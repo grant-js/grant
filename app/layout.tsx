@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { ApolloProvider } from './components/ApolloProvider';
+import { ThemeProvider } from './components/ThemeProvider';
 import { Toaster } from 'sonner';
 
 const geistSans = Geist({
@@ -27,8 +28,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ApolloProvider>{children}</ApolloProvider>
-        <Toaster />
+        <ThemeProvider>
+          <ApolloProvider>{children}</ApolloProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
