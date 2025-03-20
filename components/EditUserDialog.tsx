@@ -60,7 +60,7 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
       name: '',
       email: '',
     },
-    mode: 'onChange',
+    mode: 'onSubmit',
   });
 
   useEffect(() => {

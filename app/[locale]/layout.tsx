@@ -1,6 +1,5 @@
 import { MessagesProvider } from '@/components/providers/MessagesProvider';
 import { Header } from '@/components/Header';
-import { Toaster } from 'sonner';
 
 interface RootLayoutProps {
   children: React.ReactNode;
@@ -17,7 +16,6 @@ export default async function RootLayout({ children, params }: RootLayoutProps) 
         <Header />
         <main className="flex-1">{children}</main>
       </div>
-      <Toaster />
     </MessagesProvider>
   );
 }

@@ -61,7 +61,7 @@ export function CreateUserDialog({ currentPage }: CreateUserDialogProps) {
       name: '',
       email: '',
     },
-    mode: 'onChange',
+    mode: 'onSubmit',
   });
 
   const [createUser] = useMutation(CREATE_USER, {
