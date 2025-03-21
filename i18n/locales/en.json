@@ -21,7 +21,9 @@
   },
   "dashboard": {
     "navigation": {
-      "users": "Users"
+      "users": "Users",
+      "account": "Account",
+      "settings": "Settings"
     }
   },
   "theme": {
@@ -136,5 +138,13 @@
       "deleteSuccess": "User deleted",
       "deleteError": "Failed to delete user"
     }
+  },
+  "account": {
+    "title": "Account Management",
+    "description": "View and manage your account details"
+  },
+  "settings": {
+    "title": "System Settings",
+    "description": "Configure system preferences and options"
   }
 }
