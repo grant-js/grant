@@ -109,19 +109,19 @@ export function UserList() {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {users.map((user: { id: string; name: string; email: string }) => (
                   <div
                     key={user.id}
-                    className="flex items-center justify-between p-6 bg-white dark:bg-gray-800 rounded-lg shadow"
+                    className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg shadow"
                   >
                     <div className="flex items-center space-x-4 min-w-0">
-                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-lg">
+                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-lg">
                         {user.name.charAt(0)}
                       </div>
                       <div className="min-w-0">
-                        <h3 className="font-medium text-base truncate">{user.name}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                        <h3 className="font-medium text-sm md:text-base truncate">{user.name}</h3>
+                        <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 truncate">
                           {user.email}
                         </p>
                       </div>

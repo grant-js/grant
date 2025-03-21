@@ -141,8 +141,8 @@ export function CreateUserDialog({ currentPage }: CreateUserDialogProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
-          <UserPlus className="mr-2 h-4 w-4" />
-          {t('actions.create')}
+          <UserPlus className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">{t('actions.create')}</span>
         </Button>
       </DialogTrigger>
       <DialogContent>
