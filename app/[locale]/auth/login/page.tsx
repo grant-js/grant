@@ -79,84 +79,82 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="mx-auto w-full max-w-sm space-y-6">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold">{t('login.title')}</h1>
-          <p className="text-gray-500">{t('login.description')}</p>
-        </div>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('login.email')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder={t('login.emailPlaceholder')}
-                      {...field}
-                      className={form.formState.errors.email ? 'border-red-500' : ''}
-                    />
-                  </FormControl>
-                  {form.formState.errors.email && (
-                    <FormMessage className="text-red-500 text-sm mt-1">
-                      {t('login.emailError')}
-                    </FormMessage>
-                  )}
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('login.password')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder={t('login.passwordPlaceholder')}
-                      {...field}
-                      className={form.formState.errors.password ? 'border-red-500' : ''}
-                    />
-                  </FormControl>
-                  {form.formState.errors.password && (
-                    <FormMessage className="text-red-500 text-sm mt-1">
-                      {t('login.passwordError')}
-                    </FormMessage>
-                  )}
-                </FormItem>
-              )}
-            />
-            <div>
-              <Link
-                href={{
-                  pathname: `/${locale}/auth/forgot-password`,
-                }}
-                className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400"
-              >
-                {t('login.forgotPassword')}
-              </Link>
-            </div>
-            <Button type="submit" className="w-full">
-              {t('login.submit')}
-            </Button>
-          </form>
-        </Form>
-        <div className="text-sm">
-          {t('login.noAccount')}{' '}
-          <Link
-            href={{
-              pathname: `/${locale}/auth/register`,
-            }}
-            className="text-blue-600 hover:text-blue-500 dark:text-blue-400"
-          >
-            {t('login.register')}
-          </Link>
-        </div>
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold">{t('login.title')}</h1>
+        <p className="text-gray-500">{t('login.description')}</p>
+      </div>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('login.email')}</FormLabel>
+                <FormControl>
+                  <Input
+                    type="email"
+                    placeholder={t('login.emailPlaceholder')}
+                    {...field}
+                    className={form.formState.errors.email ? 'border-red-500' : ''}
+                  />
+                </FormControl>
+                {form.formState.errors.email && (
+                  <FormMessage className="text-red-500 text-sm mt-1">
+                    {t('login.emailError')}
+                  </FormMessage>
+                )}
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('login.password')}</FormLabel>
+                <FormControl>
+                  <Input
+                    type="password"
+                    placeholder={t('login.passwordPlaceholder')}
+                    {...field}
+                    className={form.formState.errors.password ? 'border-red-500' : ''}
+                  />
+                </FormControl>
+                {form.formState.errors.password && (
+                  <FormMessage className="text-red-500 text-sm mt-1">
+                    {t('login.passwordError')}
+                  </FormMessage>
+                )}
+              </FormItem>
+            )}
+          />
+          <div>
+            <Link
+              href={{
+                pathname: `/${locale}/auth/forgot-password`,
+              }}
+              className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400"
+            >
+              {t('login.forgotPassword')}
+            </Link>
+          </div>
+          <Button type="submit" className="w-full">
+            {t('login.submit')}
+          </Button>
+        </form>
+      </Form>
+      <div className="text-sm">
+        {t('login.noAccount')}{' '}
+        <Link
+          href={{
+            pathname: `/${locale}/auth/register`,
+          }}
+          className="text-blue-600 hover:text-blue-500 dark:text-blue-400"
+        >
+          {t('login.register')}
+        </Link>
       </div>
     </div>
   );

@@ -9,7 +9,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)]">
       {/* Desktop Sidebar */}
       <div className="hidden md:block w-64 border-r bg-background">
         <div className="flex h-full flex-col">
@@ -22,8 +22,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col">
         {/* Main Content */}
-        <div className="flex-1 overflow-auto pb-16 md:pb-0">
-          <div className="p-4 md:p-8">{children}</div>
+        <div className="flex-1 overflow-auto">
+          <div className="p-4 md:p-8 pb-16 md:pb-8">{children}</div>
         </div>
 
         {/* Mobile Bottom Navigation */}
