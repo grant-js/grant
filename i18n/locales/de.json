@@ -114,7 +114,15 @@
     },
     "form": {
       "name": "Name",
-      "email": "E-Mail"
+      "email": "E-Mail",
+      "roles": "Rollen",
+      "validation": {
+        "rolesRequired": "Benutzer muss mindestens eine Rolle haben"
+      }
+    },
+    "roles": {
+      "admin": "Administrator",
+      "customer": "Kunde"
     },
     "pagination": {
       "previous": "Zurück",

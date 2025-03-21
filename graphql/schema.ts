@@ -6,16 +6,24 @@ interface User {
   id: string;
   name: string;
   email: string;
+  roles: Role[];
+}
+
+interface Role {
+  id: string;
+  label: string;
 }
 
 interface CreateUserInput {
   name: string;
   email: string;
+  roleIds?: string[];
 }
 
 interface UpdateUserInput {
   name: string;
   email: string;
+  roleIds?: string[];
 }
 
 interface LoginInput {
@@ -25,11 +33,23 @@ interface LoginInput {
 
 const JWT_SECRET = 'your-secret-key'; // In production, use an environment variable
 
+// Define available roles
+const ROLES: Role[] = [
+  { id: 'admin', label: 'roles.admin' },
+  { id: 'customer', label: 'roles.customer' },
+];
+
 const typeDefs = `#graphql
+  type Role {
+    id: ID!
+    label: String!
+  }
+
   type User {
     id: ID!
     name: String!
     email: String!
+    roles: [Role!]!
   }
 
   type UserConnection {
@@ -41,11 +61,13 @@ const typeDefs = `#graphql
   input CreateUserInput {
     name: String!
     email: String!
+    roleIds: [ID!]
   }
 
   input UpdateUserInput {
     name: String!
     email: String!
+    roleIds: [ID!]
   }
 
   input LoginInput {
@@ -74,6 +96,7 @@ const users: User[] = Array.from({ length: 30 }, () => ({
   id: faker.string.uuid(),
   name: faker.person.fullName(),
   email: faker.internet.email(),
+  roles: [{ id: 'customer', label: 'roles.customer' }], // Default role for all users
 }));
 
 const resolvers = {
@@ -95,6 +118,11 @@ const resolvers = {
       const newUser = {
         id: faker.string.uuid(),
         ...input,
+        roles: input.roleIds
+          ?.map((id) => ROLES.find((role) => role.id === id))
+          .filter((role): role is Role => role !== undefined) || [
+          { id: 'customer', label: 'roles.customer' },
+        ],
       };
       users.push(newUser);
       return newUser;
@@ -104,7 +132,14 @@ const resolvers = {
       if (userIndex === -1) {
         throw new Error('User not found');
       }
-      users[userIndex] = { ...users[userIndex], ...input };
+      users[userIndex] = {
+        ...users[userIndex],
+        ...input,
+        roles:
+          input.roleIds
+            ?.map((id) => ROLES.find((role) => role.id === id))
+            .filter((role): role is Role => role !== undefined) || users[userIndex].roles,
+      };
       return users[userIndex];
     },
     deleteUser: (_: unknown, { id }: { id: string }): User => {

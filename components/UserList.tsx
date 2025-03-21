@@ -24,6 +24,19 @@ import { toast } from 'sonner';
 import { EditUserDialog } from './EditUserDialog';
 import { CreateUserDialog } from './CreateUserDialog';
 import { useTranslations } from 'next-intl';
+import { cn } from '@/lib/utils';
+
+interface Role {
+  id: string;
+  label: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  roles: Role[];
+}
 
 export const GET_USERS = gql`
   query GetUsers($page: Int!, $limit: Int!) {
@@ -32,6 +45,10 @@ export const GET_USERS = gql`
         id
         name
         email
+        roles {
+          id
+          label
+        }
       }
       totalCount
       hasNextPage
@@ -45,6 +62,10 @@ const DELETE_USER = gql`
       id
       name
       email
+      roles {
+        id
+        label
+      }
     }
   }
 `;
@@ -53,15 +74,25 @@ export function UserList() {
   const [page, setPage] = useState(1);
   const limit = 10;
 
-  const { loading, error, data } = useQuery(GET_USERS, {
+  const { loading, error, data } = useQuery<{
+    users: {
+      users: User[];
+      totalCount: number;
+      hasNextPage: boolean;
+    };
+  }>(GET_USERS, {
     variables: { page, limit },
   });
-  const [deleteUser] = useMutation(DELETE_USER, {
-    update(cache, { data: { deleteUser } }) {
+  const [deleteUser] = useMutation<{
+    deleteUser: User;
+  }>(DELETE_USER, {
+    update(cache, { data }) {
+      if (!data?.deleteUser) return;
+
       // Read the existing users query
       const existingUsers = cache.readQuery<{
         users: {
-          users: Array<{ id: string; name: string; email: string }>;
+          users: User[];
           totalCount: number;
           hasNextPage: boolean;
         };
@@ -84,9 +115,7 @@ export function UserList() {
               ...existingUsers.users,
               totalCount: newTotalCount,
               hasNextPage: newHasNextPage,
-              users: existingUsers.users.users.filter(
-                (user: { id: string }) => user.id !== deleteUser.id
-              ),
+              users: existingUsers.users.users.filter((user) => user.id !== data.deleteUser.id),
             },
           },
         });
@@ -96,7 +125,7 @@ export function UserList() {
           if (p !== page) {
             const otherPageData = cache.readQuery<{
               users: {
-                users: Array<{ id: string; name: string; email: string }>;
+                users: User[];
                 totalCount: number;
                 hasNextPage: boolean;
               };
@@ -124,13 +153,12 @@ export function UserList() {
     },
   });
   const [userToDelete, setUserToDelete] = useState<{ id: string; name: string } | null>(null);
-  const [userToEdit, setUserToEdit] = useState<{ id: string; name: string; email: string } | null>(
-    null
-  );
+  const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const t = useTranslations('users');
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
+  if (!data) return null;
 
   const { users, totalCount, hasNextPage } = data.users;
   const totalPages = Math.max(1, Math.ceil(totalCount / limit));
@@ -181,7 +209,7 @@ export function UserList() {
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {users.map((user: { id: string; name: string; email: string }) => (
+                {users.map((user: User) => (
                   <div
                     key={user.id}
                     className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg shadow"
@@ -195,6 +223,21 @@ export function UserList() {
                         <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 truncate">
                           {user.email}
                         </p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {user.roles.map((role) => (
+                            <span
+                              key={role.id}
+                              className={cn(
+                                'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
+                                role.id === 'admin'
+                                  ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                                  : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                              )}
+                            >
+                              {t(`roles.${role.id}`)}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2 ml-4">

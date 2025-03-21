@@ -27,10 +27,24 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useEffect } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
+
+interface Role {
+  id: string;
+  label: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  roles: Role[];
+}
 
 const editUserSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
   email: z.string().email('Please enter a valid email address'),
+  roleIds: z.array(z.string()).min(1, 'User must have at least one role'),
 });
 
 type EditUserFormValues = z.infer<typeof editUserSchema>;
@@ -41,16 +55,25 @@ const UPDATE_USER = gql`
       id
       name
       email
+      roles {
+        id
+        label
+      }
     }
   }
 `;
 
 interface EditUserDialogProps {
-  user: { id: string; name: string; email: string } | null;
+  user: User | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentPage: number;
 }
+
+const AVAILABLE_ROLES: Role[] = [
+  { id: 'admin', label: 'roles.admin' },
+  { id: 'customer', label: 'roles.customer' },
+];
 
 export function EditUserDialog({ user, open, onOpenChange, currentPage }: EditUserDialogProps) {
   const t = useTranslations('users');
@@ -60,6 +83,7 @@ export function EditUserDialog({ user, open, onOpenChange, currentPage }: EditUs
     defaultValues: {
       name: '',
       email: '',
+      roleIds: [],
     },
     mode: 'onSubmit',
   });
@@ -69,6 +93,7 @@ export function EditUserDialog({ user, open, onOpenChange, currentPage }: EditUs
       form.reset({
         name: user.name,
         email: user.email,
+        roleIds: user.roles.map((role) => role.id),
       });
     }
   }, [user, form]);
@@ -87,6 +112,7 @@ export function EditUserDialog({ user, open, onOpenChange, currentPage }: EditUs
           input: {
             name: values.name,
             email: values.email,
+            roleIds: values.roleIds,
           },
         },
       });
@@ -147,6 +173,53 @@ export function EditUserDialog({ user, open, onOpenChange, currentPage }: EditUs
                   {form.formState.errors.email && (
                     <FormMessage className="text-red-500 text-sm mt-1">
                       {form.formState.errors.email.message}
+                    </FormMessage>
+                  )}
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="roleIds"
+              render={() => (
+                <FormItem>
+                  <FormLabel>{t('form.roles')}</FormLabel>
+                  <div className="space-y-2">
+                    {AVAILABLE_ROLES.map((role) => (
+                      <FormField
+                        key={role.id}
+                        control={form.control}
+                        name="roleIds"
+                        render={({ field }) => {
+                          return (
+                            <FormItem
+                              key={role.id}
+                              className="flex flex-row items-start space-x-3 space-y-0"
+                            >
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(role.id)}
+                                  onCheckedChange={(checked: boolean) => {
+                                    return checked
+                                      ? field.onChange([...(field.value || []), role.id])
+                                      : field.onChange(
+                                          field.value?.filter((value) => value !== role.id)
+                                        );
+                                  }}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel>{t(`roles.${role.id}`)}</FormLabel>
+                              </div>
+                            </FormItem>
+                          );
+                        }}
+                      />
+                    ))}
+                  </div>
+                  {form.formState.errors.roleIds && (
+                    <FormMessage className="text-red-500 text-sm mt-1">
+                      {t('form.validation.rolesRequired')}
                     </FormMessage>
                   )}
                 </FormItem>
