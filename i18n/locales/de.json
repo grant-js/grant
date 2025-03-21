@@ -16,7 +16,8 @@
     },
     "navigation": {
       "home": "Startseite",
-      "dashboard": "Dashboard"
+      "dashboard": "Dashboard",
+      "toggleMenu": "Navigationsmenü umschalten"
     },
     "theme": {
       "label": "Design"

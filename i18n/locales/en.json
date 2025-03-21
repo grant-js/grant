@@ -16,7 +16,8 @@
     },
     "navigation": {
       "home": "Home",
-      "dashboard": "Dashboard"
+      "dashboard": "Dashboard",
+      "toggleMenu": "Toggle navigation menu"
     },
     "theme": {
       "label": "Theme"

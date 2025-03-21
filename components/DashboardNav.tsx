@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { NavLink } from './NavLink';
 import { Users, UserCircle, Settings } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { usePathname } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { useCallback } from 'react';
 
@@ -27,8 +27,8 @@ export function DashboardNav() {
   const navItemClasses = useCallback(
     (path: string) => {
       return cn(
-        'flex items-center rounded-md transition-colors',
-        isActive(path) ? 'bg-accent' : 'hover:bg-accent/50'
+        'flex items-center justify-center md:justify-start transition-colors w-full',
+        isActive(path) ? 'bg-accent md:rounded-md' : 'hover:bg-accent/50 md:rounded-md'
       );
     },
     [isActive]
@@ -67,13 +67,20 @@ export function DashboardNav() {
   ];
 
   return (
-    <nav className="flex flex-col space-y-1">
+    <nav className="grid grid-cols-3 md:flex md:flex-col md:space-y-1">
       {navItems.map((item) => (
-        <div key={item.path} className={navItemClasses(item.path)}>
+        <div key={item.path} className={cn(navItemClasses(item.path), 'md:flex-none')}>
           <NavLink href={item.path}>
-            <div className="flex items-center space-x-2 px-3 py-2">
+            <div className="flex flex-col md:flex-row items-center justify-center md:justify-start space-y-1 md:space-y-0 md:space-x-2 px-3 py-2">
               {item.icon}
-              <span className={textClasses(item.path)}>{t(item.translationKey)}</span>
+              <span
+                className={cn(
+                  'text-xs md:text-sm text-center md:text-left',
+                  textClasses(item.path)
+                )}
+              >
+                {t(item.translationKey)}
+              </span>
             </div>
           </NavLink>
         </div>
