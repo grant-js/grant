@@ -15,7 +15,6 @@ import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/toast';
 import { useTranslations } from 'next-intl';
 import { GET_USERS } from './UserList';
-import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -28,26 +27,7 @@ import {
 } from '@/components/ui/form';
 import { useEffect } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
-
-interface Role {
-  id: string;
-  label: string;
-}
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  roles: Role[];
-}
-
-const editUserSchema = z.object({
-  name: z.string().min(3, 'Name must be at least 3 characters'),
-  email: z.string().email('Please enter a valid email address'),
-  roleIds: z.array(z.string()).min(1, 'User must have at least one role'),
-});
-
-type EditUserFormValues = z.infer<typeof editUserSchema>;
+import { User, EditUserFormValues, editUserSchema, EditUserDialogProps } from './types';
 
 const UPDATE_USER = gql`
   mutation UpdateUser($id: ID!, $input: UpdateUserInput!) {
@@ -63,14 +43,7 @@ const UPDATE_USER = gql`
   }
 `;
 
-interface EditUserDialogProps {
-  user: User | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  currentPage: number;
-}
-
-const AVAILABLE_ROLES: Role[] = [
+const AVAILABLE_ROLES = [
   { id: 'admin', label: 'roles.admin' },
   { id: 'customer', label: 'roles.customer' },
 ];

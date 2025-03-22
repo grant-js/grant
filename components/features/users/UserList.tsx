@@ -26,18 +26,7 @@ import { CreateUserDialog } from './CreateUserDialog';
 import { UserCardSkeleton } from './UserCardSkeleton';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
-
-interface Role {
-  id: string;
-  label: string;
-}
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  roles: Role[];
-}
+import { User, UsersQueryResult } from './types';
 
 export const GET_USERS = gql`
   query GetUsers($page: Int!, $limit: Int!) {
@@ -75,13 +64,7 @@ export function UserList() {
   const [page, setPage] = useState(1);
   const limit = 10;
 
-  const { loading, error, data } = useQuery<{
-    users: {
-      users: User[];
-      totalCount: number;
-      hasNextPage: boolean;
-    };
-  }>(GET_USERS, {
+  const { loading, error, data } = useQuery<UsersQueryResult>(GET_USERS, {
     variables: { page, limit },
   });
   const [deleteUser] = useMutation<{
@@ -91,13 +74,7 @@ export function UserList() {
       if (!data?.deleteUser) return;
 
       // Read the existing users query
-      const existingUsers = cache.readQuery<{
-        users: {
-          users: User[];
-          totalCount: number;
-          hasNextPage: boolean;
-        };
-      }>({
+      const existingUsers = cache.readQuery<UsersQueryResult>({
         query: GET_USERS,
         variables: { page, limit },
       });
@@ -124,13 +101,7 @@ export function UserList() {
         // Update all other pages to reflect the new total count
         for (let p = 1; p <= newTotalPages; p++) {
           if (p !== page) {
-            const otherPageData = cache.readQuery<{
-              users: {
-                users: User[];
-                totalCount: number;
-                hasNextPage: boolean;
-              };
-            }>({
+            const otherPageData = cache.readQuery<UsersQueryResult>({
               query: GET_USERS,
               variables: { page: p, limit },
             });
@@ -230,7 +201,7 @@ export function UserList() {
                               {user.email}
                             </p>
                             <div className="flex flex-wrap gap-1 mt-1">
-                              {user.roles.map((role) => (
+                              {user.roles.map((role: { id: string; label: string }) => (
                                 <span
                                   key={role.id}
                                   className={cn(
@@ -249,22 +220,21 @@ export function UserList() {
                         <div className="flex items-center space-x-2 ml-4">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-gray-400 hover:text-gray-600"
-                              >
+                              <Button variant="ghost" size="icon">
                                 <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => setUserToEdit(user)}>
+                              <DropdownMenuItem
+                                onClick={() => setUserToEdit(user)}
+                                className="cursor-pointer"
+                              >
                                 <Pencil className="h-4 w-4 mr-2" />
                                 {t('actions.edit')}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => setUserToDelete({ id: user.id, name: user.name })}
-                                className="text-red-600 focus:text-red-600"
+                                className="cursor-pointer text-red-600 focus:text-red-600"
                               >
                                 <X className="h-4 w-4 mr-2" />
                                 {t('actions.delete')}
@@ -275,54 +245,39 @@ export function UserList() {
                       </div>
                     ))}
               </div>
-
-              {totalCount > 0 && (
-                <div className="flex items-center justify-between mt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1 || loading}
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-2" />
-                    {t('pagination.previous')}
-                  </Button>
-                  <span className="text-sm text-gray-500">
-                    {t('pagination.info', { current: page, total: totalPages })}
-                  </span>
-                  <Button
-                    variant="outline"
-                    onClick={() => setPage((p) => p + 1)}
-                    disabled={!hasNextPage || loading}
-                  >
-                    {t('pagination.next')}
-                    <ChevronRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </div>
-              )}
+              <div className="flex justify-between items-center mt-4">
+                <Button variant="outline" onClick={() => setPage(page - 1)} disabled={page === 1}>
+                  <ChevronLeft className="h-4 w-4 mr-2" />
+                  {t('pagination.previous')}
+                </Button>
+                <span className="text-sm text-gray-500">
+                  {t('pagination.info', { current: page, total: totalPages })}
+                </span>
+                <Button variant="outline" onClick={() => setPage(page + 1)} disabled={!hasNextPage}>
+                  {t('pagination.next')}
+                  <ChevronRight className="h-4 w-4 ml-2" />
+                </Button>
+              </div>
             </div>
           )}
         </div>
       </div>
-
-      {userToDelete && (
-        <AlertDialog open={true} onOpenChange={(open) => !open && setUserToDelete(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t('deleteDialog.title')}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {t('deleteDialog.description', { name: userToDelete.name })}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t('deleteDialog.cancel')}</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete}>
-                {t('deleteDialog.confirm')}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
-
+      <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('deleteDialog.title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('deleteDialog.description', { name: userToDelete?.name || '' })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('deleteDialog.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+              {t('deleteDialog.confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <EditUserDialog
         user={userToEdit}
         open={!!userToEdit}

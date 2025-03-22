@@ -17,7 +17,6 @@ import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/toast';
 import { useTranslations } from 'next-intl';
 import { GET_USERS } from './UserList';
-import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -31,26 +30,13 @@ import {
 import { UserPlus } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ROLES } from '@/shared/constants/roles';
-
-interface Role {
-  id: string;
-  label: string;
-}
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  roles: Role[];
-}
-
-const createUserSchema = z.object({
-  name: z.string().min(3, 'Name must be at least 3 characters'),
-  email: z.string().email('Please enter a valid email address'),
-  roleIds: z.array(z.string()).min(1, 'User must have at least one role'),
-});
-
-type CreateUserFormValues = z.infer<typeof createUserSchema>;
+import {
+  User,
+  CreateUserFormValues,
+  createUserSchema,
+  CreateUserDialogProps,
+  UsersQueryResult,
+} from './types';
 
 const CREATE_USER = gql`
   mutation CreateUser($input: CreateUserInput!) {
@@ -65,18 +51,6 @@ const CREATE_USER = gql`
     }
   }
 `;
-
-interface CreateUserDialogProps {
-  currentPage: number;
-}
-
-interface UsersQueryResult {
-  users: {
-    users: User[];
-    totalCount: number;
-    hasNextPage: boolean;
-  };
-}
 
 export function CreateUserDialog({ currentPage }: CreateUserDialogProps) {
   const [open, setOpen] = useState(false);
@@ -248,7 +222,7 @@ export function CreateUserDialog({ currentPage }: CreateUserDialogProps) {
             <DialogFooter>
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting
-                  ? t('createDialog.confirm')
+                  ? t('createDialog.submitting')
                   : t('createDialog.confirm')}
               </Button>
             </DialogFooter>
