@@ -34,14 +34,14 @@ export function UserSearch({ search, onSearchChange }: UserSearchProps) {
   };
 
   return (
-    <div className="relative">
+    <div className="relative w-full">
       <Search className="absolute left-2 top-2.5 size-4 text-muted-foreground" />
       <Input
         type="search"
         placeholder={t('search.placeholder')}
         defaultValue={search}
         onChange={(e) => handleChange(e.target.value)}
-        className="pl-8 w-[200px]"
+        className="pl-8 w-full sm:w-[200px]"
       />
     </div>
   );

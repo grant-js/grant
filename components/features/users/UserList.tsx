@@ -216,7 +216,11 @@ export function UserList({ page, limit, search, sort, onPageChange }: UserListPr
                         <div className="flex items-center space-x-2 ml-4">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="hover:bg-accent dark:hover:bg-white/10"
+                              >
                                 <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -247,7 +251,7 @@ export function UserList({ page, limit, search, sort, onPageChange }: UserListPr
       </div>
       {users.length > 0 && (
         <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t">
-          <div className="max-w-5xl mx-auto p-4">
+          <div className="mx-auto p-4">
             <div className="flex justify-between items-center">
               <Button variant="outline" onClick={handlePreviousPage} disabled={page === 1}>
                 <ChevronLeft className="h-4 w-4 mr-2" />

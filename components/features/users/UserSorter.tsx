@@ -33,20 +33,25 @@ export function UserSorter({ sort, onSortChange }: UserSorterProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="default">
-          {sort ? (
-            <>
-              {getSortLabel(sort.field)}
-              {sort.order === UserSortOrder.Asc ? (
-                <ArrowUp className="size-4" />
+        <Button variant="outline" size="default" className="w-full sm:w-auto">
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2">
+              {t('sort.label')}:{' '}
+              {sort ? (
+                <>
+                  {getSortLabel(sort.field)}
+                  {sort.order === UserSortOrder.Asc ? (
+                    <ArrowUp className="size-4" />
+                  ) : (
+                    <ArrowDown className="size-4" />
+                  )}
+                </>
               ) : (
-                <ArrowDown className="size-4" />
+                t('sort.default')
               )}
-            </>
-          ) : (
-            t('sort.label')
-          )}
-          <ChevronDown className="size-4" />
+            </div>
+            <ChevronDown className="size-4" />
+          </div>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">

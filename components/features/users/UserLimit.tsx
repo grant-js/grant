@@ -21,9 +21,13 @@ export function UserLimit({ limit, onLimitChange }: UserLimitProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="default" className="gap-2">
-          {t('limit')}: {limit}
-          <ChevronDownIcon className="size-4" />
+        <Button variant="outline" size="default" className="w-full sm:w-auto">
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2">
+              {t('limit')}: {limit}
+            </div>
+            <ChevronDownIcon className="size-4" />
+          </div>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

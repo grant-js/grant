@@ -10,7 +10,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
   const t = useTranslations('auth');
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] grid lg:grid-cols-2">
+    <div className="min-h-[calc(100vh-3.5rem)] grid lg:grid-cols-2">
       {/* Left side - Auth forms */}
       <div className="flex items-center justify-center p-6 sm:p-4">
         <div className="w-full max-w-sm">{children}</div>

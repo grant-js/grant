@@ -110,7 +110,8 @@
     "actions": {
       "create": "Benutzer erstellen",
       "edit": "Bearbeiten",
-      "delete": "Löschen"
+      "delete": "Löschen",
+      "label": "Aktionen anzeigen/ausblenden"
     },
     "sort": {
       "label": "Sortieren nach",

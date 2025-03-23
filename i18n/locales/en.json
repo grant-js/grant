@@ -110,7 +110,8 @@
     "actions": {
       "create": "Create User",
       "edit": "Edit",
-      "delete": "Delete"
+      "delete": "Delete",
+      "label": "Show/Hide Actions"
     },
     "sort": {
       "label": "Sort by",
