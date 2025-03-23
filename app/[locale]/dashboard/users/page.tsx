@@ -37,20 +37,26 @@ export default function UsersPage() {
   };
 
   return (
-    <div className="space-y-8">
-      <DashboardPageTitle
-        title={t('title')}
-        actions={
-          <UserActions
-            currentPage={1}
-            currentLimit={currentLimit}
-            currentSort={currentSort}
-            onSortChange={handleSortChange}
-            onLimitChange={handleLimitChange}
+    <div className="flex flex-col min-h-screen">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <div className="container py-4">
+          <DashboardPageTitle
+            title={t('title')}
+            actions={
+              <UserActions
+                currentPage={1}
+                currentLimit={currentLimit}
+                currentSort={currentSort}
+                onSortChange={handleSortChange}
+                onLimitChange={handleLimitChange}
+              />
+            }
           />
-        }
-      />
-      <UserList />
+        </div>
+      </div>
+      <div className="flex-1">
+        <UserList />
+      </div>
     </div>
   );
 }
