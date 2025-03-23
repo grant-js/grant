@@ -118,6 +118,9 @@
       "email": "Email"
     },
     "limit": "Items per page",
+    "search": {
+      "placeholder": "Search users..."
+    },
     "form": {
       "name": "Name",
       "email": "Email",

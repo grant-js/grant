@@ -19,7 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useState, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { EditUserDialog } from './EditUserDialog';
 import { CreateUserDialog } from './CreateUserDialog';
@@ -27,14 +27,12 @@ import { UserCardSkeleton } from './UserCardSkeleton';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { User, UsersQueryResult } from './types';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { UserSortableField, UserSortOrder } from '@/graphql/generated/types';
 import { evictUsersCache } from './cache';
-import { UserActions } from './UserActions';
 
 export const GET_USERS = gql`
-  query GetUsers($page: Int!, $limit: Int!, $sort: UserSortInput) {
-    users(page: $page, limit: $limit, sort: $sort) {
+  query GetUsers($page: Int!, $limit: Int!, $sort: UserSortInput, $search: String) {
+    users(page: $page, limit: $limit, sort: $sort, search: $search) {
       users {
         id
         name
@@ -64,51 +62,30 @@ const DELETE_USER = gql`
   }
 `;
 
-export function UserList() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const defaultLimit = 10;
+interface UserListProps {
+  page: number;
+  limit: number;
+  search: string;
+  sort?: {
+    field: UserSortableField;
+    order: UserSortOrder;
+  };
+  onPageChange: (page: number) => void;
+}
 
-  // Get page, limit, and sort from URL or use defaults
-  const currentPage = Number(searchParams.get('page')) || 1;
-  const currentLimit = Number(searchParams.get('limit')) || defaultLimit;
-  const sortField = searchParams.get('sortField') as UserSortableField | null;
-  const sortOrder = searchParams.get('sortOrder') as UserSortOrder | null;
-
-  const [page, setPage] = useState(currentPage);
-  const [limit, setLimit] = useState(currentLimit);
-
-  // Update URL when page changes (we control this in UserList)
-  useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    const currentPageParam = params.get('page');
-
-    if (currentPageParam !== page.toString()) {
-      params.set('page', page.toString());
-      router.push(`?${params.toString()}`);
-    }
-  }, [page, router, searchParams]);
-
-  // Sync limit from URL (controlled by parent)
-  useEffect(() => {
-    const newLimit = Number(searchParams.get('limit')) || defaultLimit;
-    if (newLimit !== limit) {
-      setLimit(newLimit);
-    }
-  }, [searchParams, defaultLimit]);
-
-  const { loading, error, data, refetch } = useQuery<UsersQueryResult>(GET_USERS, {
-    variables: {
+export function UserList({ page, limit, search, sort, onPageChange }: UserListProps) {
+  const queryVariables = useMemo(
+    () => ({
       page,
       limit,
-      sort:
-        sortField && sortOrder
-          ? {
-              field: sortField,
-              order: sortOrder,
-            }
-          : undefined,
-    },
+      sort,
+      search,
+    }),
+    [page, limit, sort, search]
+  );
+
+  const { loading, error, data, refetch } = useQuery<UsersQueryResult>(GET_USERS, {
+    variables: queryVariables,
   });
 
   const [deleteUser] = useMutation<{
@@ -123,14 +100,14 @@ export function UserList() {
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const t = useTranslations('users');
 
-  if (error) return <div>Error: {error.message}</div>;
-  if (!data) return null;
+  // Memoize derived values and callbacks
+  const totalPages = useMemo(() => {
+    if (!data) return 1;
+    return Math.max(1, Math.ceil(data.users.totalCount / limit));
+  }, [data?.users.totalCount, limit]);
 
-  const { users, totalCount, hasNextPage } = data.users;
-  const totalPages = Math.max(1, Math.ceil(totalCount / limit));
-
-  const handleDelete = async () => {
-    if (!userToDelete) return;
+  const handleDelete = useCallback(async () => {
+    if (!userToDelete || !data) return;
 
     try {
       await deleteUser({
@@ -145,12 +122,12 @@ export function UserList() {
 
       // If we're on a page greater than 1 and this was the last user on the current page,
       // navigate to the previous page
-      if (page > 1 && users.length === 1) {
-        setPage(page - 1);
+      if (page > 1 && data.users.users.length === 1) {
+        onPageChange(page - 1);
       }
       // If we're on the last page and it becomes empty, go back one page
-      else if (page === totalPages && users.length === 1) {
-        setPage(page - 1);
+      else if (page === totalPages && data.users.users.length === 1) {
+        onPageChange(page - 1);
       }
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -160,11 +137,28 @@ export function UserList() {
     } finally {
       setUserToDelete(null);
     }
-  };
+  }, [userToDelete, deleteUser, refetch, page, data, totalPages, onPageChange, t]);
 
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage);
-  };
+  const handleEditClick = useCallback((user: User) => {
+    setUserToEdit(user);
+  }, []);
+
+  const handleDeleteClick = useCallback((user: User) => {
+    setUserToDelete({ id: user.id, name: user.name });
+  }, []);
+
+  const handlePreviousPage = useCallback(() => {
+    onPageChange(page - 1);
+  }, [page, onPageChange]);
+
+  const handleNextPage = useCallback(() => {
+    onPageChange(page + 1);
+  }, [page, onPageChange]);
+
+  if (error) return <div>Error: {error.message}</div>;
+  if (!data) return null;
+
+  const { users, hasNextPage } = data.users;
 
   return (
     <>
@@ -173,10 +167,10 @@ export function UserList() {
           {users.length === 0 && !loading ? (
             <div className="text-center py-10 border-2 border-dashed rounded-lg">
               <UserPlus className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-4 text-lg font-semibold text-gray-900">{t('noUsers.title')}</h3>
+              <h3 className="mt-4 text-lg font-semibold text-gray-500">{t('noUsers.title')}</h3>
               <p className="mt-1 text-sm text-gray-500">{t('noUsers.description')}</p>
               <div className="mt-6">
-                <CreateUserDialog currentPage={page} />
+                <CreateUserDialog />
               </div>
             </div>
           ) : (
@@ -228,14 +222,14 @@ export function UserList() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
-                                onClick={() => setUserToEdit(user)}
+                                onClick={() => handleEditClick(user)}
                                 className="cursor-pointer"
                               >
                                 <Pencil className="h-4 w-4 mr-2" />
                                 {t('actions.edit')}
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => setUserToDelete({ id: user.id, name: user.name })}
+                                onClick={() => handleDeleteClick(user)}
                                 className="cursor-pointer text-red-600 focus:text-red-600"
                               >
                                 <X className="h-4 w-4 mr-2" />
@@ -255,22 +249,14 @@ export function UserList() {
         <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t">
           <div className="max-w-5xl mx-auto p-4">
             <div className="flex justify-between items-center">
-              <Button
-                variant="outline"
-                onClick={() => handlePageChange(page - 1)}
-                disabled={page === 1}
-              >
+              <Button variant="outline" onClick={handlePreviousPage} disabled={page === 1}>
                 <ChevronLeft className="h-4 w-4 mr-2" />
                 {t('pagination.previous')}
               </Button>
               <span className="text-sm text-gray-500">
                 {t('pagination.info', { current: page, total: totalPages })}
               </span>
-              <Button
-                variant="outline"
-                onClick={() => handlePageChange(page + 1)}
-                disabled={!hasNextPage}
-              >
+              <Button variant="outline" onClick={handleNextPage} disabled={!hasNextPage}>
                 {t('pagination.next')}
                 <ChevronRight className="h-4 w-4 ml-2" />
               </Button>

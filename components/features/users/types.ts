@@ -22,10 +22,6 @@ export type CreateUserFormValues = z.infer<typeof createUserSchema>;
 export type EditUserFormValues = z.infer<typeof editUserSchema>;
 
 // Component props
-export interface CreateUserDialogProps {
-  currentPage: number;
-}
-
 export interface EditUserDialogProps {
   user: User | null;
   open: boolean;

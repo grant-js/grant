@@ -7,19 +7,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { UserSortOrder, UserSortableField } from '@/graphql/generated/types';
+import { UserSortOrder, UserSortableField, UserSortInput } from '@/graphql/generated/types';
 import { useTranslations } from 'next-intl';
 import { ArrowDown, ArrowUp, ChevronDown } from 'lucide-react';
 
 interface UserSorterProps {
-  currentSort?: {
-    field: UserSortableField;
-    order: UserSortOrder;
-  };
+  sort?: UserSortInput;
   onSortChange: (field: UserSortableField, order: UserSortOrder) => void;
 }
 
-export function UserSorter({ currentSort, onSortChange }: UserSorterProps) {
+export function UserSorter({ sort, onSortChange }: UserSorterProps) {
   const t = useTranslations('users');
 
   const getSortLabel = (field: UserSortableField) => {
@@ -36,11 +33,11 @@ export function UserSorter({ currentSort, onSortChange }: UserSorterProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm">
-          {currentSort ? (
+        <Button variant="outline" size="default">
+          {sort ? (
             <>
-              {getSortLabel(currentSort.field)}
-              {currentSort.order === UserSortOrder.Asc ? (
+              {getSortLabel(sort.field)}
+              {sort.order === UserSortOrder.Asc ? (
                 <ArrowUp className="size-4" />
               ) : (
                 <ArrowDown className="size-4" />
@@ -63,15 +60,15 @@ export function UserSorter({ currentSort, onSortChange }: UserSorterProps) {
             className="flex items-center justify-between px-3 py-1.5 text-sm"
             onClick={() => {
               const newOrder =
-                currentSort?.field === field && currentSort.order === UserSortOrder.Asc
+                sort?.field === field && sort.order === UserSortOrder.Asc
                   ? UserSortOrder.Desc
                   : UserSortOrder.Asc;
               onSortChange(field, newOrder);
             }}
           >
             <span>{getSortLabel(field)}</span>
-            {currentSort?.field === field &&
-              (currentSort.order === UserSortOrder.Asc ? (
+            {sort?.field === field &&
+              (sort.order === UserSortOrder.Asc ? (
                 <ArrowUp className="size-4" />
               ) : (
                 <ArrowDown className="size-4" />

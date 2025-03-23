@@ -87,6 +87,7 @@ export type Query = {
 export type QueryUsersArgs = {
   limit: Scalars['Int']['input'];
   page: Scalars['Int']['input'];
+  search?: InputMaybe<Scalars['String']['input']>;
   sort?: InputMaybe<UserSortInput>;
 };
 

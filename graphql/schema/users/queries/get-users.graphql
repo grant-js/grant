@@ -30,5 +30,9 @@ extend type Query {
     Sorting configuration for the results.
     """
     sort: UserSortInput
+    """
+    Search term to filter users by name or email.
+    """
+    search: String
   ): UserConnection!
 } 

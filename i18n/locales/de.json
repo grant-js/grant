@@ -118,6 +118,9 @@
       "email": "E-Mail"
     },
     "limit": "Einträge pro Seite",
+    "search": {
+      "placeholder": "Benutzer suchen..."
+    },
     "form": {
       "name": "Name",
       "email": "E-Mail",

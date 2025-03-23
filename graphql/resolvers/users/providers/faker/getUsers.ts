@@ -1,20 +1,25 @@
-import { faker } from '@faker-js/faker';
-import { User } from '@/graphql/generated/types';
 import { GetUsersParams, GetUsersResult } from '../types';
-import { ROLES } from '@/shared/constants/roles';
+import { getUsers as getUsersFromDataStore } from './dataStore';
 
-export async function getUsers({ page, limit }: GetUsersParams): Promise<GetUsersResult> {
-  // Generate fake users based on page and limit
-  const totalCount = 100; // Mock total count
+const SEARCHABLE_FIELDS = ['name', 'email'] as const;
+
+export async function getUsers({
+  page,
+  limit,
+  sort,
+  search,
+}: GetUsersParams): Promise<GetUsersResult> {
+  const allUsers = getUsersFromDataStore(sort || undefined);
+  const filteredBySearchUsers = search
+    ? allUsers.filter((user) =>
+        SEARCHABLE_FIELDS.some((field) => user[field].toLowerCase().includes(search.toLowerCase()))
+      )
+    : allUsers;
+  const totalCount = filteredBySearchUsers.length;
+  const hasNextPage = page < Math.ceil(totalCount / limit);
   const startIndex = (page - 1) * limit;
-  const hasNextPage = startIndex + limit < totalCount;
-
-  const users: User[] = Array.from({ length: Math.min(limit, totalCount - startIndex) }, () => ({
-    id: faker.string.uuid(),
-    name: faker.person.fullName(),
-    email: faker.internet.email(),
-    roles: [ROLES[Math.floor(Math.random() * ROLES.length)]],
-  }));
+  const endIndex = startIndex + limit;
+  const users = filteredBySearchUsers.slice(startIndex, endIndex);
 
   return {
     users,

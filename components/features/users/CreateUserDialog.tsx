@@ -30,13 +30,7 @@ import {
 import { UserPlus } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ROLES } from '@/shared/constants/roles';
-import {
-  User,
-  CreateUserFormValues,
-  createUserSchema,
-  CreateUserDialogProps,
-  UsersQueryResult,
-} from './types';
+import { User, CreateUserFormValues, createUserSchema, UsersQueryResult } from './types';
 import { evictUsersCache } from './cache';
 
 const CREATE_USER = gql`
@@ -53,7 +47,7 @@ const CREATE_USER = gql`
   }
 `;
 
-export function CreateUserDialog({ currentPage }: CreateUserDialogProps) {
+export function CreateUserDialog() {
   const [open, setOpen] = useState(false);
   const t = useTranslations('users');
 
