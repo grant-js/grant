@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { faker } from '@faker-js/faker';
-import { User, CreateUserInput } from '@/graphql/generated/types';
+import { User, CreateUserInput, UserSortOrder, UserSortableField } from '@/graphql/generated/types';
 
 const DATA_FILE_PATH = path.join(process.cwd(), 'data', 'users.json');
 
@@ -46,13 +46,35 @@ export const saveUsers = (users: User[]): void => {
   fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(users, null, 2));
 };
 
-// Get all users from the data store
-export const getUsers = (): User[] => {
+export type SortConfig = {
+  field: UserSortableField;
+  order: UserSortOrder;
+};
+
+// Sort users based on configuration
+export const sortUsers = (users: User[], sortConfig?: SortConfig): User[] => {
+  if (!sortConfig) return users;
+
+  return [...users].sort((a, b) => {
+    const aValue = a[sortConfig.field];
+    const bValue = b[sortConfig.field];
+
+    if (aValue === bValue) return 0;
+    if (aValue === null || aValue === undefined) return 1;
+    if (bValue === null || bValue === undefined) return -1;
+
+    const comparison = aValue < bValue ? -1 : 1;
+    return sortConfig.order === UserSortOrder.Asc ? comparison : -comparison;
+  });
+};
+
+// Get all users from the data store with optional sorting
+export const getUsers = (sortConfig?: SortConfig): User[] => {
   if (!fs.existsSync(DATA_FILE_PATH)) {
-    return initializeDataStore();
+    return sortUsers(initializeDataStore(), sortConfig);
   }
   const data = fs.readFileSync(DATA_FILE_PATH, 'utf-8');
-  return JSON.parse(data);
+  return sortUsers(JSON.parse(data), sortConfig);
 };
 
 // Create a new user in the data store

@@ -112,6 +112,11 @@
       "edit": "Bearbeiten",
       "delete": "Löschen"
     },
+    "sort": {
+      "label": "Sortieren nach",
+      "name": "Name",
+      "email": "E-Mail"
+    },
     "form": {
       "name": "Name",
       "email": "E-Mail",

@@ -87,6 +87,7 @@ export type Query = {
 export type QueryUsersArgs = {
   limit: Scalars['Int']['input'];
   page: Scalars['Int']['input'];
+  sort?: InputMaybe<UserSortInput>;
 };
 
 /** Represents a user role in the system. */
@@ -131,6 +132,21 @@ export type UserConnection = {
   /** List of users for the current page. */
   users: Array<User>;
 };
+
+export type UserSortInput = {
+  field: UserSortableField;
+  order: UserSortOrder;
+};
+
+export enum UserSortOrder {
+  Asc = 'ASC',
+  Desc = 'DESC'
+}
+
+export enum UserSortableField {
+  Email = 'email',
+  Name = 'name'
+}
 
 export type WithIndex<TObject> = TObject & Record<string, any>;
 export type ResolversObject<TObject> = WithIndex<TObject>;
@@ -217,6 +233,9 @@ export type ResolversTypes = ResolversObject<{
   UpdateUserInput: UpdateUserInput;
   User: ResolverTypeWrapper<User>;
   UserConnection: ResolverTypeWrapper<UserConnection>;
+  UserSortInput: UserSortInput;
+  UserSortOrder: UserSortOrder;
+  UserSortableField: UserSortableField;
 }>;
 
 /** Mapping between all available schema types and the resolvers parents */
@@ -234,6 +253,7 @@ export type ResolversParentTypes = ResolversObject<{
   UpdateUserInput: UpdateUserInput;
   User: User;
   UserConnection: UserConnection;
+  UserSortInput: UserSortInput;
 }>;
 
 export type LoginResponseResolvers<ContextType = Context, ParentType extends ResolversParentTypes['LoginResponse'] = ResolversParentTypes['LoginResponse']> = ResolversObject<{
