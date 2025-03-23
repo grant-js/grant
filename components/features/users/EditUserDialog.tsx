@@ -28,6 +28,7 @@ import {
 import { useEffect } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { User, EditUserFormValues, editUserSchema, EditUserDialogProps } from './types';
+import { evictUsersCache } from './cache';
 
 const UPDATE_USER = gql`
   mutation UpdateUser($id: ID!, $input: UpdateUserInput!) {
@@ -72,7 +73,9 @@ export function EditUserDialog({ user, open, onOpenChange, currentPage }: EditUs
   }, [user, form]);
 
   const [updateUser] = useMutation(UPDATE_USER, {
-    refetchQueries: [{ query: GET_USERS, variables: { page: currentPage, limit: 10 } }],
+    update(cache) {
+      evictUsersCache(cache);
+    },
   });
 
   const onSubmit = async (values: EditUserFormValues) => {

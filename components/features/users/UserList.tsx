@@ -28,10 +28,12 @@ import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { User, UsersQueryResult } from './types';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { UserSortableField, UserSortOrder } from '@/graphql/generated/types';
+import { evictUsersCache } from './cache';
 
 export const GET_USERS = gql`
-  query GetUsers($page: Int!, $limit: Int!) {
-    users(page: $page, limit: $limit) {
+  query GetUsers($page: Int!, $limit: Int!, $sort: UserSortInput) {
+    users(page: $page, limit: $limit, sort: $sort) {
       users {
         id
         name
@@ -66,9 +68,12 @@ export function UserList() {
   const searchParams = useSearchParams();
   const defaultLimit = 10;
 
-  // Get page and limit from URL or use defaults
+  // Get page, limit, and sort from URL or use defaults
   const currentPage = Number(searchParams.get('page')) || 1;
   const currentLimit = Number(searchParams.get('limit')) || defaultLimit;
+  const sortField = searchParams.get('sortField') as UserSortableField | null;
+  const sortOrder = searchParams.get('sortOrder') as UserSortOrder | null;
+
   const [page, setPage] = useState(currentPage);
   const [limit, setLimit] = useState(currentLimit);
 
@@ -81,49 +86,27 @@ export function UserList() {
   }, [page, limit, router, searchParams]);
 
   const { loading, error, data, refetch } = useQuery<UsersQueryResult>(GET_USERS, {
-    variables: { page, limit },
+    variables: {
+      page,
+      limit,
+      sort:
+        sortField && sortOrder
+          ? {
+              field: sortField,
+              order: sortOrder,
+            }
+          : undefined,
+    },
   });
+
   const [deleteUser] = useMutation<{
     deleteUser: User;
   }>(DELETE_USER, {
-    update(cache, { data }) {
-      if (!data?.deleteUser) return;
-
-      // Read the existing users query
-      const existingUsers = cache.readQuery<UsersQueryResult>({
-        query: GET_USERS,
-        variables: { page, limit },
-      });
-
-      if (existingUsers) {
-        const newTotalCount = existingUsers.users.totalCount - 1;
-        const newTotalPages = Math.ceil(newTotalCount / limit);
-        const newHasNextPage = page < newTotalPages;
-
-        // Update the current page
-        cache.writeQuery({
-          query: GET_USERS,
-          variables: { page, limit },
-          data: {
-            users: {
-              ...existingUsers.users,
-              totalCount: newTotalCount,
-              hasNextPage: newHasNextPage,
-              users: existingUsers.users.users.filter((user) => user.id !== data.deleteUser.id),
-            },
-          },
-        });
-
-        // Invalidate the next page's cache
-        if (hasNextPage) {
-          cache.evict({
-            fieldName: 'users',
-            args: { page: page + 1, limit },
-          });
-        }
-      }
+    update(cache) {
+      evictUsersCache(cache);
     },
   });
+
   const [userToDelete, setUserToDelete] = useState<{ id: string; name: string } | null>(null);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const t = useTranslations('users');

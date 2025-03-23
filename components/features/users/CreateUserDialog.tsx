@@ -37,6 +37,7 @@ import {
   CreateUserDialogProps,
   UsersQueryResult,
 } from './types';
+import { evictUsersCache } from './cache';
 
 const CREATE_USER = gql`
   mutation CreateUser($input: CreateUserInput!) {
@@ -67,52 +68,8 @@ export function CreateUserDialog({ currentPage }: CreateUserDialogProps) {
   });
 
   const [createUser] = useMutation(CREATE_USER, {
-    update: (cache, { data: mutationData }) => {
-      if (!mutationData?.createUser) return;
-
-      // Get the current total count from the current page
-      const existingData = cache.readQuery<UsersQueryResult>({
-        query: GET_USERS,
-        variables: { page: currentPage, limit: 10 },
-      });
-
-      const newTotalCount = (existingData?.users.totalCount ?? 0) + 1;
-      const totalPages = Math.ceil(newTotalCount / 10);
-
-      // Update all existing pages in cache
-      for (let page = 1; page <= totalPages; page++) {
-        try {
-          const pageData = cache.readQuery<UsersQueryResult>({
-            query: GET_USERS,
-            variables: { page, limit: 10 },
-          });
-
-          if (pageData) {
-            // If this is the last page and it's not full, add the new user
-            const isLastPage = page === totalPages;
-            const currentPageUsers = pageData.users.users;
-            let updatedUsers = [...currentPageUsers];
-
-            if (isLastPage && currentPageUsers.length < 10) {
-              updatedUsers = [...currentPageUsers, mutationData.createUser];
-            }
-
-            cache.writeQuery<UsersQueryResult>({
-              query: GET_USERS,
-              variables: { page, limit: 10 },
-              data: {
-                users: {
-                  users: updatedUsers,
-                  totalCount: newTotalCount,
-                  hasNextPage: page < totalPages,
-                },
-              },
-            });
-          }
-        } catch {
-          // Skip if page data doesn't exist in cache
-        }
-      }
+    update(cache) {
+      evictUsersCache(cache);
     },
   });
 
