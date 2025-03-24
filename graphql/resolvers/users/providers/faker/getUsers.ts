@@ -1,5 +1,6 @@
 import { GetUsersParams, GetUsersResult } from '../types';
 import { getUsers as getUsersFromDataStore } from './dataStore';
+import { UserSortableField, UserSortOrder } from '@/graphql/generated/types';
 
 const SEARCHABLE_FIELDS = ['name', 'email'] as const;
 
@@ -9,7 +10,8 @@ export async function getUsers({
   sort,
   search,
 }: GetUsersParams): Promise<GetUsersResult> {
-  const allUsers = getUsersFromDataStore(sort || undefined);
+  const defaultSort = { field: UserSortableField.Name, order: UserSortOrder.Asc };
+  const allUsers = getUsersFromDataStore(sort || defaultSort);
   const filteredBySearchUsers = search
     ? allUsers.filter((user) =>
         SEARCHABLE_FIELDS.some((field) => user[field].toLowerCase().includes(search.toLowerCase()))

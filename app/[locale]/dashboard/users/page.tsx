@@ -48,7 +48,7 @@ export default function UsersPage() {
   const initialSort =
     initialParams.sortField && initialParams.sortOrder
       ? { field: initialParams.sortField, order: initialParams.sortOrder }
-      : undefined;
+      : { field: UserSortableField.Name, order: UserSortOrder.Asc };
 
   // Controlled state
   const [page, setPage] = useState(initialParams.page);

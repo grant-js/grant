@@ -116,7 +116,8 @@
     "sort": {
       "label": "Sort by",
       "name": "Name",
-      "email": "Email"
+      "email": "Email",
+      "default": "Default"
     },
     "limit": "Items per page",
     "search": {

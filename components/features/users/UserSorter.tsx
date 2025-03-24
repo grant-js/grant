@@ -30,6 +30,9 @@ export function UserSorter({ sort, onSortChange }: UserSorterProps) {
     }
   };
 
+  // If no sort is provided, use name ASC as default
+  const currentSort = sort || { field: UserSortableField.Name, order: UserSortOrder.Asc };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -37,18 +40,14 @@ export function UserSorter({ sort, onSortChange }: UserSorterProps) {
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2">
               {t('sort.label')}:{' '}
-              {sort ? (
-                <>
-                  {getSortLabel(sort.field)}
-                  {sort.order === UserSortOrder.Asc ? (
-                    <ArrowUp className="size-4" />
-                  ) : (
-                    <ArrowDown className="size-4" />
-                  )}
-                </>
-              ) : (
-                t('sort.default')
-              )}
+              <>
+                {getSortLabel(currentSort.field)}
+                {currentSort.order === UserSortOrder.Asc ? (
+                  <ArrowUp className="size-4" />
+                ) : (
+                  <ArrowDown className="size-4" />
+                )}
+              </>
             </div>
             <ChevronDown className="size-4" />
           </div>
@@ -65,15 +64,15 @@ export function UserSorter({ sort, onSortChange }: UserSorterProps) {
             className="flex items-center justify-between px-3 py-1.5 text-sm"
             onClick={() => {
               const newOrder =
-                sort?.field === field && sort.order === UserSortOrder.Asc
+                currentSort.field === field && currentSort.order === UserSortOrder.Asc
                   ? UserSortOrder.Desc
                   : UserSortOrder.Asc;
               onSortChange(field, newOrder);
             }}
           >
             <span>{getSortLabel(field)}</span>
-            {sort?.field === field &&
-              (sort.order === UserSortOrder.Asc ? (
+            {currentSort.field === field &&
+              (currentSort.order === UserSortOrder.Asc ? (
                 <ArrowUp className="size-4" />
               ) : (
                 <ArrowDown className="size-4" />
