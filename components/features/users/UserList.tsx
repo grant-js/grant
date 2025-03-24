@@ -190,14 +190,6 @@ export function UserList({ page, limit, search, sort, onTotalCountChange }: User
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => handleEditClick(user)}
-                          >
-                            <Pencil className="size-4" />
-                          </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -205,6 +197,10 @@ export function UserList({ page, limit, search, sort, onTotalCountChange }: User
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEditClick(user)}>
+                                <Pencil className="mr-2 size-4" />
+                                {t('actions.edit')}
+                              </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-destructive focus:text-destructive"
                                 onClick={() => handleDeleteClick(user)}
