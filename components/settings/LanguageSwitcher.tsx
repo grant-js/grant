@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Globe } from 'lucide-react';
 import { usePathname, useRouter } from '@/i18n/navigation';
+import { useSearchParams } from 'next/navigation';
 import { locales } from '@/i18n/routing';
 import { useLocale } from 'next-intl';
 import { forwardRef } from 'react';
@@ -27,6 +28,7 @@ export const LanguageSwitcher = forwardRef<HTMLButtonElement, LanguageSwitcherPr
   ({ trigger }, ref) => {
     const router = useRouter();
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const currentLocale = useLocale();
 
     const defaultTrigger = (
@@ -44,7 +46,7 @@ export const LanguageSwitcher = forwardRef<HTMLButtonElement, LanguageSwitcherPr
               <DropdownMenuRadioItem
                 key={locale}
                 value={locale}
-                onClick={() => router.replace(pathname, { locale })}
+                onClick={() => router.replace(`${pathname}?${searchParams.toString()}`, { locale })}
                 className="cursor-pointer"
               >
                 {LOCALE_LABELS[locale]}
