@@ -1,13 +1,14 @@
 import jwt from 'jsonwebtoken';
 import { LoginParams, LoginResult } from '@/graphql/resolvers/auth/providers/types';
 import { JWT_SECRET } from '@/graphql/resolvers/auth/constants';
-import { ValidationError } from '@/graphql/errors';
+import { ApolloServerErrorCode } from '@apollo/server/errors';
+import { ApiError } from '@/graphql/errors';
 
 export async function login({ input }: LoginParams): Promise<LoginResult> {
   // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(input.email)) {
-    throw new ValidationError('Invalid email format');
+    throw new ApiError('Invalid email format', ApolloServerErrorCode.BAD_USER_INPUT);
   }
 
   // TODO: Replace with actual authentication

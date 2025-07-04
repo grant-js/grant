@@ -1,0 +1,11 @@
+extend type Mutation {
+  """
+  Creates a new role.
+  """
+  createRole(
+    """
+    Role data for creation.
+    """
+    input: CreateRoleInput!
+  ): Role!
+} 

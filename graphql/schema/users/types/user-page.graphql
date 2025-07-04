@@ -1,7 +1,7 @@
 """
 Represents a paginated list of users.
 """
-type UserConnection {
+type UserPage {
   """
   List of users for the current page.
   """

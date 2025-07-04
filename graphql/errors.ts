@@ -1,34 +1,39 @@
-export class GraphQLError extends Error {
+import { ApolloServerErrorCode } from '@apollo/server/errors';
+import { GraphQLError } from 'graphql';
+
+export class ApiError extends GraphQLError {
   constructor(
     message: string,
-    public code: string = 'INTERNAL_SERVER_ERROR',
-    public extensions?: Record<string, unknown>
+    public code: ApolloServerErrorCode = ApolloServerErrorCode.INTERNAL_SERVER_ERROR
   ) {
-    super(message);
-    this.name = 'GraphQLError';
+    super(message, {
+      extensions: {
+        code,
+      },
+    });
   }
 }
 
-export class NotFoundError extends GraphQLError {
+export class NotFoundError extends ApiError {
   constructor(message: string) {
-    super(message, 'NOT_FOUND');
+    super(message, ApolloServerErrorCode.PERSISTED_QUERY_NOT_FOUND);
   }
 }
 
-export class ValidationError extends GraphQLError {
+export class ValidationError extends ApiError {
   constructor(message: string) {
-    super(message, 'VALIDATION_ERROR');
+    super(message, ApolloServerErrorCode.BAD_USER_INPUT);
   }
 }
 
-export class AuthenticationError extends GraphQLError {
+export class AuthenticationError extends ApiError {
   constructor(message: string) {
-    super(message, 'UNAUTHENTICATED');
+    super(message, ApolloServerErrorCode.BAD_REQUEST);
   }
 }
 
-export class AuthorizationError extends GraphQLError {
+export class AuthorizationError extends ApiError {
   constructor(message: string) {
-    super(message, 'FORBIDDEN');
+    super(message, ApolloServerErrorCode.BAD_REQUEST);
   }
 }

@@ -1,14 +1,14 @@
 import {
   QueryUsersArgs,
-  UserConnection,
   MutationCreateUserArgs,
   MutationUpdateUserArgs,
   MutationDeleteUserArgs,
   User,
+  UserPage,
 } from '@/graphql/generated/types';
 
 export type GetUsersParams = QueryUsersArgs;
-export type GetUsersResult = UserConnection;
+export type GetUsersResult = UserPage;
 
 export type CreateUserParams = MutationCreateUserArgs;
 export type CreateUserResult = User;

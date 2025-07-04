@@ -17,6 +17,12 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export type CreateRoleInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  id?: InputMaybe<Scalars['String']['input']>;
+  label: Scalars['String']['input'];
+};
+
 /** Input type for creating a new user. */
 export type CreateUserInput = {
   /** Email address of the user. */
@@ -45,19 +51,35 @@ export type LoginResponse = {
 export type Mutation = {
   __typename?: 'Mutation';
   _empty?: Maybe<Scalars['String']['output']>;
+  /** Creates a new role. */
+  createRole: Role;
   /** Creates a new user. */
   createUser: User;
+  /** Deletes a role by ID. */
+  deleteRole: Scalars['Boolean']['output'];
   /** Deletes a user. */
   deleteUser: User;
   /** Authenticates a user and returns a JWT token. */
   login: LoginResponse;
+  /** Updates an existing role. */
+  updateRole: Role;
   /** Updates an existing user. */
   updateUser: User;
 };
 
 
+export type MutationCreateRoleArgs = {
+  input: CreateRoleInput;
+};
+
+
 export type MutationCreateUserArgs = {
   input: CreateUserInput;
+};
+
+
+export type MutationDeleteRoleArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -71,6 +93,12 @@ export type MutationLoginArgs = {
 };
 
 
+export type MutationUpdateRoleArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateRoleInput;
+};
+
+
 export type MutationUpdateUserArgs = {
   id: Scalars['ID']['input'];
   input: UpdateUserInput;
@@ -79,8 +107,18 @@ export type MutationUpdateUserArgs = {
 export type Query = {
   __typename?: 'Query';
   _empty?: Maybe<Scalars['String']['output']>;
+  /** Retrieves a paginated list of roles. */
+  roles: RolePage;
   /** Retrieves a paginated list of users. */
-  users: UserConnection;
+  users: UserPage;
+};
+
+
+export type QueryRolesArgs = {
+  limit: Scalars['Int']['input'];
+  page: Scalars['Int']['input'];
+  search?: InputMaybe<Scalars['String']['input']>;
+  sort?: InputMaybe<RoleSortInput>;
 };
 
 
@@ -94,10 +132,44 @@ export type QueryUsersArgs = {
 /** Represents a user role in the system. */
 export type Role = {
   __typename?: 'Role';
+  description?: Maybe<Scalars['String']['output']>;
   /** Unique identifier for the role. */
   id: Scalars['ID']['output'];
   /** Human-readable label for the role. */
   label: Scalars['String']['output'];
+};
+
+/** Represents a paginated list of roles. */
+export type RolePage = {
+  __typename?: 'RolePage';
+  /** Whether there are more roles available on the next page. */
+  hasNextPage: Scalars['Boolean']['output'];
+  /** List of roles for the current page. */
+  roles: Array<Role>;
+  /** Total number of roles across all pages. */
+  totalCount: Scalars['Int']['output'];
+};
+
+/** Input for sorting roles. */
+export type RoleSortInput = {
+  field: RoleSortableField;
+  order: RoleSortOrder;
+};
+
+/** Sort order for roles. */
+export enum RoleSortOrder {
+  Asc = 'ASC',
+  Desc = 'DESC'
+}
+
+/** Fields by which roles can be sorted. */
+export enum RoleSortableField {
+  Name = 'name'
+}
+
+export type UpdateRoleInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  label?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Input type for updating an existing user. */
@@ -124,8 +196,8 @@ export type User = {
 };
 
 /** Represents a paginated list of users. */
-export type UserConnection = {
-  __typename?: 'UserConnection';
+export type UserPage = {
+  __typename?: 'UserPage';
   /** Whether there are more users available on the next page. */
   hasNextPage: Scalars['Boolean']['output'];
   /** Total number of users across all pages. */
@@ -134,16 +206,19 @@ export type UserConnection = {
   users: Array<User>;
 };
 
+/** Input for sorting users. */
 export type UserSortInput = {
   field: UserSortableField;
   order: UserSortOrder;
 };
 
+/** Sort order for users. */
 export enum UserSortOrder {
   Asc = 'ASC',
   Desc = 'DESC'
 }
 
+/** Fields by which users can be sorted. */
 export enum UserSortableField {
   Email = 'email',
   Name = 'name'
@@ -222,6 +297,7 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = ResolversObject<{
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
+  CreateRoleInput: CreateRoleInput;
   CreateUserInput: CreateUserInput;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
@@ -230,10 +306,15 @@ export type ResolversTypes = ResolversObject<{
   Mutation: ResolverTypeWrapper<{}>;
   Query: ResolverTypeWrapper<{}>;
   Role: ResolverTypeWrapper<Role>;
+  RolePage: ResolverTypeWrapper<RolePage>;
+  RoleSortInput: RoleSortInput;
+  RoleSortOrder: RoleSortOrder;
+  RoleSortableField: RoleSortableField;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
+  UpdateRoleInput: UpdateRoleInput;
   UpdateUserInput: UpdateUserInput;
   User: ResolverTypeWrapper<User>;
-  UserConnection: ResolverTypeWrapper<UserConnection>;
+  UserPage: ResolverTypeWrapper<UserPage>;
   UserSortInput: UserSortInput;
   UserSortOrder: UserSortOrder;
   UserSortableField: UserSortableField;
@@ -242,6 +323,7 @@ export type ResolversTypes = ResolversObject<{
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = ResolversObject<{
   Boolean: Scalars['Boolean']['output'];
+  CreateRoleInput: CreateRoleInput;
   CreateUserInput: CreateUserInput;
   ID: Scalars['ID']['output'];
   Int: Scalars['Int']['output'];
@@ -250,10 +332,13 @@ export type ResolversParentTypes = ResolversObject<{
   Mutation: {};
   Query: {};
   Role: Role;
+  RolePage: RolePage;
+  RoleSortInput: RoleSortInput;
   String: Scalars['String']['output'];
+  UpdateRoleInput: UpdateRoleInput;
   UpdateUserInput: UpdateUserInput;
   User: User;
-  UserConnection: UserConnection;
+  UserPage: UserPage;
   UserSortInput: UserSortInput;
 }>;
 
@@ -264,20 +349,32 @@ export type LoginResponseResolvers<ContextType = Context, ParentType extends Res
 
 export type MutationResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = ResolversObject<{
   _empty?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  createRole?: Resolver<ResolversTypes['Role'], ParentType, ContextType, RequireFields<MutationCreateRoleArgs, 'input'>>;
   createUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationCreateUserArgs, 'input'>>;
+  deleteRole?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteRoleArgs, 'id'>>;
   deleteUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationDeleteUserArgs, 'id'>>;
   login?: Resolver<ResolversTypes['LoginResponse'], ParentType, ContextType, RequireFields<MutationLoginArgs, 'input'>>;
+  updateRole?: Resolver<ResolversTypes['Role'], ParentType, ContextType, RequireFields<MutationUpdateRoleArgs, 'id' | 'input'>>;
   updateUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationUpdateUserArgs, 'id' | 'input'>>;
 }>;
 
 export type QueryResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = ResolversObject<{
   _empty?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  users?: Resolver<ResolversTypes['UserConnection'], ParentType, ContextType, RequireFields<QueryUsersArgs, 'limit' | 'page'>>;
+  roles?: Resolver<ResolversTypes['RolePage'], ParentType, ContextType, RequireFields<QueryRolesArgs, 'limit' | 'page'>>;
+  users?: Resolver<ResolversTypes['UserPage'], ParentType, ContextType, RequireFields<QueryUsersArgs, 'limit' | 'page'>>;
 }>;
 
 export type RoleResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Role'] = ResolversParentTypes['Role']> = ResolversObject<{
+  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   label?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type RolePageResolvers<ContextType = Context, ParentType extends ResolversParentTypes['RolePage'] = ResolversParentTypes['RolePage']> = ResolversObject<{
+  hasNextPage?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  roles?: Resolver<Array<ResolversTypes['Role']>, ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -289,7 +386,7 @@ export type UserResolvers<ContextType = Context, ParentType extends ResolversPar
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type UserConnectionResolvers<ContextType = Context, ParentType extends ResolversParentTypes['UserConnection'] = ResolversParentTypes['UserConnection']> = ResolversObject<{
+export type UserPageResolvers<ContextType = Context, ParentType extends ResolversParentTypes['UserPage'] = ResolversParentTypes['UserPage']> = ResolversObject<{
   hasNextPage?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   users?: Resolver<Array<ResolversTypes['User']>, ParentType, ContextType>;
@@ -301,7 +398,8 @@ export type Resolvers<ContextType = Context> = ResolversObject<{
   Mutation?: MutationResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   Role?: RoleResolvers<ContextType>;
+  RolePage?: RolePageResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
-  UserConnection?: UserConnectionResolvers<ContextType>;
+  UserPage?: UserPageResolvers<ContextType>;
 }>;
 

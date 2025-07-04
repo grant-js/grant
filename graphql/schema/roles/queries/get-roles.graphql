@@ -1,0 +1,46 @@
+"""
+Sort order for roles.
+"""
+enum RoleSortOrder {
+  ASC
+  DESC
+}
+
+"""
+Fields by which roles can be sorted.
+"""
+enum RoleSortableField {
+  name
+}
+
+"""
+Input for sorting roles.
+"""
+input RoleSortInput {
+  field: RoleSortableField!
+  order: RoleSortOrder!
+}
+
+extend type Query {
+  """
+  Retrieves a paginated list of roles.
+  """
+  roles(
+    """
+    Page number (1-based).
+    """
+    page: Int!
+    """
+    Number of roles per page.
+    """
+    limit: Int!
+    """
+    Search term to filter roles by name or description.
+    """
+    search: String
+    """
+    Sorting configuration for the results.
+    """
+    sort: RoleSortInput
+  ): RolePage!
+} 

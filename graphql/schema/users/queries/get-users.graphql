@@ -1,13 +1,22 @@
+"""
+Sort order for users.
+"""
 enum UserSortOrder {
   ASC
   DESC
 }
 
+"""
+Fields by which users can be sorted.
+"""
 enum UserSortableField {
   name
   email
 }
 
+"""
+Input for sorting users.
+"""
 input UserSortInput {
   field: UserSortableField!
   order: UserSortOrder!
@@ -27,12 +36,12 @@ extend type Query {
     """
     limit: Int!
     """
-    Sorting configuration for the results.
-    """
-    sort: UserSortInput
-    """
     Search term to filter users by name or email.
     """
     search: String
-  ): UserConnection!
+    """
+    Sorting configuration for the results.
+    """
+    sort: UserSortInput
+  ): UserPage!
 } 

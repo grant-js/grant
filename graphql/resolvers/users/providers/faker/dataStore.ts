@@ -8,6 +8,7 @@ import {
   UserSortInput,
   UpdateUserInput,
 } from '@/graphql/generated/types';
+import { getRoles } from '@/graphql/resolvers/roles/providers/faker/dataStore';
 
 const DATA_FILE_PATH = path.join(process.cwd(), 'data', 'users.json');
 
@@ -25,10 +26,7 @@ const generateFakeUsers = (count: number = 50): User[] => {
     id: faker.string.uuid(),
     name: faker.person.fullName(),
     email: faker.internet.email(),
-    roles: [
-      { id: 'admin', label: 'Administrator' },
-      { id: 'customer', label: 'Customer' },
-    ].filter(() => faker.datatype.boolean()),
+    roles: getRoles().filter(() => faker.datatype.boolean()),
   }));
 };
 
@@ -85,11 +83,7 @@ export const createUser = (input: CreateUserInput): User => {
     id: faker.string.uuid(),
     name: input.name,
     email: input.email,
-    roles:
-      input.roleIds?.map((id) => ({
-        id,
-        label: id === 'admin' ? 'Administrator' : 'Customer',
-      })) || [],
+    roles: getRoles().filter((role) => input.roleIds?.includes(role.id)) || [],
   };
 
   users.push(newUser);
@@ -106,12 +100,7 @@ export const updateUser = (userId: string, input: UpdateUserInput): User | null 
     return null;
   }
 
-  // Convert roleIds to full role objects
-  const roles =
-    input.roleIds?.map((id) => ({
-      id,
-      label: id === 'admin' ? 'Administrator' : 'Customer',
-    })) || [];
+  const roles = getRoles().filter((role) => input.roleIds?.includes(role.id)) || [];
 
   const updatedUser: User = {
     ...users[userIndex],

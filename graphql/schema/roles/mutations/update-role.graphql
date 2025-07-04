@@ -1,0 +1,15 @@
+extend type Mutation {
+  """
+  Updates an existing role.
+  """
+  updateRole(
+    """
+    ID of the role to update.
+    """
+    id: ID!
+    """
+    Updated role data.
+    """
+    input: UpdateRoleInput!
+  ): Role!
+} 

@@ -1,8 +1,8 @@
 import { ApolloServer } from '@apollo/server';
 import { startServerAndCreateNextHandler } from '@as-integrations/next';
 import { schema } from '@/graphql/schema';
-import { defaultConfig } from './config';
-import { Context } from './types';
+import { graphqlConfig } from '@/graphql/config';
+import { Context } from '@/graphql/types';
 
 // Create the Apollo Server instance
 const server = new ApolloServer<Context>({
@@ -13,6 +13,6 @@ const server = new ApolloServer<Context>({
 export const handler = startServerAndCreateNextHandler(server, {
   context: async (req) => ({
     req,
-    providers: defaultConfig.providers,
+    providers: graphqlConfig.providers,
   }),
 });

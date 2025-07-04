@@ -1,0 +1,5 @@
+input CreateRoleInput {
+  id: String
+  label: String!
+  description: String
+} 

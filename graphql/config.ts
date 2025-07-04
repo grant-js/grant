@@ -1,13 +1,15 @@
 import { AuthDataProvider } from '@/graphql/resolvers/auth/providers/types';
 import { UserDataProvider } from '@/graphql/resolvers/users/providers/types';
-import { fakerProvider } from '@/graphql/resolvers/users/providers/faker';
+import { userFakerProvider } from '@/graphql/resolvers/users/providers/faker';
 import { jwtProvider } from '@/graphql/resolvers/auth/providers/jwt';
+import { RoleDataProvider } from './resolvers/roles/providers/types';
+import { roleFakerProvider } from './resolvers/roles/providers/faker';
 
 export interface ModuleProviders {
   auth: AuthDataProvider;
   users: UserDataProvider;
+  roles: RoleDataProvider;
   // Add other modules here as we create them
-  // auth: AuthDataProvider;
 }
 
 export interface GraphQLConfig {
@@ -15,18 +17,10 @@ export interface GraphQLConfig {
 }
 
 // Default configuration using faker providers for users and JWT for auth
-export const defaultConfig: GraphQLConfig = {
+export const graphqlConfig: GraphQLConfig = {
   providers: {
-    users: fakerProvider,
     auth: jwtProvider,
+    users: userFakerProvider,
+    roles: roleFakerProvider,
   },
 };
-
-export const config = {
-  auth: {
-    provider: jwtProvider,
-  },
-  users: {
-    provider: fakerProvider,
-  },
-} as const;

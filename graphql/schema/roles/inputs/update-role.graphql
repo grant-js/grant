@@ -1,0 +1,4 @@
+input UpdateRoleInput {
+  label: String
+  description: String
+} 
