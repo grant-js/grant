@@ -1,7 +1,7 @@
 {
   "common": {
     "app": {
-      "title": "Customer Portal",
+      "title": "Identity Portal",
       "description": "A modern user management system"
     },
     "auth": {
