@@ -40,7 +40,7 @@ const CREATE_USER = gql`
       email
       roles {
         id
-        label
+        name
       }
     }
   }
@@ -161,7 +161,7 @@ export function CreateUserDialog() {
                                   />
                                 </FormControl>
                                 <div className="space-y-1 leading-none">
-                                  <FormLabel>{role.label}</FormLabel>
+                                  <FormLabel>{role.name}</FormLabel>
                                 </div>
                               </FormItem>
                             );

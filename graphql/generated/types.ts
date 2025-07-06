@@ -17,10 +17,21 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export type CreateGroupInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+  permissions?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type CreatePermissionInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+};
+
 export type CreateRoleInput = {
   description?: InputMaybe<Scalars['String']['input']>;
-  id?: InputMaybe<Scalars['String']['input']>;
-  label: Scalars['String']['input'];
+  groupIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  name: Scalars['String']['input'];
 };
 
 /** Input type for creating a new user. */
@@ -32,6 +43,42 @@ export type CreateUserInput = {
   /** List of role IDs to assign to the user. */
   roleIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
+
+export type Group = {
+  __typename?: 'Group';
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  permissions: Array<Permission>;
+};
+
+/** Represents a paginated list of groups. */
+export type GroupPage = {
+  __typename?: 'GroupPage';
+  /** List of groups for the current page. */
+  groups: Array<Group>;
+  /** Whether there are more groups available on the next page. */
+  hasNextPage: Scalars['Boolean']['output'];
+  /** Total number of groups across all pages. */
+  totalCount: Scalars['Int']['output'];
+};
+
+/** Input for sorting groups. */
+export type GroupSortInput = {
+  field: GroupSortableField;
+  order: GroupSortOrder;
+};
+
+/** Sort order for groups. */
+export enum GroupSortOrder {
+  Asc = 'ASC',
+  Desc = 'DESC'
+}
+
+/** Fields by which groups can be sorted. */
+export enum GroupSortableField {
+  Name = 'name'
+}
 
 /** Input type for user authentication. */
 export type LoginInput = {
@@ -51,20 +98,42 @@ export type LoginResponse = {
 export type Mutation = {
   __typename?: 'Mutation';
   _empty?: Maybe<Scalars['String']['output']>;
+  /** Creates a new group. */
+  createGroup: Group;
+  /** Creates a new permission. */
+  createPermission: Permission;
   /** Creates a new role. */
   createRole: Role;
   /** Creates a new user. */
   createUser: User;
+  /** Deletes a group by ID. */
+  deleteGroup: Scalars['Boolean']['output'];
+  /** Deletes a permission by ID. */
+  deletePermission: Scalars['Boolean']['output'];
   /** Deletes a role by ID. */
   deleteRole: Scalars['Boolean']['output'];
   /** Deletes a user. */
   deleteUser: User;
   /** Authenticates a user and returns a JWT token. */
   login: LoginResponse;
+  /** Updates an existing group. */
+  updateGroup: Group;
+  /** Updates an existing permission. */
+  updatePermission: Permission;
   /** Updates an existing role. */
   updateRole: Role;
   /** Updates an existing user. */
   updateUser: User;
+};
+
+
+export type MutationCreateGroupArgs = {
+  input: CreateGroupInput;
+};
+
+
+export type MutationCreatePermissionArgs = {
+  input: CreatePermissionInput;
 };
 
 
@@ -75,6 +144,16 @@ export type MutationCreateRoleArgs = {
 
 export type MutationCreateUserArgs = {
   input: CreateUserInput;
+};
+
+
+export type MutationDeleteGroupArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeletePermissionArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -93,6 +172,18 @@ export type MutationLoginArgs = {
 };
 
 
+export type MutationUpdateGroupArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateGroupInput;
+};
+
+
+export type MutationUpdatePermissionArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdatePermissionInput;
+};
+
+
 export type MutationUpdateRoleArgs = {
   id: Scalars['ID']['input'];
   input: UpdateRoleInput;
@@ -104,13 +195,68 @@ export type MutationUpdateUserArgs = {
   input: UpdateUserInput;
 };
 
+export type Permission = {
+  __typename?: 'Permission';
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+};
+
+/** Represents a paginated list of permissions. */
+export type PermissionPage = {
+  __typename?: 'PermissionPage';
+  /** Whether there are more permissions available on the next page. */
+  hasNextPage: Scalars['Boolean']['output'];
+  /** List of permissions for the current page. */
+  permissions: Array<Permission>;
+  /** Total number of permissions across all pages. */
+  totalCount: Scalars['Int']['output'];
+};
+
+/** Input for sorting groups. */
+export type PermissionSortInput = {
+  field: PermissionSortableField;
+  order: PermissionSortOrder;
+};
+
+/** Sort order for groups. */
+export enum PermissionSortOrder {
+  Asc = 'ASC',
+  Desc = 'DESC'
+}
+
+/** Fields by which groups can be sorted. */
+export enum PermissionSortableField {
+  Name = 'name'
+}
+
 export type Query = {
   __typename?: 'Query';
   _empty?: Maybe<Scalars['String']['output']>;
+  /** Retrieves a paginated list of groups. */
+  groups: GroupPage;
+  /** Retrieves a paginated list of permissions. */
+  permissions: PermissionPage;
   /** Retrieves a paginated list of roles. */
   roles: RolePage;
   /** Retrieves a paginated list of users. */
   users: UserPage;
+};
+
+
+export type QueryGroupsArgs = {
+  limit: Scalars['Int']['input'];
+  page: Scalars['Int']['input'];
+  search?: InputMaybe<Scalars['String']['input']>;
+  sort?: InputMaybe<GroupSortInput>;
+};
+
+
+export type QueryPermissionsArgs = {
+  limit: Scalars['Int']['input'];
+  page: Scalars['Int']['input'];
+  search?: InputMaybe<Scalars['String']['input']>;
+  sort?: InputMaybe<PermissionSortInput>;
 };
 
 
@@ -129,14 +275,12 @@ export type QueryUsersArgs = {
   sort?: InputMaybe<UserSortInput>;
 };
 
-/** Represents a user role in the system. */
 export type Role = {
   __typename?: 'Role';
   description?: Maybe<Scalars['String']['output']>;
-  /** Unique identifier for the role. */
+  groups: Array<Group>;
   id: Scalars['ID']['output'];
-  /** Human-readable label for the role. */
-  label: Scalars['String']['output'];
+  name: Scalars['String']['output'];
 };
 
 /** Represents a paginated list of roles. */
@@ -167,9 +311,21 @@ export enum RoleSortableField {
   Name = 'name'
 }
 
+export type UpdateGroupInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  permissions?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type UpdatePermissionInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type UpdateRoleInput = {
   description?: InputMaybe<Scalars['String']['input']>;
-  label?: InputMaybe<Scalars['String']['input']>;
+  groupIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  name?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Input type for updating an existing user. */
@@ -297,13 +453,25 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = ResolversObject<{
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
+  CreateGroupInput: CreateGroupInput;
+  CreatePermissionInput: CreatePermissionInput;
   CreateRoleInput: CreateRoleInput;
   CreateUserInput: CreateUserInput;
+  Group: ResolverTypeWrapper<Group>;
+  GroupPage: ResolverTypeWrapper<GroupPage>;
+  GroupSortInput: GroupSortInput;
+  GroupSortOrder: GroupSortOrder;
+  GroupSortableField: GroupSortableField;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   LoginInput: LoginInput;
   LoginResponse: ResolverTypeWrapper<LoginResponse>;
   Mutation: ResolverTypeWrapper<{}>;
+  Permission: ResolverTypeWrapper<Permission>;
+  PermissionPage: ResolverTypeWrapper<PermissionPage>;
+  PermissionSortInput: PermissionSortInput;
+  PermissionSortOrder: PermissionSortOrder;
+  PermissionSortableField: PermissionSortableField;
   Query: ResolverTypeWrapper<{}>;
   Role: ResolverTypeWrapper<Role>;
   RolePage: ResolverTypeWrapper<RolePage>;
@@ -311,6 +479,8 @@ export type ResolversTypes = ResolversObject<{
   RoleSortOrder: RoleSortOrder;
   RoleSortableField: RoleSortableField;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
+  UpdateGroupInput: UpdateGroupInput;
+  UpdatePermissionInput: UpdatePermissionInput;
   UpdateRoleInput: UpdateRoleInput;
   UpdateUserInput: UpdateUserInput;
   User: ResolverTypeWrapper<User>;
@@ -323,23 +493,48 @@ export type ResolversTypes = ResolversObject<{
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = ResolversObject<{
   Boolean: Scalars['Boolean']['output'];
+  CreateGroupInput: CreateGroupInput;
+  CreatePermissionInput: CreatePermissionInput;
   CreateRoleInput: CreateRoleInput;
   CreateUserInput: CreateUserInput;
+  Group: Group;
+  GroupPage: GroupPage;
+  GroupSortInput: GroupSortInput;
   ID: Scalars['ID']['output'];
   Int: Scalars['Int']['output'];
   LoginInput: LoginInput;
   LoginResponse: LoginResponse;
   Mutation: {};
+  Permission: Permission;
+  PermissionPage: PermissionPage;
+  PermissionSortInput: PermissionSortInput;
   Query: {};
   Role: Role;
   RolePage: RolePage;
   RoleSortInput: RoleSortInput;
   String: Scalars['String']['output'];
+  UpdateGroupInput: UpdateGroupInput;
+  UpdatePermissionInput: UpdatePermissionInput;
   UpdateRoleInput: UpdateRoleInput;
   UpdateUserInput: UpdateUserInput;
   User: User;
   UserPage: UserPage;
   UserSortInput: UserSortInput;
+}>;
+
+export type GroupResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Group'] = ResolversParentTypes['Group']> = ResolversObject<{
+  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  permissions?: Resolver<Array<ResolversTypes['Permission']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GroupPageResolvers<ContextType = Context, ParentType extends ResolversParentTypes['GroupPage'] = ResolversParentTypes['GroupPage']> = ResolversObject<{
+  groups?: Resolver<Array<ResolversTypes['Group']>, ParentType, ContextType>;
+  hasNextPage?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type LoginResponseResolvers<ContextType = Context, ParentType extends ResolversParentTypes['LoginResponse'] = ResolversParentTypes['LoginResponse']> = ResolversObject<{
@@ -349,25 +544,48 @@ export type LoginResponseResolvers<ContextType = Context, ParentType extends Res
 
 export type MutationResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = ResolversObject<{
   _empty?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  createGroup?: Resolver<ResolversTypes['Group'], ParentType, ContextType, RequireFields<MutationCreateGroupArgs, 'input'>>;
+  createPermission?: Resolver<ResolversTypes['Permission'], ParentType, ContextType, RequireFields<MutationCreatePermissionArgs, 'input'>>;
   createRole?: Resolver<ResolversTypes['Role'], ParentType, ContextType, RequireFields<MutationCreateRoleArgs, 'input'>>;
   createUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationCreateUserArgs, 'input'>>;
+  deleteGroup?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteGroupArgs, 'id'>>;
+  deletePermission?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeletePermissionArgs, 'id'>>;
   deleteRole?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteRoleArgs, 'id'>>;
   deleteUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationDeleteUserArgs, 'id'>>;
   login?: Resolver<ResolversTypes['LoginResponse'], ParentType, ContextType, RequireFields<MutationLoginArgs, 'input'>>;
+  updateGroup?: Resolver<ResolversTypes['Group'], ParentType, ContextType, RequireFields<MutationUpdateGroupArgs, 'id' | 'input'>>;
+  updatePermission?: Resolver<ResolversTypes['Permission'], ParentType, ContextType, RequireFields<MutationUpdatePermissionArgs, 'id' | 'input'>>;
   updateRole?: Resolver<ResolversTypes['Role'], ParentType, ContextType, RequireFields<MutationUpdateRoleArgs, 'id' | 'input'>>;
   updateUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationUpdateUserArgs, 'id' | 'input'>>;
 }>;
 
+export type PermissionResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Permission'] = ResolversParentTypes['Permission']> = ResolversObject<{
+  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type PermissionPageResolvers<ContextType = Context, ParentType extends ResolversParentTypes['PermissionPage'] = ResolversParentTypes['PermissionPage']> = ResolversObject<{
+  hasNextPage?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  permissions?: Resolver<Array<ResolversTypes['Permission']>, ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type QueryResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = ResolversObject<{
   _empty?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  groups?: Resolver<ResolversTypes['GroupPage'], ParentType, ContextType, RequireFields<QueryGroupsArgs, 'limit' | 'page'>>;
+  permissions?: Resolver<ResolversTypes['PermissionPage'], ParentType, ContextType, RequireFields<QueryPermissionsArgs, 'limit' | 'page'>>;
   roles?: Resolver<ResolversTypes['RolePage'], ParentType, ContextType, RequireFields<QueryRolesArgs, 'limit' | 'page'>>;
   users?: Resolver<ResolversTypes['UserPage'], ParentType, ContextType, RequireFields<QueryUsersArgs, 'limit' | 'page'>>;
 }>;
 
 export type RoleResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Role'] = ResolversParentTypes['Role']> = ResolversObject<{
   description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  groups?: Resolver<Array<ResolversTypes['Group']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  label?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -394,8 +612,12 @@ export type UserPageResolvers<ContextType = Context, ParentType extends Resolver
 }>;
 
 export type Resolvers<ContextType = Context> = ResolversObject<{
+  Group?: GroupResolvers<ContextType>;
+  GroupPage?: GroupPageResolvers<ContextType>;
   LoginResponse?: LoginResponseResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
+  Permission?: PermissionResolvers<ContextType>;
+  PermissionPage?: PermissionPageResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   Role?: RoleResolvers<ContextType>;
   RolePage?: RolePageResolvers<ContextType>;

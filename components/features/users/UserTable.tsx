@@ -107,7 +107,7 @@ export function UserTable({
                                     : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
                                 )}
                               >
-                                {role.label}
+                                {role.name}
                               </span>
                             ))}
                           </div>

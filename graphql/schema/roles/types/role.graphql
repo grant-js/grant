@@ -1,5 +1,6 @@
 type Role {
   id: ID!
-  label: String!
+  name: String!
   description: String
+  groups: [Group!]!
 } 

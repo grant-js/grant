@@ -12,7 +12,7 @@ export const GET_USERS = gql`
         email
         roles {
           id
-          label
+          name
         }
       }
       totalCount

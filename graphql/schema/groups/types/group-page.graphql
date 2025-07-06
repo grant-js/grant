@@ -1,0 +1,17 @@
+"""
+Represents a paginated list of groups.
+"""
+type GroupPage {
+  """
+  List of groups for the current page.
+  """
+  groups: [Group!]!
+  """
+  Total number of groups across all pages.
+  """
+  totalCount: Int!
+  """
+  Whether there are more groups available on the next page.
+  """
+  hasNextPage: Boolean!
+} 

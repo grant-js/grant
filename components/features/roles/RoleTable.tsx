@@ -37,7 +37,7 @@ interface RoleTableProps {
   loading: boolean;
   onEditClick: (role: Role) => void;
   onDeleteClick: (role: Role) => void;
-  roleToDelete: { id: string; label: string } | null;
+  roleToDelete: { id: string; name: string } | null;
   roleToEdit: Role | null;
   onDeleteConfirm: () => Promise<void>;
   onDeleteCancel: () => void;
@@ -93,7 +93,7 @@ export function RoleTable({
                   ) : (
                     roles.map((role) => (
                       <TableRow key={role.id}>
-                        <TableCell className="font-medium">{role.label}</TableCell>
+                        <TableCell className="font-medium">{role.name}</TableCell>
                         <TableCell>{role.description || t('noDescription')}</TableCell>
                         <TableCell>
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
@@ -137,7 +137,7 @@ export function RoleTable({
           <AlertDialogHeader>
             <AlertDialogTitle>{t('deleteDialog.title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('deleteDialog.description', { name: roleToDelete?.label || '' })}
+              {t('deleteDialog.description', { name: roleToDelete?.name || '' })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

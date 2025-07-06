@@ -2,7 +2,7 @@ import { GetRolesParams, GetRolesResult } from '../types';
 import { getRoles as getRolesFromDataStore } from './dataStore';
 import { RoleSortableField, RoleSortOrder } from '@/graphql/generated/types';
 
-const SEARCHABLE_FIELDS = ['label', 'description'] as const;
+const SEARCHABLE_FIELDS = ['name', 'description'] as const;
 const DEFAULT_SORT = { field: RoleSortableField.Name, order: RoleSortOrder.Asc };
 
 export async function getRoles({

@@ -4,7 +4,7 @@ export const UPDATE_ROLE = gql`
   mutation UpdateRole($id: ID!, $input: UpdateRoleInput!) {
     updateRole(id: $id, input: $input) {
       id
-      label
+      name
       description
     }
   }

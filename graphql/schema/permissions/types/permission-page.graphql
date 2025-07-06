@@ -1,0 +1,17 @@
+"""
+Represents a paginated list of permissions.
+"""
+type PermissionPage {
+  """
+  List of permissions for the current page.
+  """
+  permissions: [Permission!]!
+  """
+  Total number of permissions across all pages.
+  """
+  totalCount: Int!
+  """
+  Whether there are more permissions available on the next page.
+  """
+  hasNextPage: Boolean!
+} 

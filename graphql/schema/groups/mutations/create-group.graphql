@@ -1,0 +1,11 @@
+extend type Mutation {
+  """
+  Creates a new group.
+  """
+  createGroup(
+    """
+    Group data for creation.
+    """
+    input: CreateGroupInput!
+  ): Group!
+} 

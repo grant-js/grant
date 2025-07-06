@@ -1,0 +1,6 @@
+type Group {
+  id: ID!
+  name: String!
+  description: String
+  permissions: [Permission!]!
+} 

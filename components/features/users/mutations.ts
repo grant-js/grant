@@ -8,7 +8,7 @@ export const UPDATE_USER = gql`
       email
       roles {
         id
-        label
+        name
       }
     }
   }
@@ -22,7 +22,7 @@ export const DELETE_USER = gql`
       email
       roles {
         id
-        label
+        name
       }
     }
   }

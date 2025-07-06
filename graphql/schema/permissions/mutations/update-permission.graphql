@@ -1,0 +1,15 @@
+extend type Mutation {
+  """
+  Updates an existing permission.
+  """
+  updatePermission(
+    """
+    ID of the permission to update.
+    """
+    id: ID!
+    """
+    Updated permission data.
+    """
+    input: UpdatePermissionInput!
+  ): Permission!
+} 

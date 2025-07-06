@@ -1,4 +1,5 @@
 input UpdateRoleInput {
-  label: String
+  name: String
   description: String
+  groupIds: [ID!]
 } 

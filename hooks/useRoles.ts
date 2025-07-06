@@ -8,7 +8,7 @@ export const GET_ROLES = gql`
     roles(page: $page, limit: $limit, sort: $sort, search: $search) {
       roles {
         id
-        label
+        name
         description
       }
       totalCount

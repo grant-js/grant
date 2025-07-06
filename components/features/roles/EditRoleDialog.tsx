@@ -35,7 +35,7 @@ export function EditRoleDialog({ role, open, onOpenChange, currentPage }: EditRo
   const form = useForm<EditRoleFormValues>({
     resolver: zodResolver(editRoleSchema),
     defaultValues: {
-      label: '',
+      name: '',
       description: '',
     },
     mode: 'onSubmit',
@@ -44,7 +44,7 @@ export function EditRoleDialog({ role, open, onOpenChange, currentPage }: EditRo
   useEffect(() => {
     if (role) {
       form.reset({
-        label: role.label,
+        name: role.name,
         description: role.description || '',
       });
     }
@@ -69,7 +69,7 @@ export function EditRoleDialog({ role, open, onOpenChange, currentPage }: EditRo
         variables: {
           id: role.id,
           input: {
-            label: values.label,
+            name: values.name,
             description: values.description,
           },
         },
@@ -95,20 +95,20 @@ export function EditRoleDialog({ role, open, onOpenChange, currentPage }: EditRo
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="label"
+              name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('form.label')}</FormLabel>
+                  <FormLabel>{t('form.name')}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={t('form.label')}
+                      placeholder={t('form.name')}
                       {...field}
-                      className={form.formState.errors.label ? 'border-red-500' : ''}
+                      className={form.formState.errors.name ? 'border-red-500' : ''}
                     />
                   </FormControl>
-                  {form.formState.errors.label && (
+                  {form.formState.errors.name && (
                     <FormMessage className="text-red-500 text-sm mt-1">
-                      {form.formState.errors.label.message}
+                      {form.formState.errors.name.message}
                     </FormMessage>
                   )}
                 </FormItem>

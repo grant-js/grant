@@ -1,0 +1,46 @@
+"""
+Sort order for groups.
+"""
+enum PermissionSortOrder {
+  ASC
+  DESC
+}
+
+"""
+Fields by which groups can be sorted.
+"""
+enum PermissionSortableField {
+  name
+}
+
+"""
+Input for sorting groups.
+"""
+input PermissionSortInput {
+  field: PermissionSortableField!
+  order: PermissionSortOrder!
+}
+
+extend type Query {
+  """
+  Retrieves a paginated list of permissions.
+  """
+  permissions(
+    """
+    Page number (1-based).
+    """
+    page: Int!
+    """
+    Number of permissions per page.
+    """
+    limit: Int!
+    """
+    Search term to filter permissions by name or description.
+    """
+    search: String
+    """
+    Sorting configuration for the results.
+    """
+    sort: PermissionSortInput
+  ): PermissionPage!
+} 

@@ -1,0 +1,46 @@
+"""
+Sort order for groups.
+"""
+enum GroupSortOrder {
+  ASC
+  DESC
+}
+
+"""
+Fields by which groups can be sorted.
+"""
+enum GroupSortableField {
+  name
+}
+
+"""
+Input for sorting groups.
+"""
+input GroupSortInput {
+  field: GroupSortableField!
+  order: GroupSortOrder!
+}
+
+extend type Query {
+  """
+  Retrieves a paginated list of groups.
+  """
+  groups(
+    """
+    Page number (1-based).
+    """
+    page: Int!
+    """
+    Number of groups per page.
+    """
+    limit: Int!
+    """
+    Search term to filter groups by name or description.
+    """
+    search: String
+    """
+    Sorting configuration for the results.
+    """
+    sort: GroupSortInput
+  ): GroupPage!
+} 

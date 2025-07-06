@@ -3,12 +3,12 @@ import { z } from 'zod';
 
 // Form schemas
 export const createRoleSchema = z.object({
-  label: z.string().min(2, 'Label must be at least 2 characters'),
+  name: z.string().min(2, 'Label must be at least 2 characters'),
   description: z.string().optional(),
 });
 
 export const editRoleSchema = z.object({
-  label: z.string().min(2, 'Label must be at least 2 characters'),
+  name: z.string().min(2, 'Label must be at least 2 characters'),
   description: z.string().optional(),
 });
 

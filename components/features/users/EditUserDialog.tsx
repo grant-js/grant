@@ -179,7 +179,7 @@ export function EditUserDialog({ user, open, onOpenChange, currentPage }: EditUs
                                   />
                                 </FormControl>
                                 <div className="space-y-1 leading-none">
-                                  <FormLabel>{role.label}</FormLabel>
+                                  <FormLabel>{role.name}</FormLabel>
                                 </div>
                               </FormItem>
                             );

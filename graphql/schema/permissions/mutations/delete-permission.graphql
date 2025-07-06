@@ -1,0 +1,11 @@
+extend type Mutation {
+  """
+  Deletes a permission by ID.
+  """
+  deletePermission(
+    """
+    ID of the permission to delete.
+    """
+    id: ID!
+  ): Boolean!
+} 

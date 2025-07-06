@@ -32,7 +32,7 @@ interface RoleListProps {
   loading: boolean;
   onEditClick: (role: Role) => void;
   onDeleteClick: (role: Role) => void;
-  roleToDelete: { id: string; label: string } | null;
+  roleToDelete: { id: string; name: string } | null;
   roleToEdit: Role | null;
   onDeleteConfirm: () => Promise<void>;
   onDeleteCancel: () => void;
@@ -84,11 +84,11 @@ export function RoleList({
                         <div className="flex items-start gap-4 min-w-0">
                           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600">
                             <span className="text-sm font-medium text-white">
-                              {role.label.charAt(0).toUpperCase()}
+                              {role.name.charAt(0).toUpperCase()}
                             </span>
                           </div>
                           <div className="min-w-0">
-                            <CardTitle className="text-base truncate">{role.label}</CardTitle>
+                            <CardTitle className="text-base truncate">{role.name}</CardTitle>
                             <CardDescription className="truncate">
                               {role.description || t('noDescription')}
                             </CardDescription>
@@ -136,7 +136,7 @@ export function RoleList({
           <AlertDialogHeader>
             <AlertDialogTitle>{t('deleteDialog.title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('deleteDialog.description', { name: roleToDelete?.label || '' })}
+              {t('deleteDialog.description', { name: roleToDelete?.name || '' })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

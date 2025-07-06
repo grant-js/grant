@@ -25,13 +25,27 @@ const ensureDataDirectory = () => {
 const generateInitialRoles = (): Role[] => [
   {
     id: 'admin',
-    label: 'Admin',
-    description: 'Super user with all permission groups',
+    name: 'Admin',
+    description: 'Admin role with all permission groups',
+    groups: [],
+  },
+  {
+    id: 'support',
+    name: 'Support',
+    description: 'Support user with support permission groups',
+    groups: [],
+  },
+  {
+    id: 'partner',
+    name: 'Partner',
+    description: 'Partner user with partner permission groups',
+    groups: [],
   },
   {
     id: 'customer',
-    label: 'Customer',
+    name: 'Customer',
     description: 'Customer tenant level with customer permission groups',
+    groups: [],
   },
 ];
 
@@ -62,8 +76,8 @@ export const sortRoles = (
 ): Role[] => {
   if (!sortConfig) return roles;
   return [...roles].sort((a, b) => {
-    let aValue = a.label.toLowerCase();
-    let bValue = b.label.toLowerCase();
+    let aValue = a.name.toLowerCase();
+    let bValue = b.name.toLowerCase();
     if (aValue === bValue) return 0;
     if (aValue === null || aValue === undefined) return 1;
     if (bValue === null || bValue === undefined) return -1;
@@ -92,14 +106,15 @@ export const isRoleUnique = (roleId: string): boolean => {
 // Create a new role in the data store
 export const createRole = (input: CreateRoleInput): Role => {
   const roles = getRoles();
-  const id = slugifySafe(input.id || input.label);
+  const id = slugifySafe(input.name);
   if (!isRoleUnique(id)) {
     throw new ApiError(`Role with id ${id} already exists`, ApolloServerErrorCode.BAD_REQUEST);
   }
   const newRole: Role = {
     id,
-    label: input.label,
+    name: input.name,
     description: input.description,
+    groups: [],
   };
   roles.push(newRole);
   saveRoles(roles);
@@ -119,7 +134,7 @@ export const updateRole = (roleId: string, input: UpdateRoleInput): Role | null 
     ...roles[roleIndex],
   };
 
-  if (input.label) updatedRole.label = input.label;
+  if (input.name) updatedRole.name = input.name;
   if (input.description) updatedRole.description = input.description;
 
   roles[roleIndex] = updatedRole;

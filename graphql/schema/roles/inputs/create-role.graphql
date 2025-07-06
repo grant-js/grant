@@ -1,5 +1,5 @@
 input CreateRoleInput {
-  id: String
-  label: String!
+  name: String!
   description: String
+  groupIds: [ID!]
 } 

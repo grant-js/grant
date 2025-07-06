@@ -24,7 +24,7 @@ interface RolesContainerProps {
     loading: boolean;
     onEditClick: (role: Role) => void;
     onDeleteClick: (role: Role) => void;
-    roleToDelete: { id: string; label: string } | null;
+    roleToDelete: { id: string; name: string } | null;
     roleToEdit: Role | null;
     onDeleteConfirm: () => Promise<void>;
     onDeleteCancel: () => void;
@@ -57,7 +57,7 @@ export function RolesContainer({
     },
   });
 
-  const [roleToDelete, setRoleToDelete] = useState<{ id: string; label: string } | null>(null);
+  const [roleToDelete, setRoleToDelete] = useState<{ id: string; name: string } | null>(null);
   const [roleToEdit, setRoleToEdit] = useState<Role | null>(null);
   const t = useTranslations('roles');
 
@@ -76,7 +76,7 @@ export function RolesContainer({
         variables: { id: roleToDelete.id },
       });
       toast.success(t('notifications.deleteSuccess'), {
-        description: `${roleToDelete.label} has been removed from the system`,
+        description: `${roleToDelete.name} has been removed from the system`,
       });
 
       // Note: The useRoles hook will automatically refetch when the cache is evicted
@@ -95,7 +95,7 @@ export function RolesContainer({
   }, []);
 
   const handleDeleteClick = useCallback((role: Role) => {
-    setRoleToDelete({ id: role.id, label: role.label });
+    setRoleToDelete({ id: role.id, name: role.name });
   }, []);
 
   if (error) return <div>Error: {error.message}</div>;

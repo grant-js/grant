@@ -1,0 +1,4 @@
+input CreatePermissionInput {
+  name: String!
+  description: String
+} 

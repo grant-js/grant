@@ -35,7 +35,7 @@ const CREATE_ROLE = gql`
   mutation CreateRole($input: CreateRoleInput!) {
     createRole(input: $input) {
       id
-      label
+      name
       description
     }
   }
@@ -48,7 +48,7 @@ export function CreateRoleDialog() {
   const form = useForm<CreateRoleFormValues>({
     resolver: zodResolver(createRoleSchema),
     defaultValues: {
-      label: '',
+      name: '',
       description: '',
     },
     mode: 'onSubmit',
@@ -92,10 +92,10 @@ export function CreateRoleDialog() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="label"
+              name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('form.label')}</FormLabel>
+                  <FormLabel>{t('form.name')}</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>

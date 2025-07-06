@@ -203,6 +203,7 @@
     },
     "form": {
       "label": "Bezeichnung",
+      "name": "Name",
       "description": "Beschreibung"
     },
     "pagination": {
@@ -241,6 +242,7 @@
     },
     "table": {
       "label": "Bezeichnung",
+      "name": "Name",
       "description": "Beschreibung",
       "id": "ID",
       "actions": "Aktionen",
