@@ -1,13 +1,13 @@
-import { AuthDataProvider } from '@/graphql/resolvers/auth/providers/types';
-import { UserDataProvider } from '@/graphql/resolvers/users/providers/types';
-import { userFakerProvider } from '@/graphql/resolvers/users/providers/faker';
-import { jwtProvider } from '@/graphql/resolvers/auth/providers/jwt';
-import { RoleDataProvider } from './resolvers/roles/providers/types';
-import { roleFakerProvider } from './resolvers/roles/providers/faker';
-import { GroupDataProvider } from './resolvers/groups/providers/types';
-import { PermissionDataProvider } from './resolvers/permissions/providers/types';
-import { groupFakerProvider } from './resolvers/groups/providers/faker';
-import { permissionFakerProvider } from './resolvers/permissions/providers/faker';
+import { AuthDataProvider } from '@/graphql/providers/auth/types';
+import { UserDataProvider } from '@/graphql/providers/users/types';
+import { userFakerProvider } from '@/graphql/providers/users/faker';
+import { jwtProvider } from '@/graphql/providers/auth/jwt';
+import { RoleDataProvider } from './providers/roles/types';
+import { roleFakerProvider } from './providers/roles/faker';
+import { GroupDataProvider } from './providers/groups/types';
+import { PermissionDataProvider } from './providers/permissions/types';
+import { groupFakerProvider } from './providers/groups/faker';
+import { permissionFakerProvider } from './providers/permissions/faker';
 
 export interface ModuleProviders {
   auth: AuthDataProvider;

@@ -18,4 +18,4 @@ type User {
   List of roles assigned to the user.
   """
   roles: [Role!]!
-} 
+}

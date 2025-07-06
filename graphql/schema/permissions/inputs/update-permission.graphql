@@ -1,4 +1,4 @@
 input UpdatePermissionInput {
   name: String
   description: String
-} 
+}

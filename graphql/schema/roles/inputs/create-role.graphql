@@ -2,4 +2,4 @@ input CreateRoleInput {
   name: String!
   description: String
   groupIds: [ID!]
-} 
+}

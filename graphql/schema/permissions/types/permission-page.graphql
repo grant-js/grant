@@ -14,4 +14,4 @@ type PermissionPage {
   Whether there are more permissions available on the next page.
   """
   hasNextPage: Boolean!
-} 
+}

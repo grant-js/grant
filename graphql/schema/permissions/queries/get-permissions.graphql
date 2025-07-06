@@ -43,4 +43,4 @@ extend type Query {
     """
     sort: PermissionSortInput
   ): PermissionPage!
-} 
+}

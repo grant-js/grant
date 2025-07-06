@@ -44,4 +44,4 @@ extend type Query {
     """
     sort: UserSortInput
   ): UserPage!
-} 
+}

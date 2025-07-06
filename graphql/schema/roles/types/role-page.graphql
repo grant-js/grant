@@ -14,4 +14,4 @@ type RolePage {
   Whether there are more roles available on the next page.
   """
   hasNextPage: Boolean!
-} 
+}

@@ -2,4 +2,4 @@ input CreateGroupInput {
   name: String!
   description: String
   permissions: [String!]
-} 
+}

@@ -14,4 +14,4 @@ type UserPage {
   Whether there are more users available on the next page.
   """
   hasNextPage: Boolean!
-} 
+}

@@ -2,4 +2,4 @@ input UpdateGroupInput {
   name: String
   description: String
   permissions: [String!]
-} 
+}

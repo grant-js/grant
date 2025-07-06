@@ -14,4 +14,4 @@ type GroupPage {
   Whether there are more groups available on the next page.
   """
   hasNextPage: Boolean!
-} 
+}

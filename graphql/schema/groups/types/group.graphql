@@ -3,4 +3,4 @@ type Group {
   name: String!
   description: String
   permissions: [Permission!]!
-} 
+}

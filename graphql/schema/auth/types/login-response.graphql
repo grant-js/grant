@@ -6,4 +6,4 @@ type LoginResponse {
   JWT token for authenticated requests.
   """
   token: String!
-} 
+}
