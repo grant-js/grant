@@ -5,14 +5,14 @@ import { Query } from '@/graphql/resolvers/queries';
 import { Mutation } from '@/graphql/resolvers/mutations';
 
 // Load all schema files
-const typesArray = loadFilesSync(join(process.cwd(), 'graphql/schema'), {
+const typeDefs = loadFilesSync(join(process.cwd(), 'graphql/schema'), {
   extensions: ['graphql'],
   ignoreIndex: true,
 });
 
 // Create the schema
 export const schema = makeExecutableSchema({
-  typeDefs: typesArray,
+  typeDefs,
   resolvers: {
     Query,
     Mutation,

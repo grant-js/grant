@@ -1,0 +1,22 @@
+"""
+Sort order for groups.
+"""
+enum PermissionSortOrder {
+  ASC
+  DESC
+}
+
+"""
+Fields by which groups can be sorted.
+"""
+enum PermissionSortableField {
+  name
+}
+
+"""
+Input for sorting groups.
+"""
+input PermissionSortInput {
+  field: PermissionSortableField!
+  order: PermissionSortOrder!
+}

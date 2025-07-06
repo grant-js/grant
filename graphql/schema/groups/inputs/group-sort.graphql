@@ -1,0 +1,22 @@
+"""
+Sort order for groups.
+"""
+enum GroupSortOrder {
+  ASC
+  DESC
+}
+
+"""
+Fields by which groups can be sorted.
+"""
+enum GroupSortableField {
+  name
+}
+
+"""
+Input for sorting groups.
+"""
+input GroupSortInput {
+  field: GroupSortableField!
+  order: GroupSortOrder!
+}

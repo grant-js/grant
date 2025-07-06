@@ -1,27 +1,3 @@
-"""
-Sort order for users.
-"""
-enum UserSortOrder {
-  ASC
-  DESC
-}
-
-"""
-Fields by which users can be sorted.
-"""
-enum UserSortableField {
-  name
-  email
-}
-
-"""
-Input for sorting users.
-"""
-input UserSortInput {
-  field: UserSortableField!
-  order: UserSortOrder!
-}
-
 extend type Query {
   """
   Retrieves a paginated list of users.
