@@ -3,6 +3,7 @@ import * as authMutations from './auth/mutations';
 import * as roleMutations from './roles/mutations';
 import * as groupMutations from './groups/mutations';
 import * as permissionMutations from './permissions/mutations';
+import * as userRoleMutations from './user-roles/mutations';
 
 export const Mutation = {
   login: authMutations.login,
@@ -18,4 +19,6 @@ export const Mutation = {
   createPermission: permissionMutations.createPermission,
   deletePermission: permissionMutations.deletePermission,
   updatePermission: permissionMutations.updatePermission,
+  addUserRole: userRoleMutations.addUserRole,
+  removeUserRole: userRoleMutations.removeUserRole,
 } as const;

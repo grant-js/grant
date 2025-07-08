@@ -1,0 +1,11 @@
+extend type Mutation {
+  """
+  Removes a user-role relationship.
+  """
+  removeUserRole(
+    """
+    Input data for removing the user-role relationship.
+    """
+    input: RemoveUserRoleInput!
+  ): UserRole!
+} 

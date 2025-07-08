@@ -1,26 +1,20 @@
-import { UserRole } from '@/graphql/generated/types';
+import {
+  MutationAddUserRoleArgs,
+  MutationRemoveUserRoleArgs,
+  UserRole,
+} from '@/graphql/generated/types';
 
-export type GetUserRolesParams = {
-  userId: string;
-};
-
+export type GetUserRolesParams = { userId: string };
 export type GetUserRolesResult = UserRole[];
 
-export type CreateUserRoleParams = {
-  userId: string;
-  roleId: string;
-};
+export type AddUserRoleParams = MutationAddUserRoleArgs;
+export type AddUserRoleResult = UserRole;
 
-export type CreateUserRoleResult = UserRole;
-
-export type DeleteUserRoleParams = {
-  id: string;
-};
-
-export type DeleteUserRoleResult = UserRole;
+export type RemoveUserRoleParams = MutationRemoveUserRoleArgs;
+export type RemoveUserRoleResult = UserRole;
 
 export interface UserRoleDataProvider {
   getUserRoles(params: GetUserRolesParams): Promise<GetUserRolesResult>;
-  createUserRole(params: CreateUserRoleParams): Promise<CreateUserRoleResult>;
-  deleteUserRole(params: DeleteUserRoleParams): Promise<DeleteUserRoleResult>;
+  addUserRole(params: AddUserRoleParams): Promise<AddUserRoleResult>;
+  removeUserRole(params: RemoveUserRoleParams): Promise<RemoveUserRoleResult>;
 }

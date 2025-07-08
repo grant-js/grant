@@ -1,0 +1,13 @@
+"""
+Input type for removing a user-role relationship.
+"""
+input RemoveUserRoleInput {
+  """
+  ID of the user.
+  """
+  userId: ID!
+  """
+  ID of the role.
+  """
+  roleId: ID!
+} 

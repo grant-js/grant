@@ -1,0 +1,13 @@
+"""
+Input type for adding a user-role relationship.
+"""
+input AddUserRoleInput {
+  """
+  ID of the user.
+  """
+  userId: ID!
+  """
+  ID of the role.
+  """
+  roleId: ID!
+} 

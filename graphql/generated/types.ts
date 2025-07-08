@@ -17,6 +17,14 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+/** Input type for adding a user-role relationship. */
+export type AddUserRoleInput = {
+  /** ID of the role. */
+  roleId: Scalars['ID']['input'];
+  /** ID of the user. */
+  userId: Scalars['ID']['input'];
+};
+
 export type CreateGroupInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
@@ -96,6 +104,8 @@ export type LoginResponse = {
 export type Mutation = {
   __typename?: 'Mutation';
   _empty?: Maybe<Scalars['String']['output']>;
+  /** Adds a user-role relationship. */
+  addUserRole: UserRole;
   /** Creates a new group. */
   createGroup: Group;
   /** Creates a new permission. */
@@ -114,6 +124,8 @@ export type Mutation = {
   deleteUser: User;
   /** Authenticates a user and returns a JWT token. */
   login: LoginResponse;
+  /** Removes a user-role relationship. */
+  removeUserRole: UserRole;
   /** Updates an existing group. */
   updateGroup: Group;
   /** Updates an existing permission. */
@@ -122,6 +134,11 @@ export type Mutation = {
   updateRole: Role;
   /** Updates an existing user. */
   updateUser: User;
+};
+
+
+export type MutationAddUserRoleArgs = {
+  input: AddUserRoleInput;
 };
 
 
@@ -167,6 +184,11 @@ export type MutationDeleteUserArgs = {
 
 export type MutationLoginArgs = {
   input: LoginInput;
+};
+
+
+export type MutationRemoveUserRoleArgs = {
+  input: RemoveUserRoleInput;
 };
 
 
@@ -279,6 +301,14 @@ export type QueryUsersArgs = {
   page: Scalars['Int']['input'];
   search?: InputMaybe<Scalars['String']['input']>;
   sort?: InputMaybe<UserSortInput>;
+};
+
+/** Input type for removing a user-role relationship. */
+export type RemoveUserRoleInput = {
+  /** ID of the role. */
+  roleId: Scalars['ID']['input'];
+  /** ID of the user. */
+  userId: Scalars['ID']['input'];
 };
 
 export type Role = {
@@ -471,6 +501,7 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = ResolversObject<{
+  AddUserRoleInput: AddUserRoleInput;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   CreateGroupInput: CreateGroupInput;
   CreatePermissionInput: CreatePermissionInput;
@@ -492,6 +523,7 @@ export type ResolversTypes = ResolversObject<{
   PermissionSortOrder: PermissionSortOrder;
   PermissionSortableField: PermissionSortableField;
   Query: ResolverTypeWrapper<{}>;
+  RemoveUserRoleInput: RemoveUserRoleInput;
   Role: ResolverTypeWrapper<Role>;
   RolePage: ResolverTypeWrapper<RolePage>;
   RoleSortInput: RoleSortInput;
@@ -512,6 +544,7 @@ export type ResolversTypes = ResolversObject<{
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = ResolversObject<{
+  AddUserRoleInput: AddUserRoleInput;
   Boolean: Scalars['Boolean']['output'];
   CreateGroupInput: CreateGroupInput;
   CreatePermissionInput: CreatePermissionInput;
@@ -529,6 +562,7 @@ export type ResolversParentTypes = ResolversObject<{
   PermissionPage: PermissionPage;
   PermissionSortInput: PermissionSortInput;
   Query: {};
+  RemoveUserRoleInput: RemoveUserRoleInput;
   Role: Role;
   RolePage: RolePage;
   RoleSortInput: RoleSortInput;
@@ -565,6 +599,7 @@ export type LoginResponseResolvers<ContextType = Context, ParentType extends Res
 
 export type MutationResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = ResolversObject<{
   _empty?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  addUserRole?: Resolver<ResolversTypes['UserRole'], ParentType, ContextType, RequireFields<MutationAddUserRoleArgs, 'input'>>;
   createGroup?: Resolver<ResolversTypes['Group'], ParentType, ContextType, RequireFields<MutationCreateGroupArgs, 'input'>>;
   createPermission?: Resolver<ResolversTypes['Permission'], ParentType, ContextType, RequireFields<MutationCreatePermissionArgs, 'input'>>;
   createRole?: Resolver<ResolversTypes['Role'], ParentType, ContextType, RequireFields<MutationCreateRoleArgs, 'input'>>;
@@ -574,6 +609,7 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
   deleteRole?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteRoleArgs, 'id'>>;
   deleteUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationDeleteUserArgs, 'id'>>;
   login?: Resolver<ResolversTypes['LoginResponse'], ParentType, ContextType, RequireFields<MutationLoginArgs, 'input'>>;
+  removeUserRole?: Resolver<ResolversTypes['UserRole'], ParentType, ContextType, RequireFields<MutationRemoveUserRoleArgs, 'input'>>;
   updateGroup?: Resolver<ResolversTypes['Group'], ParentType, ContextType, RequireFields<MutationUpdateGroupArgs, 'id' | 'input'>>;
   updatePermission?: Resolver<ResolversTypes['Permission'], ParentType, ContextType, RequireFields<MutationUpdatePermissionArgs, 'id' | 'input'>>;
   updateRole?: Resolver<ResolversTypes['Role'], ParentType, ContextType, RequireFields<MutationUpdateRoleArgs, 'id' | 'input'>>;

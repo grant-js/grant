@@ -82,15 +82,21 @@ export const getUserRolesByRoleId = (roleId: string): UserRoleData[] => {
   return userRolesDataStore.getEntities().filter((ur) => ur.roleId === roleId);
 };
 
-export const createUserRole = (userId: string, roleId: string): UserRoleData => {
+export const addUserRole = (userId: string, roleId: string): UserRoleData => {
+  // Get current entities and check if role already exists
+  const entities = userRolesDataStore.getEntities();
+  const existingRole = entities.find((ur) => ur.userId === userId && ur.roleId === roleId);
+
+  if (existingRole) {
+    return existingRole;
+  }
+
   const userRole: UserRoleData = {
     id: faker.string.uuid(),
     userId,
     roleId,
   };
 
-  // Get current entities and add the new one
-  const entities = userRolesDataStore.getEntities();
   entities.push(userRole);
 
   // Save back to the data store
@@ -104,6 +110,30 @@ export const createUserRole = (userId: string, roleId: string): UserRoleData => 
 
 export const deleteUserRole = (id: string): UserRoleData | null => {
   return userRolesDataStore.deleteEntity(id);
+};
+
+// New function to delete by userId and roleId
+export const deleteUserRoleByUserAndRole = (
+  userId: string,
+  roleId: string
+): UserRoleData | null => {
+  const entities = userRolesDataStore.getEntities();
+  const userRoleIndex = entities.findIndex((ur) => ur.userId === userId && ur.roleId === roleId);
+
+  if (userRoleIndex === -1) {
+    return null;
+  }
+
+  const userRole = entities[userRoleIndex];
+  entities.splice(userRoleIndex, 1);
+
+  // Save back to the data store
+  const fs = require('fs');
+  const path = require('path');
+  const dataFilePath = path.join(process.cwd(), 'data', 'user-roles.json');
+  fs.writeFileSync(dataFilePath, JSON.stringify(entities, null, 2));
+
+  return userRole;
 };
 
 export const deleteUserRolesByUserId = (userId: string): UserRoleData[] => {
