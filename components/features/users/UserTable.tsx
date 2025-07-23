@@ -1,6 +1,6 @@
 'use client';
 
-import { X, Pencil, UserPlus, MoreVertical } from 'lucide-react';
+import { X, Pencil, UserPlus, MoreVertical, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { User } from '@/graphql/generated/types';
 import { EditUserDialog } from './EditUserDialog';
 import { CreateUserDialog } from './CreateUserDialog';
+import { ColoredList } from '@/components/common/ColoredList';
 import {
   Table,
   TableBody,
@@ -96,21 +97,13 @@ export function UserTable({
                         <TableCell className="font-medium">{user.name}</TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {user.roles.map((role) => (
-                              <span
-                                key={role.id}
-                                className={cn(
-                                  'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
-                                  role.id === 'admin'
-                                    ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-                                    : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                                )}
-                              >
-                                {role.name}
-                              </span>
-                            ))}
-                          </div>
+                          <ColoredList
+                            items={user.roles}
+                            labelField="name"
+                            title=""
+                            icon={<Shield className="h-3 w-3" />}
+                            height={60}
+                          />
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>

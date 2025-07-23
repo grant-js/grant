@@ -1,6 +1,6 @@
 'use client';
 
-import { X, Pencil, UserPlus, MoreVertical } from 'lucide-react';
+import { X, Pencil, UserPlus, MoreVertical, Group } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { Role } from '@/graphql/generated/types';
 import { EditRoleDialog } from './EditRoleDialog';
 import { CreateRoleDialog } from './CreateRoleDialog';
+import { ColoredList } from '@/components/common/ColoredList';
 import {
   Table,
   TableBody,
@@ -79,7 +80,7 @@ export function RoleTable({
                   <TableRow>
                     <TableHead>{t('table.label')}</TableHead>
                     <TableHead>{t('table.description')}</TableHead>
-                    <TableHead>{t('table.id')}</TableHead>
+                    <TableHead>{t('groups')}</TableHead>
                     <TableHead className="w-[100px]">{t('table.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -96,9 +97,13 @@ export function RoleTable({
                         <TableCell className="font-medium">{role.name}</TableCell>
                         <TableCell>{role.description || t('noDescription')}</TableCell>
                         <TableCell>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                            {role.id}
-                          </span>
+                          <ColoredList
+                            items={role.groups}
+                            labelField="name"
+                            title=""
+                            icon={<Group className="h-3 w-3" />}
+                            height={60}
+                          />
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
