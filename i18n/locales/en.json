@@ -30,6 +30,7 @@
     "navigation": {
       "users": "Users",
       "roles": "Roles",
+      "groups": "Groups",
       "account": "Account",
       "settings": "Settings"
     }
@@ -204,7 +205,13 @@
     "form": {
       "label": "Label",
       "name": "Name",
-      "description": "Description"
+      "description": "Description",
+      "groups": "Groups",
+      "groupsLoading": "Loading groups...",
+      "noGroupsAvailable": "No groups available",
+      "validation": {
+        "groupsRequired": "Role must have at least one group"
+      }
     },
     "pagination": {
       "previous": "Previous",

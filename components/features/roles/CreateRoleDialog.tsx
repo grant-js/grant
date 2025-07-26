@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useMutation } from '@apollo/client';
-import { gql } from '@apollo/client';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -28,28 +27,23 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { UserPlus } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { CreateRoleFormValues, createRoleSchema } from './types';
 import { evictRolesCache } from './cache';
-
-const CREATE_ROLE = gql`
-  mutation CreateRole($input: CreateRoleInput!) {
-    createRole(input: $input) {
-      id
-      name
-      description
-    }
-  }
-`;
+import { useGroups } from '@/hooks/useGroups';
+import { CREATE_ROLE, ADD_ROLE_GROUP } from './mutations';
 
 export function CreateRoleDialog() {
   const [open, setOpen] = useState(false);
   const t = useTranslations('roles');
+  const { groups, loading: groupsLoading } = useGroups();
 
   const form = useForm<CreateRoleFormValues>({
     resolver: zodResolver(createRoleSchema),
     defaultValues: {
       name: '',
       description: '',
+      groupIds: [],
     },
     mode: 'onSubmit',
   });
@@ -58,15 +52,50 @@ export function CreateRoleDialog() {
     update(cache) {
       evictRolesCache(cache);
     },
+    refetchQueries: ['GetRoles'], // Force refetch of roles after creation
+  });
+
+  const [addRoleGroup] = useMutation(ADD_ROLE_GROUP, {
+    update(cache) {
+      evictRolesCache(cache);
+    },
+    refetchQueries: ['GetRoles'], // Force refetch of roles after adding group
   });
 
   const onSubmit = async (values: CreateRoleFormValues) => {
     try {
-      await createRole({
+      // Create the role first
+      const result = await createRole({
         variables: {
-          input: values,
+          input: {
+            name: values.name,
+            description: values.description,
+          },
         },
       });
+
+      const roleId = result.data?.createRole.id;
+
+      if (roleId && values.groupIds && values.groupIds.length > 0) {
+        // Add groups to the role
+        const groupPromises = values.groupIds.map((groupId: string) =>
+          addRoleGroup({
+            variables: {
+              input: {
+                roleId,
+                groupId,
+              },
+            },
+          }).catch((error) => {
+            // If there's an error adding a group, log it but don't fail the entire operation
+            console.warn(`Failed to add group ${groupId} to role ${roleId}:`, error);
+            return null;
+          })
+        );
+
+        await Promise.all(groupPromises);
+      }
+
       toast.success(t('notifications.createSuccess'));
       form.reset();
       setOpen(false);
@@ -113,6 +142,63 @@ export function CreateRoleDialog() {
                     <Textarea {...field} />
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="groupIds"
+              render={() => (
+                <FormItem>
+                  <FormLabel>{t('form.groups')}</FormLabel>
+                  <div className="space-y-2">
+                    {groupsLoading ? (
+                      <div className="text-sm text-muted-foreground">{t('form.groupsLoading')}</div>
+                    ) : groups.length === 0 ? (
+                      <div className="text-sm text-muted-foreground">
+                        {t('form.noGroupsAvailable')}
+                      </div>
+                    ) : (
+                      groups.map((group: any) => (
+                        <FormField
+                          key={group.id}
+                          control={form.control}
+                          name="groupIds"
+                          render={({ field }) => {
+                            return (
+                              <FormItem
+                                key={group.id}
+                                className="flex flex-row items-start space-x-3 space-y-0"
+                              >
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(group.id)}
+                                    onCheckedChange={(checked: boolean) => {
+                                      return checked
+                                        ? field.onChange([...(field.value || []), group.id])
+                                        : field.onChange(
+                                            field.value?.filter(
+                                              (value: string) => value !== group.id
+                                            )
+                                          );
+                                    }}
+                                  />
+                                </FormControl>
+                                <div className="space-y-1 leading-none">
+                                  <FormLabel>{group.name}</FormLabel>
+                                </div>
+                              </FormItem>
+                            );
+                          }}
+                        />
+                      ))
+                    )}
+                  </div>
+                  {form.formState.errors.groupIds && (
+                    <FormMessage className="text-red-500 text-sm mt-1">
+                      {t('form.validation.groupsRequired')}
+                    </FormMessage>
+                  )}
                 </FormItem>
               )}
             />

@@ -25,7 +25,8 @@
       "@/graphql/*": ["./graphql/*"],
       "@/i18n/*": ["./i18n/*"],
       "@/config/*": ["./config/*"],
-      "@/styles/*": ["./styles/*"]
+      "@/styles/*": ["./styles/*"],
+      "@/hooks/*": ["./hooks/*"]
     },
     "baseUrl": "."
   },

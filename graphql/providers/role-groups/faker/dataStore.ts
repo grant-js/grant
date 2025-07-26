@@ -75,7 +75,8 @@ export const roleGroupsDataStore = createFakerDataStore(roleGroupConfig);
 
 // Helper functions for role-group operations
 export const getRoleGroupsByRoleId = (roleId: string): RoleGroupData[] => {
-  return roleGroupsDataStore.getEntities().filter((rg) => rg.roleId === roleId);
+  const roleGroups = roleGroupsDataStore.getEntities().filter((rg) => rg.roleId === roleId);
+  return roleGroups;
 };
 
 export const getRoleGroupsByGroupId = (groupId: string): RoleGroupData[] => {

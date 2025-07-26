@@ -10,7 +10,19 @@ export async function getGroups({
   limit = 50,
   sort,
   search,
+  ids,
 }: GetGroupsParams): Promise<GetGroupsResult> {
+  // If ids are provided and not empty, ignore pagination and return filtered results
+  if (ids && ids.length > 0) {
+    const filteredGroups = getGroupsFromDataStore(sort || DEFAULT_SORT, ids);
+
+    return {
+      groups: filteredGroups,
+      totalCount: filteredGroups.length,
+      hasNextPage: false, // No pagination when filtering by IDs
+    };
+  }
+
   // Ensure page and limit are always numbers
   const safePage = typeof page === 'number' && page > 0 ? page : 1;
   const safeLimit = typeof limit === 'number' && limit > 0 ? limit : 50;

@@ -202,8 +202,9 @@ export const sortGroups = (groups: Group[], sortConfig?: GroupSortInput): Group[
     order: sortConfig.order,
   });
 };
-export const getGroups = (sortConfig?: GroupSortInput): Group[] => {
-  return groupsDataStore.getEntities(
+// Updated getGroups function with optional ids parameter
+export const getGroups = (sortConfig?: GroupSortInput, ids?: string[]): Group[] => {
+  let allGroups = groupsDataStore.getEntities(
     sortConfig
       ? {
           field: sortConfig.field,
@@ -211,6 +212,13 @@ export const getGroups = (sortConfig?: GroupSortInput): Group[] => {
         }
       : undefined
   );
+
+  // If ids are provided, filter by those IDs
+  if (ids && ids.length > 0) {
+    allGroups = allGroups.filter((group) => ids.includes(group.id));
+  }
+
+  return allGroups;
 };
 export const isGroupUnique = (groupId: string): boolean => {
   return !groupsDataStore.entityExists(groupId);
