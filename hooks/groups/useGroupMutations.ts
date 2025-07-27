@@ -2,11 +2,7 @@ import { useMutation } from '@apollo/client';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { Group } from '@/graphql/generated/types';
-// TODO: Create groups cache when groups feature is implemented
-const evictGroupsCache = (cache: any) => {
-  // Evict all groups-related queries from cache
-  cache.evict({ fieldName: 'groups' });
-};
+import { evictGroupsCache } from '@/components/features/groups/cache';
 import {
   CREATE_GROUP,
   UPDATE_GROUP,

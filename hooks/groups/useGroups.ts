@@ -14,6 +14,12 @@ export const GET_GROUPS = gql`
         id
         name
         description
+        permissions {
+          id
+          name
+          action
+          description
+        }
       }
       totalCount
       hasNextPage

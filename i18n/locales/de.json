@@ -279,6 +279,108 @@
     "emptyElements": "Es gibt keine {title} zum Anzeigen",
     "noDescription": "Keine Beschreibung"
   },
+  "groups": {
+    "title": "Gruppenverwaltung",
+    "noGroups": {
+      "title": "Keine Gruppen gefunden",
+      "description": "Erstellen Sie Ihre erste Gruppe"
+    },
+    "noSearchResults": {
+      "title": "Keine Gruppen gefunden",
+      "description": "Versuchen Sie, Ihre Suchbegriffe anzupassen oder erstellen Sie eine neue Gruppe"
+    },
+    "actions": {
+      "create": "Gruppe erstellen",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "update": "Aktualisieren",
+      "cancel": "Abbrechen",
+      "creating": "Wird erstellt...",
+      "updating": "Wird aktualisiert...",
+      "deleting": "Wird gelöscht...",
+      "label": "Aktionen anzeigen/ausblenden"
+    },
+    "sort": {
+      "label": "Sortieren nach",
+      "name": "Name",
+      "default": "Standard"
+    },
+    "limit": {
+      "label": "Einträge pro Seite",
+      "option": "{count} Einträge"
+    },
+    "search": {
+      "placeholder": "Gruppen suchen..."
+    },
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Gruppenname eingeben",
+      "description": "Beschreibung",
+      "descriptionPlaceholder": "Gruppenbeschreibung eingeben",
+      "permissions": "Berechtigungen",
+      "permissionsLoading": "Berechtigungen werden geladen...",
+      "noPermissionsAvailable": "Keine Berechtigungen verfügbar"
+    },
+    "pagination": {
+      "previous": "Zurück",
+      "next": "Weiter",
+      "info": "Seite {current} von {total}"
+    },
+    "create": {
+      "title": "Neue Gruppe erstellen",
+      "description": "Fügen Sie eine neue Gruppe zum System hinzu"
+    },
+    "edit": {
+      "title": "Gruppe bearbeiten",
+      "description": "Aktualisieren Sie die Gruppeninformationen"
+    },
+    "delete": {
+      "title": "Gruppe löschen",
+      "description": "Sind Sie sicher, dass Sie {name} löschen möchten?"
+    },
+    "createDialog": {
+      "title": "Neue Gruppe erstellen",
+      "description": "Fügen Sie eine neue Gruppe zum System hinzu",
+      "trigger": "Gruppe erstellen"
+    },
+    "editDialog": {
+      "title": "Gruppe bearbeiten",
+      "description": "Aktualisieren Sie die Gruppeninformationen"
+    },
+    "deleteDialog": {
+      "title": "Gruppe löschen",
+      "description": "Sind Sie sicher, dass Sie {name} löschen möchten?",
+      "cancel": "Abbrechen",
+      "confirm": "Löschen",
+      "deleting": "Wird gelöscht..."
+    },
+    "notifications": {
+      "createSuccess": "Gruppe erstellt",
+      "createError": "Gruppe konnte nicht erstellt werden",
+      "updateSuccess": "Gruppe aktualisiert",
+      "updateError": "Gruppe konnte nicht aktualisiert werden",
+      "deleteSuccess": "Gruppe gelöscht",
+      "deleteError": "Gruppe konnte nicht gelöscht werden",
+      "permissionAddedSuccess": "Berechtigung zur Gruppe hinzugefügt",
+      "permissionAddedError": "Berechtigung konnte nicht zur Gruppe hinzugefügt werden",
+      "permissionRemovedSuccess": "Berechtigung von der Gruppe entfernt",
+      "permissionRemovedError": "Berechtigung konnte nicht von der Gruppe entfernt werden"
+    },
+    "view": {
+      "cards": "Kartenansicht",
+      "table": "Tabellenansicht"
+    },
+    "table": {
+      "name": "Name",
+      "description": "Beschreibung",
+      "permissions": "Berechtigungen",
+      "actions": "Aktionen",
+      "loading": "Gruppen werden geladen..."
+    },
+    "permissions": "Berechtigungen",
+    "emptyElements": "Es gibt keine {title} zum Anzeigen",
+    "noDescription": "Keine Beschreibung"
+  },
   "account": {
     "title": "Kontoverwaltung",
     "description": "Anzeigen und verwalten Sie Ihre Kontodetails"

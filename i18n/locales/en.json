@@ -279,6 +279,108 @@
     "emptyElements": "There are no {title} to display",
     "noDescription": "No description"
   },
+  "groups": {
+    "title": "Group Management",
+    "noGroups": {
+      "title": "No groups found",
+      "description": "Get started by creating your first group"
+    },
+    "noSearchResults": {
+      "title": "No groups found",
+      "description": "Try adjusting your search terms or create a new group"
+    },
+    "actions": {
+      "create": "Create Group",
+      "edit": "Edit",
+      "delete": "Delete",
+      "update": "Update",
+      "cancel": "Cancel",
+      "creating": "Creating...",
+      "updating": "Updating...",
+      "deleting": "Deleting...",
+      "label": "Show/Hide Actions"
+    },
+    "sort": {
+      "label": "Sort by",
+      "name": "Name",
+      "default": "Default"
+    },
+    "limit": {
+      "label": "Items per page",
+      "option": "{count} items"
+    },
+    "search": {
+      "placeholder": "Search groups..."
+    },
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Enter group name",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter group description",
+      "permissions": "Permissions",
+      "permissionsLoading": "Loading permissions...",
+      "noPermissionsAvailable": "No permissions available"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "info": "Page {current} of {total}"
+    },
+    "create": {
+      "title": "Create New Group",
+      "description": "Add a new group to the system"
+    },
+    "edit": {
+      "title": "Edit Group",
+      "description": "Update group information"
+    },
+    "delete": {
+      "title": "Delete Group",
+      "description": "Are you sure you want to delete {name}?"
+    },
+    "createDialog": {
+      "title": "Create New Group",
+      "description": "Add a new group to the system",
+      "trigger": "Create Group"
+    },
+    "editDialog": {
+      "title": "Edit Group",
+      "description": "Update group information"
+    },
+    "deleteDialog": {
+      "title": "Delete Group",
+      "description": "Are you sure you want to delete {name}?",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "deleting": "Deleting..."
+    },
+    "notifications": {
+      "createSuccess": "Group created",
+      "createError": "Failed to create group",
+      "updateSuccess": "Group updated",
+      "updateError": "Failed to update group",
+      "deleteSuccess": "Group deleted",
+      "deleteError": "Failed to delete group",
+      "permissionAddedSuccess": "Permission added to group",
+      "permissionAddedError": "Failed to add permission to group",
+      "permissionRemovedSuccess": "Permission removed from group",
+      "permissionRemovedError": "Failed to remove permission from group"
+    },
+    "view": {
+      "cards": "Card View",
+      "table": "Table View"
+    },
+    "table": {
+      "name": "Name",
+      "description": "Description",
+      "permissions": "Permissions",
+      "actions": "Actions",
+      "loading": "Loading groups..."
+    },
+    "permissions": "Permissions",
+    "emptyElements": "There are no {title} to display",
+    "noDescription": "No description"
+  },
   "account": {
     "title": "Account Management",
     "description": "View and manage your account details"

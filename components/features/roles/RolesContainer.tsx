@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { Role, RoleSortableField, RoleSortOrder } from '@/graphql/generated/types';
-import { useRoles, useRoleMutations } from '@/hooks/roles';
+import { useRoles } from '@/hooks/roles';
 import { EditRoleDialog } from './EditRoleDialog';
 import { DeleteRoleDialog } from './DeleteRoleDialog';
 import { RoleViewer } from './RoleViewer';
