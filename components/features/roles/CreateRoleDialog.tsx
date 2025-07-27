@@ -1,6 +1,5 @@
 'use client';
 
-import { useMutation } from '@apollo/client';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -12,7 +11,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { toast } from '@/components/ui/toast';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,9 +23,9 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { CreateRoleFormValues, createRoleSchema, CreateRoleDialogProps } from './types';
-import { evictRolesCache } from './cache';
-import { CREATE_ROLE, ADD_ROLE_GROUP } from './mutations';
-import { useGroups } from '@/hooks/useGroups';
+import { useRoleMutations } from '@/hooks/roles';
+import { useGroups } from '@/hooks/groups';
+import { Group } from '@/graphql/generated/types';
 import { CheckboxList } from '@/components/ui/checkbox-list';
 import { Shield } from 'lucide-react';
 import { useState } from 'react';
@@ -58,42 +56,23 @@ export function CreateRoleDialog({ open, onOpenChange, children }: CreateRoleDia
     mode: 'onSubmit',
   });
 
-  const [createRole] = useMutation(CREATE_ROLE, {
-    update(cache) {
-      evictRolesCache(cache);
-    },
-    refetchQueries: ['GetRoles'],
-  });
-
-  const [addRoleGroup] = useMutation(ADD_ROLE_GROUP, {
-    refetchQueries: ['GetRoles'],
-  });
+  const { createRole, addRoleGroup } = useRoleMutations();
 
   const onSubmit = async (values: CreateRoleFormValues) => {
     try {
       // Create role first
-      const result = await createRole({
-        variables: {
-          input: {
-            name: values.name,
-            description: values.description,
-          },
-        },
+      const createdRole = await createRole({
+        name: values.name,
+        description: values.description,
       });
 
-      const roleId = result.data?.createRole?.id;
-
       // Add groups if role was created and groups are selected
-      if (roleId && values.groupIds && values.groupIds.length > 0) {
+      if (createdRole?.id && values.groupIds && values.groupIds.length > 0) {
         const addPromises = values.groupIds.map((groupId) =>
           addRoleGroup({
-            variables: {
-              input: {
-                roleId,
-                groupId,
-              },
-            },
-          }).catch((error) => {
+            roleId: createdRole.id,
+            groupId,
+          }).catch((error: any) => {
             console.error('Error adding role group:', error);
             // Continue with other group assignments even if one fails
           })
@@ -101,14 +80,11 @@ export function CreateRoleDialog({ open, onOpenChange, children }: CreateRoleDia
         await Promise.all(addPromises);
       }
 
-      toast.success(t('notifications.createSuccess'));
       setDialogOpen(false);
       form.reset();
     } catch (error) {
+      // Error handling is now done in the useRoleMutations hook
       console.error('Error creating role:', error);
-      toast.error(t('notifications.createError'), {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
-      });
     }
   };
 
@@ -177,7 +153,7 @@ export function CreateRoleDialog({ open, onOpenChange, children }: CreateRoleDia
               control={form.control}
               name="groupIds"
               label={t('form.groups')}
-              items={groups.map((group) => ({
+              items={groups.map((group: Group) => ({
                 id: group.id,
                 name: group.name,
                 description: group.description ?? undefined,

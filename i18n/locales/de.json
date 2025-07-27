@@ -164,7 +164,8 @@
       "title": "Benutzer löschen",
       "description": "Sind Sie sicher, dass Sie {name} löschen möchten?",
       "cancel": "Abbrechen",
-      "confirm": "Löschen"
+      "confirm": "Löschen",
+      "deleting": "Wird gelöscht..."
     },
     "notifications": {
       "createSuccess": "Benutzer erstellt",
@@ -172,7 +173,11 @@
       "updateSuccess": "Benutzer aktualisiert",
       "updateError": "Benutzer konnte nicht aktualisiert werden",
       "deleteSuccess": "Benutzer gelöscht",
-      "deleteError": "Benutzer konnte nicht gelöscht werden"
+      "deleteError": "Benutzer konnte nicht gelöscht werden",
+      "roleAddedSuccess": "Rolle zum Benutzer hinzugefügt",
+      "roleAddedError": "Rolle konnte nicht zum Benutzer hinzugefügt werden",
+      "roleRemovedSuccess": "Rolle vom Benutzer entfernt",
+      "roleRemovedError": "Rolle konnte nicht vom Benutzer entfernt werden"
     },
     "view": {
       "card": "Kartenansicht",
@@ -243,7 +248,8 @@
       "title": "Rolle löschen",
       "description": "Sind Sie sicher, dass Sie {name} löschen möchten?",
       "cancel": "Abbrechen",
-      "confirm": "Löschen"
+      "confirm": "Löschen",
+      "deleting": "Wird gelöscht..."
     },
     "notifications": {
       "createSuccess": "Rolle erstellt",
@@ -251,7 +257,11 @@
       "updateSuccess": "Rolle aktualisiert",
       "updateError": "Rolle konnte nicht aktualisiert werden",
       "deleteSuccess": "Rolle gelöscht",
-      "deleteError": "Rolle konnte nicht gelöscht werden"
+      "deleteError": "Rolle konnte nicht gelöscht werden",
+      "groupAddedSuccess": "Gruppe zur Rolle hinzugefügt",
+      "groupAddedError": "Gruppe konnte nicht zur Rolle hinzugefügt werden",
+      "groupRemovedSuccess": "Gruppe von der Rolle entfernt",
+      "groupRemovedError": "Gruppe konnte nicht von der Rolle entfernt werden"
     },
     "view": {
       "card": "Kartenansicht",

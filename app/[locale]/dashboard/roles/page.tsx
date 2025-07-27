@@ -4,7 +4,7 @@ import { RoleActions } from '@/components/features/roles/RoleActions';
 import { RolePagination } from '@/components/features/roles/RolePagination';
 import { useTranslations } from 'next-intl';
 import { DashboardPageLayout } from '@/components/common/DashboardPageLayout';
-import { usePageTitle } from '@/hooks/usePageTitle';
+import { usePageTitle } from '@/hooks';
 import { RoleSortableField, RoleSortOrder } from '@/graphql/generated/types';
 import { useRouter } from 'next/navigation';
 import { useMemo, useCallback, useState } from 'react';

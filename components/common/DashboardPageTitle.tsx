@@ -1,4 +1,6 @@
-import { ReactNode, ReactElement, useState } from 'react';
+'use client';
+
+import { ReactNode, useState } from 'react';
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp } from 'lucide-react';

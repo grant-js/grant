@@ -4,7 +4,7 @@ import { UserActions } from '@/components/features/users/UserActions';
 import { UserPagination } from '@/components/features/users/UserPagination';
 import { useTranslations } from 'next-intl';
 import { DashboardPageLayout } from '@/components/common/DashboardPageLayout';
-import { usePageTitle } from '@/hooks/usePageTitle';
+import { usePageTitle } from '@/hooks';
 import { UserSortableField, UserSortOrder } from '@/graphql/generated/types';
 import { useRouter } from 'next/navigation';
 import { useMemo, useCallback, useState } from 'react';

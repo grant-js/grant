@@ -6,7 +6,7 @@ import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { NavLink } from '@/components/navigation/NavLink';
 import { Menu, X, Sun, Moon, Globe, LogOut } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/auth';
 import { logout } from '@/lib/auth';
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';

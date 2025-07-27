@@ -19,7 +19,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/toast';
 import { setStoredToken } from '@/lib/auth';
-import { usePageTitle } from '@/hooks/usePageTitle';
+import { usePageTitle } from '@/hooks';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),

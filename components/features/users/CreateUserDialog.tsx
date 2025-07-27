@@ -1,6 +1,5 @@
 'use client';
 
-import { useMutation } from '@apollo/client';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -12,7 +11,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { toast } from '@/components/ui/toast';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,9 +23,9 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { CreateUserFormValues, createUserSchema, CreateUserDialogProps } from './types';
-import { evictUsersCache } from './cache';
-import { CREATE_USER, ADD_USER_ROLE } from './mutations';
-import { useRoles } from '@/hooks/useRoles';
+import { useUserMutations } from '@/hooks/users';
+import { useRoles } from '@/hooks/roles';
+import { Role } from '@/graphql/generated/types';
 import { CheckboxList } from '@/components/ui/checkbox-list';
 import { UserPlus } from 'lucide-react';
 import { useState } from 'react';
@@ -58,44 +56,23 @@ export function CreateUserDialog({ open, onOpenChange, children }: CreateUserDia
     mode: 'onSubmit',
   });
 
-  const [createUser] = useMutation(CREATE_USER, {
-    update(cache) {
-      evictUsersCache(cache);
-    },
-  });
-
-  const [addUserRole] = useMutation(ADD_USER_ROLE, {
-    update(cache) {
-      evictUsersCache(cache);
-    },
-  });
+  const { createUser, addUserRole } = useUserMutations();
 
   const onSubmit = async (values: CreateUserFormValues) => {
     try {
       // Create user first
-      const result = await createUser({
-        variables: {
-          input: {
-            name: values.name,
-            email: values.email,
-          },
-        },
-        refetchQueries: ['GetUsers'],
+      const createdUser = await createUser({
+        name: values.name,
+        email: values.email,
       });
 
-      const userId = result.data?.createUser?.id;
-
       // Add roles if user was created and roles are selected
-      if (userId && values.roleIds && values.roleIds.length > 0) {
+      if (createdUser?.id && values.roleIds && values.roleIds.length > 0) {
         const addPromises = values.roleIds.map((roleId) =>
           addUserRole({
-            variables: {
-              input: {
-                userId,
-                roleId,
-              },
-            },
-          }).catch((error) => {
+            userId: createdUser.id,
+            roleId,
+          }).catch((error: any) => {
             console.error('Error adding user role:', error);
             // Continue with other role assignments even if one fails
           })
@@ -103,14 +80,11 @@ export function CreateUserDialog({ open, onOpenChange, children }: CreateUserDia
         await Promise.all(addPromises);
       }
 
-      toast.success(t('notifications.createSuccess'));
       setDialogOpen(false);
       form.reset();
     } catch (error) {
+      // Error handling is now done in the useUserMutations hook
       console.error('Error creating user:', error);
-      toast.error(t('notifications.createError'), {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
-      });
     }
   };
 
@@ -180,7 +154,7 @@ export function CreateUserDialog({ open, onOpenChange, children }: CreateUserDia
               control={form.control}
               name="roleIds"
               label={t('form.roles')}
-              items={roles.map((role) => ({
+              items={roles.map((role: Role) => ({
                 id: role.id,
                 name: role.name,
                 description: role.description ?? undefined,

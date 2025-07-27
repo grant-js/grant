@@ -1,6 +1,5 @@
 'use client';
 
-import { useMutation } from '@apollo/client';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,7 +10,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { toast } from '@/components/ui/toast';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,9 +23,9 @@ import {
 } from '@/components/ui/form';
 import { useEffect } from 'react';
 import { EditUserFormValues, editUserSchema, EditUserDialogProps } from './types';
-import { evictUsersCache } from './cache';
-import { UPDATE_USER, ADD_USER_ROLE, REMOVE_USER_ROLE } from './mutations';
-import { useRoles } from '@/hooks/useRoles';
+import { useUserMutations } from '@/hooks/users';
+import { useRoles } from '@/hooks/roles';
+import { Role } from '@/graphql/generated/types';
 import { CheckboxList } from '@/components/ui/checkbox-list';
 
 export function EditUserDialog({ user, open, onOpenChange, currentPage }: EditUserDialogProps) {
@@ -54,42 +52,16 @@ export function EditUserDialog({ user, open, onOpenChange, currentPage }: EditUs
     }
   }, [user, form]);
 
-  const [updateUser] = useMutation(UPDATE_USER, {
-    update(cache) {
-      // Evict all users-related queries from cache
-      evictUsersCache(cache);
-
-      // Also evict any specific user queries
-      cache.evict({ id: `User:${user?.id}` });
-      cache.gc();
-    },
-  });
-
-  const [addUserRole] = useMutation(ADD_USER_ROLE, {
-    update(cache) {
-      evictUsersCache(cache);
-    },
-  });
-
-  const [removeUserRole] = useMutation(REMOVE_USER_ROLE, {
-    update(cache) {
-      evictUsersCache(cache);
-    },
-  });
+  const { updateUser, addUserRole, removeUserRole } = useUserMutations();
 
   const onSubmit = async (values: EditUserFormValues) => {
     if (!user) return;
 
     try {
       // Update user data first
-      await updateUser({
-        variables: {
-          id: user.id,
-          input: {
-            name: values.name,
-            email: values.email,
-          },
-        },
+      await updateUser(user.id, {
+        name: values.name,
+        email: values.email,
       });
 
       // Handle role assignments
@@ -106,12 +78,8 @@ export function EditUserDialog({ user, open, onOpenChange, currentPage }: EditUs
       if (rolesToAdd.length > 0) {
         const addPromises = rolesToAdd.map((roleId) =>
           addUserRole({
-            variables: {
-              input: {
-                userId: user.id,
-                roleId,
-              },
-            },
+            userId: user.id,
+            roleId,
           })
         );
         await Promise.all(addPromises);
@@ -121,24 +89,17 @@ export function EditUserDialog({ user, open, onOpenChange, currentPage }: EditUs
       if (rolesToRemove.length > 0) {
         const removePromises = rolesToRemove.map((roleId) =>
           removeUserRole({
-            variables: {
-              input: {
-                userId: user.id,
-                roleId,
-              },
-            },
+            userId: user.id,
+            roleId,
           })
         );
         await Promise.all(removePromises);
       }
 
-      toast.success(t('notifications.updateSuccess'));
       onOpenChange(false);
     } catch (error) {
+      // Error handling is now done in the useUserMutations hook
       console.error('Error updating user:', error);
-      toast.error(t('notifications.updateError'), {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
-      });
     }
   };
 
@@ -198,7 +159,7 @@ export function EditUserDialog({ user, open, onOpenChange, currentPage }: EditUs
               control={form.control}
               name="roleIds"
               label={t('form.roles')}
-              items={roles.map((role) => ({
+              items={roles.map((role: Role) => ({
                 id: role.id,
                 name: role.name,
                 description: role.description || undefined,

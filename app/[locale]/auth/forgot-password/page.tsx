@@ -15,7 +15,7 @@ import { Link } from '@/i18n/navigation';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useTranslations } from 'next-intl';
-import { usePageTitle } from '@/hooks/usePageTitle';
+import { usePageTitle } from '@/hooks';
 
 export default function ForgotPasswordPage() {
   const t = useTranslations('auth');

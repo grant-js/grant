@@ -1,6 +1,5 @@
 'use client';
 
-import { useMutation } from '@apollo/client';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,7 +10,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { toast } from '@/components/ui/toast';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,9 +23,9 @@ import {
 } from '@/components/ui/form';
 import { useEffect } from 'react';
 import { EditRoleFormValues, editRoleSchema, EditRoleDialogProps } from './types';
-import { evictRolesCache } from './cache';
-import { UPDATE_ROLE, ADD_ROLE_GROUP, REMOVE_ROLE_GROUP } from './mutations';
-import { useGroups } from '@/hooks/useGroups';
+import { useRoleMutations } from '@/hooks/roles';
+import { useGroups } from '@/hooks/groups';
+import { Group } from '@/graphql/generated/types';
 import { CheckboxList } from '@/components/ui/checkbox-list';
 
 export function EditRoleDialog({ role, open, onOpenChange, currentPage }: EditRoleDialogProps) {
@@ -54,34 +52,16 @@ export function EditRoleDialog({ role, open, onOpenChange, currentPage }: EditRo
     }
   }, [role, form]);
 
-  const [updateRole] = useMutation(UPDATE_ROLE, {
-    update(cache) {
-      evictRolesCache(cache);
-    },
-    refetchQueries: ['GetRoles'],
-  });
-
-  const [addRoleGroup] = useMutation(ADD_ROLE_GROUP, {
-    refetchQueries: ['GetRoles'],
-  });
-
-  const [removeRoleGroup] = useMutation(REMOVE_ROLE_GROUP, {
-    refetchQueries: ['GetRoles'],
-  });
+  const { updateRole, addRoleGroup, removeRoleGroup } = useRoleMutations();
 
   const onSubmit = async (values: EditRoleFormValues) => {
     if (!role) return;
 
     try {
       // Update role data first
-      await updateRole({
-        variables: {
-          id: role.id,
-          input: {
-            name: values.name,
-            description: values.description,
-          },
-        },
+      await updateRole(role.id, {
+        name: values.name,
+        description: values.description,
       });
 
       // Handle group assignments
@@ -98,13 +78,9 @@ export function EditRoleDialog({ role, open, onOpenChange, currentPage }: EditRo
       if (groupsToAdd.length > 0) {
         const addPromises = groupsToAdd.map((groupId) =>
           addRoleGroup({
-            variables: {
-              input: {
-                roleId: role.id,
-                groupId,
-              },
-            },
-          }).catch((error) => {
+            roleId: role.id,
+            groupId,
+          }).catch((error: any) => {
             console.error('Error adding role group:', error);
             // Continue with other group assignments even if one fails
           })
@@ -116,13 +92,9 @@ export function EditRoleDialog({ role, open, onOpenChange, currentPage }: EditRo
       if (groupsToRemove.length > 0) {
         const removePromises = groupsToRemove.map((groupId) =>
           removeRoleGroup({
-            variables: {
-              input: {
-                roleId: role.id,
-                groupId,
-              },
-            },
-          }).catch((error) => {
+            roleId: role.id,
+            groupId,
+          }).catch((error: any) => {
             // Handle "RoleGroup not found" error gracefully
             if (error.message?.includes('RoleGroup not found')) {
               console.warn('RoleGroup not found, skipping removal:', { roleId: role.id, groupId });
@@ -135,13 +107,10 @@ export function EditRoleDialog({ role, open, onOpenChange, currentPage }: EditRo
         await Promise.all(removePromises);
       }
 
-      toast.success(t('notifications.updateSuccess'));
       onOpenChange(false);
     } catch (error) {
+      // Error handling is now done in the useRoleMutations hook
       console.error('Error updating role:', error);
-      toast.error(t('notifications.updateError'), {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
-      });
     }
   };
 
@@ -200,7 +169,7 @@ export function EditRoleDialog({ role, open, onOpenChange, currentPage }: EditRo
               control={form.control}
               name="groupIds"
               label={t('form.groups')}
-              items={groups.map((group) => ({
+              items={groups.map((group: Group) => ({
                 id: group.id,
                 name: group.name,
                 description: group.description ?? undefined,

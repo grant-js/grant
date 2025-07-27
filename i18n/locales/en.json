@@ -164,7 +164,8 @@
       "title": "Delete User",
       "description": "Are you sure you want to delete {name}?",
       "cancel": "Cancel",
-      "confirm": "Delete"
+      "confirm": "Delete",
+      "deleting": "Deleting..."
     },
     "notifications": {
       "createSuccess": "User created",
@@ -172,7 +173,11 @@
       "updateSuccess": "User updated",
       "updateError": "Failed to update user",
       "deleteSuccess": "User deleted",
-      "deleteError": "Failed to delete user"
+      "deleteError": "Failed to delete user",
+      "roleAddedSuccess": "Role added to user",
+      "roleAddedError": "Failed to add role to user",
+      "roleRemovedSuccess": "Role removed from user",
+      "roleRemovedError": "Failed to remove role from user"
     },
     "view": {
       "card": "Card View",
@@ -243,7 +248,8 @@
       "title": "Delete Role",
       "description": "Are you sure you want to delete {name}?",
       "cancel": "Cancel",
-      "confirm": "Delete"
+      "confirm": "Delete",
+      "deleting": "Deleting..."
     },
     "notifications": {
       "createSuccess": "Role created",
@@ -251,7 +257,11 @@
       "updateSuccess": "Role updated",
       "updateError": "Failed to update role",
       "deleteSuccess": "Role deleted",
-      "deleteError": "Failed to delete role"
+      "deleteError": "Failed to delete role",
+      "groupAddedSuccess": "Group added to role",
+      "groupAddedError": "Failed to add group to role",
+      "groupRemovedSuccess": "Group removed from role",
+      "groupRemovedError": "Failed to remove group from role"
     },
     "view": {
       "card": "Card View",

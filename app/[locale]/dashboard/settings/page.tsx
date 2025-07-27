@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { DashboardPageLayout } from '@/components/common/DashboardPageLayout';
-import { usePageTitle } from '@/hooks/usePageTitle';
+import { usePageTitle } from '@/hooks';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
