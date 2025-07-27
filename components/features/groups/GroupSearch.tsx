@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import { useRef, useEffect } from 'react';
+import { useDebounce } from '@/hooks/common';
 
 interface GroupSearchProps {
   search: string;
@@ -12,27 +12,10 @@ interface GroupSearchProps {
 
 export function GroupSearch({ search, onSearchChange }: GroupSearchProps) {
   const t = useTranslations('groups');
-  const timeoutRef = useRef<NodeJS.Timeout>(null);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
+  const debouncedSearchChange = useDebounce(onSearchChange, 300);
 
   const handleChange = (value: string) => {
-    // Clear any existing timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
-    // Set a new timeout to trigger onSearchChange after 300ms
-    timeoutRef.current = setTimeout(() => {
-      onSearchChange(value);
-    }, 300);
+    debouncedSearchChange(value);
   };
 
   return (
