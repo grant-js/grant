@@ -3,27 +3,16 @@
 import { X, Pencil, UserPlus, MoreVertical, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTranslations } from 'next-intl';
-import { cn } from '@/lib/utils';
 import { User } from '@/graphql/generated/types';
-import { EditUserDialog } from './EditUserDialog';
 import { CreateUserDialog } from './CreateUserDialog';
 import { ColoredList } from '@/components/ui/colored-list';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table,
   TableBody,
@@ -36,28 +25,12 @@ import {
 interface UserTableProps {
   users: User[];
   loading: boolean;
+  search: string;
   onEditClick: (user: User) => void;
   onDeleteClick: (user: User) => void;
-  userToDelete: { id: string; name: string } | null;
-  userToEdit: User | null;
-  onDeleteConfirm: () => Promise<void>;
-  onDeleteCancel: () => void;
-  onEditClose: () => void;
-  currentPage: number;
 }
 
-export function UserTable({
-  users,
-  loading,
-  onEditClick,
-  onDeleteClick,
-  userToDelete,
-  userToEdit,
-  onDeleteConfirm,
-  onDeleteCancel,
-  onEditClose,
-  currentPage,
-}: UserTableProps) {
+export function UserTable({ users, loading, search, onEditClick, onDeleteClick }: UserTableProps) {
   const t = useTranslations('users');
 
   return (
@@ -65,14 +38,12 @@ export function UserTable({
       <div className="w-full px-4">
         <div className="space-y-4">
           {users.length === 0 && !loading ? (
-            <div className="text-center py-10 border-2 border-dashed rounded-lg">
-              <UserPlus className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-4 text-lg font-semibold text-gray-500">{t('noUsers.title')}</h3>
-              <p className="mt-1 text-sm text-gray-500">{t('noUsers.description')}</p>
-              <div className="mt-6">
-                <CreateUserDialog />
-              </div>
-            </div>
+            <EmptyState
+              icon={<UserPlus className="h-12 w-12" />}
+              title={search ? t('noSearchResults.title') : t('noUsers.title')}
+              description={search ? t('noSearchResults.description') : t('noUsers.description')}
+              action={search ? undefined : <CreateUserDialog />}
+            />
           ) : (
             <div className="w-full">
               <Table>
@@ -136,30 +107,6 @@ export function UserTable({
           )}
         </div>
       </div>
-
-      <AlertDialog open={!!userToDelete} onOpenChange={onDeleteCancel}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('deleteDialog.title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('deleteDialog.description', { name: userToDelete?.name || '' })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('deleteDialog.cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={onDeleteConfirm}>
-              {t('deleteDialog.confirm')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <EditUserDialog
-        user={userToEdit}
-        open={!!userToEdit}
-        onOpenChange={(open) => !open && onEditClose()}
-        currentPage={currentPage}
-      />
     </>
   );
 }

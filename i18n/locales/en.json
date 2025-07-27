@@ -109,6 +109,10 @@
       "title": "No users found",
       "description": "Get started by creating your first user"
     },
+    "noSearchResults": {
+      "title": "No users found",
+      "description": "Try adjusting your search terms or create a new user"
+    },
     "actions": {
       "create": "Create User",
       "edit": "Edit",
@@ -187,6 +191,10 @@
     "noRoles": {
       "title": "No roles found",
       "description": "Get started by creating your first role"
+    },
+    "noSearchResults": {
+      "title": "No roles found",
+      "description": "Try adjusting your search terms or create a new role"
     },
     "actions": {
       "create": "Create Role",

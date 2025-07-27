@@ -8,6 +8,17 @@ import { evictRolesCache } from './cache';
 import { DELETE_ROLE } from './mutations';
 import { useTranslations } from 'next-intl';
 import { useRoles } from '@/hooks/useRoles';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { EditRoleDialog } from './EditRoleDialog';
 
 interface RolesContainerProps {
   page: number;
@@ -22,14 +33,9 @@ interface RolesContainerProps {
     limit: number;
     roles: Role[];
     loading: boolean;
+    search: string;
     onEditClick: (role: Role) => void;
     onDeleteClick: (role: Role) => void;
-    roleToDelete: { id: string; name: string } | null;
-    roleToEdit: Role | null;
-    onDeleteConfirm: () => Promise<void>;
-    onDeleteCancel: () => void;
-    onEditClose: () => void;
-    currentPage: number;
   }) => React.ReactNode;
 }
 
@@ -99,19 +105,41 @@ export function RolesContainer({
   }, []);
 
   if (error) return <div>Error: {error.message}</div>;
-  if (!roles.length && !loading) return null;
 
-  return children({
-    limit,
-    roles,
-    loading,
-    onEditClick: handleEditClick,
-    onDeleteClick: handleDeleteClick,
-    roleToDelete,
-    roleToEdit,
-    onDeleteConfirm: handleDelete,
-    onDeleteCancel: () => setRoleToDelete(null),
-    onEditClose: () => setRoleToEdit(null),
-    currentPage: page,
-  });
+  return (
+    <>
+      {children({
+        limit,
+        roles,
+        loading,
+        search,
+        onEditClick: handleEditClick,
+        onDeleteClick: handleDeleteClick,
+      })}
+
+      <AlertDialog open={!!roleToDelete} onOpenChange={() => setRoleToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('deleteDialog.title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('deleteDialog.description', { name: roleToDelete?.name || '' })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('deleteDialog.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>
+              {t('deleteDialog.confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <EditRoleDialog
+        role={roleToEdit}
+        open={!!roleToEdit}
+        onOpenChange={(open) => !open && setRoleToEdit(null)}
+        currentPage={page}
+      />
+    </>
+  );
 }

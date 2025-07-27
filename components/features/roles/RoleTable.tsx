@@ -1,17 +1,7 @@
 'use client';
 
-import { X, Pencil, UserPlus, MoreVertical, Group } from 'lucide-react';
+import { X, Pencil, Shield, MoreVertical, Group } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,11 +9,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTranslations } from 'next-intl';
-import { cn } from '@/lib/utils';
 import { Role } from '@/graphql/generated/types';
-import { EditRoleDialog } from './EditRoleDialog';
 import { CreateRoleDialog } from './CreateRoleDialog';
 import { ColoredList } from '@/components/ui/colored-list';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table,
   TableBody,
@@ -36,28 +25,12 @@ import {
 interface RoleTableProps {
   roles: Role[];
   loading: boolean;
+  search: string;
   onEditClick: (role: Role) => void;
   onDeleteClick: (role: Role) => void;
-  roleToDelete: { id: string; name: string } | null;
-  roleToEdit: Role | null;
-  onDeleteConfirm: () => Promise<void>;
-  onDeleteCancel: () => void;
-  onEditClose: () => void;
-  currentPage: number;
 }
 
-export function RoleTable({
-  roles,
-  loading,
-  onEditClick,
-  onDeleteClick,
-  roleToDelete,
-  roleToEdit,
-  onDeleteConfirm,
-  onDeleteCancel,
-  onEditClose,
-  currentPage,
-}: RoleTableProps) {
+export function RoleTable({ roles, loading, search, onEditClick, onDeleteClick }: RoleTableProps) {
   const t = useTranslations('roles');
 
   return (
@@ -65,14 +38,12 @@ export function RoleTable({
       <div className="w-full px-4">
         <div className="space-y-4">
           {roles.length === 0 && !loading ? (
-            <div className="text-center py-10 border-2 border-dashed rounded-lg">
-              <UserPlus className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-4 text-lg font-semibold text-gray-500">{t('noRoles.title')}</h3>
-              <p className="mt-1 text-sm text-gray-500">{t('noRoles.description')}</p>
-              <div className="mt-6">
-                <CreateRoleDialog />
-              </div>
-            </div>
+            <EmptyState
+              icon={<Shield className="h-12 w-12" />}
+              title={search ? t('noSearchResults.title') : t('noRoles.title')}
+              description={search ? t('noSearchResults.description') : t('noRoles.description')}
+              action={search ? undefined : <CreateRoleDialog />}
+            />
           ) : (
             <div className="w-full">
               <Table>
@@ -136,30 +107,6 @@ export function RoleTable({
           )}
         </div>
       </div>
-
-      <AlertDialog open={!!roleToDelete} onOpenChange={onDeleteCancel}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('deleteDialog.title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('deleteDialog.description', { name: roleToDelete?.name || '' })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('deleteDialog.cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={onDeleteConfirm}>
-              {t('deleteDialog.confirm')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <EditRoleDialog
-        role={roleToEdit}
-        open={!!roleToEdit}
-        onOpenChange={(open) => !open && onEditClose()}
-        currentPage={currentPage}
-      />
     </>
   );
 }

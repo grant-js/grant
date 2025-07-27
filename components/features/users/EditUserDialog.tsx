@@ -201,7 +201,7 @@ export function EditUserDialog({ user, open, onOpenChange, currentPage }: EditUs
               items={roles.map((role) => ({
                 id: role.id,
                 name: role.name,
-                description: role.description,
+                description: role.description || undefined,
               }))}
               loading={rolesLoading}
               loadingText={t('form.rolesLoading')}

@@ -109,6 +109,10 @@
       "title": "Keine Benutzer gefunden",
       "description": "Erstellen Sie Ihren ersten Benutzer"
     },
+    "noSearchResults": {
+      "title": "Keine Benutzer gefunden",
+      "description": "Versuchen Sie, Ihre Suchbegriffe anzupassen oder erstellen Sie einen neuen Benutzer"
+    },
     "actions": {
       "create": "Benutzer erstellen",
       "edit": "Bearbeiten",
@@ -187,6 +191,10 @@
     "noRoles": {
       "title": "Keine Rollen gefunden",
       "description": "Erstellen Sie Ihre erste Rolle"
+    },
+    "noSearchResults": {
+      "title": "Keine Rollen gefunden",
+      "description": "Versuchen Sie, Ihre Suchbegriffe anzupassen oder erstellen Sie eine neue Rolle"
     },
     "actions": {
       "create": "Rolle erstellen",

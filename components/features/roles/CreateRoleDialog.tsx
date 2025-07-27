@@ -29,7 +29,7 @@ import { evictRolesCache } from './cache';
 import { CREATE_ROLE, ADD_ROLE_GROUP } from './mutations';
 import { useGroups } from '@/hooks/useGroups';
 import { CheckboxList } from '@/components/ui/checkbox-list';
-import { UserPlus } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { useState } from 'react';
 
 interface CreateRoleDialogComponentProps extends Partial<CreateRoleDialogProps> {
@@ -119,7 +119,7 @@ export function CreateRoleDialog({ open, onOpenChange, children }: CreateRoleDia
       ) : (
         <DialogTrigger asChild>
           <Button>
-            <UserPlus className="size-4" />
+            <Shield className="size-4" />
             {t('createDialog.trigger')}
           </Button>
         </DialogTrigger>

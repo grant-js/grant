@@ -8,6 +8,17 @@ import { evictUsersCache } from './cache';
 import { DELETE_USER } from './mutations';
 import { useTranslations } from 'next-intl';
 import { useUsers } from '@/hooks/useUsers';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { EditUserDialog } from './EditUserDialog';
 
 interface UsersContainerProps {
   page: number;
@@ -22,14 +33,9 @@ interface UsersContainerProps {
     limit: number;
     users: User[];
     loading: boolean;
+    search: string;
     onEditClick: (user: User) => void;
     onDeleteClick: (user: User) => void;
-    userToDelete: { id: string; name: string } | null;
-    userToEdit: User | null;
-    onDeleteConfirm: () => Promise<void>;
-    onDeleteCancel: () => void;
-    onEditClose: () => void;
-    currentPage: number;
   }) => React.ReactNode;
 }
 
@@ -100,19 +106,41 @@ export function UsersContainer({
   }, []);
 
   if (error) return <div>Error: {error.message}</div>;
-  if (!users.length && !loading) return null;
 
-  return children({
-    limit,
-    users,
-    loading,
-    onEditClick: handleEditClick,
-    onDeleteClick: handleDeleteClick,
-    userToDelete,
-    userToEdit,
-    onDeleteConfirm: handleDelete,
-    onDeleteCancel: () => setUserToDelete(null),
-    onEditClose: () => setUserToEdit(null),
-    currentPage: page,
-  });
+  return (
+    <>
+      {children({
+        limit,
+        users,
+        loading,
+        search,
+        onEditClick: handleEditClick,
+        onDeleteClick: handleDeleteClick,
+      })}
+
+      <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('deleteDialog.title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('deleteDialog.description', { name: userToDelete?.name || '' })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('deleteDialog.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>
+              {t('deleteDialog.confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <EditUserDialog
+        user={userToEdit}
+        open={!!userToEdit}
+        onOpenChange={(open) => !open && setUserToEdit(null)}
+        currentPage={page}
+      />
+    </>
+  );
 }
