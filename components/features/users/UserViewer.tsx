@@ -16,5 +16,11 @@ interface UserViewerProps {
 }
 
 export function UserViewer({ view, ...props }: UserViewerProps) {
-  return view === 'card' ? <UserCards {...props} /> : <UserTable {...props} />;
+  switch (view) {
+    case UserView.CARD:
+      return <UserCards {...props} />;
+    case UserView.TABLE:
+    default:
+      return <UserTable {...props} />;
+  }
 }

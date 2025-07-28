@@ -4,7 +4,10 @@ import { ViewSwitcher, type ViewOption } from '@/components/common';
 import { LayoutGrid, Table } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-export type RoleView = 'card' | 'table';
+export enum RoleView {
+  CARD = 'card',
+  TABLE = 'table',
+}
 
 interface RoleViewSwitcherProps {
   currentView: RoleView;
@@ -16,12 +19,12 @@ export function RoleViewSwitcher({ currentView, onViewChange }: RoleViewSwitcher
 
   const roleViewOptions: ViewOption[] = [
     {
-      value: 'card',
+      value: RoleView.CARD,
       icon: LayoutGrid,
       label: t('view.card'),
     },
     {
-      value: 'table',
+      value: RoleView.TABLE,
       icon: Table,
       label: t('view.table'),
     },

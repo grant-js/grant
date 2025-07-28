@@ -61,7 +61,7 @@ export default function GroupsPage() {
   const [limit, setLimit] = useState(initialParams.limit);
   const [search, setSearch] = useState(initialParams.search);
   const [sort, setSort] = useState(initialSort);
-  const [view, setView] = useState<GroupView>(initialParams.view || 'cards');
+  const [view, setView] = useState<GroupView>(initialParams.view || GroupView.CARDS);
 
   // Memoize callback functions
   const handleSortChange = useCallback(

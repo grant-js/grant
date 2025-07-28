@@ -4,7 +4,10 @@ import { ViewSwitcher, type ViewOption } from '@/components/common';
 import { LayoutGrid, Table } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-export type UserView = 'card' | 'table';
+export enum UserView {
+  CARD = 'card',
+  TABLE = 'table',
+}
 
 interface UserViewSwitcherProps {
   currentView: UserView;
@@ -16,12 +19,12 @@ export function UserViewSwitcher({ currentView, onViewChange }: UserViewSwitcher
 
   const userViewOptions: ViewOption[] = [
     {
-      value: 'card',
+      value: UserView.CARD,
       icon: LayoutGrid,
       label: t('view.card'),
     },
     {
-      value: 'table',
+      value: UserView.TABLE,
       icon: Table,
       label: t('view.table'),
     },

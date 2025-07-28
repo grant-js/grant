@@ -4,7 +4,10 @@ import { ViewSwitcher, type ViewOption } from '@/components/common';
 import { LayoutGrid, Table } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-export type GroupView = 'cards' | 'table';
+export enum GroupView {
+  CARDS = 'cards',
+  TABLE = 'table',
+}
 
 interface GroupViewSwitcherProps {
   currentView: GroupView;
@@ -16,12 +19,12 @@ export function GroupViewSwitcher({ currentView, onViewChange }: GroupViewSwitch
 
   const groupViewOptions: ViewOption[] = [
     {
-      value: 'cards',
+      value: GroupView.CARDS,
       icon: LayoutGrid,
       label: t('view.cards'),
     },
     {
-      value: 'table',
+      value: GroupView.TABLE,
       icon: Table,
       label: t('view.table'),
     },

@@ -61,7 +61,7 @@ export default function RolesPage() {
   const [limit, setLimit] = useState(initialParams.limit);
   const [search, setSearch] = useState(initialParams.search);
   const [sort, setSort] = useState(initialSort);
-  const [view, setView] = useState<RoleView>(initialParams.view || 'card');
+  const [view, setView] = useState<RoleView>(initialParams.view || RoleView.CARD);
 
   // Memoize callback functions
   const handleSortChange = useCallback(

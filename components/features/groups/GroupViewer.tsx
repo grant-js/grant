@@ -16,5 +16,11 @@ interface GroupViewerProps {
 }
 
 export function GroupViewer({ view, ...props }: GroupViewerProps) {
-  return view === 'table' ? <GroupTable {...props} /> : <GroupCards {...props} />;
+  switch (view) {
+    case GroupView.TABLE:
+      return <GroupTable {...props} />;
+    case GroupView.CARDS:
+    default:
+      return <GroupCards {...props} />;
+  }
 }

@@ -11,12 +11,6 @@ interface DashboardToolbarProps {
   actions?: ReactNode;
 }
 
-interface IconProps {
-  name?: string;
-  className?: string;
-  children?: ReactNode;
-}
-
 export function DashboardToolbar({ title, actions }: DashboardToolbarProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 

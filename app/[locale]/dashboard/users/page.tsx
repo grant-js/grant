@@ -61,7 +61,7 @@ export default function UsersPage() {
   const [limit, setLimit] = useState(initialParams.limit);
   const [search, setSearch] = useState(initialParams.search);
   const [sort, setSort] = useState(initialSort);
-  const [view, setView] = useState<UserView>(initialParams.view || 'card');
+  const [view, setView] = useState<UserView>(initialParams.view || UserView.CARD);
 
   // Memoize callback functions
   const handleSortChange = useCallback(

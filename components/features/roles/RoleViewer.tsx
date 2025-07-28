@@ -16,5 +16,11 @@ interface RoleViewerProps {
 }
 
 export function RoleViewer({ view, ...props }: RoleViewerProps) {
-  return view === 'card' ? <RoleCards {...props} /> : <RoleTable {...props} />;
+  switch (view) {
+    case RoleView.CARD:
+      return <RoleCards {...props} />;
+    case RoleView.TABLE:
+    default:
+      return <RoleTable {...props} />;
+  }
 }
