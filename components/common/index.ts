@@ -13,3 +13,4 @@ export {
   type SortOrder,
   type SortableFieldConfig,
 } from './Sorter';
+export { Limit, type LimitProps } from './Limit';
