@@ -1,35 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { useTranslations } from 'next-intl';
 import { useGroupMutations } from '@/hooks/groups';
 import { usePermissions } from '@/hooks/permissions/usePermissions';
 import { Permission } from '@/graphql/generated/types';
-import { CheckboxList } from '@/components/ui/checkbox-list';
 import { createGroupSchema, CreateGroupFormValues, CreateGroupDialogProps } from './types';
 import { Group } from 'lucide-react';
+import {
+  CreateDialog,
+  CreateDialogField,
+  CreateDialogRelationship,
+} from '@/components/common/CreateDialog';
 
 interface CreateGroupDialogComponentProps extends Partial<CreateGroupDialogProps> {
   children?: React.ReactNode;
@@ -45,137 +27,87 @@ export function CreateGroupDialog({
   const { createGroup, addGroupPermission } = useGroupMutations();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Internal state for uncontrolled usage
-  const [internalOpen, setInternalOpen] = useState(false);
-
-  // Use provided props or internal state
-  const isControlled = open !== undefined && onOpenChange !== undefined;
-  const dialogOpen = isControlled ? open : internalOpen;
-  const setDialogOpen = isControlled ? onOpenChange : setInternalOpen;
-
-  const form = useForm<CreateGroupFormValues>({
-    resolver: zodResolver(createGroupSchema),
-    defaultValues: {
-      name: '',
-      description: '',
-      permissionIds: [],
+  const fields: CreateDialogField[] = [
+    {
+      name: 'name',
+      label: 'form.name',
+      placeholder: 'form.namePlaceholder',
+      type: 'text',
     },
-    mode: 'onSubmit',
-  });
+    {
+      name: 'description',
+      label: 'form.description',
+      placeholder: 'form.descriptionPlaceholder',
+      type: 'text',
+    },
+  ];
 
-  const onSubmit = async (values: CreateGroupFormValues) => {
+  const relationships: CreateDialogRelationship[] = [
+    {
+      name: 'permissionIds',
+      label: 'form.permissions',
+      items: permissions.map((permission: Permission) => ({
+        id: permission.id,
+        name: permission.name,
+        description: permission.description ?? undefined,
+      })),
+      loading: permissionsLoading,
+      loadingText: 'form.permissionsLoading',
+      emptyText: 'form.noPermissionsAvailable',
+    },
+  ];
+
+  const handleCreate = async (values: CreateGroupFormValues) => {
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
-      // Create group first
-      const createdGroup = await createGroup({
+      return await createGroup({
         name: values.name,
         description: values.description,
       });
-
-      // Add permissions if group was created and permissions are selected
-      if (createdGroup?.id && values.permissionIds && values.permissionIds.length > 0) {
-        const addPromises = values.permissionIds.map((permissionId) =>
-          addGroupPermission({
-            groupId: createdGroup.id,
-            permissionId,
-          }).catch((error: any) => {
-            console.error('Error adding group permission:', error);
-            // Continue with other permission assignments even if one fails
-          })
-        );
-        await Promise.all(addPromises);
-      }
-
-      setDialogOpen(false);
-      form.reset();
-    } catch (error) {
-      console.error('Error creating group:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen) {
-      form.reset();
+  const handleAddRelationships = async (groupId: string, values: CreateGroupFormValues) => {
+    if (values.permissionIds && values.permissionIds.length > 0) {
+      const addPromises = values.permissionIds.map((permissionId) =>
+        addGroupPermission({
+          groupId,
+          permissionId,
+        }).catch((error: any) => {
+          console.error('Error adding group permission:', error);
+        })
+      );
+      await Promise.all(addPromises);
     }
-    setDialogOpen(newOpen);
   };
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
-      {children ? (
-        <DialogTrigger asChild>{children}</DialogTrigger>
-      ) : (
-        <DialogTrigger asChild>
-          <Button>
-            <Group className="size-4" />
-            {t('createDialog.trigger')}
-          </Button>
-        </DialogTrigger>
-      )}
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>{t('create.title')}</DialogTitle>
-          <DialogDescription>{t('create.description')}</DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('form.name')}</FormLabel>
-                  <FormControl>
-                    <Input placeholder={t('form.namePlaceholder')} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('form.description')}</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder={t('form.descriptionPlaceholder')}
-                      className="resize-none"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <CheckboxList
-              control={form.control}
-              name="permissionIds"
-              label={t('form.permissions')}
-              items={permissions.map((permission: Permission) => ({
-                id: permission.id,
-                name: permission.name,
-                description: permission.description ?? undefined,
-              }))}
-              loading={permissionsLoading}
-              loadingText={t('form.permissionsLoading')}
-              emptyText={t('form.noPermissionsAvailable')}
-              error={form.formState.errors.permissionIds?.message}
-            />
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-                {t('actions.cancel')}
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? t('actions.creating') : t('actions.create')}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+    <CreateDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="create.title"
+      description="create.description"
+      triggerText="createDialog.trigger"
+      confirmText="actions.create"
+      cancelText="actions.cancel"
+      icon={Group}
+      schema={createGroupSchema}
+      defaultValues={{
+        name: '',
+        description: '',
+        permissionIds: [],
+      }}
+      fields={fields}
+      relationships={relationships}
+      onCreate={handleCreate}
+      onAddRelationships={handleAddRelationships}
+      translationNamespace="groups"
+      isSubmitting={isSubmitting}
+      submittingText="actions.creating"
+    >
+      {children}
+    </CreateDialog>
   );
 }
