@@ -14,3 +14,4 @@ export {
   type SortableFieldConfig,
 } from './Sorter';
 export { Limit, type LimitProps } from './Limit';
+export { ViewSwitcher, type ViewOption } from './ViewSwitcher';

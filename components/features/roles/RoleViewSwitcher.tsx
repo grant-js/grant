@@ -1,12 +1,6 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { ViewSwitcher, type ViewOption } from '@/components/common';
 import { LayoutGrid, Table } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -20,37 +14,24 @@ interface RoleViewSwitcherProps {
 export function RoleViewSwitcher({ currentView, onViewChange }: RoleViewSwitcherProps) {
   const t = useTranslations('roles');
 
+  const roleViewOptions: ViewOption[] = [
+    {
+      value: 'card',
+      icon: LayoutGrid,
+      label: t('view.card'),
+    },
+    {
+      value: 'table',
+      icon: Table,
+      label: t('view.table'),
+    },
+  ];
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="default" className="w-full sm:w-auto">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-2">
-              {currentView === 'card' ? (
-                <>
-                  <LayoutGrid className="size-4" />
-                  {t('view.card')}
-                </>
-              ) : (
-                <>
-                  <Table className="size-4" />
-                  {t('view.table')}
-                </>
-              )}
-            </div>
-          </div>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => onViewChange('card')}>
-          <LayoutGrid className="mr-2 size-4" />
-          {t('view.card')}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onViewChange('table')}>
-          <Table className="mr-2 size-4" />
-          {t('view.table')}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <ViewSwitcher
+      currentView={currentView}
+      onViewChange={(view) => onViewChange(view as RoleView)}
+      options={roleViewOptions}
+    />
   );
 }
