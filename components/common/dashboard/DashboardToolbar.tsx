@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface DashboardPageTitleProps {
+interface DashboardToolbarProps {
   title: string;
   actions?: ReactNode;
 }
@@ -17,7 +17,7 @@ interface IconProps {
   children?: ReactNode;
 }
 
-export function DashboardPageTitle({ title, actions }: DashboardPageTitleProps) {
+export function DashboardToolbar({ title, actions }: DashboardToolbarProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (

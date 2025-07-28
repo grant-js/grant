@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { DashboardPageTitle } from './DashboardPageTitle';
+import { DashboardToolbar } from './DashboardToolbar';
 
 interface DashboardPageLayoutProps {
   title: string;
@@ -19,7 +19,7 @@ export function DashboardPageLayout({
   if (variant === 'simple') {
     return (
       <div className="space-y-8 p-4">
-        <DashboardPageTitle title={title} actions={actions} />
+        <DashboardToolbar title={title} actions={actions} />
         {children}
       </div>
     );
@@ -30,7 +30,7 @@ export function DashboardPageLayout({
       {/* Sticky Header */}
       <div className="sticky top-[calc(3.5rem+1px)] z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div className="p-4">
-          <DashboardPageTitle title={title} actions={actions} />
+          <DashboardToolbar title={title} actions={actions} />
         </div>
       </div>
 

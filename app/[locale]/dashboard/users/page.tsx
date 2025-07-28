@@ -3,7 +3,7 @@
 import { UserToolbar } from '@/components/features/users/UserToolbar';
 import { UserPagination } from '@/components/features/users/UserPagination';
 import { useTranslations } from 'next-intl';
-import { DashboardPageLayout } from '@/components/common/DashboardPageLayout';
+import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
 import { usePageTitle } from '@/hooks';
 import { UserSortableField, UserSortOrder } from '@/graphql/generated/types';
 import { useRouter } from 'next/navigation';

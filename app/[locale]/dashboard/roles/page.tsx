@@ -3,7 +3,7 @@
 import { RoleToolbar } from '@/components/features/roles/RoleToolbar';
 import { RolePagination } from '@/components/features/roles/RolePagination';
 import { useTranslations } from 'next-intl';
-import { DashboardPageLayout } from '@/components/common/DashboardPageLayout';
+import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
 import { usePageTitle } from '@/hooks';
 import { RoleSortableField, RoleSortOrder } from '@/graphql/generated/types';
 import { useRouter } from 'next/navigation';

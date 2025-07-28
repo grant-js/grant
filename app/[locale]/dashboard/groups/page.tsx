@@ -3,7 +3,7 @@
 import { GroupToolbar } from '@/components/features/groups/GroupToolbar';
 import { GroupPagination } from '@/components/features/groups/GroupPagination';
 import { useTranslations } from 'next-intl';
-import { DashboardPageLayout } from '@/components/common/DashboardPageLayout';
+import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
 import { usePageTitle } from '@/hooks';
 import { GroupSortableField, GroupSortOrder } from '@/graphql/generated/types';
 import { useRouter } from 'next/navigation';
