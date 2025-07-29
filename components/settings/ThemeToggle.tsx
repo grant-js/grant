@@ -1,11 +1,13 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { Moon, Sun } from 'lucide-react';
-import { useTheme } from 'next-themes';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useTranslations } from 'next-intl';
 import { forwardRef } from 'react';
+
+import { Moon, Sun } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { useTheme } from 'next-themes';
+
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ThemeToggleProps {
   trigger?: React.ReactNode;

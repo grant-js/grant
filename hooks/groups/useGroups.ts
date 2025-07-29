@@ -1,10 +1,12 @@
 import { useQuery, ApolloError } from '@apollo/client';
+
 import {
   Group,
   GroupSortableField,
   GroupSortOrder,
   QueryGroupsArgs,
 } from '@/graphql/generated/types';
+
 import { GET_GROUPS } from './queries';
 
 interface UseGroupsOptions extends Partial<QueryGroupsArgs> {}

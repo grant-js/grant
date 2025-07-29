@@ -1,6 +1,8 @@
 import { useQuery, ApolloError } from '@apollo/client';
-import { User, UserSortableField, UserSortOrder, QueryUsersArgs } from '@/graphql/generated/types';
+
 import { UsersQueryResult } from '@/components/features/users/types';
+import { User, UserSortableField, UserSortOrder, QueryUsersArgs } from '@/graphql/generated/types';
+
 import { GET_USERS } from './queries';
 
 interface UseUsersOptions extends Partial<QueryUsersArgs> {}

@@ -1,12 +1,13 @@
 import { faker } from '@faker-js/faker';
+
+import { Auditable } from '@/graphql/generated/types';
+import { getRoles } from '@/graphql/providers/roles/faker/dataStore';
+import { getTags } from '@/graphql/providers/tags/faker/dataStore';
 import {
   createFakerDataStore,
   EntityConfig,
   generateAuditTimestamps,
 } from '@/lib/providers/faker/genericDataStore';
-import { getRoles } from '@/graphql/providers/roles/faker/dataStore';
-import { getTags } from '@/graphql/providers/tags/faker/dataStore';
-import { Auditable } from '@/graphql/generated/types';
 
 // Type for RoleTag data without the resolved fields
 export interface RoleTagData extends Auditable {

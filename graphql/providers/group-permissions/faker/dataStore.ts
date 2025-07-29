@@ -1,12 +1,13 @@
 import { faker } from '@faker-js/faker';
+
+import { Auditable } from '@/graphql/generated/types';
+import { getGroups } from '@/graphql/providers/groups/faker/dataStore';
+import { getPermissions } from '@/graphql/providers/permissions/faker/dataStore';
 import {
   createFakerDataStore,
   EntityConfig,
   generateAuditTimestamps,
 } from '@/lib/providers/faker/genericDataStore';
-import { getGroups } from '@/graphql/providers/groups/faker/dataStore';
-import { getPermissions } from '@/graphql/providers/permissions/faker/dataStore';
-import { Auditable } from '@/graphql/generated/types';
 
 // Type for GroupPermission data without the resolved fields
 export interface GroupPermissionData extends Auditable {

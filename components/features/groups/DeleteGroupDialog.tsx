@@ -1,8 +1,9 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useGroupMutations } from '@/hooks/groups';
+
 import { DeleteDialog } from '@/components/common';
+import { useGroupMutations } from '@/hooks/groups';
 
 interface DeleteGroupDialogProps {
   groupToDelete: { id: string; name: string } | null;

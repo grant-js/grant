@@ -1,8 +1,9 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useUserMutations } from '@/hooks/users';
+
 import { DeleteDialog } from '@/components/common';
+import { useUserMutations } from '@/hooks/users';
 
 interface DeleteUserDialogProps {
   userToDelete: { id: string; name: string } | null;

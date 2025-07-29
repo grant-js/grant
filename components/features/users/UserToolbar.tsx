@@ -1,10 +1,11 @@
+import { Toolbar } from '@/components/common';
+import { UserSortableField, UserSortOrder, UserSortInput } from '@/graphql/generated/types';
+
 import { CreateUserDialog } from './CreateUserDialog';
-import { UserSorter } from './UserSorter';
 import { UserLimit } from './UserLimit';
 import { UserSearch } from './UserSearch';
+import { UserSorter } from './UserSorter';
 import { UserViewSwitcher, UserView } from './UserViewSwitcher';
-import { UserSortableField, UserSortOrder, UserSortInput } from '@/graphql/generated/types';
-import { Toolbar } from '@/components/common';
 
 interface UserToolbarProps {
   limit: number;

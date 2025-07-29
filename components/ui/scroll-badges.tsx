@@ -1,9 +1,11 @@
 'use client';
 
 import { useCallback, useRef, useEffect, useState, ReactNode } from 'react';
-import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { useTranslations } from 'next-intl';
+
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 export interface BadgeItem {
   id: string;

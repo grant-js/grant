@@ -1,5 +1,6 @@
 import { RoleGroup } from '@/graphql/generated/types';
 import { addRoleGroup as addRoleGroupInStore } from '@/graphql/providers/role-groups/faker/dataStore';
+
 import { AddRoleGroupParams, AddRoleGroupResult } from '../types';
 
 export async function addRoleGroup({ input }: AddRoleGroupParams): Promise<AddRoleGroupResult> {

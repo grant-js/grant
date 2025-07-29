@@ -1,4 +1,5 @@
 import { SVGProps } from 'react';
+
 import { useTheme } from 'next-themes';
 
 interface LogoProps extends SVGProps<SVGSVGElement> {

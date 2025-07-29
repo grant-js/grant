@@ -1,5 +1,6 @@
-import { Role } from '@/graphql/generated/types';
 import { z } from 'zod';
+
+import { Role } from '@/graphql/generated/types';
 
 // Form schemas
 export const createRoleSchema = z.object({

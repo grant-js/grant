@@ -1,8 +1,9 @@
-import { RemoveUserRoleParams, RemoveUserRoleResult } from '@/graphql/providers/user-roles/types';
-import { deleteUserRoleByUserAndRole } from '@/graphql/providers/user-roles/faker/dataStore';
-import { ApiError } from '@/graphql/errors';
 import { ApolloServerErrorCode } from '@apollo/server/errors';
+
+import { ApiError } from '@/graphql/errors';
 import { UserRole } from '@/graphql/generated/types';
+import { deleteUserRoleByUserAndRole } from '@/graphql/providers/user-roles/faker/dataStore';
+import { RemoveUserRoleParams, RemoveUserRoleResult } from '@/graphql/providers/user-roles/types';
 
 export async function removeUserRole({
   input,

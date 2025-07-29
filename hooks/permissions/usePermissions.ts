@@ -1,9 +1,11 @@
 import { useQuery } from '@apollo/client';
+
 import {
   Permission,
   PermissionSortableField,
   PermissionSortOrder,
 } from '@/graphql/generated/types';
+
 import { GET_PERMISSIONS } from './queries';
 
 interface UsePermissionsOptions {

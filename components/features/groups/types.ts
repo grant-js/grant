@@ -1,5 +1,6 @@
-import { Group } from '@/graphql/generated/types';
 import { z } from 'zod';
+
+import { Group } from '@/graphql/generated/types';
 
 // Form schemas
 export const createGroupSchema = z.object({

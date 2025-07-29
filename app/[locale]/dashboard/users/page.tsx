@@ -1,15 +1,17 @@
 'use client';
 
-import { UserToolbar } from '@/components/features/users/UserToolbar';
-import { UserPagination } from '@/components/features/users/UserPagination';
-import { useTranslations } from 'next-intl';
-import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
-import { usePageTitle } from '@/hooks';
-import { UserSortableField, UserSortOrder } from '@/graphql/generated/types';
-import { useRouter } from 'next/navigation';
 import { useMemo, useCallback, useState } from 'react';
+
+import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+
+import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
+import { UserPagination } from '@/components/features/users/UserPagination';
 import { UsersContainer } from '@/components/features/users/UsersContainer';
+import { UserToolbar } from '@/components/features/users/UserToolbar';
 import { UserView } from '@/components/features/users/UserViewSwitcher';
+import { UserSortableField, UserSortOrder } from '@/graphql/generated/types';
+import { usePageTitle } from '@/hooks';
 
 interface InitialParams {
   page: number;

@@ -1,8 +1,9 @@
 'use client';
 
 import { Group } from '@/graphql/generated/types';
-import { GroupTable } from './GroupTable';
+
 import { GroupCards } from './GroupCards';
+import { GroupTable } from './GroupTable';
 import { GroupView } from './GroupViewSwitcher';
 
 interface GroupViewerProps {

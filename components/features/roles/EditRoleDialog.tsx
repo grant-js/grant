@@ -1,14 +1,16 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useRoleMutations } from '@/hooks/roles';
-import { useGroups } from '@/hooks/groups';
-import { Group, Role } from '@/graphql/generated/types';
+
 import {
   EditDialog,
   EditDialogField,
   EditDialogRelationship,
 } from '@/components/common/EditDialog';
+import { Group, Role } from '@/graphql/generated/types';
+import { useGroups } from '@/hooks/groups';
+import { useRoleMutations } from '@/hooks/roles';
+
 import { EditRoleFormValues, editRoleSchema, EditRoleDialogProps } from './types';
 
 export function EditRoleDialog({ role, open, onOpenChange, currentPage }: EditRoleDialogProps) {

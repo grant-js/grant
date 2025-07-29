@@ -1,9 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm, DefaultValues } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
+import { LucideIcon } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { useForm, DefaultValues } from 'react-hook-form';
 import { z } from 'zod';
+
+import { Button } from '@/components/ui/button';
+import { CheckboxList } from '@/components/ui/checkbox-list';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +19,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -24,9 +29,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useTranslations } from 'next-intl';
-import { CheckboxList } from '@/components/ui/checkbox-list';
-import { LucideIcon } from 'lucide-react';
 
 // Generic types for the dialog
 export interface CreateDialogField {

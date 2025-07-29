@@ -1,12 +1,13 @@
 import { faker } from '@faker-js/faker';
+
+import { Auditable } from '@/graphql/generated/types';
+import { getGroups } from '@/graphql/providers/groups/faker/dataStore';
+import { getTags } from '@/graphql/providers/tags/faker/dataStore';
 import {
   createFakerDataStore,
   EntityConfig,
   generateAuditTimestamps,
 } from '@/lib/providers/faker/genericDataStore';
-import { getGroups } from '@/graphql/providers/groups/faker/dataStore';
-import { getTags } from '@/graphql/providers/tags/faker/dataStore';
-import { Auditable } from '@/graphql/generated/types';
 
 // Type for GroupTag data without the resolved fields
 export interface GroupTagData extends Auditable {

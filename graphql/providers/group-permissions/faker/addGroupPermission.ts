@@ -2,9 +2,10 @@ import {
   AddGroupPermissionParams,
   AddGroupPermissionResult,
 } from '@/graphql/providers/group-permissions/types';
-import { addGroupPermission as addGroupPermissionData } from './dataStore';
 import { getGroups } from '@/graphql/providers/groups/faker/dataStore';
 import { getPermissions } from '@/graphql/providers/permissions/faker/dataStore';
+
+import { addGroupPermission as addGroupPermissionData } from './dataStore';
 
 export const addGroupPermission = async (
   params: AddGroupPermissionParams

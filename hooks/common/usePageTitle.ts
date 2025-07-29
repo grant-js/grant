@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+
 import { useTranslations } from 'next-intl';
 
 export function usePageTitle(titleKey: string) {

@@ -1,4 +1,5 @@
 import { UpdateTagParams, UpdateTagResult } from '@/graphql/providers/tags/types';
+
 import { updateTag as updateTagInStore } from './dataStore';
 
 export const updateTag = async (params: UpdateTagParams): Promise<UpdateTagResult> => {

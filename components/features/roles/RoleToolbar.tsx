@@ -1,10 +1,11 @@
+import { Toolbar } from '@/components/common';
+import { RoleSortableField, RoleSortOrder, RoleSortInput } from '@/graphql/generated/types';
+
 import { CreateRoleDialog } from './CreateRoleDialog';
-import { RoleSorter } from './RoleSorter';
 import { RoleLimit } from './RoleLimit';
 import { RoleSearch } from './RoleSearch';
+import { RoleSorter } from './RoleSorter';
 import { RoleViewSwitcher, RoleView } from './RoleViewSwitcher';
-import { RoleSortableField, RoleSortOrder, RoleSortInput } from '@/graphql/generated/types';
-import { Toolbar } from '@/components/common';
 
 interface RoleToolbarProps {
   limit: number;

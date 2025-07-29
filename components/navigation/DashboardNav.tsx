@@ -1,11 +1,14 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
-import { NavLink } from './NavLink';
+import { useCallback } from 'react';
+
 import { Users, UserCircle, Settings, Shield, Group } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+
 import { usePathname } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
-import { useCallback } from 'react';
+
+import { NavLink } from './NavLink';
 
 interface NavItem {
   path: string;

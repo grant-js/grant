@@ -2,13 +2,15 @@
 
 import { Shield } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { CreateGroupDialog } from './CreateGroupDialog';
-import { GroupCardSkeleton } from './GroupCardSkeleton';
-import { Group } from '@/graphql/generated/types';
-import { GroupActions } from './GroupActions';
+
 import { CardGrid, CardHeader } from '@/components/common';
-import { GroupAudit } from './GroupAudit';
 import { ScrollBadges } from '@/components/ui/scroll-badges';
+import { Group } from '@/graphql/generated/types';
+
+import { CreateGroupDialog } from './CreateGroupDialog';
+import { GroupActions } from './GroupActions';
+import { GroupAudit } from './GroupAudit';
+import { GroupCardSkeleton } from './GroupCardSkeleton';
 
 interface GroupCardsProps {
   limit: number;

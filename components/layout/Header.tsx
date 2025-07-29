@@ -1,18 +1,20 @@
 'use client';
 
-import { ThemeToggle } from '@/components/settings/ThemeToggle';
-import { LanguageSwitcher } from '@/components/settings/LanguageSwitcher';
-import { Link } from '@/i18n/navigation';
-import { useTranslations } from 'next-intl';
-import { NavLink } from '@/components/navigation/NavLink';
-import { Menu, X, Sun, Moon, Globe, LogOut } from 'lucide-react';
-import { useAuth } from '@/hooks/auth';
-import { logout } from '@/lib/auth';
 import { useState, useRef } from 'react';
+
+import { Menu, X, Sun, Moon, Globe, LogOut } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+
+import { Logo } from '@/components/common/Logo';
+import { NavLink } from '@/components/navigation/NavLink';
+import { LanguageSwitcher } from '@/components/settings/LanguageSwitcher';
+import { ThemeToggle } from '@/components/settings/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useAuth } from '@/hooks/auth';
+import { Link } from '@/i18n/navigation';
+import { logout } from '@/lib/auth';
 import { cn } from '@/lib/utils';
-import { Logo } from '@/components/common/Logo';
 
 export function Header() {
   const t = useTranslations('common');

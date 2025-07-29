@@ -1,6 +1,7 @@
-import { GetTagsParams, GetTagsResult } from '@/graphql/providers/tags/types';
-import { getTags as getTagsFromStore } from './dataStore';
 import { TagSortField, SortDirection } from '@/graphql/generated/types';
+import { GetTagsParams, GetTagsResult } from '@/graphql/providers/tags/types';
+
+import { getTags as getTagsFromStore } from './dataStore';
 
 const SEARCHABLE_FIELDS = ['name', 'color'] as const;
 const DEFAULT_SORT = { field: TagSortField.Name, direction: SortDirection.Asc };

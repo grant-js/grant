@@ -1,9 +1,10 @@
 'use client';
 
-import { Group } from '@/graphql/generated/types';
-import { Audit, type AuditField } from '@/components/common/Audit';
 import { Fingerprint, Calendar, Clock } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+
+import { Audit, type AuditField } from '@/components/common/Audit';
+import { Group } from '@/graphql/generated/types';
 
 interface GroupAuditProps {
   group: Group;

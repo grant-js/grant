@@ -1,15 +1,18 @@
 'use client';
 
 import { useState } from 'react';
+
 import { useTranslations } from 'next-intl';
-import { useGroupMutations } from '@/hooks/groups';
-import { usePermissions } from '@/hooks/permissions/usePermissions';
-import { Group, Permission } from '@/graphql/generated/types';
+
 import {
   EditDialog,
   EditDialogField,
   EditDialogRelationship,
 } from '@/components/common/EditDialog';
+import { Group, Permission } from '@/graphql/generated/types';
+import { useGroupMutations } from '@/hooks/groups';
+import { usePermissions } from '@/hooks/permissions/usePermissions';
+
 import { editGroupSchema, EditGroupFormValues } from './types';
 
 interface EditGroupDialogProps {

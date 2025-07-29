@@ -2,6 +2,7 @@ import {
   RemoveGroupPermissionParams,
   RemoveGroupPermissionResult,
 } from '@/graphql/providers/group-permissions/types';
+
 import { deleteGroupPermissionByGroupAndPermission } from './dataStore';
 
 export const removeGroupPermission = async (

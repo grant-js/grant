@@ -1,15 +1,17 @@
 'use client';
 
-import { User } from '@/graphql/generated/types';
-import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
-import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
-import { Avatar } from '@/components/common/Avatar';
-import { UserActions } from './UserActions';
-import { CreateUserDialog } from './CreateUserDialog';
 import { Shield, UserPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { getTagColorClasses, getAvatarBorderColorClasses } from '@/lib/tag-colors';
+
+import { Avatar } from '@/components/common/Avatar';
+import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
+import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
 import { ScrollBadges } from '@/components/ui/scroll-badges';
+import { User } from '@/graphql/generated/types';
+import { getTagColorClasses, getAvatarBorderColorClasses } from '@/lib/tag-colors';
+
+import { CreateUserDialog } from './CreateUserDialog';
+import { UserActions } from './UserActions';
 import { UserAudit } from './UserAudit';
 
 interface UserTableProps {

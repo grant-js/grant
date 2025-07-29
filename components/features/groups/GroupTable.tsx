@@ -1,15 +1,17 @@
 'use client';
 
-import { Group } from '@/graphql/generated/types';
-import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
-import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
-import { Avatar } from '@/components/common/Avatar';
-import { GroupActions } from './GroupActions';
-import { CreateGroupDialog } from './CreateGroupDialog';
 import { Shield } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { getAvatarBorderColorClasses } from '@/lib/tag-colors';
+
+import { Avatar } from '@/components/common/Avatar';
+import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
+import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
 import { ScrollBadges } from '@/components/ui/scroll-badges';
+import { Group } from '@/graphql/generated/types';
+import { getAvatarBorderColorClasses } from '@/lib/tag-colors';
+
+import { CreateGroupDialog } from './CreateGroupDialog';
+import { GroupActions } from './GroupActions';
 import { GroupAudit } from './GroupAudit';
 
 interface GroupTableProps {

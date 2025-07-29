@@ -1,6 +1,6 @@
-import { GetUsersParams, GetUsersResult } from '@/graphql/providers/users/types';
-import { getUsers as getUsersFromDataStore } from '@/graphql/providers/users/faker/dataStore';
 import { UserSortableField, UserSortOrder, User } from '@/graphql/generated/types';
+import { getUsers as getUsersFromDataStore } from '@/graphql/providers/users/faker/dataStore';
+import { GetUsersParams, GetUsersResult } from '@/graphql/providers/users/types';
 
 const SEARCHABLE_FIELDS = ['name', 'email'] as const;
 const DEFAULT_SORT = { field: UserSortableField.Name, order: UserSortOrder.Asc };

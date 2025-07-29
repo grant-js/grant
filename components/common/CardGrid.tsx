@@ -1,11 +1,13 @@
 'use client';
 
 import { ReactNode } from 'react';
+
+import { LucideIcon } from 'lucide-react';
+
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
-import { cn } from '@/lib/utils';
-import { LucideIcon } from 'lucide-react';
 import { Auditable } from '@/graphql/generated/types';
+import { cn } from '@/lib/utils';
 
 // Generic entity interface
 export interface BaseEntity extends Auditable {

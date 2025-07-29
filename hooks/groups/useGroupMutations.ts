@@ -1,7 +1,10 @@
 import { useMutation } from '@apollo/client';
-import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
+
 import { Group } from '@/graphql/generated/types';
+import { ADD_GROUP_TAG, REMOVE_GROUP_TAG } from '@/hooks/tags/mutations';
+
 import { evictGroupsCache } from './cache';
 import {
   CREATE_GROUP,
@@ -10,7 +13,6 @@ import {
   ADD_GROUP_PERMISSION,
   REMOVE_GROUP_PERMISSION,
 } from './mutations';
-import { ADD_GROUP_TAG, REMOVE_GROUP_TAG } from '@/hooks/tags/mutations';
 
 interface CreateGroupInput {
   name: string;

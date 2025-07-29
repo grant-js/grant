@@ -1,5 +1,6 @@
-import { jwtDecode } from 'jwt-decode';
 import Cookies from 'js-cookie';
+import { jwtDecode } from 'jwt-decode';
+
 import { AUTH_TOKEN_KEY } from './constants';
 
 interface JWTPayload {

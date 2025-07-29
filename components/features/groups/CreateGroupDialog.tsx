@@ -1,17 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
-import { useGroupMutations } from '@/hooks/groups';
-import { usePermissions } from '@/hooks/permissions/usePermissions';
-import { Permission } from '@/graphql/generated/types';
-import { createGroupSchema, CreateGroupFormValues, CreateGroupDialogProps } from './types';
+
 import { Group } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+
 import {
   CreateDialog,
   CreateDialogField,
   CreateDialogRelationship,
 } from '@/components/common/CreateDialog';
+import { Permission } from '@/graphql/generated/types';
+import { useGroupMutations } from '@/hooks/groups';
+import { usePermissions } from '@/hooks/permissions/usePermissions';
+
+import { createGroupSchema, CreateGroupFormValues, CreateGroupDialogProps } from './types';
 
 interface CreateGroupDialogComponentProps extends Partial<CreateGroupDialogProps> {
   children?: React.ReactNode;

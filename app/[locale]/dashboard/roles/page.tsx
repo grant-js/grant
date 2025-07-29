@@ -1,15 +1,17 @@
 'use client';
 
-import { RoleToolbar } from '@/components/features/roles/RoleToolbar';
-import { RolePagination } from '@/components/features/roles/RolePagination';
-import { useTranslations } from 'next-intl';
-import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
-import { usePageTitle } from '@/hooks';
-import { RoleSortableField, RoleSortOrder } from '@/graphql/generated/types';
-import { useRouter } from 'next/navigation';
 import { useMemo, useCallback, useState } from 'react';
+
+import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+
+import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
+import { RolePagination } from '@/components/features/roles/RolePagination';
 import { RolesContainer } from '@/components/features/roles/RolesContainer';
+import { RoleToolbar } from '@/components/features/roles/RoleToolbar';
 import { RoleView } from '@/components/features/roles/RoleViewSwitcher';
+import { RoleSortableField, RoleSortOrder } from '@/graphql/generated/types';
+import { usePageTitle } from '@/hooks';
 
 interface InitialParams {
   page: number;

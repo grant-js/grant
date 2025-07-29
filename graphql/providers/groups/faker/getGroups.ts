@@ -1,6 +1,6 @@
-import { GetGroupsParams, GetGroupsResult } from '@/graphql/providers/groups/types';
-import { getGroups as getGroupsFromDataStore } from '@/graphql/providers/groups/faker/dataStore';
 import { GroupSortableField, GroupSortOrder, Group } from '@/graphql/generated/types';
+import { getGroups as getGroupsFromDataStore } from '@/graphql/providers/groups/faker/dataStore';
+import { GetGroupsParams, GetGroupsResult } from '@/graphql/providers/groups/types';
 
 const SEARCHABLE_FIELDS = ['name', 'description'] as const;
 const DEFAULT_SORT = { field: GroupSortableField.Name, order: GroupSortOrder.Asc };

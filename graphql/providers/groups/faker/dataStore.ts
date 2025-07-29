@@ -1,12 +1,13 @@
+import { faker } from '@faker-js/faker';
+
 import { CreateGroupInput, UpdateGroupInput, GroupSortInput } from '@/graphql/generated/types';
+import { GroupData } from '@/graphql/providers/groups/types';
 import {
   createFakerDataStore,
   EntityConfig,
   generateAuditTimestamps,
   updateAuditTimestamp,
 } from '@/lib/providers/faker';
-import { GroupData } from '@/graphql/providers/groups/types';
-import { faker } from '@faker-js/faker';
 
 // Generate initial groups (hardcoded)
 const generateInitialGroups = (): GroupData[] => {

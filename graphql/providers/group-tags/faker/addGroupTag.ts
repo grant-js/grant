@@ -1,4 +1,5 @@
 import { AddGroupTagParams, AddGroupTagResult } from '@/graphql/providers/group-tags/types';
+
 import { createGroupTag } from './dataStore';
 
 export const addGroupTag = async (params: AddGroupTagParams): Promise<AddGroupTagResult> => {

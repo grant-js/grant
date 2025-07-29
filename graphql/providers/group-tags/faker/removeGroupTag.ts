@@ -1,4 +1,5 @@
 import { RemoveGroupTagParams, RemoveGroupTagResult } from '@/graphql/providers/group-tags/types';
+
 import { deleteGroupTagByGroupAndTag } from './dataStore';
 
 export const removeGroupTag = async (

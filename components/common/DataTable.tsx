@@ -1,6 +1,8 @@
 'use client';
 
 import { ReactNode } from 'react';
+
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table,
   TableBody,
@@ -9,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { EmptyState } from '@/components/ui/empty-state';
+
 import { TableSkeleton, ColumnConfig as SkeletonColumnConfig } from './TableSkeleton';
 
 export interface ColumnConfig<T> {

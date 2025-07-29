@@ -1,8 +1,10 @@
 import React from 'react';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+
 import { Control } from 'react-hook-form';
+
+import { Checkbox } from '@/components/ui/checkbox';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export interface CheckboxItem {
   id: string;

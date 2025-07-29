@@ -1,10 +1,11 @@
+import { Toolbar } from '@/components/common';
+import { GroupSortableField, GroupSortOrder, GroupSortInput } from '@/graphql/generated/types';
+
 import { CreateGroupDialog } from './CreateGroupDialog';
-import { GroupSorter } from './GroupSorter';
 import { GroupLimit } from './GroupLimit';
 import { GroupSearch } from './GroupSearch';
+import { GroupSorter } from './GroupSorter';
 import { GroupViewSwitcher, GroupView } from './GroupViewSwitcher';
-import { GroupSortableField, GroupSortOrder, GroupSortInput } from '@/graphql/generated/types';
-import { Toolbar } from '@/components/common';
 
 interface GroupToolbarProps {
   limit: number;

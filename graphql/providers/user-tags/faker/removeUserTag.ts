@@ -1,4 +1,5 @@
 import { RemoveUserTagParams, RemoveUserTagResult } from '@/graphql/providers/user-tags/types';
+
 import { deleteUserTagByUserAndTag } from './dataStore';
 
 export const removeUserTag = async (params: RemoveUserTagParams): Promise<RemoveUserTagResult> => {

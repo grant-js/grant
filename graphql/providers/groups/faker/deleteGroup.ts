@@ -1,7 +1,8 @@
-import { ApiError } from '@/graphql/errors';
-import { DeleteGroupParams, DeleteGroupResult } from '@/graphql/providers/groups/types';
-import { deleteGroup as deleteGroupFromStore } from '@/graphql/providers/groups/faker/dataStore';
 import { ApolloServerErrorCode } from '@apollo/server/errors';
+
+import { ApiError } from '@/graphql/errors';
+import { deleteGroup as deleteGroupFromStore } from '@/graphql/providers/groups/faker/dataStore';
+import { DeleteGroupParams, DeleteGroupResult } from '@/graphql/providers/groups/types';
 
 export async function deleteGroup({ id }: DeleteGroupParams): Promise<DeleteGroupResult> {
   const deletedGroup = deleteGroupFromStore(id);

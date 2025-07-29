@@ -1,7 +1,8 @@
 import { ApolloServer } from '@apollo/server';
 import { startServerAndCreateNextHandler } from '@as-integrations/next';
-import { schema } from '@/graphql/schema';
+
 import { graphqlConfig } from '@/graphql/config';
+import { schema } from '@/graphql/schema';
 import { Context } from '@/graphql/types';
 
 // Create the Apollo Server instance

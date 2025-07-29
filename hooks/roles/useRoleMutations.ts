@@ -1,7 +1,10 @@
 import { useMutation } from '@apollo/client';
-import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
+
 import { Role } from '@/graphql/generated/types';
+import { ADD_ROLE_TAG, REMOVE_ROLE_TAG } from '@/hooks/tags/mutations';
+
 import { evictRolesCache } from './cache';
 import {
   CREATE_ROLE,
@@ -10,7 +13,6 @@ import {
   ADD_ROLE_GROUP,
   REMOVE_ROLE_GROUP,
 } from './mutations';
-import { ADD_ROLE_TAG, REMOVE_ROLE_TAG } from '@/hooks/tags/mutations';
 
 interface CreateRoleInput {
   name: string;

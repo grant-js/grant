@@ -1,6 +1,7 @@
 'use client';
 
 import { Role } from '@/graphql/generated/types';
+
 import { RoleCards } from './RoleCards';
 import { RoleTable } from './RoleTable';
 import { RoleView } from './RoleViewSwitcher';

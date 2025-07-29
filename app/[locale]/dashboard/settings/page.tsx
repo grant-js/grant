@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+
 import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
 import { usePageTitle } from '@/hooks';
 

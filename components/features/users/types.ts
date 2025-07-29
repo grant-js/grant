@@ -1,5 +1,6 @@
-import { User } from '@/graphql/generated/types';
 import { z } from 'zod';
+
+import { User } from '@/graphql/generated/types';
 
 // Form schemas
 export const createUserSchema = z.object({

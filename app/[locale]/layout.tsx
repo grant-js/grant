@@ -1,5 +1,5 @@
-import { MessagesProvider } from '@/components/providers/MessagesProvider';
 import { Header } from '@/components/layout/Header';
+import { MessagesProvider } from '@/components/providers/MessagesProvider';
 
 interface RootLayoutProps {
   children: React.ReactNode;

@@ -1,5 +1,7 @@
 import { useQuery, ApolloError } from '@apollo/client';
+
 import { Tag, TagSortField, SortDirection, QueryTagsArgs } from '@/graphql/generated/types';
+
 import { GET_TAGS } from './queries';
 
 interface TagsQueryResult {

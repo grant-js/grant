@@ -1,10 +1,10 @@
-import { GetPermissionsParams, GetPermissionsResult } from '@/graphql/providers/permissions/types';
-import { getPermissions as getPermissionsFromDataStore } from '@/graphql/providers/permissions/faker/dataStore';
 import {
   PermissionSortableField,
   PermissionSortOrder,
   Permission,
 } from '@/graphql/generated/types';
+import { getPermissions as getPermissionsFromDataStore } from '@/graphql/providers/permissions/faker/dataStore';
+import { GetPermissionsParams, GetPermissionsResult } from '@/graphql/providers/permissions/types';
 
 const SEARCHABLE_FIELDS = ['name', 'description', 'action'] as const;
 const DEFAULT_SORT = { field: PermissionSortableField.Name, order: PermissionSortOrder.Asc };

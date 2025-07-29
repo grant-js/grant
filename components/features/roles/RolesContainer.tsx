@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+
 import { Role, RoleSortableField, RoleSortOrder } from '@/graphql/generated/types';
 import { useRoles } from '@/hooks/roles';
-import { EditRoleDialog } from './EditRoleDialog';
+
 import { DeleteRoleDialog } from './DeleteRoleDialog';
+import { EditRoleDialog } from './EditRoleDialog';
 import { RoleViewer } from './RoleViewer';
 import { RoleView } from './RoleViewSwitcher';
 

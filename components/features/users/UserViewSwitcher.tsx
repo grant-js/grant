@@ -1,8 +1,9 @@
 'use client';
 
-import { ViewSwitcher, type ViewOption } from '@/components/common';
 import { LayoutGrid, Table } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+
+import { ViewSwitcher, type ViewOption } from '@/components/common';
 
 export enum UserView {
   CARD = 'card',

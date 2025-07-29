@@ -1,5 +1,8 @@
 'use client';
 
+import { ArrowUp, ArrowDown, ChevronDown } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,8 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ArrowUp, ArrowDown, ChevronDown } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 
 export type SortOrder = 'ASC' | 'DESC';
 

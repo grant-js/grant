@@ -1,10 +1,12 @@
 'use client';
 
 import { ReactNode } from 'react';
+
 import { CardTitle, CardDescription } from '@/components/ui/card';
-import { Avatar, type AvatarProps } from './Avatar';
-import { cn } from '@/lib/utils';
 import { getAvatarBorderColorClasses } from '@/lib/tag-colors';
+import { cn } from '@/lib/utils';
+
+import { Avatar, type AvatarProps } from './Avatar';
 
 export interface CardHeaderProps {
   /**

@@ -1,15 +1,17 @@
 'use client';
 
-import { GroupToolbar } from '@/components/features/groups/GroupToolbar';
-import { GroupPagination } from '@/components/features/groups/GroupPagination';
-import { useTranslations } from 'next-intl';
-import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
-import { usePageTitle } from '@/hooks';
-import { GroupSortableField, GroupSortOrder } from '@/graphql/generated/types';
-import { useRouter } from 'next/navigation';
 import { useMemo, useCallback, useState } from 'react';
+
+import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+
+import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
+import { GroupPagination } from '@/components/features/groups/GroupPagination';
 import { GroupsContainer } from '@/components/features/groups/GroupsContainer';
+import { GroupToolbar } from '@/components/features/groups/GroupToolbar';
 import { GroupView } from '@/components/features/groups/GroupViewSwitcher';
+import { GroupSortableField, GroupSortOrder } from '@/graphql/generated/types';
+import { usePageTitle } from '@/hooks';
 
 interface InitialParams {
   page: number;

@@ -1,14 +1,14 @@
-import * as userQueries from './users/queries';
-import * as roleQueries from './roles/queries';
+import * as groupPermissionQueries from './group-permissions/queries';
+import * as groupTagQueries from './group-tags/queries';
 import * as groupQueries from './groups/queries';
 import * as permissionQueries from './permissions/queries';
-import * as userRoleQueries from './user-roles/queries';
 import * as roleGroupQueries from './role-groups/queries';
-import * as groupPermissionQueries from './group-permissions/queries';
-import * as tagQueries from './tags/queries';
-import * as userTagQueries from './user-tags/queries';
 import * as roleTagQueries from './role-tags/queries';
-import * as groupTagQueries from './group-tags/queries';
+import * as roleQueries from './roles/queries';
+import * as tagQueries from './tags/queries';
+import * as userRoleQueries from './user-roles/queries';
+import * as userTagQueries from './user-tags/queries';
+import * as userQueries from './users/queries';
 
 export const Query = {
   _empty: () => null,

@@ -1,15 +1,17 @@
 'use client';
 
-import { createUserSchema, CreateUserFormValues, CreateUserDialogProps } from './types';
-import { useUserMutations } from '@/hooks/users';
-import { useRoles } from '@/hooks/roles';
-import { Role } from '@/graphql/generated/types';
 import { UserPlus } from 'lucide-react';
+
 import {
   CreateDialog,
   CreateDialogField,
   CreateDialogRelationship,
 } from '@/components/common/CreateDialog';
+import { Role } from '@/graphql/generated/types';
+import { useRoles } from '@/hooks/roles';
+import { useUserMutations } from '@/hooks/users';
+
+import { createUserSchema, CreateUserFormValues, CreateUserDialogProps } from './types';
 
 interface CreateUserDialogComponentProps extends Partial<CreateUserDialogProps> {
   children?: React.ReactNode;

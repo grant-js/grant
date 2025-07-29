@@ -1,8 +1,10 @@
 'use client';
 
-import { redirect } from 'next/navigation';
-import { usePageTitle } from '@/hooks';
 import { use } from 'react';
+
+import { redirect } from 'next/navigation';
+
+import { usePageTitle } from '@/hooks';
 
 interface PageProps {
   params: Promise<{

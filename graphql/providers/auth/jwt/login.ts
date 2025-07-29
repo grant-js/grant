@@ -1,8 +1,9 @@
+import { ApolloServerErrorCode } from '@apollo/server/errors';
 import jwt from 'jsonwebtoken';
+
+import { ApiError } from '@/graphql/errors';
 import { LoginParams, LoginResult } from '@/graphql/providers/auth/types';
 import { JWT_SECRET } from '@/graphql/resolvers/auth/constants';
-import { ApolloServerErrorCode } from '@apollo/server/errors';
-import { ApiError } from '@/graphql/errors';
 
 export async function login({ input }: LoginParams): Promise<LoginResult> {
   // Validate email format

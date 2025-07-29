@@ -1,8 +1,9 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 import { Sorter, type SortInput, type SortOrder } from '@/components/common';
 import { GroupSortableField, GroupSortOrder, GroupSortInput } from '@/graphql/generated/types';
-import { useTranslations } from 'next-intl';
 
 interface GroupSorterProps {
   sort?: GroupSortInput;

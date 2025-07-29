@@ -1,12 +1,13 @@
 import { faker } from '@faker-js/faker';
+
 import { CreateRoleInput, UpdateRoleInput, RoleSortInput } from '@/graphql/generated/types';
+import { RoleData } from '@/graphql/providers/roles/types';
 import {
   createFakerDataStore,
   EntityConfig,
   generateAuditTimestamps,
   updateAuditTimestamp,
 } from '@/lib/providers/faker/genericDataStore';
-import { RoleData } from '@/graphql/providers/roles/types';
 
 // Generate initial roles (hardcoded)
 const generateInitialRoles = (): RoleData[] => {

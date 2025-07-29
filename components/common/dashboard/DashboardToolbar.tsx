@@ -2,8 +2,10 @@
 
 import { ReactNode, useState } from 'react';
 import React from 'react';
-import { Button } from '@/components/ui/button';
+
 import { ChevronDown, ChevronUp } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface DashboardToolbarProps {

@@ -1,9 +1,10 @@
 'use client';
 
-import { Group } from '@/graphql/generated/types';
-import { Actions, ActionItem } from '@/components/common';
 import { Edit, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+
+import { Actions, ActionItem } from '@/components/common';
+import { Group } from '@/graphql/generated/types';
 
 interface GroupActionsProps {
   group: Group;

@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+
 import { User, UserSortableField, UserSortOrder } from '@/graphql/generated/types';
 import { useUsers } from '@/hooks/users';
-import { EditUserDialog } from './EditUserDialog';
+
 import { DeleteUserDialog } from './DeleteUserDialog';
+import { EditUserDialog } from './EditUserDialog';
 import { UserViewer } from './UserViewer';
 import { UserView } from './UserViewSwitcher';
 

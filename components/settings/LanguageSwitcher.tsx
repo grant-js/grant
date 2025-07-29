@@ -1,5 +1,11 @@
 'use client';
 
+import { forwardRef } from 'react';
+
+import { Globe } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
+
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,12 +15,8 @@ import {
   DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Globe } from 'lucide-react';
 import { usePathname, useRouter } from '@/i18n/navigation';
-import { useSearchParams } from 'next/navigation';
 import { locales } from '@/i18n/routing';
-import { useLocale, useTranslations } from 'next-intl';
-import { forwardRef } from 'react';
 
 const LOCALE_LABELS: Record<string, string> = {
   en: 'English',

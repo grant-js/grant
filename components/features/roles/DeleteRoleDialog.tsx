@@ -1,8 +1,9 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useRoleMutations } from '@/hooks/roles';
+
 import { DeleteDialog } from '@/components/common';
+import { useRoleMutations } from '@/hooks/roles';
 
 interface DeleteRoleDialogProps {
   roleToDelete: { id: string; name: string } | null;

@@ -1,8 +1,9 @@
 'use client';
 
+import { PropsWithChildren } from 'react';
+
 import { NextIntlClientProvider } from 'next-intl';
 import { AbstractIntlMessages } from 'next-intl';
-import { PropsWithChildren } from 'react';
 
 interface MessagesProviderProps extends PropsWithChildren {
   locale: string;

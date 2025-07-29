@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+
 import { Copy, Check } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
+
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface CopyToClipboardProps {
   text: string;

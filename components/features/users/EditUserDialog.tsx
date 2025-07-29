@@ -1,14 +1,16 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useUserMutations } from '@/hooks/users';
-import { useRoles } from '@/hooks/roles';
-import { Role, User } from '@/graphql/generated/types';
+
 import {
   EditDialog,
   EditDialogField,
   EditDialogRelationship,
 } from '@/components/common/EditDialog';
+import { Role, User } from '@/graphql/generated/types';
+import { useRoles } from '@/hooks/roles';
+import { useUserMutations } from '@/hooks/users';
+
 import { EditUserFormValues, editUserSchema, EditUserDialogProps } from './types';
 
 export function EditUserDialog({ user, open, onOpenChange, currentPage }: EditUserDialogProps) {

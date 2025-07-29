@@ -1,12 +1,14 @@
 import { faker } from '@faker-js/faker';
+
+import { Auditable } from '@/graphql/generated/types';
+import { getRoles } from '@/graphql/providers/roles/faker/dataStore';
 import {
   createFakerDataStore,
   EntityConfig,
   generateAuditTimestamps,
 } from '@/lib/providers/faker/genericDataStore';
-import { getRoles } from '@/graphql/providers/roles/faker/dataStore';
+
 import { getGroups } from '../../groups/faker/dataStore';
-import { Auditable } from '@/graphql/generated/types';
 
 // Type for RoleGroup data without the resolved fields
 export interface RoleGroupData extends Auditable {

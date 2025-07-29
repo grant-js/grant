@@ -1,6 +1,10 @@
 'use client';
 
 import { ReactNode } from 'react';
+
+import { MoreVertical } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -8,8 +12,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreVertical } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 
 // Generic entity interface
 export interface BaseEntity {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+
 import { Search } from '@/components/common';
 
 interface GroupSearchProps {

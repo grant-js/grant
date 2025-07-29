@@ -1,7 +1,9 @@
 import { useMutation } from '@apollo/client';
-import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
+
 import { Tag } from '@/graphql/generated/types';
+
 import { evictTagsCache } from './cache';
 import { CREATE_TAG, UPDATE_TAG, DELETE_TAG } from './mutations';
 

@@ -1,5 +1,10 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslations } from 'next-intl';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -10,12 +15,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Link } from '@/i18n/navigation';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
-import { useTranslations } from 'next-intl';
 import { usePageTitle } from '@/hooks';
+import { Link } from '@/i18n/navigation';
 
 export default function ForgotPasswordPage() {
   const t = useTranslations('auth');

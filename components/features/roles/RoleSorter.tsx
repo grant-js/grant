@@ -1,6 +1,7 @@
+import { useTranslations } from 'next-intl';
+
 import { Sorter, type SortInput, type SortOrder } from '@/components/common';
 import { RoleSortOrder, RoleSortableField, RoleSortInput } from '@/graphql/generated/types';
-import { useTranslations } from 'next-intl';
 
 interface RoleSorterProps {
   sort?: RoleSortInput;

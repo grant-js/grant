@@ -1,15 +1,15 @@
-import * as userMutations from './users/mutations';
 import * as authMutations from './auth/mutations';
-import * as roleMutations from './roles/mutations';
+import * as groupPermissionMutations from './group-permissions/mutations';
+import * as groupTagMutations from './group-tags/mutations';
 import * as groupMutations from './groups/mutations';
 import * as permissionMutations from './permissions/mutations';
-import * as userRoleMutations from './user-roles/mutations';
 import * as roleGroupMutations from './role-groups/mutations';
-import * as groupPermissionMutations from './group-permissions/mutations';
-import * as tagMutations from './tags/mutations';
-import * as userTagMutations from './user-tags/mutations';
 import * as roleTagMutations from './role-tags/mutations';
-import * as groupTagMutations from './group-tags/mutations';
+import * as roleMutations from './roles/mutations';
+import * as tagMutations from './tags/mutations';
+import * as userRoleMutations from './user-roles/mutations';
+import * as userTagMutations from './user-tags/mutations';
+import * as userMutations from './users/mutations';
 
 export const Mutation = {
   login: authMutations.login,

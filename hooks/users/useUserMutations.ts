@@ -1,7 +1,10 @@
 import { useMutation } from '@apollo/client';
-import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
+
 import { User } from '@/graphql/generated/types';
+import { ADD_USER_TAG, REMOVE_USER_TAG } from '@/hooks/tags/mutations';
+
 import { evictUsersCache } from './cache';
 import {
   CREATE_USER,
@@ -10,7 +13,6 @@ import {
   ADD_USER_ROLE,
   REMOVE_USER_ROLE,
 } from './mutations';
-import { ADD_USER_TAG, REMOVE_USER_TAG } from '@/hooks/tags/mutations';
 
 interface CreateUserInput {
   name: string;

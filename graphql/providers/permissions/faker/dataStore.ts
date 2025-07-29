@@ -1,16 +1,17 @@
+import { faker } from '@faker-js/faker';
+
 import {
   CreatePermissionInput,
   UpdatePermissionInput,
   PermissionSortInput,
 } from '@/graphql/generated/types';
+import { PermissionData } from '@/graphql/providers/permissions/types';
 import {
   createFakerDataStore,
   EntityConfig,
   generateAuditTimestamps,
   updateAuditTimestamp,
 } from '@/lib/providers/faker';
-import { PermissionData } from '@/graphql/providers/permissions/types';
-import { faker } from '@faker-js/faker';
 
 // Generate initial permissions (hardcoded)
 const generateInitialPermissions = (): PermissionData[] => {

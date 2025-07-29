@@ -1,9 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm, DefaultValues } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslations } from 'next-intl';
+import { useForm, DefaultValues } from 'react-hook-form';
 import { z } from 'zod';
+
+import { Button } from '@/components/ui/button';
+import { CheckboxList } from '@/components/ui/checkbox-list';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +17,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -23,8 +27,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useTranslations } from 'next-intl';
-import { CheckboxList } from '@/components/ui/checkbox-list';
 
 // Generic types for the dialog
 export interface EditDialogField {

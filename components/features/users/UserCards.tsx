@@ -2,14 +2,16 @@
 
 import { UserPlus, Shield } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { CreateUserDialog } from './CreateUserDialog';
-import { UserCardSkeleton } from './UserCardSkeleton';
-import { User } from '@/graphql/generated/types';
-import { UserActions } from './UserActions';
+
 import { CardGrid, CardHeader } from '@/components/common';
-import { getTagColorClasses } from '@/lib/tag-colors';
-import { UserAudit } from './UserAudit';
 import { ScrollBadges } from '@/components/ui/scroll-badges';
+import { User } from '@/graphql/generated/types';
+import { getTagColorClasses } from '@/lib/tag-colors';
+
+import { CreateUserDialog } from './CreateUserDialog';
+import { UserActions } from './UserActions';
+import { UserAudit } from './UserAudit';
+import { UserCardSkeleton } from './UserCardSkeleton';
 
 interface UserCardsProps {
   limit: number;

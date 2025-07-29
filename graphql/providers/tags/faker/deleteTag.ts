@@ -1,4 +1,5 @@
 import { DeleteTagParams, DeleteTagResult } from '@/graphql/providers/tags/types';
+
 import { deleteTag as deleteTagInStore } from './dataStore';
 
 export const deleteTag = async (params: DeleteTagParams): Promise<DeleteTagResult> => {

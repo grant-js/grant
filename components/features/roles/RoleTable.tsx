@@ -1,15 +1,17 @@
 'use client';
 
-import { Role } from '@/graphql/generated/types';
-import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
-import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
-import { Avatar } from '@/components/common/Avatar';
-import { RoleActions } from './RoleActions';
-import { CreateRoleDialog } from './CreateRoleDialog';
 import { Shield } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { getTagColorClasses, getAvatarBorderColorClasses } from '@/lib/tag-colors';
+
+import { Avatar } from '@/components/common/Avatar';
+import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
+import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
 import { ScrollBadges } from '@/components/ui/scroll-badges';
+import { Role } from '@/graphql/generated/types';
+import { getTagColorClasses, getAvatarBorderColorClasses } from '@/lib/tag-colors';
+
+import { CreateRoleDialog } from './CreateRoleDialog';
+import { RoleActions } from './RoleActions';
 import { RoleAudit } from './RoleAudit';
 
 interface RoleTableProps {

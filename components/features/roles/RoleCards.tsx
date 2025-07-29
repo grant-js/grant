@@ -2,14 +2,16 @@
 
 import { Shield } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { CreateRoleDialog } from './CreateRoleDialog';
-import { RoleCardSkeleton } from './RoleCardSkeleton';
-import { Role } from '@/graphql/generated/types';
-import { RoleActions } from './RoleActions';
+
 import { CardGrid, CardHeader } from '@/components/common';
-import { getTagColorClasses } from '@/lib/tag-colors';
-import { RoleAudit } from './RoleAudit';
 import { ScrollBadges } from '@/components/ui/scroll-badges';
+import { Role } from '@/graphql/generated/types';
+import { getTagColorClasses } from '@/lib/tag-colors';
+
+import { CreateRoleDialog } from './CreateRoleDialog';
+import { RoleActions } from './RoleActions';
+import { RoleAudit } from './RoleAudit';
+import { RoleCardSkeleton } from './RoleCardSkeleton';
 
 interface RoleCardsProps {
   limit: number;

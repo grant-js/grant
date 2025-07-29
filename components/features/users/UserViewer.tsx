@@ -1,6 +1,7 @@
 'use client';
 
 import { User } from '@/graphql/generated/types';
+
 import { UserCards } from './UserCards';
 import { UserTable } from './UserTable';
 import { UserView } from './UserViewSwitcher';

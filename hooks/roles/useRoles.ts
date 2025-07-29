@@ -1,6 +1,8 @@
 import { useQuery, ApolloError } from '@apollo/client';
-import { Role, RoleSortableField, RoleSortOrder, QueryRolesArgs } from '@/graphql/generated/types';
+
 import { RolesQueryResult } from '@/components/features/roles/types';
+import { Role, RoleSortableField, RoleSortOrder, QueryRolesArgs } from '@/graphql/generated/types';
+
 import { GET_ROLES } from './queries';
 
 interface UseRolesOptions extends Partial<QueryRolesArgs> {}

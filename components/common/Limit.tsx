@@ -1,5 +1,8 @@
 'use client';
 
+import { ChevronDown } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -7,8 +10,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 
 export interface LimitProps {
   limit: number;

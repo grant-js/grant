@@ -1,8 +1,9 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
+
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
-import { usePathname } from 'next/navigation';
 
 export interface NavLinkProps {
   href: string;

@@ -1,12 +1,13 @@
 import { faker } from '@faker-js/faker';
+
 import { CreateTagInput, UpdateTagInput } from '@/graphql/providers/tags/types';
+import { TagData } from '@/graphql/providers/tags/types';
 import {
   createFakerDataStore,
   EntityConfig,
   generateAuditTimestamps,
   updateAuditTimestamp,
 } from '@/lib/providers/faker/genericDataStore';
-import { TagData } from '@/graphql/providers/tags/types';
 import { getAvailableTagColors } from '@/lib/tag-colors';
 
 // Generate fake tags for initial data

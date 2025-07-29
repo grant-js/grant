@@ -1,9 +1,10 @@
 'use client';
 
-import { Role } from '@/graphql/generated/types';
-import { Actions, ActionItem } from '@/components/common';
 import { Edit, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+
+import { Actions, ActionItem } from '@/components/common';
+import { Role } from '@/graphql/generated/types';
 
 interface RoleActionsProps {
   role: Role;

@@ -1,16 +1,18 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
-import { createRoleSchema, CreateRoleFormValues, CreateRoleDialogProps } from './types';
-import { useRoleMutations } from '@/hooks/roles';
-import { useGroups } from '@/hooks/groups';
-import { Group } from '@/graphql/generated/types';
 import { Shield } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+
 import {
   CreateDialog,
   CreateDialogField,
   CreateDialogRelationship,
 } from '@/components/common/CreateDialog';
+import { Group } from '@/graphql/generated/types';
+import { useGroups } from '@/hooks/groups';
+import { useRoleMutations } from '@/hooks/roles';
+
+import { createRoleSchema, CreateRoleFormValues, CreateRoleDialogProps } from './types';
 
 interface CreateRoleDialogComponentProps extends Partial<CreateRoleDialogProps> {
   children?: React.ReactNode;

@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+
 import { Group, GroupSortableField, GroupSortOrder } from '@/graphql/generated/types';
 import { useGroups } from '@/hooks/groups';
-import { EditGroupDialog } from './EditGroupDialog';
+
 import { DeleteGroupDialog } from './DeleteGroupDialog';
+import { EditGroupDialog } from './EditGroupDialog';
 import { GroupViewer } from './GroupViewer';
 import { GroupView } from './GroupViewSwitcher';
 

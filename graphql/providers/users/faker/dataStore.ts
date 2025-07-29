@@ -1,12 +1,13 @@
 import { faker } from '@faker-js/faker';
+
 import { CreateUserInput, UpdateUserInput, UserSortInput } from '@/graphql/generated/types';
+import { UserData } from '@/graphql/providers/users/types';
 import {
   createFakerDataStore,
   EntityConfig,
   generateAuditTimestamps,
   updateAuditTimestamp,
 } from '@/lib/providers/faker/genericDataStore';
-import { UserData } from '@/graphql/providers/users/types';
 
 // Generate fake users for initial data
 const generateFakeUsers = (count: number = 50): UserData[] => {

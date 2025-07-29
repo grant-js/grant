@@ -1,8 +1,10 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { CopyToClipboard } from './CopyToClipboard';
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+import { CopyToClipboard } from './CopyToClipboard';
 
 export interface AuditField {
   key: string;

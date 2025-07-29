@@ -1,6 +1,7 @@
 import type { Config } from 'tailwindcss';
-import { tokens } from './styles/tokens';
 import animate from 'tailwindcss-animate';
+
+import { tokens } from './styles/tokens';
 
 const config: Config = {
   darkMode: 'class',
