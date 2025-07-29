@@ -17,7 +17,11 @@ type User implements Auditable {
   """
   List of roles assigned to the user.
   """
-  roles: [Role!]!
+  roles: [Role!]
+  """
+  List of tags assigned to the user.
+  """
+  tags: [Tag!]
   """
   Timestamp when the user was created.
   """

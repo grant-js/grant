@@ -1,0 +1,13 @@
+"""
+Input type for adding a role-tag relationship.
+"""
+input AddRoleTagInput {
+  """
+  ID of the role.
+  """
+  roleId: ID!
+  """
+  ID of the tag.
+  """
+  tagId: ID!
+} 

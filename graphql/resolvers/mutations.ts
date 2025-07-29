@@ -7,6 +7,9 @@ import * as userRoleMutations from './user-roles/mutations';
 import * as roleGroupMutations from './role-groups/mutations';
 import * as groupPermissionMutations from './group-permissions/mutations';
 import * as tagMutations from './tags/mutations';
+import * as userTagMutations from './user-tags/mutations';
+import * as roleTagMutations from './role-tags/mutations';
+import * as groupTagMutations from './group-tags/mutations';
 
 export const Mutation = {
   login: authMutations.login,
@@ -31,4 +34,10 @@ export const Mutation = {
   createTag: tagMutations.createTag,
   updateTag: tagMutations.updateTag,
   deleteTag: tagMutations.deleteTag,
+  addUserTag: userTagMutations.addUserTag,
+  removeUserTag: userTagMutations.removeUserTag,
+  addRoleTag: roleTagMutations.addRoleTag,
+  removeRoleTag: roleTagMutations.removeRoleTag,
+  addGroupTag: groupTagMutations.addGroupTag,
+  removeGroupTag: groupTagMutations.removeGroupTag,
 } as const;

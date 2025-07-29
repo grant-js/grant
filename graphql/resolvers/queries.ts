@@ -6,6 +6,9 @@ import * as userRoleQueries from './user-roles/queries';
 import * as roleGroupQueries from './role-groups/queries';
 import * as groupPermissionQueries from './group-permissions/queries';
 import * as tagQueries from './tags/queries';
+import * as userTagQueries from './user-tags/queries';
+import * as roleTagQueries from './role-tags/queries';
+import * as groupTagQueries from './group-tags/queries';
 
 export const Query = {
   _empty: () => null,
@@ -17,4 +20,7 @@ export const Query = {
   roleGroups: roleGroupQueries.getRoleGroups,
   groupPermissions: groupPermissionQueries.getGroupPermissions,
   tags: tagQueries.getTags,
+  userTags: userTagQueries.getUserTags,
+  roleTags: roleTagQueries.getRoleTags,
+  groupTags: groupTagQueries.getGroupTags,
 } as const;

@@ -17,7 +17,11 @@ type Group implements Auditable {
   """
   List of permissions associated with this group.
   """
-  permissions: [Permission!]!
+  permissions: [Permission!]
+  """
+  List of tags assigned to the group.
+  """
+  tags: [Tag!]
   """
   Timestamp when the group was created.
   """

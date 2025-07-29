@@ -1,13 +1,28 @@
-"""
-Get tags with pagination and sorting.
-"""
-type Query {
+extend type Query {
   """
-  Get tags with pagination and sorting.
+  Retrieves a paginated list of tags.
   """
   tags(
-    page: Int = 1
-    pageSize: Int = 10
+    """
+    Page number (1-based).
+    """
+    page: Int
+    """
+    Number of tags per page.
+    """
+    limit: Int
+    """
+    Search term to filter tags by name.
+    """
+    search: String
+    """
+    Sorting configuration for the results.
+    """
     sort: TagSortInput
+    """
+    Optional array of tag IDs to filter by.
+    If provided and not empty, pagination parameters (page, limit) will be ignored.
+    """
+    ids: [ID!]
   ): TagPage!
 } 

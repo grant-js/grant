@@ -1,0 +1,6 @@
+extend type Query {
+  """
+  Retrieves role-tag relationships for a specific role.
+  """
+  roleTags(roleId: ID!): [RoleTag!]!
+} 

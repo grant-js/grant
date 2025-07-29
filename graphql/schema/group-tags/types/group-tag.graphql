@@ -1,0 +1,33 @@
+"""
+Represents a group-tag relationship in the system.
+"""
+type GroupTag implements Auditable {
+  """
+  Unique identifier for the group-tag relationship.
+  """
+  id: ID!
+  """
+  ID of the group.
+  """
+  groupId: ID!
+  """
+  ID of the tag.
+  """
+  tagId: ID!
+  """
+  The group associated with this relationship.
+  """
+  group: Group
+  """
+  The tag associated with this relationship.
+  """
+  tag: Tag
+  """
+  Timestamp when the group-tag relationship was created.
+  """
+  createdAt: String!
+  """
+  Timestamp when the group-tag relationship was last updated.
+  """
+  updatedAt: String!
+} 

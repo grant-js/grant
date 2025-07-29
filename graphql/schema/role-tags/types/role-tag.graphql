@@ -1,0 +1,33 @@
+"""
+Represents a role-tag relationship in the system.
+"""
+type RoleTag implements Auditable {
+  """
+  Unique identifier for the role-tag relationship.
+  """
+  id: ID!
+  """
+  ID of the role.
+  """
+  roleId: ID!
+  """
+  ID of the tag.
+  """
+  tagId: ID!
+  """
+  The role associated with this relationship.
+  """
+  role: Role
+  """
+  The tag associated with this relationship.
+  """
+  tag: Tag
+  """
+  Timestamp when the role-tag relationship was created.
+  """
+  createdAt: String!
+  """
+  Timestamp when the role-tag relationship was last updated.
+  """
+  updatedAt: String!
+} 

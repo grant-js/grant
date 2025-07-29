@@ -1,0 +1,13 @@
+"""
+Input type for removing a role-tag relationship.
+"""
+input RemoveRoleTagInput {
+  """
+  ID of the role.
+  """
+  roleId: ID!
+  """
+  ID of the tag.
+  """
+  tagId: ID!
+} 

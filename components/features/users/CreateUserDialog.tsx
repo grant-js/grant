@@ -1,6 +1,5 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
 import { createUserSchema, CreateUserFormValues, CreateUserDialogProps } from './types';
 import { useUserMutations } from '@/hooks/users';
 import { useRoles } from '@/hooks/roles';
@@ -17,7 +16,6 @@ interface CreateUserDialogComponentProps extends Partial<CreateUserDialogProps> 
 }
 
 export function CreateUserDialog({ open, onOpenChange, children }: CreateUserDialogComponentProps) {
-  const t = useTranslations('users');
   const { roles, loading: rolesLoading } = useRoles();
   const { createUser, addUserRole } = useUserMutations();
 

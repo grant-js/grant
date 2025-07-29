@@ -59,7 +59,7 @@ export function EditGroupDialog({ group, open, onOpenChange, currentPage }: Edit
   const mapGroupToFormValues = (group: Group): EditGroupFormValues => ({
     name: group.name,
     description: group.description || '',
-    permissionIds: group.permissions.map((permission) => permission.id),
+    permissionIds: group.permissions?.map((permission) => permission.id),
   });
 
   const handleUpdate = async (groupId: string, values: EditGroupFormValues) => {

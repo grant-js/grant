@@ -5,13 +5,13 @@ import { z } from 'zod';
 export const createUserSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
   email: z.string().email('Please enter a valid email address'),
-  roleIds: z.array(z.string()).min(1, 'User must have at least one role'),
+  roleIds: z.array(z.string()).optional(),
 });
 
 export const editUserSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
   email: z.string().email('Please enter a valid email address'),
-  roleIds: z.array(z.string()).min(1, 'User must have at least one role'),
+  roleIds: z.array(z.string()).optional(),
 });
 
 // Form types

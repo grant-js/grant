@@ -17,7 +17,11 @@ type Role implements Auditable {
   """
   List of groups associated with this role.
   """
-  groups: [Group!]!
+  groups: [Group!]
+  """
+  List of tags assigned to the role.
+  """
+  tags: [Tag!]
   """
   Timestamp when the role was created.
   """

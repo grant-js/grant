@@ -1,0 +1,6 @@
+extend type Query {
+  """
+  Retrieves user-tag relationships for a specific user.
+  """
+  userTags(userId: ID!): [UserTag!]!
+} 

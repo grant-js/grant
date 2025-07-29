@@ -1,0 +1,11 @@
+extend type Mutation {
+  """
+  Adds a role-tag relationship.
+  """
+  addRoleTag(
+    """
+    Input data for adding the role-tag relationship.
+    """
+    input: AddRoleTagInput!
+  ): RoleTag!
+} 

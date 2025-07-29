@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useRoleMutations } from '@/hooks/roles';
 import { useGroups } from '@/hooks/groups';
-import { Group } from '@/graphql/generated/types';
+import { Group, Role } from '@/graphql/generated/types';
 import {
   EditDialog,
   EditDialogField,
@@ -47,10 +47,10 @@ export function EditRoleDialog({ role, open, onOpenChange, currentPage }: EditRo
     },
   ];
 
-  const mapRoleToFormValues = (role: any): EditRoleFormValues => ({
+  const mapRoleToFormValues = (role: Role): EditRoleFormValues => ({
     name: role.name,
     description: role.description || '',
-    groupIds: role.groups.map((group: any) => group.id),
+    groupIds: role.groups?.map((group: Group) => group.id),
   });
 
   const handleUpdate = async (roleId: string, values: EditRoleFormValues) => {
