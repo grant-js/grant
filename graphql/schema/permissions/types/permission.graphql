@@ -19,6 +19,10 @@ type Permission implements Auditable {
   """
   action: String!
   """
+  Tags associated with the permission.
+  """
+  tags: [Tag!]
+  """
   Timestamp when the permission was created.
   """
   createdAt: String!

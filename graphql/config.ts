@@ -9,6 +9,8 @@ import { groupTagFakerProvider } from './providers/group-tags/faker';
 import { GroupTagDataProvider } from './providers/group-tags/types';
 import { groupFakerProvider } from './providers/groups/faker';
 import { GroupDataProvider } from './providers/groups/types';
+import { permissionTagFakerProvider } from './providers/permission-tags/faker';
+import { PermissionTagDataProvider } from './providers/permission-tags/types';
 import { permissionFakerProvider } from './providers/permissions/faker';
 import { PermissionDataProvider } from './providers/permissions/types';
 import { roleGroupFakerProvider } from './providers/role-groups/faker';
@@ -37,6 +39,7 @@ export interface ModuleProviders {
   userTags: UserTagDataProvider;
   roleTags: RoleTagDataProvider;
   groupTags: GroupTagDataProvider;
+  permissionTags: PermissionTagDataProvider;
   // Add other modules here as we create them
 }
 
@@ -59,5 +62,6 @@ export const graphqlConfig: GraphQLConfig = {
     userTags: userTagFakerProvider,
     roleTags: roleTagFakerProvider,
     groupTags: groupTagFakerProvider,
+    permissionTags: permissionTagFakerProvider,
   },
 };

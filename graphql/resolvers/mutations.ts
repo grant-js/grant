@@ -2,6 +2,7 @@ import * as authMutations from './auth/mutations';
 import * as groupPermissionMutations from './group-permissions/mutations';
 import * as groupTagMutations from './group-tags/mutations';
 import * as groupMutations from './groups/mutations';
+import * as permissionTagMutations from './permission-tags/mutations';
 import * as permissionMutations from './permissions/mutations';
 import * as roleGroupMutations from './role-groups/mutations';
 import * as roleTagMutations from './role-tags/mutations';
@@ -40,4 +41,6 @@ export const Mutation = {
   removeRoleTag: roleTagMutations.removeRoleTag,
   addGroupTag: groupTagMutations.addGroupTag,
   removeGroupTag: groupTagMutations.removeGroupTag,
+  addPermissionTag: permissionTagMutations.addPermissionTag,
+  removePermissionTag: permissionTagMutations.removePermissionTag,
 } as const;

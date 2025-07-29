@@ -33,6 +33,13 @@ export type AddGroupTagInput = {
   tagId: Scalars['ID']['input'];
 };
 
+export type AddPermissionTagInput = {
+  /** ID of the permission. */
+  permissionId: Scalars['ID']['input'];
+  /** ID of the tag. */
+  tagId: Scalars['ID']['input'];
+};
+
 /** Input type for adding a role-group relationship. */
 export type AddRoleGroupInput = {
   /** ID of the group. */
@@ -224,6 +231,8 @@ export type Mutation = {
   addGroupPermission: GroupPermission;
   /** Adds a group-tag relationship. */
   addGroupTag: GroupTag;
+  /** Adds a permission-tag relationship. */
+  addPermissionTag: PermissionTag;
   /** Adds a role-group relationship. */
   addRoleGroup: RoleGroup;
   /** Adds a role-tag relationship. */
@@ -258,6 +267,8 @@ export type Mutation = {
   removeGroupPermission: Scalars['Boolean']['output'];
   /** Removes a group-tag relationship. */
   removeGroupTag: Scalars['Boolean']['output'];
+  /** Removes a permission-tag relationship. */
+  removePermissionTag: Scalars['Boolean']['output'];
   /** Removes a role-group relationship. */
   removeRoleGroup: RoleGroup;
   /** Removes a role-tag relationship. */
@@ -288,6 +299,12 @@ export type MutationAddGroupPermissionArgs = {
 /** Update an existing tag. */
 export type MutationAddGroupTagArgs = {
   input: AddGroupTagInput;
+};
+
+
+/** Update an existing tag. */
+export type MutationAddPermissionTagArgs = {
+  input: AddPermissionTagInput;
 };
 
 
@@ -394,6 +411,12 @@ export type MutationRemoveGroupTagArgs = {
 
 
 /** Update an existing tag. */
+export type MutationRemovePermissionTagArgs = {
+  input: RemovePermissionTagInput;
+};
+
+
+/** Update an existing tag. */
 export type MutationRemoveRoleGroupArgs = {
   input: RemoveRoleGroupInput;
 };
@@ -472,6 +495,8 @@ export type Permission = Auditable & {
   id: Scalars['ID']['output'];
   /** Name of the permission. */
   name: Scalars['String']['output'];
+  /** Tags associated with the permission. */
+  tags?: Maybe<Array<Tag>>;
   /** Timestamp when the permission was last updated. */
   updatedAt: Scalars['String']['output'];
 };
@@ -505,6 +530,24 @@ export enum PermissionSortableField {
   Name = 'name'
 }
 
+export type PermissionTag = Auditable & {
+  __typename?: 'PermissionTag';
+  /** Timestamp when the permission-tag relationship was created. */
+  createdAt: Scalars['String']['output'];
+  /** Unique identifier for the permission-tag relationship. */
+  id: Scalars['ID']['output'];
+  /** The permission associated with this relationship. */
+  permission?: Maybe<Permission>;
+  /** ID of the permission. */
+  permissionId: Scalars['ID']['output'];
+  /** The tag associated with this relationship. */
+  tag?: Maybe<Tag>;
+  /** ID of the tag. */
+  tagId: Scalars['ID']['output'];
+  /** Timestamp when the permission-tag relationship was last updated. */
+  updatedAt: Scalars['String']['output'];
+};
+
 export type Query = {
   __typename?: 'Query';
   _empty?: Maybe<Scalars['String']['output']>;
@@ -514,6 +557,8 @@ export type Query = {
   groupTags: Array<GroupTag>;
   /** Retrieves a paginated list of groups. */
   groups: GroupPage;
+  /** Retrieves permission-tag relationships for a specific permission. */
+  permissionTags: Array<PermissionTag>;
   /** Retrieves a paginated list of permissions. */
   permissions: PermissionPage;
   /** Retrieves role-group relationships for a specific role. */
@@ -549,6 +594,11 @@ export type QueryGroupsArgs = {
   page?: InputMaybe<Scalars['Int']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
   sort?: InputMaybe<GroupSortInput>;
+};
+
+
+export type QueryPermissionTagsArgs = {
+  permissionId: Scalars['ID']['input'];
 };
 
 
@@ -619,6 +669,13 @@ export type RemoveGroupPermissionInput = {
 export type RemoveGroupTagInput = {
   /** ID of the group. */
   groupId: Scalars['ID']['input'];
+  /** ID of the tag. */
+  tagId: Scalars['ID']['input'];
+};
+
+export type RemovePermissionTagInput = {
+  /** ID of the permission. */
+  permissionId: Scalars['ID']['input'];
   /** ID of the tag. */
   tagId: Scalars['ID']['input'];
 };
@@ -984,7 +1041,7 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 
 /** Mapping of interface types */
 export type ResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
-  Auditable: ( Group ) | ( GroupPermission ) | ( GroupTag ) | ( Permission ) | ( Role ) | ( RoleGroup ) | ( RoleTag ) | ( Tag ) | ( User ) | ( UserRole ) | ( UserTag );
+  Auditable: ( Group ) | ( GroupPermission ) | ( GroupTag ) | ( Permission ) | ( PermissionTag ) | ( Role ) | ( RoleGroup ) | ( RoleTag ) | ( Tag ) | ( User ) | ( UserRole ) | ( UserTag );
   Creatable: never;
   PaginatedResults: ( GroupPage ) | ( PermissionPage ) | ( RolePage ) | ( TagPage ) | ( UserPage );
 }>;
@@ -993,6 +1050,7 @@ export type ResolversInterfaceTypes<_RefType extends Record<string, unknown>> = 
 export type ResolversTypes = ResolversObject<{
   AddGroupPermissionInput: AddGroupPermissionInput;
   AddGroupTagInput: AddGroupTagInput;
+  AddPermissionTagInput: AddPermissionTagInput;
   AddRoleGroupInput: AddRoleGroupInput;
   AddRoleTagInput: AddRoleTagInput;
   AddUserRoleInput: AddUserRoleInput;
@@ -1023,9 +1081,11 @@ export type ResolversTypes = ResolversObject<{
   PermissionSortInput: PermissionSortInput;
   PermissionSortOrder: PermissionSortOrder;
   PermissionSortableField: PermissionSortableField;
+  PermissionTag: ResolverTypeWrapper<PermissionTag>;
   Query: ResolverTypeWrapper<{}>;
   RemoveGroupPermissionInput: RemoveGroupPermissionInput;
   RemoveGroupTagInput: RemoveGroupTagInput;
+  RemovePermissionTagInput: RemovePermissionTagInput;
   RemoveRoleGroupInput: RemoveRoleGroupInput;
   RemoveRoleTagInput: RemoveRoleTagInput;
   RemoveUserRoleInput: RemoveUserRoleInput;
@@ -1061,6 +1121,7 @@ export type ResolversTypes = ResolversObject<{
 export type ResolversParentTypes = ResolversObject<{
   AddGroupPermissionInput: AddGroupPermissionInput;
   AddGroupTagInput: AddGroupTagInput;
+  AddPermissionTagInput: AddPermissionTagInput;
   AddRoleGroupInput: AddRoleGroupInput;
   AddRoleTagInput: AddRoleTagInput;
   AddUserRoleInput: AddUserRoleInput;
@@ -1087,9 +1148,11 @@ export type ResolversParentTypes = ResolversObject<{
   Permission: Permission;
   PermissionPage: PermissionPage;
   PermissionSortInput: PermissionSortInput;
+  PermissionTag: PermissionTag;
   Query: {};
   RemoveGroupPermissionInput: RemoveGroupPermissionInput;
   RemoveGroupTagInput: RemoveGroupTagInput;
+  RemovePermissionTagInput: RemovePermissionTagInput;
   RemoveRoleGroupInput: RemoveRoleGroupInput;
   RemoveRoleTagInput: RemoveRoleTagInput;
   RemoveUserRoleInput: RemoveUserRoleInput;
@@ -1116,7 +1179,7 @@ export type ResolversParentTypes = ResolversObject<{
 }>;
 
 export type AuditableResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Auditable'] = ResolversParentTypes['Auditable']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'Group' | 'GroupPermission' | 'GroupTag' | 'Permission' | 'Role' | 'RoleGroup' | 'RoleTag' | 'Tag' | 'User' | 'UserRole' | 'UserTag', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'Group' | 'GroupPermission' | 'GroupTag' | 'Permission' | 'PermissionTag' | 'Role' | 'RoleGroup' | 'RoleTag' | 'Tag' | 'User' | 'UserRole' | 'UserTag', ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -1177,6 +1240,7 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
   _empty?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   addGroupPermission?: Resolver<ResolversTypes['GroupPermission'], ParentType, ContextType, RequireFields<MutationAddGroupPermissionArgs, 'input'>>;
   addGroupTag?: Resolver<ResolversTypes['GroupTag'], ParentType, ContextType, RequireFields<MutationAddGroupTagArgs, 'input'>>;
+  addPermissionTag?: Resolver<ResolversTypes['PermissionTag'], ParentType, ContextType, RequireFields<MutationAddPermissionTagArgs, 'input'>>;
   addRoleGroup?: Resolver<ResolversTypes['RoleGroup'], ParentType, ContextType, RequireFields<MutationAddRoleGroupArgs, 'input'>>;
   addRoleTag?: Resolver<ResolversTypes['RoleTag'], ParentType, ContextType, RequireFields<MutationAddRoleTagArgs, 'input'>>;
   addUserRole?: Resolver<ResolversTypes['UserRole'], ParentType, ContextType, RequireFields<MutationAddUserRoleArgs, 'input'>>;
@@ -1194,6 +1258,7 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
   login?: Resolver<ResolversTypes['LoginResponse'], ParentType, ContextType, RequireFields<MutationLoginArgs, 'input'>>;
   removeGroupPermission?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveGroupPermissionArgs, 'input'>>;
   removeGroupTag?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveGroupTagArgs, 'input'>>;
+  removePermissionTag?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemovePermissionTagArgs, 'input'>>;
   removeRoleGroup?: Resolver<ResolversTypes['RoleGroup'], ParentType, ContextType, RequireFields<MutationRemoveRoleGroupArgs, 'input'>>;
   removeRoleTag?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveRoleTagArgs, 'input'>>;
   removeUserRole?: Resolver<ResolversTypes['UserRole'], ParentType, ContextType, RequireFields<MutationRemoveUserRoleArgs, 'input'>>;
@@ -1217,6 +1282,7 @@ export type PermissionResolvers<ContextType = Context, ParentType extends Resolv
   description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -1228,11 +1294,23 @@ export type PermissionPageResolvers<ContextType = Context, ParentType extends Re
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type PermissionTagResolvers<ContextType = Context, ParentType extends ResolversParentTypes['PermissionTag'] = ResolversParentTypes['PermissionTag']> = ResolversObject<{
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  permission?: Resolver<Maybe<ResolversTypes['Permission']>, ParentType, ContextType>;
+  permissionId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  tag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
+  tagId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type QueryResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = ResolversObject<{
   _empty?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   groupPermissions?: Resolver<Array<ResolversTypes['GroupPermission']>, ParentType, ContextType, RequireFields<QueryGroupPermissionsArgs, 'groupId'>>;
   groupTags?: Resolver<Array<ResolversTypes['GroupTag']>, ParentType, ContextType, RequireFields<QueryGroupTagsArgs, 'groupId'>>;
   groups?: Resolver<ResolversTypes['GroupPage'], ParentType, ContextType, Partial<QueryGroupsArgs>>;
+  permissionTags?: Resolver<Array<ResolversTypes['PermissionTag']>, ParentType, ContextType, RequireFields<QueryPermissionTagsArgs, 'permissionId'>>;
   permissions?: Resolver<ResolversTypes['PermissionPage'], ParentType, ContextType, Partial<QueryPermissionsArgs>>;
   roleGroups?: Resolver<Array<ResolversTypes['RoleGroup']>, ParentType, ContextType, RequireFields<QueryRoleGroupsArgs, 'roleId'>>;
   roleTags?: Resolver<Array<ResolversTypes['RoleTag']>, ParentType, ContextType, RequireFields<QueryRoleTagsArgs, 'roleId'>>;
@@ -1351,6 +1429,7 @@ export type Resolvers<ContextType = Context> = ResolversObject<{
   PaginatedResults?: PaginatedResultsResolvers<ContextType>;
   Permission?: PermissionResolvers<ContextType>;
   PermissionPage?: PermissionPageResolvers<ContextType>;
+  PermissionTag?: PermissionTagResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   Role?: RoleResolvers<ContextType>;
   RoleGroup?: RoleGroupResolvers<ContextType>;

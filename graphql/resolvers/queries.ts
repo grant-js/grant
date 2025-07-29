@@ -1,6 +1,7 @@
 import * as groupPermissionQueries from './group-permissions/queries';
 import * as groupTagQueries from './group-tags/queries';
 import * as groupQueries from './groups/queries';
+import * as permissionTagQueries from './permission-tags/queries';
 import * as permissionQueries from './permissions/queries';
 import * as roleGroupQueries from './role-groups/queries';
 import * as roleTagQueries from './role-tags/queries';
@@ -23,4 +24,5 @@ export const Query = {
   userTags: userTagQueries.getUserTags,
   roleTags: roleTagQueries.getRoleTags,
   groupTags: groupTagQueries.getGroupTags,
+  permissionTags: permissionTagQueries.getPermissionTags,
 } as const;

@@ -1,0 +1,30 @@
+type PermissionTag implements Auditable {
+  """
+  Unique identifier for the permission-tag relationship.
+  """
+  id: ID!
+  """
+  ID of the permission.
+  """
+  permissionId: ID!
+  """
+  ID of the tag.
+  """
+  tagId: ID!
+  """
+  The permission associated with this relationship.
+  """
+  permission: Permission
+  """
+  The tag associated with this relationship.
+  """
+  tag: Tag
+  """
+  Timestamp when the permission-tag relationship was created.
+  """
+  createdAt: String!
+  """
+  Timestamp when the permission-tag relationship was last updated.
+  """
+  updatedAt: String!
+} 

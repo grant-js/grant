@@ -1,0 +1,11 @@
+extend type Mutation {
+  """
+  Adds a permission-tag relationship.
+  """
+  addPermissionTag(
+    """
+    Input data for adding the permission-tag relationship.
+    """
+    input: AddPermissionTagInput!
+  ): PermissionTag!
+} 

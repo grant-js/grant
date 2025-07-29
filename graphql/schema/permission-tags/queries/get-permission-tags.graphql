@@ -1,0 +1,6 @@
+extend type Query {
+  """
+  Retrieves permission-tag relationships for a specific permission.
+  """
+  permissionTags(permissionId: ID!): [PermissionTag!]!
+} 
