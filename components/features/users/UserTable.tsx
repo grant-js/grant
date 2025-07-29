@@ -1,6 +1,6 @@
 'use client';
 
-import { Shield, UserPlus } from 'lucide-react';
+import { Shield, UserPlus, Tags } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { ScrollBadges } from '@/components/common';
@@ -8,7 +8,8 @@ import { Avatar } from '@/components/common/Avatar';
 import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
 import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
 import { User } from '@/graphql/generated/types';
-import { getTagColorClasses, getAvatarBorderColorClasses } from '@/lib/tag-colors';
+import { getTagBorderColorClasses } from '@/lib/tag-colors';
+import { transformTagsToRoundBadges } from '@/lib/tag-utils';
 
 import { CreateUserDialog } from './CreateUserDialog';
 import { UserActions } from './UserActions';
@@ -37,7 +38,7 @@ export function UserTable({
     return (user.roles || []).map((role) => ({
       id: role.id,
       label: role.name,
-      className: role.tags?.length ? getTagColorClasses(role.tags[0].color) : undefined,
+      className: role.tags?.length ? getTagBorderColorClasses(role.tags[0].color) : undefined,
     }));
   };
 
@@ -53,7 +54,7 @@ export function UserTable({
           size="md"
           className={
             user.tags?.[0]?.color
-              ? `border-2 ${getAvatarBorderColorClasses(user.tags[0].color)}`
+              ? `border-2 ${getTagBorderColorClasses(user.tags[0].color)}`
               : undefined
           }
         />
@@ -89,6 +90,20 @@ export function UserTable({
       ),
     },
     {
+      key: 'tags',
+      header: t('table.tags'),
+      width: '150px',
+      render: (user: User) => (
+        <ScrollBadges
+          items={transformTagsToRoundBadges(user.tags)}
+          title=""
+          icon={<Tags className="h-3 w-3" />}
+          height={60}
+          showAsRound={true}
+        />
+      ),
+    },
+    {
       key: 'audit',
       header: t('table.audit'),
       width: '200px',
@@ -102,6 +117,7 @@ export function UserTable({
       { key: 'name', type: 'text' },
       { key: 'email', type: 'text' },
       { key: 'roles', type: 'list' },
+      { key: 'tags', type: 'list' },
       { key: 'audit', type: 'audit' },
     ],
     rowCount: limit,

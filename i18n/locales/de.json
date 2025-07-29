@@ -157,6 +157,7 @@
       "name": "Name",
       "email": "E-Mail",
       "roles": "Rollen",
+      "tags": "Tags",
       "validation": {
         "rolesRequired": "Benutzer muss mindestens eine Rolle haben"
       },
@@ -207,6 +208,7 @@
       "name": "Name",
       "email": "E-Mail",
       "roles": "Rollen",
+      "tags": "Tags",
       "audit": "Audit",
       "created": "Erstellt",
       "updated": "Aktualisiert",
@@ -245,6 +247,7 @@
       "name": "Name",
       "description": "Beschreibung",
       "groups": "Gruppen",
+      "tags": "Tags",
       "groupsLoading": "Gruppen werden geladen...",
       "noGroupsAvailable": "Keine Gruppen verfügbar",
       "validation": {
@@ -291,6 +294,7 @@
       "name": "Name",
       "description": "Beschreibung",
       "groups": "Gruppen",
+      "tags": "Tags",
       "audit": "Audit",
       "id": "ID",
       "created": "Erstellt",
@@ -341,6 +345,7 @@
       "description": "Beschreibung",
       "descriptionPlaceholder": "Gruppenbeschreibung eingeben",
       "permissions": "Berechtigungen",
+      "tags": "Tags",
       "permissionsLoading": "Berechtigungen werden geladen...",
       "noPermissionsAvailable": "Keine Berechtigungen verfügbar"
     },
@@ -393,6 +398,7 @@
       "name": "Name",
       "description": "Beschreibung",
       "permissions": "Berechtigungen",
+      "tags": "Tags",
       "audit": "Audit",
       "created": "Erstellt",
       "updated": "Aktualisiert",

@@ -1,21 +1,21 @@
 import { tokens } from '@/styles/tokens';
 
 /**
- * Get the CSS classes for a tag color
+ * Get the CSS classes for a tag background color
  * @param color - The color identifier (e.g., 'purple', 'indigo')
- * @returns The CSS classes for the tag color
+ * @returns The CSS classes for the tag background color
  */
-export function getTagColorClasses(color: string): string {
+export function getTagBackgroundColorClasses(color: string): string {
   const tagColors = tokens.colors.tag as Record<string, string>;
   return tagColors[color] || tagColors.purple; // Default to purple if color not found
 }
 
 /**
- * Get border color classes for avatars based on tag color
+ * Get border color classes for badges and avatars based on tag color
  * @param color - The color identifier (e.g., 'purple', 'indigo')
- * @returns The CSS classes for the avatar border color
+ * @returns The CSS classes for the border color
  */
-export function getAvatarBorderColorClasses(color: string): string {
+export function getTagBorderColorClasses(color: string): string {
   const tagBorderColors = tokens.colors.tagBorder as Record<string, string>;
   return tagBorderColors[color] || tagBorderColors.purple; // Default to purple if color not found
 }

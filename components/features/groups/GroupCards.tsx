@@ -1,12 +1,13 @@
 'use client';
 
-import { Shield } from 'lucide-react';
+import { Shield, Tags } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { CardGrid, CardHeader } from '@/components/common';
 import { ScrollBadges } from '@/components/common';
 import { Group } from '@/graphql/generated/types';
-import { getTagColorClasses } from '@/lib/tag-colors';
+import { getTagBorderColorClasses } from '@/lib/tag-colors';
+import { transformTagsToRoundBadges } from '@/lib/tag-utils';
 
 import { CreateGroupDialog } from './CreateGroupDialog';
 import { GroupActions } from './GroupActions';
@@ -36,7 +37,9 @@ export function GroupCards({
     return (group.permissions || []).map((permission) => ({
       id: permission.id,
       label: permission.name,
-      className: permission.tags?.length ? getTagColorClasses(permission.tags[0].color) : undefined,
+      className: permission.tags?.length
+        ? getTagBorderColorClasses(permission.tags[0].color)
+        : undefined,
     }));
   };
 
@@ -69,12 +72,21 @@ export function GroupCards({
         />
       )}
       renderBody={(group: Group) => (
-        <ScrollBadges
-          items={transformPermissionsToBadges(group)}
-          title={t('form.permissions')}
-          icon={<Shield className="h-3 w-3" />}
-          height={80}
-        />
+        <div className="space-y-3">
+          <ScrollBadges
+            items={transformPermissionsToBadges(group)}
+            title={t('form.permissions')}
+            icon={<Shield className="h-3 w-3" />}
+            height={80}
+          />
+          <ScrollBadges
+            items={transformTagsToRoundBadges(group.tags)}
+            title={t('form.tags')}
+            icon={<Tags className="h-3 w-3" />}
+            height={60}
+            showAsRound={true}
+          />
+        </div>
       )}
       renderFooter={(group: Group) => <GroupAudit group={group} />}
     />

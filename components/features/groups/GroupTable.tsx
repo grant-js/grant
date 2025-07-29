@@ -1,6 +1,6 @@
 'use client';
 
-import { Shield } from 'lucide-react';
+import { Shield, Tags } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { ScrollBadges } from '@/components/common';
@@ -8,7 +8,8 @@ import { Avatar } from '@/components/common/Avatar';
 import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
 import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
 import { Group } from '@/graphql/generated/types';
-import { getAvatarBorderColorClasses, getTagColorClasses } from '@/lib/tag-colors';
+import { getTagBorderColorClasses } from '@/lib/tag-colors';
+import { transformTagsToRoundBadges } from '@/lib/tag-utils';
 
 import { CreateGroupDialog } from './CreateGroupDialog';
 import { GroupActions } from './GroupActions';
@@ -37,7 +38,9 @@ export function GroupTable({
     return (group.permissions || []).map((permission) => ({
       id: permission.id,
       label: permission.name,
-      className: permission.tags?.length ? getTagColorClasses(permission.tags[0].color) : undefined,
+      className: permission.tags?.length
+        ? getTagBorderColorClasses(permission.tags[0].color)
+        : undefined,
     }));
   };
 
@@ -53,7 +56,7 @@ export function GroupTable({
           size="md"
           className={
             group.tags?.[0]?.color
-              ? `border-2 ${getAvatarBorderColorClasses(group.tags[0].color)}`
+              ? `border-2 ${getTagBorderColorClasses(group.tags[0].color)}`
               : undefined
           }
         />
@@ -89,6 +92,20 @@ export function GroupTable({
       ),
     },
     {
+      key: 'tags',
+      header: t('table.tags'),
+      width: '150px',
+      render: (group: Group) => (
+        <ScrollBadges
+          items={transformTagsToRoundBadges(group.tags)}
+          title=""
+          icon={<Tags className="h-3 w-3" />}
+          height={60}
+          showAsRound={true}
+        />
+      ),
+    },
+    {
       key: 'audit',
       header: t('table.audit'),
       width: '200px',
@@ -102,6 +119,7 @@ export function GroupTable({
       { key: 'name', type: 'text' },
       { key: 'description', type: 'text' },
       { key: 'permissions', type: 'list' },
+      { key: 'tags', type: 'list' },
       { key: 'audit', type: 'audit' },
     ],
     rowCount: limit,

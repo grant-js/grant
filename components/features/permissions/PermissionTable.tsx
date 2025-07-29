@@ -1,6 +1,6 @@
 'use client';
 
-import { Shield, Key } from 'lucide-react';
+import { Key, Tags } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { ScrollBadges } from '@/components/common';
@@ -8,7 +8,8 @@ import { Avatar } from '@/components/common/Avatar';
 import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
 import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
 import { Permission } from '@/graphql/generated/types';
-import { getTagColorClasses, getAvatarBorderColorClasses } from '@/lib/tag-colors';
+import { getTagBorderColorClasses } from '@/lib/tag-colors';
+import { transformTagsToRoundBadges } from '@/lib/tag-utils';
 
 import { CreatePermissionDialog } from './CreatePermissionDialog';
 import { PermissionActions } from './PermissionActions';
@@ -33,14 +34,6 @@ export function PermissionTable({
 }: PermissionTableProps) {
   const t = useTranslations('permissions');
 
-  const transformTagsToBadges = (permission: Permission) => {
-    return (permission.tags || []).map((tag) => ({
-      id: tag.id,
-      label: tag.name,
-      className: getTagColorClasses(tag.color),
-    }));
-  };
-
   const columns: ColumnConfig<Permission>[] = [
     {
       key: 'avatar',
@@ -53,7 +46,7 @@ export function PermissionTable({
           size="md"
           className={
             permission.tags?.[0]?.color
-              ? `border-2 ${getAvatarBorderColorClasses(permission.tags[0].color)}`
+              ? `border-2 ${getTagBorderColorClasses(permission.tags[0].color)}`
               : undefined
           }
         />
@@ -91,10 +84,11 @@ export function PermissionTable({
       width: '200px',
       render: (permission: Permission) => (
         <ScrollBadges
-          items={transformTagsToBadges(permission)}
+          items={transformTagsToRoundBadges(permission.tags)}
           title=""
-          icon={<Shield className="h-3 w-3" />}
+          icon={<Tags className="h-3 w-3" />}
           height={60}
+          showAsRound={true}
         />
       ),
     },

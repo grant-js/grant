@@ -3,7 +3,7 @@
 import { ReactNode } from 'react';
 
 import { CardTitle, CardDescription } from '@/components/ui/card';
-import { getAvatarBorderColorClasses } from '@/lib/tag-colors';
+import { getTagBorderColorClasses } from '@/lib/tag-colors';
 import { cn } from '@/lib/utils';
 
 import { Avatar, type AvatarProps } from './Avatar';
@@ -64,7 +64,7 @@ export function CardHeader({
           initial={avatar.initial}
           imageUrl={avatar.imageUrl}
           size={avatar.size || 'lg'}
-          className={color ? cn('border-2', getAvatarBorderColorClasses(color)) : undefined}
+          className={color ? cn('border-2', getTagBorderColorClasses(color)) : undefined}
         />
         <div className="min-w-0 flex-1">
           <CardTitle className={cn('text-base font-semibold truncate', titleClassName)}>

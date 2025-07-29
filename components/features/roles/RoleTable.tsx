@@ -1,6 +1,6 @@
 'use client';
 
-import { Shield } from 'lucide-react';
+import { Shield, Tags } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { ScrollBadges } from '@/components/common';
@@ -8,7 +8,8 @@ import { Avatar } from '@/components/common/Avatar';
 import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
 import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
 import { Role } from '@/graphql/generated/types';
-import { getTagColorClasses, getAvatarBorderColorClasses } from '@/lib/tag-colors';
+import { getTagBorderColorClasses } from '@/lib/tag-colors';
+import { transformTagsToRoundBadges } from '@/lib/tag-utils';
 
 import { CreateRoleDialog } from './CreateRoleDialog';
 import { RoleActions } from './RoleActions';
@@ -37,7 +38,7 @@ export function RoleTable({
     return (role.groups || []).map((group) => ({
       id: group.id,
       label: group.name,
-      className: group.tags?.length ? getTagColorClasses(group.tags[0].color) : undefined,
+      className: group.tags?.length ? getTagBorderColorClasses(group.tags[0].color) : undefined,
     }));
   };
 
@@ -53,7 +54,7 @@ export function RoleTable({
           size="md"
           className={
             role.tags?.[0]?.color
-              ? `border-2 ${getAvatarBorderColorClasses(role.tags[0].color)}`
+              ? `border-2 ${getTagBorderColorClasses(role.tags[0].color)}`
               : undefined
           }
         />
@@ -89,6 +90,20 @@ export function RoleTable({
       ),
     },
     {
+      key: 'tags',
+      header: t('table.tags'),
+      width: '150px',
+      render: (role: Role) => (
+        <ScrollBadges
+          items={transformTagsToRoundBadges(role.tags)}
+          title=""
+          icon={<Tags className="h-3 w-3" />}
+          height={60}
+          showAsRound={true}
+        />
+      ),
+    },
+    {
       key: 'audit',
       header: t('table.audit'),
       width: '200px',
@@ -102,6 +117,7 @@ export function RoleTable({
       { key: 'name', type: 'text' },
       { key: 'description', type: 'text' },
       { key: 'groups', type: 'list' },
+      { key: 'tags', type: 'list' },
       { key: 'audit', type: 'audit' },
     ],
     rowCount: limit,

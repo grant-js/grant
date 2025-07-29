@@ -23,6 +23,7 @@ interface ScrollBadgesProps {
   height?: number; // Height in pixels
   defaultVariant?: 'default' | 'secondary' | 'destructive' | 'outline'; // Default badge variant
   className?: string;
+  showAsRound?: boolean; // New prop to show badges as round circles without text
 }
 
 export function ScrollBadges({
@@ -30,8 +31,9 @@ export function ScrollBadges({
   title,
   icon,
   height = 80,
-  defaultVariant = 'default',
+  defaultVariant = 'outline',
   className,
+  showAsRound = false,
 }: ScrollBadgesProps) {
   const t = useTranslations('common');
   const phantomRef = useRef<HTMLDivElement>(null);
@@ -41,13 +43,21 @@ export function ScrollBadges({
     () => (
       <div className="flex flex-wrap gap-2 pr-4">
         {items.map((item) => (
-          <Badge key={item.id} variant={item.variant || defaultVariant} className={item.className}>
-            {item.label}
+          <Badge
+            key={item.id}
+            variant={item.variant || defaultVariant}
+            className={cn(
+              item.className,
+              showAsRound && 'w-3 h-3 rounded-full p-0 border-2 bg-transparent',
+              !showAsRound && 'bg-transparent border-2'
+            )}
+          >
+            {!showAsRound && item.label}
           </Badge>
         ))}
       </div>
     ),
-    [items, defaultVariant]
+    [items, defaultVariant, showAsRound]
   );
 
   // Measure the natural height of the content
@@ -103,9 +113,13 @@ export function ScrollBadges({
             <Badge
               key={item.id}
               variant={item.variant || defaultVariant}
-              className={item.className}
+              className={cn(
+                item.className,
+                showAsRound && 'w-3 h-3 rounded-full p-0 border-2 bg-transparent',
+                !showAsRound && 'bg-transparent border-2'
+              )}
             >
-              {item.label}
+              {!showAsRound && item.label}
             </Badge>
           ))}
         </div>

@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { CardGrid, CardHeader } from '@/components/common';
 import { ScrollBadges } from '@/components/common';
 import { Permission } from '@/graphql/generated/types';
-import { getTagColorClasses } from '@/lib/tag-colors';
+import { transformTagsToRoundBadges } from '@/lib/tag-utils';
 
 import { CreatePermissionDialog } from './CreatePermissionDialog';
 import { PermissionActions } from './PermissionActions';
@@ -31,14 +31,6 @@ export function PermissionCards({
   onDeleteClick,
 }: PermissionCardsProps) {
   const t = useTranslations('permissions');
-
-  const transformTagsToBadges = (permission: Permission) => {
-    return (permission.tags || []).map((tag) => ({
-      id: tag.id,
-      label: tag.name,
-      className: getTagColorClasses(tag.color),
-    }));
-  };
 
   return (
     <CardGrid<Permission>
@@ -84,10 +76,11 @@ export function PermissionCards({
             </span>
           </div>
           <ScrollBadges
-            items={transformTagsToBadges(permission)}
+            items={transformTagsToRoundBadges(permission.tags)}
             title={t('form.tags')}
             icon={<Tags className="h-3 w-3" />}
             height={60}
+            showAsRound={true}
           />
         </div>
       )}

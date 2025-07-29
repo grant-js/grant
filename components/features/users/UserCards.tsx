@@ -1,12 +1,13 @@
 'use client';
 
-import { UserPlus, Shield } from 'lucide-react';
+import { UserPlus, Shield, Tags } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { CardGrid, CardHeader } from '@/components/common';
 import { ScrollBadges } from '@/components/common';
 import { User } from '@/graphql/generated/types';
-import { getTagColorClasses } from '@/lib/tag-colors';
+import { getTagBorderColorClasses } from '@/lib/tag-colors';
+import { transformTagsToRoundBadges } from '@/lib/tag-utils';
 
 import { CreateUserDialog } from './CreateUserDialog';
 import { UserActions } from './UserActions';
@@ -36,7 +37,7 @@ export function UserCards({
     return (user.roles || []).map((role) => ({
       id: role.id,
       label: role.name,
-      className: role.tags?.length ? getTagColorClasses(role.tags[0].color) : undefined,
+      className: role.tags?.length ? getTagBorderColorClasses(role.tags[0].color) : undefined,
     }));
   };
 
@@ -69,12 +70,21 @@ export function UserCards({
         />
       )}
       renderBody={(user: User) => (
-        <ScrollBadges
-          items={transformRolesToBadges(user)}
-          title={t('form.roles')}
-          icon={<Shield className="h-3 w-3" />}
-          height={80}
-        />
+        <div className="space-y-3">
+          <ScrollBadges
+            items={transformRolesToBadges(user)}
+            title={t('form.roles')}
+            icon={<Shield className="h-3 w-3" />}
+            height={80}
+          />
+          <ScrollBadges
+            items={transformTagsToRoundBadges(user.tags)}
+            title={t('form.tags')}
+            icon={<Tags className="h-3 w-3" />}
+            height={60}
+            showAsRound={true}
+          />
+        </div>
       )}
       renderFooter={(user: User) => <UserAudit user={user} />}
     />
