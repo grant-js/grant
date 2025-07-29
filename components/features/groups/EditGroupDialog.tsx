@@ -1,45 +1,37 @@
 'use client';
 
-import { useState } from 'react';
-
-import { useTranslations } from 'next-intl';
-
 import {
   EditDialog,
   EditDialogField,
   EditDialogRelationship,
 } from '@/components/common/EditDialog';
-import { Group, Permission } from '@/graphql/generated/types';
+import { CheckboxList } from '@/components/ui/checkbox-list';
+import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
+import { Group, Permission, Tag } from '@/graphql/generated/types';
 import { useGroupMutations } from '@/hooks/groups';
-import { usePermissions } from '@/hooks/permissions/usePermissions';
+import { usePermissions } from '@/hooks/permissions';
+import { useTags } from '@/hooks/tags';
 
-import { editGroupSchema, EditGroupFormValues } from './types';
+import { EditGroupFormValues, editGroupSchema, EditGroupDialogProps } from './types';
 
-interface EditGroupDialogProps {
-  group: Group | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  currentPage: number;
-}
-
-export function EditGroupDialog({ group, open, onOpenChange, currentPage }: EditGroupDialogProps) {
-  const t = useTranslations('groups');
+export function EditGroupDialog({ group, open, onOpenChange }: EditGroupDialogProps) {
   const { permissions, loading: permissionsLoading } = usePermissions();
-  const { updateGroup, addGroupPermission, removeGroupPermission } = useGroupMutations();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { tags, loading: tagsLoading } = useTags();
+  const { updateGroup, addGroupPermission, removeGroupPermission, addGroupTag, removeGroupTag } =
+    useGroupMutations();
 
   const fields: EditDialogField[] = [
     {
       name: 'name',
       label: 'form.name',
-      placeholder: 'form.namePlaceholder',
+      placeholder: 'form.name',
       type: 'text',
       required: true,
     },
     {
       name: 'description',
       label: 'form.description',
-      placeholder: 'form.descriptionPlaceholder',
+      placeholder: 'form.description',
       type: 'textarea',
     },
   ];
@@ -48,33 +40,39 @@ export function EditGroupDialog({ group, open, onOpenChange, currentPage }: Edit
     {
       name: 'permissionIds',
       label: 'form.permissions',
+      renderComponent: (props: any) => <CheckboxList {...props} />,
       items: permissions.map((permission: Permission) => ({
         id: permission.id,
         name: permission.name,
-        description: permission.description ?? undefined,
+        description: permission.description || undefined,
       })),
       loading: permissionsLoading,
       loadingText: 'form.permissionsLoading',
       emptyText: 'form.noPermissionsAvailable',
+    },
+    {
+      name: 'tagIds',
+      label: 'form.tags',
+      renderComponent: (props: any) => <TagCheckboxList {...props} />,
+      items: tags,
+      loading: tagsLoading,
+      loadingText: 'form.tagsLoading',
+      emptyText: 'form.noTagsAvailable',
     },
   ];
 
   const mapGroupToFormValues = (group: Group): EditGroupFormValues => ({
     name: group.name,
     description: group.description || '',
-    permissionIds: group.permissions?.map((permission) => permission.id),
+    permissionIds: group.permissions?.map((permission: Permission) => permission.id),
+    tagIds: group.tags?.map((tag: Tag) => tag.id),
   });
 
   const handleUpdate = async (groupId: string, values: EditGroupFormValues) => {
-    setIsSubmitting(true);
-    try {
-      await updateGroup(groupId, {
-        name: values.name,
-        description: values.description,
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    await updateGroup(groupId, {
+      name: values.name,
+      description: values.description,
+    });
   };
 
   const handleAddRelationships = async (
@@ -89,7 +87,18 @@ export function EditGroupDialog({ group, open, onOpenChange, currentPage }: Edit
           permissionId,
         }).catch((error: any) => {
           console.error('Error adding group permission:', error);
-          // Continue with other permission assignments even if one fails
+          throw error;
+        })
+      );
+      await Promise.all(addPromises);
+    } else if (relationshipName === 'tagIds') {
+      const addPromises = itemIds.map((tagId) =>
+        addGroupTag({
+          groupId,
+          tagId,
+        }).catch((error: any) => {
+          console.error('Error adding group tag:', error);
+          throw error;
         })
       );
       await Promise.all(addPromises);
@@ -107,15 +116,18 @@ export function EditGroupDialog({ group, open, onOpenChange, currentPage }: Edit
           groupId,
           permissionId,
         }).catch((error: any) => {
-          // Handle "GroupPermission not found" error gracefully
-          if (error.message?.includes('GroupPermission not found')) {
-            console.warn('GroupPermission not found, skipping removal:', {
-              groupId,
-              permissionId,
-            });
-            return;
-          }
           console.error('Error removing group permission:', error);
+          throw error;
+        })
+      );
+      await Promise.all(removePromises);
+    } else if (relationshipName === 'tagIds') {
+      const removePromises = itemIds.map((tagId) =>
+        removeGroupTag({
+          groupId,
+          tagId,
+        }).catch((error: any) => {
+          console.error('Error removing group tag:', error);
           throw error;
         })
       );
@@ -128,16 +140,15 @@ export function EditGroupDialog({ group, open, onOpenChange, currentPage }: Edit
       entity={group}
       open={open}
       onOpenChange={onOpenChange}
-      title="edit.title"
-      description="edit.description"
-      confirmText="actions.update"
-      cancelText="actions.cancel"
-      updatingText="actions.updating"
+      title="editDialog.title"
+      description="editDialog.description"
+      confirmText="editDialog.confirm"
       schema={editGroupSchema}
       defaultValues={{
         name: '',
         description: '',
         permissionIds: [],
+        tagIds: [],
       }}
       fields={fields}
       relationships={relationships}
@@ -146,7 +157,6 @@ export function EditGroupDialog({ group, open, onOpenChange, currentPage }: Edit
       onAddRelationships={handleAddRelationships}
       onRemoveRelationships={handleRemoveRelationships}
       translationNamespace="groups"
-      isSubmitting={isSubmitting}
     />
   );
 }

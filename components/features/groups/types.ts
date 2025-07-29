@@ -7,12 +7,14 @@ export const createGroupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   description: z.string().optional(),
   permissionIds: z.array(z.string()).optional(),
+  tagIds: z.array(z.string()).optional(),
 });
 
 export const editGroupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   description: z.string().optional(),
   permissionIds: z.array(z.string()).optional(),
+  tagIds: z.array(z.string()).optional(),
 });
 
 // Form types
@@ -21,8 +23,8 @@ export type EditGroupFormValues = z.infer<typeof editGroupSchema>;
 
 // Component props
 export interface CreateGroupDialogProps {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export interface EditGroupDialogProps {

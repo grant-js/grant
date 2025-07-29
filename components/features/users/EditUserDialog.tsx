@@ -1,22 +1,23 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
-
 import {
   EditDialog,
   EditDialogField,
   EditDialogRelationship,
 } from '@/components/common/EditDialog';
-import { Role, User } from '@/graphql/generated/types';
+import { CheckboxList } from '@/components/ui/checkbox-list';
+import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
+import { Role, Tag, User } from '@/graphql/generated/types';
 import { useRoles } from '@/hooks/roles';
+import { useTags } from '@/hooks/tags';
 import { useUserMutations } from '@/hooks/users';
 
 import { EditUserFormValues, editUserSchema, EditUserDialogProps } from './types';
 
-export function EditUserDialog({ user, open, onOpenChange, currentPage }: EditUserDialogProps) {
-  const t = useTranslations('users');
+export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps) {
   const { roles, loading: rolesLoading } = useRoles();
-  const { updateUser, addUserRole, removeUserRole } = useUserMutations();
+  const { tags, loading: tagsLoading } = useTags();
+  const { updateUser, addUserRole, removeUserRole, addUserTag, removeUserTag } = useUserMutations();
 
   const fields: EditDialogField[] = [
     {
@@ -39,6 +40,7 @@ export function EditUserDialog({ user, open, onOpenChange, currentPage }: EditUs
     {
       name: 'roleIds',
       label: 'form.roles',
+      renderComponent: (props: any) => <CheckboxList {...props} />,
       items: roles.map((role: Role) => ({
         id: role.id,
         name: role.name,
@@ -48,12 +50,22 @@ export function EditUserDialog({ user, open, onOpenChange, currentPage }: EditUs
       loadingText: 'form.rolesLoading',
       emptyText: 'form.noRolesAvailable',
     },
+    {
+      name: 'tagIds',
+      label: 'form.tags',
+      renderComponent: (props: any) => <TagCheckboxList {...props} />,
+      items: tags,
+      loading: tagsLoading,
+      loadingText: 'form.tagsLoading',
+      emptyText: 'form.noTagsAvailable',
+    },
   ];
 
   const mapUserToFormValues = (user: User): EditUserFormValues => ({
     name: user.name,
     email: user.email,
     roleIds: user.roles?.map((role: Role) => role.id),
+    tagIds: user.tags?.map((tag: Tag) => tag.id),
   });
 
   const handleUpdate = async (userId: string, values: EditUserFormValues) => {
@@ -79,6 +91,17 @@ export function EditUserDialog({ user, open, onOpenChange, currentPage }: EditUs
         })
       );
       await Promise.all(addPromises);
+    } else if (relationshipName === 'tagIds') {
+      const addPromises = itemIds.map((tagId) =>
+        addUserTag({
+          userId,
+          tagId,
+        }).catch((error: any) => {
+          console.error('Error adding user tag:', error);
+          throw error;
+        })
+      );
+      await Promise.all(addPromises);
     }
   };
 
@@ -94,6 +117,17 @@ export function EditUserDialog({ user, open, onOpenChange, currentPage }: EditUs
           roleId,
         }).catch((error: any) => {
           console.error('Error removing user role:', error);
+          throw error;
+        })
+      );
+      await Promise.all(removePromises);
+    } else if (relationshipName === 'tagIds') {
+      const removePromises = itemIds.map((tagId) =>
+        removeUserTag({
+          userId,
+          tagId,
+        }).catch((error: any) => {
+          console.error('Error removing user tag:', error);
           throw error;
         })
       );
@@ -114,6 +148,7 @@ export function EditUserDialog({ user, open, onOpenChange, currentPage }: EditUs
         name: '',
         email: '',
         roleIds: [],
+        tagIds: [],
       }}
       fields={fields}
       relationships={relationships}

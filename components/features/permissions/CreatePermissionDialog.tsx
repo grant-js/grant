@@ -1,11 +1,15 @@
 'use client';
 
-import { useState } from 'react';
-
 import { Key } from 'lucide-react';
 
-import { CreateDialog, CreateDialogField } from '@/components/common/CreateDialog';
+import {
+  CreateDialog,
+  CreateDialogField,
+  CreateDialogRelationship,
+} from '@/components/common/CreateDialog';
+import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
 import { usePermissionMutations } from '@/hooks/permissions';
+import { useTags } from '@/hooks/tags';
 
 import {
   createPermissionSchema,
@@ -22,8 +26,8 @@ export function CreatePermissionDialog({
   onOpenChange,
   children,
 }: CreatePermissionDialogComponentProps) {
-  const { createPermission } = usePermissionMutations();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { tags, loading: tagsLoading } = useTags();
+  const { createPermission, addPermissionTag } = usePermissionMutations();
 
   const fields: CreateDialogField[] = [
     {
@@ -46,17 +50,46 @@ export function CreatePermissionDialog({
     },
   ];
 
+  const relationships: CreateDialogRelationship[] = [
+    {
+      name: 'tagIds',
+      label: 'form.tags',
+      renderComponent: (props: any) => <TagCheckboxList {...props} />,
+      items: tags,
+      loading: tagsLoading,
+      loadingText: 'form.tagsLoading',
+      emptyText: 'form.noTagsAvailable',
+    },
+  ];
+
   const handleCreate = async (values: CreatePermissionFormValues) => {
-    setIsSubmitting(true);
-    try {
-      return await createPermission({
-        name: values.name,
-        description: values.description,
-        action: values.action,
-      });
-    } finally {
-      setIsSubmitting(false);
+    return await createPermission({
+      name: values.name,
+      description: values.description,
+      action: values.action,
+    });
+  };
+
+  const handleAddRelationships = async (
+    permissionId: string,
+    values: CreatePermissionFormValues
+  ) => {
+    const promises: Promise<any>[] = [];
+
+    // Add tags
+    if (values.tagIds && values.tagIds.length > 0) {
+      const addTagPromises = values.tagIds.map((tagId) =>
+        addPermissionTag({
+          permissionId,
+          tagId,
+        }).catch((error: any) => {
+          console.error('Error adding permission tag:', error);
+        })
+      );
+      promises.push(...addTagPromises);
     }
+
+    await Promise.all(promises);
   };
 
   return (
@@ -74,11 +107,13 @@ export function CreatePermissionDialog({
         name: '',
         action: '',
         description: '',
+        tagIds: [],
       }}
       fields={fields}
+      relationships={relationships}
       onCreate={handleCreate}
+      onAddRelationships={handleAddRelationships}
       translationNamespace="permissions"
-      isSubmitting={isSubmitting}
       submittingText="createDialog.submitting"
     >
       {children}

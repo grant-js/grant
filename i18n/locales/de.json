@@ -141,6 +141,7 @@
       "edit": "Bearbeiten",
       "delete": "Löschen",
       "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert...",
       "label": "Aktionen anzeigen/ausblenden"
     },
     "sort": {
@@ -162,7 +163,9 @@
         "rolesRequired": "Benutzer muss mindestens eine Rolle haben"
       },
       "rolesLoading": "Rollen werden geladen...",
-      "noRolesAvailable": "Keine Rollen verfügbar"
+      "noRolesAvailable": "Keine Rollen verfügbar",
+      "tagsLoading": "Tags werden geladen...",
+      "noTagsAvailable": "Keine Tags verfügbar"
     },
     "roles": {
       "admin": "Administrator",
@@ -197,7 +200,11 @@
       "roleAddedSuccess": "Rolle zum Benutzer hinzugefügt",
       "roleAddedError": "Rolle konnte nicht zum Benutzer hinzugefügt werden",
       "roleRemovedSuccess": "Rolle vom Benutzer entfernt",
-      "roleRemovedError": "Rolle konnte nicht vom Benutzer entfernt werden"
+      "roleRemovedError": "Rolle konnte nicht vom Benutzer entfernt werden",
+      "tagAddedSuccess": "Tag zum Benutzer hinzugefügt",
+      "tagAddedError": "Tag konnte nicht zum Benutzer hinzugefügt werden",
+      "tagRemovedSuccess": "Tag vom Benutzer entfernt",
+      "tagRemovedError": "Tag konnte nicht vom Benutzer entfernt werden"
     },
     "view": {
       "card": "Kartenansicht",
@@ -231,6 +238,7 @@
       "edit": "Bearbeiten",
       "delete": "Löschen",
       "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert...",
       "label": "Aktionen anzeigen/ausblenden"
     },
     "sort": {
@@ -250,6 +258,8 @@
       "tags": "Tags",
       "groupsLoading": "Gruppen werden geladen...",
       "noGroupsAvailable": "Keine Gruppen verfügbar",
+      "tagsLoading": "Tags werden geladen...",
+      "noTagsAvailable": "Keine Tags verfügbar",
       "validation": {
         "groupsRequired": "Rolle muss mindestens eine Gruppe haben"
       }
@@ -283,7 +293,11 @@
       "groupAddedSuccess": "Gruppe zur Rolle hinzugefügt",
       "groupAddedError": "Gruppe konnte nicht zur Rolle hinzugefügt werden",
       "groupRemovedSuccess": "Gruppe von der Rolle entfernt",
-      "groupRemovedError": "Gruppe konnte nicht von der Rolle entfernt werden"
+      "groupRemovedError": "Gruppe konnte nicht von der Rolle entfernt werden",
+      "tagAddedSuccess": "Tag zur Rolle hinzugefügt",
+      "tagAddedError": "Tag konnte nicht zur Rolle hinzugefügt werden",
+      "tagRemovedSuccess": "Tag von der Rolle entfernt",
+      "tagRemovedError": "Tag konnte nicht von der Rolle entfernt werden"
     },
     "view": {
       "card": "Kartenansicht",
@@ -347,7 +361,9 @@
       "permissions": "Berechtigungen",
       "tags": "Tags",
       "permissionsLoading": "Berechtigungen werden geladen...",
-      "noPermissionsAvailable": "Keine Berechtigungen verfügbar"
+      "noPermissionsAvailable": "Keine Berechtigungen verfügbar",
+      "tagsLoading": "Tags werden geladen...",
+      "noTagsAvailable": "Keine Tags verfügbar"
     },
     "create": {
       "title": "Neue Gruppe erstellen",
@@ -387,7 +403,11 @@
       "permissionAddedSuccess": "Berechtigung zur Gruppe hinzugefügt",
       "permissionAddedError": "Berechtigung konnte nicht zur Gruppe hinzugefügt werden",
       "permissionRemovedSuccess": "Berechtigung von der Gruppe entfernt",
-      "permissionRemovedError": "Berechtigung konnte nicht von der Gruppe entfernt werden"
+      "permissionRemovedError": "Berechtigung konnte nicht von der Gruppe entfernt werden",
+      "tagAddedSuccess": "Tag zur Gruppe hinzugefügt",
+      "tagAddedError": "Tag konnte nicht zur Gruppe hinzugefügt werden",
+      "tagRemovedSuccess": "Tag von der Gruppe entfernt",
+      "tagRemovedError": "Tag konnte nicht von der Gruppe entfernt werden"
     },
     "view": {
       "cards": "Kartenansicht",
@@ -424,6 +444,7 @@
       "edit": "Bearbeiten",
       "delete": "Löschen",
       "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert...",
       "label": "Aktionen anzeigen/ausblenden"
     },
     "sort": {
@@ -441,6 +462,8 @@
       "description": "Beschreibung",
       "action": "Aktion",
       "tags": "Tags",
+      "tagsLoading": "Tags werden geladen...",
+      "noTagsAvailable": "Keine Tags verfügbar",
       "validation": {
         "nameRequired": "Berechtigungsname ist erforderlich"
       }

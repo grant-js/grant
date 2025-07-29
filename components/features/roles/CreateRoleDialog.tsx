@@ -1,16 +1,18 @@
 'use client';
 
 import { Shield } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 
 import {
   CreateDialog,
   CreateDialogField,
   CreateDialogRelationship,
 } from '@/components/common/CreateDialog';
+import { CheckboxList } from '@/components/ui/checkbox-list';
+import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
 import { Group } from '@/graphql/generated/types';
 import { useGroups } from '@/hooks/groups';
 import { useRoleMutations } from '@/hooks/roles';
+import { useTags } from '@/hooks/tags';
 
 import { createRoleSchema, CreateRoleFormValues, CreateRoleDialogProps } from './types';
 
@@ -19,9 +21,9 @@ interface CreateRoleDialogComponentProps extends Partial<CreateRoleDialogProps> 
 }
 
 export function CreateRoleDialog({ open, onOpenChange, children }: CreateRoleDialogComponentProps) {
-  const t = useTranslations('roles');
   const { groups, loading: groupsLoading } = useGroups();
-  const { createRole, addRoleGroup } = useRoleMutations();
+  const { tags, loading: tagsLoading } = useTags();
+  const { createRole, addRoleGroup, addRoleTag } = useRoleMutations();
 
   const fields: CreateDialogField[] = [
     {
@@ -34,7 +36,7 @@ export function CreateRoleDialog({ open, onOpenChange, children }: CreateRoleDia
       name: 'description',
       label: 'form.description',
       placeholder: 'form.description',
-      type: 'text',
+      type: 'textarea',
     },
   ];
 
@@ -42,6 +44,7 @@ export function CreateRoleDialog({ open, onOpenChange, children }: CreateRoleDia
     {
       name: 'groupIds',
       label: 'form.groups',
+      renderComponent: (props: any) => <CheckboxList {...props} />,
       items: groups.map((group: Group) => ({
         id: group.id,
         name: group.name,
@@ -50,6 +53,15 @@ export function CreateRoleDialog({ open, onOpenChange, children }: CreateRoleDia
       loading: groupsLoading,
       loadingText: 'form.groupsLoading',
       emptyText: 'form.noGroupsAvailable',
+    },
+    {
+      name: 'tagIds',
+      label: 'form.tags',
+      renderComponent: (props: any) => <TagCheckboxList {...props} />,
+      items: tags,
+      loading: tagsLoading,
+      loadingText: 'form.tagsLoading',
+      emptyText: 'form.noTagsAvailable',
     },
   ];
 
@@ -61,8 +73,11 @@ export function CreateRoleDialog({ open, onOpenChange, children }: CreateRoleDia
   };
 
   const handleAddRelationships = async (roleId: string, values: CreateRoleFormValues) => {
+    const promises: Promise<any>[] = [];
+
+    // Add groups
     if (values.groupIds && values.groupIds.length > 0) {
-      const addPromises = values.groupIds.map((groupId) =>
+      const addGroupPromises = values.groupIds.map((groupId) =>
         addRoleGroup({
           roleId,
           groupId,
@@ -70,8 +85,23 @@ export function CreateRoleDialog({ open, onOpenChange, children }: CreateRoleDia
           console.error('Error adding role group:', error);
         })
       );
-      await Promise.all(addPromises);
+      promises.push(...addGroupPromises);
     }
+
+    // Add tags
+    if (values.tagIds && values.tagIds.length > 0) {
+      const addTagPromises = values.tagIds.map((tagId) =>
+        addRoleTag({
+          roleId,
+          tagId,
+        }).catch((error: any) => {
+          console.error('Error adding role tag:', error);
+        })
+      );
+      promises.push(...addTagPromises);
+    }
+
+    await Promise.all(promises);
   };
 
   return (
@@ -89,12 +119,14 @@ export function CreateRoleDialog({ open, onOpenChange, children }: CreateRoleDia
         name: '',
         description: '',
         groupIds: [],
+        tagIds: [],
       }}
       fields={fields}
       relationships={relationships}
       onCreate={handleCreate}
       onAddRelationships={handleAddRelationships}
       translationNamespace="roles"
+      submittingText="createDialog.submitting"
     >
       {children}
     </CreateDialog>

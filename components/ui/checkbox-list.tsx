@@ -22,6 +22,7 @@ interface CheckboxListProps {
   emptyText?: string;
   error?: string;
   maxHeight?: string;
+  disabled?: boolean;
 }
 
 export function CheckboxList({
@@ -34,6 +35,7 @@ export function CheckboxList({
   emptyText = 'No items available',
   error,
   maxHeight = '200px',
+  disabled = false,
 }: CheckboxListProps) {
   return (
     <FormField
@@ -65,12 +67,14 @@ export function CheckboxList({
                               <Checkbox
                                 checked={field.value?.includes(item.id)}
                                 onCheckedChange={(checked: boolean) => {
+                                  if (disabled) return;
                                   return checked
                                     ? field.onChange([...(field.value || []), item.id])
                                     : field.onChange(
                                         field.value?.filter((value: string) => value !== item.id)
                                       );
                                 }}
+                                disabled={disabled}
                                 className="mt-0.75"
                               />
                             </FormControl>

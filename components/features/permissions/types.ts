@@ -4,15 +4,17 @@ import { Permission } from '@/graphql/generated/types';
 
 // Form schemas
 export const createPermissionSchema = z.object({
-  name: z.string().min(3, 'Name must be at least 3 characters'),
-  action: z.string().min(1, 'Action must be at least 1 character'),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  action: z.string().min(2, 'Action must be at least 2 characters'),
   description: z.string().optional(),
+  tagIds: z.array(z.string()).optional(),
 });
 
 export const editPermissionSchema = z.object({
-  name: z.string().min(3, 'Name must be at least 3 characters'),
-  action: z.string().min(1, 'Action must be at least 1 character'),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  action: z.string().min(2, 'Action must be at least 2 characters'),
   description: z.string().optional(),
+  tagIds: z.array(z.string()).optional(),
 });
 
 // Form types

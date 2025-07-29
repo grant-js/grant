@@ -1,22 +1,24 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
-
 import {
   EditDialog,
   EditDialogField,
   EditDialogRelationship,
 } from '@/components/common/EditDialog';
-import { Group, Role } from '@/graphql/generated/types';
+import { CheckboxList } from '@/components/ui/checkbox-list';
+import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
+import { Group, Role, Tag } from '@/graphql/generated/types';
 import { useGroups } from '@/hooks/groups';
 import { useRoleMutations } from '@/hooks/roles';
+import { useTags } from '@/hooks/tags';
 
 import { EditRoleFormValues, editRoleSchema, EditRoleDialogProps } from './types';
 
-export function EditRoleDialog({ role, open, onOpenChange, currentPage }: EditRoleDialogProps) {
-  const t = useTranslations('roles');
+export function EditRoleDialog({ role, open, onOpenChange }: EditRoleDialogProps) {
   const { groups, loading: groupsLoading } = useGroups();
-  const { updateRole, addRoleGroup, removeRoleGroup } = useRoleMutations();
+  const { tags, loading: tagsLoading } = useTags();
+  const { updateRole, addRoleGroup, removeRoleGroup, addRoleTag, removeRoleTag } =
+    useRoleMutations();
 
   const fields: EditDialogField[] = [
     {
@@ -30,7 +32,7 @@ export function EditRoleDialog({ role, open, onOpenChange, currentPage }: EditRo
       name: 'description',
       label: 'form.description',
       placeholder: 'form.description',
-      type: 'text',
+      type: 'textarea',
     },
   ];
 
@@ -38,14 +40,24 @@ export function EditRoleDialog({ role, open, onOpenChange, currentPage }: EditRo
     {
       name: 'groupIds',
       label: 'form.groups',
+      renderComponent: (props: any) => <CheckboxList {...props} />,
       items: groups.map((group: Group) => ({
         id: group.id,
         name: group.name,
-        description: group.description ?? undefined,
+        description: group.description || undefined,
       })),
       loading: groupsLoading,
       loadingText: 'form.groupsLoading',
       emptyText: 'form.noGroupsAvailable',
+    },
+    {
+      name: 'tagIds',
+      label: 'form.tags',
+      renderComponent: (props: any) => <TagCheckboxList {...props} />,
+      items: tags,
+      loading: tagsLoading,
+      loadingText: 'form.tagsLoading',
+      emptyText: 'form.noTagsAvailable',
     },
   ];
 
@@ -53,6 +65,7 @@ export function EditRoleDialog({ role, open, onOpenChange, currentPage }: EditRo
     name: role.name,
     description: role.description || '',
     groupIds: role.groups?.map((group: Group) => group.id),
+    tagIds: role.tags?.map((tag: Tag) => tag.id),
   });
 
   const handleUpdate = async (roleId: string, values: EditRoleFormValues) => {
@@ -74,7 +87,18 @@ export function EditRoleDialog({ role, open, onOpenChange, currentPage }: EditRo
           groupId,
         }).catch((error: any) => {
           console.error('Error adding role group:', error);
-          // Continue with other group assignments even if one fails
+          throw error;
+        })
+      );
+      await Promise.all(addPromises);
+    } else if (relationshipName === 'tagIds') {
+      const addPromises = itemIds.map((tagId) =>
+        addRoleTag({
+          roleId,
+          tagId,
+        }).catch((error: any) => {
+          console.error('Error adding role tag:', error);
+          throw error;
         })
       );
       await Promise.all(addPromises);
@@ -92,12 +116,18 @@ export function EditRoleDialog({ role, open, onOpenChange, currentPage }: EditRo
           roleId,
           groupId,
         }).catch((error: any) => {
-          // Handle "RoleGroup not found" error gracefully
-          if (error.message?.includes('RoleGroup not found')) {
-            console.warn('RoleGroup not found, skipping removal:', { roleId, groupId });
-            return;
-          }
           console.error('Error removing role group:', error);
+          throw error;
+        })
+      );
+      await Promise.all(removePromises);
+    } else if (relationshipName === 'tagIds') {
+      const removePromises = itemIds.map((tagId) =>
+        removeRoleTag({
+          roleId,
+          tagId,
+        }).catch((error: any) => {
+          console.error('Error removing role tag:', error);
           throw error;
         })
       );
@@ -118,6 +148,7 @@ export function EditRoleDialog({ role, open, onOpenChange, currentPage }: EditRo
         name: '',
         description: '',
         groupIds: [],
+        tagIds: [],
       }}
       fields={fields}
       relationships={relationships}

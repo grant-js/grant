@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
@@ -8,7 +8,6 @@ import { useForm, DefaultValues } from 'react-hook-form';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
-import { CheckboxList } from '@/components/ui/checkbox-list';
 import {
   Dialog,
   DialogContent,
@@ -38,14 +37,11 @@ export interface EditDialogField {
   required?: boolean;
 }
 
-export interface EditDialogRelationship {
+export interface EditDialogRelationship<T = any> {
   name: string;
   label: string;
-  items: Array<{
-    id: string;
-    name: string;
-    description?: string;
-  }>;
+  renderComponent: (props: any) => React.ReactNode;
+  items: T[];
   loading: boolean;
   loadingText: string;
   emptyText: string;
@@ -91,9 +87,6 @@ export interface EditDialogProps<TFormValues extends Record<string, any>, TEntit
 
   // Translation namespace
   translationNamespace: string;
-
-  // Loading state
-  isSubmitting?: boolean;
 }
 
 export function EditDialog<TFormValues extends Record<string, any>, TEntity>({
@@ -114,9 +107,9 @@ export function EditDialog<TFormValues extends Record<string, any>, TEntity>({
   onAddRelationships,
   onRemoveRelationships,
   translationNamespace,
-  isSubmitting = false,
 }: EditDialogProps<TFormValues, TEntity>) {
   const t = useTranslations(translationNamespace);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Internal state for uncontrolled usage
   const [internalOpen, setInternalOpen] = useState(false);
@@ -142,11 +135,12 @@ export function EditDialog<TFormValues extends Record<string, any>, TEntity>({
       form.reset(safeFormValues);
       setInitialFormValues(safeFormValues);
     }
-  }, [entity, form, mapEntityToFormValues]);
+  }, [entity, form, mapEntityToFormValues, defaultValues]);
 
   const onSubmit = async (values: TFormValues) => {
     if (!entity) return;
 
+    setIsSubmitting(true);
     try {
       // Update main entity first
       const updatedEntity = await onUpdate((entity as any).id, values);
@@ -176,6 +170,8 @@ export function EditDialog<TFormValues extends Record<string, any>, TEntity>({
     } catch (error) {
       // Error handling is done in the specific mutation hooks
       console.error('Error updating entity:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -205,6 +201,7 @@ export function EditDialog<TFormValues extends Record<string, any>, TEntity>({
                 <Textarea
                   placeholder={field.placeholder ? t(field.placeholder) : t(field.label)}
                   className="resize-none"
+                  disabled={isSubmitting}
                   {...formField}
                 />
               ) : (
@@ -212,6 +209,7 @@ export function EditDialog<TFormValues extends Record<string, any>, TEntity>({
                   type={field.type}
                   placeholder={field.placeholder ? t(field.placeholder) : t(field.label)}
                   className={hasError ? 'border-red-500' : ''}
+                  disabled={isSubmitting}
                   {...formField}
                 />
               )}
@@ -241,21 +239,28 @@ export function EditDialog<TFormValues extends Record<string, any>, TEntity>({
             {fields.map(renderField)}
 
             {relationships?.map((relationship) => (
-              <CheckboxList
-                key={relationship.name}
-                control={form.control}
-                name={relationship.name as any}
-                label={t(relationship.label)}
-                items={relationship.items}
-                loading={relationship.loading}
-                loadingText={t(relationship.loadingText)}
-                emptyText={t(relationship.emptyText)}
-                error={relationship.error}
-              />
+              <div key={relationship.name}>
+                {relationship.renderComponent({
+                  control: form.control,
+                  name: relationship.name as any,
+                  label: t(relationship.label),
+                  items: relationship.items,
+                  loading: relationship.loading,
+                  loadingText: t(relationship.loadingText),
+                  emptyText: t(relationship.emptyText),
+                  error: relationship.error,
+                  disabled: isSubmitting,
+                })}
+              </div>
             ))}
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleOpenChange(false)}
+                disabled={isSubmitting}
+              >
                 {t(cancelText)}
               </Button>
               <Button type="submit" disabled={isSubmitting}>

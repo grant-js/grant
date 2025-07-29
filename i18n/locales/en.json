@@ -141,6 +141,7 @@
       "edit": "Edit",
       "delete": "Delete",
       "cancel": "Cancel",
+      "updating": "Updating...",
       "label": "Show/Hide Actions"
     },
     "sort": {
@@ -162,7 +163,9 @@
         "rolesRequired": "User must have at least one role"
       },
       "rolesLoading": "Loading roles...",
-      "noRolesAvailable": "No roles available"
+      "noRolesAvailable": "No roles available",
+      "tagsLoading": "Loading tags...",
+      "noTagsAvailable": "No tags available"
     },
     "roles": {
       "admin": "Administrator",
@@ -197,7 +200,11 @@
       "roleAddedSuccess": "Role added to user",
       "roleAddedError": "Failed to add role to user",
       "roleRemovedSuccess": "Role removed from user",
-      "roleRemovedError": "Failed to remove role from user"
+      "roleRemovedError": "Failed to remove role from user",
+      "tagAddedSuccess": "Tag added to user",
+      "tagAddedError": "Failed to add tag to user",
+      "tagRemovedSuccess": "Tag removed from user",
+      "tagRemovedError": "Failed to remove tag from user"
     },
     "view": {
       "card": "Card View",
@@ -231,6 +238,7 @@
       "edit": "Edit",
       "delete": "Delete",
       "cancel": "Cancel",
+      "updating": "Updating...",
       "label": "Show/Hide Actions"
     },
     "sort": {
@@ -250,6 +258,8 @@
       "tags": "Tags",
       "groupsLoading": "Loading groups...",
       "noGroupsAvailable": "No groups available",
+      "tagsLoading": "Loading tags...",
+      "noTagsAvailable": "No tags available",
       "validation": {
         "groupsRequired": "Role must have at least one group"
       }
@@ -283,7 +293,11 @@
       "groupAddedSuccess": "Group added to role",
       "groupAddedError": "Failed to add group to role",
       "groupRemovedSuccess": "Group removed from role",
-      "groupRemovedError": "Failed to remove group from role"
+      "groupRemovedError": "Failed to remove group from role",
+      "tagAddedSuccess": "Tag added to role",
+      "tagAddedError": "Failed to add tag to role",
+      "tagRemovedSuccess": "Tag removed from role",
+      "tagRemovedError": "Failed to remove tag from role"
     },
     "view": {
       "card": "Card View",
@@ -347,7 +361,9 @@
       "permissions": "Permissions",
       "tags": "Tags",
       "permissionsLoading": "Loading permissions...",
-      "noPermissionsAvailable": "No permissions available"
+      "noPermissionsAvailable": "No permissions available",
+      "tagsLoading": "Loading tags...",
+      "noTagsAvailable": "No tags available"
     },
     "create": {
       "title": "Create New Group",
@@ -387,7 +403,11 @@
       "permissionAddedSuccess": "Permission added to group",
       "permissionAddedError": "Failed to add permission to group",
       "permissionRemovedSuccess": "Permission removed from group",
-      "permissionRemovedError": "Failed to remove permission from group"
+      "permissionRemovedError": "Failed to remove permission from group",
+      "tagAddedSuccess": "Tag added to group",
+      "tagAddedError": "Failed to add tag to group",
+      "tagRemovedSuccess": "Tag removed from group",
+      "tagRemovedError": "Failed to remove tag from group"
     },
     "view": {
       "cards": "Card View",
@@ -424,6 +444,7 @@
       "edit": "Edit",
       "delete": "Delete",
       "cancel": "Cancel",
+      "updating": "Updating...",
       "label": "Show/Hide Actions"
     },
     "sort": {
@@ -441,6 +462,8 @@
       "description": "Description",
       "action": "Action",
       "tags": "Tags",
+      "tagsLoading": "Loading tags...",
+      "noTagsAvailable": "No tags available",
       "validation": {
         "nameRequired": "Permission name is required"
       }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LucideIcon } from 'lucide-react';
@@ -9,7 +9,6 @@ import { useForm, DefaultValues } from 'react-hook-form';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
-import { CheckboxList } from '@/components/ui/checkbox-list';
 import {
   Dialog,
   DialogContent,
@@ -40,14 +39,11 @@ export interface CreateDialogField {
   required?: boolean;
 }
 
-export interface CreateDialogRelationship {
+export interface CreateDialogRelationship<T = any> {
   name: string;
   label: string;
-  items: Array<{
-    id: string;
-    name: string;
-    description?: string;
-  }>;
+  renderComponent: (props: any) => React.ReactNode;
+  items: T[];
   loading: boolean;
   loadingText: string;
   emptyText: string;
@@ -82,13 +78,12 @@ export interface CreateDialogProps<TFormValues extends Record<string, any>> {
   translationNamespace: string;
 
   // Loading state
-  isSubmitting?: boolean;
   submittingText?: string;
 }
 
 export function CreateDialog<TFormValues extends Record<string, any>>({
   open,
-  onOpenChange,
+  onOpenChange: _onOpenChange,
   children,
   title,
   description,
@@ -103,40 +98,30 @@ export function CreateDialog<TFormValues extends Record<string, any>>({
   onCreate,
   onAddRelationships,
   translationNamespace,
-  isSubmitting = false,
   submittingText,
 }: CreateDialogProps<TFormValues>) {
   const t = useTranslations(translationNamespace);
-
-  // Internal state for uncontrolled usage
-  const [internalOpen, setInternalOpen] = useState(false);
-
-  // Use provided props or internal state
-  const isControlled = open !== undefined && onOpenChange !== undefined;
-  const dialogOpen = isControlled ? open : internalOpen;
-  const setDialogOpen = isControlled ? onOpenChange : setInternalOpen;
+  const [dialogOpen, setDialogOpen] = useState(open || false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<TFormValues>({
     resolver: zodResolver(schema),
     defaultValues,
-    mode: 'onSubmit',
   });
 
   const onSubmit = async (values: TFormValues) => {
+    setIsSubmitting(true);
     try {
-      // Create main entity first
-      const createdEntity = await onCreate(values);
-
-      // Add relationships if entity was created and relationships are configured
-      if (createdEntity?.id && onAddRelationships && relationships) {
-        await onAddRelationships(createdEntity.id, values);
+      const result = await onCreate(values);
+      if (result?.id && onAddRelationships) {
+        await onAddRelationships(result.id, values);
       }
-
-      setDialogOpen(false);
       form.reset(defaultValues);
+      setDialogOpen(false);
     } catch (error) {
-      // Error handling is done in the specific mutation hooks
       console.error('Error creating entity:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -145,6 +130,9 @@ export function CreateDialog<TFormValues extends Record<string, any>>({
       form.reset(defaultValues);
     }
     setDialogOpen(newOpen);
+    if (_onOpenChange) {
+      _onOpenChange(newOpen);
+    }
   };
 
   const renderField = (field: CreateDialogField) => {
@@ -165,6 +153,7 @@ export function CreateDialog<TFormValues extends Record<string, any>>({
                 <Textarea
                   placeholder={field.placeholder ? t(field.placeholder) : t(field.label)}
                   className="resize-none"
+                  disabled={isSubmitting}
                   {...formField}
                 />
               ) : (
@@ -172,6 +161,7 @@ export function CreateDialog<TFormValues extends Record<string, any>>({
                   type={field.type}
                   placeholder={field.placeholder ? t(field.placeholder) : t(field.label)}
                   className={hasError ? 'border-red-500' : ''}
+                  disabled={isSubmitting}
                   {...formField}
                 />
               )}
@@ -209,21 +199,28 @@ export function CreateDialog<TFormValues extends Record<string, any>>({
             {fields.map(renderField)}
 
             {relationships?.map((relationship) => (
-              <CheckboxList
-                key={relationship.name}
-                control={form.control}
-                name={relationship.name as any}
-                label={t(relationship.label)}
-                items={relationship.items}
-                loading={relationship.loading}
-                loadingText={t(relationship.loadingText)}
-                emptyText={t(relationship.emptyText)}
-                error={relationship.error}
-              />
+              <div key={relationship.name}>
+                {relationship.renderComponent({
+                  control: form.control,
+                  name: relationship.name as any,
+                  label: t(relationship.label),
+                  items: relationship.items,
+                  loading: relationship.loading,
+                  loadingText: t(relationship.loadingText),
+                  emptyText: t(relationship.emptyText),
+                  error: relationship.error,
+                  disabled: isSubmitting,
+                })}
+              </div>
             ))}
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleOpenChange(false)}
+                disabled={isSubmitting}
+              >
                 {t(cancelText)}
               </Button>
               <Button type="submit" disabled={isSubmitting}>

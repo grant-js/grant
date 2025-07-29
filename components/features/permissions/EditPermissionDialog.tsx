@@ -1,10 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-
-import { EditDialog, EditDialogField } from '@/components/common/EditDialog';
-import { Permission } from '@/graphql/generated/types';
+import {
+  EditDialog,
+  EditDialogField,
+  EditDialogRelationship,
+} from '@/components/common/EditDialog';
+import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
+import { Permission, Tag } from '@/graphql/generated/types';
 import { usePermissionMutations } from '@/hooks/permissions';
+import { useTags } from '@/hooks/tags';
 
 import { EditPermissionFormValues, editPermissionSchema, EditPermissionDialogProps } from './types';
 
@@ -13,8 +17,8 @@ export function EditPermissionDialog({
   open,
   onOpenChange,
 }: EditPermissionDialogProps) {
-  const { updatePermission } = usePermissionMutations();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { tags, loading: tagsLoading } = useTags();
+  const { updatePermission, addPermissionTag, removePermissionTag } = usePermissionMutations();
 
   const fields: EditDialogField[] = [
     {
@@ -36,7 +40,18 @@ export function EditPermissionDialog({
       label: 'form.description',
       placeholder: 'form.description',
       type: 'textarea',
-      required: false,
+    },
+  ];
+
+  const relationships: EditDialogRelationship[] = [
+    {
+      name: 'tagIds',
+      label: 'form.tags',
+      renderComponent: (props: any) => <TagCheckboxList {...props} />,
+      items: tags,
+      loading: tagsLoading,
+      loadingText: 'form.tagsLoading',
+      emptyText: 'form.noTagsAvailable',
     },
   ];
 
@@ -44,18 +59,52 @@ export function EditPermissionDialog({
     name: permission.name,
     action: permission.action,
     description: permission.description || '',
+    tagIds: permission.tags?.map((tag: Tag) => tag.id),
   });
 
   const handleUpdate = async (permissionId: string, values: EditPermissionFormValues) => {
-    setIsSubmitting(true);
-    try {
-      await updatePermission(permissionId, {
-        name: values.name,
-        description: values.description,
-        action: values.action,
-      });
-    } finally {
-      setIsSubmitting(false);
+    await updatePermission(permissionId, {
+      name: values.name,
+      action: values.action,
+      description: values.description,
+    });
+  };
+
+  const handleAddRelationships = async (
+    permissionId: string,
+    relationshipName: string,
+    itemIds: string[]
+  ) => {
+    if (relationshipName === 'tagIds') {
+      const addPromises = itemIds.map((tagId) =>
+        addPermissionTag({
+          permissionId,
+          tagId,
+        }).catch((error: any) => {
+          console.error('Error adding permission tag:', error);
+          throw error;
+        })
+      );
+      await Promise.all(addPromises);
+    }
+  };
+
+  const handleRemoveRelationships = async (
+    permissionId: string,
+    relationshipName: string,
+    itemIds: string[]
+  ) => {
+    if (relationshipName === 'tagIds') {
+      const removePromises = itemIds.map((tagId) =>
+        removePermissionTag({
+          permissionId,
+          tagId,
+        }).catch((error: any) => {
+          console.error('Error removing permission tag:', error);
+          throw error;
+        })
+      );
+      await Promise.all(removePromises);
     }
   };
 
@@ -72,13 +121,15 @@ export function EditPermissionDialog({
         name: '',
         action: '',
         description: '',
+        tagIds: [],
       }}
       fields={fields}
+      relationships={relationships}
       mapEntityToFormValues={mapPermissionToFormValues}
       onUpdate={handleUpdate}
+      onAddRelationships={handleAddRelationships}
+      onRemoveRelationships={handleRemoveRelationships}
       translationNamespace="permissions"
-      isSubmitting={isSubmitting}
-      updatingText="editDialog.updating"
     />
   );
 }

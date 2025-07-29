@@ -1,17 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-
-import { Group } from 'lucide-react';
+import { Shield } from 'lucide-react';
 
 import {
   CreateDialog,
   CreateDialogField,
   CreateDialogRelationship,
 } from '@/components/common/CreateDialog';
+import { CheckboxList } from '@/components/ui/checkbox-list';
+import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
 import { Permission } from '@/graphql/generated/types';
 import { useGroupMutations } from '@/hooks/groups';
-import { usePermissions } from '@/hooks/permissions/usePermissions';
+import { usePermissions } from '@/hooks/permissions';
+import { useTags } from '@/hooks/tags';
 
 import { createGroupSchema, CreateGroupFormValues, CreateGroupDialogProps } from './types';
 
@@ -25,21 +26,21 @@ export function CreateGroupDialog({
   children,
 }: CreateGroupDialogComponentProps) {
   const { permissions, loading: permissionsLoading } = usePermissions();
-  const { createGroup, addGroupPermission } = useGroupMutations();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { tags, loading: tagsLoading } = useTags();
+  const { createGroup, addGroupPermission, addGroupTag } = useGroupMutations();
 
   const fields: CreateDialogField[] = [
     {
       name: 'name',
       label: 'form.name',
-      placeholder: 'form.namePlaceholder',
+      placeholder: 'form.name',
       type: 'text',
     },
     {
       name: 'description',
       label: 'form.description',
-      placeholder: 'form.descriptionPlaceholder',
-      type: 'text',
+      placeholder: 'form.description',
+      type: 'textarea',
     },
   ];
 
@@ -47,6 +48,7 @@ export function CreateGroupDialog({
     {
       name: 'permissionIds',
       label: 'form.permissions',
+      renderComponent: (props: any) => <CheckboxList {...props} />,
       items: permissions.map((permission: Permission) => ({
         id: permission.id,
         name: permission.name,
@@ -56,23 +58,30 @@ export function CreateGroupDialog({
       loadingText: 'form.permissionsLoading',
       emptyText: 'form.noPermissionsAvailable',
     },
+    {
+      name: 'tagIds',
+      label: 'form.tags',
+      renderComponent: (props: any) => <TagCheckboxList {...props} />,
+      items: tags,
+      loading: tagsLoading,
+      loadingText: 'form.tagsLoading',
+      emptyText: 'form.noTagsAvailable',
+    },
   ];
 
   const handleCreate = async (values: CreateGroupFormValues) => {
-    setIsSubmitting(true);
-    try {
-      return await createGroup({
-        name: values.name,
-        description: values.description,
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    return await createGroup({
+      name: values.name,
+      description: values.description,
+    });
   };
 
   const handleAddRelationships = async (groupId: string, values: CreateGroupFormValues) => {
+    const promises: Promise<any>[] = [];
+
+    // Add permissions
     if (values.permissionIds && values.permissionIds.length > 0) {
-      const addPromises = values.permissionIds.map((permissionId) =>
+      const addPermissionPromises = values.permissionIds.map((permissionId) =>
         addGroupPermission({
           groupId,
           permissionId,
@@ -80,33 +89,48 @@ export function CreateGroupDialog({
           console.error('Error adding group permission:', error);
         })
       );
-      await Promise.all(addPromises);
+      promises.push(...addPermissionPromises);
     }
+
+    // Add tags
+    if (values.tagIds && values.tagIds.length > 0) {
+      const addTagPromises = values.tagIds.map((tagId) =>
+        addGroupTag({
+          groupId,
+          tagId,
+        }).catch((error: any) => {
+          console.error('Error adding group tag:', error);
+        })
+      );
+      promises.push(...addTagPromises);
+    }
+
+    await Promise.all(promises);
   };
 
   return (
     <CreateDialog
       open={open}
       onOpenChange={onOpenChange}
-      title="create.title"
-      description="create.description"
+      title="createDialog.title"
+      description="createDialog.description"
       triggerText="createDialog.trigger"
-      confirmText="actions.create"
-      cancelText="actions.cancel"
-      icon={Group}
+      confirmText="createDialog.confirm"
+      cancelText="deleteDialog.cancel"
+      icon={Shield}
       schema={createGroupSchema}
       defaultValues={{
         name: '',
         description: '',
         permissionIds: [],
+        tagIds: [],
       }}
       fields={fields}
       relationships={relationships}
       onCreate={handleCreate}
       onAddRelationships={handleAddRelationships}
       translationNamespace="groups"
-      isSubmitting={isSubmitting}
-      submittingText="actions.creating"
+      submittingText="createDialog.submitting"
     >
       {children}
     </CreateDialog>
