@@ -8,7 +8,7 @@ import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
 import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
 import { ScrollBadges } from '@/components/ui/scroll-badges';
 import { Group } from '@/graphql/generated/types';
-import { getAvatarBorderColorClasses } from '@/lib/tag-colors';
+import { getAvatarBorderColorClasses, getTagColorClasses } from '@/lib/tag-colors';
 
 import { CreateGroupDialog } from './CreateGroupDialog';
 import { GroupActions } from './GroupActions';
@@ -37,7 +37,7 @@ export function GroupTable({
     return (group.permissions || []).map((permission) => ({
       id: permission.id,
       label: permission.name,
-      className: undefined, // Permissions don't have tags
+      className: permission.tags?.length ? getTagColorClasses(permission.tags[0].color) : undefined,
     }));
   };
 

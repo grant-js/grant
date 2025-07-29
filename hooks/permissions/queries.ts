@@ -14,6 +14,11 @@ export const GET_PERMISSIONS = gql`
         name
         action
         description
+        tags {
+          id
+          name
+          color
+        }
         createdAt
         updatedAt
       }

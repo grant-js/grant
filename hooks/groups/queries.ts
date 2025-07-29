@@ -13,6 +13,10 @@ export const GET_GROUPS = gql`
           id
           name
           action
+          tags {
+            id
+            color
+          }
         }
         tags {
           id

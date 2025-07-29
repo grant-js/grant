@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { CardGrid, CardHeader } from '@/components/common';
 import { ScrollBadges } from '@/components/ui/scroll-badges';
 import { Group } from '@/graphql/generated/types';
+import { getTagColorClasses } from '@/lib/tag-colors';
 
 import { CreateGroupDialog } from './CreateGroupDialog';
 import { GroupActions } from './GroupActions';
@@ -35,7 +36,7 @@ export function GroupCards({
     return (group.permissions || []).map((permission) => ({
       id: permission.id,
       label: permission.name,
-      className: undefined, // Permissions don't have tags
+      className: permission.tags?.length ? getTagColorClasses(permission.tags[0].color) : undefined,
     }));
   };
 

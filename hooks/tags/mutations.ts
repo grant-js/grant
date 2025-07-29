@@ -110,3 +110,31 @@ export const REMOVE_GROUP_TAG = gql`
     removeGroupTag(input: $input)
   }
 `;
+
+export const ADD_PERMISSION_TAG = gql`
+  mutation AddPermissionTag($input: AddPermissionTagInput!) {
+    addPermissionTag(input: $input) {
+      id
+      permissionId
+      tagId
+      createdAt
+      updatedAt
+      permission {
+        id
+        name
+        action
+      }
+      tag {
+        id
+        name
+        color
+      }
+    }
+  }
+`;
+
+export const REMOVE_PERMISSION_TAG = gql`
+  mutation RemovePermissionTag($input: RemovePermissionTagInput!) {
+    removePermissionTag(input: $input)
+  }
+`;
