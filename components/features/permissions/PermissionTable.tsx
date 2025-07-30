@@ -1,6 +1,6 @@
 'use client';
 
-import { Key, Tags } from 'lucide-react';
+import { Key } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { ScrollBadges } from '@/components/common';
@@ -76,8 +76,6 @@ export function PermissionTable() {
       render: (permission: Permission) => (
         <ScrollBadges
           items={transformTagsToBadges(permission.tags)}
-          title=""
-          icon={<Tags className="h-3 w-3" />}
           height={60}
           showAsRound={true}
         />

@@ -1,6 +1,6 @@
 'use client';
 
-import { Shield, UserPlus, Tags } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { ScrollBadges } from '@/components/common';
@@ -71,27 +71,14 @@ export function UserTable() {
       key: 'roles',
       header: t('table.roles'),
       width: '200px',
-      render: (user: User) => (
-        <ScrollBadges
-          items={transformRolesToBadges(user)}
-          title=""
-          icon={<Shield className="h-3 w-3" />}
-          height={60}
-        />
-      ),
+      render: (user: User) => <ScrollBadges items={transformRolesToBadges(user)} height={60} />,
     },
     {
       key: 'tags',
       header: t('table.tags'),
       width: '150px',
       render: (user: User) => (
-        <ScrollBadges
-          items={transformTagsToBadges(user.tags)}
-          title=""
-          icon={<Tags className="h-3 w-3" />}
-          height={60}
-          showAsRound={true}
-        />
+        <ScrollBadges items={transformTagsToBadges(user.tags)} height={60} showAsRound={true} />
       ),
     },
     {

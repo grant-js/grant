@@ -1,6 +1,6 @@
 'use client';
 
-import { Shield, Tags } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { ScrollBadges } from '@/components/common';
@@ -71,27 +71,14 @@ export function RoleTable() {
       key: 'groups',
       header: t('form.groups'),
       width: '200px',
-      render: (role: Role) => (
-        <ScrollBadges
-          items={transformGroupsToBadges(role)}
-          title=""
-          icon={<Shield className="h-3 w-3" />}
-          height={60}
-        />
-      ),
+      render: (role: Role) => <ScrollBadges items={transformGroupsToBadges(role)} height={60} />,
     },
     {
       key: 'tags',
       header: t('table.tags'),
       width: '150px',
       render: (role: Role) => (
-        <ScrollBadges
-          items={transformTagsToBadges(role.tags)}
-          title=""
-          icon={<Tags className="h-3 w-3" />}
-          height={60}
-          showAsRound={true}
-        />
+        <ScrollBadges items={transformTagsToBadges(role.tags)} height={60} showAsRound={true} />
       ),
     },
     {

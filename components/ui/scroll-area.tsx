@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useCallback, useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 
@@ -24,8 +24,6 @@ function AutoScrollArea({
   const phantomRef = useRef<HTMLDivElement>(null);
   const [needsScroll, setNeedsScroll] = useState(false);
 
-  const renderContent = useCallback(() => children, [children]);
-
   // Measure the natural height of the content
   useEffect(() => {
     if (phantomRef.current) {
@@ -44,7 +42,7 @@ function AutoScrollArea({
         className="invisible absolute pointer-events-none"
         style={{ visibility: 'hidden', position: 'absolute' }}
       >
-        {renderContent()}
+        {children}
       </div>
 
       {/* Actual content */}

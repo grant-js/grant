@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, ReactNode } from 'react';
+import { ReactNode } from 'react';
 
 import { useTranslations } from 'next-intl';
 
@@ -37,28 +37,6 @@ export function ScrollBadges({
 }: ScrollBadgesProps) {
   const t = useTranslations('common');
 
-  const renderItems = useCallback(
-    () => (
-      <div className="flex flex-wrap gap-2 pr-4">
-        {items.map((item) => (
-          <Badge
-            key={item.id}
-            variant={item.variant || defaultVariant}
-            title={item.label}
-            className={cn(
-              item.className,
-              showAsRound && 'w-3 h-3 rounded-full p-0 border-2 bg-transparent',
-              !showAsRound && 'bg-transparent border-2'
-            )}
-          >
-            {!showAsRound && item.label}
-          </Badge>
-        ))}
-      </div>
-    ),
-    [items, defaultVariant, showAsRound]
-  );
-
   if (items.length === 0) {
     return (
       <div className={cn('space-y-2', className)}>
@@ -87,7 +65,22 @@ export function ScrollBadges({
       )}
 
       <AutoScrollArea maxHeight={height} fallbackClassName="flex flex-wrap gap-2">
-        {renderItems()}
+        <div className="flex flex-wrap gap-2 pr-4">
+          {items.map((item) => (
+            <Badge
+              key={item.id}
+              variant={item.variant || defaultVariant}
+              title={item.label}
+              className={cn(
+                item.className,
+                showAsRound && 'w-3 h-3 rounded-full p-0 border-2 bg-transparent',
+                !showAsRound && 'bg-transparent border-2'
+              )}
+            >
+              {!showAsRound && item.label}
+            </Badge>
+          ))}
+        </div>
       </AutoScrollArea>
     </div>
   );

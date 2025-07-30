@@ -1,6 +1,6 @@
 'use client';
 
-import { Shield, Tags } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { ScrollBadges } from '@/components/common';
@@ -74,12 +74,7 @@ export function GroupTable() {
       header: t('form.permissions'),
       width: '200px',
       render: (group: Group) => (
-        <ScrollBadges
-          items={transformPermissionsToBadges(group)}
-          title=""
-          icon={<Shield className="h-3 w-3" />}
-          height={60}
-        />
+        <ScrollBadges items={transformPermissionsToBadges(group)} height={60} />
       ),
     },
     {
@@ -87,13 +82,7 @@ export function GroupTable() {
       header: t('table.tags'),
       width: '150px',
       render: (group: Group) => (
-        <ScrollBadges
-          items={transformTagsToBadges(group.tags)}
-          title=""
-          icon={<Tags className="h-3 w-3" />}
-          height={60}
-          showAsRound={true}
-        />
+        <ScrollBadges items={transformTagsToBadges(group.tags)} height={60} showAsRound={true} />
       ),
     },
     {
