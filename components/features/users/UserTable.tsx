@@ -9,7 +9,7 @@ import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
 import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
 import { User } from '@/graphql/generated/types';
 import { getTagBorderColorClasses } from '@/lib/tag-colors';
-import { transformTagsToRoundBadges } from '@/lib/tag-utils';
+import { transformTagsToBadges } from '@/lib/tag-utils';
 
 import { CreateUserDialog } from './CreateUserDialog';
 import { UserActions } from './UserActions';
@@ -95,7 +95,7 @@ export function UserTable({
       width: '150px',
       render: (user: User) => (
         <ScrollBadges
-          items={transformTagsToRoundBadges(user.tags)}
+          items={transformTagsToBadges(user.tags)}
           title=""
           icon={<Tags className="h-3 w-3" />}
           height={60}

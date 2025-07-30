@@ -9,7 +9,7 @@ import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
 import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
 import { Permission } from '@/graphql/generated/types';
 import { getTagBorderColorClasses } from '@/lib/tag-colors';
-import { transformTagsToRoundBadges } from '@/lib/tag-utils';
+import { transformTagsToBadges } from '@/lib/tag-utils';
 
 import { CreatePermissionDialog } from './CreatePermissionDialog';
 import { PermissionActions } from './PermissionActions';
@@ -84,7 +84,7 @@ export function PermissionTable({
       width: '200px',
       render: (permission: Permission) => (
         <ScrollBadges
-          items={transformTagsToRoundBadges(permission.tags)}
+          items={transformTagsToBadges(permission.tags)}
           title=""
           icon={<Tags className="h-3 w-3" />}
           height={60}

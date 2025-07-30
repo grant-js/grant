@@ -7,7 +7,7 @@ import { CardGrid, CardHeader } from '@/components/common';
 import { ScrollBadges } from '@/components/common';
 import { Group } from '@/graphql/generated/types';
 import { getTagBorderColorClasses } from '@/lib/tag-colors';
-import { transformTagsToRoundBadges } from '@/lib/tag-utils';
+import { transformTagsToBadges } from '@/lib/tag-utils';
 
 import { CreateGroupDialog } from './CreateGroupDialog';
 import { GroupActions } from './GroupActions';
@@ -80,7 +80,7 @@ export function GroupCards({
             height={80}
           />
           <ScrollBadges
-            items={transformTagsToRoundBadges(group.tags)}
+            items={transformTagsToBadges(group.tags)}
             title={t('form.tags')}
             icon={<Tags className="h-3 w-3" />}
             height={60}

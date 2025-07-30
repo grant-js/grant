@@ -7,7 +7,7 @@ import { CardGrid, CardHeader } from '@/components/common';
 import { ScrollBadges } from '@/components/common';
 import { User } from '@/graphql/generated/types';
 import { getTagBorderColorClasses } from '@/lib/tag-colors';
-import { transformTagsToRoundBadges } from '@/lib/tag-utils';
+import { transformTagsToBadges } from '@/lib/tag-utils';
 
 import { CreateUserDialog } from './CreateUserDialog';
 import { UserActions } from './UserActions';
@@ -78,7 +78,7 @@ export function UserCards({
             height={80}
           />
           <ScrollBadges
-            items={transformTagsToRoundBadges(user.tags)}
+            items={transformTagsToBadges(user.tags)}
             title={t('form.tags')}
             icon={<Tags className="h-3 w-3" />}
             height={60}

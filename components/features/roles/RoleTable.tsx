@@ -9,7 +9,7 @@ import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
 import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
 import { Role } from '@/graphql/generated/types';
 import { getTagBorderColorClasses } from '@/lib/tag-colors';
-import { transformTagsToRoundBadges } from '@/lib/tag-utils';
+import { transformTagsToBadges } from '@/lib/tag-utils';
 
 import { CreateRoleDialog } from './CreateRoleDialog';
 import { RoleActions } from './RoleActions';
@@ -95,7 +95,7 @@ export function RoleTable({
       width: '150px',
       render: (role: Role) => (
         <ScrollBadges
-          items={transformTagsToRoundBadges(role.tags)}
+          items={transformTagsToBadges(role.tags)}
           title=""
           icon={<Tags className="h-3 w-3" />}
           height={60}

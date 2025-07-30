@@ -14,11 +14,13 @@ export const GET_USERS = gql`
           name
           tags {
             id
+            name
             color
           }
         }
         tags {
           id
+          name
           color
         }
       }

@@ -44,6 +44,7 @@ export function ScrollBadges({
           <Badge
             key={item.id}
             variant={item.variant || defaultVariant}
+            title={item.label}
             className={cn(
               item.className,
               showAsRound && 'w-3 h-3 rounded-full p-0 border-2 bg-transparent',

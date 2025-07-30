@@ -9,7 +9,7 @@ import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
 import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
 import { Group } from '@/graphql/generated/types';
 import { getTagBorderColorClasses } from '@/lib/tag-colors';
-import { transformTagsToRoundBadges } from '@/lib/tag-utils';
+import { transformTagsToBadges } from '@/lib/tag-utils';
 
 import { CreateGroupDialog } from './CreateGroupDialog';
 import { GroupActions } from './GroupActions';
@@ -97,7 +97,7 @@ export function GroupTable({
       width: '150px',
       render: (group: Group) => (
         <ScrollBadges
-          items={transformTagsToRoundBadges(group.tags)}
+          items={transformTagsToBadges(group.tags)}
           title=""
           icon={<Tags className="h-3 w-3" />}
           height={60}

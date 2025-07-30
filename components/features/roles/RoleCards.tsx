@@ -7,7 +7,7 @@ import { CardGrid, CardHeader } from '@/components/common';
 import { ScrollBadges } from '@/components/common';
 import { Role } from '@/graphql/generated/types';
 import { getTagBorderColorClasses } from '@/lib/tag-colors';
-import { transformTagsToRoundBadges } from '@/lib/tag-utils';
+import { transformTagsToBadges } from '@/lib/tag-utils';
 
 import { CreateRoleDialog } from './CreateRoleDialog';
 import { RoleActions } from './RoleActions';
@@ -78,7 +78,7 @@ export function RoleCards({
             height={80}
           />
           <ScrollBadges
-            items={transformTagsToRoundBadges(role.tags)}
+            items={transformTagsToBadges(role.tags)}
             title={t('form.tags')}
             icon={<Tags className="h-3 w-3" />}
             height={60}

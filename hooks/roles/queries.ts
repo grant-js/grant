@@ -21,11 +21,13 @@ export const GET_ROLES = gql`
           name
           tags {
             id
+            name
             color
           }
         }
         tags {
           id
+          name
           color
         }
       }

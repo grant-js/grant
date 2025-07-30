@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { CardGrid, CardHeader } from '@/components/common';
 import { ScrollBadges } from '@/components/common';
 import { Permission } from '@/graphql/generated/types';
-import { transformTagsToRoundBadges } from '@/lib/tag-utils';
+import { transformTagsToBadges } from '@/lib/tag-utils';
 
 import { CreatePermissionDialog } from './CreatePermissionDialog';
 import { PermissionActions } from './PermissionActions';
@@ -76,7 +76,7 @@ export function PermissionCards({
             </span>
           </div>
           <ScrollBadges
-            items={transformTagsToRoundBadges(permission.tags)}
+            items={transformTagsToBadges(permission.tags)}
             title={t('form.tags')}
             icon={<Tags className="h-3 w-3" />}
             height={60}
