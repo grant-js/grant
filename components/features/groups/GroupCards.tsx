@@ -8,30 +8,21 @@ import { ScrollBadges } from '@/components/common';
 import { Group } from '@/graphql/generated/types';
 import { getTagBorderColorClasses } from '@/lib/tag-colors';
 import { transformTagsToBadges } from '@/lib/tag-utils';
+import { useGroupsStore } from '@/stores/groups.store';
 
 import { CreateGroupDialog } from './CreateGroupDialog';
 import { GroupActions } from './GroupActions';
 import { GroupAudit } from './GroupAudit';
 import { GroupCardSkeleton } from './GroupCardSkeleton';
 
-interface GroupCardsProps {
-  limit: number;
-  groups: Group[];
-  loading: boolean;
-  search: string;
-  onEditClick: (group: Group) => void;
-  onDeleteClick: (group: Group) => void;
-}
-
-export function GroupCards({
-  limit,
-  groups,
-  loading,
-  search,
-  onEditClick,
-  onDeleteClick,
-}: GroupCardsProps) {
+export function GroupCards() {
   const t = useTranslations('groups');
+
+  // Use selective subscriptions to prevent unnecessary re-renders
+  const limit = useGroupsStore((state) => state.limit);
+  const search = useGroupsStore((state) => state.search);
+  const groups = useGroupsStore((state) => state.groups);
+  const loading = useGroupsStore((state) => state.loading);
 
   const transformPermissionsToBadges = (group: Group) => {
     return (group.permissions || []).map((permission) => ({
@@ -66,9 +57,7 @@ export function GroupCards({
           title={group.name}
           description={group.description || undefined}
           color={group.tags?.[0]?.color}
-          actions={
-            <GroupActions group={group} onEditClick={onEditClick} onDeleteClick={onDeleteClick} />
-          }
+          actions={<GroupActions group={group} />}
         />
       )}
       renderBody={(group: Group) => (

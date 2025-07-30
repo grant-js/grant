@@ -11,14 +11,19 @@ import { Group, Permission, Tag } from '@/graphql/generated/types';
 import { useGroupMutations } from '@/hooks/groups';
 import { usePermissions } from '@/hooks/permissions';
 import { useTags } from '@/hooks/tags';
+import { useGroupsStore } from '@/stores/groups.store';
 
-import { EditGroupFormValues, editGroupSchema, EditGroupDialogProps } from './types';
+import { EditGroupFormValues, editGroupSchema } from './types';
 
-export function EditGroupDialog({ group, open, onOpenChange }: EditGroupDialogProps) {
+export function EditGroupDialog() {
   const { permissions, loading: permissionsLoading } = usePermissions();
   const { tags, loading: tagsLoading } = useTags();
   const { updateGroup, addGroupPermission, removeGroupPermission, addGroupTag, removeGroupTag } =
     useGroupMutations();
+
+  // Use selective subscriptions to prevent unnecessary re-renders
+  const groupToEdit = useGroupsStore((state) => state.groupToEdit);
+  const setGroupToEdit = useGroupsStore((state) => state.setGroupToEdit);
 
   const fields: EditDialogField[] = [
     {
@@ -135,11 +140,17 @@ export function EditGroupDialog({ group, open, onOpenChange }: EditGroupDialogPr
     }
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setGroupToEdit(null);
+    }
+  };
+
   return (
     <EditDialog
-      entity={group}
-      open={open}
-      onOpenChange={onOpenChange}
+      entity={groupToEdit}
+      open={!!groupToEdit}
+      onOpenChange={handleOpenChange}
       title="editDialog.title"
       description="editDialog.description"
       confirmText="editDialog.confirm"

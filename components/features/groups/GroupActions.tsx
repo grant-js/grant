@@ -5,28 +5,39 @@ import { useTranslations } from 'next-intl';
 
 import { Actions, ActionItem } from '@/components/common';
 import { Group } from '@/graphql/generated/types';
+import { useGroupsStore } from '@/stores/groups.store';
 
 interface GroupActionsProps {
   group: Group;
-  onEditClick: (group: Group) => void;
-  onDeleteClick: (group: Group) => void;
 }
 
-export function GroupActions({ group, onEditClick, onDeleteClick }: GroupActionsProps) {
+export function GroupActions({ group }: GroupActionsProps) {
   const t = useTranslations('groups.actions');
+
+  // Use selective subscriptions to prevent unnecessary re-renders
+  const setGroupToEdit = useGroupsStore((state) => state.setGroupToEdit);
+  const setGroupToDelete = useGroupsStore((state) => state.setGroupToDelete);
+
+  const handleEditClick = () => {
+    setGroupToEdit(group);
+  };
+
+  const handleDeleteClick = () => {
+    setGroupToDelete({ id: group.id, name: group.name });
+  };
 
   const actions: ActionItem<Group>[] = [
     {
       key: 'edit',
       label: t('edit'),
       icon: <Edit className="mr-2 h-4 w-4" />,
-      onClick: onEditClick,
+      onClick: handleEditClick,
     },
     {
       key: 'delete',
       label: t('delete'),
       icon: <Trash2 className="mr-2 h-4 w-4" />,
-      onClick: onDeleteClick,
+      onClick: handleDeleteClick,
       variant: 'destructive',
     },
   ];

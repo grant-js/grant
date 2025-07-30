@@ -4,19 +4,19 @@ import { LayoutGrid, Table } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { ViewSwitcher, type ViewOption } from '@/components/common';
+import { useGroupsStore } from '@/stores/groups.store';
 
 export enum GroupView {
   CARDS = 'cards',
   TABLE = 'table',
 }
 
-interface GroupViewSwitcherProps {
-  currentView: GroupView;
-  onViewChange: (view: GroupView) => void;
-}
-
-export function GroupViewSwitcher({ currentView, onViewChange }: GroupViewSwitcherProps) {
+export function GroupViewSwitcher() {
   const t = useTranslations('groups');
+
+  // Use selective subscriptions to prevent unnecessary re-renders
+  const view = useGroupsStore((state) => state.view);
+  const setView = useGroupsStore((state) => state.setView);
 
   const groupViewOptions: ViewOption[] = [
     {
@@ -33,8 +33,8 @@ export function GroupViewSwitcher({ currentView, onViewChange }: GroupViewSwitch
 
   return (
     <ViewSwitcher
-      currentView={currentView}
-      onViewChange={(view) => onViewChange(view as GroupView)}
+      currentView={view}
+      onViewChange={(newView) => setView(newView as GroupView)}
       options={groupViewOptions}
     />
   );

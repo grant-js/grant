@@ -1,12 +1,12 @@
 'use client';
 
 import { Tags } from '@/components/common';
+import { useGroupsStore } from '@/stores/groups.store';
 
-interface GroupTagSelectorProps {
-  selectedTagIds: string[];
-  onTagIdsChange: (tagIds: string[]) => void;
-}
+export function GroupTagSelector() {
+  // Use selective subscriptions to prevent unnecessary re-renders
+  const selectedTagIds = useGroupsStore((state) => state.selectedTagIds);
+  const setSelectedTagIds = useGroupsStore((state) => state.setSelectedTagIds);
 
-export function GroupTagSelector({ selectedTagIds, onTagIdsChange }: GroupTagSelectorProps) {
-  return <Tags selectedTagIds={selectedTagIds} onTagIdsChange={onTagIdsChange} />;
+  return <Tags selectedTagIds={selectedTagIds} onTagIdsChange={setSelectedTagIds} />;
 }

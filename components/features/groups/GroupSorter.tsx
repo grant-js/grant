@@ -4,14 +4,14 @@ import { useTranslations } from 'next-intl';
 
 import { Sorter, type SortInput, type SortOrder } from '@/components/common';
 import { GroupSortableField, GroupSortOrder, GroupSortInput } from '@/graphql/generated/types';
+import { useGroupsStore } from '@/stores/groups.store';
 
-interface GroupSorterProps {
-  sort?: GroupSortInput;
-  onSortChange: (field: GroupSortableField, order: GroupSortOrder) => void;
-}
-
-export function GroupSorter({ sort, onSortChange }: GroupSorterProps) {
+export function GroupSorter() {
   const t = useTranslations('groups');
+
+  // Use selective subscriptions to prevent unnecessary re-renders
+  const sort = useGroupsStore((state) => state.sort);
+  const setSort = useGroupsStore((state) => state.setSort);
 
   // Convert GraphQL types to generic Sorter types
   const convertSort = (gqlSort?: GroupSortInput): SortInput<GroupSortableField> | undefined => {
@@ -24,7 +24,7 @@ export function GroupSorter({ sort, onSortChange }: GroupSorterProps) {
 
   const handleSortChange = (field: GroupSortableField, order: SortOrder) => {
     const gqlOrder = order === 'ASC' ? GroupSortOrder.Asc : GroupSortOrder.Desc;
-    onSortChange(field, gqlOrder);
+    setSort(field, gqlOrder);
   };
 
   const fields = [

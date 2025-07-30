@@ -13,21 +13,18 @@ import { Permission } from '@/graphql/generated/types';
 import { useGroupMutations } from '@/hooks/groups';
 import { usePermissions } from '@/hooks/permissions';
 import { useTags } from '@/hooks/tags';
+import { useGroupsStore } from '@/stores/groups.store';
 
-import { createGroupSchema, CreateGroupFormValues, CreateGroupDialogProps } from './types';
+import { createGroupSchema, CreateGroupFormValues } from './types';
 
-interface CreateGroupDialogComponentProps extends Partial<CreateGroupDialogProps> {
-  children?: React.ReactNode;
-}
-
-export function CreateGroupDialog({
-  open,
-  onOpenChange,
-  children,
-}: CreateGroupDialogComponentProps) {
+export function CreateGroupDialog() {
   const { permissions, loading: permissionsLoading } = usePermissions();
   const { tags, loading: tagsLoading } = useTags();
   const { createGroup, addGroupPermission, addGroupTag } = useGroupMutations();
+
+  // Use selective subscriptions to prevent unnecessary re-renders
+  const isCreateDialogOpen = useGroupsStore((state) => state.isCreateDialogOpen);
+  const setCreateDialogOpen = useGroupsStore((state) => state.setCreateDialogOpen);
 
   const fields: CreateDialogField[] = [
     {
@@ -108,10 +105,14 @@ export function CreateGroupDialog({
     await Promise.all(promises);
   };
 
+  const handleOpenChange = (open: boolean) => {
+    setCreateDialogOpen(open);
+  };
+
   return (
     <CreateDialog
-      open={open}
-      onOpenChange={onOpenChange}
+      open={isCreateDialogOpen}
+      onOpenChange={handleOpenChange}
       title="createDialog.title"
       description="createDialog.description"
       triggerText="createDialog.trigger"
@@ -131,8 +132,6 @@ export function CreateGroupDialog({
       onAddRelationships={handleAddRelationships}
       translationNamespace="groups"
       submittingText="createDialog.submitting"
-    >
-      {children}
-    </CreateDialog>
+    />
   );
 }

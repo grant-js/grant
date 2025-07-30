@@ -1,19 +1,14 @@
 'use client';
 
 import { Limit } from '@/components/common';
+import { useGroupsStore } from '@/stores/groups.store';
 
-interface GroupLimitProps {
-  limit: number;
-  onLimitChange: (limit: number) => void;
-}
+export function GroupLimit() {
+  // Use selective subscriptions to prevent unnecessary re-renders
+  const limit = useGroupsStore((state) => state.limit);
+  const setLimit = useGroupsStore((state) => state.setLimit);
 
-export function GroupLimit({ limit, onLimitChange }: GroupLimitProps) {
   return (
-    <Limit
-      limit={limit}
-      onLimitChange={onLimitChange}
-      namespace="groups"
-      translationKey="limit.label"
-    />
+    <Limit limit={limit} onLimitChange={setLimit} namespace="groups" translationKey="limit.label" />
   );
 }

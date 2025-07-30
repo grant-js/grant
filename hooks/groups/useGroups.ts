@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+
 import { useQuery, ApolloError } from '@apollo/client';
 
 import {
@@ -16,6 +18,7 @@ interface UseGroupsResult {
   loading: boolean;
   error: ApolloError | undefined;
   totalCount: number;
+  refetch: () => Promise<any>;
 }
 
 export function useGroups(options: UseGroupsOptions = {}): UseGroupsResult {
@@ -28,15 +31,22 @@ export function useGroups(options: UseGroupsOptions = {}): UseGroupsResult {
     tagIds,
   } = options;
 
-  const { data, loading, error } = useQuery(GET_GROUPS, {
-    variables: {
+  // Memoize variables to prevent unnecessary re-renders
+  const variables = useMemo(
+    () => ({
       page,
       limit,
       search,
       sort,
       ids,
       tagIds,
-    },
+    }),
+    [page, limit, search, sort, ids, tagIds]
+  );
+
+  const { data, loading, error, refetch } = useQuery(GET_GROUPS, {
+    variables,
+    notifyOnNetworkStatusChange: false, // Prevent re-renders on network status changes
   });
 
   return {
@@ -44,5 +54,6 @@ export function useGroups(options: UseGroupsOptions = {}): UseGroupsResult {
     loading,
     error,
     totalCount: data?.groups?.totalCount || 0,
+    refetch,
   };
 }

@@ -10,29 +10,20 @@ import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/T
 import { Group } from '@/graphql/generated/types';
 import { getTagBorderColorClasses } from '@/lib/tag-colors';
 import { transformTagsToBadges } from '@/lib/tag-utils';
+import { useGroupsStore } from '@/stores/groups.store';
 
 import { CreateGroupDialog } from './CreateGroupDialog';
 import { GroupActions } from './GroupActions';
 import { GroupAudit } from './GroupAudit';
 
-interface GroupTableProps {
-  limit: number;
-  groups: Group[];
-  loading: boolean;
-  search: string;
-  onEditClick: (group: Group) => void;
-  onDeleteClick: (group: Group) => void;
-}
-
-export function GroupTable({
-  limit,
-  groups,
-  loading,
-  search,
-  onEditClick,
-  onDeleteClick,
-}: GroupTableProps) {
+export function GroupTable() {
   const t = useTranslations('groups');
+
+  // Use selective subscriptions to prevent unnecessary re-renders
+  const limit = useGroupsStore((state) => state.limit);
+  const search = useGroupsStore((state) => state.search);
+  const groups = useGroupsStore((state) => state.groups);
+  const loading = useGroupsStore((state) => state.loading);
 
   const transformPermissionsToBadges = (group: Group) => {
     return (group.permissions || []).map((permission) => ({
@@ -137,9 +128,7 @@ export function GroupTable({
         action: search ? undefined : <CreateGroupDialog />,
       }}
       actionsColumn={{
-        render: (group) => (
-          <GroupActions group={group} onEditClick={onEditClick} onDeleteClick={onDeleteClick} />
-        ),
+        render: (group) => <GroupActions group={group} />,
       }}
       skeletonConfig={skeletonConfig}
     />
