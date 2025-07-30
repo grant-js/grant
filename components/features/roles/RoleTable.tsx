@@ -10,29 +10,20 @@ import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/T
 import { Role } from '@/graphql/generated/types';
 import { getTagBorderColorClasses } from '@/lib/tag-colors';
 import { transformTagsToBadges } from '@/lib/tag-utils';
+import { useRolesStore } from '@/stores/roles.store';
 
 import { CreateRoleDialog } from './CreateRoleDialog';
 import { RoleActions } from './RoleActions';
 import { RoleAudit } from './RoleAudit';
 
-interface RoleTableProps {
-  limit: number;
-  roles: Role[];
-  loading: boolean;
-  search: string;
-  onEditClick: (role: Role) => void;
-  onDeleteClick: (role: Role) => void;
-}
-
-export function RoleTable({
-  limit,
-  roles,
-  loading,
-  search,
-  onEditClick,
-  onDeleteClick,
-}: RoleTableProps) {
+export function RoleTable() {
   const t = useTranslations('roles');
+
+  // Use selective subscriptions to prevent unnecessary re-renders
+  const limit = useRolesStore((state) => state.limit);
+  const search = useRolesStore((state) => state.search);
+  const roles = useRolesStore((state) => state.roles);
+  const loading = useRolesStore((state) => state.loading);
 
   const transformGroupsToBadges = (role: Role) => {
     return (role.groups || []).map((group) => ({
@@ -135,9 +126,7 @@ export function RoleTable({
         action: search ? undefined : <CreateRoleDialog />,
       }}
       actionsColumn={{
-        render: (role) => (
-          <RoleActions role={role} onEditClick={onEditClick} onDeleteClick={onDeleteClick} />
-        ),
+        render: (role) => <RoleActions role={role} />,
       }}
       skeletonConfig={skeletonConfig}
     />

@@ -1,51 +1,51 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
-import { UserView } from '@/components/features/users/UserViewSwitcher';
-import { UserSortableField, UserSortOrder, User } from '@/graphql/generated/types';
+import { RoleView } from '@/components/features/roles/RoleViewSwitcher';
+import { RoleSortableField, RoleSortOrder, Role } from '@/graphql/generated/types';
 
-interface UsersState {
+interface RolesState {
   // State
   page: number;
   limit: number;
   search: string;
-  sort: { field: UserSortableField; order: UserSortOrder };
-  view: UserView;
+  sort: { field: RoleSortableField; order: RoleSortOrder };
+  view: RoleView;
   selectedTagIds: string[];
   totalCount: number;
   isInitialized: boolean;
 
   // Data state
-  users: User[];
+  roles: Role[];
   loading: boolean;
 
   // Dialog state
-  userToDelete: { id: string; name: string } | null;
-  userToEdit: User | null;
+  roleToDelete: { id: string; name: string } | null;
+  roleToEdit: Role | null;
   isCreateDialogOpen: boolean;
 
   // Actions
   setPage: (page: number) => void;
   setLimit: (limit: number) => void;
   setSearch: (search: string) => void;
-  setSort: (field: UserSortableField, order: UserSortOrder) => void;
-  setView: (view: UserView) => void;
+  setSort: (field: RoleSortableField, order: RoleSortOrder) => void;
+  setView: (view: RoleView) => void;
   setSelectedTagIds: (tagIds: string[]) => void;
   setTotalCount: (count: number) => void;
-  setUsers: (users: User[]) => void;
+  setRoles: (roles: Role[]) => void;
   setLoading: (loading: boolean) => void;
   resetToDefaults: () => void;
   initializeFromUrl: (params: URLSearchParams) => void;
 
   // Dialog actions
-  setUserToDelete: (user: { id: string; name: string } | null) => void;
-  setUserToEdit: (user: User | null) => void;
+  setRoleToDelete: (role: { id: string; name: string } | null) => void;
+  setRoleToEdit: (role: Role | null) => void;
   setCreateDialogOpen: (open: boolean) => void;
 }
 
-const defaultSort = { field: UserSortableField.Name, order: UserSortOrder.Asc };
+const defaultSort = { field: RoleSortableField.Name, order: RoleSortOrder.Asc };
 
-export const useUsersStore = create<UsersState>()(
+export const useRolesStore = create<RolesState>()(
   devtools(
     (set, get) => ({
       // Initial state
@@ -53,18 +53,18 @@ export const useUsersStore = create<UsersState>()(
       limit: 50,
       search: '',
       sort: defaultSort,
-      view: UserView.CARD,
+      view: RoleView.CARD,
       selectedTagIds: [],
       totalCount: 0,
       isInitialized: false,
 
       // Data state
-      users: [],
+      roles: [],
       loading: false,
 
       // Dialog state
-      userToDelete: null,
-      userToEdit: null,
+      roleToDelete: null,
+      roleToEdit: null,
       isCreateDialogOpen: false,
 
       // Actions
@@ -75,7 +75,7 @@ export const useUsersStore = create<UsersState>()(
       setView: (view) => set({ view }),
       setSelectedTagIds: (tagIds) => set({ selectedTagIds: tagIds, page: 1 }),
       setTotalCount: (totalCount) => set({ totalCount }),
-      setUsers: (users) => set({ users }),
+      setRoles: (roles) => set({ roles }),
       setLoading: (loading) => set({ loading }),
       resetToDefaults: () =>
         set({
@@ -83,14 +83,14 @@ export const useUsersStore = create<UsersState>()(
           limit: 50,
           search: '',
           sort: defaultSort,
-          view: UserView.CARD,
+          view: RoleView.CARD,
           selectedTagIds: [],
           totalCount: 0,
           isInitialized: false,
-          users: [],
+          roles: [],
           loading: false,
-          userToDelete: null,
-          userToEdit: null,
+          roleToDelete: null,
+          roleToEdit: null,
           isCreateDialogOpen: false,
         }),
       initializeFromUrl: (params) => {
@@ -102,9 +102,9 @@ export const useUsersStore = create<UsersState>()(
         const page = Number(params.get('page')) || 1;
         const limit = Number(params.get('limit')) || 50;
         const search = params.get('search') || '';
-        const sortField = params.get('sortField') as UserSortableField | null;
-        const sortOrder = params.get('sortOrder') as UserSortOrder | null;
-        const view = (params.get('view') as UserView) || UserView.CARD;
+        const sortField = params.get('sortField') as RoleSortableField | null;
+        const sortOrder = params.get('sortOrder') as RoleSortOrder | null;
+        const view = (params.get('view') as RoleView) || RoleView.CARD;
         const tagIds = params.get('tagIds')?.split(',').filter(Boolean) || [];
 
         const sort = sortField && sortOrder ? { field: sortField, order: sortOrder } : defaultSort;
@@ -121,10 +121,10 @@ export const useUsersStore = create<UsersState>()(
       },
 
       // Dialog actions
-      setUserToDelete: (user) => set({ userToDelete: user }),
-      setUserToEdit: (user) => set({ userToEdit: user }),
+      setRoleToDelete: (role) => set({ roleToDelete: role }),
+      setRoleToEdit: (role) => set({ roleToEdit: role }),
       setCreateDialogOpen: (open) => set({ isCreateDialogOpen: open }),
     }),
-    { name: 'users-store' }
+    { name: 'roles-store' }
   )
 );

@@ -8,21 +8,21 @@ import { ScrollBadges } from '@/components/common';
 import { User } from '@/graphql/generated/types';
 import { getTagBorderColorClasses } from '@/lib/tag-colors';
 import { transformTagsToBadges } from '@/lib/tag-utils';
+import { useUsersStore } from '@/stores/users.store';
 
 import { CreateUserDialog } from './CreateUserDialog';
 import { UserActions } from './UserActions';
 import { UserAudit } from './UserAudit';
 import { UserCardSkeleton } from './UserCardSkeleton';
 
-interface UserCardsProps {
-  limit: number;
-  users: User[];
-  loading: boolean;
-  search: string;
-}
-
-export function UserCards({ limit, users, loading, search }: UserCardsProps) {
+export function UserCards() {
   const t = useTranslations('users');
+
+  // Use selective subscriptions to prevent unnecessary re-renders
+  const limit = useUsersStore((state) => state.limit);
+  const search = useUsersStore((state) => state.search);
+  const users = useUsersStore((state) => state.users);
+  const loading = useUsersStore((state) => state.loading);
 
   const transformRolesToBadges = (user: User) => {
     return (user.roles || []).map((role) => ({

@@ -8,30 +8,21 @@ import { ScrollBadges } from '@/components/common';
 import { Role } from '@/graphql/generated/types';
 import { getTagBorderColorClasses } from '@/lib/tag-colors';
 import { transformTagsToBadges } from '@/lib/tag-utils';
+import { useRolesStore } from '@/stores/roles.store';
 
 import { CreateRoleDialog } from './CreateRoleDialog';
 import { RoleActions } from './RoleActions';
 import { RoleAudit } from './RoleAudit';
 import { RoleCardSkeleton } from './RoleCardSkeleton';
 
-interface RoleCardsProps {
-  limit: number;
-  roles: Role[];
-  loading: boolean;
-  search: string;
-  onEditClick: (role: Role) => void;
-  onDeleteClick: (role: Role) => void;
-}
-
-export function RoleCards({
-  limit,
-  roles,
-  loading,
-  search,
-  onEditClick,
-  onDeleteClick,
-}: RoleCardsProps) {
+export function RoleCards() {
   const t = useTranslations('roles');
+
+  // Use selective subscriptions to prevent unnecessary re-renders
+  const limit = useRolesStore((state) => state.limit);
+  const search = useRolesStore((state) => state.search);
+  const roles = useRolesStore((state) => state.roles);
+  const loading = useRolesStore((state) => state.loading);
 
   const transformGroupsToBadges = (role: Role) => {
     return (role.groups || []).map((group) => ({
@@ -64,9 +55,7 @@ export function RoleCards({
           title={role.name}
           description={role.description || undefined}
           color={role.tags?.[0]?.color}
-          actions={
-            <RoleActions role={role} onEditClick={onEditClick} onDeleteClick={onDeleteClick} />
-          }
+          actions={<RoleActions role={role} />}
         />
       )}
       renderBody={(role: Role) => (

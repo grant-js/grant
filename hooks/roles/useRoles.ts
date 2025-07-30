@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+
 import { useQuery, ApolloError } from '@apollo/client';
 
 import { RolesQueryResult } from '@/components/features/roles/types';
@@ -12,6 +14,7 @@ interface UseRolesResult {
   loading: boolean;
   error: ApolloError | undefined;
   totalCount: number;
+  refetch: () => Promise<any>;
 }
 
 export function useRoles(options: UseRolesOptions = {}): UseRolesResult {
@@ -24,15 +27,22 @@ export function useRoles(options: UseRolesOptions = {}): UseRolesResult {
     tagIds,
   } = options;
 
-  const { data, loading, error } = useQuery<RolesQueryResult>(GET_ROLES, {
-    variables: {
+  // Memoize variables to prevent unnecessary re-renders
+  const variables = useMemo(
+    () => ({
       page,
       limit,
       search,
       sort,
       ids,
       tagIds,
-    },
+    }),
+    [page, limit, search, sort, ids, tagIds]
+  );
+
+  const { data, loading, error, refetch } = useQuery<RolesQueryResult>(GET_ROLES, {
+    variables,
+    notifyOnNetworkStatusChange: false, // Prevent re-renders on network status changes
   });
 
   return {
@@ -40,5 +50,6 @@ export function useRoles(options: UseRolesOptions = {}): UseRolesResult {
     loading,
     error,
     totalCount: data?.roles?.totalCount || 0,
+    refetch,
   };
 }

@@ -2,24 +2,29 @@
 
 import { DeleteDialog } from '@/components/common';
 import { useRoleMutations } from '@/hooks/roles';
+import { useRolesStore } from '@/stores/roles.store';
 
-interface DeleteRoleDialogProps {
-  roleToDelete: { id: string; name: string } | null;
-  onOpenChange: (open: boolean) => void;
-  onSuccess?: () => void;
-}
-
-export function DeleteRoleDialog({ roleToDelete, onOpenChange, onSuccess }: DeleteRoleDialogProps) {
+export function DeleteRoleDialog() {
   const { deleteRole } = useRoleMutations();
+
+  // Use selective subscriptions to prevent unnecessary re-renders
+  const roleToDelete = useRolesStore((state) => state.roleToDelete);
+  const setRoleToDelete = useRolesStore((state) => state.setRoleToDelete);
 
   const handleDelete = async (id: string, name: string) => {
     await deleteRole(id, name);
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setRoleToDelete(null);
+    }
+  };
+
   return (
     <DeleteDialog
       open={!!roleToDelete}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       entityToDelete={roleToDelete}
       title="deleteDialog.title"
       description="deleteDialog.description"
@@ -27,7 +32,6 @@ export function DeleteRoleDialog({ roleToDelete, onOpenChange, onSuccess }: Dele
       confirmText="deleteDialog.confirm"
       deletingText="deleteDialog.deleting"
       onDelete={handleDelete}
-      onSuccess={onSuccess}
       translationNamespace="roles"
     />
   );

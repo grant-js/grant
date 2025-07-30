@@ -2,14 +2,14 @@ import { useTranslations } from 'next-intl';
 
 import { Sorter, type SortInput, type SortOrder } from '@/components/common';
 import { RoleSortOrder, RoleSortableField, RoleSortInput } from '@/graphql/generated/types';
+import { useRolesStore } from '@/stores/roles.store';
 
-interface RoleSorterProps {
-  sort?: RoleSortInput;
-  onSortChange: (field: RoleSortableField, order: RoleSortOrder) => void;
-}
-
-export function RoleSorter({ sort, onSortChange }: RoleSorterProps) {
+export function RoleSorter() {
   const t = useTranslations('roles');
+
+  // Use selective subscriptions to prevent unnecessary re-renders
+  const sort = useRolesStore((state) => state.sort);
+  const setSort = useRolesStore((state) => state.setSort);
 
   // Convert GraphQL types to generic Sorter types
   const convertSort = (gqlSort?: RoleSortInput): SortInput<RoleSortableField> | undefined => {
@@ -22,7 +22,7 @@ export function RoleSorter({ sort, onSortChange }: RoleSorterProps) {
 
   const handleSortChange = (field: RoleSortableField, order: SortOrder) => {
     const gqlOrder = order === 'ASC' ? RoleSortOrder.Asc : RoleSortOrder.Desc;
-    onSortChange(field, gqlOrder);
+    setSort(field, gqlOrder);
   };
 
   const fields = [

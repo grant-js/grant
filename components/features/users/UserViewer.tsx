@@ -12,21 +12,32 @@ import { UserView } from './UserViewSwitcher';
 export function UserViewer() {
   // Use selective subscriptions to prevent unnecessary re-renders
   const view = useUsersStore((state) => state.view);
+  const page = useUsersStore((state) => state.page);
   const limit = useUsersStore((state) => state.limit);
   const search = useUsersStore((state) => state.search);
-  const page = useUsersStore((state) => state.page);
   const sort = useUsersStore((state) => state.sort);
   const selectedTagIds = useUsersStore((state) => state.selectedTagIds);
   const setTotalCount = useUsersStore((state) => state.setTotalCount);
+  const setUsers = useUsersStore((state) => state.setUsers);
+  const setLoading = useUsersStore((state) => state.setLoading);
 
   // Get users data from the hook
-  const { users, loading, totalCount, refetch } = useUsers({
+  const { users, loading, totalCount } = useUsers({
     page,
     limit,
     search,
     sort,
     tagIds: selectedTagIds,
   });
+
+  // Update store with data when it changes
+  useEffect(() => {
+    setUsers(users);
+  }, [users, setUsers]);
+
+  useEffect(() => {
+    setLoading(loading);
+  }, [loading, setLoading]);
 
   // Update store with total count when data changes
   useEffect(() => {
@@ -37,9 +48,9 @@ export function UserViewer() {
 
   switch (view) {
     case UserView.CARD:
-      return <UserCards limit={limit} users={users} loading={loading} search={search} />;
+      return <UserCards />;
     case UserView.TABLE:
     default:
-      return <UserTable limit={limit} users={users} loading={loading} search={search} />;
+      return <UserTable />;
   }
 }

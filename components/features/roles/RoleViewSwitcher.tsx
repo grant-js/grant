@@ -4,19 +4,19 @@ import { LayoutGrid, Table } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { ViewSwitcher, type ViewOption } from '@/components/common';
+import { useRolesStore } from '@/stores/roles.store';
 
 export enum RoleView {
   CARD = 'card',
   TABLE = 'table',
 }
 
-interface RoleViewSwitcherProps {
-  currentView: RoleView;
-  onViewChange: (view: RoleView) => void;
-}
-
-export function RoleViewSwitcher({ currentView, onViewChange }: RoleViewSwitcherProps) {
+export function RoleViewSwitcher() {
   const t = useTranslations('roles');
+
+  // Use selective subscriptions to prevent unnecessary re-renders
+  const view = useRolesStore((state) => state.view);
+  const setView = useRolesStore((state) => state.setView);
 
   const roleViewOptions: ViewOption[] = [
     {
@@ -33,8 +33,8 @@ export function RoleViewSwitcher({ currentView, onViewChange }: RoleViewSwitcher
 
   return (
     <ViewSwitcher
-      currentView={currentView}
-      onViewChange={(view) => onViewChange(view as RoleView)}
+      currentView={view}
+      onViewChange={(newView) => setView(newView as RoleView)}
       options={roleViewOptions}
     />
   );

@@ -13,17 +13,18 @@ import { Group } from '@/graphql/generated/types';
 import { useGroups } from '@/hooks/groups';
 import { useRoleMutations } from '@/hooks/roles';
 import { useTags } from '@/hooks/tags';
+import { useRolesStore } from '@/stores/roles.store';
 
-import { createRoleSchema, CreateRoleFormValues, CreateRoleDialogProps } from './types';
+import { createRoleSchema, CreateRoleFormValues } from './types';
 
-interface CreateRoleDialogComponentProps extends Partial<CreateRoleDialogProps> {
-  children?: React.ReactNode;
-}
-
-export function CreateRoleDialog({ open, onOpenChange, children }: CreateRoleDialogComponentProps) {
+export function CreateRoleDialog() {
   const { groups, loading: groupsLoading } = useGroups();
   const { tags, loading: tagsLoading } = useTags();
   const { createRole, addRoleGroup, addRoleTag } = useRoleMutations();
+
+  // Use selective subscriptions to prevent unnecessary re-renders
+  const isCreateDialogOpen = useRolesStore((state) => state.isCreateDialogOpen);
+  const setCreateDialogOpen = useRolesStore((state) => state.setCreateDialogOpen);
 
   const fields: CreateDialogField[] = [
     {
@@ -104,10 +105,14 @@ export function CreateRoleDialog({ open, onOpenChange, children }: CreateRoleDia
     await Promise.all(promises);
   };
 
+  const handleOpenChange = (open: boolean) => {
+    setCreateDialogOpen(open);
+  };
+
   return (
     <CreateDialog
-      open={open}
-      onOpenChange={onOpenChange}
+      open={isCreateDialogOpen}
+      onOpenChange={handleOpenChange}
       title="createDialog.title"
       description="createDialog.description"
       triggerText="createDialog.trigger"
@@ -127,8 +132,6 @@ export function CreateRoleDialog({ open, onOpenChange, children }: CreateRoleDia
       onAddRelationships={handleAddRelationships}
       translationNamespace="roles"
       submittingText="createDialog.submitting"
-    >
-      {children}
-    </CreateDialog>
+    />
   );
 }

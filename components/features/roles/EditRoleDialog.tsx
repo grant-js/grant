@@ -11,14 +11,19 @@ import { Group, Role, Tag } from '@/graphql/generated/types';
 import { useGroups } from '@/hooks/groups';
 import { useRoleMutations } from '@/hooks/roles';
 import { useTags } from '@/hooks/tags';
+import { useRolesStore } from '@/stores/roles.store';
 
-import { EditRoleFormValues, editRoleSchema, EditRoleDialogProps } from './types';
+import { EditRoleFormValues, editRoleSchema } from './types';
 
-export function EditRoleDialog({ role, open, onOpenChange }: EditRoleDialogProps) {
+export function EditRoleDialog() {
   const { groups, loading: groupsLoading } = useGroups();
   const { tags, loading: tagsLoading } = useTags();
   const { updateRole, addRoleGroup, removeRoleGroup, addRoleTag, removeRoleTag } =
     useRoleMutations();
+
+  // Use selective subscriptions to prevent unnecessary re-renders
+  const roleToEdit = useRolesStore((state) => state.roleToEdit);
+  const setRoleToEdit = useRolesStore((state) => state.setRoleToEdit);
 
   const fields: EditDialogField[] = [
     {
@@ -135,11 +140,17 @@ export function EditRoleDialog({ role, open, onOpenChange }: EditRoleDialogProps
     }
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setRoleToEdit(null);
+    }
+  };
+
   return (
     <EditDialog
-      entity={role}
-      open={open}
-      onOpenChange={onOpenChange}
+      entity={roleToEdit}
+      open={!!roleToEdit}
+      onOpenChange={handleOpenChange}
       title="editDialog.title"
       description="editDialog.description"
       confirmText="editDialog.confirm"

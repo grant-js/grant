@@ -1,11 +1,13 @@
 import { Pagination } from '@/components/common';
+import { useRolesStore } from '@/stores/roles.store';
 
-interface RolePaginationProps {
-  page: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-}
+export function RolePagination() {
+  // Use selective subscriptions to prevent unnecessary re-renders
+  const page = useRolesStore((state) => state.page);
+  const limit = useRolesStore((state) => state.limit);
+  const totalCount = useRolesStore((state) => state.totalCount);
+  const setPage = useRolesStore((state) => state.setPage);
+  const totalPages = Math.ceil(totalCount / limit);
 
-export function RolePagination({ page, totalPages, onPageChange }: RolePaginationProps) {
-  return <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} />;
+  return <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />;
 }
