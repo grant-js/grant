@@ -1,0 +1,15 @@
+extend type Mutation {
+  """
+  Update an existing project.
+  """
+  updateProject(
+    """
+    ID of the project to update.
+    """
+    id: ID!
+    """
+    Input data for updating the project.
+    """
+    input: UpdateProjectInput!
+  ): Project!
+} 

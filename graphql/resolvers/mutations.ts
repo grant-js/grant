@@ -2,8 +2,10 @@ import * as authMutations from './auth/mutations';
 import * as groupPermissionMutations from './group-permissions/mutations';
 import * as groupTagMutations from './group-tags/mutations';
 import * as groupMutations from './groups/mutations';
+import * as organizationMutations from './organizations/mutations';
 import * as permissionTagMutations from './permission-tags/mutations';
 import * as permissionMutations from './permissions/mutations';
+import * as projectMutations from './projects/mutations';
 import * as roleGroupMutations from './role-groups/mutations';
 import * as roleTagMutations from './role-tags/mutations';
 import * as roleMutations from './roles/mutations';
@@ -23,6 +25,12 @@ export const Mutation = {
   createGroup: groupMutations.createGroup,
   deleteGroup: groupMutations.deleteGroup,
   updateGroup: groupMutations.updateGroup,
+  createOrganization: organizationMutations.createOrganization,
+  updateOrganization: organizationMutations.updateOrganization,
+  deleteOrganization: organizationMutations.deleteOrganization,
+  createProject: projectMutations.createProject,
+  updateProject: projectMutations.updateProject,
+  deleteProject: projectMutations.deleteProject,
   createPermission: permissionMutations.createPermission,
   deletePermission: permissionMutations.deletePermission,
   updatePermission: permissionMutations.updatePermission,

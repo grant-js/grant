@@ -1,0 +1,10 @@
+"""
+Input for creating a new organization.
+"""
+input CreateOrganizationInput {
+  """
+  Name of the organization.
+  """
+  name: String!
+
+} 

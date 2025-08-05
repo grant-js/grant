@@ -1,0 +1,15 @@
+extend type Mutation {
+  """
+  Update an existing organization.
+  """
+  updateOrganization(
+    """
+    ID of the organization to update.
+    """
+    id: ID!
+    """
+    Input data for updating the organization.
+    """
+    input: UpdateOrganizationInput!
+  ): Organization!
+} 

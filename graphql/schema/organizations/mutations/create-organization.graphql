@@ -1,0 +1,11 @@
+extend type Mutation {
+  """
+  Create a new organization.
+  """
+  createOrganization(
+    """
+    Input data for creating the organization.
+    """
+    input: CreateOrganizationInput!
+  ): Organization!
+} 

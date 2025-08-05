@@ -1,0 +1,11 @@
+extend type Mutation {
+  """
+  Create a new project.
+  """
+  createProject(
+    """
+    Input data for creating the project.
+    """
+    input: CreateProjectInput!
+  ): Project!
+} 

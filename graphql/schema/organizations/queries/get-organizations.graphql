@@ -1,0 +1,28 @@
+extend type Query {
+  """
+  Get a paginated list of organizations.
+  """
+  organizations(
+    """
+    Page number (1-based).
+    """
+    page: Int!
+    """
+    Number of organizations per page.
+    """
+    limit: Int!
+    """
+    Search term to filter organizations.
+    """
+    search: String
+    """
+    Sort configuration for organizations.
+    """
+    sort: OrganizationSortInput
+    """
+    Optional array of organization IDs to filter by.
+    If provided and not empty, pagination parameters (page, limit) will be ignored.
+    """
+    ids: [ID!]
+  ): OrganizationPage!
+} 

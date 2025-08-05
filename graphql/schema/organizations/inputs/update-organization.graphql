@@ -1,0 +1,10 @@
+"""
+Input for updating an existing organization.
+"""
+input UpdateOrganizationInput {
+  """
+  Name of the organization.
+  """
+  name: String
+
+} 

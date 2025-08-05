@@ -1,0 +1,26 @@
+"""
+Represents an organization in the system.
+"""
+type Organization implements Auditable {
+  """
+  Unique identifier for the organization.
+  """
+  id: ID!
+  """
+  Name of the organization.
+  """
+  name: String!
+  """
+  URL-friendly slug for the organization.
+  """
+  slug: String!
+
+  """
+  Timestamp when the organization was created.
+  """
+  createdAt: String!
+  """
+  Timestamp when the organization was last updated.
+  """
+  updatedAt: String!
+} 
