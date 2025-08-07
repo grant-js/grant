@@ -663,16 +663,24 @@ export type Organization = Auditable & {
   __typename?: 'Organization';
   /** Timestamp when the organization was created. */
   createdAt: Scalars['String']['output'];
+  /** Organization groups. */
+  groups?: Maybe<Array<Group>>;
   /** Unique identifier for the organization. */
   id: Scalars['ID']['output'];
   /** Name of the organization. */
   name: Scalars['String']['output'];
+  /** Organization permissions. */
+  permissions?: Maybe<Array<Permission>>;
   /** Organization projects. */
   projects?: Maybe<Array<Project>>;
+  /** Organization roles. */
+  roles?: Maybe<Array<Role>>;
   /** URL-friendly slug for the organization. */
   slug: Scalars['String']['output'];
   /** Timestamp when the organization was last updated. */
   updatedAt: Scalars['String']['output'];
+  /** Organization users. */
+  users?: Maybe<Array<User>>;
 };
 
 /** Represents an organization-group relationship in the system. */
@@ -1840,11 +1848,15 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
 
 export type OrganizationResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Organization'] = ResolversParentTypes['Organization']> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  groups?: Resolver<Maybe<Array<ResolversTypes['Group']>>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  permissions?: Resolver<Maybe<Array<ResolversTypes['Permission']>>, ParentType, ContextType>;
   projects?: Resolver<Maybe<Array<ResolversTypes['Project']>>, ParentType, ContextType>;
+  roles?: Resolver<Maybe<Array<ResolversTypes['Role']>>, ParentType, ContextType>;
   slug?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  users?: Resolver<Maybe<Array<ResolversTypes['User']>>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 

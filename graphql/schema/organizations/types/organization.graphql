@@ -19,6 +19,22 @@ type Organization implements Auditable {
   """
   projects: [Project!]
   """
+  Organization roles.
+  """
+  roles: [Role!]
+  """
+  Organization groups.
+  """
+  groups: [Group!]
+  """
+  Organization permissions.
+  """
+  permissions: [Permission!]
+  """
+  Organization users.
+  """
+  users: [User!]
+  """
   Timestamp when the organization was created.
   """
   createdAt: String!
