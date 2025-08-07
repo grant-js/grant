@@ -1,0 +1,11 @@
+extend type Mutation {
+  """
+  Adds an organization-permission relationship.
+  """
+  addOrganizationPermission(
+    """
+    Input data for adding the organization-permission relationship.
+    """
+    input: AddOrganizationPermissionInput!
+  ): OrganizationPermission!
+} 

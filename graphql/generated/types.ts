@@ -33,12 +33,44 @@ export type AddGroupTagInput = {
   tagId: Scalars['ID']['input'];
 };
 
+/** Input type for adding an organization-group relationship. */
+export type AddOrganizationGroupInput = {
+  /** ID of the group. */
+  groupId: Scalars['ID']['input'];
+  /** ID of the organization. */
+  organizationId: Scalars['ID']['input'];
+};
+
+/** Input type for adding an organization-permission relationship. */
+export type AddOrganizationPermissionInput = {
+  /** ID of the organization. */
+  organizationId: Scalars['ID']['input'];
+  /** ID of the permission. */
+  permissionId: Scalars['ID']['input'];
+};
+
 /** Input type for adding an organization-project relationship. */
 export type AddOrganizationProjectInput = {
   /** ID of the organization. */
   organizationId: Scalars['ID']['input'];
   /** ID of the project. */
   projectId: Scalars['ID']['input'];
+};
+
+/** Input type for adding an organization-role relationship. */
+export type AddOrganizationRoleInput = {
+  /** ID of the organization. */
+  organizationId: Scalars['ID']['input'];
+  /** ID of the role. */
+  roleId: Scalars['ID']['input'];
+};
+
+/** Input type for adding an organization-user relationship. */
+export type AddOrganizationUserInput = {
+  /** ID of the organization. */
+  organizationId: Scalars['ID']['input'];
+  /** ID of the user. */
+  userId: Scalars['ID']['input'];
 };
 
 export type AddPermissionTagInput = {
@@ -253,8 +285,16 @@ export type Mutation = {
   addGroupPermission: GroupPermission;
   /** Adds a group-tag relationship. */
   addGroupTag: GroupTag;
+  /** Adds an organization-group relationship. */
+  addOrganizationGroup: OrganizationGroup;
+  /** Adds an organization-permission relationship. */
+  addOrganizationPermission: OrganizationPermission;
   /** Adds an organization-project relationship. */
   addOrganizationProject: OrganizationProject;
+  /** Adds an organization-role relationship. */
+  addOrganizationRole: OrganizationRole;
+  /** Adds an organization-user relationship. */
+  addOrganizationUser: OrganizationUser;
   /** Adds a permission-tag relationship. */
   addPermissionTag: PermissionTag;
   /** Adds a role-group relationship. */
@@ -299,8 +339,16 @@ export type Mutation = {
   removeGroupPermission: Scalars['Boolean']['output'];
   /** Removes a group-tag relationship. */
   removeGroupTag: Scalars['Boolean']['output'];
+  /** Removes an organization-group relationship. */
+  removeOrganizationGroup: Scalars['Boolean']['output'];
+  /** Removes an organization-permission relationship. */
+  removeOrganizationPermission: Scalars['Boolean']['output'];
   /** Removes an organization-project relationship. */
   removeOrganizationProject: OrganizationProject;
+  /** Removes an organization-role relationship. */
+  removeOrganizationRole: Scalars['Boolean']['output'];
+  /** Removes an organization-user relationship. */
+  removeOrganizationUser: Scalars['Boolean']['output'];
   /** Removes a permission-tag relationship. */
   removePermissionTag: Scalars['Boolean']['output'];
   /** Removes a role-group relationship. */
@@ -341,8 +389,32 @@ export type MutationAddGroupTagArgs = {
 
 
 /** Update an existing tag. */
+export type MutationAddOrganizationGroupArgs = {
+  input: AddOrganizationGroupInput;
+};
+
+
+/** Update an existing tag. */
+export type MutationAddOrganizationPermissionArgs = {
+  input: AddOrganizationPermissionInput;
+};
+
+
+/** Update an existing tag. */
 export type MutationAddOrganizationProjectArgs = {
   input: AddOrganizationProjectInput;
+};
+
+
+/** Update an existing tag. */
+export type MutationAddOrganizationRoleArgs = {
+  input: AddOrganizationRoleInput;
+};
+
+
+/** Update an existing tag. */
+export type MutationAddOrganizationUserArgs = {
+  input: AddOrganizationUserInput;
 };
 
 
@@ -479,8 +551,32 @@ export type MutationRemoveGroupTagArgs = {
 
 
 /** Update an existing tag. */
+export type MutationRemoveOrganizationGroupArgs = {
+  input: RemoveOrganizationGroupInput;
+};
+
+
+/** Update an existing tag. */
+export type MutationRemoveOrganizationPermissionArgs = {
+  input: RemoveOrganizationPermissionInput;
+};
+
+
+/** Update an existing tag. */
 export type MutationRemoveOrganizationProjectArgs = {
   input: RemoveOrganizationProjectInput;
+};
+
+
+/** Update an existing tag. */
+export type MutationRemoveOrganizationRoleArgs = {
+  input: RemoveOrganizationRoleInput;
+};
+
+
+/** Update an existing tag. */
+export type MutationRemoveOrganizationUserArgs = {
+  input: RemoveOrganizationUserInput;
 };
 
 
@@ -579,6 +675,25 @@ export type Organization = Auditable & {
   updatedAt: Scalars['String']['output'];
 };
 
+/** Represents an organization-group relationship in the system. */
+export type OrganizationGroup = Auditable & {
+  __typename?: 'OrganizationGroup';
+  /** Timestamp when the organization-group relationship was created. */
+  createdAt: Scalars['String']['output'];
+  /** The group associated with this relationship. */
+  group?: Maybe<Group>;
+  /** ID of the group. */
+  groupId: Scalars['ID']['output'];
+  /** Unique identifier for the organization-group relationship. */
+  id: Scalars['ID']['output'];
+  /** The organization associated with this relationship. */
+  organization?: Maybe<Organization>;
+  /** ID of the organization. */
+  organizationId: Scalars['ID']['output'];
+  /** Timestamp when the organization-group relationship was last updated. */
+  updatedAt: Scalars['String']['output'];
+};
+
 /** Represents a paginated list of organizations. */
 export type OrganizationPage = PaginatedResults & {
   __typename?: 'OrganizationPage';
@@ -588,6 +703,25 @@ export type OrganizationPage = PaginatedResults & {
   organizations: Array<Organization>;
   /** Total number of organizations. */
   totalCount: Scalars['Int']['output'];
+};
+
+/** Represents an organization-permission relationship in the system. */
+export type OrganizationPermission = Auditable & {
+  __typename?: 'OrganizationPermission';
+  /** Timestamp when the organization-permission relationship was created. */
+  createdAt: Scalars['String']['output'];
+  /** Unique identifier for the organization-permission relationship. */
+  id: Scalars['ID']['output'];
+  /** The organization associated with this relationship. */
+  organization?: Maybe<Organization>;
+  /** ID of the organization. */
+  organizationId: Scalars['ID']['output'];
+  /** The permission associated with this relationship. */
+  permission?: Maybe<Permission>;
+  /** ID of the permission. */
+  permissionId: Scalars['ID']['output'];
+  /** Timestamp when the organization-permission relationship was last updated. */
+  updatedAt: Scalars['String']['output'];
 };
 
 /** Represents an organization-project relationship in the system. */
@@ -606,6 +740,25 @@ export type OrganizationProject = Auditable & {
   /** ID of the project. */
   projectId: Scalars['ID']['output'];
   /** Timestamp when the organization-project relationship was last updated. */
+  updatedAt: Scalars['String']['output'];
+};
+
+/** Represents an organization-role relationship in the system. */
+export type OrganizationRole = Auditable & {
+  __typename?: 'OrganizationRole';
+  /** Timestamp when the organization-role relationship was created. */
+  createdAt: Scalars['String']['output'];
+  /** Unique identifier for the organization-role relationship. */
+  id: Scalars['ID']['output'];
+  /** The organization associated with this relationship. */
+  organization?: Maybe<Organization>;
+  /** ID of the organization. */
+  organizationId: Scalars['ID']['output'];
+  /** The role associated with this relationship. */
+  role?: Maybe<Role>;
+  /** ID of the role. */
+  roleId: Scalars['ID']['output'];
+  /** Timestamp when the organization-role relationship was last updated. */
   updatedAt: Scalars['String']['output'];
 };
 
@@ -632,6 +785,25 @@ export enum OrganizationSortableField {
   /** Sort by last update date. */
   UpdatedAt = 'updatedAt'
 }
+
+/** Represents an organization-user relationship in the system. */
+export type OrganizationUser = Auditable & {
+  __typename?: 'OrganizationUser';
+  /** Timestamp when the organization-user relationship was created. */
+  createdAt: Scalars['String']['output'];
+  /** Unique identifier for the organization-user relationship. */
+  id: Scalars['ID']['output'];
+  /** The organization associated with this relationship. */
+  organization?: Maybe<Organization>;
+  /** ID of the organization. */
+  organizationId: Scalars['ID']['output'];
+  /** Timestamp when the organization-user relationship was last updated. */
+  updatedAt: Scalars['String']['output'];
+  /** The user associated with this relationship. */
+  user?: Maybe<User>;
+  /** ID of the user. */
+  userId: Scalars['ID']['output'];
+};
 
 /** Base interface for paginated results. */
 export type PaginatedResults = {
@@ -768,8 +940,16 @@ export type Query = {
   groupTags: Array<GroupTag>;
   /** Retrieves a paginated list of groups. */
   groups: GroupPage;
+  /** Retrieves organization-group relationships for a specific organization. */
+  organizationGroups: Array<OrganizationGroup>;
+  /** Retrieves organization-permission relationships for a specific organization. */
+  organizationPermissions: Array<OrganizationPermission>;
   /** Retrieves organization-project relationships for a specific organization. */
   organizationProjects: Array<OrganizationProject>;
+  /** Retrieves organization-role relationships for a specific organization. */
+  organizationRoles: Array<OrganizationRole>;
+  /** Retrieves organization-user relationships for a specific organization. */
+  organizationUsers: Array<OrganizationUser>;
   /** Get a paginated list of organizations. */
   organizations: OrganizationPage;
   /** Retrieves permission-tag relationships for a specific permission. */
@@ -815,7 +995,27 @@ export type QueryGroupsArgs = {
 };
 
 
+export type QueryOrganizationGroupsArgs = {
+  organizationId: Scalars['ID']['input'];
+};
+
+
+export type QueryOrganizationPermissionsArgs = {
+  organizationId: Scalars['ID']['input'];
+};
+
+
 export type QueryOrganizationProjectsArgs = {
+  organizationId: Scalars['ID']['input'];
+};
+
+
+export type QueryOrganizationRolesArgs = {
+  organizationId: Scalars['ID']['input'];
+};
+
+
+export type QueryOrganizationUsersArgs = {
   organizationId: Scalars['ID']['input'];
 };
 
@@ -917,12 +1117,44 @@ export type RemoveGroupTagInput = {
   tagId: Scalars['ID']['input'];
 };
 
+/** Input type for removing an organization-group relationship. */
+export type RemoveOrganizationGroupInput = {
+  /** ID of the group. */
+  groupId: Scalars['ID']['input'];
+  /** ID of the organization. */
+  organizationId: Scalars['ID']['input'];
+};
+
+/** Input type for removing an organization-permission relationship. */
+export type RemoveOrganizationPermissionInput = {
+  /** ID of the organization. */
+  organizationId: Scalars['ID']['input'];
+  /** ID of the permission. */
+  permissionId: Scalars['ID']['input'];
+};
+
 /** Input type for removing an organization-project relationship. */
 export type RemoveOrganizationProjectInput = {
   /** ID of the organization. */
   organizationId: Scalars['ID']['input'];
   /** ID of the project. */
   projectId: Scalars['ID']['input'];
+};
+
+/** Input type for removing an organization-role relationship. */
+export type RemoveOrganizationRoleInput = {
+  /** ID of the organization. */
+  organizationId: Scalars['ID']['input'];
+  /** ID of the role. */
+  roleId: Scalars['ID']['input'];
+};
+
+/** Input type for removing an organization-user relationship. */
+export type RemoveOrganizationUserInput = {
+  /** ID of the organization. */
+  organizationId: Scalars['ID']['input'];
+  /** ID of the user. */
+  userId: Scalars['ID']['input'];
 };
 
 export type RemovePermissionTagInput = {
@@ -1307,7 +1539,7 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 
 /** Mapping of interface types */
 export type ResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
-  Auditable: ( Group ) | ( GroupPermission ) | ( GroupTag ) | ( Organization ) | ( OrganizationProject ) | ( Permission ) | ( PermissionTag ) | ( Project ) | ( Role ) | ( RoleGroup ) | ( RoleTag ) | ( Tag ) | ( User ) | ( UserRole ) | ( UserTag );
+  Auditable: ( Group ) | ( GroupPermission ) | ( GroupTag ) | ( Organization ) | ( OrganizationGroup ) | ( OrganizationPermission ) | ( OrganizationProject ) | ( OrganizationRole ) | ( OrganizationUser ) | ( Permission ) | ( PermissionTag ) | ( Project ) | ( Role ) | ( RoleGroup ) | ( RoleTag ) | ( Tag ) | ( User ) | ( UserRole ) | ( UserTag );
   Creatable: never;
   PaginatedResults: ( GroupPage ) | ( OrganizationPage ) | ( PermissionPage ) | ( ProjectPage ) | ( RolePage ) | ( TagPage ) | ( UserPage );
 }>;
@@ -1316,7 +1548,11 @@ export type ResolversInterfaceTypes<_RefType extends Record<string, unknown>> = 
 export type ResolversTypes = ResolversObject<{
   AddGroupPermissionInput: AddGroupPermissionInput;
   AddGroupTagInput: AddGroupTagInput;
+  AddOrganizationGroupInput: AddOrganizationGroupInput;
+  AddOrganizationPermissionInput: AddOrganizationPermissionInput;
   AddOrganizationProjectInput: AddOrganizationProjectInput;
+  AddOrganizationRoleInput: AddOrganizationRoleInput;
+  AddOrganizationUserInput: AddOrganizationUserInput;
   AddPermissionTagInput: AddPermissionTagInput;
   AddRoleGroupInput: AddRoleGroupInput;
   AddRoleTagInput: AddRoleTagInput;
@@ -1345,11 +1581,15 @@ export type ResolversTypes = ResolversObject<{
   LoginResponse: ResolverTypeWrapper<LoginResponse>;
   Mutation: ResolverTypeWrapper<{}>;
   Organization: ResolverTypeWrapper<Organization>;
+  OrganizationGroup: ResolverTypeWrapper<OrganizationGroup>;
   OrganizationPage: ResolverTypeWrapper<OrganizationPage>;
+  OrganizationPermission: ResolverTypeWrapper<OrganizationPermission>;
   OrganizationProject: ResolverTypeWrapper<OrganizationProject>;
+  OrganizationRole: ResolverTypeWrapper<OrganizationRole>;
   OrganizationSortInput: OrganizationSortInput;
   OrganizationSortOrder: OrganizationSortOrder;
   OrganizationSortableField: OrganizationSortableField;
+  OrganizationUser: ResolverTypeWrapper<OrganizationUser>;
   PaginatedResults: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['PaginatedResults']>;
   Permission: ResolverTypeWrapper<Permission>;
   PermissionPage: ResolverTypeWrapper<PermissionPage>;
@@ -1365,7 +1605,11 @@ export type ResolversTypes = ResolversObject<{
   Query: ResolverTypeWrapper<{}>;
   RemoveGroupPermissionInput: RemoveGroupPermissionInput;
   RemoveGroupTagInput: RemoveGroupTagInput;
+  RemoveOrganizationGroupInput: RemoveOrganizationGroupInput;
+  RemoveOrganizationPermissionInput: RemoveOrganizationPermissionInput;
   RemoveOrganizationProjectInput: RemoveOrganizationProjectInput;
+  RemoveOrganizationRoleInput: RemoveOrganizationRoleInput;
+  RemoveOrganizationUserInput: RemoveOrganizationUserInput;
   RemovePermissionTagInput: RemovePermissionTagInput;
   RemoveRoleGroupInput: RemoveRoleGroupInput;
   RemoveRoleTagInput: RemoveRoleTagInput;
@@ -1404,7 +1648,11 @@ export type ResolversTypes = ResolversObject<{
 export type ResolversParentTypes = ResolversObject<{
   AddGroupPermissionInput: AddGroupPermissionInput;
   AddGroupTagInput: AddGroupTagInput;
+  AddOrganizationGroupInput: AddOrganizationGroupInput;
+  AddOrganizationPermissionInput: AddOrganizationPermissionInput;
   AddOrganizationProjectInput: AddOrganizationProjectInput;
+  AddOrganizationRoleInput: AddOrganizationRoleInput;
+  AddOrganizationUserInput: AddOrganizationUserInput;
   AddPermissionTagInput: AddPermissionTagInput;
   AddRoleGroupInput: AddRoleGroupInput;
   AddRoleTagInput: AddRoleTagInput;
@@ -1431,9 +1679,13 @@ export type ResolversParentTypes = ResolversObject<{
   LoginResponse: LoginResponse;
   Mutation: {};
   Organization: Organization;
+  OrganizationGroup: OrganizationGroup;
   OrganizationPage: OrganizationPage;
+  OrganizationPermission: OrganizationPermission;
   OrganizationProject: OrganizationProject;
+  OrganizationRole: OrganizationRole;
   OrganizationSortInput: OrganizationSortInput;
+  OrganizationUser: OrganizationUser;
   PaginatedResults: ResolversInterfaceTypes<ResolversParentTypes>['PaginatedResults'];
   Permission: Permission;
   PermissionPage: PermissionPage;
@@ -1445,7 +1697,11 @@ export type ResolversParentTypes = ResolversObject<{
   Query: {};
   RemoveGroupPermissionInput: RemoveGroupPermissionInput;
   RemoveGroupTagInput: RemoveGroupTagInput;
+  RemoveOrganizationGroupInput: RemoveOrganizationGroupInput;
+  RemoveOrganizationPermissionInput: RemoveOrganizationPermissionInput;
   RemoveOrganizationProjectInput: RemoveOrganizationProjectInput;
+  RemoveOrganizationRoleInput: RemoveOrganizationRoleInput;
+  RemoveOrganizationUserInput: RemoveOrganizationUserInput;
   RemovePermissionTagInput: RemovePermissionTagInput;
   RemoveRoleGroupInput: RemoveRoleGroupInput;
   RemoveRoleTagInput: RemoveRoleTagInput;
@@ -1475,7 +1731,7 @@ export type ResolversParentTypes = ResolversObject<{
 }>;
 
 export type AuditableResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Auditable'] = ResolversParentTypes['Auditable']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'Group' | 'GroupPermission' | 'GroupTag' | 'Organization' | 'OrganizationProject' | 'Permission' | 'PermissionTag' | 'Project' | 'Role' | 'RoleGroup' | 'RoleTag' | 'Tag' | 'User' | 'UserRole' | 'UserTag', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'Group' | 'GroupPermission' | 'GroupTag' | 'Organization' | 'OrganizationGroup' | 'OrganizationPermission' | 'OrganizationProject' | 'OrganizationRole' | 'OrganizationUser' | 'Permission' | 'PermissionTag' | 'Project' | 'Role' | 'RoleGroup' | 'RoleTag' | 'Tag' | 'User' | 'UserRole' | 'UserTag', ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -1536,7 +1792,11 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
   _empty?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   addGroupPermission?: Resolver<ResolversTypes['GroupPermission'], ParentType, ContextType, RequireFields<MutationAddGroupPermissionArgs, 'input'>>;
   addGroupTag?: Resolver<ResolversTypes['GroupTag'], ParentType, ContextType, RequireFields<MutationAddGroupTagArgs, 'input'>>;
+  addOrganizationGroup?: Resolver<ResolversTypes['OrganizationGroup'], ParentType, ContextType, RequireFields<MutationAddOrganizationGroupArgs, 'input'>>;
+  addOrganizationPermission?: Resolver<ResolversTypes['OrganizationPermission'], ParentType, ContextType, RequireFields<MutationAddOrganizationPermissionArgs, 'input'>>;
   addOrganizationProject?: Resolver<ResolversTypes['OrganizationProject'], ParentType, ContextType, RequireFields<MutationAddOrganizationProjectArgs, 'input'>>;
+  addOrganizationRole?: Resolver<ResolversTypes['OrganizationRole'], ParentType, ContextType, RequireFields<MutationAddOrganizationRoleArgs, 'input'>>;
+  addOrganizationUser?: Resolver<ResolversTypes['OrganizationUser'], ParentType, ContextType, RequireFields<MutationAddOrganizationUserArgs, 'input'>>;
   addPermissionTag?: Resolver<ResolversTypes['PermissionTag'], ParentType, ContextType, RequireFields<MutationAddPermissionTagArgs, 'input'>>;
   addRoleGroup?: Resolver<ResolversTypes['RoleGroup'], ParentType, ContextType, RequireFields<MutationAddRoleGroupArgs, 'input'>>;
   addRoleTag?: Resolver<ResolversTypes['RoleTag'], ParentType, ContextType, RequireFields<MutationAddRoleTagArgs, 'input'>>;
@@ -1559,7 +1819,11 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
   login?: Resolver<ResolversTypes['LoginResponse'], ParentType, ContextType, RequireFields<MutationLoginArgs, 'input'>>;
   removeGroupPermission?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveGroupPermissionArgs, 'input'>>;
   removeGroupTag?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveGroupTagArgs, 'input'>>;
+  removeOrganizationGroup?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveOrganizationGroupArgs, 'input'>>;
+  removeOrganizationPermission?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveOrganizationPermissionArgs, 'input'>>;
   removeOrganizationProject?: Resolver<ResolversTypes['OrganizationProject'], ParentType, ContextType, RequireFields<MutationRemoveOrganizationProjectArgs, 'input'>>;
+  removeOrganizationRole?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveOrganizationRoleArgs, 'input'>>;
+  removeOrganizationUser?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveOrganizationUserArgs, 'input'>>;
   removePermissionTag?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemovePermissionTagArgs, 'input'>>;
   removeRoleGroup?: Resolver<ResolversTypes['RoleGroup'], ParentType, ContextType, RequireFields<MutationRemoveRoleGroupArgs, 'input'>>;
   removeRoleTag?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveRoleTagArgs, 'input'>>;
@@ -1584,10 +1848,32 @@ export type OrganizationResolvers<ContextType = Context, ParentType extends Reso
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type OrganizationGroupResolvers<ContextType = Context, ParentType extends ResolversParentTypes['OrganizationGroup'] = ResolversParentTypes['OrganizationGroup']> = ResolversObject<{
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  group?: Resolver<Maybe<ResolversTypes['Group']>, ParentType, ContextType>;
+  groupId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  organization?: Resolver<Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
+  organizationId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type OrganizationPageResolvers<ContextType = Context, ParentType extends ResolversParentTypes['OrganizationPage'] = ResolversParentTypes['OrganizationPage']> = ResolversObject<{
   hasNextPage?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   organizations?: Resolver<Array<ResolversTypes['Organization']>, ParentType, ContextType>;
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type OrganizationPermissionResolvers<ContextType = Context, ParentType extends ResolversParentTypes['OrganizationPermission'] = ResolversParentTypes['OrganizationPermission']> = ResolversObject<{
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  organization?: Resolver<Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
+  organizationId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  permission?: Resolver<Maybe<ResolversTypes['Permission']>, ParentType, ContextType>;
+  permissionId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1599,6 +1885,28 @@ export type OrganizationProjectResolvers<ContextType = Context, ParentType exten
   project?: Resolver<Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type OrganizationRoleResolvers<ContextType = Context, ParentType extends ResolversParentTypes['OrganizationRole'] = ResolversParentTypes['OrganizationRole']> = ResolversObject<{
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  organization?: Resolver<Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
+  organizationId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  role?: Resolver<Maybe<ResolversTypes['Role']>, ParentType, ContextType>;
+  roleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type OrganizationUserResolvers<ContextType = Context, ParentType extends ResolversParentTypes['OrganizationUser'] = ResolversParentTypes['OrganizationUser']> = ResolversObject<{
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  organization?: Resolver<Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
+  organizationId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
+  userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1659,7 +1967,11 @@ export type QueryResolvers<ContextType = Context, ParentType extends ResolversPa
   groupPermissions?: Resolver<Array<ResolversTypes['GroupPermission']>, ParentType, ContextType, RequireFields<QueryGroupPermissionsArgs, 'groupId'>>;
   groupTags?: Resolver<Array<ResolversTypes['GroupTag']>, ParentType, ContextType, RequireFields<QueryGroupTagsArgs, 'groupId'>>;
   groups?: Resolver<ResolversTypes['GroupPage'], ParentType, ContextType, Partial<QueryGroupsArgs>>;
+  organizationGroups?: Resolver<Array<ResolversTypes['OrganizationGroup']>, ParentType, ContextType, RequireFields<QueryOrganizationGroupsArgs, 'organizationId'>>;
+  organizationPermissions?: Resolver<Array<ResolversTypes['OrganizationPermission']>, ParentType, ContextType, RequireFields<QueryOrganizationPermissionsArgs, 'organizationId'>>;
   organizationProjects?: Resolver<Array<ResolversTypes['OrganizationProject']>, ParentType, ContextType, RequireFields<QueryOrganizationProjectsArgs, 'organizationId'>>;
+  organizationRoles?: Resolver<Array<ResolversTypes['OrganizationRole']>, ParentType, ContextType, RequireFields<QueryOrganizationRolesArgs, 'organizationId'>>;
+  organizationUsers?: Resolver<Array<ResolversTypes['OrganizationUser']>, ParentType, ContextType, RequireFields<QueryOrganizationUsersArgs, 'organizationId'>>;
   organizations?: Resolver<ResolversTypes['OrganizationPage'], ParentType, ContextType, Partial<QueryOrganizationsArgs>>;
   permissionTags?: Resolver<Array<ResolversTypes['PermissionTag']>, ParentType, ContextType, RequireFields<QueryPermissionTagsArgs, 'permissionId'>>;
   permissions?: Resolver<ResolversTypes['PermissionPage'], ParentType, ContextType, Partial<QueryPermissionsArgs>>;
@@ -1779,8 +2091,12 @@ export type Resolvers<ContextType = Context> = ResolversObject<{
   LoginResponse?: LoginResponseResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   Organization?: OrganizationResolvers<ContextType>;
+  OrganizationGroup?: OrganizationGroupResolvers<ContextType>;
   OrganizationPage?: OrganizationPageResolvers<ContextType>;
+  OrganizationPermission?: OrganizationPermissionResolvers<ContextType>;
   OrganizationProject?: OrganizationProjectResolvers<ContextType>;
+  OrganizationRole?: OrganizationRoleResolvers<ContextType>;
+  OrganizationUser?: OrganizationUserResolvers<ContextType>;
   PaginatedResults?: PaginatedResultsResolvers<ContextType>;
   Permission?: PermissionResolvers<ContextType>;
   PermissionPage?: PermissionPageResolvers<ContextType>;

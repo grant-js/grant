@@ -1,0 +1,6 @@
+extend type Query {
+  """
+  Retrieves organization-user relationships for a specific organization.
+  """
+  organizationUsers(organizationId: ID!): [OrganizationUser!]!
+} 

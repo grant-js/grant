@@ -1,0 +1,11 @@
+extend type Mutation {
+  """
+  Removes an organization-group relationship.
+  """
+  removeOrganizationGroup(
+    """
+    Input data for removing the organization-group relationship.
+    """
+    input: RemoveOrganizationGroupInput!
+  ): Boolean!
+} 

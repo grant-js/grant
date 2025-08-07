@@ -1,0 +1,11 @@
+extend type Mutation {
+  """
+  Adds an organization-user relationship.
+  """
+  addOrganizationUser(
+    """
+    Input data for adding the organization-user relationship.
+    """
+    input: AddOrganizationUserInput!
+  ): OrganizationUser!
+} 

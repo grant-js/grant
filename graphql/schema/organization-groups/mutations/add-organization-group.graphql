@@ -1,0 +1,11 @@
+extend type Mutation {
+  """
+  Adds an organization-group relationship.
+  """
+  addOrganizationGroup(
+    """
+    Input data for adding the organization-group relationship.
+    """
+    input: AddOrganizationGroupInput!
+  ): OrganizationGroup!
+} 

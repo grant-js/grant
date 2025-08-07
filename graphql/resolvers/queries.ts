@@ -1,7 +1,11 @@
 import * as groupPermissionQueries from './group-permissions/queries';
 import * as groupTagQueries from './group-tags/queries';
 import * as groupQueries from './groups/queries';
+import * as organizationGroupQueries from './organization-groups/queries';
+import * as organizationPermissionQueries from './organization-permissions/queries';
 import * as organizationProjectQueries from './organization-projects/queries';
+import * as organizationRoleQueries from './organization-roles/queries';
+import * as organizationUserQueries from './organization-users/queries';
 import * as organizationQueries from './organizations/queries';
 import * as permissionTagQueries from './permission-tags/queries';
 import * as permissionQueries from './permissions/queries';
@@ -31,4 +35,8 @@ export const Query = {
   groupTags: groupTagQueries.getGroupTags,
   permissionTags: permissionTagQueries.getPermissionTags,
   organizationProjects: organizationProjectQueries.getOrganizationProjects,
+  organizationRoles: organizationRoleQueries.organizationRoles,
+  organizationGroups: organizationGroupQueries.organizationGroups,
+  organizationPermissions: organizationPermissionQueries.organizationPermissions,
+  organizationUsers: organizationUserQueries.organizationUsers,
 } as const;

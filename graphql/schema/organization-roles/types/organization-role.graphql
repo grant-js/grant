@@ -1,0 +1,33 @@
+"""
+Represents an organization-role relationship in the system.
+"""
+type OrganizationRole implements Auditable {
+  """
+  Unique identifier for the organization-role relationship.
+  """
+  id: ID!
+  """
+  ID of the organization.
+  """
+  organizationId: ID!
+  """
+  ID of the role.
+  """
+  roleId: ID!
+  """
+  The organization associated with this relationship.
+  """
+  organization: Organization
+  """
+  The role associated with this relationship.
+  """
+  role: Role
+  """
+  Timestamp when the organization-role relationship was created.
+  """
+  createdAt: String!
+  """
+  Timestamp when the organization-role relationship was last updated.
+  """
+  updatedAt: String!
+} 

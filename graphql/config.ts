@@ -9,8 +9,16 @@ import { groupTagFakerProvider } from './providers/group-tags/faker';
 import { GroupTagDataProvider } from './providers/group-tags/types';
 import { groupFakerProvider } from './providers/groups/faker';
 import { GroupDataProvider } from './providers/groups/types';
+import { organizationGroupFakerProvider } from './providers/organization-groups/faker';
+import { OrganizationGroupDataProvider } from './providers/organization-groups/types';
+import { organizationPermissionFakerProvider } from './providers/organization-permissions/faker';
+import { OrganizationPermissionDataProvider } from './providers/organization-permissions/types';
 import { organizationProjectFakerProvider } from './providers/organization-projects/faker';
 import { OrganizationProjectDataProvider } from './providers/organization-projects/types';
+import { organizationRoleFakerProvider } from './providers/organization-roles/faker';
+import { OrganizationRoleDataProvider } from './providers/organization-roles/types';
+import { organizationUserFakerProvider } from './providers/organization-users/faker';
+import { OrganizationUserDataProvider } from './providers/organization-users/types';
 import { organizationFakerProvider } from './providers/organizations/faker';
 import { OrganizationDataProvider } from './providers/organizations/types';
 import { permissionTagFakerProvider } from './providers/permission-tags/faker';
@@ -39,6 +47,10 @@ export interface ModuleProviders {
   groups: GroupDataProvider;
   organizations: OrganizationDataProvider;
   organizationProjects: OrganizationProjectDataProvider;
+  organizationRoles: OrganizationRoleDataProvider;
+  organizationGroups: OrganizationGroupDataProvider;
+  organizationPermissions: OrganizationPermissionDataProvider;
+  organizationUsers: OrganizationUserDataProvider;
   projects: ProjectDataProvider;
   permissions: PermissionDataProvider;
   userRoles: UserRoleDataProvider;
@@ -65,6 +77,10 @@ export const graphqlConfig: GraphQLConfig = {
     groups: groupFakerProvider,
     organizations: organizationFakerProvider,
     organizationProjects: organizationProjectFakerProvider,
+    organizationRoles: organizationRoleFakerProvider,
+    organizationGroups: organizationGroupFakerProvider,
+    organizationPermissions: organizationPermissionFakerProvider,
+    organizationUsers: organizationUserFakerProvider,
     projects: projectFakerProvider,
     permissions: permissionFakerProvider,
     userRoles: userRoleFakerProvider,

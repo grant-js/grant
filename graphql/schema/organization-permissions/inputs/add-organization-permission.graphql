@@ -1,0 +1,13 @@
+"""
+Input type for adding an organization-permission relationship.
+"""
+input AddOrganizationPermissionInput {
+  """
+  ID of the organization.
+  """
+  organizationId: ID!
+  """
+  ID of the permission.
+  """
+  permissionId: ID!
+} 

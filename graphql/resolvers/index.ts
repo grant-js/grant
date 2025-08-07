@@ -6,7 +6,10 @@ import { makeExecutableSchema } from '@graphql-tools/schema';
 import { GroupPermission } from '@/graphql/resolvers/group-permissions/fields';
 import { Group } from '@/graphql/resolvers/groups/fields';
 import { Mutation } from '@/graphql/resolvers/mutations';
+import { OrganizationGroup } from '@/graphql/resolvers/organization-groups/fields';
+import { OrganizationPermission } from '@/graphql/resolvers/organization-permissions/fields';
 import { OrganizationProject } from '@/graphql/resolvers/organization-projects/fields';
+import { OrganizationRole } from '@/graphql/resolvers/organization-roles/fields';
 import { Organization } from '@/graphql/resolvers/organizations/fields';
 import { Permission } from '@/graphql/resolvers/permissions/fields';
 import { Query } from '@/graphql/resolvers/queries';
@@ -15,6 +18,8 @@ import { Role } from '@/graphql/resolvers/roles/fields';
 import { Tag } from '@/graphql/resolvers/tags/fields';
 import { UserRole } from '@/graphql/resolvers/user-roles/fields';
 import { User } from '@/graphql/resolvers/users/fields';
+
+import { OrganizationUser } from './organization-users/fields';
 
 // Load all schema files
 const typeDefs = loadFilesSync(join(process.cwd(), 'graphql/schema'), {
@@ -36,6 +41,10 @@ export const schema = makeExecutableSchema({
     GroupPermission,
     Organization,
     OrganizationProject,
+    OrganizationRole,
+    OrganizationGroup,
+    OrganizationPermission,
+    OrganizationUser,
     Permission,
     Tag,
   },

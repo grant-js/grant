@@ -1,0 +1,13 @@
+"""
+Input type for removing an organization-permission relationship.
+"""
+input RemoveOrganizationPermissionInput {
+  """
+  ID of the organization.
+  """
+  organizationId: ID!
+  """
+  ID of the permission.
+  """
+  permissionId: ID!
+} 

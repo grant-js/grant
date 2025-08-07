@@ -1,0 +1,6 @@
+extend type Query {
+  """
+  Retrieves organization-role relationships for a specific organization.
+  """
+  organizationRoles(organizationId: ID!): [OrganizationRole!]!
+} 

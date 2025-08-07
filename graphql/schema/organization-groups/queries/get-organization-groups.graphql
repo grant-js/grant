@@ -1,0 +1,6 @@
+extend type Query {
+  """
+  Retrieves organization-group relationships for a specific organization.
+  """
+  organizationGroups(organizationId: ID!): [OrganizationGroup!]!
+} 

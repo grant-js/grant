@@ -1,0 +1,11 @@
+extend type Mutation {
+  """
+  Removes an organization-permission relationship.
+  """
+  removeOrganizationPermission(
+    """
+    Input data for removing the organization-permission relationship.
+    """
+    input: RemoveOrganizationPermissionInput!
+  ): Boolean!
+} 
