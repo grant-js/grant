@@ -16,6 +16,21 @@ The specification covers:
 - **Complete relationship model** with pivot tables and access control
 - **Implementation strategy** and migration path
 
+## 🔗 Relationship Model & Natural Hierarchies
+
+For detailed documentation on our relationship model, natural hierarchies, and RBAC system design, see:
+
+**[📖 Relationship Model & Natural Hierarchies](./RELATIONSHIP_MODEL.md)**
+
+This document covers:
+
+- **Entity purity** with pivot table scoping
+- **Action-based permission scoping** (e.g., `organization:update`, `projectUser:create`)
+- **Natural hierarchy** defined by relationships rather than abstract taxonomies
+- **Role and group templates** for organization and project setup
+- **Permission resolution** and access control patterns
+- **Security considerations** and audit trail design
+
 ## Features
 
 ### 1. Internationalization (i18n)
