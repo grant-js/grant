@@ -22,20 +22,24 @@ interface UseTagsResult {
   refetch: () => Promise<any>;
 }
 
-export function useTags(options: UseTagsOptions = {}): UseTagsResult {
+export function useTags(options: UseTagsOptions): UseTagsResult {
   const {
+    scope,
     page = 1,
     limit = 50, // Default to 50 for pagination
     search = '',
     sort = { field: TagSortField.Name, direction: SortDirection.Asc },
+    ids,
   } = options;
 
   const { data, loading, error, refetch } = useQuery<TagsQueryResult>(GET_TAGS, {
     variables: {
+      scope,
       page,
       limit,
       search,
       sort,
+      ids,
     },
   });
 

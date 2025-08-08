@@ -21,10 +21,11 @@ interface UsePermissionsResult {
   refetch: () => Promise<any>;
 }
 
-export function usePermissions(options: UsePermissionsOptions = {}): UsePermissionsResult {
+export function usePermissions(options: UsePermissionsOptions): UsePermissionsResult {
   const {
+    scope,
     page = 1,
-    limit = 1000, // Default to 1000 to get all permissions for dropdown
+    limit = -1, // Default to -1 to get all permissions for dropdown
     search = '',
     sort = { field: PermissionSortableField.Name, order: PermissionSortOrder.Asc },
     ids,
@@ -34,6 +35,7 @@ export function usePermissions(options: UsePermissionsOptions = {}): UsePermissi
   // Memoize variables to prevent unnecessary re-renders
   const variables = useMemo(
     () => ({
+      scope,
       page,
       limit,
       search,
@@ -41,7 +43,7 @@ export function usePermissions(options: UsePermissionsOptions = {}): UsePermissi
       ids,
       tagIds,
     }),
-    [page, limit, search, sort, ids, tagIds]
+    [scope, page, limit, search, sort, ids, tagIds]
   );
 
   const { data, loading, error, refetch } = useQuery(GET_PERMISSIONS, {

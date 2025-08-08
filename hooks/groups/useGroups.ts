@@ -21,8 +21,9 @@ interface UseGroupsResult {
   refetch: () => Promise<any>;
 }
 
-export function useGroups(options: UseGroupsOptions = {}): UseGroupsResult {
+export function useGroups(options: UseGroupsOptions): UseGroupsResult {
   const {
+    scope,
     page = 1,
     limit = 1000, // Default to 1000 to get all groups for dropdown
     search = '',
@@ -34,6 +35,7 @@ export function useGroups(options: UseGroupsOptions = {}): UseGroupsResult {
   // Memoize variables to prevent unnecessary re-renders
   const variables = useMemo(
     () => ({
+      scope,
       page,
       limit,
       search,
@@ -41,7 +43,7 @@ export function useGroups(options: UseGroupsOptions = {}): UseGroupsResult {
       ids,
       tagIds,
     }),
-    [page, limit, search, sort, ids, tagIds]
+    [scope, page, limit, search, sort, ids, tagIds]
   );
 
   const { data, loading, error, refetch } = useQuery(GET_GROUPS, {
