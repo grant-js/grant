@@ -1,15 +1,11 @@
 import { UserResolvers } from '@/graphql/generated/types';
 
-export const userTagsResolver: UserResolvers['tags'] = async (
-  parent: any,
-  { scope },
-  context: any
-) => {
+export const userTagsResolver: UserResolvers['tags'] = async (parent, { scope }, context) => {
   // Get user-tag relationships for this user
   const userTags = await context.providers.userTags.getUserTags({ userId: parent.id });
 
   // Extract tag IDs from user-tag relationships
-  const tagIds = userTags.map((ut: any) => ut.tagId);
+  const tagIds = userTags.map((ut) => ut.tagId);
 
   if (tagIds.length === 0) {
     return [];

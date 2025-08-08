@@ -29,7 +29,7 @@ export async function getRoles({
     const roleTagRelationships = tagIds.flatMap((tagId: string) => getRoleTagsByTagId(tagId));
 
     // Extract unique role IDs that have at least one of the specified tags
-    const roleIdsWithTags = [...new Set(roleTagRelationships.map((rt: any) => rt.roleId))];
+    const roleIdsWithTags = [...new Set(roleTagRelationships.map((rt) => rt.roleId))];
 
     // Filter roles to only include those with the specified tags
     allRoles = allRoles.filter((role) => roleIdsWithTags.includes(role.id));

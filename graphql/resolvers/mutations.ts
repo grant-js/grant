@@ -6,6 +6,7 @@ import * as organizationGroupMutations from './organization-groups/mutations';
 import * as organizationPermissionMutations from './organization-permissions/mutations';
 import * as organizationProjectMutations from './organization-projects/mutations';
 import * as organizationRoleMutations from './organization-roles/mutations';
+import * as organizationTagMutations from './organization-tags/mutations';
 import * as organizationUserMutations from './organization-users/mutations';
 import * as organizationMutations from './organizations/mutations';
 import * as permissionTagMutations from './permission-tags/mutations';
@@ -71,6 +72,8 @@ export const Mutation = {
   removeOrganizationPermission: organizationPermissionMutations.removeOrganizationPermission,
   addOrganizationUser: organizationUserMutations.addOrganizationUser,
   removeOrganizationUser: organizationUserMutations.removeOrganizationUser,
+  addOrganizationTag: organizationTagMutations.addOrganizationTag,
+  removeOrganizationTag: organizationTagMutations.removeOrganizationTag,
   addProjectRole: projectRoleMutations.addProjectRole,
   removeProjectRole: projectRoleMutations.removeProjectRole,
   addProjectGroup: projectGroupMutations.addProjectGroup,

@@ -1,15 +1,11 @@
 import { RoleResolvers } from '@/graphql/generated/types';
 
-export const roleTagsResolver: RoleResolvers['tags'] = async (
-  parent: any,
-  { scope },
-  context: any
-) => {
+export const roleTagsResolver: RoleResolvers['tags'] = async (parent, { scope }, context) => {
   // Get role-tag relationships for this role
   const roleTags = await context.providers.roleTags.getRoleTags({ roleId: parent.id });
 
   // Extract tag IDs from role-tag relationships
-  const tagIds = roleTags.map((rt: any) => rt.tagId);
+  const tagIds = roleTags.map((rt) => rt.tagId);
 
   if (tagIds.length === 0) {
     return [];

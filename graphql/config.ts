@@ -17,6 +17,8 @@ import { organizationProjectFakerProvider } from './providers/organization-proje
 import { OrganizationProjectDataProvider } from './providers/organization-projects/types';
 import { organizationRoleFakerProvider } from './providers/organization-roles/faker';
 import { OrganizationRoleDataProvider } from './providers/organization-roles/types';
+import { organizationTagFakerProvider } from './providers/organization-tags/faker';
+import { OrganizationTagDataProvider } from './providers/organization-tags/types';
 import { organizationUserFakerProvider } from './providers/organization-users/faker';
 import { OrganizationUserDataProvider } from './providers/organization-users/types';
 import { organizationFakerProvider } from './providers/organizations/faker';
@@ -61,6 +63,7 @@ export interface ModuleProviders {
   organizationGroups: OrganizationGroupDataProvider;
   organizationPermissions: OrganizationPermissionDataProvider;
   organizationUsers: OrganizationUserDataProvider;
+  organizationTags: OrganizationTagDataProvider;
   projects: ProjectDataProvider;
   projectRoles: ProjectRoleDataProvider;
   projectGroups: ProjectGroupDataProvider;
@@ -96,6 +99,7 @@ export const graphqlConfig: GraphQLConfig = {
     organizationGroups: organizationGroupFakerProvider,
     organizationPermissions: organizationPermissionFakerProvider,
     organizationUsers: organizationUserFakerProvider,
+    organizationTags: organizationTagFakerProvider,
     projects: projectFakerProvider,
     projectRoles: projectRoleFakerProvider,
     projectGroups: projectGroupFakerProvider,

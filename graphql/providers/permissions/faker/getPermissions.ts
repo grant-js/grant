@@ -32,7 +32,7 @@ export async function getPermissions({
 
     // Extract unique permission IDs that have at least one of the specified tags
     const permissionIdsWithTags = [
-      ...new Set(permissionTagRelationships.map((pt: any) => pt.permissionId)),
+      ...new Set(permissionTagRelationships.map((pt) => pt.permissionId)),
     ];
 
     // Filter permissions to only include those with the specified tags

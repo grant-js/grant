@@ -1,9 +1,9 @@
 import { MutationResolvers } from '@/graphql/generated/types';
 
 export const updateTagResolver: MutationResolvers['updateTag'] = async (
-  _parent: any,
-  { id, input }: any,
-  context: any
+  _parent,
+  { id, input },
+  context
 ) => {
   const updatedTag = await context.providers.tags.updateTag({ id, input });
   return updatedTag;

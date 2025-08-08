@@ -35,6 +35,10 @@ type Organization implements Auditable {
   """
   users: [User!]
   """
+  Organization tags.
+  """
+  tags: [Tag!]
+  """
   Timestamp when the organization was created.
   """
   createdAt: String!

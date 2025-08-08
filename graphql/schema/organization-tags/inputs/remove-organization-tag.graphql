@@ -1,0 +1,13 @@
+"""
+Input type for removing an organization-tag relationship.
+"""
+input RemoveOrganizationTagInput {
+  """
+  ID of the organization.
+  """
+  organizationId: ID!
+  """
+  ID of the tag.
+  """
+  tagId: ID!
+} 

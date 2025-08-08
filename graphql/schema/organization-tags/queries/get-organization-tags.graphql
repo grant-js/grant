@@ -1,0 +1,6 @@
+extend type Query {
+  """
+  Retrieves organization-tag relationships for a specific organization.
+  """
+  organizationTags(organizationId: ID!): [OrganizationTag!]!
+} 

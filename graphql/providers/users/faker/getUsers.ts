@@ -29,7 +29,7 @@ export async function getUsers({
     const userTagRelationships = tagIds.flatMap((tagId: string) => getUserTagsByTagId(tagId));
 
     // Extract unique user IDs that have at least one of the specified tags
-    const userIdsWithTags = [...new Set(userTagRelationships.map((ut: any) => ut.userId))];
+    const userIdsWithTags = [...new Set(userTagRelationships.map((ut) => ut.userId))];
     // Filter users to only include those with the specified tags
     allUsers = allUsers.filter((user) => userIdsWithTags.includes(user.id));
   }

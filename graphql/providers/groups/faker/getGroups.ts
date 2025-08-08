@@ -29,7 +29,7 @@ export async function getGroups({
     const groupTagRelationships = tagIds.flatMap((tagId: string) => getGroupTagsByTagId(tagId));
 
     // Extract unique group IDs that have at least one of the specified tags
-    const groupIdsWithTags = [...new Set(groupTagRelationships.map((gt: any) => gt.groupId))];
+    const groupIdsWithTags = [...new Set(groupTagRelationships.map((gt) => gt.groupId))];
 
     // Filter groups to only include those with the specified tags
     allGroups = allGroups.filter((group) => groupIdsWithTags.includes(group.id));

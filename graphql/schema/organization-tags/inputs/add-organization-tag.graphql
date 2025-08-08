@@ -1,0 +1,13 @@
+"""
+Input type for adding an organization-tag relationship.
+"""
+input AddOrganizationTagInput {
+  """
+  ID of the organization.
+  """
+  organizationId: ID!
+  """
+  ID of the tag.
+  """
+  tagId: ID!
+} 

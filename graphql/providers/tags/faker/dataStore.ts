@@ -1,5 +1,6 @@
 import { faker } from '@faker-js/faker';
 
+import { TagSortInput } from '@/graphql/generated/types';
 import { CreateTagInput, UpdateTagInput } from '@/graphql/providers/tags/types';
 import { TagData } from '@/graphql/providers/tags/types';
 import {
@@ -96,7 +97,7 @@ export const tagsDataStore = createFakerDataStore(tagsConfig);
 // Export the main functions with the same interface as the original
 export const initializeDataStore = () => tagsDataStore.getEntities();
 
-export const sortTags = (tags: TagData[], sortConfig?: any): TagData[] => {
+export const sortTags = (tags: TagData[], sortConfig?: TagSortInput): TagData[] => {
   if (!sortConfig) return tags;
 
   return tagsDataStore.getEntities({
@@ -104,7 +105,7 @@ export const sortTags = (tags: TagData[], sortConfig?: any): TagData[] => {
     order: sortConfig.direction,
   });
 };
-export const getTags = (sortConfig?: any, ids?: string[]): TagData[] => {
+export const getTags = (sortConfig?: TagSortInput, ids?: string[]): TagData[] => {
   let allTags = tagsDataStore.getEntities(
     sortConfig
       ? {

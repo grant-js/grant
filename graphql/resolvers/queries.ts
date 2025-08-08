@@ -5,6 +5,7 @@ import * as organizationGroupQueries from './organization-groups/queries';
 import * as organizationPermissionQueries from './organization-permissions/queries';
 import * as organizationProjectQueries from './organization-projects/queries';
 import * as organizationRoleQueries from './organization-roles/queries';
+import * as organizationTagQueries from './organization-tags/queries';
 import * as organizationUserQueries from './organization-users/queries';
 import * as organizationQueries from './organizations/queries';
 import * as permissionTagQueries from './permission-tags/queries';
@@ -44,6 +45,7 @@ export const Query = {
   organizationGroups: organizationGroupQueries.organizationGroups,
   organizationPermissions: organizationPermissionQueries.organizationPermissions,
   organizationUsers: organizationUserQueries.organizationUsers,
+  organizationTags: organizationTagQueries.organizationTags,
   projectRoles: projectRoleQueries.projectRoles,
   projectGroups: projectGroupQueries.projectGroups,
   projectPermissions: projectPermissionQueries.projectPermissions,
