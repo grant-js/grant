@@ -1,17 +1,5 @@
-import { OrganizationGroupResolvers } from '@/graphql/generated/types';
+import { OrganizationGroupResolvers, OrganizationGroup } from '@/graphql/generated/types';
+import { createOrganizationFieldResolver } from '@/graphql/resolvers/common';
 
 export const organizationGroupOrganizationResolver: OrganizationGroupResolvers['organization'] =
-  async (parent, _args, context) => {
-    // Get the organization by organizationId (optimized - no need to fetch all organizations)
-    const organizationsResult = await context.providers.organizations.getOrganizations({
-      ids: [parent.organizationId],
-    });
-
-    const organization = organizationsResult.organizations[0];
-
-    if (!organization) {
-      throw new Error(`Organization with ID ${parent.organizationId} not found`);
-    }
-
-    return organization;
-  };
+  createOrganizationFieldResolver<OrganizationGroup>();
