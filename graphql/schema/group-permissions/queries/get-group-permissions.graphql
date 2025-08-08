@@ -4,6 +4,10 @@ extend type Query {
   """
   groupPermissions(
     """
+    Scope of the group-permission relationships.
+    """
+    scope: Scope!
+    """
     ID of the group to get permissions for.
     """
     groupId: ID!

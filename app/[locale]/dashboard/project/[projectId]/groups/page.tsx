@@ -10,7 +10,7 @@ import { GroupToolbar } from '@/components/features/groups/GroupToolbar';
 import { GroupViewer } from '@/components/features/groups/GroupViewer';
 import { usePageTitle } from '@/hooks';
 
-export default function GroupsPage() {
+export default function ProjectGroupsPage() {
   const t = useTranslations('groups');
   usePageTitle('groups');
 

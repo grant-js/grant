@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 
+import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { usePermissions } from '@/hooks/permissions';
 import { usePermissionsStore } from '@/stores/permissions.store';
 
@@ -10,6 +11,8 @@ import { PermissionTable } from './PermissionTable';
 import { PermissionView } from './PermissionViewSwitcher';
 
 export function PermissionViewer() {
+  const scope = useScopeFromParams();
+
   // Use selective subscriptions to prevent unnecessary re-renders
   const view = usePermissionsStore((state) => state.view);
   const page = usePermissionsStore((state) => state.page);
@@ -23,6 +26,7 @@ export function PermissionViewer() {
 
   // Get permissions data from the hook
   const { permissions, loading, totalCount } = usePermissions({
+    scope,
     page,
     limit,
     search,
@@ -39,7 +43,6 @@ export function PermissionViewer() {
     setLoading(loading);
   }, [loading, setLoading]);
 
-  // Update store with total count when data changes
   useEffect(() => {
     if (totalCount && totalCount !== 0) {
       setTotalCount(totalCount);

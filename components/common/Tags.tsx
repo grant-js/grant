@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTags } from '@/hooks';
+import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { getTagBorderColorClasses } from '@/lib/tag-colors';
 
 export interface TagsProps {
@@ -21,7 +22,8 @@ export interface TagsProps {
 
 export function Tags({ selectedTagIds, onTagIdsChange }: TagsProps) {
   const t = useTranslations('common');
-  const { tags, loading } = useTags({ limit: 100 }); // Get all tags for selection
+  const scope = useScopeFromParams();
+  const { tags, loading } = useTags({ scope, limit: -1 }); // Get all tags for selection
 
   const selectedTags = tags.filter((tag) => selectedTagIds.includes(tag.id));
 

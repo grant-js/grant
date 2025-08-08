@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 
-import { Auditable } from '@/graphql/generated/types';
+import { Auditable, Scope, Tenant } from '@/graphql/generated/types';
 import { getGroups } from '@/graphql/providers/groups/faker/dataStore';
 import { getPermissions } from '@/graphql/providers/permissions/faker/dataStore';
 import {
@@ -8,6 +8,9 @@ import {
   EntityConfig,
   generateAuditTimestamps,
 } from '@/lib/providers/faker/genericDataStore';
+
+import { getOrganizationPermissionsByOrganizationId } from '../../organization-permissions/faker/dataStore';
+import { getProjectPermissionsByProjectId } from '../../project-permissions/faker/dataStore';
 
 // Type for GroupPermission data without the resolved fields
 export interface GroupPermissionData extends Auditable {
@@ -93,16 +96,30 @@ const groupPermissionConfig: EntityConfig<GroupPermissionData, CreateGroupPermis
 // Create the group-permissions data store instance
 export const groupPermissionsDataStore = createFakerDataStore(groupPermissionConfig);
 
+// Helper function to get permission IDs based on scope
+export const getGroupPermissionIdsByScope = (scope: Scope): string[] => {
+  switch (scope.tenant) {
+    case Tenant.Project:
+      return getProjectPermissionsByProjectId(scope.id).map((pp) => pp.permissionId);
+    case Tenant.Organization:
+      return getOrganizationPermissionsByOrganizationId(scope.id).map((op) => op.permissionId);
+    default:
+      // For global scope, return all permission IDs
+      return getPermissions().map((p) => p.id);
+  }
+};
+
 // Helper functions for group-permission operations
-export const getGroupPermissionsByGroupId = (groupId: string): GroupPermissionData[] => {
+export const getGroupPermissionsByGroupId = (
+  scope: Scope,
+  groupId: string
+): GroupPermissionData[] => {
   const groupPermissions = groupPermissionsDataStore
     .getEntities()
     .filter((gp) => gp.groupId === groupId);
-  return groupPermissions;
-};
 
-export const getGroupPermissionsByPermissionId = (permissionId: string): GroupPermissionData[] => {
-  return groupPermissionsDataStore.getEntities().filter((gp) => gp.permissionId === permissionId);
+  const scopedPermissionIds = getGroupPermissionIdsByScope(scope);
+  return groupPermissions.filter((gp) => scopedPermissionIds.includes(gp.permissionId));
 };
 
 export const addGroupPermission = (groupId: string, permissionId: string): GroupPermissionData => {

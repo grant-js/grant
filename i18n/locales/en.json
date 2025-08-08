@@ -566,6 +566,182 @@
     "title": "Account Management",
     "description": "View and manage your account details"
   },
+  "organizations": {
+    "title": "Organizations",
+    "description": "Manage your organizations",
+    "noOrganizations": {
+      "title": "No organizations found",
+      "description": "Get started by creating your first organization"
+    },
+    "noSearchResults": {
+      "title": "No organizations found",
+      "description": "Try adjusting your search terms or create a new organization"
+    },
+    "actions": {
+      "create": "Create Organization",
+      "edit": "Edit",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "updating": "Updating...",
+      "label": "Show/Hide Actions"
+    },
+    "sort": {
+      "label": "Sort by",
+      "name": "Name",
+      "default": "Default"
+    },
+    "limit": "Items per page",
+    "search": {
+      "placeholder": "Search organizations..."
+    },
+    "form": {
+      "name": "Name",
+      "description": "Description",
+      "validation": {
+        "nameRequired": "Organization name is required"
+      }
+    },
+    "createDialog": {
+      "title": "Create New Organization",
+      "description": "Add a new organization to the system",
+      "trigger": "Create Organization",
+      "confirm": "Create Organization",
+      "submitting": "Creating..."
+    },
+    "editDialog": {
+      "title": "Edit Organization",
+      "description": "Update organization information",
+      "confirm": "Save Changes",
+      "updating": "Updating..."
+    },
+    "deleteDialog": {
+      "title": "Delete Organization",
+      "description": "Are you sure you want to delete {name}?",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "deleting": "Deleting..."
+    },
+    "notifications": {
+      "createSuccess": "Organization created",
+      "createError": "Failed to create organization",
+      "updateSuccess": "Organization updated",
+      "updateError": "Failed to update organization",
+      "deleteSuccess": "Organization deleted",
+      "deleteError": "Failed to delete organization"
+    },
+    "view": {
+      "card": "Card View",
+      "table": "Table View"
+    },
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "description": "Description",
+      "audit": "Audit",
+      "created": "Created",
+      "updated": "Updated",
+      "actions": "Actions",
+      "loading": "Loading organizations..."
+    },
+    "toolbar": {
+      "tags": {
+        "title": "Filter by Tags",
+        "placeholder": "Select tags",
+        "selected": "{count} selected",
+        "clearAll": "Clear all",
+        "loading": "Loading tags..."
+      }
+    }
+  },
+  "organization": {
+    "projects": {
+      "title": "Projects",
+      "description": "Manage projects for this organization",
+      "noProjects": {
+        "title": "No projects found",
+        "description": "Get started by creating your first project"
+      },
+      "noSearchResults": {
+        "title": "No projects found",
+        "description": "Try adjusting your search terms or create a new project"
+      },
+      "actions": {
+        "create": "Create Project",
+        "edit": "Edit",
+        "delete": "Delete",
+        "cancel": "Cancel",
+        "updating": "Updating...",
+        "label": "Show/Hide Actions"
+      },
+      "sort": {
+        "label": "Sort by",
+        "name": "Name",
+        "default": "Default"
+      },
+      "limit": "Items per page",
+      "search": {
+        "placeholder": "Search projects..."
+      },
+      "form": {
+        "name": "Name",
+        "description": "Description",
+        "validation": {
+          "nameRequired": "Project name is required"
+        }
+      },
+      "createDialog": {
+        "title": "Create New Project",
+        "description": "Add a new project to the organization",
+        "trigger": "Create Project",
+        "confirm": "Create Project",
+        "submitting": "Creating..."
+      },
+      "editDialog": {
+        "title": "Edit Project",
+        "description": "Update project information",
+        "confirm": "Save Changes",
+        "updating": "Updating..."
+      },
+      "deleteDialog": {
+        "title": "Delete Project",
+        "description": "Are you sure you want to delete {name}?",
+        "cancel": "Cancel",
+        "confirm": "Delete",
+        "deleting": "Deleting..."
+      },
+      "notifications": {
+        "createSuccess": "Project created",
+        "createError": "Failed to create project",
+        "updateSuccess": "Project updated",
+        "updateError": "Failed to update project",
+        "deleteSuccess": "Project deleted",
+        "deleteError": "Failed to delete project"
+      },
+      "view": {
+        "card": "Card View",
+        "table": "Table View"
+      },
+      "table": {
+        "id": "ID",
+        "name": "Name",
+        "description": "Description",
+        "audit": "Audit",
+        "created": "Created",
+        "updated": "Updated",
+        "actions": "Actions",
+        "loading": "Loading projects..."
+      },
+      "toolbar": {
+        "tags": {
+          "title": "Filter by Tags",
+          "placeholder": "Select tags",
+          "selected": "{count} selected",
+          "clearAll": "Clear all",
+          "loading": "Loading tags..."
+        }
+      }
+    }
+  },
   "settings": {
     "title": "System Settings",
     "description": "Configure system preferences and options"

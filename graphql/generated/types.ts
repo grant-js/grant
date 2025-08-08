@@ -1327,11 +1327,13 @@ export type Query = {
 
 export type QueryGroupPermissionsArgs = {
   groupId: Scalars['ID']['input'];
+  scope: Scope;
 };
 
 
 export type QueryGroupTagsArgs = {
   groupId: Scalars['ID']['input'];
+  scope: Scope;
 };
 
 
@@ -1387,6 +1389,7 @@ export type QueryOrganizationsArgs = {
 
 export type QueryPermissionTagsArgs = {
   permissionId: Scalars['ID']['input'];
+  scope: Scope;
 };
 
 
@@ -1438,11 +1441,13 @@ export type QueryProjectsArgs = {
 
 export type QueryRoleGroupsArgs = {
   roleId: Scalars['ID']['input'];
+  scope: Scope;
 };
 
 
 export type QueryRoleTagsArgs = {
   roleId: Scalars['ID']['input'];
+  scope: Scope;
 };
 
 
@@ -1468,11 +1473,13 @@ export type QueryTagsArgs = {
 
 
 export type QueryUserRolesArgs = {
+  scope: Scope;
   userId: Scalars['ID']['input'];
 };
 
 
 export type QueryUserTagsArgs = {
+  scope: Scope;
   userId: Scalars['ID']['input'];
 };
 
@@ -2589,8 +2596,8 @@ export type ProjectUserResolvers<ContextType = Context, ParentType extends Resol
 
 export type QueryResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = ResolversObject<{
   _empty?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  groupPermissions?: Resolver<Array<ResolversTypes['GroupPermission']>, ParentType, ContextType, RequireFields<QueryGroupPermissionsArgs, 'groupId'>>;
-  groupTags?: Resolver<Array<ResolversTypes['GroupTag']>, ParentType, ContextType, RequireFields<QueryGroupTagsArgs, 'groupId'>>;
+  groupPermissions?: Resolver<Array<ResolversTypes['GroupPermission']>, ParentType, ContextType, RequireFields<QueryGroupPermissionsArgs, 'groupId' | 'scope'>>;
+  groupTags?: Resolver<Array<ResolversTypes['GroupTag']>, ParentType, ContextType, RequireFields<QueryGroupTagsArgs, 'groupId' | 'scope'>>;
   groups?: Resolver<ResolversTypes['GroupPage'], ParentType, ContextType, RequireFields<QueryGroupsArgs, 'scope'>>;
   organizationGroups?: Resolver<Array<ResolversTypes['OrganizationGroup']>, ParentType, ContextType, RequireFields<QueryOrganizationGroupsArgs, 'organizationId'>>;
   organizationPermissions?: Resolver<Array<ResolversTypes['OrganizationPermission']>, ParentType, ContextType, RequireFields<QueryOrganizationPermissionsArgs, 'organizationId'>>;
@@ -2599,7 +2606,7 @@ export type QueryResolvers<ContextType = Context, ParentType extends ResolversPa
   organizationTags?: Resolver<Array<ResolversTypes['OrganizationTag']>, ParentType, ContextType, RequireFields<QueryOrganizationTagsArgs, 'organizationId'>>;
   organizationUsers?: Resolver<Array<ResolversTypes['OrganizationUser']>, ParentType, ContextType, RequireFields<QueryOrganizationUsersArgs, 'organizationId'>>;
   organizations?: Resolver<ResolversTypes['OrganizationPage'], ParentType, ContextType, Partial<QueryOrganizationsArgs>>;
-  permissionTags?: Resolver<Array<ResolversTypes['PermissionTag']>, ParentType, ContextType, RequireFields<QueryPermissionTagsArgs, 'permissionId'>>;
+  permissionTags?: Resolver<Array<ResolversTypes['PermissionTag']>, ParentType, ContextType, RequireFields<QueryPermissionTagsArgs, 'permissionId' | 'scope'>>;
   permissions?: Resolver<ResolversTypes['PermissionPage'], ParentType, ContextType, RequireFields<QueryPermissionsArgs, 'scope'>>;
   projectGroups?: Resolver<Array<ResolversTypes['ProjectGroup']>, ParentType, ContextType, RequireFields<QueryProjectGroupsArgs, 'projectId'>>;
   projectPermissions?: Resolver<Array<ResolversTypes['ProjectPermission']>, ParentType, ContextType, RequireFields<QueryProjectPermissionsArgs, 'projectId'>>;
@@ -2607,12 +2614,12 @@ export type QueryResolvers<ContextType = Context, ParentType extends ResolversPa
   projectTags?: Resolver<Array<ResolversTypes['ProjectTag']>, ParentType, ContextType, RequireFields<QueryProjectTagsArgs, 'projectId'>>;
   projectUsers?: Resolver<Array<ResolversTypes['ProjectUser']>, ParentType, ContextType, RequireFields<QueryProjectUsersArgs, 'projectId'>>;
   projects?: Resolver<ResolversTypes['ProjectPage'], ParentType, ContextType, RequireFields<QueryProjectsArgs, 'organizationId'>>;
-  roleGroups?: Resolver<Array<ResolversTypes['RoleGroup']>, ParentType, ContextType, RequireFields<QueryRoleGroupsArgs, 'roleId'>>;
-  roleTags?: Resolver<Array<ResolversTypes['RoleTag']>, ParentType, ContextType, RequireFields<QueryRoleTagsArgs, 'roleId'>>;
+  roleGroups?: Resolver<Array<ResolversTypes['RoleGroup']>, ParentType, ContextType, RequireFields<QueryRoleGroupsArgs, 'roleId' | 'scope'>>;
+  roleTags?: Resolver<Array<ResolversTypes['RoleTag']>, ParentType, ContextType, RequireFields<QueryRoleTagsArgs, 'roleId' | 'scope'>>;
   roles?: Resolver<ResolversTypes['RolePage'], ParentType, ContextType, RequireFields<QueryRolesArgs, 'scope'>>;
   tags?: Resolver<ResolversTypes['TagPage'], ParentType, ContextType, RequireFields<QueryTagsArgs, 'scope'>>;
-  userRoles?: Resolver<Array<ResolversTypes['UserRole']>, ParentType, ContextType, RequireFields<QueryUserRolesArgs, 'userId'>>;
-  userTags?: Resolver<Array<ResolversTypes['UserTag']>, ParentType, ContextType, RequireFields<QueryUserTagsArgs, 'userId'>>;
+  userRoles?: Resolver<Array<ResolversTypes['UserRole']>, ParentType, ContextType, RequireFields<QueryUserRolesArgs, 'scope' | 'userId'>>;
+  userTags?: Resolver<Array<ResolversTypes['UserTag']>, ParentType, ContextType, RequireFields<QueryUserTagsArgs, 'scope' | 'userId'>>;
   users?: Resolver<ResolversTypes['UserPage'], ParentType, ContextType, RequireFields<QueryUsersArgs, 'scope'>>;
 }>;
 

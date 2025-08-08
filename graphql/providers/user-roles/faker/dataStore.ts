@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 
-import { Auditable } from '@/graphql/generated/types';
+import { Auditable, Scope, Tenant } from '@/graphql/generated/types';
 import { getRoles } from '@/graphql/providers/roles/faker/dataStore';
 import { getUsers } from '@/graphql/providers/users/faker/dataStore';
 import {
@@ -8,6 +8,9 @@ import {
   EntityConfig,
   generateAuditTimestamps,
 } from '@/lib/providers/faker/genericDataStore';
+
+import { getOrganizationRolesByOrganizationId } from '../../organization-roles/faker/dataStore';
+import { getProjectRolesByProjectId } from '../../project-roles/faker/dataStore';
 
 // Type for UserRole data without the resolved fields
 export interface UserRoleData extends Auditable {
@@ -92,9 +95,25 @@ const userRoleConfig: EntityConfig<UserRoleData, CreateUserRoleInput, never> = {
 // Create the user-roles data store instance
 export const userRolesDataStore = createFakerDataStore(userRoleConfig);
 
+// Helper function to get role IDs based on scope
+export const getUserRoleIdsByScope = (scope: Scope): string[] => {
+  switch (scope.tenant) {
+    case Tenant.Project:
+      return getProjectRolesByProjectId(scope.id).map((pr) => pr.roleId);
+    case Tenant.Organization:
+      return getOrganizationRolesByOrganizationId(scope.id).map((or) => or.roleId);
+    default:
+      // For global scope, return all role IDs
+      return getRoles().map((r) => r.id);
+  }
+};
+
 // Helper functions for user-role operations
-export const getUserRolesByUserId = (userId: string): UserRoleData[] => {
-  return userRolesDataStore.getEntities().filter((ur) => ur.userId === userId);
+export const getUserRolesByUserId = (scope: Scope, userId: string): UserRoleData[] => {
+  const userRoles = userRolesDataStore.getEntities().filter((ur) => ur.userId === userId);
+
+  const scopedRoleIds = getUserRoleIdsByScope(scope);
+  return userRoles.filter((ur) => scopedRoleIds.includes(ur.roleId));
 };
 
 export const getUserRolesByRoleId = (roleId: string): UserRoleData[] => {

@@ -1,6 +1,9 @@
 import { faker } from '@faker-js/faker';
 
 import { Auditable } from '@/graphql/generated/types';
+import { Scope, Tenant } from '@/graphql/generated/types';
+import { getOrganizationTagsByOrganizationId } from '@/graphql/providers/organization-tags/faker/dataStore';
+import { getProjectTagsByProjectId } from '@/graphql/providers/project-tags/faker/dataStore';
 import { getRoles } from '@/graphql/providers/roles/faker/dataStore';
 import { getTags } from '@/graphql/providers/tags/faker/dataStore';
 import {
@@ -90,9 +93,25 @@ const roleTagConfig: EntityConfig<RoleTagData, CreateRoleTagInput, never> = {
 // Create the role-tags data store instance
 export const roleTagsDataStore = createFakerDataStore(roleTagConfig);
 
+// Helper function to get tag IDs based on scope
+export const getRoleTagIdsByScope = (scope: Scope): string[] => {
+  switch (scope.tenant) {
+    case Tenant.Project:
+      return getProjectTagsByProjectId(scope.id).map((pt) => pt.tagId);
+    case Tenant.Organization:
+      return getOrganizationTagsByOrganizationId(scope.id).map((ot) => ot.tagId);
+    default:
+      // For global scope, return all tag IDs
+      return getTags().map((t) => t.id);
+  }
+};
+
 // Helper functions for role-tag operations
-export const getRoleTagsByRoleId = (roleId: string): RoleTagData[] => {
-  return roleTagsDataStore.getEntities().filter((rt) => rt.roleId === roleId);
+export const getRoleTagsByRoleId = (scope: Scope, roleId: string): RoleTagData[] => {
+  const roleTags = roleTagsDataStore.getEntities().filter((rt) => rt.roleId === roleId);
+
+  const scopedTagIds = getRoleTagIdsByScope(scope);
+  return roleTags.filter((rt) => scopedTagIds.includes(rt.tagId));
 };
 
 export const getRoleTagsByTagId = (tagId: string): RoleTagData[] => {
@@ -134,7 +153,7 @@ export const deleteRoleTagByRoleAndTag = (roleId: string, tagId: string): RoleTa
 };
 
 export const deleteRoleTagsByRoleId = (roleId: string): RoleTagData[] => {
-  const roleTags = getRoleTagsByRoleId(roleId);
+  const roleTags = roleTagsDataStore.getEntities().filter((rt) => rt.roleId === roleId);
   return roleTags
     .map((rt) => roleTagsDataStore.deleteEntity(rt.id))
     .filter(Boolean) as RoleTagData[];

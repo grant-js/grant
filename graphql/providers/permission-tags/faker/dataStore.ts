@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 
-import { Auditable } from '@/graphql/generated/types';
+import { Auditable, Scope, Tenant } from '@/graphql/generated/types';
 import { getPermissions } from '@/graphql/providers/permissions/faker/dataStore';
 import { getTags } from '@/graphql/providers/tags/faker/dataStore';
 import {
@@ -8,6 +8,9 @@ import {
   EntityConfig,
   generateAuditTimestamps,
 } from '@/lib/providers/faker/genericDataStore';
+
+import { getOrganizationTagsByOrganizationId } from '../../organization-tags/faker/dataStore';
+import { getProjectTagsByProjectId } from '../../project-tags/faker/dataStore';
 
 // Type for PermissionTag data without the resolved fields
 export interface PermissionTagData extends Auditable {
@@ -92,9 +95,30 @@ const permissionTagConfig: EntityConfig<PermissionTagData, CreatePermissionTagIn
 // Create the permission-tags data store instance
 export const permissionTagsDataStore = createFakerDataStore(permissionTagConfig);
 
+// Helper function to get tag IDs based on scope
+export const getPermissionTagIdsByScope = (scope: Scope): string[] => {
+  switch (scope.tenant) {
+    case Tenant.Project:
+      return getProjectTagsByProjectId(scope.id).map((pt) => pt.tagId);
+    case Tenant.Organization:
+      return getOrganizationTagsByOrganizationId(scope.id).map((ot) => ot.tagId);
+    default:
+      // For global scope, return all tag IDs
+      return getTags().map((t) => t.id);
+  }
+};
+
 // Helper functions for permission-tag operations
-export const getPermissionTagsByPermissionId = (permissionId: string): PermissionTagData[] => {
-  return permissionTagsDataStore.getEntities().filter((pt) => pt.permissionId === permissionId);
+export const getPermissionTagsByPermissionId = (
+  scope: Scope,
+  permissionId: string
+): PermissionTagData[] => {
+  const permissionTags = permissionTagsDataStore
+    .getEntities()
+    .filter((pt) => pt.permissionId === permissionId);
+
+  const scopedTagIds = getPermissionTagIdsByScope(scope);
+  return permissionTags.filter((pt) => scopedTagIds.includes(pt.tagId));
 };
 
 export const getPermissionTagsByTagId = (tagId: string): PermissionTagData[] => {
@@ -141,7 +165,9 @@ export const deletePermissionTagByPermissionAndTag = (
 };
 
 export const deletePermissionTagsByPermissionId = (permissionId: string): PermissionTagData[] => {
-  const permissionTags = getPermissionTagsByPermissionId(permissionId);
+  const permissionTags = permissionTagsDataStore
+    .getEntities()
+    .filter((pt) => pt.permissionId === permissionId);
   return permissionTags
     .map((pt) => permissionTagsDataStore.deleteEntity(pt.id))
     .filter(Boolean) as PermissionTagData[];

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 
+import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useGroups } from '@/hooks/groups';
 import { useGroupsStore } from '@/stores/groups.store';
 
@@ -10,6 +11,8 @@ import { GroupTable } from './GroupTable';
 import { GroupView } from './GroupViewSwitcher';
 
 export function GroupViewer() {
+  const scope = useScopeFromParams();
+
   // Use selective subscriptions to prevent unnecessary re-renders
   const view = useGroupsStore((state) => state.view);
   const page = useGroupsStore((state) => state.page);
@@ -23,6 +26,7 @@ export function GroupViewer() {
 
   // Get groups data from the hook
   const { groups, loading, totalCount } = useGroups({
+    scope,
     page,
     limit,
     search,
@@ -39,7 +43,6 @@ export function GroupViewer() {
     setLoading(loading);
   }, [loading, setLoading]);
 
-  // Update store with total count when data changes
   useEffect(() => {
     if (totalCount && totalCount !== 0) {
       setTotalCount(totalCount);
@@ -47,10 +50,10 @@ export function GroupViewer() {
   }, [totalCount, setTotalCount]);
 
   switch (view) {
-    case GroupView.TABLE:
-      return <GroupTable />;
     case GroupView.CARDS:
-    default:
       return <GroupCards />;
+    case GroupView.TABLE:
+    default:
+      return <GroupTable />;
   }
 }

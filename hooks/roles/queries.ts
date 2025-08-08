@@ -25,16 +25,16 @@ export const GET_ROLES = gql`
         description
         createdAt
         updatedAt
-        groups {
+        groups(scope: $scope) {
           id
           name
-          tags {
+          tags(scope: $scope) {
             id
             name
             color
           }
         }
-        tags {
+        tags(scope: $scope) {
           id
           name
           color

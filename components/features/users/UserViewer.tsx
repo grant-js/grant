@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 
+import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useUsers } from '@/hooks/users';
 import { useUsersStore } from '@/stores/users.store';
 
@@ -10,6 +11,8 @@ import { UserTable } from './UserTable';
 import { UserView } from './UserViewSwitcher';
 
 export function UserViewer() {
+  const scope = useScopeFromParams();
+
   // Use selective subscriptions to prevent unnecessary re-renders
   const view = useUsersStore((state) => state.view);
   const page = useUsersStore((state) => state.page);
@@ -23,6 +26,7 @@ export function UserViewer() {
 
   // Get users data from the hook
   const { users, loading, totalCount } = useUsers({
+    scope,
     page,
     limit,
     search,

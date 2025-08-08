@@ -566,6 +566,182 @@
     "title": "Kontoverwaltung",
     "description": "Anzeigen und verwalten Sie Ihre Kontodetails"
   },
+  "organizations": {
+    "title": "Organisationen",
+    "description": "Verwalten Sie Ihre Organisationen",
+    "noOrganizations": {
+      "title": "Keine Organisationen gefunden",
+      "description": "Erstellen Sie Ihre erste Organisation"
+    },
+    "noSearchResults": {
+      "title": "Keine Organisationen gefunden",
+      "description": "Versuchen Sie, Ihre Suchbegriffe anzupassen oder erstellen Sie eine neue Organisation"
+    },
+    "actions": {
+      "create": "Organisation erstellen",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert...",
+      "label": "Aktionen anzeigen/ausblenden"
+    },
+    "sort": {
+      "label": "Sortieren nach",
+      "name": "Name",
+      "default": "Standard"
+    },
+    "limit": "Einträge pro Seite",
+    "search": {
+      "placeholder": "Organisationen suchen..."
+    },
+    "form": {
+      "name": "Name",
+      "description": "Beschreibung",
+      "validation": {
+        "nameRequired": "Organisationsname ist erforderlich"
+      }
+    },
+    "createDialog": {
+      "title": "Neue Organisation erstellen",
+      "description": "Fügen Sie eine neue Organisation zum System hinzu",
+      "trigger": "Organisation erstellen",
+      "confirm": "Organisation erstellen",
+      "submitting": "Wird erstellt..."
+    },
+    "editDialog": {
+      "title": "Organisation bearbeiten",
+      "description": "Organisationsinformationen aktualisieren",
+      "confirm": "Änderungen speichern",
+      "updating": "Wird aktualisiert..."
+    },
+    "deleteDialog": {
+      "title": "Organisation löschen",
+      "description": "Sind Sie sicher, dass Sie {name} löschen möchten?",
+      "cancel": "Abbrechen",
+      "confirm": "Löschen",
+      "deleting": "Wird gelöscht..."
+    },
+    "notifications": {
+      "createSuccess": "Organisation erstellt",
+      "createError": "Organisation konnte nicht erstellt werden",
+      "updateSuccess": "Organisation aktualisiert",
+      "updateError": "Organisation konnte nicht aktualisiert werden",
+      "deleteSuccess": "Organisation gelöscht",
+      "deleteError": "Organisation konnte nicht gelöscht werden"
+    },
+    "view": {
+      "card": "Kartenansicht",
+      "table": "Tabellenansicht"
+    },
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "description": "Beschreibung",
+      "audit": "Audit",
+      "created": "Erstellt",
+      "updated": "Aktualisiert",
+      "actions": "Aktionen",
+      "loading": "Organisationen werden geladen..."
+    },
+    "toolbar": {
+      "tags": {
+        "title": "Nach Tags filtern",
+        "placeholder": "Tags auswählen",
+        "selected": "{count} ausgewählt",
+        "clearAll": "Alle löschen",
+        "loading": "Tags werden geladen..."
+      }
+    }
+  },
+  "organization": {
+    "projects": {
+      "title": "Projekte",
+      "description": "Verwalten Sie Projekte für diese Organisation",
+      "noProjects": {
+        "title": "Keine Projekte gefunden",
+        "description": "Erstellen Sie Ihr erstes Projekt"
+      },
+      "noSearchResults": {
+        "title": "Keine Projekte gefunden",
+        "description": "Versuchen Sie, Ihre Suchbegriffe anzupassen oder erstellen Sie ein neues Projekt"
+      },
+      "actions": {
+        "create": "Projekt erstellen",
+        "edit": "Bearbeiten",
+        "delete": "Löschen",
+        "cancel": "Abbrechen",
+        "updating": "Wird aktualisiert...",
+        "label": "Aktionen anzeigen/ausblenden"
+      },
+      "sort": {
+        "label": "Sortieren nach",
+        "name": "Name",
+        "default": "Standard"
+      },
+      "limit": "Einträge pro Seite",
+      "search": {
+        "placeholder": "Projekte suchen..."
+      },
+      "form": {
+        "name": "Name",
+        "description": "Beschreibung",
+        "validation": {
+          "nameRequired": "Projektname ist erforderlich"
+        }
+      },
+      "createDialog": {
+        "title": "Neues Projekt erstellen",
+        "description": "Fügen Sie ein neues Projekt zur Organisation hinzu",
+        "trigger": "Projekt erstellen",
+        "confirm": "Projekt erstellen",
+        "submitting": "Wird erstellt..."
+      },
+      "editDialog": {
+        "title": "Projekt bearbeiten",
+        "description": "Projektinformationen aktualisieren",
+        "confirm": "Änderungen speichern",
+        "updating": "Wird aktualisiert..."
+      },
+      "deleteDialog": {
+        "title": "Projekt löschen",
+        "description": "Sind Sie sicher, dass Sie {name} löschen möchten?",
+        "cancel": "Abbrechen",
+        "confirm": "Löschen",
+        "deleting": "Wird gelöscht..."
+      },
+      "notifications": {
+        "createSuccess": "Projekt erstellt",
+        "createError": "Projekt konnte nicht erstellt werden",
+        "updateSuccess": "Projekt aktualisiert",
+        "updateError": "Projekt konnte nicht aktualisiert werden",
+        "deleteSuccess": "Projekt gelöscht",
+        "deleteError": "Projekt konnte nicht gelöscht werden"
+      },
+      "view": {
+        "card": "Kartenansicht",
+        "table": "Tabellenansicht"
+      },
+      "table": {
+        "id": "ID",
+        "name": "Name",
+        "description": "Beschreibung",
+        "audit": "Audit",
+        "created": "Erstellt",
+        "updated": "Aktualisiert",
+        "actions": "Aktionen",
+        "loading": "Projekte werden geladen..."
+      },
+      "toolbar": {
+        "tags": {
+          "title": "Nach Tags filtern",
+          "placeholder": "Tags auswählen",
+          "selected": "{count} ausgewählt",
+          "clearAll": "Alle löschen",
+          "loading": "Tags werden geladen..."
+        }
+      }
+    }
+  },
   "settings": {
     "title": "Systemeinstellungen",
     "description": "Konfigurieren Sie Systemeinstellungen und Optionen"

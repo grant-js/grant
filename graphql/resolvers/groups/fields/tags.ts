@@ -2,7 +2,10 @@ import { GroupResolvers } from '@/graphql/generated/types';
 
 export const groupTagsResolver: GroupResolvers['tags'] = async (parent, { scope }, context) => {
   // Get group-tag relationships for this group
-  const groupTags = await context.providers.groupTags.getGroupTags({ groupId: parent.id });
+  const groupTags = await context.providers.groupTags.getGroupTags({
+    groupId: parent.id,
+    scope,
+  });
 
   // Extract tag IDs from group-tag relationships
   const tagIds = groupTags.map((gt) => gt.tagId);

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 
+import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useRoles } from '@/hooks/roles';
 import { useRolesStore } from '@/stores/roles.store';
 
@@ -10,6 +11,8 @@ import { RoleTable } from './RoleTable';
 import { RoleView } from './RoleViewSwitcher';
 
 export function RoleViewer() {
+  const scope = useScopeFromParams();
+
   // Use selective subscriptions to prevent unnecessary re-renders
   const view = useRolesStore((state) => state.view);
   const page = useRolesStore((state) => state.page);
@@ -23,6 +26,7 @@ export function RoleViewer() {
 
   // Get roles data from the hook
   const { roles, loading, totalCount } = useRoles({
+    scope,
     page,
     limit,
     search,

@@ -25,16 +25,16 @@ export const GET_USERS = gql`
         email
         createdAt
         updatedAt
-        roles {
+        roles(scope: $scope) {
           id
           name
-          tags {
+          tags(scope: $scope) {
             id
             name
             color
           }
         }
-        tags {
+        tags(scope: $scope) {
           id
           name
           color

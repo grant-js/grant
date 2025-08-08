@@ -8,6 +8,7 @@ export const groupPermissionsResolver: GroupResolvers['permissions'] = async (
   // Get group-permission relationships for this group
   const groupPermissions = await context.providers.groupPermissions.getGroupPermissions({
     groupId: parent.id,
+    scope,
   });
 
   const permissionIds = groupPermissions.map((gp) => gp.permissionId);

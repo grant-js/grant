@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 
-import { Auditable } from '@/graphql/generated/types';
+import { Auditable, Scope, Tenant } from '@/graphql/generated/types';
 import { getRoles } from '@/graphql/providers/roles/faker/dataStore';
 import {
   createFakerDataStore,
@@ -9,6 +9,8 @@ import {
 } from '@/lib/providers/faker/genericDataStore';
 
 import { getGroups } from '../../groups/faker/dataStore';
+import { getOrganizationGroupsByOrganizationId } from '../../organization-groups/faker/dataStore';
+import { getProjectGroupsByProjectId } from '../../project-groups/faker/dataStore';
 
 // Type for RoleGroup data without the resolved fields
 export interface RoleGroupData extends Auditable {
@@ -93,10 +95,25 @@ const roleGroupConfig: EntityConfig<RoleGroupData, CreateRoleGroupInput, never> 
 // Create the role-groups data store instance
 export const roleGroupsDataStore = createFakerDataStore(roleGroupConfig);
 
+// Helper function to get group IDs based on scope
+export const getRoleGroupIdsByScope = (scope: Scope): string[] => {
+  switch (scope.tenant) {
+    case Tenant.Project:
+      return getProjectGroupsByProjectId(scope.id).map((pg) => pg.groupId);
+    case Tenant.Organization:
+      return getOrganizationGroupsByOrganizationId(scope.id).map((og) => og.groupId);
+    default:
+      // For global scope, return all group IDs
+      return getGroups().map((g) => g.id);
+  }
+};
+
 // Helper functions for role-group operations
-export const getRoleGroupsByRoleId = (roleId: string): RoleGroupData[] => {
+export const getRoleGroupsByRoleId = (scope: Scope, roleId: string): RoleGroupData[] => {
   const roleGroups = roleGroupsDataStore.getEntities().filter((rg) => rg.roleId === roleId);
-  return roleGroups;
+
+  const scopedGroupIds = getRoleGroupIdsByScope(scope);
+  return roleGroups.filter((rg) => scopedGroupIds.includes(rg.groupId));
 };
 
 export const getRoleGroupsByGroupId = (groupId: string): RoleGroupData[] => {

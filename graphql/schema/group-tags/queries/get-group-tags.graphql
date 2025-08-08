@@ -2,5 +2,14 @@ extend type Query {
   """
   Retrieves group-tag relationships for a specific group.
   """
-  groupTags(groupId: ID!): [GroupTag!]!
+  groupTags(
+    """
+    Scope of the group-tag relationships.
+    """
+    scope: Scope!
+    """
+    ID of the group to get tags for.
+    """
+    groupId: ID!
+  ): [GroupTag!]!
 }

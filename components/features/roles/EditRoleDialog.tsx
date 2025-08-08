@@ -8,17 +8,19 @@ import {
 import { CheckboxList } from '@/components/ui/checkbox-list';
 import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
 import { Group, Role, Tag } from '@/graphql/generated/types';
+import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useGroups } from '@/hooks/groups';
 import { useRoleMutations } from '@/hooks/roles';
 import { useTags } from '@/hooks/tags';
 import { useRolesStore } from '@/stores/roles.store';
 
-import { EditRoleFormValues, editRoleSchema } from './types';
+import { editRoleSchema, EditRoleFormValues } from './types';
 
 export function EditRoleDialog() {
-  const { groups, loading: groupsLoading } = useGroups();
-  const { tags, loading: tagsLoading } = useTags();
-  const { updateRole, addRoleGroup, removeRoleGroup, addRoleTag, removeRoleTag } =
+  const scope = useScopeFromParams();
+  const { groups, loading: groupsLoading } = useGroups({ scope });
+  const { tags, loading: tagsLoading } = useTags({ scope });
+  const { updateRole, addRoleGroup, addRoleTag, removeRoleGroup, removeRoleTag } =
     useRoleMutations();
 
   // Use selective subscriptions to prevent unnecessary re-renders
@@ -154,6 +156,8 @@ export function EditRoleDialog() {
       title="editDialog.title"
       description="editDialog.description"
       confirmText="editDialog.confirm"
+      cancelText="editDialog.cancel"
+      updatingText="editDialog.updating"
       schema={editRoleSchema}
       defaultValues={{
         name: '',

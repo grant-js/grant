@@ -7,18 +7,20 @@ import {
 } from '@/components/common/EditDialog';
 import { CheckboxList } from '@/components/ui/checkbox-list';
 import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
-import { Role, Tag, User } from '@/graphql/generated/types';
+import { Role, User as UserType, Tag } from '@/graphql/generated/types';
+import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useRoles } from '@/hooks/roles';
 import { useTags } from '@/hooks/tags';
 import { useUserMutations } from '@/hooks/users';
 import { useUsersStore } from '@/stores/users.store';
 
-import { EditUserFormValues, editUserSchema } from './types';
+import { editUserSchema, EditUserFormValues } from './types';
 
 export function EditUserDialog() {
-  const { roles, loading: rolesLoading } = useRoles();
-  const { tags, loading: tagsLoading } = useTags();
-  const { updateUser, addUserRole, removeUserRole, addUserTag, removeUserTag } = useUserMutations();
+  const scope = useScopeFromParams();
+  const { roles, loading: rolesLoading } = useRoles({ scope });
+  const { tags, loading: tagsLoading } = useTags({ scope });
+  const { updateUser, addUserRole, addUserTag, removeUserRole, removeUserTag } = useUserMutations();
 
   // Use selective subscriptions to prevent unnecessary re-renders
   const userToEdit = useUsersStore((state) => state.userToEdit);
@@ -66,7 +68,7 @@ export function EditUserDialog() {
     },
   ];
 
-  const mapUserToFormValues = (user: User): EditUserFormValues => ({
+  const mapUserToFormValues = (user: UserType): EditUserFormValues => ({
     name: user.name,
     email: user.email,
     roleIds: user.roles?.map((role: Role) => role.id),
@@ -154,6 +156,8 @@ export function EditUserDialog() {
       title="editDialog.title"
       description="editDialog.description"
       confirmText="editDialog.confirm"
+      cancelText="editDialog.cancel"
+      updatingText="editDialog.updating"
       schema={editUserSchema}
       defaultValues={{
         name: '',

@@ -8,6 +8,7 @@ import {
   CreateDialogRelationship,
 } from '@/components/common/CreateDialog';
 import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
+import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { usePermissionMutations } from '@/hooks/permissions';
 import { useTags } from '@/hooks/tags';
 import { usePermissionsStore } from '@/stores/permissions.store';
@@ -15,7 +16,8 @@ import { usePermissionsStore } from '@/stores/permissions.store';
 import { createPermissionSchema, CreatePermissionFormValues } from './types';
 
 export function CreatePermissionDialog() {
-  const { tags, loading: tagsLoading } = useTags();
+  const scope = useScopeFromParams();
+  const { tags, loading: tagsLoading } = useTags({ scope });
   const { createPermission, addPermissionTag } = usePermissionMutations();
 
   // Use selective subscriptions to prevent unnecessary re-renders

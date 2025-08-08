@@ -1,6 +1,6 @@
 'use client';
 
-import { Shield } from 'lucide-react';
+import { Users } from 'lucide-react';
 
 import {
   CreateDialog,
@@ -10,6 +10,7 @@ import {
 import { CheckboxList } from '@/components/ui/checkbox-list';
 import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
 import { Permission } from '@/graphql/generated/types';
+import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useGroupMutations } from '@/hooks/groups';
 import { usePermissions } from '@/hooks/permissions';
 import { useTags } from '@/hooks/tags';
@@ -18,8 +19,9 @@ import { useGroupsStore } from '@/stores/groups.store';
 import { createGroupSchema, CreateGroupFormValues } from './types';
 
 export function CreateGroupDialog() {
-  const { permissions, loading: permissionsLoading } = usePermissions();
-  const { tags, loading: tagsLoading } = useTags();
+  const scope = useScopeFromParams();
+  const { permissions, loading: permissionsLoading } = usePermissions({ scope });
+  const { tags, loading: tagsLoading } = useTags({ scope });
   const { createGroup, addGroupPermission, addGroupTag } = useGroupMutations();
 
   // Use selective subscriptions to prevent unnecessary re-renders
@@ -49,7 +51,7 @@ export function CreateGroupDialog() {
       items: permissions.map((permission: Permission) => ({
         id: permission.id,
         name: permission.name,
-        description: permission.description ?? undefined,
+        description: permission.description || undefined,
       })),
       loading: permissionsLoading,
       loadingText: 'form.permissionsLoading',
@@ -118,7 +120,7 @@ export function CreateGroupDialog() {
       triggerText="createDialog.trigger"
       confirmText="createDialog.confirm"
       cancelText="deleteDialog.cancel"
-      icon={Shield}
+      icon={Users}
       schema={createGroupSchema}
       defaultValues={{
         name: '',

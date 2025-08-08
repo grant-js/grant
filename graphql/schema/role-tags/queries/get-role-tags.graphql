@@ -2,5 +2,14 @@ extend type Query {
   """
   Retrieves role-tag relationships for a specific role.
   """
-  roleTags(roleId: ID!): [RoleTag!]!
+  roleTags(
+    """
+    Scope of the role-tag relationships.
+    """
+    scope: Scope!
+    """
+    ID of the role to get tags for.
+    """
+    roleId: ID!
+  ): [RoleTag!]!
 }

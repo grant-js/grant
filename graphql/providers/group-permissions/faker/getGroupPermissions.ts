@@ -7,7 +7,8 @@ import { getGroupPermissionsByGroupId } from './dataStore';
 
 export const getGroupPermissions = async ({
   groupId,
+  scope,
 }: GetGroupPermissionsParams): Promise<GetGroupPermissionsResult> => {
-  const groupPermissions = getGroupPermissionsByGroupId(groupId);
+  const groupPermissions = getGroupPermissionsByGroupId(scope, groupId);
   return groupPermissions;
 };

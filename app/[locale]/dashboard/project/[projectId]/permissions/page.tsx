@@ -10,7 +10,7 @@ import { PermissionToolbar } from '@/components/features/permissions/PermissionT
 import { PermissionViewer } from '@/components/features/permissions/PermissionViewer';
 import { usePageTitle } from '@/hooks';
 
-export default function PermissionsPage() {
+export default function ProjectPermissionsPage() {
   const t = useTranslations('permissions');
   usePageTitle('permissions');
 

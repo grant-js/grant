@@ -1,6 +1,6 @@
 'use client';
 
-import { Shield } from 'lucide-react';
+import { ShieldPlus } from 'lucide-react';
 
 import {
   CreateDialog,
@@ -10,6 +10,7 @@ import {
 import { CheckboxList } from '@/components/ui/checkbox-list';
 import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
 import { Group } from '@/graphql/generated/types';
+import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useGroups } from '@/hooks/groups';
 import { useRoleMutations } from '@/hooks/roles';
 import { useTags } from '@/hooks/tags';
@@ -18,8 +19,9 @@ import { useRolesStore } from '@/stores/roles.store';
 import { createRoleSchema, CreateRoleFormValues } from './types';
 
 export function CreateRoleDialog() {
-  const { groups, loading: groupsLoading } = useGroups();
-  const { tags, loading: tagsLoading } = useTags();
+  const scope = useScopeFromParams();
+  const { groups, loading: groupsLoading } = useGroups({ scope });
+  const { tags, loading: tagsLoading } = useTags({ scope });
   const { createRole, addRoleGroup, addRoleTag } = useRoleMutations();
 
   // Use selective subscriptions to prevent unnecessary re-renders
@@ -49,7 +51,7 @@ export function CreateRoleDialog() {
       items: groups.map((group: Group) => ({
         id: group.id,
         name: group.name,
-        description: group.description ?? undefined,
+        description: group.description || undefined,
       })),
       loading: groupsLoading,
       loadingText: 'form.groupsLoading',
@@ -118,7 +120,7 @@ export function CreateRoleDialog() {
       triggerText="createDialog.trigger"
       confirmText="createDialog.confirm"
       cancelText="deleteDialog.cancel"
-      icon={Shield}
+      icon={ShieldPlus}
       schema={createRoleSchema}
       defaultValues={{
         name: '',

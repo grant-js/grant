@@ -8,6 +8,7 @@ export const permissionTagsResolver: PermissionResolvers['tags'] = async (
   // Get permission-tag relationships for this permission
   const permissionTags = await context.providers.permissionTags.getPermissionTags({
     permissionId: parent.id,
+    scope,
   });
 
   // Extract tag IDs from permission-tag relationships

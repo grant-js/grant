@@ -10,6 +10,7 @@ import {
 import { CheckboxList } from '@/components/ui/checkbox-list';
 import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
 import { Role } from '@/graphql/generated/types';
+import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useRoles } from '@/hooks/roles';
 import { useTags } from '@/hooks/tags';
 import { useUserMutations } from '@/hooks/users';
@@ -18,8 +19,9 @@ import { useUsersStore } from '@/stores/users.store';
 import { createUserSchema, CreateUserFormValues } from './types';
 
 export function CreateUserDialog() {
-  const { roles, loading: rolesLoading } = useRoles();
-  const { tags, loading: tagsLoading } = useTags();
+  const scope = useScopeFromParams();
+  const { roles, loading: rolesLoading } = useRoles({ scope });
+  const { tags, loading: tagsLoading } = useTags({ scope });
   const { createUser, addUserRole, addUserTag } = useUserMutations();
 
   // Use selective subscriptions to prevent unnecessary re-renders

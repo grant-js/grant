@@ -9,10 +9,10 @@ import { getTags } from '@/graphql/providers/tags/faker/dataStore';
 export const getPermissionTags = async (
   params: GetPermissionTagsParams
 ): Promise<GetPermissionTagsResult> => {
-  const { permissionId } = params;
+  const { permissionId, scope } = params;
 
   // Get the permission-tag relationships for the specified permission
-  const permissionTagData = getPermissionTagsByPermissionId(permissionId);
+  const permissionTagData = getPermissionTagsByPermissionId(scope, permissionId);
 
   // Get all permissions and tags for resolution
   const permissions = getPermissions();

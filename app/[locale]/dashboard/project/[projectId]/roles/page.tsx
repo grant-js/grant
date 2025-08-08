@@ -10,7 +10,7 @@ import { RoleToolbar } from '@/components/features/roles/RoleToolbar';
 import { RoleViewer } from '@/components/features/roles/RoleViewer';
 import { usePageTitle } from '@/hooks';
 
-export default function RolesPage() {
+export default function ProjectRolesPage() {
   const t = useTranslations('roles');
   usePageTitle('roles');
 

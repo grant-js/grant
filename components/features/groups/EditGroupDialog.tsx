@@ -8,17 +8,19 @@ import {
 import { CheckboxList } from '@/components/ui/checkbox-list';
 import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
 import { Group, Permission, Tag } from '@/graphql/generated/types';
+import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useGroupMutations } from '@/hooks/groups';
 import { usePermissions } from '@/hooks/permissions';
 import { useTags } from '@/hooks/tags';
 import { useGroupsStore } from '@/stores/groups.store';
 
-import { EditGroupFormValues, editGroupSchema } from './types';
+import { editGroupSchema, EditGroupFormValues } from './types';
 
 export function EditGroupDialog() {
-  const { permissions, loading: permissionsLoading } = usePermissions();
-  const { tags, loading: tagsLoading } = useTags();
-  const { updateGroup, addGroupPermission, removeGroupPermission, addGroupTag, removeGroupTag } =
+  const scope = useScopeFromParams();
+  const { permissions, loading: permissionsLoading } = usePermissions({ scope });
+  const { tags, loading: tagsLoading } = useTags({ scope });
+  const { updateGroup, addGroupPermission, addGroupTag, removeGroupPermission, removeGroupTag } =
     useGroupMutations();
 
   // Use selective subscriptions to prevent unnecessary re-renders
@@ -154,6 +156,8 @@ export function EditGroupDialog() {
       title="editDialog.title"
       description="editDialog.description"
       confirmText="editDialog.confirm"
+      cancelText="editDialog.cancel"
+      updatingText="editDialog.updating"
       schema={editGroupSchema}
       defaultValues={{
         name: '',

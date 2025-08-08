@@ -2,9 +2,10 @@ import {
   MutationAddGroupPermissionArgs,
   MutationRemoveGroupPermissionArgs,
   GroupPermission,
+  QueryGroupPermissionsArgs,
 } from '@/graphql/generated/types';
 
-export type GetGroupPermissionsParams = { groupId: string };
+export type GetGroupPermissionsParams = QueryGroupPermissionsArgs;
 export type GetGroupPermissionsResult = GroupPermission[];
 
 export type AddGroupPermissionParams = MutationAddGroupPermissionArgs;

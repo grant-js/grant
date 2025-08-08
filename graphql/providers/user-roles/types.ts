@@ -1,10 +1,11 @@
 import {
   MutationAddUserRoleArgs,
   MutationRemoveUserRoleArgs,
+  QueryUserRolesArgs,
   UserRole,
 } from '@/graphql/generated/types';
 
-export type GetUserRolesParams = { userId: string };
+export type GetUserRolesParams = QueryUserRolesArgs;
 export type GetUserRolesResult = UserRole[];
 
 export type AddUserRoleParams = MutationAddUserRoleArgs;

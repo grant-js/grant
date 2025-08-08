@@ -10,7 +10,7 @@ import { UserToolbar } from '@/components/features/users/UserToolbar';
 import { UserViewer } from '@/components/features/users/UserViewer';
 import { usePageTitle } from '@/hooks';
 
-export default function UsersPage() {
+export default function ProjectUsersPage() {
   const t = useTranslations('users');
   usePageTitle('users');
 

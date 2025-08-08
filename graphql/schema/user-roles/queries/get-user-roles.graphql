@@ -2,5 +2,14 @@ extend type Query {
   """
   Retrieves user-role relationships for a specific user.
   """
-  userRoles(userId: ID!): [UserRole!]!
+  userRoles(
+    """
+    Scope of the user-role relationships.
+    """
+    scope: Scope!
+    """
+    ID of the user to get roles for.
+    """
+    userId: ID!
+  ): [UserRole!]!
 }
