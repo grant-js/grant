@@ -7,6 +7,7 @@ export * from './permissions';
 export * from './tags';
 export * from './projects';
 export * from './organizations';
+export * from './organization-projects';
 
 // Export common utility hooks
 export * from './common';

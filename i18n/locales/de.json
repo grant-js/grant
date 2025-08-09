@@ -863,6 +863,14 @@
       }
     }
   },
+  "organizationProjects": {
+    "notifications": {
+      "addSuccess": "Projekt zur Organisation hinzugefügt",
+      "addError": "Projekt konnte nicht zur Organisation hinzugefügt werden",
+      "removeSuccess": "Projekt aus der Organisation entfernt",
+      "removeError": "Projekt konnte nicht aus der Organisation entfernt werden"
+    }
+  },
   "settings": {
     "title": "Systemeinstellungen",
     "description": "Konfigurieren Sie Systemeinstellungen und Optionen"

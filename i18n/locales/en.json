@@ -869,6 +869,14 @@
       }
     }
   },
+  "organizationProjects": {
+    "notifications": {
+      "addSuccess": "Project added to organization",
+      "addError": "Failed to add project to organization",
+      "removeSuccess": "Project removed from organization",
+      "removeError": "Failed to remove project from organization"
+    }
+  },
   "settings": {
     "title": "System Settings",
     "description": "Configure system preferences and options"
