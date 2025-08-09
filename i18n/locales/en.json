@@ -53,7 +53,19 @@
       "clearAll": "Clear all",
       "loading": "Loading tags..."
     },
-    "emptyElements": "No {title} to display"
+    "emptyElements": "No {title} to display",
+    "loading": "Loading...",
+    "error": "Error",
+    "organizations": {
+      "select": "Select organization",
+      "search": "Search organizations...",
+      "notFound": "No organizations found"
+    },
+    "projects": {
+      "select": "Select project",
+      "search": "Search projects...",
+      "notFound": "No projects found"
+    }
   },
   "dashboard": {
     "navigation": {

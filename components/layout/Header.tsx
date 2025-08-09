@@ -6,6 +6,8 @@ import { Menu, X, Sun, Moon, Globe, LogOut } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Logo } from '@/components/common/Logo';
+import { OrganizationSwitcher } from '@/components/features/organizations/OrganizationSwitcher';
+import { ProjectSwitcher } from '@/components/features/projects/ProjectSwitcher';
 import { NavLink } from '@/components/navigation/NavLink';
 import { LanguageSwitcher } from '@/components/settings/LanguageSwitcher';
 import { ThemeToggle } from '@/components/settings/ThemeToggle';
@@ -94,6 +96,8 @@ export function Header() {
           </nav>
 
           <div className="flex items-center space-x-3">
+            <OrganizationSwitcher />
+            <ProjectSwitcher />
             <ThemeToggle ref={themeToggleRef} trigger={desktopThemeTrigger} />
             <LanguageSwitcher ref={languageSwitcherRef} trigger={desktopLanguageTrigger} />
             {!isAuthenticated ? (
@@ -149,6 +153,8 @@ export function Header() {
             </nav>
             <div className="h-px bg-border" />
             <div className="flex flex-col space-y-2">
+              <OrganizationSwitcher />
+              <ProjectSwitcher />
               <ThemeToggle ref={themeToggleRef} trigger={mobileThemeTrigger} />
               <LanguageSwitcher ref={languageSwitcherRef} trigger={mobileLanguageTrigger} />
             </div>

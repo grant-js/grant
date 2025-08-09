@@ -2,7 +2,7 @@
   "common": {
     "app": {
       "title": "Identity Central",
-      "description": "Vereinheitlichte Identitätsverwaltung über mehrere Authentifizierungssysteme"
+      "description": "Einheitliche Identitätsverwaltung über mehrere Authentifizierungssysteme hinweg"
     },
     "auth": {
       "login": "Anmelden",
@@ -17,7 +17,7 @@
     "navigation": {
       "home": "Startseite",
       "dashboard": "Dashboard",
-      "toggleMenu": "Navigationsmenü umschalten"
+      "toggleMenu": "Navigationstabelle umschalten"
     },
     "theme": {
       "label": "Design"
@@ -53,7 +53,19 @@
       "clearAll": "Alle löschen",
       "loading": "Tags werden geladen..."
     },
-    "emptyElements": "Keine {title} zum Anzeigen"
+    "emptyElements": "Keine {title} zum Anzeigen",
+    "loading": "Wird geladen...",
+    "error": "Fehler",
+    "organizations": {
+      "select": "Organisation auswählen",
+      "search": "Organisationen suchen...",
+      "notFound": "Keine Organisationen gefunden"
+    },
+    "projects": {
+      "select": "Projekt auswählen",
+      "search": "Projekte suchen...",
+      "notFound": "Keine Projekte gefunden"
+    }
   },
   "dashboard": {
     "navigation": {

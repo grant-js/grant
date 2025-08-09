@@ -3,4 +3,4 @@ extend type Query {
   Retrieves project-tag relationships for a specific project.
   """
   projectTags(projectId: ID!): [ProjectTag!]!
-} 
+}

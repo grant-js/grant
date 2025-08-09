@@ -10,4 +10,4 @@ input RemoveProjectTagInput {
   ID of the tag.
   """
   tagId: ID!
-} 
+}

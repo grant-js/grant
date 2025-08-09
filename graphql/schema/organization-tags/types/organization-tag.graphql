@@ -30,4 +30,4 @@ type OrganizationTag implements Auditable {
   Timestamp when the organization-tag relationship was last updated.
   """
   updatedAt: String!
-} 
+}

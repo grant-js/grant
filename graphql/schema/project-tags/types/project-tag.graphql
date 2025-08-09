@@ -30,4 +30,4 @@ type ProjectTag implements Auditable {
   Timestamp when the project-tag relationship was last updated.
   """
   updatedAt: String!
-} 
+}

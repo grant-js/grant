@@ -8,4 +8,4 @@ extend type Mutation {
     """
     input: AddOrganizationTagInput!
   ): OrganizationTag!
-} 
+}
