@@ -75,10 +75,10 @@ export function ProjectSwitcher({ className }: ProjectSwitcherProps) {
           className={cn('w-[220px] justify-between', className)}
           disabled={loading || !currentOrganizationId}
         >
-          <div className="flex items-center gap-2">
-            <FolderOpen className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground text-sm">Project:</span>
-            <span className="truncate">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <FolderOpen className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-muted-foreground text-sm shrink-0">Project:</span>
+            <span className="truncate min-w-0">
               {loading
                 ? t('loading')
                 : error

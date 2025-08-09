@@ -72,10 +72,10 @@ export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
           className={cn('w-[220px] justify-between', className)}
           disabled={loading}
         >
-          <div className="flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground text-sm">Org:</span>
-            <span className="truncate">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-muted-foreground text-sm shrink-0">Org:</span>
+            <span className="truncate min-w-0">
               {loading
                 ? t('loading')
                 : error
