@@ -38,7 +38,7 @@ export interface DeleteDialogProps {
 
   // Actions
   onDelete: (entityId: string, entityName: string) => Promise<void>;
-  onSuccess?: () => void;
+  onSuccess?: () => void | Promise<void>;
 
   // Translation namespace
   translationNamespace: string;
@@ -73,7 +73,10 @@ export function DeleteDialog({
     setInternalIsDeleting(true);
     try {
       await onDelete(entityToDelete.id, entityToDelete.name);
-      onSuccess?.();
+      // Wait for onSuccess to complete if it's async
+      if (onSuccess) {
+        await onSuccess();
+      }
       setDialogOpen(false);
     } catch (error) {
       // Error handling is done in the specific mutation hooks

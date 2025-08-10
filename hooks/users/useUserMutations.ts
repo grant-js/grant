@@ -1,4 +1,4 @@
-import { useMutation } from '@apollo/client';
+import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
@@ -47,54 +47,43 @@ interface RemoveUserTagInput {
 export function useUserMutations() {
   const t = useTranslations('users');
 
+  const update = (cache: ApolloCache<any>) => {
+    evictUsersCache(cache);
+  };
+
   const [createUser] = useMutation<{ createUser: User }>(CREATE_USER, {
-    update(cache) {
-      evictUsersCache(cache);
-    },
+    update,
   });
 
   const [updateUser] = useMutation<{ updateUser: User }>(UPDATE_USER, {
-    update(cache) {
-      evictUsersCache(cache);
-    },
+    update,
   });
 
   const [deleteUser] = useMutation<{ deleteUser: User }>(DELETE_USER, {
-    update(cache) {
-      evictUsersCache(cache);
-      cache.gc();
-    },
+    update,
   });
 
   const [addUserRole] = useMutation<{ addUserRole: any }>(ADD_USER_ROLE, {
-    update(cache) {
-      evictUsersCache(cache);
-    },
+    update,
   });
 
   const [removeUserRole] = useMutation<{ removeUserRole: any }>(REMOVE_USER_ROLE, {
-    update(cache) {
-      evictUsersCache(cache);
-    },
+    update,
   });
 
   const [addUserTag] = useMutation<{ addUserTag: any }>(ADD_USER_TAG, {
-    update(cache) {
-      evictUsersCache(cache);
-    },
+    update,
   });
 
   const [removeUserTag] = useMutation<{ removeUserTag: boolean }>(REMOVE_USER_TAG, {
-    update(cache) {
-      evictUsersCache(cache);
-    },
+    update,
   });
 
   const handleCreateUser = async (input: CreateUserInput) => {
     try {
       const result = await createUser({
         variables: { input },
-        refetchQueries: ['GetUsers'],
+        // Remove refetchQueries to prevent "Unknown query" warnings in tenant contexts
       });
 
       toast.success(t('notifications.createSuccess'));
@@ -112,7 +101,7 @@ export function useUserMutations() {
     try {
       const result = await updateUser({
         variables: { id, input },
-        refetchQueries: ['GetUsers'],
+        // Remove refetchQueries to prevent "Unknown query" warnings in tenant contexts
       });
 
       toast.success(t('notifications.updateSuccess'));
@@ -149,7 +138,7 @@ export function useUserMutations() {
     try {
       const result = await addUserRole({
         variables: { input },
-        refetchQueries: ['GetUsers'],
+        // Remove refetchQueries to prevent "Unknown query" warnings in tenant contexts
       });
 
       toast.success(t('notifications.roleAddedSuccess'));
@@ -167,7 +156,7 @@ export function useUserMutations() {
     try {
       const result = await removeUserRole({
         variables: { input },
-        refetchQueries: ['GetUsers'],
+        // Remove refetchQueries to prevent "Unknown query" warnings in tenant contexts
       });
 
       toast.success(t('notifications.roleRemovedSuccess'));
@@ -185,7 +174,7 @@ export function useUserMutations() {
     try {
       const result = await addUserTag({
         variables: { input },
-        refetchQueries: ['GetUsers'],
+        // Remove refetchQueries to prevent "Unknown query" warnings in tenant contexts
       });
 
       toast.success(t('notifications.tagAddedSuccess'));
@@ -203,7 +192,7 @@ export function useUserMutations() {
     try {
       await removeUserTag({
         variables: { input },
-        refetchQueries: ['GetUsers'],
+        // Remove refetchQueries to prevent "Unknown query" warnings in tenant contexts
       });
 
       toast.success(t('notifications.tagRemovedSuccess'));

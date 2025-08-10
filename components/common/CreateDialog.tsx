@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LucideIcon } from 'lucide-react';
@@ -29,7 +29,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
-// Generic types for the dialog
 export interface CreateDialogField {
   name: string;
   label: string;
@@ -51,38 +50,27 @@ export interface CreateDialogRelationship<T = any> {
 }
 
 export interface CreateDialogProps<TFormValues extends Record<string, any>> {
-  // Dialog props
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-
-  // Content
   title: string;
   description: string;
   triggerText: string;
   confirmText: string;
   cancelText?: string;
   icon: LucideIcon;
-
-  // Form configuration
   schema: z.ZodSchema<TFormValues>;
   defaultValues: DefaultValues<TFormValues>;
   fields: CreateDialogField[];
   relationships?: CreateDialogRelationship[];
-
-  // Actions
   onCreate: (values: TFormValues) => Promise<any>;
   onAddRelationships?: (entityId: string, values: TFormValues) => Promise<void>;
-
-  // Translation namespace
   translationNamespace: string;
-
-  // Loading state
   submittingText?: string;
 }
 
 export function CreateDialog<TFormValues extends Record<string, any>>({
   open,
-  onOpenChange: _onOpenChange,
+  onOpenChange,
   title,
   description,
   triggerText,
@@ -99,7 +87,6 @@ export function CreateDialog<TFormValues extends Record<string, any>>({
   submittingText,
 }: CreateDialogProps<TFormValues>) {
   const t = useTranslations(translationNamespace);
-  const [dialogOpen, setDialogOpen] = useState(open || false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<TFormValues>({
@@ -107,15 +94,27 @@ export function CreateDialog<TFormValues extends Record<string, any>>({
     defaultValues,
   });
 
-  const onSubmit = async (values: TFormValues) => {
+  useEffect(() => {
+    if (!open) {
+      // Use a small delay to ensure the dialog is fully closed before resetting
+      const timer = setTimeout(() => {
+        form.reset(defaultValues);
+      }, 200);
+
+      return () => clearTimeout(timer);
+    }
+  }, [open, form, defaultValues]);
+
+  const onSubmit = async (values: TFormValues): Promise<void> => {
     setIsSubmitting(true);
     try {
       const result = await onCreate(values);
       if (result?.id && onAddRelationships) {
         await onAddRelationships(result.id, values);
       }
-      form.reset(defaultValues);
-      setDialogOpen(false);
+      if (onOpenChange) {
+        onOpenChange(false);
+      }
     } catch (error) {
       console.error('Error creating entity:', error);
     } finally {
@@ -124,12 +123,8 @@ export function CreateDialog<TFormValues extends Record<string, any>>({
   };
 
   const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen) {
-      form.reset(defaultValues);
-    }
-    setDialogOpen(newOpen);
-    if (_onOpenChange) {
-      _onOpenChange(newOpen);
+    if (onOpenChange) {
+      onOpenChange(newOpen);
     }
   };
 
@@ -176,7 +171,7 @@ export function CreateDialog<TFormValues extends Record<string, any>>({
   };
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>
           <Icon className="size-4" />

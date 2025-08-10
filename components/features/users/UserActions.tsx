@@ -23,7 +23,7 @@ export function UserActions({ user }: UserActionsProps) {
   };
 
   const handleDeleteClick = () => {
-    setUserToDelete({ id: user.id, name: user.name });
+    setUserToDelete(user);
   };
 
   const actions: ActionItem<User>[] = [

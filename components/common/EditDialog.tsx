@@ -110,81 +110,81 @@ export function EditDialog<TFormValues extends Record<string, any>, TEntity>({
 }: EditDialogProps<TFormValues, TEntity>) {
   const t = useTranslations(translationNamespace);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const isSubmittingRef = React.useRef(false);
-
-  // Internal state for uncontrolled usage
-  const [internalOpen, setInternalOpen] = useState(false);
-  const [initialFormValues, setInitialFormValues] = useState<TFormValues | null>(null);
-
-  // Use provided props or internal state
-  const isControlled = open !== undefined && onOpenChange !== undefined;
-  const dialogOpen = isControlled ? open : internalOpen;
-  const setDialogOpen = isControlled ? onOpenChange : setInternalOpen;
 
   const form = useForm<TFormValues>({
     resolver: zodResolver(schema),
     defaultValues,
-    mode: 'onSubmit',
   });
 
   // Update form values when entity changes
   useEffect(() => {
-    if (entity && !isSubmittingRef.current) {
+    if (entity) {
       const formValues = mapEntityToFormValues(entity);
-      // Ensure all form values have proper defaults to prevent controlled/uncontrolled issues
       const safeFormValues = { ...defaultValues, ...formValues };
       form.reset(safeFormValues);
-      setInitialFormValues(safeFormValues);
     }
-  }, [entity, form, mapEntityToFormValues, defaultValues]);
+  }, [entity, mapEntityToFormValues, defaultValues, form]);
 
   const onSubmit = async (values: TFormValues) => {
     if (!entity) return;
 
     setIsSubmitting(true);
-    isSubmittingRef.current = true;
     try {
-      // Handle main entity update first
       await onUpdate((entity as any).id, values);
 
-      // Handle relationship updates if configured
-      if (relationships && onAddRelationships && onRemoveRelationships && initialFormValues) {
+      // Handle relationship updates if configured - with proper diffing logic
+      if (relationships && onAddRelationships && onRemoveRelationships) {
+        // Get current form values to compare with initial entity state
+        const entityFormValues = mapEntityToFormValues(entity);
+
+        // Process relationships in parallel to avoid blocking UI
+        const relationshipPromises: Promise<void>[] = [];
+
         for (const relationship of relationships) {
           const relationshipName = relationship.name;
-          const initialIds = initialFormValues[relationshipName] || [];
+          const initialIds = entityFormValues[relationshipName] || [];
           const newIds = values[relationshipName] || [];
 
           // Find items to add
           const itemsToAdd = newIds.filter((id: string) => !initialIds.includes(id));
           if (itemsToAdd.length > 0) {
-            await onAddRelationships((entity as any).id, relationshipName, itemsToAdd);
+            relationshipPromises.push(
+              onAddRelationships((entity as any).id, relationshipName, itemsToAdd)
+            );
           }
 
           // Find items to remove
           const itemsToRemove = initialIds.filter((id: string) => !newIds.includes(id));
           if (itemsToRemove.length > 0) {
-            await onRemoveRelationships((entity as any).id, relationshipName, itemsToRemove);
+            relationshipPromises.push(
+              onRemoveRelationships((entity as any).id, relationshipName, itemsToRemove)
+            );
           }
+        }
+
+        if (relationshipPromises.length > 0) {
+          await Promise.all(relationshipPromises);
         }
       }
 
-      setDialogOpen(false);
+      // Close dialog after successful update
+      if (onOpenChange) {
+        onOpenChange(false);
+      }
     } catch (error) {
-      // Error handling is done in the specific mutation hooks
       console.error('Error updating entity:', error);
     } finally {
       setIsSubmitting(false);
-      isSubmittingRef.current = false;
     }
   };
 
   const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen && !isSubmittingRef.current) {
-      // Only reset the form when closing manually (not during submission)
-      form.reset();
-      setInitialFormValues(null);
+    if (!newOpen) {
+      form.reset(defaultValues);
     }
-    setDialogOpen(newOpen);
+    if (onOpenChange) {
+      onOpenChange(newOpen);
+    }
   };
 
   const renderField = (field: EditDialogField) => {
@@ -229,10 +229,8 @@ export function EditDialog<TFormValues extends Record<string, any>, TEntity>({
     );
   };
 
-  if (!entity) return null;
-
   return (
-    <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{t(title)}</DialogTitle>

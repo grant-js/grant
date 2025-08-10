@@ -8,6 +8,8 @@ export * from './tags';
 export * from './projects';
 export * from './organizations';
 export * from './organization-projects';
+export * from './organization-users';
+export * from './project-users';
 
 // Export common utility hooks
 export * from './common';

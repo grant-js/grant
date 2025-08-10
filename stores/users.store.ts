@@ -20,7 +20,7 @@ interface UsersState {
   loading: boolean;
 
   // Dialog state
-  userToDelete: { id: string; name: string } | null;
+  userToDelete: User | null;
   userToEdit: User | null;
   isCreateDialogOpen: boolean;
 
@@ -38,7 +38,7 @@ interface UsersState {
   initializeFromUrl: (params: URLSearchParams) => void;
 
   // Dialog actions
-  setUserToDelete: (user: { id: string; name: string } | null) => void;
+  setUserToDelete: (user: User | null) => void;
   setUserToEdit: (user: User | null) => void;
   setCreateDialogOpen: (open: boolean) => void;
 }

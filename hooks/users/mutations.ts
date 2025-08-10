@@ -32,14 +32,6 @@ export const ADD_USER_ROLE = gql`
       roleId
       createdAt
       updatedAt
-      user {
-        id
-        name
-      }
-      role {
-        id
-        name
-      }
     }
   }
 `;
@@ -52,14 +44,6 @@ export const REMOVE_USER_ROLE = gql`
       roleId
       createdAt
       updatedAt
-      user {
-        id
-        name
-      }
-      role {
-        id
-        name
-      }
     }
   }
 `;

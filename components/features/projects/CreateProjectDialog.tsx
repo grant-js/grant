@@ -10,35 +10,35 @@ import { useProjectsStore } from '@/stores/projects.store';
 import { createProjectSchema, type CreateProjectFormValues } from './types';
 
 export function CreateProjectDialog() {
-  const isOpen = useProjectsStore((state) => state.isCreateDialogOpen);
-  const setCreateDialogOpen = useProjectsStore((state) => state.setCreateDialogOpen);
   const selectedOrganizationId = useOrganizationsStore((state) => state.selectedOrganizationId);
+  const isCreateDialogOpen = useProjectsStore((state) => state.isCreateDialogOpen);
+  const setCreateDialogOpen = useProjectsStore((state) => state.setCreateDialogOpen);
+
   const { createProject } = useProjectMutations();
   const { addOrganizationProject } = useOrganizationProjectMutations();
 
   const handleSubmit = async (values: CreateProjectFormValues) => {
+    return createProject(values);
+  };
+
+  const handleAddRelationships = async (projectId: string, _values: CreateProjectFormValues) => {
     if (!selectedOrganizationId) {
       throw new Error('No organization selected');
     }
+    await addOrganizationProject({
+      organizationId: selectedOrganizationId,
+      projectId,
+    });
+  };
 
-    // First, create the project
-    const createdProject = await createProject(values);
-
-    if (createdProject) {
-      // Then, create the organization-project relationship
-      await addOrganizationProject({
-        organizationId: selectedOrganizationId,
-        projectId: createdProject.id,
-      });
-    }
-
-    setCreateDialogOpen(false);
+  const handleOpenChange = (open: boolean) => {
+    setCreateDialogOpen(open);
   };
 
   return (
     <CreateDialog
-      open={isOpen}
-      onOpenChange={setCreateDialogOpen}
+      open={isCreateDialogOpen}
+      onOpenChange={handleOpenChange}
       title="createDialog.title"
       description="createDialog.description"
       triggerText="createDialog.trigger"
@@ -65,6 +65,7 @@ export function CreateProjectDialog() {
         },
       ]}
       onCreate={handleSubmit}
+      onAddRelationships={handleAddRelationships}
       translationNamespace="projects"
       submittingText="createDialog.submitting"
     />

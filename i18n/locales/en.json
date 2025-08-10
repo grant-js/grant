@@ -200,7 +200,9 @@
     "editDialog": {
       "title": "Edit User",
       "description": "Update user information",
-      "confirm": "Save Changes"
+      "confirm": "Save Changes",
+      "cancel": "Cancel",
+      "updating": "Updating..."
     },
     "deleteDialog": {
       "title": "Delete User",
@@ -887,6 +889,22 @@
       "addError": "Failed to add project to organization",
       "removeSuccess": "Project removed from organization",
       "removeError": "Failed to remove project from organization"
+    }
+  },
+  "organizationUsers": {
+    "notifications": {
+      "addSuccess": "User added to organization",
+      "addError": "Failed to add user to organization",
+      "removeSuccess": "User removed from organization",
+      "removeError": "Failed to remove user from organization"
+    }
+  },
+  "projectUsers": {
+    "notifications": {
+      "addSuccess": "User added to project",
+      "addError": "Failed to add user to project",
+      "removeSuccess": "User removed from project",
+      "removeError": "Failed to remove user from project"
     }
   },
   "settings": {

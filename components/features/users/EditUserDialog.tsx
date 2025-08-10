@@ -1,5 +1,7 @@
 'use client';
 
+import React from 'react';
+
 import {
   EditDialog,
   EditDialogField,
@@ -16,8 +18,21 @@ import { useUsersStore } from '@/stores/users.store';
 
 import { editUserSchema, EditUserFormValues } from './types';
 
+// Move these functions outside the component to prevent recreation on every render
+const mapUserToFormValues = (user: UserType): EditUserFormValues => ({
+  name: user.name,
+  email: user.email,
+  roleIds: user.roles?.map((role: Role) => role.id),
+  tagIds: user.tags?.map((tag: Tag) => tag.id),
+});
+
+// Stable render component functions
+const renderCheckboxList = (props: any) => <CheckboxList {...props} />;
+const renderTagCheckboxList = (props: any) => <TagCheckboxList {...props} />;
+
 export function EditUserDialog() {
   const scope = useScopeFromParams();
+
   const { roles, loading: rolesLoading } = useRoles({ scope });
   const { tags, loading: tagsLoading } = useTags({ scope });
   const { updateUser, addUserRole, addUserTag, removeUserRole, removeUserTag } = useUserMutations();
@@ -43,16 +58,25 @@ export function EditUserDialog() {
     },
   ];
 
+  const defaultValues = {
+    name: '',
+    email: '',
+    roleIds: [],
+    tagIds: [],
+  };
+
+  const roleItems = roles.map((role: Role) => ({
+    id: role.id,
+    name: role.name,
+    description: role.description || undefined,
+  }));
+
   const relationships: EditDialogRelationship[] = [
     {
       name: 'roleIds',
       label: 'form.roles',
-      renderComponent: (props: any) => <CheckboxList {...props} />,
-      items: roles.map((role: Role) => ({
-        id: role.id,
-        name: role.name,
-        description: role.description || undefined,
-      })),
+      renderComponent: renderCheckboxList,
+      items: roleItems,
       loading: rolesLoading,
       loadingText: 'form.rolesLoading',
       emptyText: 'form.noRolesAvailable',
@@ -60,7 +84,7 @@ export function EditUserDialog() {
     {
       name: 'tagIds',
       label: 'form.tags',
-      renderComponent: (props: any) => <TagCheckboxList {...props} />,
+      renderComponent: renderTagCheckboxList,
       items: tags,
       loading: tagsLoading,
       loadingText: 'form.tagsLoading',
@@ -68,15 +92,8 @@ export function EditUserDialog() {
     },
   ];
 
-  const mapUserToFormValues = (user: UserType): EditUserFormValues => ({
-    name: user.name,
-    email: user.email,
-    roleIds: user.roles?.map((role: Role) => role.id),
-    tagIds: user.tags?.map((tag: Tag) => tag.id),
-  });
-
   const handleUpdate = async (userId: string, values: EditUserFormValues) => {
-    await updateUser(userId, {
+    return await updateUser(userId, {
       name: values.name,
       email: values.email,
     });
@@ -159,12 +176,7 @@ export function EditUserDialog() {
       cancelText="editDialog.cancel"
       updatingText="editDialog.updating"
       schema={editUserSchema}
-      defaultValues={{
-        name: '',
-        email: '',
-        roleIds: [],
-        tagIds: [],
-      }}
+      defaultValues={defaultValues}
       fields={fields}
       relationships={relationships}
       mapEntityToFormValues={mapUserToFormValues}

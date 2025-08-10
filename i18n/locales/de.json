@@ -200,7 +200,9 @@
     "editDialog": {
       "title": "Benutzer bearbeiten",
       "description": "Aktualisieren Sie die Benutzerinformationen",
-      "confirm": "Änderungen speichern"
+      "confirm": "Änderungen speichern",
+      "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert..."
     },
     "deleteDialog": {
       "title": "Benutzer löschen",
@@ -881,6 +883,22 @@
       "addError": "Projekt konnte nicht zur Organisation hinzugefügt werden",
       "removeSuccess": "Projekt aus der Organisation entfernt",
       "removeError": "Projekt konnte nicht aus der Organisation entfernt werden"
+    }
+  },
+  "organizationUsers": {
+    "notifications": {
+      "addSuccess": "Benutzer zur Organisation hinzugefügt",
+      "addError": "Benutzer konnte nicht zur Organisation hinzugefügt werden",
+      "removeSuccess": "Benutzer aus der Organisation entfernt",
+      "removeError": "Benutzer konnte nicht aus der Organisation entfernt werden"
+    }
+  },
+  "projectUsers": {
+    "notifications": {
+      "addSuccess": "Benutzer zum Projekt hinzugefügt",
+      "addError": "Benutzer konnte nicht zum Projekt hinzugefügt werden",
+      "removeSuccess": "Benutzer aus dem Projekt entfernt",
+      "removeError": "Benutzer konnte nicht aus dem Projekt entfernt werden"
     }
   },
   "settings": {

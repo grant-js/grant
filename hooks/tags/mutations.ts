@@ -38,15 +38,6 @@ export const ADD_USER_TAG = gql`
       tagId
       createdAt
       updatedAt
-      user {
-        id
-        name
-      }
-      tag {
-        id
-        name
-        color
-      }
     }
   }
 `;
@@ -65,15 +56,6 @@ export const ADD_ROLE_TAG = gql`
       tagId
       createdAt
       updatedAt
-      role {
-        id
-        name
-      }
-      tag {
-        id
-        name
-        color
-      }
     }
   }
 `;
@@ -92,15 +74,6 @@ export const ADD_GROUP_TAG = gql`
       tagId
       createdAt
       updatedAt
-      group {
-        id
-        name
-      }
-      tag {
-        id
-        name
-        color
-      }
     }
   }
 `;
@@ -119,16 +92,6 @@ export const ADD_PERMISSION_TAG = gql`
       tagId
       createdAt
       updatedAt
-      permission {
-        id
-        name
-        action
-      }
-      tag {
-        id
-        name
-        color
-      }
     }
   }
 `;
