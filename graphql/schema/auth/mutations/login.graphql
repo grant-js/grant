@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Authenticates a user and returns a JWT token.
-  """
   login(
-    """
-    User credentials.
-    """
     input: LoginInput!
   ): LoginResponse!
 }

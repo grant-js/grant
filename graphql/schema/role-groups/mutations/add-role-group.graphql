@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Adds a role-group relationship.
-  """
   addRoleGroup(
-    """
-    Input data for adding the role-group relationship.
-    """
     input: AddRoleGroupInput!
   ): RoleGroup!
 }

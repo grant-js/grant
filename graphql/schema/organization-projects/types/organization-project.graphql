@@ -1,33 +1,9 @@
-"""
-Represents an organization-project relationship in the system.
-"""
 type OrganizationProject implements Auditable {
-  """
-  Unique identifier for the organization-project relationship.
-  """
   id: ID!
-  """
-  ID of the organization.
-  """
   organizationId: ID!
-  """
-  ID of the project.
-  """
   projectId: ID!
-  """
-  The organization associated with this relationship.
-  """
   organization: Organization
-  """
-  The project associated with this relationship.
-  """
   project: Project
-  """
-  Timestamp when the organization-project relationship was created.
-  """
   createdAt: String!
-  """
-  Timestamp when the organization-project relationship was last updated.
-  """
   updatedAt: String!
 }

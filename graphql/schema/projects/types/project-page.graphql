@@ -1,17 +1,5 @@
-"""
-Represents a paginated list of projects.
-"""
 type ProjectPage implements PaginatedResults {
-  """
-  List of projects in the current page.
-  """
   projects: [Project!]!
-  """
-  Total number of projects.
-  """
   totalCount: Int!
-  """
-  Whether there are more projects to load.
-  """
   hasNextPage: Boolean!
 }

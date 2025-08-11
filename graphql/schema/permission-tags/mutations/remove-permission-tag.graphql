@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Removes a permission-tag relationship.
-  """
   removePermissionTag(
-    """
-    Input data for removing the permission-tag relationship.
-    """
     input: RemovePermissionTagInput!
   ): PermissionTag!
 }

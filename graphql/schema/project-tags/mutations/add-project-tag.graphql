@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Adds a project-tag relationship.
-  """
   addProjectTag(
-    """
-    Input data for adding the project-tag relationship.
-    """
     input: AddProjectTagInput!
   ): ProjectTag!
 }

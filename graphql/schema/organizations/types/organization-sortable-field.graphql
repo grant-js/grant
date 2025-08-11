@@ -1,17 +1,5 @@
-"""
-Fields that can be used to sort organizations.
-"""
 enum OrganizationSortableField {
-  """
-  Sort by organization name.
-  """
   name
-  """
-  Sort by creation date.
-  """
   createdAt
-  """
-  Sort by last update date.
-  """
   updatedAt
 }

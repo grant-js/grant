@@ -1,33 +1,9 @@
-"""
-Represents a user-role relationship in the system.
-"""
 type UserRole implements Auditable {
-  """
-  Unique identifier for the user-role relationship.
-  """
   id: ID!
-  """
-  ID of the user.
-  """
   userId: ID!
-  """
-  ID of the role.
-  """
   roleId: ID!
-  """
-  The user associated with this relationship.
-  """
   user(scope: Scope!): User
-  """
-  The role associated with this relationship.
-  """
   role(scope: Scope!): Role
-  """
-  Timestamp when the user-role relationship was created.
-  """
   createdAt: String!
-  """
-  Timestamp when the user-role relationship was last updated.
-  """
   updatedAt: String!
 }

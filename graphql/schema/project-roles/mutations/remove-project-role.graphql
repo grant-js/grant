@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Removes a project-role relationship.
-  """
   removeProjectRole(
-    """
-    Input data for removing the project-role relationship.
-    """
     input: RemoveProjectRoleInput!
   ): ProjectRole!
 }

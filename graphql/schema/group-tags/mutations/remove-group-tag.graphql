@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Removes a group-tag relationship.
-  """
   removeGroupTag(
-    """
-    Input data for removing the group-tag relationship.
-    """
     input: RemoveGroupTagInput!
   ): GroupTag!
 }

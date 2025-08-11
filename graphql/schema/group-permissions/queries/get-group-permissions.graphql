@@ -1,15 +1,6 @@
 extend type Query {
-  """
-  Retrieves group-permission relationships.
-  """
   groupPermissions(
-    """
-    Scope of the group-permission relationships.
-    """
     scope: Scope!
-    """
-    ID of the group to get permissions for.
-    """
     groupId: ID!
   ): [GroupPermission!]!
 }

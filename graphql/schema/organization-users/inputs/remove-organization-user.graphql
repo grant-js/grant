@@ -1,13 +1,4 @@
-"""
-Input type for removing an organization-user relationship.
-"""
 input RemoveOrganizationUserInput {
-  """
-  ID of the organization.
-  """
   organizationId: ID!
-  """
-  ID of the user.
-  """
   userId: ID!
 }

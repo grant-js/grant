@@ -1,13 +1,4 @@
-"""
-Input type for removing an organization-role relationship.
-"""
 input RemoveOrganizationRoleInput {
-  """
-  ID of the organization.
-  """
   organizationId: ID!
-  """
-  ID of the role.
-  """
   roleId: ID!
 }

@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Adds a group-permission relationship.
-  """
   addGroupPermission(
-    """
-    Input data for adding the group-permission relationship.
-    """
     input: AddGroupPermissionInput!
   ): GroupPermission!
 }

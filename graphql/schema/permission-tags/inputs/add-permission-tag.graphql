@@ -1,10 +1,4 @@
 input AddPermissionTagInput {
-  """
-  ID of the permission.
-  """
   permissionId: ID!
-  """
-  ID of the tag.
-  """
   tagId: ID!
 }

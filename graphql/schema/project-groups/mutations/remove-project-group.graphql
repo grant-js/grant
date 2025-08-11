@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Removes a project-group relationship.
-  """
   removeProjectGroup(
-    """
-    Input data for removing the project-group relationship.
-    """
     input: RemoveProjectGroupInput!
   ): ProjectGroup!
 }

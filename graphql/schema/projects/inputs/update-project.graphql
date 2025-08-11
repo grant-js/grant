@@ -1,13 +1,4 @@
-"""
-Input for updating an existing project.
-"""
 input UpdateProjectInput {
-  """
-  Name of the project.
-  """
   name: String
-  """
-  Description of the project.
-  """
   description: String
 }

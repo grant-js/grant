@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Removes a role-tag relationship.
-  """
   removeRoleTag(
-    """
-    Input data for removing the role-tag relationship.
-    """
     input: RemoveRoleTagInput!
   ): RoleTag!
 }

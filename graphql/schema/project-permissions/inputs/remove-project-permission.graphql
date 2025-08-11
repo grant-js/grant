@@ -1,13 +1,4 @@
-"""
-Input type for removing a project-permission relationship.
-"""
 input RemoveProjectPermissionInput {
-  """
-  ID of the project.
-  """
   projectId: ID!
-  """
-  ID of the permission.
-  """
   permissionId: ID!
 }

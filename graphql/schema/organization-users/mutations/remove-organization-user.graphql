@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Removes an organization-user relationship.
-  """
   removeOrganizationUser(
-    """
-    Input data for removing the organization-user relationship.
-    """
     input: RemoveOrganizationUserInput!
   ): OrganizationUser!
 }

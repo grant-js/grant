@@ -1,73 +1,21 @@
-"""
-Base interface for entities with audit fields.
-"""
 interface Auditable {
-  """
-  Unique identifier for the entity.
-  """
   id: ID!
-  """
-  Timestamp when the entity was created.
-  """
   createdAt: String!
-  """
-  Timestamp when the entity was last updated.
-  """
   updatedAt: String!
 }
-
-"""
-Base interface for entities that can be created and updated.
-"""
 interface Creatable {
-  """
-  Timestamp when the entity was created.
-  """
   createdAt: String!
-  """
-  Timestamp when the entity was last updated.
-  """
   updatedAt: String!
 }
-
-"""
-Base interface for paginated results.
-"""
 interface PaginatedResults {
-  """
-  Total number of items across all pages.
-  """
   totalCount: Int!
-  """
-  Whether there are more items available on the next page.
-  """
   hasNextPage: Boolean!
 }
-
-"""
-Enum for tenant types in the multi-tenant system.
-"""
 enum Tenant {
-  """
-  Organization-level tenant.
-  """
   ORGANIZATION
-  """
-  Project-level tenant.
-  """
   PROJECT
 }
-
-"""
-Input type for specifying the scope of a query.
-"""
 input Scope {
-  """
-  The type of tenant (organization or project).
-  """
   tenant: Tenant!
-  """
-  The unique identifier of the tenant.
-  """
   id: ID!
 }

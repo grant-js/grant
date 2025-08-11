@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Adds a project-permission relationship.
-  """
   addProjectPermission(
-    """
-    Input data for adding the project-permission relationship.
-    """
     input: AddProjectPermissionInput!
   ): ProjectPermission!
 }

@@ -1,13 +1,4 @@
-"""
-Input type for adding a user-tag relationship.
-"""
 input AddUserTagInput {
-  """
-  ID of the user.
-  """
   userId: ID!
-  """
-  ID of the tag.
-  """
   tagId: ID!
 }

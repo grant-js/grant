@@ -1,33 +1,9 @@
-"""
-Represents an organization-group relationship in the system.
-"""
 type OrganizationGroup implements Auditable {
-  """
-  Unique identifier for the organization-group relationship.
-  """
   id: ID!
-  """
-  ID of the organization.
-  """
   organizationId: ID!
-  """
-  ID of the group.
-  """
   groupId: ID!
-  """
-  The organization associated with this relationship.
-  """
   organization: Organization
-  """
-  The group associated with this relationship.
-  """
   group: Group
-  """
-  Timestamp when the organization-group relationship was created.
-  """
   createdAt: String!
-  """
-  Timestamp when the organization-group relationship was last updated.
-  """
   updatedAt: String!
 }

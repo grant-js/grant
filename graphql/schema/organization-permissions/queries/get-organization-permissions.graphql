@@ -1,6 +1,3 @@
 extend type Query {
-  """
-  Retrieves organization-permission relationships for a specific organization.
-  """
   organizationPermissions(organizationId: ID!): [OrganizationPermission!]!
 }

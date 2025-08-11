@@ -1,33 +1,9 @@
-"""
-Represents a user in the system.
-"""
 type User implements Auditable {
-  """
-  Unique identifier for the user.
-  """
   id: ID!
-  """
-  Full name of the user.
-  """
   name: String!
-  """
-  Email address of the user.
-  """
   email: String!
-  """
-  List of roles assigned to the user.
-  """
   roles(scope: Scope!): [Role!]
-  """
-  List of tags assigned to the user.
-  """
   tags(scope: Scope!): [Tag!]
-  """
-  Timestamp when the user was created.
-  """
   createdAt: String!
-  """
-  Timestamp when the user was last updated.
-  """
   updatedAt: String!
 }

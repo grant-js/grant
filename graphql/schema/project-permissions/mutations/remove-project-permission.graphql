@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Removes a project-permission relationship.
-  """
   removeProjectPermission(
-    """
-    Input data for removing the project-permission relationship.
-    """
     input: RemoveProjectPermissionInput!
   ): ProjectPermission!
 }

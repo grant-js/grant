@@ -1,13 +1,4 @@
-"""
-Input type for removing a group-permission relationship.
-"""
 input RemoveGroupPermissionInput {
-  """
-  ID of the group.
-  """
   groupId: ID!
-  """
-  ID of the permission.
-  """
   permissionId: ID!
 }

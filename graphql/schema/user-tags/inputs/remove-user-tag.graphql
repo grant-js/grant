@@ -1,13 +1,4 @@
-"""
-Input type for removing a user-tag relationship.
-"""
 input RemoveUserTagInput {
-  """
-  ID of the user.
-  """
   userId: ID!
-  """
-  ID of the tag.
-  """
   tagId: ID!
 }

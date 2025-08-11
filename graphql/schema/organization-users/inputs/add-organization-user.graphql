@@ -1,13 +1,4 @@
-"""
-Input type for adding an organization-user relationship.
-"""
 input AddOrganizationUserInput {
-  """
-  ID of the organization.
-  """
   organizationId: ID!
-  """
-  ID of the user.
-  """
   userId: ID!
 }

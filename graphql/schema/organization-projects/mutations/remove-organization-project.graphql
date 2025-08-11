@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Removes an organization-project relationship.
-  """
   removeOrganizationProject(
-    """
-    Input data for removing the organization-project relationship.
-    """
     input: RemoveOrganizationProjectInput!
   ): OrganizationProject!
 }

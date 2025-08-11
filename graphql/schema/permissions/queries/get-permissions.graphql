@@ -1,37 +1,11 @@
 extend type Query {
-  """
-  Retrieves a paginated list of permissions within the specified scope.
-  """
   permissions(
-    """
-    The scope (organization or project) to query permissions within.
-    """
     scope: Scope!
-    """
-    Page number (1-based).
-    """
     page: Int
-    """
-    Number of permissions per page.
-    """
     limit: Int
-    """
-    Search term to filter permissions by name or action.
-    """
     search: String
-    """
-    Sorting configuration for the results.
-    """
     sort: PermissionSortInput
-    """
-    Optional array of permission IDs to filter by.
-    If provided and not empty, pagination parameters (page, limit) will be ignored.
-    """
     ids: [ID!]
-    """
-    Optional array of tag IDs to filter permissions by.
-    Permissions must have at least one of the specified tags to be included in the results.
-    """
     tagIds: [ID!]
   ): PermissionPage!
 }

@@ -1,13 +1,4 @@
-"""
-Input type for adding an organization-project relationship.
-"""
 input AddOrganizationProjectInput {
-  """
-  ID of the organization.
-  """
   organizationId: ID!
-  """
-  ID of the project.
-  """
   projectId: ID!
 }

@@ -1,33 +1,9 @@
-"""
-Represents an organization-user relationship in the system.
-"""
 type OrganizationUser implements Auditable {
-  """
-  Unique identifier for the organization-user relationship.
-  """
   id: ID!
-  """
-  ID of the organization.
-  """
   organizationId: ID!
-  """
-  ID of the user.
-  """
   userId: ID!
-  """
-  The organization associated with this relationship.
-  """
   organization: Organization
-  """
-  The user associated with this relationship.
-  """
   user: User
-  """
-  Timestamp when the organization-user relationship was created.
-  """
   createdAt: String!
-  """
-  Timestamp when the organization-user relationship was last updated.
-  """
   updatedAt: String!
 }

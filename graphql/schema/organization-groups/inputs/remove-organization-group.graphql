@@ -1,13 +1,4 @@
-"""
-Input type for removing an organization-group relationship.
-"""
 input RemoveOrganizationGroupInput {
-  """
-  ID of the organization.
-  """
   organizationId: ID!
-  """
-  ID of the group.
-  """
   groupId: ID!
 }

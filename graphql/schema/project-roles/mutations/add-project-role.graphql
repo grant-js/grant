@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Adds a project-role relationship.
-  """
   addProjectRole(
-    """
-    Input data for adding the project-role relationship.
-    """
     input: AddProjectRoleInput!
   ): ProjectRole!
 }

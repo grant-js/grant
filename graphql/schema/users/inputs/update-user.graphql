@@ -1,13 +1,4 @@
-"""
-Input type for updating an existing user.
-"""
 input UpdateUserInput {
-  """
-  Full name of the user.
-  """
   name: String!
-  """
-  Email address of the user.
-  """
   email: String!
 }

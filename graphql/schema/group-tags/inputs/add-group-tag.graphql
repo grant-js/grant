@@ -1,13 +1,4 @@
-"""
-Input type for adding a group-tag relationship.
-"""
 input AddGroupTagInput {
-  """
-  ID of the group.
-  """
   groupId: ID!
-  """
-  ID of the tag.
-  """
   tagId: ID!
 }

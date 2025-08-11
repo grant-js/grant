@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Adds a project-group relationship.
-  """
   addProjectGroup(
-    """
-    Input data for adding the project-group relationship.
-    """
     input: AddProjectGroupInput!
   ): ProjectGroup!
 }

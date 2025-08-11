@@ -1,17 +1,5 @@
-"""
-Represents a paginated list of organizations.
-"""
 type OrganizationPage implements PaginatedResults {
-  """
-  List of organizations in the current page.
-  """
   organizations: [Organization!]!
-  """
-  Total number of organizations.
-  """
   totalCount: Int!
-  """
-  Whether there are more organizations to load.
-  """
   hasNextPage: Boolean!
 }

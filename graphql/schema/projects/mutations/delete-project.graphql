@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Delete a project.
-  """
   deleteProject(
-    """
-    ID of the project to delete.
-    """
     id: ID!
   ): Project!
 }

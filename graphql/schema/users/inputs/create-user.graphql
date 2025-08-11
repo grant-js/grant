@@ -1,13 +1,4 @@
-"""
-Input type for creating a new user.
-"""
 input CreateUserInput {
-  """
-  Full name of the user.
-  """
   name: String!
-  """
-  Email address of the user.
-  """
   email: String!
 }

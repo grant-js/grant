@@ -1,21 +1,10 @@
-"""
-Sort order for roles.
-"""
 enum RoleSortOrder {
   ASC
   DESC
 }
-
-"""
-Fields by which roles can be sorted.
-"""
 enum RoleSortableField {
   name
 }
-
-"""
-Input for sorting roles.
-"""
 input RoleSortInput {
   field: RoleSortableField!
   order: RoleSortOrder!

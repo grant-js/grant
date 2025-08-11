@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Removes a project-tag relationship.
-  """
   removeProjectTag(
-    """
-    Input data for removing the project-tag relationship.
-    """
     input: RemoveProjectTagInput!
   ): ProjectTag!
 }

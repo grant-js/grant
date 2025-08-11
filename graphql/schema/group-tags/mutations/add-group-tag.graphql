@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Adds a group-tag relationship.
-  """
   addGroupTag(
-    """
-    Input data for adding the group-tag relationship.
-    """
     input: AddGroupTagInput!
   ): GroupTag!
 }

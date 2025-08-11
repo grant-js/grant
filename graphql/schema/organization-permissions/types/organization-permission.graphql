@@ -1,33 +1,9 @@
-"""
-Represents an organization-permission relationship in the system.
-"""
 type OrganizationPermission implements Auditable {
-  """
-  Unique identifier for the organization-permission relationship.
-  """
   id: ID!
-  """
-  ID of the organization.
-  """
   organizationId: ID!
-  """
-  ID of the permission.
-  """
   permissionId: ID!
-  """
-  The organization associated with this relationship.
-  """
   organization: Organization
-  """
-  The permission associated with this relationship.
-  """
   permission: Permission
-  """
-  Timestamp when the organization-permission relationship was created.
-  """
   createdAt: String!
-  """
-  Timestamp when the organization-permission relationship was last updated.
-  """
   updatedAt: String!
 }

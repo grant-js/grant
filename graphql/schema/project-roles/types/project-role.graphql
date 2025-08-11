@@ -1,33 +1,9 @@
-"""
-Represents a project-role relationship in the system.
-"""
 type ProjectRole implements Auditable {
-  """
-  Unique identifier for the project-role relationship.
-  """
   id: ID!
-  """
-  ID of the project.
-  """
   projectId: ID!
-  """
-  ID of the role.
-  """
   roleId: ID!
-  """
-  The project associated with this relationship.
-  """
   project(organizationId: ID!): Project
-  """
-  The role associated with this relationship.
-  """
   role: Role
-  """
-  Timestamp when the project-role relationship was created.
-  """
   createdAt: String!
-  """
-  Timestamp when the project-role relationship was last updated.
-  """
   updatedAt: String!
 }

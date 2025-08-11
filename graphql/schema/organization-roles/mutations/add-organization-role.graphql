@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Adds an organization-role relationship.
-  """
   addOrganizationRole(
-    """
-    Input data for adding the organization-role relationship.
-    """
     input: AddOrganizationRoleInput!
   ): OrganizationRole!
 }

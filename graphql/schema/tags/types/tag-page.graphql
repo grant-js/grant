@@ -1,17 +1,5 @@
-"""
-Represents a paginated list of tags.
-"""
 type TagPage implements PaginatedResults {
-  """
-  List of tags in the current page.
-  """
   tags: [Tag!]!
-  """
-  Total number of tags across all pages.
-  """
   totalCount: Int!
-  """
-  Whether there are more tags available on the next page.
-  """
   hasNextPage: Boolean!
 }

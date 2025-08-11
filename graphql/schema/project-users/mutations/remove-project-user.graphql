@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Removes a project-user relationship.
-  """
   removeProjectUser(
-    """
-    Input data for removing the project-user relationship.
-    """
     input: RemoveProjectUserInput!
   ): ProjectUser!
 }

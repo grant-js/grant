@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Deletes a group by ID.
-  """
   deleteGroup(
-    """
-    ID of the group to delete.
-    """
     id: ID!
   ): Group!
 }

@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Adds a user-role relationship.
-  """
   addUserRole(
-    """
-    Input data for adding the user-role relationship.
-    """
     input: AddUserRoleInput!
   ): UserRole!
 }

@@ -1,33 +1,9 @@
-"""
-Represents a project-group relationship in the system.
-"""
 type ProjectGroup implements Auditable {
-  """
-  Unique identifier for the project-group relationship.
-  """
   id: ID!
-  """
-  ID of the project.
-  """
   projectId: ID!
-  """
-  ID of the group.
-  """
   groupId: ID!
-  """
-  The project associated with this relationship.
-  """
   project(organizationId: ID!): Project
-  """
-  The group associated with this relationship.
-  """
   group: Group
-  """
-  Timestamp when the project-group relationship was created.
-  """
   createdAt: String!
-  """
-  Timestamp when the project-group relationship was last updated.
-  """
   updatedAt: String!
 }

@@ -1,15 +1,6 @@
 extend type Mutation {
-  """
-  Updates an existing group.
-  """
   updateGroup(
-    """
-    ID of the group to update.
-    """
     id: ID!
-    """
-    Updated group data.
-    """
     input: UpdateGroupInput!
   ): Group!
 }

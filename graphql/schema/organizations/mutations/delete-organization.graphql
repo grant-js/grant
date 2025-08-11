@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Delete an organization.
-  """
   deleteOrganization(
-    """
-    ID of the organization to delete.
-    """
     id: ID!
   ): Organization!
 }

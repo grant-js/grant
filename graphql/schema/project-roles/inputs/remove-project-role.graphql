@@ -1,13 +1,4 @@
-"""
-Input type for removing a project-role relationship.
-"""
 input RemoveProjectRoleInput {
-  """
-  ID of the project.
-  """
   projectId: ID!
-  """
-  ID of the role.
-  """
   roleId: ID!
 }

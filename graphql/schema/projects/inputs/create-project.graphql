@@ -1,13 +1,4 @@
-"""
-Input for creating a new project.
-"""
 input CreateProjectInput {
-  """
-  Name of the project.
-  """
   name: String!
-  """
-  Description of the project.
-  """
   description: String
 }

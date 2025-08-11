@@ -1,33 +1,9 @@
-"""
-Represents a project-tag relationship in the system.
-"""
 type ProjectTag implements Auditable {
-  """
-  Unique identifier for the project-tag relationship.
-  """
   id: ID!
-  """
-  ID of the project.
-  """
   projectId: ID!
-  """
-  ID of the tag.
-  """
   tagId: ID!
-  """
-  The project associated with this relationship.
-  """
   project(organizationId: ID!): Project
-  """
-  The tag associated with this relationship.
-  """
   tag: Tag
-  """
-  Timestamp when the project-tag relationship was created.
-  """
   createdAt: String!
-  """
-  Timestamp when the project-tag relationship was last updated.
-  """
   updatedAt: String!
 }

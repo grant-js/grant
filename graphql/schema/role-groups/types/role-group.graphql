@@ -1,33 +1,9 @@
-"""
-Represents a role-group relationship in the system.
-"""
 type RoleGroup implements Auditable {
-  """
-  Unique identifier for the role-group relationship.
-  """
   id: ID!
-  """
-  ID of the group.
-  """
   groupId: ID!
-  """
-  ID of the role.
-  """
   roleId: ID!
-  """
-  The group associated with this relationship.
-  """
   group(scope: Scope!): Group
-  """
-  The role associated with this relationship.
-  """
   role(scope: Scope!): Role
-  """
-  Timestamp when the role-group relationship was created.
-  """
   createdAt: String!
-  """
-  Timestamp when the role-group relationship was last updated.
-  """
   updatedAt: String!
 }

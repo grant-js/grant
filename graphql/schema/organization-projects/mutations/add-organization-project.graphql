@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Adds an organization-project relationship.
-  """
   addOrganizationProject(
-    """
-    Input data for adding the organization-project relationship.
-    """
     input: AddOrganizationProjectInput!
   ): OrganizationProject!
 }

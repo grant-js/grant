@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Removes a user-tag relationship.
-  """
   removeUserTag(
-    """
-    Input data for removing the user-tag relationship.
-    """
     input: RemoveUserTagInput!
   ): UserTag!
 }

@@ -1,13 +1,4 @@
-"""
-Input type for removing a group-tag relationship.
-"""
 input RemoveGroupTagInput {
-  """
-  ID of the group.
-  """
   groupId: ID!
-  """
-  ID of the tag.
-  """
   tagId: ID!
 }

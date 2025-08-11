@@ -1,22 +1,11 @@
-"""
-Sort order for permissions.
-"""
 enum PermissionSortOrder {
   ASC
   DESC
 }
-
-"""
-Fields by which permissions can be sorted.
-"""
 enum PermissionSortableField {
   name
   action
 }
-
-"""
-Input for sorting permissions.
-"""
 input PermissionSortInput {
   field: PermissionSortableField!
   order: PermissionSortOrder!

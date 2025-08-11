@@ -1,21 +1,8 @@
-"""
-Sort order for projects.
-"""
 enum ProjectSortOrder {
   ASC
   DESC
 }
-
-"""
-Input for sorting projects.
-"""
 input ProjectSortInput {
-  """
-  Field to sort by.
-  """
   field: ProjectSortableField!
-  """
-  Sort order.
-  """
   order: ProjectSortOrder!
 }

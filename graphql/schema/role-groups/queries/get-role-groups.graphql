@@ -1,15 +1,6 @@
 extend type Query {
-  """
-  Retrieves role-group relationships for a specific role.
-  """
   roleGroups(
-    """
-    Scope of the role-group relationships.
-    """
     scope: Scope!
-    """
-    ID of the role to get groups for.
-    """
     roleId: ID!
   ): [RoleGroup!]!
 }

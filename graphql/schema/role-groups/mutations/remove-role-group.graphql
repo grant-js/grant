@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Removes a role-group relationship.
-  """
   removeRoleGroup(
-    """
-    Input data for removing the role-group relationship.
-    """
     input: RemoveRoleGroupInput!
   ): RoleGroup!
 }

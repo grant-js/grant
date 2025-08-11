@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Removes an organization-tag relationship.
-  """
   removeOrganizationTag(
-    """
-    Input data for removing the organization-tag relationship.
-    """
     input: RemoveOrganizationTagInput!
   ): OrganizationTag!
 }

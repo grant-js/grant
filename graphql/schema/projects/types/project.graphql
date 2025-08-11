@@ -1,49 +1,13 @@
-"""
-Represents a project in the system.
-"""
 type Project implements Auditable {
-  """
-  Unique identifier for the project.
-  """
   id: ID!
-  """
-  Name of the project.
-  """
   name: String!
-  """
-  URL-friendly slug for the project.
-  """
   slug: String!
-  """
-  Description of the project.
-  """
   description: String
-  """
-  Project roles.
-  """
   roles: [Role!]
-  """
-  Project groups.
-  """
   groups: [Group!]
-  """
-  Project permissions.
-  """
   permissions: [Permission!]
-  """
-  Project users.
-  """
   users: [User!]
-  """
-  Project tags.
-  """
   tags: [Tag!]
-  """
-  Timestamp when the project was created.
-  """
   createdAt: String!
-  """
-  Timestamp when the project was last updated.
-  """
   updatedAt: String!
 }

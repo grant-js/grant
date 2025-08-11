@@ -1,17 +1,5 @@
-"""
-Fields that can be used to sort projects.
-"""
 enum ProjectSortableField {
-  """
-  Sort by project name.
-  """
   name
-  """
-  Sort by creation date.
-  """
   createdAt
-  """
-  Sort by last update date.
-  """
   updatedAt
 }

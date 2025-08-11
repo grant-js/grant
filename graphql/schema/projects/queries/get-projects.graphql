@@ -1,32 +1,10 @@
 extend type Query {
-  """
-  Get a paginated list of projects within an organization.
-  """
   projects(
-    """
-    The organization ID to scope the projects to.
-    """
     organizationId: ID!
-    """
-    Page number (1-based).
-    """
     page: Int
-    """
-    Number of projects per page.
-    """
     limit: Int
-    """
-    Search term to filter projects.
-    """
     search: String
-    """
-    Sort configuration for projects.
-    """
     sort: ProjectSortInput
-    """
-    Optional array of project IDs to filter by.
-    If provided and not empty, pagination parameters (page, limit) will be ignored.
-    """
     ids: [ID!]
   ): ProjectPage!
 }

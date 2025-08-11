@@ -1,21 +1,8 @@
-"""
-Sort order for organizations.
-"""
 enum OrganizationSortOrder {
   ASC
   DESC
 }
-
-"""
-Input for sorting organizations.
-"""
 input OrganizationSortInput {
-  """
-  Field to sort by.
-  """
   field: OrganizationSortableField!
-  """
-  Sort order.
-  """
   order: OrganizationSortOrder!
 }

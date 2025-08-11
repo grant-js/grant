@@ -1,6 +1,3 @@
 extend type Mutation {
-  """
-  Delete a tag.
-  """
   deleteTag(id: ID!): Tag!
 }

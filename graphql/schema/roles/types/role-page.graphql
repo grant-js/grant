@@ -1,17 +1,5 @@
-"""
-Represents a paginated list of roles.
-"""
 type RolePage implements PaginatedResults {
-  """
-  List of roles for the current page.
-  """
   roles: [Role!]!
-  """
-  Total number of roles across all pages.
-  """
   totalCount: Int!
-  """
-  Whether there are more roles available on the next page.
-  """
   hasNextPage: Boolean!
 }

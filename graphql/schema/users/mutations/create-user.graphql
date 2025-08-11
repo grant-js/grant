@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Creates a new user.
-  """
   createUser(
-    """
-    User data for creation.
-    """
     input: CreateUserInput!
   ): User!
 }

@@ -1,15 +1,6 @@
 extend type Query {
-  """
-  Retrieves permission-tag relationships for a specific permission.
-  """
   permissionTags(
-    """
-    Scope of the permission-tag relationships.
-    """
     scope: Scope!
-    """
-    ID of the permission to get tags for.
-    """
     permissionId: ID!
   ): [PermissionTag!]!
 }

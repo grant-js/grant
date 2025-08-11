@@ -1,17 +1,5 @@
-"""
-Represents a paginated list of users.
-"""
 type UserPage implements PaginatedResults {
-  """
-  List of users for the current page.
-  """
   users: [User!]!
-  """
-  Total number of users across all pages.
-  """
   totalCount: Int!
-  """
-  Whether there are more users available on the next page.
-  """
   hasNextPage: Boolean!
 }

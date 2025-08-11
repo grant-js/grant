@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Adds a project-user relationship.
-  """
   addProjectUser(
-    """
-    Input data for adding the project-user relationship.
-    """
     input: AddProjectUserInput!
   ): ProjectUser!
 }

@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Creates a new permission.
-  """
   createPermission(
-    """
-    Permission data for creation.
-    """
     input: CreatePermissionInput!
   ): Permission!
 }

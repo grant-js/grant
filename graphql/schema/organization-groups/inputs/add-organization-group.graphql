@@ -1,13 +1,4 @@
-"""
-Input type for adding an organization-group relationship.
-"""
 input AddOrganizationGroupInput {
-  """
-  ID of the organization.
-  """
   organizationId: ID!
-  """
-  ID of the group.
-  """
   groupId: ID!
 }

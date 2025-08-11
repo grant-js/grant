@@ -1,25 +1,7 @@
-"""
-Represents a tag in the system.
-"""
 type Tag implements Auditable {
-  """
-  Unique identifier for the tag.
-  """
   id: ID!
-  """
-  Name of the tag.
-  """
   name: String!
-  """
-  Color identifier for the tag (e.g., 'purple', 'indigo', 'blue').
-  """
   color: String!
-  """
-  Timestamp when the tag was created.
-  """
   createdAt: String!
-  """
-  Timestamp when the tag was last updated.
-  """
   updatedAt: String!
 }

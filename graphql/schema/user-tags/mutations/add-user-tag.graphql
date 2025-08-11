@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Adds a user-tag relationship.
-  """
   addUserTag(
-    """
-    Input data for adding the user-tag relationship.
-    """
     input: AddUserTagInput!
   ): UserTag!
 }

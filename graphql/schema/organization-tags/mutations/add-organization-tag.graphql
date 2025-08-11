@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Adds an organization-tag relationship.
-  """
   addOrganizationTag(
-    """
-    Input data for adding the organization-tag relationship.
-    """
     input: AddOrganizationTagInput!
   ): OrganizationTag!
 }

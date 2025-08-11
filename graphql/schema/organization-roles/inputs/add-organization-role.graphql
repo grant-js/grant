@@ -1,13 +1,4 @@
-"""
-Input type for adding an organization-role relationship.
-"""
 input AddOrganizationRoleInput {
-  """
-  ID of the organization.
-  """
   organizationId: ID!
-  """
-  ID of the role.
-  """
   roleId: ID!
 }

@@ -1,33 +1,9 @@
-"""
-Represents a role in the system.
-"""
 type Role implements Auditable {
-  """
-  Unique identifier for the role.
-  """
   id: ID!
-  """
-  Name of the role.
-  """
   name: String!
-  """
-  Description of the role.
-  """
   description: String
-  """
-  List of groups associated with this role.
-  """
   groups(scope: Scope!): [Group!]
-  """
-  List of tags assigned to the role.
-  """
   tags(scope: Scope!): [Tag!]
-  """
-  Timestamp when the role was created.
-  """
   createdAt: String!
-  """
-  Timestamp when the role was last updated.
-  """
   updatedAt: String!
 }

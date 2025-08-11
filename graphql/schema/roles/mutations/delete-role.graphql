@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Deletes a role by ID.
-  """
   deleteRole(
-    """
-    ID of the role to delete.
-    """
     id: ID!
   ): Role!
 }

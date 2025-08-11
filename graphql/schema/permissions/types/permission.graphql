@@ -1,33 +1,9 @@
-"""
-Represents a permission in the system.
-"""
 type Permission implements Auditable {
-  """
-  Unique identifier for the permission.
-  """
   id: ID!
-  """
-  Name of the permission.
-  """
   name: String!
-  """
-  Description of the permission.
-  """
   description: String
-  """
-  Action associated with the permission.
-  """
   action: String!
-  """
-  Tags associated with the permission.
-  """
   tags(scope: Scope!): [Tag!]
-  """
-  Timestamp when the permission was created.
-  """
   createdAt: String!
-  """
-  Timestamp when the permission was last updated.
-  """
   updatedAt: String!
 }

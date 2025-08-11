@@ -1,33 +1,9 @@
-"""
-Represents an organization-tag relationship in the system.
-"""
 type OrganizationTag implements Auditable {
-  """
-  Unique identifier for the organization-tag relationship.
-  """
   id: ID!
-  """
-  ID of the organization.
-  """
   organizationId: ID!
-  """
-  ID of the tag.
-  """
   tagId: ID!
-  """
-  The organization associated with this relationship.
-  """
   organization: Organization
-  """
-  The tag associated with this relationship.
-  """
   tag: Tag
-  """
-  Timestamp when the organization-tag relationship was created.
-  """
   createdAt: String!
-  """
-  Timestamp when the organization-tag relationship was last updated.
-  """
   updatedAt: String!
 }

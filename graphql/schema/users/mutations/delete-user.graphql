@@ -1,11 +1,5 @@
 extend type Mutation {
-  """
-  Deletes a user.
-  """
   deleteUser(
-    """
-    ID of the user to delete.
-    """
     id: ID!
   ): User!
 }

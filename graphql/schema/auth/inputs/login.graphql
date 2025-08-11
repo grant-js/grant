@@ -1,13 +1,4 @@
-"""
-Input type for user authentication.
-"""
 input LoginInput {
-  """
-  Email address of the user.
-  """
   email: String!
-  """
-  Password of the user.
-  """
   password: String!
 }

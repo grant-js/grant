@@ -1,49 +1,14 @@
-"""
-Input for sorting tags.
-"""
 input TagSortInput {
-  """
-  Field to sort by.
-  """
   field: TagSortField!
-  """
-  Sort direction.
-  """
   direction: SortDirection!
 }
-
-"""
-Available fields for sorting tags.
-"""
 enum TagSortField {
-  """
-  Sort by name.
-  """
   NAME
-  """
-  Sort by color.
-  """
   COLOR
-  """
-  Sort by creation date.
-  """
   CREATED_AT
-  """
-  Sort by last update date.
-  """
   UPDATED_AT
 }
-
-"""
-Sort direction.
-"""
 enum SortDirection {
-  """
-  Ascending order.
-  """
   ASC
-  """
-  Descending order.
-  """
   DESC
 }

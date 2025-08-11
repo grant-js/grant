@@ -1,33 +1,9 @@
-"""
-Represents a group in the system.
-"""
 type Group implements Auditable {
-  """
-  Unique identifier for the group.
-  """
   id: ID!
-  """
-  Name of the group.
-  """
   name: String!
-  """
-  Description of the group.
-  """
   description: String
-  """
-  List of permissions associated with this group.
-  """
   permissions(scope: Scope!): [Permission!]
-  """
-  List of tags assigned to the group.
-  """
   tags(scope: Scope!): [Tag!]
-  """
-  Timestamp when the group was created.
-  """
   createdAt: String!
-  """
-  Timestamp when the group was last updated.
-  """
   updatedAt: String!
 }

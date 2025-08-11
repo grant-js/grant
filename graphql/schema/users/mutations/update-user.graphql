@@ -1,15 +1,6 @@
 extend type Mutation {
-  """
-  Updates an existing user.
-  """
   updateUser(
-    """
-    ID of the user to update.
-    """
     id: ID!
-    """
-    Updated user data.
-    """
     input: UpdateUserInput!
   ): User!
 }

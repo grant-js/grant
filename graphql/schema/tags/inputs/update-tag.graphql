@@ -1,13 +1,4 @@
-"""
-Input for updating an existing tag.
-"""
 input UpdateTagInput {
-  """
-  Name of the tag.
-  """
   name: String
-  """
-  Color identifier for the tag (e.g., 'purple', 'indigo', 'blue').
-  """
   color: String
 }
