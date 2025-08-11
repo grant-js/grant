@@ -1,69 +1,46 @@
-import { useMutation } from '@apollo/client';
+import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import { Permission } from '@/graphql/generated/types';
+import {
+  AddPermissionTagInput,
+  CreatePermissionInput,
+  Permission,
+  PermissionTag,
+  RemovePermissionTagInput,
+  UpdatePermissionInput,
+} from '@/graphql/generated/types';
 import { ADD_PERMISSION_TAG, REMOVE_PERMISSION_TAG } from '@/hooks/tags/mutations';
 
 import { evictPermissionsCache } from './cache';
 import { CREATE_PERMISSION, UPDATE_PERMISSION, DELETE_PERMISSION } from './mutations';
 
-interface CreatePermissionInput {
-  name: string;
-  description?: string;
-  action: string;
-}
-
-interface UpdatePermissionInput {
-  name?: string;
-  description?: string;
-  action?: string;
-}
-
-interface AddPermissionTagInput {
-  permissionId: string;
-  tagId: string;
-}
-
-interface RemovePermissionTagInput {
-  permissionId: string;
-  tagId: string;
-}
-
 export function usePermissionMutations() {
   const t = useTranslations('permissions');
+  const update = (cache: ApolloCache<any>) => {
+    evictPermissionsCache(cache);
+  };
 
   const [createPermission] = useMutation<{ createPermission: Permission }>(CREATE_PERMISSION, {
-    update(cache) {
-      evictPermissionsCache(cache);
-    },
+    update,
   });
 
   const [updatePermission] = useMutation<{ updatePermission: Permission }>(UPDATE_PERMISSION, {
-    update(cache) {
-      evictPermissionsCache(cache);
-    },
+    update,
   });
 
   const [deletePermission] = useMutation<{ deletePermission: boolean }>(DELETE_PERMISSION, {
-    update(cache) {
-      evictPermissionsCache(cache);
-      cache.gc();
-    },
+    update,
   });
 
-  const [addPermissionTag] = useMutation<{ addPermissionTag: any }>(ADD_PERMISSION_TAG, {
-    update(cache) {
-      evictPermissionsCache(cache);
-    },
+  const [addPermissionTag] = useMutation<{ addPermissionTag: PermissionTag }>(ADD_PERMISSION_TAG, {
+    update,
   });
 
-  const [removePermissionTag] = useMutation<{ removePermissionTag: boolean }>(
+  const [removePermissionTag] = useMutation<{ removePermissionTag: PermissionTag }>(
     REMOVE_PERMISSION_TAG,
     {
-      update(cache) {
-        evictPermissionsCache(cache);
-      },
+      update,
     }
   );
 
@@ -72,7 +49,6 @@ export function usePermissionMutations() {
       console.log('Creating permission with input:', input);
       const result = await createPermission({
         variables: { input },
-        refetchQueries: ['GetPermissions'],
       });
 
       console.log('Create permission result:', result);
@@ -80,12 +56,6 @@ export function usePermissionMutations() {
       return result.data?.createPermission;
     } catch (error) {
       console.error('Error creating permission:', error);
-      console.error('Error details:', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        graphQLErrors: (error as any)?.graphQLErrors,
-        networkError: (error as any)?.networkError,
-      });
       toast.error(t('notifications.createError'), {
         description: error instanceof Error ? error.message : 'An unknown error occurred',
       });

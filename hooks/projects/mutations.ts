@@ -36,6 +36,10 @@ export const ADD_PROJECT_ROLE = gql`
   mutation AddProjectRole($input: AddProjectRoleInput!) {
     addProjectRole(input: $input) {
       id
+      projectId
+      roleId
+      createdAt
+      updatedAt
     }
   }
 `;
@@ -50,6 +54,10 @@ export const ADD_PROJECT_TAG = gql`
   mutation AddProjectTag($input: AddProjectTagInput!) {
     addProjectTag(input: $input) {
       id
+      projectId
+      tagId
+      createdAt
+      updatedAt
     }
   }
 `;

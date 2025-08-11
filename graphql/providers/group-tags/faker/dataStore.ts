@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 
-import { Auditable, Scope, Tenant } from '@/graphql/generated/types';
+import { AddGroupTagInput, GroupTag, Scope, Tenant } from '@/graphql/generated/types';
 import { getGroups } from '@/graphql/providers/groups/faker/dataStore';
 import { getTags } from '@/graphql/providers/tags/faker/dataStore';
 import {
@@ -12,24 +12,12 @@ import {
 import { getOrganizationTagsByOrganizationId } from '../../organization-tags/faker/dataStore';
 import { getProjectTagsByProjectId } from '../../project-tags/faker/dataStore';
 
-// Type for GroupTag data without the resolved fields
-export interface GroupTagData extends Auditable {
-  groupId: string;
-  tagId: string;
-}
-
-// Input type for creating group-tag relationships
-export interface CreateGroupTagInput {
-  groupId: string;
-  tagId: string;
-}
-
 // Generate fake group-tag relationships
-const generateFakeGroupTags = (count: number = 50): GroupTagData[] => {
+const generateFakeGroupTags = (count: number = 50): GroupTag[] => {
   const groups = getGroups();
   const tags = getTags();
 
-  const groupTags: GroupTagData[] = [];
+  const groupTags: GroupTag[] = [];
 
   // Create some random group-tag relationships
   for (let i = 0; i < count; i++) {
@@ -55,7 +43,7 @@ const generateFakeGroupTags = (count: number = 50): GroupTagData[] => {
 };
 
 // GroupTag-specific configuration
-const groupTagConfig: EntityConfig<GroupTagData, CreateGroupTagInput, never> = {
+const groupTagConfig: EntityConfig<GroupTag, AddGroupTagInput, never> = {
   entityName: 'GroupTag',
   dataFileName: 'group-tags.json',
 
@@ -63,7 +51,7 @@ const groupTagConfig: EntityConfig<GroupTagData, CreateGroupTagInput, never> = {
   generateId: () => faker.string.uuid(),
 
   // Generate group-tag entity from input
-  generateEntity: (input: CreateGroupTagInput, id: string): GroupTagData => {
+  generateEntity: (input: AddGroupTagInput, id: string): GroupTag => {
     const auditTimestamps = generateAuditTimestamps();
     return {
       id,
@@ -109,22 +97,22 @@ export const getGroupTagIdsByScope = (scope: Scope): string[] => {
 };
 
 // Helper functions for group-tag operations
-export const getGroupTagsByGroupId = (scope: Scope, groupId: string): GroupTagData[] => {
+export const getGroupTagsByGroupId = (scope: Scope, groupId: string): GroupTag[] => {
   const groupTags = groupTagsDataStore.getEntities().filter((gt) => gt.groupId === groupId);
 
   const scopedTagIds = getGroupTagIdsByScope(scope);
   return groupTags.filter((gt) => scopedTagIds.includes(gt.tagId));
 };
 
-export const getGroupTagsByTagId = (tagId: string): GroupTagData[] => {
+export const getGroupTagsByTagId = (tagId: string): GroupTag[] => {
   return groupTagsDataStore.getEntities().filter((gt) => gt.tagId === tagId);
 };
 
-export const getGroupTags = (): GroupTagData[] => {
+export const getGroupTags = (): GroupTag[] => {
   return groupTagsDataStore.getEntities();
 };
 
-export const createGroupTag = (groupId: string, tagId: string): GroupTagData => {
+export const createGroupTag = (groupId: string, tagId: string): GroupTag => {
   // Check if relationship already exists
   const existing = groupTagsDataStore
     .getEntities()
@@ -138,14 +126,11 @@ export const createGroupTag = (groupId: string, tagId: string): GroupTagData => 
   return newGroupTag;
 };
 
-export const deleteGroupTag = (id: string): GroupTagData | null => {
+export const deleteGroupTag = (id: string): GroupTag | null => {
   return groupTagsDataStore.deleteEntity(id);
 };
 
-export const deleteGroupTagByGroupAndTag = (
-  groupId: string,
-  tagId: string
-): GroupTagData | null => {
+export const deleteGroupTagByGroupAndTag = (groupId: string, tagId: string): GroupTag | null => {
   const groupTag = groupTagsDataStore
     .getEntities()
     .find((gt) => gt.groupId === groupId && gt.tagId === tagId);
@@ -157,16 +142,16 @@ export const deleteGroupTagByGroupAndTag = (
   return groupTagsDataStore.deleteEntity(groupTag.id);
 };
 
-export const deleteGroupTagsByGroupId = (groupId: string): GroupTagData[] => {
+export const deleteGroupTagsByGroupId = (groupId: string): GroupTag[] => {
   const groupTags = groupTagsDataStore.getEntities().filter((gt) => gt.groupId === groupId);
   return groupTags
     .map((gt) => groupTagsDataStore.deleteEntity(gt.id))
-    .filter(Boolean) as GroupTagData[];
+    .filter(Boolean) as GroupTag[];
 };
 
-export const deleteGroupTagsByTagId = (tagId: string): GroupTagData[] => {
+export const deleteGroupTagsByTagId = (tagId: string): GroupTag[] => {
   const groupTags = getGroupTagsByTagId(tagId);
   return groupTags
     .map((gt) => groupTagsDataStore.deleteEntity(gt.id))
-    .filter(Boolean) as GroupTagData[];
+    .filter(Boolean) as GroupTag[];
 };

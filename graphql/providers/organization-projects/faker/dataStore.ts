@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 
-import { Auditable } from '@/graphql/generated/types';
+import { AddOrganizationProjectInput, OrganizationProject } from '@/graphql/generated/types';
 import { getOrganizations } from '@/graphql/providers/organizations/faker/dataStore';
 import { getProjects } from '@/graphql/providers/projects/faker/dataStore';
 import {
@@ -9,24 +9,12 @@ import {
   generateAuditTimestamps,
 } from '@/lib/providers/faker/genericDataStore';
 
-// Type for OrganizationProject data without the resolved fields
-export interface OrganizationProjectData extends Auditable {
-  organizationId: string;
-  projectId: string;
-}
-
-// Input type for creating organization-project relationships
-export interface CreateOrganizationProjectInput {
-  organizationId: string;
-  projectId: string;
-}
-
 // Generate fake organization-project relationships
-const generateFakeOrganizationProjects = (count: number = 100): OrganizationProjectData[] => {
+const generateFakeOrganizationProjects = (count: number = 100): OrganizationProject[] => {
   const organizations = getOrganizations();
   const projects = getProjects();
 
-  const organizationProjects: OrganizationProjectData[] = [];
+  const organizationProjects: OrganizationProject[] = [];
 
   // Create some random organization-project relationships
   for (let i = 0; i < count; i++) {
@@ -53,8 +41,8 @@ const generateFakeOrganizationProjects = (count: number = 100): OrganizationProj
 
 // OrganizationProject-specific configuration
 const organizationProjectConfig: EntityConfig<
-  OrganizationProjectData,
-  CreateOrganizationProjectInput,
+  OrganizationProject,
+  AddOrganizationProjectInput,
   never
 > = {
   entityName: 'OrganizationProject',
@@ -64,7 +52,7 @@ const organizationProjectConfig: EntityConfig<
   generateId: () => faker.string.uuid(),
 
   // Generate organization-project entity from input
-  generateEntity: (input: CreateOrganizationProjectInput, id: string): OrganizationProjectData => {
+  generateEntity: (input: AddOrganizationProjectInput, id: string): OrganizationProject => {
     const auditTimestamps = generateAuditTimestamps();
     return {
       id,
@@ -99,23 +87,21 @@ export const organizationProjectsDataStore = createFakerDataStore(organizationPr
 // Helper functions for organization-project operations
 export const getOrganizationProjectsByOrganizationId = (
   organizationId: string
-): OrganizationProjectData[] => {
+): OrganizationProject[] => {
   const organizationProjects = organizationProjectsDataStore
     .getEntities()
     .filter((op) => op.organizationId === organizationId);
   return organizationProjects;
 };
 
-export const getOrganizationProjectsByProjectId = (
-  projectId: string
-): OrganizationProjectData[] => {
+export const getOrganizationProjectsByProjectId = (projectId: string): OrganizationProject[] => {
   return organizationProjectsDataStore.getEntities().filter((op) => op.projectId === projectId);
 };
 
 export const addOrganizationProject = (
   organizationId: string,
   projectId: string
-): OrganizationProjectData => {
+): OrganizationProject => {
   // Check if relationship already exists
   const existingRelationship = organizationProjectsDataStore
     .getEntities()
@@ -128,14 +114,14 @@ export const addOrganizationProject = (
   return organizationProjectsDataStore.createEntity({ organizationId, projectId });
 };
 
-export const deleteOrganizationProject = (id: string): OrganizationProjectData | null => {
+export const deleteOrganizationProject = (id: string): OrganizationProject | null => {
   return organizationProjectsDataStore.deleteEntity(id);
 };
 
 export const deleteOrganizationProjectByOrganizationAndProject = (
   organizationId: string,
   projectId: string
-): OrganizationProjectData | null => {
+): OrganizationProject | null => {
   const organizationProject = organizationProjectsDataStore
     .getEntities()
     .find((op) => op.organizationId === organizationId && op.projectId === projectId);
@@ -149,7 +135,7 @@ export const deleteOrganizationProjectByOrganizationAndProject = (
 
 export const deleteOrganizationProjectsByOrganizationId = (
   organizationId: string
-): OrganizationProjectData[] => {
+): OrganizationProject[] => {
   const organizationProjects = organizationProjectsDataStore
     .getEntities()
     .filter((op) => op.organizationId === organizationId);
@@ -157,9 +143,7 @@ export const deleteOrganizationProjectsByOrganizationId = (
   return organizationProjects;
 };
 
-export const deleteOrganizationProjectsByProjectId = (
-  projectId: string
-): OrganizationProjectData[] => {
+export const deleteOrganizationProjectsByProjectId = (projectId: string): OrganizationProject[] => {
   const organizationProjects = organizationProjectsDataStore
     .getEntities()
     .filter((op) => op.projectId === projectId);

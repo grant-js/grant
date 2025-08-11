@@ -2,21 +2,11 @@ import {
   MutationAddOrganizationRoleArgs,
   MutationRemoveOrganizationRoleArgs,
   OrganizationRole,
+  QueryOrganizationRolesArgs,
 } from '@/graphql/generated/types';
 
-export type GetOrganizationRolesParams = { organizationId: string };
-export type GetOrganizationRolesResult = OrganizationRole[];
-
-export type AddOrganizationRoleParams = MutationAddOrganizationRoleArgs;
-export type AddOrganizationRoleResult = OrganizationRole;
-
-export type RemoveOrganizationRoleParams = MutationRemoveOrganizationRoleArgs;
-export type RemoveOrganizationRoleResult = boolean;
-
 export interface OrganizationRoleDataProvider {
-  getOrganizationRoles(params: GetOrganizationRolesParams): Promise<GetOrganizationRolesResult>;
-  addOrganizationRole(params: AddOrganizationRoleParams): Promise<AddOrganizationRoleResult>;
-  removeOrganizationRole(
-    params: RemoveOrganizationRoleParams
-  ): Promise<RemoveOrganizationRoleResult>;
+  getOrganizationRoles(params: QueryOrganizationRolesArgs): Promise<OrganizationRole[]>;
+  addOrganizationRole(params: MutationAddOrganizationRoleArgs): Promise<OrganizationRole>;
+  removeOrganizationRole(params: MutationRemoveOrganizationRoleArgs): Promise<boolean>;
 }

@@ -17,11 +17,11 @@ type RoleTag implements Auditable {
   """
   The role associated with this relationship.
   """
-  role: Role
+  role(scope: Scope!): Role
   """
   The tag associated with this relationship.
   """
-  tag: Tag
+  tag(scope: Scope!): Tag
   """
   Timestamp when the role-tag relationship was created.
   """

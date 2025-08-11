@@ -1,15 +1,15 @@
 import { ApolloServerErrorCode } from '@apollo/server/errors';
 
 import { ApiError } from '@/graphql/errors';
+import { MutationDeleteGroupArgs } from '@/graphql/generated/types';
 import { deleteGroup as deleteGroupFromStore } from '@/graphql/providers/groups/faker/dataStore';
-import { DeleteGroupParams, DeleteGroupResult } from '@/graphql/providers/groups/types';
 
-export async function deleteGroup({ id }: DeleteGroupParams): Promise<DeleteGroupResult> {
+export async function deleteGroup({ id }: MutationDeleteGroupArgs): Promise<boolean> {
   const deletedGroup = deleteGroupFromStore(id);
 
   if (!deletedGroup) {
     throw new ApiError('Group not found', ApolloServerErrorCode.PERSISTED_QUERY_NOT_FOUND);
   }
 
-  return true;
+  return deletedGroup !== null;
 }

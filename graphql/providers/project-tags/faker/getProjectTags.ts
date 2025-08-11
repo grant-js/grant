@@ -1,8 +1,6 @@
+import { ProjectTag, QueryProjectTagsArgs } from '@/graphql/generated/types';
 import { getProjectTagsByProjectId } from '@/graphql/providers/project-tags/faker/dataStore';
-import { GetProjectTagsParams, GetProjectTagsResult } from '@/graphql/providers/project-tags/types';
 
-export async function getProjectTags({
-  projectId,
-}: GetProjectTagsParams): Promise<GetProjectTagsResult> {
+export async function getProjectTags({ projectId }: QueryProjectTagsArgs): Promise<ProjectTag[]> {
   return getProjectTagsByProjectId(projectId);
 }

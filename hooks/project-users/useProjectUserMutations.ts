@@ -1,41 +1,35 @@
-import { useMutation } from '@apollo/client';
+import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import { ProjectUser } from '@/graphql/generated/types';
+import {
+  AddProjectUserInput,
+  ProjectUser,
+  RemoveProjectUserInput,
+} from '@/graphql/generated/types';
 
+import { evictProjectUsersCache } from './cache';
 import { ADD_PROJECT_USER, REMOVE_PROJECT_USER } from './mutations';
-
-interface AddProjectUserInput {
-  projectId: string;
-  userId: string;
-}
-
-interface RemoveProjectUserInput {
-  projectId: string;
-  userId: string;
-}
 
 export function useProjectUserMutations() {
   const t = useTranslations('projectUsers');
 
+  const update = (cache: ApolloCache<any>) => {
+    evictProjectUsersCache(cache);
+  };
+
   const [addProjectUser] = useMutation<{ addProjectUser: ProjectUser }>(ADD_PROJECT_USER, {
-    update(cache) {
-      // Only evict project users cache, not the entire users cache
-      cache.evict({ fieldName: 'projectUsers' });
-      cache.gc();
-    },
+    update,
   });
 
   const [removeProjectUser] = useMutation<{ removeProjectUser: ProjectUser }>(REMOVE_PROJECT_USER, {
-    // Remove cache eviction since it's handled manually in DeleteUserDialog
+    update,
   });
 
   const handleAddProjectUser = async (input: AddProjectUserInput) => {
     try {
       const result = await addProjectUser({
         variables: { input },
-        // Remove refetchQueries since cache eviction is handled manually
       });
 
       toast.success(t('notifications.addSuccess'));
@@ -53,7 +47,6 @@ export function useProjectUserMutations() {
     try {
       const result = await removeProjectUser({
         variables: { input },
-        // Remove refetchQueries since cache eviction is handled manually in DeleteUserDialog
       });
 
       toast.success(t('notifications.removeSuccess'));

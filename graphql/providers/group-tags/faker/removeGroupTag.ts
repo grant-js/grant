@@ -1,10 +1,7 @@
-import { RemoveGroupTagParams, RemoveGroupTagResult } from '@/graphql/providers/group-tags/types';
+import { MutationRemoveGroupTagArgs } from '@/graphql/generated/types';
+import { deleteGroupTagByGroupAndTag } from '@/graphql/providers/group-tags/faker/dataStore';
 
-import { deleteGroupTagByGroupAndTag } from './dataStore';
-
-export const removeGroupTag = async (
-  params: RemoveGroupTagParams
-): Promise<RemoveGroupTagResult> => {
+export const removeGroupTag = async (params: MutationRemoveGroupTagArgs): Promise<boolean> => {
   const { input } = params;
   const deletedGroupTag = deleteGroupTagByGroupAndTag(input.groupId, input.tagId);
 
@@ -14,5 +11,5 @@ export const removeGroupTag = async (
     );
   }
 
-  return deletedGroupTag;
+  return deletedGroupTag !== null;
 };

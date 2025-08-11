@@ -2,25 +2,13 @@ import {
   MutationAddOrganizationProjectArgs,
   MutationRemoveOrganizationProjectArgs,
   OrganizationProject,
+  QueryOrganizationProjectsArgs,
 } from '@/graphql/generated/types';
 
-export type GetOrganizationProjectsParams = { organizationId: string };
-export type GetOrganizationProjectsResult = OrganizationProject[];
-
-export type AddOrganizationProjectParams = MutationAddOrganizationProjectArgs;
-export type AddOrganizationProjectResult = OrganizationProject;
-
-export type RemoveOrganizationProjectParams = MutationRemoveOrganizationProjectArgs;
-export type RemoveOrganizationProjectResult = OrganizationProject;
-
 export interface OrganizationProjectDataProvider {
-  getOrganizationProjects(
-    params: GetOrganizationProjectsParams
-  ): Promise<GetOrganizationProjectsResult>;
-  addOrganizationProject(
-    params: AddOrganizationProjectParams
-  ): Promise<AddOrganizationProjectResult>;
+  getOrganizationProjects(params: QueryOrganizationProjectsArgs): Promise<OrganizationProject[]>;
+  addOrganizationProject(params: MutationAddOrganizationProjectArgs): Promise<OrganizationProject>;
   removeOrganizationProject(
-    params: RemoveOrganizationProjectParams
-  ): Promise<RemoveOrganizationProjectResult>;
+    params: MutationRemoveOrganizationProjectArgs
+  ): Promise<OrganizationProject>;
 }

@@ -10,6 +10,8 @@ export * from './organizations';
 export * from './organization-projects';
 export * from './organization-users';
 export * from './project-users';
+export * from './organization-groups';
+export * from './project-groups';
 
 // Export common utility hooks
 export * from './common';

@@ -1,34 +1,20 @@
 import { faker } from '@faker-js/faker';
 
+import { AddProjectRoleInput, ProjectRole } from '@/graphql/generated/types';
 import {
   createFakerDataStore,
   EntityConfig,
   generateAuditTimestamps,
 } from '@/lib/providers/faker/genericDataStore';
 
-// Type for ProjectRole data without the resolved fields
-export interface ProjectRoleData {
-  id: string;
-  projectId: string;
-  roleId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Input type for creating project-role relationships
-export interface CreateProjectRoleInput {
-  projectId: string;
-  roleId: string;
-}
-
 // Generate empty initial data for project-role relationships
-const generateInitialProjectRoles = (): ProjectRoleData[] => {
+const generateInitialProjectRoles = (): ProjectRole[] => {
   // Return empty array - project-role relationships should be created through application logic
   return [];
 };
 
 // ProjectRole-specific configuration
-const projectRoleConfig: EntityConfig<ProjectRoleData, CreateProjectRoleInput, never> = {
+const projectRoleConfig: EntityConfig<ProjectRole, AddProjectRoleInput, never> = {
   entityName: 'ProjectRole',
   dataFileName: 'project-roles.json',
 
@@ -36,7 +22,7 @@ const projectRoleConfig: EntityConfig<ProjectRoleData, CreateProjectRoleInput, n
   generateId: () => faker.string.uuid(),
 
   // Generate project-role entity from input
-  generateEntity: (input: CreateProjectRoleInput, id: string): ProjectRoleData => {
+  generateEntity: (input: AddProjectRoleInput, id: string): ProjectRole => {
     const auditTimestamps = generateAuditTimestamps();
     return {
       id,
@@ -69,18 +55,18 @@ const projectRoleConfig: EntityConfig<ProjectRoleData, CreateProjectRoleInput, n
 export const projectRolesDataStore = createFakerDataStore(projectRoleConfig);
 
 // Helper functions for project-role operations
-export const getProjectRolesByProjectId = (projectId: string): ProjectRoleData[] => {
+export const getProjectRolesByProjectId = (projectId: string): ProjectRole[] => {
   const projectRoles = projectRolesDataStore
     .getEntities()
     .filter((pr) => pr.projectId === projectId);
   return projectRoles;
 };
 
-export const getProjectRolesByRoleId = (roleId: string): ProjectRoleData[] => {
+export const getProjectRolesByRoleId = (roleId: string): ProjectRole[] => {
   return projectRolesDataStore.getEntities().filter((pr) => pr.roleId === roleId);
 };
 
-export const addProjectRole = (projectId: string, roleId: string): ProjectRoleData => {
+export const addProjectRole = (projectId: string, roleId: string): ProjectRole => {
   // Check if relationship already exists
   const existingRelationship = projectRolesDataStore
     .getEntities()
@@ -93,14 +79,14 @@ export const addProjectRole = (projectId: string, roleId: string): ProjectRoleDa
   return projectRolesDataStore.createEntity({ projectId, roleId });
 };
 
-export const deleteProjectRole = (id: string): ProjectRoleData | null => {
+export const deleteProjectRole = (id: string): ProjectRole | null => {
   return projectRolesDataStore.deleteEntity(id);
 };
 
 export const deleteProjectRoleByProjectAndRole = (
   projectId: string,
   roleId: string
-): ProjectRoleData | null => {
+): ProjectRole | null => {
   const projectRole = projectRolesDataStore
     .getEntities()
     .find((pr) => pr.projectId === projectId && pr.roleId === roleId);
@@ -112,7 +98,7 @@ export const deleteProjectRoleByProjectAndRole = (
   return projectRolesDataStore.deleteEntity(projectRole.id);
 };
 
-export const deleteProjectRolesByProjectId = (projectId: string): ProjectRoleData[] => {
+export const deleteProjectRolesByProjectId = (projectId: string): ProjectRole[] => {
   const projectRoles = projectRolesDataStore
     .getEntities()
     .filter((pr) => pr.projectId === projectId);
@@ -120,7 +106,7 @@ export const deleteProjectRolesByProjectId = (projectId: string): ProjectRoleDat
   return projectRoles;
 };
 
-export const deleteProjectRolesByRoleId = (roleId: string): ProjectRoleData[] => {
+export const deleteProjectRolesByRoleId = (roleId: string): ProjectRole[] => {
   const projectRoles = projectRolesDataStore.getEntities().filter((pr) => pr.roleId === roleId);
   projectRoles.forEach((pr) => projectRolesDataStore.deleteEntity(pr.id));
   return projectRoles;

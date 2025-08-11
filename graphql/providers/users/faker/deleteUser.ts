@@ -1,11 +1,10 @@
 import { ApolloServerErrorCode } from '@apollo/server/errors';
 
 import { ApiError } from '@/graphql/errors';
-import { User } from '@/graphql/generated/types';
+import { MutationDeleteUserArgs, User } from '@/graphql/generated/types';
 import { deleteUser as deleteUserFromStore } from '@/graphql/providers/users/faker/dataStore';
-import { DeleteUserParams, DeleteUserResult } from '@/graphql/providers/users/types';
 
-export async function deleteUser({ id }: DeleteUserParams): Promise<DeleteUserResult> {
+export async function deleteUser({ id }: MutationDeleteUserArgs): Promise<User> {
   const deletedUser = deleteUserFromStore(id);
 
   if (!deletedUser) {

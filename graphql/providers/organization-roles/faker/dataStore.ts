@@ -1,38 +1,20 @@
 import { faker } from '@faker-js/faker';
 
+import { AddOrganizationRoleInput, OrganizationRole } from '@/graphql/generated/types';
 import {
   createFakerDataStore,
   EntityConfig,
   generateAuditTimestamps,
 } from '@/lib/providers/faker/genericDataStore';
 
-// Type for OrganizationRole data without the resolved fields
-export interface OrganizationRoleData {
-  id: string;
-  organizationId: string;
-  roleId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Input type for creating organization-role relationships
-export interface CreateOrganizationRoleInput {
-  organizationId: string;
-  roleId: string;
-}
-
 // Generate empty initial data for organization-role relationships
-const generateInitialOrganizationRoles = (): OrganizationRoleData[] => {
+const generateInitialOrganizationRoles = (): OrganizationRole[] => {
   // Return empty array - organization-role relationships should be created through application logic
   return [];
 };
 
 // OrganizationRole-specific configuration
-const organizationRoleConfig: EntityConfig<
-  OrganizationRoleData,
-  CreateOrganizationRoleInput,
-  never
-> = {
+const organizationRoleConfig: EntityConfig<OrganizationRole, AddOrganizationRoleInput, never> = {
   entityName: 'OrganizationRole',
   dataFileName: 'organization-roles.json',
 
@@ -40,7 +22,7 @@ const organizationRoleConfig: EntityConfig<
   generateId: () => faker.string.uuid(),
 
   // Generate organization-role entity from input
-  generateEntity: (input: CreateOrganizationRoleInput, id: string): OrganizationRoleData => {
+  generateEntity: (input: AddOrganizationRoleInput, id: string): OrganizationRole => {
     const auditTimestamps = generateAuditTimestamps();
     return {
       id,
@@ -75,21 +57,18 @@ export const organizationRolesDataStore = createFakerDataStore(organizationRoleC
 // Helper functions for organization-role operations
 export const getOrganizationRolesByOrganizationId = (
   organizationId: string
-): OrganizationRoleData[] => {
+): OrganizationRole[] => {
   const organizationRoles = organizationRolesDataStore
     .getEntities()
     .filter((or) => or.organizationId === organizationId);
   return organizationRoles;
 };
 
-export const getOrganizationRolesByRoleId = (roleId: string): OrganizationRoleData[] => {
+export const getOrganizationRolesByRoleId = (roleId: string): OrganizationRole[] => {
   return organizationRolesDataStore.getEntities().filter((or) => or.roleId === roleId);
 };
 
-export const addOrganizationRole = (
-  organizationId: string,
-  roleId: string
-): OrganizationRoleData => {
+export const addOrganizationRole = (organizationId: string, roleId: string): OrganizationRole => {
   // Check if relationship already exists
   const existingRelationship = organizationRolesDataStore
     .getEntities()
@@ -102,14 +81,14 @@ export const addOrganizationRole = (
   return organizationRolesDataStore.createEntity({ organizationId, roleId });
 };
 
-export const deleteOrganizationRole = (id: string): OrganizationRoleData | null => {
+export const deleteOrganizationRole = (id: string): OrganizationRole | null => {
   return organizationRolesDataStore.deleteEntity(id);
 };
 
 export const deleteOrganizationRoleByOrganizationAndRole = (
   organizationId: string,
   roleId: string
-): OrganizationRoleData | null => {
+): OrganizationRole | null => {
   const organizationRole = organizationRolesDataStore
     .getEntities()
     .find((or) => or.organizationId === organizationId && or.roleId === roleId);
@@ -123,7 +102,7 @@ export const deleteOrganizationRoleByOrganizationAndRole = (
 
 export const deleteOrganizationRolesByOrganizationId = (
   organizationId: string
-): OrganizationRoleData[] => {
+): OrganizationRole[] => {
   const organizationRoles = organizationRolesDataStore
     .getEntities()
     .filter((or) => or.organizationId === organizationId);
@@ -131,7 +110,7 @@ export const deleteOrganizationRolesByOrganizationId = (
   return organizationRoles;
 };
 
-export const deleteOrganizationRolesByRoleId = (roleId: string): OrganizationRoleData[] => {
+export const deleteOrganizationRolesByRoleId = (roleId: string): OrganizationRole[] => {
   const organizationRoles = organizationRolesDataStore
     .getEntities()
     .filter((or) => or.roleId === roleId);

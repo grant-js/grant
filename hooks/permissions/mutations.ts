@@ -7,11 +7,6 @@ export const CREATE_PERMISSION = gql`
       name
       action
       description
-      tags {
-        id
-        name
-        color
-      }
       createdAt
       updatedAt
     }
@@ -25,11 +20,6 @@ export const UPDATE_PERMISSION = gql`
       name
       action
       description
-      tags {
-        id
-        name
-        color
-      }
       createdAt
       updatedAt
     }

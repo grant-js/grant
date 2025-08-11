@@ -1,11 +1,8 @@
+import { ProjectGroup, QueryProjectGroupsArgs } from '@/graphql/generated/types';
 import { getProjectGroupsByProjectId } from '@/graphql/providers/project-groups/faker/dataStore';
-import {
-  GetProjectGroupsParams,
-  GetProjectGroupsResult,
-} from '@/graphql/providers/project-groups/types';
 
 export async function getProjectGroups({
   projectId,
-}: GetProjectGroupsParams): Promise<GetProjectGroupsResult> {
+}: QueryProjectGroupsArgs): Promise<ProjectGroup[]> {
   return getProjectGroupsByProjectId(projectId);
 }

@@ -1,4 +1,4 @@
-import { useMutation } from '@apollo/client';
+import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
@@ -14,21 +14,21 @@ import { ADD_ORGANIZATION_PROJECT, REMOVE_ORGANIZATION_PROJECT } from './mutatio
 export function useOrganizationProjectMutations() {
   const t = useTranslations('organizationProjects');
 
+  const update = (cache: ApolloCache<any>) => {
+    evictOrganizationProjectsCache(cache);
+  };
+
   const [addOrganizationProject] = useMutation<{ addOrganizationProject: OrganizationProject }>(
     ADD_ORGANIZATION_PROJECT,
     {
-      update(cache) {
-        evictOrganizationProjectsCache(cache);
-      },
+      update,
     }
   );
 
   const [removeOrganizationProject] = useMutation<{
     removeOrganizationProject: OrganizationProject;
   }>(REMOVE_ORGANIZATION_PROJECT, {
-    update(cache) {
-      evictOrganizationProjectsCache(cache);
-    },
+    update,
   });
 
   const handleAddOrganizationProject = async (input: AddOrganizationProjectInput) => {

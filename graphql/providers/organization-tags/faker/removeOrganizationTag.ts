@@ -1,15 +1,17 @@
+import { MutationRemoveOrganizationTagArgs } from '@/graphql/generated/types';
 import { deleteOrganizationTagByOrganizationAndTag } from '@/graphql/providers/organization-tags/faker/dataStore';
-import {
-  RemoveOrganizationTagParams,
-  RemoveOrganizationTagResult,
-} from '@/graphql/providers/organization-tags/types';
 
 export async function removeOrganizationTag({
   input,
-}: RemoveOrganizationTagParams): Promise<RemoveOrganizationTagResult> {
+}: MutationRemoveOrganizationTagArgs): Promise<boolean> {
   const deletedOrganizationTag = deleteOrganizationTagByOrganizationAndTag(
     input.organizationId,
     input.tagId
   );
+  if (!deletedOrganizationTag) {
+    throw new Error(
+      `OrganizationTag relationship not found for organization ${input.organizationId} and tag ${input.tagId}`
+    );
+  }
   return deletedOrganizationTag !== null;
 }

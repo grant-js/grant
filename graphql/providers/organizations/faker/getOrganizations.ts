@@ -1,8 +1,5 @@
+import { OrganizationPage, QueryOrganizationsArgs } from '@/graphql/generated/types';
 import { getOrganizations as getOrganizationsFromStore } from '@/graphql/providers/organizations/faker/dataStore';
-import {
-  GetOrganizationsParams,
-  GetOrganizationsResult,
-} from '@/graphql/providers/organizations/types';
 
 const SEARCHABLE_FIELDS = ['name', 'slug'] as const;
 
@@ -12,7 +9,7 @@ export async function getOrganizations({
   search,
   sort,
   ids,
-}: GetOrganizationsParams): Promise<GetOrganizationsResult> {
+}: QueryOrganizationsArgs): Promise<OrganizationPage> {
   // If ids are provided and not empty, ignore pagination and return filtered results
   if (ids && ids.length > 0) {
     const filteredOrganizations = getOrganizationsFromStore(sort || undefined, ids);

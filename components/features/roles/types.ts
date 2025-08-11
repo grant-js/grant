@@ -33,12 +33,3 @@ export interface EditRoleDialogProps {
   onOpenChange: (open: boolean) => void;
   currentPage: number;
 }
-
-// Query result types
-export interface RolesQueryResult {
-  roles: {
-    roles: Role[];
-    totalCount: number;
-    hasNextPage: boolean;
-  };
-}

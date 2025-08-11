@@ -4,6 +4,7 @@ import { useQuery, ApolloError } from '@apollo/client';
 
 import {
   Project,
+  ProjectPage,
   ProjectSortableField,
   ProjectSortOrder,
   QueryProjectsArgs,
@@ -23,7 +24,7 @@ export function useProjects(options: QueryProjectsArgs): UseProjectsResult {
   const {
     organizationId,
     page = 1,
-    limit = 50, // Default to 50 for pagination
+    limit = 50,
     search = '',
     sort = { field: ProjectSortableField.Name, order: ProjectSortOrder.Asc },
     ids,
@@ -42,9 +43,8 @@ export function useProjects(options: QueryProjectsArgs): UseProjectsResult {
     [organizationId, page, limit, search, sort, ids]
   );
 
-  const { data, loading, error, refetch } = useQuery(GET_PROJECTS, {
+  const { data, loading, error, refetch } = useQuery<{ projects: ProjectPage }>(GET_PROJECTS, {
     variables,
-    notifyOnNetworkStatusChange: false, // Prevent re-renders on network status changes
   });
 
   return {

@@ -17,21 +17,9 @@ export type ProjectData = {
   updatedAt: string;
 };
 
-export type GetProjectsParams = QueryProjectsArgs;
-export type GetProjectsResult = ProjectPage;
-
-export type CreateProjectParams = MutationCreateProjectArgs;
-export type CreateProjectResult = Project;
-
-export type UpdateProjectParams = MutationUpdateProjectArgs;
-export type UpdateProjectResult = Project;
-
-export type DeleteProjectParams = MutationDeleteProjectArgs;
-export type DeleteProjectResult = boolean;
-
 export interface ProjectDataProvider {
-  getProjects(params: GetProjectsParams): Promise<GetProjectsResult>;
-  createProject(params: CreateProjectParams): Promise<CreateProjectResult>;
-  updateProject(params: UpdateProjectParams): Promise<UpdateProjectResult>;
-  deleteProject(params: DeleteProjectParams): Promise<DeleteProjectResult>;
+  getProjects(params: QueryProjectsArgs): Promise<ProjectPage>;
+  createProject(params: MutationCreateProjectArgs): Promise<Project>;
+  updateProject(params: MutationUpdateProjectArgs): Promise<Project>;
+  deleteProject(params: MutationDeleteProjectArgs): Promise<boolean>;
 }

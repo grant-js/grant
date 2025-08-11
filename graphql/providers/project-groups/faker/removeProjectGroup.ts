@@ -1,10 +1,12 @@
+import { MutationRemoveProjectGroupArgs } from '@/graphql/generated/types';
 import { deleteProjectGroupByProjectAndGroup } from '@/graphql/providers/project-groups/faker/dataStore';
-
-import { RemoveProjectGroupParams, RemoveProjectGroupResult } from '../types';
 
 export async function removeProjectGroup({
   input,
-}: RemoveProjectGroupParams): Promise<RemoveProjectGroupResult> {
+}: MutationRemoveProjectGroupArgs): Promise<boolean> {
   const deletedProjectGroup = deleteProjectGroupByProjectAndGroup(input.projectId, input.groupId);
+  if (!deletedProjectGroup) {
+    throw new Error('Project group not found');
+  }
   return deletedProjectGroup !== null;
 }

@@ -2,19 +2,13 @@ import { useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import { OrganizationUser } from '@/graphql/generated/types';
+import {
+  AddOrganizationUserInput,
+  OrganizationUser,
+  RemoveOrganizationUserInput,
+} from '@/graphql/generated/types';
 
 import { ADD_ORGANIZATION_USER, REMOVE_ORGANIZATION_USER } from './mutations';
-
-interface AddOrganizationUserInput {
-  organizationId: string;
-  userId: string;
-}
-
-interface RemoveOrganizationUserInput {
-  organizationId: string;
-  userId: string;
-}
 
 export function useOrganizationUserMutations() {
   const t = useTranslations('organizationUsers');

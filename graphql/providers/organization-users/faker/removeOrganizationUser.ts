@@ -1,10 +1,9 @@
+import { MutationRemoveOrganizationUserArgs } from '@/graphql/generated/types';
 import { deleteOrganizationUserByOrganizationAndUser } from '@/graphql/providers/organization-users/faker/dataStore';
-
-import { RemoveOrganizationUserParams, RemoveOrganizationUserResult } from '../types';
 
 export async function removeOrganizationUser({
   input,
-}: RemoveOrganizationUserParams): Promise<RemoveOrganizationUserResult> {
+}: MutationRemoveOrganizationUserArgs): Promise<boolean> {
   const deletedOrganizationUser = deleteOrganizationUserByOrganizationAndUser(
     input.organizationId,
     input.userId

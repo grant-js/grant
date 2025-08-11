@@ -1,11 +1,8 @@
+import { ProjectPermission, QueryProjectPermissionsArgs } from '@/graphql/generated/types';
 import { getProjectPermissionsByProjectId } from '@/graphql/providers/project-permissions/faker/dataStore';
-import {
-  GetProjectPermissionsParams,
-  GetProjectPermissionsResult,
-} from '@/graphql/providers/project-permissions/types';
 
 export async function getProjectPermissions({
   projectId,
-}: GetProjectPermissionsParams): Promise<GetProjectPermissionsResult> {
+}: QueryProjectPermissionsArgs): Promise<ProjectPermission[]> {
   return getProjectPermissionsByProjectId(projectId);
 }

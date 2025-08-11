@@ -9,24 +9,9 @@ import {
   PermissionPage,
 } from '@/graphql/generated/types';
 
-// Type for permission data without the resolved fields (none for permissions)
-export type PermissionData = Permission;
-
-export type GetPermissionsParams = QueryPermissionsArgs;
-export type GetPermissionsResult = PermissionPage;
-
-export type CreatePermissionParams = MutationCreatePermissionArgs;
-export type CreatePermissionResult = Permission;
-
-export type UpdatePermissionParams = MutationUpdatePermissionArgs;
-export type UpdatePermissionResult = Permission;
-
-export type DeletePermissionParams = MutationDeletePermissionArgs;
-export type DeletePermissionResult = boolean;
-
 export interface PermissionDataProvider {
-  getPermissions(params: GetPermissionsParams): Promise<GetPermissionsResult>;
-  createPermission(params: CreatePermissionParams): Promise<CreatePermissionResult>;
-  updatePermission(params: UpdatePermissionParams): Promise<UpdatePermissionResult>;
-  deletePermission(params: DeletePermissionParams): Promise<DeletePermissionResult>;
+  getPermissions(params: QueryPermissionsArgs): Promise<PermissionPage>;
+  createPermission(params: MutationCreatePermissionArgs): Promise<Permission>;
+  updatePermission(params: MutationUpdatePermissionArgs): Promise<Permission>;
+  deletePermission(params: MutationDeletePermissionArgs): Promise<boolean>;
 }

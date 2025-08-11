@@ -9,24 +9,9 @@ import {
   GroupPage,
 } from '@/graphql/generated/types';
 
-// Type for group data without the resolved fields (permissions)
-export type GroupData = Omit<Group, 'permissions'>;
-
-export type GetGroupsParams = QueryGroupsArgs;
-export type GetGroupsResult = GroupPage;
-
-export type CreateGroupParams = MutationCreateGroupArgs;
-export type CreateGroupResult = Group;
-
-export type UpdateGroupParams = MutationUpdateGroupArgs;
-export type UpdateGroupResult = Group;
-
-export type DeleteGroupParams = MutationDeleteGroupArgs;
-export type DeleteGroupResult = boolean;
-
 export interface GroupDataProvider {
-  getGroups(params: GetGroupsParams): Promise<GetGroupsResult>;
-  createGroup(params: CreateGroupParams): Promise<CreateGroupResult>;
-  updateGroup(params: UpdateGroupParams): Promise<UpdateGroupResult>;
-  deleteGroup(params: DeleteGroupParams): Promise<DeleteGroupResult>;
+  getGroups(params: QueryGroupsArgs): Promise<GroupPage>;
+  createGroup(params: MutationCreateGroupArgs): Promise<Group>;
+  updateGroup(params: MutationUpdateGroupArgs): Promise<Group>;
+  deleteGroup(params: MutationDeleteGroupArgs): Promise<boolean>;
 }

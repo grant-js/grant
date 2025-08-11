@@ -1,12 +1,9 @@
+import { MutationAddOrganizationTagArgs, OrganizationTag } from '@/graphql/generated/types';
 import { addOrganizationTag as addOrganizationTagToStore } from '@/graphql/providers/organization-tags/faker/dataStore';
-import {
-  AddOrganizationTagParams,
-  AddOrganizationTagResult,
-} from '@/graphql/providers/organization-tags/types';
 
 export async function addOrganizationTag({
   input,
-}: AddOrganizationTagParams): Promise<AddOrganizationTagResult> {
+}: MutationAddOrganizationTagArgs): Promise<OrganizationTag> {
   const organizationTag = addOrganizationTagToStore(input.organizationId, input.tagId);
-  return organizationTag as AddOrganizationTagResult;
+  return organizationTag;
 }

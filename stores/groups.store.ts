@@ -20,7 +20,7 @@ interface GroupsState {
   loading: boolean;
 
   // Dialog state
-  groupToDelete: { id: string; name: string } | null;
+  groupToDelete: Group | null;
   groupToEdit: Group | null;
   isCreateDialogOpen: boolean;
 
@@ -38,7 +38,7 @@ interface GroupsState {
   initializeFromUrl: (params: URLSearchParams) => void;
 
   // Dialog actions
-  setGroupToDelete: (group: { id: string; name: string } | null) => void;
+  setGroupToDelete: (group: Group | null) => void;
   setGroupToEdit: (group: Group | null) => void;
   setCreateDialogOpen: (open: boolean) => void;
 }

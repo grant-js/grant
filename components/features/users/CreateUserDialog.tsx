@@ -1,6 +1,5 @@
 'use client';
 
-import { useApolloClient } from '@apollo/client';
 import { UserPlus } from 'lucide-react';
 
 import {
@@ -17,7 +16,6 @@ import { useProjectUserMutations } from '@/hooks/project-users';
 import { useRoles } from '@/hooks/roles';
 import { useTags } from '@/hooks/tags';
 import { useUserMutations } from '@/hooks/users';
-import { evictUsersCache } from '@/hooks/users/cache';
 import { useUsersStore } from '@/stores/users.store';
 
 import { createUserSchema, CreateUserFormValues } from './types';
@@ -29,7 +27,6 @@ export function CreateUserDialog() {
   const { createUser, addUserRole, addUserTag } = useUserMutations();
   const { addOrganizationUser } = useOrganizationUserMutations();
   const { addProjectUser } = useProjectUserMutations();
-  const client = useApolloClient();
 
   const isCreateDialogOpen = useUsersStore((state) => state.isCreateDialogOpen);
   const setCreateDialogOpen = useUsersStore((state) => state.setCreateDialogOpen);
@@ -89,8 +86,6 @@ export function CreateUserDialog() {
         addOrganizationUser({
           organizationId: scope.id,
           userId,
-        }).catch((error: any) => {
-          console.error('Error adding organization user:', error);
         })
       );
     } else if (scope.tenant === Tenant.Project) {
@@ -98,8 +93,6 @@ export function CreateUserDialog() {
         addProjectUser({
           projectId: scope.id,
           userId,
-        }).catch((error: any) => {
-          console.error('Error adding project user:', error);
         })
       );
     }
@@ -109,8 +102,6 @@ export function CreateUserDialog() {
         addUserRole({
           userId,
           roleId,
-        }).catch((error: any) => {
-          console.error('Error adding user role:', error);
         })
       );
       promises.push(...addRolePromises);
@@ -121,19 +112,12 @@ export function CreateUserDialog() {
         addUserTag({
           userId,
           tagId,
-        }).catch((error: any) => {
-          console.error('Error adding user tag:', error);
         })
       );
       promises.push(...addTagPromises);
     }
 
     await Promise.all(promises);
-
-    evictUsersCache(client.cache);
-    client.cache.gc();
-
-    await new Promise((resolve) => setTimeout(resolve, 100));
   };
 
   const handleOpenChange = (open: boolean) => {

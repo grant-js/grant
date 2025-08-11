@@ -4,8 +4,8 @@ import {
   CreateOrganizationInput,
   UpdateOrganizationInput,
   OrganizationSortInput,
+  Organization,
 } from '@/graphql/generated/types';
-import { OrganizationData } from '@/graphql/providers/organizations/types';
 import {
   createFakerDataStore,
   EntityConfig,
@@ -14,7 +14,7 @@ import {
 } from '@/lib/providers/faker/genericDataStore';
 
 // Generate initial organizations (hardcoded)
-const generateInitialOrganizations = (): OrganizationData[] => {
+const generateInitialOrganizations = (): Organization[] => {
   const auditTimestamps = generateAuditTimestamps();
   return [
     {
@@ -46,7 +46,7 @@ const generateInitialOrganizations = (): OrganizationData[] => {
 
 // Organizations-specific configuration
 const organizationsConfig: EntityConfig<
-  OrganizationData,
+  Organization,
   CreateOrganizationInput,
   UpdateOrganizationInput
 > = {
@@ -57,7 +57,7 @@ const organizationsConfig: EntityConfig<
   generateId: () => faker.string.uuid(),
 
   // Generate organization entity from input
-  generateEntity: (input: CreateOrganizationInput, id: string): OrganizationData => {
+  generateEntity: (input: CreateOrganizationInput, id: string): Organization => {
     const auditTimestamps = generateAuditTimestamps();
     return {
       id,
@@ -71,7 +71,7 @@ const organizationsConfig: EntityConfig<
   },
 
   // Update organization entity
-  updateEntity: (entity: OrganizationData, input: UpdateOrganizationInput): OrganizationData => {
+  updateEntity: (entity: Organization, input: UpdateOrganizationInput): Organization => {
     const auditTimestamp = updateAuditTimestamp();
     return {
       ...entity,
@@ -107,9 +107,9 @@ export const organizationsDataStore = createFakerDataStore(organizationsConfig);
 export const initializeDataStore = () => organizationsDataStore.getEntities();
 
 export const sortOrganizations = (
-  organizations: OrganizationData[],
+  organizations: Organization[],
   sortConfig?: OrganizationSortInput
-): OrganizationData[] => {
+): Organization[] => {
   if (!sortConfig) return organizations;
 
   return organizationsDataStore.getEntities({
@@ -122,7 +122,7 @@ export const sortOrganizations = (
 export const getOrganizations = (
   sortConfig?: OrganizationSortInput,
   ids?: string[]
-): OrganizationData[] => {
+): Organization[] => {
   let allOrganizations = organizationsDataStore.getEntities(
     sortConfig
       ? {
@@ -140,17 +140,17 @@ export const getOrganizations = (
   return allOrganizations;
 };
 
-export const createOrganization = (input: CreateOrganizationInput): OrganizationData => {
+export const createOrganization = (input: CreateOrganizationInput): Organization => {
   return organizationsDataStore.createEntity(input);
 };
 
 export const updateOrganization = (
   organizationId: string,
   input: UpdateOrganizationInput
-): OrganizationData | null => {
+): Organization | null => {
   return organizationsDataStore.updateEntity(organizationId, input);
 };
 
-export const deleteOrganization = (organizationId: string): OrganizationData | null => {
+export const deleteOrganization = (organizationId: string): Organization | null => {
   return organizationsDataStore.deleteEntity(organizationId);
 };

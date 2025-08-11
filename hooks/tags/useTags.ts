@@ -1,16 +1,14 @@
 import { useQuery, ApolloError } from '@apollo/client';
 
-import { Tag, TagSortField, SortDirection, QueryTagsArgs } from '@/graphql/generated/types';
+import {
+  Tag,
+  TagSortField,
+  SortDirection,
+  QueryTagsArgs,
+  TagPage,
+} from '@/graphql/generated/types';
 
 import { GET_TAGS } from './queries';
-
-interface TagsQueryResult {
-  tags: {
-    tags: Tag[];
-    totalCount: number;
-    hasNextPage: boolean;
-  };
-}
 
 interface UseTagsOptions extends Partial<QueryTagsArgs> {}
 
@@ -26,13 +24,13 @@ export function useTags(options: UseTagsOptions): UseTagsResult {
   const {
     scope,
     page = 1,
-    limit = 50, // Default to 50 for pagination
+    limit = 50,
     search = '',
     sort = { field: TagSortField.Name, direction: SortDirection.Asc },
     ids,
   } = options;
 
-  const { data, loading, error, refetch } = useQuery<TagsQueryResult>(GET_TAGS, {
+  const { data, loading, error, refetch } = useQuery<{ tags: TagPage }>(GET_TAGS, {
     variables: {
       scope,
       page,

@@ -1,7 +1,6 @@
 import { faker } from '@faker-js/faker';
 
-import { CreateUserInput, UpdateUserInput, UserSortInput } from '@/graphql/generated/types';
-import { UserData } from '@/graphql/providers/users/types';
+import { CreateUserInput, UpdateUserInput, User, UserSortInput } from '@/graphql/generated/types';
 import {
   createFakerDataStore,
   EntityConfig,
@@ -10,7 +9,7 @@ import {
 } from '@/lib/providers/faker/genericDataStore';
 
 // Generate fake users for initial data
-const generateFakeUsers = (count: number = 50): UserData[] => {
+const generateFakeUsers = (count: number = 50): User[] => {
   return Array.from({ length: count }, () => {
     const auditTimestamps = generateAuditTimestamps();
     return {
@@ -23,7 +22,7 @@ const generateFakeUsers = (count: number = 50): UserData[] => {
 };
 
 // Users-specific configuration
-const usersConfig: EntityConfig<UserData, CreateUserInput, UpdateUserInput> = {
+const usersConfig: EntityConfig<User, CreateUserInput, UpdateUserInput> = {
   entityName: 'User',
   dataFileName: 'users.json',
 
@@ -31,7 +30,7 @@ const usersConfig: EntityConfig<UserData, CreateUserInput, UpdateUserInput> = {
   generateId: () => faker.string.uuid(),
 
   // Generate user entity from input
-  generateEntity: (input: CreateUserInput, id: string): UserData => {
+  generateEntity: (input: CreateUserInput, id: string): User => {
     const auditTimestamps = generateAuditTimestamps();
     return {
       id,
@@ -42,7 +41,7 @@ const usersConfig: EntityConfig<UserData, CreateUserInput, UpdateUserInput> = {
   },
 
   // Update user entity
-  updateEntity: (entity: UserData, input: UpdateUserInput): UserData => {
+  updateEntity: (entity: User, input: UpdateUserInput): User => {
     const auditTimestamp = updateAuditTimestamp();
     return {
       ...entity,
@@ -71,7 +70,7 @@ export const usersDataStore = createFakerDataStore(usersConfig);
 // Export the main functions with the same interface as the original
 export const initializeDataStore = () => usersDataStore.getEntities();
 
-export const sortUsers = (users: UserData[], sortConfig?: UserSortInput): UserData[] => {
+export const sortUsers = (users: User[], sortConfig?: UserSortInput): User[] => {
   if (!sortConfig) return users;
 
   return usersDataStore.getEntities({
@@ -79,7 +78,7 @@ export const sortUsers = (users: UserData[], sortConfig?: UserSortInput): UserDa
     order: sortConfig.order,
   });
 };
-export const getUsers = (sortConfig?: UserSortInput, ids?: string[]): UserData[] => {
+export const getUsers = (sortConfig?: UserSortInput, ids?: string[]): User[] => {
   let allUsers = usersDataStore.getEntities(
     sortConfig
       ? {
@@ -96,12 +95,12 @@ export const getUsers = (sortConfig?: UserSortInput, ids?: string[]): UserData[]
 
   return allUsers;
 };
-export const createUser = (input: CreateUserInput): UserData => {
+export const createUser = (input: CreateUserInput): User => {
   return usersDataStore.createEntity(input);
 };
-export const updateUser = (userId: string, input: UpdateUserInput): UserData | null => {
+export const updateUser = (userId: string, input: UpdateUserInput): User | null => {
   return usersDataStore.updateEntity(userId, input);
 };
-export const deleteUser = (userId: string): UserData | null => {
+export const deleteUser = (userId: string): User | null => {
   return usersDataStore.deleteEntity(userId);
 };

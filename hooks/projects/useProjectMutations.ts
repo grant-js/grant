@@ -2,7 +2,17 @@ import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import { Project } from '@/graphql/generated/types';
+import {
+  AddProjectRoleInput,
+  AddProjectTagInput,
+  CreateProjectInput,
+  Project,
+  ProjectRole,
+  ProjectTag,
+  RemoveProjectRoleInput,
+  RemoveProjectTagInput,
+  UpdateProjectInput,
+} from '@/graphql/generated/types';
 
 import { evictProjectsCache } from './cache';
 import {
@@ -15,46 +25,11 @@ import {
   REMOVE_PROJECT_TAG,
 } from './mutations';
 
-interface CreateProjectInput {
-  name: string;
-  description?: string;
-}
-
-interface UpdateProjectInput {
-  name?: string;
-  description?: string;
-}
-
-interface AddProjectRoleInput {
-  projectId: string;
-  roleId: string;
-}
-
-interface RemoveProjectRoleInput {
-  projectId: string;
-  roleId: string;
-}
-
-interface AddProjectTagInput {
-  projectId: string;
-  tagId: string;
-}
-
-interface RemoveProjectTagInput {
-  projectId: string;
-  tagId: string;
-}
-
 export function useProjectMutations() {
   const t = useTranslations('projects');
 
   const update = (cache: ApolloCache<any>) => {
     evictProjectsCache(cache);
-  };
-
-  const updateWithGC = (cache: ApolloCache<any>) => {
-    evictProjectsCache(cache);
-    cache.gc();
   };
 
   const [createProject] = useMutation<{ createProject: Project }>(CREATE_PROJECT, {
@@ -66,18 +41,18 @@ export function useProjectMutations() {
   });
 
   const [deleteProject] = useMutation<{ deleteProject: boolean }>(DELETE_PROJECT, {
-    update: updateWithGC,
-  });
-
-  const [addProjectRole] = useMutation<{ addProjectRole: any }>(ADD_PROJECT_ROLE, {
     update,
   });
 
-  const [removeProjectRole] = useMutation<{ removeProjectRole: any }>(REMOVE_PROJECT_ROLE, {
+  const [addProjectRole] = useMutation<{ addProjectRole: ProjectRole }>(ADD_PROJECT_ROLE, {
     update,
   });
 
-  const [addProjectTag] = useMutation<{ addProjectTag: any }>(ADD_PROJECT_TAG, {
+  const [removeProjectRole] = useMutation<{ removeProjectRole: boolean }>(REMOVE_PROJECT_ROLE, {
+    update,
+  });
+
+  const [addProjectTag] = useMutation<{ addProjectTag: ProjectTag }>(ADD_PROJECT_TAG, {
     update,
   });
 
@@ -89,7 +64,6 @@ export function useProjectMutations() {
     try {
       const result = await createProject({
         variables: { input },
-        // Remove refetchQueries to prevent "Unknown query" warnings in tenant contexts
       });
 
       toast.success(t('notifications.createSuccess'));
@@ -107,7 +81,6 @@ export function useProjectMutations() {
     try {
       const result = await updateProject({
         variables: { id, input },
-        // Remove refetchQueries to prevent "Unknown query" warnings in tenant contexts
       });
 
       toast.success(t('notifications.updateSuccess'));
@@ -125,7 +98,6 @@ export function useProjectMutations() {
     try {
       await deleteProject({
         variables: { id },
-        // Remove refetchQueries to prevent "Unknown query" warnings in tenant contexts
       });
 
       toast.success(t('notifications.deleteSuccess'));
@@ -142,7 +114,6 @@ export function useProjectMutations() {
     try {
       const result = await addProjectTag({
         variables: { input },
-        // Remove refetchQueries to prevent "Unknown query" warnings in tenant contexts
       });
 
       return result.data?.addProjectTag;
@@ -156,7 +127,6 @@ export function useProjectMutations() {
     try {
       const result = await removeProjectRole({
         variables: { input },
-        // Remove refetchQueries to prevent "Unknown query" warnings in tenant contexts
       });
 
       return result.data?.removeProjectRole;
@@ -170,7 +140,6 @@ export function useProjectMutations() {
     try {
       const result = await addProjectRole({
         variables: { input },
-        // Remove refetchQueries to prevent "Unknown query" warnings in tenant contexts
       });
 
       return result.data?.addProjectRole;
@@ -184,7 +153,6 @@ export function useProjectMutations() {
     try {
       const result = await removeProjectTag({
         variables: { input },
-        // Remove refetchQueries to prevent "Unknown query" warnings in tenant contexts
       });
 
       return result.data?.removeProjectTag;

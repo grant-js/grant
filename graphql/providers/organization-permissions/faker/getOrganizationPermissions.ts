@@ -1,11 +1,11 @@
-import { getOrganizationPermissionsByOrganizationId } from '@/graphql/providers/organization-permissions/faker/dataStore';
 import {
-  GetOrganizationPermissionsParams,
-  GetOrganizationPermissionsResult,
-} from '@/graphql/providers/organization-permissions/types';
+  OrganizationPermission,
+  QueryOrganizationPermissionsArgs,
+} from '@/graphql/generated/types';
+import { getOrganizationPermissionsByOrganizationId } from '@/graphql/providers/organization-permissions/faker/dataStore';
 
 export async function getOrganizationPermissions({
   organizationId,
-}: GetOrganizationPermissionsParams): Promise<GetOrganizationPermissionsResult> {
+}: QueryOrganizationPermissionsArgs): Promise<OrganizationPermission[]> {
   return getOrganizationPermissionsByOrganizationId(organizationId);
 }

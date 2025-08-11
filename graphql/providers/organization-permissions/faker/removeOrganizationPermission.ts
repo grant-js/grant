@@ -1,13 +1,17 @@
+import { MutationRemoveOrganizationPermissionArgs } from '@/graphql/generated/types';
 import { deleteOrganizationPermissionByOrganizationAndPermission } from '@/graphql/providers/organization-permissions/faker/dataStore';
-
-import { RemoveOrganizationPermissionParams, RemoveOrganizationPermissionResult } from '../types';
 
 export async function removeOrganizationPermission({
   input,
-}: RemoveOrganizationPermissionParams): Promise<RemoveOrganizationPermissionResult> {
+}: MutationRemoveOrganizationPermissionArgs): Promise<boolean> {
   const deletedOrganizationPermission = deleteOrganizationPermissionByOrganizationAndPermission(
     input.organizationId,
     input.permissionId
   );
+  if (!deletedOrganizationPermission) {
+    throw new Error(
+      `OrganizationPermission relationship not found for organization ${input.organizationId} and permission ${input.permissionId}`
+    );
+  }
   return deletedOrganizationPermission !== null;
 }

@@ -1,6 +1,5 @@
 'use client';
 
-import { useApolloClient } from '@apollo/client';
 import { ShieldPlus } from 'lucide-react';
 
 import {
@@ -17,7 +16,6 @@ import { useGroups } from '@/hooks/groups';
 import { useOrganizationMutations } from '@/hooks/organizations';
 import { useProjectMutations } from '@/hooks/projects';
 import { useRoleMutations } from '@/hooks/roles';
-import { evictRolesCache } from '@/hooks/roles/cache';
 import { useTags } from '@/hooks/tags';
 import { useRolesStore } from '@/stores/roles.store';
 
@@ -30,9 +28,7 @@ export function CreateRoleDialog() {
   const { createRole, addRoleGroup, addRoleTag } = useRoleMutations();
   const { addProjectRole } = useProjectMutations();
   const { addOrganizationRole } = useOrganizationMutations();
-  const client = useApolloClient();
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const isCreateDialogOpen = useRolesStore((state) => state.isCreateDialogOpen);
   const setCreateDialogOpen = useRolesStore((state) => state.setCreateDialogOpen);
 
@@ -86,14 +82,11 @@ export function CreateRoleDialog() {
   const handleAddRelationships = async (roleId: string, values: CreateRoleFormValues) => {
     const promises: Promise<any>[] = [];
 
-    // Add role to tenant
     if (scope.tenant === Tenant.Organization) {
       promises.push(
         addOrganizationRole({
           organizationId: scope.id,
           roleId,
-        }).catch((error: any) => {
-          console.error('Error adding organization role:', error);
         })
       );
     } else if (scope.tenant === Tenant.Project) {
@@ -101,44 +94,31 @@ export function CreateRoleDialog() {
         addProjectRole({
           projectId: scope.id,
           roleId,
-        }).catch((error: any) => {
-          console.error('Error adding project role:', error);
         })
       );
     }
 
-    // Add groups
     if (values.groupIds && values.groupIds.length > 0) {
       const addGroupPromises = values.groupIds.map((groupId) =>
         addRoleGroup({
           roleId,
           groupId,
-        }).catch((error: any) => {
-          console.error('Error adding role group:', error);
         })
       );
       promises.push(...addGroupPromises);
     }
 
-    // Add tags
     if (values.tagIds && values.tagIds.length > 0) {
       const addTagPromises = values.tagIds.map((tagId) =>
         addRoleTag({
           roleId,
           tagId,
-        }).catch((error: any) => {
-          console.error('Error adding role tag:', error);
         })
       );
       promises.push(...addTagPromises);
     }
 
     await Promise.all(promises);
-
-    evictRolesCache(client.cache);
-    client.cache.gc();
-
-    await new Promise((resolve) => setTimeout(resolve, 100));
   };
 
   const handleOpenChange = (open: boolean) => {

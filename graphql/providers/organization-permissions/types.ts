@@ -2,25 +2,15 @@ import {
   MutationAddOrganizationPermissionArgs,
   MutationRemoveOrganizationPermissionArgs,
   OrganizationPermission,
+  QueryOrganizationPermissionsArgs,
 } from '@/graphql/generated/types';
-
-export type GetOrganizationPermissionsParams = { organizationId: string };
-export type GetOrganizationPermissionsResult = OrganizationPermission[];
-
-export type AddOrganizationPermissionParams = MutationAddOrganizationPermissionArgs;
-export type AddOrganizationPermissionResult = OrganizationPermission;
-
-export type RemoveOrganizationPermissionParams = MutationRemoveOrganizationPermissionArgs;
-export type RemoveOrganizationPermissionResult = boolean;
 
 export interface OrganizationPermissionDataProvider {
   getOrganizationPermissions(
-    params: GetOrganizationPermissionsParams
-  ): Promise<GetOrganizationPermissionsResult>;
+    params: QueryOrganizationPermissionsArgs
+  ): Promise<OrganizationPermission[]>;
   addOrganizationPermission(
-    params: AddOrganizationPermissionParams
-  ): Promise<AddOrganizationPermissionResult>;
-  removeOrganizationPermission(
-    params: RemoveOrganizationPermissionParams
-  ): Promise<RemoveOrganizationPermissionResult>;
+    params: MutationAddOrganizationPermissionArgs
+  ): Promise<OrganizationPermission>;
+  removeOrganizationPermission(params: MutationRemoveOrganizationPermissionArgs): Promise<boolean>;
 }

@@ -38,11 +38,6 @@ export const ADD_ORGANIZATION_ROLE = gql`
       roleId
       createdAt
       updatedAt
-      role {
-        id
-        name
-        description
-      }
     }
   }
 `;
@@ -61,11 +56,6 @@ export const ADD_ORGANIZATION_TAG = gql`
       tagId
       createdAt
       updatedAt
-      tag {
-        id
-        name
-        color
-      }
     }
   }
 `;

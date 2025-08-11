@@ -1,38 +1,20 @@
 import { faker } from '@faker-js/faker';
 
+import { AddProjectPermissionInput, ProjectPermission } from '@/graphql/generated/types';
 import {
   createFakerDataStore,
   EntityConfig,
   generateAuditTimestamps,
 } from '@/lib/providers/faker/genericDataStore';
 
-// Type for ProjectPermission data without the resolved fields
-export interface ProjectPermissionData {
-  id: string;
-  projectId: string;
-  permissionId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Input type for creating project-permission relationships
-export interface CreateProjectPermissionInput {
-  projectId: string;
-  permissionId: string;
-}
-
 // Generate empty initial data for project-permission relationships
-const generateInitialProjectPermissions = (): ProjectPermissionData[] => {
+const generateInitialProjectPermissions = (): ProjectPermission[] => {
   // Return empty array - project-permission relationships should be created through application logic
   return [];
 };
 
 // ProjectPermission-specific configuration
-const projectPermissionConfig: EntityConfig<
-  ProjectPermissionData,
-  CreateProjectPermissionInput,
-  never
-> = {
+const projectPermissionConfig: EntityConfig<ProjectPermission, AddProjectPermissionInput, never> = {
   entityName: 'ProjectPermission',
   dataFileName: 'project-permissions.json',
 
@@ -40,7 +22,7 @@ const projectPermissionConfig: EntityConfig<
   generateId: () => faker.string.uuid(),
 
   // Generate project-permission entity from input
-  generateEntity: (input: CreateProjectPermissionInput, id: string): ProjectPermissionData => {
+  generateEntity: (input: AddProjectPermissionInput, id: string): ProjectPermission => {
     const auditTimestamps = generateAuditTimestamps();
     return {
       id,
@@ -73,23 +55,21 @@ const projectPermissionConfig: EntityConfig<
 export const projectPermissionsDataStore = createFakerDataStore(projectPermissionConfig);
 
 // Helper functions for project-permission operations
-export const getProjectPermissionsByProjectId = (projectId: string): ProjectPermissionData[] => {
+export const getProjectPermissionsByProjectId = (projectId: string): ProjectPermission[] => {
   const projectPermissions = projectPermissionsDataStore
     .getEntities()
     .filter((pp) => pp.projectId === projectId);
   return projectPermissions;
 };
 
-export const getProjectPermissionsByPermissionId = (
-  permissionId: string
-): ProjectPermissionData[] => {
+export const getProjectPermissionsByPermissionId = (permissionId: string): ProjectPermission[] => {
   return projectPermissionsDataStore.getEntities().filter((pp) => pp.permissionId === permissionId);
 };
 
 export const addProjectPermission = (
   projectId: string,
   permissionId: string
-): ProjectPermissionData => {
+): ProjectPermission => {
   // Check if relationship already exists
   const existingRelationship = projectPermissionsDataStore
     .getEntities()
@@ -102,14 +82,14 @@ export const addProjectPermission = (
   return projectPermissionsDataStore.createEntity({ projectId, permissionId });
 };
 
-export const deleteProjectPermission = (id: string): ProjectPermissionData | null => {
+export const deleteProjectPermission = (id: string): ProjectPermission | null => {
   return projectPermissionsDataStore.deleteEntity(id);
 };
 
 export const deleteProjectPermissionByProjectAndPermission = (
   projectId: string,
   permissionId: string
-): ProjectPermissionData | null => {
+): ProjectPermission | null => {
   const projectPermission = projectPermissionsDataStore
     .getEntities()
     .find((pp) => pp.projectId === projectId && pp.permissionId === permissionId);
@@ -121,7 +101,7 @@ export const deleteProjectPermissionByProjectAndPermission = (
   return projectPermissionsDataStore.deleteEntity(projectPermission.id);
 };
 
-export const deleteProjectPermissionsByProjectId = (projectId: string): ProjectPermissionData[] => {
+export const deleteProjectPermissionsByProjectId = (projectId: string): ProjectPermission[] => {
   const projectPermissions = projectPermissionsDataStore
     .getEntities()
     .filter((pp) => pp.projectId === projectId);
@@ -131,7 +111,7 @@ export const deleteProjectPermissionsByProjectId = (projectId: string): ProjectP
 
 export const deleteProjectPermissionsByPermissionId = (
   permissionId: string
-): ProjectPermissionData[] => {
+): ProjectPermission[] => {
   const projectPermissions = projectPermissionsDataStore
     .getEntities()
     .filter((pp) => pp.permissionId === permissionId);

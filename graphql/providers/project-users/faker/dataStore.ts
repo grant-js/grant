@@ -1,34 +1,20 @@
 import { faker } from '@faker-js/faker';
 
+import { AddProjectUserInput, ProjectUser } from '@/graphql/generated/types';
 import {
   createFakerDataStore,
   EntityConfig,
   generateAuditTimestamps,
 } from '@/lib/providers/faker/genericDataStore';
 
-// Type for ProjectUser data without the resolved fields
-export interface ProjectUserData {
-  id: string;
-  projectId: string;
-  userId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Input type for creating project-user relationships
-export interface CreateProjectUserInput {
-  projectId: string;
-  userId: string;
-}
-
 // Generate empty initial data for project-user relationships
-const generateInitialProjectUsers = (): ProjectUserData[] => {
+const generateInitialProjectUsers = (): ProjectUser[] => {
   // Return empty array - project-user relationships should be created through application logic
   return [];
 };
 
 // ProjectUser-specific configuration
-const projectUserConfig: EntityConfig<ProjectUserData, CreateProjectUserInput, never> = {
+const projectUserConfig: EntityConfig<ProjectUser, AddProjectUserInput, never> = {
   entityName: 'ProjectUser',
   dataFileName: 'project-users.json',
 
@@ -36,7 +22,7 @@ const projectUserConfig: EntityConfig<ProjectUserData, CreateProjectUserInput, n
   generateId: () => faker.string.uuid(),
 
   // Generate project-user entity from input
-  generateEntity: (input: CreateProjectUserInput, id: string): ProjectUserData => {
+  generateEntity: (input: AddProjectUserInput, id: string): ProjectUser => {
     const auditTimestamps = generateAuditTimestamps();
     return {
       id,
@@ -69,18 +55,18 @@ const projectUserConfig: EntityConfig<ProjectUserData, CreateProjectUserInput, n
 export const projectUsersDataStore = createFakerDataStore(projectUserConfig);
 
 // Helper functions for project-user operations
-export const getProjectUsersByProjectId = (projectId: string): ProjectUserData[] => {
+export const getProjectUsersByProjectId = (projectId: string): ProjectUser[] => {
   const projectUsers = projectUsersDataStore
     .getEntities()
     .filter((pu) => pu.projectId === projectId);
   return projectUsers;
 };
 
-export const getProjectUsersByUserId = (userId: string): ProjectUserData[] => {
+export const getProjectUsersByUserId = (userId: string): ProjectUser[] => {
   return projectUsersDataStore.getEntities().filter((pu) => pu.userId === userId);
 };
 
-export const addProjectUser = (projectId: string, userId: string): ProjectUserData => {
+export const addProjectUser = (projectId: string, userId: string): ProjectUser => {
   // Check if relationship already exists
   const existingRelationship = projectUsersDataStore
     .getEntities()
@@ -93,14 +79,14 @@ export const addProjectUser = (projectId: string, userId: string): ProjectUserDa
   return projectUsersDataStore.createEntity({ projectId, userId });
 };
 
-export const deleteProjectUser = (id: string): ProjectUserData | null => {
+export const deleteProjectUser = (id: string): ProjectUser | null => {
   return projectUsersDataStore.deleteEntity(id);
 };
 
 export const deleteProjectUserByProjectAndUser = (
   projectId: string,
   userId: string
-): ProjectUserData | null => {
+): ProjectUser | null => {
   const projectUser = projectUsersDataStore
     .getEntities()
     .find((pu) => pu.projectId === projectId && pu.userId === userId);
@@ -112,7 +98,7 @@ export const deleteProjectUserByProjectAndUser = (
   return projectUsersDataStore.deleteEntity(projectUser.id);
 };
 
-export const deleteProjectUsersByProjectId = (projectId: string): ProjectUserData[] => {
+export const deleteProjectUsersByProjectId = (projectId: string): ProjectUser[] => {
   const projectUsers = projectUsersDataStore
     .getEntities()
     .filter((pu) => pu.projectId === projectId);
@@ -120,7 +106,7 @@ export const deleteProjectUsersByProjectId = (projectId: string): ProjectUserDat
   return projectUsers;
 };
 
-export const deleteProjectUsersByUserId = (userId: string): ProjectUserData[] => {
+export const deleteProjectUsersByUserId = (userId: string): ProjectUser[] => {
   const projectUsers = projectUsersDataStore.getEntities().filter((pu) => pu.userId === userId);
   projectUsers.forEach((pu) => projectUsersDataStore.deleteEntity(pu.id));
   return projectUsers;

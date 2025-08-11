@@ -1,36 +1,22 @@
 import { faker } from '@faker-js/faker';
 
+import { AddOrganizationPermissionInput, OrganizationPermission } from '@/graphql/generated/types';
 import {
   createFakerDataStore,
   EntityConfig,
   generateAuditTimestamps,
 } from '@/lib/providers/faker/genericDataStore';
 
-// Type for OrganizationPermission data without the resolved fields
-export interface OrganizationPermissionData {
-  id: string;
-  organizationId: string;
-  permissionId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Input type for creating organization-permission relationships
-export interface CreateOrganizationPermissionInput {
-  organizationId: string;
-  permissionId: string;
-}
-
 // Generate empty initial data for organization-permission relationships
-const generateInitialOrganizationPermissions = (): OrganizationPermissionData[] => {
+const generateInitialOrganizationPermissions = (): OrganizationPermission[] => {
   // Return empty array - organization-permission relationships should be created through application logic
   return [];
 };
 
 // OrganizationPermission-specific configuration
 const organizationPermissionConfig: EntityConfig<
-  OrganizationPermissionData,
-  CreateOrganizationPermissionInput,
+  OrganizationPermission,
+  AddOrganizationPermissionInput,
   never
 > = {
   entityName: 'OrganizationPermission',
@@ -40,10 +26,7 @@ const organizationPermissionConfig: EntityConfig<
   generateId: () => faker.string.uuid(),
 
   // Generate organization-permission entity from input
-  generateEntity: (
-    input: CreateOrganizationPermissionInput,
-    id: string
-  ): OrganizationPermissionData => {
+  generateEntity: (input: AddOrganizationPermissionInput, id: string): OrganizationPermission => {
     const auditTimestamps = generateAuditTimestamps();
     return {
       id,
@@ -78,7 +61,7 @@ export const organizationPermissionsDataStore = createFakerDataStore(organizatio
 // Helper functions for organization-permission operations
 export const getOrganizationPermissionsByOrganizationId = (
   organizationId: string
-): OrganizationPermissionData[] => {
+): OrganizationPermission[] => {
   const organizationPermissions = organizationPermissionsDataStore
     .getEntities()
     .filter((op) => op.organizationId === organizationId);
@@ -87,7 +70,7 @@ export const getOrganizationPermissionsByOrganizationId = (
 
 export const getOrganizationPermissionsByPermissionId = (
   permissionId: string
-): OrganizationPermissionData[] => {
+): OrganizationPermission[] => {
   return organizationPermissionsDataStore
     .getEntities()
     .filter((op) => op.permissionId === permissionId);
@@ -96,7 +79,7 @@ export const getOrganizationPermissionsByPermissionId = (
 export const addOrganizationPermission = (
   organizationId: string,
   permissionId: string
-): OrganizationPermissionData => {
+): OrganizationPermission => {
   // Check if relationship already exists
   const existingRelationship = organizationPermissionsDataStore
     .getEntities()
@@ -109,14 +92,14 @@ export const addOrganizationPermission = (
   return organizationPermissionsDataStore.createEntity({ organizationId, permissionId });
 };
 
-export const deleteOrganizationPermission = (id: string): OrganizationPermissionData | null => {
+export const deleteOrganizationPermission = (id: string): OrganizationPermission | null => {
   return organizationPermissionsDataStore.deleteEntity(id);
 };
 
 export const deleteOrganizationPermissionByOrganizationAndPermission = (
   organizationId: string,
   permissionId: string
-): OrganizationPermissionData | null => {
+): OrganizationPermission | null => {
   const organizationPermission = organizationPermissionsDataStore
     .getEntities()
     .find((op) => op.organizationId === organizationId && op.permissionId === permissionId);
@@ -130,7 +113,7 @@ export const deleteOrganizationPermissionByOrganizationAndPermission = (
 
 export const deleteOrganizationPermissionsByOrganizationId = (
   organizationId: string
-): OrganizationPermissionData[] => {
+): OrganizationPermission[] => {
   const organizationPermissions = organizationPermissionsDataStore
     .getEntities()
     .filter((op) => op.organizationId === organizationId);
@@ -140,7 +123,7 @@ export const deleteOrganizationPermissionsByOrganizationId = (
 
 export const deleteOrganizationPermissionsByPermissionId = (
   permissionId: string
-): OrganizationPermissionData[] => {
+): OrganizationPermission[] => {
   const organizationPermissions = organizationPermissionsDataStore
     .getEntities()
     .filter((op) => op.permissionId === permissionId);

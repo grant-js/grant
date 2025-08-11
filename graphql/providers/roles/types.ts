@@ -9,24 +9,9 @@ import {
   RolePage,
 } from '@/graphql/generated/types';
 
-// Type for role data without the resolved fields (groups)
-export type RoleData = Omit<Role, 'groups'>;
-
-export type GetRolesParams = QueryRolesArgs;
-export type GetRolesResult = RolePage;
-
-export type CreateRoleParams = MutationCreateRoleArgs;
-export type CreateRoleResult = Role;
-
-export type UpdateRoleParams = MutationUpdateRoleArgs;
-export type UpdateRoleResult = Role;
-
-export type DeleteRoleParams = MutationDeleteRoleArgs;
-export type DeleteRoleResult = boolean;
-
 export interface RoleDataProvider {
-  getRoles(params: GetRolesParams): Promise<GetRolesResult>;
-  createRole(params: CreateRoleParams): Promise<CreateRoleResult>;
-  updateRole(params: UpdateRoleParams): Promise<UpdateRoleResult>;
-  deleteRole(params: DeleteRoleParams): Promise<DeleteRoleResult>;
+  getRoles(params: QueryRolesArgs): Promise<RolePage>;
+  createRole(params: MutationCreateRoleArgs): Promise<Role>;
+  updateRole(params: MutationUpdateRoleArgs): Promise<Role>;
+  deleteRole(params: MutationDeleteRoleArgs): Promise<boolean>;
 }

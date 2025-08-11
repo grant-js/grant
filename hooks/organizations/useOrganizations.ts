@@ -2,12 +2,7 @@ import { useMemo } from 'react';
 
 import { useQuery, ApolloError } from '@apollo/client';
 
-import {
-  Organization,
-  OrganizationSortableField,
-  OrganizationSortOrder,
-  QueryOrganizationsArgs,
-} from '@/graphql/generated/types';
+import { Organization, OrganizationPage, QueryOrganizationsArgs } from '@/graphql/generated/types';
 
 import { GET_ORGANIZATIONS } from './queries';
 
@@ -20,15 +15,8 @@ interface UseOrganizationsResult {
 }
 
 export function useOrganizations(options: QueryOrganizationsArgs): UseOrganizationsResult {
-  const {
-    page = 1,
-    limit = 50, // Default to 50 for pagination
-    search = '',
-    sort = { field: OrganizationSortableField.Name, order: OrganizationSortOrder.Asc },
-    ids,
-  } = options;
+  const { page, limit, search, sort, ids } = options;
 
-  // Memoize variables to prevent unnecessary re-renders
   const variables = useMemo(
     () => ({
       page,
@@ -40,10 +28,12 @@ export function useOrganizations(options: QueryOrganizationsArgs): UseOrganizati
     [page, limit, search, sort, ids]
   );
 
-  const { data, loading, error, refetch } = useQuery(GET_ORGANIZATIONS, {
-    variables,
-    notifyOnNetworkStatusChange: false, // Prevent re-renders on network status changes
-  });
+  const { data, loading, error, refetch } = useQuery<{ organizations: OrganizationPage }>(
+    GET_ORGANIZATIONS,
+    {
+      variables,
+    }
+  );
 
   return {
     organizations: data?.organizations?.organizations || [],

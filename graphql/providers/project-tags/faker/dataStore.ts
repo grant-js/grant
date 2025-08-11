@@ -1,34 +1,20 @@
 import { faker } from '@faker-js/faker';
 
+import { AddProjectTagInput, ProjectTag } from '@/graphql/generated/types';
 import {
   createFakerDataStore,
   EntityConfig,
   generateAuditTimestamps,
 } from '@/lib/providers/faker/genericDataStore';
 
-// Type for ProjectTag data without the resolved fields
-export interface ProjectTagData {
-  id: string;
-  projectId: string;
-  tagId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Input type for creating project-tag relationships
-export interface CreateProjectTagInput {
-  projectId: string;
-  tagId: string;
-}
-
 // Generate empty initial data for project-tag relationships
-const generateInitialProjectTags = (): ProjectTagData[] => {
+const generateInitialProjectTags = (): ProjectTag[] => {
   // Return empty array - project-tag relationships should be created through application logic
   return [];
 };
 
 // ProjectTag-specific configuration
-const projectTagConfig: EntityConfig<ProjectTagData, CreateProjectTagInput, never> = {
+const projectTagConfig: EntityConfig<ProjectTag, AddProjectTagInput, never> = {
   entityName: 'ProjectTag',
   dataFileName: 'project-tags.json',
 
@@ -36,7 +22,7 @@ const projectTagConfig: EntityConfig<ProjectTagData, CreateProjectTagInput, neve
   generateId: () => faker.string.uuid(),
 
   // Generate project-tag entity from input
-  generateEntity: (input: CreateProjectTagInput, id: string): ProjectTagData => {
+  generateEntity: (input: AddProjectTagInput, id: string): ProjectTag => {
     const auditTimestamps = generateAuditTimestamps();
     return {
       id,
@@ -69,16 +55,16 @@ const projectTagConfig: EntityConfig<ProjectTagData, CreateProjectTagInput, neve
 export const projectTagsDataStore = createFakerDataStore(projectTagConfig);
 
 // Helper functions for project-tag operations
-export const getProjectTagsByProjectId = (projectId: string): ProjectTagData[] => {
+export const getProjectTagsByProjectId = (projectId: string): ProjectTag[] => {
   const projectTags = projectTagsDataStore.getEntities().filter((pt) => pt.projectId === projectId);
   return projectTags;
 };
 
-export const getProjectTagsByTagId = (tagId: string): ProjectTagData[] => {
+export const getProjectTagsByTagId = (tagId: string): ProjectTag[] => {
   return projectTagsDataStore.getEntities().filter((pt) => pt.tagId === tagId);
 };
 
-export const addProjectTag = (projectId: string, tagId: string): ProjectTagData => {
+export const addProjectTag = (projectId: string, tagId: string): ProjectTag => {
   // Check if relationship already exists
   const existingRelationship = projectTagsDataStore
     .getEntities()
@@ -91,14 +77,14 @@ export const addProjectTag = (projectId: string, tagId: string): ProjectTagData 
   return projectTagsDataStore.createEntity({ projectId, tagId });
 };
 
-export const deleteProjectTag = (id: string): ProjectTagData | null => {
+export const deleteProjectTag = (id: string): ProjectTag | null => {
   return projectTagsDataStore.deleteEntity(id);
 };
 
 export const deleteProjectTagByProjectAndTag = (
   projectId: string,
   tagId: string
-): ProjectTagData | null => {
+): ProjectTag | null => {
   const projectTag = projectTagsDataStore
     .getEntities()
     .find((pt) => pt.projectId === projectId && pt.tagId === tagId);
@@ -110,13 +96,13 @@ export const deleteProjectTagByProjectAndTag = (
   return projectTagsDataStore.deleteEntity(projectTag.id);
 };
 
-export const deleteProjectTagsByProjectId = (projectId: string): ProjectTagData[] => {
+export const deleteProjectTagsByProjectId = (projectId: string): ProjectTag[] => {
   const projectTags = projectTagsDataStore.getEntities().filter((pt) => pt.projectId === projectId);
   projectTags.forEach((pt) => projectTagsDataStore.deleteEntity(pt.id));
   return projectTags;
 };
 
-export const deleteProjectTagsByTagId = (tagId: string): ProjectTagData[] => {
+export const deleteProjectTagsByTagId = (tagId: string): ProjectTag[] => {
   const projectTags = projectTagsDataStore.getEntities().filter((pt) => pt.tagId === tagId);
   projectTags.forEach((pt) => projectTagsDataStore.deleteEntity(pt.id));
   return projectTags;

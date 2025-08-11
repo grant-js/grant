@@ -4,10 +4,10 @@ import {
   CreatePermissionInput,
   UpdatePermissionInput,
   PermissionSortInput,
+  Permission,
 } from '@/graphql/generated/types';
 import { deleteGroupPermissionsByPermissionId } from '@/graphql/providers/group-permissions/faker/dataStore';
 import { deletePermissionTagsByPermissionId } from '@/graphql/providers/permission-tags/faker/dataStore';
-import { PermissionData } from '@/graphql/providers/permissions/types';
 import {
   createFakerDataStore,
   EntityConfig,
@@ -16,7 +16,7 @@ import {
 } from '@/lib/providers/faker';
 
 // Generate initial permissions (hardcoded)
-const generateInitialPermissions = (): PermissionData[] => {
+const generateInitialPermissions = (): Permission[] => {
   const auditTimestamps = generateAuditTimestamps();
   return [
     {
@@ -51,11 +51,7 @@ const generateInitialPermissions = (): PermissionData[] => {
 };
 
 // Permissions-specific configuration
-const permissionsConfig: EntityConfig<
-  PermissionData,
-  CreatePermissionInput,
-  UpdatePermissionInput
-> = {
+const permissionsConfig: EntityConfig<Permission, CreatePermissionInput, UpdatePermissionInput> = {
   entityName: 'Permission',
   dataFileName: 'permissions.json',
 
@@ -63,7 +59,7 @@ const permissionsConfig: EntityConfig<
   generateId: () => faker.string.uuid(),
 
   // Generate permission entity from input
-  generateEntity: (input: CreatePermissionInput, id: string): PermissionData => {
+  generateEntity: (input: CreatePermissionInput, id: string): Permission => {
     const auditTimestamps = generateAuditTimestamps();
     return {
       id,
@@ -75,7 +71,7 @@ const permissionsConfig: EntityConfig<
   },
 
   // Update permission entity
-  updateEntity: (entity: PermissionData, input: UpdatePermissionInput): PermissionData => {
+  updateEntity: (entity: Permission, input: UpdatePermissionInput): Permission => {
     const auditTimestamp = updateAuditTimestamp();
     return {
       ...entity,
@@ -107,9 +103,9 @@ export const permissionsDataStore = createFakerDataStore(permissionsConfig);
 export const initializeDataStore = () => permissionsDataStore.getEntities();
 
 export const sortPermissions = (
-  permissions: PermissionData[],
+  permissions: Permission[],
   sortConfig?: PermissionSortInput
-): PermissionData[] => {
+): Permission[] => {
   if (!sortConfig) return permissions;
 
   return permissionsDataStore.getEntities({
@@ -117,10 +113,7 @@ export const sortPermissions = (
     order: sortConfig.order,
   });
 };
-export const getPermissions = (
-  sortConfig?: PermissionSortInput,
-  ids?: string[]
-): PermissionData[] => {
+export const getPermissions = (sortConfig?: PermissionSortInput, ids?: string[]): Permission[] => {
   let allPermissions = permissionsDataStore.getEntities(
     sortConfig
       ? {
@@ -142,18 +135,18 @@ export const isPermissionUnique = (permissionId: string): boolean => {
   return permissionsDataStore.entityExists(permissionId);
 };
 
-export const createPermission = (input: CreatePermissionInput): PermissionData => {
+export const createPermission = (input: CreatePermissionInput): Permission => {
   return permissionsDataStore.createEntity(input);
 };
 
 export const updatePermission = (
   permissionId: string,
   input: UpdatePermissionInput
-): PermissionData | null => {
+): Permission | null => {
   return permissionsDataStore.updateEntity(permissionId, input);
 };
 
-export const deletePermission = (permissionId: string): PermissionData | null => {
+export const deletePermission = (permissionId: string): Permission | null => {
   // Clean up related relationships first
   deleteGroupPermissionsByPermissionId(permissionId);
   deletePermissionTagsByPermissionId(permissionId);

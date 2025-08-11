@@ -17,11 +17,11 @@ type UserTag implements Auditable {
   """
   The user associated with this relationship.
   """
-  user: User
+  user(scope: Scope!): User
   """
   The tag associated with this relationship.
   """
-  tag: Tag
+  tag(scope: Scope!): Tag
   """
   Timestamp when the user-tag relationship was created.
   """

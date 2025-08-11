@@ -1,38 +1,20 @@
 import { faker } from '@faker-js/faker';
 
+import { AddOrganizationUserInput, OrganizationUser } from '@/graphql/generated/types';
 import {
   createFakerDataStore,
   EntityConfig,
   generateAuditTimestamps,
 } from '@/lib/providers/faker/genericDataStore';
 
-// Type for OrganizationUser data without the resolved fields
-export interface OrganizationUserData {
-  id: string;
-  organizationId: string;
-  userId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Input type for creating organization-user relationships
-export interface CreateOrganizationUserInput {
-  organizationId: string;
-  userId: string;
-}
-
 // Generate empty initial data for organization-user relationships
-const generateInitialOrganizationUsers = (): OrganizationUserData[] => {
+const generateInitialOrganizationUsers = (): OrganizationUser[] => {
   // Return empty array - organization-user relationships should be created through application logic
   return [];
 };
 
 // OrganizationUser-specific configuration
-const organizationUserConfig: EntityConfig<
-  OrganizationUserData,
-  CreateOrganizationUserInput,
-  never
-> = {
+const organizationUserConfig: EntityConfig<OrganizationUser, AddOrganizationUserInput, never> = {
   entityName: 'OrganizationUser',
   dataFileName: 'organization-users.json',
 
@@ -40,7 +22,7 @@ const organizationUserConfig: EntityConfig<
   generateId: () => faker.string.uuid(),
 
   // Generate organization-user entity from input
-  generateEntity: (input: CreateOrganizationUserInput, id: string): OrganizationUserData => {
+  generateEntity: (input: AddOrganizationUserInput, id: string): OrganizationUser => {
     const auditTimestamps = generateAuditTimestamps();
     return {
       id,
@@ -75,21 +57,18 @@ export const organizationUsersDataStore = createFakerDataStore(organizationUserC
 // Helper functions for organization-user operations
 export const getOrganizationUsersByOrganizationId = (
   organizationId: string
-): OrganizationUserData[] => {
+): OrganizationUser[] => {
   const organizationUsers = organizationUsersDataStore
     .getEntities()
     .filter((ou) => ou.organizationId === organizationId);
   return organizationUsers;
 };
 
-export const getOrganizationUsersByUserId = (userId: string): OrganizationUserData[] => {
+export const getOrganizationUsersByUserId = (userId: string): OrganizationUser[] => {
   return organizationUsersDataStore.getEntities().filter((ou) => ou.userId === userId);
 };
 
-export const addOrganizationUser = (
-  organizationId: string,
-  userId: string
-): OrganizationUserData => {
+export const addOrganizationUser = (organizationId: string, userId: string): OrganizationUser => {
   // Check if relationship already exists
   const existingRelationship = organizationUsersDataStore
     .getEntities()
@@ -102,14 +81,14 @@ export const addOrganizationUser = (
   return organizationUsersDataStore.createEntity({ organizationId, userId });
 };
 
-export const deleteOrganizationUser = (id: string): OrganizationUserData | null => {
+export const deleteOrganizationUser = (id: string): OrganizationUser | null => {
   return organizationUsersDataStore.deleteEntity(id);
 };
 
 export const deleteOrganizationUserByOrganizationAndUser = (
   organizationId: string,
   userId: string
-): OrganizationUserData | null => {
+): OrganizationUser | null => {
   const organizationUser = organizationUsersDataStore
     .getEntities()
     .find((ou) => ou.organizationId === organizationId && ou.userId === userId);
@@ -123,7 +102,7 @@ export const deleteOrganizationUserByOrganizationAndUser = (
 
 export const deleteOrganizationUsersByOrganizationId = (
   organizationId: string
-): OrganizationUserData[] => {
+): OrganizationUser[] => {
   const organizationUsers = organizationUsersDataStore
     .getEntities()
     .filter((ou) => ou.organizationId === organizationId);
@@ -131,7 +110,7 @@ export const deleteOrganizationUsersByOrganizationId = (
   return organizationUsers;
 };
 
-export const deleteOrganizationUsersByUserId = (userId: string): OrganizationUserData[] => {
+export const deleteOrganizationUsersByUserId = (userId: string): OrganizationUser[] => {
   const organizationUsers = organizationUsersDataStore
     .getEntities()
     .filter((ou) => ou.userId === userId);

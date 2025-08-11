@@ -1,8 +1,18 @@
-import { useMutation } from '@apollo/client';
+import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import { Organization } from '@/graphql/generated/types';
+import {
+  AddOrganizationRoleInput,
+  AddOrganizationTagInput,
+  CreateOrganizationInput,
+  Organization,
+  OrganizationRole,
+  OrganizationTag,
+  RemoveOrganizationRoleInput,
+  RemoveOrganizationTagInput,
+  UpdateOrganizationInput,
+} from '@/graphql/generated/types';
 
 import { evictOrganizationsCache } from './cache';
 import {
@@ -15,89 +25,56 @@ import {
   REMOVE_ORGANIZATION_TAG,
 } from './mutations';
 
-interface CreateOrganizationInput {
-  name: string;
-}
-
-interface UpdateOrganizationInput {
-  name?: string;
-}
-
-interface AddOrganizationRoleInput {
-  organizationId: string;
-  roleId: string;
-}
-
-interface RemoveOrganizationRoleInput {
-  organizationId: string;
-  roleId: string;
-}
-
-interface AddOrganizationTagInput {
-  organizationId: string;
-  tagId: string;
-}
-
-interface RemoveOrganizationTagInput {
-  organizationId: string;
-  tagId: string;
-}
-
 export function useOrganizationMutations() {
   const t = useTranslations('organizations');
+
+  const update = (cache: ApolloCache<any>) => {
+    evictOrganizationsCache(cache);
+  };
 
   const [createOrganization] = useMutation<{ createOrganization: Organization }>(
     CREATE_ORGANIZATION,
     {
-      update(cache) {
-        evictOrganizationsCache(cache);
-      },
+      update,
     }
   );
 
   const [updateOrganization] = useMutation<{ updateOrganization: Organization }>(
     UPDATE_ORGANIZATION,
     {
-      update(cache) {
-        evictOrganizationsCache(cache);
-      },
+      update,
     }
   );
 
   const [deleteOrganization] = useMutation<{ deleteOrganization: boolean }>(DELETE_ORGANIZATION, {
-    update(cache) {
-      evictOrganizationsCache(cache);
-      cache.gc();
-    },
+    update,
   });
 
-  const [addOrganizationRole] = useMutation<{ addOrganizationRole: any }>(ADD_ORGANIZATION_ROLE, {
-    update(cache) {
-      evictOrganizationsCache(cache);
-    },
-  });
-
-  const [removeOrganizationRole] = useMutation<{ removeOrganizationRole: any }>(
-    REMOVE_ORGANIZATION_ROLE,
+  const [addOrganizationRole] = useMutation<{ addOrganizationRole: OrganizationRole }>(
+    ADD_ORGANIZATION_ROLE,
     {
-      update(cache) {
-        evictOrganizationsCache(cache);
-      },
+      update,
     }
   );
 
-  const [addOrganizationTag] = useMutation<{ addOrganizationTag: any }>(ADD_ORGANIZATION_TAG, {
-    update(cache) {
-      evictOrganizationsCache(cache);
-    },
-  });
+  const [removeOrganizationRole] = useMutation<{ removeOrganizationRole: boolean }>(
+    REMOVE_ORGANIZATION_ROLE,
+    {
+      update,
+    }
+  );
+
+  const [addOrganizationTag] = useMutation<{ addOrganizationTag: OrganizationTag }>(
+    ADD_ORGANIZATION_TAG,
+    {
+      update,
+    }
+  );
 
   const [removeOrganizationTag] = useMutation<{ removeOrganizationTag: boolean }>(
     REMOVE_ORGANIZATION_TAG,
     {
-      update(cache) {
-        evictOrganizationsCache(cache);
-      },
+      update,
     }
   );
 

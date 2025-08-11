@@ -17,11 +17,11 @@ type UserRole implements Auditable {
   """
   The user associated with this relationship.
   """
-  user(scope: Scope!): User!
+  user(scope: Scope!): User
   """
   The role associated with this relationship.
   """
-  role(scope: Scope!): Role!
+  role(scope: Scope!): Role
   """
   Timestamp when the user-role relationship was created.
   """

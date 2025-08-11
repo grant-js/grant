@@ -1,7 +1,11 @@
-import { UserSortableField, UserSortOrder } from '@/graphql/generated/types';
+import {
+  QueryUsersArgs,
+  UserPage,
+  UserSortableField,
+  UserSortOrder,
+} from '@/graphql/generated/types';
 import { getUserTagsByTagId } from '@/graphql/providers/user-tags/faker/dataStore';
 import { getUsers as getUsersFromDataStore } from '@/graphql/providers/users/faker/dataStore';
-import { GetUsersParams, GetUsersResult } from '@/graphql/providers/users/types';
 
 const SEARCHABLE_FIELDS = ['name', 'email'] as const;
 const DEFAULT_SORT = { field: UserSortableField.Name, order: UserSortOrder.Asc };
@@ -13,7 +17,7 @@ export async function getUsers({
   search,
   ids,
   tagIds,
-}: GetUsersParams): Promise<GetUsersResult> {
+}: QueryUsersArgs): Promise<UserPage> {
   const safePage = typeof page === 'number' && page > 0 ? page : 1;
   const safeLimit = typeof limit === 'number' ? limit : 50;
 

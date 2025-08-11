@@ -2,7 +2,17 @@ import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import { User } from '@/graphql/generated/types';
+import {
+  AddUserRoleInput,
+  AddUserTagInput,
+  CreateUserInput,
+  RemoveUserRoleInput,
+  RemoveUserTagInput,
+  UpdateUserInput,
+  User,
+  UserRole,
+  UserTag,
+} from '@/graphql/generated/types';
 import { ADD_USER_TAG, REMOVE_USER_TAG } from '@/hooks/tags/mutations';
 
 import { evictUsersCache } from './cache';
@@ -13,36 +23,6 @@ import {
   ADD_USER_ROLE,
   REMOVE_USER_ROLE,
 } from './mutations';
-
-interface CreateUserInput {
-  name: string;
-  email: string;
-}
-
-interface UpdateUserInput {
-  name?: string;
-  email?: string;
-}
-
-interface AddUserRoleInput {
-  userId: string;
-  roleId: string;
-}
-
-interface RemoveUserRoleInput {
-  userId: string;
-  roleId: string;
-}
-
-interface AddUserTagInput {
-  userId: string;
-  tagId: string;
-}
-
-interface RemoveUserTagInput {
-  userId: string;
-  tagId: string;
-}
 
 export function useUserMutations() {
   const t = useTranslations('users');
@@ -63,19 +43,19 @@ export function useUserMutations() {
     update,
   });
 
-  const [addUserRole] = useMutation<{ addUserRole: any }>(ADD_USER_ROLE, {
+  const [addUserRole] = useMutation<{ addUserRole: UserRole }>(ADD_USER_ROLE, {
     update,
   });
 
-  const [removeUserRole] = useMutation<{ removeUserRole: any }>(REMOVE_USER_ROLE, {
+  const [removeUserRole] = useMutation<{ removeUserRole: UserRole }>(REMOVE_USER_ROLE, {
     update,
   });
 
-  const [addUserTag] = useMutation<{ addUserTag: any }>(ADD_USER_TAG, {
+  const [addUserTag] = useMutation<{ addUserTag: UserTag }>(ADD_USER_TAG, {
     update,
   });
 
-  const [removeUserTag] = useMutation<{ removeUserTag: boolean }>(REMOVE_USER_TAG, {
+  const [removeUserTag] = useMutation<{ removeUserTag: UserTag }>(REMOVE_USER_TAG, {
     update,
   });
 
@@ -83,7 +63,6 @@ export function useUserMutations() {
     try {
       const result = await createUser({
         variables: { input },
-        // Remove refetchQueries to prevent "Unknown query" warnings in tenant contexts
       });
 
       toast.success(t('notifications.createSuccess'));
@@ -101,7 +80,6 @@ export function useUserMutations() {
     try {
       const result = await updateUser({
         variables: { id, input },
-        // Remove refetchQueries to prevent "Unknown query" warnings in tenant contexts
       });
 
       toast.success(t('notifications.updateSuccess'));
@@ -138,7 +116,6 @@ export function useUserMutations() {
     try {
       const result = await addUserRole({
         variables: { input },
-        // Remove refetchQueries to prevent "Unknown query" warnings in tenant contexts
       });
 
       toast.success(t('notifications.roleAddedSuccess'));
@@ -156,7 +133,6 @@ export function useUserMutations() {
     try {
       const result = await removeUserRole({
         variables: { input },
-        // Remove refetchQueries to prevent "Unknown query" warnings in tenant contexts
       });
 
       toast.success(t('notifications.roleRemovedSuccess'));
@@ -174,7 +150,6 @@ export function useUserMutations() {
     try {
       const result = await addUserTag({
         variables: { input },
-        // Remove refetchQueries to prevent "Unknown query" warnings in tenant contexts
       });
 
       toast.success(t('notifications.tagAddedSuccess'));
@@ -192,7 +167,6 @@ export function useUserMutations() {
     try {
       await removeUserTag({
         variables: { input },
-        // Remove refetchQueries to prevent "Unknown query" warnings in tenant contexts
       });
 
       toast.success(t('notifications.tagRemovedSuccess'));

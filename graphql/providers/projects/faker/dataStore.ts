@@ -2,10 +2,10 @@ import { faker } from '@faker-js/faker';
 
 import {
   CreateProjectInput,
-  UpdateProjectInput,
+  Project,
   ProjectSortInput,
+  UpdateProjectInput,
 } from '@/graphql/generated/types';
-import { ProjectData } from '@/graphql/providers/projects/types';
 import {
   createFakerDataStore,
   EntityConfig,
@@ -14,7 +14,7 @@ import {
 } from '@/lib/providers/faker/genericDataStore';
 
 // Generate initial projects (hardcoded)
-const generateInitialProjects = (): ProjectData[] => {
+const generateInitialProjects = (): Project[] => {
   const auditTimestamps = generateAuditTimestamps();
   return [
     {
@@ -49,7 +49,7 @@ const generateInitialProjects = (): ProjectData[] => {
 };
 
 // Projects-specific configuration
-const projectsConfig: EntityConfig<ProjectData, CreateProjectInput, UpdateProjectInput> = {
+const projectsConfig: EntityConfig<Project, CreateProjectInput, UpdateProjectInput> = {
   entityName: 'Project',
   dataFileName: 'projects.json',
 
@@ -57,7 +57,7 @@ const projectsConfig: EntityConfig<ProjectData, CreateProjectInput, UpdateProjec
   generateId: () => faker.string.uuid(),
 
   // Generate project entity from input
-  generateEntity: (input: CreateProjectInput, id: string): ProjectData => {
+  generateEntity: (input: CreateProjectInput, id: string): Project => {
     const auditTimestamps = generateAuditTimestamps();
     return {
       id,
@@ -72,7 +72,7 @@ const projectsConfig: EntityConfig<ProjectData, CreateProjectInput, UpdateProjec
   },
 
   // Update project entity
-  updateEntity: (entity: ProjectData, input: UpdateProjectInput): ProjectData => {
+  updateEntity: (entity: Project, input: UpdateProjectInput): Project => {
     const auditTimestamp = updateAuditTimestamp();
     return {
       ...entity,
@@ -108,10 +108,7 @@ export const projectsDataStore = createFakerDataStore(projectsConfig);
 // Export the main functions with the same interface as the original
 export const initializeDataStore = () => projectsDataStore.getEntities();
 
-export const sortProjects = (
-  projects: ProjectData[],
-  sortConfig?: ProjectSortInput
-): ProjectData[] => {
+export const sortProjects = (projects: Project[], sortConfig?: ProjectSortInput): Project[] => {
   if (!sortConfig) return projects;
 
   return projectsDataStore.getEntities({
@@ -121,7 +118,7 @@ export const sortProjects = (
 };
 
 // Updated getProjects function with optional ids parameter
-export const getProjects = (sortConfig?: ProjectSortInput, ids?: string[]): ProjectData[] => {
+export const getProjects = (sortConfig?: ProjectSortInput, ids?: string[]): Project[] => {
   let allProjects = projectsDataStore.getEntities(
     sortConfig
       ? {
@@ -139,14 +136,14 @@ export const getProjects = (sortConfig?: ProjectSortInput, ids?: string[]): Proj
   return allProjects;
 };
 
-export const createProject = (input: CreateProjectInput): ProjectData => {
+export const createProject = (input: CreateProjectInput): Project => {
   return projectsDataStore.createEntity(input);
 };
 
-export const updateProject = (projectId: string, input: UpdateProjectInput): ProjectData | null => {
+export const updateProject = (projectId: string, input: UpdateProjectInput): Project | null => {
   return projectsDataStore.updateEntity(projectId, input);
 };
 
-export const deleteProject = (projectId: string): ProjectData | null => {
+export const deleteProject = (projectId: string): Project | null => {
   return projectsDataStore.deleteEntity(projectId);
 };

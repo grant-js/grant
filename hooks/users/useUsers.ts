@@ -2,14 +2,7 @@ import { useMemo } from 'react';
 
 import { useQuery, ApolloError } from '@apollo/client';
 
-import { UsersQueryResult } from '@/components/features/users/types';
-import {
-  User,
-  UserSortableField,
-  UserSortOrder,
-  QueryUsersArgs,
-  Scope,
-} from '@/graphql/generated/types';
+import { User, QueryUsersArgs, Scope, UserPage } from '@/graphql/generated/types';
 
 import { GET_USERS } from './queries';
 
@@ -26,17 +19,8 @@ interface UseUsersResult {
 }
 
 export function useUsers(options: UseUsersOptions): UseUsersResult {
-  const {
-    scope,
-    page = 1,
-    limit = 50, // Default to 50 for pagination
-    search = '',
-    sort = { field: UserSortableField.Name, order: UserSortOrder.Asc },
-    ids,
-    tagIds,
-  } = options;
+  const { scope, page, limit, search, sort, ids, tagIds } = options;
 
-  // Memoize variables to prevent unnecessary re-renders
   const variables = useMemo(
     () => ({
       scope,
@@ -50,9 +34,8 @@ export function useUsers(options: UseUsersOptions): UseUsersResult {
     [scope, page, limit, search, sort, ids, tagIds]
   );
 
-  const { data, loading, error, refetch } = useQuery<UsersQueryResult>(GET_USERS, {
+  const { data, loading, error, refetch } = useQuery<{ users: UserPage }>(GET_USERS, {
     variables,
-    notifyOnNetworkStatusChange: false, // Prevent re-renders on network status changes
   });
 
   return {

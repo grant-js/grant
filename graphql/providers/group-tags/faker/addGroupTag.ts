@@ -1,8 +1,7 @@
-import { AddGroupTagParams, AddGroupTagResult } from '@/graphql/providers/group-tags/types';
+import { GroupTag, MutationAddGroupTagArgs } from '@/graphql/generated/types';
+import { createGroupTag } from '@/graphql/providers/group-tags/faker/dataStore';
 
-import { createGroupTag } from './dataStore';
-
-export const addGroupTag = async (params: AddGroupTagParams): Promise<AddGroupTagResult> => {
+export const addGroupTag = async (params: MutationAddGroupTagArgs): Promise<GroupTag> => {
   const { input } = params;
   return createGroupTag(input.groupId, input.tagId);
 };

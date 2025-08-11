@@ -1,38 +1,20 @@
 import { faker } from '@faker-js/faker';
 
+import { AddOrganizationGroupInput, OrganizationGroup } from '@/graphql/generated/types';
 import {
   createFakerDataStore,
   EntityConfig,
   generateAuditTimestamps,
 } from '@/lib/providers/faker/genericDataStore';
 
-// Type for OrganizationGroup data without the resolved fields
-export interface OrganizationGroupData {
-  id: string;
-  organizationId: string;
-  groupId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Input type for creating organization-group relationships
-export interface CreateOrganizationGroupInput {
-  organizationId: string;
-  groupId: string;
-}
-
 // Generate empty initial data for organization-group relationships
-const generateInitialOrganizationGroups = (): OrganizationGroupData[] => {
+const generateInitialOrganizationGroups = (): OrganizationGroup[] => {
   // Return empty array - organization-group relationships should be created through application logic
   return [];
 };
 
 // OrganizationGroup-specific configuration
-const organizationGroupConfig: EntityConfig<
-  OrganizationGroupData,
-  CreateOrganizationGroupInput,
-  never
-> = {
+const organizationGroupConfig: EntityConfig<OrganizationGroup, AddOrganizationGroupInput, never> = {
   entityName: 'OrganizationGroup',
   dataFileName: 'organization-groups.json',
 
@@ -40,7 +22,7 @@ const organizationGroupConfig: EntityConfig<
   generateId: () => faker.string.uuid(),
 
   // Generate organization-group entity from input
-  generateEntity: (input: CreateOrganizationGroupInput, id: string): OrganizationGroupData => {
+  generateEntity: (input: AddOrganizationGroupInput, id: string): OrganizationGroup => {
     const auditTimestamps = generateAuditTimestamps();
     return {
       id,
@@ -75,21 +57,21 @@ export const organizationGroupsDataStore = createFakerDataStore(organizationGrou
 // Helper functions for organization-group operations
 export const getOrganizationGroupsByOrganizationId = (
   organizationId: string
-): OrganizationGroupData[] => {
+): OrganizationGroup[] => {
   const organizationGroups = organizationGroupsDataStore
     .getEntities()
     .filter((og) => og.organizationId === organizationId);
   return organizationGroups;
 };
 
-export const getOrganizationGroupsByGroupId = (groupId: string): OrganizationGroupData[] => {
+export const getOrganizationGroupsByGroupId = (groupId: string): OrganizationGroup[] => {
   return organizationGroupsDataStore.getEntities().filter((og) => og.groupId === groupId);
 };
 
 export const addOrganizationGroup = (
   organizationId: string,
   groupId: string
-): OrganizationGroupData => {
+): OrganizationGroup => {
   // Check if relationship already exists
   const existingRelationship = organizationGroupsDataStore
     .getEntities()
@@ -102,14 +84,14 @@ export const addOrganizationGroup = (
   return organizationGroupsDataStore.createEntity({ organizationId, groupId });
 };
 
-export const deleteOrganizationGroup = (id: string): OrganizationGroupData | null => {
+export const deleteOrganizationGroup = (id: string): OrganizationGroup | null => {
   return organizationGroupsDataStore.deleteEntity(id);
 };
 
 export const deleteOrganizationGroupByOrganizationAndGroup = (
   organizationId: string,
   groupId: string
-): OrganizationGroupData | null => {
+): OrganizationGroup | null => {
   const organizationGroup = organizationGroupsDataStore
     .getEntities()
     .find((og) => og.organizationId === organizationId && og.groupId === groupId);
@@ -123,7 +105,7 @@ export const deleteOrganizationGroupByOrganizationAndGroup = (
 
 export const deleteOrganizationGroupsByOrganizationId = (
   organizationId: string
-): OrganizationGroupData[] => {
+): OrganizationGroup[] => {
   const organizationGroups = organizationGroupsDataStore
     .getEntities()
     .filter((og) => og.organizationId === organizationId);
@@ -131,7 +113,7 @@ export const deleteOrganizationGroupsByOrganizationId = (
   return organizationGroups;
 };
 
-export const deleteOrganizationGroupsByGroupId = (groupId: string): OrganizationGroupData[] => {
+export const deleteOrganizationGroupsByGroupId = (groupId: string): OrganizationGroup[] => {
   const organizationGroups = organizationGroupsDataStore
     .getEntities()
     .filter((og) => og.groupId === groupId);

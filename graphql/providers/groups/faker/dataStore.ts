@@ -1,7 +1,11 @@
 import { faker } from '@faker-js/faker';
 
-import { CreateGroupInput, UpdateGroupInput, GroupSortInput } from '@/graphql/generated/types';
-import { GroupData } from '@/graphql/providers/groups/types';
+import {
+  CreateGroupInput,
+  UpdateGroupInput,
+  GroupSortInput,
+  Group,
+} from '@/graphql/generated/types';
 import {
   createFakerDataStore,
   EntityConfig,
@@ -10,7 +14,7 @@ import {
 } from '@/lib/providers/faker';
 
 // Generate initial groups (hardcoded)
-const generateInitialGroups = (): GroupData[] => {
+const generateInitialGroups = (): Group[] => {
   const auditTimestamps = generateAuditTimestamps();
   return [
     {
@@ -221,7 +225,7 @@ const generateInitialGroups = (): GroupData[] => {
 };
 
 // Groups-specific configuration
-const groupsConfig: EntityConfig<GroupData, CreateGroupInput, UpdateGroupInput> = {
+const groupsConfig: EntityConfig<Group, CreateGroupInput, UpdateGroupInput> = {
   entityName: 'Group',
   dataFileName: 'groups.json',
 
@@ -229,7 +233,7 @@ const groupsConfig: EntityConfig<GroupData, CreateGroupInput, UpdateGroupInput> 
   generateId: () => faker.string.uuid(),
 
   // Generate group entity from input
-  generateEntity: (input: CreateGroupInput, id: string): GroupData => {
+  generateEntity: (input: CreateGroupInput, id: string): Group => {
     const auditTimestamps = generateAuditTimestamps();
     return {
       id,
@@ -240,7 +244,7 @@ const groupsConfig: EntityConfig<GroupData, CreateGroupInput, UpdateGroupInput> 
   },
 
   // Update group entity
-  updateEntity: (entity: GroupData, input: UpdateGroupInput): GroupData => {
+  updateEntity: (entity: Group, input: UpdateGroupInput): Group => {
     const auditTimestamp = updateAuditTimestamp();
     return {
       ...entity,
@@ -269,7 +273,7 @@ export const groupsDataStore = createFakerDataStore(groupsConfig);
 // Export the main functions with the same interface as the original
 export const initializeDataStore = () => groupsDataStore.getEntities();
 
-export const sortGroups = (groups: GroupData[], sortConfig?: GroupSortInput): GroupData[] => {
+export const sortGroups = (groups: Group[], sortConfig?: GroupSortInput): Group[] => {
   if (!sortConfig) return groups;
 
   return groupsDataStore.getEntities({
@@ -279,7 +283,7 @@ export const sortGroups = (groups: GroupData[], sortConfig?: GroupSortInput): Gr
 };
 
 // Updated getGroups function with optional ids parameter
-export const getGroups = (sortConfig?: GroupSortInput, ids?: string[]): GroupData[] => {
+export const getGroups = (sortConfig?: GroupSortInput, ids?: string[]): Group[] => {
   let allGroups = groupsDataStore.getEntities(
     sortConfig
       ? {
@@ -301,14 +305,14 @@ export const isGroupUnique = (groupId: string): boolean => {
   return groupsDataStore.entityExists(groupId);
 };
 
-export const createGroup = (input: CreateGroupInput): GroupData => {
+export const createGroup = (input: CreateGroupInput): Group => {
   return groupsDataStore.createEntity(input);
 };
 
-export const updateGroup = (groupId: string, input: UpdateGroupInput): GroupData | null => {
+export const updateGroup = (groupId: string, input: UpdateGroupInput): Group | null => {
   return groupsDataStore.updateEntity(groupId, input);
 };
 
-export const deleteGroup = (groupId: string): GroupData | null => {
+export const deleteGroup = (groupId: string): Group | null => {
   return groupsDataStore.deleteEntity(groupId);
 };

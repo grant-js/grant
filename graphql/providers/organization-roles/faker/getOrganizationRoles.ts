@@ -1,11 +1,8 @@
+import { OrganizationRole, QueryOrganizationRolesArgs } from '@/graphql/generated/types';
 import { getOrganizationRolesByOrganizationId } from '@/graphql/providers/organization-roles/faker/dataStore';
-import {
-  GetOrganizationRolesParams,
-  GetOrganizationRolesResult,
-} from '@/graphql/providers/organization-roles/types';
 
 export async function getOrganizationRoles({
   organizationId,
-}: GetOrganizationRolesParams): Promise<GetOrganizationRolesResult> {
+}: QueryOrganizationRolesArgs): Promise<OrganizationRole[]> {
   return getOrganizationRolesByOrganizationId(organizationId);
 }

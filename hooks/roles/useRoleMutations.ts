@@ -2,7 +2,17 @@ import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import { Role } from '@/graphql/generated/types';
+import {
+  AddRoleGroupInput,
+  AddRoleTagInput,
+  CreateRoleInput,
+  RemoveRoleGroupInput,
+  RemoveRoleTagInput,
+  Role,
+  RoleGroup,
+  RoleTag,
+  UpdateRoleInput,
+} from '@/graphql/generated/types';
 import { ADD_ROLE_TAG, REMOVE_ROLE_TAG } from '@/hooks/tags/mutations';
 
 import { evictRolesCache } from './cache';
@@ -13,36 +23,6 @@ import {
   ADD_ROLE_GROUP,
   REMOVE_ROLE_GROUP,
 } from './mutations';
-
-interface CreateRoleInput {
-  name: string;
-  description?: string;
-}
-
-interface UpdateRoleInput {
-  name?: string;
-  description?: string;
-}
-
-interface AddRoleGroupInput {
-  roleId: string;
-  groupId: string;
-}
-
-interface RemoveRoleGroupInput {
-  roleId: string;
-  groupId: string;
-}
-
-interface AddRoleTagInput {
-  roleId: string;
-  tagId: string;
-}
-
-interface RemoveRoleTagInput {
-  roleId: string;
-  tagId: string;
-}
 
 export function useRoleMutations() {
   const t = useTranslations('roles');
@@ -63,19 +43,19 @@ export function useRoleMutations() {
     update,
   });
 
-  const [addRoleGroup] = useMutation<{ addRoleGroup: any }>(ADD_ROLE_GROUP, {
+  const [addRoleGroup] = useMutation<{ addRoleGroup: RoleGroup }>(ADD_ROLE_GROUP, {
     update,
   });
 
-  const [removeRoleGroup] = useMutation<{ removeRoleGroup: any }>(REMOVE_ROLE_GROUP, {
+  const [removeRoleGroup] = useMutation<{ removeRoleGroup: RoleGroup }>(REMOVE_ROLE_GROUP, {
     update,
   });
 
-  const [addRoleTag] = useMutation<{ addRoleTag: any }>(ADD_ROLE_TAG, {
+  const [addRoleTag] = useMutation<{ addRoleTag: RoleTag }>(ADD_ROLE_TAG, {
     update,
   });
 
-  const [removeRoleTag] = useMutation<{ removeRoleTag: boolean }>(REMOVE_ROLE_TAG, {
+  const [removeRoleTag] = useMutation<{ removeRoleTag: RoleTag }>(REMOVE_ROLE_TAG, {
     update,
   });
 
@@ -83,7 +63,6 @@ export function useRoleMutations() {
     try {
       const result = await createRole({
         variables: { input },
-        // Remove refetchQueries to prevent "Unknown query" warnings in tenant contexts
       });
 
       toast.success(t('notifications.createSuccess'));
@@ -101,7 +80,6 @@ export function useRoleMutations() {
     try {
       const result = await updateRole({
         variables: { id, input },
-        // Remove refetchQueries to prevent "Unknown query" warnings in tenant contexts
       });
 
       toast.success(t('notifications.updateSuccess'));

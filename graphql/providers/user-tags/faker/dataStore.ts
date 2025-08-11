@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 
-import { Auditable, Scope, Tenant } from '@/graphql/generated/types';
+import { AddUserTagInput, Scope, Tenant, UserTag } from '@/graphql/generated/types';
 import { getTags } from '@/graphql/providers/tags/faker/dataStore';
 import { getUsers } from '@/graphql/providers/users/faker/dataStore';
 import {
@@ -12,24 +12,12 @@ import {
 import { getOrganizationTagsByOrganizationId } from '../../organization-tags/faker/dataStore';
 import { getProjectTagsByProjectId } from '../../project-tags/faker/dataStore';
 
-// Type for UserTag data without the resolved fields
-export interface UserTagData extends Auditable {
-  userId: string;
-  tagId: string;
-}
-
-// Input type for creating user-tag relationships
-export interface CreateUserTagInput {
-  userId: string;
-  tagId: string;
-}
-
 // Generate fake user-tag relationships
-const generateFakeUserTags = (count: number = 50): UserTagData[] => {
+const generateFakeUserTags = (count: number = 50): UserTag[] => {
   const users = getUsers();
   const tags = getTags();
 
-  const userTags: UserTagData[] = [];
+  const userTags: UserTag[] = [];
 
   // Create some random user-tag relationships
   for (let i = 0; i < count; i++) {
@@ -53,7 +41,7 @@ const generateFakeUserTags = (count: number = 50): UserTagData[] => {
 };
 
 // UserTag-specific configuration
-const userTagConfig: EntityConfig<UserTagData, CreateUserTagInput, never> = {
+const userTagConfig: EntityConfig<UserTag, AddUserTagInput, never> = {
   entityName: 'UserTag',
   dataFileName: 'user-tags.json',
 
@@ -61,7 +49,7 @@ const userTagConfig: EntityConfig<UserTagData, CreateUserTagInput, never> = {
   generateId: () => faker.string.uuid(),
 
   // Generate user-tag entity from input
-  generateEntity: (input: CreateUserTagInput, id: string): UserTagData => {
+  generateEntity: (input: AddUserTagInput, id: string): UserTag => {
     const auditTimestamps = generateAuditTimestamps();
     return {
       id,
@@ -107,22 +95,22 @@ export const getUserTagIdsByScope = (scope: Scope): string[] => {
 };
 
 // Helper functions for user-tag operations
-export const getUserTagsByUserId = (scope: Scope, userId: string): UserTagData[] => {
+export const getUserTagsByUserId = (scope: Scope, userId: string): UserTag[] => {
   const userTags = userTagsDataStore.getEntities().filter((ut) => ut.userId === userId);
 
   const scopedTagIds = getUserTagIdsByScope(scope);
   return userTags.filter((ut) => scopedTagIds.includes(ut.tagId));
 };
 
-export const getUserTagsByTagId = (tagId: string): UserTagData[] => {
+export const getUserTagsByTagId = (tagId: string): UserTag[] => {
   return userTagsDataStore.getEntities().filter((ut) => ut.tagId === tagId);
 };
 
-export const getUserTags = (): UserTagData[] => {
+export const getUserTags = (): UserTag[] => {
   return userTagsDataStore.getEntities();
 };
 
-export const createUserTag = (userId: string, tagId: string): UserTagData => {
+export const createUserTag = (userId: string, tagId: string): UserTag => {
   // Check if relationship already exists
   const existing = userTagsDataStore
     .getEntities()
@@ -136,11 +124,11 @@ export const createUserTag = (userId: string, tagId: string): UserTagData => {
   return newUserTag;
 };
 
-export const deleteUserTag = (id: string): UserTagData | null => {
+export const deleteUserTag = (id: string): UserTag | null => {
   return userTagsDataStore.deleteEntity(id);
 };
 
-export const deleteUserTagByUserAndTag = (userId: string, tagId: string): UserTagData | null => {
+export const deleteUserTagByUserAndTag = (userId: string, tagId: string): UserTag | null => {
   const userTag = userTagsDataStore
     .getEntities()
     .find((ut) => ut.userId === userId && ut.tagId === tagId);
@@ -152,16 +140,12 @@ export const deleteUserTagByUserAndTag = (userId: string, tagId: string): UserTa
   return userTagsDataStore.deleteEntity(userTag.id);
 };
 
-export const deleteUserTagsByUserId = (userId: string): UserTagData[] => {
+export const deleteUserTagsByUserId = (userId: string): UserTag[] => {
   const userTags = userTagsDataStore.getEntities().filter((ut) => ut.userId === userId);
-  return userTags
-    .map((ut) => userTagsDataStore.deleteEntity(ut.id))
-    .filter(Boolean) as UserTagData[];
+  return userTags.map((ut) => userTagsDataStore.deleteEntity(ut.id)).filter(Boolean) as UserTag[];
 };
 
-export const deleteUserTagsByTagId = (tagId: string): UserTagData[] => {
+export const deleteUserTagsByTagId = (tagId: string): UserTag[] => {
   const userTags = getUserTagsByTagId(tagId);
-  return userTags
-    .map((ut) => userTagsDataStore.deleteEntity(ut.id))
-    .filter(Boolean) as UserTagData[];
+  return userTags.map((ut) => userTagsDataStore.deleteEntity(ut.id)).filter(Boolean) as UserTag[];
 };

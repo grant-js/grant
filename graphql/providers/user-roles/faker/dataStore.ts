@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 
-import { Auditable, Scope, Tenant } from '@/graphql/generated/types';
+import { AddUserRoleInput, Scope, Tenant, UserRole } from '@/graphql/generated/types';
 import { getRoles } from '@/graphql/providers/roles/faker/dataStore';
 import { getUsers } from '@/graphql/providers/users/faker/dataStore';
 import {
@@ -12,24 +12,12 @@ import {
 import { getOrganizationRolesByOrganizationId } from '../../organization-roles/faker/dataStore';
 import { getProjectRolesByProjectId } from '../../project-roles/faker/dataStore';
 
-// Type for UserRole data without the resolved fields
-export interface UserRoleData extends Auditable {
-  userId: string;
-  roleId: string;
-}
-
-// Input type for creating user-role relationships
-export interface CreateUserRoleInput {
-  userId: string;
-  roleId: string;
-}
-
 // Generate fake user-role relationships
-const generateFakeUserRoles = (count: number = 100): UserRoleData[] => {
+const generateFakeUserRoles = (count: number = 100): UserRole[] => {
   const users = getUsers();
   const roles = getRoles();
 
-  const userRoles: UserRoleData[] = [];
+  const userRoles: UserRole[] = [];
 
   // Create some random user-role relationships
   for (let i = 0; i < count; i++) {
@@ -55,7 +43,7 @@ const generateFakeUserRoles = (count: number = 100): UserRoleData[] => {
 };
 
 // UserRole-specific configuration
-const userRoleConfig: EntityConfig<UserRoleData, CreateUserRoleInput, never> = {
+const userRoleConfig: EntityConfig<UserRole, AddUserRoleInput, never> = {
   entityName: 'UserRole',
   dataFileName: 'user-roles.json',
 
@@ -63,7 +51,7 @@ const userRoleConfig: EntityConfig<UserRoleData, CreateUserRoleInput, never> = {
   generateId: () => faker.string.uuid(),
 
   // Generate user-role entity from input
-  generateEntity: (input: CreateUserRoleInput, id: string): UserRoleData => {
+  generateEntity: (input: AddUserRoleInput, id: string): UserRole => {
     const auditTimestamps = generateAuditTimestamps();
     return {
       id,
@@ -109,18 +97,18 @@ export const getUserRoleIdsByScope = (scope: Scope): string[] => {
 };
 
 // Helper functions for user-role operations
-export const getUserRolesByUserId = (scope: Scope, userId: string): UserRoleData[] => {
+export const getUserRolesByUserId = (scope: Scope, userId: string): UserRole[] => {
   const userRoles = userRolesDataStore.getEntities().filter((ur) => ur.userId === userId);
 
   const scopedRoleIds = getUserRoleIdsByScope(scope);
   return userRoles.filter((ur) => scopedRoleIds.includes(ur.roleId));
 };
 
-export const getUserRolesByRoleId = (roleId: string): UserRoleData[] => {
+export const getUserRolesByRoleId = (roleId: string): UserRole[] => {
   return userRolesDataStore.getEntities().filter((ur) => ur.roleId === roleId);
 };
 
-export const addUserRole = (userId: string, roleId: string): UserRoleData => {
+export const addUserRole = (userId: string, roleId: string): UserRole => {
   // Check if role already exists
   const existingRole = userRolesDataStore
     .getEntities()
@@ -133,14 +121,11 @@ export const addUserRole = (userId: string, roleId: string): UserRoleData => {
   return userRolesDataStore.createEntity({ userId, roleId });
 };
 
-export const deleteUserRole = (id: string): UserRoleData | null => {
+export const deleteUserRole = (id: string): UserRole | null => {
   return userRolesDataStore.deleteEntity(id);
 };
 
-export const deleteUserRoleByUserAndRole = (
-  userId: string,
-  roleId: string
-): UserRoleData | null => {
+export const deleteUserRoleByUserAndRole = (userId: string, roleId: string): UserRole | null => {
   const userRole = userRolesDataStore
     .getEntities()
     .find((ur) => ur.userId === userId && ur.roleId === roleId);
@@ -152,13 +137,13 @@ export const deleteUserRoleByUserAndRole = (
   return userRolesDataStore.deleteEntity(userRole.id);
 };
 
-export const deleteUserRolesByUserId = (userId: string): UserRoleData[] => {
+export const deleteUserRolesByUserId = (userId: string): UserRole[] => {
   const userRoles = userRolesDataStore.getEntities().filter((ur) => ur.userId === userId);
   userRoles.forEach((ur) => userRolesDataStore.deleteEntity(ur.id));
   return userRoles;
 };
 
-export const deleteUserRolesByRoleId = (roleId: string): UserRoleData[] => {
+export const deleteUserRolesByRoleId = (roleId: string): UserRole[] => {
   const userRoles = userRolesDataStore.getEntities().filter((ur) => ur.roleId === roleId);
   userRoles.forEach((ur) => userRolesDataStore.deleteEntity(ur.id));
   return userRoles;

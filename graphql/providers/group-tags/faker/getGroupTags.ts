@@ -1,8 +1,8 @@
-import { GetGroupTagsParams, GetGroupTagsResult } from '@/graphql/providers/group-tags/types';
+import { QueryGroupTagsArgs } from '@/graphql/generated/types';
+import { GroupTag } from '@/graphql/generated/types';
+import { getGroupTagsByGroupId } from '@/graphql/providers/group-tags/faker/dataStore';
 
-import { getGroupTagsByGroupId } from './dataStore';
-
-export const getGroupTags = async (params: GetGroupTagsParams): Promise<GetGroupTagsResult> => {
+export const getGroupTags = async (params: QueryGroupTagsArgs): Promise<GroupTag[]> => {
   const { groupId, scope } = params;
   return getGroupTagsByGroupId(scope, groupId);
 };

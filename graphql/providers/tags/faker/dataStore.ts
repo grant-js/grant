@@ -1,8 +1,7 @@
 import { faker } from '@faker-js/faker';
 
 import { TagSortInput } from '@/graphql/generated/types';
-import { CreateTagInput, UpdateTagInput } from '@/graphql/providers/tags/types';
-import { TagData } from '@/graphql/providers/tags/types';
+import { Tag, CreateTagInput, UpdateTagInput } from '@/graphql/generated/types';
 import {
   createFakerDataStore,
   EntityConfig,
@@ -12,7 +11,7 @@ import {
 import { getAvailableTagColors } from '@/lib/tag-colors';
 
 // Generate fake tags for initial data
-const generateFakeTags = (count: number = 20): TagData[] => {
+const generateFakeTags = (count: number = 20): Tag[] => {
   const availableColors = getAvailableTagColors();
   const tagNames = [
     'Frontend',
@@ -49,7 +48,7 @@ const generateFakeTags = (count: number = 20): TagData[] => {
 };
 
 // Tags-specific configuration
-const tagsConfig: EntityConfig<TagData, CreateTagInput, UpdateTagInput> = {
+const tagsConfig: EntityConfig<Tag, CreateTagInput, UpdateTagInput> = {
   entityName: 'Tag',
   dataFileName: 'tags.json',
 
@@ -57,7 +56,7 @@ const tagsConfig: EntityConfig<TagData, CreateTagInput, UpdateTagInput> = {
   generateId: () => faker.string.uuid(),
 
   // Generate tag entity from input
-  generateEntity: (input: CreateTagInput, id: string): TagData => {
+  generateEntity: (input: CreateTagInput, id: string): Tag => {
     const auditTimestamps = generateAuditTimestamps();
     return {
       id,
@@ -68,7 +67,7 @@ const tagsConfig: EntityConfig<TagData, CreateTagInput, UpdateTagInput> = {
   },
 
   // Update tag entity
-  updateEntity: (entity: TagData, input: UpdateTagInput): TagData => {
+  updateEntity: (entity: Tag, input: UpdateTagInput): Tag => {
     const auditTimestamp = updateAuditTimestamp();
     return {
       ...entity,
@@ -97,7 +96,7 @@ export const tagsDataStore = createFakerDataStore(tagsConfig);
 // Export the main functions with the same interface as the original
 export const initializeDataStore = () => tagsDataStore.getEntities();
 
-export const sortTags = (tags: TagData[], sortConfig?: TagSortInput): TagData[] => {
+export const sortTags = (tags: Tag[], sortConfig?: TagSortInput): Tag[] => {
   if (!sortConfig) return tags;
 
   return tagsDataStore.getEntities({
@@ -105,7 +104,7 @@ export const sortTags = (tags: TagData[], sortConfig?: TagSortInput): TagData[] 
     order: sortConfig.direction,
   });
 };
-export const getTags = (sortConfig?: TagSortInput, ids?: string[]): TagData[] => {
+export const getTags = (sortConfig?: TagSortInput, ids?: string[]): Tag[] => {
   let allTags = tagsDataStore.getEntities(
     sortConfig
       ? {
@@ -122,12 +121,12 @@ export const getTags = (sortConfig?: TagSortInput, ids?: string[]): TagData[] =>
 
   return allTags;
 };
-export const createTag = (input: CreateTagInput): TagData => {
+export const createTag = (input: CreateTagInput): Tag => {
   return tagsDataStore.createEntity(input);
 };
-export const updateTag = (tagId: string, input: UpdateTagInput): TagData | null => {
+export const updateTag = (tagId: string, input: UpdateTagInput): Tag | null => {
   return tagsDataStore.updateEntity(tagId, input);
 };
-export const deleteTag = (tagId: string): TagData | null => {
+export const deleteTag = (tagId: string): Tag | null => {
   return tagsDataStore.deleteEntity(tagId);
 };

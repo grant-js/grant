@@ -1,11 +1,7 @@
-import { ProjectUser } from '@/graphql/generated/types';
+import { MutationAddProjectUserArgs, ProjectUser } from '@/graphql/generated/types';
 import { addProjectUser as addProjectUserInStore } from '@/graphql/providers/project-users/faker/dataStore';
 
-import { AddProjectUserParams, AddProjectUserResult } from '../types';
-
-export async function addProjectUser({
-  input,
-}: AddProjectUserParams): Promise<AddProjectUserResult> {
+export async function addProjectUser({ input }: MutationAddProjectUserArgs): Promise<ProjectUser> {
   const projectUserData = addProjectUserInStore(input.projectId, input.userId);
-  return projectUserData as ProjectUser; // Convert ProjectUserData to ProjectUser for GraphQL
+  return projectUserData;
 }

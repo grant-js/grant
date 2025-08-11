@@ -8,17 +8,6 @@ export const ADD_ORGANIZATION_PROJECT = gql`
       projectId
       createdAt
       updatedAt
-      organization {
-        id
-        name
-        slug
-      }
-      project {
-        id
-        name
-        slug
-        description
-      }
     }
   }
 `;

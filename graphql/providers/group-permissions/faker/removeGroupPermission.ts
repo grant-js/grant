@@ -1,13 +1,9 @@
-import {
-  RemoveGroupPermissionParams,
-  RemoveGroupPermissionResult,
-} from '@/graphql/providers/group-permissions/types';
-
-import { deleteGroupPermissionByGroupAndPermission } from './dataStore';
+import { MutationRemoveGroupPermissionArgs } from '@/graphql/generated/types';
+import { deleteGroupPermissionByGroupAndPermission } from '@/graphql/providers/group-permissions/faker/dataStore';
 
 export const removeGroupPermission = async (
-  params: RemoveGroupPermissionParams
-): Promise<RemoveGroupPermissionResult> => {
+  params: MutationRemoveGroupPermissionArgs
+): Promise<boolean> => {
   const { input } = params;
   const { groupId, permissionId } = input;
 
@@ -20,5 +16,5 @@ export const removeGroupPermission = async (
     );
   }
 
-  return true;
+  return deletedGroupPermission !== null;
 };

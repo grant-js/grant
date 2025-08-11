@@ -14,7 +14,6 @@ export function DeleteRoleDialog() {
   const { removeProjectRole } = useProjectMutations();
   const { removeOrganizationRole } = useOrganizationMutations();
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const roleToDelete = useRolesStore((state) => state.roleToDelete);
   const setRoleToDelete = useRolesStore((state) => state.setRoleToDelete);
 
@@ -30,14 +29,11 @@ export function DeleteRoleDialog() {
     try {
       const promises: Promise<any>[] = [];
 
-      // Remove role from tenant
       if (scope.tenant === Tenant.Organization) {
         promises.push(
           removeOrganizationRole({
             organizationId: scope.id,
             roleId: roleToDelete.id,
-          }).catch((error: any) => {
-            console.error('Error removing organization role:', error);
           })
         );
       } else if (scope.tenant === Tenant.Project) {
@@ -51,14 +47,11 @@ export function DeleteRoleDialog() {
         );
       }
 
-      // Remove all group relationships
       if (roleToDelete.groups && roleToDelete.groups.length > 0) {
         const removeGroupPromises = roleToDelete.groups.map((group) =>
           removeRoleGroup({
             roleId: roleToDelete.id,
             groupId: group.id,
-          }).catch((error: any) => {
-            console.error('Error removing role group:', error);
           })
         );
         promises.push(...removeGroupPromises);
@@ -70,8 +63,6 @@ export function DeleteRoleDialog() {
           removeRoleTag({
             roleId: roleToDelete.id,
             tagId: tag.id,
-          }).catch((error: any) => {
-            console.error('Error removing role tag:', error);
           })
         );
         promises.push(...removeTagPromises);

@@ -1,7 +1,11 @@
-import { RoleSortableField, RoleSortOrder } from '@/graphql/generated/types';
+import {
+  QueryRolesArgs,
+  RolePage,
+  RoleSortableField,
+  RoleSortOrder,
+} from '@/graphql/generated/types';
 import { getRoleTagsByTagId } from '@/graphql/providers/role-tags/faker/dataStore';
 import { getRoles as getRolesFromDataStore } from '@/graphql/providers/roles/faker/dataStore';
-import { GetRolesParams, GetRolesResult } from '@/graphql/providers/roles/types';
 
 const SEARCHABLE_FIELDS = ['name', 'description'] as const;
 const DEFAULT_SORT = { field: RoleSortableField.Name, order: RoleSortOrder.Asc };
@@ -13,7 +17,7 @@ export async function getRoles({
   search,
   ids,
   tagIds,
-}: GetRolesParams): Promise<GetRolesResult> {
+}: QueryRolesArgs): Promise<RolePage> {
   const safePage = typeof page === 'number' && page > 0 ? page : 1;
   const safeLimit = typeof limit === 'number' ? limit : 50;
 

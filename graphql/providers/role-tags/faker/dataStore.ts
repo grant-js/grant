@@ -1,7 +1,6 @@
 import { faker } from '@faker-js/faker';
 
-import { Auditable } from '@/graphql/generated/types';
-import { Scope, Tenant } from '@/graphql/generated/types';
+import { AddRoleTagInput, RoleTag, Scope, Tenant } from '@/graphql/generated/types';
 import { getOrganizationTagsByOrganizationId } from '@/graphql/providers/organization-tags/faker/dataStore';
 import { getProjectTagsByProjectId } from '@/graphql/providers/project-tags/faker/dataStore';
 import { getRoles } from '@/graphql/providers/roles/faker/dataStore';
@@ -12,24 +11,12 @@ import {
   generateAuditTimestamps,
 } from '@/lib/providers/faker/genericDataStore';
 
-// Type for RoleTag data without the resolved fields
-export interface RoleTagData extends Auditable {
-  roleId: string;
-  tagId: string;
-}
-
-// Input type for creating role-tag relationships
-export interface CreateRoleTagInput {
-  roleId: string;
-  tagId: string;
-}
-
 // Generate fake role-tag relationships
-const generateFakeRoleTags = (count: number = 50): RoleTagData[] => {
+const generateFakeRoleTags = (count: number = 50): RoleTag[] => {
   const roles = getRoles();
   const tags = getTags();
 
-  const roleTags: RoleTagData[] = [];
+  const roleTags: RoleTag[] = [];
 
   // Create some random role-tag relationships
   for (let i = 0; i < count; i++) {
@@ -53,7 +40,7 @@ const generateFakeRoleTags = (count: number = 50): RoleTagData[] => {
 };
 
 // RoleTag-specific configuration
-const roleTagConfig: EntityConfig<RoleTagData, CreateRoleTagInput, never> = {
+const roleTagConfig: EntityConfig<RoleTag, AddRoleTagInput, never> = {
   entityName: 'RoleTag',
   dataFileName: 'role-tags.json',
 
@@ -61,7 +48,7 @@ const roleTagConfig: EntityConfig<RoleTagData, CreateRoleTagInput, never> = {
   generateId: () => faker.string.uuid(),
 
   // Generate role-tag entity from input
-  generateEntity: (input: CreateRoleTagInput, id: string): RoleTagData => {
+  generateEntity: (input: AddRoleTagInput, id: string): RoleTag => {
     const auditTimestamps = generateAuditTimestamps();
     return {
       id,
@@ -107,22 +94,22 @@ export const getRoleTagIdsByScope = (scope: Scope): string[] => {
 };
 
 // Helper functions for role-tag operations
-export const getRoleTagsByRoleId = (scope: Scope, roleId: string): RoleTagData[] => {
+export const getRoleTagsByRoleId = (scope: Scope, roleId: string): RoleTag[] => {
   const roleTags = roleTagsDataStore.getEntities().filter((rt) => rt.roleId === roleId);
 
   const scopedTagIds = getRoleTagIdsByScope(scope);
   return roleTags.filter((rt) => scopedTagIds.includes(rt.tagId));
 };
 
-export const getRoleTagsByTagId = (tagId: string): RoleTagData[] => {
+export const getRoleTagsByTagId = (tagId: string): RoleTag[] => {
   return roleTagsDataStore.getEntities().filter((rt) => rt.tagId === tagId);
 };
 
-export const getRoleTags = (): RoleTagData[] => {
+export const getRoleTags = (): RoleTag[] => {
   return roleTagsDataStore.getEntities();
 };
 
-export const createRoleTag = (roleId: string, tagId: string): RoleTagData => {
+export const createRoleTag = (roleId: string, tagId: string): RoleTag => {
   // Check if relationship already exists
   const existing = roleTagsDataStore
     .getEntities()
@@ -136,11 +123,11 @@ export const createRoleTag = (roleId: string, tagId: string): RoleTagData => {
   return newRoleTag;
 };
 
-export const deleteRoleTag = (id: string): RoleTagData | null => {
+export const deleteRoleTag = (id: string): RoleTag | null => {
   return roleTagsDataStore.deleteEntity(id);
 };
 
-export const deleteRoleTagByRoleAndTag = (roleId: string, tagId: string): RoleTagData | null => {
+export const deleteRoleTagByRoleAndTag = (roleId: string, tagId: string): RoleTag | null => {
   const roleTag = roleTagsDataStore
     .getEntities()
     .find((rt) => rt.roleId === roleId && rt.tagId === tagId);
@@ -152,16 +139,12 @@ export const deleteRoleTagByRoleAndTag = (roleId: string, tagId: string): RoleTa
   return roleTagsDataStore.deleteEntity(roleTag.id);
 };
 
-export const deleteRoleTagsByRoleId = (roleId: string): RoleTagData[] => {
+export const deleteRoleTagsByRoleId = (roleId: string): RoleTag[] => {
   const roleTags = roleTagsDataStore.getEntities().filter((rt) => rt.roleId === roleId);
-  return roleTags
-    .map((rt) => roleTagsDataStore.deleteEntity(rt.id))
-    .filter(Boolean) as RoleTagData[];
+  return roleTags.map((rt) => roleTagsDataStore.deleteEntity(rt.id)).filter(Boolean) as RoleTag[];
 };
 
-export const deleteRoleTagsByTagId = (tagId: string): RoleTagData[] => {
+export const deleteRoleTagsByTagId = (tagId: string): RoleTag[] => {
   const roleTags = getRoleTagsByTagId(tagId);
-  return roleTags
-    .map((rt) => roleTagsDataStore.deleteEntity(rt.id))
-    .filter(Boolean) as RoleTagData[];
+  return roleTags.map((rt) => roleTagsDataStore.deleteEntity(rt.id)).filter(Boolean) as RoleTag[];
 };

@@ -1,5 +1,5 @@
+import { ProjectPage, QueryProjectsArgs } from '@/graphql/generated/types';
 import { getProjects as getProjectsFromStore } from '@/graphql/providers/projects/faker/dataStore';
-import { GetProjectsParams, GetProjectsResult } from '@/graphql/providers/projects/types';
 
 const SEARCHABLE_FIELDS = ['name', 'slug', 'description'] as const;
 
@@ -9,7 +9,7 @@ export async function getProjects({
   search,
   sort,
   ids,
-}: GetProjectsParams): Promise<GetProjectsResult> {
+}: QueryProjectsArgs): Promise<ProjectPage> {
   const safePage = typeof page === 'number' && page > 0 ? page : 1;
   const safeLimit = typeof limit === 'number' ? limit : 10;
 

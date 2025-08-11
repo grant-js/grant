@@ -1,8 +1,9 @@
-import { RemoveRoleTagParams, RemoveRoleTagResult } from '@/graphql/providers/role-tags/types';
+import { MutationRemoveRoleTagArgs } from '@/graphql/generated/types';
+import { RoleTag } from '@/graphql/generated/types';
 
 import { deleteRoleTagByRoleAndTag } from './dataStore';
 
-export const removeRoleTag = async (params: RemoveRoleTagParams): Promise<RemoveRoleTagResult> => {
+export const removeRoleTag = async (params: MutationRemoveRoleTagArgs): Promise<RoleTag> => {
   const { input } = params;
   const deletedRoleTag = deleteRoleTagByRoleAndTag(input.roleId, input.tagId);
 

@@ -1,19 +1,23 @@
-import { PermissionSortableField, PermissionSortOrder } from '@/graphql/generated/types';
+import {
+  PermissionPage,
+  PermissionSortableField,
+  PermissionSortOrder,
+  QueryPermissionsArgs,
+} from '@/graphql/generated/types';
 import { getPermissionTagsByTagId } from '@/graphql/providers/permission-tags/faker/dataStore';
 import { getPermissions as getPermissionsFromDataStore } from '@/graphql/providers/permissions/faker/dataStore';
-import { GetPermissionsParams, GetPermissionsResult } from '@/graphql/providers/permissions/types';
 
 const SEARCHABLE_FIELDS = ['name', 'description', 'action'] as const;
 const DEFAULT_SORT = { field: PermissionSortableField.Name, order: PermissionSortOrder.Asc };
 
 export async function getPermissions({
-  page = 1,
-  limit = 50,
+  page,
+  limit,
   sort,
   search,
   ids,
   tagIds,
-}: GetPermissionsParams): Promise<GetPermissionsResult> {
+}: QueryPermissionsArgs): Promise<PermissionPage> {
   const safePage = typeof page === 'number' && page > 0 ? page : 1;
   const safeLimit = typeof limit === 'number' ? limit : 50;
 

@@ -1,14 +1,10 @@
-import {
-  GetGroupPermissionsParams,
-  GetGroupPermissionsResult,
-} from '@/graphql/providers/group-permissions/types';
-
-import { getGroupPermissionsByGroupId } from './dataStore';
+import { GroupPermission, QueryGroupPermissionsArgs } from '@/graphql/generated/types';
+import { getGroupPermissionsByGroupId } from '@/graphql/providers/group-permissions/faker/dataStore';
 
 export const getGroupPermissions = async ({
   groupId,
   scope,
-}: GetGroupPermissionsParams): Promise<GetGroupPermissionsResult> => {
+}: QueryGroupPermissionsArgs): Promise<GroupPermission[]> => {
   const groupPermissions = getGroupPermissionsByGroupId(scope, groupId);
   return groupPermissions;
 };

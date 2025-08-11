@@ -2,12 +2,15 @@ import { useMemo } from 'react';
 
 import { useQuery, ApolloError } from '@apollo/client';
 
-import { RolesQueryResult } from '@/components/features/roles/types';
-import { Role, RoleSortableField, RoleSortOrder, QueryRolesArgs } from '@/graphql/generated/types';
+import {
+  Role,
+  RoleSortableField,
+  RoleSortOrder,
+  QueryRolesArgs,
+  RolePage,
+} from '@/graphql/generated/types';
 
 import { GET_ROLES } from './queries';
-
-interface UseRolesOptions extends Partial<QueryRolesArgs> {}
 
 interface UseRolesResult {
   roles: Role[];
@@ -17,7 +20,7 @@ interface UseRolesResult {
   refetch: () => Promise<any>;
 }
 
-export function useRoles(options: UseRolesOptions): UseRolesResult {
+export function useRoles(options: QueryRolesArgs): UseRolesResult {
   const {
     scope,
     page = 1,
@@ -42,9 +45,8 @@ export function useRoles(options: UseRolesOptions): UseRolesResult {
     [scope, page, limit, search, sort, ids, tagIds]
   );
 
-  const { data, loading, error, refetch } = useQuery<RolesQueryResult>(GET_ROLES, {
+  const { data, loading, error, refetch } = useQuery<{ roles: RolePage }>(GET_ROLES, {
     variables,
-    notifyOnNetworkStatusChange: false, // Prevent re-renders on network status changes
   });
 
   return {

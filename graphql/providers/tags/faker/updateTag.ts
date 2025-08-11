@@ -1,8 +1,8 @@
-import { UpdateTagParams, UpdateTagResult } from '@/graphql/providers/tags/types';
+import { MutationUpdateTagArgs, Tag } from '@/graphql/generated/types';
 
 import { updateTag as updateTagInStore } from './dataStore';
 
-export const updateTag = async (params: UpdateTagParams): Promise<UpdateTagResult> => {
+export const updateTag = async (params: MutationUpdateTagArgs): Promise<Tag> => {
   const { id, input } = params;
   const updatedTag = updateTagInStore(id, input);
 

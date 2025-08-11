@@ -22,19 +22,3 @@ export const GET_TAGS = gql`
     }
   }
 `;
-
-export const GET_TAGS_BY_IDS = gql`
-  query GetTagsByIds($scope: Scope!, $ids: [ID!]!) {
-    tags(scope: $scope, ids: $ids) {
-      tags {
-        id
-        name
-        color
-        createdAt
-        updatedAt
-      }
-      totalCount
-      hasNextPage
-    }
-  }
-`;

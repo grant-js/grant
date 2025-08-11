@@ -23,7 +23,7 @@ export function GroupActions({ group }: GroupActionsProps) {
   };
 
   const handleDeleteClick = () => {
-    setGroupToDelete({ id: group.id, name: group.name });
+    setGroupToDelete(group);
   };
 
   const actions: ActionItem<Group>[] = [

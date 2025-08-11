@@ -1,42 +1,29 @@
-import { useMutation } from '@apollo/client';
+import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import { Tag } from '@/graphql/generated/types';
+import { CreateTagInput, Tag, TagPage, UpdateTagInput } from '@/graphql/generated/types';
 
 import { evictTagsCache } from './cache';
 import { CREATE_TAG, UPDATE_TAG, DELETE_TAG } from './mutations';
 
-interface CreateTagInput {
-  name: string;
-  color: string;
-}
-
-interface UpdateTagInput {
-  name?: string;
-  color?: string;
-}
-
 export function useTagMutations() {
   const t = useTranslations('tags');
 
-  const [createTag] = useMutation<{ createTag: Tag }>(CREATE_TAG, {
-    update(cache) {
-      evictTagsCache(cache);
-    },
+  const update = (cache: ApolloCache<any>) => {
+    evictTagsCache(cache);
+  };
+
+  const [createTag] = useMutation<{ createTag: TagPage }>(CREATE_TAG, {
+    update,
   });
 
   const [updateTag] = useMutation<{ updateTag: Tag }>(UPDATE_TAG, {
-    update(cache) {
-      evictTagsCache(cache);
-    },
+    update,
   });
 
   const [deleteTag] = useMutation<{ deleteTag: boolean }>(DELETE_TAG, {
-    update(cache) {
-      evictTagsCache(cache);
-      cache.gc();
-    },
+    update,
   });
 
   const handleCreateTag = async (input: CreateTagInput) => {

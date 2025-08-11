@@ -1,16 +1,15 @@
 import { ApolloServerErrorCode } from '@apollo/server/errors';
 
 import { ApiError } from '@/graphql/errors';
-import { OrganizationProject } from '@/graphql/generated/types';
-import { deleteOrganizationProjectByOrganizationAndProject } from '@/graphql/providers/organization-projects/faker/dataStore';
 import {
-  RemoveOrganizationProjectParams,
-  RemoveOrganizationProjectResult,
-} from '@/graphql/providers/organization-projects/types';
+  MutationRemoveOrganizationProjectArgs,
+  OrganizationProject,
+} from '@/graphql/generated/types';
+import { deleteOrganizationProjectByOrganizationAndProject } from '@/graphql/providers/organization-projects/faker/dataStore';
 
 export async function removeOrganizationProject({
   input,
-}: RemoveOrganizationProjectParams): Promise<RemoveOrganizationProjectResult> {
+}: MutationRemoveOrganizationProjectArgs): Promise<OrganizationProject> {
   const deletedOrganizationProject = deleteOrganizationProjectByOrganizationAndProject(
     input.organizationId,
     input.projectId
@@ -23,5 +22,5 @@ export async function removeOrganizationProject({
     );
   }
 
-  return deletedOrganizationProject as OrganizationProject; // Convert OrganizationProjectData to OrganizationProject for GraphQL
+  return deletedOrganizationProject;
 }

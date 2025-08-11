@@ -1,11 +1,8 @@
+import { OrganizationGroup, QueryOrganizationGroupsArgs } from '@/graphql/generated/types';
 import { getOrganizationGroupsByOrganizationId } from '@/graphql/providers/organization-groups/faker/dataStore';
-import {
-  GetOrganizationGroupsParams,
-  GetOrganizationGroupsResult,
-} from '@/graphql/providers/organization-groups/types';
 
 export async function getOrganizationGroups({
   organizationId,
-}: GetOrganizationGroupsParams): Promise<GetOrganizationGroupsResult> {
+}: QueryOrganizationGroupsArgs): Promise<OrganizationGroup[]> {
   return getOrganizationGroupsByOrganizationId(organizationId);
 }

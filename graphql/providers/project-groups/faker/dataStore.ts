@@ -1,34 +1,20 @@
 import { faker } from '@faker-js/faker';
 
+import { AddProjectGroupInput, ProjectGroup } from '@/graphql/generated/types';
 import {
   createFakerDataStore,
   EntityConfig,
   generateAuditTimestamps,
 } from '@/lib/providers/faker/genericDataStore';
 
-// Type for ProjectGroup data without the resolved fields
-export interface ProjectGroupData {
-  id: string;
-  projectId: string;
-  groupId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Input type for creating project-group relationships
-export interface CreateProjectGroupInput {
-  projectId: string;
-  groupId: string;
-}
-
 // Generate empty initial data for project-group relationships
-const generateInitialProjectGroups = (): ProjectGroupData[] => {
+const generateInitialProjectGroups = (): ProjectGroup[] => {
   // Return empty array - project-group relationships should be created through application logic
   return [];
 };
 
 // ProjectGroup-specific configuration
-const projectGroupConfig: EntityConfig<ProjectGroupData, CreateProjectGroupInput, never> = {
+const projectGroupConfig: EntityConfig<ProjectGroup, AddProjectGroupInput, never> = {
   entityName: 'ProjectGroup',
   dataFileName: 'project-groups.json',
 
@@ -36,7 +22,7 @@ const projectGroupConfig: EntityConfig<ProjectGroupData, CreateProjectGroupInput
   generateId: () => faker.string.uuid(),
 
   // Generate project-group entity from input
-  generateEntity: (input: CreateProjectGroupInput, id: string): ProjectGroupData => {
+  generateEntity: (input: AddProjectGroupInput, id: string): ProjectGroup => {
     const auditTimestamps = generateAuditTimestamps();
     return {
       id,
@@ -69,18 +55,18 @@ const projectGroupConfig: EntityConfig<ProjectGroupData, CreateProjectGroupInput
 export const projectGroupsDataStore = createFakerDataStore(projectGroupConfig);
 
 // Helper functions for project-group operations
-export const getProjectGroupsByProjectId = (projectId: string): ProjectGroupData[] => {
+export const getProjectGroupsByProjectId = (projectId: string): ProjectGroup[] => {
   const projectGroups = projectGroupsDataStore
     .getEntities()
     .filter((pg) => pg.projectId === projectId);
   return projectGroups;
 };
 
-export const getProjectGroupsByGroupId = (groupId: string): ProjectGroupData[] => {
+export const getProjectGroupsByGroupId = (groupId: string): ProjectGroup[] => {
   return projectGroupsDataStore.getEntities().filter((pg) => pg.groupId === groupId);
 };
 
-export const addProjectGroup = (projectId: string, groupId: string): ProjectGroupData => {
+export const addProjectGroup = (projectId: string, groupId: string): ProjectGroup => {
   // Check if relationship already exists
   const existingRelationship = projectGroupsDataStore
     .getEntities()
@@ -93,14 +79,14 @@ export const addProjectGroup = (projectId: string, groupId: string): ProjectGrou
   return projectGroupsDataStore.createEntity({ projectId, groupId });
 };
 
-export const deleteProjectGroup = (id: string): ProjectGroupData | null => {
+export const deleteProjectGroup = (id: string): ProjectGroup | null => {
   return projectGroupsDataStore.deleteEntity(id);
 };
 
 export const deleteProjectGroupByProjectAndGroup = (
   projectId: string,
   groupId: string
-): ProjectGroupData | null => {
+): ProjectGroup | null => {
   const projectGroup = projectGroupsDataStore
     .getEntities()
     .find((pg) => pg.projectId === projectId && pg.groupId === groupId);
@@ -112,7 +98,7 @@ export const deleteProjectGroupByProjectAndGroup = (
   return projectGroupsDataStore.deleteEntity(projectGroup.id);
 };
 
-export const deleteProjectGroupsByProjectId = (projectId: string): ProjectGroupData[] => {
+export const deleteProjectGroupsByProjectId = (projectId: string): ProjectGroup[] => {
   const projectGroups = projectGroupsDataStore
     .getEntities()
     .filter((pg) => pg.projectId === projectId);
@@ -120,7 +106,7 @@ export const deleteProjectGroupsByProjectId = (projectId: string): ProjectGroupD
   return projectGroups;
 };
 
-export const deleteProjectGroupsByGroupId = (groupId: string): ProjectGroupData[] => {
+export const deleteProjectGroupsByGroupId = (groupId: string): ProjectGroup[] => {
   const projectGroups = projectGroupsDataStore.getEntities().filter((pg) => pg.groupId === groupId);
   projectGroups.forEach((pg) => projectGroupsDataStore.deleteEntity(pg.id));
   return projectGroups;

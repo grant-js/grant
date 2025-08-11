@@ -1,8 +1,18 @@
-import { useMutation } from '@apollo/client';
+import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import { Group } from '@/graphql/generated/types';
+import {
+  AddGroupPermissionInput,
+  AddGroupTagInput,
+  CreateGroupInput,
+  Group,
+  GroupPermission,
+  GroupTag,
+  RemoveGroupPermissionInput,
+  RemoveGroupTagInput,
+  UpdateGroupInput,
+} from '@/graphql/generated/types';
 import { ADD_GROUP_TAG, REMOVE_GROUP_TAG } from '@/hooks/tags/mutations';
 
 import { evictGroupsCache } from './cache';
@@ -14,90 +24,51 @@ import {
   REMOVE_GROUP_PERMISSION,
 } from './mutations';
 
-interface CreateGroupInput {
-  name: string;
-  description?: string;
-}
-
-interface UpdateGroupInput {
-  name?: string;
-  description?: string;
-}
-
-interface AddGroupPermissionInput {
-  groupId: string;
-  permissionId: string;
-}
-
-interface RemoveGroupPermissionInput {
-  groupId: string;
-  permissionId: string;
-}
-
-interface AddGroupTagInput {
-  groupId: string;
-  tagId: string;
-}
-
-interface RemoveGroupTagInput {
-  groupId: string;
-  tagId: string;
-}
-
 export function useGroupMutations() {
   const t = useTranslations('groups');
 
+  const update = (cache: ApolloCache<any>) => {
+    evictGroupsCache(cache);
+  };
+
   const [createGroup] = useMutation<{ createGroup: Group }>(CREATE_GROUP, {
-    update(cache) {
-      evictGroupsCache(cache);
-    },
+    update,
   });
 
   const [updateGroup] = useMutation<{ updateGroup: Group }>(UPDATE_GROUP, {
-    update(cache) {
-      evictGroupsCache(cache);
-    },
+    update,
   });
 
   const [deleteGroup] = useMutation<{ deleteGroup: boolean }>(DELETE_GROUP, {
-    update(cache) {
-      evictGroupsCache(cache);
-      cache.gc();
-    },
+    update,
   });
 
-  const [addGroupPermission] = useMutation<{ addGroupPermission: any }>(ADD_GROUP_PERMISSION, {
-    update(cache) {
-      evictGroupsCache(cache);
-    },
-  });
-
-  const [removeGroupPermission] = useMutation<{ removeGroupPermission: boolean }>(
-    REMOVE_GROUP_PERMISSION,
+  const [addGroupPermission] = useMutation<{ addGroupPermission: GroupPermission }>(
+    ADD_GROUP_PERMISSION,
     {
-      update(cache) {
-        evictGroupsCache(cache);
-      },
+      update,
     }
   );
 
-  const [addGroupTag] = useMutation<{ addGroupTag: any }>(ADD_GROUP_TAG, {
-    update(cache) {
-      evictGroupsCache(cache);
-    },
+  const [removeGroupPermission] = useMutation<{ removeGroupPermission: GroupPermission }>(
+    REMOVE_GROUP_PERMISSION,
+    {
+      update,
+    }
+  );
+
+  const [addGroupTag] = useMutation<{ addGroupTag: GroupTag }>(ADD_GROUP_TAG, {
+    update,
   });
 
   const [removeGroupTag] = useMutation<{ removeGroupTag: boolean }>(REMOVE_GROUP_TAG, {
-    update(cache) {
-      evictGroupsCache(cache);
-    },
+    update,
   });
 
   const handleCreateGroup = async (input: CreateGroupInput) => {
     try {
       const result = await createGroup({
         variables: { input },
-        refetchQueries: ['GetGroups'],
       });
 
       toast.success(t('notifications.createSuccess'));
@@ -115,7 +86,6 @@ export function useGroupMutations() {
     try {
       const result = await updateGroup({
         variables: { id, input },
-        refetchQueries: ['GetGroups'],
       });
 
       toast.success(t('notifications.updateSuccess'));
@@ -152,7 +122,6 @@ export function useGroupMutations() {
     try {
       const result = await addGroupPermission({
         variables: { input },
-        refetchQueries: ['GetGroups'],
       });
 
       toast.success(t('notifications.permissionAddedSuccess'));
@@ -170,7 +139,6 @@ export function useGroupMutations() {
     try {
       const result = await removeGroupPermission({
         variables: { input },
-        refetchQueries: ['GetGroups'],
       });
 
       toast.success(t('notifications.permissionRemovedSuccess'));
@@ -188,7 +156,6 @@ export function useGroupMutations() {
     try {
       const result = await addGroupTag({
         variables: { input },
-        refetchQueries: ['GetGroups'],
       });
 
       toast.success(t('notifications.tagAddedSuccess'));
@@ -206,7 +173,6 @@ export function useGroupMutations() {
     try {
       await removeGroupTag({
         variables: { input },
-        refetchQueries: ['GetGroups'],
       });
 
       toast.success(t('notifications.tagRemovedSuccess'));

@@ -1,12 +1,11 @@
-import { TagSortField, SortDirection } from '@/graphql/generated/types';
-import { GetTagsParams, GetTagsResult } from '@/graphql/providers/tags/types';
+import { TagSortField, SortDirection, QueryTagsArgs, TagPage } from '@/graphql/generated/types';
 
 import { getTags as getTagsFromStore } from './dataStore';
 
 const SEARCHABLE_FIELDS = ['name', 'color'] as const;
 const DEFAULT_SORT = { field: TagSortField.Name, direction: SortDirection.Asc };
 
-export const getTags = async (params: GetTagsParams): Promise<GetTagsResult> => {
+export const getTags = async (params: QueryTagsArgs): Promise<TagPage> => {
   const { page = 1, limit = 50, sort, search, ids } = params;
 
   // Ensure page and limit are always numbers

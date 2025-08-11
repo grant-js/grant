@@ -13,6 +13,7 @@ import { OrganizationRole } from '@/graphql/resolvers/organization-roles/fields'
 import { OrganizationTag } from '@/graphql/resolvers/organization-tags/fields';
 import { OrganizationUser } from '@/graphql/resolvers/organization-users/fields';
 import { Organization } from '@/graphql/resolvers/organizations/fields';
+import { PermissionTag } from '@/graphql/resolvers/permission-tags/fields';
 import { Permission } from '@/graphql/resolvers/permissions/fields';
 import { ProjectGroup } from '@/graphql/resolvers/project-groups/fields';
 import { ProjectPermission } from '@/graphql/resolvers/project-permissions/fields';
@@ -22,8 +23,10 @@ import { ProjectUser } from '@/graphql/resolvers/project-users/fields';
 import { Project } from '@/graphql/resolvers/projects/fields';
 import { Query } from '@/graphql/resolvers/queries';
 import { RoleGroup } from '@/graphql/resolvers/role-groups/fields';
+import { RoleTag } from '@/graphql/resolvers/role-tags/fields';
 import { Role } from '@/graphql/resolvers/roles/fields';
 import { UserRole } from '@/graphql/resolvers/user-roles/fields';
+import { UserTag } from '@/graphql/resolvers/user-tags/fields';
 import { User } from '@/graphql/resolvers/users/fields';
 
 // Load all schema files
@@ -58,5 +61,8 @@ export const schema = makeExecutableSchema({
     ProjectPermission,
     ProjectUser,
     ProjectTag,
+    PermissionTag,
+    UserTag,
+    RoleTag,
   },
 });

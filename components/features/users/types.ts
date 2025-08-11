@@ -32,12 +32,3 @@ export interface EditUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-// Query result types
-export interface UsersQueryResult {
-  users: {
-    users: User[];
-    totalCount: number;
-    hasNextPage: boolean;
-  };
-}

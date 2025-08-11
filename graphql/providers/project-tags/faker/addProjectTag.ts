@@ -1,7 +1,6 @@
+import { MutationAddProjectTagArgs, ProjectTag } from '@/graphql/generated/types';
 import { addProjectTag as addProjectTagToStore } from '@/graphql/providers/project-tags/faker/dataStore';
-import { AddProjectTagParams, AddProjectTagResult } from '@/graphql/providers/project-tags/types';
 
-export async function addProjectTag({ input }: AddProjectTagParams): Promise<AddProjectTagResult> {
-  const projectTag = addProjectTagToStore(input.projectId, input.tagId);
-  return projectTag as AddProjectTagResult;
+export async function addProjectTag({ input }: MutationAddProjectTagArgs): Promise<ProjectTag> {
+  return addProjectTagToStore(input.projectId, input.tagId);
 }
