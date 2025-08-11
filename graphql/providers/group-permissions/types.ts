@@ -8,5 +8,5 @@ import {
 export interface GroupPermissionDataProvider {
   getGroupPermissions(params: QueryGroupPermissionsArgs): Promise<GroupPermission[]>;
   addGroupPermission(params: MutationAddGroupPermissionArgs): Promise<GroupPermission>;
-  removeGroupPermission(params: MutationRemoveGroupPermissionArgs): Promise<boolean>;
+  removeGroupPermission(params: MutationRemoveGroupPermissionArgs): Promise<GroupPermission>;
 }

@@ -5,6 +5,8 @@ export const removePermissionTagResolver: MutationResolvers['removePermissionTag
   { input },
   context
 ) => {
-  await context.providers.permissionTags.removePermissionTag({ input });
-  return true;
+  const removedPermissionTag = await context.providers.permissionTags.removePermissionTag({
+    input,
+  });
+  return removedPermissionTag;
 };

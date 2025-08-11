@@ -5,6 +5,6 @@ export const removeRoleTagResolver: MutationResolvers['removeRoleTag'] = async (
   { input },
   context
 ) => {
-  await context.providers.roleTags.removeRoleTag({ input });
-  return true;
+  const removedRoleTag = await context.providers.roleTags.removeRoleTag({ input });
+  return removedRoleTag;
 };

@@ -1,8 +1,8 @@
-import { MutationDeleteTagArgs } from '@/graphql/generated/types';
+import { MutationDeleteTagArgs, Tag } from '@/graphql/generated/types';
 
 import { deleteTag as deleteTagInStore } from './dataStore';
 
-export const deleteTag = async (params: MutationDeleteTagArgs): Promise<boolean> => {
+export const deleteTag = async (params: MutationDeleteTagArgs): Promise<Tag> => {
   const { id } = params;
   const deletedTag = deleteTagInStore(id);
 
@@ -10,5 +10,5 @@ export const deleteTag = async (params: MutationDeleteTagArgs): Promise<boolean>
     throw new Error(`Tag with id ${id} not found`);
   }
 
-  return deletedTag !== null;
+  return deletedTag;
 };

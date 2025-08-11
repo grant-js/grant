@@ -5,6 +5,6 @@ export const removeGroupTagResolver: MutationResolvers['removeGroupTag'] = async
   { input },
   context
 ) => {
-  await context.providers.groupTags.removeGroupTag({ input });
-  return true;
+  const removedGroupTag = await context.providers.groupTags.removeGroupTag({ input });
+  return removedGroupTag;
 };

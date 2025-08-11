@@ -8,5 +8,5 @@ import {
 export interface OrganizationTagDataProvider {
   getOrganizationTags(params: QueryOrganizationTagsArgs): Promise<OrganizationTag[]>;
   addOrganizationTag(params: MutationAddOrganizationTagArgs): Promise<OrganizationTag>;
-  removeOrganizationTag(params: MutationRemoveOrganizationTagArgs): Promise<boolean>;
+  removeOrganizationTag(params: MutationRemoveOrganizationTagArgs): Promise<OrganizationTag>;
 }

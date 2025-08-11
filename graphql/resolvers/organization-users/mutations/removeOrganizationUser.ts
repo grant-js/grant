@@ -5,8 +5,8 @@ export const removeOrganizationUserResolver: MutationResolvers['removeOrganizati
   { input },
   context
 ) => {
-  const success = await context.providers.organizationUsers.removeOrganizationUser({
+  const removedOrganizationUser = await context.providers.organizationUsers.removeOrganizationUser({
     input,
   });
-  return success;
+  return removedOrganizationUser;
 };

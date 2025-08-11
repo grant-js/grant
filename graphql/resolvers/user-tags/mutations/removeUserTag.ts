@@ -5,6 +5,6 @@ export const removeUserTagResolver: MutationResolvers['removeUserTag'] = async (
   { input },
   context
 ) => {
-  await context.providers.userTags.removeUserTag({ input });
-  return true;
+  const removedUserTag = await context.providers.userTags.removeUserTag({ input });
+  return removedUserTag;
 };

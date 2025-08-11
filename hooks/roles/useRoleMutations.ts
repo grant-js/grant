@@ -39,7 +39,7 @@ export function useRoleMutations() {
     update,
   });
 
-  const [deleteRole] = useMutation<{ deleteRole: boolean }>(DELETE_ROLE, {
+  const [deleteRole] = useMutation<{ deleteRole: Role }>(DELETE_ROLE, {
     update,
   });
 
@@ -165,11 +165,12 @@ export function useRoleMutations() {
 
   const handleRemoveRoleTag = async (input: RemoveRoleTagInput) => {
     try {
-      await removeRoleTag({
+      const result = await removeRoleTag({
         variables: { input },
       });
 
       toast.success(t('notifications.tagRemovedSuccess'));
+      return result.data?.removeRoleTag;
     } catch (error) {
       console.error('Error removing role tag:', error);
       toast.error(t('notifications.tagRemovedError'), {

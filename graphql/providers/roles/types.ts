@@ -13,5 +13,5 @@ export interface RoleDataProvider {
   getRoles(params: QueryRolesArgs): Promise<RolePage>;
   createRole(params: MutationCreateRoleArgs): Promise<Role>;
   updateRole(params: MutationUpdateRoleArgs): Promise<Role>;
-  deleteRole(params: MutationDeleteRoleArgs): Promise<boolean>;
+  deleteRole(params: MutationDeleteRoleArgs): Promise<Role>;
 }

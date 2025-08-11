@@ -13,5 +13,5 @@ export interface PermissionDataProvider {
   getPermissions(params: QueryPermissionsArgs): Promise<PermissionPage>;
   createPermission(params: MutationCreatePermissionArgs): Promise<Permission>;
   updatePermission(params: MutationUpdatePermissionArgs): Promise<Permission>;
-  deletePermission(params: MutationDeletePermissionArgs): Promise<boolean>;
+  deletePermission(params: MutationDeletePermissionArgs): Promise<Permission>;
 }

@@ -7,5 +7,5 @@ import {
 export interface OrganizationUserDataProvider {
   getOrganizationUsers(params: QueryOrganizationUsersArgs): Promise<OrganizationUser[]>;
   addOrganizationUser(params: MutationAddOrganizationUserArgs): Promise<OrganizationUser>;
-  removeOrganizationUser(params: MutationRemoveOrganizationUserArgs): Promise<boolean>;
+  removeOrganizationUser(params: MutationRemoveOrganizationUserArgs): Promise<OrganizationUser>;
 }

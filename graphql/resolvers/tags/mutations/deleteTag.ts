@@ -6,5 +6,5 @@ export const deleteTagResolver: MutationResolvers['deleteTag'] = async (
   context
 ) => {
   const deletedTag = await context.providers.tags.deleteTag({ id });
-  return deletedTag ? true : false;
+  return deletedTag;
 };

@@ -1,8 +1,8 @@
 import {
   MutationAddUserTagArgs,
   MutationRemoveUserTagArgs,
-  QueryUserTagsArgs,
   UserTag,
+  QueryUserTagsArgs,
 } from '@/graphql/generated/types';
 
 export interface UserTagDataProvider {

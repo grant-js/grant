@@ -1,15 +1,12 @@
-import { MutationRemoveGroupTagArgs } from '@/graphql/generated/types';
+import { MutationRemoveGroupTagArgs, GroupTag } from '@/graphql/generated/types';
 import { deleteGroupTagByGroupAndTag } from '@/graphql/providers/group-tags/faker/dataStore';
 
-export const removeGroupTag = async (params: MutationRemoveGroupTagArgs): Promise<boolean> => {
-  const { input } = params;
+export async function removeGroupTag({ input }: MutationRemoveGroupTagArgs): Promise<GroupTag> {
   const deletedGroupTag = deleteGroupTagByGroupAndTag(input.groupId, input.tagId);
 
   if (!deletedGroupTag) {
-    throw new Error(
-      `GroupTag relationship not found for group ${input.groupId} and tag ${input.tagId}`
-    );
+    throw new Error('Group tag relationship not found');
   }
 
-  return deletedGroupTag !== null;
-};
+  return deletedGroupTag;
+}

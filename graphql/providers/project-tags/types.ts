@@ -8,5 +8,5 @@ import {
 export interface ProjectTagDataProvider {
   getProjectTags(params: QueryProjectTagsArgs): Promise<ProjectTag[]>;
   addProjectTag(params: MutationAddProjectTagArgs): Promise<ProjectTag>;
-  removeProjectTag(params: MutationRemoveProjectTagArgs): Promise<boolean>;
+  removeProjectTag(params: MutationRemoveProjectTagArgs): Promise<ProjectTag>;
 }

@@ -1,7 +1,4 @@
-"""
-Create a new tag.
-"""
-type Mutation {
+extend type Mutation {
   """
   Create a new tag.
   """

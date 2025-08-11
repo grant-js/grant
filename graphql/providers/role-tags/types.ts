@@ -1,8 +1,8 @@
 import {
   MutationAddRoleTagArgs,
   MutationRemoveRoleTagArgs,
-  QueryRoleTagsArgs,
   RoleTag,
+  QueryRoleTagsArgs,
 } from '@/graphql/generated/types';
 
 export interface RoleTagDataProvider {

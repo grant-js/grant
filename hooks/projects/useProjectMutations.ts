@@ -40,7 +40,7 @@ export function useProjectMutations() {
     update,
   });
 
-  const [deleteProject] = useMutation<{ deleteProject: boolean }>(DELETE_PROJECT, {
+  const [deleteProject] = useMutation<{ deleteProject: Project }>(DELETE_PROJECT, {
     update,
   });
 
@@ -48,7 +48,7 @@ export function useProjectMutations() {
     update,
   });
 
-  const [removeProjectRole] = useMutation<{ removeProjectRole: boolean }>(REMOVE_PROJECT_ROLE, {
+  const [removeProjectRole] = useMutation<{ removeProjectRole: ProjectRole }>(REMOVE_PROJECT_ROLE, {
     update,
   });
 
@@ -56,7 +56,7 @@ export function useProjectMutations() {
     update,
   });
 
-  const [removeProjectTag] = useMutation<{ removeProjectTag: boolean }>(REMOVE_PROJECT_TAG, {
+  const [removeProjectTag] = useMutation<{ removeProjectTag: ProjectTag }>(REMOVE_PROJECT_TAG, {
     update,
   });
 
@@ -96,11 +96,12 @@ export function useProjectMutations() {
 
   const handleDeleteProject = async (id: string, name: string) => {
     try {
-      await deleteProject({
+      const result = await deleteProject({
         variables: { id },
       });
 
       toast.success(t('notifications.deleteSuccess'));
+      return result.data?.deleteProject;
     } catch (error) {
       console.error('Error deleting project:', error);
       toast.error(t('notifications.deleteError'), {

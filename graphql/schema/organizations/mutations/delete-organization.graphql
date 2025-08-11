@@ -7,5 +7,5 @@ extend type Mutation {
     ID of the organization to delete.
     """
     id: ID!
-  ): Boolean!
+  ): Organization!
 }

@@ -7,5 +7,5 @@ extend type Mutation {
     Input data for removing the group-tag relationship.
     """
     input: RemoveGroupTagInput!
-  ): Boolean!
+  ): GroupTag!
 }

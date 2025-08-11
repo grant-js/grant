@@ -1,9 +1,14 @@
-import { MutationRemoveProjectUserArgs } from '@/graphql/generated/types';
+import { MutationRemoveProjectUserArgs, ProjectUser } from '@/graphql/generated/types';
 import { deleteProjectUserByProjectAndUser } from '@/graphql/providers/project-users/faker/dataStore';
 
 export async function removeProjectUser({
   input,
-}: MutationRemoveProjectUserArgs): Promise<boolean> {
+}: MutationRemoveProjectUserArgs): Promise<ProjectUser> {
   const deletedProjectUser = deleteProjectUserByProjectAndUser(input.projectId, input.userId);
-  return deletedProjectUser !== null;
+
+  if (!deletedProjectUser) {
+    throw new Error('Project user relationship not found');
+  }
+
+  return deletedProjectUser;
 }

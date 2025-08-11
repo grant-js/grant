@@ -1,9 +1,6 @@
-"""
-Delete a tag.
-"""
-type Mutation {
+extend type Mutation {
   """
   Delete a tag.
   """
-  deleteTag(id: ID!): Boolean!
+  deleteTag(id: ID!): Tag!
 }

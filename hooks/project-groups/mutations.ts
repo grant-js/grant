@@ -14,6 +14,12 @@ export const ADD_PROJECT_GROUP = gql`
 
 export const REMOVE_PROJECT_GROUP = gql`
   mutation RemoveProjectGroup($input: RemoveProjectGroupInput!) {
-    removeProjectGroup(input: $input)
+    removeProjectGroup(input: $input) {
+      id
+      projectId
+      groupId
+      createdAt
+      updatedAt
+    }
   }
 `;

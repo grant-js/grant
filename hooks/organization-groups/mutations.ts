@@ -14,6 +14,12 @@ export const ADD_ORGANIZATION_GROUP = gql`
 
 export const REMOVE_ORGANIZATION_GROUP = gql`
   mutation RemoveOrganizationGroup($input: RemoveOrganizationGroupInput!) {
-    removeOrganizationGroup(input: $input)
+    removeOrganizationGroup(input: $input) {
+      id
+      organizationId
+      groupId
+      createdAt
+      updatedAt
+    }
   }
 `;

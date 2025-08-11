@@ -1,7 +1,4 @@
-"""
-Update an existing tag.
-"""
-type Mutation {
+extend type Mutation {
   """
   Update an existing tag.
   """

@@ -8,5 +8,5 @@ import {
 export interface ProjectUserDataProvider {
   getProjectUsers(params: QueryProjectUsersArgs): Promise<ProjectUser[]>;
   addProjectUser(params: MutationAddProjectUserArgs): Promise<ProjectUser>;
-  removeProjectUser(params: MutationRemoveProjectUserArgs): Promise<boolean>;
+  removeProjectUser(params: MutationRemoveProjectUserArgs): Promise<ProjectUser>;
 }

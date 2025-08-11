@@ -22,7 +22,7 @@ export function useTagMutations() {
     update,
   });
 
-  const [deleteTag] = useMutation<{ deleteTag: boolean }>(DELETE_TAG, {
+  const [deleteTag] = useMutation<{ deleteTag: Tag }>(DELETE_TAG, {
     update,
   });
 
@@ -64,12 +64,13 @@ export function useTagMutations() {
 
   const handleDeleteTag = async (id: string, name: string) => {
     try {
-      await deleteTag({
+      const result = await deleteTag({
         variables: { id },
         refetchQueries: ['GetTags'],
       });
 
       toast.success(t('notifications.deleteSuccess', { name }));
+      return result.data?.deleteTag;
     } catch (error) {
       console.error('Error deleting tag:', error);
       toast.error(t('notifications.deleteError'), {

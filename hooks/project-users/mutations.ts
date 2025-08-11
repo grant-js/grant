@@ -14,6 +14,12 @@ export const ADD_PROJECT_USER = gql`
 
 export const REMOVE_PROJECT_USER = gql`
   mutation RemoveProjectUser($input: RemoveProjectUserInput!) {
-    removeProjectUser(input: $input)
+    removeProjectUser(input: $input) {
+      id
+      projectId
+      userId
+      createdAt
+      updatedAt
+    }
   }
 `;

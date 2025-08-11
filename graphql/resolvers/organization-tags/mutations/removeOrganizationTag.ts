@@ -5,8 +5,8 @@ export const removeOrganizationTagResolver: MutationResolvers['removeOrganizatio
   { input },
   context
 ) => {
-  const success = await context.providers.organizationTags.removeOrganizationTag({
+  const removedOrganizationTag = await context.providers.organizationTags.removeOrganizationTag({
     input,
   });
-  return success;
+  return removedOrganizationTag;
 };

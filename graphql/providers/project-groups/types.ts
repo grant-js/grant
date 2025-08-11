@@ -8,5 +8,5 @@ import {
 export interface ProjectGroupDataProvider {
   getProjectGroups(params: QueryProjectGroupsArgs): Promise<ProjectGroup[]>;
   addProjectGroup(params: MutationAddProjectGroupArgs): Promise<ProjectGroup>;
-  removeProjectGroup(params: MutationRemoveProjectGroupArgs): Promise<boolean>;
+  removeProjectGroup(params: MutationRemoveProjectGroupArgs): Promise<ProjectGroup>;
 }

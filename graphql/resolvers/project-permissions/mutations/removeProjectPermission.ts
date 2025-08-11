@@ -5,8 +5,9 @@ export const removeProjectPermissionResolver: MutationResolvers['removeProjectPe
   { input },
   context
 ) => {
-  const success = await context.providers.projectPermissions.removeProjectPermission({
-    input,
-  });
-  return success;
+  const removedProjectPermission =
+    await context.providers.projectPermissions.removeProjectPermission({
+      input,
+    });
+  return removedProjectPermission;
 };

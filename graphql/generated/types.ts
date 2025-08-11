@@ -361,7 +361,6 @@ export type LoginResponse = {
   token: Scalars['String']['output'];
 };
 
-/** Update an existing tag. */
 export type Mutation = {
   __typename?: 'Mutation';
   _empty?: Maybe<Scalars['String']['output']>;
@@ -416,57 +415,57 @@ export type Mutation = {
   /** Creates a new user. */
   createUser: User;
   /** Deletes a group by ID. */
-  deleteGroup: Scalars['Boolean']['output'];
+  deleteGroup: Group;
   /** Delete an organization. */
-  deleteOrganization: Scalars['Boolean']['output'];
+  deleteOrganization: Organization;
   /** Deletes a permission by ID. */
-  deletePermission: Scalars['Boolean']['output'];
+  deletePermission: Permission;
   /** Delete a project. */
-  deleteProject: Scalars['Boolean']['output'];
+  deleteProject: Project;
   /** Deletes a role by ID. */
-  deleteRole: Scalars['Boolean']['output'];
+  deleteRole: Role;
   /** Delete a tag. */
-  deleteTag: Scalars['Boolean']['output'];
+  deleteTag: Tag;
   /** Deletes a user. */
   deleteUser: User;
   /** Authenticates a user and returns a JWT token. */
   login: LoginResponse;
   /** Removes a group-permission relationship. */
-  removeGroupPermission: Scalars['Boolean']['output'];
+  removeGroupPermission: GroupPermission;
   /** Removes a group-tag relationship. */
-  removeGroupTag: Scalars['Boolean']['output'];
+  removeGroupTag: GroupTag;
   /** Removes an organization-group relationship. */
-  removeOrganizationGroup: Scalars['Boolean']['output'];
+  removeOrganizationGroup: OrganizationGroup;
   /** Removes an organization-permission relationship. */
-  removeOrganizationPermission: Scalars['Boolean']['output'];
+  removeOrganizationPermission: OrganizationPermission;
   /** Removes an organization-project relationship. */
   removeOrganizationProject: OrganizationProject;
   /** Removes an organization-role relationship. */
-  removeOrganizationRole: Scalars['Boolean']['output'];
+  removeOrganizationRole: OrganizationRole;
   /** Removes an organization-tag relationship. */
-  removeOrganizationTag: Scalars['Boolean']['output'];
+  removeOrganizationTag: OrganizationTag;
   /** Removes an organization-user relationship. */
-  removeOrganizationUser: Scalars['Boolean']['output'];
+  removeOrganizationUser: OrganizationUser;
   /** Removes a permission-tag relationship. */
-  removePermissionTag: Scalars['Boolean']['output'];
+  removePermissionTag: PermissionTag;
   /** Removes a project-group relationship. */
-  removeProjectGroup: Scalars['Boolean']['output'];
+  removeProjectGroup: ProjectGroup;
   /** Removes a project-permission relationship. */
-  removeProjectPermission: Scalars['Boolean']['output'];
+  removeProjectPermission: ProjectPermission;
   /** Removes a project-role relationship. */
-  removeProjectRole: Scalars['Boolean']['output'];
+  removeProjectRole: ProjectRole;
   /** Removes a project-tag relationship. */
-  removeProjectTag: Scalars['Boolean']['output'];
+  removeProjectTag: ProjectTag;
   /** Removes a project-user relationship. */
-  removeProjectUser: Scalars['Boolean']['output'];
+  removeProjectUser: ProjectUser;
   /** Removes a role-group relationship. */
   removeRoleGroup: RoleGroup;
   /** Removes a role-tag relationship. */
-  removeRoleTag: Scalars['Boolean']['output'];
+  removeRoleTag: RoleTag;
   /** Removes a user-role relationship. */
   removeUserRole: UserRole;
   /** Removes a user-tag relationship. */
-  removeUserTag: Scalars['Boolean']['output'];
+  removeUserTag: UserTag;
   /** Updates an existing group. */
   updateGroup: Group;
   /** Update an existing organization. */
@@ -484,355 +483,297 @@ export type Mutation = {
 };
 
 
-/** Update an existing tag. */
 export type MutationAddGroupPermissionArgs = {
   input: AddGroupPermissionInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationAddGroupTagArgs = {
   input: AddGroupTagInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationAddOrganizationGroupArgs = {
   input: AddOrganizationGroupInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationAddOrganizationPermissionArgs = {
   input: AddOrganizationPermissionInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationAddOrganizationProjectArgs = {
   input: AddOrganizationProjectInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationAddOrganizationRoleArgs = {
   input: AddOrganizationRoleInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationAddOrganizationTagArgs = {
   input: AddOrganizationTagInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationAddOrganizationUserArgs = {
   input: AddOrganizationUserInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationAddPermissionTagArgs = {
   input: AddPermissionTagInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationAddProjectGroupArgs = {
   input: AddProjectGroupInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationAddProjectPermissionArgs = {
   input: AddProjectPermissionInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationAddProjectRoleArgs = {
   input: AddProjectRoleInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationAddProjectTagArgs = {
   input: AddProjectTagInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationAddProjectUserArgs = {
   input: AddProjectUserInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationAddRoleGroupArgs = {
   input: AddRoleGroupInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationAddRoleTagArgs = {
   input: AddRoleTagInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationAddUserRoleArgs = {
   input: AddUserRoleInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationAddUserTagArgs = {
   input: AddUserTagInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationCreateGroupArgs = {
   input: CreateGroupInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationCreateOrganizationArgs = {
   input: CreateOrganizationInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationCreatePermissionArgs = {
   input: CreatePermissionInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationCreateProjectArgs = {
   input: CreateProjectInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationCreateRoleArgs = {
   input: CreateRoleInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationCreateTagArgs = {
   input: CreateTagInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationCreateUserArgs = {
   input: CreateUserInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationDeleteGroupArgs = {
   id: Scalars['ID']['input'];
 };
 
 
-/** Update an existing tag. */
 export type MutationDeleteOrganizationArgs = {
   id: Scalars['ID']['input'];
 };
 
 
-/** Update an existing tag. */
 export type MutationDeletePermissionArgs = {
   id: Scalars['ID']['input'];
 };
 
 
-/** Update an existing tag. */
 export type MutationDeleteProjectArgs = {
   id: Scalars['ID']['input'];
 };
 
 
-/** Update an existing tag. */
 export type MutationDeleteRoleArgs = {
   id: Scalars['ID']['input'];
 };
 
 
-/** Update an existing tag. */
 export type MutationDeleteTagArgs = {
   id: Scalars['ID']['input'];
 };
 
 
-/** Update an existing tag. */
 export type MutationDeleteUserArgs = {
   id: Scalars['ID']['input'];
 };
 
 
-/** Update an existing tag. */
 export type MutationLoginArgs = {
   input: LoginInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationRemoveGroupPermissionArgs = {
   input: RemoveGroupPermissionInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationRemoveGroupTagArgs = {
   input: RemoveGroupTagInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationRemoveOrganizationGroupArgs = {
   input: RemoveOrganizationGroupInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationRemoveOrganizationPermissionArgs = {
   input: RemoveOrganizationPermissionInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationRemoveOrganizationProjectArgs = {
   input: RemoveOrganizationProjectInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationRemoveOrganizationRoleArgs = {
   input: RemoveOrganizationRoleInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationRemoveOrganizationTagArgs = {
   input: RemoveOrganizationTagInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationRemoveOrganizationUserArgs = {
   input: RemoveOrganizationUserInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationRemovePermissionTagArgs = {
   input: RemovePermissionTagInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationRemoveProjectGroupArgs = {
   input: RemoveProjectGroupInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationRemoveProjectPermissionArgs = {
   input: RemoveProjectPermissionInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationRemoveProjectRoleArgs = {
   input: RemoveProjectRoleInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationRemoveProjectTagArgs = {
   input: RemoveProjectTagInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationRemoveProjectUserArgs = {
   input: RemoveProjectUserInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationRemoveRoleGroupArgs = {
   input: RemoveRoleGroupInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationRemoveRoleTagArgs = {
   input: RemoveRoleTagInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationRemoveUserRoleArgs = {
   input: RemoveUserRoleInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationRemoveUserTagArgs = {
   input: RemoveUserTagInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationUpdateGroupArgs = {
   id: Scalars['ID']['input'];
   input: UpdateGroupInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationUpdateOrganizationArgs = {
   id: Scalars['ID']['input'];
   input: UpdateOrganizationInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationUpdatePermissionArgs = {
   id: Scalars['ID']['input'];
   input: UpdatePermissionInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationUpdateProjectArgs = {
   id: Scalars['ID']['input'];
   input: UpdateProjectInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationUpdateRoleArgs = {
   id: Scalars['ID']['input'];
   input: UpdateRoleInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationUpdateTagArgs = {
   id: Scalars['ID']['input'];
   input: UpdateTagInput;
 };
 
 
-/** Update an existing tag. */
 export type MutationUpdateUserArgs = {
   id: Scalars['ID']['input'];
   input: UpdateUserInput;
@@ -2405,32 +2346,32 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
   createRole?: Resolver<ResolversTypes['Role'], ParentType, ContextType, RequireFields<MutationCreateRoleArgs, 'input'>>;
   createTag?: Resolver<ResolversTypes['Tag'], ParentType, ContextType, RequireFields<MutationCreateTagArgs, 'input'>>;
   createUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationCreateUserArgs, 'input'>>;
-  deleteGroup?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteGroupArgs, 'id'>>;
-  deleteOrganization?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteOrganizationArgs, 'id'>>;
-  deletePermission?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeletePermissionArgs, 'id'>>;
-  deleteProject?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteProjectArgs, 'id'>>;
-  deleteRole?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteRoleArgs, 'id'>>;
-  deleteTag?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteTagArgs, 'id'>>;
+  deleteGroup?: Resolver<ResolversTypes['Group'], ParentType, ContextType, RequireFields<MutationDeleteGroupArgs, 'id'>>;
+  deleteOrganization?: Resolver<ResolversTypes['Organization'], ParentType, ContextType, RequireFields<MutationDeleteOrganizationArgs, 'id'>>;
+  deletePermission?: Resolver<ResolversTypes['Permission'], ParentType, ContextType, RequireFields<MutationDeletePermissionArgs, 'id'>>;
+  deleteProject?: Resolver<ResolversTypes['Project'], ParentType, ContextType, RequireFields<MutationDeleteProjectArgs, 'id'>>;
+  deleteRole?: Resolver<ResolversTypes['Role'], ParentType, ContextType, RequireFields<MutationDeleteRoleArgs, 'id'>>;
+  deleteTag?: Resolver<ResolversTypes['Tag'], ParentType, ContextType, RequireFields<MutationDeleteTagArgs, 'id'>>;
   deleteUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationDeleteUserArgs, 'id'>>;
   login?: Resolver<ResolversTypes['LoginResponse'], ParentType, ContextType, RequireFields<MutationLoginArgs, 'input'>>;
-  removeGroupPermission?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveGroupPermissionArgs, 'input'>>;
-  removeGroupTag?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveGroupTagArgs, 'input'>>;
-  removeOrganizationGroup?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveOrganizationGroupArgs, 'input'>>;
-  removeOrganizationPermission?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveOrganizationPermissionArgs, 'input'>>;
+  removeGroupPermission?: Resolver<ResolversTypes['GroupPermission'], ParentType, ContextType, RequireFields<MutationRemoveGroupPermissionArgs, 'input'>>;
+  removeGroupTag?: Resolver<ResolversTypes['GroupTag'], ParentType, ContextType, RequireFields<MutationRemoveGroupTagArgs, 'input'>>;
+  removeOrganizationGroup?: Resolver<ResolversTypes['OrganizationGroup'], ParentType, ContextType, RequireFields<MutationRemoveOrganizationGroupArgs, 'input'>>;
+  removeOrganizationPermission?: Resolver<ResolversTypes['OrganizationPermission'], ParentType, ContextType, RequireFields<MutationRemoveOrganizationPermissionArgs, 'input'>>;
   removeOrganizationProject?: Resolver<ResolversTypes['OrganizationProject'], ParentType, ContextType, RequireFields<MutationRemoveOrganizationProjectArgs, 'input'>>;
-  removeOrganizationRole?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveOrganizationRoleArgs, 'input'>>;
-  removeOrganizationTag?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveOrganizationTagArgs, 'input'>>;
-  removeOrganizationUser?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveOrganizationUserArgs, 'input'>>;
-  removePermissionTag?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemovePermissionTagArgs, 'input'>>;
-  removeProjectGroup?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveProjectGroupArgs, 'input'>>;
-  removeProjectPermission?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveProjectPermissionArgs, 'input'>>;
-  removeProjectRole?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveProjectRoleArgs, 'input'>>;
-  removeProjectTag?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveProjectTagArgs, 'input'>>;
-  removeProjectUser?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveProjectUserArgs, 'input'>>;
+  removeOrganizationRole?: Resolver<ResolversTypes['OrganizationRole'], ParentType, ContextType, RequireFields<MutationRemoveOrganizationRoleArgs, 'input'>>;
+  removeOrganizationTag?: Resolver<ResolversTypes['OrganizationTag'], ParentType, ContextType, RequireFields<MutationRemoveOrganizationTagArgs, 'input'>>;
+  removeOrganizationUser?: Resolver<ResolversTypes['OrganizationUser'], ParentType, ContextType, RequireFields<MutationRemoveOrganizationUserArgs, 'input'>>;
+  removePermissionTag?: Resolver<ResolversTypes['PermissionTag'], ParentType, ContextType, RequireFields<MutationRemovePermissionTagArgs, 'input'>>;
+  removeProjectGroup?: Resolver<ResolversTypes['ProjectGroup'], ParentType, ContextType, RequireFields<MutationRemoveProjectGroupArgs, 'input'>>;
+  removeProjectPermission?: Resolver<ResolversTypes['ProjectPermission'], ParentType, ContextType, RequireFields<MutationRemoveProjectPermissionArgs, 'input'>>;
+  removeProjectRole?: Resolver<ResolversTypes['ProjectRole'], ParentType, ContextType, RequireFields<MutationRemoveProjectRoleArgs, 'input'>>;
+  removeProjectTag?: Resolver<ResolversTypes['ProjectTag'], ParentType, ContextType, RequireFields<MutationRemoveProjectTagArgs, 'input'>>;
+  removeProjectUser?: Resolver<ResolversTypes['ProjectUser'], ParentType, ContextType, RequireFields<MutationRemoveProjectUserArgs, 'input'>>;
   removeRoleGroup?: Resolver<ResolversTypes['RoleGroup'], ParentType, ContextType, RequireFields<MutationRemoveRoleGroupArgs, 'input'>>;
-  removeRoleTag?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveRoleTagArgs, 'input'>>;
+  removeRoleTag?: Resolver<ResolversTypes['RoleTag'], ParentType, ContextType, RequireFields<MutationRemoveRoleTagArgs, 'input'>>;
   removeUserRole?: Resolver<ResolversTypes['UserRole'], ParentType, ContextType, RequireFields<MutationRemoveUserRoleArgs, 'input'>>;
-  removeUserTag?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationRemoveUserTagArgs, 'input'>>;
+  removeUserTag?: Resolver<ResolversTypes['UserTag'], ParentType, ContextType, RequireFields<MutationRemoveUserTagArgs, 'input'>>;
   updateGroup?: Resolver<ResolversTypes['Group'], ParentType, ContextType, RequireFields<MutationUpdateGroupArgs, 'id' | 'input'>>;
   updateOrganization?: Resolver<ResolversTypes['Organization'], ParentType, ContextType, RequireFields<MutationUpdateOrganizationArgs, 'id' | 'input'>>;
   updatePermission?: Resolver<ResolversTypes['Permission'], ParentType, ContextType, RequireFields<MutationUpdatePermissionArgs, 'id' | 'input'>>;

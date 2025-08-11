@@ -7,5 +7,5 @@ extend type Mutation {
     Input data for removing the organization-permission relationship.
     """
     input: RemoveOrganizationPermissionInput!
-  ): Boolean!
+  ): OrganizationPermission!
 }

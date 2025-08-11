@@ -13,5 +13,5 @@ export interface GroupDataProvider {
   getGroups(params: QueryGroupsArgs): Promise<GroupPage>;
   createGroup(params: MutationCreateGroupArgs): Promise<Group>;
   updateGroup(params: MutationUpdateGroupArgs): Promise<Group>;
-  deleteGroup(params: MutationDeleteGroupArgs): Promise<boolean>;
+  deleteGroup(params: MutationDeleteGroupArgs): Promise<Group>;
 }

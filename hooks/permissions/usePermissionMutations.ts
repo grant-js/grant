@@ -29,7 +29,7 @@ export function usePermissionMutations() {
     update,
   });
 
-  const [deletePermission] = useMutation<{ deletePermission: boolean }>(DELETE_PERMISSION, {
+  const [deletePermission] = useMutation<{ deletePermission: Permission }>(DELETE_PERMISSION, {
     update,
   });
 
@@ -125,12 +125,13 @@ export function usePermissionMutations() {
 
   const handleRemovePermissionTag = async (input: RemovePermissionTagInput) => {
     try {
-      await removePermissionTag({
+      const result = await removePermissionTag({
         variables: { input },
         refetchQueries: ['GetPermissions'],
       });
 
       toast.success(t('notifications.tagRemovedSuccess'));
+      return result.data?.removePermissionTag;
     } catch (error) {
       console.error('Error removing permission tag:', error);
       toast.error(t('notifications.tagRemovedError'), {

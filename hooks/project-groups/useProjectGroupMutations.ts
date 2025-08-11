@@ -21,9 +21,12 @@ export function useProjectGroupMutations() {
     update,
   });
 
-  const [removeProjectGroup] = useMutation<{ removeProjectGroup: boolean }>(REMOVE_PROJECT_GROUP, {
-    update,
-  });
+  const [removeProjectGroup] = useMutation<{ removeProjectGroup: ProjectGroup }>(
+    REMOVE_PROJECT_GROUP,
+    {
+      update,
+    }
+  );
 
   const handleAddProjectGroup = async (input: AddProjectGroupInput) => {
     try {
@@ -44,11 +47,12 @@ export function useProjectGroupMutations() {
 
   const handleRemoveProjectGroup = async (input: RemoveProjectGroupInput) => {
     try {
-      await removeProjectGroup({
+      const result = await removeProjectGroup({
         variables: { input },
       });
 
       toast.success(t('notifications.removeSuccess'));
+      return result.data?.removeProjectGroup;
     } catch (error) {
       console.error('Error removing project group:', error);
       toast.error(t('notifications.removeError'), {

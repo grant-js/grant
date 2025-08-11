@@ -39,7 +39,7 @@ export function useGroupMutations() {
     update,
   });
 
-  const [deleteGroup] = useMutation<{ deleteGroup: boolean }>(DELETE_GROUP, {
+  const [deleteGroup] = useMutation<{ deleteGroup: Group }>(DELETE_GROUP, {
     update,
   });
 
@@ -61,7 +61,7 @@ export function useGroupMutations() {
     update,
   });
 
-  const [removeGroupTag] = useMutation<{ removeGroupTag: boolean }>(REMOVE_GROUP_TAG, {
+  const [removeGroupTag] = useMutation<{ removeGroupTag: GroupTag }>(REMOVE_GROUP_TAG, {
     update,
   });
 
@@ -171,11 +171,12 @@ export function useGroupMutations() {
 
   const handleRemoveGroupTag = async (input: RemoveGroupTagInput) => {
     try {
-      await removeGroupTag({
+      const result = await removeGroupTag({
         variables: { input },
       });
 
       toast.success(t('notifications.tagRemovedSuccess'));
+      return result.data?.removeGroupTag;
     } catch (error) {
       console.error('Error removing group tag:', error);
       toast.error(t('notifications.tagRemovedError'), {

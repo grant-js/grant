@@ -8,5 +8,5 @@ import {
 export interface ProjectRoleDataProvider {
   getProjectRoles(params: QueryProjectRolesArgs): Promise<ProjectRole[]>;
   addProjectRole(params: MutationAddProjectRoleArgs): Promise<ProjectRole>;
-  removeProjectRole(params: MutationRemoveProjectRoleArgs): Promise<boolean>;
+  removeProjectRole(params: MutationRemoveProjectRoleArgs): Promise<ProjectRole>;
 }

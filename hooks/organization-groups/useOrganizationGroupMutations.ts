@@ -25,7 +25,7 @@ export function useOrganizationGroupMutations() {
     }
   );
 
-  const [removeOrganizationGroup] = useMutation<{ removeOrganizationGroup: boolean }>(
+  const [removeOrganizationGroup] = useMutation<{ removeOrganizationGroup: OrganizationGroup }>(
     REMOVE_ORGANIZATION_GROUP,
     {
       update,
@@ -51,11 +51,12 @@ export function useOrganizationGroupMutations() {
 
   const handleRemoveOrganizationGroup = async (input: RemoveOrganizationGroupInput) => {
     try {
-      await removeOrganizationGroup({
+      const result = await removeOrganizationGroup({
         variables: { input },
       });
 
       toast.success(t('notifications.removeSuccess'));
+      return result.data?.removeOrganizationGroup;
     } catch (error) {
       console.error('Error removing organization group:', error);
       toast.error(t('notifications.removeError'), {

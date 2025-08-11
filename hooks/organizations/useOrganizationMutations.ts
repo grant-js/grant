@@ -46,9 +46,12 @@ export function useOrganizationMutations() {
     }
   );
 
-  const [deleteOrganization] = useMutation<{ deleteOrganization: boolean }>(DELETE_ORGANIZATION, {
-    update,
-  });
+  const [deleteOrganization] = useMutation<{ deleteOrganization: Organization }>(
+    DELETE_ORGANIZATION,
+    {
+      update,
+    }
+  );
 
   const [addOrganizationRole] = useMutation<{ addOrganizationRole: OrganizationRole }>(
     ADD_ORGANIZATION_ROLE,
@@ -57,7 +60,7 @@ export function useOrganizationMutations() {
     }
   );
 
-  const [removeOrganizationRole] = useMutation<{ removeOrganizationRole: boolean }>(
+  const [removeOrganizationRole] = useMutation<{ removeOrganizationRole: OrganizationRole }>(
     REMOVE_ORGANIZATION_ROLE,
     {
       update,
@@ -71,7 +74,7 @@ export function useOrganizationMutations() {
     }
   );
 
-  const [removeOrganizationTag] = useMutation<{ removeOrganizationTag: boolean }>(
+  const [removeOrganizationTag] = useMutation<{ removeOrganizationTag: OrganizationTag }>(
     REMOVE_ORGANIZATION_TAG,
     {
       update,
@@ -116,12 +119,13 @@ export function useOrganizationMutations() {
 
   const handleDeleteOrganization = async (id: string, _name: string) => {
     try {
-      await deleteOrganization({
+      const result = await deleteOrganization({
         variables: { id },
         refetchQueries: ['GetOrganizations'],
       });
 
       toast.success(t('notifications.deleteSuccess'));
+      return result.data?.deleteOrganization;
     } catch (error) {
       console.error('Error deleting organization:', error);
       toast.error(t('notifications.deleteError'), {

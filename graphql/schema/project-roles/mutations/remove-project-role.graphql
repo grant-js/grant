@@ -7,5 +7,5 @@ extend type Mutation {
     Input data for removing the project-role relationship.
     """
     input: RemoveProjectRoleInput!
-  ): Boolean!
+  ): ProjectRole!
 }

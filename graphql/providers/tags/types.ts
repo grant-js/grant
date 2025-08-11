@@ -11,5 +11,5 @@ export interface TagDataProvider {
   getTags(params: QueryTagsArgs): Promise<TagPage>;
   createTag(params: MutationCreateTagArgs): Promise<Tag>;
   updateTag(params: MutationUpdateTagArgs): Promise<Tag>;
-  deleteTag(params: MutationDeleteTagArgs): Promise<boolean>;
+  deleteTag(params: MutationDeleteTagArgs): Promise<Tag>;
 }

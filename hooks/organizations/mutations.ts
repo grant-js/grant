@@ -26,7 +26,13 @@ export const UPDATE_ORGANIZATION = gql`
 
 export const DELETE_ORGANIZATION = gql`
   mutation DeleteOrganization($id: ID!) {
-    deleteOrganization(id: $id)
+    deleteOrganization(id: $id) {
+      id
+      name
+      slug
+      createdAt
+      updatedAt
+    }
   }
 `;
 
@@ -44,7 +50,13 @@ export const ADD_ORGANIZATION_ROLE = gql`
 
 export const REMOVE_ORGANIZATION_ROLE = gql`
   mutation RemoveOrganizationRole($input: RemoveOrganizationRoleInput!) {
-    removeOrganizationRole(input: $input)
+    removeOrganizationRole(input: $input) {
+      id
+      organizationId
+      roleId
+      createdAt
+      updatedAt
+    }
   }
 `;
 
@@ -62,6 +74,12 @@ export const ADD_ORGANIZATION_TAG = gql`
 
 export const REMOVE_ORGANIZATION_TAG = gql`
   mutation RemoveOrganizationTag($input: RemoveOrganizationTagInput!) {
-    removeOrganizationTag(input: $input)
+    removeOrganizationTag(input: $input) {
+      id
+      organizationId
+      tagId
+      createdAt
+      updatedAt
+    }
   }
 `;

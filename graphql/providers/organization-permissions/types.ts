@@ -12,5 +12,7 @@ export interface OrganizationPermissionDataProvider {
   addOrganizationPermission(
     params: MutationAddOrganizationPermissionArgs
   ): Promise<OrganizationPermission>;
-  removeOrganizationPermission(params: MutationRemoveOrganizationPermissionArgs): Promise<boolean>;
+  removeOrganizationPermission(
+    params: MutationRemoveOrganizationPermissionArgs
+  ): Promise<OrganizationPermission>;
 }

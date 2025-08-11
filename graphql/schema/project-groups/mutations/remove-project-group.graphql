@@ -7,5 +7,5 @@ extend type Mutation {
     Input data for removing the project-group relationship.
     """
     input: RemoveProjectGroupInput!
-  ): Boolean!
+  ): ProjectGroup!
 }

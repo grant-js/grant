@@ -28,7 +28,14 @@ export const UPDATE_PROJECT = gql`
 
 export const DELETE_PROJECT = gql`
   mutation DeleteProject($id: ID!) {
-    deleteProject(id: $id)
+    deleteProject(id: $id) {
+      id
+      name
+      slug
+      description
+      createdAt
+      updatedAt
+    }
   }
 `;
 
@@ -46,7 +53,13 @@ export const ADD_PROJECT_ROLE = gql`
 
 export const REMOVE_PROJECT_ROLE = gql`
   mutation RemoveProjectRole($input: RemoveProjectRoleInput!) {
-    removeProjectRole(input: $input)
+    removeProjectRole(input: $input) {
+      id
+      projectId
+      roleId
+      createdAt
+      updatedAt
+    }
   }
 `;
 
@@ -64,6 +77,12 @@ export const ADD_PROJECT_TAG = gql`
 
 export const REMOVE_PROJECT_TAG = gql`
   mutation RemoveProjectTag($input: RemoveProjectTagInput!) {
-    removeProjectTag(input: $input)
+    removeProjectTag(input: $input) {
+      id
+      projectId
+      tagId
+      createdAt
+      updatedAt
+    }
   }
 `;

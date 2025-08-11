@@ -7,5 +7,5 @@ extend type Mutation {
     ID of the permission to delete.
     """
     id: ID!
-  ): Boolean!
+  ): Permission!
 }

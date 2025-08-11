@@ -7,5 +7,5 @@ extend type Mutation {
     ID of the group to delete.
     """
     id: ID!
-  ): Boolean!
+  ): Group!
 }

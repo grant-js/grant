@@ -8,5 +8,5 @@ import {
 export interface OrganizationGroupDataProvider {
   getOrganizationGroups(params: QueryOrganizationGroupsArgs): Promise<OrganizationGroup[]>;
   addOrganizationGroup(params: MutationAddOrganizationGroupArgs): Promise<OrganizationGroup>;
-  removeOrganizationGroup(params: MutationRemoveOrganizationGroupArgs): Promise<boolean>;
+  removeOrganizationGroup(params: MutationRemoveOrganizationGroupArgs): Promise<OrganizationGroup>;
 }

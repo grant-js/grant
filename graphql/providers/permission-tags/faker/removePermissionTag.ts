@@ -1,19 +1,17 @@
-import { MutationRemovePermissionTagArgs } from '@/graphql/generated/types';
+import { MutationRemovePermissionTagArgs, PermissionTag } from '@/graphql/generated/types';
 import { deletePermissionTagByPermissionAndTag } from '@/graphql/providers/permission-tags/faker/dataStore';
 
-export const removePermissionTag = async ({
+export async function removePermissionTag({
   input,
-}: MutationRemovePermissionTagArgs): Promise<boolean> => {
-  const { permissionId, tagId } = input;
-
-  // Delete the permission-tag relationship
-  const deletedPermissionTag = deletePermissionTagByPermissionAndTag(permissionId, tagId);
+}: MutationRemovePermissionTagArgs): Promise<PermissionTag> {
+  const deletedPermissionTag = deletePermissionTagByPermissionAndTag(
+    input.permissionId,
+    input.tagId
+  );
 
   if (!deletedPermissionTag) {
-    throw new Error(
-      `PermissionTag relationship not found for permission ${permissionId} and tag ${tagId}`
-    );
+    throw new Error('Permission tag relationship not found');
   }
 
-  return deletedPermissionTag !== null;
-};
+  return deletedPermissionTag;
+}
