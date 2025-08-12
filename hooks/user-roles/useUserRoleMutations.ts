@@ -1,8 +1,8 @@
-import { useMutation } from '@apollo/client';
+import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import { AddUserRoleInput, UserRole, RemoveUserRoleInput } from '@/graphql/generated/types';
+import { AddUserRoleInput, RemoveUserRoleInput, UserRole } from '@/graphql/generated/types';
 
 import { evictUserRolesCache } from './cache';
 import { ADD_USER_ROLE, REMOVE_USER_ROLE } from './mutations';
@@ -10,23 +10,22 @@ import { ADD_USER_ROLE, REMOVE_USER_ROLE } from './mutations';
 export function useUserRoleMutations() {
   const t = useTranslations('users');
 
+  const update = (cache: ApolloCache<any>) => {
+    evictUserRolesCache(cache);
+  };
+
   const [addUserRole] = useMutation<{ addUserRole: UserRole }>(ADD_USER_ROLE, {
-    update(cache) {
-      evictUserRolesCache(cache);
-    },
+    update,
   });
 
   const [removeUserRole] = useMutation<{ removeUserRole: UserRole }>(REMOVE_USER_ROLE, {
-    update(cache) {
-      evictUserRolesCache(cache);
-    },
+    update,
   });
 
   const handleAddUserRole = async (input: AddUserRoleInput) => {
     try {
       const result = await addUserRole({
         variables: { input },
-        refetchQueries: ['GetUsers'],
       });
 
       toast.success(t('notifications.roleAddedSuccess'));
@@ -44,7 +43,6 @@ export function useUserRoleMutations() {
     try {
       const result = await removeUserRole({
         variables: { input },
-        refetchQueries: ['GetUsers'],
       });
 
       toast.success(t('notifications.roleRemovedSuccess'));

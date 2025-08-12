@@ -1,4 +1,4 @@
-import { useMutation } from '@apollo/client';
+import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
@@ -10,23 +10,22 @@ import { ADD_GROUP_TAG, REMOVE_GROUP_TAG } from './mutations';
 export function useGroupTagMutations() {
   const t = useTranslations('groups');
 
+  const update = (cache: ApolloCache<any>) => {
+    evictGroupTagsCache(cache);
+  };
+
   const [addGroupTag] = useMutation<{ addGroupTag: GroupTag }>(ADD_GROUP_TAG, {
-    update(cache) {
-      evictGroupTagsCache(cache);
-    },
+    update,
   });
 
   const [removeGroupTag] = useMutation<{ removeGroupTag: GroupTag }>(REMOVE_GROUP_TAG, {
-    update(cache) {
-      evictGroupTagsCache(cache);
-    },
+    update,
   });
 
   const handleAddGroupTag = async (input: AddGroupTagInput) => {
     try {
       const result = await addGroupTag({
         variables: { input },
-        refetchQueries: ['GetGroups'],
       });
 
       toast.success(t('notifications.tagAddedSuccess'));
@@ -44,7 +43,6 @@ export function useGroupTagMutations() {
     try {
       const result = await removeGroupTag({
         variables: { input },
-        refetchQueries: ['GetGroups'],
       });
 
       toast.success(t('notifications.tagRemovedSuccess'));

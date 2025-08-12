@@ -33,7 +33,6 @@ export function usePermissionTagMutations() {
     try {
       const result = await addPermissionTag({
         variables: { input },
-        refetchQueries: ['GetPermissions'],
       });
 
       toast.success(t('notifications.tagAddedSuccess'));
@@ -51,7 +50,6 @@ export function usePermissionTagMutations() {
     try {
       const result = await removePermissionTag({
         variables: { input },
-        refetchQueries: ['GetPermissions'],
       });
 
       toast.success(t('notifications.tagRemovedSuccess'));

@@ -43,7 +43,6 @@ export function useOrganizationMutations() {
     try {
       const result = await createOrganization({
         variables: { input },
-        refetchQueries: ['GetOrganizations'],
       });
 
       toast.success(t('notifications.createSuccess'));
@@ -61,7 +60,6 @@ export function useOrganizationMutations() {
     try {
       const result = await updateOrganization({
         variables: { id, input },
-        refetchQueries: ['GetOrganizations'],
       });
 
       toast.success(t('notifications.updateSuccess'));
@@ -79,7 +77,6 @@ export function useOrganizationMutations() {
     try {
       const result = await deleteOrganization({
         variables: { id },
-        refetchQueries: ['GetOrganizations'],
       });
 
       toast.success(t('notifications.deleteSuccess'));

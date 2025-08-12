@@ -35,7 +35,6 @@ export function useOrganizationProjectMutations() {
     try {
       const result = await addOrganizationProject({
         variables: { input },
-        refetchQueries: ['GetProjects', 'GetOrganizationProjects'],
       });
 
       toast.success(t('notifications.addSuccess'));
@@ -53,7 +52,6 @@ export function useOrganizationProjectMutations() {
     try {
       const result = await removeOrganizationProject({
         variables: { input },
-        refetchQueries: ['GetProjects', 'GetOrganizationProjects'],
       });
 
       toast.success(t('notifications.removeSuccess'));

@@ -1,11 +1,11 @@
-import { useMutation } from '@apollo/client';
+import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import {
   AddProjectRoleInput,
-  ProjectRole,
   RemoveProjectRoleInput,
+  ProjectRole,
 } from '@/graphql/generated/types';
 
 import { evictProjectRolesCache } from './cache';
@@ -14,23 +14,22 @@ import { ADD_PROJECT_ROLE, REMOVE_PROJECT_ROLE } from './mutations';
 export function useProjectRoleMutations() {
   const t = useTranslations('projects');
 
+  const update = (cache: ApolloCache<any>) => {
+    evictProjectRolesCache(cache);
+  };
+
   const [addProjectRole] = useMutation<{ addProjectRole: ProjectRole }>(ADD_PROJECT_ROLE, {
-    update(cache) {
-      evictProjectRolesCache(cache);
-    },
+    update,
   });
 
   const [removeProjectRole] = useMutation<{ removeProjectRole: ProjectRole }>(REMOVE_PROJECT_ROLE, {
-    update(cache) {
-      evictProjectRolesCache(cache);
-    },
+    update,
   });
 
   const handleAddProjectRole = async (input: AddProjectRoleInput) => {
     try {
       const result = await addProjectRole({
         variables: { input },
-        refetchQueries: ['GetProjects'],
       });
 
       toast.success(t('notifications.roleAddedSuccess'));
@@ -48,7 +47,6 @@ export function useProjectRoleMutations() {
     try {
       const result = await removeProjectRole({
         variables: { input },
-        refetchQueries: ['GetProjects'],
       });
 
       toast.success(t('notifications.roleRemovedSuccess'));

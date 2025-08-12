@@ -30,7 +30,6 @@ export function useTagMutations() {
     try {
       const result = await createTag({
         variables: { input },
-        refetchQueries: ['GetTags'],
       });
 
       toast.success(t('notifications.createSuccess'));
@@ -48,7 +47,6 @@ export function useTagMutations() {
     try {
       const result = await updateTag({
         variables: { id, input },
-        refetchQueries: ['GetTags'],
       });
 
       toast.success(t('notifications.updateSuccess'));
@@ -62,14 +60,13 @@ export function useTagMutations() {
     }
   };
 
-  const handleDeleteTag = async (id: string, name: string) => {
+  const handleDeleteTag = async (id: string, _name: string) => {
     try {
       const result = await deleteTag({
         variables: { id },
-        refetchQueries: ['GetTags'],
       });
 
-      toast.success(t('notifications.deleteSuccess', { name }));
+      toast.success(t('notifications.deleteSuccess'));
       return result.data?.deleteTag;
     } catch (error) {
       console.error('Error deleting tag:', error);

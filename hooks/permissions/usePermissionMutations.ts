@@ -52,7 +52,6 @@ export function usePermissionMutations() {
     try {
       const result = await updatePermission({
         variables: { id, input },
-        refetchQueries: ['GetPermissions'],
       });
 
       toast.success(t('notifications.updateSuccess'));

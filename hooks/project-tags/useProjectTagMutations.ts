@@ -1,8 +1,8 @@
-import { useMutation } from '@apollo/client';
+import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import { AddProjectTagInput, ProjectTag, RemoveProjectTagInput } from '@/graphql/generated/types';
+import { AddProjectTagInput, RemoveProjectTagInput, ProjectTag } from '@/graphql/generated/types';
 
 import { evictProjectTagsCache } from './cache';
 import { ADD_PROJECT_TAG, REMOVE_PROJECT_TAG } from './mutations';
@@ -10,23 +10,22 @@ import { ADD_PROJECT_TAG, REMOVE_PROJECT_TAG } from './mutations';
 export function useProjectTagMutations() {
   const t = useTranslations('projects');
 
+  const update = (cache: ApolloCache<any>) => {
+    evictProjectTagsCache(cache);
+  };
+
   const [addProjectTag] = useMutation<{ addProjectTag: ProjectTag }>(ADD_PROJECT_TAG, {
-    update(cache) {
-      evictProjectTagsCache(cache);
-    },
+    update,
   });
 
   const [removeProjectTag] = useMutation<{ removeProjectTag: ProjectTag }>(REMOVE_PROJECT_TAG, {
-    update(cache) {
-      evictProjectTagsCache(cache);
-    },
+    update,
   });
 
   const handleAddProjectTag = async (input: AddProjectTagInput) => {
     try {
       const result = await addProjectTag({
         variables: { input },
-        refetchQueries: ['GetProjects'],
       });
 
       toast.success(t('notifications.tagAddedSuccess'));
@@ -44,7 +43,6 @@ export function useProjectTagMutations() {
     try {
       const result = await removeProjectTag({
         variables: { input },
-        refetchQueries: ['GetProjects'],
       });
 
       toast.success(t('notifications.tagRemovedSuccess'));

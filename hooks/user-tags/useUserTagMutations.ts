@@ -1,8 +1,8 @@
-import { useMutation } from '@apollo/client';
+import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import { AddUserTagInput, UserTag, RemoveUserTagInput } from '@/graphql/generated/types';
+import { AddUserTagInput, RemoveUserTagInput, UserTag } from '@/graphql/generated/types';
 
 import { evictUserTagsCache } from './cache';
 import { ADD_USER_TAG, REMOVE_USER_TAG } from './mutations';
@@ -10,23 +10,22 @@ import { ADD_USER_TAG, REMOVE_USER_TAG } from './mutations';
 export function useUserTagMutations() {
   const t = useTranslations('users');
 
+  const update = (cache: ApolloCache<any>) => {
+    evictUserTagsCache(cache);
+  };
+
   const [addUserTag] = useMutation<{ addUserTag: UserTag }>(ADD_USER_TAG, {
-    update(cache) {
-      evictUserTagsCache(cache);
-    },
+    update,
   });
 
   const [removeUserTag] = useMutation<{ removeUserTag: UserTag }>(REMOVE_USER_TAG, {
-    update(cache) {
-      evictUserTagsCache(cache);
-    },
+    update,
   });
 
   const handleAddUserTag = async (input: AddUserTagInput) => {
     try {
       const result = await addUserTag({
         variables: { input },
-        refetchQueries: ['GetUsers'],
       });
 
       toast.success(t('notifications.tagAddedSuccess'));
@@ -44,7 +43,6 @@ export function useUserTagMutations() {
     try {
       await removeUserTag({
         variables: { input },
-        refetchQueries: ['GetUsers'],
       });
 
       toast.success(t('notifications.tagRemovedSuccess'));

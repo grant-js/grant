@@ -1,4 +1,4 @@
-import { useMutation } from '@apollo/client';
+import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
@@ -8,26 +8,27 @@ import {
   RemoveOrganizationUserInput,
 } from '@/graphql/generated/types';
 
+import { evictOrganizationUsersCache } from './cache';
 import { ADD_ORGANIZATION_USER, REMOVE_ORGANIZATION_USER } from './mutations';
 
 export function useOrganizationUserMutations() {
   const t = useTranslations('organizationUsers');
 
+  const update = (cache: ApolloCache<any>) => {
+    evictOrganizationUsersCache(cache);
+  };
+
   const [addOrganizationUser] = useMutation<{ addOrganizationUser: OrganizationUser }>(
     ADD_ORGANIZATION_USER,
     {
-      update(cache) {
-        // Only evict organization users cache, not the entire users cache
-        cache.evict({ fieldName: 'organizationUsers' });
-        cache.gc();
-      },
+      update,
     }
   );
 
   const [removeOrganizationUser] = useMutation<{ removeOrganizationUser: OrganizationUser }>(
     REMOVE_ORGANIZATION_USER,
     {
-      // Remove cache eviction since it's handled manually in DeleteUserDialog
+      update,
     }
   );
 
@@ -35,7 +36,6 @@ export function useOrganizationUserMutations() {
     try {
       const result = await addOrganizationUser({
         variables: { input },
-        // Remove refetchQueries since cache eviction is handled manually
       });
 
       toast.success(t('notifications.addSuccess'));
@@ -53,7 +53,6 @@ export function useOrganizationUserMutations() {
     try {
       const result = await removeOrganizationUser({
         variables: { input },
-        // Remove refetchQueries since cache eviction is handled manually in DeleteUserDialog
       });
 
       toast.success(t('notifications.removeSuccess'));

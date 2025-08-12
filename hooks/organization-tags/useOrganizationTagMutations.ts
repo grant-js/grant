@@ -1,4 +1,4 @@
-import { useMutation } from '@apollo/client';
+import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
@@ -14,21 +14,21 @@ import { ADD_ORGANIZATION_TAG, REMOVE_ORGANIZATION_TAG } from './mutations';
 export function useOrganizationTagMutations() {
   const t = useTranslations('organizations');
 
+  const update = (cache: ApolloCache<any>) => {
+    evictOrganizationTagsCache(cache);
+  };
+
   const [addOrganizationTag] = useMutation<{ addOrganizationTag: OrganizationTag }>(
     ADD_ORGANIZATION_TAG,
     {
-      update(cache) {
-        evictOrganizationTagsCache(cache);
-      },
+      update,
     }
   );
 
   const [removeOrganizationTag] = useMutation<{ removeOrganizationTag: OrganizationTag }>(
     REMOVE_ORGANIZATION_TAG,
     {
-      update(cache) {
-        evictOrganizationTagsCache(cache);
-      },
+      update,
     }
   );
 
@@ -36,7 +36,6 @@ export function useOrganizationTagMutations() {
     try {
       const result = await addOrganizationTag({
         variables: { input },
-        refetchQueries: ['GetOrganizations'],
       });
 
       toast.success(t('notifications.tagAddedSuccess'));
@@ -54,7 +53,6 @@ export function useOrganizationTagMutations() {
     try {
       const result = await removeOrganizationTag({
         variables: { input },
-        refetchQueries: ['GetOrganizations'],
       });
 
       toast.success(t('notifications.tagRemovedSuccess'));

@@ -1,4 +1,4 @@
-import { useMutation } from '@apollo/client';
+import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
@@ -14,21 +14,21 @@ import { ADD_ORGANIZATION_ROLE, REMOVE_ORGANIZATION_ROLE } from './mutations';
 export function useOrganizationRoleMutations() {
   const t = useTranslations('organizations');
 
+  const update = (cache: ApolloCache<any>) => {
+    evictOrganizationRolesCache(cache);
+  };
+
   const [addOrganizationRole] = useMutation<{ addOrganizationRole: OrganizationRole }>(
     ADD_ORGANIZATION_ROLE,
     {
-      update(cache) {
-        evictOrganizationRolesCache(cache);
-      },
+      update,
     }
   );
 
   const [removeOrganizationRole] = useMutation<{ removeOrganizationRole: OrganizationRole }>(
     REMOVE_ORGANIZATION_ROLE,
     {
-      update(cache) {
-        evictOrganizationRolesCache(cache);
-      },
+      update,
     }
   );
 
@@ -36,7 +36,6 @@ export function useOrganizationRoleMutations() {
     try {
       const result = await addOrganizationRole({
         variables: { input },
-        refetchQueries: ['GetOrganizations'],
       });
 
       toast.success(t('notifications.roleAddedSuccess'));
@@ -54,7 +53,6 @@ export function useOrganizationRoleMutations() {
     try {
       const result = await removeOrganizationRole({
         variables: { input },
-        refetchQueries: ['GetOrganizations'],
       });
 
       toast.success(t('notifications.roleRemovedSuccess'));

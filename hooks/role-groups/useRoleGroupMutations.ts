@@ -1,8 +1,8 @@
-import { useMutation } from '@apollo/client';
+import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import { AddRoleGroupInput, RoleGroup, RemoveRoleGroupInput } from '@/graphql/generated/types';
+import { AddRoleGroupInput, RemoveRoleGroupInput, RoleGroup } from '@/graphql/generated/types';
 
 import { evictRoleGroupsCache } from './cache';
 import { ADD_ROLE_GROUP, REMOVE_ROLE_GROUP } from './mutations';
@@ -10,23 +10,22 @@ import { ADD_ROLE_GROUP, REMOVE_ROLE_GROUP } from './mutations';
 export function useRoleGroupMutations() {
   const t = useTranslations('roles');
 
+  const update = (cache: ApolloCache<any>) => {
+    evictRoleGroupsCache(cache);
+  };
+
   const [addRoleGroup] = useMutation<{ addRoleGroup: RoleGroup }>(ADD_ROLE_GROUP, {
-    update(cache) {
-      evictRoleGroupsCache(cache);
-    },
+    update,
   });
 
   const [removeRoleGroup] = useMutation<{ removeRoleGroup: RoleGroup }>(REMOVE_ROLE_GROUP, {
-    update(cache) {
-      evictRoleGroupsCache(cache);
-    },
+    update,
   });
 
   const handleAddRoleGroup = async (input: AddRoleGroupInput) => {
     try {
       const result = await addRoleGroup({
         variables: { input },
-        refetchQueries: ['GetRoles'],
       });
 
       toast.success(t('notifications.groupAddedSuccess'));
@@ -44,7 +43,6 @@ export function useRoleGroupMutations() {
     try {
       const result = await removeRoleGroup({
         variables: { input },
-        refetchQueries: ['GetRoles'],
       });
 
       toast.success(t('notifications.groupRemovedSuccess'));
