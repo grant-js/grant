@@ -2,13 +2,12 @@
 
 import { useCallback } from 'react';
 
-import { Users, Shield, Group, Key, Tag, ArrowLeft } from 'lucide-react';
+import { Users, Shield, Group, Key, Tag, FolderOpen } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { usePathname } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
-import { useOrganizationsStore } from '@/stores/organizations.store';
 
 import { NavLink } from './NavLink';
 
@@ -18,12 +17,11 @@ interface NavItem {
   translationKey: string;
 }
 
-export function ProjectNav() {
+export function OrganizationNav() {
   const t = useTranslations('dashboard.navigation');
   const pathname = usePathname();
   const scope = useScopeFromParams();
-  const { id: projectId } = scope;
-  const { selectedOrganizationId } = useOrganizationsStore();
+  const { id: organizationId } = scope;
 
   const isActive = useCallback(
     (path: string) => {
@@ -56,30 +54,35 @@ export function ProjectNav() {
     [isActive]
   );
 
-  const projectNavItems: NavItem[] = [
+  const organizationNavItems: NavItem[] = [
     {
-      path: `/dashboard/project/${projectId}/users`,
-      icon: <Users className={iconClasses(`/dashboard/project/${projectId}/users`)} />,
+      path: `/dashboard/org/${organizationId}/projects`,
+      icon: <FolderOpen className={iconClasses(`/dashboard/org/${organizationId}/projects`)} />,
+      translationKey: 'projects',
+    },
+    {
+      path: `/dashboard/org/${organizationId}/users`,
+      icon: <Users className={iconClasses(`/dashboard/org/${organizationId}/users`)} />,
       translationKey: 'users',
     },
     {
-      path: `/dashboard/project/${projectId}/roles`,
-      icon: <Shield className={iconClasses(`/dashboard/project/${projectId}/roles`)} />,
+      path: `/dashboard/org/${organizationId}/roles`,
+      icon: <Shield className={iconClasses(`/dashboard/org/${organizationId}/roles`)} />,
       translationKey: 'roles',
     },
     {
-      path: `/dashboard/project/${projectId}/groups`,
-      icon: <Group className={iconClasses(`/dashboard/project/${projectId}/groups`)} />,
+      path: `/dashboard/org/${organizationId}/groups`,
+      icon: <Group className={iconClasses(`/dashboard/org/${organizationId}/groups`)} />,
       translationKey: 'groups',
     },
     {
-      path: `/dashboard/project/${projectId}/permissions`,
-      icon: <Key className={iconClasses(`/dashboard/project/${projectId}/permissions`)} />,
+      path: `/dashboard/org/${organizationId}/permissions`,
+      icon: <Key className={iconClasses(`/dashboard/org/${organizationId}/permissions`)} />,
       translationKey: 'permissions',
     },
     {
-      path: `/dashboard/project/${projectId}/tags`,
-      icon: <Tag className={iconClasses(`/dashboard/project/${projectId}/tags`)} />,
+      path: `/dashboard/org/${organizationId}/tags`,
+      icon: <Tag className={iconClasses(`/dashboard/org/${organizationId}/tags`)} />,
       translationKey: 'tags',
     },
   ];
@@ -108,22 +111,12 @@ export function ProjectNav() {
 
   return (
     <nav className="md:flex md:flex-col md:h-full">
-      {/* Back to Organization */}
-      <div className="mb-4 p-2">
-        <NavLink href={`/dashboard/org/${selectedOrganizationId}/projects`}>
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" />
-            <span>{t('backToOrganization')}</span>
-          </div>
-        </NavLink>
-      </div>
-
       {/* Mobile: All items in single row */}
-      <div className="grid grid-cols-5 md:hidden">{renderNavItems(projectNavItems)}</div>
+      <div className="grid grid-cols-6 md:hidden gap-1">{renderNavItems(organizationNavItems)}</div>
 
       {/* Desktop: Vertical layout */}
       <div className="hidden md:flex md:flex-col md:space-y-1">
-        {renderNavItems(projectNavItems)}
+        {renderNavItems(organizationNavItems)}
       </div>
     </nav>
   );

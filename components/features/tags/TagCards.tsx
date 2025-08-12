@@ -7,13 +7,14 @@ import { CardGrid, CardHeader } from '@/components/common';
 import { Tag } from '@/graphql/generated/types';
 import { useTagsStore } from '@/stores/tags.store';
 
+import { CreateTagDialog } from './CreateTagDialog';
 import { TagActions } from './TagActions';
 import { TagAudit } from './TagAudit';
 import { TagCardSkeleton } from './TagCardSkeleton';
 
 export function TagCards() {
   const t = useTranslations('tags');
-  const { tags, loading, limit } = useTagsStore();
+  const { tags, loading, limit, search } = useTagsStore();
 
   return (
     <CardGrid<Tag>
@@ -21,9 +22,9 @@ export function TagCards() {
       loading={loading}
       emptyState={{
         icon: TagIcon,
-        title: t('noTags.title'),
-        description: t('noTags.description'),
-        action: undefined, // No create action in cards view
+        title: search ? t('noSearchResults.title') : t('noTags.title'),
+        description: search ? t('noSearchResults.description') : t('noTags.description'),
+        action: search ? undefined : <CreateTagDialog />,
       }}
       skeleton={{
         component: <TagCardSkeleton />,

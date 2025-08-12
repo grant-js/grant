@@ -78,8 +78,10 @@
       "groups": "Gruppen",
       "permissions": "Berechtigungen",
       "tags": "Tags",
-      "account": "Konto",
-      "settings": "Einstellungen"
+      "projects": "Projekte",
+      "account": "Account",
+      "settings": "Einstellungen",
+      "backToOrganization": "Zurück zur Organisation"
     }
   },
   "theme": {
@@ -596,6 +598,7 @@
   "organizations": {
     "title": "Organisationen",
     "description": "Verwalten Sie Ihre Organisationen",
+    "redirectingToProjects": "Weiterleitung zu Projekten...",
     "noOrganizations": {
       "title": "Keine Organisationen gefunden",
       "description": "Erstellen Sie Ihre erste Organisation"

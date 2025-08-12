@@ -1,6 +1,6 @@
 'use client';
 
-import { Shield, Tags } from 'lucide-react';
+import { Group as GroupIcon, Shield, Tags } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { CardGrid, CardHeader } from '@/components/common';
@@ -39,7 +39,7 @@ export function GroupCards() {
       entities={groups}
       loading={loading}
       emptyState={{
-        icon: Shield,
+        icon: GroupIcon,
         title: search ? t('noSearchResults.title') : t('noGroups.title'),
         description: search ? t('noSearchResults.description') : t('noGroups.description'),
         action: search ? undefined : <CreateGroupDialog />,

@@ -1,6 +1,6 @@
 'use client';
 
-import { Users } from 'lucide-react';
+import { Group } from 'lucide-react';
 
 import {
   CreateDialog,
@@ -149,7 +149,7 @@ export function CreateGroupDialog() {
       triggerText="createDialog.trigger"
       confirmText="createDialog.confirm"
       cancelText="createDialog.cancel"
-      icon={Users}
+      icon={Group}
       schema={createGroupSchema}
       defaultValues={{
         name: '',

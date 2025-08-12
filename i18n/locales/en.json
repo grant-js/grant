@@ -78,8 +78,10 @@
       "groups": "Groups",
       "permissions": "Permissions",
       "tags": "Tags",
+      "projects": "Projects",
       "account": "Account",
-      "settings": "Settings"
+      "settings": "Settings",
+      "backToOrganization": "Back to Organization"
     }
   },
   "theme": {
@@ -596,6 +598,7 @@
   "organizations": {
     "title": "Organizations",
     "description": "Manage your organizations",
+    "redirectingToProjects": "Redirecting to projects...",
     "noOrganizations": {
       "title": "No organizations found",
       "description": "Get started by creating your first organization"
