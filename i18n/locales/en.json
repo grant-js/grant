@@ -529,12 +529,14 @@
       "description": "Add a new permission to the system",
       "trigger": "Create Permission",
       "confirm": "Create Permission",
+      "cancel": "Cancel",
       "submitting": "Creating..."
     },
     "editDialog": {
       "title": "Edit Permission",
       "description": "Update permission information",
       "confirm": "Save Changes",
+      "cancel": "Cancel",
       "updating": "Updating..."
     },
     "deleteDialog": {
@@ -731,6 +733,8 @@
       "descriptionPlaceholder": "Enter project description",
       "roles": "Roles",
       "tags": "Tags",
+      "tagsLoading": "Loading tags...",
+      "noTagsAvailable": "No tags available",
       "validation": {
         "nameRequired": "Project name is required"
       }
@@ -763,7 +767,11 @@
       "updateSuccess": "Project updated",
       "updateError": "Failed to update project",
       "deleteSuccess": "Project deleted",
-      "deleteError": "Failed to delete project"
+      "deleteError": "Failed to delete project",
+      "tagAddedSuccess": "Tag added to project",
+      "tagAddedError": "Failed to add tag to project",
+      "tagRemovedSuccess": "Tag removed from project",
+      "tagRemovedError": "Failed to remove tag from project"
     },
     "view": {
       "card": "Card View",
@@ -903,6 +911,38 @@
       "addError": "Failed to add user to organization",
       "removeSuccess": "User removed from organization",
       "removeError": "Failed to remove user from organization"
+    }
+  },
+  "organizationGroups": {
+    "notifications": {
+      "addSuccess": "Group added to organization",
+      "addError": "Failed to add group to organization",
+      "removeSuccess": "Group removed from organization",
+      "removeError": "Failed to remove group from organization"
+    }
+  },
+  "projectGroups": {
+    "notifications": {
+      "addSuccess": "Group added to project",
+      "addError": "Failed to add group to project",
+      "removeSuccess": "Group removed from project",
+      "removeError": "Failed to remove group from project"
+    }
+  },
+  "organizationPermissions": {
+    "notifications": {
+      "addSuccess": "Permission added to organization",
+      "addError": "Failed to add permission to organization",
+      "removeSuccess": "Permission removed from organization",
+      "removeError": "Failed to remove permission from organization"
+    }
+  },
+  "projectPermissions": {
+    "notifications": {
+      "addSuccess": "Permission added to project",
+      "addError": "Failed to add permission to project",
+      "removeSuccess": "Permission removed from project",
+      "removeError": "Failed to remove permission from project"
     }
   },
   "projectUsers": {

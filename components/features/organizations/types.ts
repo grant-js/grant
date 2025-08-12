@@ -14,6 +14,7 @@ export interface OrganizationsQueryResult {
 // Form schemas
 export const createOrganizationSchema = z.object({
   name: z.string().min(1, 'Organization name is required'),
+  tagIds: z.array(z.string()).optional(),
 });
 
 export const editOrganizationSchema = z.object({

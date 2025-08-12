@@ -529,12 +529,14 @@
       "description": "Fügen Sie eine neue Berechtigung zum System hinzu",
       "trigger": "Berechtigung erstellen",
       "confirm": "Berechtigung erstellen",
+      "cancel": "Abbrechen",
       "submitting": "Wird erstellt..."
     },
     "editDialog": {
       "title": "Berechtigung bearbeiten",
       "description": "Berechtigungsinformationen aktualisieren",
       "confirm": "Änderungen speichern",
+      "cancel": "Abbrechen",
       "updating": "Wird aktualisiert..."
     },
     "deleteDialog": {
@@ -723,6 +725,8 @@
       "descriptionPlaceholder": "Projektbeschreibung eingeben",
       "roles": "Rollen",
       "tags": "Tags",
+      "tagsLoading": "Tags werden geladen...",
+      "noTagsAvailable": "Keine Tags verfügbar",
       "validation": {
         "nameRequired": "Projektname ist erforderlich"
       }
@@ -755,7 +759,11 @@
       "updateSuccess": "Projekt aktualisiert",
       "updateError": "Projekt konnte nicht aktualisiert werden",
       "deleteSuccess": "Projekt gelöscht",
-      "deleteError": "Projekt konnte nicht gelöscht werden"
+      "deleteError": "Projekt konnte nicht gelöscht werden",
+      "tagAddedSuccess": "Tag zum Projekt hinzugefügt",
+      "tagAddedError": "Tag konnte nicht zum Projekt hinzugefügt werden",
+      "tagRemovedSuccess": "Tag vom Projekt entfernt",
+      "tagRemovedError": "Tag konnte nicht vom Projekt entfernt werden"
     },
     "view": {
       "card": "Kartenansicht",
@@ -897,6 +905,38 @@
       "addError": "Benutzer konnte nicht zur Organisation hinzugefügt werden",
       "removeSuccess": "Benutzer aus der Organisation entfernt",
       "removeError": "Benutzer konnte nicht aus der Organisation entfernt werden"
+    }
+  },
+  "organizationGroups": {
+    "notifications": {
+      "addSuccess": "Gruppe zur Organisation hinzugefügt",
+      "addError": "Gruppe konnte nicht zur Organisation hinzugefügt werden",
+      "removeSuccess": "Gruppe aus der Organisation entfernt",
+      "removeError": "Gruppe konnte nicht aus der Organisation entfernt werden"
+    }
+  },
+  "projectGroups": {
+    "notifications": {
+      "addSuccess": "Gruppe zum Projekt hinzugefügt",
+      "addError": "Gruppe konnte nicht zum Projekt hinzugefügt werden",
+      "removeSuccess": "Gruppe aus dem Projekt entfernt",
+      "removeError": "Gruppe konnte nicht aus dem Projekt entfernt werden"
+    }
+  },
+  "organizationPermissions": {
+    "notifications": {
+      "addSuccess": "Berechtigung zur Organisation hinzugefügt",
+      "addError": "Berechtigung konnte nicht zur Organisation hinzugefügt werden",
+      "removeSuccess": "Berechtigung aus der Organisation entfernt",
+      "removeError": "Berechtigung konnte nicht aus der Organisation entfernt werden"
+    }
+  },
+  "projectPermissions": {
+    "notifications": {
+      "addSuccess": "Berechtigung zum Projekt hinzugefügt",
+      "addError": "Berechtigung konnte nicht zum Projekt hinzugefügt werden",
+      "removeSuccess": "Berechtigung aus dem Projekt entfernt",
+      "removeError": "Berechtigung konnte nicht aus dem Projekt entfernt werden"
     }
   },
   "projectUsers": {
