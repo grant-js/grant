@@ -1,6 +1,5 @@
 import { MutationUpdateOrganizationArgs, Organization } from '@/graphql/generated/types';
 import { updateOrganization as updateOrganizationInStore } from '@/graphql/providers/organizations/faker/dataStore';
-
 export async function updateOrganization({
   id,
   input,

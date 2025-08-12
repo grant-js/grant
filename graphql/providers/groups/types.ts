@@ -1,5 +1,3 @@
-// Types for Groups provider
-
 import {
   QueryGroupsArgs,
   MutationCreateGroupArgs,
@@ -8,7 +6,6 @@ import {
   Group,
   GroupPage,
 } from '@/graphql/generated/types';
-
 export interface GroupDataProvider {
   getGroups(params: QueryGroupsArgs): Promise<GroupPage>;
   createGroup(params: MutationCreateGroupArgs): Promise<Group>;

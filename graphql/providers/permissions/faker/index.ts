@@ -3,7 +3,6 @@ import { deletePermission } from '@/graphql/providers/permissions/faker/deletePe
 import { getPermissions } from '@/graphql/providers/permissions/faker/getPermissions';
 import { updatePermission } from '@/graphql/providers/permissions/faker/updatePermission';
 import { PermissionDataProvider } from '@/graphql/providers/permissions/types';
-
 export const permissionFakerProvider: PermissionDataProvider = {
   getPermissions,
   createPermission,

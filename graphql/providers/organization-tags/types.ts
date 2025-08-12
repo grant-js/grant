@@ -4,7 +4,6 @@ import {
   OrganizationTag,
   QueryOrganizationTagsArgs,
 } from '@/graphql/generated/types';
-
 export interface OrganizationTagDataProvider {
   getOrganizationTags(params: QueryOrganizationTagsArgs): Promise<OrganizationTag[]>;
   addOrganizationTag(params: MutationAddOrganizationTagArgs): Promise<OrganizationTag>;

@@ -3,7 +3,6 @@ import {
   OrganizationPermission,
 } from '@/graphql/generated/types';
 import { addOrganizationPermission as addOrganizationPermissionInStore } from '@/graphql/providers/organization-permissions/faker/dataStore';
-
 export async function addOrganizationPermission({
   input,
 }: MutationAddOrganizationPermissionArgs): Promise<OrganizationPermission> {
@@ -11,5 +10,5 @@ export async function addOrganizationPermission({
     input.organizationId,
     input.permissionId
   );
-  return organizationPermissionData as OrganizationPermission; // Convert OrganizationPermissionData to OrganizationPermission for GraphQL
+  return organizationPermissionData as OrganizationPermission;
 }

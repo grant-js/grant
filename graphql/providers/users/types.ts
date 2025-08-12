@@ -6,7 +6,6 @@ import {
   User,
   UserPage,
 } from '@/graphql/generated/types';
-
 export interface UserDataProvider {
   getUsers(params: QueryUsersArgs): Promise<UserPage>;
   createUser(params: MutationCreateUserArgs): Promise<User>;

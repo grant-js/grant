@@ -3,7 +3,6 @@ import { deleteOrganization } from '@/graphql/providers/organizations/faker/dele
 import { getOrganizations } from '@/graphql/providers/organizations/faker/getOrganizations';
 import { updateOrganization } from '@/graphql/providers/organizations/faker/updateOrganization';
 import { OrganizationDataProvider } from '@/graphql/providers/organizations/types';
-
 export const organizationFakerProvider: OrganizationDataProvider = {
   getOrganizations,
   createOrganization,

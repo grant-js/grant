@@ -4,7 +4,6 @@ import {
   OrganizationPermission,
   QueryOrganizationPermissionsArgs,
 } from '@/graphql/generated/types';
-
 export interface OrganizationPermissionDataProvider {
   getOrganizationPermissions(
     params: QueryOrganizationPermissionsArgs

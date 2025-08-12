@@ -10,20 +10,13 @@ import {
   EntityConfig,
   generateAuditTimestamps,
 } from '@/lib/providers/faker/genericDataStore';
-
-// Generate fake role-tag relationships
 const generateFakeRoleTags = (count: number = 50): RoleTag[] => {
   const roles = getRoles();
   const tags = getTags();
-
   const roleTags: RoleTag[] = [];
-
-  // Create some random role-tag relationships
   for (let i = 0; i < count; i++) {
     const randomRole = roles[Math.floor(Math.random() * roles.length)];
     const randomTag = tags[Math.floor(Math.random() * tags.length)];
-
-    // Avoid duplicates
     const exists = roleTags.some((rt) => rt.roleId === randomRole.id && rt.tagId === randomTag.id);
     if (!exists) {
       const auditTimestamps = generateAuditTimestamps();
@@ -35,19 +28,12 @@ const generateFakeRoleTags = (count: number = 50): RoleTag[] => {
       });
     }
   }
-
   return roleTags;
 };
-
-// RoleTag-specific configuration
 const roleTagConfig: EntityConfig<RoleTag, AddRoleTagInput, never> = {
   entityName: 'RoleTag',
   dataFileName: 'role-tags.json',
-
-  // Generate UUID for role-tag IDs
   generateId: () => faker.string.uuid(),
-
-  // Generate role-tag entity from input
   generateEntity: (input: AddRoleTagInput, id: string): RoleTag => {
     const auditTimestamps = generateAuditTimestamps();
     return {
@@ -57,30 +43,18 @@ const roleTagConfig: EntityConfig<RoleTag, AddRoleTagInput, never> = {
       ...auditTimestamps,
     };
   },
-
-  // Update role-tag entity (not used for this pivot)
   updateEntity: () => {
     throw new Error('RoleTag entities should be updated through specific methods');
   },
-
-  // Sortable fields
   sortableFields: ['roleId', 'tagId', 'createdAt', 'updatedAt'],
-
-  // Validation rules
   validationRules: [
     { field: 'id', unique: true },
     { field: 'roleId', unique: false, required: true },
     { field: 'tagId', unique: false, required: true },
   ],
-
-  // Initial data
   initialData: generateFakeRoleTags,
 };
-
-// Create the role-tags data store instance
 export const roleTagsDataStore = createFakerDataStore(roleTagConfig);
-
-// Helper function to get tag IDs based on scope
 export const getRoleTagIdsByScope = (scope: Scope): string[] => {
   switch (scope.tenant) {
     case Tenant.Project:
@@ -88,62 +62,46 @@ export const getRoleTagIdsByScope = (scope: Scope): string[] => {
     case Tenant.Organization:
       return getOrganizationTagsByOrganizationId(scope.id).map((ot) => ot.tagId);
     default:
-      // For global scope, return all tag IDs
       return getTags().map((t) => t.id);
   }
 };
-
-// Helper functions for role-tag operations
 export const getRoleTagsByRoleId = (scope: Scope, roleId: string): RoleTag[] => {
   const roleTags = roleTagsDataStore.getEntities().filter((rt) => rt.roleId === roleId);
-
   const scopedTagIds = getRoleTagIdsByScope(scope);
   return roleTags.filter((rt) => scopedTagIds.includes(rt.tagId));
 };
-
 export const getRoleTagsByTagId = (tagId: string): RoleTag[] => {
   return roleTagsDataStore.getEntities().filter((rt) => rt.tagId === tagId);
 };
-
 export const getRoleTags = (): RoleTag[] => {
   return roleTagsDataStore.getEntities();
 };
-
 export const createRoleTag = (roleId: string, tagId: string): RoleTag => {
-  // Check if relationship already exists
   const existing = roleTagsDataStore
     .getEntities()
     .find((rt) => rt.roleId === roleId && rt.tagId === tagId);
-
   if (existing) {
     throw new Error(`RoleTag relationship already exists for role ${roleId} and tag ${tagId}`);
   }
-
   const newRoleTag = roleTagsDataStore.createEntity({ roleId, tagId });
   return newRoleTag;
 };
-
 export const deleteRoleTag = (id: string): RoleTag | null => {
   return roleTagsDataStore.deleteEntity(id);
 };
-
 export const deleteRoleTagByRoleAndTag = (roleId: string, tagId: string): RoleTag | null => {
   const roleTag = roleTagsDataStore
     .getEntities()
     .find((rt) => rt.roleId === roleId && rt.tagId === tagId);
-
   if (!roleTag) {
     return null;
   }
-
   return roleTagsDataStore.deleteEntity(roleTag.id);
 };
-
 export const deleteRoleTagsByRoleId = (roleId: string): RoleTag[] => {
   const roleTags = roleTagsDataStore.getEntities().filter((rt) => rt.roleId === roleId);
   return roleTags.map((rt) => roleTagsDataStore.deleteEntity(rt.id)).filter(Boolean) as RoleTag[];
 };
-
 export const deleteRoleTagsByTagId = (tagId: string): RoleTag[] => {
   const roleTags = getRoleTagsByTagId(tagId);
   return roleTags.map((rt) => roleTagsDataStore.deleteEntity(rt.id)).filter(Boolean) as RoleTag[];

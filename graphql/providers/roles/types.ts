@@ -1,5 +1,3 @@
-// Types for roles provider
-
 import {
   QueryRolesArgs,
   MutationCreateRoleArgs,
@@ -8,7 +6,6 @@ import {
   Role,
   RolePage,
 } from '@/graphql/generated/types';
-
 export interface RoleDataProvider {
   getRoles(params: QueryRolesArgs): Promise<RolePage>;
   createRole(params: MutationCreateRoleArgs): Promise<Role>;

@@ -12,8 +12,6 @@ import {
   generateAuditTimestamps,
   updateAuditTimestamp,
 } from '@/lib/providers/faker/genericDataStore';
-
-// Generate initial projects (hardcoded)
 const generateInitialProjects = (): Project[] => {
   const auditTimestamps = generateAuditTimestamps();
   return [
@@ -47,16 +45,10 @@ const generateInitialProjects = (): Project[] => {
     },
   ];
 };
-
-// Projects-specific configuration
 const projectsConfig: EntityConfig<Project, CreateProjectInput, UpdateProjectInput> = {
   entityName: 'Project',
   dataFileName: 'projects.json',
-
-  // Generate UUID for project IDs
   generateId: () => faker.string.uuid(),
-
-  // Generate project entity from input
   generateEntity: (input: CreateProjectInput, id: string): Project => {
     const auditTimestamps = generateAuditTimestamps();
     return {
@@ -70,8 +62,6 @@ const projectsConfig: EntityConfig<Project, CreateProjectInput, UpdateProjectInp
       ...auditTimestamps,
     };
   },
-
-  // Update project entity
   updateEntity: (entity: Project, input: UpdateProjectInput): Project => {
     const auditTimestamp = updateAuditTimestamp();
     return {
@@ -87,37 +77,23 @@ const projectsConfig: EntityConfig<Project, CreateProjectInput, UpdateProjectInp
       ...auditTimestamp,
     };
   },
-
-  // Sortable fields
   sortableFields: ['name', 'slug', 'createdAt', 'updatedAt'],
-
-  // Validation rules
   validationRules: [
     { field: 'id', unique: true },
     { field: 'name', unique: true, required: true },
     { field: 'slug', unique: true, required: true },
   ],
-
-  // Initial data
   initialData: generateInitialProjects,
 };
-
-// Create the projects data store instance
 export const projectsDataStore = createFakerDataStore(projectsConfig);
-
-// Export the main functions with the same interface as the original
 export const initializeDataStore = () => projectsDataStore.getEntities();
-
 export const sortProjects = (projects: Project[], sortConfig?: ProjectSortInput): Project[] => {
   if (!sortConfig) return projects;
-
   return projectsDataStore.getEntities({
     field: sortConfig.field,
     order: sortConfig.order,
   });
 };
-
-// Updated getProjects function with optional ids parameter
 export const getProjects = (sortConfig?: ProjectSortInput, ids?: string[]): Project[] => {
   let allProjects = projectsDataStore.getEntities(
     sortConfig
@@ -127,23 +103,17 @@ export const getProjects = (sortConfig?: ProjectSortInput, ids?: string[]): Proj
         }
       : undefined
   );
-
-  // If ids are provided, filter by those IDs
   if (ids && ids.length > 0) {
     allProjects = allProjects.filter((project) => ids.includes(project.id));
   }
-
   return allProjects;
 };
-
 export const createProject = (input: CreateProjectInput): Project => {
   return projectsDataStore.createEntity(input);
 };
-
 export const updateProject = (projectId: string, input: UpdateProjectInput): Project | null => {
   return projectsDataStore.updateEntity(projectId, input);
 };
-
 export const deleteProject = (projectId: string): Project | null => {
   return projectsDataStore.deleteEntity(projectId);
 };

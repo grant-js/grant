@@ -4,7 +4,6 @@ import {
   RoleTag,
   QueryRoleTagsArgs,
 } from '@/graphql/generated/types';
-
 export interface RoleTagDataProvider {
   getRoleTags(params: QueryRoleTagsArgs): Promise<RoleTag[]>;
   addRoleTag(params: MutationAddRoleTagArgs): Promise<RoleTag>;

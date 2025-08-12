@@ -9,8 +9,6 @@ import {
   updateAuditTimestamp,
 } from '@/lib/providers/faker/genericDataStore';
 import { getAvailableTagColors } from '@/lib/tag-colors';
-
-// Generate fake tags for initial data
 const generateFakeTags = (count: number = 20): Tag[] => {
   const availableColors = getAvailableTagColors();
   const tagNames = [
@@ -35,7 +33,6 @@ const generateFakeTags = (count: number = 20): Tag[] => {
     'Sales',
     'Support',
   ];
-
   return Array.from({ length: count }, (_, index) => {
     const auditTimestamps = generateAuditTimestamps();
     return {
@@ -46,16 +43,10 @@ const generateFakeTags = (count: number = 20): Tag[] => {
     };
   });
 };
-
-// Tags-specific configuration
 const tagsConfig: EntityConfig<Tag, CreateTagInput, UpdateTagInput> = {
   entityName: 'Tag',
   dataFileName: 'tags.json',
-
-  // Generate UUID for tag IDs
   generateId: () => faker.string.uuid(),
-
-  // Generate tag entity from input
   generateEntity: (input: CreateTagInput, id: string): Tag => {
     const auditTimestamps = generateAuditTimestamps();
     return {
@@ -65,8 +56,6 @@ const tagsConfig: EntityConfig<Tag, CreateTagInput, UpdateTagInput> = {
       ...auditTimestamps,
     };
   },
-
-  // Update tag entity
   updateEntity: (entity: Tag, input: UpdateTagInput): Tag => {
     const auditTimestamp = updateAuditTimestamp();
     return {
@@ -76,29 +65,17 @@ const tagsConfig: EntityConfig<Tag, CreateTagInput, UpdateTagInput> = {
       ...auditTimestamp,
     };
   },
-
-  // Sortable fields
   sortableFields: ['name', 'color', 'createdAt', 'updatedAt'],
-
-  // Validation rules
   validationRules: [
     { field: 'id', unique: true },
     { field: 'name', unique: true, required: true },
   ],
-
-  // Initial data
   initialData: generateFakeTags,
 };
-
-// Create the tags data store instance
 export const tagsDataStore = createFakerDataStore(tagsConfig);
-
-// Export the main functions with the same interface as the original
 export const initializeDataStore = () => tagsDataStore.getEntities();
-
 export const sortTags = (tags: Tag[], sortConfig?: TagSortInput): Tag[] => {
   if (!sortConfig) return tags;
-
   return tagsDataStore.getEntities({
     field: sortConfig.field,
     order: sortConfig.direction,
@@ -113,12 +90,9 @@ export const getTags = (sortConfig?: TagSortInput, ids?: string[]): Tag[] => {
         }
       : undefined
   );
-
-  // If ids are provided, filter by those IDs
   if (ids && ids.length > 0) {
     allTags = allTags.filter((tag) => ids.includes(tag.id));
   }
-
   return allTags;
 };
 export const createTag = (input: CreateTagInput): Tag => {

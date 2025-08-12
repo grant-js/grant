@@ -4,7 +4,6 @@ import {
   OrganizationGroup,
   QueryOrganizationGroupsArgs,
 } from '@/graphql/generated/types';
-
 export interface OrganizationGroupDataProvider {
   getOrganizationGroups(params: QueryOrganizationGroupsArgs): Promise<OrganizationGroup[]>;
   addOrganizationGroup(params: MutationAddOrganizationGroupArgs): Promise<OrganizationGroup>;

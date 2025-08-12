@@ -12,8 +12,6 @@ import {
   generateAuditTimestamps,
   updateAuditTimestamp,
 } from '@/lib/providers/faker';
-
-// Generate initial groups (hardcoded)
 const generateInitialGroups = (): Group[] => {
   const auditTimestamps = generateAuditTimestamps();
   return [
@@ -223,16 +221,10 @@ const generateInitialGroups = (): Group[] => {
     },
   ];
 };
-
-// Groups-specific configuration
 const groupsConfig: EntityConfig<Group, CreateGroupInput, UpdateGroupInput> = {
   entityName: 'Group',
   dataFileName: 'groups.json',
-
-  // Generate UUID for group IDs
   generateId: () => faker.string.uuid(),
-
-  // Generate group entity from input
   generateEntity: (input: CreateGroupInput, id: string): Group => {
     const auditTimestamps = generateAuditTimestamps();
     return {
@@ -242,8 +234,6 @@ const groupsConfig: EntityConfig<Group, CreateGroupInput, UpdateGroupInput> = {
       ...auditTimestamps,
     };
   },
-
-  // Update group entity
   updateEntity: (entity: Group, input: UpdateGroupInput): Group => {
     const auditTimestamp = updateAuditTimestamp();
     return {
@@ -253,36 +243,22 @@ const groupsConfig: EntityConfig<Group, CreateGroupInput, UpdateGroupInput> = {
       ...auditTimestamp,
     };
   },
-
-  // Sortable fields
   sortableFields: ['name', 'createdAt', 'updatedAt'],
-
-  // Validation rules
   validationRules: [
     { field: 'id', unique: true },
     { field: 'name', unique: true, required: true },
   ],
-
-  // Initial data
   initialData: generateInitialGroups,
 };
-
-// Create the groups data store instance
 export const groupsDataStore = createFakerDataStore(groupsConfig);
-
-// Export the main functions with the same interface as the original
 export const initializeDataStore = () => groupsDataStore.getEntities();
-
 export const sortGroups = (groups: Group[], sortConfig?: GroupSortInput): Group[] => {
   if (!sortConfig) return groups;
-
   return groupsDataStore.getEntities({
     field: sortConfig.field,
     order: sortConfig.order,
   });
 };
-
-// Updated getGroups function with optional ids parameter
 export const getGroups = (sortConfig?: GroupSortInput, ids?: string[]): Group[] => {
   let allGroups = groupsDataStore.getEntities(
     sortConfig
@@ -292,27 +268,20 @@ export const getGroups = (sortConfig?: GroupSortInput, ids?: string[]): Group[] 
         }
       : undefined
   );
-
-  // If ids are provided, filter by those IDs
   if (ids && ids.length > 0) {
     allGroups = allGroups.filter((group) => ids.includes(group.id));
   }
-
   return allGroups;
 };
-
 export const isGroupUnique = (groupId: string): boolean => {
   return groupsDataStore.entityExists(groupId);
 };
-
 export const createGroup = (input: CreateGroupInput): Group => {
   return groupsDataStore.createEntity(input);
 };
-
 export const updateGroup = (groupId: string, input: UpdateGroupInput): Group | null => {
   return groupsDataStore.updateEntity(groupId, input);
 };
-
 export const deleteGroup = (groupId: string): Group | null => {
   return groupsDataStore.deleteEntity(groupId);
 };

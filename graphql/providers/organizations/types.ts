@@ -6,7 +6,6 @@ import {
   Organization,
   OrganizationPage,
 } from '@/graphql/generated/types';
-
 export interface OrganizationDataProvider {
   getOrganizations(params: QueryOrganizationsArgs): Promise<OrganizationPage>;
   createOrganization(params: MutationCreateOrganizationArgs): Promise<Organization>;

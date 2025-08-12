@@ -4,7 +4,6 @@ import {
   GroupTag,
   QueryGroupTagsArgs,
 } from '@/graphql/generated/types';
-
 export interface GroupTagDataProvider {
   getGroupTags(params: QueryGroupTagsArgs): Promise<GroupTag[]>;
   addGroupTag(params: MutationAddGroupTagArgs): Promise<GroupTag>;

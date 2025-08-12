@@ -6,7 +6,6 @@ import {
   MutationUpdateTagArgs,
   MutationDeleteTagArgs,
 } from '@/graphql/generated/types';
-
 export interface TagDataProvider {
   getTags(params: QueryTagsArgs): Promise<TagPage>;
   createTag(params: MutationCreateTagArgs): Promise<Tag>;

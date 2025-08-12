@@ -6,7 +6,6 @@ import {
   Project,
   ProjectPage,
 } from '@/graphql/generated/types';
-
 export interface ProjectDataProvider {
   getProjects(params: QueryProjectsArgs): Promise<ProjectPage>;
   createProject(params: MutationCreateProjectArgs): Promise<Project>;
