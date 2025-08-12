@@ -10,6 +10,8 @@ export * from './organizations';
 export * from './organization-projects';
 export * from './organization-users';
 export * from './project-users';
+export * from './project-roles';
+export * from './project-tags';
 export * from './organization-groups';
 export * from './organization-roles';
 export * from './organization-tags';

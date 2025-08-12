@@ -2,28 +2,10 @@ import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import {
-  AddProjectRoleInput,
-  AddProjectTagInput,
-  CreateProjectInput,
-  Project,
-  ProjectRole,
-  ProjectTag,
-  RemoveProjectRoleInput,
-  RemoveProjectTagInput,
-  UpdateProjectInput,
-} from '@/graphql/generated/types';
+import { CreateProjectInput, Project, UpdateProjectInput } from '@/graphql/generated/types';
 
 import { evictProjectsCache } from './cache';
-import {
-  CREATE_PROJECT,
-  UPDATE_PROJECT,
-  DELETE_PROJECT,
-  ADD_PROJECT_ROLE,
-  REMOVE_PROJECT_ROLE,
-  ADD_PROJECT_TAG,
-  REMOVE_PROJECT_TAG,
-} from './mutations';
+import { CREATE_PROJECT, UPDATE_PROJECT, DELETE_PROJECT } from './mutations';
 
 export function useProjectMutations() {
   const t = useTranslations('projects');
@@ -41,22 +23,6 @@ export function useProjectMutations() {
   });
 
   const [deleteProject] = useMutation<{ deleteProject: Project }>(DELETE_PROJECT, {
-    update,
-  });
-
-  const [addProjectRole] = useMutation<{ addProjectRole: ProjectRole }>(ADD_PROJECT_ROLE, {
-    update,
-  });
-
-  const [removeProjectRole] = useMutation<{ removeProjectRole: ProjectRole }>(REMOVE_PROJECT_ROLE, {
-    update,
-  });
-
-  const [addProjectTag] = useMutation<{ addProjectTag: ProjectTag }>(ADD_PROJECT_TAG, {
-    update,
-  });
-
-  const [removeProjectTag] = useMutation<{ removeProjectTag: ProjectTag }>(REMOVE_PROJECT_TAG, {
     update,
   });
 
@@ -111,65 +77,9 @@ export function useProjectMutations() {
     }
   };
 
-  const handleAddProjectTag = async (input: AddProjectTagInput) => {
-    try {
-      const result = await addProjectTag({
-        variables: { input },
-      });
-
-      return result.data?.addProjectTag;
-    } catch (error) {
-      console.error('Error adding project tag:', error);
-      throw error;
-    }
-  };
-
-  const handleRemoveProjectRole = async (input: RemoveProjectRoleInput) => {
-    try {
-      const result = await removeProjectRole({
-        variables: { input },
-      });
-
-      return result.data?.removeProjectRole;
-    } catch (error) {
-      console.error('Error removing project role:', error);
-      throw error;
-    }
-  };
-
-  const handleAddProjectRole = async (input: AddProjectRoleInput) => {
-    try {
-      const result = await addProjectRole({
-        variables: { input },
-      });
-
-      return result.data?.addProjectRole;
-    } catch (error) {
-      console.error('Error adding project role:', error);
-      throw error;
-    }
-  };
-
-  const handleRemoveProjectTag = async (input: RemoveProjectTagInput) => {
-    try {
-      const result = await removeProjectTag({
-        variables: { input },
-      });
-
-      return result.data?.removeProjectTag;
-    } catch (error) {
-      console.error('Error removing project tag:', error);
-      throw error;
-    }
-  };
-
   return {
     createProject: handleCreateProject,
     updateProject: handleUpdateProject,
     deleteProject: handleDeleteProject,
-    addProjectRole: handleAddProjectRole,
-    removeProjectRole: handleRemoveProjectRole,
-    addProjectTag: handleAddProjectTag,
-    removeProjectTag: handleRemoveProjectTag,
   };
 }
