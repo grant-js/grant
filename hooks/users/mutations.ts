@@ -24,30 +24,6 @@ export const UPDATE_USER = gql`
   }
 `;
 
-export const ADD_USER_ROLE = gql`
-  mutation AddUserRole($input: AddUserRoleInput!) {
-    addUserRole(input: $input) {
-      id
-      userId
-      roleId
-      createdAt
-      updatedAt
-    }
-  }
-`;
-
-export const REMOVE_USER_ROLE = gql`
-  mutation RemoveUserRole($input: RemoveUserRoleInput!) {
-    removeUserRole(input: $input) {
-      id
-      userId
-      roleId
-      createdAt
-      updatedAt
-    }
-  }
-`;
-
 export const DELETE_USER = gql`
   mutation DeleteUser($id: ID!) {
     deleteUser(id: $id) {

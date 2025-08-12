@@ -14,7 +14,7 @@ import { Tenant } from '@/graphql/generated/types';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useGroups } from '@/hooks/groups';
 import { useOrganizationRoleMutations } from '@/hooks/organization-roles';
-import { useProjectMutations } from '@/hooks/projects';
+import { useProjectRoleMutations } from '@/hooks/project-roles';
 import { useRoleMutations } from '@/hooks/roles';
 import { useTags } from '@/hooks/tags';
 import { useRolesStore } from '@/stores/roles.store';
@@ -26,7 +26,7 @@ export function CreateRoleDialog() {
   const { groups, loading: groupsLoading } = useGroups({ scope });
   const { tags, loading: tagsLoading } = useTags({ scope });
   const { createRole, addRoleGroup, addRoleTag } = useRoleMutations();
-  const { addProjectRole } = useProjectMutations();
+  const { addProjectRole } = useProjectRoleMutations();
   const { addOrganizationRole } = useOrganizationRoleMutations();
 
   const isCreateDialogOpen = useRolesStore((state) => state.isCreateDialogOpen);

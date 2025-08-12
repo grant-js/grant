@@ -15,6 +15,8 @@ import { useOrganizationUserMutations } from '@/hooks/organization-users';
 import { useProjectUserMutations } from '@/hooks/project-users';
 import { useRoles } from '@/hooks/roles';
 import { useTags } from '@/hooks/tags';
+import { useUserRoleMutations } from '@/hooks/user-roles';
+import { useUserTagMutations } from '@/hooks/user-tags';
 import { useUserMutations } from '@/hooks/users';
 import { useUsersStore } from '@/stores/users.store';
 
@@ -24,7 +26,9 @@ export function CreateUserDialog() {
   const scope = useScopeFromParams();
   const { roles, loading: rolesLoading } = useRoles({ scope });
   const { tags, loading: tagsLoading } = useTags({ scope });
-  const { createUser, addUserRole, addUserTag } = useUserMutations();
+  const { createUser } = useUserMutations();
+  const { addUserRole } = useUserRoleMutations();
+  const { addUserTag } = useUserTagMutations();
   const { addOrganizationUser } = useOrganizationUserMutations();
   const { addProjectUser } = useProjectUserMutations();
 

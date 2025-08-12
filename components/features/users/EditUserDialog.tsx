@@ -13,6 +13,8 @@ import { Role, User as UserType, Tag } from '@/graphql/generated/types';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useRoles } from '@/hooks/roles';
 import { useTags } from '@/hooks/tags';
+import { useUserRoleMutations } from '@/hooks/user-roles';
+import { useUserTagMutations } from '@/hooks/user-tags';
 import { useUserMutations } from '@/hooks/users';
 import { useUsersStore } from '@/stores/users.store';
 
@@ -35,7 +37,9 @@ export function EditUserDialog() {
 
   const { roles, loading: rolesLoading } = useRoles({ scope });
   const { tags, loading: tagsLoading } = useTags({ scope });
-  const { updateUser, addUserRole, addUserTag, removeUserRole, removeUserTag } = useUserMutations();
+  const { updateUser } = useUserMutations();
+  const { addUserRole, removeUserRole } = useUserRoleMutations();
+  const { addUserTag, removeUserTag } = useUserTagMutations();
 
   // Use selective subscriptions to prevent unnecessary re-renders
   const userToEdit = useUsersStore((state) => state.userToEdit);

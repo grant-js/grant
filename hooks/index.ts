@@ -1,5 +1,7 @@
 // Export all hooks, queries, and mutations from modularized structure
 export * from './users';
+export * from './user-roles';
+export * from './user-tags';
 export * from './roles';
 export * from './groups';
 export * from './auth';
