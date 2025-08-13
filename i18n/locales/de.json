@@ -59,12 +59,16 @@
     "organizations": {
       "select": "Organisation auswählen",
       "search": "Organisationen suchen...",
-      "notFound": "Keine Organisationen gefunden"
+      "notFound": "Keine Organisationen gefunden",
+      "title": "Organisationen",
+      "organization": "Organisation"
     },
     "projects": {
       "select": "Projekt auswählen",
       "search": "Projekte suchen...",
-      "notFound": "Keine Projekte gefunden"
+      "notFound": "Keine Projekte gefunden",
+      "title": "Projekte",
+      "project": "Projekt"
     },
     "view": {
       "card": "Kartenansicht",

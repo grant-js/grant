@@ -28,7 +28,7 @@ export function ProjectNavigationButton({
 
   return (
     <Button variant={variant} size={size} className={className} asChild>
-      <Link href={`/dashboard/org/${organizationId}/projects/${project.id}`}>
+      <Link href={`/dashboard/organizations/${organizationId}/projects/${project.id}`}>
         <ChevronRight className="h-4 w-4" />
         {!round && <span className="sr-only">{t('actions.view')}</span>}
       </Link>

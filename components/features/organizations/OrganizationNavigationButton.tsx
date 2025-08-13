@@ -26,7 +26,7 @@ export function OrganizationNavigationButton({
 
   return (
     <Button variant={variant} size={size} className={className} asChild>
-      <Link href={`/dashboard/org/${organization.id}/projects`}>
+      <Link href={`/dashboard/organizations/${organization.id}/projects`}>
         <ChevronRight className="h-4 w-4" />
         {!round && <span className="sr-only">{t('actions.view')}</span>}
       </Link>

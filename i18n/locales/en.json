@@ -59,12 +59,16 @@
     "organizations": {
       "select": "Select organization",
       "search": "Search organizations...",
-      "notFound": "No organizations found"
+      "notFound": "No organizations found",
+      "title": "Organizations",
+      "organization": "Organization"
     },
     "projects": {
       "select": "Select project",
       "search": "Search projects...",
-      "notFound": "No projects found"
+      "notFound": "No projects found",
+      "title": "Projects",
+      "project": "Project"
     },
     "view": {
       "card": "Card View",

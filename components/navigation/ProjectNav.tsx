@@ -59,48 +59,56 @@ export function ProjectNav() {
 
   const projectNavItems: NavItem[] = [
     {
-      path: `/dashboard/org/${organizationId}/projects/${projectId}/users`,
+      path: `/dashboard/organizations/${organizationId}/projects/${projectId}/users`,
       icon: (
         <Users
-          className={iconClasses(`/dashboard/org/${organizationId}/projects/${projectId}/users`)}
+          className={iconClasses(
+            `/dashboard/organizations/${organizationId}/projects/${projectId}/users`
+          )}
         />
       ),
       translationKey: 'users',
     },
     {
-      path: `/dashboard/org/${organizationId}/projects/${projectId}/roles`,
+      path: `/dashboard/organizations/${organizationId}/projects/${projectId}/roles`,
       icon: (
         <Shield
-          className={iconClasses(`/dashboard/org/${organizationId}/projects/${projectId}/roles`)}
+          className={iconClasses(
+            `/dashboard/organizations/${organizationId}/projects/${projectId}/roles`
+          )}
         />
       ),
       translationKey: 'roles',
     },
     {
-      path: `/dashboard/org/${organizationId}/projects/${projectId}/groups`,
+      path: `/dashboard/organizations/${organizationId}/projects/${projectId}/groups`,
       icon: (
         <Group
-          className={iconClasses(`/dashboard/org/${organizationId}/projects/${projectId}/groups`)}
+          className={iconClasses(
+            `/dashboard/organizations/${organizationId}/projects/${projectId}/groups`
+          )}
         />
       ),
       translationKey: 'groups',
     },
     {
-      path: `/dashboard/org/${organizationId}/projects/${projectId}/permissions`,
+      path: `/dashboard/organizations/${organizationId}/projects/${projectId}/permissions`,
       icon: (
         <Key
           className={iconClasses(
-            `/dashboard/org/${organizationId}/projects/${projectId}/permissions`
+            `/dashboard/organizations/${organizationId}/projects/${projectId}/permissions`
           )}
         />
       ),
       translationKey: 'permissions',
     },
     {
-      path: `/dashboard/org/${organizationId}/projects/${projectId}/tags`,
+      path: `/dashboard/organizations/${organizationId}/projects/${projectId}/tags`,
       icon: (
         <Tag
-          className={iconClasses(`/dashboard/org/${organizationId}/projects/${projectId}/tags`)}
+          className={iconClasses(
+            `/dashboard/organizations/${organizationId}/projects/${projectId}/tags`
+          )}
         />
       ),
       translationKey: 'projectTags',

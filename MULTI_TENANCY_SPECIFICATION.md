@@ -237,21 +237,21 @@ type SystemRole implements Auditable {
 ### Organization Management
 
 ```
-/[locale]/org/[organization-slug]/dashboard
-/[locale]/org/[organization-slug]/projects
-/[locale]/org/[organization-slug]/members
-/[locale]/org/[organization-slug]/settings
+/[locale]/organizations/[organization-slug]/dashboard
+/[locale]/organizations/[organization-slug]/projects
+/[locale]/organizations/[organization-slug]/members
+/[locale]/organizations/[organization-slug]/settings
 ```
 
 ### Project Management (Integration Environments)
 
 ```
-/[locale]/org/[organization-slug]/projects/[project-slug]/dashboard
-/[locale]/org/[organization-slug]/projects/[project-slug]/external-users
-/[locale]/org/[organization-slug]/projects/[project-slug]/external-roles
-/[locale]/org/[organization-slug]/projects/[project-slug]/external-groups
-/[locale]/org/[organization-slug]/projects/[project-slug]/external-permissions
-/[locale]/org/[organization-slug]/projects/[project-slug]/settings
+/[locale]/organizations/[organization-slug]/projects/[project-slug]/dashboard
+/[locale]/organizations/[organization-slug]/projects/[project-slug]/external-users
+/[locale]/organizations/[organization-slug]/projects/[project-slug]/external-roles
+/[locale]/organizations/[organization-slug]/projects/[project-slug]/external-groups
+/[locale]/organizations/[organization-slug]/projects/[project-slug]/external-permissions
+/[locale]/organizations/[organization-slug]/projects/[project-slug]/settings
 ```
 
 ## Use Case Examples

@@ -5,10 +5,10 @@ import { useState, useRef } from 'react';
 import { Menu, X, Sun, Moon, Globe, LogOut } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+import { Breadcrumb } from '@/components/common/Breadcrumb';
 import { Logo } from '@/components/common/Logo';
 import { OrganizationSwitcher } from '@/components/features/organizations/OrganizationSwitcher';
 import { ProjectSwitcher } from '@/components/features/projects/ProjectSwitcher';
-import { NavLink } from '@/components/navigation/NavLink';
 import { LanguageSwitcher } from '@/components/settings/LanguageSwitcher';
 import { ThemeToggle } from '@/components/settings/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -80,10 +80,17 @@ export function Header() {
           </Link>
         </div>
 
+        {/* Breadcrumb - Hidden on mobile to save space */}
+        <div className="hidden md:flex flex-1 justify-center px-4">
+          <div className="bg-muted/30 rounded-md px-3 py-1.5">
+            <Breadcrumb />
+          </div>
+        </div>
+
         {/* Mobile Menu Button */}
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="md:hidden p-2 rounded-md hover:bg-accent"
+          className="md:hidden p-2 rounded-md hover:bg-accent flex-shrink-0"
           aria-label="Toggle menu"
         >
           {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -91,10 +98,6 @@ export function Header() {
 
         {/* Desktop Navigation and Controls */}
         <div className="hidden md:flex md:items-center md:space-x-3">
-          <nav className="absolute left-1/2 -translate-x-1/2 flex items-center space-x-3">
-            {isAuthenticated && <NavLink href="/dashboard">{t('navigation.dashboard')}</NavLink>}
-          </nav>
-
           <div className="flex items-center space-x-3">
             <ThemeToggle ref={themeToggleRef} trigger={desktopThemeTrigger} />
             <LanguageSwitcher ref={languageSwitcherRef} trigger={desktopLanguageTrigger} />
@@ -142,12 +145,15 @@ export function Header() {
           )}
         >
           <div className="flex flex-col space-y-4 p-4">
+            {/* Mobile Breadcrumb */}
+            <div className="pb-3 border-b border-border">
+              <div className="bg-muted/30 rounded-md px-3 py-2">
+                <Breadcrumb />
+              </div>
+            </div>
+
             <nav className="flex flex-col space-y-2">
-              {isAuthenticated && (
-                <div className="block py-2">
-                  <NavLink href="/dashboard">{t('navigation.dashboard')}</NavLink>
-                </div>
-              )}
+              {/* Dashboard link removed - breadcrumb provides better navigation */}
             </nav>
             <div className="h-px bg-border" />
             <div className="flex flex-col space-y-2">
@@ -160,15 +166,15 @@ export function Header() {
             <div className="flex flex-col space-y-2">
               {!isAuthenticated ? (
                 <div className="block py-2">
-                  <NavLink href="/auth/login">{t('auth.login')}</NavLink>
+                  <Link href="/auth/login">{t('auth.login')}</Link>
                 </div>
               ) : (
                 <div className="block py-2">
                   <div className="flex items-center gap-2">
                     <LogOut className="h-4 w-4" />
-                    <NavLink href="/auth/login" onClick={handleLogout}>
+                    <Link href="/auth/login" onClick={handleLogout}>
                       {t('auth.logout')}
-                    </NavLink>
+                    </Link>
                   </div>
                 </div>
               )}

@@ -54,7 +54,7 @@ export function ProjectSwitcher({ className }: ProjectSwitcherProps) {
     setOpen(false);
 
     // Redirect to the project page using the new nested structure
-    const newPath = `/dashboard/org/${organizationId}/projects/${projectId}`;
+    const newPath = `/dashboard/organizations/${organizationId}/projects/${projectId}`;
     if (pathname !== newPath) {
       router.replace(newPath);
     }

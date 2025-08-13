@@ -58,18 +58,22 @@ export function OrganizationNav() {
 
   const organizationNavItems: NavItem[] = [
     {
-      path: `/dashboard/org/${organizationId}/projects`,
-      icon: <FolderOpen className={iconClasses(`/dashboard/org/${organizationId}/projects`)} />,
+      path: `/dashboard/organizations/${organizationId}/projects`,
+      icon: (
+        <FolderOpen
+          className={iconClasses(`/dashboard/organizations/${organizationId}/projects`)}
+        />
+      ),
       translationKey: 'projects',
     },
     {
-      path: `/dashboard/org/${organizationId}/members`,
-      icon: <Users className={iconClasses(`/dashboard/org/${organizationId}/members`)} />,
+      path: `/dashboard/organizations/${organizationId}/members`,
+      icon: <Users className={iconClasses(`/dashboard/organizations/${organizationId}/members`)} />,
       translationKey: 'members',
     },
     {
-      path: `/dashboard/org/${organizationId}/tags`,
-      icon: <Tag className={iconClasses(`/dashboard/org/${organizationId}/tags`)} />,
+      path: `/dashboard/organizations/${organizationId}/tags`,
+      icon: <Tag className={iconClasses(`/dashboard/organizations/${organizationId}/tags`)} />,
       translationKey: 'organizationTags',
     },
   ];

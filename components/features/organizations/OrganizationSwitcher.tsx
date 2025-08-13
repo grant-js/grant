@@ -54,7 +54,7 @@ export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
     setOpen(false);
 
     // Redirect to the organization's projects page
-    const newPath = `/dashboard/org/${organizationId}/projects`;
+    const newPath = `/dashboard/organizations/${organizationId}/projects`;
     if (pathname !== newPath) {
       router.replace(newPath);
     }
