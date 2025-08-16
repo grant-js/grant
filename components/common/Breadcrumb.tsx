@@ -1,5 +1,7 @@
 'use client';
 
+import React from 'react';
+
 import { usePathname, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
@@ -144,16 +146,18 @@ export function Breadcrumb() {
     <BreadcrumbRoot>
       <BreadcrumbList>
         {breadcrumbs.map((item, index) => (
-          <BreadcrumbItem key={index}>
+          <React.Fragment key={index}>
             {index > 0 && <BreadcrumbSeparator />}
-            {index === breadcrumbs.length - 1 ? (
-              <BreadcrumbPage>{item.label}</BreadcrumbPage>
-            ) : (
-              <BreadcrumbLink asChild>
-                <Link href={item.href || '#'}>{item.label}</Link>
-              </BreadcrumbLink>
-            )}
-          </BreadcrumbItem>
+            <BreadcrumbItem>
+              {index === breadcrumbs.length - 1 ? (
+                <BreadcrumbPage>{item.label}</BreadcrumbPage>
+              ) : (
+                <BreadcrumbLink asChild>
+                  <Link href={item.href || '#'}>{item.label}</Link>
+                </BreadcrumbLink>
+              )}
+            </BreadcrumbItem>
+          </React.Fragment>
         ))}
       </BreadcrumbList>
     </BreadcrumbRoot>
