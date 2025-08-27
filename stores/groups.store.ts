@@ -2,14 +2,14 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
 import { GroupView } from '@/components/features/groups/GroupViewSwitcher';
-import { GroupSortableField, GroupSortOrder, Group } from '@/graphql/generated/types';
+import { GroupSortableField, Group, SortOrder } from '@/graphql/generated/types';
 
 interface GroupsState {
   // State
   page: number;
   limit: number;
   search: string;
-  sort: { field: GroupSortableField; order: GroupSortOrder };
+  sort: { field: GroupSortableField; order: SortOrder };
   view: GroupView;
   selectedTagIds: string[];
   totalCount: number;
@@ -28,7 +28,7 @@ interface GroupsState {
   setPage: (page: number) => void;
   setLimit: (limit: number) => void;
   setSearch: (search: string) => void;
-  setSort: (field: GroupSortableField, order: GroupSortOrder) => void;
+  setSort: (field: GroupSortableField, order: SortOrder) => void;
   setView: (view: GroupView) => void;
   setSelectedTagIds: (tagIds: string[]) => void;
   setTotalCount: (count: number) => void;
@@ -43,7 +43,7 @@ interface GroupsState {
   setCreateDialogOpen: (open: boolean) => void;
 }
 
-const defaultSort = { field: GroupSortableField.Name, order: GroupSortOrder.Asc };
+const defaultSort = { field: GroupSortableField.Name, order: SortOrder.Asc };
 
 export const useGroupsStore = create<GroupsState>()(
   devtools(
@@ -103,7 +103,7 @@ export const useGroupsStore = create<GroupsState>()(
         const limit = Number(params.get('limit')) || 50;
         const search = params.get('search') || '';
         const sortField = params.get('sortField') as GroupSortableField | null;
-        const sortOrder = params.get('sortOrder') as GroupSortOrder | null;
+        const sortOrder = params.get('sortOrder') as SortOrder | null;
         const view = (params.get('view') as GroupView) || GroupView.CARDS;
         const tagIds = params.get('tagIds')?.split(',').filter(Boolean) || [];
 

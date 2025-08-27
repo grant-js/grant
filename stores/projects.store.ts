@@ -2,14 +2,14 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
 import { ProjectView } from '@/components/features/projects/ProjectViewSwitcher';
-import { ProjectSortableField, ProjectSortOrder, Project } from '@/graphql/generated/types';
+import { ProjectSortableField, Project, SortOrder } from '@/graphql/generated/types';
 
 interface ProjectsState {
   // State
   page: number;
   limit: number;
   search: string;
-  sort: { field: ProjectSortableField; order: ProjectSortOrder };
+  sort: { field: ProjectSortableField; order: SortOrder };
   view: ProjectView;
   selectedTagIds: string[];
   totalCount: number;
@@ -28,7 +28,7 @@ interface ProjectsState {
   setPage: (page: number) => void;
   setLimit: (limit: number) => void;
   setSearch: (search: string) => void;
-  setSort: (field: ProjectSortableField, order: ProjectSortOrder) => void;
+  setSort: (field: ProjectSortableField, order: SortOrder) => void;
   setView: (view: ProjectView) => void;
   setSelectedTagIds: (tagIds: string[]) => void;
   setTotalCount: (count: number) => void;
@@ -43,7 +43,7 @@ interface ProjectsState {
   setCreateDialogOpen: (open: boolean) => void;
 }
 
-const defaultSort = { field: ProjectSortableField.Name, order: ProjectSortOrder.Asc };
+const defaultSort = { field: ProjectSortableField.Name, order: SortOrder.Asc };
 
 export const useProjectsStore = create<ProjectsState>()(
   devtools(
@@ -102,7 +102,7 @@ export const useProjectsStore = create<ProjectsState>()(
         const search = params.get('search') || '';
         const sortField =
           (params.get('sortField') as ProjectSortableField) || ProjectSortableField.Name;
-        const sortOrder = (params.get('sortOrder') as ProjectSortOrder) || ProjectSortOrder.Asc;
+        const sortOrder = (params.get('sortOrder') as SortOrder) || SortOrder.Asc;
         const view = (params.get('view') as ProjectView) || ProjectView.CARD;
         const selectedTagIds = params.get('tagIds')?.split(',').filter(Boolean) || [];
 

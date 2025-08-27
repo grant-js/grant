@@ -12,8 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
-export type SortOrder = 'ASC' | 'DESC';
+import { SortOrder } from '@/graphql/generated/types';
 
 export interface SortInput<T extends string> {
   field: T;
@@ -45,7 +44,7 @@ export function Sorter<T extends string>({
   const t = useTranslations(translationNamespace);
 
   // If no sort is provided, use default field ASC as default
-  const currentSort = sort || { field: defaultField, order: 'ASC' as SortOrder };
+  const currentSort = sort || { field: defaultField, order: SortOrder.Asc };
 
   const getSortLabel = (field: T) => {
     const fieldConfig = fields.find((f) => f.value === field);
@@ -61,7 +60,7 @@ export function Sorter<T extends string>({
               {t('sort.label')}:{' '}
               <>
                 {getSortLabel(currentSort.field)}
-                {currentSort.order === 'ASC' ? (
+                {currentSort.order === SortOrder.Asc ? (
                   <ArrowUp className="size-4" />
                 ) : (
                   <ArrowDown className="size-4" />
@@ -87,13 +86,15 @@ export function Sorter<T extends string>({
             className="flex items-center justify-between px-3 py-1.5 text-sm"
             onClick={() => {
               const newOrder =
-                currentSort.field === field.value && currentSort.order === 'ASC' ? 'DESC' : 'ASC';
+                currentSort.field === field.value && currentSort.order === SortOrder.Asc
+                  ? SortOrder.Desc
+                  : SortOrder.Asc;
               onSortChange(field.value, newOrder);
             }}
           >
             <span>{field.label}</span>
             {currentSort.field === field.value &&
-              (currentSort.order === 'ASC' ? (
+              (currentSort.order === SortOrder.Asc ? (
                 <ArrowUp className="size-4" />
               ) : (
                 <ArrowDown className="size-4" />

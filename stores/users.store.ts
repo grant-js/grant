@@ -2,14 +2,14 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
 import { UserView } from '@/components/features/users/UserViewSwitcher';
-import { UserSortableField, UserSortOrder, User } from '@/graphql/generated/types';
+import { UserSortableField, User, SortOrder } from '@/graphql/generated/types';
 
 interface UsersState {
   // State
   page: number;
   limit: number;
   search: string;
-  sort: { field: UserSortableField; order: UserSortOrder };
+  sort: { field: UserSortableField; order: SortOrder };
   view: UserView;
   selectedTagIds: string[];
   totalCount: number;
@@ -28,7 +28,7 @@ interface UsersState {
   setPage: (page: number) => void;
   setLimit: (limit: number) => void;
   setSearch: (search: string) => void;
-  setSort: (field: UserSortableField, order: UserSortOrder) => void;
+  setSort: (field: UserSortableField, order: SortOrder) => void;
   setView: (view: UserView) => void;
   setSelectedTagIds: (tagIds: string[]) => void;
   setTotalCount: (count: number) => void;
@@ -43,7 +43,7 @@ interface UsersState {
   setCreateDialogOpen: (open: boolean) => void;
 }
 
-const defaultSort = { field: UserSortableField.Name, order: UserSortOrder.Asc };
+const defaultSort = { field: UserSortableField.Name, order: SortOrder.Asc };
 
 export const useUsersStore = create<UsersState>()(
   devtools(
@@ -103,7 +103,7 @@ export const useUsersStore = create<UsersState>()(
         const limit = Number(params.get('limit')) || 50;
         const search = params.get('search') || '';
         const sortField = params.get('sortField') as UserSortableField | null;
-        const sortOrder = params.get('sortOrder') as UserSortOrder | null;
+        const sortOrder = params.get('sortOrder') as SortOrder | null;
         const view = (params.get('view') as UserView) || UserView.CARD;
         const tagIds = params.get('tagIds')?.split(',').filter(Boolean) || [];
 

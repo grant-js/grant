@@ -2,18 +2,14 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
 import { PermissionView } from '@/components/features/permissions/PermissionViewSwitcher';
-import {
-  PermissionSortableField,
-  PermissionSortOrder,
-  Permission,
-} from '@/graphql/generated/types';
+import { PermissionSortableField, Permission, SortOrder } from '@/graphql/generated/types';
 
 interface PermissionsState {
   // State
   page: number;
   limit: number;
   search: string;
-  sort: { field: PermissionSortableField; order: PermissionSortOrder };
+  sort: { field: PermissionSortableField; order: SortOrder };
   view: PermissionView;
   selectedTagIds: string[];
   totalCount: number;
@@ -32,7 +28,7 @@ interface PermissionsState {
   setPage: (page: number) => void;
   setLimit: (limit: number) => void;
   setSearch: (search: string) => void;
-  setSort: (field: PermissionSortableField, order: PermissionSortOrder) => void;
+  setSort: (field: PermissionSortableField, order: SortOrder) => void;
   setView: (view: PermissionView) => void;
   setSelectedTagIds: (tagIds: string[]) => void;
   setTotalCount: (count: number) => void;
@@ -47,7 +43,7 @@ interface PermissionsState {
   setCreateDialogOpen: (open: boolean) => void;
 }
 
-const defaultSort = { field: PermissionSortableField.Name, order: PermissionSortOrder.Asc };
+const defaultSort = { field: PermissionSortableField.Name, order: SortOrder.Asc };
 
 export const usePermissionsStore = create<PermissionsState>()(
   devtools(
@@ -107,7 +103,7 @@ export const usePermissionsStore = create<PermissionsState>()(
         const limit = Number(params.get('limit')) || 50;
         const search = params.get('search') || '';
         const sortField = params.get('sortField') as PermissionSortableField | null;
-        const sortOrder = params.get('sortOrder') as PermissionSortOrder | null;
+        const sortOrder = params.get('sortOrder') as SortOrder | null;
         const view = (params.get('view') as PermissionView) || PermissionView.CARD;
         const tagIds = params.get('tagIds')?.split(',').filter(Boolean) || [];
 

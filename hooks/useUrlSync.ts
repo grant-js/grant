@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { UserView } from '@/components/features/users/UserViewSwitcher';
-import { UserSortableField, UserSortOrder } from '@/graphql/generated/types';
+import { UserSortableField, SortOrder } from '@/graphql/generated/types';
 import { useUsersStore } from '@/stores/users.store';
 
 export function useUrlSync() {
@@ -31,7 +31,7 @@ export function useUrlSync() {
     if (page > 1) params.set('page', page.toString());
     if (limit !== 50) params.set('limit', limit.toString());
     if (search) params.set('search', search);
-    if (sort.field !== UserSortableField.Name || sort.order !== UserSortOrder.Asc) {
+    if (sort.field !== UserSortableField.Name || sort.order !== SortOrder.Asc) {
       params.set('sortField', sort.field);
       params.set('sortOrder', sort.order);
     }

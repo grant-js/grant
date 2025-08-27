@@ -26,7 +26,7 @@ export const tagQuerySchema = sortableParamsSchema.extend({
   sort: z
     .object({
       field: z.enum(['name', 'createdAt', 'updatedAt']),
-      direction: sortOrderSchema,
+      order: sortOrderSchema,
     })
     .optional(),
 });
@@ -34,7 +34,7 @@ export const tagQuerySchema = sortableParamsSchema.extend({
 export const tagSortableFieldSchema = z.enum(['name', 'color', 'createdAt', 'updatedAt']);
 export const tagSortInputSchema = z.object({
   field: tagSortableFieldSchema,
-  direction: sortOrderSchema,
+  order: sortOrderSchema,
 });
 
 export const createTagInputSchema = z.object({

@@ -1,12 +1,6 @@
 import { useQuery, ApolloError } from '@apollo/client';
 
-import {
-  Tag,
-  TagSortField,
-  SortDirection,
-  QueryTagsArgs,
-  TagPage,
-} from '@/graphql/generated/types';
+import { Tag, TagSortField, SortOrder, QueryTagsArgs, TagPage } from '@/graphql/generated/types';
 
 import { GET_TAGS } from './queries';
 
@@ -26,7 +20,7 @@ export function useTags(options: UseTagsOptions): UseTagsResult {
     page = 1,
     limit = 50,
     search = '',
-    sort = { field: TagSortField.Name, direction: SortDirection.Asc },
+    sort = { field: TagSortField.Name, order: SortOrder.Asc },
     ids,
   } = options;
 

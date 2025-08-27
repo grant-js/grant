@@ -2,35 +2,28 @@
 
 import { useTranslations } from 'next-intl';
 
-import { Sorter, type SortInput, type SortOrder } from '@/components/common';
-import {
-  PermissionSortOrder,
-  PermissionSortableField,
-  PermissionSortInput,
-} from '@/graphql/generated/types';
+import { Sorter, type SortInput } from '@/components/common';
+import { SortOrder, PermissionSortableField, PermissionSortInput } from '@/graphql/generated/types';
 import { usePermissionsStore } from '@/stores/permissions.store';
 
 export function PermissionSorter() {
   const t = useTranslations('permissions');
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const sort = usePermissionsStore((state) => state.sort);
   const setSort = usePermissionsStore((state) => state.setSort);
 
-  // Convert GraphQL types to generic Sorter types
   const convertSort = (
     gqlSort?: PermissionSortInput
   ): SortInput<PermissionSortableField> | undefined => {
     if (!gqlSort) return undefined;
     return {
       field: gqlSort.field,
-      order: gqlSort.order === PermissionSortOrder.Asc ? 'ASC' : 'DESC',
+      order: gqlSort.order,
     };
   };
 
   const handleSortChange = (field: PermissionSortableField, order: SortOrder) => {
-    const gqlOrder = order === 'ASC' ? PermissionSortOrder.Asc : PermissionSortOrder.Desc;
-    setSort(field, gqlOrder);
+    setSort(field, order);
   };
 
   const fields = [

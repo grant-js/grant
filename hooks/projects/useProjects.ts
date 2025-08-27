@@ -6,8 +6,8 @@ import {
   Project,
   ProjectPage,
   ProjectSortableField,
-  ProjectSortOrder,
   QueryProjectsArgs,
+  SortOrder,
 } from '@/graphql/generated/types';
 
 import { GET_PROJECTS } from './queries';
@@ -26,7 +26,7 @@ export function useProjects(options: QueryProjectsArgs): UseProjectsResult {
     page = 1,
     limit = 50,
     search = '',
-    sort = { field: ProjectSortableField.Name, order: ProjectSortOrder.Asc },
+    sort = { field: ProjectSortableField.Name, order: SortOrder.Asc },
     ids,
     tagIds,
   } = options;

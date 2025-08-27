@@ -1,8 +1,4 @@
-enum ProjectSortOrder {
-  ASC
-  DESC
-}
 input ProjectSortInput {
   field: ProjectSortableField!
-  order: ProjectSortOrder!
+  order: SortOrder!
 }

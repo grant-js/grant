@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 
 import { Sorter } from '@/components/common';
-import { ProjectSortableField, ProjectSortOrder } from '@/graphql/generated/types';
+import { ProjectSortableField } from '@/graphql/generated/types';
 import { useProjectsStore } from '@/stores/projects.store';
 
 export function ProjectSorter() {
@@ -20,9 +20,7 @@ export function ProjectSorter() {
   return (
     <Sorter
       sort={sort}
-      onSortChange={(field, order) =>
-        setSort(field, order === 'ASC' ? ProjectSortOrder.Asc : ProjectSortOrder.Desc)
-      }
+      onSortChange={(field, order) => setSort(field, order)}
       fields={sortOptions}
       defaultField={ProjectSortableField.Name}
       translationNamespace="projects"

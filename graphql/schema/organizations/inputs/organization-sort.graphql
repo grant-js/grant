@@ -1,8 +1,4 @@
-enum OrganizationSortOrder {
-  ASC
-  DESC
-}
 input OrganizationSortInput {
   field: OrganizationSortableField!
-  order: OrganizationSortOrder!
+  order: SortOrder!
 }

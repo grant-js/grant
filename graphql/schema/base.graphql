@@ -22,6 +22,11 @@ enum Tenant {
   PROJECT
 }
 
+enum SortOrder {
+  ASC
+  DESC
+}
+
 input Scope {
   tenant: Tenant!
   id: ID!

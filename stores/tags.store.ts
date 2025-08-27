@@ -2,14 +2,14 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
 import { TagView } from '@/components/features/tags/TagViewSwitcher';
-import { TagSortField, SortDirection, Tag } from '@/graphql/generated/types';
+import { TagSortField, SortOrder, Tag } from '@/graphql/generated/types';
 
 interface TagsState {
   // State
   page: number;
   limit: number;
   search: string;
-  sort: { field: TagSortField; direction: SortDirection };
+  sort: { field: TagSortField; order: SortOrder };
   view: TagView;
   totalCount: number;
   isInitialized: boolean;
@@ -27,7 +27,7 @@ interface TagsState {
   setPage: (page: number) => void;
   setLimit: (limit: number) => void;
   setSearch: (search: string) => void;
-  setSort: (field: TagSortField, direction: SortDirection) => void;
+  setSort: (field: TagSortField, order: SortOrder) => void;
   setView: (view: TagView) => void;
   setTotalCount: (count: number) => void;
   setTags: (tags: Tag[]) => void;
@@ -41,7 +41,7 @@ interface TagsState {
   setCreateDialogOpen: (open: boolean) => void;
 }
 
-const defaultSort = { field: TagSortField.Name, direction: SortDirection.Asc };
+const defaultSort = { field: TagSortField.Name, order: SortOrder.Asc };
 
 export const useTagsStore = create<TagsState>()(
   devtools((set, get) => ({
@@ -67,7 +67,7 @@ export const useTagsStore = create<TagsState>()(
     setPage: (page) => set({ page }),
     setLimit: (limit) => set({ limit, page: 1 }),
     setSearch: (search) => set({ search, page: 1 }),
-    setSort: (field, direction) => set({ sort: { field, direction }, page: 1 }),
+    setSort: (field, order) => set({ sort: { field, order }, page: 1 }),
     setView: (view) => set({ view }),
     setTotalCount: (totalCount) => set({ totalCount }),
     setTags: (tags) => set({ tags }),
@@ -97,15 +97,14 @@ export const useTagsStore = create<TagsState>()(
       const limit = parseInt(params.get('limit') || '50');
       const search = params.get('search') || '';
       const sortField = params.get('sortField') as TagSortField;
-      const sortDirection = params.get('sortDirection') as SortDirection;
+      const sortOrder = params.get('sortOrder') as SortOrder;
       const view = params.get('view') as TagView;
 
       set({
         page: isNaN(page) ? 1 : page,
         limit: isNaN(limit) ? 50 : limit,
         search,
-        sort:
-          sortField && sortDirection ? { field: sortField, direction: sortDirection } : defaultSort,
+        sort: sortField && sortOrder ? { field: sortField, order: sortOrder } : defaultSort,
         view: view || TagView.CARD,
         isInitialized: true,
       });

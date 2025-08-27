@@ -16,7 +16,7 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ProjectSortableField, ProjectSortOrder } from '@/graphql/generated/types';
+import { ProjectSortableField, SortOrder } from '@/graphql/generated/types';
 import { useProjects } from '@/hooks/projects/useProjects';
 import { useRouter, usePathname } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
@@ -37,7 +37,7 @@ export function ProjectSwitcher({ className }: ProjectSwitcherProps) {
   const { projects, loading, error } = useProjects({
     organizationId,
     limit: -1,
-    sort: { field: ProjectSortableField.Name, order: ProjectSortOrder.Asc },
+    sort: { field: ProjectSortableField.Name, order: SortOrder.Asc },
   });
 
   // Only show on project pages

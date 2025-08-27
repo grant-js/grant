@@ -208,13 +208,8 @@ export type GroupPermissionPermissionArgs = {
 
 export type GroupSortInput = {
   field: GroupSortableField;
-  order: GroupSortOrder;
+  order: SortOrder;
 };
-
-export enum GroupSortOrder {
-  Asc = 'ASC',
-  Desc = 'DESC'
-}
 
 export enum GroupSortableField {
   Name = 'name'
@@ -685,13 +680,8 @@ export type OrganizationRole = Auditable & {
 
 export type OrganizationSortInput = {
   field: OrganizationSortableField;
-  order: OrganizationSortOrder;
+  order: SortOrder;
 };
-
-export enum OrganizationSortOrder {
-  Asc = 'ASC',
-  Desc = 'DESC'
-}
 
 export enum OrganizationSortableField {
   CreatedAt = 'createdAt',
@@ -754,13 +744,8 @@ export type PermissionPage = PaginatedResults & {
 
 export type PermissionSortInput = {
   field: PermissionSortableField;
-  order: PermissionSortOrder;
+  order: SortOrder;
 };
-
-export enum PermissionSortOrder {
-  Asc = 'ASC',
-  Desc = 'DESC'
-}
 
 export enum PermissionSortableField {
   Action = 'action',
@@ -865,13 +850,8 @@ export type ProjectRoleProjectArgs = {
 
 export type ProjectSortInput = {
   field: ProjectSortableField;
-  order: ProjectSortOrder;
+  order: SortOrder;
 };
-
-export enum ProjectSortOrder {
-  Asc = 'ASC',
-  Desc = 'DESC'
-}
 
 export enum ProjectSortableField {
   CreatedAt = 'createdAt',
@@ -1258,13 +1238,8 @@ export type RolePage = PaginatedResults & {
 
 export type RoleSortInput = {
   field: RoleSortableField;
-  order: RoleSortOrder;
+  order: SortOrder;
 };
-
-export enum RoleSortOrder {
-  Asc = 'ASC',
-  Desc = 'DESC'
-}
 
 export enum RoleSortableField {
   Name = 'name'
@@ -1297,7 +1272,7 @@ export type Scope = {
   tenant: Tenant;
 };
 
-export enum SortDirection {
+export enum SortOrder {
   Asc = 'ASC',
   Desc = 'DESC'
 }
@@ -1327,8 +1302,8 @@ export enum TagSortField {
 }
 
 export type TagSortInput = {
-  direction: SortDirection;
   field: TagSortField;
+  order: SortOrder;
 };
 
 export enum Tenant {
@@ -1424,13 +1399,8 @@ export type UserRoleUserArgs = {
 
 export type UserSortInput = {
   field: UserSortableField;
-  order: UserSortOrder;
+  order: SortOrder;
 };
-
-export enum UserSortOrder {
-  Asc = 'ASC',
-  Desc = 'DESC'
-}
 
 export enum UserSortableField {
   Email = 'email',
@@ -1570,7 +1540,6 @@ export type ResolversTypes = ResolversObject<{
   GroupPage: ResolverTypeWrapper<GroupPage>;
   GroupPermission: ResolverTypeWrapper<GroupPermission>;
   GroupSortInput: GroupSortInput;
-  GroupSortOrder: GroupSortOrder;
   GroupSortableField: GroupSortableField;
   GroupTag: ResolverTypeWrapper<GroupTag>;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
@@ -1585,7 +1554,6 @@ export type ResolversTypes = ResolversObject<{
   OrganizationProject: ResolverTypeWrapper<OrganizationProject>;
   OrganizationRole: ResolverTypeWrapper<OrganizationRole>;
   OrganizationSortInput: OrganizationSortInput;
-  OrganizationSortOrder: OrganizationSortOrder;
   OrganizationSortableField: OrganizationSortableField;
   OrganizationTag: ResolverTypeWrapper<OrganizationTag>;
   OrganizationUser: ResolverTypeWrapper<OrganizationUser>;
@@ -1593,7 +1561,6 @@ export type ResolversTypes = ResolversObject<{
   Permission: ResolverTypeWrapper<Permission>;
   PermissionPage: ResolverTypeWrapper<PermissionPage>;
   PermissionSortInput: PermissionSortInput;
-  PermissionSortOrder: PermissionSortOrder;
   PermissionSortableField: PermissionSortableField;
   PermissionTag: ResolverTypeWrapper<PermissionTag>;
   Project: ResolverTypeWrapper<Project>;
@@ -1602,7 +1569,6 @@ export type ResolversTypes = ResolversObject<{
   ProjectPermission: ResolverTypeWrapper<ProjectPermission>;
   ProjectRole: ResolverTypeWrapper<ProjectRole>;
   ProjectSortInput: ProjectSortInput;
-  ProjectSortOrder: ProjectSortOrder;
   ProjectSortableField: ProjectSortableField;
   ProjectTag: ResolverTypeWrapper<ProjectTag>;
   ProjectUser: ResolverTypeWrapper<ProjectUser>;
@@ -1629,11 +1595,10 @@ export type ResolversTypes = ResolversObject<{
   RoleGroup: ResolverTypeWrapper<RoleGroup>;
   RolePage: ResolverTypeWrapper<RolePage>;
   RoleSortInput: RoleSortInput;
-  RoleSortOrder: RoleSortOrder;
   RoleSortableField: RoleSortableField;
   RoleTag: ResolverTypeWrapper<RoleTag>;
   Scope: Scope;
-  SortDirection: SortDirection;
+  SortOrder: SortOrder;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Tag: ResolverTypeWrapper<Tag>;
   TagPage: ResolverTypeWrapper<TagPage>;
@@ -1651,7 +1616,6 @@ export type ResolversTypes = ResolversObject<{
   UserPage: ResolverTypeWrapper<UserPage>;
   UserRole: ResolverTypeWrapper<UserRole>;
   UserSortInput: UserSortInput;
-  UserSortOrder: UserSortOrder;
   UserSortableField: UserSortableField;
   UserTag: ResolverTypeWrapper<UserTag>;
 }>;

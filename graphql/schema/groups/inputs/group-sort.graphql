@@ -1,11 +1,7 @@
-enum GroupSortOrder {
-  ASC
-  DESC
-}
 enum GroupSortableField {
   name
 }
 input GroupSortInput {
   field: GroupSortableField!
-  order: GroupSortOrder!
+  order: SortOrder!
 }

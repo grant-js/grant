@@ -2,14 +2,14 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
 import { RoleView } from '@/components/features/roles/RoleViewSwitcher';
-import { RoleSortableField, RoleSortOrder, Role } from '@/graphql/generated/types';
+import { RoleSortableField, Role, SortOrder } from '@/graphql/generated/types';
 
 interface RolesState {
   // State
   page: number;
   limit: number;
   search: string;
-  sort: { field: RoleSortableField; order: RoleSortOrder };
+  sort: { field: RoleSortableField; order: SortOrder };
   view: RoleView;
   selectedTagIds: string[];
   totalCount: number;
@@ -28,7 +28,7 @@ interface RolesState {
   setPage: (page: number) => void;
   setLimit: (limit: number) => void;
   setSearch: (search: string) => void;
-  setSort: (field: RoleSortableField, order: RoleSortOrder) => void;
+  setSort: (field: RoleSortableField, order: SortOrder) => void;
   setView: (view: RoleView) => void;
   setSelectedTagIds: (tagIds: string[]) => void;
   setTotalCount: (count: number) => void;
@@ -43,7 +43,7 @@ interface RolesState {
   setCreateDialogOpen: (open: boolean) => void;
 }
 
-const defaultSort = { field: RoleSortableField.Name, order: RoleSortOrder.Asc };
+const defaultSort = { field: RoleSortableField.Name, order: SortOrder.Asc };
 
 export const useRolesStore = create<RolesState>()(
   devtools(
@@ -103,7 +103,7 @@ export const useRolesStore = create<RolesState>()(
         const limit = Number(params.get('limit')) || 50;
         const search = params.get('search') || '';
         const sortField = params.get('sortField') as RoleSortableField | null;
-        const sortOrder = params.get('sortOrder') as RoleSortOrder | null;
+        const sortOrder = params.get('sortOrder') as SortOrder | null;
         const view = (params.get('view') as RoleView) || RoleView.CARD;
         const tagIds = params.get('tagIds')?.split(',').filter(Boolean) || [];
 

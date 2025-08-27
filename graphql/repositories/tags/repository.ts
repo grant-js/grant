@@ -33,7 +33,7 @@ export class TagRepository extends EntityRepository<TagModel, Tag> implements IT
       sort: params.sort
         ? {
             field: params.sort.field as keyof TagModel,
-            order: params.sort.direction,
+            order: params.sort.order,
           }
         : undefined,
       requestedFields: params.requestedFields as Array<keyof TagModel> | undefined,

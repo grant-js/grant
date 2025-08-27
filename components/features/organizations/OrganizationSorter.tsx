@@ -1,34 +1,31 @@
 import { useTranslations } from 'next-intl';
 
-import { Sorter, type SortInput, type SortOrder } from '@/components/common';
+import { Sorter, type SortInput } from '@/components/common';
 import {
-  OrganizationSortOrder,
   OrganizationSortableField,
   OrganizationSortInput,
+  SortOrder,
 } from '@/graphql/generated/types';
 import { useOrganizationsStore } from '@/stores/organizations.store';
 
 export function OrganizationSorter() {
   const t = useTranslations('organizations');
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const sort = useOrganizationsStore((state) => state.sort);
   const setSort = useOrganizationsStore((state) => state.setSort);
 
-  // Convert GraphQL types to generic Sorter types
   const convertSort = (
     gqlSort?: OrganizationSortInput
   ): SortInput<OrganizationSortableField> | undefined => {
     if (!gqlSort) return undefined;
     return {
       field: gqlSort.field,
-      order: gqlSort.order === OrganizationSortOrder.Asc ? 'ASC' : 'DESC',
+      order: gqlSort.order,
     };
   };
 
   const handleSortChange = (field: OrganizationSortableField, order: SortOrder) => {
-    const gqlOrder = order === 'ASC' ? OrganizationSortOrder.Asc : OrganizationSortOrder.Desc;
-    setSort(field, gqlOrder);
+    setSort(field, order);
   };
 
   const fields = [

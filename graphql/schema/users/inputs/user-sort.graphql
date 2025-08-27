@@ -1,12 +1,8 @@
-enum UserSortOrder {
-  ASC
-  DESC
-}
 enum UserSortableField {
   name
   email
 }
 input UserSortInput {
   field: UserSortableField!
-  order: UserSortOrder!
+  order: SortOrder!
 }

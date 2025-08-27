@@ -2,31 +2,29 @@
 
 import { useTranslations } from 'next-intl';
 
-import { Sorter, type SortInput, type SortOrder } from '@/components/common';
-import { TagSortField, SortDirection } from '@/graphql/generated/types';
+import { Sorter, type SortInput } from '@/components/common';
+import { TagSortField, SortOrder } from '@/graphql/generated/types';
 import { useTagsStore } from '@/stores/tags.store';
 
 export function TagSorter() {
   const t = useTranslations('tags');
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const sort = useTagsStore((state) => state.sort);
   const setSort = useTagsStore((state) => state.setSort);
 
-  // Convert GraphQL types to generic Sorter types
   const convertSort = (gqlSort?: {
     field: TagSortField;
-    direction: SortDirection;
+    order: SortOrder;
   }): SortInput<TagSortField> | undefined => {
     if (!gqlSort) return undefined;
     return {
       field: gqlSort.field,
-      order: gqlSort.direction === SortDirection.Asc ? 'ASC' : 'DESC',
+      order: gqlSort.order,
     };
   };
 
   const handleSortChange = (field: TagSortField, order: SortOrder) => {
-    const gqlOrder = order === 'ASC' ? SortDirection.Asc : SortDirection.Desc;
+    const gqlOrder = order === 'ASC' ? SortOrder.Asc : SortOrder.Desc;
     setSort(field, gqlOrder);
   };
 

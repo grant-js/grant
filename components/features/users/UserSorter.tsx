@@ -1,28 +1,25 @@
 import { useTranslations } from 'next-intl';
 
-import { Sorter, type SortInput, type SortOrder } from '@/components/common';
-import { UserSortOrder, UserSortableField, UserSortInput } from '@/graphql/generated/types';
+import { Sorter, type SortInput } from '@/components/common';
+import { SortOrder, UserSortableField, UserSortInput } from '@/graphql/generated/types';
 import { useUsersStore } from '@/stores/users.store';
 
 export function UserSorter() {
   const t = useTranslations('users');
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const sort = useUsersStore((state) => state.sort);
   const setSort = useUsersStore((state) => state.setSort);
 
-  // Convert GraphQL types to generic Sorter types
   const convertSort = (gqlSort?: UserSortInput): SortInput<UserSortableField> | undefined => {
     if (!gqlSort) return undefined;
     return {
       field: gqlSort.field,
-      order: gqlSort.order === UserSortOrder.Asc ? 'ASC' : 'DESC',
+      order: gqlSort.order,
     };
   };
 
   const handleSortChange = (field: UserSortableField, order: SortOrder) => {
-    const gqlOrder = order === 'ASC' ? UserSortOrder.Asc : UserSortOrder.Desc;
-    setSort(field, gqlOrder);
+    setSort(field, order);
   };
 
   const fields = [

@@ -2,18 +2,14 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
 import { OrganizationView } from '@/components/features/organizations/OrganizationViewSwitcher';
-import {
-  OrganizationSortableField,
-  OrganizationSortOrder,
-  Organization,
-} from '@/graphql/generated/types';
+import { OrganizationSortableField, Organization, SortOrder } from '@/graphql/generated/types';
 
 interface OrganizationsState {
   // State
   page: number;
   limit: number;
   search: string;
-  sort: { field: OrganizationSortableField; order: OrganizationSortOrder };
+  sort: { field: OrganizationSortableField; order: SortOrder };
   view: OrganizationView;
   selectedTagIds: string[];
   totalCount: number;
@@ -32,7 +28,7 @@ interface OrganizationsState {
   setPage: (page: number) => void;
   setLimit: (limit: number) => void;
   setSearch: (search: string) => void;
-  setSort: (field: OrganizationSortableField, order: OrganizationSortOrder) => void;
+  setSort: (field: OrganizationSortableField, order: SortOrder) => void;
   setView: (view: OrganizationView) => void;
   setSelectedTagIds: (tagIds: string[]) => void;
   setTotalCount: (count: number) => void;
@@ -47,7 +43,7 @@ interface OrganizationsState {
   setCreateDialogOpen: (open: boolean) => void;
 }
 
-const defaultSort = { field: OrganizationSortableField.Name, order: OrganizationSortOrder.Asc };
+const defaultSort = { field: OrganizationSortableField.Name, order: SortOrder.Asc };
 
 export const useOrganizationsStore = create<OrganizationsState>()(
   devtools(
@@ -106,8 +102,7 @@ export const useOrganizationsStore = create<OrganizationsState>()(
         const search = params.get('search') || '';
         const sortField =
           (params.get('sortField') as OrganizationSortableField) || OrganizationSortableField.Name;
-        const sortOrder =
-          (params.get('sortOrder') as OrganizationSortOrder) || OrganizationSortOrder.Asc;
+        const sortOrder = (params.get('sortOrder') as SortOrder) || SortOrder.Asc;
         const view = (params.get('view') as OrganizationView) || OrganizationView.CARD;
         const selectedTagIds = params.get('tagIds')?.split(',').filter(Boolean) || [];
 

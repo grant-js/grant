@@ -1,11 +1,7 @@
-enum RoleSortOrder {
-  ASC
-  DESC
-}
 enum RoleSortableField {
   name
 }
 input RoleSortInput {
   field: RoleSortableField!
-  order: RoleSortOrder!
+  order: SortOrder!
 }

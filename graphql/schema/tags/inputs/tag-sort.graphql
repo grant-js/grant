@@ -1,14 +1,10 @@
 input TagSortInput {
   field: TagSortField!
-  direction: SortDirection!
+  order: SortOrder!
 }
 enum TagSortField {
   name
   color
   createdAt
   updatedAt
-}
-enum SortDirection {
-  ASC
-  DESC
 }

@@ -7,7 +7,7 @@ import { EntityCache } from './lib/scopeFiltering';
 export interface AuthenticatedUser {
   id: string;
   email: string;
-  sub: string; // JWT subject claim
+  sub: string;
 }
 
 export interface Context {
@@ -15,5 +15,5 @@ export interface Context {
   services: ModuleServices;
   scopeCache?: EntityCache;
   info?: GraphQLResolveInfo;
-  user?: AuthenticatedUser; // Current authenticated user
+  user?: AuthenticatedUser;
 }

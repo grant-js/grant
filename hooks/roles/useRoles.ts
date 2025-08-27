@@ -5,9 +5,9 @@ import { useQuery, ApolloError } from '@apollo/client';
 import {
   Role,
   RoleSortableField,
-  RoleSortOrder,
   QueryRolesArgs,
   RolePage,
+  SortOrder,
 } from '@/graphql/generated/types';
 
 import { GET_ROLES } from './queries';
@@ -26,7 +26,7 @@ export function useRoles(options: QueryRolesArgs): UseRolesResult {
     page = 1,
     limit = -1, // Default to -1 to get all roles for dropdown
     search = '',
-    sort = { field: RoleSortableField.Name, order: RoleSortOrder.Asc },
+    sort = { field: RoleSortableField.Name, order: SortOrder.Asc },
     ids,
     tagIds,
   } = options;

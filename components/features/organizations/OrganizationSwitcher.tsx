@@ -16,7 +16,7 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { OrganizationSortableField, OrganizationSortOrder } from '@/graphql/generated/types';
+import { OrganizationSortableField, SortOrder } from '@/graphql/generated/types';
 import { useOrganizations } from '@/hooks/organizations/useOrganizations';
 import { useRouter, usePathname } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
@@ -37,7 +37,7 @@ export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
   // Load all organizations with limit -1 (always call this hook)
   const { organizations, loading, error } = useOrganizations({
     limit: -1,
-    sort: { field: OrganizationSortableField.Name, order: OrganizationSortOrder.Asc },
+    sort: { field: OrganizationSortableField.Name, order: SortOrder.Asc },
   });
 
   // Only show on project pages or organization pages
