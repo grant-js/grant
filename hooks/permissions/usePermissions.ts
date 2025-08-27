@@ -34,6 +34,7 @@ export function usePermissions(options: QueryPermissionsArgs): UsePermissionsRes
     GET_PERMISSIONS,
     {
       variables,
+      skip: !scope || !scope.id || !scope.tenant,
     }
   );
 

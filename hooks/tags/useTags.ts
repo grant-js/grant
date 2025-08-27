@@ -39,6 +39,7 @@ export function useTags(options: UseTagsOptions): UseTagsResult {
       sort,
       ids,
     },
+    skip: !scope || !scope.id || !scope.tenant,
   });
 
   return {

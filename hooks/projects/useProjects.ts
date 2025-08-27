@@ -31,7 +31,6 @@ export function useProjects(options: QueryProjectsArgs): UseProjectsResult {
     tagIds,
   } = options;
 
-  // Memoize variables to prevent unnecessary re-renders
   const variables = useMemo(
     () => ({
       organizationId,
@@ -47,6 +46,7 @@ export function useProjects(options: QueryProjectsArgs): UseProjectsResult {
 
   const { data, loading, error, refetch } = useQuery<{ projects: ProjectPage }>(GET_PROJECTS, {
     variables,
+    skip: !organizationId,
   });
 
   return {

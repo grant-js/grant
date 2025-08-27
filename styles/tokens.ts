@@ -1,3 +1,5 @@
+import { TAG_BACKGROUND_CLASSES, TAG_BORDER_CLASSES } from '../lib/constants/colors';
+
 export const tokens = {
   colors: {
     primary: {
@@ -13,57 +15,8 @@ export const tokens = {
       900: 'var(--color-primary-900)',
       950: 'var(--color-primary-950)',
     },
-    // Tag color abstractions for consistent theming
-    tag: {
-      purple: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-      indigo: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
-      blue: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-      cyan: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200',
-      teal: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
-      emerald: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
-      sky: 'bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-200',
-      violet: 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200',
-      rose: 'bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200',
-      pink: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
-      fuchsia: 'bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900 dark:text-fuchsia-200',
-      slate: 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200',
-      gray: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
-      zinc: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-900 dark:text-zinc-200',
-      neutral: 'bg-neutral-100 text-neutral-800 dark:bg-neutral-900 dark:text-neutral-200',
-      stone: 'bg-stone-100 text-stone-800 dark:bg-stone-900 dark:text-stone-200',
-      red: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-      orange: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
-      amber: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
-      yellow: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-      lime: 'bg-lime-100 text-lime-800 dark:bg-lime-900 dark:text-lime-200',
-      green: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    },
-    // Tag border color abstractions for avatar styling
-    tagBorder: {
-      purple: 'border-purple-300 dark:border-purple-600',
-      indigo: 'border-indigo-300 dark:border-indigo-600',
-      blue: 'border-blue-300 dark:border-blue-600',
-      cyan: 'border-cyan-300 dark:border-cyan-600',
-      teal: 'border-teal-300 dark:border-teal-600',
-      emerald: 'border-emerald-300 dark:border-emerald-600',
-      sky: 'border-sky-300 dark:border-sky-600',
-      violet: 'border-violet-300 dark:border-violet-600',
-      rose: 'border-rose-300 dark:border-rose-600',
-      pink: 'border-pink-300 dark:border-pink-600',
-      fuchsia: 'border-fuchsia-300 dark:border-fuchsia-600',
-      slate: 'border-slate-300 dark:border-slate-600',
-      gray: 'border-gray-300 dark:border-gray-600',
-      zinc: 'border-zinc-300 dark:border-zinc-600',
-      neutral: 'border-neutral-300 dark:border-neutral-600',
-      stone: 'border-stone-300 dark:border-stone-600',
-      red: 'border-red-300 dark:border-red-600',
-      orange: 'border-orange-300 dark:border-orange-600',
-      amber: 'border-amber-300 dark:border-amber-600',
-      yellow: 'border-yellow-300 dark:border-yellow-600',
-      lime: 'border-lime-300 dark:border-lime-600',
-      green: 'border-green-300 dark:border-green-600',
-    },
-    // Add more color scales as needed
+    tag: TAG_BACKGROUND_CLASSES,
+    tagBorder: TAG_BORDER_CLASSES,
   },
   spacing: {
     '0': '0',
@@ -73,7 +26,6 @@ export const tokens = {
     '4': 'var(--spacing-4)',
     '5': 'var(--spacing-5)',
     '6': 'var(--spacing-6)',
-    // Add more spacing values as needed
   },
   borderRadius: {
     none: '0',
@@ -90,7 +42,6 @@ export const tokens = {
       lg: 'var(--font-size-lg)',
       xl: 'var(--font-size-xl)',
       '2xl': 'var(--font-size-2xl)',
-      // Add more font sizes as needed
     },
     fontWeights: {
       normal: '400',

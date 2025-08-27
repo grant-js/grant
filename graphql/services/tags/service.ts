@@ -48,9 +48,15 @@ export class TagService extends AuditService implements ITagService {
     const validatedParams = validateInput(getTagsParamsSchema, params, 'getTags method');
     const result = await this.tagRepository.getTags(validatedParams as any);
 
+    const transformedResult = {
+      items: result.tags,
+      totalCount: result.totalCount,
+      hasNextPage: result.hasNextPage,
+    };
+
     const validatedResult = validateOutput(
       paginatedResponseSchema(tagSchema),
-      result,
+      transformedResult,
       'getTags method'
     ) as any;
 

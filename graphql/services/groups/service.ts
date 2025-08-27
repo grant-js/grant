@@ -48,16 +48,23 @@ export class GroupService extends AuditService implements IGroupService {
     const validatedParams = validateInput(getGroupsParamsSchema, params, 'getGroups method');
     const result = await this.groupRepository.getGroups(validatedParams as any);
 
+    // Transform repository result to standard format for validation
+    const transformedResult = {
+      items: result.groups,
+      totalCount: result.totalCount,
+      hasNextPage: result.hasNextPage,
+    };
+
     const validatedResult = validateOutput(
       paginatedResponseSchema(groupSchema),
-      result,
+      transformedResult,
       'getGroups method'
     ) as any;
 
     return {
       groups: validatedResult.items,
-      hasNextPage: validatedResult.hasNextPage,
       totalCount: validatedResult.totalCount,
+      hasNextPage: validatedResult.hasNextPage,
     };
   }
 

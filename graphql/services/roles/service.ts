@@ -48,9 +48,16 @@ export class RoleService extends AuditService implements IRoleService {
     const validatedParams = validateInput(getRolesParamsSchema, params, 'getRoles method');
     const result = await this.roleRepository.getRoles(validatedParams as any);
 
+    // Transform repository result to standard format for validation
+    const transformedResult = {
+      items: result.roles,
+      totalCount: result.totalCount,
+      hasNextPage: result.hasNextPage,
+    };
+
     const validatedResult = validateOutput(
       paginatedResponseSchema(roleSchema),
-      result,
+      transformedResult,
       'getRoles method'
     ) as any;
 

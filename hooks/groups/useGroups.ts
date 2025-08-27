@@ -32,6 +32,7 @@ export function useGroups(options: QueryGroupsArgs): UseGroupsResult {
 
   const { data, loading, error, refetch } = useQuery<{ groups: GroupPage }>(GET_GROUPS, {
     variables,
+    skip: !scope || !scope.id || !scope.tenant,
   });
 
   return {

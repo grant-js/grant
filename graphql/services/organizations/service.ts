@@ -52,9 +52,15 @@ export class OrganizationService extends AuditService implements IOrganizationSe
     );
     const result = await this.organizationRepository.getOrganizations(validatedParams as any);
 
+    const transformedResult = {
+      items: result.organizations,
+      totalCount: result.totalCount,
+      hasNextPage: result.hasNextPage,
+    };
+
     const validatedResult = validateOutput(
       paginatedResponseSchema(organizationSchema),
-      result,
+      transformedResult,
       'getOrganizations method'
     ) as any;
 

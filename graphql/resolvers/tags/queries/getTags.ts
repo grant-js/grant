@@ -1,11 +1,15 @@
 import { QueryResolvers } from '@/graphql/generated/types';
+import { getDirectFieldSelection } from '@/graphql/lib/fieldSelection';
 import { getScopedTagIds } from '@/graphql/lib/scopeFiltering';
 
 export const getTagsResolver: QueryResolvers['tags'] = async (
   _parent,
   { scope, page = 1, limit = 10, sort, search, ids },
-  context
+  context,
+  info
 ) => {
+  const requestedFields = info ? getDirectFieldSelection(info, ['tags']) : undefined;
+
   let tagIds = await getScopedTagIds({ scope, context });
 
   if (ids && ids.length > 0) {
@@ -26,6 +30,7 @@ export const getTagsResolver: QueryResolvers['tags'] = async (
     limit,
     sort,
     search,
+    requestedFields,
   });
 
   return tagsResult;

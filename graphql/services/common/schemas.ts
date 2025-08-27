@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { TAG_COLORS, TagColor } from '@/lib/constants/colors';
+
 export const idSchema = z.string().min(1, 'ID is required');
 export const emailSchema = z.string().email('Invalid email format').min(1, 'Email is required');
 export const nameSchema = z.string().min(1, 'Name is required').max(255, 'Name too long');
@@ -8,8 +10,11 @@ export const limitSchema = z.number().int().min(-1).max(100, 'Limit must be betw
 export const pageSchema = z.number().int().min(1, 'Page must be at least 1').optional();
 export const searchSchema = z
   .string()
-  .min(2, 'Search term must be at least 2 characters')
-  .optional();
+  .optional()
+  .refine(
+    (value) => !value || value.trim().length === 0 || value.trim().length >= 2,
+    'Search term must be at least 2 characters'
+  );
 
 export const actionSchema = z.string().min(1, 'Action is required').max(255, 'Action too long');
 
@@ -24,7 +29,10 @@ export const sortOrderSchema = z.enum(['ASC', 'DESC']);
 
 export const colorSchema = z
   .string()
-  .regex(/^#[0-9A-F]{6}$/i, 'Invalid color format (must be hex)');
+  .refine(
+    (value) => TAG_COLORS.includes(value as TagColor),
+    'Invalid tag color. Must be one of the predefined colors.'
+  );
 export const slugSchema = z
   .string()
   .min(1, 'Slug is required')

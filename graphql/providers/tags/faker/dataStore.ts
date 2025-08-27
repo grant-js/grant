@@ -8,7 +8,7 @@ import {
   generateAuditTimestamps,
   updateAuditTimestamp,
 } from '@/graphql/lib/providers/faker/genericDataStore';
-import { getAvailableTagColors } from '@/lib/tag-colors';
+import { getAvailableTagColors } from '@/lib/constants/colors';
 const generateFakeTags = (count: number = 20): Tag[] => {
   const availableColors = getAvailableTagColors();
   const tagNames = [

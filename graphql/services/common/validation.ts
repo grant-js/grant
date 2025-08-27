@@ -14,6 +14,7 @@ export function validateInput<T>(schema: z.ZodSchema<T>, data: unknown, context?
   try {
     return schema.parse(data);
   } catch (error) {
+    console.log('VALIDATE INPUT ERROR', error);
     if (error instanceof z.ZodError) {
       const contextMsg = context ? ` in ${context}` : '';
       throw new ValidationError(

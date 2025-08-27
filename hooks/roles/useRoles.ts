@@ -47,6 +47,7 @@ export function useRoles(options: QueryRolesArgs): UseRolesResult {
 
   const { data, loading, error, refetch } = useQuery<{ roles: RolePage }>(GET_ROLES, {
     variables,
+    skip: !scope || !scope.id || !scope.tenant,
   });
 
   return {

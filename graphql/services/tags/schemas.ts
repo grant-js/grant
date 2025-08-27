@@ -34,7 +34,7 @@ export const tagQuerySchema = sortableParamsSchema.extend({
 export const tagSortableFieldSchema = z.enum(['name', 'color', 'createdAt', 'updatedAt']);
 export const tagSortInputSchema = z.object({
   field: tagSortableFieldSchema,
-  order: sortOrderSchema,
+  direction: sortOrderSchema,
 });
 
 export const createTagInputSchema = z.object({
@@ -61,7 +61,6 @@ export const deleteTagArgsSchema = z.object({
 });
 
 export const queryTagsArgsSchema = sortableParamsSchema.extend({
-  ids: z.array(idSchema).optional(),
   sort: tagSortInputSchema.optional(),
 });
 
@@ -76,10 +75,7 @@ export const tagPageSchema = paginatedResponseSchema(tagSchema).transform((data)
   totalCount: data.totalCount,
 }));
 
-export const getTagsParamsSchema = queryTagsArgsSchema.extend({
-  requestedFields: z.array(z.string()).optional(),
-});
-
+export const getTagsParamsSchema = queryTagsArgsSchema;
 export const createTagParamsSchema = createTagArgsSchema;
 export const updateTagParamsSchema = updateTagArgsSchema;
 export const deleteTagParamsSchema = deleteTagArgsSchema;

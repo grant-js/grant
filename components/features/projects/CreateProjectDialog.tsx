@@ -23,7 +23,10 @@ export function CreateProjectDialog() {
   const { addProjectTag } = useProjectTagMutations();
 
   const handleSubmit = async (values: CreateProjectFormValues) => {
-    return createProject(values);
+    return createProject({
+      name: values.name,
+      description: values.description,
+    });
   };
 
   const handleAddRelationships = async (projectId: string, values: CreateProjectFormValues) => {

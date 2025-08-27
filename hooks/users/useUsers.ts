@@ -36,6 +36,7 @@ export function useUsers(options: UseUsersOptions): UseUsersResult {
 
   const { data, loading, error, refetch } = useQuery<{ users: UserPage }>(GET_USERS, {
     variables,
+    skip: !scope || !scope.id || !scope.tenant,
   });
 
   return {

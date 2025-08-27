@@ -52,12 +52,16 @@ export const toEntity = <T>(dbModel: any, requestedFields?: string[]): T => {
 
 export const buildSelectObject = (
   table: any,
-  requestedFields: string[],
+  requestedFields: string[] | undefined,
   searchFields: string[],
   search?: string,
   sort?: { field: string; order: 'ASC' | 'DESC' }
 ): any => {
   const selectObj: any = { id: table.id };
+
+  if (!requestedFields) {
+    return selectObj;
+  }
 
   requestedFields.forEach((field) => {
     if (table[field]) {

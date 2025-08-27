@@ -48,16 +48,23 @@ export class ProjectService extends AuditService implements IProjectService {
     const validatedParams = validateInput(getProjectsParamsSchema, params, 'getProjects method');
     const result = await this.projectRepository.getProjects(validatedParams as any);
 
+    // Transform repository result to standard format for validation
+    const transformedResult = {
+      items: result.projects,
+      totalCount: result.totalCount,
+      hasNextPage: result.hasNextPage,
+    };
+
     const validatedResult = validateOutput(
       paginatedResponseSchema(projectSchema),
-      result,
+      transformedResult,
       'getProjects method'
     ) as any;
 
     return {
       projects: validatedResult.items,
-      hasNextPage: validatedResult.hasNextPage,
       totalCount: validatedResult.totalCount,
+      hasNextPage: validatedResult.hasNextPage,
     };
   }
 

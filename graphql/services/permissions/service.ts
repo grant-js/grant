@@ -52,16 +52,23 @@ export class PermissionService extends AuditService implements IPermissionServic
     );
     const result = await this.permissionRepository.getPermissions(validatedParams as any);
 
+    // Transform repository result to standard format for validation
+    const transformedResult = {
+      items: result.permissions,
+      totalCount: result.totalCount,
+      hasNextPage: result.hasNextPage,
+    };
+
     const validatedResult = validateOutput(
       paginatedResponseSchema(permissionSchema),
-      result,
+      transformedResult,
       'getPermissions method'
     ) as any;
 
     return {
       permissions: validatedResult.items,
-      hasNextPage: validatedResult.hasNextPage,
       totalCount: validatedResult.totalCount,
+      hasNextPage: validatedResult.hasNextPage,
     };
   }
 

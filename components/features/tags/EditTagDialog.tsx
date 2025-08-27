@@ -12,7 +12,7 @@ import { Tag } from '@/graphql/generated/types';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useTags } from '@/hooks/tags';
 import { useTagMutations } from '@/hooks/tags';
-import { getAvailableTagColors } from '@/lib/tag-colors';
+import { getAvailableTagColors } from '@/lib/constants/colors';
 import { useTagsStore } from '@/stores/tags.store';
 
 import { editTagSchema, EditTagFormValues } from './types';

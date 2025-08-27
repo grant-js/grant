@@ -48,9 +48,16 @@ export class UserService extends AuditService implements IUserService {
     const validatedParams = validateInput(getUsersParamsSchema, params, 'getUsers method');
     const result = await this.userRepository.getUsers(validatedParams as any);
 
+    // Transform repository result to standard format for validation
+    const transformedResult = {
+      items: result.users,
+      totalCount: result.totalCount,
+      hasNextPage: result.hasNextPage,
+    };
+
     const validatedResult = validateOutput(
       paginatedResponseSchema(userSchema),
-      result,
+      transformedResult,
       'getUsers method'
     ) as any;
 

@@ -57,6 +57,13 @@
       "when": 1756113093944,
       "tag": "0007_goofy_lethal_legion",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1756289941941,
+      "tag": "0008_public_harry_osborn",
+      "breakpoints": true
     }
   ]
 }

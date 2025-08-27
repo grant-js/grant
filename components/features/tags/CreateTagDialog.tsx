@@ -15,7 +15,7 @@ import { useOrganizationTagMutations } from '@/hooks/organization-tags';
 import { useProjectTagMutations } from '@/hooks/project-tags';
 import { useTags } from '@/hooks/tags';
 import { useTagMutations } from '@/hooks/tags';
-import { getAvailableTagColors } from '@/lib/tag-colors';
+import { getAvailableTagColors } from '@/lib/constants/colors';
 import { useTagsStore } from '@/stores/tags.store';
 
 import { createTagSchema, CreateTagFormValues } from './types';
