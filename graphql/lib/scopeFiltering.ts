@@ -179,6 +179,7 @@ export async function getScopedTagIds({ scope, context }: TenantScopeParams): Pr
   const cacheKey = createCacheKey(scope);
 
   if (cache.tags.has(cacheKey)) {
+    console.log('cache hit', cacheKey);
     return cache.tags.get(cacheKey)!;
   }
 

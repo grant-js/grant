@@ -12,7 +12,7 @@ import {
 import { organizationTagAuditLogs } from '@/graphql/repositories/organization-tags/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput } from '../common';
+import { AuditService, validateInput, validateOutput, createDynamicSingleSchema } from '../common';
 
 import { IOrganizationTagService } from './interface';
 import {
@@ -74,7 +74,11 @@ export class OrganizationTagService extends AuditService implements IOrganizatio
     await this.organizationExists(validatedParams.organizationId);
 
     const result = await this.organizationTagRepository.getOrganizationTags(validatedParams);
-    return validateOutput(organizationTagSchema.array(), result, 'getOrganizationTags method');
+    return validateOutput(
+      createDynamicSingleSchema(organizationTagSchema).array(),
+      result,
+      'getOrganizationTags method'
+    );
   }
 
   public async addOrganizationTag(
@@ -112,7 +116,11 @@ export class OrganizationTagService extends AuditService implements IOrganizatio
 
     await this.logCreate(organizationTag.id, newValues, metadata);
 
-    return validateOutput(organizationTagSchema, organizationTag, 'addOrganizationTag method');
+    return validateOutput(
+      createDynamicSingleSchema(organizationTagSchema),
+      organizationTag,
+      'addOrganizationTag method'
+    );
   }
 
   public async removeOrganizationTag(
@@ -164,6 +172,10 @@ export class OrganizationTagService extends AuditService implements IOrganizatio
       await this.logSoftDelete(organizationTag.id, oldValues, newValues, metadata);
     }
 
-    return validateOutput(organizationTagSchema, organizationTag, 'removeOrganizationTag method');
+    return validateOutput(
+      createDynamicSingleSchema(organizationTagSchema),
+      organizationTag,
+      'removeOrganizationTag method'
+    );
   }
 }

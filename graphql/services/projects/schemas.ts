@@ -9,6 +9,7 @@ import {
   paginatedResponseSchema,
   sortableParamsSchema,
   nonEmptyNameSchema,
+  sortOrderSchema,
 } from '../common/schemas';
 
 export const projectSortableFieldSchema = z.enum([
@@ -20,7 +21,7 @@ export const projectSortableFieldSchema = z.enum([
 ]);
 export const projectSortInputSchema = z.object({
   field: projectSortableFieldSchema,
-  order: z.enum(['ASC', 'DESC']),
+  order: sortOrderSchema,
 });
 
 export const getProjectsParamsSchema = sortableParamsSchema.extend({

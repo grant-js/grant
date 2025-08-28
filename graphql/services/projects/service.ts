@@ -10,7 +10,13 @@ import { IProjectRepository } from '@/graphql/repositories/projects/interface';
 import { projectAuditLogs } from '@/graphql/repositories/projects/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput, paginatedResponseSchema } from '../common';
+import {
+  AuditService,
+  validateInput,
+  validateOutput,
+  createDynamicPaginatedSchema,
+  createDynamicSingleSchema,
+} from '../common';
 
 import { IProjectService } from './interface';
 import {
@@ -56,7 +62,7 @@ export class ProjectService extends AuditService implements IProjectService {
     };
 
     const validatedResult = validateOutput(
-      paginatedResponseSchema(projectSchema),
+      createDynamicPaginatedSchema(projectSchema, params.requestedFields),
       transformedResult,
       'getProjects method'
     ) as any;
@@ -91,7 +97,11 @@ export class ProjectService extends AuditService implements IProjectService {
 
     await this.logCreate(project.id, newValues, metadata);
 
-    return validateOutput(projectSchema, project, 'createProject method');
+    return validateOutput(
+      createDynamicSingleSchema(projectSchema),
+      project,
+      'createProject method'
+    );
   }
 
   public async updateProject(params: MutationUpdateProjectArgs): Promise<Project> {
@@ -128,7 +138,11 @@ export class ProjectService extends AuditService implements IProjectService {
 
     await this.logUpdate(updatedProject.id, oldValues, newValues, metadata);
 
-    return validateOutput(projectSchema, updatedProject, 'updateProject method');
+    return validateOutput(
+      createDynamicSingleSchema(projectSchema),
+      updatedProject,
+      'updateProject method'
+    );
   }
 
   public async deleteProject(
@@ -173,6 +187,10 @@ export class ProjectService extends AuditService implements IProjectService {
       await this.logSoftDelete(deletedProject.id, oldValues, newValues, metadata);
     }
 
-    return validateOutput(projectSchema, deletedProject, 'deleteProject method');
+    return validateOutput(
+      createDynamicSingleSchema(projectSchema),
+      deletedProject,
+      'deleteProject method'
+    );
   }
 }

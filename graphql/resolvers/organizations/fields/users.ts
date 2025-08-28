@@ -1,12 +1,16 @@
 import { OrganizationResolvers, Tenant } from '@/graphql/generated/types';
+import { getDirectFieldSelection } from '@/graphql/lib/fieldSelection';
 import { getScopedUserIds } from '@/graphql/lib/scopeFiltering';
 
 export const organizationUsersResolver: OrganizationResolvers['users'] = async (
   parent,
   _args,
-  context
+  context,
+  info
 ) => {
   const organizationId = parent.id;
+  const requestedFields = info ? getDirectFieldSelection(info) : undefined;
+
   const organizationUsers = await context.services.organizationUsers.getOrganizationUsers({
     organizationId,
   });
@@ -27,6 +31,7 @@ export const organizationUsersResolver: OrganizationResolvers['users'] = async (
   const usersResult = await context.services.users.getUsers({
     ids: filteredUserIds,
     limit: -1,
+    requestedFields,
   });
   return usersResult.users;
 };

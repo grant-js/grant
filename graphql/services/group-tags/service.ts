@@ -8,7 +8,7 @@ import { IGroupTagRepository, IGroupRepository, ITagRepository } from '@/graphql
 import { groupTagsAuditLogs } from '@/graphql/repositories/group-tags/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput } from '../common';
+import { AuditService, validateInput, validateOutput, createDynamicSingleSchema } from '../common';
 
 import { IGroupTagService } from './interface';
 import {
@@ -69,7 +69,11 @@ export class GroupTagService extends AuditService implements IGroupTagService {
     await this.groupExists(validatedParams.groupId);
 
     const result = await this.groupTagRepository.getGroupTags(validatedParams);
-    return result.map((item) => validateOutput(groupTagSchema, item, 'getGroupTags method'));
+    return validateOutput(
+      createDynamicSingleSchema(groupTagSchema).array(),
+      result,
+      'getGroupTags method'
+    );
   }
 
   public async addGroupTag(params: MutationAddGroupTagArgs): Promise<GroupTag> {
@@ -103,7 +107,7 @@ export class GroupTagService extends AuditService implements IGroupTagService {
 
     await this.logCreate(result.id, newValues, metadata);
 
-    return validateOutput(groupTagSchema, result, 'addGroupTag method');
+    return validateOutput(createDynamicSingleSchema(groupTagSchema), result, 'addGroupTag method');
   }
 
   public async removeGroupTag(
@@ -165,6 +169,10 @@ export class GroupTagService extends AuditService implements IGroupTagService {
       await this.logSoftDelete(result.id, oldValues, newValues, metadata);
     }
 
-    return validateOutput(groupTagSchema, result, 'removeGroupTag method');
+    return validateOutput(
+      createDynamicSingleSchema(groupTagSchema),
+      result,
+      'removeGroupTag method'
+    );
   }
 }

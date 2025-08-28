@@ -10,7 +10,13 @@ import { IGroupRepository } from '@/graphql/repositories/groups/interface';
 import { groupAuditLogs } from '@/graphql/repositories/groups/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput, paginatedResponseSchema } from '../common';
+import {
+  AuditService,
+  validateInput,
+  validateOutput,
+  createDynamicPaginatedSchema,
+  createDynamicSingleSchema,
+} from '../common';
 
 import { IGroupService } from './interface';
 import {
@@ -56,7 +62,7 @@ export class GroupService extends AuditService implements IGroupService {
     };
 
     const validatedResult = validateOutput(
-      paginatedResponseSchema(groupSchema),
+      createDynamicPaginatedSchema(groupSchema, params.requestedFields),
       transformedResult,
       'getGroups method'
     ) as any;
@@ -86,7 +92,7 @@ export class GroupService extends AuditService implements IGroupService {
 
     await this.logCreate(group.id, newValues, metadata);
 
-    return validateOutput(groupSchema, group, 'createGroup method');
+    return validateOutput(createDynamicSingleSchema(groupSchema), group, 'createGroup method');
   }
 
   public async updateGroup(params: MutationUpdateGroupArgs): Promise<Group> {
@@ -117,7 +123,11 @@ export class GroupService extends AuditService implements IGroupService {
 
     await this.logUpdate(updatedGroup.id, oldValues, newValues, metadata);
 
-    return validateOutput(groupSchema, updatedGroup, 'updateGroup method');
+    return validateOutput(
+      createDynamicSingleSchema(groupSchema),
+      updatedGroup,
+      'updateGroup method'
+    );
   }
 
   public async deleteGroup(
@@ -157,6 +167,10 @@ export class GroupService extends AuditService implements IGroupService {
       await this.logSoftDelete(deletedGroup.id, oldValues, newValues, metadata);
     }
 
-    return validateOutput(groupSchema, deletedGroup, 'deleteGroup method');
+    return validateOutput(
+      createDynamicSingleSchema(groupSchema),
+      deletedGroup,
+      'deleteGroup method'
+    );
   }
 }

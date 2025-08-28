@@ -1,7 +1,10 @@
 import { UserResolvers } from '@/graphql/generated/types';
+import { getDirectFieldSelection } from '@/graphql/lib/fieldSelection';
 import { getScopedTagIds } from '@/graphql/lib/scopeFiltering';
 
-export const userTagsResolver: UserResolvers['tags'] = async (parent, { scope }, context) => {
+export const userTagsResolver: UserResolvers['tags'] = async (parent, { scope }, context, info) => {
+  const requestedFields = info ? getDirectFieldSelection(info) : undefined;
+
   const userTags = await context.services.userTags.getUserTags({
     userId: parent.id,
   });
@@ -23,6 +26,7 @@ export const userTagsResolver: UserResolvers['tags'] = async (parent, { scope },
   const tagsResult = await context.services.tags.getTags({
     ids: filteredTagIds,
     limit: -1,
+    requestedFields,
   });
 
   return tagsResult.tags;

@@ -1,7 +1,15 @@
 import { RoleResolvers } from '@/graphql/generated/types';
+import { getDirectFieldSelection } from '@/graphql/lib/fieldSelection';
 import { getScopedGroupIds } from '@/graphql/lib/scopeFiltering';
 
-export const roleGroupsResolver: RoleResolvers['groups'] = async (parent, { scope }, context) => {
+export const roleGroupsResolver: RoleResolvers['groups'] = async (
+  parent,
+  { scope },
+  context,
+  info
+) => {
+  const requestedFields = info ? getDirectFieldSelection(info) : undefined;
+
   const groups = await context.services.roleGroups.getRoleGroups({
     roleId: parent.id,
   });
@@ -22,6 +30,7 @@ export const roleGroupsResolver: RoleResolvers['groups'] = async (parent, { scop
   const groupsResult = await context.services.groups.getGroups({
     ids: accessibleGroupIds,
     limit: -1,
+    requestedFields,
   });
 
   return groupsResult.groups;

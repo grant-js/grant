@@ -12,7 +12,7 @@ import {
 import { organizationRolesAuditLogs } from '@/graphql/repositories/organization-roles/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput } from '../common';
+import { AuditService, validateInput, validateOutput, createDynamicSingleSchema } from '../common';
 
 import { IOrganizationRoleService } from './interface';
 import {
@@ -76,7 +76,11 @@ export class OrganizationRoleService extends AuditService implements IOrganizati
     await this.organizationExists(validatedParams.organizationId);
 
     const result = await this.organizationRoleRepository.getOrganizationRoles(validatedParams);
-    return validateOutput(organizationRoleSchema.array(), result, 'getOrganizationRoles method');
+    return validateOutput(
+      createDynamicSingleSchema(organizationRoleSchema).array(),
+      result,
+      'getOrganizationRoles method'
+    );
   }
 
   public async addOrganizationRole(
@@ -114,7 +118,11 @@ export class OrganizationRoleService extends AuditService implements IOrganizati
 
     await this.logCreate(organizationRole.id, newValues, metadata);
 
-    return validateOutput(organizationRoleSchema, organizationRole, 'addOrganizationRole method');
+    return validateOutput(
+      createDynamicSingleSchema(organizationRoleSchema),
+      organizationRole,
+      'addOrganizationRole method'
+    );
   }
 
   public async removeOrganizationRole(
@@ -167,7 +175,7 @@ export class OrganizationRoleService extends AuditService implements IOrganizati
     }
 
     return validateOutput(
-      organizationRoleSchema,
+      createDynamicSingleSchema(organizationRoleSchema),
       organizationRole,
       'removeOrganizationRole method'
     );

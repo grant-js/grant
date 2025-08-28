@@ -8,7 +8,7 @@ import { IRoleGroupRepository, IRoleRepository, IGroupRepository } from '@/graph
 import { roleGroupsAuditLogs } from '@/graphql/repositories/role-groups/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput } from '../common';
+import { AuditService, validateInput, validateOutput, createDynamicSingleSchema } from '../common';
 
 import { IRoleGroupService } from './interface';
 import {
@@ -70,7 +70,11 @@ export class RoleGroupService extends AuditService implements IRoleGroupService 
     await this.roleExists(validatedParams.roleId);
 
     const result = await this.roleGroupRepository.getRoleGroups(validatedParams);
-    return result.map((item) => validateOutput(roleGroupSchema, item, 'getRoleGroups method'));
+    return validateOutput(
+      createDynamicSingleSchema(roleGroupSchema).array(),
+      result,
+      'getRoleGroups method'
+    );
   }
 
   public async addRoleGroup(params: MutationAddRoleGroupArgs): Promise<RoleGroup> {
@@ -104,7 +108,11 @@ export class RoleGroupService extends AuditService implements IRoleGroupService 
 
     await this.logCreate(roleGroup.id, newValues, metadata);
 
-    return validateOutput(roleGroupSchema, roleGroup, 'addRoleGroup method');
+    return validateOutput(
+      createDynamicSingleSchema(roleGroupSchema),
+      roleGroup,
+      'addRoleGroup method'
+    );
   }
 
   public async removeRoleGroup(
@@ -162,6 +170,10 @@ export class RoleGroupService extends AuditService implements IRoleGroupService 
       await this.logSoftDelete(roleGroup.id, oldValues, newValues, metadata);
     }
 
-    return validateOutput(roleGroupSchema, roleGroup, 'removeRoleGroup method');
+    return validateOutput(
+      createDynamicSingleSchema(roleGroupSchema),
+      roleGroup,
+      'removeRoleGroup method'
+    );
   }
 }

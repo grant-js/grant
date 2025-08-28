@@ -12,7 +12,7 @@ import {
 import { organizationProjectsAuditLogs } from '@/graphql/repositories/organization-projects/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput } from '../common';
+import { AuditService, validateInput, validateOutput, createDynamicSingleSchema } from '../common';
 
 import { IOrganizationProjectService } from './interface';
 import {
@@ -81,8 +81,10 @@ export class OrganizationProjectService
 
     const result =
       await this.organizationProjectRepository.getOrganizationProjects(validatedParams);
-    return result.map((item) =>
-      validateOutput(organizationProjectSchema, item, 'getOrganizationProjects method')
+    return validateOutput(
+      createDynamicSingleSchema(organizationProjectSchema).array(),
+      result,
+      'getOrganizationProjects method'
     );
   }
 
@@ -124,7 +126,7 @@ export class OrganizationProjectService
     await this.logCreate(organizationProject.id, newValues, metadata);
 
     return validateOutput(
-      organizationProjectSchema,
+      createDynamicSingleSchema(organizationProjectSchema),
       organizationProject,
       'addOrganizationProject method'
     );
@@ -186,7 +188,7 @@ export class OrganizationProjectService
     }
 
     return validateOutput(
-      organizationProjectSchema,
+      createDynamicSingleSchema(organizationProjectSchema),
       organizationProject,
       'removeOrganizationProject method'
     );

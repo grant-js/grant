@@ -1,11 +1,15 @@
 import { PermissionResolvers } from '@/graphql/generated/types';
+import { getDirectFieldSelection } from '@/graphql/lib/fieldSelection';
 import { getScopedTagIds } from '@/graphql/lib/scopeFiltering';
 
 export const permissionTagsResolver: PermissionResolvers['tags'] = async (
   parent,
   { scope },
-  context
+  context,
+  info
 ) => {
+  const requestedFields = info ? getDirectFieldSelection(info) : undefined;
+
   const permissionTags = await context.services.permissionTags.getPermissionTags({
     permissionId: parent.id,
   });
@@ -26,6 +30,7 @@ export const permissionTagsResolver: PermissionResolvers['tags'] = async (
   const tagsResult = await context.services.tags.getTags({
     ids: accessibleTagIds,
     limit: -1,
+    requestedFields,
   });
 
   return tagsResult.tags;

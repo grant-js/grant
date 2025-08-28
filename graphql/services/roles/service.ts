@@ -10,7 +10,13 @@ import { IRoleRepository } from '@/graphql/repositories/roles/interface';
 import { roleAuditLogs } from '@/graphql/repositories/roles/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput, paginatedResponseSchema } from '../common';
+import {
+  AuditService,
+  validateInput,
+  validateOutput,
+  createDynamicPaginatedSchema,
+  createDynamicSingleSchema,
+} from '../common';
 
 import { IRoleService } from './interface';
 import {
@@ -56,7 +62,7 @@ export class RoleService extends AuditService implements IRoleService {
     };
 
     const validatedResult = validateOutput(
-      paginatedResponseSchema(roleSchema),
+      createDynamicPaginatedSchema(roleSchema, params.requestedFields),
       transformedResult,
       'getRoles method'
     ) as any;
@@ -86,7 +92,7 @@ export class RoleService extends AuditService implements IRoleService {
 
     await this.logCreate(role.id, newValues, metadata);
 
-    return validateOutput(roleSchema, role, 'createRole method');
+    return validateOutput(createDynamicSingleSchema(roleSchema), role, 'createRole method');
   }
 
   public async updateRole(params: MutationUpdateRoleArgs): Promise<Role> {
@@ -117,7 +123,7 @@ export class RoleService extends AuditService implements IRoleService {
 
     await this.logUpdate(updatedRole.id, oldValues, newValues, metadata);
 
-    return validateOutput(roleSchema, updatedRole, 'updateRole method');
+    return validateOutput(createDynamicSingleSchema(roleSchema), updatedRole, 'updateRole method');
   }
 
   public async deleteRole(
@@ -157,6 +163,6 @@ export class RoleService extends AuditService implements IRoleService {
       await this.logSoftDelete(deletedRole.id, oldValues, newValues, metadata);
     }
 
-    return validateOutput(roleSchema, deletedRole, 'deleteRole method');
+    return validateOutput(createDynamicSingleSchema(roleSchema), deletedRole, 'deleteRole method');
   }
 }

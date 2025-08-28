@@ -12,7 +12,7 @@ import {
 import { projectRoleAuditLogs } from '@/graphql/repositories/project-roles/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput } from '../common';
+import { AuditService, validateInput, validateOutput, createDynamicSingleSchema } from '../common';
 
 import { IProjectRoleService } from './interface';
 import {
@@ -74,7 +74,11 @@ export class ProjectRoleService extends AuditService implements IProjectRoleServ
     await this.projectExists(validatedParams.projectId);
 
     const result = await this.projectRoleRepository.getProjectRoles(validatedParams);
-    return validateOutput(projectRoleSchema.array(), result, 'getProjectRoles method');
+    return validateOutput(
+      createDynamicSingleSchema(projectRoleSchema).array(),
+      result,
+      'getProjectRoles method'
+    );
   }
 
   public async addProjectRole(params: MutationAddProjectRoleArgs): Promise<ProjectRole> {
@@ -109,7 +113,11 @@ export class ProjectRoleService extends AuditService implements IProjectRoleServ
 
     await this.logCreate(projectRole.id, newValues, metadata);
 
-    return validateOutput(projectRoleSchema, projectRole, 'addProjectRole method');
+    return validateOutput(
+      createDynamicSingleSchema(projectRoleSchema),
+      projectRole,
+      'addProjectRole method'
+    );
   }
 
   public async removeProjectRole(
@@ -161,6 +169,10 @@ export class ProjectRoleService extends AuditService implements IProjectRoleServ
       await this.logSoftDelete(projectRole.id, oldValues, newValues, metadata);
     }
 
-    return validateOutput(projectRoleSchema, projectRole, 'deleteProjectRole method');
+    return validateOutput(
+      createDynamicSingleSchema(projectRoleSchema),
+      projectRole,
+      'deleteProjectRole method'
+    );
   }
 }

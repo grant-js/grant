@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { count } from 'drizzle-orm';
 
+import { SortOrder } from '@/graphql/generated/types';
 import { db } from '@/graphql/lib/providers/database/connection';
 
 import { buildOrderBy, toEntity, buildSelectObject, buildWhereClause } from './utils';
@@ -24,7 +25,7 @@ export interface BaseQueryArgs<TModel extends BaseEntityModel = BaseEntityModel>
   search?: string;
   sort?: {
     field: keyof TModel;
-    order: 'ASC' | 'DESC';
+    order: SortOrder;
   };
   requestedFields?: Array<keyof TModel>;
 }
@@ -57,13 +58,9 @@ export abstract class EntityRepository<TModel extends BaseEntityModel, TEntity e
     const { ids, page = 1, limit = 50, search, sort, requestedFields } = params;
 
     try {
-      const orderBy = buildOrderBy(
-        this.table,
-        sort as { field: string; order: 'ASC' | 'DESC' },
-        this.defaultSortField as string
-      );
+      const orderBy = buildOrderBy<TModel>(this.table, sort, this.defaultSortField);
 
-      const whereClause = buildWhereClause(this.table, this.searchFields as string[], ids, search);
+      const whereClause = buildWhereClause<TModel>(this.table, this.searchFields, ids, search);
       const countResult = await db.select({ count: count() }).from(this.table).where(whereClause);
       const totalCount = Number(countResult[0]?.count || 0);
       const offset = (page - 1) * limit;
@@ -72,12 +69,12 @@ export abstract class EntityRepository<TModel extends BaseEntityModel, TEntity e
         return { items: [], totalCount: 0, hasNextPage: false };
       }
 
-      const selectObj = buildSelectObject(
+      const selectObj = buildSelectObject<TModel>(
         this.table,
-        requestedFields as string[],
-        this.searchFields as string[],
+        requestedFields,
+        this.searchFields,
         search,
-        sort as { field: string; order: 'ASC' | 'DESC' }
+        sort
       );
 
       const results = await db

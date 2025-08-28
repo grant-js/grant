@@ -10,7 +10,13 @@ import { IUserRepository } from '@/graphql/repositories/users/interface';
 import { userAuditLogs } from '@/graphql/repositories/users/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput, paginatedResponseSchema } from '../common';
+import {
+  AuditService,
+  validateInput,
+  validateOutput,
+  createDynamicPaginatedSchema,
+  createDynamicSingleSchema,
+} from '../common';
 
 import { IUserService } from './interface';
 import {
@@ -56,7 +62,7 @@ export class UserService extends AuditService implements IUserService {
     };
 
     const validatedResult = validateOutput(
-      paginatedResponseSchema(userSchema),
+      createDynamicPaginatedSchema(userSchema, params.requestedFields),
       transformedResult,
       'getUsers method'
     ) as any;
@@ -86,7 +92,7 @@ export class UserService extends AuditService implements IUserService {
 
     await this.logCreate(user.id, newValues, metadata);
 
-    return validateOutput(userSchema, user, 'createUser method');
+    return validateOutput(createDynamicSingleSchema(userSchema), user, 'createUser method');
   }
 
   public async updateUser(params: MutationUpdateUserArgs): Promise<User> {
@@ -117,7 +123,7 @@ export class UserService extends AuditService implements IUserService {
 
     await this.logUpdate(updatedUser.id, oldValues, newValues, metadata);
 
-    return validateOutput(userSchema, updatedUser, 'updateUser method');
+    return validateOutput(createDynamicSingleSchema(userSchema), updatedUser, 'updateUser method');
   }
 
   public async deleteUser(
@@ -157,6 +163,6 @@ export class UserService extends AuditService implements IUserService {
       await this.logSoftDelete(deletedUser.id, oldValues, newValues, metadata);
     }
 
-    return validateOutput(userSchema, deletedUser, 'deleteUser method');
+    return validateOutput(createDynamicSingleSchema(userSchema), deletedUser, 'deleteUser method');
   }
 }

@@ -12,7 +12,7 @@ import {
 import { permissionTagAuditLogs } from '@/graphql/repositories/permission-tags/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput } from '../common';
+import { AuditService, validateInput, validateOutput, createDynamicSingleSchema } from '../common';
 
 import { IPermissionTagService } from './interface';
 import {
@@ -76,7 +76,11 @@ export class PermissionTagService extends AuditService implements IPermissionTag
     await this.permissionExists(validatedParams.permissionId);
 
     const result = await this.permissionTagRepository.getPermissionTags(validatedParams);
-    return validateOutput(permissionTagSchema.array(), result, 'getPermissionTags method');
+    return validateOutput(
+      createDynamicSingleSchema(permissionTagSchema).array(),
+      result,
+      'getPermissionTags method'
+    );
   }
 
   public async addPermissionTag(params: MutationAddPermissionTagArgs): Promise<PermissionTag> {
@@ -111,7 +115,11 @@ export class PermissionTagService extends AuditService implements IPermissionTag
 
     await this.logCreate(permissionTag.id, newValues, metadata);
 
-    return validateOutput(permissionTagSchema, permissionTag, 'addPermissionTag method');
+    return validateOutput(
+      createDynamicSingleSchema(permissionTagSchema),
+      permissionTag,
+      'addPermissionTag method'
+    );
   }
 
   public async removePermissionTag(
@@ -163,6 +171,10 @@ export class PermissionTagService extends AuditService implements IPermissionTag
       await this.logSoftDelete(permissionTag.id, oldValues, newValues, metadata);
     }
 
-    return validateOutput(permissionTagSchema, permissionTag, 'removePermissionTag method');
+    return validateOutput(
+      createDynamicSingleSchema(permissionTagSchema),
+      permissionTag,
+      'removePermissionTag method'
+    );
   }
 }

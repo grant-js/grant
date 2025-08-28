@@ -1,6 +1,7 @@
 export * from './validation';
 export * from './schemas';
 export * from './AuditService';
+export * from './dynamicSchemas';
 
 export interface UnifiedDeleteParams {
   id: string;

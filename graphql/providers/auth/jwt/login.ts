@@ -1,5 +1,6 @@
 import { ApolloServerErrorCode } from '@apollo/server/errors';
 import jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
 
 import { ApiError } from '@/graphql/errors';
 import { LoginParams, LoginResult } from '@/graphql/providers/auth/types';
@@ -12,8 +13,7 @@ export async function login({ input }: LoginParams): Promise<LoginResult> {
   const expiresIn = 7 * 24 * 60 * 60;
   const token = jwt.sign(
     {
-      sub: '1234567890',
-      email: input.email,
+      sub: uuidv4(),
       exp: Math.floor(Date.now() / 1000) + expiresIn,
     },
     JWT_SECRET

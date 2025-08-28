@@ -43,7 +43,6 @@ export function Sorter<T extends string>({
 }: SorterProps<T>) {
   const t = useTranslations(translationNamespace);
 
-  // If no sort is provided, use default field ASC as default
   const currentSort = sort || { field: defaultField, order: SortOrder.Asc };
 
   const getSortLabel = (field: T) => {

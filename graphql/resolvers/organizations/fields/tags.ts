@@ -1,12 +1,15 @@
 import { OrganizationResolvers, Tenant } from '@/graphql/generated/types';
+import { getDirectFieldSelection } from '@/graphql/lib/fieldSelection';
 import { getScopedTagIds } from '@/graphql/lib/scopeFiltering';
 
 export const organizationTagsResolver: OrganizationResolvers['tags'] = async (
   parent,
   _args,
-  context
+  context,
+  info
 ) => {
   const organizationId = parent.id;
+  const requestedFields = info ? getDirectFieldSelection(info) : undefined;
 
   const organizationTags = await context.services.organizationTags.getOrganizationTags({
     organizationId,
@@ -30,6 +33,7 @@ export const organizationTagsResolver: OrganizationResolvers['tags'] = async (
   const tagsResult = await context.services.tags.getTags({
     ids: filteredTagIds,
     limit: -1,
+    requestedFields,
   });
 
   return tagsResult.tags;

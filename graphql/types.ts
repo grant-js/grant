@@ -6,7 +6,6 @@ import { EntityCache } from './lib/scopeFiltering';
 
 export interface AuthenticatedUser {
   id: string;
-  email: string;
   sub: string;
 }
 
@@ -15,5 +14,5 @@ export interface Context {
   services: ModuleServices;
   scopeCache?: EntityCache;
   info?: GraphQLResolveInfo;
-  user?: AuthenticatedUser;
+  user: AuthenticatedUser | null;
 }

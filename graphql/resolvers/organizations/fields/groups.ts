@@ -1,12 +1,15 @@
 import { OrganizationResolvers, Tenant } from '@/graphql/generated/types';
+import { getDirectFieldSelection } from '@/graphql/lib/fieldSelection';
 import { getScopedGroupIds } from '@/graphql/lib/scopeFiltering';
 
 export const organizationGroupsResolver: OrganizationResolvers['groups'] = async (
   parent,
   _args,
-  context
+  context,
+  info
 ) => {
   const organizationId = parent.id;
+  const requestedFields = info ? getDirectFieldSelection(info) : undefined;
 
   const organizationGroups = await context.services.organizationGroups.getOrganizationGroups({
     organizationId,
@@ -30,6 +33,7 @@ export const organizationGroupsResolver: OrganizationResolvers['groups'] = async
   const groupsResult = await context.services.groups.getGroups({
     ids: filteredGroupIds,
     limit: -1,
+    requestedFields,
   });
 
   return groupsResult.groups;

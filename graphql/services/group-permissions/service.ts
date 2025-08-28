@@ -12,7 +12,7 @@ import {
 import { groupPermissionsAuditLogs } from '@/graphql/repositories/group-permissions/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput } from '../common';
+import { AuditService, validateInput, validateOutput, createDynamicSingleSchema } from '../common';
 
 import { IGroupPermissionService } from './interface';
 import {
@@ -79,8 +79,10 @@ export class GroupPermissionService extends AuditService implements IGroupPermis
     await this.groupExists(validatedParams.groupId);
 
     const result = await this.groupPermissionRepository.getGroupPermissions(validatedParams);
-    return result.map((groupPermission) =>
-      validateOutput(groupPermissionSchema, groupPermission, 'getGroupPermissions method')
+    return validateOutput(
+      createDynamicSingleSchema(groupPermissionSchema).array(),
+      result,
+      'getGroupPermissions method'
     );
   }
 
@@ -118,7 +120,11 @@ export class GroupPermissionService extends AuditService implements IGroupPermis
 
     await this.logCreate(groupPermission.id, newValues, metadata);
 
-    return validateOutput(groupPermissionSchema, groupPermission, 'addGroupPermission method');
+    return validateOutput(
+      createDynamicSingleSchema(groupPermissionSchema),
+      groupPermission,
+      'addGroupPermission method'
+    );
   }
 
   public async removeGroupPermission(
@@ -169,6 +175,10 @@ export class GroupPermissionService extends AuditService implements IGroupPermis
       await this.logSoftDelete(groupPermission.id, oldValues, newValues, metadata);
     }
 
-    return validateOutput(groupPermissionSchema, groupPermission, 'removeGroupPermission method');
+    return validateOutput(
+      createDynamicSingleSchema(groupPermissionSchema),
+      groupPermission,
+      'removeGroupPermission method'
+    );
   }
 }

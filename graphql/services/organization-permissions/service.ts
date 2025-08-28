@@ -12,7 +12,7 @@ import {
 import { organizationPermissionsAuditLogs } from '@/graphql/repositories/organization-permissions/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput } from '../common';
+import { AuditService, validateInput, validateOutput, createDynamicSingleSchema } from '../common';
 
 import { IOrganizationPermissionService } from './interface';
 import {
@@ -84,8 +84,10 @@ export class OrganizationPermissionService
 
     const result =
       await this.organizationPermissionRepository.getOrganizationPermissions(validatedParams);
-    return result.map((item) =>
-      validateOutput(organizationPermissionSchema, item, 'getOrganizationPermissions method')
+    return validateOutput(
+      createDynamicSingleSchema(organizationPermissionSchema).array(),
+      result,
+      'getOrganizationPermissions method'
     );
   }
 
@@ -126,7 +128,11 @@ export class OrganizationPermissionService
 
     await this.logCreate(result.id, newValues, metadata);
 
-    return validateOutput(organizationPermissionSchema, result, 'addOrganizationPermission method');
+    return validateOutput(
+      createDynamicSingleSchema(organizationPermissionSchema),
+      result,
+      'addOrganizationPermission method'
+    );
   }
 
   public async removeOrganizationPermission(
@@ -189,7 +195,7 @@ export class OrganizationPermissionService
     }
 
     return validateOutput(
-      organizationPermissionSchema,
+      createDynamicSingleSchema(organizationPermissionSchema),
       result,
       'removeOrganizationPermission method'
     );

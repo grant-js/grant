@@ -9,7 +9,7 @@ import { IUserRoleRepository } from '@/graphql/repositories/user-roles/interface
 import { userRolesAuditLogs } from '@/graphql/repositories/user-roles/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput } from '../common';
+import { AuditService, validateInput, validateOutput, createDynamicSingleSchema } from '../common';
 
 import { IUserRoleService } from './interface';
 import {
@@ -67,8 +67,10 @@ export class UserRoleService extends AuditService implements IUserRoleService {
     await this.userExists(validatedParams.userId);
 
     const result = await this.userRoleRepository.getUserRoles({ userId: validatedParams.userId });
-    return result.map((userRole) =>
-      validateOutput(userRoleSchema, userRole, 'getUserRoles method')
+    return validateOutput(
+      createDynamicSingleSchema(userRoleSchema).array(),
+      result,
+      'getUserRoles method'
     );
   }
 
@@ -100,7 +102,11 @@ export class UserRoleService extends AuditService implements IUserRoleService {
 
     await this.logCreate(userRole.id, newValues, metadata);
 
-    return validateOutput(userRoleSchema, userRole, 'addUserRole method');
+    return validateOutput(
+      createDynamicSingleSchema(userRoleSchema),
+      userRole,
+      'addUserRole method'
+    );
   }
 
   public async removeUserRole(
@@ -152,6 +158,10 @@ export class UserRoleService extends AuditService implements IUserRoleService {
       await this.logSoftDelete(userRole.id, oldValues, newValues, metadata);
     }
 
-    return validateOutput(userRoleSchema, userRole, 'removeUserRole method');
+    return validateOutput(
+      createDynamicSingleSchema(userRoleSchema),
+      userRole,
+      'removeUserRole method'
+    );
   }
 }

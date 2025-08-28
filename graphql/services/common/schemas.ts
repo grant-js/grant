@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { SortOrder, Tenant } from '@/graphql/generated/types';
 import { TAG_COLORS, TagColor } from '@/lib/constants/colors';
 
 export const idSchema = z.string().min(1, 'ID is required');
@@ -18,14 +19,14 @@ export const searchSchema = z
 
 export const actionSchema = z.string().min(1, 'Action is required').max(255, 'Action too long');
 
-export const tenantSchema = z.enum(['ORGANIZATION', 'PROJECT']);
+export const tenantSchema = z.enum(Object.values(Tenant) as [string, ...string[]]);
 
 export const scopeSchema = z.object({
   id: idSchema,
   tenant: tenantSchema,
 });
 
-export const sortOrderSchema = z.enum(['ASC', 'DESC']);
+export const sortOrderSchema = z.enum(Object.values(SortOrder) as [string, ...string[]]);
 
 export const colorSchema = z
   .string()

@@ -10,7 +10,13 @@ import { IOrganizationRepository } from '@/graphql/repositories/organizations/in
 import { organizationAuditLogs } from '@/graphql/repositories/organizations/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput, paginatedResponseSchema } from '../common';
+import {
+  AuditService,
+  validateInput,
+  validateOutput,
+  createDynamicPaginatedSchema,
+  createDynamicSingleSchema,
+} from '../common';
 
 import { IOrganizationService } from './interface';
 import {
@@ -59,7 +65,7 @@ export class OrganizationService extends AuditService implements IOrganizationSe
     };
 
     const validatedResult = validateOutput(
-      paginatedResponseSchema(organizationSchema),
+      createDynamicPaginatedSchema(organizationSchema, params.requestedFields),
       transformedResult,
       'getOrganizations method'
     ) as any;
@@ -93,7 +99,11 @@ export class OrganizationService extends AuditService implements IOrganizationSe
 
     await this.logCreate(organization.id, newValues, metadata);
 
-    return validateOutput(organizationSchema, organization, 'createOrganization method');
+    return validateOutput(
+      createDynamicSingleSchema(organizationSchema),
+      organization,
+      'createOrganization method'
+    );
   }
 
   public async updateOrganization(params: MutationUpdateOrganizationArgs): Promise<Organization> {
@@ -129,7 +139,11 @@ export class OrganizationService extends AuditService implements IOrganizationSe
 
     await this.logUpdate(updatedOrganization.id, oldValues, newValues, metadata);
 
-    return validateOutput(organizationSchema, updatedOrganization, 'updateOrganization method');
+    return validateOutput(
+      createDynamicSingleSchema(organizationSchema),
+      updatedOrganization,
+      'updateOrganization method'
+    );
   }
 
   public async deleteOrganization(
@@ -173,6 +187,10 @@ export class OrganizationService extends AuditService implements IOrganizationSe
       await this.logSoftDelete(deletedOrganization.id, oldValues, newValues, metadata);
     }
 
-    return validateOutput(organizationSchema, deletedOrganization, 'deleteOrganization method');
+    return validateOutput(
+      createDynamicSingleSchema(organizationSchema),
+      deletedOrganization,
+      'deleteOrganization method'
+    );
   }
 }

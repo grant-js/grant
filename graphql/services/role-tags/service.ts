@@ -10,7 +10,7 @@ import { IRoleRepository } from '@/graphql/repositories/roles/interface';
 import { ITagRepository } from '@/graphql/repositories/tags/interface';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput } from '../common';
+import { AuditService, validateInput, validateOutput, createDynamicSingleSchema } from '../common';
 
 import { IRoleTagService } from './interface';
 import {
@@ -68,7 +68,11 @@ export class RoleTagService extends AuditService implements IRoleTagService {
     await this.roleExists(validatedParams.roleId);
 
     const result = await this.roleTagRepository.getRoleTags(validatedParams);
-    return validateOutput(roleTagSchema.array(), result, 'getRoleTags method');
+    return validateOutput(
+      createDynamicSingleSchema(roleTagSchema).array(),
+      result,
+      'getRoleTags method'
+    );
   }
 
   public async addRoleTag(params: MutationAddRoleTagArgs): Promise<RoleTag> {
@@ -96,7 +100,7 @@ export class RoleTagService extends AuditService implements IRoleTagService {
 
     await this.logCreate(roleTag.id, newValues, metadata);
 
-    return validateOutput(roleTagSchema, roleTag, 'addRoleTag method');
+    return validateOutput(createDynamicSingleSchema(roleTagSchema), roleTag, 'addRoleTag method');
   }
 
   public async removeRoleTag(
@@ -145,6 +149,10 @@ export class RoleTagService extends AuditService implements IRoleTagService {
       await this.logSoftDelete(roleTag.id, oldValues, newValues, metadata);
     }
 
-    return validateOutput(roleTagSchema, roleTag, 'removeRoleTag method');
+    return validateOutput(
+      createDynamicSingleSchema(roleTagSchema),
+      roleTag,
+      'removeRoleTag method'
+    );
   }
 }

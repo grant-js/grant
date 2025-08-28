@@ -12,7 +12,7 @@ import {
 import { projectPermissionsAuditLogs } from '@/graphql/repositories/project-permissions/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput } from '../common';
+import { AuditService, validateInput, validateOutput, createDynamicSingleSchema } from '../common';
 
 import { IProjectPermissionService } from './interface';
 import {
@@ -78,7 +78,11 @@ export class ProjectPermissionService extends AuditService implements IProjectPe
     await this.projectExists(validatedParams.projectId);
 
     const result = await this.projectPermissionRepository.getProjectPermissions(validatedParams);
-    return validateOutput(projectPermissionSchema.array(), result, 'getProjectPermissions method');
+    return validateOutput(
+      createDynamicSingleSchema(projectPermissionSchema).array(),
+      result,
+      'getProjectPermissions method'
+    );
   }
 
   public async addProjectPermission(
@@ -117,7 +121,7 @@ export class ProjectPermissionService extends AuditService implements IProjectPe
     await this.logCreate(projectPermission.id, newValues, metadata);
 
     return validateOutput(
-      projectPermissionSchema,
+      createDynamicSingleSchema(projectPermissionSchema),
       projectPermission,
       'addProjectPermission method'
     );
@@ -173,7 +177,7 @@ export class ProjectPermissionService extends AuditService implements IProjectPe
     }
 
     return validateOutput(
-      projectPermissionSchema,
+      createDynamicSingleSchema(projectPermissionSchema),
       projectPermission,
       'deleteProjectPermission method'
     );

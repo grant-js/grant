@@ -12,7 +12,7 @@ import {
 import { projectGroupAuditLogs } from '@/graphql/repositories/project-groups/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput } from '../common';
+import { AuditService, validateInput, validateOutput, createDynamicSingleSchema } from '../common';
 
 import { IProjectGroupService } from './interface';
 import {
@@ -74,7 +74,11 @@ export class ProjectGroupService extends AuditService implements IProjectGroupSe
     await this.projectExists(validatedParams.projectId);
 
     const result = await this.projectGroupRepository.getProjectGroups(validatedParams);
-    return validateOutput(projectGroupSchema.array(), result, 'getProjectGroups method');
+    return validateOutput(
+      createDynamicSingleSchema(projectGroupSchema).array(),
+      result,
+      'getProjectGroups method'
+    );
   }
 
   public async addProjectGroup(params: MutationAddProjectGroupArgs): Promise<ProjectGroup> {
@@ -109,7 +113,11 @@ export class ProjectGroupService extends AuditService implements IProjectGroupSe
 
     await this.logCreate(projectGroup.id, newValues, metadata);
 
-    return validateOutput(projectGroupSchema, projectGroup, 'addProjectGroup method');
+    return validateOutput(
+      createDynamicSingleSchema(projectGroupSchema),
+      projectGroup,
+      'addProjectGroup method'
+    );
   }
 
   public async removeProjectGroup(
@@ -161,6 +169,10 @@ export class ProjectGroupService extends AuditService implements IProjectGroupSe
       await this.logSoftDelete(projectGroup.id, oldValues, newValues, metadata);
     }
 
-    return validateOutput(projectGroupSchema, projectGroup, 'deleteProjectGroup method');
+    return validateOutput(
+      createDynamicSingleSchema(projectGroupSchema),
+      projectGroup,
+      'deleteProjectGroup method'
+    );
   }
 }

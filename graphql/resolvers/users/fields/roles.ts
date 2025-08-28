@@ -1,7 +1,15 @@
 import { UserResolvers } from '@/graphql/generated/types';
+import { getDirectFieldSelection } from '@/graphql/lib/fieldSelection';
 import { getScopedRoleIds } from '@/graphql/lib/scopeFiltering';
 
-export const userRolesResolver: UserResolvers['roles'] = async (parent, { scope }, context) => {
+export const userRolesResolver: UserResolvers['roles'] = async (
+  parent,
+  { scope },
+  context,
+  info
+) => {
+  const requestedFields = info ? getDirectFieldSelection(info) : undefined;
+
   const userRoles = await context.services.userRoles.getUserRoles({
     userId: parent.id,
   });
@@ -23,6 +31,7 @@ export const userRolesResolver: UserResolvers['roles'] = async (parent, { scope 
   const rolesResult = await context.services.roles.getRoles({
     ids: filteredRoleIds,
     limit: -1,
+    requestedFields,
   });
 
   return rolesResult.roles;

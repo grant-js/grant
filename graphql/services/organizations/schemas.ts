@@ -8,12 +8,13 @@ import {
   paginatedResponseSchema,
   sortableParamsSchema,
   nonEmptyNameSchema,
+  sortOrderSchema,
 } from '../common/schemas';
 
 export const organizationSortableFieldSchema = z.enum(['name', 'slug', 'createdAt', 'updatedAt']);
 export const organizationSortInputSchema = z.object({
   field: organizationSortableFieldSchema,
-  order: z.enum(['ASC', 'DESC']),
+  order: sortOrderSchema,
 });
 
 export const getOrganizationsParamsSchema = sortableParamsSchema.extend({

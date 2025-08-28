@@ -14,6 +14,11 @@ export interface PaginationProps {
 export function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
   const t = useTranslations('common');
 
+  // Don't render pagination if there are no pages
+  if (totalPages <= 0) {
+    return null;
+  }
+
   const handlePreviousPage = () => {
     onPageChange(page - 1);
   };

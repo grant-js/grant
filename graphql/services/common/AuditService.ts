@@ -1,5 +1,6 @@
 import { db } from '@/graphql/lib/providers/database/connection';
 import { AuthenticatedUser } from '@/graphql/types';
+import { SYSTEM_USER_ID } from '@/lib/constants';
 
 export interface AuditLogParams {
   entityId: string;
@@ -17,7 +18,7 @@ export abstract class AuditService {
   ) {}
 
   protected getPerformedBy(): string {
-    return this.user?.id || 'system';
+    return this.user !== null ? this.user.id : SYSTEM_USER_ID;
   }
 
   protected async logAction(params: AuditLogParams): Promise<void> {

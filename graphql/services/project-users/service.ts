@@ -12,7 +12,7 @@ import {
 import { projectUserAuditLogs } from '@/graphql/repositories/project-users/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput } from '../common';
+import { AuditService, validateInput, validateOutput, createDynamicSingleSchema } from '../common';
 
 import { IProjectUserService } from './interface';
 import {
@@ -74,7 +74,11 @@ export class ProjectUserService extends AuditService implements IProjectUserServ
     await this.projectExists(validatedParams.projectId);
 
     const result = await this.projectUserRepository.getProjectUsers(validatedParams);
-    return result.map((item) => validateOutput(projectUserSchema, item, 'getProjectUsers method'));
+    return validateOutput(
+      createDynamicSingleSchema(projectUserSchema).array(),
+      result,
+      'getProjectUsers method'
+    );
   }
 
   public async addProjectUser(params: MutationAddProjectUserArgs): Promise<ProjectUser> {
@@ -109,7 +113,11 @@ export class ProjectUserService extends AuditService implements IProjectUserServ
 
     await this.logCreate(projectUser.id, newValues, metadata);
 
-    return validateOutput(projectUserSchema, projectUser, 'addProjectUser method');
+    return validateOutput(
+      createDynamicSingleSchema(projectUserSchema),
+      projectUser,
+      'addProjectUser method'
+    );
   }
 
   public async removeProjectUser(
@@ -161,6 +169,10 @@ export class ProjectUserService extends AuditService implements IProjectUserServ
       await this.logSoftDelete(projectUser.id, oldValues, newValues, metadata);
     }
 
-    return validateOutput(projectUserSchema, projectUser, 'deleteProjectUser method');
+    return validateOutput(
+      createDynamicSingleSchema(projectUserSchema),
+      projectUser,
+      'deleteProjectUser method'
+    );
   }
 }

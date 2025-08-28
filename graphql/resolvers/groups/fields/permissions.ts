@@ -1,11 +1,15 @@
 import { GroupResolvers } from '@/graphql/generated/types';
+import { getDirectFieldSelection } from '@/graphql/lib/fieldSelection';
 import { getScopedPermissionIds } from '@/graphql/lib/scopeFiltering';
 
 export const groupPermissionsResolver: GroupResolvers['permissions'] = async (
   parent,
   { scope },
-  context
+  context,
+  info
 ) => {
+  const requestedFields = info ? getDirectFieldSelection(info) : undefined;
+
   const groupPermissions = await context.services.groupPermissions.getGroupPermissions({
     groupId: parent.id,
   });
@@ -26,6 +30,7 @@ export const groupPermissionsResolver: GroupResolvers['permissions'] = async (
   const permissionsResult = await context.services.permissions.getPermissions({
     ids: accessiblePermissionIds,
     limit: -1,
+    requestedFields,
   });
 
   return permissionsResult.permissions;

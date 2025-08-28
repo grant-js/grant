@@ -10,7 +10,13 @@ import { IPermissionRepository } from '@/graphql/repositories/permissions/interf
 import { permissionAuditLogs } from '@/graphql/repositories/permissions/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput, paginatedResponseSchema } from '../common';
+import {
+  AuditService,
+  validateInput,
+  validateOutput,
+  createDynamicPaginatedSchema,
+  createDynamicSingleSchema,
+} from '../common';
 
 import { IPermissionService } from './interface';
 import {
@@ -60,7 +66,7 @@ export class PermissionService extends AuditService implements IPermissionServic
     };
 
     const validatedResult = validateOutput(
-      paginatedResponseSchema(permissionSchema),
+      createDynamicPaginatedSchema(permissionSchema, params.requestedFields),
       transformedResult,
       'getPermissions method'
     ) as any;
@@ -95,7 +101,11 @@ export class PermissionService extends AuditService implements IPermissionServic
 
     await this.logCreate(permission.id, newValues, metadata);
 
-    return validateOutput(permissionSchema, permission, 'createPermission method');
+    return validateOutput(
+      createDynamicSingleSchema(permissionSchema),
+      permission,
+      'createPermission method'
+    );
   }
 
   public async updatePermission(params: MutationUpdatePermissionArgs): Promise<Permission> {
@@ -132,7 +142,11 @@ export class PermissionService extends AuditService implements IPermissionServic
 
     await this.logUpdate(updatedPermission.id, oldValues, newValues, metadata);
 
-    return validateOutput(permissionSchema, updatedPermission, 'updatePermission method');
+    return validateOutput(
+      createDynamicSingleSchema(permissionSchema),
+      updatedPermission,
+      'updatePermission method'
+    );
   }
 
   public async deletePermission(
@@ -177,6 +191,10 @@ export class PermissionService extends AuditService implements IPermissionServic
       await this.logSoftDelete(deletedPermission.id, oldValues, newValues, metadata);
     }
 
-    return validateOutput(permissionSchema, deletedPermission, 'deletePermission method');
+    return validateOutput(
+      createDynamicSingleSchema(permissionSchema),
+      deletedPermission,
+      'deletePermission method'
+    );
   }
 }

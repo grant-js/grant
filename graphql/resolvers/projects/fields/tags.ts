@@ -1,8 +1,15 @@
 import { ProjectResolvers, Tenant } from '@/graphql/generated/types';
+import { getDirectFieldSelection } from '@/graphql/lib/fieldSelection';
 import { getScopedTagIds } from '@/graphql/lib/scopeFiltering';
 
-export const projectTagsResolver: ProjectResolvers['tags'] = async (parent, _args, context) => {
+export const projectTagsResolver: ProjectResolvers['tags'] = async (
+  parent,
+  _args,
+  context,
+  info
+) => {
   const projectId = parent.id;
+  const requestedFields = info ? getDirectFieldSelection(info) : undefined;
 
   const projectTags = await context.services.projectTags.getProjectTags({ projectId });
 
@@ -24,6 +31,7 @@ export const projectTagsResolver: ProjectResolvers['tags'] = async (parent, _arg
   const tagsResult = await context.services.tags.getTags({
     ids: filteredTagIds,
     limit: -1,
+    requestedFields,
   });
 
   return tagsResult.tags;

@@ -887,7 +887,9 @@
       "tagAddedSuccess": "Tag zum Projekt hinzugefügt",
       "tagAddedError": "Tag konnte nicht zum Projekt hinzugefügt werden",
       "tagRemovedSuccess": "Tag vom Projekt entfernt",
-      "tagRemovedError": "Tag konnte nicht vom Projekt entfernt werden"
+      "tagRemovedError": "Tag konnte nicht vom Projekt entfernt werden",
+      "roleAddedSuccess": "Rolle zum Projekt hinzugefügt",
+      "roleAddedError": "Rolle konnte nicht zum Projekt hinzugefügt werden"
     },
     "view": {
       "card": "Kartenansicht",

@@ -1,7 +1,15 @@
 import { GroupResolvers } from '@/graphql/generated/types';
+import { getDirectFieldSelection } from '@/graphql/lib/fieldSelection';
 import { getScopedTagIds } from '@/graphql/lib/scopeFiltering';
 
-export const groupTagsResolver: GroupResolvers['tags'] = async (parent, { scope }, context) => {
+export const groupTagsResolver: GroupResolvers['tags'] = async (
+  parent,
+  { scope },
+  context,
+  info
+) => {
+  const requestedFields = info ? getDirectFieldSelection(info) : undefined;
+
   const groupTags = await context.services.groupTags.getGroupTags({
     groupId: parent.id,
   });
@@ -22,6 +30,7 @@ export const groupTagsResolver: GroupResolvers['tags'] = async (parent, { scope 
   const tagsResult = await context.services.tags.getTags({
     ids: accessibleTagIds,
     limit: -1,
+    requestedFields,
   });
 
   return tagsResult.tags;

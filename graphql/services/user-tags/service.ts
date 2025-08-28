@@ -9,7 +9,7 @@ import { IUserTagRepository } from '@/graphql/repositories/user-tags/interface';
 import { userTagsAuditLogs } from '@/graphql/repositories/user-tags/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput } from '../common';
+import { AuditService, validateInput, validateOutput, createDynamicSingleSchema } from '../common';
 
 import { IUserTagService } from './interface';
 import {
@@ -66,7 +66,11 @@ export class UserTagService extends AuditService implements IUserTagService {
     await this.userExists(validatedParams.userId);
 
     const result = await this.userTagRepository.getUserTags({ userId: validatedParams.userId });
-    return result.map((userTag) => validateOutput(userTagSchema, userTag, 'getUserTags method'));
+    return validateOutput(
+      createDynamicSingleSchema(userTagSchema).array(),
+      result,
+      'getUserTags method'
+    );
   }
 
   public async addUserTag(params: MutationAddUserTagArgs): Promise<UserTag> {
@@ -94,7 +98,7 @@ export class UserTagService extends AuditService implements IUserTagService {
 
     await this.logCreate(userTag.id, newValues, metadata);
 
-    return validateOutput(userTagSchema, userTag, 'addUserTag method');
+    return validateOutput(createDynamicSingleSchema(userTagSchema), userTag, 'addUserTag method');
   }
 
   public async removeUserTag(
@@ -143,6 +147,10 @@ export class UserTagService extends AuditService implements IUserTagService {
       await this.logSoftDelete(userTag.id, oldValues, newValues, metadata);
     }
 
-    return validateOutput(userTagSchema, userTag, 'deleteUserTag method');
+    return validateOutput(
+      createDynamicSingleSchema(userTagSchema),
+      userTag,
+      'deleteUserTag method'
+    );
   }
 }

@@ -10,7 +10,13 @@ import { ITagRepository } from '@/graphql/repositories/tags/interface';
 import { tagAuditLogs } from '@/graphql/repositories/tags/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput, paginatedResponseSchema } from '../common';
+import {
+  AuditService,
+  validateInput,
+  validateOutput,
+  createDynamicPaginatedSchema,
+  createDynamicSingleSchema,
+} from '../common';
 
 import { ITagService } from './interface';
 import {
@@ -46,8 +52,10 @@ export class TagService extends AuditService implements ITagService {
     params: Omit<QueryTagsArgs, 'scope'> & { requestedFields?: string[] }
   ): Promise<TagPage> {
     const validatedParams = validateInput(getTagsParamsSchema, params, 'getTags method');
-    const result = await this.tagRepository.getTags(validatedParams as any);
-
+    const result = await this.tagRepository.getTags({
+      ...validatedParams,
+      requestedFields: params.requestedFields,
+    } as any);
     const transformedResult = {
       items: result.tags,
       totalCount: result.totalCount,
@@ -55,7 +63,7 @@ export class TagService extends AuditService implements ITagService {
     };
 
     const validatedResult = validateOutput(
-      paginatedResponseSchema(tagSchema),
+      createDynamicPaginatedSchema(tagSchema, params.requestedFields),
       transformedResult,
       'getTags method'
     ) as any;
@@ -85,7 +93,7 @@ export class TagService extends AuditService implements ITagService {
 
     await this.logCreate(tag.id, newValues, metadata);
 
-    return validateOutput(tagSchema, tag, 'createTag method');
+    return validateOutput(createDynamicSingleSchema(tagSchema), tag, 'createTag method');
   }
 
   public async updateTag(params: MutationUpdateTagArgs): Promise<Tag> {
@@ -116,7 +124,7 @@ export class TagService extends AuditService implements ITagService {
 
     await this.logUpdate(updatedTag.id, oldValues, newValues, metadata);
 
-    return validateOutput(tagSchema, updatedTag, 'updateTag method');
+    return validateOutput(createDynamicSingleSchema(tagSchema), updatedTag, 'updateTag method');
   }
 
   public async deleteTag(params: MutationDeleteTagArgs & { hardDelete?: boolean }): Promise<Tag> {
@@ -154,6 +162,6 @@ export class TagService extends AuditService implements ITagService {
       await this.logSoftDelete(deletedTag.id, oldValues, newValues, metadata);
     }
 
-    return validateOutput(tagSchema, deletedTag, 'deleteTag method');
+    return validateOutput(createDynamicSingleSchema(tagSchema), deletedTag, 'deleteTag method');
   }
 }

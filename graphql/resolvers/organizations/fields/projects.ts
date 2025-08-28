@@ -1,11 +1,14 @@
 import { OrganizationResolvers } from '@/graphql/generated/types';
+import { getDirectFieldSelection } from '@/graphql/lib/fieldSelection';
 
 export const organizationProjectsResolver: OrganizationResolvers['projects'] = async (
   parent,
   _args,
-  context
+  context,
+  info
 ) => {
   const organizationId = parent.id;
+  const requestedFields = info ? getDirectFieldSelection(info) : undefined;
 
   const organizationProjects = await context.services.organizationProjects.getOrganizationProjects({
     organizationId,
@@ -21,6 +24,7 @@ export const organizationProjectsResolver: OrganizationResolvers['projects'] = a
     ids: projectIds,
     organizationId,
     limit: -1,
+    requestedFields,
   });
 
   return projectsResult.projects;

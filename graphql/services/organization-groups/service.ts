@@ -12,7 +12,7 @@ import {
 import { organizationGroupsAuditLogs } from '@/graphql/repositories/organization-groups/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput } from '../common';
+import { AuditService, validateInput, validateOutput, createDynamicSingleSchema } from '../common';
 
 import { IOrganizationGroupService } from './interface';
 import {
@@ -81,8 +81,10 @@ export class OrganizationGroupService extends AuditService implements IOrganizat
     await this.organizationExists(validatedParams.organizationId);
 
     const result = await this.organizationGroupRepository.getOrganizationGroups(validatedParams);
-    return result.map((item) =>
-      validateOutput(organizationGroupSchema, item, 'getOrganizationGroups method')
+    return validateOutput(
+      createDynamicSingleSchema(organizationGroupSchema).array(),
+      result,
+      'getOrganizationGroups method'
     );
   }
 
@@ -123,7 +125,11 @@ export class OrganizationGroupService extends AuditService implements IOrganizat
 
     await this.logCreate(result.id, newValues, metadata);
 
-    return validateOutput(organizationGroupSchema, result, 'addOrganizationGroup method');
+    return validateOutput(
+      createDynamicSingleSchema(organizationGroupSchema),
+      result,
+      'addOrganizationGroup method'
+    );
   }
 
   public async removeOrganizationGroup(
@@ -185,6 +191,10 @@ export class OrganizationGroupService extends AuditService implements IOrganizat
       await this.logSoftDelete(result.id, oldValues, newValues, metadata);
     }
 
-    return validateOutput(organizationGroupSchema, result, 'removeOrganizationGroup method');
+    return validateOutput(
+      createDynamicSingleSchema(organizationGroupSchema),
+      result,
+      'removeOrganizationGroup method'
+    );
   }
 }

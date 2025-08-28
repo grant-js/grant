@@ -1,8 +1,13 @@
 import { inArray, isNull, or, like, desc, asc, sql, and, eq } from 'drizzle-orm';
 
-export const buildWhereClause = (
+import { SortOrder } from '@/graphql/generated/types';
+
+import { BaseEntityModel } from './EntityRepository';
+import { BasePivotModel } from './PivotRepository';
+
+export const buildWhereClause = <TModel extends BaseEntityModel>(
   table: any,
-  searchFields: string[],
+  searchFields: Array<keyof TModel>,
   ids?: string[],
   search?: string
 ): any => {
@@ -24,13 +29,13 @@ export const buildWhereClause = (
   return conditions.length === 1 ? conditions[0] : sql`${sql.join(conditions, sql` AND `)}`;
 };
 
-export const buildOrderBy = (
+export const buildOrderBy = <TModel extends BaseEntityModel>(
   table: any,
-  sort?: { field: string; order: 'ASC' | 'DESC' },
-  defaultField = 'createdAt'
+  sort?: { field: keyof TModel; order: SortOrder },
+  defaultField: keyof TModel = 'createdAt'
 ): any[] => {
   if (sort) {
-    return [sort.order === 'ASC' ? asc(table[sort.field]) : desc(table[sort.field])];
+    return [sort.order === SortOrder.Asc ? asc(table[sort.field]) : desc(table[sort.field])];
   }
   return [desc(table[defaultField])];
 };
@@ -50,12 +55,12 @@ export const toEntity = <T>(dbModel: any, requestedFields?: string[]): T => {
   return output;
 };
 
-export const buildSelectObject = (
+export const buildSelectObject = <TModel extends BaseEntityModel>(
   table: any,
-  requestedFields: string[] | undefined,
-  searchFields: string[],
+  requestedFields: Array<keyof TModel> | undefined,
+  searchFields: Array<keyof TModel>,
   search?: string,
-  sort?: { field: string; order: 'ASC' | 'DESC' }
+  sort?: { field: keyof TModel; order: SortOrder }
 ): any => {
   const selectObj: any = { id: table.id };
 
@@ -84,10 +89,10 @@ export const buildSelectObject = (
   return selectObj;
 };
 
-export const buildPivotWhereClause = (
+export const buildPivotWhereClause = <TModel extends BasePivotModel>(
   table: any,
-  parentIdField: string,
-  relatedIdField: string,
+  parentIdField: keyof TModel,
+  relatedIdField: keyof TModel,
   parentId: string,
   relatedId?: string
 ): any => {
@@ -111,9 +116,9 @@ export const buildPivotWhereClause = (
   return conditions.length === 1 ? conditions[0] : and(...conditions);
 };
 
-export const buildPivotInsertValues = (
-  parentIdField: string,
-  relatedIdField: string,
+export const buildPivotInsertValues = <TModel extends BasePivotModel>(
+  parentIdField: keyof TModel,
+  relatedIdField: keyof TModel,
   parentId: string,
   relatedId: string
 ): Record<string, unknown> => ({

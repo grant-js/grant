@@ -895,7 +895,9 @@
       "tagAddedSuccess": "Tag added to project",
       "tagAddedError": "Failed to add tag to project",
       "tagRemovedSuccess": "Tag removed from project",
-      "tagRemovedError": "Failed to remove tag from project"
+      "tagRemovedError": "Failed to remove tag from project",
+      "roleAddedSuccess": "Role added to project",
+      "roleAddedError": "Failed to add role to project"
     },
     "view": {
       "card": "Card View",

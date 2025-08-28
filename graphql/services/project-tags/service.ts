@@ -8,7 +8,7 @@ import { IProjectTagRepository, IProjectRepository, ITagRepository } from '@/gra
 import { projectTagAuditLogs } from '@/graphql/repositories/project-tags/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput } from '../common';
+import { AuditService, validateInput, validateOutput, createDynamicSingleSchema } from '../common';
 
 import { IProjectTagService } from './interface';
 import {
@@ -70,7 +70,11 @@ export class ProjectTagService extends AuditService implements IProjectTagServic
     await this.projectExists(validatedParams.projectId);
 
     const result = await this.projectTagRepository.getProjectTags(validatedParams);
-    return validateOutput(projectTagSchema.array(), result, 'getProjectTags method');
+    return validateOutput(
+      createDynamicSingleSchema(projectTagSchema).array(),
+      result,
+      'getProjectTags method'
+    );
   }
 
   public async addProjectTag(params: MutationAddProjectTagArgs): Promise<ProjectTag> {
@@ -105,7 +109,11 @@ export class ProjectTagService extends AuditService implements IProjectTagServic
 
     await this.logCreate(projectTag.id, newValues, metadata);
 
-    return validateOutput(projectTagSchema, projectTag, 'addProjectTag method');
+    return validateOutput(
+      createDynamicSingleSchema(projectTagSchema),
+      projectTag,
+      'addProjectTag method'
+    );
   }
 
   public async removeProjectTag(
@@ -157,6 +165,10 @@ export class ProjectTagService extends AuditService implements IProjectTagServic
       await this.logSoftDelete(projectTag.id, oldValues, newValues, metadata);
     }
 
-    return validateOutput(projectTagSchema, projectTag, 'removeProjectTag method');
+    return validateOutput(
+      createDynamicSingleSchema(projectTagSchema),
+      projectTag,
+      'removeProjectTag method'
+    );
   }
 }

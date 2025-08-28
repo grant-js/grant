@@ -45,10 +45,10 @@ export abstract class PivotRepository<
 
   protected async query(params: BasePivotQueryArgs): Promise<TPivotEntity[]> {
     try {
-      const whereClause = buildPivotWhereClause(
+      const whereClause = buildPivotWhereClause<TPivotModel>(
         this.table,
-        this.parentIdField as string,
-        this.relatedIdField as string,
+        this.parentIdField,
+        this.relatedIdField,
         params.parentId
       );
 
@@ -88,10 +88,10 @@ export abstract class PivotRepository<
         return this.toEntity(reactivatedItem as TPivotModel);
       }
 
-      const whereClause = buildPivotWhereClause(
+      const whereClause = buildPivotWhereClause<TPivotModel>(
         this.table,
-        this.parentIdField as string,
-        this.relatedIdField as string,
+        this.parentIdField,
+        this.relatedIdField,
         params.parentId,
         params.relatedId
       );
@@ -102,9 +102,9 @@ export abstract class PivotRepository<
         return this.toEntity(existingPivot[0]);
       }
 
-      const insertValues = buildPivotInsertValues(
-        this.parentIdField as string,
-        this.relatedIdField as string,
+      const insertValues = buildPivotInsertValues<TPivotModel>(
+        this.parentIdField,
+        this.relatedIdField,
         params.parentId,
         params.relatedId
       );

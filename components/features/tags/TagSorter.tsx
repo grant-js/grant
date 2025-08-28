@@ -24,8 +24,7 @@ export function TagSorter() {
   };
 
   const handleSortChange = (field: TagSortField, order: SortOrder) => {
-    const gqlOrder = order === 'ASC' ? SortOrder.Asc : SortOrder.Desc;
-    setSort(field, gqlOrder);
+    setSort(field, order);
   };
 
   const fields = [

@@ -12,7 +12,7 @@ import {
 import { organizationUsersAuditLogs } from '@/graphql/repositories/organization-users/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput } from '../common';
+import { AuditService, validateInput, validateOutput, createDynamicSingleSchema } from '../common';
 
 import { IOrganizationUserService } from './interface';
 import {
@@ -76,8 +76,10 @@ export class OrganizationUserService extends AuditService implements IOrganizati
     await this.organizationExists(validatedParams.organizationId);
 
     const result = await this.organizationUserRepository.getOrganizationUsers(validatedParams);
-    return result.map((item) =>
-      validateOutput(organizationUserSchema, item, 'getOrganizationUsers method')
+    return validateOutput(
+      createDynamicSingleSchema(organizationUserSchema).array(),
+      result,
+      'getOrganizationUsers method'
     );
   }
 
@@ -116,7 +118,11 @@ export class OrganizationUserService extends AuditService implements IOrganizati
 
     await this.logCreate(organizationUser.id, newValues, metadata);
 
-    return validateOutput(organizationUserSchema, organizationUser, 'addOrganizationUser method');
+    return validateOutput(
+      createDynamicSingleSchema(organizationUserSchema),
+      organizationUser,
+      'addOrganizationUser method'
+    );
   }
 
   public async removeOrganizationUser(
@@ -169,7 +175,7 @@ export class OrganizationUserService extends AuditService implements IOrganizati
     }
 
     return validateOutput(
-      organizationUserSchema,
+      createDynamicSingleSchema(organizationUserSchema),
       organizationUser,
       'removeOrganizationUser method'
     );

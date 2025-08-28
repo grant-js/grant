@@ -1,12 +1,15 @@
 import { OrganizationResolvers, Tenant } from '@/graphql/generated/types';
+import { getDirectFieldSelection } from '@/graphql/lib/fieldSelection';
 import { getScopedPermissionIds } from '@/graphql/lib/scopeFiltering';
 
 export const organizationPermissionsResolver: OrganizationResolvers['permissions'] = async (
   parent,
   _args,
-  context
+  context,
+  info
 ) => {
   const organizationId = parent.id;
+  const requestedFields = info ? getDirectFieldSelection(info) : undefined;
 
   const organizationPermissions =
     await context.services.organizationPermissions.getOrganizationPermissions({
@@ -33,6 +36,7 @@ export const organizationPermissionsResolver: OrganizationResolvers['permissions
   const permissionsResult = await context.services.permissions.getPermissions({
     ids: filteredPermissionIds,
     limit: -1,
+    requestedFields,
   });
 
   return permissionsResult.permissions;
