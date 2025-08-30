@@ -1,15 +1,13 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   QueryGroupPermissionsArgs,
   MutationAddGroupPermissionArgs,
   MutationRemoveGroupPermissionArgs,
   GroupPermission,
 } from '@/graphql/generated/types';
-import {
-  IGroupPermissionRepository,
-  IGroupRepository,
-  IPermissionRepository,
-} from '@/graphql/repositories';
-import { groupPermissionsAuditLogs } from '@/graphql/repositories/group-permissions/schema';
+import { Repositories } from '@/graphql/repositories';
+import { groupPermissionsAuditLogs } from '@/graphql/repositories/group-permissions';
 import { AuthenticatedUser } from '@/graphql/types';
 
 import { AuditService, validateInput, validateOutput, createDynamicSingleSchema } from '../common';
@@ -24,16 +22,15 @@ import {
 
 export class GroupPermissionService extends AuditService implements IGroupPermissionService {
   constructor(
-    private readonly groupPermissionRepository: IGroupPermissionRepository,
-    private readonly groupRepository: IGroupRepository,
-    private readonly permissionRepository: IPermissionRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(groupPermissionsAuditLogs, 'groupPermissionId', user);
   }
 
   private async groupExists(groupId: string): Promise<void> {
-    const groups = await this.groupRepository.getGroups({
+    const groups = await this.repositories.groupRepository.getGroups({
       ids: [groupId],
       limit: 1,
     });
@@ -44,7 +41,7 @@ export class GroupPermissionService extends AuditService implements IGroupPermis
   }
 
   private async permissionExists(permissionId: string): Promise<void> {
-    const permissions = await this.permissionRepository.getPermissions({
+    const permissions = await this.repositories.permissionRepository.getPermissions({
       ids: [permissionId],
       limit: 1,
     });
@@ -57,9 +54,10 @@ export class GroupPermissionService extends AuditService implements IGroupPermis
   private async groupHasPermission(groupId: string, permissionId: string): Promise<boolean> {
     await this.groupExists(groupId);
     await this.permissionExists(permissionId);
-    const existingGroupPermissions = await this.groupPermissionRepository.getGroupPermissions({
-      groupId,
-    });
+    const existingGroupPermissions =
+      await this.repositories.groupPermissionRepository.getGroupPermissions({
+        groupId,
+      });
 
     return existingGroupPermissions.some((gp) => gp.permissionId === permissionId);
   }
@@ -78,7 +76,8 @@ export class GroupPermissionService extends AuditService implements IGroupPermis
     }
     await this.groupExists(validatedParams.groupId);
 
-    const result = await this.groupPermissionRepository.getGroupPermissions(validatedParams);
+    const result =
+      await this.repositories.groupPermissionRepository.getGroupPermissions(validatedParams);
     return validateOutput(
       createDynamicSingleSchema(groupPermissionSchema).array(),
       result,
@@ -104,7 +103,7 @@ export class GroupPermissionService extends AuditService implements IGroupPermis
     }
 
     const groupPermission =
-      await this.groupPermissionRepository.addGroupPermission(validatedParams);
+      await this.repositories.groupPermissionRepository.addGroupPermission(validatedParams);
 
     const newValues = {
       id: groupPermission.id,
@@ -147,8 +146,10 @@ export class GroupPermissionService extends AuditService implements IGroupPermis
     const isHardDelete = params.hardDelete === true;
 
     const groupPermission = isHardDelete
-      ? await this.groupPermissionRepository.hardDeleteGroupPermission(validatedParams)
-      : await this.groupPermissionRepository.softDeleteGroupPermission(validatedParams);
+      ? await this.repositories.groupPermissionRepository.hardDeleteGroupPermission(validatedParams)
+      : await this.repositories.groupPermissionRepository.softDeleteGroupPermission(
+          validatedParams
+        );
 
     const oldValues = {
       id: groupPermission.id,

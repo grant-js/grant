@@ -6,6 +6,7 @@ import {
   Project,
   ProjectPage,
 } from '@/graphql/generated/types';
+import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import {
   EntityRepository,
   BaseQueryArgs,
@@ -68,17 +69,23 @@ export class ProjectRepository extends EntityRepository<ProjectModel, Project> {
     }
   }
 
-  public async createProject(params: MutationCreateProjectArgs): Promise<Project> {
+  public async createProject(
+    params: MutationCreateProjectArgs,
+    transaction?: Transaction
+  ): Promise<Project> {
     const baseParams: BaseCreateArgs = {
       name: params.input.name,
       slug: this.generateSlug(params.input.name),
       description: params.input.description,
     };
 
-    return this.create(baseParams);
+    return this.create(baseParams, transaction);
   }
 
-  public async updateProject(params: MutationUpdateProjectArgs): Promise<Project> {
+  public async updateProject(
+    params: MutationUpdateProjectArgs,
+    transaction?: Transaction
+  ): Promise<Project> {
     const baseParams: BaseUpdateArgs = {
       id: params.id,
       input: {
@@ -88,22 +95,28 @@ export class ProjectRepository extends EntityRepository<ProjectModel, Project> {
       },
     };
 
-    return this.update(baseParams);
+    return this.update(baseParams, transaction);
   }
 
-  public async softDeleteProject(params: MutationDeleteProjectArgs): Promise<Project> {
+  public async softDeleteProject(
+    params: MutationDeleteProjectArgs,
+    transaction?: Transaction
+  ): Promise<Project> {
     const baseParams: BaseDeleteArgs = {
       id: params.id,
     };
 
-    return this.softDelete(baseParams);
+    return this.softDelete(baseParams, transaction);
   }
 
-  public async hardDeleteProject(params: MutationDeleteProjectArgs): Promise<Project> {
+  public async hardDeleteProject(
+    params: MutationDeleteProjectArgs,
+    transaction?: Transaction
+  ): Promise<Project> {
     const baseParams: BaseDeleteArgs = {
       id: params.id,
     };
 
-    return this.hardDelete(baseParams);
+    return this.hardDelete(baseParams, transaction);
   }
 }

@@ -32,6 +32,8 @@ export const createProjectParamsSchema = z.object({
   input: z.object({
     name: nonEmptyNameSchema,
     description: descriptionSchema,
+    organizationId: idSchema,
+    tagIds: z.array(idSchema).optional(),
   }),
 });
 

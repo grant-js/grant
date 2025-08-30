@@ -1,12 +1,14 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
+  Tag,
+  TagPage,
   QueryTagsArgs,
   MutationCreateTagArgs,
   MutationUpdateTagArgs,
   MutationDeleteTagArgs,
-  Tag,
-  TagPage,
 } from '@/graphql/generated/types';
-import { ITagRepository } from '@/graphql/repositories/tags/interface';
+import { Repositories } from '@/graphql/repositories';
 import { tagAuditLogs } from '@/graphql/repositories/tags/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -29,14 +31,15 @@ import {
 
 export class TagService extends AuditService implements ITagService {
   constructor(
-    private readonly tagRepository: ITagRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(tagAuditLogs, 'tagId', user);
   }
 
   private async getTag(tagId: string): Promise<Tag> {
-    const existingTags = await this.tagRepository.getTags({
+    const existingTags = await this.repositories.tagRepository.getTags({
       ids: [tagId],
       limit: 1,
     });
@@ -52,10 +55,9 @@ export class TagService extends AuditService implements ITagService {
     params: Omit<QueryTagsArgs, 'scope'> & { requestedFields?: string[] }
   ): Promise<TagPage> {
     const validatedParams = validateInput(getTagsParamsSchema, params, 'getTags method');
-    const result = await this.tagRepository.getTags({
-      ...validatedParams,
-      requestedFields: params.requestedFields,
-    } as any);
+    const result = await this.repositories.tagRepository.getTags(validatedParams as any);
+
+    // Transform repository result to standard format for validation
     const transformedResult = {
       items: result.tags,
       totalCount: result.totalCount,
@@ -77,7 +79,7 @@ export class TagService extends AuditService implements ITagService {
 
   public async createTag(params: MutationCreateTagArgs): Promise<Tag> {
     const validatedParams = validateInput(createTagParamsSchema, params, 'createTag method');
-    const tag = await this.tagRepository.createTag(validatedParams);
+    const tag = await this.repositories.tagRepository.createTag(validatedParams);
 
     const newValues = {
       id: tag.id,
@@ -100,7 +102,7 @@ export class TagService extends AuditService implements ITagService {
     const validatedParams = validateInput(updateTagParamsSchema, params, 'updateTag method');
 
     const oldTag = await this.getTag(validatedParams.id);
-    const updatedTag = await this.tagRepository.updateTag(validatedParams);
+    const updatedTag = await this.repositories.tagRepository.updateTag(validatedParams);
 
     const oldValues = {
       id: oldTag.id,
@@ -134,8 +136,8 @@ export class TagService extends AuditService implements ITagService {
     const isHardDelete = params.hardDelete === true;
 
     const deletedTag = isHardDelete
-      ? await this.tagRepository.hardDeleteTag(validatedParams)
-      : await this.tagRepository.softDeleteTag(validatedParams);
+      ? await this.repositories.tagRepository.hardDeleteTag(validatedParams)
+      : await this.repositories.tagRepository.softDeleteTag(validatedParams);
 
     const oldValues = {
       id: oldTag.id,

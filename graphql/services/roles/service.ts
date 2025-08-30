@@ -1,3 +1,5 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   QueryRolesArgs,
   MutationCreateRoleArgs,
@@ -6,7 +8,7 @@ import {
   Role,
   RolePage,
 } from '@/graphql/generated/types';
-import { IRoleRepository } from '@/graphql/repositories/roles/interface';
+import { Repositories } from '@/graphql/repositories';
 import { roleAuditLogs } from '@/graphql/repositories/roles/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -29,14 +31,15 @@ import {
 
 export class RoleService extends AuditService implements IRoleService {
   constructor(
-    private readonly roleRepository: IRoleRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(roleAuditLogs, 'roleId', user);
   }
 
   private async getRole(roleId: string): Promise<Role> {
-    const existingRoles = await this.roleRepository.getRoles({
+    const existingRoles = await this.repositories.roleRepository.getRoles({
       ids: [roleId],
       limit: 1,
     });
@@ -52,7 +55,7 @@ export class RoleService extends AuditService implements IRoleService {
     params: Omit<QueryRolesArgs, 'scope'> & { requestedFields?: string[] }
   ): Promise<RolePage> {
     const validatedParams = validateInput(getRolesParamsSchema, params, 'getRoles method');
-    const result = await this.roleRepository.getRoles(validatedParams as any);
+    const result = await this.repositories.roleRepository.getRoles(validatedParams as any);
 
     // Transform repository result to standard format for validation
     const transformedResult = {
@@ -76,7 +79,7 @@ export class RoleService extends AuditService implements IRoleService {
 
   public async createRole(params: MutationCreateRoleArgs): Promise<Role> {
     const validatedParams = validateInput(createRoleParamsSchema, params, 'createRole method');
-    const role = await this.roleRepository.createRole(validatedParams);
+    const role = await this.repositories.roleRepository.createRole(validatedParams);
 
     const newValues = {
       id: role.id,
@@ -99,7 +102,7 @@ export class RoleService extends AuditService implements IRoleService {
     const validatedParams = validateInput(updateRoleParamsSchema, params, 'updateRole method');
 
     const oldRole = await this.getRole(validatedParams.id);
-    const updatedRole = await this.roleRepository.updateRole(validatedParams);
+    const updatedRole = await this.repositories.roleRepository.updateRole(validatedParams);
 
     const oldValues = {
       id: oldRole.id,
@@ -135,8 +138,8 @@ export class RoleService extends AuditService implements IRoleService {
     const isHardDelete = params.hardDelete === true;
 
     const deletedRole = isHardDelete
-      ? await this.roleRepository.hardDeleteRole(validatedParams)
-      : await this.roleRepository.softDeleteRole(validatedParams);
+      ? await this.repositories.roleRepository.hardDeleteRole(validatedParams)
+      : await this.repositories.roleRepository.softDeleteRole(validatedParams);
 
     const oldValues = {
       id: oldRole.id,

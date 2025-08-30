@@ -1,3 +1,5 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   IRoleService,
   IUserRoleService,
@@ -57,4 +59,5 @@ export interface ModuleServices {
 
 export interface CreateModuleServicesParams {
   user: AuthenticatedUser | null;
+  db: PostgresJsDatabase; // Database connection for connection reuse
 }

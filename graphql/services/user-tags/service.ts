@@ -1,11 +1,12 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   QueryUserTagsArgs,
   MutationAddUserTagArgs,
   MutationRemoveUserTagArgs,
   UserTag,
 } from '@/graphql/generated/types';
-import { ITagRepository, IUserRepository } from '@/graphql/repositories';
-import { IUserTagRepository } from '@/graphql/repositories/user-tags/interface';
+import { Repositories } from '@/graphql/repositories';
 import { userTagsAuditLogs } from '@/graphql/repositories/user-tags/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -21,16 +22,15 @@ import {
 
 export class UserTagService extends AuditService implements IUserTagService {
   constructor(
-    private readonly userTagRepository: IUserTagRepository,
-    private readonly userRepository: IUserRepository,
-    private readonly tagRepository: ITagRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(userTagsAuditLogs, 'userTagId', user);
   }
 
   private async userExists(userId: string): Promise<void> {
-    const users = await this.userRepository.getUsers({
+    const users = await this.repositories.userRepository.getUsers({
       ids: [userId],
       limit: 1,
     });
@@ -41,7 +41,7 @@ export class UserTagService extends AuditService implements IUserTagService {
   }
 
   private async tagExists(tagId: string): Promise<void> {
-    const tags = await this.tagRepository.getTags({
+    const tags = await this.repositories.tagRepository.getTags({
       ids: [tagId],
       limit: 1,
     });
@@ -53,7 +53,7 @@ export class UserTagService extends AuditService implements IUserTagService {
   private async userHasTag(userId: string, tagId: string): Promise<boolean> {
     await this.userExists(userId);
     await this.tagExists(tagId);
-    const existingUserTags = await this.userTagRepository.getUserTags({
+    const existingUserTags = await this.repositories.userTagRepository.getUserTags({
       userId,
     });
 
@@ -65,7 +65,9 @@ export class UserTagService extends AuditService implements IUserTagService {
 
     await this.userExists(validatedParams.userId);
 
-    const result = await this.userTagRepository.getUserTags({ userId: validatedParams.userId });
+    const result = await this.repositories.userTagRepository.getUserTags({
+      userId: validatedParams.userId,
+    });
     return validateOutput(
       createDynamicSingleSchema(userTagSchema).array(),
       result,
@@ -82,7 +84,7 @@ export class UserTagService extends AuditService implements IUserTagService {
       throw new Error('User already has this tag');
     }
 
-    const userTag = await this.userTagRepository.addUserTag(validatedParams);
+    const userTag = await this.repositories.userTagRepository.addUserTag(validatedParams);
 
     const newValues = {
       id: userTag.id,
@@ -119,8 +121,8 @@ export class UserTagService extends AuditService implements IUserTagService {
     const isHardDelete = params.hardDelete === true;
 
     const userTag = isHardDelete
-      ? await this.userTagRepository.hardDeleteUserTag(validatedParams)
-      : await this.userTagRepository.softDeleteUserTag(validatedParams);
+      ? await this.repositories.userTagRepository.hardDeleteUserTag(validatedParams)
+      : await this.repositories.userTagRepository.softDeleteUserTag(validatedParams);
 
     const oldValues = {
       id: userTag.id,

@@ -138,6 +138,8 @@ export type CreatePermissionInput = {
 export type CreateProjectInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
+  organizationId: Scalars['ID']['input'];
+  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
 export type CreateRoleInput = {

@@ -1,8 +1,6 @@
-import {
-  IOrganizationUserRepository,
-  IOrganizationRepository,
-  IUserRepository,
-} from '@/graphql/repositories';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
+import { Repositories } from '@/graphql/repositories';
 import { AuthenticatedUser } from '@/graphql/types';
 
 import { OrganizationUserService } from './service';
@@ -12,15 +10,9 @@ export * from './service';
 export * from './schemas';
 
 export function createOrganizationUserService(
-  organizationUserRepository: IOrganizationUserRepository,
-  organizationRepository: IOrganizationRepository,
-  userRepository: IUserRepository,
-  user: AuthenticatedUser | null
+  repositories: Repositories,
+  user: AuthenticatedUser | null,
+  db: PostgresJsDatabase
 ) {
-  return new OrganizationUserService(
-    organizationUserRepository,
-    organizationRepository,
-    userRepository,
-    user
-  );
+  return new OrganizationUserService(repositories, user, db);
 }

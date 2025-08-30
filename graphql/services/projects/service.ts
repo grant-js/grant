@@ -1,3 +1,5 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   QueryProjectsArgs,
   MutationCreateProjectArgs,
@@ -6,7 +8,8 @@ import {
   Project,
   ProjectPage,
 } from '@/graphql/generated/types';
-import { IProjectRepository } from '@/graphql/repositories/projects/interface';
+import { Transaction, TransactionManager } from '@/graphql/lib/transactions/TransactionManager';
+import { Repositories } from '@/graphql/repositories';
 import { projectAuditLogs } from '@/graphql/repositories/projects/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -29,14 +32,15 @@ import {
 
 export class ProjectService extends AuditService implements IProjectService {
   constructor(
-    private readonly projectRepository: IProjectRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    db: PostgresJsDatabase
   ) {
-    super(projectAuditLogs, 'projectId', user);
+    super(projectAuditLogs, 'projectId', user, db);
   }
 
-  private async getProject(projectId: string): Promise<Project> {
-    const project = await this.projectRepository.getProjects({
+  private async getProject(projectId: string, transaction?: Transaction): Promise<Project> {
+    const project = await this.repositories.projectRepository.getProjects({
       ids: [projectId],
       limit: 1,
     });
@@ -49,12 +53,11 @@ export class ProjectService extends AuditService implements IProjectService {
   }
 
   public async getProjects(
-    params: Omit<QueryProjectsArgs, 'scope'> & { requestedFields?: string[] }
+    params: Omit<QueryProjectsArgs, 'organizationId'> & { requestedFields?: string[] }
   ): Promise<ProjectPage> {
     const validatedParams = validateInput(getProjectsParamsSchema, params, 'getProjects method');
-    const result = await this.projectRepository.getProjects(validatedParams as any);
+    const result = await this.repositories.projectRepository.getProjects(validatedParams as any);
 
-    // Transform repository result to standard format for validation
     const transformedResult = {
       items: result.projects,
       totalCount: result.totalCount,
@@ -74,45 +77,97 @@ export class ProjectService extends AuditService implements IProjectService {
     };
   }
 
-  public async createProject(params: MutationCreateProjectArgs): Promise<Project> {
+  public async createProject(
+    params: MutationCreateProjectArgs,
+    transaction?: Transaction
+  ): Promise<Project> {
     const validatedParams = validateInput(
       createProjectParamsSchema,
       params,
       'createProject method'
     );
-    const project = await this.projectRepository.createProject(validatedParams);
 
-    const newValues = {
-      id: project.id,
-      name: project.name,
-      slug: project.slug,
-      description: project.description,
-      createdAt: project.createdAt,
-      updatedAt: project.updatedAt,
-    };
+    const dbInstance = transaction || this.db;
 
-    const metadata = {
-      source: 'create_project_mutation',
-    };
+    return await TransactionManager.withTransaction(dbInstance, async (tx: Transaction) => {
+      const projectInput = {
+        input: {
+          name: validatedParams.input.name,
+          description: validatedParams.input.description,
+        },
+      };
 
-    await this.logCreate(project.id, newValues, metadata);
+      const project = await this.repositories.projectRepository.createProject(
+        projectInput as any,
+        tx
+      );
 
-    return validateOutput(
-      createDynamicSingleSchema(projectSchema),
-      project,
-      'createProject method'
-    );
+      if (validatedParams.input.organizationId) {
+        await this.repositories.organizationProjectRepository.addOrganizationProject(
+          validatedParams.input.organizationId,
+          project.id,
+          tx
+        );
+      }
+
+      if (validatedParams.input.tagIds && validatedParams.input.tagIds.length > 0) {
+        await Promise.all(
+          validatedParams.input.tagIds.map((tagId: string) =>
+            this.repositories.projectTagRepository.addProjectTag(
+              {
+                input: {
+                  projectId: project.id,
+                  tagId,
+                },
+              },
+              tx
+            )
+          )
+        );
+      }
+
+      const newValues = {
+        id: project.id,
+        name: project.name,
+        slug: project.slug,
+        description: project.description,
+        organizationId: validatedParams.input.organizationId,
+        tagIds: validatedParams.input.tagIds,
+        createdAt: project.createdAt,
+        updatedAt: project.updatedAt,
+      };
+
+      const metadata = {
+        source: 'create_project_with_relations_mutation',
+        organizationId: validatedParams.input.organizationId,
+        tagCount: validatedParams.input.tagIds?.length || 0,
+      };
+
+      await this.logCreate(project.id, newValues, metadata, tx);
+
+      return validateOutput(
+        createDynamicSingleSchema(projectSchema),
+        project,
+        'createProject method'
+      );
+    });
   }
 
-  public async updateProject(params: MutationUpdateProjectArgs): Promise<Project> {
+  public async updateProject(
+    params: MutationUpdateProjectArgs,
+    transaction?: Transaction
+  ): Promise<Project> {
     const validatedParams = validateInput(
       updateProjectParamsSchema,
       params,
       'updateProject method'
     );
 
-    const oldProject = await this.getProject(validatedParams.id);
-    const updatedProject = await this.projectRepository.updateProject(validatedParams);
+    const oldProject = await this.getProject(validatedParams.id, transaction);
+    const updatedProject = await this.repositories.projectRepository.updateProject(
+      validatedParams,
+      transaction
+    );
 
     const oldValues = {
       id: oldProject.id,
@@ -146,7 +201,8 @@ export class ProjectService extends AuditService implements IProjectService {
   }
 
   public async deleteProject(
-    params: MutationDeleteProjectArgs & { hardDelete?: boolean }
+    params: MutationDeleteProjectArgs & { hardDelete?: boolean },
+    transaction?: Transaction
   ): Promise<Project> {
     const validatedParams = validateInput(
       deleteProjectParamsSchema,
@@ -154,12 +210,12 @@ export class ProjectService extends AuditService implements IProjectService {
       'deleteProject method'
     );
 
-    const oldProject = await this.getProject(validatedParams.id);
+    const oldProject = await this.getProject(validatedParams.id, transaction);
     const isHardDelete = params.hardDelete === true;
 
     const deletedProject = isHardDelete
-      ? await this.projectRepository.hardDeleteProject(validatedParams)
-      : await this.projectRepository.softDeleteProject(validatedParams);
+      ? await this.repositories.projectRepository.hardDeleteProject(validatedParams, transaction)
+      : await this.repositories.projectRepository.softDeleteProject(validatedParams, transaction);
 
     const oldValues = {
       id: oldProject.id,

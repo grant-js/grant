@@ -1,7 +1,13 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
+import { IUserTagRepository } from './interface';
 import { UserTagRepository } from './repository';
 
-export const userTagRepository = new UserTagRepository();
+// Factory function for creating instances with database connections
+export function createUserTagRepository(db: PostgresJsDatabase): IUserTagRepository {
+  return new UserTagRepository(db);
+}
 
-export * from './interface';
 export * from './repository';
+export * from './interface';
 export * from './schema';

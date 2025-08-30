@@ -1,6 +1,15 @@
-export { OrganizationGroupRepository } from './repository';
-export type { IOrganizationGroupRepository } from './interface';
-export * from './schema';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
+import { IOrganizationGroupRepository } from './interface';
 import { OrganizationGroupRepository } from './repository';
-export const organizationGroupRepository = new OrganizationGroupRepository();
+
+// Factory function for creating instances with database connections
+export function createOrganizationGroupRepository(
+  db: PostgresJsDatabase
+): IOrganizationGroupRepository {
+  return new OrganizationGroupRepository(db);
+}
+
+export * from './repository';
+export * from './interface';
+export * from './schema';

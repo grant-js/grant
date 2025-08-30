@@ -1,17 +1,18 @@
-import { ITagRepository, IUserTagRepository, IUserRepository } from '@/graphql/repositories';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
+import { Repositories } from '@/graphql/repositories';
 import { AuthenticatedUser } from '@/graphql/types';
 
 import { UserTagService } from './service';
 
-export * from './schemas';
 export * from './interface';
 export * from './service';
+export * from './schemas';
 
 export function createUserTagService(
-  userTagRepository: IUserTagRepository,
-  userRepository: IUserRepository,
-  tagRepository: ITagRepository,
-  user: AuthenticatedUser | null
+  repositories: Repositories,
+  user: AuthenticatedUser | null,
+  db: PostgresJsDatabase
 ) {
-  return new UserTagService(userTagRepository, userRepository, tagRepository, user);
+  return new UserTagService(repositories, user, db);
 }

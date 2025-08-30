@@ -1,15 +1,18 @@
-import { IGroupRepository } from '@/graphql/repositories/groups/interface';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
+import { Repositories } from '@/graphql/repositories';
 import { AuthenticatedUser } from '@/graphql/types';
 
 import { GroupService } from './service';
 
-export { GroupService } from './service';
-export type { IGroupService } from './interface';
+export * from './interface';
+export * from './service';
 export * from './schemas';
 
 export function createGroupService(
-  groupRepository: IGroupRepository,
-  user: AuthenticatedUser | null
+  repositories: Repositories,
+  user: AuthenticatedUser | null,
+  db: PostgresJsDatabase
 ) {
-  return new GroupService(groupRepository, user);
+  return new GroupService(repositories, user, db);
 }

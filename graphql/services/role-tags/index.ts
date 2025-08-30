@@ -1,4 +1,6 @@
-import { IRoleRepository, IRoleTagRepository, ITagRepository } from '@/graphql/repositories';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
+import { Repositories } from '@/graphql/repositories';
 import { AuthenticatedUser } from '@/graphql/types';
 
 import { RoleTagService } from './service';
@@ -8,10 +10,9 @@ export * from './service';
 export * from './schemas';
 
 export function createRoleTagService(
-  roleTagRepository: IRoleTagRepository,
-  roleRepository: IRoleRepository,
-  tagRepository: ITagRepository,
-  user: AuthenticatedUser | null
+  repositories: Repositories,
+  user: AuthenticatedUser | null,
+  db: PostgresJsDatabase
 ) {
-  return new RoleTagService(roleTagRepository, roleRepository, tagRepository, user);
+  return new RoleTagService(repositories, user, db);
 }

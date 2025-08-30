@@ -1,3 +1,5 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   QueryPermissionsArgs,
   MutationCreatePermissionArgs,
@@ -6,7 +8,7 @@ import {
   Permission,
   PermissionPage,
 } from '@/graphql/generated/types';
-import { IPermissionRepository } from '@/graphql/repositories/permissions/interface';
+import { Repositories } from '@/graphql/repositories';
 import { permissionAuditLogs } from '@/graphql/repositories/permissions/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -29,23 +31,24 @@ import {
 
 export class PermissionService extends AuditService implements IPermissionService {
   constructor(
-    private readonly permissionRepository: IPermissionRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(permissionAuditLogs, 'permissionId', user);
   }
 
   private async getPermission(permissionId: string): Promise<Permission> {
-    const permissions = await this.permissionRepository.getPermissions({
+    const existingPermissions = await this.repositories.permissionRepository.getPermissions({
       ids: [permissionId],
       limit: 1,
     });
 
-    if (permissions.permissions.length === 0) {
+    if (existingPermissions.permissions.length === 0) {
       throw new Error('Permission not found');
     }
 
-    return permissions.permissions[0];
+    return existingPermissions.permissions[0];
   }
 
   public async getPermissions(
@@ -56,7 +59,9 @@ export class PermissionService extends AuditService implements IPermissionServic
       params,
       'getPermissions method'
     );
-    const result = await this.permissionRepository.getPermissions(validatedParams as any);
+    const result = await this.repositories.permissionRepository.getPermissions(
+      validatedParams as any
+    );
 
     // Transform repository result to standard format for validation
     const transformedResult = {
@@ -73,8 +78,8 @@ export class PermissionService extends AuditService implements IPermissionServic
 
     return {
       permissions: validatedResult.items,
-      totalCount: validatedResult.totalCount,
       hasNextPage: validatedResult.hasNextPage,
+      totalCount: validatedResult.totalCount,
     };
   }
 
@@ -84,13 +89,13 @@ export class PermissionService extends AuditService implements IPermissionServic
       params,
       'createPermission method'
     );
-    const permission = await this.permissionRepository.createPermission(validatedParams);
+    const permission =
+      await this.repositories.permissionRepository.createPermission(validatedParams);
 
     const newValues = {
       id: permission.id,
       name: permission.name,
       description: permission.description,
-      action: permission.action,
       createdAt: permission.createdAt,
       updatedAt: permission.updatedAt,
     };
@@ -116,13 +121,13 @@ export class PermissionService extends AuditService implements IPermissionServic
     );
 
     const oldPermission = await this.getPermission(validatedParams.id);
-    const updatedPermission = await this.permissionRepository.updatePermission(validatedParams);
+    const updatedPermission =
+      await this.repositories.permissionRepository.updatePermission(validatedParams);
 
     const oldValues = {
       id: oldPermission.id,
       name: oldPermission.name,
       description: oldPermission.description,
-      action: oldPermission.action,
       createdAt: oldPermission.createdAt,
       updatedAt: oldPermission.updatedAt,
     };
@@ -131,7 +136,6 @@ export class PermissionService extends AuditService implements IPermissionServic
       id: updatedPermission.id,
       name: updatedPermission.name,
       description: updatedPermission.description,
-      action: updatedPermission.action,
       createdAt: updatedPermission.createdAt,
       updatedAt: updatedPermission.updatedAt,
     };
@@ -162,14 +166,13 @@ export class PermissionService extends AuditService implements IPermissionServic
     const isHardDelete = params.hardDelete === true;
 
     const deletedPermission = isHardDelete
-      ? await this.permissionRepository.hardDeletePermission(validatedParams)
-      : await this.permissionRepository.softDeletePermission(validatedParams);
+      ? await this.repositories.permissionRepository.hardDeletePermission(validatedParams)
+      : await this.repositories.permissionRepository.softDeletePermission(validatedParams);
 
     const oldValues = {
       id: oldPermission.id,
       name: oldPermission.name,
       description: oldPermission.description,
-      action: oldPermission.action,
       createdAt: oldPermission.createdAt,
       updatedAt: oldPermission.updatedAt,
     };

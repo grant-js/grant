@@ -15,11 +15,11 @@ export function DeleteProjectDialog() {
 
   const handleDelete = async () => {
     if (!projectToDelete) return;
-    await deleteProject(projectToDelete.id, projectToDelete.name);
     await removeOrganizationProject({
       organizationId: scope.id,
       projectId: projectToDelete.id,
     });
+    await deleteProject(projectToDelete.id, projectToDelete.name);
     setProjectToDelete(null);
   };
 

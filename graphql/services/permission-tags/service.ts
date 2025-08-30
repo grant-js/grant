@@ -1,14 +1,12 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   QueryPermissionTagsArgs,
   MutationAddPermissionTagArgs,
   MutationRemovePermissionTagArgs,
   PermissionTag,
 } from '@/graphql/generated/types';
-import {
-  IPermissionTagRepository,
-  IPermissionRepository,
-  ITagRepository,
-} from '@/graphql/repositories';
+import { Repositories } from '@/graphql/repositories';
 import { permissionTagAuditLogs } from '@/graphql/repositories/permission-tags/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -24,16 +22,15 @@ import {
 
 export class PermissionTagService extends AuditService implements IPermissionTagService {
   constructor(
-    private readonly permissionTagRepository: IPermissionTagRepository,
-    private readonly permissionRepository: IPermissionRepository,
-    private readonly tagRepository: ITagRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(permissionTagAuditLogs, 'permissionTagId', user);
   }
 
   private async permissionExists(permissionId: string): Promise<void> {
-    const permissions = await this.permissionRepository.getPermissions({
+    const permissions = await this.repositories.permissionRepository.getPermissions({
       ids: [permissionId],
       limit: 1,
     });
@@ -44,7 +41,7 @@ export class PermissionTagService extends AuditService implements IPermissionTag
   }
 
   private async tagExists(tagId: string): Promise<void> {
-    const tags = await this.tagRepository.getTags({
+    const tags = await this.repositories.tagRepository.getTags({
       ids: [tagId],
       limit: 1,
     });
@@ -57,9 +54,10 @@ export class PermissionTagService extends AuditService implements IPermissionTag
   private async permissionHasTag(permissionId: string, tagId: string): Promise<boolean> {
     await this.permissionExists(permissionId);
     await this.tagExists(tagId);
-    const existingPermissionTags = await this.permissionTagRepository.getPermissionTags({
-      permissionId,
-    });
+    const existingPermissionTags =
+      await this.repositories.permissionTagRepository.getPermissionTags({
+        permissionId,
+      });
 
     return existingPermissionTags.some((pt) => pt.tagId === tagId);
   }
@@ -75,7 +73,8 @@ export class PermissionTagService extends AuditService implements IPermissionTag
 
     await this.permissionExists(validatedParams.permissionId);
 
-    const result = await this.permissionTagRepository.getPermissionTags(validatedParams);
+    const result =
+      await this.repositories.permissionTagRepository.getPermissionTags(validatedParams);
     return validateOutput(
       createDynamicSingleSchema(permissionTagSchema).array(),
       result,
@@ -99,7 +98,8 @@ export class PermissionTagService extends AuditService implements IPermissionTag
       throw new Error('Permission already has this tag');
     }
 
-    const permissionTag = await this.permissionTagRepository.addPermissionTag(validatedParams);
+    const permissionTag =
+      await this.repositories.permissionTagRepository.addPermissionTag(validatedParams);
 
     const newValues = {
       id: permissionTag.id,
@@ -143,8 +143,8 @@ export class PermissionTagService extends AuditService implements IPermissionTag
     const isHardDelete = params.hardDelete === true;
 
     const permissionTag = isHardDelete
-      ? await this.permissionTagRepository.hardDeletePermissionTag(validatedParams)
-      : await this.permissionTagRepository.softDeletePermissionTag(validatedParams);
+      ? await this.repositories.permissionTagRepository.hardDeletePermissionTag(validatedParams)
+      : await this.repositories.permissionTagRepository.softDeletePermissionTag(validatedParams);
 
     const oldValues = {
       id: permissionTag.id,

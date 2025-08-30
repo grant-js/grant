@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
-import { db } from '@/graphql/lib/providers/database/connection';
+import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 
 import { buildPivotWhereClause, buildPivotInsertValues, getFirstResult } from './utils';
 
@@ -43,7 +44,14 @@ export abstract class PivotRepository<
 
   protected abstract toEntity(dbPivot: TPivotModel): TPivotEntity;
 
-  protected async query(params: BasePivotQueryArgs): Promise<TPivotEntity[]> {
+  constructor(protected db: PostgresJsDatabase) {}
+
+  protected async query(
+    params: BasePivotQueryArgs,
+    transaction?: Transaction
+  ): Promise<TPivotEntity[]> {
+    const dbInstance = transaction || this.db;
+
     try {
       const whereClause = buildPivotWhereClause<TPivotModel>(
         this.table,
@@ -52,7 +60,7 @@ export abstract class PivotRepository<
         params.parentId
       );
 
-      const result = await db.select().from(this.table).where(whereClause);
+      const result = await dbInstance.select().from(this.table).where(whereClause);
 
       return result.map((item: TPivotModel) => this.toEntity(item));
     } catch (error) {
@@ -61,21 +69,23 @@ export abstract class PivotRepository<
     }
   }
 
-  protected async add(params: BasePivotAddArgs): Promise<TPivotEntity> {
+  protected async add(params: BasePivotAddArgs, transaction?: Transaction): Promise<TPivotEntity> {
+    const dbInstance = transaction || this.db;
+
     try {
       const softDeletedWhereClause = and(
         eq(this.table[this.parentIdField as string], params.parentId),
         eq(this.table[this.relatedIdField as string], params.relatedId)
       );
 
-      const existingSoftDeleted = await db
+      const existingSoftDeleted = await dbInstance
         .select()
         .from(this.table)
         .where(softDeletedWhereClause)
         .limit(1);
 
       if (existingSoftDeleted.length > 0) {
-        const result = await db
+        const result = await dbInstance
           .update(this.table)
           .set({
             deletedAt: null,
@@ -96,7 +106,7 @@ export abstract class PivotRepository<
         params.relatedId
       );
 
-      const existingPivot = await db.select().from(this.table).where(whereClause).limit(1);
+      const existingPivot = await dbInstance.select().from(this.table).where(whereClause).limit(1);
 
       if (existingPivot.length > 0) {
         return this.toEntity(existingPivot[0]);
@@ -109,7 +119,7 @@ export abstract class PivotRepository<
         params.relatedId
       );
 
-      const result = await db.insert(this.table).values(insertValues).returning();
+      const result = await dbInstance.insert(this.table).values(insertValues).returning();
 
       const insertedItem = getFirstResult(result);
       return this.toEntity(insertedItem as TPivotModel);
@@ -119,7 +129,12 @@ export abstract class PivotRepository<
     }
   }
 
-  protected async softDelete(params: BasePivotRemoveArgs): Promise<TPivotEntity> {
+  protected async softDelete(
+    params: BasePivotRemoveArgs,
+    transaction?: Transaction
+  ): Promise<TPivotEntity> {
+    const dbInstance = transaction || this.db;
+
     try {
       const whereClause = buildPivotWhereClause(
         this.table,
@@ -129,7 +144,7 @@ export abstract class PivotRepository<
         params.relatedId
       );
 
-      const result = await db
+      const result = await dbInstance
         .update(this.table)
         .set({
           deletedAt: new Date(),
@@ -150,7 +165,12 @@ export abstract class PivotRepository<
     }
   }
 
-  protected async hardDelete(params: BasePivotRemoveArgs): Promise<TPivotEntity> {
+  protected async hardDelete(
+    params: BasePivotRemoveArgs,
+    transaction?: Transaction
+  ): Promise<TPivotEntity> {
+    const dbInstance = transaction || this.db;
+
     try {
       const whereClause = buildPivotWhereClause(
         this.table,
@@ -160,7 +180,7 @@ export abstract class PivotRepository<
         params.relatedId
       );
 
-      const result = await db.delete(this.table).where(whereClause).returning();
+      const result = await dbInstance.delete(this.table).where(whereClause).returning();
 
       const deletedItem = getFirstResult(result);
       if (!deletedItem) {

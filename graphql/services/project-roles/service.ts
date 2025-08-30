@@ -1,14 +1,12 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   QueryProjectRolesArgs,
   MutationAddProjectRoleArgs,
   MutationRemoveProjectRoleArgs,
   ProjectRole,
 } from '@/graphql/generated/types';
-import {
-  IProjectRoleRepository,
-  IProjectRepository,
-  IRoleRepository,
-} from '@/graphql/repositories';
+import { Repositories } from '@/graphql/repositories';
 import { projectRoleAuditLogs } from '@/graphql/repositories/project-roles/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -24,16 +22,15 @@ import {
 
 export class ProjectRoleService extends AuditService implements IProjectRoleService {
   constructor(
-    private readonly projectRoleRepository: IProjectRoleRepository,
-    private readonly projectRepository: IProjectRepository,
-    private readonly roleRepository: IRoleRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(projectRoleAuditLogs, 'projectRoleId', user);
   }
 
   private async projectExists(projectId: string): Promise<void> {
-    const projects = await this.projectRepository.getProjects({
+    const projects = await this.repositories.projectRepository.getProjects({
       ids: [projectId],
       limit: 1,
     });
@@ -44,7 +41,7 @@ export class ProjectRoleService extends AuditService implements IProjectRoleServ
   }
 
   private async roleExists(roleId: string): Promise<void> {
-    const roles = await this.roleRepository.getRoles({
+    const roles = await this.repositories.roleRepository.getRoles({
       ids: [roleId],
       limit: 1,
     });
@@ -57,7 +54,7 @@ export class ProjectRoleService extends AuditService implements IProjectRoleServ
   private async projectHasRole(projectId: string, roleId: string): Promise<boolean> {
     await this.projectExists(projectId);
     await this.roleExists(roleId);
-    const existingProjectRoles = await this.projectRoleRepository.getProjectRoles({
+    const existingProjectRoles = await this.repositories.projectRoleRepository.getProjectRoles({
       projectId,
     });
 
@@ -73,7 +70,7 @@ export class ProjectRoleService extends AuditService implements IProjectRoleServ
 
     await this.projectExists(validatedParams.projectId);
 
-    const result = await this.projectRoleRepository.getProjectRoles(validatedParams);
+    const result = await this.repositories.projectRoleRepository.getProjectRoles(validatedParams);
     return validateOutput(
       createDynamicSingleSchema(projectRoleSchema).array(),
       result,
@@ -97,7 +94,8 @@ export class ProjectRoleService extends AuditService implements IProjectRoleServ
       throw new Error('Project already has this role');
     }
 
-    const projectRole = await this.projectRoleRepository.addProjectRole(validatedParams);
+    const projectRole =
+      await this.repositories.projectRoleRepository.addProjectRole(validatedParams);
 
     const newValues = {
       id: projectRole.id,
@@ -141,8 +139,8 @@ export class ProjectRoleService extends AuditService implements IProjectRoleServ
     const isHardDelete = params.hardDelete === true;
 
     const projectRole = isHardDelete
-      ? await this.projectRoleRepository.hardDeleteProjectRole(validatedParams)
-      : await this.projectRoleRepository.softDeleteProjectRole(validatedParams);
+      ? await this.repositories.projectRoleRepository.hardDeleteProjectRole(validatedParams)
+      : await this.repositories.projectRoleRepository.softDeleteProjectRole(validatedParams);
 
     const oldValues = {
       id: projectRole.id,

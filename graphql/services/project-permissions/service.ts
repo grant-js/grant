@@ -1,14 +1,12 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   QueryProjectPermissionsArgs,
   MutationAddProjectPermissionArgs,
   MutationRemoveProjectPermissionArgs,
   ProjectPermission,
 } from '@/graphql/generated/types';
-import {
-  IProjectPermissionRepository,
-  IProjectRepository,
-  IPermissionRepository,
-} from '@/graphql/repositories';
+import { Repositories } from '@/graphql/repositories';
 import { projectPermissionsAuditLogs } from '@/graphql/repositories/project-permissions/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -24,16 +22,15 @@ import {
 
 export class ProjectPermissionService extends AuditService implements IProjectPermissionService {
   constructor(
-    private readonly projectPermissionRepository: IProjectPermissionRepository,
-    private readonly projectRepository: IProjectRepository,
-    private readonly permissionRepository: IPermissionRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(projectPermissionsAuditLogs, 'projectPermissionId', user);
   }
 
   private async projectExists(projectId: string): Promise<void> {
-    const projects = await this.projectRepository.getProjects({
+    const projects = await this.repositories.projectRepository.getProjects({
       ids: [projectId],
       limit: 1,
     });
@@ -44,7 +41,7 @@ export class ProjectPermissionService extends AuditService implements IProjectPe
   }
 
   private async permissionExists(permissionId: string): Promise<void> {
-    const permissions = await this.permissionRepository.getPermissions({
+    const permissions = await this.repositories.permissionRepository.getPermissions({
       ids: [permissionId],
       limit: 1,
     });
@@ -57,11 +54,10 @@ export class ProjectPermissionService extends AuditService implements IProjectPe
   private async projectHasPermission(projectId: string, permissionId: string): Promise<boolean> {
     await this.projectExists(projectId);
     await this.permissionExists(permissionId);
-    const existingProjectPermissions = await this.projectPermissionRepository.getProjectPermissions(
-      {
+    const existingProjectPermissions =
+      await this.repositories.projectPermissionRepository.getProjectPermissions({
         projectId,
-      }
-    );
+      });
 
     return existingProjectPermissions.some((pp) => pp.permissionId === permissionId);
   }
@@ -77,7 +73,8 @@ export class ProjectPermissionService extends AuditService implements IProjectPe
 
     await this.projectExists(validatedParams.projectId);
 
-    const result = await this.projectPermissionRepository.getProjectPermissions(validatedParams);
+    const result =
+      await this.repositories.projectPermissionRepository.getProjectPermissions(validatedParams);
     return validateOutput(
       createDynamicSingleSchema(projectPermissionSchema).array(),
       result,
@@ -104,7 +101,7 @@ export class ProjectPermissionService extends AuditService implements IProjectPe
     }
 
     const projectPermission =
-      await this.projectPermissionRepository.addProjectPermission(validatedParams);
+      await this.repositories.projectPermissionRepository.addProjectPermission(validatedParams);
 
     const newValues = {
       id: projectPermission.id,
@@ -148,8 +145,12 @@ export class ProjectPermissionService extends AuditService implements IProjectPe
     const isHardDelete = params.hardDelete === true;
 
     const projectPermission = isHardDelete
-      ? await this.projectPermissionRepository.hardDeleteProjectPermission(validatedParams)
-      : await this.projectPermissionRepository.softDeleteProjectPermission(validatedParams);
+      ? await this.repositories.projectPermissionRepository.hardDeleteProjectPermission(
+          validatedParams
+        )
+      : await this.repositories.projectPermissionRepository.softDeleteProjectPermission(
+          validatedParams
+        );
 
     const oldValues = {
       id: projectPermission.id,

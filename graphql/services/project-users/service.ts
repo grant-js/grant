@@ -1,14 +1,12 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js/driver';
+
 import {
   MutationAddProjectUserArgs,
   MutationRemoveProjectUserArgs,
   ProjectUser,
   QueryProjectUsersArgs,
 } from '@/graphql/generated/types';
-import {
-  IProjectUserRepository,
-  IProjectRepository,
-  IUserRepository,
-} from '@/graphql/repositories';
+import { Repositories } from '@/graphql/repositories';
 import { projectUserAuditLogs } from '@/graphql/repositories/project-users/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -24,16 +22,15 @@ import {
 
 export class ProjectUserService extends AuditService implements IProjectUserService {
   constructor(
-    private readonly projectUserRepository: IProjectUserRepository,
-    private readonly projectRepository: IProjectRepository,
-    private readonly userRepository: IUserRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(projectUserAuditLogs, 'projectUserId', user);
   }
 
   private async projectExists(projectId: string): Promise<void> {
-    const projects = await this.projectRepository.getProjects({
+    const projects = await this.repositories.projectRepository.getProjects({
       ids: [projectId],
       limit: 1,
     });
@@ -44,7 +41,7 @@ export class ProjectUserService extends AuditService implements IProjectUserServ
   }
 
   private async userExists(userId: string): Promise<void> {
-    const users = await this.userRepository.getUsers({
+    const users = await this.repositories.userRepository.getUsers({
       ids: [userId],
       limit: 1,
     });
@@ -57,7 +54,7 @@ export class ProjectUserService extends AuditService implements IProjectUserServ
   private async projectHasUser(projectId: string, userId: string): Promise<boolean> {
     await this.projectExists(projectId);
     await this.userExists(userId);
-    const existingProjectUsers = await this.projectUserRepository.getProjectUsers({
+    const existingProjectUsers = await this.repositories.projectUserRepository.getProjectUsers({
       projectId,
     });
 
@@ -73,7 +70,7 @@ export class ProjectUserService extends AuditService implements IProjectUserServ
 
     await this.projectExists(validatedParams.projectId);
 
-    const result = await this.projectUserRepository.getProjectUsers(validatedParams);
+    const result = await this.repositories.projectUserRepository.getProjectUsers(validatedParams);
     return validateOutput(
       createDynamicSingleSchema(projectUserSchema).array(),
       result,
@@ -97,7 +94,8 @@ export class ProjectUserService extends AuditService implements IProjectUserServ
       throw new Error('Project already has this user');
     }
 
-    const projectUser = await this.projectUserRepository.addProjectUser(validatedParams);
+    const projectUser =
+      await this.repositories.projectUserRepository.addProjectUser(validatedParams);
 
     const newValues = {
       id: projectUser.id,
@@ -141,8 +139,8 @@ export class ProjectUserService extends AuditService implements IProjectUserServ
     const isHardDelete = params.hardDelete === true;
 
     const projectUser = isHardDelete
-      ? await this.projectUserRepository.hardDeleteProjectUser(validatedParams)
-      : await this.projectUserRepository.softDeleteProjectUser(validatedParams);
+      ? await this.repositories.projectUserRepository.hardDeleteProjectUser(validatedParams)
+      : await this.repositories.projectUserRepository.softDeleteProjectUser(validatedParams);
 
     const oldValues = {
       id: projectUser.id,

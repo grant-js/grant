@@ -13,6 +13,7 @@ export const projectUsersResolver: ProjectResolvers['users'] = async (
 
   const projectUsers = await context.services.projectUsers.getProjectUsers({ projectId });
   const userIds = projectUsers.map((pu) => pu.userId);
+
   if (userIds.length === 0) {
     return [];
   }

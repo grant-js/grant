@@ -1,10 +1,12 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   MutationAddRoleGroupArgs,
   MutationRemoveRoleGroupArgs,
   RoleGroup,
   QueryRoleGroupsArgs,
 } from '@/graphql/generated/types';
-import { IRoleGroupRepository, IRoleRepository, IGroupRepository } from '@/graphql/repositories';
+import { Repositories } from '@/graphql/repositories';
 import { roleGroupsAuditLogs } from '@/graphql/repositories/role-groups/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -20,16 +22,15 @@ import {
 
 export class RoleGroupService extends AuditService implements IRoleGroupService {
   constructor(
-    private readonly roleGroupRepository: IRoleGroupRepository,
-    private readonly roleRepository: IRoleRepository,
-    private readonly groupRepository: IGroupRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(roleGroupsAuditLogs, 'roleGroupId', user);
   }
 
   private async roleExists(roleId: string): Promise<void> {
-    const roles = await this.roleRepository.getRoles({
+    const roles = await this.repositories.roleRepository.getRoles({
       ids: [roleId],
       limit: 1,
     });
@@ -40,7 +41,7 @@ export class RoleGroupService extends AuditService implements IRoleGroupService 
   }
 
   private async groupExists(groupId: string): Promise<void> {
-    const groups = await this.groupRepository.getGroups({
+    const groups = await this.repositories.groupRepository.getGroups({
       ids: [groupId],
       limit: 1,
     });
@@ -53,7 +54,7 @@ export class RoleGroupService extends AuditService implements IRoleGroupService 
   private async roleHasGroup(roleId: string, groupId: string): Promise<boolean> {
     await this.roleExists(roleId);
     await this.groupExists(groupId);
-    const existingRoleGroups = await this.roleGroupRepository.getRoleGroups({
+    const existingRoleGroups = await this.repositories.roleGroupRepository.getRoleGroups({
       roleId,
     });
 
@@ -69,7 +70,7 @@ export class RoleGroupService extends AuditService implements IRoleGroupService 
 
     await this.roleExists(validatedParams.roleId);
 
-    const result = await this.roleGroupRepository.getRoleGroups(validatedParams);
+    const result = await this.repositories.roleGroupRepository.getRoleGroups(validatedParams);
     return validateOutput(
       createDynamicSingleSchema(roleGroupSchema).array(),
       result,
@@ -89,7 +90,7 @@ export class RoleGroupService extends AuditService implements IRoleGroupService 
       throw new Error('Role already has this group');
     }
 
-    const roleGroup = await this.roleGroupRepository.addRoleGroup(
+    const roleGroup = await this.repositories.roleGroupRepository.addRoleGroup(
       validatedParams.input.roleId,
       validatedParams.input.groupId
     );
@@ -136,11 +137,11 @@ export class RoleGroupService extends AuditService implements IRoleGroupService 
     const isHardDelete = params.hardDelete === true;
 
     const roleGroup = isHardDelete
-      ? await this.roleGroupRepository.hardDeleteRoleGroup(
+      ? await this.repositories.roleGroupRepository.hardDeleteRoleGroup(
           validatedParams.input.roleId,
           validatedParams.input.groupId
         )
-      : await this.roleGroupRepository.softDeleteRoleGroup(
+      : await this.repositories.roleGroupRepository.softDeleteRoleGroup(
           validatedParams.input.roleId,
           validatedParams.input.groupId
         );

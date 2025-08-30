@@ -1,4 +1,6 @@
-import { IGroupRepository, IRoleGroupRepository, IRoleRepository } from '@/graphql/repositories';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
+import { Repositories } from '@/graphql/repositories';
 import { AuthenticatedUser } from '@/graphql/types';
 
 import { RoleGroupService } from './service';
@@ -8,10 +10,9 @@ export * from './service';
 export * from './schemas';
 
 export function createRoleGroupService(
-  roleGroupRepository: IRoleGroupRepository,
-  roleRepository: IRoleRepository,
-  groupRepository: IGroupRepository,
-  user: AuthenticatedUser | null
+  repositories: Repositories,
+  user: AuthenticatedUser | null,
+  db: PostgresJsDatabase
 ) {
-  return new RoleGroupService(roleGroupRepository, roleRepository, groupRepository, user);
+  return new RoleGroupService(repositories, user, db);
 }

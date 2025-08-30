@@ -1,28 +1,62 @@
-export { userRepository } from './users';
-export { roleRepository } from './roles';
-export { userRoleRepository } from './user-roles';
-export { userTagRepository } from './user-tags';
-export { tagRepository } from './tags';
-export { groupRepository } from './groups';
-export { permissionRepository } from './permissions';
-export { projectRepository } from './projects';
-export { organizationRepository } from './organizations';
-export { groupPermissionRepository } from './group-permissions';
-export { organizationUserRepository } from './organization-users';
-export { projectUserRepository } from './project-users';
-export { projectGroupRepository } from './project-groups';
-export { projectRoleRepository } from './project-roles';
-export { projectPermissionRepository } from './project-permissions';
-export { projectTagRepository } from './project-tags';
-export { organizationProjectRepository } from './organization-projects';
-export { organizationRoleRepository } from './organization-roles';
-export { organizationTagRepository } from './organization-tags';
-export { roleGroupRepository } from './role-groups';
-export { roleTagRepository } from './role-tags';
-export { organizationPermissionRepository } from './organization-permissions';
-export { organizationGroupRepository } from './organization-groups';
-export { groupTagRepository } from './group-tags';
-export { permissionTagRepository } from './permission-tags';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
+import { createGroupPermissionRepository } from './group-permissions';
+import { createGroupTagRepository } from './group-tags';
+import { createGroupRepository } from './groups';
+import { createOrganizationGroupRepository } from './organization-groups';
+import { createOrganizationPermissionRepository } from './organization-permissions';
+import { createOrganizationProjectRepository } from './organization-projects';
+import { createOrganizationRoleRepository } from './organization-roles';
+import { createOrganizationTagRepository } from './organization-tags';
+import { createOrganizationUserRepository } from './organization-users';
+import { createOrganizationRepository } from './organizations';
+import { createPermissionTagRepository } from './permission-tags';
+import { createPermissionRepository } from './permissions';
+import { createProjectGroupRepository } from './project-groups';
+import { createProjectPermissionRepository } from './project-permissions';
+import { createProjectRoleRepository } from './project-roles';
+import { createProjectTagRepository } from './project-tags';
+import { createProjectUserRepository } from './project-users';
+import { createProjectRepository } from './projects';
+import { createRoleGroupRepository } from './role-groups';
+import { createRoleTagRepository } from './role-tags';
+import { createRoleRepository } from './roles';
+import { createTagRepository } from './tags';
+import { createUserRoleRepository } from './user-roles';
+import { createUserTagRepository } from './user-tags';
+import { createUserRepository } from './users';
+
+export type Repositories = ReturnType<typeof createRepositories>;
+
+export function createRepositories(db: PostgresJsDatabase) {
+  return {
+    userRepository: createUserRepository(db),
+    roleRepository: createRoleRepository(db),
+    userRoleRepository: createUserRoleRepository(db),
+    userTagRepository: createUserTagRepository(db),
+    tagRepository: createTagRepository(db),
+    groupRepository: createGroupRepository(db),
+    permissionRepository: createPermissionRepository(db),
+    projectRepository: createProjectRepository(db),
+    organizationRepository: createOrganizationRepository(db),
+    groupPermissionRepository: createGroupPermissionRepository(db),
+    organizationUserRepository: createOrganizationUserRepository(db),
+    projectUserRepository: createProjectUserRepository(db),
+    projectGroupRepository: createProjectGroupRepository(db),
+    projectRoleRepository: createProjectRoleRepository(db),
+    projectPermissionRepository: createProjectPermissionRepository(db),
+    projectTagRepository: createProjectTagRepository(db),
+    organizationProjectRepository: createOrganizationProjectRepository(db),
+    organizationRoleRepository: createOrganizationRoleRepository(db),
+    organizationTagRepository: createOrganizationTagRepository(db),
+    roleGroupRepository: createRoleGroupRepository(db),
+    roleTagRepository: createRoleTagRepository(db),
+    organizationPermissionRepository: createOrganizationPermissionRepository(db),
+    organizationGroupRepository: createOrganizationGroupRepository(db),
+    groupTagRepository: createGroupTagRepository(db),
+    permissionTagRepository: createPermissionTagRepository(db),
+  };
+}
 
 export type { IUserRepository } from './users/interface';
 export type { IRoleRepository } from './roles/interface';

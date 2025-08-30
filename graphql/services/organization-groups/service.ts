@@ -1,14 +1,12 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   MutationAddOrganizationGroupArgs,
   MutationRemoveOrganizationGroupArgs,
   OrganizationGroup,
   QueryOrganizationGroupsArgs,
 } from '@/graphql/generated/types';
-import {
-  IOrganizationGroupRepository,
-  IOrganizationRepository,
-  IGroupRepository,
-} from '@/graphql/repositories';
+import { Repositories } from '@/graphql/repositories';
 import { organizationGroupsAuditLogs } from '@/graphql/repositories/organization-groups/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -24,16 +22,15 @@ import {
 
 export class OrganizationGroupService extends AuditService implements IOrganizationGroupService {
   constructor(
-    private readonly organizationGroupRepository: IOrganizationGroupRepository,
-    private readonly organizationRepository: IOrganizationRepository,
-    private readonly groupRepository: IGroupRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(organizationGroupsAuditLogs, 'organizationGroupId', user);
   }
 
   private async organizationExists(organizationId: string): Promise<void> {
-    const organizations = await this.organizationRepository.getOrganizations({
+    const organizations = await this.repositories.organizationRepository.getOrganizations({
       ids: [organizationId],
       limit: 1,
     });
@@ -44,7 +41,7 @@ export class OrganizationGroupService extends AuditService implements IOrganizat
   }
 
   private async groupExists(groupId: string): Promise<void> {
-    const groups = await this.groupRepository.getGroups({
+    const groups = await this.repositories.groupRepository.getGroups({
       ids: [groupId],
       limit: 1,
     });
@@ -57,11 +54,10 @@ export class OrganizationGroupService extends AuditService implements IOrganizat
   private async organizationHasGroup(organizationId: string, groupId: string): Promise<boolean> {
     await this.organizationExists(organizationId);
     await this.groupExists(groupId);
-    const existingOrganizationGroups = await this.organizationGroupRepository.getOrganizationGroups(
-      {
+    const existingOrganizationGroups =
+      await this.repositories.organizationGroupRepository.getOrganizationGroups({
         organizationId,
-      }
-    );
+      });
 
     return existingOrganizationGroups.some((og) => og.groupId === groupId);
   }
@@ -80,7 +76,8 @@ export class OrganizationGroupService extends AuditService implements IOrganizat
     }
     await this.organizationExists(validatedParams.organizationId);
 
-    const result = await this.organizationGroupRepository.getOrganizationGroups(validatedParams);
+    const result =
+      await this.repositories.organizationGroupRepository.getOrganizationGroups(validatedParams);
     return validateOutput(
       createDynamicSingleSchema(organizationGroupSchema).array(),
       result,
@@ -106,7 +103,7 @@ export class OrganizationGroupService extends AuditService implements IOrganizat
       throw new Error('Organization already has this group');
     }
 
-    const result = await this.organizationGroupRepository.addOrganizationGroup(
+    const result = await this.repositories.organizationGroupRepository.addOrganizationGroup(
       validatedParams.input.organizationId,
       validatedParams.input.groupId
     );
@@ -153,11 +150,11 @@ export class OrganizationGroupService extends AuditService implements IOrganizat
     const isHardDelete = params.hardDelete === true;
 
     const result = isHardDelete
-      ? await this.organizationGroupRepository.hardDeleteOrganizationGroup(
+      ? await this.repositories.organizationGroupRepository.hardDeleteOrganizationGroup(
           validatedParams.input.organizationId,
           validatedParams.input.groupId
         )
-      : await this.organizationGroupRepository.softDeleteOrganizationGroup(
+      : await this.repositories.organizationGroupRepository.softDeleteOrganizationGroup(
           validatedParams.input.organizationId,
           validatedParams.input.groupId
         );

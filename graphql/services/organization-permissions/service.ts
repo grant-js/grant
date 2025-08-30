@@ -1,14 +1,12 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   MutationAddOrganizationPermissionArgs,
   MutationRemoveOrganizationPermissionArgs,
   OrganizationPermission,
   QueryOrganizationPermissionsArgs,
 } from '@/graphql/generated/types';
-import {
-  IOrganizationPermissionRepository,
-  IOrganizationRepository,
-  IPermissionRepository,
-} from '@/graphql/repositories';
+import { Repositories } from '@/graphql/repositories';
 import { organizationPermissionsAuditLogs } from '@/graphql/repositories/organization-permissions/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -27,16 +25,15 @@ export class OrganizationPermissionService
   implements IOrganizationPermissionService
 {
   constructor(
-    private readonly organizationPermissionRepository: IOrganizationPermissionRepository,
-    private readonly organizationRepository: IOrganizationRepository,
-    private readonly permissionRepository: IPermissionRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(organizationPermissionsAuditLogs, 'organizationPermissionId', user);
   }
 
   private async organizationExists(organizationId: string): Promise<void> {
-    const organizations = await this.organizationRepository.getOrganizations({
+    const organizations = await this.repositories.organizationRepository.getOrganizations({
       ids: [organizationId],
       limit: 1,
     });
@@ -47,7 +44,7 @@ export class OrganizationPermissionService
   }
 
   private async permissionExists(permissionId: string): Promise<void> {
-    const permissions = await this.permissionRepository.getPermissions({
+    const permissions = await this.repositories.permissionRepository.getPermissions({
       ids: [permissionId],
       limit: 1,
     });
@@ -64,7 +61,7 @@ export class OrganizationPermissionService
     await this.organizationExists(organizationId);
     await this.permissionExists(permissionId);
     const existingOrganizationPermissions =
-      await this.organizationPermissionRepository.getOrganizationPermissions({
+      await this.repositories.organizationPermissionRepository.getOrganizationPermissions({
         organizationId,
       });
 
@@ -83,7 +80,9 @@ export class OrganizationPermissionService
     await this.organizationExists(validatedParams.organizationId);
 
     const result =
-      await this.organizationPermissionRepository.getOrganizationPermissions(validatedParams);
+      await this.repositories.organizationPermissionRepository.getOrganizationPermissions(
+        validatedParams
+      );
     return validateOutput(
       createDynamicSingleSchema(organizationPermissionSchema).array(),
       result,
@@ -109,10 +108,11 @@ export class OrganizationPermissionService
       throw new Error('Organization already has this permission');
     }
 
-    const result = await this.organizationPermissionRepository.addOrganizationPermission(
-      validatedParams.input.organizationId,
-      validatedParams.input.permissionId
-    );
+    const result =
+      await this.repositories.organizationPermissionRepository.addOrganizationPermission(
+        validatedParams.input.organizationId,
+        validatedParams.input.permissionId
+      );
 
     const newValues = {
       id: result.id,
@@ -156,11 +156,11 @@ export class OrganizationPermissionService
     const isHardDelete = params.hardDelete === true;
 
     const result = isHardDelete
-      ? await this.organizationPermissionRepository.hardDeleteOrganizationPermission(
+      ? await this.repositories.organizationPermissionRepository.hardDeleteOrganizationPermission(
           validatedParams.input.organizationId,
           validatedParams.input.permissionId
         )
-      : await this.organizationPermissionRepository.softDeleteOrganizationPermission(
+      : await this.repositories.organizationPermissionRepository.softDeleteOrganizationPermission(
           validatedParams.input.organizationId,
           validatedParams.input.permissionId
         );

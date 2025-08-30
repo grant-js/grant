@@ -1,10 +1,12 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   MutationAddGroupTagArgs,
   MutationRemoveGroupTagArgs,
   GroupTag,
   QueryGroupTagsArgs,
 } from '@/graphql/generated/types';
-import { IGroupTagRepository, IGroupRepository, ITagRepository } from '@/graphql/repositories';
+import { Repositories } from '@/graphql/repositories';
 import { groupTagsAuditLogs } from '@/graphql/repositories/group-tags/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -20,16 +22,15 @@ import {
 
 export class GroupTagService extends AuditService implements IGroupTagService {
   constructor(
-    private readonly groupTagRepository: IGroupTagRepository,
-    private readonly groupRepository: IGroupRepository,
-    private readonly tagRepository: ITagRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(groupTagsAuditLogs, 'groupTagId', user);
   }
 
   private async groupExists(groupId: string): Promise<void> {
-    const groups = await this.groupRepository.getGroups({
+    const groups = await this.repositories.groupRepository.getGroups({
       ids: [groupId],
       limit: 1,
     });
@@ -40,7 +41,7 @@ export class GroupTagService extends AuditService implements IGroupTagService {
   }
 
   private async tagExists(tagId: string): Promise<void> {
-    const tags = await this.tagRepository.getTags({
+    const tags = await this.repositories.tagRepository.getTags({
       ids: [tagId],
       limit: 1,
     });
@@ -53,7 +54,7 @@ export class GroupTagService extends AuditService implements IGroupTagService {
   private async groupHasTag(groupId: string, tagId: string): Promise<boolean> {
     await this.groupExists(groupId);
     await this.tagExists(tagId);
-    const existingGroupTags = await this.groupTagRepository.getGroupTags({
+    const existingGroupTags = await this.repositories.groupTagRepository.getGroupTags({
       groupId,
     });
 
@@ -68,7 +69,7 @@ export class GroupTagService extends AuditService implements IGroupTagService {
     }
     await this.groupExists(validatedParams.groupId);
 
-    const result = await this.groupTagRepository.getGroupTags(validatedParams);
+    const result = await this.repositories.groupTagRepository.getGroupTags(validatedParams);
     return validateOutput(
       createDynamicSingleSchema(groupTagSchema).array(),
       result,
@@ -88,7 +89,7 @@ export class GroupTagService extends AuditService implements IGroupTagService {
       throw new Error('Group already has this tag');
     }
 
-    const result = await this.groupTagRepository.addGroupTag(
+    const result = await this.repositories.groupTagRepository.addGroupTag(
       validatedParams.input.groupId,
       validatedParams.input.tagId
     );
@@ -131,11 +132,11 @@ export class GroupTagService extends AuditService implements IGroupTagService {
     const isHardDelete = params.hardDelete === true;
 
     const result = isHardDelete
-      ? await this.groupTagRepository.hardDeleteGroupTag(
+      ? await this.repositories.groupTagRepository.hardDeleteGroupTag(
           validatedParams.input.groupId,
           validatedParams.input.tagId
         )
-      : await this.groupTagRepository.softDeleteGroupTag(
+      : await this.repositories.groupTagRepository.softDeleteGroupTag(
           validatedParams.input.groupId,
           validatedParams.input.tagId
         );

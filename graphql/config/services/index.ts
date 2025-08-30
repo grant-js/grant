@@ -1,30 +1,4 @@
-import {
-  roleRepository,
-  userRepository,
-  userRoleRepository,
-  userTagRepository,
-  tagRepository,
-  groupRepository,
-  permissionRepository,
-  projectRepository,
-  organizationRepository,
-  groupPermissionRepository,
-  organizationUserRepository,
-  organizationProjectRepository,
-  roleGroupRepository,
-  organizationPermissionRepository,
-  organizationGroupRepository,
-  groupTagRepository,
-  projectRoleRepository,
-  projectPermissionRepository,
-  projectTagRepository,
-  projectGroupRepository,
-  projectUserRepository,
-  organizationRoleRepository,
-  organizationTagRepository,
-  roleTagRepository,
-  permissionTagRepository,
-} from '@/graphql/repositories';
+import { createRepositories } from '@/graphql/repositories';
 import { createGroupPermissionService } from '@/graphql/services/group-permissions';
 import { createGroupTagService } from '@/graphql/services/group-tags';
 import { createGroupService } from '@/graphql/services/groups';
@@ -53,95 +27,34 @@ import { createUserService } from '@/graphql/services/users';
 
 import { CreateModuleServicesParams, ModuleServices } from './interface';
 
-export const createServices = ({ user }: CreateModuleServicesParams): ModuleServices => ({
-  users: createUserService(userRepository, user),
-  roles: createRoleService(roleRepository, user),
-  groups: createGroupService(groupRepository, user),
-  permissions: createPermissionService(permissionRepository, user),
-  projects: createProjectService(projectRepository, user),
-  organizations: createOrganizationService(organizationRepository, user),
-  tags: createTagService(tagRepository, user),
-  userRoles: createUserRoleService(userRoleRepository, userRepository, roleRepository, user),
-  userTags: createUserTagService(userTagRepository, userRepository, tagRepository, user),
-  groupPermissions: createGroupPermissionService(
-    groupPermissionRepository,
-    groupRepository,
-    permissionRepository,
-    user
-  ),
-  organizationUsers: createOrganizationUserService(
-    organizationUserRepository,
-    organizationRepository,
-    userRepository,
-    user
-  ),
-  organizationProjects: createOrganizationProjectService(
-    organizationProjectRepository,
-    organizationRepository,
-    projectRepository,
-    user
-  ),
-  roleGroups: createRoleGroupService(roleGroupRepository, roleRepository, groupRepository, user),
-  organizationPermissions: createOrganizationPermissionService(
-    organizationPermissionRepository,
-    organizationRepository,
-    permissionRepository,
-    user
-  ),
-  organizationGroups: createOrganizationGroupService(
-    organizationGroupRepository,
-    organizationRepository,
-    groupRepository,
-    user
-  ),
-  groupTags: createGroupTagService(groupTagRepository, groupRepository, tagRepository, user),
-  projectRoles: createProjectRoleService(
-    projectRoleRepository,
-    projectRepository,
-    roleRepository,
-    user
-  ),
-  projectPermissions: createProjectPermissionService(
-    projectPermissionRepository,
-    projectRepository,
-    permissionRepository,
-    user
-  ),
-  projectTags: createProjectTagService(
-    projectTagRepository,
-    projectRepository,
-    tagRepository,
-    user
-  ),
-  projectGroups: createProjectGroupService(
-    projectGroupRepository,
-    projectRepository,
-    groupRepository,
-    user
-  ),
-  projectUsers: createProjectUserService(
-    projectUserRepository,
-    projectRepository,
-    userRepository,
-    user
-  ),
-  organizationRoles: createOrganizationRoleService(
-    organizationRoleRepository,
-    organizationRepository,
-    roleRepository,
-    user
-  ),
-  organizationTags: createOrganizationTagService(
-    organizationTagRepository,
-    organizationRepository,
-    tagRepository,
-    user
-  ),
-  roleTags: createRoleTagService(roleTagRepository, roleRepository, tagRepository, user),
-  permissionTags: createPermissionTagService(
-    permissionTagRepository,
-    permissionRepository,
-    tagRepository,
-    user
-  ),
-});
+export const createServices = ({ user, db }: CreateModuleServicesParams): ModuleServices => {
+  const repositories = createRepositories(db);
+
+  return {
+    users: createUserService(repositories, user, db),
+    roles: createRoleService(repositories, user, db),
+    groups: createGroupService(repositories, user, db),
+    permissions: createPermissionService(repositories, user, db),
+    projects: createProjectService(repositories, user, db),
+    organizations: createOrganizationService(repositories, user, db),
+    tags: createTagService(repositories, user, db),
+    userRoles: createUserRoleService(repositories, user, db),
+    userTags: createUserTagService(repositories, user, db),
+    groupPermissions: createGroupPermissionService(repositories, user, db),
+    organizationUsers: createOrganizationUserService(repositories, user, db),
+    organizationProjects: createOrganizationProjectService(repositories, user, db),
+    roleGroups: createRoleGroupService(repositories, user, db),
+    organizationPermissions: createOrganizationPermissionService(repositories, user, db),
+    organizationGroups: createOrganizationGroupService(repositories, user, db),
+    groupTags: createGroupTagService(repositories, user, db),
+    projectRoles: createProjectRoleService(repositories, user, db),
+    projectPermissions: createProjectPermissionService(repositories, user, db),
+    projectTags: createProjectTagService(repositories, user, db),
+    projectGroups: createProjectGroupService(repositories, user, db),
+    projectUsers: createProjectUserService(repositories, user, db),
+    organizationRoles: createOrganizationRoleService(repositories, user, db),
+    organizationTags: createOrganizationTagService(repositories, user, db),
+    roleTags: createRoleTagService(repositories, user, db),
+    permissionTags: createPermissionTagService(repositories, user, db),
+  };
+};

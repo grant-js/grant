@@ -4,9 +4,8 @@ import { Plus } from 'lucide-react';
 
 import { CreateDialog, CreateDialogRelationship } from '@/components/common';
 import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
-import { useProjectMutations, useOrganizationProjectMutations } from '@/hooks';
+import { useProjectMutations } from '@/hooks';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
-import { useProjectTagMutations } from '@/hooks/project-tags';
 import { useTags } from '@/hooks/tags';
 import { useProjectsStore } from '@/stores/projects.store';
 
@@ -19,39 +18,14 @@ export function CreateProjectDialog() {
   const setCreateDialogOpen = useProjectsStore((state) => state.setCreateDialogOpen);
 
   const { createProject } = useProjectMutations();
-  const { addOrganizationProject } = useOrganizationProjectMutations();
-  const { addProjectTag } = useProjectTagMutations();
 
   const handleSubmit = async (values: CreateProjectFormValues) => {
     return createProject({
       name: values.name,
       description: values.description,
+      organizationId: scope.id,
+      tagIds: values.tagIds,
     });
-  };
-
-  const handleAddRelationships = async (projectId: string, values: CreateProjectFormValues) => {
-    const promises: Promise<any>[] = [];
-
-    // Add organization-project relationship
-    promises.push(
-      addOrganizationProject({
-        organizationId: scope.id,
-        projectId,
-      })
-    );
-
-    // Add project-tag relationships
-    if (values.tagIds && values.tagIds.length > 0) {
-      const addTagPromises = values.tagIds.map((tagId) =>
-        addProjectTag({
-          projectId,
-          tagId,
-        })
-      );
-      promises.push(...addTagPromises);
-    }
-
-    await Promise.all(promises);
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -102,7 +76,6 @@ export function CreateProjectDialog() {
       ]}
       relationships={relationships}
       onCreate={handleSubmit}
-      onAddRelationships={handleAddRelationships}
       translationNamespace="projects"
       submittingText="createDialog.submitting"
     />

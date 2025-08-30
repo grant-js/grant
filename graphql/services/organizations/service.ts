@@ -1,3 +1,5 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   QueryOrganizationsArgs,
   MutationCreateOrganizationArgs,
@@ -6,7 +8,7 @@ import {
   Organization,
   OrganizationPage,
 } from '@/graphql/generated/types';
-import { IOrganizationRepository } from '@/graphql/repositories/organizations/interface';
+import { Repositories } from '@/graphql/repositories';
 import { organizationAuditLogs } from '@/graphql/repositories/organizations/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -29,23 +31,24 @@ import {
 
 export class OrganizationService extends AuditService implements IOrganizationService {
   constructor(
-    private readonly organizationRepository: IOrganizationRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(organizationAuditLogs, 'organizationId', user);
   }
 
   private async getOrganization(organizationId: string): Promise<Organization> {
-    const organizations = await this.organizationRepository.getOrganizations({
+    const existingOrganizations = await this.repositories.organizationRepository.getOrganizations({
       ids: [organizationId],
       limit: 1,
     });
 
-    if (organizations.organizations.length === 0) {
+    if (existingOrganizations.organizations.length === 0) {
       throw new Error('Organization not found');
     }
 
-    return organizations.organizations[0];
+    return existingOrganizations.organizations[0];
   }
 
   public async getOrganizations(
@@ -56,8 +59,11 @@ export class OrganizationService extends AuditService implements IOrganizationSe
       params,
       'getOrganizations method'
     );
-    const result = await this.organizationRepository.getOrganizations(validatedParams as any);
+    const result = await this.repositories.organizationRepository.getOrganizations(
+      validatedParams as any
+    );
 
+    // Transform repository result to standard format for validation
     const transformedResult = {
       items: result.organizations,
       totalCount: result.totalCount,
@@ -83,7 +89,8 @@ export class OrganizationService extends AuditService implements IOrganizationSe
       params,
       'createOrganization method'
     );
-    const organization = await this.organizationRepository.createOrganization(validatedParams);
+    const organization =
+      await this.repositories.organizationRepository.createOrganization(validatedParams);
 
     const newValues = {
       id: organization.id,
@@ -115,7 +122,7 @@ export class OrganizationService extends AuditService implements IOrganizationSe
 
     const oldOrganization = await this.getOrganization(validatedParams.id);
     const updatedOrganization =
-      await this.organizationRepository.updateOrganization(validatedParams);
+      await this.repositories.organizationRepository.updateOrganization(validatedParams);
 
     const oldValues = {
       id: oldOrganization.id,
@@ -159,8 +166,8 @@ export class OrganizationService extends AuditService implements IOrganizationSe
     const isHardDelete = params.hardDelete === true;
 
     const deletedOrganization = isHardDelete
-      ? await this.organizationRepository.hardDeleteOrganization(validatedParams)
-      : await this.organizationRepository.softDeleteOrganization(validatedParams);
+      ? await this.repositories.organizationRepository.hardDeleteOrganization(validatedParams)
+      : await this.repositories.organizationRepository.softDeleteOrganization(validatedParams);
 
     const oldValues = {
       id: oldOrganization.id,

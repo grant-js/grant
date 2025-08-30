@@ -1,14 +1,12 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   QueryOrganizationTagsArgs,
   MutationAddOrganizationTagArgs,
   MutationRemoveOrganizationTagArgs,
   OrganizationTag,
 } from '@/graphql/generated/types';
-import {
-  IOrganizationTagRepository,
-  IOrganizationRepository,
-  ITagRepository,
-} from '@/graphql/repositories';
+import { Repositories } from '@/graphql/repositories';
 import { organizationTagAuditLogs } from '@/graphql/repositories/organization-tags/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -24,16 +22,15 @@ import {
 
 export class OrganizationTagService extends AuditService implements IOrganizationTagService {
   constructor(
-    private readonly organizationTagRepository: IOrganizationTagRepository,
-    private readonly organizationRepository: IOrganizationRepository,
-    private readonly tagRepository: ITagRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(organizationTagAuditLogs, 'organizationTagId', user);
   }
 
   private async organizationExists(organizationId: string): Promise<void> {
-    const organizations = await this.organizationRepository.getOrganizations({
+    const organizations = await this.repositories.organizationRepository.getOrganizations({
       ids: [organizationId],
       limit: 1,
     });
@@ -44,7 +41,7 @@ export class OrganizationTagService extends AuditService implements IOrganizatio
   }
 
   private async tagExists(tagId: string): Promise<void> {
-    const tags = await this.tagRepository.getTags({
+    const tags = await this.repositories.tagRepository.getTags({
       ids: [tagId],
       limit: 1,
     });
@@ -57,9 +54,10 @@ export class OrganizationTagService extends AuditService implements IOrganizatio
   private async organizationHasTag(organizationId: string, tagId: string): Promise<boolean> {
     await this.organizationExists(organizationId);
     await this.tagExists(tagId);
-    const existingOrganizationTags = await this.organizationTagRepository.getOrganizationTags({
-      organizationId,
-    });
+    const existingOrganizationTags =
+      await this.repositories.organizationTagRepository.getOrganizationTags({
+        organizationId,
+      });
 
     return existingOrganizationTags.some((ot) => ot.tagId === tagId);
   }
@@ -73,7 +71,8 @@ export class OrganizationTagService extends AuditService implements IOrganizatio
 
     await this.organizationExists(validatedParams.organizationId);
 
-    const result = await this.organizationTagRepository.getOrganizationTags(validatedParams);
+    const result =
+      await this.repositories.organizationTagRepository.getOrganizationTags(validatedParams);
     return validateOutput(
       createDynamicSingleSchema(organizationTagSchema).array(),
       result,
@@ -100,7 +99,7 @@ export class OrganizationTagService extends AuditService implements IOrganizatio
     }
 
     const organizationTag =
-      await this.organizationTagRepository.addOrganizationTag(validatedParams);
+      await this.repositories.organizationTagRepository.addOrganizationTag(validatedParams);
 
     const newValues = {
       id: organizationTag.id,
@@ -144,8 +143,10 @@ export class OrganizationTagService extends AuditService implements IOrganizatio
     const isHardDelete = params.hardDelete === true;
 
     const organizationTag = isHardDelete
-      ? await this.organizationTagRepository.hardDeleteOrganizationTag(validatedParams)
-      : await this.organizationTagRepository.softDeleteOrganizationTag(validatedParams);
+      ? await this.repositories.organizationTagRepository.hardDeleteOrganizationTag(validatedParams)
+      : await this.repositories.organizationTagRepository.softDeleteOrganizationTag(
+          validatedParams
+        );
 
     const oldValues = {
       id: organizationTag.id,

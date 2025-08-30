@@ -1,8 +1,6 @@
-import {
-  IOrganizationPermissionRepository,
-  IOrganizationRepository,
-  IPermissionRepository,
-} from '@/graphql/repositories';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
+import { Repositories } from '@/graphql/repositories';
 import { AuthenticatedUser } from '@/graphql/types';
 
 import { OrganizationPermissionService } from './service';
@@ -12,15 +10,9 @@ export * from './service';
 export * from './schemas';
 
 export function createOrganizationPermissionService(
-  organizationPermissionRepository: IOrganizationPermissionRepository,
-  organizationRepository: IOrganizationRepository,
-  permissionRepository: IPermissionRepository,
-  user: AuthenticatedUser | null
+  repositories: Repositories,
+  user: AuthenticatedUser | null,
+  db: PostgresJsDatabase
 ) {
-  return new OrganizationPermissionService(
-    organizationPermissionRepository,
-    organizationRepository,
-    permissionRepository,
-    user
-  );
+  return new OrganizationPermissionService(repositories, user, db);
 }

@@ -1,12 +1,18 @@
-import { IUserRepository } from '@/graphql/repositories/users/interface';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
+import { Repositories } from '@/graphql/repositories';
 import { AuthenticatedUser } from '@/graphql/types';
 
 import { UserService } from './service';
 
-export * from './schemas';
 export * from './interface';
 export * from './service';
+export * from './schemas';
 
-export function createUserService(userRepository: IUserRepository, user: AuthenticatedUser | null) {
-  return new UserService(userRepository, user);
+export function createUserService(
+  repositories: Repositories,
+  user: AuthenticatedUser | null,
+  db: PostgresJsDatabase
+) {
+  return new UserService(repositories, user, db);
 }

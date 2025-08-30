@@ -1,14 +1,12 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   MutationAddOrganizationUserArgs,
   MutationRemoveOrganizationUserArgs,
   OrganizationUser,
   QueryOrganizationUsersArgs,
 } from '@/graphql/generated/types';
-import {
-  IOrganizationUserRepository,
-  IOrganizationRepository,
-  IUserRepository,
-} from '@/graphql/repositories';
+import { Repositories } from '@/graphql/repositories';
 import { organizationUsersAuditLogs } from '@/graphql/repositories/organization-users/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -24,16 +22,15 @@ import {
 
 export class OrganizationUserService extends AuditService implements IOrganizationUserService {
   constructor(
-    private readonly organizationUserRepository: IOrganizationUserRepository,
-    private readonly organizationRepository: IOrganizationRepository,
-    private readonly userRepository: IUserRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(organizationUsersAuditLogs, 'organizationUserId', user);
   }
 
   private async organizationExists(organizationId: string): Promise<void> {
-    const organizations = await this.organizationRepository.getOrganizations({
+    const organizations = await this.repositories.organizationRepository.getOrganizations({
       ids: [organizationId],
       limit: 1,
     });
@@ -44,7 +41,7 @@ export class OrganizationUserService extends AuditService implements IOrganizati
   }
 
   private async userExists(userId: string): Promise<void> {
-    const users = await this.userRepository.getUsers({
+    const users = await this.repositories.userRepository.getUsers({
       ids: [userId],
       limit: 1,
     });
@@ -57,9 +54,10 @@ export class OrganizationUserService extends AuditService implements IOrganizati
   private async organizationHasUser(organizationId: string, userId: string): Promise<boolean> {
     await this.organizationExists(organizationId);
     await this.userExists(userId);
-    const existingOrganizationUsers = await this.organizationUserRepository.getOrganizationUsers({
-      organizationId,
-    });
+    const existingOrganizationUsers =
+      await this.repositories.organizationUserRepository.getOrganizationUsers({
+        organizationId,
+      });
 
     return existingOrganizationUsers.some((ou) => ou.userId === userId);
   }
@@ -75,7 +73,8 @@ export class OrganizationUserService extends AuditService implements IOrganizati
 
     await this.organizationExists(validatedParams.organizationId);
 
-    const result = await this.organizationUserRepository.getOrganizationUsers(validatedParams);
+    const result =
+      await this.repositories.organizationUserRepository.getOrganizationUsers(validatedParams);
     return validateOutput(
       createDynamicSingleSchema(organizationUserSchema).array(),
       result,
@@ -102,7 +101,7 @@ export class OrganizationUserService extends AuditService implements IOrganizati
     }
 
     const organizationUser =
-      await this.organizationUserRepository.addOrganizationUser(validatedParams);
+      await this.repositories.organizationUserRepository.addOrganizationUser(validatedParams);
 
     const newValues = {
       id: organizationUser.id,
@@ -146,8 +145,12 @@ export class OrganizationUserService extends AuditService implements IOrganizati
     const isHardDelete = params.hardDelete === true;
 
     const organizationUser = isHardDelete
-      ? await this.organizationUserRepository.hardDeleteOrganizationUser(validatedParams)
-      : await this.organizationUserRepository.softDeleteOrganizationUser(validatedParams);
+      ? await this.repositories.organizationUserRepository.hardDeleteOrganizationUser(
+          validatedParams
+        )
+      : await this.repositories.organizationUserRepository.softDeleteOrganizationUser(
+          validatedParams
+        );
 
     const oldValues = {
       id: organizationUser.id,

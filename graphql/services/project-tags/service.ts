@@ -1,10 +1,12 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   QueryProjectTagsArgs,
   MutationAddProjectTagArgs,
   MutationRemoveProjectTagArgs,
   ProjectTag,
 } from '@/graphql/generated/types';
-import { IProjectTagRepository, IProjectRepository, ITagRepository } from '@/graphql/repositories';
+import { Repositories } from '@/graphql/repositories';
 import { projectTagAuditLogs } from '@/graphql/repositories/project-tags/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -20,16 +22,15 @@ import {
 
 export class ProjectTagService extends AuditService implements IProjectTagService {
   constructor(
-    private readonly projectTagRepository: IProjectTagRepository,
-    private readonly projectRepository: IProjectRepository,
-    private readonly tagRepository: ITagRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(projectTagAuditLogs, 'projectTagId', user);
   }
 
   private async projectExists(projectId: string): Promise<void> {
-    const projects = await this.projectRepository.getProjects({
+    const projects = await this.repositories.projectRepository.getProjects({
       ids: [projectId],
       limit: 1,
     });
@@ -40,7 +41,7 @@ export class ProjectTagService extends AuditService implements IProjectTagServic
   }
 
   private async tagExists(tagId: string): Promise<void> {
-    const tags = await this.tagRepository.getTags({
+    const tags = await this.repositories.tagRepository.getTags({
       ids: [tagId],
       limit: 1,
     });
@@ -53,7 +54,7 @@ export class ProjectTagService extends AuditService implements IProjectTagServic
   private async projectHasTag(projectId: string, tagId: string): Promise<boolean> {
     await this.projectExists(projectId);
     await this.tagExists(tagId);
-    const existingProjectTags = await this.projectTagRepository.getProjectTags({
+    const existingProjectTags = await this.repositories.projectTagRepository.getProjectTags({
       projectId,
     });
 
@@ -69,7 +70,7 @@ export class ProjectTagService extends AuditService implements IProjectTagServic
 
     await this.projectExists(validatedParams.projectId);
 
-    const result = await this.projectTagRepository.getProjectTags(validatedParams);
+    const result = await this.repositories.projectTagRepository.getProjectTags(validatedParams);
     return validateOutput(
       createDynamicSingleSchema(projectTagSchema).array(),
       result,
@@ -93,7 +94,7 @@ export class ProjectTagService extends AuditService implements IProjectTagServic
       throw new Error('Project already has this tag');
     }
 
-    const projectTag = await this.projectTagRepository.addProjectTag(validatedParams);
+    const projectTag = await this.repositories.projectTagRepository.addProjectTag(validatedParams);
 
     const newValues = {
       id: projectTag.id,
@@ -137,8 +138,8 @@ export class ProjectTagService extends AuditService implements IProjectTagServic
     const isHardDelete = params.hardDelete === true;
 
     const projectTag = isHardDelete
-      ? await this.projectTagRepository.hardDeleteProjectTag(validatedParams)
-      : await this.projectTagRepository.softDeleteProjectTag(validatedParams);
+      ? await this.repositories.projectTagRepository.hardDeleteProjectTag(validatedParams)
+      : await this.repositories.projectTagRepository.softDeleteProjectTag(validatedParams);
 
     const oldValues = {
       id: projectTag.id,

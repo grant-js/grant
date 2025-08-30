@@ -1,17 +1,18 @@
-import { IRoleRepository, IUserRoleRepository, IUserRepository } from '@/graphql/repositories';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
+import { Repositories } from '@/graphql/repositories';
 import { AuthenticatedUser } from '@/graphql/types';
 
 import { UserRoleService } from './service';
 
-export * from './schemas';
 export * from './interface';
 export * from './service';
+export * from './schemas';
 
 export function createUserRoleService(
-  userRoleRepository: IUserRoleRepository,
-  userRepository: IUserRepository,
-  roleRepository: IRoleRepository,
-  user: AuthenticatedUser | null
+  repositories: Repositories,
+  user: AuthenticatedUser | null,
+  db: PostgresJsDatabase
 ) {
-  return new UserRoleService(userRoleRepository, userRepository, roleRepository, user);
+  return new UserRoleService(repositories, user, db);
 }

@@ -1,8 +1,6 @@
-import {
-  IProjectRepository,
-  IUserRepository,
-  IProjectUserRepository,
-} from '@/graphql/repositories';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
+import { Repositories } from '@/graphql/repositories';
 import { AuthenticatedUser } from '@/graphql/types';
 
 import { ProjectUserService } from './service';
@@ -12,10 +10,9 @@ export * from './service';
 export * from './schemas';
 
 export function createProjectUserService(
-  projectUserRepository: IProjectUserRepository,
-  projectRepository: IProjectRepository,
-  userRepository: IUserRepository,
-  user: AuthenticatedUser | null
+  repositories: Repositories,
+  user: AuthenticatedUser | null,
+  db: PostgresJsDatabase
 ) {
-  return new ProjectUserService(projectUserRepository, projectRepository, userRepository, user);
+  return new ProjectUserService(repositories, user, db);
 }

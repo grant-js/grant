@@ -1,14 +1,12 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   QueryProjectGroupsArgs,
   MutationAddProjectGroupArgs,
   MutationRemoveProjectGroupArgs,
   ProjectGroup,
 } from '@/graphql/generated/types';
-import {
-  IProjectGroupRepository,
-  IProjectRepository,
-  IGroupRepository,
-} from '@/graphql/repositories';
+import { Repositories } from '@/graphql/repositories';
 import { projectGroupAuditLogs } from '@/graphql/repositories/project-groups/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -24,16 +22,15 @@ import {
 
 export class ProjectGroupService extends AuditService implements IProjectGroupService {
   constructor(
-    private readonly projectGroupRepository: IProjectGroupRepository,
-    private readonly projectRepository: IProjectRepository,
-    private readonly groupRepository: IGroupRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(projectGroupAuditLogs, 'projectGroupId', user);
   }
 
   private async projectExists(projectId: string): Promise<void> {
-    const projects = await this.projectRepository.getProjects({
+    const projects = await this.repositories.projectRepository.getProjects({
       ids: [projectId],
       limit: 1,
     });
@@ -44,7 +41,7 @@ export class ProjectGroupService extends AuditService implements IProjectGroupSe
   }
 
   private async groupExists(groupId: string): Promise<void> {
-    const groups = await this.groupRepository.getGroups({
+    const groups = await this.repositories.groupRepository.getGroups({
       ids: [groupId],
       limit: 1,
     });
@@ -57,7 +54,7 @@ export class ProjectGroupService extends AuditService implements IProjectGroupSe
   private async projectHasGroup(projectId: string, groupId: string): Promise<boolean> {
     await this.projectExists(projectId);
     await this.groupExists(groupId);
-    const existingProjectGroups = await this.projectGroupRepository.getProjectGroups({
+    const existingProjectGroups = await this.repositories.projectGroupRepository.getProjectGroups({
       projectId,
     });
 
@@ -73,7 +70,7 @@ export class ProjectGroupService extends AuditService implements IProjectGroupSe
 
     await this.projectExists(validatedParams.projectId);
 
-    const result = await this.projectGroupRepository.getProjectGroups(validatedParams);
+    const result = await this.repositories.projectGroupRepository.getProjectGroups(validatedParams);
     return validateOutput(
       createDynamicSingleSchema(projectGroupSchema).array(),
       result,
@@ -97,7 +94,8 @@ export class ProjectGroupService extends AuditService implements IProjectGroupSe
       throw new Error('Project already has this group');
     }
 
-    const projectGroup = await this.projectGroupRepository.addProjectGroup(validatedParams);
+    const projectGroup =
+      await this.repositories.projectGroupRepository.addProjectGroup(validatedParams);
 
     const newValues = {
       id: projectGroup.id,
@@ -141,8 +139,8 @@ export class ProjectGroupService extends AuditService implements IProjectGroupSe
     const isHardDelete = params.hardDelete === true;
 
     const projectGroup = isHardDelete
-      ? await this.projectGroupRepository.hardDeleteProjectGroup(validatedParams)
-      : await this.projectGroupRepository.softDeleteProjectGroup(validatedParams);
+      ? await this.repositories.projectGroupRepository.hardDeleteProjectGroup(validatedParams)
+      : await this.repositories.projectGroupRepository.softDeleteProjectGroup(validatedParams);
 
     const oldValues = {
       id: projectGroup.id,

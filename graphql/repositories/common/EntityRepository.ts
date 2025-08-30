@@ -1,8 +1,9 @@
 import { eq } from 'drizzle-orm';
 import { count } from 'drizzle-orm';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 import { SortOrder } from '@/graphql/generated/types';
-import { db } from '@/graphql/lib/providers/database/connection';
+import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 
 import { buildOrderBy, toEntity, buildSelectObject, buildWhereClause } from './utils';
 
@@ -54,14 +55,23 @@ export abstract class EntityRepository<TModel extends BaseEntityModel, TEntity e
   protected abstract searchFields: Array<keyof TModel>;
   protected abstract defaultSortField: keyof TModel;
 
-  protected async query(params: BaseQueryArgs<TModel>): Promise<BasePageResult<TEntity>> {
+  constructor(protected db: PostgresJsDatabase) {}
+
+  protected async query(
+    params: BaseQueryArgs<TModel>,
+    transaction?: Transaction
+  ): Promise<BasePageResult<TEntity>> {
     const { ids, page = 1, limit = 50, search, sort, requestedFields } = params;
+    const dbInstance = transaction || this.db;
 
     try {
       const orderBy = buildOrderBy<TModel>(this.table, sort, this.defaultSortField);
 
       const whereClause = buildWhereClause<TModel>(this.table, this.searchFields, ids, search);
-      const countResult = await db.select({ count: count() }).from(this.table).where(whereClause);
+      const countResult = await dbInstance
+        .select({ count: count() })
+        .from(this.table)
+        .where(whereClause);
       const totalCount = Number(countResult[0]?.count || 0);
       const offset = (page - 1) * limit;
 
@@ -77,7 +87,7 @@ export abstract class EntityRepository<TModel extends BaseEntityModel, TEntity e
         sort
       );
 
-      const results = await db
+      const results = await dbInstance
         .select(selectObj)
         .from(this.table)
         .where(whereClause)
@@ -100,9 +110,11 @@ export abstract class EntityRepository<TModel extends BaseEntityModel, TEntity e
     }
   }
 
-  protected async create(data: BaseCreateArgs): Promise<TEntity> {
+  protected async create(data: BaseCreateArgs, transaction?: Transaction): Promise<TEntity> {
+    const dbInstance = transaction || this.db;
+
     try {
-      const result = await db
+      const result = await dbInstance
         .insert(this.table)
         .values({
           ...data,
@@ -120,7 +132,9 @@ export abstract class EntityRepository<TModel extends BaseEntityModel, TEntity e
     }
   }
 
-  protected async update(params: BaseUpdateArgs): Promise<TEntity> {
+  protected async update(params: BaseUpdateArgs, transaction?: Transaction): Promise<TEntity> {
+    const dbInstance = transaction || this.db;
+
     try {
       const updateValues: Record<string, unknown> = {
         updatedAt: new Date(),
@@ -132,7 +146,7 @@ export abstract class EntityRepository<TModel extends BaseEntityModel, TEntity e
         }
       });
 
-      const result = await db
+      const result = await dbInstance
         .update(this.table)
         .set(updateValues)
         .where(eq(this.table.id, params.id))
@@ -146,9 +160,11 @@ export abstract class EntityRepository<TModel extends BaseEntityModel, TEntity e
     }
   }
 
-  protected async softDelete(params: BaseDeleteArgs): Promise<TEntity> {
+  protected async softDelete(params: BaseDeleteArgs, transaction?: Transaction): Promise<TEntity> {
+    const dbInstance = transaction || this.db;
+
     try {
-      const result = await db
+      const result = await dbInstance
         .update(this.table)
         .set({
           deletedAt: new Date(),
@@ -165,11 +181,19 @@ export abstract class EntityRepository<TModel extends BaseEntityModel, TEntity e
     }
   }
 
-  protected async hardDelete(params: BaseDeleteArgs): Promise<TEntity> {
+  protected async hardDelete(params: BaseDeleteArgs, transaction?: Transaction): Promise<TEntity> {
+    const dbInstance = transaction || this.db;
+
     try {
-      const result = await db.delete(this.table).where(eq(this.table.id, params.id)).returning();
+      const result = await dbInstance
+        .delete(this.table)
+        .where(eq(this.table.id, params.id))
+        .returning();
 
       const deletedItem = Array.isArray(result) ? result[0] : result;
+      if (!deletedItem) {
+        throw new Error('Entity not found');
+      }
       return toEntity<TEntity>(deletedItem as TModel);
     } catch (error) {
       console.error('Hard delete error:', error);

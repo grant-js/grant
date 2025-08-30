@@ -1,6 +1,13 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
+import { IGroupTagRepository } from './interface';
 import { GroupTagRepository } from './repository';
 
-export type { IGroupTagRepository } from './interface';
-export * from './schema';
+// Factory function for creating instances with database connections
+export function createGroupTagRepository(db: PostgresJsDatabase): IGroupTagRepository {
+  return new GroupTagRepository(db);
+}
 
-export const groupTagRepository = new GroupTagRepository();
+export * from './repository';
+export * from './interface';
+export * from './schema';

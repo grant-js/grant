@@ -1,26 +1,18 @@
-import {
-  IGroupPermissionRepository,
-  IGroupRepository,
-  IPermissionRepository,
-} from '@/graphql/repositories';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
+import { Repositories } from '@/graphql/repositories';
 import { AuthenticatedUser } from '@/graphql/types';
 
 import { GroupPermissionService } from './service';
 
-export { GroupPermissionService } from './service';
-export type { IGroupPermissionService } from './interface';
+export * from './interface';
+export * from './service';
 export * from './schemas';
 
 export function createGroupPermissionService(
-  groupPermissionRepository: IGroupPermissionRepository,
-  groupRepository: IGroupRepository,
-  permissionRepository: IPermissionRepository,
-  user: AuthenticatedUser | null
+  repositories: Repositories,
+  user: AuthenticatedUser | null,
+  db: PostgresJsDatabase
 ) {
-  return new GroupPermissionService(
-    groupPermissionRepository,
-    groupRepository,
-    permissionRepository,
-    user
-  );
+  return new GroupPermissionService(repositories, user, db);
 }

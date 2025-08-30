@@ -1,8 +1,6 @@
-import {
-  IProjectPermissionRepository,
-  IProjectRepository,
-  IPermissionRepository,
-} from '@/graphql/repositories';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
+import { Repositories } from '@/graphql/repositories';
 import { AuthenticatedUser } from '@/graphql/types';
 
 import { ProjectPermissionService } from './service';
@@ -12,15 +10,9 @@ export * from './service';
 export * from './schemas';
 
 export function createProjectPermissionService(
-  projectPermissionRepository: IProjectPermissionRepository,
-  projectRepository: IProjectRepository,
-  permissionRepository: IPermissionRepository,
-  user: AuthenticatedUser | null
+  repositories: Repositories,
+  user: AuthenticatedUser | null,
+  db: PostgresJsDatabase
 ) {
-  return new ProjectPermissionService(
-    projectPermissionRepository,
-    projectRepository,
-    permissionRepository,
-    user
-  );
+  return new ProjectPermissionService(repositories, user, db);
 }

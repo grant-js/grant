@@ -1,14 +1,12 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   QueryOrganizationRolesArgs,
   MutationAddOrganizationRoleArgs,
   MutationRemoveOrganizationRoleArgs,
   OrganizationRole,
 } from '@/graphql/generated/types';
-import {
-  IOrganizationRoleRepository,
-  IOrganizationRepository,
-  IRoleRepository,
-} from '@/graphql/repositories';
+import { Repositories } from '@/graphql/repositories';
 import { organizationRolesAuditLogs } from '@/graphql/repositories/organization-roles/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -24,16 +22,15 @@ import {
 
 export class OrganizationRoleService extends AuditService implements IOrganizationRoleService {
   constructor(
-    private readonly organizationRoleRepository: IOrganizationRoleRepository,
-    private readonly organizationRepository: IOrganizationRepository,
-    private readonly roleRepository: IRoleRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(organizationRolesAuditLogs, 'organizationRoleId', user);
   }
 
   private async organizationExists(organizationId: string): Promise<void> {
-    const organizations = await this.organizationRepository.getOrganizations({
+    const organizations = await this.repositories.organizationRepository.getOrganizations({
       ids: [organizationId],
       limit: 1,
     });
@@ -44,7 +41,7 @@ export class OrganizationRoleService extends AuditService implements IOrganizati
   }
 
   private async roleExists(roleId: string): Promise<void> {
-    const roles = await this.roleRepository.getRoles({
+    const roles = await this.repositories.roleRepository.getRoles({
       ids: [roleId],
       limit: 1,
     });
@@ -57,9 +54,10 @@ export class OrganizationRoleService extends AuditService implements IOrganizati
   private async organizationHasRole(organizationId: string, roleId: string): Promise<boolean> {
     await this.organizationExists(organizationId);
     await this.roleExists(roleId);
-    const existingOrganizationRoles = await this.organizationRoleRepository.getOrganizationRoles({
-      organizationId,
-    });
+    const existingOrganizationRoles =
+      await this.repositories.organizationRoleRepository.getOrganizationRoles({
+        organizationId,
+      });
 
     return existingOrganizationRoles.some((or) => or.roleId === roleId);
   }
@@ -75,7 +73,8 @@ export class OrganizationRoleService extends AuditService implements IOrganizati
 
     await this.organizationExists(validatedParams.organizationId);
 
-    const result = await this.organizationRoleRepository.getOrganizationRoles(validatedParams);
+    const result =
+      await this.repositories.organizationRoleRepository.getOrganizationRoles(validatedParams);
     return validateOutput(
       createDynamicSingleSchema(organizationRoleSchema).array(),
       result,
@@ -102,7 +101,7 @@ export class OrganizationRoleService extends AuditService implements IOrganizati
     }
 
     const organizationRole =
-      await this.organizationRoleRepository.addOrganizationRole(validatedParams);
+      await this.repositories.organizationRoleRepository.addOrganizationRole(validatedParams);
 
     const newValues = {
       id: organizationRole.id,
@@ -146,8 +145,12 @@ export class OrganizationRoleService extends AuditService implements IOrganizati
     const isHardDelete = params.hardDelete === true;
 
     const organizationRole = isHardDelete
-      ? await this.organizationRoleRepository.hardDeleteOrganizationRole(validatedParams)
-      : await this.organizationRoleRepository.softDeleteOrganizationRole(validatedParams);
+      ? await this.repositories.organizationRoleRepository.hardDeleteOrganizationRole(
+          validatedParams
+        )
+      : await this.repositories.organizationRoleRepository.softDeleteOrganizationRole(
+          validatedParams
+        );
 
     const oldValues = {
       id: organizationRole.id,

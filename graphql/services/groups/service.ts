@@ -1,3 +1,5 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   QueryGroupsArgs,
   MutationCreateGroupArgs,
@@ -6,7 +8,7 @@ import {
   Group,
   GroupPage,
 } from '@/graphql/generated/types';
-import { IGroupRepository } from '@/graphql/repositories/groups/interface';
+import { Repositories } from '@/graphql/repositories';
 import { groupAuditLogs } from '@/graphql/repositories/groups/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -29,30 +31,31 @@ import {
 
 export class GroupService extends AuditService implements IGroupService {
   constructor(
-    private readonly groupRepository: IGroupRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(groupAuditLogs, 'groupId', user);
   }
 
   private async getGroup(groupId: string): Promise<Group> {
-    const groups = await this.groupRepository.getGroups({
+    const existingGroups = await this.repositories.groupRepository.getGroups({
       ids: [groupId],
       limit: 1,
     });
 
-    if (groups.groups.length === 0) {
+    if (existingGroups.groups.length === 0) {
       throw new Error('Group not found');
     }
 
-    return groups.groups[0];
+    return existingGroups.groups[0];
   }
 
   public async getGroups(
     params: Omit<QueryGroupsArgs, 'scope'> & { requestedFields?: string[] }
   ): Promise<GroupPage> {
     const validatedParams = validateInput(getGroupsParamsSchema, params, 'getGroups method');
-    const result = await this.groupRepository.getGroups(validatedParams as any);
+    const result = await this.repositories.groupRepository.getGroups(validatedParams as any);
 
     // Transform repository result to standard format for validation
     const transformedResult = {
@@ -69,14 +72,14 @@ export class GroupService extends AuditService implements IGroupService {
 
     return {
       groups: validatedResult.items,
-      totalCount: validatedResult.totalCount,
       hasNextPage: validatedResult.hasNextPage,
+      totalCount: validatedResult.totalCount,
     };
   }
 
   public async createGroup(params: MutationCreateGroupArgs): Promise<Group> {
     const validatedParams = validateInput(createGroupParamsSchema, params, 'createGroup method');
-    const group = await this.groupRepository.createGroup(validatedParams);
+    const group = await this.repositories.groupRepository.createGroup(validatedParams);
 
     const newValues = {
       id: group.id,
@@ -99,7 +102,7 @@ export class GroupService extends AuditService implements IGroupService {
     const validatedParams = validateInput(updateGroupParamsSchema, params, 'updateGroup method');
 
     const oldGroup = await this.getGroup(validatedParams.id);
-    const updatedGroup = await this.groupRepository.updateGroup(validatedParams);
+    const updatedGroup = await this.repositories.groupRepository.updateGroup(validatedParams);
 
     const oldValues = {
       id: oldGroup.id,
@@ -139,8 +142,8 @@ export class GroupService extends AuditService implements IGroupService {
     const isHardDelete = params.hardDelete === true;
 
     const deletedGroup = isHardDelete
-      ? await this.groupRepository.hardDeleteGroup(validatedParams)
-      : await this.groupRepository.softDeleteGroup(validatedParams);
+      ? await this.repositories.groupRepository.hardDeleteGroup(validatedParams)
+      : await this.repositories.groupRepository.softDeleteGroup(validatedParams);
 
     const oldValues = {
       id: oldGroup.id,

@@ -1,4 +1,6 @@
-import { db } from '@/graphql/lib/providers/database/connection';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
+import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { AuthenticatedUser } from '@/graphql/types';
 import { SYSTEM_USER_ID } from '@/lib/constants';
 
@@ -13,15 +15,17 @@ export interface AuditLogParams {
 export abstract class AuditService {
   constructor(
     protected readonly auditLogsTable: any,
-    protected readonly entityIdField: string = 'entityId',
-    protected readonly user: AuthenticatedUser | null = null
+    protected readonly entityIdField: string,
+    protected readonly user: AuthenticatedUser | null = null,
+    readonly db: PostgresJsDatabase
   ) {}
 
   protected getPerformedBy(): string {
     return this.user !== null ? this.user.id : SYSTEM_USER_ID;
   }
 
-  protected async logAction(params: AuditLogParams): Promise<void> {
+  protected async logAction(params: AuditLogParams, transaction?: Transaction): Promise<void> {
+    const dbInstance = transaction || this.db;
     try {
       const insertData: any = {
         [this.entityIdField]: params.entityId,
@@ -33,7 +37,7 @@ export abstract class AuditService {
         createdAt: new Date(),
       };
 
-      await db.insert(this.auditLogsTable).values(insertData);
+      await dbInstance.insert(this.auditLogsTable).values(insertData);
     } catch (error) {
       console.error('Error creating audit log:', error);
     }
@@ -42,58 +46,74 @@ export abstract class AuditService {
   protected async logCreate(
     entityId: string,
     newValues: Record<string, unknown>,
-    metadata?: Record<string, unknown>
+    metadata?: Record<string, unknown>,
+    transaction?: Transaction
   ): Promise<void> {
-    await this.logAction({
-      entityId,
-      action: 'CREATE',
-      oldValues: null,
-      newValues,
-      metadata,
-    });
+    await this.logAction(
+      {
+        entityId,
+        action: 'CREATE',
+        oldValues: null,
+        newValues,
+        metadata,
+      },
+      transaction
+    );
   }
 
   protected async logUpdate(
     entityId: string,
     oldValues: Record<string, unknown>,
     newValues: Record<string, unknown>,
-    metadata?: Record<string, unknown>
+    metadata?: Record<string, unknown>,
+    transaction?: Transaction
   ): Promise<void> {
-    await this.logAction({
-      entityId,
-      action: 'UPDATE',
-      oldValues,
-      newValues,
-      metadata,
-    });
+    await this.logAction(
+      {
+        entityId,
+        action: 'UPDATE',
+        oldValues,
+        newValues,
+        metadata,
+      },
+      transaction
+    );
   }
 
   protected async logSoftDelete(
     entityId: string,
     oldValues: Record<string, unknown>,
     newValues: Record<string, unknown>,
-    metadata?: Record<string, unknown>
+    metadata?: Record<string, unknown>,
+    transaction?: Transaction
   ): Promise<void> {
-    await this.logAction({
-      entityId,
-      action: 'SOFT_DELETE',
-      oldValues,
-      newValues,
-      metadata,
-    });
+    await this.logAction(
+      {
+        entityId,
+        action: 'SOFT_DELETE',
+        oldValues,
+        newValues,
+        metadata,
+      },
+      transaction
+    );
   }
 
   protected async logHardDelete(
     entityId: string,
     oldValues: Record<string, unknown>,
-    metadata?: Record<string, unknown>
+    metadata?: Record<string, unknown>,
+    transaction?: Transaction
   ): Promise<void> {
-    await this.logAction({
-      entityId,
-      action: 'HARD_DELETE',
-      oldValues,
-      newValues: null,
-      metadata,
-    });
+    await this.logAction(
+      {
+        entityId,
+        action: 'HARD_DELETE',
+        oldValues,
+        newValues: null,
+        metadata,
+      },
+      transaction
+    );
   }
 }

@@ -1,11 +1,12 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   QueryUserRolesArgs,
   MutationAddUserRoleArgs,
   MutationRemoveUserRoleArgs,
   UserRole,
 } from '@/graphql/generated/types';
-import { IUserRepository, IRoleRepository } from '@/graphql/repositories';
-import { IUserRoleRepository } from '@/graphql/repositories/user-roles/interface';
+import { Repositories } from '@/graphql/repositories';
 import { userRolesAuditLogs } from '@/graphql/repositories/user-roles/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -21,16 +22,15 @@ import {
 
 export class UserRoleService extends AuditService implements IUserRoleService {
   constructor(
-    private readonly userRoleRepository: IUserRoleRepository,
-    private readonly userRepository: IUserRepository,
-    private readonly roleRepository: IRoleRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(userRolesAuditLogs, 'userRoleId', user);
   }
 
   private async userExists(userId: string): Promise<void> {
-    const users = await this.userRepository.getUsers({
+    const users = await this.repositories.userRepository.getUsers({
       ids: [userId],
       limit: 1,
     });
@@ -41,7 +41,7 @@ export class UserRoleService extends AuditService implements IUserRoleService {
   }
 
   private async roleExists(roleId: string): Promise<void> {
-    const roles = await this.roleRepository.getRoles({
+    const roles = await this.repositories.roleRepository.getRoles({
       ids: [roleId],
       limit: 1,
     });
@@ -54,7 +54,7 @@ export class UserRoleService extends AuditService implements IUserRoleService {
   private async userHasRole(userId: string, roleId: string): Promise<boolean> {
     await this.userExists(userId);
     await this.roleExists(roleId);
-    const existingUserRoles = await this.userRoleRepository.getUserRoles({
+    const existingUserRoles = await this.repositories.userRoleRepository.getUserRoles({
       userId,
     });
 
@@ -66,7 +66,9 @@ export class UserRoleService extends AuditService implements IUserRoleService {
 
     await this.userExists(validatedParams.userId);
 
-    const result = await this.userRoleRepository.getUserRoles({ userId: validatedParams.userId });
+    const result = await this.repositories.userRoleRepository.getUserRoles({
+      userId: validatedParams.userId,
+    });
     return validateOutput(
       createDynamicSingleSchema(userRoleSchema).array(),
       result,
@@ -86,7 +88,7 @@ export class UserRoleService extends AuditService implements IUserRoleService {
       throw new Error('User already has this role');
     }
 
-    const userRole = await this.userRoleRepository.addUserRole(validatedParams);
+    const userRole = await this.repositories.userRoleRepository.addUserRole(validatedParams);
 
     const newValues = {
       id: userRole.id,
@@ -130,8 +132,8 @@ export class UserRoleService extends AuditService implements IUserRoleService {
     const isHardDelete = params.hardDelete === true;
 
     const userRole = isHardDelete
-      ? await this.userRoleRepository.hardDeleteUserRole(validatedParams)
-      : await this.userRoleRepository.softDeleteUserRole(validatedParams);
+      ? await this.repositories.userRoleRepository.hardDeleteUserRole(validatedParams)
+      : await this.repositories.userRoleRepository.softDeleteUserRole(validatedParams);
 
     const oldValues = {
       id: userRole.id,

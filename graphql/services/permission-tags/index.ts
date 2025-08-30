@@ -1,8 +1,6 @@
-import {
-  IPermissionTagRepository,
-  IPermissionRepository,
-  ITagRepository,
-} from '@/graphql/repositories';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
+import { Repositories } from '@/graphql/repositories';
 import { AuthenticatedUser } from '@/graphql/types';
 
 import { PermissionTagService } from './service';
@@ -12,15 +10,9 @@ export * from './service';
 export * from './schemas';
 
 export function createPermissionTagService(
-  permissionTagRepository: IPermissionTagRepository,
-  permissionRepository: IPermissionRepository,
-  tagRepository: ITagRepository,
-  user: AuthenticatedUser | null
+  repositories: Repositories,
+  user: AuthenticatedUser | null,
+  db: PostgresJsDatabase
 ) {
-  return new PermissionTagService(
-    permissionTagRepository,
-    permissionRepository,
-    tagRepository,
-    user
-  );
+  return new PermissionTagService(repositories, user, db);
 }

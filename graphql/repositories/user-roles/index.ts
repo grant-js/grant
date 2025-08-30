@@ -1,3 +1,13 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
+import { IUserRoleRepository } from './interface';
 import { UserRoleRepository } from './repository';
 
-export const userRoleRepository = new UserRoleRepository();
+// Factory function for creating instances with database connections
+export function createUserRoleRepository(db: PostgresJsDatabase): IUserRoleRepository {
+  return new UserRoleRepository(db);
+}
+
+export * from './repository';
+export * from './interface';
+export * from './schema';

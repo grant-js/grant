@@ -15,6 +15,7 @@ export type EntityCache = {
   groups: Map<CacheKey, string[]>;
   permissions: Map<CacheKey, string[]>;
   tags: Map<CacheKey, string[]>;
+  projects: Map<CacheKey, string[]>;
 };
 
 function getScopeCache(context: Context): EntityCache {
@@ -25,6 +26,7 @@ function getScopeCache(context: Context): EntityCache {
       groups: new Map(),
       permissions: new Map(),
       tags: new Map(),
+      projects: new Map(),
     };
   }
   return context.scopeCache;
@@ -207,4 +209,32 @@ export async function getScopedTagIds({ scope, context }: TenantScopeParams): Pr
 
   cache.tags.set(cacheKey, tagIds);
   return tagIds;
+}
+
+export async function getScopedProjectIds({
+  scope,
+  context,
+}: TenantScopeParams): Promise<string[]> {
+  const cache = getScopeCache(context);
+  const cacheKey = createCacheKey(scope);
+
+  if (cache.projects.has(cacheKey)) {
+    return cache.projects.get(cacheKey)!;
+  }
+
+  let projectIds: string[];
+  switch (scope.tenant) {
+    case Tenant.Organization: {
+      const organizationProjects =
+        await context.services.organizationProjects.getOrganizationProjects({
+          organizationId: scope.id,
+        });
+      projectIds = organizationProjects.map((op) => op.projectId);
+      break;
+    }
+    default:
+      throw new Error(`Unsupported tenant type: ${scope.tenant}`);
+  }
+  cache.projects.set(cacheKey, projectIds);
+  return projectIds;
 }

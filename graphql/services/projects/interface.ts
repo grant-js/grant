@@ -6,12 +6,16 @@ import {
   Project,
   ProjectPage,
 } from '@/graphql/generated/types';
+import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 
 export interface IProjectService {
   getProjects(
-    params: Omit<QueryProjectsArgs, 'scope'> & { requestedFields?: string[] }
+    params: Omit<QueryProjectsArgs, 'organizationId'> & { requestedFields?: string[] }
   ): Promise<ProjectPage>;
-  createProject(params: MutationCreateProjectArgs): Promise<Project>;
-  updateProject(params: MutationUpdateProjectArgs): Promise<Project>;
-  deleteProject(params: MutationDeleteProjectArgs & { hardDelete?: boolean }): Promise<Project>;
+  createProject(params: MutationCreateProjectArgs, transaction?: Transaction): Promise<Project>;
+  updateProject(params: MutationUpdateProjectArgs, transaction?: Transaction): Promise<Project>;
+  deleteProject(
+    params: MutationDeleteProjectArgs & { hardDelete?: boolean },
+    transaction?: Transaction
+  ): Promise<Project>;
 }

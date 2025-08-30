@@ -1,3 +1,5 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   QueryUsersArgs,
   MutationCreateUserArgs,
@@ -6,7 +8,7 @@ import {
   User,
   UserPage,
 } from '@/graphql/generated/types';
-import { IUserRepository } from '@/graphql/repositories/users/interface';
+import { Repositories } from '@/graphql/repositories';
 import { userAuditLogs } from '@/graphql/repositories/users/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -29,14 +31,15 @@ import {
 
 export class UserService extends AuditService implements IUserService {
   constructor(
-    private readonly userRepository: IUserRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(userAuditLogs, 'userId', user);
   }
 
   private async getUser(userId: string): Promise<User> {
-    const existingUsers = await this.userRepository.getUsers({
+    const existingUsers = await this.repositories.userRepository.getUsers({
       ids: [userId],
       limit: 1,
     });
@@ -52,7 +55,7 @@ export class UserService extends AuditService implements IUserService {
     params: Omit<QueryUsersArgs, 'scope'> & { requestedFields?: string[] }
   ): Promise<UserPage> {
     const validatedParams = validateInput(getUsersParamsSchema, params, 'getUsers method');
-    const result = await this.userRepository.getUsers(validatedParams as any);
+    const result = await this.repositories.userRepository.getUsers(validatedParams as any);
 
     // Transform repository result to standard format for validation
     const transformedResult = {
@@ -76,7 +79,7 @@ export class UserService extends AuditService implements IUserService {
 
   public async createUser(params: MutationCreateUserArgs): Promise<User> {
     const validatedParams = validateInput(createUserParamsSchema, params, 'createUser method');
-    const user = await this.userRepository.createUser(validatedParams);
+    const user = await this.repositories.userRepository.createUser(validatedParams);
 
     const newValues = {
       id: user.id,
@@ -99,7 +102,7 @@ export class UserService extends AuditService implements IUserService {
     const validatedParams = validateInput(updateUserParamsSchema, params, 'updateUser method');
 
     const oldUser = await this.getUser(validatedParams.id);
-    const updatedUser = await this.userRepository.updateUser(validatedParams);
+    const updatedUser = await this.repositories.userRepository.updateUser(validatedParams);
 
     const oldValues = {
       id: oldUser.id,
@@ -135,8 +138,8 @@ export class UserService extends AuditService implements IUserService {
     const isHardDelete = params.hardDelete === true;
 
     const deletedUser = isHardDelete
-      ? await this.userRepository.hardDeleteUser(validatedParams)
-      : await this.userRepository.softDeleteUser(validatedParams);
+      ? await this.repositories.userRepository.hardDeleteUser(validatedParams)
+      : await this.repositories.userRepository.softDeleteUser(validatedParams);
 
     const oldValues = {
       id: oldUser.id,

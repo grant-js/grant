@@ -1,13 +1,13 @@
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
 import {
   QueryRoleTagsArgs,
   MutationAddRoleTagArgs,
   MutationRemoveRoleTagArgs,
   RoleTag,
 } from '@/graphql/generated/types';
-import { IRoleTagRepository } from '@/graphql/repositories/role-tags/interface';
+import { Repositories } from '@/graphql/repositories';
 import { roleTagAuditLogs } from '@/graphql/repositories/role-tags/schema';
-import { IRoleRepository } from '@/graphql/repositories/roles/interface';
-import { ITagRepository } from '@/graphql/repositories/tags/interface';
 import { AuthenticatedUser } from '@/graphql/types';
 
 import { AuditService, validateInput, validateOutput, createDynamicSingleSchema } from '../common';
@@ -22,16 +22,15 @@ import {
 
 export class RoleTagService extends AuditService implements IRoleTagService {
   constructor(
-    private readonly roleTagRepository: IRoleTagRepository,
-    private readonly roleRepository: IRoleRepository,
-    private readonly tagRepository: ITagRepository,
-    user: AuthenticatedUser | null
+    private readonly repositories: Repositories,
+    user: AuthenticatedUser | null,
+    private readonly db: PostgresJsDatabase
   ) {
     super(roleTagAuditLogs, 'roleTagId', user);
   }
 
   private async roleExists(roleId: string): Promise<void> {
-    const roles = await this.roleRepository.getRoles({
+    const roles = await this.repositories.roleRepository.getRoles({
       ids: [roleId],
       limit: 1,
     });
@@ -42,7 +41,7 @@ export class RoleTagService extends AuditService implements IRoleTagService {
   }
 
   private async tagExists(tagId: string): Promise<void> {
-    const tags = await this.tagRepository.getTags({
+    const tags = await this.repositories.tagRepository.getTags({
       ids: [tagId],
       limit: 1,
     });
@@ -55,7 +54,7 @@ export class RoleTagService extends AuditService implements IRoleTagService {
   private async roleHasTag(roleId: string, tagId: string): Promise<boolean> {
     await this.roleExists(roleId);
     await this.tagExists(tagId);
-    const existingRoleTags = await this.roleTagRepository.getRoleTags({
+    const existingRoleTags = await this.repositories.roleTagRepository.getRoleTags({
       roleId,
     });
 
@@ -67,7 +66,7 @@ export class RoleTagService extends AuditService implements IRoleTagService {
 
     await this.roleExists(validatedParams.roleId);
 
-    const result = await this.roleTagRepository.getRoleTags(validatedParams);
+    const result = await this.repositories.roleTagRepository.getRoleTags(validatedParams);
     return validateOutput(
       createDynamicSingleSchema(roleTagSchema).array(),
       result,
@@ -84,7 +83,7 @@ export class RoleTagService extends AuditService implements IRoleTagService {
       throw new Error('Role already has this tag');
     }
 
-    const roleTag = await this.roleTagRepository.addRoleTag(validatedParams);
+    const roleTag = await this.repositories.roleTagRepository.addRoleTag(validatedParams);
 
     const newValues = {
       id: roleTag.id,
@@ -121,8 +120,8 @@ export class RoleTagService extends AuditService implements IRoleTagService {
     const isHardDelete = params.hardDelete === true;
 
     const roleTag = isHardDelete
-      ? await this.roleTagRepository.hardDeleteRoleTag(validatedParams)
-      : await this.roleTagRepository.softDeleteRoleTag(validatedParams);
+      ? await this.repositories.roleTagRepository.hardDeleteRoleTag(validatedParams)
+      : await this.repositories.roleTagRepository.softDeleteRoleTag(validatedParams);
 
     const oldValues = {
       id: roleTag.id,
