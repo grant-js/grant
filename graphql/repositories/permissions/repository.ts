@@ -18,6 +18,7 @@ import { PermissionModel, permissions } from './schema';
 
 export class PermissionRepository extends EntityRepository<PermissionModel, Permission> {
   protected table = permissions;
+  protected schemaName = 'permissions' as const;
   protected searchFields: Array<keyof PermissionModel> = ['name', 'description', 'action'];
   protected defaultSortField: keyof PermissionModel = 'createdAt';
 

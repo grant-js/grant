@@ -1,9 +1,7 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
-
-import { buildPivotWhereClause, buildPivotInsertValues, getFirstResult } from './utils';
 
 export interface BasePivotModel {
   id: string;
@@ -14,14 +12,16 @@ export interface BasePivotModel {
 }
 
 export interface BasePivotEntity extends BasePivotModel {
-  createdAt: Date | string;
-  updatedAt: Date | string;
-  deletedAt?: Date | null;
   [key: string]: unknown;
 }
 
 export interface BasePivotQueryArgs {
   parentId: string;
+}
+
+export interface PivotIntersectionQueryArgs {
+  parentIds: string[];
+  relatedIds: string[];
 }
 
 export interface BasePivotAddArgs {
@@ -46,6 +46,52 @@ export abstract class PivotRepository<
 
   constructor(protected db: PostgresJsDatabase) {}
 
+  private where(
+    table: any,
+    parentIdField: keyof TPivotModel,
+    relatedIdField: keyof TPivotModel,
+    parentId: string,
+    relatedId?: string
+  ): any {
+    const conditions = [isNull(table.deletedAt)];
+
+    if (relatedId) {
+      const relationCondition = and(
+        eq(table[parentIdField], parentId),
+        eq(table[relatedIdField], relatedId)
+      );
+      if (relationCondition) {
+        conditions.push(relationCondition);
+      }
+    } else {
+      const parentCondition = eq(table[parentIdField], parentId);
+      if (parentCondition) {
+        conditions.push(parentCondition);
+      }
+    }
+
+    return conditions.length === 1 ? conditions[0] : and(...conditions);
+  }
+
+  private insertValues(
+    parentIdField: keyof TPivotModel,
+    relatedIdField: keyof TPivotModel,
+    parentId: string,
+    relatedId: string
+  ): Record<string, unknown> {
+    return {
+      [parentIdField]: parentId,
+      [relatedIdField]: relatedId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+    };
+  }
+
+  private first<T>(result: T | T[]): T {
+    return Array.isArray(result) ? result[0] : result;
+  }
+
   protected async query(
     params: BasePivotQueryArgs,
     transaction?: Transaction
@@ -53,7 +99,7 @@ export abstract class PivotRepository<
     const dbInstance = transaction || this.db;
 
     try {
-      const whereClause = buildPivotWhereClause<TPivotModel>(
+      const whereClause = this.where(
         this.table,
         this.parentIdField,
         this.relatedIdField,
@@ -67,6 +113,22 @@ export abstract class PivotRepository<
       console.error('Error querying pivot table:', error);
       throw error;
     }
+  }
+
+  protected async queryIntersection(
+    params: PivotIntersectionQueryArgs,
+    transaction?: Transaction
+  ): Promise<TPivotEntity[]> {
+    const dbInstance = transaction || this.db;
+    const whereClause = and(
+      inArray(this.table[this.parentIdField], params.parentIds),
+      inArray(this.table[this.relatedIdField], params.relatedIds),
+      isNull(this.table.deletedAt)
+    );
+
+    const result = await dbInstance.select().from(this.table).where(whereClause);
+
+    return result.map((item: TPivotModel) => this.toEntity(item));
   }
 
   protected async add(params: BasePivotAddArgs, transaction?: Transaction): Promise<TPivotEntity> {
@@ -94,11 +156,11 @@ export abstract class PivotRepository<
           .where(softDeletedWhereClause)
           .returning();
 
-        const reactivatedItem = getFirstResult(result);
+        const reactivatedItem = this.first(result);
         return this.toEntity(reactivatedItem as TPivotModel);
       }
 
-      const whereClause = buildPivotWhereClause<TPivotModel>(
+      const whereClause = this.where(
         this.table,
         this.parentIdField,
         this.relatedIdField,
@@ -112,7 +174,7 @@ export abstract class PivotRepository<
         return this.toEntity(existingPivot[0]);
       }
 
-      const insertValues = buildPivotInsertValues<TPivotModel>(
+      const insertValues = this.insertValues(
         this.parentIdField,
         this.relatedIdField,
         params.parentId,
@@ -121,7 +183,7 @@ export abstract class PivotRepository<
 
       const result = await dbInstance.insert(this.table).values(insertValues).returning();
 
-      const insertedItem = getFirstResult(result);
+      const insertedItem = this.first(result);
       return this.toEntity(insertedItem as TPivotModel);
     } catch (error) {
       console.error('Error adding pivot relationship:', error);
@@ -136,10 +198,10 @@ export abstract class PivotRepository<
     const dbInstance = transaction || this.db;
 
     try {
-      const whereClause = buildPivotWhereClause(
+      const whereClause = this.where(
         this.table,
-        this.parentIdField as string,
-        this.relatedIdField as string,
+        this.parentIdField,
+        this.relatedIdField,
         params.parentId,
         params.relatedId
       );
@@ -153,7 +215,7 @@ export abstract class PivotRepository<
         .where(whereClause)
         .returning();
 
-      const deletedItem = getFirstResult(result);
+      const deletedItem = this.first(result);
       if (!deletedItem) {
         throw new Error('Relationship not found');
       }
@@ -172,17 +234,17 @@ export abstract class PivotRepository<
     const dbInstance = transaction || this.db;
 
     try {
-      const whereClause = buildPivotWhereClause(
+      const whereClause = this.where(
         this.table,
-        this.parentIdField as string,
-        this.relatedIdField as string,
+        this.parentIdField,
+        this.relatedIdField,
         params.parentId,
         params.relatedId
       );
 
       const result = await dbInstance.delete(this.table).where(whereClause).returning();
 
-      const deletedItem = getFirstResult(result);
+      const deletedItem = this.first(result);
       if (!deletedItem) {
         throw new Error('Relationship not found');
       }

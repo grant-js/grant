@@ -54,28 +54,30 @@ export class OrganizationProjectRepository extends PivotRepository<
 
   public async softDeleteOrganizationProject(
     organizationId: string,
-    projectId: string
+    projectId: string,
+    transaction?: Transaction
   ): Promise<OrganizationProject> {
     const baseParams: BasePivotRemoveArgs = {
       parentId: organizationId,
       relatedId: projectId,
     };
 
-    const organizationProject = await this.softDelete(baseParams);
+    const organizationProject = await this.softDelete(baseParams, transaction);
 
     return organizationProject;
   }
 
   public async hardDeleteOrganizationProject(
     organizationId: string,
-    projectId: string
+    projectId: string,
+    transaction?: Transaction
   ): Promise<OrganizationProject> {
     const baseParams: BasePivotRemoveArgs = {
       parentId: organizationId,
       relatedId: projectId,
     };
 
-    const organizationProject = await this.hardDelete(baseParams);
+    const organizationProject = await this.hardDelete(baseParams, transaction);
 
     return organizationProject;
   }

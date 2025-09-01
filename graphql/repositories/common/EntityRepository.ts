@@ -1,25 +1,25 @@
-import { eq } from 'drizzle-orm';
-import { count } from 'drizzle-orm';
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { eq, inArray, ilike, or, and, isNull, count, desc, asc } from 'drizzle-orm';
 
 import { SortOrder } from '@/graphql/generated/types';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
+import type { Schema } from '@/graphql/repositories/schema';
 
-import { buildOrderBy, toEntity, buildSelectObject, buildWhereClause } from './utils';
-
-export interface BaseEntityModel {
+export interface Auditable {
   id: string;
   deletedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface BaseEntity extends Auditable {
   [key: string]: unknown;
 }
 
-export interface BaseEntity extends BaseEntityModel {
-  [key: string]: unknown;
-}
-
-export interface BaseQueryArgs<TModel extends BaseEntityModel = BaseEntityModel> {
+export interface BaseQueryArgs<
+  TModel extends Auditable = Auditable,
+  TEntity extends BaseEntity = BaseEntity,
+> {
   ids?: string[] | null;
   page?: number | null;
   limit?: number | null;
@@ -28,8 +28,7 @@ export interface BaseQueryArgs<TModel extends BaseEntityModel = BaseEntityModel>
     field: keyof TModel;
     order: SortOrder;
   } | null;
-  requestedFields?: Array<keyof TModel> | null;
-  tagIds?: string[] | null;
+  requestedFields?: Array<keyof TEntity> | null;
 }
 
 export interface BasePageResult<T> {
@@ -51,61 +50,156 @@ export interface BaseDeleteArgs {
   id: string;
 }
 
-export abstract class EntityRepository<TModel extends BaseEntityModel, TEntity extends BaseEntity> {
+export interface RelationConfig {
+  field: string;
+  table: any;
+  extract: (value: any) => any;
+}
+
+export type RelationsConfig<TEntity> = Partial<Record<keyof TEntity, RelationConfig>>;
+export abstract class EntityRepository<TModel extends Auditable, TEntity extends BaseEntity> {
   protected abstract table: any;
+  protected abstract schemaName: keyof Schema;
   protected abstract searchFields: Array<keyof TModel>;
   protected abstract defaultSortField: keyof TModel;
+  protected abstract relations: RelationsConfig<TEntity>;
 
-  constructor(protected db: PostgresJsDatabase) {}
+  constructor(protected db: DbSchema) {}
 
-  protected async query(
-    params: BaseQueryArgs<TModel>,
-    transaction?: Transaction
-  ): Promise<BasePageResult<TEntity>> {
-    const { ids, page, limit, search, sort, requestedFields } = params;
-    const dbInstance = transaction || this.db;
-    const safePage = page || 1;
-    const safeLimit = limit || 50;
+  private get queryBuilder() {
+    return this.db.query[this.schemaName] as any;
+  }
+
+  private where(ids?: string[] | null, search?: string | null) {
+    const conditions: any[] = [];
+
+    if (ids && ids.length > 0) {
+      conditions.push(inArray(this.table.id, ids));
+    }
+
+    if (search && search.trim()) {
+      const searchTerm = `%${search.trim()}%`;
+      const searchConditions: any[] = [];
+
+      this.searchFields.forEach((field) => {
+        if (this.table[field]) {
+          searchConditions.push(ilike(this.table[field], searchTerm));
+        }
+      });
+
+      if (searchConditions.length > 0) {
+        conditions.push(or(...searchConditions));
+      }
+    }
+
+    conditions.push(isNull(this.table.deletedAt));
+
+    return conditions.length === 1 ? conditions[0] : and(...conditions);
+  }
+
+  private orderBy(sort?: { field: keyof TModel; order: SortOrder } | null) {
+    if (!sort) {
+      return [this.table[this.defaultSortField]];
+    }
+    return sort.order === SortOrder.Asc
+      ? [asc(this.table[sort.field])]
+      : [desc(this.table[sort.field])];
+  }
+
+  private async getTotalCount(where: any): Promise<number> {
+    try {
+      const countResult = await this.db.select({ count: count() }).from(this.table).where(where);
+      return Number(countResult[0]?.count ?? 0);
+    } catch (error) {
+      console.error('Count error:', error);
+      return 0;
+    }
+  }
+
+  private first<T>(result: T | T[]): T {
+    return Array.isArray(result) ? result[0] : result;
+  }
+
+  private withRelations(
+    requestedFields?: Array<keyof TEntity> | null
+  ): Record<keyof TEntity, any> | undefined {
+    if (!requestedFields || !this.relations) {
+      return undefined;
+    }
+    return requestedFields.reduce(
+      (acc, field) => {
+        const relation = this.relations[field];
+        if (relation) {
+          acc[field] = {
+            with: { [relation.field]: true },
+            where: isNull(relation.table.deletedAt),
+          };
+        }
+        return acc;
+      },
+      {} as Record<keyof TEntity, any>
+    );
+  }
+
+  private extractRelations(
+    row: TModel & TEntity,
+    requestedFields?: Array<keyof TEntity> | null
+  ): TModel {
+    if (!requestedFields || !this.relations) {
+      return row;
+    }
+
+    const mappedRow = { ...row };
+
+    requestedFields.forEach((field) => {
+      const relation = this.relations[field];
+      if (relation && row[field]) {
+        mappedRow[field] = relation.extract(row[field]);
+      }
+    });
+
+    return mappedRow;
+  }
+
+  protected async query(params: BaseQueryArgs<TModel, TEntity>): Promise<BasePageResult<TEntity>> {
+    const { requestedFields } = params;
+
+    const { ids, search, sort } = params;
+    const page = params.page ?? 1;
+    const safeLimit = params.limit ?? 50;
+    const limit = safeLimit > -1 ? safeLimit : undefined;
+    const offset = limit ? (page - 1) * limit : undefined;
 
     try {
-      const orderBy = buildOrderBy<TModel>(this.table, sort, this.defaultSortField);
+      const withRelations = this.withRelations(requestedFields);
+      const where = this.where(ids, search);
+      const orderBy = this.orderBy(sort);
+      const hasRelations = withRelations && Object.keys(withRelations).length > 0;
+      const totalCount = await this.getTotalCount(where);
+      const hasNextPage = limit ? page * limit < totalCount : false;
+      const filter = {
+        where,
+        orderBy,
+        limit,
+        offset,
+      };
 
-      const whereClause = buildWhereClause<TModel>(this.table, this.searchFields, ids, search);
-      const countResult = await dbInstance
-        .select({ count: count() })
-        .from(this.table)
-        .where(whereClause);
-      const totalCount = Number(countResult[0]?.count || 0);
-      const offset = (safePage - 1) * safeLimit;
+      let results = [];
 
-      if (totalCount === 0) {
-        return { items: [], totalCount: 0, hasNextPage: false };
+      if (hasRelations) {
+        results = await this.queryBuilder.findMany({
+          with: withRelations,
+          ...filter,
+        });
+        results = results.map((row: TModel & TEntity) =>
+          this.extractRelations(row, requestedFields)
+        );
+      } else {
+        results = await this.queryBuilder.findMany(filter);
       }
 
-      const hasNextPage = safePage * safeLimit < totalCount;
-
-      const selectObj = buildSelectObject<TModel>(
-        this.table,
-        requestedFields,
-        this.searchFields,
-        search,
-        sort
-      );
-
-      const results = await dbInstance
-        .select(selectObj)
-        .from(this.table)
-        .where(whereClause)
-        .orderBy(...orderBy)
-        .limit(safeLimit)
-        .offset(offset);
-
-      const items = results.map((item: TModel) =>
-        toEntity<TEntity>(item, requestedFields as string[])
-      );
-
       return {
-        items,
+        items: results as unknown as TEntity[],
         totalCount,
         hasNextPage,
       };
@@ -116,7 +210,7 @@ export abstract class EntityRepository<TModel extends BaseEntityModel, TEntity e
   }
 
   protected async create(data: BaseCreateArgs, transaction?: Transaction): Promise<TEntity> {
-    const dbInstance = transaction || this.db;
+    const dbInstance = transaction ?? this.db;
 
     try {
       const result = await dbInstance
@@ -129,8 +223,8 @@ export abstract class EntityRepository<TModel extends BaseEntityModel, TEntity e
         })
         .returning();
 
-      const insertedItem = Array.isArray(result) ? result[0] : result;
-      return toEntity<TEntity>(insertedItem as TModel);
+      const insertedItem = this.first(result);
+      return insertedItem as TEntity;
     } catch (error) {
       console.error('Create error:', error);
       throw error;
@@ -138,7 +232,7 @@ export abstract class EntityRepository<TModel extends BaseEntityModel, TEntity e
   }
 
   protected async update(params: BaseUpdateArgs, transaction?: Transaction): Promise<TEntity> {
-    const dbInstance = transaction || this.db;
+    const dbInstance = transaction ?? this.db;
 
     try {
       const updateValues: Record<string, unknown> = {
@@ -157,8 +251,8 @@ export abstract class EntityRepository<TModel extends BaseEntityModel, TEntity e
         .where(eq(this.table.id, params.id))
         .returning();
 
-      const updatedItem = Array.isArray(result) ? result[0] : result;
-      return toEntity<TEntity>(updatedItem as TModel);
+      const updatedItem = this.first(result);
+      return updatedItem as TEntity;
     } catch (error) {
       console.error('Update error:', error);
       throw error;
@@ -166,7 +260,7 @@ export abstract class EntityRepository<TModel extends BaseEntityModel, TEntity e
   }
 
   protected async softDelete(params: BaseDeleteArgs, transaction?: Transaction): Promise<TEntity> {
-    const dbInstance = transaction || this.db;
+    const dbInstance = transaction ?? this.db;
 
     try {
       const result = await dbInstance
@@ -178,8 +272,8 @@ export abstract class EntityRepository<TModel extends BaseEntityModel, TEntity e
         .where(eq(this.table.id, params.id))
         .returning();
 
-      const deletedItem = Array.isArray(result) ? result[0] : result;
-      return toEntity<TEntity>(deletedItem as TModel);
+      const deletedItem = this.first(result);
+      return deletedItem as TEntity;
     } catch (error) {
       console.error('Soft delete error:', error);
       throw error;
@@ -187,7 +281,7 @@ export abstract class EntityRepository<TModel extends BaseEntityModel, TEntity e
   }
 
   protected async hardDelete(params: BaseDeleteArgs, transaction?: Transaction): Promise<TEntity> {
-    const dbInstance = transaction || this.db;
+    const dbInstance = transaction ?? this.db;
 
     try {
       const result = await dbInstance
@@ -195,11 +289,11 @@ export abstract class EntityRepository<TModel extends BaseEntityModel, TEntity e
         .where(eq(this.table.id, params.id))
         .returning();
 
-      const deletedItem = Array.isArray(result) ? result[0] : result;
+      const deletedItem = this.first(result);
       if (!deletedItem) {
         throw new Error('Entity not found');
       }
-      return toEntity<TEntity>(deletedItem as TModel);
+      return deletedItem as TEntity;
     } catch (error) {
       console.error('Hard delete error:', error);
       throw error;

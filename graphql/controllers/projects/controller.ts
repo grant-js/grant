@@ -14,7 +14,7 @@ import { Transaction, TransactionManager } from '@/graphql/lib/transactions/Tran
 import { ProjectModel } from '@/graphql/repositories/projects/schema';
 import { UserModel } from '@/graphql/repositories/users/schema';
 import { Services } from '@/graphql/services';
-import { SelectedFields } from '@/graphql/services/common';
+import { DeleteParams, SelectedFields } from '@/graphql/services/common';
 
 import { ScopeController } from '../base/ScopeController';
 
@@ -35,6 +35,15 @@ export class ProjectController extends ScopeController {
     const scope = { tenant: Tenant.Organization, id: organizationId };
 
     let projectIds = await this.getScopedProjectIds(scope);
+    if (tagIds && tagIds.length > 0) {
+      const projectTags = await this.services.projectTags.getProjectTagIntersection(
+        projectIds,
+        tagIds
+      );
+      projectIds = projectTags
+        .filter(({ projectId, tagId }) => projectIds.includes(projectId) && tagIds.includes(tagId))
+        .map(({ projectId }) => projectId);
+    }
 
     if (ids && ids.length > 0) {
       projectIds = ids.filter((projectId) => projectIds.includes(projectId));
@@ -54,7 +63,6 @@ export class ProjectController extends ScopeController {
       limit,
       sort,
       search,
-      tagIds,
       requestedFields,
     });
 
@@ -87,6 +95,7 @@ export class ProjectController extends ScopeController {
   }
 
   public async updateProject(params: MutationUpdateProjectArgs): Promise<Project> {
+    console.log('params', params);
     const { id: projectId, input } = params;
     const { tagIds } = input;
     let currentTagIds: string[] = [];
@@ -101,6 +110,8 @@ export class ProjectController extends ScopeController {
       if (tagIds && tagIds.length > 0) {
         const newTagIds = tagIds.filter((tagId) => !currentTagIds.includes(tagId));
         const removedTagIds = currentTagIds.filter((tagId) => !tagIds.includes(tagId));
+        console.log('newTagIds', newTagIds);
+        console.log('removedTagIds', removedTagIds);
         await Promise.all(
           newTagIds.map((tagId) =>
             this.services.projectTags.addProjectTag({ projectId, tagId }, tx)
@@ -116,10 +127,9 @@ export class ProjectController extends ScopeController {
     });
   }
 
-  public async deleteProject(
-    params: MutationDeleteProjectArgs & { hardDelete?: boolean }
-  ): Promise<Project> {
+  public async deleteProject(params: MutationDeleteProjectArgs & DeleteParams): Promise<Project> {
     const projectId = params.id;
+    const organizationId = params.organizationId;
     const [projectTags, projectPermissions, projectGroups, projectRoles, projectUsers] =
       await Promise.all([
         this.services.projectTags.getProjectTags({ projectId }),
@@ -136,6 +146,10 @@ export class ProjectController extends ScopeController {
     const userIds = projectUsers.map((pu) => pu.userId);
 
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+      await this.services.organizationProjects.removeOrganizationProject(
+        { organizationId, projectId },
+        tx
+      );
       await Promise.all([
         ...tagIds.map((tagId) =>
           this.services.projectTags.removeProjectTag({ projectId, tagId }, tx)

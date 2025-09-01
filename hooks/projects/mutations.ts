@@ -27,8 +27,8 @@ export const UPDATE_PROJECT = gql`
 `;
 
 export const DELETE_PROJECT = gql`
-  mutation DeleteProject($id: ID!) {
-    deleteProject(id: $id) {
+  mutation DeleteProject($id: ID!, $organizationId: ID!) {
+    deleteProject(id: $id, organizationId: $organizationId) {
       id
       name
       slug

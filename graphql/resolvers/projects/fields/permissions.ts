@@ -1,5 +1,6 @@
 import { ProjectResolvers } from '@/graphql/generated/types';
 import { getDirectFieldSelection } from '@/graphql/lib/fieldSelection';
+import { PermissionModel } from '@/graphql/repositories/permissions/schema';
 
 export const projectPermissionsResolver: ProjectResolvers['permissions'] = async (
   parent,
@@ -8,7 +9,9 @@ export const projectPermissionsResolver: ProjectResolvers['permissions'] = async
   info
 ) => {
   const projectId = parent.id;
-  const requestedFields = info ? getDirectFieldSelection(info) : undefined;
-
+  const requestedFields = getDirectFieldSelection<keyof PermissionModel>(info);
+  if (parent.permissions) {
+    return parent.permissions;
+  }
   return await context.controllers.projects.getProjectPermissions(projectId, requestedFields);
 };

@@ -18,6 +18,7 @@ import { UserModel, users } from './schema';
 
 export class UserRepository extends EntityRepository<UserModel, User> {
   protected table = users;
+  protected schemaName = 'users' as const;
   protected searchFields: Array<keyof UserModel> = ['name', 'email'];
   protected defaultSortField: keyof UserModel = 'createdAt';
 

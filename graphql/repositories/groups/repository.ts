@@ -18,6 +18,7 @@ import { GroupModel, groups } from './schema';
 
 export class GroupRepository extends EntityRepository<GroupModel, Group> {
   protected table = groups;
+  protected schemaName = 'groups' as const;
   protected searchFields: Array<keyof GroupModel> = ['name', 'description'];
   protected defaultSortField: keyof GroupModel = 'createdAt';
 

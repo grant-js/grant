@@ -24,6 +24,7 @@ import {
   projectTagSchema,
   addProjectTagInputSchema,
   removeProjectTagInputSchema,
+  getProjectTagsIntersectionSchema,
 } from './schemas';
 
 export class ProjectTagService extends AuditService {
@@ -74,6 +75,20 @@ export class ProjectTagService extends AuditService {
     await this.projectExists(validatedParams.projectId);
 
     const result = await this.repositories.projectTagRepository.getProjectTags(validatedParams);
+    return validateOutput(createDynamicSingleSchema(projectTagSchema).array(), result, context);
+  }
+
+  public async getProjectTagIntersection(
+    projectIds: string[],
+    tagIds: string[]
+  ): Promise<ProjectTag[]> {
+    const context = 'ProjectTagService.getProjectTagIntersection';
+    validateInput(getProjectTagsIntersectionSchema, { projectIds, tagIds }, context);
+
+    const result = await this.repositories.projectTagRepository.getProjectTagIntersection(
+      projectIds,
+      tagIds
+    );
     return validateOutput(createDynamicSingleSchema(projectTagSchema).array(), result, context);
   }
 

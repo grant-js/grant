@@ -18,6 +18,7 @@ import { TagModel, tags } from './schema';
 
 export class TagRepository extends EntityRepository<TagModel, Tag> {
   protected table = tags;
+  protected schemaName = 'tags' as const;
   protected searchFields: Array<keyof TagModel> = ['name'];
   protected defaultSortField: keyof TagModel = 'createdAt';
 

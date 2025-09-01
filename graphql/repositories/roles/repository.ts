@@ -18,6 +18,7 @@ import { RoleModel, roles } from './schema';
 
 export class RoleRepository extends EntityRepository<RoleModel, Role> {
   protected table = roles;
+  protected schemaName = 'roles' as const;
   protected searchFields: Array<keyof RoleModel> = ['name', 'description'];
   protected defaultSortField: keyof RoleModel = 'createdAt';
 

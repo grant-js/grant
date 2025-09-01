@@ -43,12 +43,14 @@ export const updateProjectParamsSchema = z.object({
 
 export const deleteProjectParamsSchema = deleteSchema.extend({
   id: idSchema,
+  organizationId: idSchema,
 });
 
 export const projectSchema = baseEntitySchema.extend({
   name: nameSchema,
   slug: slugSchema,
   description: descriptionSchema.nullable().optional(),
+  tags: z.array(z.any()).nullable().optional(),
 });
 
 export const projectPageSchema = paginatedResponseSchema(projectSchema).transform((data) => ({

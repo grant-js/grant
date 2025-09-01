@@ -60,10 +60,10 @@ export function useProjectMutations() {
     }
   };
 
-  const handleDeleteProject = async (id: string, _name: string) => {
+  const handleDeleteProject = async (id: string, organizationId: string, _name: string) => {
     try {
       const result = await deleteProject({
-        variables: { id },
+        variables: { id, organizationId },
       });
 
       toast.success(t('notifications.deleteSuccess'));

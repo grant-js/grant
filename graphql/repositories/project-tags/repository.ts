@@ -29,6 +29,13 @@ export class ProjectTagRepository extends PivotRepository<ProjectTagModel, Proje
     return this.query({ parentId: params.projectId });
   }
 
+  public async getProjectTagIntersection(
+    projectIds: string[],
+    tagIds: string[]
+  ): Promise<ProjectTag[]> {
+    return this.queryIntersection({ parentIds: projectIds, relatedIds: tagIds });
+  }
+
   public async addProjectTag(
     params: AddProjectTagInput,
     transaction?: Transaction

@@ -8,7 +8,6 @@ import {
 } from '@/graphql/generated/types';
 import {
   EntityRepository,
-  BaseQueryArgs,
   BaseCreateArgs,
   BaseUpdateArgs,
   BaseDeleteArgs,
@@ -18,6 +17,7 @@ import { OrganizationModel, organizations } from './schema';
 
 export class OrganizationRepository extends EntityRepository<OrganizationModel, Organization> {
   protected table = organizations;
+  protected schemaName = 'organizations' as const;
   protected searchFields: Array<keyof OrganizationModel> = ['name', 'slug'];
   protected defaultSortField: keyof OrganizationModel = 'createdAt';
 
@@ -33,22 +33,7 @@ export class OrganizationRepository extends EntityRepository<OrganizationModel, 
       requestedFields?: Array<keyof OrganizationModel>;
     }
   ): Promise<OrganizationPage> {
-    const baseParams: BaseQueryArgs<OrganizationModel> = {
-      ids: params.ids || undefined,
-      page: params.page || undefined,
-      limit: params.limit || undefined,
-      search: params.search || undefined,
-      sort: params.sort
-        ? {
-            field: params.sort.field as keyof OrganizationModel,
-            order: params.sort.order,
-          }
-        : undefined,
-      requestedFields: params.requestedFields as Array<keyof OrganizationModel> | undefined,
-    };
-
-    const result = await this.query(baseParams);
-
+    const result = await this.query(params);
     return {
       organizations: result.items,
       totalCount: result.totalCount,

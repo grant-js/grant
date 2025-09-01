@@ -2,6 +2,8 @@ import * as dotenv from 'dotenv';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
+import { relations, schema, Schema } from '@/graphql/repositories/schema';
+
 dotenv.config();
 
 const connectionString =
@@ -14,9 +16,14 @@ const client = postgres(connectionString, {
   connect_timeout: 10,
 });
 
-export const db = drizzle(client);
+export type DbSchema = ReturnType<typeof drizzle<Schema>>;
 
-export { client as postgresClient };
+export const db = drizzle(client, {
+  schema: {
+    ...schema,
+    ...relations,
+  },
+});
 
 process.on('SIGINT', async () => {
   console.log('Closing database connections...');

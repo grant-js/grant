@@ -1,5 +1,6 @@
 import { ProjectResolvers } from '@/graphql/generated/types';
 import { getDirectFieldSelection } from '@/graphql/lib/fieldSelection';
+import { RoleModel } from '@/graphql/repositories/roles/schema';
 
 export const projectRolesResolver: ProjectResolvers['roles'] = async (
   parent,
@@ -8,7 +9,10 @@ export const projectRolesResolver: ProjectResolvers['roles'] = async (
   info
 ) => {
   const projectId = parent.id;
-  const requestedFields = info ? getDirectFieldSelection(info) : undefined;
+  const requestedFields = getDirectFieldSelection<keyof RoleModel>(info);
+  if (parent.roles) {
+    return parent.roles;
+  }
 
   return await context.controllers.projects.getProjectRoles(projectId, requestedFields);
 };

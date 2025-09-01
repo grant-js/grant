@@ -107,6 +107,7 @@ export const queryParamsSchema = z.object({
   page: pageSchema,
   search: searchSchema,
   tagIds: z.array(idSchema).nullable().optional(),
+  requestedFields: z.array(z.string()).nullable().optional(),
 });
 
 export const sortableParamsSchema = queryParamsSchema.extend({

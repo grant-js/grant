@@ -54,11 +54,11 @@ export class ProjectService extends AuditService {
   }
 
   public async getProjects(
-    params: Omit<QueryProjectsArgs, 'organizationId'> & SelectedFields<ProjectModel>
+    params: Omit<QueryProjectsArgs, 'organizationId' | 'tagIds'> & SelectedFields<ProjectModel>
   ): Promise<ProjectPage> {
     const validationContext = 'ProjectService.getProjects';
-    const validatedParams = validateInput(getProjectsParamsSchema, params, validationContext);
-    const result = await this.repositories.projectRepository.getProjects(validatedParams);
+    validateInput(getProjectsParamsSchema, params, validationContext);
+    const result = await this.repositories.projectRepository.getProjects(params);
 
     const transformedResult = {
       items: result.projects,
@@ -66,17 +66,13 @@ export class ProjectService extends AuditService {
       hasNextPage: result.hasNextPage,
     };
 
-    const validatedResult = validateOutput(
-      createDynamicPaginatedSchema(projectSchema, params.requestedFields),
+    validateOutput(
+      createDynamicPaginatedSchema(projectSchema),
       transformedResult,
       validationContext
-    ) as any;
+    );
 
-    return {
-      projects: validatedResult.items,
-      totalCount: validatedResult.totalCount,
-      hasNextPage: validatedResult.hasNextPage,
-    };
+    return result;
   }
 
   public async createProject(

@@ -24,3 +24,8 @@ export const removeProjectTagInputSchema = deleteSchema.extend({
   projectId: idSchema,
   tagId: idSchema,
 });
+
+export const getProjectTagsIntersectionSchema = z.object({
+  projectIds: z.array(idSchema),
+  tagIds: z.array(idSchema),
+});

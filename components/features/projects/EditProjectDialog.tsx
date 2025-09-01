@@ -8,7 +8,6 @@ import {
 import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
 import { Project, Tag } from '@/graphql/generated/types';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
-import { useProjectTagMutations } from '@/hooks/project-tags';
 import { useProjectMutations } from '@/hooks/projects';
 import { useTags } from '@/hooks/tags';
 import { useProjectsStore } from '@/stores/projects.store';
@@ -21,7 +20,6 @@ export function EditProjectDialog() {
   const projectToEdit = useProjectsStore((state) => state.projectToEdit);
   const setProjectToEdit = useProjectsStore((state) => state.setProjectToEdit);
   const { updateProject } = useProjectMutations();
-  const { addProjectTag, removeProjectTag } = useProjectTagMutations();
 
   const fields: EditDialogField[] = [
     {
@@ -61,45 +59,8 @@ export function EditProjectDialog() {
     await updateProject(projectId, {
       name: values.name,
       description: values.description,
+      tagIds: values.tagIds,
     });
-  };
-
-  const handleAddRelationships = async (
-    projectId: string,
-    relationshipName: string,
-    itemIds: string[]
-  ) => {
-    if (relationshipName === 'tagIds') {
-      const addPromises = itemIds.map((tagId) =>
-        addProjectTag({
-          projectId,
-          tagId,
-        }).catch((error: any) => {
-          console.error('Error adding project tag:', error);
-          throw error;
-        })
-      );
-      await Promise.all(addPromises);
-    }
-  };
-
-  const handleRemoveRelationships = async (
-    projectId: string,
-    relationshipName: string,
-    itemIds: string[]
-  ) => {
-    if (relationshipName === 'tagIds') {
-      const removePromises = itemIds.map((tagId) =>
-        removeProjectTag({
-          projectId,
-          tagId,
-        }).catch((error: any) => {
-          console.error('Error removing project tag:', error);
-          throw error;
-        })
-      );
-      await Promise.all(removePromises);
-    }
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -136,8 +97,6 @@ export function EditProjectDialog() {
       relationships={relationships}
       mapEntityToFormValues={mapProjectToFormValues}
       onUpdate={handleUpdate}
-      onAddRelationships={handleAddRelationships}
-      onRemoveRelationships={handleRemoveRelationships}
       translationNamespace="projects"
     />
   );

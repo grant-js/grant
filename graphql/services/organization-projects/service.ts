@@ -2,22 +2,28 @@ import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 import {
   AddOrganizationProjectInput,
-  MutationRemoveOrganizationProjectArgs,
   OrganizationProject,
   QueryOrganizationProjectsArgs,
+  RemoveOrganizationProjectInput,
 } from '@/graphql/generated/types';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
 import { organizationProjectsAuditLogs } from '@/graphql/repositories/organization-projects/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput, createDynamicSingleSchema } from '../common';
+import {
+  AuditService,
+  validateInput,
+  validateOutput,
+  createDynamicSingleSchema,
+  DeleteParams,
+} from '../common';
 
 import {
   getOrganizationProjectsParamsSchema,
   addOrganizationProjectParamsSchema,
-  removeOrganizationProjectParamsSchema,
   organizationProjectSchema,
+  removeOrganizationProjectInputSchema,
 } from './schemas';
 
 export class OrganizationProjectService extends AuditService {
@@ -134,18 +140,15 @@ export class OrganizationProjectService extends AuditService {
   }
 
   public async removeOrganizationProject(
-    params: MutationRemoveOrganizationProjectArgs & { hardDelete?: boolean }
+    params: RemoveOrganizationProjectInput & DeleteParams,
+    transaction?: Transaction
   ): Promise<OrganizationProject> {
-    const validatedParams = validateInput(
-      removeOrganizationProjectParamsSchema,
-      params,
-      'removeOrganizationProject method'
-    );
+    const context = 'OrganizationProjectService.removeOrganizationProject';
+    const validatedParams = validateInput(removeOrganizationProjectInputSchema, params, context);
 
-    const hasProject = await this.organizationHasProject(
-      validatedParams.input.organizationId,
-      validatedParams.input.projectId
-    );
+    const { organizationId, projectId } = validatedParams;
+
+    const hasProject = await this.organizationHasProject(organizationId, projectId);
 
     if (!hasProject) {
       throw new Error('Organization does not have this project');
@@ -155,12 +158,14 @@ export class OrganizationProjectService extends AuditService {
 
     const organizationProject = isHardDelete
       ? await this.repositories.organizationProjectRepository.hardDeleteOrganizationProject(
-          validatedParams.input.organizationId,
-          validatedParams.input.projectId
+          organizationId,
+          projectId,
+          transaction
         )
       : await this.repositories.organizationProjectRepository.softDeleteOrganizationProject(
-          validatedParams.input.organizationId,
-          validatedParams.input.projectId
+          organizationId,
+          projectId,
+          transaction
         );
 
     const oldValues = {
@@ -176,16 +181,15 @@ export class OrganizationProjectService extends AuditService {
       deletedAt: organizationProject.deletedAt,
     };
 
+    const metadata = {
+      context,
+      isHardDelete,
+    };
+
     if (isHardDelete) {
-      const metadata = {
-        source: 'hard_delete_organization_project_mutation',
-      };
-      await this.logHardDelete(organizationProject.id, oldValues, metadata);
+      await this.logHardDelete(organizationProject.id, oldValues, metadata, transaction);
     } else {
-      const metadata = {
-        source: 'soft_delete_organization_project_mutation',
-      };
-      await this.logSoftDelete(organizationProject.id, oldValues, newValues, metadata);
+      await this.logSoftDelete(organizationProject.id, oldValues, newValues, metadata, transaction);
     }
 
     return validateOutput(

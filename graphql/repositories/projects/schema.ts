@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm';
 import { pgTable, uuid, varchar, timestamp, index } from 'drizzle-orm/pg-core';
 
 export const projects = pgTable(
@@ -34,6 +35,22 @@ export const projectAuditLogs = pgTable(
   ]
 );
 
+export const projectsRelations = relations(projects, ({ many }) => ({
+  auditLogs: many(projectAuditLogs),
+  tags: many(projectTags),
+  users: many(projectUsers),
+  roles: many(projectRoles),
+  groups: many(projectGroups),
+  permissions: many(projectPermissions),
+}));
+
+export const projectAuditLogsRelations = relations(projectAuditLogs, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectAuditLogs.projectId],
+    references: [projects.id],
+  }),
+}));
+
 export type ProjectModel = typeof projects.$inferSelect;
 export type NewProjectModel = typeof projects.$inferInsert;
 export type ProjectAuditLogModel = typeof projectAuditLogs.$inferSelect;
@@ -47,3 +64,9 @@ export const ProjectAuditAction = {
 } as const;
 
 export type ProjectAuditActionType = (typeof ProjectAuditAction)[keyof typeof ProjectAuditAction];
+
+import { projectGroups } from '../project-groups/schema';
+import { projectPermissions } from '../project-permissions/schema';
+import { projectRoles } from '../project-roles/schema';
+import { projectTags } from '../project-tags/schema';
+import { projectUsers } from '../project-users/schema';
