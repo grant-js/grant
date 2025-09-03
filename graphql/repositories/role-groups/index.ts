@@ -1,7 +1,7 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 
 import { RoleGroupRepository } from './repository';
 
-export function createRoleGroupRepository(db: PostgresJsDatabase) {
+export function createRoleGroupRepository(db: DbSchema) {
   return new RoleGroupRepository(db);
 }

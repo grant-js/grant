@@ -2,8 +2,8 @@ type Role implements Auditable {
   id: ID!
   name: String!
   description: String
-  groups(scope: Scope!): [Group!]
-  tags(scope: Scope!): [Tag!]
+  groups: [Group!]
+  tags: [Tag!]
   createdAt: Date!
   updatedAt: Date!
   deletedAt: Date

@@ -9,14 +9,10 @@ import {
 } from '@/components/common/CreateDialog';
 import { CheckboxList } from '@/components/ui/checkbox-list';
 import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
-import { Permission, Tenant } from '@/graphql/generated/types';
+import { Permission } from '@/graphql/generated/types';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
-import { useGroupPermissionMutations } from '@/hooks/group-permissions';
-import { useGroupTagMutations } from '@/hooks/group-tags';
 import { useGroupMutations } from '@/hooks/groups/useGroupMutations';
-import { useOrganizationGroupMutations } from '@/hooks/organization-groups/useOrganizationGroupMutations';
 import { usePermissions } from '@/hooks/permissions';
-import { useProjectGroupMutations } from '@/hooks/project-groups/useProjectGroupMutations';
 import { useTags } from '@/hooks/tags';
 import { useGroupsStore } from '@/stores/groups.store';
 
@@ -27,12 +23,7 @@ export function CreateGroupDialog() {
   const { permissions, loading: permissionsLoading } = usePermissions({ scope });
   const { tags, loading: tagsLoading } = useTags({ scope });
   const { createGroup } = useGroupMutations();
-  const { addGroupPermission } = useGroupPermissionMutations();
-  const { addGroupTag } = useGroupTagMutations();
-  const { addOrganizationGroup } = useOrganizationGroupMutations();
-  const { addProjectGroup } = useProjectGroupMutations();
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const isCreateDialogOpen = useGroupsStore((state) => state.isCreateDialogOpen);
   const setCreateDialogOpen = useGroupsStore((state) => state.setCreateDialogOpen);
 
@@ -80,60 +71,10 @@ export function CreateGroupDialog() {
     return await createGroup({
       name: values.name,
       description: values.description,
+      scope,
+      permissionIds: values.permissionIds,
+      tagIds: values.tagIds,
     });
-  };
-
-  const handleAddRelationships = async (groupId: string, values: CreateGroupFormValues) => {
-    const promises: Promise<any>[] = [];
-
-    // Add group to tenant
-    if (scope.tenant === Tenant.Organization) {
-      promises.push(
-        addOrganizationGroup({
-          organizationId: scope.id,
-          groupId,
-        }).catch((error: any) => {
-          console.error('Error adding organization group:', error);
-        })
-      );
-    } else if (scope.tenant === Tenant.Project) {
-      promises.push(
-        addProjectGroup({
-          projectId: scope.id,
-          groupId,
-        }).catch((error: any) => {
-          console.error('Error adding project group:', error);
-        })
-      );
-    }
-
-    // Add permissions
-    if (values.permissionIds && values.permissionIds.length > 0) {
-      const addPermissionPromises = values.permissionIds.map((permissionId) =>
-        addGroupPermission({
-          groupId,
-          permissionId,
-        }).catch((error: any) => {
-          console.error('Error adding group permission:', error);
-        })
-      );
-      promises.push(...addPermissionPromises);
-    }
-
-    // Add tags
-    if (values.tagIds && values.tagIds.length > 0) {
-      const addTagPromises = values.tagIds.map((tagId) =>
-        addGroupTag({
-          groupId,
-          tagId,
-        }).catch((error: any) => {
-          console.error('Error adding group tag:', error);
-        })
-      );
-      promises.push(...addTagPromises);
-    }
-
-    await Promise.all(promises);
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -160,7 +101,6 @@ export function CreateGroupDialog() {
       fields={fields}
       relationships={relationships}
       onCreate={handleCreate}
-      onAddRelationships={handleAddRelationships}
       translationNamespace="groups"
       submittingText="createDialog.submitting"
     />

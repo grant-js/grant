@@ -1,5 +1,3 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
 import {
   QueryPermissionsArgs,
   MutationUpdatePermissionArgs,
@@ -8,6 +6,7 @@ import {
   PermissionPage,
   CreatePermissionInput,
 } from '@/graphql/generated/types';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
 import { permissionAuditLogs } from '@/graphql/repositories/permissions/schema';
@@ -35,7 +34,7 @@ export class PermissionService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
     user: AuthenticatedUser | null,
-    db: PostgresJsDatabase
+    db: DbSchema
   ) {
     super(permissionAuditLogs, 'permissionId', user, db);
   }

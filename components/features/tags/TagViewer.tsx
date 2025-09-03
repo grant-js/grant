@@ -13,7 +13,6 @@ import { TagView } from './TagViewSwitcher';
 export function TagViewer() {
   const scope = useScopeFromParams();
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const view = useTagsStore((state) => state.view);
   const page = useTagsStore((state) => state.page);
   const limit = useTagsStore((state) => state.limit);
@@ -23,7 +22,6 @@ export function TagViewer() {
   const setTags = useTagsStore((state) => state.setTags);
   const setLoading = useTagsStore((state) => state.setLoading);
 
-  // Get tags data from the hook
   const { tags, loading, totalCount } = useTags({
     scope,
     page,
@@ -32,7 +30,6 @@ export function TagViewer() {
     sort,
   });
 
-  // Update store with data when it changes
   useEffect(() => {
     setTags(tags);
   }, [tags, setTags]);
@@ -41,7 +38,6 @@ export function TagViewer() {
     setLoading(loading);
   }, [loading, setLoading]);
 
-  // Update store with total count when data changes
   useEffect(() => {
     if (totalCount && totalCount !== 0) {
       setTotalCount(totalCount);

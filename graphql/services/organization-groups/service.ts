@@ -1,10 +1,9 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
 import {
   AddOrganizationGroupInput,
   OrganizationGroup,
   RemoveOrganizationGroupInput,
 } from '@/graphql/generated/types';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
 import { organizationGroupsAuditLogs } from '@/graphql/repositories/organization-groups/schema';
@@ -30,7 +29,7 @@ export class OrganizationGroupService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
     user: AuthenticatedUser | null,
-    db: PostgresJsDatabase
+    db: DbSchema
   ) {
     super(organizationGroupsAuditLogs, 'organizationGroupId', user, db);
   }

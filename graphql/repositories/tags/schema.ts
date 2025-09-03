@@ -1,4 +1,3 @@
-import { relations } from 'drizzle-orm';
 import { pgTable, uuid, varchar, timestamp, index } from 'drizzle-orm/pg-core';
 
 export const tags = pgTable('tags', {
@@ -9,11 +8,6 @@ export const tags = pgTable('tags', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
   deletedAt: timestamp('deleted_at'),
 });
-
-// Define relationships
-export const tagsRelations = relations(tags, ({ many }) => ({
-  projectTags: many(projectTags),
-}));
 
 export const tagAuditLogs = pgTable(
   'tag_audit_logs',
@@ -50,4 +44,3 @@ export const TagAuditAction = {
 export type TagAuditActionType = (typeof TagAuditAction)[keyof typeof TagAuditAction];
 
 // Import at the bottom to avoid circular dependencies
-import { projectTags } from '../project-tags/schema';

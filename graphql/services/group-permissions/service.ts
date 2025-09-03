@@ -1,10 +1,9 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
 import {
   AddGroupPermissionInput,
   GroupPermission,
   RemoveGroupPermissionInput,
 } from '@/graphql/generated/types';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
 import { groupPermissionsAuditLogs } from '@/graphql/repositories/group-permissions/schema';
@@ -29,7 +28,7 @@ export class GroupPermissionService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
     user: AuthenticatedUser | null,
-    db: PostgresJsDatabase
+    db: DbSchema
   ) {
     super(groupPermissionsAuditLogs, 'groupPermissionId', user, db);
   }

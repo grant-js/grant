@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNull } from 'drizzle-orm';
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 
 export interface BasePivotModel {
@@ -44,7 +44,7 @@ export abstract class PivotRepository<
 
   protected abstract toEntity(dbPivot: TPivotModel): TPivotEntity;
 
-  constructor(protected db: PostgresJsDatabase) {}
+  constructor(protected db: DbSchema) {}
 
   private where(
     table: any,

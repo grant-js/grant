@@ -13,14 +13,11 @@ import { Role, User as UserType, Tag } from '@/graphql/generated/types';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useRoles } from '@/hooks/roles';
 import { useTags } from '@/hooks/tags';
-import { useUserRoleMutations } from '@/hooks/user-roles';
-import { useUserTagMutations } from '@/hooks/user-tags';
 import { useUserMutations } from '@/hooks/users';
 import { useUsersStore } from '@/stores/users.store';
 
 import { editUserSchema, EditUserFormValues } from './types';
 
-// Move these functions outside the component to prevent recreation on every render
 const mapUserToFormValues = (user: UserType): EditUserFormValues => ({
   name: user.name,
   email: user.email,
@@ -28,7 +25,6 @@ const mapUserToFormValues = (user: UserType): EditUserFormValues => ({
   tagIds: user.tags?.map((tag: Tag) => tag.id),
 });
 
-// Stable render component functions
 const renderCheckboxList = (props: any) => <CheckboxList {...props} />;
 const renderTagCheckboxList = (props: any) => <TagCheckboxList {...props} />;
 
@@ -38,10 +34,7 @@ export function EditUserDialog() {
   const { roles, loading: rolesLoading } = useRoles({ scope });
   const { tags, loading: tagsLoading } = useTags({ scope });
   const { updateUser } = useUserMutations();
-  const { addUserRole, removeUserRole } = useUserRoleMutations();
-  const { addUserTag, removeUserTag } = useUserTagMutations();
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const userToEdit = useUsersStore((state) => state.userToEdit);
   const setUserToEdit = useUsersStore((state) => state.setUserToEdit);
 
@@ -100,67 +93,9 @@ export function EditUserDialog() {
     return await updateUser(userId, {
       name: values.name,
       email: values.email,
+      roleIds: values.roleIds,
+      tagIds: values.tagIds,
     });
-  };
-
-  const handleAddRelationships = async (
-    userId: string,
-    relationshipName: string,
-    itemIds: string[]
-  ) => {
-    if (relationshipName === 'roleIds') {
-      const addPromises = itemIds.map((roleId) =>
-        addUserRole({
-          userId,
-          roleId,
-        }).catch((error: any) => {
-          console.error('Error adding user role:', error);
-          throw error;
-        })
-      );
-      await Promise.all(addPromises);
-    } else if (relationshipName === 'tagIds') {
-      const addPromises = itemIds.map((tagId) =>
-        addUserTag({
-          userId,
-          tagId,
-        }).catch((error: any) => {
-          console.error('Error adding user tag:', error);
-          throw error;
-        })
-      );
-      await Promise.all(addPromises);
-    }
-  };
-
-  const handleRemoveRelationships = async (
-    userId: string,
-    relationshipName: string,
-    itemIds: string[]
-  ) => {
-    if (relationshipName === 'roleIds') {
-      const removePromises = itemIds.map((roleId) =>
-        removeUserRole({
-          userId,
-          roleId,
-        }).catch((error: any) => {
-          console.error('Error removing user role:', error);
-          throw error;
-        })
-      );
-      await Promise.all(removePromises);
-    } else if (relationshipName === 'tagIds') {
-      const removePromises = itemIds.map((tagId) =>
-        removeUserTag({
-          userId,
-          tagId,
-        }).catch((error: any) => {
-          console.error('Error removing user tag:', error);
-          throw error;
-        })
-      );
-      await Promise.all(removePromises);
-    }
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -185,8 +120,6 @@ export function EditUserDialog() {
       relationships={relationships}
       mapEntityToFormValues={mapUserToFormValues}
       onUpdate={handleUpdate}
-      onAddRelationships={handleAddRelationships}
-      onRemoveRelationships={handleRemoveRelationships}
       translationNamespace="users"
     />
   );

@@ -14,32 +14,31 @@ interface UseGroupsResult {
   refetch: () => Promise<any>;
 }
 
-export function useGroups(options: QueryGroupsArgs): UseGroupsResult {
-  const { scope, page, limit, search, sort, ids, tagIds } = options;
+export function useGroups(params: QueryGroupsArgs): UseGroupsResult {
+  const { scope } = params;
 
-  const variables = useMemo(
-    () => ({
-      scope,
-      page,
-      limit,
-      search,
-      sort,
-      ids,
-      tagIds,
-    }),
-    [scope, page, limit, search, sort, ids, tagIds]
-  );
+  const variables = useMemo(() => params, [params]);
+
+  const skip = useMemo(() => !scope || !scope.id, [scope]);
 
   const { data, loading, error, refetch } = useQuery<{ groups: GroupPage }>(GET_GROUPS, {
     variables,
-    skip: !scope || !scope.id || !scope.tenant,
+    skip,
   });
 
+  const { groups, totalCount } = useMemo(
+    () => ({
+      groups: data?.groups?.groups || [],
+      totalCount: data?.groups?.totalCount || 0,
+    }),
+    [data]
+  );
+
   return {
-    groups: data?.groups?.groups || [],
+    groups,
     loading,
     error,
-    totalCount: data?.groups?.totalCount || 0,
+    totalCount,
     refetch,
   };
 }

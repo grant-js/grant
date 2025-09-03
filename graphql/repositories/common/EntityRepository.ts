@@ -1,40 +1,34 @@
 import { eq, inArray, ilike, or, and, isNull, count, desc, asc } from 'drizzle-orm';
 
-import { SortOrder } from '@/graphql/generated/types';
+import { Auditable, Searchable, SortOrder } from '@/graphql/generated/types';
 import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import type { Schema } from '@/graphql/repositories/schema';
 
-export interface Auditable {
-  id: string;
-  deletedAt?: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface BaseEntity extends Auditable {
+interface BaseEntity extends Auditable {
   [key: string]: unknown;
 }
 
-export interface BaseQueryArgs<
-  TModel extends Auditable = Auditable,
-  TEntity extends BaseEntity = BaseEntity,
-> {
-  ids?: string[] | null;
-  page?: number | null;
-  limit?: number | null;
-  search?: string | null;
-  sort?: {
-    field: keyof TModel;
-    order: SortOrder;
-  } | null;
+interface BaseSortable<TModel> {
+  field: keyof TModel;
+  order: SortOrder;
+}
+
+interface BaseQueryArgs<TModel, TEntity> extends Searchable {
+  sort?: BaseSortable<TModel> | null;
   requestedFields?: Array<keyof TEntity> | null;
 }
 
-export interface BasePageResult<T> {
+interface BasePageResult<T> {
   items: T[];
   totalCount: number;
   hasNextPage: boolean;
+}
+
+interface RelationConfig {
+  field: string;
+  table: any;
+  extract: (value: any) => any;
 }
 
 export interface BaseCreateArgs {
@@ -50,12 +44,6 @@ export interface BaseDeleteArgs {
   id: string;
 }
 
-export interface RelationConfig {
-  field: string;
-  table: any;
-  extract: (value: any) => any;
-}
-
 export type RelationsConfig<TEntity> = Partial<Record<keyof TEntity, RelationConfig>>;
 export abstract class EntityRepository<TModel extends Auditable, TEntity extends BaseEntity> {
   protected abstract table: any;
@@ -67,7 +55,8 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
   constructor(protected db: DbSchema) {}
 
   private get queryBuilder() {
-    return this.db.query[this.schemaName] as any;
+    const queryApi = this.db.query as any;
+    return queryApi[this.schemaName];
   }
 
   private where(ids?: string[] | null, search?: string | null) {

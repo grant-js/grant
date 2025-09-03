@@ -7,6 +7,7 @@ import {
   GroupTag,
   GroupPermission,
   CreateGroupInput,
+  GroupSearchableField,
 } from '@/graphql/generated/types';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import {
@@ -26,7 +27,7 @@ import { GroupModel, groups } from './schema';
 export class GroupRepository extends EntityRepository<GroupModel, Group> {
   protected table = groups;
   protected schemaName = 'groups' as const;
-  protected searchFields: Array<keyof GroupModel> = ['name', 'description'];
+  protected searchFields: Array<keyof GroupModel> = Object.values(GroupSearchableField);
   protected defaultSortField: keyof GroupModel = 'createdAt';
   protected relations: RelationsConfig<Group> = {
     tags: {

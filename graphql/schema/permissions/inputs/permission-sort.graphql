@@ -1,7 +1,4 @@
-enum PermissionSortableField {
-  name
-  action
-}
+
 input PermissionSortInput {
   field: PermissionSortableField!
   order: SortOrder!

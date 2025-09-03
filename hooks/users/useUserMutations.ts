@@ -2,7 +2,12 @@ import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import { CreateUserInput, UpdateUserInput, User } from '@/graphql/generated/types';
+import {
+  CreateUserInput,
+  MutationDeleteUserArgs,
+  UpdateUserInput,
+  User,
+} from '@/graphql/generated/types';
 
 import { evictUsersCache } from './cache';
 import { CREATE_USER, UPDATE_USER, DELETE_USER } from './mutations';
@@ -60,10 +65,11 @@ export function useUserMutations() {
     }
   };
 
-  const handleDeleteUser = async (id: string, name: string) => {
+  const handleDeleteUser = async (params: MutationDeleteUserArgs, name: string) => {
+    const { id, scope } = params;
     try {
       const result = await deleteUser({
-        variables: { id },
+        variables: { id, scope },
       });
 
       toast.success(t('notifications.deleteSuccess'), {

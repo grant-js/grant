@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm';
 import { pgTable, uuid, varchar, timestamp, index } from 'drizzle-orm/pg-core';
 
 export const groups = pgTable(
@@ -12,6 +13,12 @@ export const groups = pgTable(
   },
   (t) => [index('groups_deleted_at_idx').on(t.deletedAt)]
 );
+
+export const groupsRelations = relations(groups, ({ many }) => ({
+  auditLogs: many(groupAuditLogs),
+  tags: many(groupTags),
+  permissions: many(groupPermissions),
+}));
 
 export const groupAuditLogs = pgTable(
   'group_audit_logs',
@@ -46,3 +53,6 @@ export const GroupAuditAction = {
 } as const;
 
 export type GroupAuditActionType = (typeof GroupAuditAction)[keyof typeof GroupAuditAction];
+
+import { groupPermissions } from '../group-permissions/schema';
+import { groupTags } from '../group-tags/schema';

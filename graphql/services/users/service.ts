@@ -1,5 +1,3 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
 import {
   QueryUsersArgs,
   MutationUpdateUserArgs,
@@ -8,6 +6,7 @@ import {
   UserPage,
   CreateUserInput,
 } from '@/graphql/generated/types';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
 import { userAuditLogs, UserModel } from '@/graphql/repositories/users/schema';
@@ -35,7 +34,7 @@ export class UserService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
     user: AuthenticatedUser | null,
-    db: PostgresJsDatabase
+    db: DbSchema
   ) {
     super(userAuditLogs, 'userId', user, db);
   }

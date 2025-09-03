@@ -181,16 +181,6 @@ export type Group = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
-
-export type GroupPermissionsArgs = {
-  scope: Scope;
-};
-
-
-export type GroupTagsArgs = {
-  scope: Scope;
-};
-
 export type GroupPage = PaginatedResults & {
   __typename?: 'GroupPage';
   groups: Array<Group>;
@@ -219,6 +209,11 @@ export type GroupPermissionGroupArgs = {
 export type GroupPermissionPermissionArgs = {
   scope: Scope;
 };
+
+export enum GroupSearchableField {
+  Description = 'description',
+  Name = 'name'
+}
 
 export type GroupSortInput = {
   field: GroupSortableField;
@@ -482,6 +477,11 @@ export type OrganizationRole = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
+export enum OrganizationSearchableField {
+  Name = 'name',
+  Slug = 'slug'
+}
+
 export type OrganizationSortInput = {
   field: OrganizationSortableField;
   order: SortOrder;
@@ -534,17 +534,18 @@ export type Permission = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
-
-export type PermissionTagsArgs = {
-  scope: Scope;
-};
-
 export type PermissionPage = PaginatedResults & {
   __typename?: 'PermissionPage';
   hasNextPage: Scalars['Boolean']['output'];
   permissions: Array<Permission>;
   totalCount: Scalars['Int']['output'];
 };
+
+export enum PermissionSearchableField {
+  Action = 'action',
+  Description = 'description',
+  Name = 'name'
+}
 
 export type PermissionSortInput = {
   field: PermissionSortableField;
@@ -652,6 +653,12 @@ export type ProjectRoleProjectArgs = {
   organizationId: Scalars['ID']['input'];
 };
 
+export enum ProjectSearchableField {
+  Description = 'description',
+  Name = 'name',
+  Slug = 'slug'
+}
+
 export type ProjectSortInput = {
   field: ProjectSortableField;
   order: SortOrder;
@@ -727,7 +734,6 @@ export type QueryOrganizationsArgs = {
   page?: InputMaybe<Scalars['Int']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
   sort?: InputMaybe<OrganizationSortInput>;
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
 
@@ -886,16 +892,6 @@ export type Role = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
-
-export type RoleGroupsArgs = {
-  scope: Scope;
-};
-
-
-export type RoleTagsArgs = {
-  scope: Scope;
-};
-
 export type RoleGroup = Auditable & {
   __typename?: 'RoleGroup';
   createdAt: Scalars['Date']['output'];
@@ -924,6 +920,11 @@ export type RolePage = PaginatedResults & {
   roles: Array<Role>;
   totalCount: Scalars['Int']['output'];
 };
+
+export enum RoleSearchableField {
+  Description = 'description',
+  Name = 'name'
+}
 
 export type RoleSortInput = {
   field: RoleSortableField;
@@ -961,6 +962,13 @@ export type Scope = {
   tenant: Tenant;
 };
 
+export type Searchable = {
+  ids?: Maybe<Array<Scalars['ID']['output']>>;
+  limit?: Maybe<Scalars['Int']['output']>;
+  page?: Maybe<Scalars['Int']['output']>;
+  search?: Maybe<Scalars['String']['output']>;
+};
+
 export enum SortOrder {
   Asc = 'ASC',
   Desc = 'DESC'
@@ -982,6 +990,10 @@ export type TagPage = PaginatedResults & {
   tags: Array<Tag>;
   totalCount: Scalars['Int']['output'];
 };
+
+export enum TagSearchableField {
+  Name = 'name'
+}
 
 export enum TagSortField {
   Color = 'color',
@@ -1055,16 +1067,6 @@ export type User = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
-
-export type UserRolesArgs = {
-  scope: Scope;
-};
-
-
-export type UserTagsArgs = {
-  scope: Scope;
-};
-
 export type UserPage = PaginatedResults & {
   __typename?: 'UserPage';
   hasNextPage: Scalars['Boolean']['output'];
@@ -1093,6 +1095,11 @@ export type UserRoleRoleArgs = {
 export type UserRoleUserArgs = {
   scope: Scope;
 };
+
+export enum UserSearchableField {
+  Email = 'email',
+  Name = 'name'
+}
 
 export type UserSortInput = {
   field: UserSortableField;
@@ -1200,6 +1207,7 @@ export type ResolversInterfaceTypes<_RefType extends Record<string, unknown>> = 
   Auditable: ( Group ) | ( GroupPermission ) | ( GroupTag ) | ( Organization ) | ( OrganizationGroup ) | ( OrganizationPermission ) | ( OrganizationProject ) | ( OrganizationRole ) | ( OrganizationTag ) | ( OrganizationUser ) | ( Permission ) | ( PermissionTag ) | ( Project ) | ( ProjectGroup ) | ( ProjectPermission ) | ( ProjectRole ) | ( ProjectTag ) | ( ProjectUser ) | ( Role ) | ( RoleGroup ) | ( RoleTag ) | ( Tag ) | ( User ) | ( UserRole ) | ( UserTag );
   Creatable: never;
   PaginatedResults: ( GroupPage ) | ( OrganizationPage ) | ( PermissionPage ) | ( ProjectPage ) | ( RolePage ) | ( TagPage ) | ( UserPage );
+  Searchable: never;
 }>;
 
 /** Mapping between all available schema types and the resolvers types */
@@ -1236,6 +1244,7 @@ export type ResolversTypes = ResolversObject<{
   Group: ResolverTypeWrapper<Group>;
   GroupPage: ResolverTypeWrapper<GroupPage>;
   GroupPermission: ResolverTypeWrapper<GroupPermission>;
+  GroupSearchableField: GroupSearchableField;
   GroupSortInput: GroupSortInput;
   GroupSortableField: GroupSortableField;
   GroupTag: ResolverTypeWrapper<GroupTag>;
@@ -1250,6 +1259,7 @@ export type ResolversTypes = ResolversObject<{
   OrganizationPermission: ResolverTypeWrapper<OrganizationPermission>;
   OrganizationProject: ResolverTypeWrapper<OrganizationProject>;
   OrganizationRole: ResolverTypeWrapper<OrganizationRole>;
+  OrganizationSearchableField: OrganizationSearchableField;
   OrganizationSortInput: OrganizationSortInput;
   OrganizationSortableField: OrganizationSortableField;
   OrganizationTag: ResolverTypeWrapper<OrganizationTag>;
@@ -1257,6 +1267,7 @@ export type ResolversTypes = ResolversObject<{
   PaginatedResults: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['PaginatedResults']>;
   Permission: ResolverTypeWrapper<Permission>;
   PermissionPage: ResolverTypeWrapper<PermissionPage>;
+  PermissionSearchableField: PermissionSearchableField;
   PermissionSortInput: PermissionSortInput;
   PermissionSortableField: PermissionSortableField;
   PermissionTag: ResolverTypeWrapper<PermissionTag>;
@@ -1265,6 +1276,7 @@ export type ResolversTypes = ResolversObject<{
   ProjectPage: ResolverTypeWrapper<ProjectPage>;
   ProjectPermission: ResolverTypeWrapper<ProjectPermission>;
   ProjectRole: ResolverTypeWrapper<ProjectRole>;
+  ProjectSearchableField: ProjectSearchableField;
   ProjectSortInput: ProjectSortInput;
   ProjectSortableField: ProjectSortableField;
   ProjectTag: ResolverTypeWrapper<ProjectTag>;
@@ -1291,14 +1303,17 @@ export type ResolversTypes = ResolversObject<{
   Role: ResolverTypeWrapper<Role>;
   RoleGroup: ResolverTypeWrapper<RoleGroup>;
   RolePage: ResolverTypeWrapper<RolePage>;
+  RoleSearchableField: RoleSearchableField;
   RoleSortInput: RoleSortInput;
   RoleSortableField: RoleSortableField;
   RoleTag: ResolverTypeWrapper<RoleTag>;
   Scope: Scope;
+  Searchable: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['Searchable']>;
   SortOrder: SortOrder;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Tag: ResolverTypeWrapper<Tag>;
   TagPage: ResolverTypeWrapper<TagPage>;
+  TagSearchableField: TagSearchableField;
   TagSortField: TagSortField;
   TagSortInput: TagSortInput;
   Tenant: Tenant;
@@ -1312,6 +1327,7 @@ export type ResolversTypes = ResolversObject<{
   User: ResolverTypeWrapper<User>;
   UserPage: ResolverTypeWrapper<UserPage>;
   UserRole: ResolverTypeWrapper<UserRole>;
+  UserSearchableField: UserSearchableField;
   UserSortInput: UserSortInput;
   UserSortableField: UserSortableField;
   UserTag: ResolverTypeWrapper<UserTag>;
@@ -1405,6 +1421,7 @@ export type ResolversParentTypes = ResolversObject<{
   RoleSortInput: RoleSortInput;
   RoleTag: RoleTag;
   Scope: Scope;
+  Searchable: ResolversInterfaceTypes<ResolversParentTypes>['Searchable'];
   String: Scalars['String']['output'];
   Tag: Tag;
   TagPage: TagPage;
@@ -1447,8 +1464,8 @@ export type GroupResolvers<ContextType = Context, ParentType extends ResolversPa
   description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  permissions?: Resolver<Maybe<Array<ResolversTypes['Permission']>>, ParentType, ContextType, RequireFields<GroupPermissionsArgs, 'scope'>>;
-  tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType, RequireFields<GroupTagsArgs, 'scope'>>;
+  permissions?: Resolver<Maybe<Array<ResolversTypes['Permission']>>, ParentType, ContextType>;
+  tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -1623,7 +1640,7 @@ export type PermissionResolvers<ContextType = Context, ParentType extends Resolv
   description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType, RequireFields<PermissionTagsArgs, 'scope'>>;
+  tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -1745,10 +1762,10 @@ export type RoleResolvers<ContextType = Context, ParentType extends ResolversPar
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  groups?: Resolver<Maybe<Array<ResolversTypes['Group']>>, ParentType, ContextType, RequireFields<RoleGroupsArgs, 'scope'>>;
+  groups?: Resolver<Maybe<Array<ResolversTypes['Group']>>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType, RequireFields<RoleTagsArgs, 'scope'>>;
+  tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -1784,6 +1801,14 @@ export type RoleTagResolvers<ContextType = Context, ParentType extends Resolvers
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type SearchableResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Searchable'] = ResolversParentTypes['Searchable']> = ResolversObject<{
+  __resolveType: TypeResolveFn<null, ParentType, ContextType>;
+  ids?: Resolver<Maybe<Array<ResolversTypes['ID']>>, ParentType, ContextType>;
+  limit?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  page?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  search?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+}>;
+
 export type TagResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Tag'] = ResolversParentTypes['Tag']> = ResolversObject<{
   color?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -1807,8 +1832,8 @@ export type UserResolvers<ContextType = Context, ParentType extends ResolversPar
   email?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  roles?: Resolver<Maybe<Array<ResolversTypes['Role']>>, ParentType, ContextType, RequireFields<UserRolesArgs, 'scope'>>;
-  tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType, RequireFields<UserTagsArgs, 'scope'>>;
+  roles?: Resolver<Maybe<Array<ResolversTypes['Role']>>, ParentType, ContextType>;
+  tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -1878,6 +1903,7 @@ export type Resolvers<ContextType = Context> = ResolversObject<{
   RoleGroup?: RoleGroupResolvers<ContextType>;
   RolePage?: RolePageResolvers<ContextType>;
   RoleTag?: RoleTagResolvers<ContextType>;
+  Searchable?: SearchableResolvers<ContextType>;
   Tag?: TagResolvers<ContextType>;
   TagPage?: TagPageResolvers<ContextType>;
   User?: UserResolvers<ContextType>;

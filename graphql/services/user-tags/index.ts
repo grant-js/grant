@@ -1,5 +1,4 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Repositories } from '@/graphql/repositories';
 import { AuthenticatedUser } from '@/graphql/types';
 
@@ -8,7 +7,7 @@ import { UserTagService } from './service';
 export function createUserTagService(
   repositories: Repositories,
   user: AuthenticatedUser | null,
-  db: PostgresJsDatabase
+  db: DbSchema
 ) {
   return new UserTagService(repositories, user, db);
 }

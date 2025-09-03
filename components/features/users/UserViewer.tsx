@@ -13,7 +13,6 @@ import { UserView } from './UserViewSwitcher';
 export function UserViewer() {
   const scope = useScopeFromParams();
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const view = useUsersStore((state) => state.view);
   const page = useUsersStore((state) => state.page);
   const limit = useUsersStore((state) => state.limit);
@@ -24,7 +23,6 @@ export function UserViewer() {
   const setUsers = useUsersStore((state) => state.setUsers);
   const setLoading = useUsersStore((state) => state.setLoading);
 
-  // Get users data from the hook
   const { users, loading, totalCount } = useUsers({
     scope,
     page,
@@ -34,7 +32,6 @@ export function UserViewer() {
     tagIds: selectedTagIds,
   });
 
-  // Update store with data when it changes
   useEffect(() => {
     setUsers(users);
   }, [users, setUsers]);
@@ -43,7 +40,6 @@ export function UserViewer() {
     setLoading(loading);
   }, [loading, setLoading]);
 
-  // Update store with total count when data changes
   useEffect(() => {
     if (totalCount && totalCount !== 0) {
       setTotalCount(totalCount);

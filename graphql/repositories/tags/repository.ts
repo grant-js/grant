@@ -5,6 +5,7 @@ import {
   TagPage,
   CreateTagInput,
   MutationUpdateTagArgs,
+  TagSearchableField,
 } from '@/graphql/generated/types';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import {
@@ -21,7 +22,7 @@ import { TagModel, tags } from './schema';
 export class TagRepository extends EntityRepository<TagModel, Tag> {
   protected table = tags;
   protected schemaName = 'tags' as const;
-  protected searchFields: Array<keyof TagModel> = ['name'];
+  protected searchFields: Array<keyof TagModel> = Object.values(TagSearchableField);
   protected defaultSortField: keyof TagModel = 'createdAt';
   protected relations: RelationsConfig<Tag> = {};
 

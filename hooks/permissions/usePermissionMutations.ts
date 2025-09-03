@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 
 import {
   CreatePermissionInput,
+  MutationDeletePermissionArgs,
   Permission,
   UpdatePermissionInput,
 } from '@/graphql/generated/types';
@@ -63,10 +64,10 @@ export function usePermissionMutations() {
     }
   };
 
-  const handleDeletePermission = async (id: string) => {
+  const handleDeletePermission = async (variables: MutationDeletePermissionArgs) => {
     try {
       const result = await deletePermission({
-        variables: { id },
+        variables,
       });
 
       toast.success(t('notifications.deleteSuccess'));

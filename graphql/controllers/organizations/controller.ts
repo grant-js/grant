@@ -1,5 +1,3 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
 import {
   QueryOrganizationsArgs,
   MutationCreateOrganizationArgs,
@@ -8,6 +6,7 @@ import {
   Organization,
   OrganizationPage,
 } from '@/graphql/generated/types';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { EntityCache } from '@/graphql/lib/scopeFiltering';
 import { Transaction, TransactionManager } from '@/graphql/lib/transactions/TransactionManager';
 import { OrganizationModel } from '@/graphql/repositories/organizations/schema';
@@ -20,7 +19,7 @@ export class OrganizationController extends ScopeController {
   constructor(
     readonly scopeCache: EntityCache,
     readonly services: Services,
-    readonly db: PostgresJsDatabase
+    readonly db: DbSchema
   ) {
     super(scopeCache, services);
   }

@@ -6,6 +6,7 @@ import {
   PermissionPage,
   PermissionTag,
   CreatePermissionInput,
+  PermissionSearchableField,
 } from '@/graphql/generated/types';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import {
@@ -23,11 +24,11 @@ import { PermissionModel, permissions } from './schema';
 export class PermissionRepository extends EntityRepository<PermissionModel, Permission> {
   protected table = permissions;
   protected schemaName = 'permissions' as const;
-  protected searchFields: Array<keyof PermissionModel> = ['name', 'description', 'action'];
+  protected searchFields: Array<keyof PermissionModel> = Object.values(PermissionSearchableField);
   protected defaultSortField: keyof PermissionModel = 'createdAt';
   protected relations: RelationsConfig<Permission> = {
     tags: {
-      field: 'tagIds',
+      field: 'tag',
       table: tags,
       extract: (v: Array<PermissionTag>) => v.map(({ tag }: PermissionTag) => tag),
     },

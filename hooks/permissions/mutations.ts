@@ -27,8 +27,8 @@ export const UPDATE_PERMISSION = gql`
 `;
 
 export const DELETE_PERMISSION = gql`
-  mutation DeletePermission($id: ID!) {
-    deletePermission(id: $id) {
+  mutation DeletePermission($id: ID!, $scope: Scope!) {
+    deletePermission(id: $id, scope: $scope) {
       id
       name
       action

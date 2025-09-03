@@ -15,34 +15,33 @@ interface UsePermissionsResult {
 }
 
 export function usePermissions(options: QueryPermissionsArgs): UsePermissionsResult {
-  const { scope, page, limit, search, sort, ids, tagIds } = options;
+  const { scope } = options;
 
-  const variables = useMemo(
-    () => ({
-      scope,
-      page,
-      limit,
-      search,
-      sort,
-      ids,
-      tagIds,
-    }),
-    [scope, page, limit, search, sort, ids, tagIds]
-  );
+  const skip = useMemo(() => !scope || !scope.id || !scope.tenant, [scope]);
+
+  const variables = useMemo(() => options, [options]);
 
   const { data, loading, error, refetch } = useQuery<{ permissions: PermissionPage }>(
     GET_PERMISSIONS,
     {
       variables,
-      skip: !scope || !scope.id || !scope.tenant,
+      skip,
     }
   );
 
+  const { permissions, totalCount } = useMemo(
+    () => ({
+      permissions: data?.permissions?.permissions ?? [],
+      totalCount: data?.permissions?.totalCount ?? 0,
+    }),
+    [data]
+  );
+
   return {
-    permissions: data?.permissions?.permissions || [],
+    permissions,
     loading,
     error,
-    totalCount: data?.permissions?.totalCount || 0,
+    totalCount,
     refetch,
   };
 }

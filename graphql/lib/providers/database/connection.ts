@@ -2,7 +2,7 @@ import * as dotenv from 'dotenv';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
-import { relations, schema, Schema } from '@/graphql/repositories/schema';
+import { schema, Schema } from '@/graphql/repositories/schema';
 
 dotenv.config();
 
@@ -19,10 +19,7 @@ const client = postgres(connectionString, {
 export type DbSchema = ReturnType<typeof drizzle<Schema>>;
 
 export const db = drizzle(client, {
-  schema: {
-    ...schema,
-    ...relations,
-  },
+  schema,
 });
 
 process.on('SIGINT', async () => {

@@ -56,9 +56,6 @@ export const schema = {
   roleGroups,
   roleTags,
   permissionTags,
-};
-
-export const relations = {
   projectsRelations,
   projectTagsRelations,
   projectUsersRelations,

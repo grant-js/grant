@@ -11,6 +11,7 @@ import {
   OrganizationUser,
   OrganizationTag,
   CreateOrganizationInput,
+  OrganizationSearchableField,
 } from '@/graphql/generated/types';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import {
@@ -34,7 +35,9 @@ import { OrganizationModel, organizations } from './schema';
 export class OrganizationRepository extends EntityRepository<OrganizationModel, Organization> {
   protected table = organizations;
   protected schemaName = 'organizations' as const;
-  protected searchFields: Array<keyof OrganizationModel> = ['name', 'slug'];
+  protected searchFields: Array<keyof OrganizationModel> = Object.values(
+    OrganizationSearchableField
+  );
   protected defaultSortField: keyof OrganizationModel = 'createdAt';
   protected relations: RelationsConfig<Organization> = {
     projects: {

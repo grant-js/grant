@@ -1,6 +1,5 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
 import { AddUserTagInput, RemoveUserTagInput, UserTag } from '@/graphql/generated/types';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
 import { userTagsAuditLogs } from '@/graphql/repositories/user-tags/schema';
@@ -26,7 +25,7 @@ export class UserTagService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
     user: AuthenticatedUser | null,
-    db: PostgresJsDatabase
+    db: DbSchema
   ) {
     super(userTagsAuditLogs, 'userTagId', user, db);
   }

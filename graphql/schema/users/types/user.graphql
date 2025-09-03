@@ -2,8 +2,8 @@ type User implements Auditable {
   id: ID!
   name: String!
   email: String!
-  roles(scope: Scope!): [Role!]
-  tags(scope: Scope!): [Tag!]
+  roles: [Role!]
+  tags: [Tag!]
   createdAt: Date!
   updatedAt: Date!
   deletedAt: Date

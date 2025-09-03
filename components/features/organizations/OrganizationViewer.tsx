@@ -20,7 +20,6 @@ export function OrganizationViewer() {
   const setOrganizations = useOrganizationsStore((state) => state.setOrganizations);
   const setLoading = useOrganizationsStore((state) => state.setLoading);
 
-  // Get organizations data from the hook
   const { organizations, loading, totalCount } = useOrganizations({
     page,
     limit,
@@ -28,7 +27,6 @@ export function OrganizationViewer() {
     sort,
   });
 
-  // Update store with data when it changes
   useEffect(() => {
     setOrganizations(organizations);
   }, [organizations, setOrganizations]);
@@ -37,7 +35,6 @@ export function OrganizationViewer() {
     setLoading(loading);
   }, [loading, setLoading]);
 
-  // Update store with total count when data changes
   useEffect(() => {
     if (totalCount && totalCount !== 0) {
       setTotalCount(totalCount);

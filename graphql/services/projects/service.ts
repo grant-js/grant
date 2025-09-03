@@ -1,5 +1,3 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
 import {
   QueryProjectsArgs,
   MutationUpdateProjectArgs,
@@ -8,6 +6,7 @@ import {
   ProjectPage,
   CreateProjectInput,
 } from '@/graphql/generated/types';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
 import { projectAuditLogs, ProjectModel } from '@/graphql/repositories/projects/schema';
@@ -35,7 +34,7 @@ export class ProjectService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
     user: AuthenticatedUser | null,
-    db: PostgresJsDatabase
+    db: DbSchema
   ) {
     super(projectAuditLogs, 'projectId', user, db);
   }

@@ -1,10 +1,9 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js/driver';
-
 import {
   AddProjectUserInput,
   ProjectUser,
   RemoveProjectUserInput,
 } from '@/graphql/generated/types';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
 import { projectUserAuditLogs } from '@/graphql/repositories/project-users/schema';
@@ -29,7 +28,7 @@ export class ProjectUserService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
     user: AuthenticatedUser | null,
-    db: PostgresJsDatabase
+    db: DbSchema
   ) {
     super(projectUserAuditLogs, 'projectUserId', user, db);
   }

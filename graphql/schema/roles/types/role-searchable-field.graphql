@@ -1,0 +1,4 @@
+enum RoleSearchableField {
+  name
+  description
+}

@@ -3,7 +3,7 @@ type Permission implements Auditable {
   name: String!
   description: String
   action: String!
-  tags(scope: Scope!): [Tag!]
+  tags: [Tag!]
   createdAt: Date!
   updatedAt: Date!
   deletedAt: Date

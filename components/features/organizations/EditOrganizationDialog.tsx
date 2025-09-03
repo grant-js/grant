@@ -10,7 +10,6 @@ import { editOrganizationSchema, EditOrganizationFormValues } from './types';
 export function EditOrganizationDialog() {
   const { updateOrganization } = useOrganizationMutations();
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const organizationToEdit = useOrganizationsStore((state) => state.organizationToEdit);
   const setOrganizationToEdit = useOrganizationsStore((state) => state.setOrganizationToEdit);
 

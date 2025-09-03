@@ -13,7 +13,6 @@ import { PermissionView } from './PermissionViewSwitcher';
 export function PermissionViewer() {
   const scope = useScopeFromParams();
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const view = usePermissionsStore((state) => state.view);
   const page = usePermissionsStore((state) => state.page);
   const limit = usePermissionsStore((state) => state.limit);
@@ -24,7 +23,6 @@ export function PermissionViewer() {
   const setPermissions = usePermissionsStore((state) => state.setPermissions);
   const setLoading = usePermissionsStore((state) => state.setLoading);
 
-  // Get permissions data from the hook
   const { permissions, loading, totalCount } = usePermissions({
     scope,
     page,
@@ -34,7 +32,6 @@ export function PermissionViewer() {
     tagIds: selectedTagIds,
   });
 
-  // Update store with data when it changes
   useEffect(() => {
     setPermissions(permissions);
   }, [permissions, setPermissions]);

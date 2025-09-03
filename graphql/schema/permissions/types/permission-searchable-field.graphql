@@ -1,0 +1,5 @@
+enum PermissionSearchableField {
+  name
+  action
+  description
+}

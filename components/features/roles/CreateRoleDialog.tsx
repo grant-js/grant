@@ -10,13 +10,8 @@ import {
 import { CheckboxList } from '@/components/ui/checkbox-list';
 import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
 import { Group } from '@/graphql/generated/types';
-import { Tenant } from '@/graphql/generated/types';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useGroups } from '@/hooks/groups';
-import { useOrganizationRoleMutations } from '@/hooks/organization-roles';
-import { useProjectRoleMutations } from '@/hooks/project-roles';
-import { useRoleGroupMutations } from '@/hooks/role-groups';
-import { useRoleTagMutations } from '@/hooks/role-tags';
 import { useRoleMutations } from '@/hooks/roles';
 import { useTags } from '@/hooks/tags';
 import { useRolesStore } from '@/stores/roles.store';
@@ -28,10 +23,6 @@ export function CreateRoleDialog() {
   const { groups, loading: groupsLoading } = useGroups({ scope });
   const { tags, loading: tagsLoading } = useTags({ scope });
   const { createRole } = useRoleMutations();
-  const { addRoleGroup } = useRoleGroupMutations();
-  const { addRoleTag } = useRoleTagMutations();
-  const { addProjectRole } = useProjectRoleMutations();
-  const { addOrganizationRole } = useOrganizationRoleMutations();
 
   const isCreateDialogOpen = useRolesStore((state) => state.isCreateDialogOpen);
   const setCreateDialogOpen = useRolesStore((state) => state.setCreateDialogOpen);
@@ -78,51 +69,12 @@ export function CreateRoleDialog() {
 
   const handleCreate = async (values: CreateRoleFormValues) => {
     return await createRole({
+      scope: scope,
       name: values.name,
       description: values.description,
+      groupIds: values.groupIds,
+      tagIds: values.tagIds,
     });
-  };
-
-  const handleAddRelationships = async (roleId: string, values: CreateRoleFormValues) => {
-    const promises: Promise<any>[] = [];
-
-    if (scope.tenant === Tenant.Organization) {
-      promises.push(
-        addOrganizationRole({
-          organizationId: scope.id,
-          roleId,
-        })
-      );
-    } else if (scope.tenant === Tenant.Project) {
-      promises.push(
-        addProjectRole({
-          projectId: scope.id,
-          roleId,
-        })
-      );
-    }
-
-    if (values.groupIds && values.groupIds.length > 0) {
-      const addGroupPromises = values.groupIds.map((groupId) =>
-        addRoleGroup({
-          roleId,
-          groupId,
-        })
-      );
-      promises.push(...addGroupPromises);
-    }
-
-    if (values.tagIds && values.tagIds.length > 0) {
-      const addTagPromises = values.tagIds.map((tagId) =>
-        addRoleTag({
-          roleId,
-          tagId,
-        })
-      );
-      promises.push(...addTagPromises);
-    }
-
-    await Promise.all(promises);
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -149,7 +101,6 @@ export function CreateRoleDialog() {
       fields={fields}
       relationships={relationships}
       onCreate={handleCreate}
-      onAddRelationships={handleAddRelationships}
       translationNamespace="roles"
       submittingText="createDialog.submitting"
     />

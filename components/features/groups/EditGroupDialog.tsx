@@ -9,8 +9,6 @@ import { CheckboxList } from '@/components/ui/checkbox-list';
 import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
 import { Group, Permission, Tag } from '@/graphql/generated/types';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
-import { useGroupPermissionMutations } from '@/hooks/group-permissions';
-import { useGroupTagMutations } from '@/hooks/group-tags';
 import { useGroupMutations } from '@/hooks/groups';
 import { usePermissions } from '@/hooks/permissions';
 import { useTags } from '@/hooks/tags';
@@ -23,10 +21,7 @@ export function EditGroupDialog() {
   const { permissions, loading: permissionsLoading } = usePermissions({ scope });
   const { tags, loading: tagsLoading } = useTags({ scope });
   const { updateGroup } = useGroupMutations();
-  const { addGroupPermission, removeGroupPermission } = useGroupPermissionMutations();
-  const { addGroupTag, removeGroupTag } = useGroupTagMutations();
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const groupToEdit = useGroupsStore((state) => state.groupToEdit);
   const setGroupToEdit = useGroupsStore((state) => state.setGroupToEdit);
 
@@ -79,70 +74,15 @@ export function EditGroupDialog() {
   });
 
   const handleUpdate = async (groupId: string, values: EditGroupFormValues) => {
-    await updateGroup(groupId, {
-      name: values.name,
-      description: values.description,
+    await updateGroup({
+      id: groupId,
+      input: {
+        name: values.name,
+        description: values.description,
+        permissionIds: values.permissionIds,
+        tagIds: values.tagIds,
+      },
     });
-  };
-
-  const handleAddRelationships = async (
-    groupId: string,
-    relationshipName: string,
-    itemIds: string[]
-  ) => {
-    if (relationshipName === 'permissionIds') {
-      const addPromises = itemIds.map((permissionId) =>
-        addGroupPermission({
-          groupId,
-          permissionId,
-        }).catch((error: any) => {
-          console.error('Error adding group permission:', error);
-          throw error;
-        })
-      );
-      await Promise.all(addPromises);
-    } else if (relationshipName === 'tagIds') {
-      const addPromises = itemIds.map((tagId) =>
-        addGroupTag({
-          groupId,
-          tagId,
-        }).catch((error: any) => {
-          console.error('Error adding group tag:', error);
-          throw error;
-        })
-      );
-      await Promise.all(addPromises);
-    }
-  };
-
-  const handleRemoveRelationships = async (
-    groupId: string,
-    relationshipName: string,
-    itemIds: string[]
-  ) => {
-    if (relationshipName === 'permissionIds') {
-      const removePromises = itemIds.map((permissionId) =>
-        removeGroupPermission({
-          groupId,
-          permissionId,
-        }).catch((error: any) => {
-          console.error('Error removing group permission:', error);
-          throw error;
-        })
-      );
-      await Promise.all(removePromises);
-    } else if (relationshipName === 'tagIds') {
-      const removePromises = itemIds.map((tagId) =>
-        removeGroupTag({
-          groupId,
-          tagId,
-        }).catch((error: any) => {
-          console.error('Error removing group tag:', error);
-          throw error;
-        })
-      );
-      await Promise.all(removePromises);
-    }
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -172,8 +112,6 @@ export function EditGroupDialog() {
       relationships={relationships}
       mapEntityToFormValues={mapGroupToFormValues}
       onUpdate={handleUpdate}
-      onAddRelationships={handleAddRelationships}
-      onRemoveRelationships={handleRemoveRelationships}
       translationNamespace="groups"
     />
   );

@@ -51,10 +51,7 @@ export const handler = startServerAndCreateNextHandler(server, {
     return {
       req,
       providers,
-      services,
       controllers,
-      scopeCache,
-      user,
     };
   },
 });

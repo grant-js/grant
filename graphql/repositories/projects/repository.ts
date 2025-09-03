@@ -5,12 +5,12 @@ import {
   Project,
   ProjectPage,
   CreateProjectInput,
-  ProjectSortableField,
   ProjectTag,
   ProjectUser,
   ProjectRole,
   ProjectGroup,
   ProjectPermission,
+  ProjectSearchableField,
 } from '@/graphql/generated/types';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import {
@@ -33,7 +33,7 @@ import { ProjectModel, projects } from './schema';
 export class ProjectRepository extends EntityRepository<ProjectModel, Project> {
   protected table = projects;
   protected schemaName = 'projects' as const;
-  protected searchFields: Array<keyof ProjectModel> = Object.values(ProjectSortableField);
+  protected searchFields: Array<keyof ProjectModel> = Object.values(ProjectSearchableField);
   protected defaultSortField: keyof ProjectModel = 'createdAt';
   protected relations: RelationsConfig<Project> = {
     tags: {

@@ -24,7 +24,6 @@ export function RoleViewer() {
   const setRoles = useRolesStore((state) => state.setRoles);
   const setLoading = useRolesStore((state) => state.setLoading);
 
-  // Get roles data from the hook
   const { roles, loading, totalCount } = useRoles({
     scope,
     page,
@@ -34,7 +33,6 @@ export function RoleViewer() {
     tagIds: selectedTagIds,
   });
 
-  // Update store with data when it changes
   useEffect(() => {
     setRoles(roles);
   }, [roles, setRoles]);

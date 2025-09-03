@@ -13,7 +13,6 @@ import { ProjectView } from './ProjectViewSwitcher';
 export function ProjectViewer() {
   const scope = useScopeFromParams();
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const view = useProjectsStore((state) => state.view);
   const page = useProjectsStore((state) => state.page);
   const limit = useProjectsStore((state) => state.limit);
@@ -24,7 +23,6 @@ export function ProjectViewer() {
   const setProjects = useProjectsStore((state) => state.setProjects);
   const setLoading = useProjectsStore((state) => state.setLoading);
 
-  // Get projects data from the hook
   const { projects, loading, totalCount } = useProjects({
     organizationId: scope.id,
     page,
@@ -34,7 +32,6 @@ export function ProjectViewer() {
     tagIds: selectedTagIds,
   });
 
-  // Update store with data when it changes
   useEffect(() => {
     setProjects(projects);
   }, [projects, setProjects]);
@@ -43,14 +40,12 @@ export function ProjectViewer() {
     setLoading(loading);
   }, [loading, setLoading]);
 
-  // Update store with total count when data changes
   useEffect(() => {
     if (totalCount && totalCount !== 0) {
       setTotalCount(totalCount);
     }
   }, [totalCount, setTotalCount]);
 
-  // Render the appropriate view based on the current view state
   switch (view) {
     case ProjectView.CARD:
       return <ProjectCards organizationId={scope.id} />;

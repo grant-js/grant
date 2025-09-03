@@ -1,5 +1,4 @@
 import {
-  QueryProjectRolesArgs,
   ProjectRole,
   RemoveProjectRoleInput,
   AddProjectRoleInput,
@@ -25,7 +24,7 @@ export class ProjectRoleRepository extends PivotRepository<ProjectRoleModel, Pro
     };
   }
 
-  public async getProjectRoles(params: QueryProjectRolesArgs): Promise<ProjectRole[]> {
+  public async getProjectRoles(params: { projectId: string }): Promise<ProjectRole[]> {
     return this.query({ parentId: params.projectId });
   }
 

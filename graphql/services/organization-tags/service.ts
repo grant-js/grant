@@ -1,10 +1,9 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
 import {
   OrganizationTag,
   AddOrganizationTagInput,
   RemoveOrganizationTagInput,
 } from '@/graphql/generated/types';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
 import { organizationTagAuditLogs } from '@/graphql/repositories/organization-tags/schema';
@@ -29,7 +28,7 @@ export class OrganizationTagService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
     user: AuthenticatedUser | null,
-    db: PostgresJsDatabase
+    db: DbSchema
   ) {
     super(organizationTagAuditLogs, 'organizationTagId', user, db);
   }

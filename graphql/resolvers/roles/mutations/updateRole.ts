@@ -4,6 +4,6 @@ export const updateRoleResolver: MutationResolvers['updateRole'] = async (
   { id, input },
   context
 ) => {
-  const updatedRole = await context.services.roles.updateRole({ id, input });
+  const updatedRole = await context.controllers.roles.updateRole({ id, input });
   return updatedRole;
 };

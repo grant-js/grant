@@ -1,11 +1,9 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
 import {
-  QueryProjectGroupsArgs,
   ProjectGroup,
   RemoveProjectGroupInput,
   AddProjectGroupInput,
 } from '@/graphql/generated/types';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
 import { projectGroupAuditLogs } from '@/graphql/repositories/project-groups/schema';
@@ -30,7 +28,7 @@ export class ProjectGroupService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
     user: AuthenticatedUser | null,
-    db: PostgresJsDatabase
+    db: DbSchema
   ) {
     super(projectGroupAuditLogs, 'projectGroupId', user, db);
   }
@@ -67,7 +65,7 @@ export class ProjectGroupService extends AuditService {
     return existingProjectGroups.some((pg) => pg.groupId === groupId);
   }
 
-  public async getProjectGroups(params: QueryProjectGroupsArgs): Promise<ProjectGroup[]> {
+  public async getProjectGroups(params: { projectId: string }): Promise<ProjectGroup[]> {
     const context = 'ProjectGroupService.getProjectGroups';
     const validatedParams = validateInput(getProjectGroupsParamsSchema, params, context);
 

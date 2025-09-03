@@ -1,7 +1,7 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 
 import { PermissionTagRepository } from './repository';
 
-export function createPermissionTagRepository(db: PostgresJsDatabase) {
+export function createPermissionTagRepository(db: DbSchema) {
   return new PermissionTagRepository(db);
 }

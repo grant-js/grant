@@ -1,5 +1,3 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
 import {
   QueryGroupsArgs,
   MutationUpdateGroupArgs,
@@ -8,6 +6,7 @@ import {
   GroupPage,
   CreateGroupInput,
 } from '@/graphql/generated/types';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
 import { groupAuditLogs, GroupModel } from '@/graphql/repositories/groups/schema';
@@ -35,7 +34,7 @@ export class GroupService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
     user: AuthenticatedUser | null,
-    db: PostgresJsDatabase
+    db: DbSchema
   ) {
     super(groupAuditLogs, 'groupId', user, db);
   }

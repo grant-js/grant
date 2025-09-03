@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm';
 import { pgTable, varchar, timestamp, uuid, index } from 'drizzle-orm/pg-core';
 
 import { groups } from '../groups/schema';
@@ -15,6 +16,17 @@ export const groupTags = pgTable('group_tags', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),
 });
+
+export const groupTagsRelations = relations(groupTags, ({ one }) => ({
+  group: one(groups, {
+    fields: [groupTags.groupId],
+    references: [groups.id],
+  }),
+  tag: one(tags, {
+    fields: [groupTags.tagId],
+    references: [tags.id],
+  }),
+}));
 
 export const groupTagsAuditLogs = pgTable(
   'group_tags_audit_logs',

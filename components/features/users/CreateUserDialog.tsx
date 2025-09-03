@@ -9,14 +9,10 @@ import {
 } from '@/components/common/CreateDialog';
 import { CheckboxList } from '@/components/ui/checkbox-list';
 import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
-import { Role, Tenant } from '@/graphql/generated/types';
+import { Role } from '@/graphql/generated/types';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
-import { useOrganizationUserMutations } from '@/hooks/organization-users';
-import { useProjectUserMutations } from '@/hooks/project-users';
 import { useRoles } from '@/hooks/roles';
 import { useTags } from '@/hooks/tags';
-import { useUserRoleMutations } from '@/hooks/user-roles';
-import { useUserTagMutations } from '@/hooks/user-tags';
 import { useUserMutations } from '@/hooks/users';
 import { useUsersStore } from '@/stores/users.store';
 
@@ -27,10 +23,6 @@ export function CreateUserDialog() {
   const { roles, loading: rolesLoading } = useRoles({ scope });
   const { tags, loading: tagsLoading } = useTags({ scope });
   const { createUser } = useUserMutations();
-  const { addUserRole } = useUserRoleMutations();
-  const { addUserTag } = useUserTagMutations();
-  const { addOrganizationUser } = useOrganizationUserMutations();
-  const { addProjectUser } = useProjectUserMutations();
 
   const isCreateDialogOpen = useUsersStore((state) => state.isCreateDialogOpen);
   const setCreateDialogOpen = useUsersStore((state) => state.setCreateDialogOpen);
@@ -77,51 +69,12 @@ export function CreateUserDialog() {
 
   const handleCreate = async (values: CreateUserFormValues) => {
     return await createUser({
+      scope: scope,
       name: values.name,
       email: values.email,
+      roleIds: values.roleIds,
+      tagIds: values.tagIds,
     });
-  };
-
-  const handleAddRelationships = async (userId: string, values: CreateUserFormValues) => {
-    const promises: Promise<any>[] = [];
-
-    if (scope.tenant === Tenant.Organization) {
-      promises.push(
-        addOrganizationUser({
-          organizationId: scope.id,
-          userId,
-        })
-      );
-    } else if (scope.tenant === Tenant.Project) {
-      promises.push(
-        addProjectUser({
-          projectId: scope.id,
-          userId,
-        })
-      );
-    }
-
-    if (values.roleIds && values.roleIds.length > 0) {
-      const addRolePromises = values.roleIds.map((roleId) =>
-        addUserRole({
-          userId,
-          roleId,
-        })
-      );
-      promises.push(...addRolePromises);
-    }
-
-    if (values.tagIds && values.tagIds.length > 0) {
-      const addTagPromises = values.tagIds.map((tagId) =>
-        addUserTag({
-          userId,
-          tagId,
-        })
-      );
-      promises.push(...addTagPromises);
-    }
-
-    await Promise.all(promises);
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -148,7 +101,6 @@ export function CreateUserDialog() {
       fields={fields}
       relationships={relationships}
       onCreate={handleCreate}
-      onAddRelationships={handleAddRelationships}
       translationNamespace="users"
       submittingText="createDialog.submitting"
     />

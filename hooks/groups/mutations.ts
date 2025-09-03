@@ -25,8 +25,8 @@ export const UPDATE_GROUP = gql`
 `;
 
 export const DELETE_GROUP = gql`
-  mutation DeleteGroup($id: ID!) {
-    deleteGroup(id: $id) {
+  mutation DeleteGroup($id: ID!, $scope: Scope!) {
+    deleteGroup(id: $id, scope: $scope) {
       id
       name
       description

@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import { pgTable, uuid, timestamp, varchar, uniqueIndex, index } from 'drizzle-orm/pg-core';
 
 import { groups } from '../groups/schema';
@@ -25,6 +25,17 @@ export const groupPermissions = pgTable(
     uniqueIndex('group_permissions_deleted_at_idx').on(table.deletedAt),
   ]
 );
+
+export const groupPermissionsRelations = relations(groupPermissions, ({ one }) => ({
+  group: one(groups, {
+    fields: [groupPermissions.groupId],
+    references: [groups.id],
+  }),
+  permission: one(permissions, {
+    fields: [groupPermissions.permissionId],
+    references: [permissions.id],
+  }),
+}));
 
 export const groupPermissionsAuditLogs = pgTable(
   'group_permission_audit_logs',

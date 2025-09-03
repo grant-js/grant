@@ -2,13 +2,9 @@ import { useMemo } from 'react';
 
 import { useQuery, ApolloError } from '@apollo/client';
 
-import { User, QueryUsersArgs, Scope, UserPage } from '@/graphql/generated/types';
+import { User, QueryUsersArgs, UserPage } from '@/graphql/generated/types';
 
 import { GET_USERS } from './queries';
-
-interface UseUsersOptions extends Partial<QueryUsersArgs> {
-  scope: Scope;
-}
 
 interface UseUsersResult {
   users: User[];
@@ -18,32 +14,31 @@ interface UseUsersResult {
   refetch: () => Promise<any>;
 }
 
-export function useUsers(options: UseUsersOptions): UseUsersResult {
-  const { scope, page, limit, search, sort, ids, tagIds } = options;
+export function useUsers(params: QueryUsersArgs): UseUsersResult {
+  const { scope } = params;
 
-  const variables = useMemo(
-    () => ({
-      scope,
-      page,
-      limit,
-      search,
-      sort,
-      ids,
-      tagIds,
-    }),
-    [scope, page, limit, search, sort, ids, tagIds]
-  );
+  const skip = useMemo(() => !scope || !scope.id || !scope.tenant, [scope]);
+
+  const variables = useMemo(() => params, [params]);
 
   const { data, loading, error, refetch } = useQuery<{ users: UserPage }>(GET_USERS, {
     variables,
-    skip: !scope || !scope.id || !scope.tenant,
+    skip,
   });
 
+  const { users, totalCount } = useMemo(
+    () => ({
+      users: data?.users?.users ?? [],
+      totalCount: data?.users?.totalCount ?? 0,
+    }),
+    [data]
+  );
+
   return {
-    users: data?.users?.users || [],
+    users,
     loading,
     error,
-    totalCount: data?.users?.totalCount || 0,
+    totalCount,
     refetch,
   };
 }

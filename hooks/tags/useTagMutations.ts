@@ -2,7 +2,13 @@ import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import { CreateTagInput, Tag, TagPage, UpdateTagInput } from '@/graphql/generated/types';
+import {
+  CreateTagInput,
+  MutationDeleteTagArgs,
+  MutationUpdateTagArgs,
+  Tag,
+  TagPage,
+} from '@/graphql/generated/types';
 
 import { evictTagsCache } from './cache';
 import { CREATE_TAG, UPDATE_TAG, DELETE_TAG } from './mutations';
@@ -43,10 +49,10 @@ export function useTagMutations() {
     }
   };
 
-  const handleUpdateTag = async (id: string, input: UpdateTagInput) => {
+  const handleUpdateTag = async (variables: MutationUpdateTagArgs) => {
     try {
       const result = await updateTag({
-        variables: { id, input },
+        variables,
       });
 
       toast.success(t('notifications.updateSuccess'));
@@ -60,10 +66,10 @@ export function useTagMutations() {
     }
   };
 
-  const handleDeleteTag = async (id: string, _name: string) => {
+  const handleDeleteTag = async (variables: MutationDeleteTagArgs, _name: string) => {
     try {
       const result = await deleteTag({
-        variables: { id },
+        variables,
       });
 
       toast.success(t('notifications.deleteSuccess'));

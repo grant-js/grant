@@ -1,5 +1,12 @@
 scalar Date
 
+interface Searchable {
+  page: Int
+  limit: Int
+  search: String
+  ids: [ID!]
+}
+
 interface Auditable {
   id: ID!
   createdAt: Date!

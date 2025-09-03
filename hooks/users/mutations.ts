@@ -25,8 +25,8 @@ export const UPDATE_USER = gql`
 `;
 
 export const DELETE_USER = gql`
-  mutation DeleteUser($id: ID!) {
-    deleteUser(id: $id) {
+  mutation DeleteUser($id: ID!, $scope: Scope!) {
+    deleteUser(id: $id, scope: $scope) {
       id
       name
       email

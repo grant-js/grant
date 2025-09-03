@@ -1,6 +1,5 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
 import { AddGroupTagInput, GroupTag, RemoveGroupTagInput } from '@/graphql/generated/types';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
 import { groupTagsAuditLogs } from '@/graphql/repositories/group-tags/schema';
@@ -26,7 +25,7 @@ export class GroupTagService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
     user: AuthenticatedUser | null,
-    db: PostgresJsDatabase
+    db: DbSchema
   ) {
     super(groupTagsAuditLogs, 'groupTagId', user, db);
   }

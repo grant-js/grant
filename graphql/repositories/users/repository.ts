@@ -7,6 +7,7 @@ import {
   UserTag,
   UserRole,
   CreateUserInput,
+  UserSearchableField,
 } from '@/graphql/generated/types';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { EntityRepository, RelationsConfig } from '@/graphql/repositories/common';
@@ -20,16 +21,16 @@ import { UserModel, users } from './schema';
 export class UserRepository extends EntityRepository<UserModel, User> {
   protected table = users;
   protected schemaName = 'users' as const;
-  protected searchFields: Array<keyof UserModel> = ['name', 'email'];
+  protected searchFields: Array<keyof UserModel> = Object.values(UserSearchableField);
   protected defaultSortField: keyof UserModel = 'createdAt';
   protected relations: RelationsConfig<User> = {
     tags: {
-      field: 'tagIds',
+      field: 'tag',
       table: tags,
       extract: (v: Array<UserTag>) => v.map(({ tag }: UserTag) => tag),
     },
     roles: {
-      field: 'roleIds',
+      field: 'role',
       table: roles,
       extract: (v: Array<UserRole>) => v.map(({ role }: UserRole) => role),
     },

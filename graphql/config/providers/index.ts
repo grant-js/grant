@@ -1,7 +1,7 @@
 import { jwtProvider } from '@/graphql/providers/auth/jwt';
 
-import { ModuleProviders } from './interface';
+import { Providers } from './interface';
 
-export const providers: ModuleProviders = {
+export const providers: Providers = {
   auth: jwtProvider,
 };

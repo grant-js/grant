@@ -1,10 +1,9 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
 import {
   AddPermissionTagInput,
   PermissionTag,
   RemovePermissionTagInput,
 } from '@/graphql/generated/types';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
 import { permissionTagAuditLogs } from '@/graphql/repositories/permission-tags/schema';
@@ -30,7 +29,7 @@ export class PermissionTagService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
     user: AuthenticatedUser | null,
-    db: PostgresJsDatabase
+    db: DbSchema
   ) {
     super(permissionTagAuditLogs, 'permissionTagId', user, db);
   }

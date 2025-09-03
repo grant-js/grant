@@ -1,4 +1,4 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { DbSchema } from '../lib/providers/database/connection';
 
 import { createGroupPermissionRepository } from './group-permissions';
 import { createGroupTagRepository } from './group-tags';
@@ -28,7 +28,7 @@ import { createUserRepository } from './users';
 
 export type Repositories = ReturnType<typeof createRepositories>;
 
-export function createRepositories(db: PostgresJsDatabase) {
+export function createRepositories(db: DbSchema) {
   return {
     userRepository: createUserRepository(db),
     roleRepository: createRoleRepository(db),

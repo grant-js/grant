@@ -25,8 +25,8 @@ export const UPDATE_TAG = gql`
 `;
 
 export const DELETE_TAG = gql`
-  mutation DeleteTag($id: ID!) {
-    deleteTag(id: $id) {
+  mutation DeleteTag($id: ID!, $scope: Scope!) {
+    deleteTag(id: $id, scope: $scope) {
       id
       name
       color

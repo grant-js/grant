@@ -25,17 +25,17 @@ export const GET_GROUPS = gql`
         description
         createdAt
         updatedAt
-        permissions(scope: $scope) {
+        permissions {
           id
           name
           action
-          tags(scope: $scope) {
+          tags {
             id
             name
             color
           }
         }
-        tags(scope: $scope) {
+        tags {
           id
           name
           color

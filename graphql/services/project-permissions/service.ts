@@ -1,10 +1,9 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
 import {
   ProjectPermission,
   RemoveProjectPermissionInput,
   AddProjectPermissionInput,
 } from '@/graphql/generated/types';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
 import { projectPermissionsAuditLogs } from '@/graphql/repositories/project-permissions/schema';
@@ -29,7 +28,7 @@ export class ProjectPermissionService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
     user: AuthenticatedUser | null,
-    db: PostgresJsDatabase
+    db: DbSchema
   ) {
     super(projectPermissionsAuditLogs, 'projectPermissionId', user, db);
   }

@@ -11,7 +11,6 @@ import { createOrganizationSchema, CreateOrganizationFormValues } from './types'
 export function CreateOrganizationDialog() {
   const { createOrganization } = useOrganizationMutations();
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const isCreateDialogOpen = useOrganizationsStore((state) => state.isCreateDialogOpen);
   const setCreateDialogOpen = useOrganizationsStore((state) => state.setCreateDialogOpen);
 

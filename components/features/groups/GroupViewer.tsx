@@ -13,7 +13,6 @@ import { GroupView } from './GroupViewSwitcher';
 export function GroupViewer() {
   const scope = useScopeFromParams();
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const view = useGroupsStore((state) => state.view);
   const page = useGroupsStore((state) => state.page);
   const limit = useGroupsStore((state) => state.limit);
@@ -24,7 +23,6 @@ export function GroupViewer() {
   const setGroups = useGroupsStore((state) => state.setGroups);
   const setLoading = useGroupsStore((state) => state.setLoading);
 
-  // Get groups data from the hook
   const { groups, loading, totalCount } = useGroups({
     scope,
     page,
@@ -34,7 +32,6 @@ export function GroupViewer() {
     tagIds: selectedTagIds,
   });
 
-  // Update store with data when it changes
   useEffect(() => {
     setGroups(groups);
   }, [groups, setGroups]);

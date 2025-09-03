@@ -2,7 +2,12 @@ import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import { CreateRoleInput, Role, UpdateRoleInput } from '@/graphql/generated/types';
+import {
+  CreateRoleInput,
+  MutationDeleteRoleArgs,
+  Role,
+  UpdateRoleInput,
+} from '@/graphql/generated/types';
 
 import { evictRolesCache } from './cache';
 import { CREATE_ROLE, UPDATE_ROLE, DELETE_ROLE } from './mutations';
@@ -60,10 +65,11 @@ export function useRoleMutations() {
     }
   };
 
-  const handleDeleteRole = async (id: string, name: string) => {
+  const handleDeleteRole = async (params: MutationDeleteRoleArgs, name: string) => {
+    const { id, scope } = params;
     try {
       const result = await deleteRole({
-        variables: { id },
+        variables: { id, scope },
       });
 
       toast.success(t('notifications.deleteSuccess'), {

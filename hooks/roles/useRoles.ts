@@ -2,13 +2,7 @@ import { useMemo } from 'react';
 
 import { useQuery, ApolloError } from '@apollo/client';
 
-import {
-  Role,
-  RoleSortableField,
-  QueryRolesArgs,
-  RolePage,
-  SortOrder,
-} from '@/graphql/generated/types';
+import { Role, QueryRolesArgs, RolePage } from '@/graphql/generated/types';
 
 import { GET_ROLES } from './queries';
 
@@ -20,41 +14,31 @@ interface UseRolesResult {
   refetch: () => Promise<any>;
 }
 
-export function useRoles(options: QueryRolesArgs): UseRolesResult {
-  const {
-    scope,
-    page = 1,
-    limit = -1, // Default to -1 to get all roles for dropdown
-    search = '',
-    sort = { field: RoleSortableField.Name, order: SortOrder.Asc },
-    ids,
-    tagIds,
-  } = options;
+export function useRoles(params: QueryRolesArgs): UseRolesResult {
+  const { scope } = params;
 
-  // Memoize variables to prevent unnecessary re-renders
-  const variables = useMemo(
-    () => ({
-      scope,
-      page,
-      limit,
-      search,
-      sort,
-      ids,
-      tagIds,
-    }),
-    [scope, page, limit, search, sort, ids, tagIds]
-  );
+  const skip = useMemo(() => !scope || !scope.id || !scope.tenant, [scope]);
+
+  const variables = useMemo(() => params, [params]);
 
   const { data, loading, error, refetch } = useQuery<{ roles: RolePage }>(GET_ROLES, {
     variables,
-    skip: !scope || !scope.id || !scope.tenant,
+    skip,
   });
 
+  const { roles, totalCount } = useMemo(
+    () => ({
+      roles: data?.roles?.roles ?? [],
+      totalCount: data?.roles?.totalCount ?? 0,
+    }),
+    [data]
+  );
+
   return {
-    roles: data?.roles?.roles || [],
+    roles,
     loading,
     error,
-    totalCount: data?.roles?.totalCount || 0,
+    totalCount,
     refetch,
   };
 }

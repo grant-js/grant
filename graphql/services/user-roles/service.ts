@@ -1,6 +1,5 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
 import { AddUserRoleInput, RemoveUserRoleInput, UserRole } from '@/graphql/generated/types';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
 import { userRolesAuditLogs } from '@/graphql/repositories/user-roles/schema';
@@ -25,7 +24,7 @@ export class UserRoleService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
     user: AuthenticatedUser | null,
-    db: PostgresJsDatabase
+    db: DbSchema
   ) {
     super(userRolesAuditLogs, 'userRoleId', user, db);
   }

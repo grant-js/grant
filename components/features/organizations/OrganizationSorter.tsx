@@ -28,20 +28,12 @@ export function OrganizationSorter() {
     setSort(field, order);
   };
 
-  const fields = [
-    {
-      value: OrganizationSortableField.Name,
-      label: t('sort.name'),
-    },
-    {
-      value: OrganizationSortableField.CreatedAt,
-      label: t('sort.createdAt'),
-    },
-    {
-      value: OrganizationSortableField.UpdatedAt,
-      label: t('sort.updatedAt'),
-    },
-  ];
+  const fields = Object.values(OrganizationSortableField).map(
+    (value: OrganizationSortableField) => ({
+      value,
+      label: t(`sort.${value}`),
+    })
+  );
 
   return (
     <Sorter

@@ -1,10 +1,9 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
 import {
   AddOrganizationUserInput,
   OrganizationUser,
   RemoveOrganizationUserInput,
 } from '@/graphql/generated/types';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
 import { organizationUsersAuditLogs } from '@/graphql/repositories/organization-users/schema';
@@ -29,7 +28,7 @@ export class OrganizationUserService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
     user: AuthenticatedUser | null,
-    db: PostgresJsDatabase
+    db: DbSchema
   ) {
     super(organizationUsersAuditLogs, 'organizationUserId', user, db);
   }

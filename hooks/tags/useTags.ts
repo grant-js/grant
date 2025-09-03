@@ -1,10 +1,10 @@
+import { useMemo } from 'react';
+
 import { useQuery, ApolloError } from '@apollo/client';
 
-import { Tag, TagSortField, SortOrder, QueryTagsArgs, TagPage } from '@/graphql/generated/types';
+import { Tag, QueryTagsArgs, TagPage } from '@/graphql/generated/types';
 
 import { GET_TAGS } from './queries';
-
-interface UseTagsOptions extends Partial<QueryTagsArgs> {}
 
 interface UseTagsResult {
   tags: Tag[];
@@ -14,33 +14,31 @@ interface UseTagsResult {
   refetch: () => Promise<any>;
 }
 
-export function useTags(options: UseTagsOptions): UseTagsResult {
-  const {
-    scope,
-    page = 1,
-    limit = 50,
-    search = '',
-    sort = { field: TagSortField.Name, order: SortOrder.Asc },
-    ids,
-  } = options;
+export function useTags(params: QueryTagsArgs): UseTagsResult {
+  const { scope } = params;
+
+  const variables = useMemo(() => params, [params]);
+
+  const skip = useMemo(() => !scope || !scope.id, [scope]);
 
   const { data, loading, error, refetch } = useQuery<{ tags: TagPage }>(GET_TAGS, {
-    variables: {
-      scope,
-      page,
-      limit,
-      search,
-      sort,
-      ids,
-    },
-    skip: !scope || !scope.id || !scope.tenant,
+    variables,
+    skip,
   });
 
+  const { tags, totalCount } = useMemo(
+    () => ({
+      tags: data?.tags?.tags || [],
+      totalCount: data?.tags?.totalCount || 0,
+    }),
+    [data]
+  );
+
   return {
-    tags: data?.tags?.tags || [],
+    tags,
     loading,
     error,
-    totalCount: data?.tags?.totalCount || 0,
+    totalCount,
     refetch,
   };
 }

@@ -1,6 +1,5 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
 import { ProjectTag, AddProjectTagInput, RemoveProjectTagInput } from '@/graphql/generated/types';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
 import { projectTagAuditLogs } from '@/graphql/repositories/project-tags/schema';
@@ -26,7 +25,7 @@ export class ProjectTagService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
     readonly user: AuthenticatedUser | null,
-    readonly db: PostgresJsDatabase
+    readonly db: DbSchema
   ) {
     super(projectTagAuditLogs, 'projectTagId', user, db);
   }

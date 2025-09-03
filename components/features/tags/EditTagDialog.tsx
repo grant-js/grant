@@ -28,7 +28,6 @@ export function EditTagDialog() {
   const usedColors = tags.map((tag) => tag.color);
   const availableColors = getAvailableTagColors();
 
-  // Create items with disabled state for already used colors (excluding current tag's color)
   const colorItems = availableColors.map((color) => ({
     id: color,
     name: color,
@@ -73,9 +72,12 @@ export function EditTagDialog() {
   });
 
   const handleUpdate = async (tagId: string, values: EditTagFormValues) => {
-    await handleUpdateTag(tagId, {
-      name: values.name,
-      color: values.color,
+    await handleUpdateTag({
+      id: tagId,
+      input: {
+        name: values.name,
+        color: values.color,
+      },
     });
   };
 

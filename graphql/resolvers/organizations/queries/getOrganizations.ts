@@ -4,20 +4,14 @@ import { OrganizationModel } from '@/graphql/repositories/organizations/schema';
 
 export const getOrganizationsResolver: QueryResolvers['organizations'] = async (
   _parent,
-  { page = 1, limit = 10, sort, search, ids, tagIds },
+  args,
   context,
   info
 ) => {
   const requestedFields = getDirectFieldSelection<keyof OrganizationModel>(info, ['organizations']);
 
-  const organizations = await context.controllers.organizations.getOrganizations({
-    limit,
-    page,
-    sort,
-    search,
-    ids,
-    tagIds,
+  return context.controllers.organizations.getOrganizations({
+    ...args,
     requestedFields,
   });
-  return organizations;
 };

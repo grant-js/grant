@@ -2,9 +2,3 @@ input TagSortInput {
   field: TagSortField!
   order: SortOrder!
 }
-enum TagSortField {
-  name
-  color
-  createdAt
-  updatedAt
-}

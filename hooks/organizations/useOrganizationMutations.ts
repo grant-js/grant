@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 
 import {
   CreateOrganizationInput,
+  MutationDeleteOrganizationArgs,
   Organization,
   UpdateOrganizationInput,
 } from '@/graphql/generated/types';
@@ -73,10 +74,13 @@ export function useOrganizationMutations() {
     }
   };
 
-  const handleDeleteOrganization = async (id: string, _name: string) => {
+  const handleDeleteOrganization = async (
+    variables: MutationDeleteOrganizationArgs,
+    _name: string
+  ) => {
     try {
       const result = await deleteOrganization({
-        variables: { id },
+        variables,
       });
 
       toast.success(t('notifications.deleteSuccess'));

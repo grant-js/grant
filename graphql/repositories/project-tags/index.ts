@@ -1,7 +1,7 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 
 import { ProjectTagRepository } from './repository';
 
-export function createProjectTagRepository(db: PostgresJsDatabase) {
+export function createProjectTagRepository(db: DbSchema) {
   return new ProjectTagRepository(db);
 }

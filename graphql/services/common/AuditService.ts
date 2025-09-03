@@ -1,5 +1,4 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { AuthenticatedUser } from '@/graphql/types';
 import { SYSTEM_USER_ID } from '@/lib/constants';
@@ -17,7 +16,7 @@ export abstract class AuditService {
     protected readonly auditLogsTable: any,
     protected readonly entityIdField: string,
     protected readonly user: AuthenticatedUser | null = null,
-    protected readonly db: PostgresJsDatabase
+    protected readonly db: DbSchema
   ) {}
 
   protected getPerformedBy(): string {

@@ -1,5 +1,3 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
 import {
   QueryGroupsArgs,
   MutationCreateGroupArgs,
@@ -9,6 +7,7 @@ import {
   GroupPage,
   Tenant,
 } from '@/graphql/generated/types';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { EntityCache } from '@/graphql/lib/scopeFiltering';
 import { Transaction, TransactionManager } from '@/graphql/lib/transactions/TransactionManager';
 import { GroupModel } from '@/graphql/repositories/groups/schema';
@@ -21,7 +20,7 @@ export class GroupController extends ScopeController {
   constructor(
     readonly scopeCache: EntityCache,
     readonly services: Services,
-    readonly db: PostgresJsDatabase
+    readonly db: DbSchema
   ) {
     super(scopeCache, services);
   }

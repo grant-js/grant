@@ -1,5 +1,3 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
 import {
   Tag,
   TagPage,
@@ -8,6 +6,7 @@ import {
   MutationDeleteTagArgs,
   CreateTagInput,
 } from '@/graphql/generated/types';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
 import { tagAuditLogs } from '@/graphql/repositories/tags/schema';
@@ -35,7 +34,7 @@ export class TagService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
     user: AuthenticatedUser | null,
-    db: PostgresJsDatabase
+    db: DbSchema
   ) {
     super(tagAuditLogs, 'tagId', user, db);
   }

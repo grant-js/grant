@@ -1,11 +1,11 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 
-export type Transaction = PostgresJsDatabase;
+export type Transaction = DbSchema;
 
 export class TransactionManager {
   static async withTransaction<T>(
-    db: PostgresJsDatabase,
-    operation: (transaction: Transaction) => Promise<T>
+    db: DbSchema,
+    operation: (transaction: any) => Promise<T>
   ): Promise<T> {
     return await db.transaction(operation);
   }

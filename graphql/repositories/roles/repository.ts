@@ -7,6 +7,7 @@ import {
   RoleTag,
   RoleGroup,
   CreateRoleInput,
+  RoleSearchableField,
 } from '@/graphql/generated/types';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { EntityRepository, RelationsConfig } from '@/graphql/repositories/common';
@@ -20,16 +21,16 @@ import { RoleModel, roles } from './schema';
 export class RoleRepository extends EntityRepository<RoleModel, Role> {
   protected table = roles;
   protected schemaName = 'roles' as const;
-  protected searchFields: Array<keyof RoleModel> = ['name', 'description'];
+  protected searchFields: Array<keyof RoleModel> = Object.values(RoleSearchableField);
   protected defaultSortField: keyof RoleModel = 'createdAt';
   protected relations: RelationsConfig<Role> = {
     tags: {
-      field: 'tagIds',
+      field: 'tag',
       table: tags,
       extract: (v: Array<RoleTag>) => v.map(({ tag }: RoleTag) => tag),
     },
     groups: {
-      field: 'groupIds',
+      field: 'group',
       table: groups,
       extract: (v: Array<RoleGroup>) => v.map(({ group }: RoleGroup) => group),
     },

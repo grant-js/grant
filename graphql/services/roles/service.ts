@@ -1,5 +1,3 @@
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-
 import {
   QueryRolesArgs,
   MutationUpdateRoleArgs,
@@ -8,6 +6,7 @@ import {
   RolePage,
   CreateRoleInput,
 } from '@/graphql/generated/types';
+import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
 import { roleAuditLogs, RoleModel } from '@/graphql/repositories/roles/schema';
@@ -35,7 +34,7 @@ export class RoleService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
     user: AuthenticatedUser | null,
-    db: PostgresJsDatabase
+    db: DbSchema
   ) {
     super(roleAuditLogs, 'roleId', user, db);
   }

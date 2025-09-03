@@ -2,7 +2,12 @@ import { ApolloCache, useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import { CreateGroupInput, Group, UpdateGroupInput } from '@/graphql/generated/types';
+import {
+  CreateGroupInput,
+  Group,
+  MutationDeleteGroupArgs,
+  MutationUpdateGroupArgs,
+} from '@/graphql/generated/types';
 
 import { evictGroupsCache } from './cache';
 import { CREATE_GROUP, UPDATE_GROUP, DELETE_GROUP } from './mutations';
@@ -43,10 +48,10 @@ export function useGroupMutations() {
     }
   };
 
-  const handleUpdateGroup = async (id: string, input: UpdateGroupInput) => {
+  const handleUpdateGroup = async (variables: MutationUpdateGroupArgs) => {
     try {
       const result = await updateGroup({
-        variables: { id, input },
+        variables,
       });
 
       toast.success(t('notifications.updateSuccess'));
@@ -60,10 +65,10 @@ export function useGroupMutations() {
     }
   };
 
-  const handleDeleteGroup = async (id: string, name: string) => {
+  const handleDeleteGroup = async (variables: MutationDeleteGroupArgs, name: string) => {
     try {
       const result = await deleteGroup({
-        variables: { id },
+        variables,
       });
 
       toast.success(t('notifications.deleteSuccess'), {

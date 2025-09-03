@@ -1,38 +1,25 @@
 import { QueryResolvers } from '@/graphql/generated/types';
 import { getDirectFieldSelection } from '@/graphql/lib/fieldSelection';
-import { getScopedRoleIds } from '@/graphql/lib/scopeFiltering';
+import { RoleModel } from '@/graphql/repositories/roles/schema';
 
 export const getRolesResolver: QueryResolvers['roles'] = async (
   _parent,
-  { scope, page = 1, limit = 10, sort, search, ids, tagIds },
+  { scope, page, limit, sort, search, ids, tagIds },
   context,
   info
 ) => {
-  const requestedFields = info ? getDirectFieldSelection(info, ['roles']) : undefined;
+  const requestedFields = getDirectFieldSelection<keyof RoleModel>(info, ['roles']);
 
-  let roleIds = await getScopedRoleIds({ scope, context });
-
-  if (ids && ids.length > 0) {
-    roleIds = roleIds.filter((roleId) => ids.includes(roleId));
-  }
-
-  if (roleIds.length === 0) {
-    return {
-      roles: [],
-      totalCount: 0,
-      hasNextPage: false,
-    };
-  }
-
-  const rolesResult = await context.services.roles.getRoles({
-    ids: roleIds,
+  const roles = await context.controllers.roles.getRoles({
+    scope,
     page,
     limit,
     sort,
     search,
+    ids,
     tagIds,
     requestedFields,
   });
 
-  return rolesResult;
+  return roles;
 };
