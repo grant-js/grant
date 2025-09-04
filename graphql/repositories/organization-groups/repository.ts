@@ -21,13 +21,16 @@ export class OrganizationGroupRepository extends PivotRepository<
     return dbOrganizationGroup;
   }
 
-  public async getOrganizationGroups(params: {
-    organizationId: string;
-  }): Promise<OrganizationGroup[]> {
+  public async getOrganizationGroups(
+    params: {
+      organizationId: string;
+    },
+    transaction?: Transaction
+  ): Promise<OrganizationGroup[]> {
     const baseParams: BasePivotQueryArgs = {
       parentId: params.organizationId,
     };
-    return this.query(baseParams);
+    return this.query(baseParams, transaction);
   }
 
   public async addOrganizationGroup(

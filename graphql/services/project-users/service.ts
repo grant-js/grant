@@ -33,45 +33,58 @@ export class ProjectUserService extends AuditService {
     super(projectUserAuditLogs, 'projectUserId', user, db);
   }
 
-  private async projectExists(projectId: string): Promise<void> {
-    const projects = await this.repositories.projectRepository.getProjects({
-      ids: [projectId],
-      limit: 1,
-    });
+  private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
+    const projects = await this.repositories.projectRepository.getProjects(
+      { ids: [projectId], limit: 1 },
+      transaction
+    );
 
     if (projects.projects.length === 0) {
       throw new Error('Project not found');
     }
   }
 
-  private async userExists(userId: string): Promise<void> {
-    const users = await this.repositories.userRepository.getUsers({
-      ids: [userId],
-      limit: 1,
-    });
+  private async userExists(userId: string, transaction?: Transaction): Promise<void> {
+    const users = await this.repositories.userRepository.getUsers(
+      { ids: [userId], limit: 1 },
+      transaction
+    );
 
     if (users.users.length === 0) {
       throw new Error('User not found');
     }
   }
 
-  private async projectHasUser(projectId: string, userId: string): Promise<boolean> {
-    await this.projectExists(projectId);
-    await this.userExists(userId);
-    const existingProjectUsers = await this.repositories.projectUserRepository.getProjectUsers({
-      projectId,
-    });
+  private async projectHasUser(
+    projectId: string,
+    userId: string,
+    transaction?: Transaction
+  ): Promise<boolean> {
+    await this.projectExists(projectId, transaction);
+    await this.userExists(userId, transaction);
+    const existingProjectUsers = await this.repositories.projectUserRepository.getProjectUsers(
+      {
+        projectId,
+      },
+      transaction
+    );
 
     return existingProjectUsers.some((pu) => pu.userId === userId);
   }
 
-  public async getProjectUsers(params: { projectId: string }): Promise<ProjectUser[]> {
+  public async getProjectUsers(
+    params: { projectId: string },
+    transaction?: Transaction
+  ): Promise<ProjectUser[]> {
     const context = 'ProjectUserService.getProjectUsers';
     const validatedParams = validateInput(getProjectUsersParamsSchema, params, context);
 
-    await this.projectExists(validatedParams.projectId);
+    await this.projectExists(validatedParams.projectId, transaction);
 
-    const result = await this.repositories.projectUserRepository.getProjectUsers(validatedParams);
+    const result = await this.repositories.projectUserRepository.getProjectUsers(
+      validatedParams,
+      transaction
+    );
     return validateOutput(createDynamicSingleSchema(projectUserSchema).array(), result, context);
   }
 
@@ -83,7 +96,7 @@ export class ProjectUserService extends AuditService {
     const validatedParams = validateInput(addProjectUserParamsSchema, params, context);
     const { projectId, userId } = validatedParams;
 
-    const hasUser = await this.projectHasUser(projectId, userId);
+    const hasUser = await this.projectHasUser(projectId, userId, transaction);
 
     if (hasUser) {
       throw new Error('Project already has this user');
@@ -123,7 +136,7 @@ export class ProjectUserService extends AuditService {
 
     const { projectId, userId, hardDelete } = validatedParams;
 
-    const hasUser = await this.projectHasUser(projectId, userId);
+    const hasUser = await this.projectHasUser(projectId, userId, transaction);
 
     if (!hasUser) {
       throw new Error('Project does not have this user');

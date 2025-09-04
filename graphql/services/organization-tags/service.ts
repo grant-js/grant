@@ -33,47 +33,68 @@ export class OrganizationTagService extends AuditService {
     super(organizationTagAuditLogs, 'organizationTagId', user, db);
   }
 
-  private async organizationExists(organizationId: string): Promise<void> {
-    const organizations = await this.repositories.organizationRepository.getOrganizations({
-      ids: [organizationId],
-      limit: 1,
-    });
+  private async organizationExists(
+    organizationId: string,
+    transaction?: Transaction
+  ): Promise<void> {
+    const organizations = await this.repositories.organizationRepository.getOrganizations(
+      {
+        ids: [organizationId],
+        limit: 1,
+      },
+      transaction
+    );
 
     if (organizations.organizations.length === 0) {
       throw new Error('Organization not found');
     }
   }
 
-  private async tagExists(tagId: string): Promise<void> {
-    const tags = await this.repositories.tagRepository.getTags({
-      ids: [tagId],
-      limit: 1,
-    });
+  private async tagExists(tagId: string, transaction?: Transaction): Promise<void> {
+    const tags = await this.repositories.tagRepository.getTags(
+      {
+        ids: [tagId],
+        limit: 1,
+      },
+      transaction
+    );
 
     if (tags.tags.length === 0) {
       throw new Error('Tag not found');
     }
   }
 
-  private async organizationHasTag(organizationId: string, tagId: string): Promise<boolean> {
-    await this.organizationExists(organizationId);
-    await this.tagExists(tagId);
+  private async organizationHasTag(
+    organizationId: string,
+    tagId: string,
+    transaction?: Transaction
+  ): Promise<boolean> {
+    await this.organizationExists(organizationId, transaction);
+    await this.tagExists(tagId, transaction);
     const existingOrganizationTags =
-      await this.repositories.organizationTagRepository.getOrganizationTags({
-        organizationId,
-      });
+      await this.repositories.organizationTagRepository.getOrganizationTags(
+        {
+          organizationId,
+        },
+        transaction
+      );
 
     return existingOrganizationTags.some((ot) => ot.tagId === tagId);
   }
 
-  public async getOrganizationTags(params: { organizationId: string }): Promise<OrganizationTag[]> {
+  public async getOrganizationTags(
+    params: { organizationId: string },
+    transaction?: Transaction
+  ): Promise<OrganizationTag[]> {
     const context = 'OrganizationTagService.getOrganizationTags';
     const validatedParams = validateInput(getOrganizationTagsParamsSchema, params, context);
 
-    await this.organizationExists(validatedParams.organizationId);
+    await this.organizationExists(validatedParams.organizationId, transaction);
 
-    const result =
-      await this.repositories.organizationTagRepository.getOrganizationTags(validatedParams);
+    const result = await this.repositories.organizationTagRepository.getOrganizationTags(
+      validatedParams,
+      transaction
+    );
     return validateOutput(
       createDynamicSingleSchema(organizationTagSchema).array(),
       result,
@@ -89,7 +110,7 @@ export class OrganizationTagService extends AuditService {
     const validatedParams = validateInput(addOrganizationTagInputSchema, params, context);
     const { organizationId, tagId } = validatedParams;
 
-    const hasTag = await this.organizationHasTag(organizationId, tagId);
+    const hasTag = await this.organizationHasTag(organizationId, tagId, transaction);
 
     if (hasTag) {
       throw new Error('Organization already has this tag');
@@ -130,7 +151,7 @@ export class OrganizationTagService extends AuditService {
 
     const { organizationId, tagId, hardDelete } = validatedParams;
 
-    const hasTag = await this.organizationHasTag(organizationId, tagId);
+    const hasTag = await this.organizationHasTag(organizationId, tagId, transaction);
 
     if (!hasTag) {
       throw new Error('Organization does not have this tag');

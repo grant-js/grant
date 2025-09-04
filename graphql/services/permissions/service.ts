@@ -39,11 +39,14 @@ export class PermissionService extends AuditService {
     super(permissionAuditLogs, 'permissionId', user, db);
   }
 
-  private async getPermission(permissionId: string): Promise<Permission> {
-    const existingPermissions = await this.repositories.permissionRepository.getPermissions({
-      ids: [permissionId],
-      limit: 1,
-    });
+  private async getPermission(
+    permissionId: string,
+    transaction?: Transaction
+  ): Promise<Permission> {
+    const existingPermissions = await this.repositories.permissionRepository.getPermissions(
+      { ids: [permissionId], limit: 1 },
+      transaction
+    );
 
     if (existingPermissions.permissions.length === 0) {
       throw new Error('Permission not found');
@@ -113,7 +116,7 @@ export class PermissionService extends AuditService {
 
     const { id, input } = validatedParams;
 
-    const oldPermission = await this.getPermission(id);
+    const oldPermission = await this.getPermission(id, transaction);
     const updatedPermission = await this.repositories.permissionRepository.updatePermission(
       { id, input },
       transaction
@@ -153,7 +156,7 @@ export class PermissionService extends AuditService {
 
     const { id, hardDelete } = validatedParams;
 
-    const oldPermission = await this.getPermission(id);
+    const oldPermission = await this.getPermission(id, transaction);
     const isHardDelete = hardDelete === true;
 
     const deletedPermission = isHardDelete

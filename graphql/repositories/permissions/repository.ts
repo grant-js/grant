@@ -35,9 +35,10 @@ export class PermissionRepository extends EntityRepository<PermissionModel, Perm
   };
 
   public async getPermissions(
-    params: Omit<QueryPermissionsArgs, 'scope' | 'tagIds'> & SelectedFields<Permission>
+    params: Omit<QueryPermissionsArgs, 'scope' | 'tagIds'> & SelectedFields<Permission>,
+    transaction?: Transaction
   ): Promise<PermissionPage> {
-    const result = await this.query(params);
+    const result = await this.query(params, transaction);
 
     return {
       permissions: result.items,

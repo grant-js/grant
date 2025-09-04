@@ -39,11 +39,11 @@ export class TagService extends AuditService {
     super(tagAuditLogs, 'tagId', user, db);
   }
 
-  private async getTag(tagId: string): Promise<Tag> {
-    const existingTags = await this.repositories.tagRepository.getTags({
-      ids: [tagId],
-      limit: 1,
-    });
+  private async getTag(tagId: string, transaction?: Transaction): Promise<Tag> {
+    const existingTags = await this.repositories.tagRepository.getTags(
+      { ids: [tagId], limit: 1 },
+      transaction
+    );
 
     if (existingTags.tags.length === 0) {
       throw new Error('Tag not found');
@@ -53,12 +53,13 @@ export class TagService extends AuditService {
   }
 
   public async getTags(
-    params: Omit<QueryTagsArgs, 'scope'> & SelectedFields<Tag>
+    params: Omit<QueryTagsArgs, 'scope'> & SelectedFields<Tag>,
+    transaction?: Transaction
   ): Promise<TagPage> {
     const context = 'TagService.getTags';
     validateInput(queryTagsArgsSchema, params, context);
 
-    const result = await this.repositories.tagRepository.getTags(params);
+    const result = await this.repositories.tagRepository.getTags(params, transaction);
 
     const transformedResult = {
       items: result.tags,
@@ -109,7 +110,7 @@ export class TagService extends AuditService {
 
     const { id, input } = validatedParams;
 
-    const oldTag = await this.getTag(id);
+    const oldTag = await this.getTag(id, transaction);
     const updatedTag = await this.repositories.tagRepository.updateTag({ id, input }, transaction);
 
     const oldValues = {

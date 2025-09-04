@@ -92,16 +92,14 @@ export class ProjectController extends ScopeController {
   }
 
   public async updateProject(params: MutationUpdateProjectArgs): Promise<Project> {
-    const { id: projectId, input } = params;
-    const { tagIds } = input;
-    let currentTagIds: string[] = [];
-    if (tagIds && tagIds.length > 0) {
-      const currentTags = await this.services.projectTags.getProjectTags({
-        projectId,
-      });
-      currentTagIds = currentTags.map((pt) => pt.tagId);
-    }
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+      const { id: projectId, input } = params;
+      const { tagIds } = input;
+      let currentTagIds: string[] = [];
+      if (tagIds && tagIds.length > 0) {
+        const currentTags = await this.services.projectTags.getProjectTags({ projectId }, tx);
+        currentTagIds = currentTags.map((pt) => pt.tagId);
+      }
       const updatedProject = await this.services.projects.updateProject(params, tx);
       if (tagIds && tagIds.length > 0) {
         const newTagIds = tagIds.filter((tagId) => !currentTagIds.includes(tagId));
@@ -123,24 +121,23 @@ export class ProjectController extends ScopeController {
   }
 
   public async deleteProject(params: MutationDeleteProjectArgs & DeleteParams): Promise<Project> {
-    const projectId = params.id;
-    const organizationId = params.organizationId;
-    const [projectTags, projectPermissions, projectGroups, projectRoles, projectUsers] =
-      await Promise.all([
-        this.services.projectTags.getProjectTags({ projectId }),
-        this.services.projectPermissions.getProjectPermissions({ projectId }),
-        this.services.projectGroups.getProjectGroups({ projectId }),
-        this.services.projectRoles.getProjectRoles({ projectId }),
-        this.services.projectUsers.getProjectUsers({ projectId }),
-      ]);
-
-    const tagIds = projectTags.map((pt) => pt.tagId);
-    const permissionIds = projectPermissions.map((pp) => pp.permissionId);
-    const groupIds = projectGroups.map((pg) => pg.groupId);
-    const roleIds = projectRoles.map((pr) => pr.roleId);
-    const userIds = projectUsers.map((pu) => pu.userId);
-
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+      const projectId = params.id;
+      const organizationId = params.organizationId;
+      const [projectTags, projectPermissions, projectGroups, projectRoles, projectUsers] =
+        await Promise.all([
+          this.services.projectTags.getProjectTags({ projectId }, tx),
+          this.services.projectPermissions.getProjectPermissions({ projectId }, tx),
+          this.services.projectGroups.getProjectGroups({ projectId }, tx),
+          this.services.projectRoles.getProjectRoles({ projectId }, tx),
+          this.services.projectUsers.getProjectUsers({ projectId }, tx),
+        ]);
+
+      const tagIds = projectTags.map((pt) => pt.tagId);
+      const permissionIds = projectPermissions.map((pp) => pp.permissionId);
+      const groupIds = projectGroups.map((pg) => pg.groupId);
+      const roleIds = projectRoles.map((pr) => pr.roleId);
+      const userIds = projectUsers.map((pu) => pu.userId);
       await this.services.organizationProjects.removeOrganizationProject(
         { organizationId, projectId },
         tx

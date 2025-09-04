@@ -29,12 +29,15 @@ export class ProjectUserRepository extends PivotRepository<ProjectUserModel, Pro
     };
   }
 
-  public async getProjectUsers(params: { projectId: string }): Promise<ProjectUser[]> {
+  public async getProjectUsers(
+    params: { projectId: string },
+    transaction?: Transaction
+  ): Promise<ProjectUser[]> {
     const baseParams: BasePivotQueryArgs = {
       parentId: params.projectId,
     };
 
-    return this.query(baseParams);
+    return this.query(baseParams, transaction);
   }
 
   public async addProjectUser(

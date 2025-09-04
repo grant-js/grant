@@ -33,47 +33,57 @@ export class ProjectPermissionService extends AuditService {
     super(projectPermissionsAuditLogs, 'projectPermissionId', user, db);
   }
 
-  private async projectExists(projectId: string): Promise<void> {
-    const projects = await this.repositories.projectRepository.getProjects({
-      ids: [projectId],
-      limit: 1,
-    });
+  private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
+    const projects = await this.repositories.projectRepository.getProjects(
+      { ids: [projectId], limit: 1 },
+      transaction
+    );
 
     if (projects.projects.length === 0) {
       throw new Error('Project not found');
     }
   }
 
-  private async permissionExists(permissionId: string): Promise<void> {
-    const permissions = await this.repositories.permissionRepository.getPermissions({
-      ids: [permissionId],
-      limit: 1,
-    });
+  private async permissionExists(permissionId: string, transaction?: Transaction): Promise<void> {
+    const permissions = await this.repositories.permissionRepository.getPermissions(
+      { ids: [permissionId], limit: 1 },
+      transaction
+    );
 
     if (permissions.permissions.length === 0) {
       throw new Error('Permission not found');
     }
   }
 
-  private async projectHasPermission(projectId: string, permissionId: string): Promise<boolean> {
-    await this.projectExists(projectId);
-    await this.permissionExists(permissionId);
+  private async projectHasPermission(
+    projectId: string,
+    permissionId: string,
+    transaction?: Transaction
+  ): Promise<boolean> {
+    await this.projectExists(projectId, transaction);
+    await this.permissionExists(permissionId, transaction);
     const existingProjectPermissions =
-      await this.repositories.projectPermissionRepository.getProjectPermissions({
-        projectId,
-      });
+      await this.repositories.projectPermissionRepository.getProjectPermissions(
+        { projectId },
+        transaction
+      );
 
     return existingProjectPermissions.some((pp) => pp.permissionId === permissionId);
   }
 
-  public async getProjectPermissions(params: { projectId: string }): Promise<ProjectPermission[]> {
+  public async getProjectPermissions(
+    params: { projectId: string },
+    transaction?: Transaction
+  ): Promise<ProjectPermission[]> {
     const context = 'ProjectPermissionService.getProjectPermissions';
     const validatedParams = validateInput(getProjectPermissionsParamsSchema, params, context);
 
-    await this.projectExists(validatedParams.projectId);
+    await this.projectExists(validatedParams.projectId, transaction);
 
-    const result =
-      await this.repositories.projectPermissionRepository.getProjectPermissions(validatedParams);
+    const result = await this.repositories.projectPermissionRepository.getProjectPermissions(
+      validatedParams,
+      transaction
+    );
     return validateOutput(
       createDynamicSingleSchema(projectPermissionSchema).array(),
       result,
@@ -89,7 +99,7 @@ export class ProjectPermissionService extends AuditService {
     const validatedParams = validateInput(addProjectPermissionInputSchema, params, context);
     const { projectId, permissionId } = validatedParams;
 
-    const hasPermission = await this.projectHasPermission(projectId, permissionId);
+    const hasPermission = await this.projectHasPermission(projectId, permissionId, transaction);
 
     if (hasPermission) {
       throw new Error('Project already has this permission');
@@ -131,7 +141,7 @@ export class ProjectPermissionService extends AuditService {
 
     const { projectId, permissionId, hardDelete } = validatedParams;
 
-    const hasPermission = await this.projectHasPermission(projectId, permissionId);
+    const hasPermission = await this.projectHasPermission(projectId, permissionId, transaction);
 
     if (!hasPermission) {
       throw new Error('Project does not have this permission');
@@ -141,10 +151,7 @@ export class ProjectPermissionService extends AuditService {
 
     const projectPermission = isHardDelete
       ? await this.repositories.projectPermissionRepository.hardDeleteProjectPermission(
-          {
-            projectId,
-            permissionId,
-          },
+          { projectId, permissionId },
           transaction
         )
       : await this.repositories.projectPermissionRepository.softDeleteProjectPermission(

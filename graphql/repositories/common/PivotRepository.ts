@@ -182,8 +182,9 @@ export abstract class PivotRepository<
       );
 
       const result = await dbInstance.insert(this.table).values(insertValues).returning();
-
+      console.log('result', result);
       const insertedItem = this.first(result);
+      console.log('insertedItem', insertedItem);
       return this.toEntity(insertedItem as TPivotModel);
     } catch (error) {
       console.error('Error adding pivot relationship:', error);

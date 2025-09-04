@@ -29,47 +29,58 @@ export class RoleGroupService extends AuditService {
     super(roleGroupsAuditLogs, 'roleGroupId', user, db);
   }
 
-  private async roleExists(roleId: string): Promise<void> {
-    const roles = await this.repositories.roleRepository.getRoles({
-      ids: [roleId],
-      limit: 1,
-    });
+  private async roleExists(roleId: string, transaction?: Transaction): Promise<void> {
+    const roles = await this.repositories.roleRepository.getRoles(
+      { ids: [roleId], limit: 1 },
+      transaction
+    );
 
     if (roles.roles.length === 0) {
       throw new Error('Role not found');
     }
   }
 
-  private async groupExists(groupId: string): Promise<void> {
-    const groups = await this.repositories.groupRepository.getGroups({
-      ids: [groupId],
-      limit: 1,
-    });
+  private async groupExists(groupId: string, transaction?: Transaction): Promise<void> {
+    const groups = await this.repositories.groupRepository.getGroups(
+      { ids: [groupId], limit: 1 },
+      transaction
+    );
 
     if (groups.groups.length === 0) {
       throw new Error('Group not found');
     }
   }
 
-  private async roleHasGroup(roleId: string, groupId: string): Promise<boolean> {
-    await this.roleExists(roleId);
-    await this.groupExists(groupId);
-    const existingRoleGroups = await this.repositories.roleGroupRepository.getRoleGroups({
-      roleId,
-    });
+  private async roleHasGroup(
+    roleId: string,
+    groupId: string,
+    transaction?: Transaction
+  ): Promise<boolean> {
+    await this.roleExists(roleId, transaction);
+    await this.groupExists(groupId, transaction);
+    const existingRoleGroups = await this.repositories.roleGroupRepository.getRoleGroups(
+      { roleId },
+      transaction
+    );
 
     return existingRoleGroups.some((rg) => rg.groupId === groupId);
   }
 
-  public async getRoleGroups(params: { roleId: string }): Promise<RoleGroup[]> {
+  public async getRoleGroups(
+    params: { roleId: string },
+    transaction?: Transaction
+  ): Promise<RoleGroup[]> {
     const context = 'RoleGroupService.getRoleGroups';
     const validatedParams = validateInput(queryRoleGroupsArgsSchema, params, context);
 
     const { roleId } = validatedParams;
 
-    await this.roleExists(roleId);
+    await this.roleExists(roleId, transaction);
 
-    const result = await this.repositories.roleGroupRepository.getRoleGroups({ roleId });
+    const result = await this.repositories.roleGroupRepository.getRoleGroups(
+      { roleId },
+      transaction
+    );
     return validateOutput(createDynamicSingleSchema(roleGroupSchema).array(), result, context);
   }
 
@@ -82,7 +93,7 @@ export class RoleGroupService extends AuditService {
 
     const { roleId, groupId } = validatedParams;
 
-    const hasGroup = await this.roleHasGroup(roleId, groupId);
+    const hasGroup = await this.roleHasGroup(roleId, groupId, transaction);
 
     if (hasGroup) {
       throw new Error('Role already has this group');
@@ -120,7 +131,7 @@ export class RoleGroupService extends AuditService {
 
     const { roleId, groupId, hardDelete } = validatedParams;
 
-    const hasGroup = await this.roleHasGroup(roleId, groupId);
+    const hasGroup = await this.roleHasGroup(roleId, groupId, transaction);
 
     if (!hasGroup) {
       throw new Error('Role does not have this group');

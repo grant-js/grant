@@ -25,12 +25,15 @@ export class RoleGroupRepository extends PivotRepository<RoleGroupModel, RoleGro
     };
   }
 
-  public async getRoleGroups(params: { roleId: string }): Promise<RoleGroup[]> {
+  public async getRoleGroups(
+    params: { roleId: string },
+    transaction?: Transaction
+  ): Promise<RoleGroup[]> {
     const baseParams: BasePivotQueryArgs = {
       parentId: params.roleId,
     };
 
-    return this.query(baseParams);
+    return this.query(baseParams, transaction);
   }
 
   public async addRoleGroup(

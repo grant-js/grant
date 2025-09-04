@@ -33,49 +33,63 @@ export class OrganizationRoleService extends AuditService {
     super(organizationRolesAuditLogs, 'organizationRoleId', user, db);
   }
 
-  private async organizationExists(organizationId: string): Promise<void> {
-    const organizations = await this.repositories.organizationRepository.getOrganizations({
-      ids: [organizationId],
-      limit: 1,
-    });
+  private async organizationExists(
+    organizationId: string,
+    transaction?: Transaction
+  ): Promise<void> {
+    const organizations = await this.repositories.organizationRepository.getOrganizations(
+      { ids: [organizationId], limit: 1 },
+      transaction
+    );
 
     if (organizations.organizations.length === 0) {
       throw new Error('Organization not found');
     }
   }
 
-  private async roleExists(roleId: string): Promise<void> {
-    const roles = await this.repositories.roleRepository.getRoles({
-      ids: [roleId],
-      limit: 1,
-    });
+  private async roleExists(roleId: string, transaction?: Transaction): Promise<void> {
+    const roles = await this.repositories.roleRepository.getRoles(
+      { ids: [roleId], limit: 1 },
+      transaction
+    );
 
     if (roles.roles.length === 0) {
       throw new Error('Role not found');
     }
   }
 
-  private async organizationHasRole(organizationId: string, roleId: string): Promise<boolean> {
-    await this.organizationExists(organizationId);
-    await this.roleExists(roleId);
+  private async organizationHasRole(
+    organizationId: string,
+    roleId: string,
+    transaction?: Transaction
+  ): Promise<boolean> {
+    await this.organizationExists(organizationId, transaction);
+    await this.roleExists(roleId, transaction);
     const existingOrganizationRoles =
-      await this.repositories.organizationRoleRepository.getOrganizationRoles({
-        organizationId,
-      });
+      await this.repositories.organizationRoleRepository.getOrganizationRoles(
+        { organizationId },
+        transaction
+      );
 
     return existingOrganizationRoles.some((or) => or.roleId === roleId);
   }
 
-  public async getOrganizationRoles(params: {
-    organizationId: string;
-  }): Promise<OrganizationRole[]> {
+  public async getOrganizationRoles(
+    params: {
+      organizationId: string;
+    },
+    transaction?: Transaction
+  ): Promise<OrganizationRole[]> {
     const context = 'OrganizationRoleService.getOrganizationRoles';
     const validatedParams = validateInput(getOrganizationRolesParamsSchema, params, context);
     const { organizationId } = validatedParams;
 
-    await this.organizationExists(organizationId);
+    await this.organizationExists(organizationId, transaction);
 
-    const result = await this.repositories.organizationRoleRepository.getOrganizationRoles(params);
+    const result = await this.repositories.organizationRoleRepository.getOrganizationRoles(
+      params,
+      transaction
+    );
     return validateOutput(
       createDynamicSingleSchema(organizationRoleSchema).array(),
       result,
@@ -91,7 +105,7 @@ export class OrganizationRoleService extends AuditService {
     const validatedParams = validateInput(addOrganizationRoleInputSchema, params, context);
     const { organizationId, roleId } = validatedParams;
 
-    const hasRole = await this.organizationHasRole(organizationId, roleId);
+    const hasRole = await this.organizationHasRole(organizationId, roleId, transaction);
 
     if (hasRole) {
       throw new Error('Organization already has this role');
@@ -131,7 +145,7 @@ export class OrganizationRoleService extends AuditService {
     const validatedParams = validateInput(removeOrganizationRoleInputSchema, params, context);
     const { organizationId, roleId, hardDelete } = validatedParams;
 
-    const hasRole = await this.organizationHasRole(organizationId, roleId);
+    const hasRole = await this.organizationHasRole(organizationId, roleId, transaction);
 
     if (!hasRole) {
       throw new Error('Organization does not have this role');

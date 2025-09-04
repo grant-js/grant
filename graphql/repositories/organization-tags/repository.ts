@@ -27,8 +27,11 @@ export class OrganizationTagRepository extends PivotRepository<
     };
   }
 
-  public async getOrganizationTags(params: { organizationId: string }): Promise<OrganizationTag[]> {
-    return this.query({ parentId: params.organizationId });
+  public async getOrganizationTags(
+    params: { organizationId: string },
+    transaction?: Transaction
+  ): Promise<OrganizationTag[]> {
+    return this.query({ parentId: params.organizationId }, transaction);
   }
 
   public async addOrganizationTag(

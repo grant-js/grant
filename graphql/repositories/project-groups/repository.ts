@@ -24,8 +24,11 @@ export class ProjectGroupRepository extends PivotRepository<ProjectGroupModel, P
     };
   }
 
-  public async getProjectGroups(params: { projectId: string }): Promise<ProjectGroup[]> {
-    return this.query({ parentId: params.projectId });
+  public async getProjectGroups(
+    params: { projectId: string },
+    transaction?: Transaction
+  ): Promise<ProjectGroup[]> {
+    return this.query({ parentId: params.projectId }, transaction);
   }
 
   public async addProjectGroup(

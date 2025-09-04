@@ -25,12 +25,15 @@ export class UserRoleRepository extends PivotRepository<UserRoleModel, UserRole>
     };
   }
 
-  public async getUserRoles(params: { userId: string }): Promise<UserRole[]> {
+  public async getUserRoles(
+    params: { userId: string },
+    transaction?: Transaction
+  ): Promise<UserRole[]> {
     const baseParams: BasePivotQueryArgs = {
       parentId: params.userId,
     };
 
-    return this.query(baseParams);
+    return this.query(baseParams, transaction);
   }
 
   public async addUserRole(params: AddUserRoleInput, transaction?: Transaction): Promise<UserRole> {

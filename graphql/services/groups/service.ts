@@ -39,11 +39,11 @@ export class GroupService extends AuditService {
     super(groupAuditLogs, 'groupId', user, db);
   }
 
-  private async getGroup(groupId: string): Promise<Group> {
-    const existingGroups = await this.repositories.groupRepository.getGroups({
-      ids: [groupId],
-      limit: 1,
-    });
+  private async getGroup(groupId: string, transaction?: Transaction): Promise<Group> {
+    const existingGroups = await this.repositories.groupRepository.getGroups(
+      { ids: [groupId], limit: 1 },
+      transaction
+    );
 
     if (existingGroups.groups.length === 0) {
       throw new Error('Group not found');
@@ -53,11 +53,12 @@ export class GroupService extends AuditService {
   }
 
   public async getGroups(
-    params: Omit<QueryGroupsArgs, 'scope'> & SelectedFields<Group>
+    params: Omit<QueryGroupsArgs, 'scope'> & SelectedFields<Group>,
+    transaction?: Transaction
   ): Promise<GroupPage> {
     const context = 'GroupService.getGroups';
     validateInput(getGroupsParamsSchema, params, context);
-    const result = await this.repositories.groupRepository.getGroups(params);
+    const result = await this.repositories.groupRepository.getGroups(params, transaction);
 
     const transformedResult = {
       items: result.groups,
@@ -113,7 +114,7 @@ export class GroupService extends AuditService {
 
     const { id, input } = validatedParams;
 
-    const oldGroup = await this.getGroup(id);
+    const oldGroup = await this.getGroup(id, transaction);
     const updatedGroup = await this.repositories.groupRepository.updateGroup(
       { id, input },
       transaction
@@ -153,7 +154,7 @@ export class GroupService extends AuditService {
 
     const { id, hardDelete } = validatedParams;
 
-    const oldGroup = await this.getGroup(id);
+    const oldGroup = await this.getGroup(id, transaction);
     const isHardDelete = hardDelete === true;
 
     const deletedGroup = isHardDelete

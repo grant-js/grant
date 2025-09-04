@@ -32,14 +32,17 @@ export class OrganizationUserRepository extends PivotRepository<
     };
   }
 
-  public async getOrganizationUsers(params: {
-    organizationId: string;
-  }): Promise<OrganizationUser[]> {
+  public async getOrganizationUsers(
+    params: {
+      organizationId: string;
+    },
+    transaction?: Transaction
+  ): Promise<OrganizationUser[]> {
     const baseParams: BasePivotQueryArgs = {
       parentId: params.organizationId,
     };
 
-    return this.query(baseParams);
+    return this.query(baseParams, transaction);
   }
 
   public async addOrganizationUser(

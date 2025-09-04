@@ -27,9 +27,10 @@ export class TagRepository extends EntityRepository<TagModel, Tag> {
   protected relations: RelationsConfig<Tag> = {};
 
   public async getTags(
-    params: Omit<QueryTagsArgs, 'scope'> & SelectedFields<Tag>
+    params: Omit<QueryTagsArgs, 'scope'> & SelectedFields<Tag>,
+    transaction?: Transaction
   ): Promise<TagPage> {
-    const result = await this.query(params);
+    const result = await this.query(params, transaction);
 
     return {
       tags: result.items,

@@ -33,45 +33,56 @@ export class ProjectRoleService extends AuditService {
     super(projectRoleAuditLogs, 'projectRoleId', user, db);
   }
 
-  private async projectExists(projectId: string): Promise<void> {
-    const projects = await this.repositories.projectRepository.getProjects({
-      ids: [projectId],
-      limit: 1,
-    });
+  private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
+    const projects = await this.repositories.projectRepository.getProjects(
+      { ids: [projectId], limit: 1 },
+      transaction
+    );
 
     if (projects.projects.length === 0) {
       throw new Error('Project not found');
     }
   }
 
-  private async roleExists(roleId: string): Promise<void> {
-    const roles = await this.repositories.roleRepository.getRoles({
-      ids: [roleId],
-      limit: 1,
-    });
+  private async roleExists(roleId: string, transaction?: Transaction): Promise<void> {
+    const roles = await this.repositories.roleRepository.getRoles(
+      { ids: [roleId], limit: 1 },
+      transaction
+    );
 
     if (roles.roles.length === 0) {
       throw new Error('Role not found');
     }
   }
 
-  private async projectHasRole(projectId: string, roleId: string): Promise<boolean> {
-    await this.projectExists(projectId);
-    await this.roleExists(roleId);
-    const existingProjectRoles = await this.repositories.projectRoleRepository.getProjectRoles({
-      projectId,
-    });
+  private async projectHasRole(
+    projectId: string,
+    roleId: string,
+    transaction?: Transaction
+  ): Promise<boolean> {
+    await this.projectExists(projectId, transaction);
+    await this.roleExists(roleId, transaction);
+    const existingProjectRoles = await this.repositories.projectRoleRepository.getProjectRoles(
+      { projectId },
+      transaction
+    );
 
     return existingProjectRoles.some((pr) => pr.roleId === roleId);
   }
 
-  public async getProjectRoles(params: { projectId: string }): Promise<ProjectRole[]> {
+  public async getProjectRoles(
+    params: { projectId: string },
+    transaction?: Transaction
+  ): Promise<ProjectRole[]> {
     const context = 'ProjectRoleService.getProjectRoles';
     const validatedParams = validateInput(getProjectRolesParamsSchema, params, context);
 
-    await this.projectExists(validatedParams.projectId);
+    await this.projectExists(validatedParams.projectId, transaction);
 
-    const result = await this.repositories.projectRoleRepository.getProjectRoles(validatedParams);
+    const result = await this.repositories.projectRoleRepository.getProjectRoles(
+      validatedParams,
+      transaction
+    );
     return validateOutput(createDynamicSingleSchema(projectRoleSchema).array(), result, context);
   }
 
@@ -83,7 +94,7 @@ export class ProjectRoleService extends AuditService {
     const validatedParams = validateInput(addProjectRoleInputSchema, params, context);
     const { projectId, roleId } = validatedParams;
 
-    const hasRole = await this.projectHasRole(projectId, roleId);
+    const hasRole = await this.projectHasRole(projectId, roleId, transaction);
 
     if (hasRole) {
       throw new Error('Project already has this role');
@@ -120,7 +131,7 @@ export class ProjectRoleService extends AuditService {
 
     const { projectId, roleId, hardDelete } = validatedParams;
 
-    const hasRole = await this.projectHasRole(projectId, roleId);
+    const hasRole = await this.projectHasRole(projectId, roleId, transaction);
 
     if (!hasRole) {
       throw new Error('Project does not have this role');

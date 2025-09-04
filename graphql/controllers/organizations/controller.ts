@@ -62,25 +62,23 @@ export class OrganizationController extends ScopeController {
   public async deleteOrganization(
     params: MutationDeleteOrganizationArgs & DeleteParams
   ): Promise<Organization> {
-    const { id: organizationId } = params;
-
-    const [
-      organizationProjects,
-      organizationUsers,
-      organizationRoles,
-      organizationGroups,
-      organizationPermissions,
-      organizationTags,
-    ] = await Promise.all([
-      this.services.organizationProjects.getOrganizationProjects({ organizationId }),
-      this.services.organizationUsers.getOrganizationUsers({ organizationId }),
-      this.services.organizationRoles.getOrganizationRoles({ organizationId }),
-      this.services.organizationGroups.getOrganizationGroups({ organizationId }),
-      this.services.organizationPermissions.getOrganizationPermissions({ organizationId }),
-      this.services.organizationTags.getOrganizationTags({ organizationId }),
-    ]);
-
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+      const { id: organizationId } = params;
+      const [
+        organizationProjects,
+        organizationUsers,
+        organizationRoles,
+        organizationGroups,
+        organizationPermissions,
+        organizationTags,
+      ] = await Promise.all([
+        this.services.organizationProjects.getOrganizationProjects({ organizationId }, tx),
+        this.services.organizationUsers.getOrganizationUsers({ organizationId }, tx),
+        this.services.organizationRoles.getOrganizationRoles({ organizationId }, tx),
+        this.services.organizationGroups.getOrganizationGroups({ organizationId }, tx),
+        this.services.organizationPermissions.getOrganizationPermissions({ organizationId }, tx),
+        this.services.organizationTags.getOrganizationTags({ organizationId }, tx),
+      ]);
       await Promise.all([
         ...organizationProjects.map((op) =>
           this.services.organizationProjects.removeOrganizationProject(

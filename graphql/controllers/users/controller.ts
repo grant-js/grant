@@ -104,11 +104,11 @@ export class UserController extends ScopeController {
       let currentTagIds: string[] = [];
       let currentRoleIds: string[] = [];
       if (tagIds && tagIds.length > 0) {
-        const currentTags = await this.services.userTags.getUserTags({ userId });
+        const currentTags = await this.services.userTags.getUserTags({ userId }, tx);
         currentTagIds = currentTags.map((pt) => pt.tagId);
       }
       if (roleIds && roleIds.length > 0) {
-        const currentRoles = await this.services.userRoles.getUserRoles({ userId });
+        const currentRoles = await this.services.userRoles.getUserRoles({ userId }, tx);
         currentRoleIds = currentRoles.map((ur) => ur.roleId);
       }
       const updatedUser = await this.services.users.updateUser(params, tx);
@@ -139,17 +139,16 @@ export class UserController extends ScopeController {
   }
 
   public async deleteUser(params: MutationDeleteUserArgs & DeleteParams): Promise<User> {
-    const userId = params.id;
-    const scope = params.scope;
-    const [userTags, userRoles] = await Promise.all([
-      this.services.userTags.getUserTags({ userId }),
-      this.services.userRoles.getUserRoles({ userId }),
-    ]);
-
-    const tagIds = userTags.map((ut) => ut.tagId);
-    const roleIds = userRoles.map((ur) => ur.roleId);
-
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+      const userId = params.id;
+      const scope = params.scope;
+      const [userTags, userRoles] = await Promise.all([
+        this.services.userTags.getUserTags({ userId }, tx),
+        this.services.userRoles.getUserRoles({ userId }, tx),
+      ]);
+
+      const tagIds = userTags.map((ut) => ut.tagId);
+      const roleIds = userRoles.map((ur) => ur.roleId);
       switch (scope.tenant) {
         case Tenant.Organization:
           await this.services.organizationUsers.removeOrganizationUser(

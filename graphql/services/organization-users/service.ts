@@ -55,29 +55,42 @@ export class OrganizationUserService extends AuditService {
     }
   }
 
-  private async organizationHasUser(organizationId: string, userId: string): Promise<boolean> {
+  private async organizationHasUser(
+    organizationId: string,
+    userId: string,
+    transaction?: Transaction
+  ): Promise<boolean> {
     await this.organizationExists(organizationId);
     await this.userExists(userId);
     const existingOrganizationUsers =
-      await this.repositories.organizationUserRepository.getOrganizationUsers({
-        organizationId,
-      });
+      await this.repositories.organizationUserRepository.getOrganizationUsers(
+        {
+          organizationId,
+        },
+        transaction
+      );
 
     return existingOrganizationUsers.some((ou) => ou.userId === userId);
   }
 
-  public async getOrganizationUsers(params: {
-    organizationId: string;
-  }): Promise<OrganizationUser[]> {
+  public async getOrganizationUsers(
+    params: {
+      organizationId: string;
+    },
+    transaction?: Transaction
+  ): Promise<OrganizationUser[]> {
     const context = 'OrganizationUserService.getOrganizationUsers';
     const validatedParams = validateInput(getOrganizationUsersParamsSchema, params, context);
     const { organizationId } = validatedParams;
 
     await this.organizationExists(organizationId);
 
-    const result = await this.repositories.organizationUserRepository.getOrganizationUsers({
-      organizationId,
-    });
+    const result = await this.repositories.organizationUserRepository.getOrganizationUsers(
+      {
+        organizationId,
+      },
+      transaction
+    );
     return validateOutput(
       createDynamicSingleSchema(organizationUserSchema).array(),
       result,
@@ -93,7 +106,7 @@ export class OrganizationUserService extends AuditService {
     const validatedParams = validateInput(addOrganizationUserParamsSchema, params, context);
     const { organizationId, userId } = validatedParams;
 
-    const hasUser = await this.organizationHasUser(organizationId, userId);
+    const hasUser = await this.organizationHasUser(organizationId, userId, transaction);
 
     if (hasUser) {
       throw new Error('Organization already has this user');
@@ -133,7 +146,7 @@ export class OrganizationUserService extends AuditService {
     const validatedParams = validateInput(removeOrganizationUserParamsSchema, params, context);
     const { organizationId, userId, hardDelete } = validatedParams;
 
-    const hasUser = await this.organizationHasUser(organizationId, userId);
+    const hasUser = await this.organizationHasUser(organizationId, userId, transaction);
 
     if (!hasUser) {
       throw new Error('Organization does not have this user');

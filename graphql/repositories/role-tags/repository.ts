@@ -20,15 +20,24 @@ export class RoleTagRepository extends PivotRepository<RoleTagModel, RoleTag> {
     };
   }
 
-  public async getRoleTags(params: { roleId: string }): Promise<RoleTag[]> {
-    return this.query({ parentId: params.roleId });
+  public async getRoleTags(
+    params: { roleId: string },
+    transaction?: Transaction
+  ): Promise<RoleTag[]> {
+    return this.query({ parentId: params.roleId }, transaction);
   }
 
-  public async getRoleTagIntersection(params: {
-    roleIds: string[];
-    tagIds: string[];
-  }): Promise<RoleTag[]> {
-    return this.queryIntersection({ parentIds: params.roleIds, relatedIds: params.tagIds });
+  public async getRoleTagIntersection(
+    params: {
+      roleIds: string[];
+      tagIds: string[];
+    },
+    transaction?: Transaction
+  ): Promise<RoleTag[]> {
+    return this.queryIntersection(
+      { parentIds: params.roleIds, relatedIds: params.tagIds },
+      transaction
+    );
   }
 
   public async addRoleTag(params: AddRoleTagInput, transaction?: Transaction): Promise<RoleTag> {

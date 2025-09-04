@@ -92,23 +92,22 @@ export class GroupController extends ScopeController {
   }
 
   public async updateGroup(params: MutationUpdateGroupArgs): Promise<Group> {
-    const { id: groupId, input } = params;
-    const { tagIds, permissionIds } = input;
-    let currentTagIds: string[] = [];
-    let currentPermissionIds: string[] = [];
-    if (tagIds && tagIds.length > 0) {
-      const currentTags = await this.services.groupTags.getGroupTags({
-        groupId,
-      });
-      currentTagIds = currentTags.map((gt) => gt.tagId);
-    }
-    if (permissionIds && permissionIds.length > 0) {
-      const currentPermissions = await this.services.groupPermissions.getGroupPermissions({
-        groupId,
-      });
-      currentPermissionIds = currentPermissions.map((gp) => gp.permissionId);
-    }
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+      const { id: groupId, input } = params;
+      const { tagIds, permissionIds } = input;
+      let currentTagIds: string[] = [];
+      let currentPermissionIds: string[] = [];
+      if (tagIds && tagIds.length > 0) {
+        const currentTags = await this.services.groupTags.getGroupTags({ groupId }, tx);
+        currentTagIds = currentTags.map((gt) => gt.tagId);
+      }
+      if (permissionIds && permissionIds.length > 0) {
+        const currentPermissions = await this.services.groupPermissions.getGroupPermissions(
+          { groupId },
+          tx
+        );
+        currentPermissionIds = currentPermissions.map((gp) => gp.permissionId);
+      }
       const updatedGroup = await this.services.groups.updateGroup(params, tx);
       if (tagIds && tagIds.length > 0) {
         const newTagIds = tagIds.filter((tagId) => !currentTagIds.includes(tagId));
@@ -145,15 +144,14 @@ export class GroupController extends ScopeController {
   }
 
   public async deleteGroup(params: MutationDeleteGroupArgs & DeleteParams): Promise<Group> {
-    const { id: groupId, scope } = params;
-    const [groupTags, groupPermissions] = await Promise.all([
-      this.services.groupTags.getGroupTags({ groupId }),
-      this.services.groupPermissions.getGroupPermissions({ groupId }),
-    ]);
-    const tagIds = groupTags.map((gt) => gt.tagId);
-    const permissionIds = groupPermissions.map((gp) => gp.permissionId);
-
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+      const { id: groupId, scope } = params;
+      const [groupTags, groupPermissions] = await Promise.all([
+        this.services.groupTags.getGroupTags({ groupId }, tx),
+        this.services.groupPermissions.getGroupPermissions({ groupId }, tx),
+      ]);
+      const tagIds = groupTags.map((gt) => gt.tagId);
+      const permissionIds = groupPermissions.map((gp) => gp.permissionId);
       switch (scope.tenant) {
         case Tenant.Organization:
           await this.services.organizationGroups.removeOrganizationGroup(

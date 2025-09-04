@@ -23,13 +23,16 @@ export class OrganizationPermissionRepository extends PivotRepository<
     return dbOrganizationPermission;
   }
 
-  public async getOrganizationPermissions(params: {
-    organizationId: string;
-  }): Promise<OrganizationPermissionModel[]> {
+  public async getOrganizationPermissions(
+    params: {
+      organizationId: string;
+    },
+    transaction?: Transaction
+  ): Promise<OrganizationPermissionModel[]> {
     const baseParams: BasePivotQueryArgs = {
       parentId: params.organizationId,
     };
-    return this.query(baseParams);
+    return this.query(baseParams, transaction);
   }
 
   public async addOrganizationPermission(

@@ -24,8 +24,11 @@ export class ProjectRoleRepository extends PivotRepository<ProjectRoleModel, Pro
     };
   }
 
-  public async getProjectRoles(params: { projectId: string }): Promise<ProjectRole[]> {
-    return this.query({ parentId: params.projectId });
+  public async getProjectRoles(
+    params: { projectId: string },
+    transaction?: Transaction
+  ): Promise<ProjectRole[]> {
+    return this.query({ parentId: params.projectId }, transaction);
   }
 
   public async addProjectRole(

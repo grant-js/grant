@@ -28,14 +28,17 @@ export class OrganizationProjectRepository extends PivotRepository<
     };
   }
 
-  public async getOrganizationProjects(params: {
-    organizationId: string;
-  }): Promise<OrganizationProject[]> {
+  public async getOrganizationProjects(
+    params: {
+      organizationId: string;
+    },
+    transaction?: Transaction
+  ): Promise<OrganizationProject[]> {
     const baseParams: BasePivotQueryArgs = {
       parentId: params.organizationId,
     };
 
-    return this.query(baseParams);
+    return this.query(baseParams, transaction);
   }
 
   public async addOrganizationProject(

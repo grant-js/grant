@@ -30,57 +30,70 @@ export class UserTagService extends AuditService {
     super(userTagsAuditLogs, 'userTagId', user, db);
   }
 
-  private async userExists(userId: string): Promise<void> {
-    const users = await this.repositories.userRepository.getUsers({
-      ids: [userId],
-      limit: 1,
-    });
+  private async userExists(userId: string, transaction?: Transaction): Promise<void> {
+    const users = await this.repositories.userRepository.getUsers(
+      { ids: [userId], limit: 1 },
+      transaction
+    );
 
     if (users.users.length === 0) {
       throw new Error('User not found');
     }
   }
 
-  private async tagExists(tagId: string): Promise<void> {
-    const tags = await this.repositories.tagRepository.getTags({
-      ids: [tagId],
-      limit: 1,
-    });
+  private async tagExists(tagId: string, transaction?: Transaction): Promise<void> {
+    const tags = await this.repositories.tagRepository.getTags(
+      { ids: [tagId], limit: 1 },
+      transaction
+    );
 
     if (tags.tags.length === 0) {
       throw new Error('Tag not found');
     }
   }
-  private async userHasTag(userId: string, tagId: string): Promise<boolean> {
-    await this.userExists(userId);
-    await this.tagExists(tagId);
-    const existingUserTags = await this.repositories.userTagRepository.getUserTags({
-      userId,
-    });
+  private async userHasTag(
+    userId: string,
+    tagId: string,
+    transaction?: Transaction
+  ): Promise<boolean> {
+    await this.userExists(userId, transaction);
+    await this.tagExists(tagId, transaction);
+    const existingUserTags = await this.repositories.userTagRepository.getUserTags(
+      { userId },
+      transaction
+    );
 
     return existingUserTags.some((ut) => ut.tagId === tagId);
   }
 
-  public async getUserTags(params: { userId: string }): Promise<UserTag[]> {
+  public async getUserTags(
+    params: { userId: string },
+    transaction?: Transaction
+  ): Promise<UserTag[]> {
     const context = 'UserTagService.getUserTags';
     const validatedParams = validateInput(queryUserTagsArgsSchema, params, context);
 
-    await this.userExists(validatedParams.userId);
+    await this.userExists(validatedParams.userId, transaction);
 
-    const result = await this.repositories.userTagRepository.getUserTags({
-      userId: validatedParams.userId,
-    });
+    const result = await this.repositories.userTagRepository.getUserTags(
+      { userId: validatedParams.userId },
+      transaction
+    );
     return validateOutput(createDynamicSingleSchema(userTagSchema).array(), result, context);
   }
 
-  public async getUserTagIntersection(userIds: string[], tagIds: string[]): Promise<UserTag[]> {
+  public async getUserTagIntersection(
+    userIds: string[],
+    tagIds: string[],
+    transaction?: Transaction
+  ): Promise<UserTag[]> {
     const context = 'UserTagService.getUserTagIntersection';
     validateInput(getUserTagIntersectionInputSchema, { userIds, tagIds }, context);
 
-    const result = await this.repositories.userTagRepository.getUserTagIntersection({
-      userIds,
-      tagIds,
-    });
+    const result = await this.repositories.userTagRepository.getUserTagIntersection(
+      { userIds, tagIds },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(userTagSchema).array(), result, context);
   }
@@ -90,7 +103,7 @@ export class UserTagService extends AuditService {
     const validatedParams = validateInput(addUserTagInputSchema, params, context);
     const { userId, tagId } = validatedParams;
 
-    const hasTag = await this.userHasTag(userId, tagId);
+    const hasTag = await this.userHasTag(userId, tagId, transaction);
 
     if (hasTag) {
       throw new Error('User already has this tag');
@@ -126,7 +139,7 @@ export class UserTagService extends AuditService {
     const validatedParams = validateInput(removeUserTagInputSchema, params, context);
     const { userId, tagId, hardDelete } = validatedParams;
 
-    const hasTag = await this.userHasTag(userId, tagId);
+    const hasTag = await this.userHasTag(userId, tagId, transaction);
 
     if (!hasTag) {
       throw new Error('User does not have this tag');

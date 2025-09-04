@@ -33,22 +33,31 @@ export class OrganizationProjectService extends AuditService {
     super(organizationProjectsAuditLogs, 'organizationProjectId', user, db);
   }
 
-  private async organizationExists(organizationId: string): Promise<void> {
-    const organizations = await this.repositories.organizationRepository.getOrganizations({
-      ids: [organizationId],
-      limit: 1,
-    });
+  private async organizationExists(
+    organizationId: string,
+    transaction?: Transaction
+  ): Promise<void> {
+    const organizations = await this.repositories.organizationRepository.getOrganizations(
+      {
+        ids: [organizationId],
+        limit: 1,
+      },
+      transaction
+    );
 
     if (organizations.organizations.length === 0) {
       throw new Error('Organization not found');
     }
   }
 
-  private async projectExists(projectId: string): Promise<void> {
-    const projects = await this.repositories.projectRepository.getProjects({
-      ids: [projectId],
-      limit: 1,
-    });
+  private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
+    const projects = await this.repositories.projectRepository.getProjects(
+      {
+        ids: [projectId],
+        limit: 1,
+      },
+      transaction
+    );
 
     if (projects.projects.length === 0) {
       throw new Error('Project not found');
@@ -57,21 +66,23 @@ export class OrganizationProjectService extends AuditService {
 
   private async organizationHasProject(
     organizationId: string,
-    projectId: string
+    projectId: string,
+    transaction?: Transaction
   ): Promise<boolean> {
-    await this.organizationExists(organizationId);
-    await this.projectExists(projectId);
+    await this.organizationExists(organizationId, transaction);
+    await this.projectExists(projectId, transaction);
     const existingOrganizationProjects =
-      await this.repositories.organizationProjectRepository.getOrganizationProjects({
-        organizationId,
-      });
-
+      await this.repositories.organizationProjectRepository.getOrganizationProjects(
+        { organizationId },
+        transaction
+      );
     return existingOrganizationProjects.some((op) => op.projectId === projectId);
   }
 
-  public async getOrganizationProjects(params: {
-    organizationId: string;
-  }): Promise<OrganizationProject[]> {
+  public async getOrganizationProjects(
+    params: { organizationId: string },
+    transaction?: Transaction
+  ): Promise<OrganizationProject[]> {
     const validationContext = 'OrganizationProjectService.getOrganizationProjects';
     const validatedParams = validateInput(
       queryOrganizationProjectsArgsSchema,
@@ -81,11 +92,12 @@ export class OrganizationProjectService extends AuditService {
 
     const { organizationId } = validatedParams;
 
-    await this.organizationExists(organizationId);
+    await this.organizationExists(organizationId, transaction);
 
-    const result = await this.repositories.organizationProjectRepository.getOrganizationProjects({
-      organizationId,
-    });
+    const result = await this.repositories.organizationProjectRepository.getOrganizationProjects(
+      { organizationId },
+      transaction
+    );
 
     return validateOutput(
       createDynamicSingleSchema(organizationProjectSchema).array(),
@@ -102,8 +114,7 @@ export class OrganizationProjectService extends AuditService {
     const validatedParams = validateInput(addOrganizationProjectInputSchema, params, context);
 
     const { organizationId, projectId } = validatedParams;
-
-    const hasProject = await this.organizationHasProject(organizationId, projectId);
+    const hasProject = await this.organizationHasProject(organizationId, projectId, transaction);
 
     if (hasProject) {
       throw new Error('Organization already has this project');

@@ -29,48 +29,54 @@ export class UserRoleService extends AuditService {
     super(userRolesAuditLogs, 'userRoleId', user, db);
   }
 
-  private async userExists(userId: string): Promise<void> {
-    const users = await this.repositories.userRepository.getUsers({
-      ids: [userId],
-      limit: 1,
-    });
+  private async userExists(userId: string, transaction?: Transaction): Promise<void> {
+    const users = await this.repositories.userRepository.getUsers(
+      { ids: [userId], limit: 1 },
+      transaction
+    );
 
     if (users.users.length === 0) {
       throw new Error('User not found');
     }
   }
 
-  private async roleExists(roleId: string): Promise<void> {
-    const roles = await this.repositories.roleRepository.getRoles({
-      ids: [roleId],
-      limit: 1,
-    });
+  private async roleExists(roleId: string, transaction?: Transaction): Promise<void> {
+    const roles = await this.repositories.roleRepository.getRoles(
+      { ids: [roleId], limit: 1 },
+      transaction
+    );
 
     if (roles.roles.length === 0) {
       throw new Error('Role not found');
     }
   }
 
-  private async userHasRole(userId: string, roleId: string): Promise<boolean> {
-    await this.userExists(userId);
-    await this.roleExists(roleId);
-    const existingUserRoles = await this.repositories.userRoleRepository.getUserRoles({
-      userId,
-    });
+  private async userHasRole(
+    userId: string,
+    roleId: string,
+    transaction?: Transaction
+  ): Promise<boolean> {
+    await this.userExists(userId, transaction);
+    await this.roleExists(roleId, transaction);
+    const existingUserRoles = await this.repositories.userRoleRepository.getUserRoles(
+      { userId },
+      transaction
+    );
 
     return existingUserRoles.some((ur) => ur.roleId === roleId);
   }
 
-  public async getUserRoles(params: { userId: string }): Promise<UserRole[]> {
+  public async getUserRoles(
+    params: { userId: string },
+    transaction?: Transaction
+  ): Promise<UserRole[]> {
     const context = 'UserRoleService.getUserRoles';
     const validatedParams = validateInput(queryUserRolesArgsSchema, params, context);
     const { userId } = validatedParams;
 
-    await this.userExists(userId);
+    await this.userExists(userId, transaction);
 
-    const result = await this.repositories.userRoleRepository.getUserRoles({
-      userId,
-    });
+    const result = await this.repositories.userRoleRepository.getUserRoles({ userId }, transaction);
     return validateOutput(createDynamicSingleSchema(userRoleSchema).array(), result, context);
   }
 
@@ -79,7 +85,7 @@ export class UserRoleService extends AuditService {
     const validatedParams = validateInput(addUserRoleInputSchema, params, context);
     const { userId, roleId } = validatedParams;
 
-    const hasRole = await this.userHasRole(userId, roleId);
+    const hasRole = await this.userHasRole(userId, roleId, transaction);
 
     if (hasRole) {
       throw new Error('User already has this role');
@@ -115,7 +121,7 @@ export class UserRoleService extends AuditService {
     const validatedParams = validateInput(removeUserRoleInputSchema, params, context);
     const { userId, roleId, hardDelete } = validatedParams;
 
-    const hasRole = await this.userHasRole(userId, roleId);
+    const hasRole = await this.userHasRole(userId, roleId, transaction);
 
     if (!hasRole) {
       throw new Error('User does not have this role');

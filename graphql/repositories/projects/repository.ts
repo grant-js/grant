@@ -71,9 +71,10 @@ export class ProjectRepository extends EntityRepository<ProjectModel, Project> {
   }
 
   public async getProjects(
-    params: Omit<QueryProjectsArgs, 'organizationId' | 'tagIds'> & SelectedFields<ProjectModel>
+    params: Omit<QueryProjectsArgs, 'organizationId' | 'tagIds'> & SelectedFields<ProjectModel>,
+    transaction?: Transaction
   ): Promise<ProjectPage> {
-    const result = await this.query(params);
+    const result = await this.query(params, transaction);
 
     return {
       projects: result.items,

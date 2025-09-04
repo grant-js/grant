@@ -34,58 +34,70 @@ export class PermissionTagService extends AuditService {
     super(permissionTagAuditLogs, 'permissionTagId', user, db);
   }
 
-  private async permissionExists(permissionId: string): Promise<void> {
-    const permissions = await this.repositories.permissionRepository.getPermissions({
-      ids: [permissionId],
-      limit: 1,
-    });
+  private async permissionExists(permissionId: string, transaction?: Transaction): Promise<void> {
+    const permissions = await this.repositories.permissionRepository.getPermissions(
+      { ids: [permissionId], limit: 1 },
+      transaction
+    );
 
     if (permissions.permissions.length === 0) {
       throw new Error('Permission not found');
     }
   }
 
-  private async tagExists(tagId: string): Promise<void> {
-    const tags = await this.repositories.tagRepository.getTags({
-      ids: [tagId],
-      limit: 1,
-    });
+  private async tagExists(tagId: string, transaction?: Transaction): Promise<void> {
+    const tags = await this.repositories.tagRepository.getTags(
+      { ids: [tagId], limit: 1 },
+      transaction
+    );
 
     if (tags.tags.length === 0) {
       throw new Error('Tag not found');
     }
   }
 
-  private async permissionHasTag(permissionId: string, tagId: string): Promise<boolean> {
-    await this.permissionExists(permissionId);
-    await this.tagExists(tagId);
+  private async permissionHasTag(
+    permissionId: string,
+    tagId: string,
+    transaction?: Transaction
+  ): Promise<boolean> {
+    await this.permissionExists(permissionId, transaction);
+    await this.tagExists(tagId, transaction);
     const existingPermissionTags =
-      await this.repositories.permissionTagRepository.getPermissionTags({
-        permissionId,
-      });
+      await this.repositories.permissionTagRepository.getPermissionTags(
+        { permissionId },
+        transaction
+      );
 
     return existingPermissionTags.some((pt) => pt.tagId === tagId);
   }
 
-  public async getPermissionTags(params: { permissionId: string }): Promise<PermissionTag[]> {
+  public async getPermissionTags(
+    params: { permissionId: string },
+    transaction?: Transaction
+  ): Promise<PermissionTag[]> {
     const context = 'PermissionTagService.getPermissionTags';
     const validatedParams = validateInput(getPermissionTagsParamsSchema, params, context);
 
     const { permissionId } = validatedParams;
 
-    await this.permissionExists(permissionId);
+    await this.permissionExists(permissionId, transaction);
 
-    const result = await this.repositories.permissionTagRepository.getPermissionTags({
-      permissionId,
-    });
+    const result = await this.repositories.permissionTagRepository.getPermissionTags(
+      { permissionId },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(permissionTagSchema).array(), result, context);
   }
 
-  public async getPermissionTagIntersection(params: {
-    permissionIds: string[];
-    tagIds: string[];
-  }): Promise<PermissionTag[]> {
+  public async getPermissionTagIntersection(
+    params: {
+      permissionIds: string[];
+      tagIds: string[];
+    },
+    transaction?: Transaction
+  ): Promise<PermissionTag[]> {
     const context = 'PermissionTagService.getPermissionTagIntersection';
     const validatedParams = validateInput(
       getPermissionTagIntersectionParamsSchema,
@@ -95,10 +107,10 @@ export class PermissionTagService extends AuditService {
 
     const { permissionIds, tagIds } = validatedParams;
 
-    const result = await this.repositories.permissionTagRepository.getPermissionTagIntersection({
-      permissionIds,
-      tagIds,
-    });
+    const result = await this.repositories.permissionTagRepository.getPermissionTagIntersection(
+      { permissionIds, tagIds },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(permissionTagSchema).array(), result, context);
   }
@@ -112,7 +124,7 @@ export class PermissionTagService extends AuditService {
 
     const { permissionId, tagId } = validatedParams;
 
-    const hasTag = await this.permissionHasTag(permissionId, tagId);
+    const hasTag = await this.permissionHasTag(permissionId, tagId, transaction);
 
     if (hasTag) {
       throw new Error('Permission already has this tag');
@@ -149,7 +161,7 @@ export class PermissionTagService extends AuditService {
 
     const { permissionId, tagId, hardDelete } = validatedParams;
 
-    const hasTag = await this.permissionHasTag(permissionId, tagId);
+    const hasTag = await this.permissionHasTag(permissionId, tagId, transaction);
 
     if (!hasTag) {
       throw new Error('Permission does not have this tag');

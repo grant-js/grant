@@ -13,12 +13,19 @@ export class GroupTagRepository extends PivotRepository<GroupTag, GroupTag> {
     return dbGroupTag;
   }
 
-  public async getGroupTags(params: { groupId: string }): Promise<GroupTag[]> {
-    return this.query({ parentId: params.groupId });
+  public async getGroupTags(
+    params: { groupId: string },
+    transaction?: Transaction
+  ): Promise<GroupTag[]> {
+    return this.query({ parentId: params.groupId }, transaction);
   }
 
-  public async getGroupTagIntersection(groupIds: string[], tagIds: string[]): Promise<GroupTag[]> {
-    return this.queryIntersection({ parentIds: groupIds, relatedIds: tagIds });
+  public async getGroupTagIntersection(
+    groupIds: string[],
+    tagIds: string[],
+    transaction?: Transaction
+  ): Promise<GroupTag[]> {
+    return this.queryIntersection({ parentIds: groupIds, relatedIds: tagIds }, transaction);
   }
 
   public async addGroupTag(

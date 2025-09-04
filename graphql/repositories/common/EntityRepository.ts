@@ -54,9 +54,9 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
 
   constructor(protected db: DbSchema) {}
 
-  private get queryBuilder() {
-    const queryApi = this.db.query as any;
-    return queryApi[this.schemaName];
+  private queryBuilder(transaction?: Transaction) {
+    const dbInstance = transaction ?? (this.db as any);
+    return dbInstance.query[this.schemaName];
   }
 
   private where(ids?: string[] | null, search?: string | null) {
@@ -150,7 +150,10 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
     return mappedRow;
   }
 
-  protected async query(params: BaseQueryArgs<TModel, TEntity>): Promise<BasePageResult<TEntity>> {
+  protected async query(
+    params: BaseQueryArgs<TModel, TEntity>,
+    transaction?: Transaction
+  ): Promise<BasePageResult<TEntity>> {
     const { requestedFields } = params;
 
     const { ids, search, sort } = params;
@@ -176,7 +179,7 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
       let results = [];
 
       if (hasRelations) {
-        results = await this.queryBuilder.findMany({
+        results = await this.queryBuilder(transaction).findMany({
           with: withRelations,
           ...filter,
         });
@@ -184,7 +187,7 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
           this.extractRelations(row, requestedFields)
         );
       } else {
-        results = await this.queryBuilder.findMany(filter);
+        results = await this.queryBuilder(transaction).findMany(filter);
       }
 
       return {

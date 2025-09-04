@@ -27,8 +27,11 @@ export class ProjectPermissionRepository extends PivotRepository<
     };
   }
 
-  public async getProjectPermissions(params: { projectId: string }): Promise<ProjectPermission[]> {
-    return this.query({ parentId: params.projectId });
+  public async getProjectPermissions(
+    params: { projectId: string },
+    transaction?: Transaction
+  ): Promise<ProjectPermission[]> {
+    return this.query({ parentId: params.projectId }, transaction);
   }
 
   public async addProjectPermission(

@@ -109,18 +109,18 @@ export class PermissionController extends ScopeController {
   }
 
   public async updatePermission(params: MutationUpdatePermissionArgs): Promise<Permission> {
-    const { id: permissionId, input } = params;
-    const { tagIds } = input;
-    let currentTagIds: string[] = [];
-
-    if (tagIds && tagIds.length > 0) {
-      const currentTags = await this.services.permissionTags.getPermissionTags({
-        permissionId,
-      });
-      currentTagIds = currentTags.map((pt) => pt.tagId);
-    }
-
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+      const { id: permissionId, input } = params;
+      const { tagIds } = input;
+      let currentTagIds: string[] = [];
+
+      if (tagIds && tagIds.length > 0) {
+        const currentTags = await this.services.permissionTags.getPermissionTags(
+          { permissionId },
+          tx
+        );
+        currentTagIds = currentTags.map((pt) => pt.tagId);
+      }
       const updatedPermission = await this.services.permissions.updatePermission(params, tx);
 
       if (tagIds && tagIds.length > 0) {
@@ -146,11 +146,13 @@ export class PermissionController extends ScopeController {
   public async deletePermission(
     params: MutationDeletePermissionArgs & DeleteParams
   ): Promise<Permission> {
-    const { id: permissionId, scope } = params;
-    const permissionTags = await this.services.permissionTags.getPermissionTags({ permissionId });
-    const tagIds = permissionTags.map((pt) => pt.tagId);
-
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+      const { id: permissionId, scope } = params;
+      const permissionTags = await this.services.permissionTags.getPermissionTags(
+        { permissionId },
+        tx
+      );
+      const tagIds = permissionTags.map((pt) => pt.tagId);
       switch (scope.tenant) {
         case Tenant.Organization:
           await this.services.organizationPermissions.removeOrganizationPermission(

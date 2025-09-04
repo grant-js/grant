@@ -25,19 +25,28 @@ export class UserTagRepository extends PivotRepository<UserTagModel, UserTag> {
     };
   }
 
-  public async getUserTags(params: { userId: string }): Promise<UserTag[]> {
+  public async getUserTags(
+    params: { userId: string },
+    transaction?: Transaction
+  ): Promise<UserTag[]> {
     const baseParams: BasePivotQueryArgs = {
       parentId: params.userId,
     };
 
-    return this.query(baseParams);
+    return this.query(baseParams, transaction);
   }
 
-  public async getUserTagIntersection(params: {
-    userIds: string[];
-    tagIds: string[];
-  }): Promise<UserTag[]> {
-    return this.queryIntersection({ parentIds: params.userIds, relatedIds: params.tagIds });
+  public async getUserTagIntersection(
+    params: {
+      userIds: string[];
+      tagIds: string[];
+    },
+    transaction?: Transaction
+  ): Promise<UserTag[]> {
+    return this.queryIntersection(
+      { parentIds: params.userIds, relatedIds: params.tagIds },
+      transaction
+    );
   }
 
   public async addUserTag(params: AddUserTagInput, transaction?: Transaction): Promise<UserTag> {

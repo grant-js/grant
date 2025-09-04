@@ -80,9 +80,10 @@ export class OrganizationRepository extends EntityRepository<OrganizationModel, 
   }
 
   public async getOrganizations(
-    params: Omit<QueryOrganizationsArgs, 'scope'> & SelectedFields<OrganizationModel>
+    params: Omit<QueryOrganizationsArgs, 'scope'> & SelectedFields<OrganizationModel>,
+    transaction?: Transaction
   ): Promise<OrganizationPage> {
-    const result = await this.query(params);
+    const result = await this.query(params, transaction);
     return {
       organizations: result.items,
       totalCount: result.totalCount,

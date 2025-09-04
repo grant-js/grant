@@ -33,45 +33,56 @@ export class ProjectGroupService extends AuditService {
     super(projectGroupAuditLogs, 'projectGroupId', user, db);
   }
 
-  private async projectExists(projectId: string): Promise<void> {
-    const projects = await this.repositories.projectRepository.getProjects({
-      ids: [projectId],
-      limit: 1,
-    });
+  private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
+    const projects = await this.repositories.projectRepository.getProjects(
+      { ids: [projectId], limit: 1 },
+      transaction
+    );
 
     if (projects.projects.length === 0) {
       throw new Error('Project not found');
     }
   }
 
-  private async groupExists(groupId: string): Promise<void> {
-    const groups = await this.repositories.groupRepository.getGroups({
-      ids: [groupId],
-      limit: 1,
-    });
+  private async groupExists(groupId: string, transaction?: Transaction): Promise<void> {
+    const groups = await this.repositories.groupRepository.getGroups(
+      { ids: [groupId], limit: 1 },
+      transaction
+    );
 
     if (groups.groups.length === 0) {
       throw new Error('Group not found');
     }
   }
 
-  private async projectHasGroup(projectId: string, groupId: string): Promise<boolean> {
-    await this.projectExists(projectId);
-    await this.groupExists(groupId);
-    const existingProjectGroups = await this.repositories.projectGroupRepository.getProjectGroups({
-      projectId,
-    });
+  private async projectHasGroup(
+    projectId: string,
+    groupId: string,
+    transaction?: Transaction
+  ): Promise<boolean> {
+    await this.projectExists(projectId, transaction);
+    await this.groupExists(groupId, transaction);
+    const existingProjectGroups = await this.repositories.projectGroupRepository.getProjectGroups(
+      { projectId },
+      transaction
+    );
 
     return existingProjectGroups.some((pg) => pg.groupId === groupId);
   }
 
-  public async getProjectGroups(params: { projectId: string }): Promise<ProjectGroup[]> {
+  public async getProjectGroups(
+    params: { projectId: string },
+    transaction?: Transaction
+  ): Promise<ProjectGroup[]> {
     const context = 'ProjectGroupService.getProjectGroups';
     const validatedParams = validateInput(getProjectGroupsParamsSchema, params, context);
 
-    await this.projectExists(validatedParams.projectId);
+    await this.projectExists(validatedParams.projectId, transaction);
 
-    const result = await this.repositories.projectGroupRepository.getProjectGroups(validatedParams);
+    const result = await this.repositories.projectGroupRepository.getProjectGroups(
+      validatedParams,
+      transaction
+    );
     return validateOutput(createDynamicSingleSchema(projectGroupSchema).array(), result, context);
   }
 
@@ -84,7 +95,7 @@ export class ProjectGroupService extends AuditService {
 
     const { projectId, groupId } = validatedParams;
 
-    const hasGroup = await this.projectHasGroup(projectId, groupId);
+    const hasGroup = await this.projectHasGroup(projectId, groupId, transaction);
 
     if (hasGroup) {
       throw new Error('Project already has this group');
@@ -121,7 +132,7 @@ export class ProjectGroupService extends AuditService {
 
     const { projectId, groupId, hardDelete } = validatedParams;
 
-    const hasGroup = await this.projectHasGroup(projectId, groupId);
+    const hasGroup = await this.projectHasGroup(projectId, groupId, transaction);
 
     if (!hasGroup) {
       throw new Error('Project does not have this group');

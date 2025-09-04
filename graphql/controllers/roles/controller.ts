@@ -105,7 +105,7 @@ export class RoleController extends ScopeController {
       let currentTagIds: string[] = [];
       let currentGroupIds: string[] = [];
       if (tagIds && tagIds.length > 0) {
-        const currentTags = await this.services.roleTags.getRoleTags({ roleId });
+        const currentTags = await this.services.roleTags.getRoleTags({ roleId }, tx);
         currentTagIds = currentTags.map((pt) => pt.tagId);
       }
       if (groupIds && groupIds.length > 0) {
@@ -142,17 +142,16 @@ export class RoleController extends ScopeController {
   }
 
   public async deleteRole(params: MutationDeleteRoleArgs & DeleteParams): Promise<Role> {
-    const roleId = params.id;
-    const scope = params.scope;
-    const [roleTags, roleGroups] = await Promise.all([
-      this.services.roleTags.getRoleTags({ roleId }),
-      this.services.roleGroups.getRoleGroups({ roleId }),
-    ]);
-
-    const tagIds = roleTags.map((rt) => rt.tagId);
-    const groupIds = roleGroups.map((rg) => rg.groupId);
-
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+      const roleId = params.id;
+      const scope = params.scope;
+      const [roleTags, roleGroups] = await Promise.all([
+        this.services.roleTags.getRoleTags({ roleId }, tx),
+        this.services.roleGroups.getRoleGroups({ roleId }, tx),
+      ]);
+
+      const tagIds = roleTags.map((rt) => rt.tagId);
+      const groupIds = roleGroups.map((rg) => rg.groupId);
       switch (scope.tenant) {
         case Tenant.Organization:
           await this.services.organizationRoles.removeOrganizationRole(

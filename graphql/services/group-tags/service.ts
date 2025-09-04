@@ -30,39 +30,47 @@ export class GroupTagService extends AuditService {
     super(groupTagsAuditLogs, 'groupTagId', user, db);
   }
 
-  private async groupExists(groupId: string): Promise<void> {
-    const groups = await this.repositories.groupRepository.getGroups({
-      ids: [groupId],
-      limit: 1,
-    });
+  private async groupExists(groupId: string, transaction?: Transaction): Promise<void> {
+    const groups = await this.repositories.groupRepository.getGroups(
+      { ids: [groupId], limit: 1 },
+      transaction
+    );
 
     if (groups.groups.length === 0) {
       throw new Error('Group not found');
     }
   }
 
-  private async tagExists(tagId: string): Promise<void> {
-    const tags = await this.repositories.tagRepository.getTags({
-      ids: [tagId],
-      limit: 1,
-    });
+  private async tagExists(tagId: string, transaction?: Transaction): Promise<void> {
+    const tags = await this.repositories.tagRepository.getTags(
+      { ids: [tagId], limit: 1 },
+      transaction
+    );
 
     if (tags.tags.length === 0) {
       throw new Error('Tag not found');
     }
   }
 
-  private async groupHasTag(groupId: string, tagId: string): Promise<boolean> {
-    await this.groupExists(groupId);
-    await this.tagExists(tagId);
-    const existingGroupTags = await this.repositories.groupTagRepository.getGroupTags({
-      groupId,
-    });
+  private async groupHasTag(
+    groupId: string,
+    tagId: string,
+    transaction?: Transaction
+  ): Promise<boolean> {
+    await this.groupExists(groupId, transaction);
+    await this.tagExists(tagId, transaction);
+    const existingGroupTags = await this.repositories.groupTagRepository.getGroupTags(
+      { groupId },
+      transaction
+    );
 
     return existingGroupTags.some((gt) => gt.tagId === tagId);
   }
 
-  public async getGroupTags(params: { groupId: string }): Promise<GroupTag[]> {
+  public async getGroupTags(
+    params: { groupId: string },
+    transaction?: Transaction
+  ): Promise<GroupTag[]> {
     const context = 'GroupTagService.getGroupTags';
     const validatedParams = validateInput(queryGroupTagsArgsSchema, params, context);
     const { groupId } = validatedParams;
@@ -70,23 +78,30 @@ export class GroupTagService extends AuditService {
     if (!groupId) {
       throw new Error('Group ID is required');
     }
-    await this.groupExists(groupId);
+    await this.groupExists(groupId, transaction);
 
-    const result = await this.repositories.groupTagRepository.getGroupTags({ groupId });
+    const result = await this.repositories.groupTagRepository.getGroupTags(
+      { groupId },
+      transaction
+    );
     return validateOutput(createDynamicSingleSchema(groupTagSchema).array(), result, context);
   }
 
-  public async getGroupTagIntersection(params: {
-    groupIds: string[];
-    tagIds: string[];
-  }): Promise<GroupTag[]> {
+  public async getGroupTagIntersection(
+    params: {
+      groupIds: string[];
+      tagIds: string[];
+    },
+    transaction?: Transaction
+  ): Promise<GroupTag[]> {
     const context = 'GroupTagService.getGroupTagIntersection';
     const validatedParams = validateInput(getGroupTagIntersectionInputSchema, params, context);
     const { groupIds, tagIds } = validatedParams;
 
     const result = await this.repositories.groupTagRepository.getGroupTagIntersection(
       groupIds,
-      tagIds
+      tagIds,
+      transaction
     );
     return validateOutput(createDynamicSingleSchema(groupTagSchema).array(), result, context);
   }
@@ -96,7 +111,7 @@ export class GroupTagService extends AuditService {
     const validatedParams = validateInput(addGroupTagInputSchema, params, context);
     const { groupId, tagId } = validatedParams;
 
-    const hasTag = await this.groupHasTag(groupId, tagId);
+    const hasTag = await this.groupHasTag(groupId, tagId, transaction);
 
     if (hasTag) {
       throw new Error('Group already has this tag');
@@ -133,7 +148,7 @@ export class GroupTagService extends AuditService {
     const validatedParams = validateInput(removeGroupTagInputSchema, params, context);
     const { groupId, tagId, hardDelete } = validatedParams;
 
-    const hasTag = await this.groupHasTag(groupId, tagId);
+    const hasTag = await this.groupHasTag(groupId, tagId, transaction);
 
     if (!hasTag) {
       throw new Error('Group does not have this tag');

@@ -30,45 +30,62 @@ export class ProjectTagService extends AuditService {
     super(projectTagAuditLogs, 'projectTagId', user, db);
   }
 
-  private async projectExists(projectId: string): Promise<void> {
-    const projects = await this.repositories.projectRepository.getProjects({
-      ids: [projectId],
-      limit: 1,
-    });
+  private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
+    const projects = await this.repositories.projectRepository.getProjects(
+      {
+        ids: [projectId],
+        limit: 1,
+      },
+      transaction
+    );
 
     if (projects.projects.length === 0) {
       throw new Error('Project not found');
     }
   }
 
-  private async tagExists(tagId: string): Promise<void> {
-    const tags = await this.repositories.tagRepository.getTags({
-      ids: [tagId],
-      limit: 1,
-    });
+  private async tagExists(tagId: string, transaction?: Transaction): Promise<void> {
+    const tags = await this.repositories.tagRepository.getTags(
+      {
+        ids: [tagId],
+        limit: 1,
+      },
+      transaction
+    );
 
     if (tags.tags.length === 0) {
       throw new Error('Tag not found');
     }
   }
 
-  private async projectHasTag(projectId: string, tagId: string): Promise<boolean> {
-    await this.projectExists(projectId);
-    await this.tagExists(tagId);
-    const existingProjectTags = await this.repositories.projectTagRepository.getProjectTags({
-      projectId,
-    });
+  private async projectHasTag(
+    projectId: string,
+    tagId: string,
+    transaction?: Transaction
+  ): Promise<boolean> {
+    await this.projectExists(projectId, transaction);
+    await this.tagExists(tagId, transaction);
+    const existingProjectTags = await this.repositories.projectTagRepository.getProjectTags(
+      { projectId },
+      transaction
+    );
 
     return existingProjectTags.some((pt) => pt.tagId === tagId);
   }
 
-  public async getProjectTags(params: { projectId: string }): Promise<ProjectTag[]> {
+  public async getProjectTags(
+    params: { projectId: string },
+    transaction?: Transaction
+  ): Promise<ProjectTag[]> {
     const context = 'ProjectTagService.getProjectTags';
     const validatedParams = validateInput(getProjectTagsParamsSchema, params, context);
 
     await this.projectExists(validatedParams.projectId);
 
-    const result = await this.repositories.projectTagRepository.getProjectTags(validatedParams);
+    const result = await this.repositories.projectTagRepository.getProjectTags(
+      validatedParams,
+      transaction
+    );
     return validateOutput(createDynamicSingleSchema(projectTagSchema).array(), result, context);
   }
 
@@ -94,7 +111,7 @@ export class ProjectTagService extends AuditService {
     const validatedParams = validateInput(addProjectTagInputSchema, params, context);
     const { projectId, tagId } = validatedParams;
 
-    const hasTag = await this.projectHasTag(projectId, tagId);
+    const hasTag = await this.projectHasTag(projectId, tagId, transaction);
 
     if (hasTag) {
       throw new Error('Project already has this tag');
@@ -131,7 +148,7 @@ export class ProjectTagService extends AuditService {
 
     const { projectId, tagId, hardDelete } = validatedParams;
 
-    const hasTag = await this.projectHasTag(projectId, tagId);
+    const hasTag = await this.projectHasTag(projectId, tagId, transaction);
 
     if (!hasTag) {
       throw new Error('Project does not have this tag');

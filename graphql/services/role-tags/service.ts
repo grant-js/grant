@@ -30,61 +30,72 @@ export class RoleTagService extends AuditService {
     super(roleTagAuditLogs, 'roleTagId', user, db);
   }
 
-  private async roleExists(roleId: string): Promise<void> {
-    const roles = await this.repositories.roleRepository.getRoles({
-      ids: [roleId],
-      limit: 1,
-    });
+  private async roleExists(roleId: string, transaction?: Transaction): Promise<void> {
+    const roles = await this.repositories.roleRepository.getRoles(
+      { ids: [roleId], limit: 1 },
+      transaction
+    );
 
     if (roles.roles.length === 0) {
       throw new Error('Role not found');
     }
   }
 
-  private async tagExists(tagId: string): Promise<void> {
-    const tags = await this.repositories.tagRepository.getTags({
-      ids: [tagId],
-      limit: 1,
-    });
+  private async tagExists(tagId: string, transaction?: Transaction): Promise<void> {
+    const tags = await this.repositories.tagRepository.getTags(
+      { ids: [tagId], limit: 1 },
+      transaction
+    );
 
     if (tags.tags.length === 0) {
       throw new Error('Tag not found');
     }
   }
 
-  private async roleHasTag(roleId: string, tagId: string): Promise<boolean> {
-    await this.roleExists(roleId);
-    await this.tagExists(tagId);
-    const existingRoleTags = await this.repositories.roleTagRepository.getRoleTags({
-      roleId,
-    });
+  private async roleHasTag(
+    roleId: string,
+    tagId: string,
+    transaction?: Transaction
+  ): Promise<boolean> {
+    await this.roleExists(roleId, transaction);
+    await this.tagExists(tagId, transaction);
+    const existingRoleTags = await this.repositories.roleTagRepository.getRoleTags(
+      { roleId },
+      transaction
+    );
 
     return existingRoleTags.some((rt) => rt.tagId === tagId);
   }
 
-  public async getRoleTags(params: { roleId: string }): Promise<RoleTag[]> {
+  public async getRoleTags(
+    params: { roleId: string },
+    transaction?: Transaction
+  ): Promise<RoleTag[]> {
     const context = 'RoleTagService.getRoleTags';
     const validatedParams = validateInput(getRoleTagsParamsSchema, params, context);
     const { roleId } = validatedParams;
 
-    await this.roleExists(roleId);
+    await this.roleExists(roleId, transaction);
 
-    const result = await this.repositories.roleTagRepository.getRoleTags(params);
+    const result = await this.repositories.roleTagRepository.getRoleTags(params, transaction);
     return validateOutput(createDynamicSingleSchema(roleTagSchema).array(), result, context);
   }
 
-  public async getRoleTagIntersection(params: {
-    roleIds: string[];
-    tagIds: string[];
-  }): Promise<RoleTag[]> {
+  public async getRoleTagIntersection(
+    params: {
+      roleIds: string[];
+      tagIds: string[];
+    },
+    transaction?: Transaction
+  ): Promise<RoleTag[]> {
     const context = 'RoleTagService.getRoleTagIntersection';
     const validatedParams = validateInput(getRoleTagIntersectionInputSchema, params, context);
     const { roleIds, tagIds } = validatedParams;
 
-    const roleTags = await this.repositories.roleTagRepository.getRoleTagIntersection({
-      roleIds,
-      tagIds,
-    });
+    const roleTags = await this.repositories.roleTagRepository.getRoleTagIntersection(
+      { roleIds, tagIds },
+      transaction
+    );
     return validateOutput(roleTagSchema.array(), roleTags, context);
   }
 
@@ -93,7 +104,7 @@ export class RoleTagService extends AuditService {
     const validatedParams = validateInput(addRoleTagInputSchema, params, context);
     const { roleId, tagId } = validatedParams;
 
-    const hasTag = await this.roleHasTag(roleId, tagId);
+    const hasTag = await this.roleHasTag(roleId, tagId, transaction);
 
     if (hasTag) {
       throw new Error('Role already has this tag');
@@ -129,7 +140,7 @@ export class RoleTagService extends AuditService {
     const validatedParams = validateInput(removeRoleTagInputSchema, params, context);
     const { roleId, tagId, hardDelete } = validatedParams;
 
-    const hasTag = await this.roleHasTag(roleId, tagId);
+    const hasTag = await this.roleHasTag(roleId, tagId, transaction);
 
     if (!hasTag) {
       throw new Error('Role does not have this tag');

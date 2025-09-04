@@ -86,9 +86,8 @@ export class TagController extends ScopeController {
   }
 
   public async deleteTag(params: MutationDeleteTagArgs & DeleteParams): Promise<Tag> {
-    const { id: tagId, scope } = params;
-
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+      const { id: tagId, scope } = params;
       switch (scope.tenant) {
         case Tenant.Organization:
           await this.services.organizationTags.removeOrganizationTag(

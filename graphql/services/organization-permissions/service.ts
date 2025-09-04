@@ -33,22 +33,25 @@ export class OrganizationPermissionService extends AuditService {
     super(organizationPermissionsAuditLogs, 'organizationPermissionId', user, db);
   }
 
-  private async organizationExists(organizationId: string): Promise<void> {
-    const organizations = await this.repositories.organizationRepository.getOrganizations({
-      ids: [organizationId],
-      limit: 1,
-    });
+  private async organizationExists(
+    organizationId: string,
+    transaction?: Transaction
+  ): Promise<void> {
+    const organizations = await this.repositories.organizationRepository.getOrganizations(
+      { ids: [organizationId], limit: 1 },
+      transaction
+    );
 
     if (organizations.organizations.length === 0) {
       throw new Error('Organization not found');
     }
   }
 
-  private async permissionExists(permissionId: string): Promise<void> {
-    const permissions = await this.repositories.permissionRepository.getPermissions({
-      ids: [permissionId],
-      limit: 1,
-    });
+  private async permissionExists(permissionId: string, transaction?: Transaction): Promise<void> {
+    const permissions = await this.repositories.permissionRepository.getPermissions(
+      { ids: [permissionId], limit: 1 },
+      transaction
+    );
 
     if (permissions.permissions.length === 0) {
       throw new Error('Permission not found');
@@ -57,32 +60,38 @@ export class OrganizationPermissionService extends AuditService {
 
   private async organizationHasPermission(
     organizationId: string,
-    permissionId: string
+    permissionId: string,
+    transaction?: Transaction
   ): Promise<boolean> {
-    await this.organizationExists(organizationId);
-    await this.permissionExists(permissionId);
+    await this.organizationExists(organizationId, transaction);
+    await this.permissionExists(permissionId, transaction);
     const existingOrganizationPermissions =
-      await this.repositories.organizationPermissionRepository.getOrganizationPermissions({
-        organizationId,
-      });
+      await this.repositories.organizationPermissionRepository.getOrganizationPermissions(
+        { organizationId },
+        transaction
+      );
 
     return existingOrganizationPermissions.some((op) => op.permissionId === permissionId);
   }
 
-  public async getOrganizationPermissions(params: {
-    organizationId: string;
-  }): Promise<OrganizationPermission[]> {
+  public async getOrganizationPermissions(
+    params: {
+      organizationId: string;
+    },
+    transaction?: Transaction
+  ): Promise<OrganizationPermission[]> {
     const context = 'OrganizationPermissionService.getOrganizationPermissions';
     const validatedParams = validateInput(queryOrganizationPermissionsArgsSchema, params, context);
 
     const { organizationId } = validatedParams;
 
-    await this.organizationExists(organizationId);
+    await this.organizationExists(organizationId, transaction);
 
     const result =
-      await this.repositories.organizationPermissionRepository.getOrganizationPermissions({
-        organizationId,
-      });
+      await this.repositories.organizationPermissionRepository.getOrganizationPermissions(
+        { organizationId },
+        transaction
+      );
 
     return validateOutput(
       createDynamicSingleSchema(organizationPermissionSchema).array(),
@@ -100,10 +109,14 @@ export class OrganizationPermissionService extends AuditService {
 
     const { organizationId, permissionId } = validatedParams;
 
-    await this.organizationExists(organizationId);
-    await this.permissionExists(permissionId);
+    await this.organizationExists(organizationId, transaction);
+    await this.permissionExists(permissionId, transaction);
 
-    const hasPermission = await this.organizationHasPermission(organizationId, permissionId);
+    const hasPermission = await this.organizationHasPermission(
+      organizationId,
+      permissionId,
+      transaction
+    );
 
     if (hasPermission) {
       throw new Error('Organization already has this permission');
@@ -142,7 +155,11 @@ export class OrganizationPermissionService extends AuditService {
 
     const { organizationId, permissionId, hardDelete } = validatedParams;
 
-    const hasPermission = await this.organizationHasPermission(organizationId, permissionId);
+    const hasPermission = await this.organizationHasPermission(
+      organizationId,
+      permissionId,
+      transaction
+    );
 
     if (!hasPermission) {
       throw new Error('Organization does not have this permission');

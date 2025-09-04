@@ -42,11 +42,17 @@ export class OrganizationService extends AuditService {
     super(organizationAuditLogs, 'organizationId', user, db);
   }
 
-  private async getOrganization(organizationId: string): Promise<Organization> {
-    const existingOrganizations = await this.repositories.organizationRepository.getOrganizations({
-      ids: [organizationId],
-      limit: 1,
-    });
+  private async getOrganization(
+    organizationId: string,
+    transaction?: Transaction
+  ): Promise<Organization> {
+    const existingOrganizations = await this.repositories.organizationRepository.getOrganizations(
+      {
+        ids: [organizationId],
+        limit: 1,
+      },
+      transaction
+    );
 
     if (existingOrganizations.organizations.length === 0) {
       throw new Error('Organization not found');
@@ -56,11 +62,15 @@ export class OrganizationService extends AuditService {
   }
 
   public async getOrganizations(
-    params: Omit<QueryOrganizationsArgs, 'scope'> & SelectedFields<OrganizationModel>
+    params: Omit<QueryOrganizationsArgs, 'scope'> & SelectedFields<OrganizationModel>,
+    transaction?: Transaction
   ): Promise<OrganizationPage> {
     const context = 'OrganizationService.getOrganizations';
     validateInput(getOrganizationsParamsSchema, params, context);
-    const result = await this.repositories.organizationRepository.getOrganizations(params);
+    const result = await this.repositories.organizationRepository.getOrganizations(
+      params,
+      transaction
+    );
 
     const transformedResult = {
       items: result.organizations,
@@ -160,7 +170,7 @@ export class OrganizationService extends AuditService {
 
     const { id, hardDelete } = validatedParams;
 
-    const oldOrganization = await this.getOrganization(id);
+    const oldOrganization = await this.getOrganization(id, transaction);
     const isHardDelete = hardDelete === true;
 
     const deletedOrganization = isHardDelete

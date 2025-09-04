@@ -33,40 +33,48 @@ export class GroupPermissionService extends AuditService {
     super(groupPermissionsAuditLogs, 'groupPermissionId', user, db);
   }
 
-  private async groupExists(groupId: string): Promise<void> {
-    const groups = await this.repositories.groupRepository.getGroups({
-      ids: [groupId],
-      limit: 1,
-    });
+  private async groupExists(groupId: string, transaction?: Transaction): Promise<void> {
+    const groups = await this.repositories.groupRepository.getGroups(
+      { ids: [groupId], limit: 1 },
+      transaction
+    );
 
     if (groups.groups.length === 0) {
       throw new Error('Group not found');
     }
   }
 
-  private async permissionExists(permissionId: string): Promise<void> {
-    const permissions = await this.repositories.permissionRepository.getPermissions({
-      ids: [permissionId],
-      limit: 1,
-    });
+  private async permissionExists(permissionId: string, transaction?: Transaction): Promise<void> {
+    const permissions = await this.repositories.permissionRepository.getPermissions(
+      { ids: [permissionId], limit: 1 },
+      transaction
+    );
 
     if (permissions.permissions.length === 0) {
       throw new Error('Permission not found');
     }
   }
 
-  private async groupHasPermission(groupId: string, permissionId: string): Promise<boolean> {
+  private async groupHasPermission(
+    groupId: string,
+    permissionId: string,
+    transaction?: Transaction
+  ): Promise<boolean> {
     await this.groupExists(groupId);
     await this.permissionExists(permissionId);
     const existingGroupPermissions =
-      await this.repositories.groupPermissionRepository.getGroupPermissions({
-        groupId,
-      });
+      await this.repositories.groupPermissionRepository.getGroupPermissions(
+        { groupId },
+        transaction
+      );
 
     return existingGroupPermissions.some((gp) => gp.permissionId === permissionId);
   }
 
-  public async getGroupPermissions(params: { groupId: string }): Promise<GroupPermission[]> {
+  public async getGroupPermissions(
+    params: { groupId: string },
+    transaction?: Transaction
+  ): Promise<GroupPermission[]> {
     const context = 'GroupPermissionService.getGroupPermissions';
     const validatedParams = validateInput(getGroupPermissionsParamsSchema, params, context);
     const { groupId } = validatedParams;
@@ -74,11 +82,12 @@ export class GroupPermissionService extends AuditService {
     if (!groupId) {
       throw new Error('Group ID is required');
     }
-    await this.groupExists(groupId);
+    await this.groupExists(groupId, transaction);
 
-    const result = await this.repositories.groupPermissionRepository.getGroupPermissions({
-      groupId,
-    });
+    const result = await this.repositories.groupPermissionRepository.getGroupPermissions(
+      { groupId },
+      transaction
+    );
 
     return validateOutput(
       createDynamicSingleSchema(groupPermissionSchema).array(),
@@ -95,7 +104,7 @@ export class GroupPermissionService extends AuditService {
     const validatedParams = validateInput(addGroupPermissionParamsSchema, params, context);
     const { groupId, permissionId } = validatedParams;
 
-    const hasPermission = await this.groupHasPermission(groupId, permissionId);
+    const hasPermission = await this.groupHasPermission(groupId, permissionId, transaction);
 
     if (hasPermission) {
       throw new Error('Group already has this permission');
@@ -135,7 +144,7 @@ export class GroupPermissionService extends AuditService {
     const validatedParams = validateInput(removeGroupPermissionParamsSchema, params, context);
     const { groupId, permissionId, hardDelete } = validatedParams;
 
-    const hasPermission = await this.groupHasPermission(groupId, permissionId);
+    const hasPermission = await this.groupHasPermission(groupId, permissionId, transaction);
 
     if (!hasPermission) {
       throw new Error('Group does not have this permission');

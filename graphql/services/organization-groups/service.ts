@@ -34,41 +34,50 @@ export class OrganizationGroupService extends AuditService {
     super(organizationGroupsAuditLogs, 'organizationGroupId', user, db);
   }
 
-  private async organizationExists(organizationId: string): Promise<void> {
-    const organizations = await this.repositories.organizationRepository.getOrganizations({
-      ids: [organizationId],
-      limit: 1,
-    });
+  private async organizationExists(
+    organizationId: string,
+    transaction?: Transaction
+  ): Promise<void> {
+    const organizations = await this.repositories.organizationRepository.getOrganizations(
+      { ids: [organizationId], limit: 1 },
+      transaction
+    );
 
     if (organizations.organizations.length === 0) {
       throw new Error('Organization not found');
     }
   }
 
-  private async groupExists(groupId: string): Promise<void> {
-    const groups = await this.repositories.groupRepository.getGroups({
-      ids: [groupId],
-      limit: 1,
-    });
+  private async groupExists(groupId: string, transaction?: Transaction): Promise<void> {
+    const groups = await this.repositories.groupRepository.getGroups(
+      { ids: [groupId], limit: 1 },
+      transaction
+    );
 
     if (groups.groups.length === 0) {
       throw new Error('Group not found');
     }
   }
 
-  private async organizationHasGroup(organizationId: string, groupId: string): Promise<boolean> {
-    await this.organizationExists(organizationId);
-    await this.groupExists(groupId);
+  private async organizationHasGroup(
+    organizationId: string,
+    groupId: string,
+    transaction?: Transaction
+  ): Promise<boolean> {
+    await this.organizationExists(organizationId, transaction);
+    await this.groupExists(groupId, transaction);
     const existingOrganizationGroups =
-      await this.repositories.organizationGroupRepository.getOrganizationGroups({
-        organizationId,
-      });
+      await this.repositories.organizationGroupRepository.getOrganizationGroups(
+        { organizationId },
+        transaction
+      );
 
     return existingOrganizationGroups.some((og) => og.groupId === groupId);
   }
 
   public async getOrganizationGroups(
-    params: { organizationId: string } & SelectedFields<OrganizationGroup>
+    params: { organizationId: string } & SelectedFields<OrganizationGroup>,
+    transaction?: Transaction
   ): Promise<OrganizationGroup[]> {
     const context = 'OrganizationGroupService.getOrganizationGroups';
     const validatedParams = validateInput(getOrganizationGroupsParamsSchema, params, context);
@@ -78,11 +87,12 @@ export class OrganizationGroupService extends AuditService {
     if (!organizationId) {
       throw new Error('Organization ID is required');
     }
-    await this.organizationExists(organizationId);
+    await this.organizationExists(organizationId, transaction);
 
-    const result = await this.repositories.organizationGroupRepository.getOrganizationGroups({
-      organizationId,
-    });
+    const result = await this.repositories.organizationGroupRepository.getOrganizationGroups(
+      { organizationId },
+      transaction
+    );
     return validateOutput(
       createDynamicSingleSchema(organizationGroupSchema).array(),
       result,
@@ -98,7 +108,7 @@ export class OrganizationGroupService extends AuditService {
     const validatedParams = validateInput(addOrganizationGroupInputSchema, params, context);
     const { organizationId, groupId } = validatedParams;
 
-    const hasGroup = await this.organizationHasGroup(organizationId, groupId);
+    const hasGroup = await this.organizationHasGroup(organizationId, groupId, transaction);
 
     if (hasGroup) {
       throw new Error('Organization already has this group');
@@ -136,7 +146,7 @@ export class OrganizationGroupService extends AuditService {
 
     const { organizationId, groupId, hardDelete } = validatedParams;
 
-    const hasGroup = await this.organizationHasGroup(organizationId, groupId);
+    const hasGroup = await this.organizationHasGroup(organizationId, groupId, transaction);
 
     if (!hasGroup) {
       throw new Error('Organization does not have this group');
@@ -147,11 +157,13 @@ export class OrganizationGroupService extends AuditService {
     const result = isHardDelete
       ? await this.repositories.organizationGroupRepository.hardDeleteOrganizationGroup(
           organizationId,
-          groupId
+          groupId,
+          transaction
         )
       : await this.repositories.organizationGroupRepository.softDeleteOrganizationGroup(
           organizationId,
-          groupId
+          groupId,
+          transaction
         );
 
     if (!result) {

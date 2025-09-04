@@ -33,12 +33,15 @@ export class GroupPermissionRepository extends PivotRepository<
     };
   }
 
-  public async getGroupPermissions(params: { groupId: string }): Promise<GroupPermission[]> {
+  public async getGroupPermissions(
+    params: { groupId: string },
+    transaction?: Transaction
+  ): Promise<GroupPermission[]> {
     const baseParams: BasePivotQueryArgs = {
       parentId: params.groupId,
     };
 
-    return this.query(baseParams);
+    return this.query(baseParams, transaction);
   }
 
   public async addGroupPermission(
