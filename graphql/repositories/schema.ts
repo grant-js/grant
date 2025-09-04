@@ -1,6 +1,6 @@
-import { groupPermissions } from './group-permissions/schema';
-import { groupTags } from './group-tags/schema';
-import { groups } from './groups/schema';
+import { groupPermissions, groupPermissionsRelations } from './group-permissions/schema';
+import { groupTags, groupTagsRelations } from './group-tags/schema';
+import { groups, groupsRelations } from './groups/schema';
 import { organizationGroups, organizationGroupsRelations } from './organization-groups/schema';
 import {
   organizationPermissions,
@@ -14,8 +14,8 @@ import { organizationRoles, organizationRolesRelations } from './organization-ro
 import { organizationTags, organizationTagsRelations } from './organization-tags/schema';
 import { organizationUsers, organizationUsersRelations } from './organization-users/schema';
 import { organizations, organizationsRelations } from './organizations/schema';
-import { permissionTags } from './permission-tags/schema';
-import { permissions } from './permissions/schema';
+import { permissionTags, permissionTagsRelations } from './permission-tags/schema';
+import { permissions, permissionsRelations } from './permissions/schema';
 import { projectGroups, projectGroupsRelations } from './project-groups/schema';
 import { projectPermissions, projectPermissionsRelations } from './project-permissions/schema';
 import { projectRoles, projectRolesRelations } from './project-roles/schema';
@@ -75,6 +75,11 @@ export const schema = {
   organizationRolesRelations,
   organizationTagsRelations,
   organizationUsersRelations,
+  groupTagsRelations,
+  groupsRelations,
+  permissionsRelations,
+  groupPermissionsRelations,
+  permissionTagsRelations,
 };
 
 export type Schema = typeof schema;

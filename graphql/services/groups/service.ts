@@ -9,7 +9,7 @@ import {
 import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
-import { groupAuditLogs, GroupModel } from '@/graphql/repositories/groups/schema';
+import { groupAuditLogs } from '@/graphql/repositories/groups/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
 import {
@@ -53,7 +53,7 @@ export class GroupService extends AuditService {
   }
 
   public async getGroups(
-    params: Omit<QueryGroupsArgs, 'scope'> & SelectedFields<GroupModel>
+    params: Omit<QueryGroupsArgs, 'scope'> & SelectedFields<Group>
   ): Promise<GroupPage> {
     const context = 'GroupService.getGroups';
     validateInput(getGroupsParamsSchema, params, context);

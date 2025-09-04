@@ -6,6 +6,8 @@ import {
   User,
   UserPage,
   Tenant,
+  Tag,
+  Role,
 } from '@/graphql/generated/types';
 import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { EntityCache } from '@/graphql/lib/scopeFiltering';
@@ -167,5 +169,25 @@ export class UserController extends ScopeController {
 
       return await this.services.users.deleteUser(params, tx);
     });
+  }
+
+  public async getUserTags(params: { userId: string } & SelectedFields<User>): Promise<Array<Tag>> {
+    const { userId, requestedFields } = params;
+    const usersPage = await this.services.users.getUsers({ ids: [userId], requestedFields });
+    if (Array.isArray(usersPage.users) && usersPage.users.length > 0) {
+      return usersPage.users[0].tags || [];
+    }
+    return [];
+  }
+
+  public async getUserRoles(
+    params: { userId: string } & SelectedFields<User>
+  ): Promise<Array<Role>> {
+    const { userId, requestedFields } = params;
+    const usersPage = await this.services.users.getUsers({ ids: [userId], requestedFields });
+    if (Array.isArray(usersPage.users) && usersPage.users.length > 0) {
+      return usersPage.users[0].roles || [];
+    }
+    return [];
   }
 }

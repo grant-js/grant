@@ -37,7 +37,7 @@ export class UserRepository extends EntityRepository<UserModel, User> {
   };
 
   public async getUsers(
-    params: Omit<QueryUsersArgs, 'scope'> & SelectedFields<UserModel>
+    params: Omit<QueryUsersArgs, 'scope'> & SelectedFields<User>
   ): Promise<UserPage> {
     const result = await this.query(params);
 

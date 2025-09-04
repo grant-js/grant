@@ -37,7 +37,7 @@ export class RoleRepository extends EntityRepository<RoleModel, Role> {
   };
 
   public async getRoles(
-    params: Omit<QueryRolesArgs, 'scope' | 'tagIds'> & SelectedFields<RoleModel>
+    params: Omit<QueryRolesArgs, 'scope' | 'tagIds'> & SelectedFields<Role>
   ): Promise<RolePage> {
     const result = await this.query(params);
 

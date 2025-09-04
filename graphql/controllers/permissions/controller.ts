@@ -6,6 +6,7 @@ import {
   Permission,
   PermissionPage,
   Tenant,
+  Tag,
 } from '@/graphql/generated/types';
 import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { EntityCache } from '@/graphql/lib/scopeFiltering';
@@ -173,5 +174,19 @@ export class PermissionController extends ScopeController {
 
       return await this.services.permissions.deletePermission(params, tx);
     });
+  }
+
+  public async getPermissionTags(
+    params: { permissionId: string } & SelectedFields<Permission>
+  ): Promise<Array<Tag>> {
+    const { permissionId, requestedFields } = params;
+    const permissionsPage = await this.services.permissions.getPermissions({
+      ids: [permissionId],
+      requestedFields,
+    });
+    if (Array.isArray(permissionsPage.permissions) && permissionsPage.permissions.length > 0) {
+      return permissionsPage.permissions[0].tags || [];
+    }
+    return [];
   }
 }

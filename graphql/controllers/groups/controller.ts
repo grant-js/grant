@@ -6,6 +6,8 @@ import {
   Group,
   GroupPage,
   Tenant,
+  Tag,
+  Permission,
 } from '@/graphql/generated/types';
 import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { EntityCache } from '@/graphql/lib/scopeFiltering';
@@ -174,5 +176,27 @@ export class GroupController extends ScopeController {
       ]);
       return await this.services.groups.deleteGroup(params, tx);
     });
+  }
+
+  public async getGroupTags(
+    params: { groupId: string } & SelectedFields<Group>
+  ): Promise<Array<Tag>> {
+    const { groupId, requestedFields } = params;
+    const groupsPage = await this.services.groups.getGroups({ ids: [groupId], requestedFields });
+    if (Array.isArray(groupsPage.groups) && groupsPage.groups.length > 0) {
+      return groupsPage.groups[0].tags || [];
+    }
+    return [];
+  }
+
+  public async getGroupPermissions(
+    params: { groupId: string } & SelectedFields<Group>
+  ): Promise<Array<Permission>> {
+    const { groupId, requestedFields } = params;
+    const groupsPage = await this.services.groups.getGroups({ ids: [groupId], requestedFields });
+    if (Array.isArray(groupsPage.groups) && groupsPage.groups.length > 0) {
+      return groupsPage.groups[0].permissions || [];
+    }
+    return [];
   }
 }

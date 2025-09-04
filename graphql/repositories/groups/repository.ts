@@ -43,7 +43,7 @@ export class GroupRepository extends EntityRepository<GroupModel, Group> {
   };
 
   public async getGroups(
-    params: Omit<QueryGroupsArgs, 'scope'> & SelectedFields<GroupModel>
+    params: Omit<QueryGroupsArgs, 'scope'> & SelectedFields<Group>
   ): Promise<GroupPage> {
     const result = await this.query(params);
 

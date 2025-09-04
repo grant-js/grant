@@ -6,6 +6,8 @@ import {
   Role,
   MutationUpdateRoleArgs,
   MutationDeleteRoleArgs,
+  Group,
+  Tag,
 } from '@/graphql/generated/types';
 import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { EntityCache } from '@/graphql/lib/scopeFiltering';
@@ -172,5 +174,25 @@ export class RoleController extends ScopeController {
 
       return await this.services.roles.deleteRole(params, tx);
     });
+  }
+
+  public async getRoleGroups(
+    params: { roleId: string } & SelectedFields<Role>
+  ): Promise<Array<Group>> {
+    const { roleId, requestedFields } = params;
+    const rolesPage = await this.services.roles.getRoles({ ids: [roleId], requestedFields });
+    if (Array.isArray(rolesPage.roles) && rolesPage.roles.length > 0) {
+      return rolesPage.roles[0].groups || [];
+    }
+    return [];
+  }
+
+  public async getRoleTags(params: { roleId: string } & SelectedFields<Role>): Promise<Array<Tag>> {
+    const { roleId, requestedFields } = params;
+    const rolesPage = await this.services.roles.getRoles({ ids: [roleId], requestedFields });
+    if (Array.isArray(rolesPage.roles) && rolesPage.roles.length > 0) {
+      return rolesPage.roles[0].tags || [];
+    }
+    return [];
   }
 }

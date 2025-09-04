@@ -9,7 +9,7 @@ import {
 import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
-import { roleAuditLogs, RoleModel } from '@/graphql/repositories/roles/schema';
+import { roleAuditLogs } from '@/graphql/repositories/roles/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
 import {
@@ -53,7 +53,7 @@ export class RoleService extends AuditService {
   }
 
   public async getRoles(
-    params: Omit<QueryRolesArgs, 'scope' | 'tagIds'> & SelectedFields<RoleModel>
+    params: Omit<QueryRolesArgs, 'scope' | 'tagIds'> & SelectedFields<Role>
   ): Promise<RolePage> {
     const context = 'RoleService.getRoles';
     validateInput(getRolesParamsSchema, params, context);

@@ -9,7 +9,7 @@ import {
 import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
-import { userAuditLogs, UserModel } from '@/graphql/repositories/users/schema';
+import { userAuditLogs } from '@/graphql/repositories/users/schema';
 import { AuthenticatedUser } from '@/graphql/types';
 
 import {
@@ -53,7 +53,7 @@ export class UserService extends AuditService {
   }
 
   public async getUsers(
-    params: Omit<QueryUsersArgs, 'scope'> & SelectedFields<UserModel>
+    params: Omit<QueryUsersArgs, 'scope'> & SelectedFields<User>
   ): Promise<UserPage> {
     const context = 'UserService.getUsers';
     validateInput(queryUsersArgsSchema, params, context);
