@@ -60,8 +60,8 @@ export class GroupPermissionService extends AuditService {
     permissionId: string,
     transaction?: Transaction
   ): Promise<boolean> {
-    await this.groupExists(groupId);
-    await this.permissionExists(permissionId);
+    await this.groupExists(groupId, transaction);
+    await this.permissionExists(permissionId, transaction);
     const existingGroupPermissions =
       await this.repositories.groupPermissionRepository.getGroupPermissions(
         { groupId },

@@ -199,7 +199,6 @@ export async function getScopedTagIds({
   const cacheKey = createCacheKey(scope);
 
   if (cache.tags.has(cacheKey)) {
-    console.log('cache hit', cacheKey);
     return cache.tags.get(cacheKey)!;
   }
 

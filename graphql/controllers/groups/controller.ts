@@ -69,9 +69,21 @@ export class GroupController extends ScopeController {
   public async createGroup(params: MutationCreateGroupArgs): Promise<Group> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { input } = params;
-      const { name, description, tagIds, permissionIds } = input;
+      const { name, description, tagIds, permissionIds, scope } = input;
       const group = await this.services.groups.createGroup({ name, description }, tx);
       const { id: groupId } = group;
+
+      switch (scope.tenant) {
+        case Tenant.Organization:
+          await this.services.organizationGroups.addOrganizationGroup(
+            { organizationId: scope.id, groupId },
+            tx
+          );
+          break;
+        case Tenant.Project:
+          await this.services.projectGroups.addProjectGroup({ projectId: scope.id, groupId }, tx);
+          break;
+      }
 
       if (tagIds && tagIds.length > 0) {
         await Promise.all(
