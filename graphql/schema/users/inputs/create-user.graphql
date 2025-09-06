@@ -4,4 +4,5 @@ input CreateUserInput {
   tagIds: [ID!]
   roleIds: [ID!]
   scope: Scope!
+  primaryTagId: ID
 }

@@ -28,6 +28,7 @@ export interface PivotIntersectionQueryArgs {
 export interface BasePivotAddArgs {
   parentId: string;
   relatedId: string;
+  [key: string]: unknown;
 }
 
 export interface BasePivotRemoveArgs {
@@ -83,9 +84,11 @@ export abstract class PivotRepository<
     parentIdField: keyof TPivotModel,
     relatedIdField: keyof TPivotModel,
     parentId: string,
-    relatedId: string
+    relatedId: string,
+    rest: Record<string, unknown>
   ): Record<string, unknown> {
     return {
+      ...rest,
       [parentIdField]: parentId,
       [relatedIdField]: relatedId,
       createdAt: new Date(),
@@ -140,11 +143,11 @@ export abstract class PivotRepository<
 
   protected async add(params: BasePivotAddArgs, transaction?: Transaction): Promise<TPivotEntity> {
     const dbInstance = transaction || this.db;
-
+    const { parentId, relatedId, ...rest } = params;
     try {
       const softDeletedWhereClause = and(
-        eq(this.table[this.parentIdField as string], params.parentId),
-        eq(this.table[this.relatedIdField as string], params.relatedId)
+        eq(this.table[this.parentIdField as string], parentId),
+        eq(this.table[this.relatedIdField as string], relatedId)
       );
 
       const existingSoftDeleted = await dbInstance
@@ -184,8 +187,9 @@ export abstract class PivotRepository<
       const insertValues = this.insertValues(
         this.parentIdField,
         this.relatedIdField,
-        params.parentId,
-        params.relatedId
+        parentId,
+        relatedId,
+        rest
       );
 
       const result = await dbInstance.insert(this.table).values(insertValues).returning();
@@ -195,6 +199,26 @@ export abstract class PivotRepository<
       console.error('Error adding pivot relationship:', error);
       throw error;
     }
+  }
+
+  protected async update(
+    parentId: string,
+    relatedId: string,
+    update: Partial<TPivotModel>,
+    transaction?: Transaction
+  ): Promise<TPivotEntity> {
+    const dbInstance = transaction || this.db;
+    const updatedItem = await dbInstance
+      .update(this.table)
+      .set(update)
+      .where(
+        and(
+          eq(this.table[this.parentIdField], parentId),
+          eq(this.table[this.relatedIdField], relatedId)
+        )
+      )
+      .returning();
+    return this.toEntity(updatedItem[0] as TPivotModel);
   }
 
   protected async softDelete(

@@ -21,14 +21,12 @@ interface ProjectCardsProps {
 export function ProjectCards({ organizationId }: ProjectCardsProps) {
   const t = useTranslations('projects');
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const limit = useProjectsStore((state) => state.limit);
   const search = useProjectsStore((state) => state.search);
   const projects = useProjectsStore((state) => state.projects);
   const loading = useProjectsStore((state) => state.loading);
   const selectedTagIds = useProjectsStore((state) => state.selectedTagIds);
 
-  // Check if there are any active filters
   const hasActiveFilters = search.trim() !== '' || selectedTagIds.length > 0;
 
   return (

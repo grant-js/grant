@@ -2,6 +2,7 @@ type GroupTag implements Auditable {
   id: ID!
   groupId: ID!
   tagId: ID!
+  isPrimary: Boolean!
   group(scope: Scope!): Group
   tag(scope: Scope!): Tag
   createdAt: Date!

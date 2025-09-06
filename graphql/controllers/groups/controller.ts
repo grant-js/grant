@@ -69,7 +69,7 @@ export class GroupController extends ScopeController {
   public async createGroup(params: MutationCreateGroupArgs): Promise<Group> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { input } = params;
-      const { name, description, tagIds, permissionIds, scope } = input;
+      const { name, description, tagIds, permissionIds, scope, primaryTagId } = input;
       const group = await this.services.groups.createGroup({ name, description }, tx);
       const { id: groupId } = group;
 
@@ -87,7 +87,12 @@ export class GroupController extends ScopeController {
 
       if (tagIds && tagIds.length > 0) {
         await Promise.all(
-          tagIds.map((tagId) => this.services.groupTags.addGroupTag({ groupId, tagId }, tx))
+          tagIds.map((tagId) =>
+            this.services.groupTags.addGroupTag(
+              { groupId, tagId, isPrimary: tagId === primaryTagId },
+              tx
+            )
+          )
         );
       }
 
@@ -106,7 +111,7 @@ export class GroupController extends ScopeController {
   public async updateGroup(params: MutationUpdateGroupArgs): Promise<Group> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { id: groupId, input } = params;
-      const { tagIds, permissionIds } = input;
+      const { tagIds, permissionIds, primaryTagId } = input;
       let currentTagIds: string[] = [];
       let currentPermissionIds: string[] = [];
       if (tagIds && tagIds.length > 0) {
@@ -124,12 +129,26 @@ export class GroupController extends ScopeController {
       if (tagIds && tagIds.length > 0) {
         const newTagIds = tagIds.filter((tagId) => !currentTagIds.includes(tagId));
         const removedTagIds = currentTagIds.filter((tagId) => !tagIds.includes(tagId));
+        const updatedTagIds = tagIds.filter((tagId) => currentTagIds.includes(tagId));
         await Promise.all(
-          newTagIds.map((tagId) => this.services.groupTags.addGroupTag({ groupId, tagId }, tx))
+          newTagIds.map((tagId) =>
+            this.services.groupTags.addGroupTag(
+              { groupId, tagId, isPrimary: tagId === primaryTagId },
+              tx
+            )
+          )
         );
         await Promise.all(
           removedTagIds.map((tagId) =>
             this.services.groupTags.removeGroupTag({ groupId, tagId }, tx)
+          )
+        );
+        await Promise.all(
+          updatedTagIds.map((tagId) =>
+            this.services.groupTags.updateGroupTag(
+              { groupId, tagId, isPrimary: tagId === primaryTagId },
+              tx
+            )
           )
         );
       }

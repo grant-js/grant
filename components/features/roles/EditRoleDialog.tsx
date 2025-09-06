@@ -1,13 +1,12 @@
 'use client';
 
-import { useApolloClient } from '@apollo/client';
-
 import {
   EditDialog,
   EditDialogField,
   EditDialogRelationship,
 } from '@/components/common/EditDialog';
 import { CheckboxList } from '@/components/ui/checkbox-list';
+import { PrimaryTagSelector } from '@/components/ui/primary-tag-selector';
 import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
 import { Group, Role, Tag } from '@/graphql/generated/types';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
@@ -23,7 +22,6 @@ export function EditRoleDialog() {
   const { groups, loading: groupsLoading } = useGroups({ scope });
   const { tags, loading: tagsLoading } = useTags({ scope });
   const { updateRole } = useRoleMutations();
-  const client = useApolloClient();
 
   const roleToEdit = useRolesStore((state) => state.roleToEdit);
   const setRoleToEdit = useRolesStore((state) => state.setRoleToEdit);
@@ -66,6 +64,15 @@ export function EditRoleDialog() {
       loadingText: 'form.tagsLoading',
       emptyText: 'form.noTagsAvailable',
     },
+    {
+      name: 'primaryTagId',
+      label: 'form.primaryTag',
+      renderComponent: (props: any) => <PrimaryTagSelector {...props} />,
+      items: tags,
+      loading: tagsLoading,
+      loadingText: 'form.tagsLoading',
+      emptyText: 'form.noTagsAvailable',
+    },
   ];
 
   const mapRoleToFormValues = (role: Role): EditRoleFormValues => ({
@@ -73,6 +80,7 @@ export function EditRoleDialog() {
     description: role.description || '',
     groupIds: role.groups?.map((group: Group) => group.id),
     tagIds: role.tags?.map((tag: Tag) => tag.id),
+    primaryTagId: role.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
   });
 
   const handleUpdate = async (roleId: string, values: EditRoleFormValues) => {
@@ -81,6 +89,7 @@ export function EditRoleDialog() {
       description: values.description,
       groupIds: values.groupIds,
       tagIds: values.tagIds,
+      primaryTagId: values.primaryTagId,
     });
   };
 
@@ -89,6 +98,7 @@ export function EditRoleDialog() {
     description: '',
     groupIds: [],
     tagIds: [],
+    primaryTagId: '',
   };
 
   const handleOpenChange = (open: boolean) => {

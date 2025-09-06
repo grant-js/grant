@@ -5,6 +5,7 @@ import {
   EditDialogField,
   EditDialogRelationship,
 } from '@/components/common/EditDialog';
+import { PrimaryTagSelector } from '@/components/ui/primary-tag-selector';
 import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
 import { Project, Tag } from '@/graphql/generated/types';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
@@ -47,12 +48,22 @@ export function EditProjectDialog() {
       loadingText: 'form.tagsLoading',
       emptyText: 'form.noTagsAvailable',
     },
+    {
+      name: 'primaryTagId',
+      label: 'form.primaryTag',
+      renderComponent: (props: any) => <PrimaryTagSelector {...props} />,
+      items: tags,
+      loading: tagsLoading,
+      loadingText: 'form.tagsLoading',
+      emptyText: 'form.noTagsAvailable',
+    },
   ];
 
   const mapProjectToFormValues = (project: Project): EditProjectFormValues => ({
     name: project.name,
     description: project.description || '',
     tagIds: project.tags?.map((tag: Tag) => tag.id),
+    primaryTagId: project.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
   });
 
   const handleUpdate = async (projectId: string, values: EditProjectFormValues) => {
@@ -60,6 +71,7 @@ export function EditProjectDialog() {
       name: values.name,
       description: values.description,
       tagIds: values.tagIds,
+      primaryTagId: values.primaryTagId,
     });
   };
 

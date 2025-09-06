@@ -1,0 +1,5 @@
+input UpdateProjectTagInput {
+  projectId: ID!
+  tagId: ID!
+  isPrimary: Boolean!
+}

@@ -30,7 +30,8 @@ export class PermissionRepository extends EntityRepository<PermissionModel, Perm
     tags: {
       field: 'tag',
       table: tags,
-      extract: (v: Array<PermissionTag>) => v.map(({ tag }: PermissionTag) => tag),
+      extract: (v: Array<PermissionTag>) =>
+        v.map(({ tag, isPrimary }: PermissionTag) => ({ ...tag, isPrimary })),
     },
   };
 

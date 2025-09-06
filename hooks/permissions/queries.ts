@@ -28,6 +28,7 @@ export const GET_PERMISSIONS = gql`
           id
           name
           color
+          isPrimary
         }
         createdAt
         updatedAt

@@ -5,8 +5,8 @@ import { useTranslations } from 'next-intl';
 
 import { CardGrid, CardHeader } from '@/components/common';
 import { ScrollBadges } from '@/components/common';
-import { Role } from '@/graphql/generated/types';
-import { getTagBorderColorClasses } from '@/lib/tag-colors';
+import { Role, Tag } from '@/graphql/generated/types';
+import { getTagBorderClasses, TagColor } from '@/lib/constants/colors';
 import { transformTagsToBadges } from '@/lib/tag-utils';
 import { useRolesStore } from '@/stores/roles.store';
 
@@ -18,7 +18,6 @@ import { RoleCardSkeleton } from './RoleCardSkeleton';
 export function RoleCards() {
   const t = useTranslations('roles');
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const limit = useRolesStore((state) => state.limit);
   const search = useRolesStore((state) => state.search);
   const roles = useRolesStore((state) => state.roles);
@@ -28,7 +27,9 @@ export function RoleCards() {
     return (role.groups || []).map((group) => ({
       id: group.id,
       label: group.name,
-      className: group.tags?.length ? getTagBorderColorClasses(group.tags[0].color) : undefined,
+      className: group.tags?.find((tag: Tag) => tag.isPrimary)?.color
+        ? getTagBorderClasses(group.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor)
+        : undefined,
     }));
   };
 
@@ -54,7 +55,7 @@ export function RoleCards() {
           }}
           title={role.name}
           description={role.description || undefined}
-          color={role.tags?.[0]?.color}
+          color={role.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor}
           actions={<RoleActions role={role} />}
         />
       )}

@@ -7,9 +7,10 @@ import { ScrollBadges } from '@/components/common';
 import { Avatar } from '@/components/common/Avatar';
 import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
 import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
-import { Role } from '@/graphql/generated/types';
-import { getTagBorderColorClasses } from '@/lib/tag-colors';
+import { Role, Tag } from '@/graphql/generated/types';
+import { getTagBorderClasses, TagColor } from '@/lib/constants/colors';
 import { transformTagsToBadges } from '@/lib/tag-utils';
+import { cn } from '@/lib/utils';
 import { useRolesStore } from '@/stores/roles.store';
 
 import { CreateRoleDialog } from './CreateRoleDialog';
@@ -19,7 +20,6 @@ import { RoleAudit } from './RoleAudit';
 export function RoleTable() {
   const t = useTranslations('roles');
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const limit = useRolesStore((state) => state.limit);
   const search = useRolesStore((state) => state.search);
   const roles = useRolesStore((state) => state.roles);
@@ -29,7 +29,9 @@ export function RoleTable() {
     return (role.groups || []).map((group) => ({
       id: group.id,
       label: group.name,
-      className: group.tags?.length ? getTagBorderColorClasses(group.tags[0].color) : undefined,
+      className: group.tags?.find((tag: Tag) => tag.isPrimary)?.color
+        ? getTagBorderClasses(group.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor)
+        : undefined,
     }));
   };
 
@@ -44,8 +46,13 @@ export function RoleTable() {
           initial={role.name.charAt(0)}
           size="md"
           className={
-            role.tags?.[0]?.color
-              ? `border-2 ${getTagBorderColorClasses(role.tags[0].color)}`
+            role.tags?.find((tag: Tag) => tag.isPrimary)?.color
+              ? cn(
+                  'border-2',
+                  getTagBorderClasses(
+                    role.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor
+                  )
+                )
               : undefined
           }
         />

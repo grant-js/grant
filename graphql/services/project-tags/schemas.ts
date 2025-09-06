@@ -18,6 +18,7 @@ export const getProjectTagsParamsSchema = z.object({
 export const addProjectTagInputSchema = z.object({
   projectId: idSchema,
   tagId: idSchema,
+  isPrimary: z.boolean().nullable().optional(),
 });
 
 export const removeProjectTagInputSchema = deleteSchema.extend({
@@ -28,4 +29,10 @@ export const removeProjectTagInputSchema = deleteSchema.extend({
 export const getProjectTagsIntersectionSchema = z.object({
   projectIds: z.array(idSchema),
   tagIds: z.array(idSchema),
+});
+
+export const updateProjectTagInputSchema = z.object({
+  projectId: idSchema,
+  tagId: idSchema,
+  isPrimary: z.boolean(),
 });

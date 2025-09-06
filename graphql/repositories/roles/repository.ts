@@ -27,7 +27,8 @@ export class RoleRepository extends EntityRepository<RoleModel, Role> {
     tags: {
       field: 'tag',
       table: tags,
-      extract: (v: Array<RoleTag>) => v.map(({ tag }: RoleTag) => tag),
+      extract: (v: Array<RoleTag>) =>
+        v.map(({ tag, isPrimary }: RoleTag) => ({ ...tag, isPrimary })),
     },
     groups: {
       field: 'group',

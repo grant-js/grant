@@ -1,6 +1,14 @@
 import { sql } from 'drizzle-orm';
 import { relations } from 'drizzle-orm';
-import { pgTable, uuid, timestamp, uniqueIndex, varchar, index } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  timestamp,
+  uniqueIndex,
+  varchar,
+  index,
+  boolean,
+} from 'drizzle-orm/pg-core';
 
 import { projects } from '../projects/schema';
 import { tags } from '../tags/schema';
@@ -15,6 +23,7 @@ export const projectTags = pgTable(
     tagId: uuid('tag_id')
       .references(() => tags.id, { onDelete: 'cascade' })
       .notNull(),
+    isPrimary: boolean('is_primary').notNull().default(false),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
     deletedAt: timestamp('deleted_at'),

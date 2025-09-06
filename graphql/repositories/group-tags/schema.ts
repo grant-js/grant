@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { pgTable, varchar, timestamp, uuid, index } from 'drizzle-orm/pg-core';
+import { pgTable, varchar, timestamp, uuid, index, boolean } from 'drizzle-orm/pg-core';
 
 import { groups } from '../groups/schema';
 import { tags } from '../tags/schema';
@@ -12,6 +12,7 @@ export const groupTags = pgTable('group_tags', {
   tagId: uuid('tag_id')
     .notNull()
     .references(() => tags.id, { onDelete: 'cascade' }),
+  isPrimary: boolean('is_primary').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),

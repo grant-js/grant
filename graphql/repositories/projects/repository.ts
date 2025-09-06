@@ -38,7 +38,7 @@ export class ProjectRepository extends EntityRepository<ProjectModel, Project> {
   protected relations: RelationsConfig<Project> = {
     tags: {
       field: 'tag',
-      extract: (v: ProjectTag[]) => v.map(({ tag }) => tag),
+      extract: (v: ProjectTag[]) => v.map(({ tag, isPrimary }) => ({ ...tag, isPrimary })),
       table: projectTags,
     },
     users: {

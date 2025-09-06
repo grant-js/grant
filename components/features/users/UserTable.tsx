@@ -7,9 +7,10 @@ import { ScrollBadges } from '@/components/common';
 import { Avatar } from '@/components/common/Avatar';
 import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
 import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
-import { User } from '@/graphql/generated/types';
-import { getTagBorderColorClasses } from '@/lib/tag-colors';
+import { User, Tag } from '@/graphql/generated/types';
+import { getTagBorderClasses, TagColor } from '@/lib/constants/colors';
 import { transformTagsToBadges } from '@/lib/tag-utils';
+import { cn } from '@/lib/utils';
 import { useUsersStore } from '@/stores/users.store';
 
 import { CreateUserDialog } from './CreateUserDialog';
@@ -19,7 +20,6 @@ import { UserAudit } from './UserAudit';
 export function UserTable() {
   const t = useTranslations('users');
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const limit = useUsersStore((state) => state.limit);
   const search = useUsersStore((state) => state.search);
   const users = useUsersStore((state) => state.users);
@@ -29,7 +29,9 @@ export function UserTable() {
     return (user.roles || []).map((role) => ({
       id: role.id,
       label: role.name,
-      className: role.tags?.length ? getTagBorderColorClasses(role.tags[0].color) : undefined,
+      className: role.tags?.find((tag: Tag) => tag.isPrimary)?.color
+        ? getTagBorderClasses(role.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor)
+        : undefined,
     }));
   };
 
@@ -44,8 +46,13 @@ export function UserTable() {
           initial={user.name.charAt(0)}
           size="md"
           className={
-            user.tags?.[0]?.color
-              ? `border-2 ${getTagBorderColorClasses(user.tags[0].color)}`
+            user.tags?.find((tag: Tag) => tag.isPrimary)?.color
+              ? cn(
+                  'border-2',
+                  getTagBorderClasses(
+                    user.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor
+                  )
+                )
               : undefined
           }
         />

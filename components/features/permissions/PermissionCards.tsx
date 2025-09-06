@@ -5,7 +5,8 @@ import { useTranslations } from 'next-intl';
 
 import { CardGrid, CardHeader } from '@/components/common';
 import { ScrollBadges } from '@/components/common';
-import { Permission } from '@/graphql/generated/types';
+import { Permission, Tag } from '@/graphql/generated/types';
+import { TagColor } from '@/lib/constants/colors';
 import { transformTagsToBadges } from '@/lib/tag-utils';
 import { usePermissionsStore } from '@/stores/permissions.store';
 
@@ -17,7 +18,6 @@ import { PermissionCardSkeleton } from './PermissionCardSkeleton';
 export function PermissionCards() {
   const t = useTranslations('permissions');
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const limit = usePermissionsStore((state) => state.limit);
   const search = usePermissionsStore((state) => state.search);
   const permissions = usePermissionsStore((state) => state.permissions);
@@ -45,7 +45,7 @@ export function PermissionCards() {
           }}
           title={permission.name}
           description={permission.description || undefined}
-          color={permission.tags?.[0]?.color}
+          color={permission.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor}
           actions={<PermissionActions permission={permission} />}
         />
       )}

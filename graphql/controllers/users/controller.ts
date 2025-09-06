@@ -66,7 +66,7 @@ export class UserController extends ScopeController {
   public async createUser(params: MutationCreateUserArgs): Promise<User> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { input } = params;
-      const { name, email, scope, tagIds, roleIds } = input;
+      const { name, email, scope, tagIds, roleIds, primaryTagId } = input;
 
       const user = await this.services.users.createUser({ name, email }, tx);
       const { id: userId } = user;
@@ -90,7 +90,12 @@ export class UserController extends ScopeController {
 
       if (tagIds && tagIds.length > 0) {
         await Promise.all(
-          tagIds.map((tagId) => this.services.userTags.addUserTag({ userId, tagId }, tx))
+          tagIds.map((tagId) =>
+            this.services.userTags.addUserTag(
+              { userId, tagId, isPrimary: tagId === primaryTagId },
+              tx
+            )
+          )
         );
       }
       return user;
@@ -100,7 +105,7 @@ export class UserController extends ScopeController {
   public async updateUser(params: MutationUpdateUserArgs): Promise<User> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { id: userId, input } = params;
-      const { roleIds, tagIds } = input;
+      const { roleIds, tagIds, primaryTagId } = input;
       let currentTagIds: string[] = [];
       let currentRoleIds: string[] = [];
       if (tagIds && tagIds.length > 0) {
@@ -115,11 +120,25 @@ export class UserController extends ScopeController {
       if (tagIds && tagIds.length > 0) {
         const newTagIds = tagIds.filter((tagId) => !currentTagIds.includes(tagId));
         const removedTagIds = currentTagIds.filter((tagId) => !tagIds.includes(tagId));
+        const updatedTagIds = tagIds.filter((tagId) => currentTagIds.includes(tagId));
         await Promise.all(
-          newTagIds.map((tagId) => this.services.userTags.addUserTag({ userId, tagId }, tx))
+          newTagIds.map((tagId) =>
+            this.services.userTags.addUserTag(
+              { userId, tagId, isPrimary: tagId === primaryTagId },
+              tx
+            )
+          )
         );
         await Promise.all(
           removedTagIds.map((tagId) => this.services.userTags.removeUserTag({ userId, tagId }, tx))
+        );
+        await Promise.all(
+          updatedTagIds.map((tagId) =>
+            this.services.userTags.updateUserTag(
+              { userId, tagId, isPrimary: tagId === primaryTagId },
+              tx
+            )
+          )
         );
       }
       if (roleIds && roleIds.length > 0) {

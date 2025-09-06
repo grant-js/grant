@@ -8,6 +8,7 @@ import {
   EditDialogRelationship,
 } from '@/components/common/EditDialog';
 import { CheckboxList } from '@/components/ui/checkbox-list';
+import { PrimaryTagSelector } from '@/components/ui/primary-tag-selector';
 import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
 import { Role, User as UserType, Tag } from '@/graphql/generated/types';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
@@ -23,6 +24,7 @@ const mapUserToFormValues = (user: UserType): EditUserFormValues => ({
   email: user.email,
   roleIds: user.roles?.map((role: Role) => role.id),
   tagIds: user.tags?.map((tag: Tag) => tag.id),
+  primaryTagId: user.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
 });
 
 const renderCheckboxList = (props: any) => <CheckboxList {...props} />;
@@ -60,6 +62,7 @@ export function EditUserDialog() {
     email: '',
     roleIds: [],
     tagIds: [],
+    primaryTagId: '',
   };
 
   const roleItems = roles.map((role: Role) => ({
@@ -87,6 +90,15 @@ export function EditUserDialog() {
       loadingText: 'form.tagsLoading',
       emptyText: 'form.noTagsAvailable',
     },
+    {
+      name: 'primaryTagId',
+      label: 'form.primaryTag',
+      renderComponent: (props: any) => <PrimaryTagSelector {...props} />,
+      items: tags,
+      loading: tagsLoading,
+      loadingText: 'form.tagsLoading',
+      emptyText: 'form.noTagsAvailable',
+    },
   ];
 
   const handleUpdate = async (userId: string, values: EditUserFormValues) => {
@@ -95,6 +107,7 @@ export function EditUserDialog() {
       email: values.email,
       roleIds: values.roleIds,
       tagIds: values.tagIds,
+      primaryTagId: values.primaryTagId,
     });
   };
 

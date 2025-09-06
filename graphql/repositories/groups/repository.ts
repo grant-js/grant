@@ -33,7 +33,7 @@ export class GroupRepository extends EntityRepository<GroupModel, Group> {
     tags: {
       field: 'tag',
       table: groupTags,
-      extract: (v: GroupTag[]) => v.map(({ tag }) => tag),
+      extract: (v: GroupTag[]) => v.map(({ tag, isPrimary }) => ({ ...tag, isPrimary })),
     },
     permissions: {
       field: 'permission',

@@ -3,7 +3,8 @@
 import { useTranslations } from 'next-intl';
 
 import { CardHeader } from '@/components/common';
-import { Project } from '@/graphql/generated/types';
+import { Project, Tag } from '@/graphql/generated/types';
+import { TagColor } from '@/lib/constants/colors';
 
 import { ProjectActions } from './ProjectActions';
 
@@ -21,7 +22,7 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
       }}
       title={project.name}
       description={project.description || t('card.noDescription')}
-      color={project.tags?.[0]?.color}
+      color={project.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor}
       actions={<ProjectActions project={project} />}
     />
   );

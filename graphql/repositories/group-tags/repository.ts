@@ -1,6 +1,7 @@
+import { AddGroupTagInput, UpdateGroupTagInput } from '@/graphql/generated/types';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 
-import { PivotRepository, BasePivotAddArgs, BasePivotRemoveArgs } from '../common/PivotRepository';
+import { PivotRepository, BasePivotRemoveArgs } from '../common/PivotRepository';
 
 import { GroupTag, groupTags } from './schema';
 
@@ -20,6 +21,14 @@ export class GroupTagRepository extends PivotRepository<GroupTag, GroupTag> {
     return this.query({ parentId: params.groupId, relatedId: params.tagId }, transaction);
   }
 
+  public async getGroupTag(
+    params: { groupId: string; tagId: string },
+    transaction?: Transaction
+  ): Promise<GroupTag> {
+    const result = await this.getGroupTags(params, transaction);
+    return this.first(result);
+  }
+
   public async getGroupTagIntersection(
     groupIds: string[],
     tagIds: string[],
@@ -28,18 +37,22 @@ export class GroupTagRepository extends PivotRepository<GroupTag, GroupTag> {
     return this.queryIntersection({ parentIds: groupIds, relatedIds: tagIds }, transaction);
   }
 
-  public async addGroupTag(
-    groupId: string,
-    tagId: string,
+  public async addGroupTag(params: AddGroupTagInput, transaction?: Transaction): Promise<GroupTag> {
+    const { groupId, tagId, isPrimary } = params;
+
+    const groupTag = await this.add(
+      { parentId: groupId, relatedId: tagId, isPrimary },
+      transaction
+    );
+    return groupTag;
+  }
+
+  public async updateGroupTag(
+    params: UpdateGroupTagInput,
     transaction?: Transaction
   ): Promise<GroupTag> {
-    const baseParams: BasePivotAddArgs = {
-      parentId: groupId,
-      relatedId: tagId,
-    };
-
-    const groupTag = await this.add(baseParams, transaction);
-    return groupTag;
+    const { groupId, tagId, isPrimary } = params;
+    return this.update(groupId, tagId, { isPrimary }, transaction);
   }
 
   public async softDeleteGroupTag(

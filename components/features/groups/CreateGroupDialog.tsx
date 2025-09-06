@@ -8,6 +8,7 @@ import {
   CreateDialogRelationship,
 } from '@/components/common/CreateDialog';
 import { CheckboxList } from '@/components/ui/checkbox-list';
+import { PrimaryTagSelector } from '@/components/ui/primary-tag-selector';
 import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
 import { Permission } from '@/graphql/generated/types';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
@@ -65,6 +66,15 @@ export function CreateGroupDialog() {
       loadingText: 'form.tagsLoading',
       emptyText: 'form.noTagsAvailable',
     },
+    {
+      name: 'primaryTagId',
+      label: 'form.primaryTag',
+      renderComponent: (props: any) => <PrimaryTagSelector {...props} />,
+      items: tags,
+      loading: tagsLoading,
+      loadingText: 'form.tagsLoading',
+      emptyText: 'form.noTagsAvailable',
+    },
   ];
 
   const handleCreate = async (values: CreateGroupFormValues) => {
@@ -74,6 +84,7 @@ export function CreateGroupDialog() {
       scope,
       permissionIds: values.permissionIds,
       tagIds: values.tagIds,
+      primaryTagId: values.primaryTagId,
     });
   };
 
@@ -97,6 +108,7 @@ export function CreateGroupDialog() {
         description: '',
         permissionIds: [],
         tagIds: [],
+        primaryTagId: '',
       }}
       fields={fields}
       relationships={relationships}

@@ -3,47 +3,23 @@
 import { ReactNode } from 'react';
 
 import { CardTitle, CardDescription } from '@/components/ui/card';
-import { getTagBorderColorClasses } from '@/lib/tag-colors';
+import { getTagBorderClasses, TagColor } from '@/lib/constants/colors';
 import { cn } from '@/lib/utils';
 
 import { Avatar, type AvatarProps } from './Avatar';
 
 export interface CardHeaderProps {
-  /**
-   * Avatar configuration
-   */
   avatar: {
     initial: string;
     imageUrl?: string;
     size?: AvatarProps['size'];
   };
-  /**
-   * Title text to display
-   */
   title: string;
-  /**
-   * Optional description text to display below the title
-   */
   description?: string;
-  /**
-   * Actions to display on the right side of the header
-   */
   actions?: ReactNode;
-  /**
-   * Tag color for avatar border styling
-   */
-  color?: string;
-  /**
-   * Additional CSS classes for the header container
-   */
+  color?: TagColor;
   className?: string;
-  /**
-   * Additional CSS classes for the title
-   */
   titleClassName?: string;
-  /**
-   * Additional CSS classes for the description
-   */
   descriptionClassName?: string;
 }
 
@@ -64,7 +40,7 @@ export function CardHeader({
           initial={avatar.initial}
           imageUrl={avatar.imageUrl}
           size={avatar.size || 'lg'}
-          className={color ? cn('border-2', getTagBorderColorClasses(color)) : undefined}
+          className={color ? cn('border-2', getTagBorderClasses(color)) : undefined}
         />
         <div className="min-w-0 flex-1">
           <CardTitle className={cn('text-base font-semibold truncate', titleClassName)}>

@@ -8,6 +8,7 @@ import {
   CreateDialogRelationship,
 } from '@/components/common/CreateDialog';
 import { CheckboxList } from '@/components/ui/checkbox-list';
+import { PrimaryTagSelector } from '@/components/ui/primary-tag-selector';
 import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
 import { Role } from '@/graphql/generated/types';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
@@ -65,6 +66,15 @@ export function CreateUserDialog() {
       loadingText: 'form.tagsLoading',
       emptyText: 'form.noTagsAvailable',
     },
+    {
+      name: 'primaryTagId',
+      label: 'form.primaryTag',
+      renderComponent: (props: any) => <PrimaryTagSelector {...props} />,
+      items: tags,
+      loading: tagsLoading,
+      loadingText: 'form.tagsLoading',
+      emptyText: 'form.noTagsAvailable',
+    },
   ];
 
   const handleCreate = async (values: CreateUserFormValues) => {
@@ -74,6 +84,7 @@ export function CreateUserDialog() {
       email: values.email,
       roleIds: values.roleIds,
       tagIds: values.tagIds,
+      primaryTagId: values.primaryTagId,
     });
   };
 
@@ -97,6 +108,7 @@ export function CreateUserDialog() {
         email: '',
         roleIds: [],
         tagIds: [],
+        primaryTagId: '',
       }}
       fields={fields}
       relationships={relationships}

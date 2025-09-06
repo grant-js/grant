@@ -25,6 +25,7 @@ export type AddGroupPermissionInput = {
 
 export type AddGroupTagInput = {
   groupId: Scalars['ID']['input'];
+  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
   tagId: Scalars['ID']['input'];
 };
 
@@ -49,6 +50,7 @@ export type AddOrganizationRoleInput = {
 };
 
 export type AddOrganizationTagInput = {
+  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
   organizationId: Scalars['ID']['input'];
   tagId: Scalars['ID']['input'];
 };
@@ -59,6 +61,7 @@ export type AddOrganizationUserInput = {
 };
 
 export type AddPermissionTagInput = {
+  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
   permissionId: Scalars['ID']['input'];
   tagId: Scalars['ID']['input'];
 };
@@ -79,6 +82,7 @@ export type AddProjectRoleInput = {
 };
 
 export type AddProjectTagInput = {
+  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
   projectId: Scalars['ID']['input'];
   tagId: Scalars['ID']['input'];
 };
@@ -94,6 +98,7 @@ export type AddRoleGroupInput = {
 };
 
 export type AddRoleTagInput = {
+  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
   roleId: Scalars['ID']['input'];
   tagId: Scalars['ID']['input'];
 };
@@ -104,6 +109,7 @@ export type AddUserRoleInput = {
 };
 
 export type AddUserTagInput = {
+  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
   tagId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
@@ -124,6 +130,7 @@ export type CreateGroupInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   permissionIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
   scope: Scope;
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
@@ -136,6 +143,7 @@ export type CreatePermissionInput = {
   action: Scalars['String']['input'];
   description?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
+  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
   scope: Scope;
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
@@ -144,6 +152,7 @@ export type CreateProjectInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   organizationId: Scalars['ID']['input'];
+  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
@@ -151,6 +160,7 @@ export type CreateRoleInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   groupIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   name: Scalars['String']['input'];
+  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
   scope: Scope;
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
@@ -164,6 +174,7 @@ export type CreateTagInput = {
 export type CreateUserInput = {
   email: Scalars['String']['input'];
   name: Scalars['String']['input'];
+  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
   roleIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   scope: Scope;
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -231,6 +242,7 @@ export type GroupTag = Auditable & {
   group?: Maybe<Group>;
   groupId: Scalars['ID']['output'];
   id: Scalars['ID']['output'];
+  isPrimary: Scalars['Boolean']['output'];
   tag?: Maybe<Tag>;
   tagId: Scalars['ID']['output'];
   updatedAt: Scalars['Date']['output'];
@@ -498,6 +510,7 @@ export type OrganizationTag = Auditable & {
   createdAt: Scalars['Date']['output'];
   deletedAt?: Maybe<Scalars['Date']['output']>;
   id: Scalars['ID']['output'];
+  isPrimary: Scalars['Boolean']['output'];
   organization?: Maybe<Organization>;
   organizationId: Scalars['ID']['output'];
   tag?: Maybe<Tag>;
@@ -562,6 +575,7 @@ export type PermissionTag = Auditable & {
   createdAt: Scalars['Date']['output'];
   deletedAt?: Maybe<Scalars['Date']['output']>;
   id: Scalars['ID']['output'];
+  isPrimary: Scalars['Boolean']['output'];
   permission?: Maybe<Permission>;
   permissionId: Scalars['ID']['output'];
   tag?: Maybe<Tag>;
@@ -675,6 +689,7 @@ export type ProjectTag = Auditable & {
   createdAt: Scalars['Date']['output'];
   deletedAt?: Maybe<Scalars['Date']['output']>;
   id: Scalars['ID']['output'];
+  isPrimary: Scalars['Boolean']['output'];
   project?: Maybe<Project>;
   projectId: Scalars['ID']['output'];
   tag?: Maybe<Tag>;
@@ -940,6 +955,7 @@ export type RoleTag = Auditable & {
   createdAt: Scalars['Date']['output'];
   deletedAt?: Maybe<Scalars['Date']['output']>;
   id: Scalars['ID']['output'];
+  isPrimary: Scalars['Boolean']['output'];
   role?: Maybe<Role>;
   roleId: Scalars['ID']['output'];
   tag?: Maybe<Tag>;
@@ -980,6 +996,7 @@ export type Tag = Auditable & {
   createdAt: Scalars['Date']['output'];
   deletedAt?: Maybe<Scalars['Date']['output']>;
   id: Scalars['ID']['output'];
+  isPrimary?: Maybe<Scalars['Boolean']['output']>;
   name: Scalars['String']['output'];
   updatedAt: Scalars['Date']['output'];
 };
@@ -1016,31 +1033,65 @@ export type UpdateGroupInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   permissionIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
+export type UpdateGroupTagInput = {
+  groupId: Scalars['ID']['input'];
+  isPrimary: Scalars['Boolean']['input'];
+  tagId: Scalars['ID']['input'];
 };
 
 export type UpdateOrganizationInput = {
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type UpdateOrganizationTagInput = {
+  isPrimary: Scalars['Boolean']['input'];
+  organizationId: Scalars['ID']['input'];
+  tagId: Scalars['ID']['input'];
+};
+
 export type UpdatePermissionInput = {
   action?: InputMaybe<Scalars['String']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
+  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
+export type UpdatePermissionTagInput = {
+  isPrimary: Scalars['Boolean']['input'];
+  permissionId: Scalars['ID']['input'];
+  tagId: Scalars['ID']['input'];
 };
 
 export type UpdateProjectInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
+  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
+export type UpdateProjectTagInput = {
+  isPrimary: Scalars['Boolean']['input'];
+  projectId: Scalars['ID']['input'];
+  tagId: Scalars['ID']['input'];
 };
 
 export type UpdateRoleInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   groupIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   name?: InputMaybe<Scalars['String']['input']>;
+  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
+export type UpdateRoleTagInput = {
+  isPrimary: Scalars['Boolean']['input'];
+  roleId: Scalars['ID']['input'];
+  tagId: Scalars['ID']['input'];
 };
 
 export type UpdateTagInput = {
@@ -1051,8 +1102,15 @@ export type UpdateTagInput = {
 export type UpdateUserInput = {
   email: Scalars['String']['input'];
   name: Scalars['String']['input'];
+  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
   roleIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
+export type UpdateUserTagInput = {
+  isPrimary: Scalars['Boolean']['input'];
+  tagId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 export type User = Auditable & {
@@ -1116,6 +1174,7 @@ export type UserTag = Auditable & {
   createdAt: Scalars['Date']['output'];
   deletedAt?: Maybe<Scalars['Date']['output']>;
   id: Scalars['ID']['output'];
+  isPrimary: Scalars['Boolean']['output'];
   tag?: Maybe<Tag>;
   tagId: Scalars['ID']['output'];
   updatedAt: Scalars['Date']['output'];
@@ -1318,12 +1377,18 @@ export type ResolversTypes = ResolversObject<{
   TagSortInput: TagSortInput;
   Tenant: Tenant;
   UpdateGroupInput: UpdateGroupInput;
+  UpdateGroupTagInput: UpdateGroupTagInput;
   UpdateOrganizationInput: UpdateOrganizationInput;
+  UpdateOrganizationTagInput: UpdateOrganizationTagInput;
   UpdatePermissionInput: UpdatePermissionInput;
+  UpdatePermissionTagInput: UpdatePermissionTagInput;
   UpdateProjectInput: UpdateProjectInput;
+  UpdateProjectTagInput: UpdateProjectTagInput;
   UpdateRoleInput: UpdateRoleInput;
+  UpdateRoleTagInput: UpdateRoleTagInput;
   UpdateTagInput: UpdateTagInput;
   UpdateUserInput: UpdateUserInput;
+  UpdateUserTagInput: UpdateUserTagInput;
   User: ResolverTypeWrapper<User>;
   UserPage: ResolverTypeWrapper<UserPage>;
   UserRole: ResolverTypeWrapper<UserRole>;
@@ -1427,12 +1492,18 @@ export type ResolversParentTypes = ResolversObject<{
   TagPage: TagPage;
   TagSortInput: TagSortInput;
   UpdateGroupInput: UpdateGroupInput;
+  UpdateGroupTagInput: UpdateGroupTagInput;
   UpdateOrganizationInput: UpdateOrganizationInput;
+  UpdateOrganizationTagInput: UpdateOrganizationTagInput;
   UpdatePermissionInput: UpdatePermissionInput;
+  UpdatePermissionTagInput: UpdatePermissionTagInput;
   UpdateProjectInput: UpdateProjectInput;
+  UpdateProjectTagInput: UpdateProjectTagInput;
   UpdateRoleInput: UpdateRoleInput;
+  UpdateRoleTagInput: UpdateRoleTagInput;
   UpdateTagInput: UpdateTagInput;
   UpdateUserInput: UpdateUserInput;
+  UpdateUserTagInput: UpdateUserTagInput;
   User: User;
   UserPage: UserPage;
   UserRole: UserRole;
@@ -1495,6 +1566,7 @@ export type GroupTagResolvers<ContextType = Context, ParentType extends Resolver
   group?: Resolver<Maybe<ResolversTypes['Group']>, ParentType, ContextType, RequireFields<GroupTagGroupArgs, 'scope'>>;
   groupId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   tag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType, RequireFields<GroupTagTagArgs, 'scope'>>;
   tagId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -1607,6 +1679,7 @@ export type OrganizationTagResolvers<ContextType = Context, ParentType extends R
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   organization?: Resolver<Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
   organizationId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   tag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
@@ -1656,6 +1729,7 @@ export type PermissionTagResolvers<ContextType = Context, ParentType extends Res
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   permission?: Resolver<Maybe<ResolversTypes['Permission']>, ParentType, ContextType, RequireFields<PermissionTagPermissionArgs, 'scope'>>;
   permissionId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   tag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType, RequireFields<PermissionTagTagArgs, 'scope'>>;
@@ -1727,6 +1801,7 @@ export type ProjectTagResolvers<ContextType = Context, ParentType extends Resolv
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   project?: Resolver<Maybe<ResolversTypes['Project']>, ParentType, ContextType, RequireFields<ProjectTagProjectArgs, 'organizationId'>>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   tag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
@@ -1793,6 +1868,7 @@ export type RoleTagResolvers<ContextType = Context, ParentType extends Resolvers
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   role?: Resolver<Maybe<ResolversTypes['Role']>, ParentType, ContextType, RequireFields<RoleTagRoleArgs, 'scope'>>;
   roleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   tag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType, RequireFields<RoleTagTagArgs, 'scope'>>;
@@ -1814,6 +1890,7 @@ export type TagResolvers<ContextType = Context, ParentType extends ResolversPare
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  isPrimary?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -1861,6 +1938,7 @@ export type UserTagResolvers<ContextType = Context, ParentType extends Resolvers
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   tag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType, RequireFields<UserTagTagArgs, 'scope'>>;
   tagId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;

@@ -2,6 +2,7 @@ import {
   AddPermissionTagInput,
   PermissionTag,
   RemovePermissionTagInput,
+  UpdatePermissionTagInput,
 } from '@/graphql/generated/types';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { PivotRepository } from '@/graphql/repositories/common';
@@ -18,6 +19,7 @@ export class PermissionTagRepository extends PivotRepository<PermissionTagModel,
       id: dbPivot.id,
       permissionId: dbPivot.permissionId,
       tagId: dbPivot.tagId,
+      isPrimary: dbPivot.isPrimary,
       createdAt: dbPivot.createdAt,
       updatedAt: dbPivot.updatedAt,
       deletedAt: dbPivot.deletedAt,
@@ -29,6 +31,14 @@ export class PermissionTagRepository extends PivotRepository<PermissionTagModel,
     transaction?: Transaction
   ): Promise<PermissionTag[]> {
     return this.query({ parentId: params.permissionId, relatedId: params.tagId }, transaction);
+  }
+
+  public async getPermissionTag(
+    params: { permissionId: string; tagId: string },
+    transaction?: Transaction
+  ): Promise<PermissionTag> {
+    const result = await this.getPermissionTags(params, transaction);
+    return this.first(result);
   }
 
   public async getPermissionTagIntersection(
@@ -48,13 +58,16 @@ export class PermissionTagRepository extends PivotRepository<PermissionTagModel,
     params: AddPermissionTagInput,
     transaction?: Transaction
   ): Promise<PermissionTag> {
-    return this.add(
-      {
-        parentId: params.permissionId,
-        relatedId: params.tagId,
-      },
-      transaction
-    );
+    const { permissionId, tagId, isPrimary } = params;
+    return this.add({ parentId: permissionId, relatedId: tagId, isPrimary }, transaction);
+  }
+
+  public async updatePermissionTag(
+    params: UpdatePermissionTagInput,
+    transaction?: Transaction
+  ): Promise<PermissionTag> {
+    const { permissionId, tagId, isPrimary } = params;
+    return this.update(permissionId, tagId, { isPrimary }, transaction);
   }
 
   public async softDeletePermissionTag(

@@ -2,6 +2,7 @@ import {
   OrganizationTag,
   AddOrganizationTagInput,
   RemoveOrganizationTagInput,
+  UpdateOrganizationTagInput,
 } from '@/graphql/generated/types';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { PivotRepository } from '@/graphql/repositories/common';
@@ -21,6 +22,7 @@ export class OrganizationTagRepository extends PivotRepository<
       id: dbPivot.id,
       organizationId: dbPivot.organizationId,
       tagId: dbPivot.tagId,
+      isPrimary: dbPivot.isPrimary,
       createdAt: dbPivot.createdAt,
       updatedAt: dbPivot.updatedAt,
       deletedAt: dbPivot.deletedAt,
@@ -38,13 +40,16 @@ export class OrganizationTagRepository extends PivotRepository<
     params: AddOrganizationTagInput,
     transaction?: Transaction
   ): Promise<OrganizationTag> {
-    return this.add(
-      {
-        parentId: params.organizationId,
-        relatedId: params.tagId,
-      },
-      transaction
-    );
+    const { organizationId, tagId, isPrimary } = params;
+    return this.add({ parentId: organizationId, relatedId: tagId, isPrimary }, transaction);
+  }
+
+  public async updateOrganizationTag(
+    params: UpdateOrganizationTagInput,
+    transaction?: Transaction
+  ): Promise<OrganizationTag> {
+    const { organizationId, tagId, isPrimary } = params;
+    return this.update(organizationId, tagId, { isPrimary }, transaction);
   }
 
   public async softDeleteOrganizationTag(

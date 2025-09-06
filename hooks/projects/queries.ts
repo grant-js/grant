@@ -30,6 +30,7 @@ export const GET_PROJECTS = gql`
           id
           name
           color
+          isPrimary
         }
       }
       totalCount

@@ -1,4 +1,9 @@
-import { ProjectTag, AddProjectTagInput, RemoveProjectTagInput } from '@/graphql/generated/types';
+import {
+  ProjectTag,
+  AddProjectTagInput,
+  RemoveProjectTagInput,
+  UpdateProjectTagInput,
+} from '@/graphql/generated/types';
 import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
@@ -19,6 +24,7 @@ import {
   addProjectTagInputSchema,
   removeProjectTagInputSchema,
   getProjectTagsIntersectionSchema,
+  updateProjectTagInputSchema,
 } from './schemas';
 
 export class ProjectTagService extends AuditService {
@@ -109,7 +115,7 @@ export class ProjectTagService extends AuditService {
   ): Promise<ProjectTag> {
     const context = 'ProjectTagService.addProjectTag';
     const validatedParams = validateInput(addProjectTagInputSchema, params, context);
-    const { projectId, tagId } = validatedParams;
+    const { projectId, tagId, isPrimary } = validatedParams;
 
     const hasTag = await this.projectHasTag(projectId, tagId, transaction);
 
@@ -118,7 +124,7 @@ export class ProjectTagService extends AuditService {
     }
 
     const projectTag = await this.repositories.projectTagRepository.addProjectTag(
-      { projectId, tagId },
+      { projectId, tagId, isPrimary },
       transaction
     );
 
@@ -137,6 +143,51 @@ export class ProjectTagService extends AuditService {
     await this.logCreate(projectTag.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(projectTagSchema), projectTag, context);
+  }
+
+  public async updateProjectTag(
+    params: UpdateProjectTagInput,
+    transaction?: Transaction
+  ): Promise<ProjectTag> {
+    const context = 'ProjectTagService.updateProjectTag';
+    const validatedParams = validateInput(updateProjectTagInputSchema, params, context);
+    const { projectId, tagId, isPrimary } = validatedParams;
+
+    const projectTag = await this.repositories.projectTagRepository.getProjectTag(
+      { projectId, tagId },
+      transaction
+    );
+
+    const updatedProjectTag = await this.repositories.projectTagRepository.updateProjectTag(
+      { projectId, tagId, isPrimary },
+      transaction
+    );
+
+    const oldValues = {
+      id: projectTag.id,
+      projectId: projectTag.projectId,
+      tagId: projectTag.tagId,
+      isPrimary: projectTag.isPrimary,
+      createdAt: projectTag.createdAt,
+      updatedAt: projectTag.updatedAt,
+    };
+
+    const newValues = {
+      id: updatedProjectTag.id,
+      projectId: updatedProjectTag.projectId,
+      tagId: updatedProjectTag.tagId,
+      isPrimary: updatedProjectTag.isPrimary,
+      createdAt: updatedProjectTag.createdAt,
+      updatedAt: updatedProjectTag.updatedAt,
+    };
+
+    const metadata = {
+      context,
+    };
+
+    await this.logUpdate(updatedProjectTag.id, oldValues, newValues, metadata, transaction);
+
+    return validateOutput(createDynamicSingleSchema(projectTagSchema), updatedProjectTag, context);
   }
 
   public async removeProjectTag(

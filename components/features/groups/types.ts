@@ -8,6 +8,7 @@ export const createGroupSchema = z.object({
   description: z.string().optional(),
   permissionIds: z.array(z.string()).optional(),
   tagIds: z.array(z.string()).optional(),
+  primaryTagId: z.string().optional(),
 });
 
 export const editGroupSchema = z.object({
@@ -15,6 +16,7 @@ export const editGroupSchema = z.object({
   description: z.string().optional(),
   permissionIds: z.array(z.string()).optional(),
   tagIds: z.array(z.string()).optional(),
+  primaryTagId: z.string().optional(),
 });
 
 // Form types

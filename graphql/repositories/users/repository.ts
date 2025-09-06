@@ -27,7 +27,8 @@ export class UserRepository extends EntityRepository<UserModel, User> {
     tags: {
       field: 'tag',
       table: tags,
-      extract: (v: Array<UserTag>) => v.map(({ tag }: UserTag) => tag),
+      extract: (v: Array<UserTag>) =>
+        v.map(({ tag, isPrimary }: UserTag) => ({ ...tag, isPrimary })),
     },
     roles: {
       field: 'role',

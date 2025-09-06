@@ -19,6 +19,7 @@ export const GET_ORGANIZATIONS = gql`
           id
           name
           color
+          isPrimary
         }
       }
       totalCount

@@ -1,4 +1,4 @@
-import { AddRoleTagInput, RoleTag } from '@/graphql/generated/types';
+import { AddRoleTagInput, RoleTag, UpdateRoleTagInput } from '@/graphql/generated/types';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { PivotRepository } from '@/graphql/repositories/common';
 
@@ -14,6 +14,7 @@ export class RoleTagRepository extends PivotRepository<RoleTagModel, RoleTag> {
       id: dbPivot.id,
       roleId: dbPivot.roleId,
       tagId: dbPivot.tagId,
+      isPrimary: dbPivot.isPrimary,
       createdAt: dbPivot.createdAt,
       updatedAt: dbPivot.updatedAt,
       deletedAt: dbPivot.deletedAt,
@@ -25,6 +26,14 @@ export class RoleTagRepository extends PivotRepository<RoleTagModel, RoleTag> {
     transaction?: Transaction
   ): Promise<RoleTag[]> {
     return this.query({ parentId: params.roleId, relatedId: params.tagId }, transaction);
+  }
+
+  public async getRoleTag(
+    params: { roleId: string; tagId: string },
+    transaction?: Transaction
+  ): Promise<RoleTag> {
+    const result = await this.getRoleTags(params, transaction);
+    return this.first(result);
   }
 
   public async getRoleTagIntersection(
@@ -41,13 +50,16 @@ export class RoleTagRepository extends PivotRepository<RoleTagModel, RoleTag> {
   }
 
   public async addRoleTag(params: AddRoleTagInput, transaction?: Transaction): Promise<RoleTag> {
-    return this.add(
-      {
-        parentId: params.roleId,
-        relatedId: params.tagId,
-      },
-      transaction
-    );
+    const { roleId, tagId, isPrimary } = params;
+    return this.add({ parentId: roleId, relatedId: tagId, isPrimary }, transaction);
+  }
+
+  public async updateRoleTag(
+    params: UpdateRoleTagInput,
+    transaction?: Transaction
+  ): Promise<RoleTag> {
+    const { roleId, tagId, isPrimary } = params;
+    return this.update(roleId, tagId, { isPrimary }, transaction);
   }
 
   public async softDeleteRoleTag(

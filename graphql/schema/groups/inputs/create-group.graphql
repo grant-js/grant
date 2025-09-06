@@ -4,4 +4,5 @@ input CreateGroupInput {
   tagIds: [ID!]
   permissionIds: [ID!]
   scope: Scope!
+  primaryTagId: ID
 }

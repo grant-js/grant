@@ -86,7 +86,7 @@ export class ProjectController extends ScopeController {
   public async createProject(params: MutationCreateProjectArgs): Promise<Project> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { input } = params;
-      const { name, description, organizationId, tagIds } = input;
+      const { name, description, organizationId, tagIds, primaryTagId } = input;
 
       const project = await this.services.projects.createProject({ name, description }, tx);
       const { id: projectId } = project;
@@ -98,7 +98,12 @@ export class ProjectController extends ScopeController {
 
       if (tagIds && tagIds.length > 0) {
         await Promise.all(
-          tagIds.map((tagId) => this.services.projectTags.addProjectTag({ projectId, tagId }, tx))
+          tagIds.map((tagId) =>
+            this.services.projectTags.addProjectTag(
+              { projectId, tagId, isPrimary: tagId === primaryTagId },
+              tx
+            )
+          )
         );
       }
 
@@ -109,7 +114,7 @@ export class ProjectController extends ScopeController {
   public async updateProject(params: MutationUpdateProjectArgs): Promise<Project> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { id: projectId, input } = params;
-      const { tagIds } = input;
+      const { tagIds, primaryTagId } = input;
       let currentTagIds: string[] = [];
       if (tagIds && tagIds.length > 0) {
         const currentTags = await this.services.projectTags.getProjectTags({ projectId }, tx);
@@ -119,10 +124,21 @@ export class ProjectController extends ScopeController {
       if (tagIds && tagIds.length > 0) {
         const newTagIds = tagIds.filter((tagId) => !currentTagIds.includes(tagId));
         const removedTagIds = currentTagIds.filter((tagId) => !tagIds.includes(tagId));
-        ``;
+        const updatedTagIds = tagIds.filter((tagId) => currentTagIds.includes(tagId));
+        await Promise.all(
+          updatedTagIds.map((tagId) =>
+            this.services.projectTags.updateProjectTag(
+              { projectId, tagId, isPrimary: tagId === primaryTagId },
+              tx
+            )
+          )
+        );
         await Promise.all(
           newTagIds.map((tagId) =>
-            this.services.projectTags.addProjectTag({ projectId, tagId }, tx)
+            this.services.projectTags.addProjectTag(
+              { projectId, tagId, isPrimary: tagId === primaryTagId },
+              tx
+            )
           )
         );
         await Promise.all(

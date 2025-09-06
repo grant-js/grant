@@ -193,6 +193,7 @@
       "email": "E-Mail",
       "roles": "Rollen",
       "tags": "Tags",
+      "primaryTag": "Haupt-Tag",
       "validation": {
         "rolesRequired": "Benutzer muss mindestens eine Rolle haben"
       },
@@ -409,6 +410,7 @@
       "description": "Beschreibung",
       "groups": "Gruppen",
       "tags": "Tags",
+      "primaryTag": "Haupt-Tag",
       "groupsLoading": "Gruppen werden geladen...",
       "noGroupsAvailable": "Keine Gruppen verfügbar",
       "tagsLoading": "Tags werden geladen...",
@@ -524,6 +526,7 @@
       "descriptionPlaceholder": "Gruppenbeschreibung eingeben",
       "permissions": "Berechtigungen",
       "tags": "Tags",
+      "primaryTag": "Haupt-Tag",
       "permissionsLoading": "Berechtigungen werden geladen...",
       "noPermissionsAvailable": "Keine Berechtigungen verfügbar",
       "tagsLoading": "Tags werden geladen...",
@@ -641,6 +644,7 @@
       "description": "Beschreibung",
       "action": "Aktion",
       "tags": "Tags",
+      "primaryTag": "Haupt-Tag",
       "tagsLoading": "Tags werden geladen...",
       "noTagsAvailable": "Keine Tags verfügbar",
       "validation": {
@@ -849,6 +853,7 @@
       "descriptionPlaceholder": "Projektbeschreibung eingeben",
       "roles": "Rollen",
       "tags": "Tags",
+      "primaryTag": "Haupt-Tag",
       "tagsLoading": "Tags werden geladen...",
       "noTagsAvailable": "Keine Tags verfügbar",
       "validation": {

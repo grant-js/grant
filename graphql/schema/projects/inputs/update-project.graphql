@@ -2,4 +2,5 @@ input UpdateProjectInput {
   name: String
   description: String
   tagIds: [ID!]
+  primaryTagId: ID
 }

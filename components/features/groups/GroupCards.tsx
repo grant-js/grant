@@ -5,8 +5,8 @@ import { useTranslations } from 'next-intl';
 
 import { CardGrid, CardHeader } from '@/components/common';
 import { ScrollBadges } from '@/components/common';
-import { Group } from '@/graphql/generated/types';
-import { getTagBorderColorClasses } from '@/lib/tag-colors';
+import { Group, Tag } from '@/graphql/generated/types';
+import { getTagBorderClasses, TagColor } from '@/lib/constants/colors';
 import { transformTagsToBadges } from '@/lib/tag-utils';
 import { useGroupsStore } from '@/stores/groups.store';
 
@@ -18,7 +18,6 @@ import { GroupCardSkeleton } from './GroupCardSkeleton';
 export function GroupCards() {
   const t = useTranslations('groups');
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const limit = useGroupsStore((state) => state.limit);
   const search = useGroupsStore((state) => state.search);
   const groups = useGroupsStore((state) => state.groups);
@@ -28,8 +27,8 @@ export function GroupCards() {
     return (group.permissions || []).map((permission) => ({
       id: permission.id,
       label: permission.name,
-      className: permission.tags?.length
-        ? getTagBorderColorClasses(permission.tags[0].color)
+      className: permission.tags?.find((tag: Tag) => tag.isPrimary)?.color
+        ? getTagBorderClasses(permission.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor)
         : undefined,
     }));
   };
@@ -56,7 +55,7 @@ export function GroupCards() {
           }}
           title={group.name}
           description={group.description || undefined}
-          color={group.tags?.[0]?.color}
+          color={group.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor}
           actions={<GroupActions group={group} />}
         />
       )}

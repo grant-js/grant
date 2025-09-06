@@ -8,7 +8,7 @@ import { Avatar } from '@/components/common/Avatar';
 import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
 import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
 import { Organization } from '@/graphql/generated/types';
-import { getTagBorderColorClasses } from '@/lib/tag-colors';
+import { getTagBorderClasses, TagColor } from '@/lib/constants/colors';
 import { transformTagsToBadges } from '@/lib/tag-utils';
 import { useOrganizationsStore } from '@/stores/organizations.store';
 
@@ -19,20 +19,10 @@ import { OrganizationNavigationButton } from './OrganizationNavigationButton';
 
 export function OrganizationTable() {
   const t = useTranslations('organizations');
-
-  // Use selective subscriptions to prevent unnecessary re-renders
   const limit = useOrganizationsStore((state) => state.limit);
   const search = useOrganizationsStore((state) => state.search);
   const organizations = useOrganizationsStore((state) => state.organizations);
   const loading = useOrganizationsStore((state) => state.loading);
-
-  const transformRolesToBadges = (organization: Organization) => {
-    return (organization.roles || []).map((role) => ({
-      id: role.id,
-      label: role.name,
-      className: role.tags?.length ? getTagBorderColorClasses(role.tags[0].color) : undefined,
-    }));
-  };
 
   const columns: ColumnConfig<Organization>[] = [
     {
@@ -45,8 +35,8 @@ export function OrganizationTable() {
           initial={organization.name.charAt(0)}
           size="md"
           className={
-            organization.tags?.[0]?.color
-              ? `border-2 ${getTagBorderColorClasses(organization.tags[0].color)}`
+            organization?.tags?.find((tag) => tag.isPrimary)?.color
+              ? `border-2 ${getTagBorderClasses(organization.tags?.find((tag) => tag.isPrimary)?.color as TagColor)}`
               : undefined
           }
         />
@@ -66,14 +56,6 @@ export function OrganizationTable() {
       width: '250px',
       render: (organization: Organization) => (
         <span className="text-sm text-muted-foreground">{organization.slug}</span>
-      ),
-    },
-    {
-      key: 'roles',
-      header: t('table.roles'),
-      width: '200px',
-      render: (organization: Organization) => (
-        <ScrollBadges items={transformRolesToBadges(organization)} height={60} />
       ),
     },
     {
@@ -115,7 +97,6 @@ export function OrganizationTable() {
       { key: 'avatar', type: 'avatar-only' },
       { key: 'name', type: 'text' },
       { key: 'slug', type: 'text' },
-      { key: 'roles', type: 'list' },
       { key: 'tags', type: 'list' },
       { key: 'audit', type: 'audit' },
       { key: 'actions', type: 'actions' },

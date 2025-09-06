@@ -66,7 +66,7 @@ export class RoleController extends ScopeController {
   public async createRole(params: MutationCreateRoleArgs): Promise<Role> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { input } = params;
-      const { name, description, scope, tagIds, groupIds } = input;
+      const { name, description, scope, tagIds, groupIds, primaryTagId } = input;
 
       const role = await this.services.roles.createRole({ name, description }, tx);
       const { id: roleId } = role;
@@ -90,7 +90,12 @@ export class RoleController extends ScopeController {
 
       if (tagIds && tagIds.length > 0) {
         await Promise.all(
-          tagIds.map((tagId) => this.services.roleTags.addRoleTag({ roleId, tagId }, tx))
+          tagIds.map((tagId) =>
+            this.services.roleTags.addRoleTag(
+              { roleId, tagId, isPrimary: tagId === primaryTagId },
+              tx
+            )
+          )
         );
       }
 
@@ -101,7 +106,7 @@ export class RoleController extends ScopeController {
   public async updateRole(params: MutationUpdateRoleArgs): Promise<Role> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { id: roleId, input } = params;
-      const { tagIds, groupIds } = input;
+      const { tagIds, groupIds, primaryTagId } = input;
       let currentTagIds: string[] = [];
       let currentGroupIds: string[] = [];
       if (tagIds && tagIds.length > 0) {
@@ -116,11 +121,25 @@ export class RoleController extends ScopeController {
       if (tagIds && tagIds.length > 0) {
         const newTagIds = tagIds.filter((tagId) => !currentTagIds.includes(tagId));
         const removedTagIds = currentTagIds.filter((tagId) => !tagIds.includes(tagId));
+        const updatedTagIds = tagIds.filter((tagId) => currentTagIds.includes(tagId));
         await Promise.all(
-          newTagIds.map((tagId) => this.services.roleTags.addRoleTag({ roleId, tagId }, tx))
+          newTagIds.map((tagId) =>
+            this.services.roleTags.addRoleTag(
+              { roleId, tagId, isPrimary: tagId === primaryTagId },
+              tx
+            )
+          )
         );
         await Promise.all(
           removedTagIds.map((tagId) => this.services.roleTags.removeRoleTag({ roleId, tagId }, tx))
+        );
+        await Promise.all(
+          updatedTagIds.map((tagId) =>
+            this.services.roleTags.updateRoleTag(
+              { roleId, tagId, isPrimary: tagId === primaryTagId },
+              tx
+            )
+          )
         );
       }
       if (groupIds && groupIds.length > 0) {

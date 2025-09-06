@@ -3,4 +3,5 @@ input CreateProjectInput {
   description: String
   organizationId: ID!
   tagIds: [ID!]
+  primaryTagId: ID
 }

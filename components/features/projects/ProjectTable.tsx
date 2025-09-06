@@ -8,9 +8,12 @@ import {
   type ColumnConfig,
   type SkeletonColumnConfig,
   ScrollBadges,
+  Avatar,
 } from '@/components/common';
-import { Project } from '@/graphql/generated/types';
+import { Project, Tag } from '@/graphql/generated/types';
+import { getTagBorderClasses, TagColor } from '@/lib/constants/colors';
 import { transformTagsToBadges } from '@/lib/tag-utils';
+import { cn } from '@/lib/utils';
 import { useProjectsStore } from '@/stores/projects.store';
 
 import { CreateProjectDialog } from './CreateProjectDialog';
@@ -41,9 +44,20 @@ export function ProjectTable({ organizationId }: ProjectTableProps) {
       header: '',
       width: '60px',
       render: (project: Project) => (
-        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-semibold text-sm">
-          {project.name.charAt(0).toUpperCase()}
-        </div>
+        <Avatar
+          initial={project.name.charAt(0).toUpperCase()}
+          size="lg"
+          className={
+            project.tags?.find((tag: Tag) => tag.isPrimary)?.color
+              ? cn(
+                  'border-2',
+                  getTagBorderClasses(
+                    project.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor
+                  )
+                )
+              : undefined
+          }
+        />
       ),
     },
     {

@@ -2,6 +2,7 @@ type UserTag implements Auditable {
   id: ID!
   userId: ID!
   tagId: ID!
+  isPrimary: Boolean!
   user(scope: Scope!): User
   tag(scope: Scope!): Tag
   createdAt: Date!

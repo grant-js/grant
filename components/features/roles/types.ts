@@ -8,6 +8,7 @@ export const createRoleSchema = z.object({
   description: z.string().optional(),
   groupIds: z.array(z.string()).optional(),
   tagIds: z.array(z.string()).optional(),
+  primaryTagId: z.string().optional(),
 });
 
 export const editRoleSchema = z.object({
@@ -15,13 +16,12 @@ export const editRoleSchema = z.object({
   description: z.string().optional(),
   groupIds: z.array(z.string()).optional(),
   tagIds: z.array(z.string()).optional(),
+  primaryTagId: z.string().optional(),
 });
 
-// Form types
 export type CreateRoleFormValues = z.infer<typeof createRoleSchema>;
 export type EditRoleFormValues = z.infer<typeof editRoleSchema>;
 
-// Component props
 export interface CreateRoleDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;

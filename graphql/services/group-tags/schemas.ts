@@ -9,6 +9,13 @@ export const queryGroupTagsArgsSchema = z.object({
 export const addGroupTagInputSchema = z.object({
   groupId: idSchema.refine((groupId) => groupId.trim().length > 0, 'Group ID is required'),
   tagId: idSchema.refine((tagId) => tagId.trim().length > 0, 'Tag ID is required'),
+  isPrimary: z.boolean().nullable().optional(),
+});
+
+export const updateGroupTagInputSchema = z.object({
+  groupId: idSchema.refine((groupId) => groupId.trim().length > 0, 'Group ID is required'),
+  tagId: idSchema.refine((tagId) => tagId.trim().length > 0, 'Tag ID is required'),
+  isPrimary: z.boolean(),
 });
 
 export const removeGroupTagInputSchema = deleteSchema.extend({

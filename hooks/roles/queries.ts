@@ -32,12 +32,14 @@ export const GET_ROLES = gql`
             id
             name
             color
+            isPrimary
           }
         }
         tags {
           id
           name
           color
+          isPrimary
         }
       }
       totalCount

@@ -7,6 +7,7 @@ export const createPermissionSchema = z.object({
   action: z.string().min(2, 'Action must be at least 2 characters'),
   description: z.string().optional(),
   tagIds: z.array(z.string()).optional(),
+  primaryTagId: z.string().optional(),
 });
 
 export const editPermissionSchema = z.object({
@@ -14,6 +15,7 @@ export const editPermissionSchema = z.object({
   action: z.string().min(2, 'Action must be at least 2 characters'),
   description: z.string().optional(),
   tagIds: z.array(z.string()).optional(),
+  primaryTagId: z.string().optional(),
 });
 
 export type CreatePermissionFormValues = z.infer<typeof createPermissionSchema>;

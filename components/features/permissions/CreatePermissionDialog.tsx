@@ -7,6 +7,7 @@ import {
   CreateDialogField,
   CreateDialogRelationship,
 } from '@/components/common/CreateDialog';
+import { PrimaryTagSelector } from '@/components/ui/primary-tag-selector';
 import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { usePermissionMutations } from '@/hooks/permissions';
@@ -54,6 +55,15 @@ export function CreatePermissionDialog() {
       loadingText: 'form.tagsLoading',
       emptyText: 'form.noTagsAvailable',
     },
+    {
+      name: 'primaryTagId',
+      label: 'form.primaryTag',
+      renderComponent: (props: any) => <PrimaryTagSelector {...props} />,
+      items: tags,
+      loading: tagsLoading,
+      loadingText: 'form.tagsLoading',
+      emptyText: 'form.noTagsAvailable',
+    },
   ];
 
   const handleCreate = async (values: CreatePermissionFormValues) => {
@@ -63,6 +73,7 @@ export function CreatePermissionDialog() {
       action: values.action,
       description: values.description,
       tagIds: values.tagIds,
+      primaryTagId: values.primaryTagId,
     });
   };
 
@@ -86,6 +97,7 @@ export function CreatePermissionDialog() {
         action: '',
         description: '',
         tagIds: [],
+        primaryTagId: '',
       }}
       fields={fields}
       relationships={relationships}

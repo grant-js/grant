@@ -64,6 +64,27 @@
       "when": 1756289941941,
       "tag": "0008_public_harry_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1757082111613,
+      "tag": "0009_fair_bucky",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1757156391220,
+      "tag": "0010_sleepy_maddog",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1757156436728,
+      "tag": "0011_abnormal_night_thrasher",
+      "breakpoints": true
     }
   ]
 }

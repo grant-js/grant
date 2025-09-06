@@ -2,6 +2,7 @@ type RoleTag implements Auditable {
   id: ID!
   roleId: ID!
   tagId: ID!
+  isPrimary: Boolean!
   role(scope: Scope!): Role
   tag(scope: Scope!): Tag
   createdAt: Date!

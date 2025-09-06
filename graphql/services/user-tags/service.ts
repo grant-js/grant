@@ -1,4 +1,9 @@
-import { AddUserTagInput, RemoveUserTagInput, UserTag } from '@/graphql/generated/types';
+import {
+  AddUserTagInput,
+  RemoveUserTagInput,
+  UpdateUserTagInput,
+  UserTag,
+} from '@/graphql/generated/types';
 import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
@@ -20,6 +25,7 @@ import {
   removeUserTagInputSchema,
   getUserTagIntersectionInputSchema,
   removeUsersTagsInputSchema,
+  updateUserTagInputSchema,
 } from './schemas';
 
 export class UserTagService extends AuditService {
@@ -130,6 +136,33 @@ export class UserTagService extends AuditService {
     await this.logCreate(userTag.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(userTagSchema), userTag, context);
+  }
+
+  public async updateUserTag(
+    params: UpdateUserTagInput,
+    transaction?: Transaction
+  ): Promise<UserTag> {
+    const context = 'UserTagService.updateUserTag';
+    const validatedParams = validateInput(updateUserTagInputSchema, params, context);
+    const { userId, tagId, isPrimary } = validatedParams;
+
+    const userTag = await this.repositories.userTagRepository.getUserTag(
+      { userId, tagId },
+      transaction
+    );
+
+    const updatedUserTag = await this.repositories.userTagRepository.updateUserTag(
+      { userId, tagId, isPrimary },
+      transaction
+    );
+
+    const metadata = {
+      context,
+    };
+
+    await this.logUpdate(updatedUserTag.id, userTag, updatedUserTag, metadata, transaction);
+
+    return validateOutput(createDynamicSingleSchema(userTagSchema), updatedUserTag, context);
   }
 
   public async removeUserTag(

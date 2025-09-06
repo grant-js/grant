@@ -7,9 +7,10 @@ import { ScrollBadges } from '@/components/common';
 import { Avatar } from '@/components/common/Avatar';
 import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
 import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
-import { Group } from '@/graphql/generated/types';
-import { getTagBorderColorClasses } from '@/lib/tag-colors';
+import { Group, Tag } from '@/graphql/generated/types';
+import { getTagBorderClasses, TagColor } from '@/lib/constants/colors';
 import { transformTagsToBadges } from '@/lib/tag-utils';
+import { cn } from '@/lib/utils';
 import { useGroupsStore } from '@/stores/groups.store';
 
 import { CreateGroupDialog } from './CreateGroupDialog';
@@ -19,7 +20,6 @@ import { GroupAudit } from './GroupAudit';
 export function GroupTable() {
   const t = useTranslations('groups');
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const limit = useGroupsStore((state) => state.limit);
   const search = useGroupsStore((state) => state.search);
   const groups = useGroupsStore((state) => state.groups);
@@ -29,8 +29,8 @@ export function GroupTable() {
     return (group.permissions || []).map((permission) => ({
       id: permission.id,
       label: permission.name,
-      className: permission.tags?.length
-        ? getTagBorderColorClasses(permission.tags[0].color)
+      className: permission.tags?.find((tag: Tag) => tag.isPrimary)?.color
+        ? getTagBorderClasses(permission.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor)
         : undefined,
     }));
   };
@@ -46,8 +46,13 @@ export function GroupTable() {
           initial={group.name.charAt(0)}
           size="md"
           className={
-            group.tags?.[0]?.color
-              ? `border-2 ${getTagBorderColorClasses(group.tags[0].color)}`
+            group.tags?.find((tag: Tag) => tag.isPrimary)?.color
+              ? cn(
+                  'border-2',
+                  getTagBorderClasses(
+                    group.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor
+                  )
+                )
               : undefined
           }
         />

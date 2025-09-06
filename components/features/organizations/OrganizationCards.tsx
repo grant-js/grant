@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 
 import { CardGrid, CardHeader } from '@/components/common';
 import { Organization } from '@/graphql/generated/types';
+import { TagColor } from '@/lib/constants/colors';
 import { useOrganizationsStore } from '@/stores/organizations.store';
 
 import { CreateOrganizationDialog } from './CreateOrganizationDialog';
@@ -43,6 +44,7 @@ export function OrganizationCards() {
           }}
           title={organization.name}
           description={organization.slug}
+          color={organization.tags?.find((tag) => tag.isPrimary)?.color as TagColor}
           actions={<OrganizationActions organization={organization} />}
         />
       )}

@@ -2,6 +2,7 @@ type PermissionTag implements Auditable {
   id: ID!
   permissionId: ID!
   tagId: ID!
+  isPrimary: Boolean!
   permission(scope: Scope!): Permission
   tag(scope: Scope!): Tag
   createdAt: Date!

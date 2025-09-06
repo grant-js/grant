@@ -13,7 +13,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTags } from '@/hooks';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
-import { getTagBorderColorClasses } from '@/lib/tag-colors';
+import { getTagBorderClasses, TagColor } from '@/lib/constants/colors';
 
 export interface TagsProps {
   selectedTagIds: string[];
@@ -56,7 +56,7 @@ export function Tags({ selectedTagIds, onTagIdsChange }: TagsProps) {
                       {selectedTags.slice(0, 3).map((tag) => (
                         <div
                           key={tag.id}
-                          className={`w-2 h-2 rounded-full border-2 bg-transparent ${getTagBorderColorClasses(tag.color)}`}
+                          className={`w-2 h-2 rounded-full border-2 bg-transparent ${getTagBorderClasses(tag.color as TagColor)}`}
                           title={tag.name}
                         />
                       ))}
@@ -104,7 +104,7 @@ export function Tags({ selectedTagIds, onTagIdsChange }: TagsProps) {
                       >
                         <div className="flex items-center gap-2">
                           <div
-                            className={`w-3 h-3 rounded-full border-2 bg-transparent ${getTagBorderColorClasses(tag.color)}`}
+                            className={`w-3 h-3 rounded-full border-2 bg-transparent ${getTagBorderClasses(tag.color as TagColor)}`}
                           />
                           <span className="text-sm">{tag.name}</span>
                         </div>

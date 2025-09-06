@@ -1,0 +1,1 @@
+ALTER TABLE "organization_tags" ALTER COLUMN "is_primary" SET DEFAULT false;

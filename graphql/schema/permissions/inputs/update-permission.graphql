@@ -3,4 +3,5 @@ input UpdatePermissionInput {
   description: String
   action: String
   tagIds: [ID!]
+  primaryTagId: ID
 }

@@ -68,7 +68,7 @@ export class OrganizationRepository extends EntityRepository<OrganizationModel, 
     tags: {
       field: 'tag',
       table: organizationTags,
-      extract: (v: OrganizationTag[]) => v.map(({ tag }) => tag),
+      extract: (v: OrganizationTag[]) => v.map(({ tag, isPrimary }) => ({ ...tag, isPrimary })),
     },
   };
 

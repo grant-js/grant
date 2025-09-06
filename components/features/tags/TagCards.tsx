@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 
 import { CardGrid, CardHeader } from '@/components/common';
 import { Tag } from '@/graphql/generated/types';
+import { TagColor } from '@/lib/constants/colors';
 import { useTagsStore } from '@/stores/tags.store';
 
 import { CreateTagDialog } from './CreateTagDialog';
@@ -38,11 +39,11 @@ export function TagCards() {
           }}
           title={tag.name}
           description={tag.color}
-          color={tag.color}
+          color={tag.color as TagColor}
           actions={<TagActions tag={tag} />}
         />
       )}
-      renderBody={() => null} // Tags don't have additional body content
+      renderBody={() => null}
       renderFooter={(tag: Tag) => (
         <div className="flex items-center justify-between w-full">
           <TagAudit tag={tag} />

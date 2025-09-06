@@ -4,6 +4,7 @@ type OrganizationTag implements Auditable {
   tagId: ID!
   organization: Organization
   tag: Tag
+  isPrimary: Boolean!
   createdAt: Date!
   updatedAt: Date!
   deletedAt: Date

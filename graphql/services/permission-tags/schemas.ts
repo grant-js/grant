@@ -18,6 +18,13 @@ export const getPermissionTagsParamsSchema = z.object({
 export const addPermissionTagInputSchema = z.object({
   permissionId: idSchema,
   tagId: idSchema,
+  isPrimary: z.boolean().nullable().optional(),
+});
+
+export const updatePermissionTagInputSchema = z.object({
+  permissionId: idSchema,
+  tagId: idSchema,
+  isPrimary: z.boolean(),
 });
 
 export const addPermissionTagParamsSchema = z.object({

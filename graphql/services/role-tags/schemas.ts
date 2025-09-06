@@ -6,6 +6,7 @@ export const roleTagSchema = z.object({
   id: idSchema,
   roleId: idSchema,
   tagId: idSchema,
+  isPrimary: z.boolean(),
   createdAt: z.date(),
   updatedAt: z.date(),
   deletedAt: z.date().nullable().optional(),
@@ -18,6 +19,13 @@ export const getRoleTagsParamsSchema = z.object({
 export const addRoleTagInputSchema = z.object({
   roleId: idSchema,
   tagId: idSchema,
+  isPrimary: z.boolean().nullable().optional(),
+});
+
+export const updateRoleTagInputSchema = z.object({
+  roleId: idSchema,
+  tagId: idSchema,
+  isPrimary: z.boolean(),
 });
 
 export const addRoleTagParamsSchema = z.object({

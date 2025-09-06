@@ -1,4 +1,9 @@
-import { AddGroupTagInput, GroupTag, RemoveGroupTagInput } from '@/graphql/generated/types';
+import {
+  AddGroupTagInput,
+  GroupTag,
+  RemoveGroupTagInput,
+  UpdateGroupTagInput,
+} from '@/graphql/generated/types';
 import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
@@ -20,6 +25,7 @@ import {
   queryGroupTagsArgsSchema,
   removeGroupTagInputSchema,
   removeGroupTagsInputSchema,
+  updateGroupTagInputSchema,
 } from './schemas';
 
 export class GroupTagService extends AuditService {
@@ -110,7 +116,7 @@ export class GroupTagService extends AuditService {
   public async addGroupTag(params: AddGroupTagInput, transaction?: Transaction): Promise<GroupTag> {
     const context = 'GroupTagService.addGroupTag';
     const validatedParams = validateInput(addGroupTagInputSchema, params, context);
-    const { groupId, tagId } = validatedParams;
+    const { groupId, tagId, isPrimary } = validatedParams;
 
     const hasTag = await this.groupHasTag(groupId, tagId, transaction);
 
@@ -119,8 +125,7 @@ export class GroupTagService extends AuditService {
     }
 
     const result = await this.repositories.groupTagRepository.addGroupTag(
-      groupId,
-      tagId,
+      { groupId, tagId, isPrimary },
       transaction
     );
 
@@ -139,6 +144,33 @@ export class GroupTagService extends AuditService {
     await this.logCreate(result.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(groupTagSchema), result, context);
+  }
+
+  public async updateGroupTag(
+    params: UpdateGroupTagInput,
+    transaction?: Transaction
+  ): Promise<GroupTag> {
+    const context = 'GroupTagService.updateGroupTag';
+    const validatedParams = validateInput(updateGroupTagInputSchema, params, context);
+    const { groupId, tagId, isPrimary } = validatedParams;
+
+    const groupTag = await this.repositories.groupTagRepository.getGroupTag(
+      { groupId, tagId },
+      transaction
+    );
+
+    const updatedGroupTag = await this.repositories.groupTagRepository.updateGroupTag(
+      { groupId, tagId, isPrimary },
+      transaction
+    );
+
+    const metadata = {
+      context,
+    };
+
+    await this.logUpdate(updatedGroupTag.id, groupTag, updatedGroupTag, metadata, transaction);
+
+    return validateOutput(createDynamicSingleSchema(groupTagSchema), updatedGroupTag, context);
   }
 
   public async removeGroupTag(

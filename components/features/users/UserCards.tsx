@@ -5,8 +5,8 @@ import { useTranslations } from 'next-intl';
 
 import { CardGrid, CardHeader } from '@/components/common';
 import { ScrollBadges } from '@/components/common';
-import { User } from '@/graphql/generated/types';
-import { getTagBorderColorClasses } from '@/lib/tag-colors';
+import { User, Tag } from '@/graphql/generated/types';
+import { getTagBorderClasses, TagColor } from '@/lib/constants/colors';
 import { transformTagsToBadges } from '@/lib/tag-utils';
 import { useUsersStore } from '@/stores/users.store';
 
@@ -18,7 +18,6 @@ import { UserCardSkeleton } from './UserCardSkeleton';
 export function UserCards() {
   const t = useTranslations('users');
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const limit = useUsersStore((state) => state.limit);
   const search = useUsersStore((state) => state.search);
   const users = useUsersStore((state) => state.users);
@@ -28,7 +27,9 @@ export function UserCards() {
     return (user.roles || []).map((role) => ({
       id: role.id,
       label: role.name,
-      className: role.tags?.length ? getTagBorderColorClasses(role.tags[0].color) : undefined,
+      className: role.tags?.find((tag: Tag) => tag.isPrimary)?.color
+        ? getTagBorderClasses(role.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor)
+        : undefined,
     }));
   };
 
@@ -54,7 +55,7 @@ export function UserCards() {
           }}
           title={user.name}
           description={user.email}
-          color={user.tags?.[0]?.color}
+          color={user.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor}
           actions={<UserActions user={user} />}
         />
       )}

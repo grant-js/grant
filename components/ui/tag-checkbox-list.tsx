@@ -5,7 +5,7 @@ import { Control } from 'react-hook-form';
 import { FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { AutoScrollArea } from '@/components/ui/scroll-area';
 import { Tag } from '@/graphql/generated/types';
-import { getTagBorderColorClasses } from '@/lib/tag-colors';
+import { getTagBorderClasses, TagColor } from '@/lib/constants/colors';
 import { cn } from '@/lib/utils';
 
 interface TagCheckboxListProps {
@@ -63,7 +63,7 @@ export function TagCheckboxList({
               disabled={isDisabled}
               className={cn(
                 'w-3 h-3 rounded-full border-2 transition-all duration-200 hover:scale-110 focus:outline-none relative',
-                getTagBorderColorClasses(tag.color),
+                getTagBorderClasses(tag.color as TagColor),
                 'bg-transparent',
                 isDisabled && 'opacity-50 cursor-not-allowed'
               )}

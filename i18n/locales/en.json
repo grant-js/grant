@@ -193,6 +193,7 @@
       "email": "Email",
       "roles": "Roles",
       "tags": "Tags",
+      "primaryTag": "Primary Tag",
       "validation": {
         "rolesRequired": "User must have at least one role"
       },
@@ -409,6 +410,7 @@
       "description": "Description",
       "groups": "Groups",
       "tags": "Tags",
+      "primaryTag": "Primary Tag",
       "groupsLoading": "Loading groups...",
       "noGroupsAvailable": "No groups available",
       "tagsLoading": "Loading tags...",
@@ -524,6 +526,7 @@
       "descriptionPlaceholder": "Enter group description",
       "permissions": "Permissions",
       "tags": "Tags",
+      "primaryTag": "Primary Tag",
       "permissionsLoading": "Loading permissions...",
       "noPermissionsAvailable": "No permissions available",
       "tagsLoading": "Loading tags...",
@@ -641,6 +644,7 @@
       "description": "Description",
       "action": "Action",
       "tags": "Tags",
+      "primaryTag": "Primary Tag",
       "tagsLoading": "Loading tags...",
       "noTagsAvailable": "No tags available",
       "validation": {
@@ -857,6 +861,7 @@
       "descriptionPlaceholder": "Enter project description",
       "roles": "Roles",
       "tags": "Tags",
+      "primaryTag": "Primary Tag",
       "tagsLoading": "Loading tags...",
       "noTagsAvailable": "No tags available",
       "validation": {

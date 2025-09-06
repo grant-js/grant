@@ -33,12 +33,14 @@ export const GET_GROUPS = gql`
             id
             name
             color
+            isPrimary
           }
         }
         tags {
           id
           name
           color
+          isPrimary
         }
       }
       totalCount

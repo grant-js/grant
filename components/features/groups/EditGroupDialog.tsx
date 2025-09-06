@@ -6,6 +6,7 @@ import {
   EditDialogRelationship,
 } from '@/components/common/EditDialog';
 import { CheckboxList } from '@/components/ui/checkbox-list';
+import { PrimaryTagSelector } from '@/components/ui/primary-tag-selector';
 import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
 import { Group, Permission, Tag } from '@/graphql/generated/types';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
@@ -64,6 +65,15 @@ export function EditGroupDialog() {
       loadingText: 'form.tagsLoading',
       emptyText: 'form.noTagsAvailable',
     },
+    {
+      name: 'primaryTagId',
+      label: 'form.primaryTag',
+      renderComponent: (props: any) => <PrimaryTagSelector {...props} />,
+      items: tags,
+      loading: tagsLoading,
+      loadingText: 'form.tagsLoading',
+      emptyText: 'form.noTagsAvailable',
+    },
   ];
 
   const mapGroupToFormValues = (group: Group): EditGroupFormValues => ({
@@ -71,6 +81,7 @@ export function EditGroupDialog() {
     description: group.description || '',
     permissionIds: group.permissions?.map((permission: Permission) => permission.id),
     tagIds: group.tags?.map((tag: Tag) => tag.id),
+    primaryTagId: group.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
   });
 
   const handleUpdate = async (groupId: string, values: EditGroupFormValues) => {
@@ -81,6 +92,7 @@ export function EditGroupDialog() {
         description: values.description,
         permissionIds: values.permissionIds,
         tagIds: values.tagIds,
+        primaryTagId: values.primaryTagId,
       },
     });
   };
@@ -107,6 +119,7 @@ export function EditGroupDialog() {
         description: '',
         permissionIds: [],
         tagIds: [],
+        primaryTagId: '',
       }}
       fields={fields}
       relationships={relationships}

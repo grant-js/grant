@@ -3,4 +3,5 @@ input UpdateUserInput {
   email: String!
   tagIds: [ID!]
   roleIds: [ID!]
+  primaryTagId: ID
 }

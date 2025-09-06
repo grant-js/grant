@@ -7,9 +7,10 @@ import { ScrollBadges } from '@/components/common';
 import { Avatar } from '@/components/common/Avatar';
 import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
 import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
-import { Permission } from '@/graphql/generated/types';
-import { getTagBorderColorClasses } from '@/lib/tag-colors';
+import { Permission, Tag } from '@/graphql/generated/types';
+import { getTagBorderClasses, TagColor } from '@/lib/constants/colors';
 import { transformTagsToBadges } from '@/lib/tag-utils';
+import { cn } from '@/lib/utils';
 import { usePermissionsStore } from '@/stores/permissions.store';
 
 import { CreatePermissionDialog } from './CreatePermissionDialog';
@@ -19,7 +20,6 @@ import { PermissionAudit } from './PermissionAudit';
 export function PermissionTable() {
   const t = useTranslations('permissions');
 
-  // Use selective subscriptions to prevent unnecessary re-renders
   const limit = usePermissionsStore((state) => state.limit);
   const search = usePermissionsStore((state) => state.search);
   const permissions = usePermissionsStore((state) => state.permissions);
@@ -36,8 +36,13 @@ export function PermissionTable() {
           initial={permission.name.charAt(0)}
           size="md"
           className={
-            permission.tags?.[0]?.color
-              ? `border-2 ${getTagBorderColorClasses(permission.tags[0].color)}`
+            permission.tags?.find((tag: Tag) => tag.isPrimary)?.color
+              ? cn(
+                  'border-2',
+                  getTagBorderClasses(
+                    permission.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor
+                  )
+                )
               : undefined
           }
         />

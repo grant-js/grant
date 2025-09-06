@@ -1,0 +1,5 @@
+input UpdateOrganizationTagInput {
+  organizationId: ID!
+  tagId: ID!
+  isPrimary: Boolean!
+}

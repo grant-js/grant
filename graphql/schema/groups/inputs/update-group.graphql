@@ -3,4 +3,5 @@ input UpdateGroupInput {
   description: String
   tagIds: [ID!]
   permissionIds: [ID!]
+  primaryTagId: ID
 }

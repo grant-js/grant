@@ -1,4 +1,9 @@
-import { ProjectTag, AddProjectTagInput, RemoveProjectTagInput } from '@/graphql/generated/types';
+import {
+  ProjectTag,
+  AddProjectTagInput,
+  RemoveProjectTagInput,
+  UpdateProjectTagInput,
+} from '@/graphql/generated/types';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { PivotRepository } from '@/graphql/repositories/common';
 
@@ -14,6 +19,7 @@ export class ProjectTagRepository extends PivotRepository<ProjectTagModel, Proje
       id: dbPivot.id,
       projectId: dbPivot.projectId,
       tagId: dbPivot.tagId,
+      isPrimary: dbPivot.isPrimary,
       createdAt: dbPivot.createdAt,
       updatedAt: dbPivot.updatedAt,
       deletedAt: dbPivot.deletedAt,
@@ -21,10 +27,18 @@ export class ProjectTagRepository extends PivotRepository<ProjectTagModel, Proje
   }
 
   public async getProjectTags(
-    params: { projectId: string },
+    params: { projectId: string; tagId?: string },
     transaction?: Transaction
   ): Promise<ProjectTag[]> {
-    return this.query({ parentId: params.projectId }, transaction);
+    return this.query({ parentId: params.projectId, relatedId: params.tagId }, transaction);
+  }
+
+  public async getProjectTag(
+    params: { projectId: string; tagId: string },
+    transaction?: Transaction
+  ): Promise<ProjectTag> {
+    const result = await this.getProjectTags(params, transaction);
+    return this.first(result);
   }
 
   public async getProjectTagIntersection(
@@ -38,13 +52,16 @@ export class ProjectTagRepository extends PivotRepository<ProjectTagModel, Proje
     params: AddProjectTagInput,
     transaction?: Transaction
   ): Promise<ProjectTag> {
-    return this.add(
-      {
-        parentId: params.projectId,
-        relatedId: params.tagId,
-      },
-      transaction
-    );
+    const { projectId, tagId, ...rest } = params;
+    return this.add({ parentId: projectId, relatedId: tagId, ...rest }, transaction);
+  }
+
+  public async updateProjectTag(
+    params: UpdateProjectTagInput,
+    transaction?: Transaction
+  ): Promise<ProjectTag> {
+    const { projectId, tagId, isPrimary } = params;
+    return this.update(projectId, tagId, { isPrimary }, transaction);
   }
 
   public async softDeleteProjectTag(

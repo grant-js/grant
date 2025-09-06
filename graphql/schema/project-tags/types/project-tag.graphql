@@ -2,6 +2,7 @@ type ProjectTag implements Auditable {
   id: ID!
   projectId: ID!
   tagId: ID!
+  isPrimary: Boolean!
   project(organizationId: ID!): Project
   tag: Tag
   createdAt: Date!

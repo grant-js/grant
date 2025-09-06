@@ -1,0 +1,5 @@
+input UpdateGroupTagInput {
+  groupId: ID!
+  tagId: ID!
+  isPrimary: Boolean!
+}

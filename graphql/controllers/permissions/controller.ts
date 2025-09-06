@@ -73,7 +73,7 @@ export class PermissionController extends ScopeController {
   public async createPermission(params: MutationCreatePermissionArgs): Promise<Permission> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { input } = params;
-      const { name, description, action, scope, tagIds } = input;
+      const { name, description, action, scope, tagIds, primaryTagId } = input;
 
       const permission = await this.services.permissions.createPermission(
         { name, description, action },
@@ -99,7 +99,10 @@ export class PermissionController extends ScopeController {
       if (tagIds && tagIds.length > 0) {
         await Promise.all(
           tagIds.map((tagId) =>
-            this.services.permissionTags.addPermissionTag({ permissionId, tagId }, tx)
+            this.services.permissionTags.addPermissionTag(
+              { permissionId, tagId, isPrimary: tagId === primaryTagId },
+              tx
+            )
           )
         );
       }
@@ -111,7 +114,7 @@ export class PermissionController extends ScopeController {
   public async updatePermission(params: MutationUpdatePermissionArgs): Promise<Permission> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { id: permissionId, input } = params;
-      const { tagIds } = input;
+      const { tagIds, primaryTagId } = input;
       let currentTagIds: string[] = [];
 
       if (tagIds && tagIds.length > 0) {
@@ -126,15 +129,26 @@ export class PermissionController extends ScopeController {
       if (tagIds && tagIds.length > 0) {
         const newTagIds = tagIds.filter((tagId) => !currentTagIds.includes(tagId));
         const removedTagIds = currentTagIds.filter((tagId) => !tagIds.includes(tagId));
-
+        const updatedTagIds = tagIds.filter((tagId) => currentTagIds.includes(tagId));
         await Promise.all(
           newTagIds.map((tagId) =>
-            this.services.permissionTags.addPermissionTag({ permissionId, tagId }, tx)
+            this.services.permissionTags.addPermissionTag(
+              { permissionId, tagId, isPrimary: tagId === primaryTagId },
+              tx
+            )
           )
         );
         await Promise.all(
           removedTagIds.map((tagId) =>
             this.services.permissionTags.removePermissionTag({ permissionId, tagId }, tx)
+          )
+        );
+        await Promise.all(
+          updatedTagIds.map((tagId) =>
+            this.services.permissionTags.updatePermissionTag(
+              { permissionId, tagId, isPrimary: tagId === primaryTagId },
+              tx
+            )
           )
         );
       }

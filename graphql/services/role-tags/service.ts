@@ -1,4 +1,9 @@
-import { AddRoleTagInput, RemoveRoleTagInput, RoleTag } from '@/graphql/generated/types';
+import {
+  AddRoleTagInput,
+  RemoveRoleTagInput,
+  RoleTag,
+  UpdateRoleTagInput,
+} from '@/graphql/generated/types';
 import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
@@ -20,6 +25,7 @@ import {
   removeRoleTagInputSchema,
   getRoleTagIntersectionInputSchema,
   removeRoleTagsInputSchema,
+  updateRoleTagInputSchema,
 } from './schemas';
 
 export class RoleTagService extends AuditService {
@@ -103,7 +109,7 @@ export class RoleTagService extends AuditService {
   public async addRoleTag(params: AddRoleTagInput, transaction?: Transaction): Promise<RoleTag> {
     const context = 'RoleTagService.addRoleTag';
     const validatedParams = validateInput(addRoleTagInputSchema, params, context);
-    const { roleId, tagId } = validatedParams;
+    const { roleId, tagId, isPrimary } = validatedParams;
 
     const hasTag = await this.roleHasTag(roleId, tagId, transaction);
 
@@ -112,7 +118,7 @@ export class RoleTagService extends AuditService {
     }
 
     const roleTag = await this.repositories.roleTagRepository.addRoleTag(
-      { roleId, tagId },
+      { roleId, tagId, isPrimary },
       transaction
     );
 
@@ -131,6 +137,33 @@ export class RoleTagService extends AuditService {
     await this.logCreate(roleTag.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(roleTagSchema), roleTag, context);
+  }
+
+  public async updateRoleTag(
+    params: UpdateRoleTagInput,
+    transaction?: Transaction
+  ): Promise<RoleTag> {
+    const context = 'RoleTagService.updateRoleTag';
+    const validatedParams = validateInput(updateRoleTagInputSchema, params, context);
+    const { roleId, tagId, isPrimary } = validatedParams;
+
+    const roleTag = await this.repositories.roleTagRepository.getRoleTag(
+      { roleId, tagId },
+      transaction
+    );
+
+    const updatedRoleTag = await this.repositories.roleTagRepository.updateRoleTag(
+      { roleId, tagId, isPrimary },
+      transaction
+    );
+
+    const metadata = {
+      context,
+    };
+
+    await this.logUpdate(updatedRoleTag.id, roleTag, updatedRoleTag, metadata, transaction);
+
+    return validateOutput(createDynamicSingleSchema(roleTagSchema), updatedRoleTag, context);
   }
 
   public async removeRoleTag(

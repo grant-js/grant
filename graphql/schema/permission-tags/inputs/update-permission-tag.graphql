@@ -1,0 +1,5 @@
+input UpdatePermissionTagInput {
+  permissionId: ID!
+  tagId: ID!
+  isPrimary: Boolean!
+}

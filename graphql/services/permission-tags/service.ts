@@ -2,6 +2,7 @@ import {
   AddPermissionTagInput,
   PermissionTag,
   RemovePermissionTagInput,
+  UpdatePermissionTagInput,
 } from '@/graphql/generated/types';
 import { DbSchema } from '@/graphql/lib/providers/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
@@ -24,6 +25,7 @@ import {
   removePermissionTagInputSchema,
   getPermissionTagIntersectionParamsSchema,
   removePermissionTagsInputSchema,
+  updatePermissionTagInputSchema,
 } from './schemas';
 
 export class PermissionTagService extends AuditService {
@@ -123,7 +125,7 @@ export class PermissionTagService extends AuditService {
     const context = 'PermissionTagService.addPermissionTag';
     const validatedParams = validateInput(addPermissionTagInputSchema, params, context);
 
-    const { permissionId, tagId } = validatedParams;
+    const { permissionId, tagId, isPrimary } = validatedParams;
 
     const hasTag = await this.permissionHasTag(permissionId, tagId, transaction);
 
@@ -132,7 +134,7 @@ export class PermissionTagService extends AuditService {
     }
 
     const permissionTag = await this.repositories.permissionTagRepository.addPermissionTag(
-      { permissionId, tagId },
+      { permissionId, tagId, isPrimary },
       transaction
     );
 
@@ -151,6 +153,44 @@ export class PermissionTagService extends AuditService {
     await this.logCreate(permissionTag.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(permissionTagSchema), permissionTag, context);
+  }
+
+  public async updatePermissionTag(
+    params: UpdatePermissionTagInput,
+    transaction?: Transaction
+  ): Promise<PermissionTag> {
+    const context = 'PermissionTagService.updatePermissionTag';
+    const validatedParams = validateInput(updatePermissionTagInputSchema, params, context);
+    const { permissionId, tagId, isPrimary } = validatedParams;
+
+    const permissionTag = await this.repositories.permissionTagRepository.getPermissionTag(
+      { permissionId, tagId },
+      transaction
+    );
+
+    const updatedPermissionTag =
+      await this.repositories.permissionTagRepository.updatePermissionTag(
+        { permissionId, tagId, isPrimary },
+        transaction
+      );
+
+    const metadata = {
+      context,
+    };
+
+    await this.logUpdate(
+      updatedPermissionTag.id,
+      permissionTag,
+      updatedPermissionTag,
+      metadata,
+      transaction
+    );
+
+    return validateOutput(
+      createDynamicSingleSchema(permissionTagSchema),
+      updatedPermissionTag,
+      context
+    );
   }
 
   public async removePermissionTag(
