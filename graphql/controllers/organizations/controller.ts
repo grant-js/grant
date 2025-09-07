@@ -1,3 +1,4 @@
+import { EntityCache } from '@/graphql/controllers/base/ScopeController';
 import {
   QueryOrganizationsArgs,
   MutationCreateOrganizationArgs,
@@ -6,8 +7,7 @@ import {
   Organization,
   OrganizationPage,
 } from '@/graphql/generated/types';
-import { DbSchema } from '@/graphql/lib/providers/database/connection';
-import { EntityCache } from '@/graphql/lib/scopeFiltering';
+import { DbSchema } from '@/graphql/lib/database/connection';
 import { Transaction, TransactionManager } from '@/graphql/lib/transactions/TransactionManager';
 import { OrganizationModel } from '@/graphql/repositories/organizations/schema';
 import { Services } from '@/graphql/services';

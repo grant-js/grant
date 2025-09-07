@@ -1,3 +1,4 @@
+import { EntityCache } from '@/graphql/controllers/base/ScopeController';
 import {
   QueryPermissionsArgs,
   MutationCreatePermissionArgs,
@@ -8,8 +9,7 @@ import {
   Tenant,
   Tag,
 } from '@/graphql/generated/types';
-import { DbSchema } from '@/graphql/lib/providers/database/connection';
-import { EntityCache } from '@/graphql/lib/scopeFiltering';
+import { DbSchema } from '@/graphql/lib/database/connection';
 import { Transaction, TransactionManager } from '@/graphql/lib/transactions/TransactionManager';
 import { PermissionModel } from '@/graphql/repositories/permissions/schema';
 import { Services } from '@/graphql/services';

@@ -1,9 +1,8 @@
 import { createProjectController } from '@/graphql/controllers/projects';
-import { DbSchema } from '@/graphql/lib/providers/database/connection';
+import { DbSchema } from '@/graphql/lib/database/connection';
 import { Services } from '@/graphql/services';
 
-import { EntityCache } from '../lib/scopeFiltering';
-
+import { EntityCache } from './base/ScopeController';
 import { createGroupController } from './groups';
 import { createOrganizationController } from './organizations';
 import { createPermissionController } from './permissions';

@@ -1,7 +1,16 @@
 import { Scope, Tenant } from '@/graphql/generated/types';
-import { CacheKey, EntityCache } from '@/graphql/lib/scopeFiltering';
 import { Services } from '@/graphql/services';
 
+export type CacheKey = `${Tenant}:${string}`;
+
+export type EntityCache = {
+  roles: Map<CacheKey, string[]>;
+  users: Map<CacheKey, string[]>;
+  groups: Map<CacheKey, string[]>;
+  permissions: Map<CacheKey, string[]>;
+  tags: Map<CacheKey, string[]>;
+  projects: Map<CacheKey, string[]>;
+};
 export class ScopeController {
   constructor(
     protected scopeCache: EntityCache,

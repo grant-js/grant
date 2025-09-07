@@ -1,7 +1,7 @@
 import { eq, inArray, ilike, or, and, isNull, count, desc, asc } from 'drizzle-orm';
 
 import { Auditable, Searchable, SortOrder } from '@/graphql/generated/types';
-import { DbSchema } from '@/graphql/lib/providers/database/connection';
+import { DbSchema } from '@/graphql/lib/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import type { Schema } from '@/graphql/repositories/schema';
 

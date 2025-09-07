@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 
-import { DbSchema } from '@/graphql/lib/providers/database/connection';
+import { DbSchema } from '@/graphql/lib/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 
 export interface BasePivotModel {

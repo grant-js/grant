@@ -1,3 +1,4 @@
+import { EntityCache } from '@/graphql/controllers/base/ScopeController';
 import {
   QueryUsersArgs,
   MutationCreateUserArgs,
@@ -9,8 +10,7 @@ import {
   Tag,
   Role,
 } from '@/graphql/generated/types';
-import { DbSchema } from '@/graphql/lib/providers/database/connection';
-import { EntityCache } from '@/graphql/lib/scopeFiltering';
+import { DbSchema } from '@/graphql/lib/database/connection';
 import { Transaction, TransactionManager } from '@/graphql/lib/transactions/TransactionManager';
 import { UserModel } from '@/graphql/repositories/users/schema';
 import { Services } from '@/graphql/services';

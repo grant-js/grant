@@ -11,7 +11,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./data/postgres:/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U identity_user -d identity_central"]
       interval: 10s

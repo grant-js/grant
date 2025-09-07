@@ -8,7 +8,7 @@ export interface AuthenticatedUser {
   sub: string;
 }
 
-export interface Context {
+export interface GraphqlContext {
   providers: Providers;
   controllers: Controllers;
   info?: GraphQLResolveInfo;

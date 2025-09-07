@@ -1,4 +1,4 @@
-import { DbSchema } from '../lib/providers/database/connection';
+import { DbSchema } from '@/graphql/lib/database/connection';
 
 import { createGroupPermissionRepository } from './group-permissions';
 import { createGroupTagRepository } from './group-tags';

@@ -22,6 +22,7 @@ import {
   BaseDeleteArgs,
 } from '@/graphql/repositories/common';
 import { SelectedFields } from '@/graphql/services/common';
+import { slugifySafe } from '@/lib/slugify';
 
 import { organizationGroups } from '../organization-groups/schema';
 import { organizationPermissions } from '../organization-permissions/schema';
@@ -73,10 +74,7 @@ export class OrganizationRepository extends EntityRepository<OrganizationModel, 
   };
 
   private generateSlug(name: string): string {
-    return name
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '');
+    return slugifySafe(name);
   }
 
   public async getOrganizations(

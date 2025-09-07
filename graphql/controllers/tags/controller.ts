@@ -1,3 +1,4 @@
+import { EntityCache } from '@/graphql/controllers/base/ScopeController';
 import {
   QueryTagsArgs,
   MutationCreateTagArgs,
@@ -7,8 +8,7 @@ import {
   TagPage,
   Tenant,
 } from '@/graphql/generated/types';
-import { DbSchema } from '@/graphql/lib/providers/database/connection';
-import { EntityCache } from '@/graphql/lib/scopeFiltering';
+import { DbSchema } from '@/graphql/lib/database/connection';
 import { Transaction, TransactionManager } from '@/graphql/lib/transactions/TransactionManager';
 import { TagModel } from '@/graphql/repositories/tags/schema';
 import { Services } from '@/graphql/services';

@@ -1,3 +1,4 @@
+import { EntityCache } from '@/graphql/controllers/base/ScopeController';
 import {
   Tenant,
   QueryRolesArgs,
@@ -9,8 +10,7 @@ import {
   Group,
   Tag,
 } from '@/graphql/generated/types';
-import { DbSchema } from '@/graphql/lib/providers/database/connection';
-import { EntityCache } from '@/graphql/lib/scopeFiltering';
+import { DbSchema } from '@/graphql/lib/database/connection';
 import { Transaction, TransactionManager } from '@/graphql/lib/transactions/TransactionManager';
 import { RoleModel } from '@/graphql/repositories/roles/schema';
 import { Services } from '@/graphql/services';

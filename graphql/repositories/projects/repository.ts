@@ -21,6 +21,7 @@ import {
   RelationsConfig,
 } from '@/graphql/repositories/common';
 import { SelectedFields } from '@/graphql/services/common';
+import { slugifySafe } from '@/lib/slugify';
 
 import { projectGroups } from '../project-groups/schema';
 import { projectPermissions } from '../project-permissions/schema';
@@ -64,10 +65,7 @@ export class ProjectRepository extends EntityRepository<ProjectModel, Project> {
   };
 
   private generateSlug(name: string): string {
-    return name
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '');
+    return slugifySafe(name);
   }
 
   public async getProjects(

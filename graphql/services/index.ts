@@ -1,7 +1,6 @@
+import { DbSchema } from '@/graphql/lib/database/connection';
+import { Repositories } from '@/graphql/repositories';
 import { AuthenticatedUser } from '@/graphql/types';
-
-import { DbSchema } from '../lib/providers/database/connection';
-import { Repositories } from '../repositories';
 
 import { createGroupPermissionService } from './group-permissions';
 import { createGroupTagService } from './group-tags';

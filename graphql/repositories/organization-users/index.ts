@@ -1,4 +1,4 @@
-import { DbSchema } from '@/graphql/lib/providers/database/connection';
+import { DbSchema } from '@/graphql/lib/database/connection';
 
 import { OrganizationUserRepository } from './repository';
 

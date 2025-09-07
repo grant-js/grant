@@ -1,25 +1,31 @@
 import { ApolloServer } from '@apollo/server';
 import { startServerAndCreateNextHandler } from '@as-integrations/next';
 import { verify } from 'jsonwebtoken';
+import { NextRequest } from 'next/server';
 
 import { providers } from '@/graphql/config/providers';
+import { db } from '@/graphql/lib/database/connection';
 import { schema } from '@/graphql/resolvers';
-import { Context, AuthenticatedUser } from '@/graphql/types';
+import { GraphqlContext, AuthenticatedUser } from '@/graphql/types';
+import { AUTH_HEADER_KEY, AUTH_TOKEN_KEY } from '@/lib/constants';
 
 import { createControllers } from './controllers';
-import { db } from './lib/providers/database/connection';
 import { createRepositories } from './repositories';
 import { JWT_SECRET } from './resolvers/auth/constants';
 import { createServices } from './services';
 
-const server = new ApolloServer<Context>({
+const server = new ApolloServer<GraphqlContext>({
   schema,
 });
 
-export const handler = startServerAndCreateNextHandler(server, {
+export const handler = startServerAndCreateNextHandler<NextRequest, GraphqlContext>(server, {
   context: async (req) => {
     let user: AuthenticatedUser | null = null;
-    const token = req.headers.authorization?.split(' ')[1];
+    const { cookies, headers } = req;
+    const cookieToken = cookies.get(AUTH_TOKEN_KEY)?.value;
+    const authorization = headers.get(AUTH_HEADER_KEY);
+    const headerToken = authorization?.split(' ')[1];
+    const token = headerToken || cookieToken;
     if (token) {
       try {
         const decoded = verify(token, JWT_SECRET);
@@ -49,7 +55,6 @@ export const handler = startServerAndCreateNextHandler(server, {
     const controllers = createControllers(scopeCache, services, db);
 
     return {
-      req,
       providers,
       controllers,
     };

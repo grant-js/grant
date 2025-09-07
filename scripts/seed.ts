@@ -2,7 +2,7 @@
 
 import { seed } from 'drizzle-seed';
 
-import { db } from '@/graphql/lib/providers/database/connection';
+import { db } from '@/graphql/lib/database/connection';
 import * as roleSchema from '@/graphql/repositories/roles/schema';
 import * as userSchema from '@/graphql/repositories/users/schema';
 

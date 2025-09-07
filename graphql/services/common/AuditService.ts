@@ -1,4 +1,4 @@
-import { DbSchema } from '@/graphql/lib/providers/database/connection';
+import { DbSchema } from '@/graphql/lib/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { AuthenticatedUser } from '@/graphql/types';
 import { SYSTEM_USER_ID } from '@/lib/constants';

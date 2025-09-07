@@ -6,7 +6,7 @@ import {
   GroupPage,
   CreateGroupInput,
 } from '@/graphql/generated/types';
-import { DbSchema } from '@/graphql/lib/providers/database/connection';
+import { DbSchema } from '@/graphql/lib/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
 import { groupAuditLogs } from '@/graphql/repositories/groups/schema';

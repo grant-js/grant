@@ -1,13 +1,6 @@
-export type SlugifyOptions = {
-  replacement?: string;
-  remove?: RegExp;
-  lower?: boolean;
-  strict?: boolean;
-  locale?: string;
-  trim?: boolean;
-};
+import slugify from 'slugify';
 
-export const slugifyOptions = {
+const slugifyOptions = {
   replacement: '-', // replace spaces with replacement character, defaults to `-`
   remove: undefined, // remove characters that match regex, defaults to `undefined`
   lower: true, // convert to lower case, defaults to `false`
@@ -15,3 +8,7 @@ export const slugifyOptions = {
   locale: 'en', // language code of the locale to use
   trim: true, // trim leading and trailing replacement chars, defaults to `true`
 };
+
+export function slugifySafe(input: string) {
+  return slugify(input, slugifyOptions);
+}

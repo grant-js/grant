@@ -1,5 +1,5 @@
-import { DbSchema } from '@/graphql/lib/providers/database/connection';
-import { EntityCache } from '@/graphql/lib/scopeFiltering';
+import { EntityCache } from '@/graphql/controllers/base/ScopeController';
+import { DbSchema } from '@/graphql/lib/database/connection';
 import { Services } from '@/graphql/services';
 
 import { TagController } from './controller';
