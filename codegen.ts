@@ -7,7 +7,7 @@ const config: CodegenConfig = {
       plugins: ['typescript', 'typescript-resolvers'],
       config: {
         useIndexSignature: true,
-        contextType: '@/graphql/types#Context',
+        contextType: '@/graphql/types#GraphqlContext',
         scalars: {
           Date: 'Date',
         },
