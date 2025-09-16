@@ -86,8 +86,16 @@ export function DeleteDialog({
     }
   };
 
+  const handleDialogOpenChange = (newOpen: boolean) => {
+    // Prevent closing dialog during deletion
+    if (internalIsDeleting && !newOpen) {
+      return;
+    }
+    setDialogOpen(newOpen);
+  };
+
   return (
-    <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
+    <AlertDialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{t(title)}</AlertDialogTitle>

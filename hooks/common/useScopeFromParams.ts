@@ -7,8 +7,14 @@ import { Scope, Tenant } from '@/graphql/generated/types';
 export function useScopeFromParams(): Scope {
   const params = useParams();
 
-  // With the new nested structure, we can always determine the scope from URL params
-  if (params.projectId && params.organizationId) {
+  if (params.accountId) {
+    return {
+      tenant: Tenant.Account,
+      id: params.accountId as string,
+    };
+  }
+
+  if (params.projectId) {
     return {
       tenant: Tenant.Project,
       id: params.projectId as string,
@@ -22,8 +28,6 @@ export function useScopeFromParams(): Scope {
     };
   }
 
-  // If no organization context is available, throw an error
-  // This should not happen with the new nested structure
   throw new Error(
     'No organization context available. This should not happen with the new nested URL structure.'
   );

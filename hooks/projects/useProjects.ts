@@ -15,11 +15,11 @@ interface UseProjectsResult {
 }
 
 export function useProjects(params: QueryProjectsArgs): UseProjectsResult {
-  const { organizationId } = params;
+  const { scope } = params;
 
   const variables = useMemo(() => params, [params]);
 
-  const skip = useMemo(() => !organizationId, [organizationId]);
+  const skip = useMemo(() => !scope, [scope]);
 
   const { data, loading, error, refetch } = useQuery<{ projects: ProjectPage }>(GET_PROJECTS, {
     variables,

@@ -61,11 +61,3 @@ export type RoleGroupModel = typeof roleGroups.$inferSelect;
 export type NewRoleGroupModel = typeof roleGroups.$inferInsert;
 export type RoleGroupAuditLogModel = typeof roleGroupsAuditLogs.$inferSelect;
 export type NewRoleGroupAuditLogModel = typeof roleGroupsAuditLogs.$inferInsert;
-
-export const RoleGroupAuditAction = {
-  CREATE: 'CREATE',
-  DELETE: 'DELETE',
-} as const;
-
-export type RoleGroupAuditActionType =
-  (typeof RoleGroupAuditAction)[keyof typeof RoleGroupAuditAction];

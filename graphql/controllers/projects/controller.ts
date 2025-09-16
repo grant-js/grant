@@ -27,9 +27,7 @@ export class ProjectController extends ScopeController {
   public async getProjects(
     params: QueryProjectsArgs & SelectedFields<Project>
   ): Promise<ProjectPage> {
-    const { organizationId, page, limit, sort, search, ids, tagIds, requestedFields } = params;
-
-    const scope = { tenant: Tenant.Organization, id: organizationId };
+    const { scope, page, limit, sort, search, ids, tagIds, requestedFields } = params;
 
     let projectIds = await this.getScopedProjectIds(scope);
 
@@ -86,15 +84,27 @@ export class ProjectController extends ScopeController {
   public async createProject(params: MutationCreateProjectArgs): Promise<Project> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { input } = params;
-      const { name, description, organizationId, tagIds, primaryTagId } = input;
+      const { name, description, scope, tagIds, primaryTagId } = input;
 
       const project = await this.services.projects.createProject({ name, description }, tx);
       const { id: projectId } = project;
 
-      await this.services.organizationProjects.addOrganizationProject(
-        { organizationId, projectId },
-        tx
-      );
+      switch (scope.tenant) {
+        case Tenant.Account:
+          await this.services.accountProjects.addAccountProject(
+            { accountId: scope.id, projectId },
+            tx
+          );
+          break;
+        case Tenant.Organization:
+          await this.services.organizationProjects.addOrganizationProject(
+            { organizationId: scope.id, projectId },
+            tx
+          );
+          break;
+        default:
+          throw new Error('Invalid scope');
+      }
 
       if (tagIds && tagIds.length > 0) {
         await Promise.all(
@@ -153,8 +163,8 @@ export class ProjectController extends ScopeController {
 
   public async deleteProject(params: MutationDeleteProjectArgs & DeleteParams): Promise<Project> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
-      const projectId = params.id;
-      const organizationId = params.organizationId;
+      const { id: projectId, scope } = params;
+      const organizationId = scope.id;
       const [projectTags, projectPermissions, projectGroups, projectRoles, projectUsers] =
         await Promise.all([
           this.services.projectTags.getProjectTags({ projectId }, tx),
@@ -169,10 +179,22 @@ export class ProjectController extends ScopeController {
       const groupIds = projectGroups.map((pg) => pg.groupId);
       const roleIds = projectRoles.map((pr) => pr.roleId);
       const userIds = projectUsers.map((pu) => pu.userId);
-      await this.services.organizationProjects.removeOrganizationProject(
-        { organizationId, projectId },
-        tx
-      );
+      switch (scope.tenant) {
+        case Tenant.Account:
+          await this.services.accountProjects.removeAccountProject(
+            { accountId: scope.id, projectId },
+            tx
+          );
+          break;
+        case Tenant.Organization:
+          await this.services.organizationProjects.removeOrganizationProject(
+            { organizationId, projectId },
+            tx
+          );
+          break;
+        default:
+          throw new Error('Invalid scope');
+      }
       await Promise.all([
         ...tagIds.map((tagId) =>
           this.services.projectTags.removeProjectTag({ projectId, tagId }, tx)

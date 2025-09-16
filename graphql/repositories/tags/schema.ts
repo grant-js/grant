@@ -33,14 +33,3 @@ export type TagModel = typeof tags.$inferSelect;
 export type NewTagModel = typeof tags.$inferInsert;
 export type TagAuditLogModel = typeof tagAuditLogs.$inferSelect;
 export type NewTagAuditLogModel = typeof tagAuditLogs.$inferInsert;
-
-export const TagAuditAction = {
-  CREATE: 'CREATE',
-  UPDATE: 'UPDATE',
-  DELETE: 'DELETE',
-  SOFT_DELETE: 'SOFT_DELETE',
-} as const;
-
-export type TagAuditActionType = (typeof TagAuditAction)[keyof typeof TagAuditAction];
-
-// Import at the bottom to avoid circular dependencies

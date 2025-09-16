@@ -61,13 +61,3 @@ export type ProjectGroupModel = typeof projectGroups.$inferSelect;
 export type ProjectGroupInsert = typeof projectGroups.$inferInsert;
 export type ProjectGroupAuditLogModel = typeof projectGroupAuditLogs.$inferSelect;
 export type NewProjectGroupAuditLogModel = typeof projectGroupAuditLogs.$inferInsert;
-
-export const ProjectGroupAuditAction = {
-  CREATE: 'CREATE',
-  UPDATE: 'UPDATE',
-  DELETE: 'DELETE',
-  SOFT_DELETE: 'SOFT_DELETE',
-} as const;
-
-export type ProjectGroupAuditActionType =
-  (typeof ProjectGroupAuditAction)[keyof typeof ProjectGroupAuditAction];

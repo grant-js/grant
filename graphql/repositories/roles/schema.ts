@@ -43,15 +43,3 @@ export type RoleModel = typeof roles.$inferSelect;
 export type NewRoleModel = typeof roles.$inferInsert;
 export type RoleAuditLogModel = typeof roleAuditLogs.$inferSelect;
 export type NewRoleAuditLogModel = typeof roleAuditLogs.$inferInsert;
-
-export const RoleAuditAction = {
-  CREATE: 'CREATE',
-  UPDATE: 'UPDATE',
-  DELETE: 'DELETE',
-  SOFT_DELETE: 'SOFT_DELETE',
-} as const;
-
-export type RoleAuditActionType = (typeof RoleAuditAction)[keyof typeof RoleAuditAction];
-
-import { roleGroups } from '../role-groups/schema';
-import { roleTags } from '../role-tags/schema';

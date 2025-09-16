@@ -70,13 +70,3 @@ export type OrganizationTagModel = typeof organizationTags.$inferSelect;
 export type OrganizationTagInsert = typeof organizationTags.$inferInsert;
 export type OrganizationTagAuditLogModel = typeof organizationTagAuditLogs.$inferSelect;
 export type NewOrganizationTagAuditLogModel = typeof organizationTagAuditLogs.$inferInsert;
-
-export const OrganizationTagAuditAction = {
-  CREATE: 'CREATE',
-  UPDATE: 'UPDATE',
-  DELETE: 'DELETE',
-  SOFT_DELETE: 'SOFT_DELETE',
-} as const;
-
-export type OrganizationTagAuditActionType =
-  (typeof OrganizationTagAuditAction)[keyof typeof OrganizationTagAuditAction];

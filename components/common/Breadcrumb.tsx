@@ -13,6 +13,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
+import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useOrganizations } from '@/hooks/organizations';
 import { useProjects } from '@/hooks/projects';
 import { Link } from '@/i18n/navigation';
@@ -26,21 +27,20 @@ export function Breadcrumb() {
   const t = useTranslations('common');
   const dashboardT = useTranslations('dashboard.navigation');
   const pathname = usePathname();
+  const scope = useScopeFromParams();
   const params = useParams();
 
-  // Get current organization and project data using existing hooks
   const { organizations: [organization] = [] } = useOrganizations({
     ids: params.organizationId ? [params.organizationId as string] : undefined,
     limit: 1,
   });
 
   const { projects: [project] = [] } = useProjects({
-    organizationId: params.organizationId as string,
+    scope,
     ids: params.projectId ? [params.projectId as string] : undefined,
     limit: 1,
   });
 
-  // Don't show breadcrumb on home page or auth pages
   if (pathname === '/' || pathname.startsWith('/auth')) {
     return null;
   }
@@ -49,7 +49,6 @@ export function Breadcrumb() {
     const segments = pathname.split('/').filter(Boolean);
     const breadcrumbs: BreadcrumbItem[] = [];
 
-    // Add Dashboard as first item
     breadcrumbs.push({
       label: t('navigation.dashboard'),
       href: '/dashboard',
@@ -57,20 +56,17 @@ export function Breadcrumb() {
 
     let currentPath = '';
 
-    segments.forEach((segment, index) => {
+    segments.forEach((segment) => {
       currentPath += `/${segment}`;
 
-      // Skip locale segment
       if (segment === '[locale]' || segment === params.locale) {
         return;
       }
 
-      // Handle dashboard segment
       if (segment === 'dashboard') {
         return;
       }
 
-      // Handle organizations segment
       if (segment === 'organizations') {
         breadcrumbs.push({
           label: t('organizations.title'),
@@ -79,9 +75,7 @@ export function Breadcrumb() {
         return;
       }
 
-      // Handle organization ID segment
       if (params.organizationId && segment === params.organizationId) {
-        // Show actual organization name if available, fallback to generic label
         const orgLabel = organization?.name || t('organizations.organization');
         breadcrumbs.push({
           label: orgLabel,
@@ -90,7 +84,6 @@ export function Breadcrumb() {
         return;
       }
 
-      // Handle projects segment
       if (segment === 'projects') {
         breadcrumbs.push({
           label: t('projects.title'),
@@ -99,9 +92,7 @@ export function Breadcrumb() {
         return;
       }
 
-      // Handle project ID segment
       if (params.projectId && segment === params.projectId) {
-        // Show actual project name if available, fallback to generic label
         const projectLabel = project?.name || t('projects.project');
         breadcrumbs.push({
           label: projectLabel,
@@ -110,7 +101,6 @@ export function Breadcrumb() {
         return;
       }
 
-      // Handle other segments (like users, roles, etc.)
       if (
         [
           'users',
@@ -137,7 +127,6 @@ export function Breadcrumb() {
 
   const breadcrumbs = generateBreadcrumbs();
 
-  // Don't show breadcrumb if we only have dashboard
   if (breadcrumbs.length <= 1) {
     return null;
   }

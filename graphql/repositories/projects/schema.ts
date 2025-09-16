@@ -42,6 +42,7 @@ export const projectsRelations = relations(projects, ({ many }) => ({
   roles: many(projectRoles),
   groups: many(projectGroups),
   permissions: many(projectPermissions),
+  accounts: many(accountProjects), // Accounts that own this project
 }));
 
 export const projectAuditLogsRelations = relations(projectAuditLogs, ({ one }) => ({
@@ -56,15 +57,7 @@ export type NewProjectModel = typeof projects.$inferInsert;
 export type ProjectAuditLogModel = typeof projectAuditLogs.$inferSelect;
 export type NewProjectAuditLogModel = typeof projectAuditLogs.$inferInsert;
 
-export const ProjectAuditAction = {
-  CREATE: 'CREATE',
-  UPDATE: 'UPDATE',
-  DELETE: 'DELETE',
-  SOFT_DELETE: 'SOFT_DELETE',
-} as const;
-
-export type ProjectAuditActionType = (typeof ProjectAuditAction)[keyof typeof ProjectAuditAction];
-
+import { accountProjects } from '../account-projects/schema';
 import { projectGroups } from '../project-groups/schema';
 import { projectPermissions } from '../project-permissions/schema';
 import { projectRoles } from '../project-roles/schema';

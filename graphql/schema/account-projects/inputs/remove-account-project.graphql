@@ -1,0 +1,4 @@
+input RemoveAccountProjectInput {
+  accountId: ID!
+  projectId: ID!
+}

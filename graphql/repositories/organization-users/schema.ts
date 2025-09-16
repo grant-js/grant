@@ -61,11 +61,3 @@ export type OrganizationUserModel = typeof organizationUsers.$inferSelect;
 export type NewOrganizationUserModel = typeof organizationUsers.$inferInsert;
 export type OrganizationUserAuditLogModel = typeof organizationUsersAuditLogs.$inferSelect;
 export type NewOrganizationUserAuditLogModel = typeof organizationUsersAuditLogs.$inferInsert;
-
-export const OrganizationUserAuditAction = {
-  CREATE: 'CREATE',
-  DELETE: 'DELETE',
-} as const;
-
-export type OrganizationUserAuditActionType =
-  (typeof OrganizationUserAuditAction)[keyof typeof OrganizationUserAuditAction];

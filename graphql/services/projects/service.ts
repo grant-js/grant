@@ -53,7 +53,7 @@ export class ProjectService extends AuditService {
   }
 
   public async getProjects(
-    params: Omit<QueryProjectsArgs, 'organizationId' | 'tagIds'> & SelectedFields<Project>
+    params: Omit<QueryProjectsArgs, 'scope' | 'tagIds'> & SelectedFields<Project>
   ): Promise<ProjectPage> {
     const validationContext = 'ProjectService.getProjects';
     validateInput(getProjectsParamsSchema, params, validationContext);
@@ -75,7 +75,7 @@ export class ProjectService extends AuditService {
   }
 
   public async createProject(
-    params: Omit<CreateProjectInput, 'organizationId' | 'tagIds'>,
+    params: Omit<CreateProjectInput, 'scope' | 'tagIds'>,
     transaction?: Transaction
   ): Promise<Project> {
     const context = 'ProjectService.createProject';
@@ -146,7 +146,7 @@ export class ProjectService extends AuditService {
   }
 
   public async deleteProject(
-    params: MutationDeleteProjectArgs & DeleteParams,
+    params: Omit<MutationDeleteProjectArgs, 'scope'> & DeleteParams,
     transaction?: Transaction
   ): Promise<Project> {
     const context = 'ProjectService.deleteProject';

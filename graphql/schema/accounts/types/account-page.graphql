@@ -1,0 +1,5 @@
+type AccountPage implements PaginatedResults {
+  accounts: [Account!]!
+  totalCount: Int!
+  hasNextPage: Boolean!
+} 

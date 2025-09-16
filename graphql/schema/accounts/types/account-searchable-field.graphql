@@ -1,0 +1,4 @@
+enum AccountSearchableField {
+  name
+  slug
+} 

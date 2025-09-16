@@ -25,6 +25,7 @@ interface PaginatedResults {
 }
 
 enum Tenant {
+  ACCOUNT
   ORGANIZATION
   PROJECT
 }

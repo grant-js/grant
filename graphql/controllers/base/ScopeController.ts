@@ -45,6 +45,13 @@ export class ScopeController {
 
     let projectIds: string[];
     switch (scope.tenant) {
+      case Tenant.Account: {
+        const accountProjects = await this.services.accountProjects.getAccountProjects({
+          accountId: scope.id,
+        });
+        projectIds = accountProjects.map((ap) => ap.projectId);
+        break;
+      }
       case Tenant.Organization: {
         const organizationProjects =
           await this.services.organizationProjects.getOrganizationProjects({

@@ -6,7 +6,6 @@ export const users = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     name: varchar('name', { length: 255 }).notNull(),
-    email: varchar('email', { length: 255 }).notNull(),
     deletedAt: timestamp('deleted_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -17,6 +16,9 @@ export const users = pgTable(
 export const usersRelations = relations(users, ({ many }) => ({
   tags: many(userTags),
   roles: many(userRoles),
+  authenticationMethods: many(userAuthenticationMethods),
+  sessions: many(userSessions),
+  ownedAccounts: many(accounts), // Accounts this user owns
 }));
 
 export const userAuditLogs = pgTable(
@@ -44,14 +46,8 @@ export type NewUserModel = typeof users.$inferInsert;
 export type UserAuditLogModel = typeof userAuditLogs.$inferSelect;
 export type NewUserAuditLogModel = typeof userAuditLogs.$inferInsert;
 
-export const UserAuditAction = {
-  CREATE: 'CREATE',
-  UPDATE: 'UPDATE',
-  DELETE: 'DELETE',
-  SOFT_DELETE: 'SOFT_DELETE',
-} as const;
-
-export type UserAuditActionType = (typeof UserAuditAction)[keyof typeof UserAuditAction];
-
+import { accounts } from '../accounts/schema';
+import { userAuthenticationMethods } from '../user-authentication-methods/schema';
 import { userRoles } from '../user-roles/schema';
+import { userSessions } from '../user-sessions/schema';
 import { userTags } from '../user-tags/schema';

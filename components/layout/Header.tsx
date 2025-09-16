@@ -72,11 +72,9 @@ export function Header() {
         {/* Logo */}
         <div className="flex-shrink-0">
           <Link href="/" className="flex items-center">
-            <div className="flex h-8 w-8 items-center justify-center">
-              <Logo size={40} />
+            <div className="flex items-center justify-center">
+              <Logo size={75} className="mt-2" />
             </div>
-            <span className="font-bold uppercase tracking-tight">{title[0]}</span>
-            <span className="font-normal uppercase tracking-wider">{title[1]}</span>
           </Link>
         </div>
 

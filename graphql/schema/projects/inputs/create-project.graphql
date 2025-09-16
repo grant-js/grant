@@ -1,7 +1,7 @@
 input CreateProjectInput {
   name: String!
   description: String
-  organizationId: ID!
+  scope: Scope!
   tagIds: [ID!]
   primaryTagId: ID
 }

@@ -61,13 +61,3 @@ export type ProjectPermissionModel = typeof projectPermissions.$inferSelect;
 export type ProjectPermissionInsert = typeof projectPermissions.$inferInsert;
 export type ProjectPermissionAuditLogModel = typeof projectPermissionsAuditLogs.$inferSelect;
 export type NewProjectPermissionAuditLogModel = typeof projectPermissionsAuditLogs.$inferInsert;
-
-export const ProjectPermissionAuditAction = {
-  CREATE: 'CREATE',
-  UPDATE: 'UPDATE',
-  DELETE: 'DELETE',
-  SOFT_DELETE: 'SOFT_DELETE',
-} as const;
-
-export type ProjectPermissionAuditActionType =
-  (typeof ProjectPermissionAuditAction)[keyof typeof ProjectPermissionAuditAction];

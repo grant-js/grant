@@ -179,11 +179,30 @@ export function EditDialog<TFormValues extends Record<string, any>, TEntity>({
   };
 
   const handleOpenChange = (newOpen: boolean) => {
+    // Prevent closing dialog during submission
+    if (isSubmitting && !newOpen) {
+      return;
+    }
+
     if (!newOpen) {
       form.reset(defaultValues);
     }
     if (onOpenChange) {
       onOpenChange(newOpen);
+    }
+  };
+
+  const handleInteractionOutside = (event: Event) => {
+    // Prevent closing dialog during submission
+    if (isSubmitting) {
+      event.preventDefault();
+    }
+  };
+
+  const handleEscapeKeyDown = (event: KeyboardEvent) => {
+    // Prevent closing dialog during submission
+    if (isSubmitting) {
+      event.preventDefault();
     }
   };
 
@@ -231,7 +250,12 @@ export function EditDialog<TFormValues extends Record<string, any>, TEntity>({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent
+        className="sm:max-w-[425px]"
+        onPointerDownOutside={handleInteractionOutside}
+        onInteractOutside={handleInteractionOutside}
+        onEscapeKeyDown={handleEscapeKeyDown}
+      >
         <DialogHeader>
           <DialogTitle>{t(title)}</DialogTitle>
           <DialogDescription>{t(description)}</DialogDescription>

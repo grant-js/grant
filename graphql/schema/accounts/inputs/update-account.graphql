@@ -1,0 +1,4 @@
+input UpdateAccountInput {
+  name: String
+  type: AccountType
+}

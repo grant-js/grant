@@ -1,9 +1,10 @@
 type User implements Auditable {
   id: ID!
   name: String!
-  email: String!
   roles: [Role!]
   tags: [Tag!]
+  authenticationMethods: [UserAuthenticationMethod!]
+  ownedAccounts: [Account!]
   createdAt: Date!
   updatedAt: Date!
   deletedAt: Date

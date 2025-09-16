@@ -1,0 +1,4 @@
+input AddAccountProjectInput {
+  accountId: ID!
+  projectId: ID!
+}

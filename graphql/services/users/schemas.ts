@@ -4,13 +4,11 @@ import { UserSortableField } from '@/graphql/generated/types';
 
 import {
   idSchema,
-  emailSchema,
   nameSchema,
   sortOrderSchema,
   baseEntitySchema,
   paginatedResponseSchema,
   nonEmptyNameSchema,
-  nonEmptyEmailSchema,
   queryParamsSchema,
   deleteSchema,
 } from '../common/schemas';
@@ -24,13 +22,11 @@ export const userSortInputSchema = z.object({
 });
 
 export const createUserInputSchema = z.object({
-  email: nonEmptyEmailSchema,
   name: nonEmptyNameSchema,
 });
 
 export const updateUserInputSchema = z.object({
-  email: nonEmptyEmailSchema,
-  name: nonEmptyNameSchema,
+  name: nonEmptyNameSchema.nullable().optional(),
 });
 
 export const createUserArgsSchema = z.object({
@@ -52,7 +48,6 @@ export const queryUsersArgsSchema = queryParamsSchema.extend({
 
 export const userSchema = baseEntitySchema.extend({
   name: nameSchema,
-  email: emailSchema,
   roles: z.array(z.any()).nullable().optional(),
   tags: z.array(z.any()).nullable().optional(),
 });

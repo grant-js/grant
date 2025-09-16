@@ -2,7 +2,7 @@ import { gql } from '@apollo/client';
 
 export const GET_PROJECTS = gql`
   query GetProjects(
-    $organizationId: ID!
+    $scope: Scope!
     $page: Int
     $limit: Int
     $sort: ProjectSortInput
@@ -11,7 +11,7 @@ export const GET_PROJECTS = gql`
     $tagIds: [ID!]
   ) {
     projects(
-      organizationId: $organizationId
+      scope: $scope
       page: $page
       limit: $limit
       sort: $sort

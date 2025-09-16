@@ -1,3 +1,5 @@
+import { accountProjects, accountProjectsRelations } from './account-projects/schema';
+import { accounts, accountsRelations } from './accounts/schema';
 import { groupPermissions, groupPermissionsRelations } from './group-permissions/schema';
 import { groupTags, groupTagsRelations } from './group-tags/schema';
 import { groups, groupsRelations } from './groups/schema';
@@ -26,11 +28,20 @@ import { roleGroups, roleGroupsRelations } from './role-groups/schema';
 import { roleTags, roleTagsRelations } from './role-tags/schema';
 import { roles, rolesRelations } from './roles/schema';
 import { tags } from './tags/schema';
+import {
+  userAuthenticationMethods,
+  userAuthenticationMethodsRelations,
+} from './user-authentication-methods/schema';
 import { userRoles, userRolesRelations } from './user-roles/schema';
+import { userSessions, userSessionsRelations } from './user-sessions/schema';
 import { userTags, userTagsRelations } from './user-tags/schema';
 import { users, usersRelations } from './users/schema';
 
+// New authentication entities
+
 export const schema = {
+  accountProjects,
+  accounts,
   groupPermissions,
   groupTags,
   groups,
@@ -56,6 +67,8 @@ export const schema = {
   userRoles,
   userTags,
   users,
+  userAuthenticationMethods,
+  userSessions,
   groupPermissionsRelations,
   groupTagsRelations,
   groupsRelations,
@@ -80,6 +93,10 @@ export const schema = {
   userRolesRelations,
   userTagsRelations,
   usersRelations,
+  accountProjectsRelations,
+  accountsRelations,
+  userAuthenticationMethodsRelations,
+  userSessionsRelations,
 };
 
 export type Schema = typeof schema;

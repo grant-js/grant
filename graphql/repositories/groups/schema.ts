@@ -45,14 +45,5 @@ export type NewGroupModel = typeof groups.$inferInsert;
 export type GroupAuditLogModel = typeof groupAuditLogs.$inferSelect;
 export type NewGroupAuditLogModel = typeof groupAuditLogs.$inferInsert;
 
-export const GroupAuditAction = {
-  CREATE: 'CREATE',
-  UPDATE: 'UPDATE',
-  DELETE: 'DELETE',
-  SOFT_DELETE: 'SOFT_DELETE',
-} as const;
-
-export type GroupAuditActionType = (typeof GroupAuditAction)[keyof typeof GroupAuditAction];
-
 import { groupPermissions } from '../group-permissions/schema';
 import { groupTags } from '../group-tags/schema';

@@ -69,7 +69,7 @@ export class ProjectRepository extends EntityRepository<ProjectModel, Project> {
   }
 
   public async getProjects(
-    params: Omit<QueryProjectsArgs, 'organizationId' | 'tagIds'> & SelectedFields<Project>,
+    params: Omit<QueryProjectsArgs, 'scope' | 'tagIds'> & SelectedFields<Project>,
     transaction?: Transaction
   ): Promise<ProjectPage> {
     const result = await this.query(params, transaction);
@@ -82,7 +82,7 @@ export class ProjectRepository extends EntityRepository<ProjectModel, Project> {
   }
 
   public async createProject(
-    params: Omit<CreateProjectInput, 'organizationId' | 'tagIds'>,
+    params: Omit<CreateProjectInput, 'scope' | 'tagIds'>,
     transaction?: Transaction
   ): Promise<Project> {
     const baseParams: BaseCreateArgs = {
@@ -111,7 +111,7 @@ export class ProjectRepository extends EntityRepository<ProjectModel, Project> {
   }
 
   public async softDeleteProject(
-    params: MutationDeleteProjectArgs,
+    params: Omit<MutationDeleteProjectArgs, 'scope'>,
     transaction?: Transaction
   ): Promise<Project> {
     const baseParams: BaseDeleteArgs = {
@@ -122,7 +122,7 @@ export class ProjectRepository extends EntityRepository<ProjectModel, Project> {
   }
 
   public async hardDeleteProject(
-    params: MutationDeleteProjectArgs,
+    params: Omit<MutationDeleteProjectArgs, 'scope'>,
     transaction?: Transaction
   ): Promise<Project> {
     const baseParams: BaseDeleteArgs = {

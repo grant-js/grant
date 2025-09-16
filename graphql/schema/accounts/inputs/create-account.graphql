@@ -1,0 +1,5 @@
+input CreateAccountInput {
+  name: String!
+  type: AccountType!
+  ownerId: String!
+}

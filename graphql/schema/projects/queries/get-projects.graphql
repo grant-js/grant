@@ -1,6 +1,6 @@
 extend type Query {
   projects(
-    organizationId: ID!
+    scope: Scope!
     page: Int
     limit: Int
     search: String

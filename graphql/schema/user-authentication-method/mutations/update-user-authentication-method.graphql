@@ -1,0 +1,6 @@
+extend type Mutation {
+  updateUserAuthenticationMethod(
+    id: ID!
+    input: UpdateUserAuthenticationMethodInput!
+  ): UserAuthenticationMethod!
+}

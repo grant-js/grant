@@ -1,5 +1,7 @@
 import { DbSchema } from '@/graphql/lib/database/connection';
 
+import { createAccountProjectRepository } from './account-projects';
+import { createAccountRepository } from './accounts';
 import { createGroupPermissionRepository } from './group-permissions';
 import { createGroupTagRepository } from './group-tags';
 import { createGroupRepository } from './groups';
@@ -30,6 +32,8 @@ export type Repositories = ReturnType<typeof createRepositories>;
 
 export function createRepositories(db: DbSchema) {
   return {
+    accountProjectRepository: createAccountProjectRepository(db),
+    accountRepository: createAccountRepository(db),
     groupPermissionRepository: createGroupPermissionRepository(db),
     groupTagRepository: createGroupTagRepository(db),
     groupRepository: createGroupRepository(db),

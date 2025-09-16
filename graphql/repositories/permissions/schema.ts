@@ -44,14 +44,4 @@ export type NewPermissionModel = typeof permissions.$inferInsert;
 export type PermissionAuditLogModel = typeof permissionAuditLogs.$inferSelect;
 export type NewPermissionAuditLogModel = typeof permissionAuditLogs.$inferInsert;
 
-export const PermissionAuditAction = {
-  CREATE: 'CREATE',
-  UPDATE: 'UPDATE',
-  DELETE: 'DELETE',
-  SOFT_DELETE: 'SOFT_DELETE',
-} as const;
-
-export type PermissionAuditActionType =
-  (typeof PermissionAuditAction)[keyof typeof PermissionAuditAction];
-
 import { permissionTags } from '../permission-tags/schema';

@@ -1,0 +1,5 @@
+enum UserAuthenticationMethodProvider {
+  EMAIL
+  GOOGLE
+  GITHUB
+}

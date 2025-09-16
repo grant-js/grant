@@ -61,13 +61,3 @@ export type OrganizationRoleModel = typeof organizationRoles.$inferSelect;
 export type OrganizationRoleInsert = typeof organizationRoles.$inferInsert;
 export type OrganizationRoleAuditLogModel = typeof organizationRolesAuditLogs.$inferSelect;
 export type NewOrganizationRoleAuditLogModel = typeof organizationRolesAuditLogs.$inferInsert;
-
-export const OrganizationRoleAuditAction = {
-  CREATE: 'CREATE',
-  UPDATE: 'UPDATE',
-  DELETE: 'DELETE',
-  SOFT_DELETE: 'SOFT_DELETE',
-} as const;
-
-export type OrganizationRoleAuditActionType =
-  (typeof OrganizationRoleAuditAction)[keyof typeof OrganizationRoleAuditAction];

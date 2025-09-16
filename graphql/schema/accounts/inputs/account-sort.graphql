@@ -1,0 +1,4 @@
+input AccountSortInput {
+  field: AccountSortableField!
+  order: SortOrder!
+}

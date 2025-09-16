@@ -48,16 +48,6 @@ export type NewOrganizationModel = typeof organizations.$inferInsert;
 export type OrganizationAuditLogModel = typeof organizationAuditLogs.$inferSelect;
 export type NewOrganizationAuditLogModel = typeof organizationAuditLogs.$inferInsert;
 
-export const OrganizationAuditAction = {
-  CREATE: 'CREATE',
-  UPDATE: 'UPDATE',
-  DELETE: 'DELETE',
-  SOFT_DELETE: 'SOFT_DELETE',
-} as const;
-
-export type OrganizationAuditActionType =
-  (typeof OrganizationAuditAction)[keyof typeof OrganizationAuditAction];
-
 import { organizationGroups } from '../organization-groups/schema';
 import { organizationPermissions } from '../organization-permissions/schema';
 import { organizationProjects } from '../organization-projects/schema';

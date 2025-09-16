@@ -70,12 +70,3 @@ export type RoleTagModel = typeof roleTags.$inferSelect;
 export type RoleTagInsert = typeof roleTags.$inferInsert;
 export type RoleTagAuditLogModel = typeof roleTagAuditLogs.$inferSelect;
 export type NewRoleTagAuditLogModel = typeof roleTagAuditLogs.$inferInsert;
-
-export const RoleTagAuditAction = {
-  CREATE: 'CREATE',
-  UPDATE: 'UPDATE',
-  DELETE: 'DELETE',
-  SOFT_DELETE: 'SOFT_DELETE',
-} as const;
-
-export type RoleTagAuditActionType = (typeof RoleTagAuditAction)[keyof typeof RoleTagAuditAction];

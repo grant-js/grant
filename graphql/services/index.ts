@@ -2,6 +2,8 @@ import { DbSchema } from '@/graphql/lib/database/connection';
 import { Repositories } from '@/graphql/repositories';
 import { AuthenticatedUser } from '@/graphql/types';
 
+import { createAccountProjectService } from './account-projects';
+import { createAccountService } from './accounts';
 import { createGroupPermissionService } from './group-permissions';
 import { createGroupTagService } from './group-tags';
 import { createGroupService } from './groups';
@@ -36,6 +38,8 @@ export function createServices(
   db: DbSchema
 ) {
   return {
+    accounts: createAccountService(repositories, user, db),
+    accountProjects: createAccountProjectService(repositories, user, db),
     users: createUserService(repositories, user, db),
     roles: createRoleService(repositories, user, db),
     userRoles: createUserRoleService(repositories, user, db),

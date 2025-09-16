@@ -16,7 +16,8 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ProjectSortableField, SortOrder } from '@/graphql/generated/types';
+import { ProjectSortableField, SortOrder, Tenant } from '@/graphql/generated/types';
+import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useProjects } from '@/hooks/projects/useProjects';
 import { useRouter, usePathname } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
@@ -29,18 +30,16 @@ export function ProjectSwitcher({ className }: ProjectSwitcherProps) {
   const t = useTranslations('common');
   const router = useRouter();
   const pathname = usePathname();
+  const scope = useScopeFromParams();
   const params = useParams();
   const [open, setOpen] = React.useState(false);
-  const organizationId = params.organizationId as string;
 
-  // Load all projects for the current organization with limit -1
   const { projects, loading, error } = useProjects({
-    organizationId,
+    scope,
     limit: -1,
     sort: { field: ProjectSortableField.Name, order: SortOrder.Asc },
   });
 
-  // Only show on project pages
   const isProjectPage = !!params.projectId;
 
   if (!isProjectPage) {
@@ -52,9 +51,17 @@ export function ProjectSwitcher({ className }: ProjectSwitcherProps) {
 
   const handleProjectSelect = (projectId: string) => {
     setOpen(false);
-
-    // Redirect to the project page using the new nested structure
-    const newPath = `/dashboard/organizations/${organizationId}/projects/${projectId}`;
+    let newPath;
+    switch (scope.tenant) {
+      case Tenant.Account:
+        newPath = `/dashboard/accounts/${scope.id}/projects/${projectId}`;
+        break;
+      case Tenant.Organization:
+        newPath = `/dashboard/organizations/${scope.id}/projects/${projectId}`;
+        break;
+      default:
+        throw new Error('Invalid scope');
+    }
     if (pathname !== newPath) {
       router.replace(newPath);
     }
@@ -68,7 +75,7 @@ export function ProjectSwitcher({ className }: ProjectSwitcherProps) {
           role="combobox"
           aria-expanded={open}
           className={cn('w-full justify-between', className)}
-          disabled={loading || !organizationId}
+          disabled={loading || !scope}
         >
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <FolderOpen className="h-4 w-4 text-muted-foreground shrink-0" />

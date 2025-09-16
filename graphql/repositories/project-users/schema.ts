@@ -61,11 +61,3 @@ export type ProjectUserModel = typeof projectUsers.$inferSelect;
 export type NewProjectUserModel = typeof projectUsers.$inferInsert;
 export type ProjectUserAuditLogModel = typeof projectUserAuditLogs.$inferSelect;
 export type NewProjectUserAuditLogModel = typeof projectUserAuditLogs.$inferInsert;
-
-export const ProjectUserAuditAction = {
-  CREATE: 'CREATE',
-  DELETE: 'DELETE',
-} as const;
-
-export type ProjectUserAuditActionType =
-  (typeof ProjectUserAuditAction)[keyof typeof ProjectUserAuditAction];

@@ -1,0 +1,7 @@
+input UpdateUserAuthenticationMethodInput {
+  providerId: String
+  providerData: String
+  password: String
+  isVerified: Boolean
+  isPrimary: Boolean
+}

@@ -1,6 +1,5 @@
 input CreateUserInput {
   name: String!
-  email: String!
   tagIds: [ID!]
   roleIds: [ID!]
   scope: Scope!

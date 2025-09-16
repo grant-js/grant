@@ -43,7 +43,6 @@ export const updateProjectParamsSchema = z.object({
 
 export const deleteProjectParamsSchema = deleteSchema.extend({
   id: idSchema,
-  organizationId: idSchema,
 });
 
 export const projectSchema = baseEntitySchema.extend({

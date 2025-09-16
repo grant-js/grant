@@ -62,7 +62,7 @@ export class OrganizationService extends AuditService {
   }
 
   public async getOrganizations(
-    params: Omit<QueryOrganizationsArgs, 'scope'> & SelectedFields<OrganizationModel>,
+    params: QueryOrganizationsArgs & SelectedFields<OrganizationModel>,
     transaction?: Transaction
   ): Promise<OrganizationPage> {
     const context = 'OrganizationService.getOrganizations';
@@ -88,7 +88,7 @@ export class OrganizationService extends AuditService {
   }
 
   public async createOrganization(
-    params: Omit<CreateOrganizationInput, 'scope'>,
+    params: CreateOrganizationInput,
     transaction?: Transaction
   ): Promise<Organization> {
     const context = 'OrganizationService.createOrganization';

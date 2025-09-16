@@ -78,7 +78,7 @@ export class OrganizationRepository extends EntityRepository<OrganizationModel, 
   }
 
   public async getOrganizations(
-    params: Omit<QueryOrganizationsArgs, 'scope'> & SelectedFields<OrganizationModel>,
+    params: QueryOrganizationsArgs & SelectedFields<OrganizationModel>,
     transaction?: Transaction
   ): Promise<OrganizationPage> {
     const result = await this.query(params, transaction);
@@ -90,7 +90,7 @@ export class OrganizationRepository extends EntityRepository<OrganizationModel, 
   }
 
   public async createOrganization(
-    params: Omit<CreateOrganizationInput, 'scope'>,
+    params: CreateOrganizationInput,
     transaction?: Transaction
   ): Promise<Organization> {
     const baseParams: BaseCreateArgs = {

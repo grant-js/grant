@@ -85,7 +85,6 @@ export class UserService extends AuditService {
     const newValues = {
       id: user.id,
       name: user.name,
-      email: user.email,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
@@ -115,7 +114,6 @@ export class UserService extends AuditService {
     const oldValues = {
       id: oldUser.id,
       name: oldUser.name,
-      email: oldUser.email,
       createdAt: oldUser.createdAt,
       updatedAt: oldUser.updatedAt,
     };
@@ -123,7 +121,6 @@ export class UserService extends AuditService {
     const newValues = {
       id: updatedUser.id,
       name: updatedUser.name,
-      email: updatedUser.email,
       createdAt: updatedUser.createdAt,
       updatedAt: updatedUser.updatedAt,
     };
@@ -155,7 +152,6 @@ export class UserService extends AuditService {
     const oldValues = {
       id: oldUser.id,
       name: oldUser.name,
-      email: oldUser.email,
       createdAt: oldUser.createdAt,
       updatedAt: oldUser.updatedAt,
     };

@@ -71,13 +71,3 @@ export type ProjectTagModel = typeof projectTags.$inferSelect;
 export type ProjectTagInsert = typeof projectTags.$inferInsert;
 export type ProjectTagAuditLogModel = typeof projectTagAuditLogs.$inferSelect;
 export type NewProjectTagAuditLogModel = typeof projectTagAuditLogs.$inferInsert;
-
-export const ProjectTagAuditAction = {
-  CREATE: 'CREATE',
-  UPDATE: 'UPDATE',
-  DELETE: 'DELETE',
-  SOFT_DELETE: 'SOFT_DELETE',
-} as const;
-
-export type ProjectTagAuditActionType =
-  (typeof ProjectTagAuditAction)[keyof typeof ProjectTagAuditAction];

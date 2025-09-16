@@ -61,11 +61,3 @@ export type GroupPermissionModel = typeof groupPermissions.$inferSelect;
 export type NewGroupPermissionModel = typeof groupPermissions.$inferInsert;
 export type GroupPermissionAuditLogModel = typeof groupPermissionsAuditLogs.$inferSelect;
 export type NewGroupPermissionAuditLogModel = typeof groupPermissionsAuditLogs.$inferInsert;
-
-export const GroupPermissionAuditAction = {
-  CREATE: 'CREATE',
-  DELETE: 'DELETE',
-} as const;
-
-export type GroupPermissionAuditActionType =
-  (typeof GroupPermissionAuditAction)[keyof typeof GroupPermissionAuditAction];

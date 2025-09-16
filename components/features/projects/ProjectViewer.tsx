@@ -24,7 +24,7 @@ export function ProjectViewer() {
   const setLoading = useProjectsStore((state) => state.setLoading);
 
   const { projects, loading, totalCount } = useProjects({
-    organizationId: scope.id,
+    scope,
     page,
     limit,
     search,

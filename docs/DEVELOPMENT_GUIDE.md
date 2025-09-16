@@ -136,7 +136,7 @@ type Post {
   title: String!
   content: String!
   author: User!
-  createdAt: DateTime!
+  createdAt: Date!
 }
 
 # graphql/schema/posts/queries/get-posts.graphql

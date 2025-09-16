@@ -70,10 +70,3 @@ export type UserTagModel = typeof userTags.$inferSelect;
 export type NewUserTagModel = typeof userTags.$inferInsert;
 export type UserTagAuditLogModel = typeof userTagsAuditLogs.$inferSelect;
 export type NewUserTagAuditLogModel = typeof userTagsAuditLogs.$inferInsert;
-
-export const UserTagAuditAction = {
-  CREATE: 'CREATE',
-  DELETE: 'DELETE',
-} as const;
-
-export type UserTagAuditActionType = (typeof UserTagAuditAction)[keyof typeof UserTagAuditAction];
