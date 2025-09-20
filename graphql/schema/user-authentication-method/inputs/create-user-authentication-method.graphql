@@ -3,7 +3,6 @@ input CreateUserAuthenticationMethodInput {
   provider: UserAuthenticationMethodProvider!
   providerId: String!
   providerData: String
-  password: String
   isVerified: Boolean
   isPrimary: Boolean
 }

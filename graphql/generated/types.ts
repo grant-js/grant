@@ -190,6 +190,9 @@ export type Creatable = {
 export type CreateAccountInput = {
   name: Scalars['String']['input'];
   ownerId: Scalars['String']['input'];
+  provider: UserAuthenticationMethodProvider;
+  providerData: Scalars['String']['input'];
+  providerId: Scalars['String']['input'];
   type: AccountType;
 };
 
@@ -241,7 +244,6 @@ export type CreateTagInput = {
 export type CreateUserAuthenticationMethodInput = {
   isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
   isVerified?: InputMaybe<Scalars['Boolean']['input']>;
-  password?: InputMaybe<Scalars['String']['input']>;
   provider: UserAuthenticationMethodProvider;
   providerData?: InputMaybe<Scalars['String']['input']>;
   providerId: Scalars['String']['input'];
@@ -1243,7 +1245,7 @@ export type UpdateTagInput = {
 export type UpdateUserAuthenticationMethodInput = {
   isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
   isVerified?: InputMaybe<Scalars['Boolean']['input']>;
-  password?: InputMaybe<Scalars['String']['input']>;
+  provider?: InputMaybe<UserAuthenticationMethodProvider>;
   providerData?: InputMaybe<Scalars['String']['input']>;
   providerId?: InputMaybe<Scalars['String']['input']>;
 };

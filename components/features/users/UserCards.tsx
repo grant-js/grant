@@ -55,7 +55,6 @@ export function UserCards() {
             size: 'lg',
           }}
           title={user.name}
-          description={user.email}
           color={user.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor}
           actions={<UserActions user={user} />}
         />

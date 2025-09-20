@@ -35,12 +35,6 @@ export function CreateUserDialog() {
       placeholder: 'form.name',
       type: 'text',
     },
-    {
-      name: 'email',
-      label: 'form.email',
-      placeholder: 'form.email',
-      type: 'email',
-    },
   ];
 
   const relationships: CreateDialogRelationship[] = [
@@ -81,7 +75,6 @@ export function CreateUserDialog() {
     return await createUser({
       scope: scope,
       name: values.name,
-      email: values.email,
       roleIds: values.roleIds,
       tagIds: values.tagIds,
       primaryTagId: values.primaryTagId,
@@ -105,7 +98,6 @@ export function CreateUserDialog() {
       schema={createUserSchema}
       defaultValues={{
         name: '',
-        email: '',
         roleIds: [],
         tagIds: [],
         primaryTagId: '',

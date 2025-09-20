@@ -22,16 +22,10 @@ export function UserSorter() {
     setSort(field, order);
   };
 
-  const fields = [
-    {
-      value: UserSortableField.Name,
-      label: t('sort.name'),
-    },
-    {
-      value: UserSortableField.Email,
-      label: t('sort.email'),
-    },
-  ];
+  const fields = Object.values(UserSortableField).map((field) => ({
+    value: field,
+    label: t(`sort.${field}`),
+  }));
 
   return (
     <Sorter

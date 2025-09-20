@@ -21,7 +21,6 @@ import { editUserSchema, EditUserFormValues } from './types';
 
 const mapUserToFormValues = (user: UserType): EditUserFormValues => ({
   name: user.name,
-  email: user.email,
   roleIds: user.roles?.map((role: Role) => role.id),
   tagIds: user.tags?.map((tag: Tag) => tag.id),
   primaryTagId: user.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
@@ -48,18 +47,10 @@ export function EditUserDialog() {
       type: 'text',
       required: true,
     },
-    {
-      name: 'email',
-      label: 'form.email',
-      placeholder: 'form.email',
-      type: 'email',
-      required: true,
-    },
   ];
 
   const defaultValues = {
     name: '',
-    email: '',
     roleIds: [],
     tagIds: [],
     primaryTagId: '',
@@ -104,7 +95,6 @@ export function EditUserDialog() {
   const handleUpdate = async (userId: string, values: EditUserFormValues) => {
     return await updateUser(userId, {
       name: values.name,
-      email: values.email,
       roleIds: values.roleIds,
       tagIds: values.tagIds,
       primaryTagId: values.primaryTagId,

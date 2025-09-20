@@ -1,4 +1,4 @@
-import { eq, inArray, ilike, or, and, isNull, count, desc, asc } from 'drizzle-orm';
+import { eq, inArray, ilike, or, and, isNull, count, desc, asc, SQL } from 'drizzle-orm';
 
 import { Auditable, Searchable, SortOrder } from '@/graphql/generated/types';
 import { DbSchema } from '@/graphql/lib/database/connection';
@@ -14,9 +14,29 @@ interface BaseSortable<TModel> {
   order: SortOrder;
 }
 
+// New filter types
+export type FilterOperator = 'eq' | 'in' | 'ilike' | 'isNull';
+
+export interface FilterCondition<TModel> {
+  field: keyof TModel;
+  operator: FilterOperator;
+  value?: any;
+}
+
+export interface FilterGroup<TModel> {
+  conditions: (FilterCondition<TModel> | FilterGroup<TModel>)[];
+  logic: 'AND' | 'OR';
+}
+
+export type Filter<TModel> =
+  | FilterCondition<TModel>
+  | FilterGroup<TModel>
+  | (FilterCondition<TModel> | FilterGroup<TModel>)[];
+
 interface BaseQueryArgs<TModel, TEntity> extends Searchable {
   sort?: BaseSortable<TModel> | null;
   requestedFields?: Array<keyof TEntity> | null;
+  filters?: Filter<TModel> | null; // New flexible filter system
 }
 
 interface BasePageResult<T> {
@@ -59,13 +79,15 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
     return dbInstance.query[this.schemaName];
   }
 
-  private where(ids?: string[] | null, search?: string | null) {
+  private where(ids?: string[] | null, search?: string | null, filters?: Filter<TModel> | null) {
     const conditions: any[] = [];
 
+    // Legacy support for ids parameter
     if (ids && ids.length > 0) {
       conditions.push(inArray(this.table.id, ids));
     }
 
+    // Legacy support for search parameter
     if (search && search.trim()) {
       const searchTerm = `%${search.trim()}%`;
       const searchConditions: any[] = [];
@@ -81,9 +103,58 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
       }
     }
 
+    // New flexible filter system
+    if (filters) {
+      const filterCondition = this.buildFilterCondition(filters);
+      if (filterCondition) {
+        conditions.push(filterCondition);
+      }
+    }
+
+    // Always exclude soft-deleted records
     conditions.push(isNull(this.table.deletedAt));
 
     return conditions.length === 1 ? conditions[0] : and(...conditions);
+  }
+
+  private buildFilterCondition(filter: Filter<TModel>): SQL | undefined {
+    // Handle array of conditions/groups
+    if (Array.isArray(filter)) {
+      const conditions = filter
+        .map((f) => this.buildFilterCondition(f))
+        .filter((c): c is SQL => c !== undefined);
+      return conditions.length > 0 ? and(...conditions) : undefined;
+    }
+
+    // Handle filter group
+    if ('conditions' in filter && 'logic' in filter) {
+      const conditions = filter.conditions
+        .map((c) => this.buildFilterCondition(c))
+        .filter((c): c is SQL => c !== undefined);
+      if (conditions.length === 0) return undefined;
+      return filter.logic === 'OR' ? or(...conditions) : and(...conditions);
+    }
+
+    // Handle single filter condition
+    if ('field' in filter && 'operator' in filter) {
+      const column = this.table[filter.field];
+      if (!column) return undefined;
+
+      switch (filter.operator) {
+        case 'eq':
+          return eq(column, filter.value);
+        case 'in':
+          return Array.isArray(filter.value) ? inArray(column, filter.value) : undefined;
+        case 'ilike':
+          return ilike(column, filter.value);
+        case 'isNull':
+          return isNull(column);
+        default:
+          return undefined;
+      }
+    }
+
+    return undefined;
   }
 
   private orderBy(sort?: { field: keyof TModel; order: SortOrder } | null) {
@@ -164,7 +235,7 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
 
     try {
       const withRelations = this.withRelations(requestedFields);
-      const where = this.where(ids, search);
+      const where = this.where(ids, search, params.filters);
       const orderBy = this.orderBy(sort);
       const hasRelations = withRelations && Object.keys(withRelations).length > 0;
       const totalCount = await this.getTotalCount(where);

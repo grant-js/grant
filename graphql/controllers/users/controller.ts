@@ -66,9 +66,9 @@ export class UserController extends ScopeController {
   public async createUser(params: MutationCreateUserArgs): Promise<User> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { input } = params;
-      const { name, email, scope, tagIds, roleIds, primaryTagId } = input;
+      const { name, scope, tagIds, roleIds, primaryTagId } = input;
 
-      const user = await this.services.users.createUser({ name, email }, tx);
+      const user = await this.services.users.createUser({ name }, tx);
       const { id: userId } = user;
       switch (scope.tenant) {
         case Tenant.Organization:

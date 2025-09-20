@@ -1,8 +1,14 @@
-import { eq, and, isNull } from 'drizzle-orm';
+import {
+  CreateUserAuthenticationMethodInput,
+  MutationDeleteUserAuthenticationMethodArgs,
+  MutationUpdateUserAuthenticationMethodArgs,
+  QueryUserAuthenticationMethodsArgs,
+  UserAuthenticationMethod,
+} from '@/graphql/generated/types';
+import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
+import { SelectedFields } from '@/graphql/services/common';
 
-import { UserAuthenticationMethod } from '@/graphql/generated/types';
-
-import { EntityRepository, RelationsConfig } from '../common/EntityRepository';
+import { EntityRepository, RelationsConfig, FilterCondition } from '../common/EntityRepository';
 import { users } from '../users/schema';
 
 import { userAuthenticationMethods, UserAuthenticationMethodModel } from './schema';
@@ -24,88 +30,65 @@ export class UserAuthenticationMethodRepository extends EntityRepository<
     },
   };
 
-  // Custom methods specific to authentication methods
-  async findByProvider(
-    provider: string,
-    providerId: string
-  ): Promise<UserAuthenticationMethodModel | null> {
-    const result = await this.db
-      .select()
-      .from(userAuthenticationMethods)
-      .where(
-        and(
-          eq(userAuthenticationMethods.provider, provider),
-          eq(userAuthenticationMethods.providerId, providerId),
-          isNull(userAuthenticationMethods.deletedAt)
-        )
-      )
-      .limit(1);
+  async getUserAuthenticationMethods(
+    params: QueryUserAuthenticationMethodsArgs & SelectedFields<UserAuthenticationMethod>,
+    transaction?: Transaction
+  ): Promise<UserAuthenticationMethod[]> {
+    const { userId, requestedFields } = params;
 
-    return result[0] || null;
+    const filters: FilterCondition<UserAuthenticationMethodModel>[] = [
+      {
+        field: 'userId',
+        operator: 'eq',
+        value: userId,
+      },
+    ];
+
+    const result = await this.query(
+      {
+        filters,
+        requestedFields,
+        limit: -1,
+      },
+      transaction
+    );
+
+    return result.items;
   }
 
-  async findByUserId(userId: string): Promise<UserAuthenticationMethodModel[]> {
-    return this.db
-      .select()
-      .from(userAuthenticationMethods)
-      .where(
-        and(
-          eq(userAuthenticationMethods.userId, userId),
-          isNull(userAuthenticationMethods.deletedAt)
-        )
-      );
+  async getUserAuthenticationMethod(
+    id: string,
+    transaction?: Transaction
+  ): Promise<UserAuthenticationMethod> {
+    const result = await this.query({ ids: [id], limit: 1 }, transaction);
+    return result.items[0] as UserAuthenticationMethod;
   }
 
-  async findPrimaryByUserId(userId: string): Promise<UserAuthenticationMethodModel | null> {
-    const result = await this.db
-      .select()
-      .from(userAuthenticationMethods)
-      .where(
-        and(
-          eq(userAuthenticationMethods.userId, userId),
-          eq(userAuthenticationMethods.isPrimary, true),
-          isNull(userAuthenticationMethods.deletedAt)
-        )
-      )
-      .limit(1);
-
-    return result[0] || null;
+  async createUserAuthenticationMethod(
+    params: CreateUserAuthenticationMethodInput,
+    transaction?: Transaction
+  ): Promise<UserAuthenticationMethod> {
+    return this.create(params, transaction);
   }
 
-  async setPrimary(id: string, userId: string): Promise<void> {
-    // First, unset all primary methods for this user
-    await this.db
-      .update(userAuthenticationMethods)
-      .set({ isPrimary: false, updatedAt: new Date() })
-      .where(
-        and(
-          eq(userAuthenticationMethods.userId, userId),
-          isNull(userAuthenticationMethods.deletedAt)
-        )
-      );
-
-    // Then set the specified method as primary
-    await this.db
-      .update(userAuthenticationMethods)
-      .set({ isPrimary: true, updatedAt: new Date() })
-      .where(eq(userAuthenticationMethods.id, id));
+  async updateUserAuthenticationMethod(
+    params: MutationUpdateUserAuthenticationMethodArgs,
+    transaction?: Transaction
+  ): Promise<UserAuthenticationMethod> {
+    return this.update(params, transaction);
   }
 
-  async updateLastUsed(id: string): Promise<void> {
-    await this.db
-      .update(userAuthenticationMethods)
-      .set({ lastUsedAt: new Date(), updatedAt: new Date() })
-      .where(eq(userAuthenticationMethods.id, id));
+  async softDeleteUserAuthenticationMethod(
+    params: MutationDeleteUserAuthenticationMethodArgs,
+    transaction?: Transaction
+  ): Promise<UserAuthenticationMethod> {
+    return this.softDelete(params, transaction);
   }
 
-  async verify(id: string): Promise<void> {
-    await this.db
-      .update(userAuthenticationMethods)
-      .set({
-        isVerified: true,
-        verifiedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(userAuthenticationMethods.id, id));
+  async hardDeleteUserAuthenticationMethod(
+    params: MutationDeleteUserAuthenticationMethodArgs,
+    transaction?: Transaction
+  ): Promise<UserAuthenticationMethod> {
+    return this.hardDelete(params, transaction);
   }
 }

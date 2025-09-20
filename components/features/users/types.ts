@@ -4,7 +4,6 @@ import { User } from '@/graphql/generated/types';
 
 export const createUserSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
-  email: z.string().email('Please enter a valid email address'),
   roleIds: z.array(z.string()).optional(),
   tagIds: z.array(z.string()).optional(),
   primaryTagId: z.string().optional(),
@@ -12,7 +11,6 @@ export const createUserSchema = z.object({
 
 export const editUserSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
-  email: z.string().email('Please enter a valid email address'),
   roleIds: z.array(z.string()).optional(),
   tagIds: z.array(z.string()).optional(),
   primaryTagId: z.string().optional(),

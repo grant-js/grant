@@ -24,6 +24,7 @@ import { createRoleGroupRepository } from './role-groups';
 import { createRoleTagRepository } from './role-tags';
 import { createRoleRepository } from './roles';
 import { createTagRepository } from './tags';
+import { createUserAuthenticationMethodRepository } from './user-authentication-methods';
 import { createUserRoleRepository } from './user-roles';
 import { createUserTagRepository } from './user-tags';
 import { createUserRepository } from './users';
@@ -56,6 +57,7 @@ export function createRepositories(db: DbSchema) {
     roleTagRepository: createRoleTagRepository(db),
     roleRepository: createRoleRepository(db),
     tagRepository: createTagRepository(db),
+    userAuthenticationMethodRepository: createUserAuthenticationMethodRepository(db),
     userRoleRepository: createUserRoleRepository(db),
     userTagRepository: createUserTagRepository(db),
     userRepository: createUserRepository(db),

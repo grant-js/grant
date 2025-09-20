@@ -7,6 +7,7 @@ import {
   boolean,
   uniqueIndex,
   index,
+  jsonb,
 } from 'drizzle-orm/pg-core';
 
 import { users } from '../users/schema';
@@ -20,8 +21,7 @@ export const userAuthenticationMethods = pgTable(
       .notNull(),
     provider: varchar('provider', { length: 50 }).notNull(), // 'email', 'google', 'github'
     providerId: varchar('provider_id', { length: 255 }).notNull(), // email address or OAuth provider ID
-    providerData: varchar('provider_data', { length: 2000 }), // JSON: additional provider data
-    passwordHash: varchar('password_hash', { length: 255 }), // Only for email provider
+    providerData: jsonb('provider_data'), // JSON: additional provider data (now properly typed!)
     isVerified: boolean('is_verified').default(false).notNull(),
     verifiedAt: timestamp('verified_at'),
     isPrimary: boolean('is_primary').default(false).notNull(), // One primary method per user
@@ -37,6 +37,8 @@ export const userAuthenticationMethods = pgTable(
     index('user_auth_methods_user_id_idx').on(t.userId),
     index('user_auth_methods_provider_idx').on(t.provider),
     index('user_auth_methods_deleted_at_idx').on(t.deletedAt),
+    // Add GIN index for efficient JSON queries
+    index('user_auth_methods_provider_data_idx').using('gin', t.providerData),
   ]
 );
 

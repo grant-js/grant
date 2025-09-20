@@ -101,13 +101,15 @@ export const paginatedResponseSchema = <T extends z.ZodTypeAny>(itemSchema: T) =
     hasNextPage: z.boolean(),
   });
 
+export const requestedFieldsSchema = z.array(z.string()).nullable().optional();
+
 export const queryParamsSchema = z.object({
   ids: z.array(idSchema).nullable().optional(),
   limit: limitSchema.nullable().optional(),
   page: pageSchema,
   search: searchSchema,
   tagIds: z.array(idSchema).nullable().optional(),
-  requestedFields: z.array(z.string()).nullable().optional(),
+  requestedFields: requestedFieldsSchema,
 });
 
 export const sortableParamsSchema = queryParamsSchema.extend({

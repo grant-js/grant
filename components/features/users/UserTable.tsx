@@ -65,16 +65,6 @@ export function UserTable() {
       render: (user: User) => <span className="text-sm font-medium">{user.name}</span>,
     },
     {
-      key: 'email',
-      header: t('table.email'),
-      width: '250px',
-      render: (user: User) => (
-        <a href={`mailto:${user.email}`} className="text-sm text-primary hover:underline">
-          {user.email}
-        </a>
-      ),
-    },
-    {
       key: 'roles',
       header: t('table.roles'),
       width: '200px',
@@ -100,7 +90,6 @@ export function UserTable() {
     columns: [
       { key: 'avatar', type: 'avatar-only' },
       { key: 'name', type: 'text' },
-      { key: 'email', type: 'text' },
       { key: 'roles', type: 'list' },
       { key: 'tags', type: 'list' },
       { key: 'audit', type: 'audit' },

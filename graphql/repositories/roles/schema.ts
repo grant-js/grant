@@ -1,6 +1,9 @@
 import { relations } from 'drizzle-orm';
 import { pgTable, uuid, varchar, timestamp, index } from 'drizzle-orm/pg-core';
 
+import { roleGroups } from '../role-groups/schema';
+import { roleTags } from '../role-tags/schema';
+
 export const roles = pgTable(
   'roles',
   {

@@ -24,7 +24,7 @@ export function CreateProjectDialog() {
     return createProject({
       name: values.name,
       description: values.description,
-      organizationId: scope.id,
+      scope,
       tagIds: values.tagIds,
       primaryTagId: values.primaryTagId,
     });

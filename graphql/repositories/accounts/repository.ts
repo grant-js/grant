@@ -1,11 +1,9 @@
-import { eq, and, isNull } from 'drizzle-orm';
-
 import {
   Account,
   AccountPage,
   AccountProject,
   AccountSearchableField,
-  MutationCreateAccountArgs,
+  CreateAccountInput,
   MutationDeleteAccountArgs,
   MutationUpdateAccountArgs,
   QueryAccountsArgs,
@@ -55,16 +53,14 @@ export class AccountRepository extends EntityRepository<AccountModel, Account> {
   }
 
   public async createAccount(
-    params: MutationCreateAccountArgs,
+    params: Omit<CreateAccountInput, 'provider' | 'providerId' | 'providerData'>,
     transaction?: Transaction
   ): Promise<Account> {
     const baseParams: BaseCreateArgs = {
-      input: {
-        name: params.input.name,
-        slug: this.generateSlug(params.input.name),
-        ownerId: params.input.ownerId,
-        type: params.input.type,
-      },
+      name: params.name,
+      slug: this.generateSlug(params.name),
+      ownerId: params.ownerId,
+      type: params.type,
     };
     return this.create(baseParams, transaction);
   }
@@ -102,38 +98,5 @@ export class AccountRepository extends EntityRepository<AccountModel, Account> {
       id: params.id,
     };
     return this.hardDelete(baseParams, transaction);
-  }
-
-  async findBySlug(slug: string): Promise<AccountModel | null> {
-    const result = await this.db
-      .select()
-      .from(accounts)
-      .where(and(eq(accounts.slug, slug), isNull(accounts.deletedAt)))
-      .limit(1);
-
-    return result[0] || null;
-  }
-
-  async findByOwnerId(ownerId: string): Promise<AccountModel[]> {
-    return this.db
-      .select()
-      .from(accounts)
-      .where(and(eq(accounts.ownerId, ownerId), isNull(accounts.deletedAt)));
-  }
-
-  async findPersonalAccountByOwnerId(ownerId: string): Promise<AccountModel | null> {
-    const result = await this.db
-      .select()
-      .from(accounts)
-      .where(
-        and(
-          eq(accounts.ownerId, ownerId),
-          eq(accounts.type, 'personal'),
-          isNull(accounts.deletedAt)
-        )
-      )
-      .limit(1);
-
-    return result[0] || null;
   }
 }

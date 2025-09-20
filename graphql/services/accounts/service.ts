@@ -79,7 +79,7 @@ export class AccountService extends AuditService {
   }
 
   public async createAccount(
-    params: CreateAccountInput,
+    params: Omit<CreateAccountInput, 'provider' | 'providerId' | 'providerData'>,
     transaction?: Transaction
   ): Promise<Account> {
     const context = 'AccountService.createAccount';
@@ -87,7 +87,11 @@ export class AccountService extends AuditService {
     const { name, type, ownerId } = validatedParams;
 
     const account = await this.repositories.accountRepository.createAccount(
-      { input: { name, type, ownerId } },
+      {
+        name,
+        type,
+        ownerId,
+      },
       transaction
     );
 
