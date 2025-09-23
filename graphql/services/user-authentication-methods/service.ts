@@ -3,8 +3,8 @@ import { randomBytes } from 'crypto';
 import { hashSync, compareSync } from 'bcrypt';
 
 import {
-  QueryUserAuthenticationMethodsArgs,
-  MutationDeleteUserAuthenticationMethodArgs,
+  GetUserAuthenticationMethodsInput,
+  DeleteUserAuthenticationMethodInput,
   UserAuthenticationMethod,
   CreateUserAuthenticationMethodInput,
   UserAuthenticationMethodProvider,
@@ -68,7 +68,7 @@ export class UserAuthenticationMethodService extends AuditService {
   }
 
   public async getUserAuthenticationMethods(
-    params: QueryUserAuthenticationMethodsArgs & SelectedFields<UserAuthenticationMethod>
+    params: GetUserAuthenticationMethodsInput & SelectedFields<UserAuthenticationMethod>
   ): Promise<UserAuthenticationMethod[]> {
     const context = 'UserAuthenticationMethodService.getUserAuthenticationMethods';
     validateInput(queryUserAuthenticationMethodsArgsSchema, params, context);
@@ -135,7 +135,8 @@ export class UserAuthenticationMethodService extends AuditService {
 
     const updatedUserAuthenticationMethod =
       await this.repositories.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
-        { id, input },
+        id,
+        input,
         transaction
       );
 
@@ -181,7 +182,7 @@ export class UserAuthenticationMethodService extends AuditService {
   }
 
   public async deleteUserAuthenticationMethod(
-    params: Omit<MutationDeleteUserAuthenticationMethodArgs, 'scope'> & DeleteParams,
+    params: Omit<DeleteUserAuthenticationMethodInput, 'scope'> & DeleteParams,
     transaction?: Transaction
   ): Promise<UserAuthenticationMethod> {
     const context = 'UserAuthenticationMethodService.deleteUserAuthenticationMethod';

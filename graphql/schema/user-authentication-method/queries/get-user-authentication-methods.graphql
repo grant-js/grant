@@ -1,5 +1,0 @@
-extend type Query {
-  userAuthenticationMethods(
-    userId: ID!
-  ): [UserAuthenticationMethod!]!
-}

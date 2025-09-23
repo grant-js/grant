@@ -196,6 +196,13 @@ export type CreateAccountInput = {
   type: AccountType;
 };
 
+export type CreateAccountResult = {
+  __typename?: 'CreateAccountResult';
+  accessToken: Scalars['String']['output'];
+  account: Account;
+  refreshToken: Scalars['String']['output'];
+};
+
 export type CreateGroupInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
@@ -269,8 +276,17 @@ export type CreateUserSessionInput = {
   userId: Scalars['ID']['input'];
 };
 
+export type DeleteUserAuthenticationMethodInput = {
+  __typename?: 'DeleteUserAuthenticationMethodInput';
+  id: Scalars['ID']['output'];
+};
+
 export type DeleteUserSessionInput = {
   id: Scalars['ID']['input'];
+};
+
+export type GetUserAuthenticationMethodsInput = {
+  userId: Scalars['ID']['input'];
 };
 
 export type GetUserSessionsInput = {
@@ -376,7 +392,7 @@ export type LoginResponse = {
 export type Mutation = {
   __typename?: 'Mutation';
   _empty?: Maybe<Scalars['String']['output']>;
-  createAccount: Account;
+  createAccount: CreateAccountResult;
   createGroup: Group;
   createOrganization: Organization;
   createPermission: Permission;
@@ -384,7 +400,6 @@ export type Mutation = {
   createRole: Role;
   createTag: Tag;
   createUser: User;
-  createUserAuthenticationMethod: UserAuthenticationMethod;
   deleteAccount: Account;
   deleteGroup: Group;
   deleteOrganization: Organization;
@@ -393,7 +408,6 @@ export type Mutation = {
   deleteRole: Role;
   deleteTag: Tag;
   deleteUser: User;
-  deleteUserAuthenticationMethod: UserAuthenticationMethod;
   login: LoginResponse;
   updateAccount: Account;
   updateGroup: Group;
@@ -403,7 +417,6 @@ export type Mutation = {
   updateRole: Role;
   updateTag: Tag;
   updateUser: User;
-  updateUserAuthenticationMethod: UserAuthenticationMethod;
 };
 
 
@@ -444,11 +457,6 @@ export type MutationCreateTagArgs = {
 
 export type MutationCreateUserArgs = {
   input: CreateUserInput;
-};
-
-
-export type MutationCreateUserAuthenticationMethodArgs = {
-  input: CreateUserAuthenticationMethodInput;
 };
 
 
@@ -495,11 +503,6 @@ export type MutationDeleteTagArgs = {
 export type MutationDeleteUserArgs = {
   id: Scalars['ID']['input'];
   scope: Scope;
-};
-
-
-export type MutationDeleteUserAuthenticationMethodArgs = {
-  id: Scalars['ID']['input'];
 };
 
 
@@ -553,12 +556,6 @@ export type MutationUpdateTagArgs = {
 export type MutationUpdateUserArgs = {
   id: Scalars['ID']['input'];
   input: UpdateUserInput;
-};
-
-
-export type MutationUpdateUserAuthenticationMethodArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdateUserAuthenticationMethodInput;
 };
 
 export type Organization = Auditable & {
@@ -872,7 +869,6 @@ export type Query = {
   projects: ProjectPage;
   roles: RolePage;
   tags: TagPage;
-  userAuthenticationMethods: Array<UserAuthenticationMethod>;
   users: UserPage;
 };
 
@@ -946,11 +942,6 @@ export type QueryTagsArgs = {
   scope: Scope;
   search?: InputMaybe<Scalars['String']['input']>;
   sort?: InputMaybe<TagSortInput>;
-};
-
-
-export type QueryUserAuthenticationMethodsArgs = {
-  userId: Scalars['ID']['input'];
 };
 
 
@@ -1270,6 +1261,7 @@ export type UpdateTagInput = {
 };
 
 export type UpdateUserAuthenticationMethodInput = {
+  id: Scalars['ID']['input'];
   isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
   isVerified?: InputMaybe<Scalars['Boolean']['input']>;
   provider?: InputMaybe<UserAuthenticationMethodProvider>;
@@ -1547,6 +1539,7 @@ export type ResolversTypes = ResolversObject<{
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Creatable: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['Creatable']>;
   CreateAccountInput: CreateAccountInput;
+  CreateAccountResult: ResolverTypeWrapper<CreateAccountResult>;
   CreateGroupInput: CreateGroupInput;
   CreateOrganizationInput: CreateOrganizationInput;
   CreatePermissionInput: CreatePermissionInput;
@@ -1557,7 +1550,9 @@ export type ResolversTypes = ResolversObject<{
   CreateUserInput: CreateUserInput;
   CreateUserSessionInput: CreateUserSessionInput;
   Date: ResolverTypeWrapper<Scalars['Date']['output']>;
+  DeleteUserAuthenticationMethodInput: ResolverTypeWrapper<DeleteUserAuthenticationMethodInput>;
   DeleteUserSessionInput: DeleteUserSessionInput;
+  GetUserAuthenticationMethodsInput: GetUserAuthenticationMethodsInput;
   GetUserSessionsInput: GetUserSessionsInput;
   Group: ResolverTypeWrapper<Group>;
   GroupPage: ResolverTypeWrapper<GroupPage>;
@@ -1697,6 +1692,7 @@ export type ResolversParentTypes = ResolversObject<{
   Boolean: Scalars['Boolean']['output'];
   Creatable: ResolversInterfaceTypes<ResolversParentTypes>['Creatable'];
   CreateAccountInput: CreateAccountInput;
+  CreateAccountResult: CreateAccountResult;
   CreateGroupInput: CreateGroupInput;
   CreateOrganizationInput: CreateOrganizationInput;
   CreatePermissionInput: CreatePermissionInput;
@@ -1707,7 +1703,9 @@ export type ResolversParentTypes = ResolversObject<{
   CreateUserInput: CreateUserInput;
   CreateUserSessionInput: CreateUserSessionInput;
   Date: Scalars['Date']['output'];
+  DeleteUserAuthenticationMethodInput: DeleteUserAuthenticationMethodInput;
   DeleteUserSessionInput: DeleteUserSessionInput;
+  GetUserAuthenticationMethodsInput: GetUserAuthenticationMethodsInput;
   GetUserSessionsInput: GetUserSessionsInput;
   Group: Group;
   GroupPage: GroupPage;
@@ -1846,9 +1844,21 @@ export type CreatableResolvers<ContextType = GraphqlContext, ParentType extends 
   updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
+export type CreateAccountResultResolvers<ContextType = GraphqlContext, ParentType extends ResolversParentTypes['CreateAccountResult'] = ResolversParentTypes['CreateAccountResult']> = ResolversObject<{
+  accessToken?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  account?: Resolver<ResolversTypes['Account'], ParentType, ContextType>;
+  refreshToken?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export interface DateScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['Date'], any> {
   name: 'Date';
 }
+
+export type DeleteUserAuthenticationMethodInputResolvers<ContextType = GraphqlContext, ParentType extends ResolversParentTypes['DeleteUserAuthenticationMethodInput'] = ResolversParentTypes['DeleteUserAuthenticationMethodInput']> = ResolversObject<{
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
 
 export type GroupResolvers<ContextType = GraphqlContext, ParentType extends ResolversParentTypes['Group'] = ResolversParentTypes['Group']> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -1901,7 +1911,7 @@ export type LoginResponseResolvers<ContextType = GraphqlContext, ParentType exte
 
 export type MutationResolvers<ContextType = GraphqlContext, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = ResolversObject<{
   _empty?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  createAccount?: Resolver<ResolversTypes['Account'], ParentType, ContextType, RequireFields<MutationCreateAccountArgs, 'input'>>;
+  createAccount?: Resolver<ResolversTypes['CreateAccountResult'], ParentType, ContextType, RequireFields<MutationCreateAccountArgs, 'input'>>;
   createGroup?: Resolver<ResolversTypes['Group'], ParentType, ContextType, RequireFields<MutationCreateGroupArgs, 'input'>>;
   createOrganization?: Resolver<ResolversTypes['Organization'], ParentType, ContextType, RequireFields<MutationCreateOrganizationArgs, 'input'>>;
   createPermission?: Resolver<ResolversTypes['Permission'], ParentType, ContextType, RequireFields<MutationCreatePermissionArgs, 'input'>>;
@@ -1909,7 +1919,6 @@ export type MutationResolvers<ContextType = GraphqlContext, ParentType extends R
   createRole?: Resolver<ResolversTypes['Role'], ParentType, ContextType, RequireFields<MutationCreateRoleArgs, 'input'>>;
   createTag?: Resolver<ResolversTypes['Tag'], ParentType, ContextType, RequireFields<MutationCreateTagArgs, 'input'>>;
   createUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationCreateUserArgs, 'input'>>;
-  createUserAuthenticationMethod?: Resolver<ResolversTypes['UserAuthenticationMethod'], ParentType, ContextType, RequireFields<MutationCreateUserAuthenticationMethodArgs, 'input'>>;
   deleteAccount?: Resolver<ResolversTypes['Account'], ParentType, ContextType, RequireFields<MutationDeleteAccountArgs, 'id'>>;
   deleteGroup?: Resolver<ResolversTypes['Group'], ParentType, ContextType, RequireFields<MutationDeleteGroupArgs, 'id' | 'scope'>>;
   deleteOrganization?: Resolver<ResolversTypes['Organization'], ParentType, ContextType, RequireFields<MutationDeleteOrganizationArgs, 'id'>>;
@@ -1918,7 +1927,6 @@ export type MutationResolvers<ContextType = GraphqlContext, ParentType extends R
   deleteRole?: Resolver<ResolversTypes['Role'], ParentType, ContextType, RequireFields<MutationDeleteRoleArgs, 'id' | 'scope'>>;
   deleteTag?: Resolver<ResolversTypes['Tag'], ParentType, ContextType, RequireFields<MutationDeleteTagArgs, 'id' | 'scope'>>;
   deleteUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationDeleteUserArgs, 'id' | 'scope'>>;
-  deleteUserAuthenticationMethod?: Resolver<ResolversTypes['UserAuthenticationMethod'], ParentType, ContextType, RequireFields<MutationDeleteUserAuthenticationMethodArgs, 'id'>>;
   login?: Resolver<ResolversTypes['LoginResponse'], ParentType, ContextType, RequireFields<MutationLoginArgs, 'input'>>;
   updateAccount?: Resolver<ResolversTypes['Account'], ParentType, ContextType, RequireFields<MutationUpdateAccountArgs, 'id' | 'input'>>;
   updateGroup?: Resolver<ResolversTypes['Group'], ParentType, ContextType, RequireFields<MutationUpdateGroupArgs, 'id' | 'input'>>;
@@ -1928,7 +1936,6 @@ export type MutationResolvers<ContextType = GraphqlContext, ParentType extends R
   updateRole?: Resolver<ResolversTypes['Role'], ParentType, ContextType, RequireFields<MutationUpdateRoleArgs, 'id' | 'input'>>;
   updateTag?: Resolver<ResolversTypes['Tag'], ParentType, ContextType, RequireFields<MutationUpdateTagArgs, 'id' | 'input'>>;
   updateUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationUpdateUserArgs, 'id' | 'input'>>;
-  updateUserAuthenticationMethod?: Resolver<ResolversTypes['UserAuthenticationMethod'], ParentType, ContextType, RequireFields<MutationUpdateUserAuthenticationMethodArgs, 'id' | 'input'>>;
 }>;
 
 export type OrganizationResolvers<ContextType = GraphqlContext, ParentType extends ResolversParentTypes['Organization'] = ResolversParentTypes['Organization']> = ResolversObject<{
@@ -2158,7 +2165,6 @@ export type QueryResolvers<ContextType = GraphqlContext, ParentType extends Reso
   projects?: Resolver<ResolversTypes['ProjectPage'], ParentType, ContextType, RequireFields<QueryProjectsArgs, 'scope'>>;
   roles?: Resolver<ResolversTypes['RolePage'], ParentType, ContextType, RequireFields<QueryRolesArgs, 'scope'>>;
   tags?: Resolver<ResolversTypes['TagPage'], ParentType, ContextType, RequireFields<QueryTagsArgs, 'scope'>>;
-  userAuthenticationMethods?: Resolver<Array<ResolversTypes['UserAuthenticationMethod']>, ParentType, ContextType, RequireFields<QueryUserAuthenticationMethodsArgs, 'userId'>>;
   users?: Resolver<ResolversTypes['UserPage'], ParentType, ContextType, RequireFields<QueryUsersArgs, 'scope'>>;
 }>;
 
@@ -2325,7 +2331,9 @@ export type Resolvers<ContextType = GraphqlContext> = ResolversObject<{
   AccountProject?: AccountProjectResolvers<ContextType>;
   Auditable?: AuditableResolvers<ContextType>;
   Creatable?: CreatableResolvers<ContextType>;
+  CreateAccountResult?: CreateAccountResultResolvers<ContextType>;
   Date?: GraphQLScalarType;
+  DeleteUserAuthenticationMethodInput?: DeleteUserAuthenticationMethodInputResolvers<ContextType>;
   Group?: GroupResolvers<ContextType>;
   GroupPage?: GroupPageResolvers<ContextType>;
   GroupPermission?: GroupPermissionResolvers<ContextType>;

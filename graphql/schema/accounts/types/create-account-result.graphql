@@ -1,0 +1,5 @@
+type CreateAccountResult {
+  account: Account!
+  accessToken: String!
+  refreshToken: String!
+}

@@ -9,6 +9,7 @@ import {
   UserAuthenticationMethodProvider,
   Tenant,
   AccountType,
+  CreateAccountResult,
 } from '@/graphql/generated/types';
 import { DbSchema } from '@/graphql/lib/database/connection';
 import { Transaction, TransactionManager } from '@/graphql/lib/transactions/TransactionManager';
@@ -45,7 +46,7 @@ export class AccountController extends ScopeController {
 
   public async createAccount(
     params: Omit<CreateAccountInput, 'ownerId'>
-  ): Promise<{ account: Account; accessToken: string; refreshToken: string }> {
+  ): Promise<CreateAccountResult> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { name, type, provider, providerId, providerData: providerDataString } = params;
 

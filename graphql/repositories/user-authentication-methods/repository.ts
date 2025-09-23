@@ -1,15 +1,20 @@
 import {
   CreateUserAuthenticationMethodInput,
-  MutationDeleteUserAuthenticationMethodArgs,
-  MutationUpdateUserAuthenticationMethodArgs,
-  QueryUserAuthenticationMethodsArgs,
+  DeleteUserAuthenticationMethodInput,
+  UpdateUserAuthenticationMethodInput,
+  GetUserAuthenticationMethodsInput,
   User,
   UserAuthenticationMethod,
 } from '@/graphql/generated/types';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { SelectedFields } from '@/graphql/services/common';
 
-import { EntityRepository, RelationsConfig, FilterCondition } from '../common/EntityRepository';
+import {
+  EntityRepository,
+  RelationsConfig,
+  FilterCondition,
+  BaseUpdateArgs,
+} from '../common/EntityRepository';
 import { users } from '../users/schema';
 
 import { userAuthenticationMethods, UserAuthenticationMethodModel } from './schema';
@@ -31,7 +36,7 @@ export class UserAuthenticationMethodRepository extends EntityRepository<
   };
 
   async getUserAuthenticationMethods(
-    params: QueryUserAuthenticationMethodsArgs & SelectedFields<UserAuthenticationMethod>,
+    params: GetUserAuthenticationMethodsInput & SelectedFields<UserAuthenticationMethod>,
     transaction?: Transaction
   ): Promise<UserAuthenticationMethod[]> {
     const { userId, requestedFields } = params;
@@ -74,21 +79,27 @@ export class UserAuthenticationMethodRepository extends EntityRepository<
   }
 
   async updateUserAuthenticationMethod(
-    params: MutationUpdateUserAuthenticationMethodArgs,
+    id: string,
+    input: UpdateUserAuthenticationMethodInput,
     transaction?: Transaction
   ): Promise<UserAuthenticationMethod> {
-    return this.update(params, transaction);
+    const baseUpdateArgs: BaseUpdateArgs = {
+      id,
+      input,
+    };
+
+    return this.update(baseUpdateArgs, transaction);
   }
 
   async softDeleteUserAuthenticationMethod(
-    params: MutationDeleteUserAuthenticationMethodArgs,
+    params: DeleteUserAuthenticationMethodInput,
     transaction?: Transaction
   ): Promise<UserAuthenticationMethod> {
     return this.softDelete(params, transaction);
   }
 
   async hardDeleteUserAuthenticationMethod(
-    params: MutationDeleteUserAuthenticationMethodArgs,
+    params: DeleteUserAuthenticationMethodInput,
     transaction?: Transaction
   ): Promise<UserAuthenticationMethod> {
     return this.hardDelete(params, transaction);

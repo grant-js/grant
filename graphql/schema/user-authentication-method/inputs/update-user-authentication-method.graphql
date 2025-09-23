@@ -1,4 +1,5 @@
 input UpdateUserAuthenticationMethodInput {
+  id: ID!
   providerId: String
   provider: UserAuthenticationMethodProvider
   providerData: String

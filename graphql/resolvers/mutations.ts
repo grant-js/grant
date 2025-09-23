@@ -1,3 +1,4 @@
+import * as accountMutations from './accounts/mutations';
 import * as authMutations from './auth/mutations';
 import * as groupMutations from './groups/mutations';
 import * as organizationMutations from './organizations/mutations';
@@ -8,6 +9,9 @@ import * as tagMutations from './tags/mutations';
 import * as userMutations from './users/mutations';
 export const Mutation = {
   login: authMutations.login,
+  createAccount: accountMutations.createAccount,
+  updateAccount: accountMutations.updateAccount,
+  deleteAccount: accountMutations.deleteAccount,
   createUser: userMutations.createUser,
   updateUser: userMutations.updateUser,
   deleteUser: userMutations.deleteUser,
