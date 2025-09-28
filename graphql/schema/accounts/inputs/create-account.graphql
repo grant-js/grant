@@ -4,5 +4,5 @@ input CreateAccountInput {
   ownerId: String!
   provider: UserAuthenticationMethodProvider!
   providerId: String!
-  providerData: String!
+  providerData: JSON!
 }

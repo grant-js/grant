@@ -47,6 +47,15 @@ interface Otp {
   validUntil: number;
 }
 
+// Type conversion utility for handling JSON fields
+function convertProviderDataForGraphQL(method: UserAuthenticationMethod): UserAuthenticationMethod {
+  return {
+    ...method,
+    // Ensure providerData is properly typed for GraphQL
+    providerData: method.providerData as Record<string, unknown> | null,
+  };
+}
+
 export class UserAuthenticationMethodService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
@@ -67,6 +76,28 @@ export class UserAuthenticationMethodService extends AuditService {
     return method;
   }
 
+  public async getUserAuthenticationMethodByProvider(
+    provider: UserAuthenticationMethodProvider,
+    providerId: string,
+    providerData?: Record<string, unknown>,
+    transaction?: Transaction
+  ): Promise<UserAuthenticationMethod> {
+    const method =
+      await this.repositories.userAuthenticationMethodRepository.findByProviderAndProviderId(
+        provider,
+        providerId,
+        providerData,
+        transaction
+      );
+
+    if (!method) {
+      throw new Error('User authentication method not found');
+    }
+
+    // Convert the result to ensure proper JSON typing
+    return convertProviderDataForGraphQL(method);
+  }
+
   public async getUserAuthenticationMethods(
     params: GetUserAuthenticationMethodsInput & SelectedFields<UserAuthenticationMethod>
   ): Promise<UserAuthenticationMethod[]> {
@@ -77,9 +108,15 @@ export class UserAuthenticationMethodService extends AuditService {
         params
       );
 
-    return result.map((method: UserAuthenticationMethod) =>
-      validateOutput(createDynamicSingleSchema(userAuthenticationMethodSchema), method, context)
-    );
+    // Convert all results to ensure proper JSON typing
+    return result.map((method: UserAuthenticationMethod) => {
+      const converted = convertProviderDataForGraphQL(method);
+      return validateOutput(
+        createDynamicSingleSchema(userAuthenticationMethodSchema),
+        converted,
+        context
+      );
+    });
   }
 
   public async createUserAuthenticationMethod(
@@ -91,6 +128,8 @@ export class UserAuthenticationMethodService extends AuditService {
     const context = 'UserAuthenticationMethodService.createUserAuthenticationMethod';
 
     validateInput(createUserAuthenticationMethodInputSchema, params, context);
+
+    await this.validateProviderUniqueness(params.provider, params.providerId, transaction);
 
     const userAuthenticationMethod =
       await this.repositories.userAuthenticationMethodRepository.createUserAuthenticationMethod(
@@ -255,7 +294,7 @@ export class UserAuthenticationMethodService extends AuditService {
     providerData: Record<string, unknown>,
     context: string
   ): ProcessedProvider {
-    const { password } = providerData;
+    const { password, action } = providerData;
     if (!password || typeof password !== 'string') {
       throw new Error('Password is required and must be a string');
     }
@@ -266,13 +305,25 @@ export class UserAuthenticationMethodService extends AuditService {
     const validatedPassword = validateInput(passwordPolicySchema, password, context);
     const hashedPassword = this.hashPassword(validatedPassword);
     const otp = this.generateOtp();
-    return {
-      providerData: {
-        otp,
-        hashedPassword,
-      },
-      isVerified: false,
-    };
+    switch (action) {
+      case 'login':
+        return {
+          providerData: {
+            password,
+          },
+          isVerified: false,
+        };
+      case 'signup':
+        return {
+          providerData: {
+            otp,
+            hashedPassword,
+          },
+          isVerified: false,
+        };
+      default:
+        throw new Error('Invalid action');
+    }
   }
 
   private processGoogleProvider(
@@ -293,24 +344,67 @@ export class UserAuthenticationMethodService extends AuditService {
     return { providerData, isVerified: false };
   }
 
-  public async processProvider(
+  private async findByProviderAndProviderId(
     provider: UserAuthenticationMethodProvider,
     providerId: string,
-    providerDataString: string
-  ): Promise<ProcessedProvider> {
-    const context = 'UserAuthenticationMethodService.parseProviderData';
+    transaction?: Transaction
+  ): Promise<UserAuthenticationMethod | null> {
+    const context = 'UserAuthenticationMethodService.findByProviderAndProviderId';
+
     validateInput(
-      parseProviderDataSchema,
-      { providerId, provider, providerData: providerDataString },
+      parseProviderDataSchema.pick({ provider: true, providerId: true }),
+      { provider, providerId },
       context
     );
 
-    let providerData;
+    const result =
+      await this.repositories.userAuthenticationMethodRepository.findByProviderAndProviderId(
+        provider,
+        providerId,
+        undefined,
+        transaction
+      );
 
-    try {
-      providerData = JSON.parse(providerDataString);
-    } catch {
-      throw new Error('Invalid provider data');
+    if (result) {
+      return validateOutput(
+        createDynamicSingleSchema(userAuthenticationMethodSchema),
+        result,
+        context
+      );
+    }
+
+    return null;
+  }
+
+  private async validateProviderUniqueness(
+    provider: UserAuthenticationMethodProvider,
+    providerId: string,
+    transaction?: Transaction
+  ): Promise<void> {
+    const existingMethod = await this.findByProviderAndProviderId(
+      provider,
+      providerId,
+      transaction
+    );
+
+    if (existingMethod) {
+      throw new Error(
+        `Duplicate authentication method: A user with provider '${provider}' and identifier '${providerId}' already exists. Each provider-identifier combination must be unique.`
+      );
+    }
+  }
+
+  public async processProvider(
+    provider: UserAuthenticationMethodProvider,
+    providerId: string,
+    providerData: Record<string, unknown>
+  ): Promise<ProcessedProvider> {
+    const context = 'UserAuthenticationMethodService.processProvider';
+    validateInput(parseProviderDataSchema, { providerId, provider, providerData }, context);
+
+    // providerData is now a direct JSON object, no need to parse
+    if (!providerData || typeof providerData !== 'object') {
+      throw new Error('Invalid provider data: must be a valid JSON object');
     }
 
     switch (provider) {

@@ -69,6 +69,46 @@ export class UserAuthenticationMethodRepository extends EntityRepository<
     return result.items[0] as UserAuthenticationMethod;
   }
 
+  async findByProviderAndProviderId(
+    provider: string,
+    providerId: string,
+    providerData?: Record<string, unknown>,
+    transaction?: Transaction
+  ): Promise<UserAuthenticationMethod | null> {
+    const filters: FilterCondition<UserAuthenticationMethodModel>[] = [
+      {
+        field: 'provider',
+        operator: 'eq',
+        value: provider,
+      },
+      {
+        field: 'providerId',
+        operator: 'eq',
+        value: providerId,
+      },
+    ];
+
+    if (providerData) {
+      Object.entries(providerData).forEach(([key, value]) => {
+        filters.push({
+          field: `providerData.${key}` as keyof UserAuthenticationMethodModel,
+          operator: 'eq',
+          value,
+        });
+      });
+    }
+
+    const result = await this.query(
+      {
+        filters,
+        limit: 1,
+      },
+      transaction
+    );
+
+    return result.items[0] || null;
+  }
+
   async createUserAuthenticationMethod(
     params: Omit<CreateUserAuthenticationMethodInput, 'providerData'> & {
       providerData?: Record<string, unknown>;

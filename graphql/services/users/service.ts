@@ -53,11 +53,12 @@ export class UserService extends AuditService {
   }
 
   public async getUsers(
-    params: Omit<QueryUsersArgs, 'scope'> & SelectedFields<User>
+    params: Omit<QueryUsersArgs, 'scope'> & SelectedFields<User>,
+    transaction?: Transaction
   ): Promise<UserPage> {
     const context = 'UserService.getUsers';
     validateInput(queryUsersArgsSchema, params, context);
-    const result = await this.repositories.userRepository.getUsers(params);
+    const result = await this.repositories.userRepository.getUsers(params, transaction);
 
     const transformedResult = {
       items: result.users,

@@ -7,6 +7,8 @@ import {
   CreateUserSessionInput,
   Tenant,
   UpdateUserSessionInput,
+  GetUserSessionsInput,
+  UserSessionPage,
 } from '@/graphql/generated/types';
 import { DbSchema } from '@/graphql/lib/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
@@ -19,7 +21,7 @@ import {
 } from '@/graphql/resolvers/auth/constants';
 import { AuthenticatedUser } from '@/graphql/types';
 
-import { AuditService, validateInput, validateOutput } from '../common';
+import { AuditService, SelectedFields, validateInput, validateOutput } from '../common';
 
 import {
   userSessionSchema,
@@ -56,8 +58,8 @@ export class UserSessionService extends AuditService {
     return new Date(from + REFRESH_TOKEN_EXPIRATION_DAYS * 24 * 60 * 60 * 1000);
   }
 
-  private decodeJwt(jwt: string): JwtPayload {
-    const decoded = verify(jwt, JWT_SECRET);
+  private decodeJwt(jwt: string, ignoreExpiration: boolean = false): JwtPayload {
+    const decoded = verify(jwt, JWT_SECRET, { ignoreExpiration });
     if (!decoded) {
       throw new Error('Invalid token');
     }
@@ -66,9 +68,10 @@ export class UserSessionService extends AuditService {
 
   private async getSessionFromTokens(
     accessToken: string,
-    refreshToken?: string
+    refreshToken?: string,
+    ignoreExpired: boolean = false
   ): Promise<UserSession> {
-    const decoded = this.decodeJwt(accessToken);
+    const decoded = this.decodeJwt(accessToken, ignoreExpired);
 
     const userId = decoded.sub;
     const scope = decoded.aud as string;
@@ -112,6 +115,30 @@ export class UserSessionService extends AuditService {
     return existingUserSessions.userSessions[0];
   }
 
+  public async getUserSessions(
+    params: GetUserSessionsInput & SelectedFields<UserSession>,
+    transaction?: Transaction
+  ): Promise<UserSessionPage> {
+    return this.repositories.userSessionRepository.getUserSessions(params, transaction);
+  }
+
+  public signSession(session: UserSession): CreateSessionResult {
+    const context = 'UserSessionService.signSession';
+    const validatedSession = validateInput(userSessionSchema, session, context);
+    const { userId, scopeTenant, scopeId } = validatedSession;
+    const sub = userId;
+    const aud = `${scopeTenant}:${scopeId}`;
+    const iat = Math.floor(Date.now() / 1000); // in seconds
+    const exp = Math.floor(this.getAccessTokenExpirationDate(Date.now()).getTime() / 1000); // in seconds
+
+    const jwtPayload: JwtPayload = { sub, aud, exp, iat };
+
+    const accessToken = sign(jwtPayload, JWT_SECRET);
+    const refreshToken = session.token;
+
+    return validateOutput(sessionResultSchema, { accessToken, refreshToken }, context);
+  }
+
   public async createSession(
     params: Omit<CreateUserSessionInput, 'expiresAt' | 'token'>,
     transaction?: Transaction
@@ -138,18 +165,7 @@ export class UserSessionService extends AuditService {
       transaction
     );
 
-    // JWT Claims
-    const sub = userId;
-    const aud = `${validatedParams.scopeTenant}:${validatedParams.scopeId}`;
-    const iat = Math.floor(now / 1000); // in seconds
-    const exp = Math.floor(this.getAccessTokenExpirationDate(now).getTime() / 1000); // in seconds
-
-    const jwtPayload: JwtPayload = { sub, aud, exp, iat };
-
-    const accessToken = sign(jwtPayload, JWT_SECRET);
-    const refreshToken = session.token;
-
-    return validateOutput(sessionResultSchema, { accessToken, refreshToken }, context);
+    return this.signSession(session);
   }
 
   public async validateAccessToken(accessToken: string): Promise<boolean> {
@@ -179,7 +195,7 @@ export class UserSessionService extends AuditService {
     const context = 'UserSessionService.refreshSession';
     validateInput(refreshSessionSchema, { accessToken, refreshToken }, context);
 
-    const currentSession = await this.getSessionFromTokens(accessToken, refreshToken);
+    const currentSession = await this.getSessionFromTokens(accessToken, refreshToken, true);
 
     await this.revokeSession(currentSession.id, transaction);
 

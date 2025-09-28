@@ -1,4 +1,5 @@
 scalar Date
+scalar JSON
 
 interface Searchable {
   page: Int

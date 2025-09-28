@@ -3,15 +3,13 @@ import { gql } from '@apollo/client';
 export const LOGIN = gql`
   mutation Login($input: LoginInput!) {
     login(input: $input) {
-      token
-      user {
+      accessToken
+      refreshToken
+      accounts {
         id
         name
-        email
-        roles {
-          id
-          name
-        }
+        slug
+        type
       }
     }
   }

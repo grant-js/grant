@@ -47,7 +47,6 @@ export const queryUserSessionsArgsSchema = z.object({
 
 export const userSessionSchema = baseEntitySchema.extend({
   userId: idSchema,
-  authMethodId: idSchema,
   token: z.string(),
   scopeTenant: tenantSchema,
   scopeId: idSchema,

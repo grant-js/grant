@@ -32,7 +32,14 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 const LOGIN_MUTATION = gql`
   mutation Login($input: LoginInput!) {
     login(input: $input) {
-      token
+      accessToken
+      refreshToken
+      accounts {
+        id
+        name
+        slug
+        type
+      }
     }
   }
 `;
@@ -61,14 +68,22 @@ export default function LoginPage() {
       const { data } = await login({
         variables: {
           input: {
-            email: values.email,
-            password: values.password,
+            provider: 'email',
+            providerId: values.email,
+            providerData: {
+              password: values.password,
+              action: 'login',
+            },
           },
         },
       });
 
-      if (data?.login?.token) {
-        setStoredToken(data.login.token);
+      if (data?.login?.accessToken) {
+        // Store both tokens
+        setStoredToken(data.login.accessToken);
+        // You might want to store refreshToken separately if needed
+        // localStorage.setItem('refreshToken', data.login.refreshToken);
+
         toast.success(t('login.success'));
         const redirectTo = from.startsWith(`/${locale}`) ? from : `/${locale}${from}`;
         window.location.href = redirectTo;

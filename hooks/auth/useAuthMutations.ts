@@ -2,7 +2,7 @@ import { useMutation } from '@apollo/client';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import { LoginResponse } from '@/graphql/generated/types';
+import { LoginResponse, UserAuthenticationMethodProvider } from '@/graphql/generated/types';
 
 import { LOGIN, LOGOUT } from './mutations';
 
@@ -20,7 +20,16 @@ export function useAuthMutations() {
   const handleLogin = async (input: LoginInput) => {
     try {
       const result = await login({
-        variables: { input },
+        variables: {
+          input: {
+            provider: UserAuthenticationMethodProvider.Email,
+            providerId: input.email,
+            providerData: {
+              password: input.password,
+              action: 'login',
+            },
+          },
+        },
       });
 
       toast.success(t('notifications.loginSuccess'));

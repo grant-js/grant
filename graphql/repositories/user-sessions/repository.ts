@@ -30,7 +30,7 @@ export class UserSessionRepository extends EntityRepository<UserSessionModel, Us
   protected table = userSessions;
   protected schemaName = 'userSessions' as const;
   protected searchFields: Array<keyof UserSessionModel> = Object.values(UserSessionSearchableField);
-  protected defaultSortField: keyof UserSessionModel = 'createdAt';
+  protected defaultSortField: keyof UserSessionModel = 'lastUsedAt';
   protected relations: RelationsConfig<UserSession> = {
     user: {
       field: 'user',

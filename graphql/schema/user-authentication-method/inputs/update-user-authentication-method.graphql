@@ -2,7 +2,7 @@ input UpdateUserAuthenticationMethodInput {
   id: ID!
   providerId: String
   provider: UserAuthenticationMethodProvider
-  providerData: String
+  providerData: JSON
   isVerified: Boolean
   isPrimary: Boolean
 }

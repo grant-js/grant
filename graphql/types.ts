@@ -1,15 +1,13 @@
-import { GraphQLResolveInfo } from 'graphql';
-
-import { Providers } from './config/providers/interface';
 import { Controllers } from './controllers';
+
+// Backward compatibility alias for generated types
+export type GraphqlContext = {
+  user: AuthenticatedUser | null;
+  controllers: Controllers;
+};
 
 export interface AuthenticatedUser {
   id: string;
-  sub: string;
-}
-
-export interface GraphqlContext {
-  providers: Providers;
-  controllers: Controllers;
-  info?: GraphQLResolveInfo;
+  name: string;
+  email: string;
 }

@@ -4,7 +4,7 @@ type UserAuthenticationMethod implements Auditable {
   user: User!
   provider: UserAuthenticationMethodProvider!
   providerId: String!
-  providerData: String
+  providerData: JSON
   isVerified: Boolean!
   isPrimary: Boolean!
   lastUsedAt: Date

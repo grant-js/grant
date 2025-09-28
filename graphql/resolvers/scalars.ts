@@ -1,36 +1,39 @@
-import { GraphQLScalarType, Kind } from 'graphql';
+import { GraphQLScalarType, Kind, GraphQLError } from 'graphql';
+import { GraphQLJSON } from 'graphql-type-json';
 
-export const DateScalar = new GraphQLScalarType({
-  name: 'Date',
-  description: 'Date custom scalar type that accepts both Date objects and ISO strings',
-
-  // Serialize: Return Date object or convert string to Date
-  serialize(value: unknown): Date {
-    if (value instanceof Date) {
-      return value;
-    }
-    if (typeof value === 'string') {
-      return new Date(value);
-    }
-    throw new Error('GraphQL Date Scalar serializer expected a `Date` object or ISO string');
-  },
-
-  // ParseValue: Convert string from GraphQL variables to Date object
-  parseValue(value: unknown): Date {
-    if (typeof value === 'string') {
-      return new Date(value);
-    }
-    if (value instanceof Date) {
-      return value;
-    }
-    throw new Error('GraphQL Date Scalar parser expected a `string` or `Date`');
-  },
-
-  // ParseL teral: Convert AST literal to Date object
-  parseLiteral(ast): Date | null {
-    if (ast.kind === Kind.STRING) {
-      return new Date(ast.value);
-    }
-    return null;
-  },
-});
+export const resolvers = {
+  Date: new GraphQLScalarType({
+    name: 'Date',
+    description: 'Date custom scalar type',
+    serialize(value: unknown): string {
+      if (value instanceof Date) {
+        return value.toISOString();
+      }
+      if (typeof value === 'string') {
+        return new Date(value).toISOString();
+      }
+      throw new GraphQLError(`Value is not a valid Date: ${value}`);
+    },
+    parseValue(value: unknown): Date {
+      if (typeof value === 'string') {
+        const date = new Date(value);
+        if (isNaN(date.getTime())) {
+          throw new GraphQLError(`Value is not a valid Date: ${value}`);
+        }
+        return date;
+      }
+      throw new GraphQLError(`Value is not a valid Date: ${value}`);
+    },
+    parseLiteral(ast): Date {
+      if (ast.kind === Kind.STRING) {
+        const date = new Date(ast.value);
+        if (isNaN(date.getTime())) {
+          throw new GraphQLError(`Value is not a valid Date: ${ast.value}`);
+        }
+        return date;
+      }
+      throw new GraphQLError(`Can only parse strings to dates but got a: ${ast.kind}`);
+    },
+  }),
+  JSON: GraphQLJSON,
+};

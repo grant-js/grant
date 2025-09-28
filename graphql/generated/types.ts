@@ -16,6 +16,7 @@ export type Scalars = {
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
   Date: { input: Date; output: Date; }
+  JSON: { input: any; output: any; }
 };
 
 export type Account = Auditable & {
@@ -191,7 +192,7 @@ export type CreateAccountInput = {
   name: Scalars['String']['input'];
   ownerId: Scalars['String']['input'];
   provider: UserAuthenticationMethodProvider;
-  providerData: Scalars['String']['input'];
+  providerData: Scalars['JSON']['input'];
   providerId: Scalars['String']['input'];
   type: AccountType;
 };
@@ -252,7 +253,7 @@ export type CreateUserAuthenticationMethodInput = {
   isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
   isVerified?: InputMaybe<Scalars['Boolean']['input']>;
   provider: UserAuthenticationMethodProvider;
-  providerData?: InputMaybe<Scalars['String']['input']>;
+  providerData: Scalars['JSON']['input'];
   providerId: Scalars['String']['input'];
   userId: Scalars['String']['input'];
 };
@@ -380,13 +381,16 @@ export type GroupTagTagArgs = {
 };
 
 export type LoginInput = {
-  email: Scalars['String']['input'];
-  password: Scalars['String']['input'];
+  provider: UserAuthenticationMethodProvider;
+  providerData: Scalars['JSON']['input'];
+  providerId: Scalars['String']['input'];
 };
 
 export type LoginResponse = {
   __typename?: 'LoginResponse';
-  token: Scalars['String']['output'];
+  accessToken: Scalars['String']['output'];
+  accounts: Array<Account>;
+  refreshToken: Scalars['String']['output'];
 };
 
 export type Mutation = {
@@ -1265,7 +1269,7 @@ export type UpdateUserAuthenticationMethodInput = {
   isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
   isVerified?: InputMaybe<Scalars['Boolean']['input']>;
   provider?: InputMaybe<UserAuthenticationMethodProvider>;
-  providerData?: InputMaybe<Scalars['String']['input']>;
+  providerData?: InputMaybe<Scalars['JSON']['input']>;
   providerId?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -1311,7 +1315,7 @@ export type UserAuthenticationMethod = Auditable & {
   isVerified: Scalars['Boolean']['output'];
   lastUsedAt?: Maybe<Scalars['Date']['output']>;
   provider: UserAuthenticationMethodProvider;
-  providerData?: Maybe<Scalars['String']['output']>;
+  providerData?: Maybe<Scalars['JSON']['output']>;
   providerId: Scalars['String']['output'];
   updatedAt: Scalars['Date']['output'];
   user: User;
@@ -1563,6 +1567,7 @@ export type ResolversTypes = ResolversObject<{
   GroupTag: ResolverTypeWrapper<GroupTag>;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
+  JSON: ResolverTypeWrapper<Scalars['JSON']['output']>;
   LoginInput: LoginInput;
   LoginResponse: ResolverTypeWrapper<LoginResponse>;
   Mutation: ResolverTypeWrapper<{}>;
@@ -1714,6 +1719,7 @@ export type ResolversParentTypes = ResolversObject<{
   GroupTag: GroupTag;
   ID: Scalars['ID']['output'];
   Int: Scalars['Int']['output'];
+  JSON: Scalars['JSON']['output'];
   LoginInput: LoginInput;
   LoginResponse: LoginResponse;
   Mutation: {};
@@ -1904,8 +1910,14 @@ export type GroupTagResolvers<ContextType = GraphqlContext, ParentType extends R
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export interface JsonScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['JSON'], any> {
+  name: 'JSON';
+}
+
 export type LoginResponseResolvers<ContextType = GraphqlContext, ParentType extends ResolversParentTypes['LoginResponse'] = ResolversParentTypes['LoginResponse']> = ResolversObject<{
-  token?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  accessToken?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  accounts?: Resolver<Array<ResolversTypes['Account']>, ParentType, ContextType>;
+  refreshToken?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -2259,7 +2271,7 @@ export type UserAuthenticationMethodResolvers<ContextType = GraphqlContext, Pare
   isVerified?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   lastUsedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   provider?: Resolver<ResolversTypes['UserAuthenticationMethodProvider'], ParentType, ContextType>;
-  providerData?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  providerData?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
   providerId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   user?: Resolver<ResolversTypes['User'], ParentType, ContextType>;
@@ -2338,6 +2350,7 @@ export type Resolvers<ContextType = GraphqlContext> = ResolversObject<{
   GroupPage?: GroupPageResolvers<ContextType>;
   GroupPermission?: GroupPermissionResolvers<ContextType>;
   GroupTag?: GroupTagResolvers<ContextType>;
+  JSON?: GraphQLScalarType;
   LoginResponse?: LoginResponseResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   Organization?: OrganizationResolvers<ContextType>;

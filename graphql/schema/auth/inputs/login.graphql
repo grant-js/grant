@@ -1,4 +1,5 @@
 input LoginInput {
-  email: String!
-  password: String!
+  provider: UserAuthenticationMethodProvider!
+  providerId: String!
+  providerData: JSON!
 }

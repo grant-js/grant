@@ -83,7 +83,7 @@ export const sendOtpSchema = z.object({
 export const parseProviderDataSchema = z.object({
   providerId: z.string(),
   provider: userAuthenticationMethodProviderSchema,
-  providerData: z.string(),
+  providerData: providerDataSchema,
 });
 
 // Password Policy Configuration

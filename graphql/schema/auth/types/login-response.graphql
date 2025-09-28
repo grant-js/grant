@@ -1,3 +1,5 @@
 type LoginResponse {
-  token: String!
+  accounts: [Account!]!
+  accessToken: String!
+  refreshToken: String!
 }

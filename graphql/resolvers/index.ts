@@ -5,7 +5,7 @@ import { makeExecutableSchema } from '@graphql-tools/schema';
 
 import { Mutation } from '@/graphql/resolvers/mutations';
 import { Query } from '@/graphql/resolvers/queries';
-import { DateScalar } from '@/graphql/resolvers/scalars';
+import { resolvers as scalarResolvers } from '@/graphql/resolvers/scalars';
 
 import { groupResolver as Group } from './groups/fields';
 import { permissionResolver as Permission } from './permissions/fields';
@@ -20,7 +20,7 @@ const typeDefs = loadFilesSync(join(process.cwd(), 'graphql/schema'), {
 export const schema = makeExecutableSchema({
   typeDefs,
   resolvers: {
-    Date: DateScalar,
+    ...scalarResolvers,
     Query,
     Mutation,
     User,
