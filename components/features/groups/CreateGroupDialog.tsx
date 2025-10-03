@@ -21,8 +21,8 @@ import { createGroupSchema, CreateGroupFormValues } from './types';
 
 export function CreateGroupDialog() {
   const scope = useScopeFromParams();
-  const { permissions, loading: permissionsLoading } = usePermissions({ scope });
-  const { tags, loading: tagsLoading } = useTags({ scope });
+  const { permissions, loading: permissionsLoading } = usePermissions({ scope: scope! });
+  const { tags, loading: tagsLoading } = useTags({ scope: scope! });
   const { createGroup } = useGroupMutations();
 
   const isCreateDialogOpen = useGroupsStore((state) => state.isCreateDialogOpen);
@@ -81,7 +81,7 @@ export function CreateGroupDialog() {
     return await createGroup({
       name: values.name,
       description: values.description,
-      scope,
+      scope: scope!,
       permissionIds: values.permissionIds,
       tagIds: values.tagIds,
       primaryTagId: values.primaryTagId,

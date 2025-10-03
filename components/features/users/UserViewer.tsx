@@ -24,7 +24,7 @@ export function UserViewer() {
   const setLoading = useUsersStore((state) => state.setLoading);
 
   const { users, loading, totalCount } = useUsers({
-    scope,
+    scope: scope!,
     page,
     limit,
     search,

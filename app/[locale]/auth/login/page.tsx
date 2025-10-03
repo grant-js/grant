@@ -1,6 +1,7 @@
 'use client';
 
-import { gql, useMutation } from '@apollo/client';
+import { useState } from 'react';
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useSearchParams, useParams } from 'next/navigation';
@@ -18,9 +19,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { toast } from '@/components/ui/toast';
-import { usePageTitle } from '@/hooks';
-import { setStoredToken } from '@/lib/auth';
+import { useAuthMutations, usePageTitle } from '@/hooks';
+import { setStoredTokens } from '@/lib/auth';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -29,27 +29,13 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-const LOGIN_MUTATION = gql`
-  mutation Login($input: LoginInput!) {
-    login(input: $input) {
-      accessToken
-      refreshToken
-      accounts {
-        id
-        name
-        slug
-        type
-      }
-    }
-  }
-`;
-
 export default function LoginPage() {
   const t = useTranslations('auth');
   const searchParams = useSearchParams();
   const params = useParams();
   const locale = params.locale as string;
   const from = searchParams.get('from') || '/dashboard';
+  const [isSubmitting, setIsSubmitting] = useState(false);
   usePageTitle('auth.login');
 
   const form = useForm<LoginFormValues>({
@@ -61,38 +47,23 @@ export default function LoginPage() {
     mode: 'onSubmit',
   });
 
-  const [login] = useMutation(LOGIN_MUTATION);
+  const { login } = useAuthMutations();
 
   const onSubmit = async (values: LoginFormValues) => {
+    setIsSubmitting(true);
     try {
-      const { data } = await login({
-        variables: {
-          input: {
-            provider: 'email',
-            providerId: values.email,
-            providerData: {
-              password: values.password,
-              action: 'login',
-            },
-          },
-        },
+      const data = await login({
+        email: values.email,
+        password: values.password,
       });
 
-      if (data?.login?.accessToken) {
-        // Store both tokens
-        setStoredToken(data.login.accessToken);
-        // You might want to store refreshToken separately if needed
-        // localStorage.setItem('refreshToken', data.login.refreshToken);
-
-        toast.success(t('login.success'));
+      if (data?.accessToken && data?.refreshToken) {
+        setStoredTokens(data.accessToken, data.refreshToken);
         const redirectTo = from.startsWith(`/${locale}`) ? from : `/${locale}${from}`;
         window.location.href = redirectTo;
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      toast.error(t('login.error'), {
-        description: error instanceof Error ? error.message : t('login.errorUnknown'),
-      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -112,6 +83,7 @@ export default function LoginPage() {
                 <FormLabel>{t('login.email')}</FormLabel>
                 <FormControl>
                   <Input
+                    disabled={isSubmitting}
                     type="email"
                     placeholder={t('login.emailPlaceholder')}
                     {...field}
@@ -134,6 +106,7 @@ export default function LoginPage() {
                 <FormLabel>{t('login.password')}</FormLabel>
                 <FormControl>
                   <Input
+                    disabled={isSubmitting}
                     type="password"
                     placeholder={t('login.passwordPlaceholder')}
                     {...field}
@@ -158,7 +131,7 @@ export default function LoginPage() {
               {t('login.forgotPassword')}
             </Link>
           </div>
-          <Button type="submit" className="w-full">
+          <Button disabled={isSubmitting} type="submit" className="w-full">
             {t('login.submit')}
           </Button>
         </form>

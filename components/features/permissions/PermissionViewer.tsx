@@ -24,7 +24,7 @@ export function PermissionViewer() {
   const setLoading = usePermissionsStore((state) => state.setLoading);
 
   const { permissions, loading, totalCount } = usePermissions({
-    scope,
+    scope: scope!,
     page,
     limit,
     search,

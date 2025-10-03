@@ -32,8 +32,8 @@ const renderTagCheckboxList = (props: any) => <TagCheckboxList {...props} />;
 export function EditUserDialog() {
   const scope = useScopeFromParams();
 
-  const { roles, loading: rolesLoading } = useRoles({ scope });
-  const { tags, loading: tagsLoading } = useTags({ scope });
+  const { roles, loading: rolesLoading } = useRoles({ scope: scope! });
+  const { tags, loading: tagsLoading } = useTags({ scope: scope! });
   const { updateUser } = useUserMutations();
 
   const userToEdit = useUsersStore((state) => state.userToEdit);

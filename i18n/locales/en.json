@@ -119,6 +119,14 @@
       "confirmPassword": {
         "label": "Confirm Password",
         "placeholder": "Confirm your password"
+      },
+      "accountType": {
+        "label": "Account Type",
+        "placeholder": "Select account type",
+        "options": {
+          "personal": "Personal Account",
+          "organization": "Organization Account"
+        }
       }
     },
     "login": {
@@ -136,14 +144,21 @@
       "register": "Create identity",
       "success": "Identity access granted",
       "error": "Identity verification failed",
-      "errorUnknown": "An unknown error occurred"
+      "errorUnknown": "An unknown error occurred",
+      "verificationRequired": "Email verification needed",
+      "verifyEmailDescription": "Please verify your email to access all features"
     },
     "register": {
       "title": "Create Identity",
       "description": "Establish your unified identity across all connected authentication systems",
       "submit": "Sign Up",
+      "submitting": "Creating Account...",
       "haveAccount": "Already have an identity?",
-      "login": "Sign in"
+      "login": "Sign in",
+      "success": "Account created successfully",
+      "error": "Failed to create account",
+      "verificationRequired": "Email verification required",
+      "verifyEmailDescription": "Please check your email and verify your account to access all features"
     },
     "forgotPassword": {
       "title": "Reset Identity Access",

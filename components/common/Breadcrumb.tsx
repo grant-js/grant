@@ -13,6 +13,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
+import { Scope } from '@/graphql/generated/types';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useOrganizations } from '@/hooks/organizations';
 import { useProjects } from '@/hooks/projects';
@@ -36,7 +37,7 @@ export function Breadcrumb() {
   });
 
   const { projects: [project] = [] } = useProjects({
-    scope,
+    scope: scope as Scope,
     ids: params.projectId ? [params.projectId as string] : undefined,
     limit: 1,
   });

@@ -10,7 +10,7 @@ type UserSession implements Auditable {
   expiresAt: Date!
   userAgent: String
   ipAddress: String
-  lastUsedAt: Date!
+  lastUsedAt: Date
   createdAt: Date!
   updatedAt: Date!
   deletedAt: Date

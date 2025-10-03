@@ -3,13 +3,13 @@
 import { ApolloClient, HttpLink, InMemoryCache, from } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 
-import { getStoredToken, isTokenValid } from './auth';
+import { getStoredAccessToken, isTokenValid } from './auth';
 
 const authLink = setContext((_, { headers }) => {
   try {
-    const token = getStoredToken();
+    const accessToken = getStoredAccessToken();
 
-    if (token && !isTokenValid(token)) {
+    if (accessToken && !isTokenValid(accessToken)) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('auth_token');
         console.warn('⚠️ Invalid/expired token removed from localStorage');
@@ -18,7 +18,7 @@ const authLink = setContext((_, { headers }) => {
     }
 
     if (process.env.NODE_ENV === 'development') {
-      if (token) {
+      if (accessToken) {
         console.log('🔐 Valid auth token found, including in request headers');
       } else {
         console.log('🔓 No auth token found, proceeding without authorization');
@@ -28,7 +28,7 @@ const authLink = setContext((_, { headers }) => {
     return {
       headers: {
         ...headers,
-        ...(token && { authorization: `Bearer ${token}` }),
+        ...(accessToken && { authorization: `Bearer ${accessToken}` }),
       },
     };
   } catch (error) {

@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 
 import { Scope, Tenant } from '@/graphql/generated/types';
 
-export function useScopeFromParams(): Scope {
+export function useScopeFromParams(): Scope | null {
   const params = useParams();
 
   if (params.accountId) {
@@ -28,7 +28,5 @@ export function useScopeFromParams(): Scope {
     };
   }
 
-  throw new Error(
-    'No organization context available. This should not happen with the new nested URL structure.'
-  );
+  return null;
 }

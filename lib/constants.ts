@@ -1,4 +1,8 @@
-export const AUTH_TOKEN_KEY = 'auth_token';
+export const AUTH_ACCESS_TOKEN_KEY = 'auth_access_token';
+export const AUTH_REFRESH_TOKEN_KEY = 'auth_refresh_token';
 export const AUTH_HEADER_KEY = 'authorization';
-
+export const ACCESS_TOKEN_EXPIRATION_HOURS =
+  Number(process.env.NEXT_PUBLIC_ACCESS_TOKEN_EXPIRATION_HOURS) ?? 2;
+export const REFRESH_TOKEN_EXPIRATION_DAYS =
+  Number(process.env.NEXT_PUBLIC_REFRESH_TOKEN_EXPIRATION_DAYS) ?? 7;
 export const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';

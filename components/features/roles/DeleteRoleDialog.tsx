@@ -13,7 +13,7 @@ export function DeleteRoleDialog() {
   const setRoleToDelete = useRolesStore((state) => state.setRoleToDelete);
 
   const handleDelete = async (id: string, name: string) => {
-    await deleteRole({ id, scope }, name);
+    await deleteRole({ id, scope: scope! }, name);
   };
 
   const handleSuccess = async () => {

@@ -18,7 +18,7 @@ import { createPermissionSchema, CreatePermissionFormValues } from './types';
 
 export function CreatePermissionDialog() {
   const scope = useScopeFromParams();
-  const { tags, loading: tagsLoading } = useTags({ scope });
+  const { tags, loading: tagsLoading } = useTags({ scope: scope! });
   const { createPermission } = usePermissionMutations();
 
   const isCreateDialogOpen = usePermissionsStore((state) => state.isCreateDialogOpen);
@@ -68,7 +68,7 @@ export function CreatePermissionDialog() {
 
   const handleCreate = async (values: CreatePermissionFormValues) => {
     return await createPermission({
-      scope,
+      scope: scope!,
       name: values.name,
       action: values.action,
       description: values.description,

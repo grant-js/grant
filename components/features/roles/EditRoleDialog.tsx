@@ -19,8 +19,8 @@ import { editRoleSchema, EditRoleFormValues } from './types';
 
 export function EditRoleDialog() {
   const scope = useScopeFromParams();
-  const { groups, loading: groupsLoading } = useGroups({ scope });
-  const { tags, loading: tagsLoading } = useTags({ scope });
+  const { groups, loading: groupsLoading } = useGroups({ scope: scope! });
+  const { tags, loading: tagsLoading } = useTags({ scope: scope! });
   const { updateRole } = useRoleMutations();
 
   const roleToEdit = useRolesStore((state) => state.roleToEdit);

@@ -17,7 +17,7 @@ import { EditPermissionFormValues, editPermissionSchema } from './types';
 
 export function EditPermissionDialog() {
   const scope = useScopeFromParams();
-  const { tags, loading: tagsLoading } = useTags({ scope });
+  const { tags, loading: tagsLoading } = useTags({ scope: scope! });
   const { updatePermission } = usePermissionMutations();
 
   const permissionToEdit = usePermissionsStore((state) => state.permissionToEdit);

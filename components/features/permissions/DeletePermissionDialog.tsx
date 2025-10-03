@@ -13,7 +13,7 @@ export function DeletePermissionDialog() {
   const setPermissionToDelete = usePermissionsStore((state) => state.setPermissionToDelete);
 
   const handleDelete = async (id: string, _name: string) => {
-    await deletePermission({ id, scope });
+    await deletePermission({ id, scope: scope! });
   };
 
   const handleOpenChange = (open: boolean) => {

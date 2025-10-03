@@ -7,7 +7,7 @@ import { useProjectsStore } from '@/stores/projects.store';
 
 export function DeleteProjectDialog() {
   const scope = useScopeFromParams();
-  const organizationId = scope.id;
+  const organizationId = scope!.id;
   const projectToDelete = useProjectsStore((state) => state.projectToDelete);
   const setProjectToDelete = useProjectsStore((state) => state.setProjectToDelete);
   const { deleteProject } = useProjectMutations();

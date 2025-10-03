@@ -12,7 +12,7 @@ export function DeleteTagDialog() {
   const setTagToDelete = useTagsStore((state) => state.setTagToDelete);
 
   const handleDelete = async (id: string, tagName: string) => {
-    await handleDeleteTag({ id, scope }, tagName);
+    await handleDeleteTag({ id, scope: scope! }, tagName);
   };
 
   const handleOpenChange = (open: boolean) => {

@@ -20,7 +20,7 @@ import { editTagSchema, EditTagFormValues } from './types';
 export function EditTagDialog() {
   const t = useTranslations('tags');
   const scope = useScopeFromParams();
-  const { tags, loading: tagsLoading } = useTags({ scope });
+  const { tags, loading: tagsLoading } = useTags({ scope: scope! });
   const tagToEdit = useTagsStore((state) => state.tagToEdit);
   const setTagToEdit = useTagsStore((state) => state.setTagToEdit);
   const { handleUpdateTag } = useTagMutations();

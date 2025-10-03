@@ -23,7 +23,7 @@ export function TagViewer() {
   const setLoading = useTagsStore((state) => state.setLoading);
 
   const { tags, loading, totalCount } = useTags({
-    scope,
+    scope: scope!,
     page,
     limit,
     search,

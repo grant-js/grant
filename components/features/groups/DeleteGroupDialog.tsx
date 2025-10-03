@@ -13,7 +13,7 @@ export function DeleteGroupDialog() {
   const setGroupToDelete = useGroupsStore((state) => state.setGroupToDelete);
 
   const handleDelete = async (id: string, name: string) => {
-    await deleteGroup({ id, scope }, name);
+    await deleteGroup({ id, scope: scope! }, name);
   };
 
   const handleOpenChange = (open: boolean) => {

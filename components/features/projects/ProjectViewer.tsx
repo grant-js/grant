@@ -24,7 +24,7 @@ export function ProjectViewer() {
   const setLoading = useProjectsStore((state) => state.setLoading);
 
   const { projects, loading, totalCount } = useProjects({
-    scope,
+    scope: scope!,
     page,
     limit,
     search,
@@ -48,10 +48,10 @@ export function ProjectViewer() {
 
   switch (view) {
     case ProjectView.CARD:
-      return <ProjectCards organizationId={scope.id} />;
+      return <ProjectCards organizationId={scope!.id} />;
     case ProjectView.TABLE:
-      return <ProjectTable organizationId={scope.id} />;
+      return <ProjectTable organizationId={scope!.id} />;
     default:
-      return <ProjectCards organizationId={scope.id} />;
+      return <ProjectCards organizationId={scope!.id} />;
   }
 }

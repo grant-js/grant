@@ -2,4 +2,6 @@ type LoginResponse {
   accounts: [Account!]!
   accessToken: String!
   refreshToken: String!
+  requiresEmailVerification: Boolean
+  verificationExpiry: Date
 }

@@ -24,7 +24,7 @@ export function GroupViewer() {
   const setLoading = useGroupsStore((state) => state.setLoading);
 
   const { groups, loading, totalCount } = useGroups({
-    scope,
+    scope: scope!,
     page,
     limit,
     search,

@@ -55,7 +55,7 @@ export const userAuthenticationMethodSchema = baseEntitySchema.extend({
   userId: idSchema,
   provider: userAuthenticationMethodProviderSchema,
   providerId: z.string(),
-  providerData: providerDataSchema.nullable().optional(),
+  providerData: providerDataSchema,
   isVerified: z.boolean(),
   isPrimary: z.boolean(),
   lastUsedAt: z.date().nullable().optional(),

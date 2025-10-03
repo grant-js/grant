@@ -1,0 +1,7 @@
+input RegisterInput {
+  name: String!
+  type: AccountType!
+  provider: UserAuthenticationMethodProvider!
+  providerId: String!
+  providerData: JSON!
+}

@@ -14,7 +14,7 @@ import { createProjectSchema, type CreateProjectFormValues } from './types';
 
 export function CreateProjectDialog() {
   const scope = useScopeFromParams();
-  const { tags, loading: tagsLoading } = useTags({ scope });
+  const { tags, loading: tagsLoading } = useTags({ scope: scope! });
   const isCreateDialogOpen = useProjectsStore((state) => state.isCreateDialogOpen);
   const setCreateDialogOpen = useProjectsStore((state) => state.setCreateDialogOpen);
 
@@ -24,7 +24,7 @@ export function CreateProjectDialog() {
     return createProject({
       name: values.name,
       description: values.description,
-      scope,
+      scope: scope!,
       tagIds: values.tagIds,
       primaryTagId: values.primaryTagId,
     });

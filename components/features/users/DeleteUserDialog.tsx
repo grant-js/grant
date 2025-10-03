@@ -13,7 +13,7 @@ export function DeleteUserDialog() {
   const setUserToDelete = useUsersStore((state) => state.setUserToDelete);
 
   const handleDelete = async (id: string, name: string) => {
-    await deleteUser({ id, scope }, name);
+    await deleteUser({ id, scope: scope! }, name);
   };
 
   const handleSuccess = async () => {

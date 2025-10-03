@@ -18,7 +18,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   roles: many(userRoles),
   authenticationMethods: many(userAuthenticationMethods),
   sessions: many(userSessions),
-  ownedAccounts: many(accounts), // Accounts this user owns
+  accounts: many(accounts),
 }));
 
 export const userAuditLogs = pgTable(

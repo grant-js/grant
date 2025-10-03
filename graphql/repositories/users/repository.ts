@@ -13,6 +13,7 @@ import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { EntityRepository, RelationsConfig } from '@/graphql/repositories/common';
 import { SelectedFields } from '@/graphql/services/common';
 
+import { accounts } from '../accounts/schema';
 import { roles } from '../roles/schema';
 import { tags } from '../tags/schema';
 
@@ -34,6 +35,11 @@ export class UserRepository extends EntityRepository<UserModel, User> {
       field: 'role',
       table: roles,
       extract: (v: Array<UserRole>) => v.map(({ role }: UserRole) => role),
+    },
+    accounts: {
+      field: 'owner',
+      table: accounts,
+      extract: (v: any[]) => v,
     },
   };
 

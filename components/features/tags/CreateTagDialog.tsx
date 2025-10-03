@@ -20,7 +20,7 @@ import { createTagSchema, CreateTagFormValues } from './types';
 export function CreateTagDialog() {
   const t = useTranslations('tags');
   const scope = useScopeFromParams();
-  const { tags, loading: tagsLoading } = useTags({ scope });
+  const { tags, loading: tagsLoading } = useTags({ scope: scope! });
   const { handleCreateTag } = useTagMutations();
 
   const isCreateDialogOpen = useTagsStore((state) => state.isCreateDialogOpen);
@@ -71,7 +71,7 @@ export function CreateTagDialog() {
     return await handleCreateTag({
       name: values.name,
       color: values.color,
-      scope,
+      scope: scope!,
     });
   };
 

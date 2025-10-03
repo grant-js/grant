@@ -1,7 +1,11 @@
 import Cookies from 'js-cookie';
 import { jwtDecode } from 'jwt-decode';
 
-import { AUTH_TOKEN_KEY } from './constants';
+import {
+  AUTH_ACCESS_TOKEN_KEY,
+  AUTH_REFRESH_TOKEN_KEY,
+  REFRESH_TOKEN_EXPIRATION_DAYS,
+} from './constants';
 
 interface JWTPayload {
   exp: number;
@@ -9,26 +13,33 @@ interface JWTPayload {
   email: string;
 }
 
-export function getStoredToken(): string | null {
+export function getStoredAccessToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem(AUTH_TOKEN_KEY);
+  return localStorage.getItem(AUTH_ACCESS_TOKEN_KEY);
 }
 
-export function setStoredToken(token: string): void {
-  localStorage.setItem(AUTH_TOKEN_KEY, token);
-  // Also set the cookie for server-side auth checks
-  Cookies.set(AUTH_TOKEN_KEY, token, {
-    expires: 7, // 7 days
+export function setStoredTokens(accessToken: string, refreshToken: string): void {
+  localStorage.setItem(AUTH_ACCESS_TOKEN_KEY, accessToken);
+  localStorage.setItem(AUTH_REFRESH_TOKEN_KEY, refreshToken);
+  Cookies.set(AUTH_ACCESS_TOKEN_KEY, accessToken, {
+    expires: REFRESH_TOKEN_EXPIRATION_DAYS,
     path: '/',
-    sameSite: 'lax', // Changed to lax to allow redirects
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+  });
+  Cookies.set(AUTH_REFRESH_TOKEN_KEY, refreshToken, {
+    expires: REFRESH_TOKEN_EXPIRATION_DAYS,
+    path: '/',
+    sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
   });
 }
 
 export function removeStoredToken(): void {
-  localStorage.removeItem(AUTH_TOKEN_KEY);
-  // Also remove the cookie
-  Cookies.remove(AUTH_TOKEN_KEY, { path: '/' });
+  localStorage.removeItem(AUTH_ACCESS_TOKEN_KEY);
+  localStorage.removeItem(AUTH_REFRESH_TOKEN_KEY);
+  Cookies.remove(AUTH_ACCESS_TOKEN_KEY, { path: '/' });
+  Cookies.remove(AUTH_REFRESH_TOKEN_KEY, { path: '/' });
 }
 
 export function isTokenValid(token: string): boolean {
@@ -42,12 +53,12 @@ export function isTokenValid(token: string): boolean {
 }
 
 export function isAuthenticated(): boolean {
-  const token = getStoredToken();
+  const token = getStoredAccessToken();
   return token !== null && isTokenValid(token);
 }
 
 export function getDecodedToken(): JWTPayload | null {
-  const token = getStoredToken();
+  const token = getStoredAccessToken();
   if (!token) return null;
 
   try {
@@ -68,6 +79,5 @@ export function getCurrentLocale(): string {
 export function logout(): void {
   removeStoredToken();
   const locale = getCurrentLocale();
-  // Use Next.js router to preserve locale
   window.location.href = `/${locale}/auth/login`;
 }

@@ -47,15 +47,6 @@ interface Otp {
   validUntil: number;
 }
 
-// Type conversion utility for handling JSON fields
-function convertProviderDataForGraphQL(method: UserAuthenticationMethod): UserAuthenticationMethod {
-  return {
-    ...method,
-    // Ensure providerData is properly typed for GraphQL
-    providerData: method.providerData as Record<string, unknown> | null,
-  };
-}
-
 export class UserAuthenticationMethodService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
@@ -81,7 +72,7 @@ export class UserAuthenticationMethodService extends AuditService {
     providerId: string,
     providerData?: Record<string, unknown>,
     transaction?: Transaction
-  ): Promise<UserAuthenticationMethod> {
+  ): Promise<UserAuthenticationMethod | null> {
     const method =
       await this.repositories.userAuthenticationMethodRepository.findByProviderAndProviderId(
         provider,
@@ -90,12 +81,11 @@ export class UserAuthenticationMethodService extends AuditService {
         transaction
       );
 
-    if (!method) {
-      throw new Error('User authentication method not found');
+    if (method) {
+      return method;
     }
 
-    // Convert the result to ensure proper JSON typing
-    return convertProviderDataForGraphQL(method);
+    return null;
   }
 
   public async getUserAuthenticationMethods(
@@ -108,14 +98,8 @@ export class UserAuthenticationMethodService extends AuditService {
         params
       );
 
-    // Convert all results to ensure proper JSON typing
     return result.map((method: UserAuthenticationMethod) => {
-      const converted = convertProviderDataForGraphQL(method);
-      return validateOutput(
-        createDynamicSingleSchema(userAuthenticationMethodSchema),
-        converted,
-        context
-      );
+      return validateOutput(userAuthenticationMethodSchema, method, context);
     });
   }
 
@@ -302,9 +286,6 @@ export class UserAuthenticationMethodService extends AuditService {
       throw new Error('Email is required and must be a string');
     }
     validateInput(emailSchema, email, context);
-    const validatedPassword = validateInput(passwordPolicySchema, password, context);
-    const hashedPassword = this.hashPassword(validatedPassword);
-    const otp = this.generateOtp();
     switch (action) {
       case 'login':
         return {
@@ -313,7 +294,10 @@ export class UserAuthenticationMethodService extends AuditService {
           },
           isVerified: false,
         };
-      case 'signup':
+      case 'signup': {
+        const validatedPassword = validateInput(passwordPolicySchema, password, context);
+        const hashedPassword = this.hashPassword(validatedPassword);
+        const otp = this.generateOtp();
         return {
           providerData: {
             otp,
@@ -321,6 +305,7 @@ export class UserAuthenticationMethodService extends AuditService {
           },
           isVerified: false,
         };
+      }
       default:
         throw new Error('Invalid action');
     }

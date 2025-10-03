@@ -21,8 +21,8 @@ import { createRoleSchema, CreateRoleFormValues } from './types';
 
 export function CreateRoleDialog() {
   const scope = useScopeFromParams();
-  const { groups, loading: groupsLoading } = useGroups({ scope });
-  const { tags, loading: tagsLoading } = useTags({ scope });
+  const { groups, loading: groupsLoading } = useGroups({ scope: scope! });
+  const { tags, loading: tagsLoading } = useTags({ scope: scope! });
   const { createRole } = useRoleMutations();
 
   const isCreateDialogOpen = useRolesStore((state) => state.isCreateDialogOpen);
@@ -79,7 +79,7 @@ export function CreateRoleDialog() {
 
   const handleCreate = async (values: CreateRoleFormValues) => {
     return await createRole({
-      scope: scope,
+      scope: scope!,
       name: values.name,
       description: values.description,
       groupIds: values.groupIds,

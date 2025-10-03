@@ -202,6 +202,8 @@ export type CreateAccountResult = {
   accessToken: Scalars['String']['output'];
   account: Account;
   refreshToken: Scalars['String']['output'];
+  requiresEmailVerification?: Maybe<Scalars['Boolean']['output']>;
+  verificationExpiry?: Maybe<Scalars['Date']['output']>;
 };
 
 export type CreateGroupInput = {
@@ -391,6 +393,8 @@ export type LoginResponse = {
   accessToken: Scalars['String']['output'];
   accounts: Array<Account>;
   refreshToken: Scalars['String']['output'];
+  requiresEmailVerification?: Maybe<Scalars['Boolean']['output']>;
+  verificationExpiry?: Maybe<Scalars['Date']['output']>;
 };
 
 export type Mutation = {
@@ -413,6 +417,7 @@ export type Mutation = {
   deleteTag: Tag;
   deleteUser: User;
   login: LoginResponse;
+  register: CreateAccountResult;
   updateAccount: Account;
   updateGroup: Group;
   updateOrganization: Organization;
@@ -512,6 +517,11 @@ export type MutationDeleteUserArgs = {
 
 export type MutationLoginArgs = {
   input: LoginInput;
+};
+
+
+export type MutationRegisterArgs = {
+  input: RegisterInput;
 };
 
 
@@ -959,6 +969,14 @@ export type QueryUsersArgs = {
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
+export type RegisterInput = {
+  name: Scalars['String']['input'];
+  provider: UserAuthenticationMethodProvider;
+  providerData: Scalars['JSON']['input'];
+  providerId: Scalars['String']['input'];
+  type: AccountType;
+};
+
 export type RemoveAccountProjectInput = {
   accountId: Scalars['ID']['input'];
   projectId: Scalars['ID']['input'];
@@ -1295,12 +1313,12 @@ export type UpdateUserTagInput = {
 
 export type User = Auditable & {
   __typename?: 'User';
+  accounts?: Maybe<Array<Account>>;
   authenticationMethods?: Maybe<Array<UserAuthenticationMethod>>;
   createdAt: Scalars['Date']['output'];
   deletedAt?: Maybe<Scalars['Date']['output']>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
-  ownedAccounts?: Maybe<Array<Account>>;
   roles?: Maybe<Array<Role>>;
   tags?: Maybe<Array<Tag>>;
   updatedAt: Scalars['Date']['output'];
@@ -1315,10 +1333,10 @@ export type UserAuthenticationMethod = Auditable & {
   isVerified: Scalars['Boolean']['output'];
   lastUsedAt?: Maybe<Scalars['Date']['output']>;
   provider: UserAuthenticationMethodProvider;
-  providerData?: Maybe<Scalars['JSON']['output']>;
+  providerData: Scalars['JSON']['output'];
   providerId: Scalars['String']['output'];
   updatedAt: Scalars['Date']['output'];
-  user: User;
+  user?: Maybe<User>;
   userId: Scalars['ID']['output'];
 };
 
@@ -1368,7 +1386,7 @@ export type UserSession = Auditable & {
   expiresAt: Scalars['Date']['output'];
   id: Scalars['ID']['output'];
   ipAddress?: Maybe<Scalars['String']['output']>;
-  lastUsedAt: Scalars['Date']['output'];
+  lastUsedAt?: Maybe<Scalars['Date']['output']>;
   scopeId: Scalars['ID']['output'];
   scopeTenant: Tenant;
   token: Scalars['String']['output'];
@@ -1600,6 +1618,7 @@ export type ResolversTypes = ResolversObject<{
   ProjectTag: ResolverTypeWrapper<ProjectTag>;
   ProjectUser: ResolverTypeWrapper<ProjectUser>;
   Query: ResolverTypeWrapper<{}>;
+  RegisterInput: RegisterInput;
   RemoveAccountProjectInput: RemoveAccountProjectInput;
   RemoveGroupPermissionInput: RemoveGroupPermissionInput;
   RemoveGroupTagInput: RemoveGroupTagInput;
@@ -1746,6 +1765,7 @@ export type ResolversParentTypes = ResolversObject<{
   ProjectTag: ProjectTag;
   ProjectUser: ProjectUser;
   Query: {};
+  RegisterInput: RegisterInput;
   RemoveAccountProjectInput: RemoveAccountProjectInput;
   RemoveGroupPermissionInput: RemoveGroupPermissionInput;
   RemoveGroupTagInput: RemoveGroupTagInput;
@@ -1854,6 +1874,8 @@ export type CreateAccountResultResolvers<ContextType = GraphqlContext, ParentTyp
   accessToken?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   account?: Resolver<ResolversTypes['Account'], ParentType, ContextType>;
   refreshToken?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  requiresEmailVerification?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
+  verificationExpiry?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1918,6 +1940,8 @@ export type LoginResponseResolvers<ContextType = GraphqlContext, ParentType exte
   accessToken?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   accounts?: Resolver<Array<ResolversTypes['Account']>, ParentType, ContextType>;
   refreshToken?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  requiresEmailVerification?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
+  verificationExpiry?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1940,6 +1964,7 @@ export type MutationResolvers<ContextType = GraphqlContext, ParentType extends R
   deleteTag?: Resolver<ResolversTypes['Tag'], ParentType, ContextType, RequireFields<MutationDeleteTagArgs, 'id' | 'scope'>>;
   deleteUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationDeleteUserArgs, 'id' | 'scope'>>;
   login?: Resolver<ResolversTypes['LoginResponse'], ParentType, ContextType, RequireFields<MutationLoginArgs, 'input'>>;
+  register?: Resolver<ResolversTypes['CreateAccountResult'], ParentType, ContextType, RequireFields<MutationRegisterArgs, 'input'>>;
   updateAccount?: Resolver<ResolversTypes['Account'], ParentType, ContextType, RequireFields<MutationUpdateAccountArgs, 'id' | 'input'>>;
   updateGroup?: Resolver<ResolversTypes['Group'], ParentType, ContextType, RequireFields<MutationUpdateGroupArgs, 'id' | 'input'>>;
   updateOrganization?: Resolver<ResolversTypes['Organization'], ParentType, ContextType, RequireFields<MutationUpdateOrganizationArgs, 'id' | 'input'>>;
@@ -2251,12 +2276,12 @@ export type TagPageResolvers<ContextType = GraphqlContext, ParentType extends Re
 }>;
 
 export type UserResolvers<ContextType = GraphqlContext, ParentType extends ResolversParentTypes['User'] = ResolversParentTypes['User']> = ResolversObject<{
+  accounts?: Resolver<Maybe<Array<ResolversTypes['Account']>>, ParentType, ContextType>;
   authenticationMethods?: Resolver<Maybe<Array<ResolversTypes['UserAuthenticationMethod']>>, ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  ownedAccounts?: Resolver<Maybe<Array<ResolversTypes['Account']>>, ParentType, ContextType>;
   roles?: Resolver<Maybe<Array<ResolversTypes['Role']>>, ParentType, ContextType>;
   tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -2271,10 +2296,10 @@ export type UserAuthenticationMethodResolvers<ContextType = GraphqlContext, Pare
   isVerified?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   lastUsedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   provider?: Resolver<ResolversTypes['UserAuthenticationMethodProvider'], ParentType, ContextType>;
-  providerData?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
+  providerData?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
   providerId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  user?: Resolver<ResolversTypes['User'], ParentType, ContextType>;
+  user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
   userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -2304,7 +2329,7 @@ export type UserSessionResolvers<ContextType = GraphqlContext, ParentType extend
   expiresAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   ipAddress?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  lastUsedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  lastUsedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   scopeId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   scopeTenant?: Resolver<ResolversTypes['Tenant'], ParentType, ContextType>;
   token?: Resolver<ResolversTypes['String'], ParentType, ContextType>;

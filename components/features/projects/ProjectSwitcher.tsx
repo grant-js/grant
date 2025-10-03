@@ -35,7 +35,7 @@ export function ProjectSwitcher({ className }: ProjectSwitcherProps) {
   const [open, setOpen] = React.useState(false);
 
   const { projects, loading, error } = useProjects({
-    scope,
+    scope: scope!,
     limit: -1,
     sort: { field: ProjectSortableField.Name, order: SortOrder.Asc },
   });
@@ -52,12 +52,12 @@ export function ProjectSwitcher({ className }: ProjectSwitcherProps) {
   const handleProjectSelect = (projectId: string) => {
     setOpen(false);
     let newPath;
-    switch (scope.tenant) {
+    switch (scope!.tenant) {
       case Tenant.Account:
-        newPath = `/dashboard/accounts/${scope.id}/projects/${projectId}`;
+        newPath = `/dashboard/accounts/${scope!.id}/projects/${projectId}`;
         break;
       case Tenant.Organization:
-        newPath = `/dashboard/organizations/${scope.id}/projects/${projectId}`;
+        newPath = `/dashboard/organizations/${scope!.id}/projects/${projectId}`;
         break;
       default:
         throw new Error('Invalid scope');

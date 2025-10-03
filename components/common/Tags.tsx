@@ -23,7 +23,7 @@ export interface TagsProps {
 export function Tags({ selectedTagIds, onTagIdsChange }: TagsProps) {
   const t = useTranslations('common');
   const scope = useScopeFromParams();
-  const { tags, loading } = useTags({ scope, limit: -1 }); // Get all tags for selection
+  const { tags, loading } = useTags({ scope: scope!, limit: -1 }); // Get all tags for selection
 
   const selectedTags = tags.filter((tag) => selectedTagIds.includes(tag.id));
 

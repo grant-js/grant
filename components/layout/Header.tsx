@@ -21,7 +21,6 @@ import { cn } from '@/lib/utils';
 export function Header() {
   const t = useTranslations('common');
   const themeT = useTranslations('theme');
-  const title = t('app.title').split(' ');
   const { isAuthenticated } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const themeToggleRef = useRef<HTMLButtonElement>(null);

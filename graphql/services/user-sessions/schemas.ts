@@ -52,7 +52,7 @@ export const userSessionSchema = baseEntitySchema.extend({
   scopeId: idSchema,
   userAuthenticationMethodId: idSchema,
   expiresAt: z.date(),
-  lastUsedAt: z.date(),
+  lastUsedAt: z.date().nullable(),
   userAgent: z.string().nullable().optional(),
   ipAddress: z.string().nullable().optional(),
   user: z.any().nullable().optional(),

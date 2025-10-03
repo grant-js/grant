@@ -19,8 +19,8 @@ import { editGroupSchema, EditGroupFormValues } from './types';
 
 export function EditGroupDialog() {
   const scope = useScopeFromParams();
-  const { permissions, loading: permissionsLoading } = usePermissions({ scope });
-  const { tags, loading: tagsLoading } = useTags({ scope });
+  const { permissions, loading: permissionsLoading } = usePermissions({ scope: scope! });
+  const { tags, loading: tagsLoading } = useTags({ scope: scope! });
   const { updateGroup } = useGroupMutations();
 
   const groupToEdit = useGroupsStore((state) => state.groupToEdit);

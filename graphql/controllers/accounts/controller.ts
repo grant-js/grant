@@ -69,7 +69,18 @@ export class AccountController extends ScopeController {
         }
       }
 
-      if (!userAuthenticationMethod.isVerified) {
+      // Only require isVerified if verification expiration (7 days) has passed
+      const verificationCreatedAt = userAuthenticationMethod.createdAt
+        ? new Date(userAuthenticationMethod.createdAt)
+        : null;
+      const verificationExpirationMs = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
+      const now = new Date();
+
+      if (
+        !userAuthenticationMethod.isVerified &&
+        verificationCreatedAt &&
+        now.getTime() - verificationCreatedAt.getTime() > verificationExpirationMs
+      ) {
         throw new AuthenticationError('User not verified');
       }
 
@@ -77,7 +88,7 @@ export class AccountController extends ScopeController {
         {
           ids: [userAuthenticationMethod.userId],
           limit: 1,
-          requestedFields: ['ownedAccounts'],
+          requestedFields: ['accounts'],
         },
         tx
       );
@@ -92,11 +103,11 @@ export class AccountController extends ScopeController {
 
       const user = usersResult.users[0];
 
-      if (!Array.isArray(user.ownedAccounts) || user.ownedAccounts.length === 0) {
+      if (!Array.isArray(user.accounts) || user.accounts.length === 0) {
         throw new AuthenticationError('User does not have an account');
       }
 
-      const account = user.ownedAccounts[0]; // TODO: define how to select the account to use by default
+      const account = user.accounts[0]; // TODO: define how to select the account to use by default
 
       const userSessionsResult = await this.services.userSessions.getUserSessions(
         {
@@ -120,7 +131,11 @@ export class AccountController extends ScopeController {
           return {
             accessToken,
             refreshToken,
-            accounts: user.ownedAccounts ?? [],
+            accounts: user.accounts ?? [],
+            requiresEmailVerification: !userAuthenticationMethod.isVerified,
+            verificationExpiry: userAuthenticationMethod.isVerified
+              ? null
+              : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
           };
         }
       }
@@ -139,7 +154,11 @@ export class AccountController extends ScopeController {
       return {
         accessToken: session.accessToken,
         refreshToken: session.refreshToken,
-        accounts: user.ownedAccounts ?? [],
+        accounts: user.accounts ?? [],
+        requiresEmailVerification: !userAuthenticationMethod.isVerified,
+        verificationExpiry: userAuthenticationMethod.isVerified
+          ? null
+          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
       };
     });
   }
@@ -164,62 +183,71 @@ export class AccountController extends ScopeController {
   public async createAccount(
     params: Omit<CreateAccountInput, 'ownerId'>
   ): Promise<CreateAccountResult> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
-      const { name, type, provider, providerId, providerData } = params;
+    try {
+      return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+        const { name, type, provider, providerId, providerData } = params;
 
-      const { providerData: processedProviderData, isVerified } =
-        await this.services.userAuthenticationMethods.processProvider(
-          provider,
-          providerId,
-          providerData as Record<string, unknown>
-        );
-
-      const user = await this.services.users.createUser({ name }, tx);
-
-      const userAuthenticationMethod =
-        await this.services.userAuthenticationMethods.createUserAuthenticationMethod(
-          {
-            userId: user.id,
+        const { providerData: processedProviderData, isVerified } =
+          await this.services.userAuthenticationMethods.processProvider(
             provider,
             providerId,
-            providerData: processedProviderData,
-            isVerified,
+            providerData as Record<string, unknown>
+          );
+
+        const user = await this.services.users.createUser({ name }, tx);
+
+        const userAuthenticationMethod =
+          await this.services.userAuthenticationMethods.createUserAuthenticationMethod(
+            {
+              userId: user.id,
+              provider,
+              providerId,
+              providerData: processedProviderData,
+              isVerified,
+            },
+            tx
+          );
+
+        const account = await this.services.accounts.createAccount(
+          { name, type, ownerId: user.id },
+          tx
+        );
+
+        const session = await this.services.userSessions.createSession(
+          {
+            userId: user.id,
+            userAuthenticationMethodId: userAuthenticationMethod.id,
+            scopeTenant: type === AccountType.Organization ? Tenant.Organization : Tenant.Account,
+            scopeId: account.id,
           },
           tx
         );
 
-      const account = await this.services.accounts.createAccount(
-        { name, type, ownerId: user.id },
-        tx
-      );
-
-      const session = await this.services.userSessions.createSession(
-        {
-          userId: user.id,
-          userAuthenticationMethodId: userAuthenticationMethod.id,
-          scopeTenant: type === AccountType.Organization ? Tenant.Organization : Tenant.Account,
-          scopeId: account.id,
-        },
-        tx
-      );
-
-      if (provider === UserAuthenticationMethodProvider.Email) {
-        const { token } = processedProviderData.otp as { token: string };
-        if (token) {
-          try {
-            await this.services.userAuthenticationMethods.sendOtp(providerId, token);
-          } catch (error) {
-            console.error('Error sending OTP', error);
+        if (provider === UserAuthenticationMethodProvider.Email) {
+          const { token } = processedProviderData.otp as { token: string };
+          if (token) {
+            try {
+              await this.services.userAuthenticationMethods.sendOtp(providerId, token);
+            } catch (error) {
+              console.error('Error sending OTP', error);
+            }
           }
         }
-      }
 
-      return {
-        account,
-        accessToken: session.accessToken,
-        refreshToken: session.refreshToken,
-      };
-    });
+        const result = {
+          account,
+          accessToken: session.accessToken,
+          refreshToken: session.refreshToken,
+          requiresEmailVerification: !isVerified,
+          verificationExpiry: isVerified ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        };
+
+        return result;
+      });
+    } catch (error) {
+      console.error('❌ createAccount transaction failed:', error);
+      throw error;
+    }
   }
 
   public async updateAccount(params: MutationUpdateAccountArgs): Promise<Account> {

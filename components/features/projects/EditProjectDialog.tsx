@@ -17,7 +17,7 @@ import { editProjectSchema, type EditProjectFormValues } from './types';
 
 export function EditProjectDialog() {
   const scope = useScopeFromParams();
-  const { tags, loading: tagsLoading } = useTags({ scope });
+  const { tags, loading: tagsLoading } = useTags({ scope: scope! });
   const projectToEdit = useProjectsStore((state) => state.projectToEdit);
   const setProjectToEdit = useProjectsStore((state) => state.setProjectToEdit);
   const { updateProject } = useProjectMutations();

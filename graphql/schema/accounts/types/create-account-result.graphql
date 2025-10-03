@@ -2,4 +2,6 @@ type CreateAccountResult {
   account: Account!
   accessToken: String!
   refreshToken: String!
+  requiresEmailVerification: Boolean
+  verificationExpiry: Date
 }

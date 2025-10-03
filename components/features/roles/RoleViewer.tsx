@@ -25,7 +25,7 @@ export function RoleViewer() {
   const setLoading = useRolesStore((state) => state.setLoading);
 
   const { roles, loading, totalCount } = useRoles({
-    scope,
+    scope: scope!,
     page,
     limit,
     search,

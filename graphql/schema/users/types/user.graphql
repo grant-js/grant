@@ -4,7 +4,7 @@ type User implements Auditable {
   roles: [Role!]
   tags: [Tag!]
   authenticationMethods: [UserAuthenticationMethod!]
-  ownedAccounts: [Account!]
+  accounts: [Account!]
   createdAt: Date!
   updatedAt: Date!
   deletedAt: Date

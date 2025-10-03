@@ -21,8 +21,8 @@ import { createUserSchema, CreateUserFormValues } from './types';
 
 export function CreateUserDialog() {
   const scope = useScopeFromParams();
-  const { roles, loading: rolesLoading } = useRoles({ scope });
-  const { tags, loading: tagsLoading } = useTags({ scope });
+  const { roles, loading: rolesLoading } = useRoles({ scope: scope! });
+  const { tags, loading: tagsLoading } = useTags({ scope: scope! });
   const { createUser } = useUserMutations();
 
   const isCreateDialogOpen = useUsersStore((state) => state.isCreateDialogOpen);
@@ -73,7 +73,7 @@ export function CreateUserDialog() {
 
   const handleCreate = async (values: CreateUserFormValues) => {
     return await createUser({
-      scope: scope,
+      scope: scope!,
       name: values.name,
       roleIds: values.roleIds,
       tagIds: values.tagIds,
