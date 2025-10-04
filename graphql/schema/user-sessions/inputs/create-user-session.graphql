@@ -4,6 +4,7 @@ input CreateUserSessionInput {
   scopeTenant: Tenant!
   scopeId: ID!
   token: String!
+  lastUsedAt: Date!
   expiresAt: Date!
   userAgent: String
   ipAddress: String

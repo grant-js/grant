@@ -46,5 +46,25 @@ export const userSessionsRelations = relations(userSessions, ({ one }) => ({
   }),
 }));
 
+export const userSessionAuditLogs = pgTable(
+  'user_session_audit_logs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userSessionId: uuid('user_session_id')
+      .references(() => userSessions.id)
+      .notNull(),
+    action: varchar('action', { length: 50 }).notNull(),
+    oldValues: varchar('old_values', { length: 1000 }),
+    newValues: varchar('new_values', { length: 1000 }),
+    metadata: varchar('metadata', { length: 1000 }),
+    performedBy: uuid('performed_by').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => [
+    index('user_session_audit_logs_user_session_id_idx').on(t.userSessionId),
+    index('user_session_audit_logs_action_idx').on(t.action),
+  ]
+);
+
 export type UserSessionModel = typeof userSessions.$inferSelect;
 export type NewUserSessionModel = typeof userSessions.$inferInsert;

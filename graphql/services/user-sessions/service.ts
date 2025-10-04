@@ -13,7 +13,7 @@ import {
 import { DbSchema } from '@/graphql/lib/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
 import { Repositories } from '@/graphql/repositories';
-import { userSessions } from '@/graphql/repositories/user-sessions/schema';
+import { userSessionAuditLogs } from '@/graphql/repositories/user-sessions/schema';
 import {
   JWT_EXPIRATION_MINUTES,
   JWT_SECRET,
@@ -43,7 +43,7 @@ export class UserSessionService extends AuditService {
     user: AuthenticatedUser | null,
     db: DbSchema
   ) {
-    super(userSessions, 'id', user, db);
+    super(userSessionAuditLogs, 'userSessionId', user, db);
   }
 
   private generateRefreshToken(): string {
@@ -140,7 +140,7 @@ export class UserSessionService extends AuditService {
   }
 
   public async createSession(
-    params: Omit<CreateUserSessionInput, 'expiresAt' | 'token'>,
+    params: Omit<CreateUserSessionInput, 'expiresAt' | 'token' | 'lastUsedAt'>,
     transaction?: Transaction
   ): Promise<CreateSessionResult> {
     const context = 'UserSessionService.createSession';
@@ -159,6 +159,7 @@ export class UserSessionService extends AuditService {
         scopeId,
         token: this.generateRefreshToken(),
         expiresAt: this.getRefreshTokenExpirationDate(now),
+        lastUsedAt: new Date(),
         userAgent,
         ipAddress,
       },
@@ -216,6 +217,19 @@ export class UserSessionService extends AuditService {
       transaction
     );
     return revokedSession;
+  }
+
+  public async refreshSessionLastUsed(
+    sessionId: string,
+    transaction?: Transaction
+  ): Promise<UserSession> {
+    return this.updateUserSession(
+      {
+        id: sessionId,
+        lastUsedAt: new Date(),
+      },
+      transaction
+    );
   }
 
   private async updateUserSession(

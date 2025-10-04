@@ -271,6 +271,7 @@ export type CreateUserInput = {
 export type CreateUserSessionInput = {
   expiresAt: Scalars['Date']['input'];
   ipAddress?: InputMaybe<Scalars['String']['input']>;
+  lastUsedAt: Scalars['Date']['input'];
   scopeId: Scalars['ID']['input'];
   scopeTenant: Tenant;
   token: Scalars['String']['input'];

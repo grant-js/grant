@@ -20,6 +20,7 @@ import { DbSchema } from '@/graphql/lib/database/connection';
 import { Transaction, TransactionManager } from '@/graphql/lib/transactions/TransactionManager';
 import { Services } from '@/graphql/services';
 import { DeleteParams, SelectedFields } from '@/graphql/services/common';
+import { PROVIDER_VERIFICATION_EXPIRATION_DAYS } from '@/lib/constants';
 
 import { ScopeController } from '../base/ScopeController';
 
@@ -30,6 +31,14 @@ export class AccountController extends ScopeController {
     readonly db: DbSchema
   ) {
     super(scopeCache, services);
+  }
+
+  private getVerificationExpirationMs(): number {
+    return PROVIDER_VERIFICATION_EXPIRATION_DAYS * 24 * 60 * 60 * 1000;
+  }
+
+  private getVerificationExpiryDate(): Date {
+    return new Date(Date.now() + this.getVerificationExpirationMs());
   }
 
   public async login(params: MutationLoginArgs): Promise<LoginResponse> {
@@ -69,11 +78,10 @@ export class AccountController extends ScopeController {
         }
       }
 
-      // Only require isVerified if verification expiration (7 days) has passed
       const verificationCreatedAt = userAuthenticationMethod.createdAt
         ? new Date(userAuthenticationMethod.createdAt)
         : null;
-      const verificationExpirationMs = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
+      const verificationExpirationMs = this.getVerificationExpirationMs();
       const now = new Date();
 
       if (
@@ -127,6 +135,8 @@ export class AccountController extends ScopeController {
       if (userSessionsResult.totalCount > 0) {
         const lastSession = userSessionsResult.userSessions[0];
         if (lastSession.expiresAt > new Date()) {
+          await this.services.userSessions.refreshSessionLastUsed(lastSession.id, tx);
+
           const { accessToken, refreshToken } = this.services.userSessions.signSession(lastSession);
           return {
             accessToken,
@@ -135,7 +145,7 @@ export class AccountController extends ScopeController {
             requiresEmailVerification: !userAuthenticationMethod.isVerified,
             verificationExpiry: userAuthenticationMethod.isVerified
               ? null
-              : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+              : this.getVerificationExpiryDate(),
           };
         }
       }
@@ -158,7 +168,7 @@ export class AccountController extends ScopeController {
         requiresEmailVerification: !userAuthenticationMethod.isVerified,
         verificationExpiry: userAuthenticationMethod.isVerified
           ? null
-          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+          : this.getVerificationExpiryDate(),
       };
     });
   }
@@ -238,7 +248,7 @@ export class AccountController extends ScopeController {
         accessToken: session.accessToken,
         refreshToken: session.refreshToken,
         requiresEmailVerification: !isVerified,
-        verificationExpiry: isVerified ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        verificationExpiry: isVerified ? null : this.getVerificationExpiryDate(),
       };
 
       return result;
