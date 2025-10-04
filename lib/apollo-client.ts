@@ -3,16 +3,20 @@
 import { ApolloClient, HttpLink, InMemoryCache, from } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 
-import { getStoredAccessToken, isTokenValid } from './auth';
+import { useAuthStore } from '@/stores/auth.store';
+
+import { isTokenValid } from './auth';
 
 const authLink = setContext((_, { headers }) => {
   try {
-    const accessToken = getStoredAccessToken();
+    // Get token from Zustand store instead of localStorage
+    const accessToken = useAuthStore.getState().accessToken;
 
     if (accessToken && !isTokenValid(accessToken)) {
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('auth_token');
-        console.warn('⚠️ Invalid/expired token removed from localStorage');
+        // Clear invalid token from both store and localStorage (fallback cleanup)
+        useAuthStore.getState().setTokens('', '');
+        console.warn('⚠️ Invalid/expired token removed from auth store');
       }
       return { headers };
     }

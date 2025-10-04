@@ -100,8 +100,8 @@
   },
   "auth": {
     "welcome": {
-      "title": "Willkommen bei Identity Central",
-      "description": "Ihr vereinheitlichtes Gateway zur Verwaltung von Identitäten über mehrere Authentifizierungssysteme. Nahtlos verbinden, migrieren und orchestrieren Sie den Benutzerzugriff mit unserer strukturierten Identitätsverwaltungsplattform."
+      "title": "Willkommen bei Grant",
+      "description": "Eine moderne Autorisierungsplattform für Einzelpersonen und Organisationen. Verwalten Sie Benutzerzugriff, Berechtigungen und Rollen für Ihre Anwendungen mit Einfachheit."
     },
     "form": {
       "name": {
@@ -131,7 +131,7 @@
     },
     "login": {
       "title": "Anmelden",
-      "description": "Greifen Sie auf Ihre vereinheitlichte Identität über alle verbundenen Systeme zu",
+      "description": "Melden Sie sich an, um den Zugriff für Ihre Projekte zu verwalten",
       "email": "E-Mail",
       "emailPlaceholder": "E-Mail eingeben",
       "emailError": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
@@ -150,7 +150,7 @@
     },
     "register": {
       "title": "Identität erstellen",
-      "description": "Erstellen Sie Ihre vereinheitlichte Identität über alle verbundenen Authentifizierungssysteme",
+      "description": "Erstellen Sie Ihr Konto, um mit der Verwaltung des Zugriffs für Ihre Projekte zu beginnen",
       "submit": "Registrieren",
       "submitting": "Konto wird erstellt...",
       "haveAccount": "Bereits eine Identität?",

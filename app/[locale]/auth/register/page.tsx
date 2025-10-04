@@ -4,7 +4,6 @@ import { useState, useRef } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ChevronDown } from 'lucide-react';
-import { useParams, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -25,10 +24,10 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { AccountType } from '@/graphql/generated/types';
 import { useAuthMutations, usePageTitle } from '@/hooks';
 import { Link } from '@/i18n/navigation';
-import { setStoredTokens } from '@/lib/auth';
 import {
   passwordPolicySchema,
   getPasswordStrength,
@@ -37,10 +36,6 @@ import {
 
 export default function RegisterPage() {
   const t = useTranslations('auth');
-  const searchParams = useSearchParams();
-  const params = useParams();
-  const locale = params.locale as string;
-  const from = searchParams.get('from') || '/dashboard';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   usePageTitle('auth.register');
@@ -74,18 +69,12 @@ export default function RegisterPage() {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
-      const data = await handleRegister({
+      await handleRegister({
         name: values.name,
         email: values.email,
         password: values.password,
         accountType: values.accountType,
       });
-
-      if (data?.accessToken && data?.refreshToken) {
-        setStoredTokens(data.accessToken, data.refreshToken);
-        const redirectTo = from.startsWith(`/${locale}`) ? from : `/${locale}${from}`;
-        window.location.href = redirectTo;
-      }
     } finally {
       setIsSubmitting(false);
     }
@@ -144,8 +133,7 @@ export default function RegisterPage() {
             <FormItem>
               <FormLabel>{t('form.password.label')}</FormLabel>
               <FormControl>
-                <Input
-                  type="password"
+                <PasswordInput
                   placeholder={t('form.password.placeholder')}
                   disabled={isSubmitting}
                   {...field}
@@ -225,8 +213,7 @@ export default function RegisterPage() {
             <FormItem>
               <FormLabel>{t('form.confirmPassword.label')}</FormLabel>
               <FormControl>
-                <Input
-                  type="password"
+                <PasswordInput
                   placeholder={t('form.confirmPassword.placeholder')}
                   disabled={isSubmitting}
                   {...field}

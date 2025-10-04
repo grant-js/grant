@@ -5,7 +5,6 @@ export const CREATE_USER = gql`
     createUser(input: $input) {
       id
       name
-      email
       createdAt
       updatedAt
     }
@@ -17,7 +16,6 @@ export const UPDATE_USER = gql`
     updateUser(id: $id, input: $input) {
       id
       name
-      email
       createdAt
       updatedAt
     }
@@ -29,7 +27,6 @@ export const DELETE_USER = gql`
     deleteUser(id: $id, scope: $scope) {
       id
       name
-      email
       createdAt
       updatedAt
     }

@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 
-import { isAuthenticated, getDecodedToken } from '@/lib/auth';
+import { jwtDecode } from 'jwt-decode';
+import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
+
+import { getRedirectPath, removeStoredTokens } from '@/lib/auth';
+import { useAuthStore } from '@/stores/auth.store';
 
 interface JWTPayload {
   exp: number;
@@ -8,21 +13,30 @@ interface JWTPayload {
   email: string;
 }
 
+interface UseAuthOptions {
+  disableAutoRedirect?: boolean;
+}
+
 interface UseAuthResult {
   user: JWTPayload | null;
   loading: boolean;
   error: Error | undefined;
   isAuthenticated: boolean;
+  logout: () => void;
 }
 
-export function useAuth(): UseAuthResult {
+export function useAuth(options: UseAuthOptions = {}): UseAuthResult {
+  const { disableAutoRedirect = false } = options;
+  const { accessToken, isAuthenticated, currentAccount, clearAuth } = useAuthStore();
+  const router = useRouter();
+  const locale = useLocale();
   const [user, setUser] = useState<JWTPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | undefined>(undefined);
 
   useEffect(() => {
     try {
-      const decodedToken = getDecodedToken();
+      const decodedToken = accessToken ? jwtDecode<JWTPayload>(accessToken) : null;
 
       setUser(decodedToken);
       setLoading(false);
@@ -31,12 +45,26 @@ export function useAuth(): UseAuthResult {
       setError(err instanceof Error ? err : new Error('Authentication check failed'));
       setLoading(false);
     }
-  }, []);
+  }, [accessToken]);
+
+  useEffect(() => {
+    if (!disableAutoRedirect && isAuthenticated && currentAccount) {
+      const redirectTo = getRedirectPath(currentAccount.type, currentAccount.id, locale);
+      router.replace(redirectTo as any);
+    }
+  }, [isAuthenticated, currentAccount, locale, router, disableAutoRedirect]);
+
+  const handleLogout = () => {
+    removeStoredTokens();
+    clearAuth();
+    router.push(`/${locale}/auth/login`);
+  };
 
   return {
     user,
     loading,
     error,
-    isAuthenticated: isAuthenticated(),
+    isAuthenticated,
+    logout: handleLogout,
   };
 }

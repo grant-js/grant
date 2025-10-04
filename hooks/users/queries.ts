@@ -22,7 +22,6 @@ export const GET_USERS = gql`
       users {
         id
         name
-        email
         createdAt
         updatedAt
         roles {

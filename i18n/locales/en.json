@@ -100,8 +100,8 @@
   },
   "auth": {
     "welcome": {
-      "title": "Welcome to Identity Central",
-      "description": "Your unified gateway to manage identities across multiple authentication systems. Seamlessly bridge, migrate, and orchestrate user access with our opinionated identity management platform."
+      "title": "Welcome to Grant",
+      "description": "A modern authorization platform for individuals and organizations. Manage user access, permissions and roles for your applications with simplicity."
     },
     "form": {
       "name": {
@@ -131,7 +131,7 @@
     },
     "login": {
       "title": "Sign In",
-      "description": "Access your unified identity across all connected systems",
+      "description": "Sign in to manage access for your projects",
       "email": "Email",
       "emailPlaceholder": "Enter your email",
       "emailError": "Please enter a valid email address",
@@ -140,8 +140,8 @@
       "passwordError": "Password must be at least 6 characters",
       "forgotPassword": "Forgot password?",
       "submit": "Login",
-      "noAccount": "Don't have an identity?",
-      "register": "Create identity",
+      "noAccount": "Don't have an account?",
+      "register": "Create account",
       "success": "Identity access granted",
       "error": "Identity verification failed",
       "errorUnknown": "An unknown error occurred",
@@ -149,11 +149,11 @@
       "verifyEmailDescription": "Please verify your email to access all features"
     },
     "register": {
-      "title": "Create Identity",
-      "description": "Establish your unified identity across all connected authentication systems",
+      "title": "Create Account",
+      "description": "Create your account to start managing access for your projects",
       "submit": "Sign Up",
       "submitting": "Creating Account...",
-      "haveAccount": "Already have an identity?",
+      "haveAccount": "Already have an account?",
       "login": "Sign in",
       "success": "Account created successfully",
       "error": "Failed to create account",
@@ -161,8 +161,8 @@
       "verifyEmailDescription": "Please check your email and verify your account to access all features"
     },
     "forgotPassword": {
-      "title": "Reset Identity Access",
-      "description": "Enter your email address and we'll send you a secure link to reset your identity access across all connected systems.",
+      "title": "Reset Password",
+      "description": "Enter your email address and we'll send you a secure link to reset your password.",
       "submit": "Send Reset Link",
       "rememberPassword": "Remember your credentials?",
       "backToLogin": "Back to login"

@@ -16,9 +16,17 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
         <div className="w-full max-w-sm">{children}</div>
       </div>
 
-      {/* Right side - Image or gradient */}
+      {/* Right side - Protection concept image with gradient overlay */}
       <div className="hidden lg:flex items-center justify-center bg-gradient-to-r from-blue-600/90 to-blue-400/90 p-8 relative overflow-hidden">
-        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" />
+        {/* Background protection concept image with black and white filter */}
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat filter grayscale opacity-40"
+          style={{
+            backgroundImage: `url('/protection-concept-with-lock.jpg')`,
+            backgroundPosition: 'center bottom',
+          }}
+        />
+        {/* Blue gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600/90 to-blue-400/90" />
         <div className="max-w-lg text-white relative z-10">
           <div className="flex items-center">

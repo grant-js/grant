@@ -1,14 +1,8 @@
-import { jwtDecode } from 'jwt-decode';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+import { isTokenValid } from '@/lib/auth';
 import { AUTH_ACCESS_TOKEN_KEY } from '@/lib/constants';
-
-interface JWTPayload {
-  exp: number;
-  sub: string;
-  email: string;
-}
 
 function getLocaleFromPath(path: string): string {
   const firstSegment = path.split('/')[1];
@@ -32,22 +26,21 @@ export function middleware(request: NextRequest) {
 
   const accessToken = request.cookies.get(AUTH_ACCESS_TOKEN_KEY)?.value;
 
-  const isTokenValid = accessToken ? isValidToken(accessToken) : false;
+  const tokenIsValid = accessToken ? isTokenValid(accessToken) : false;
 
-  if (!isPublicPath && !isTokenValid) {
+  if (!isPublicPath && !tokenIsValid) {
     const loginUrl = new URL(`/${locale}/auth/login`, request.url);
     loginUrl.searchParams.set('from', path);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isTokenValid && path.includes('/auth')) {
-    const currentLocale = getLocaleFromPath(path);
-    return NextResponse.redirect(new URL(`/${currentLocale}/dashboard`, request.url));
+  if (tokenIsValid && path.includes('/auth')) {
+    return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
   }
 
   if (path === '/') {
     const defaultLocale = 'en';
-    if (isTokenValid) {
+    if (tokenIsValid) {
       return NextResponse.redirect(new URL(`/${defaultLocale}/dashboard`, request.url));
     } else {
       return NextResponse.redirect(new URL(`/${defaultLocale}/auth/login`, request.url));
@@ -55,16 +48,6 @@ export function middleware(request: NextRequest) {
   }
 
   return NextResponse.next();
-}
-
-function isValidToken(token: string): boolean {
-  try {
-    const decoded = jwtDecode<JWTPayload>(token);
-    const currentTime = Math.floor(Date.now() / 1000);
-    return decoded.exp > currentTime;
-  } catch {
-    return false;
-  }
 }
 
 export const config = {

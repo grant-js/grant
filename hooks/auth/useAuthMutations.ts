@@ -9,6 +9,8 @@ import {
   AccountType,
   UserAuthenticationEmailProviderAction,
 } from '@/graphql/generated/types';
+import { setStoredTokens } from '@/lib/auth';
+import { useAuthStore } from '@/stores/auth.store';
 
 import { LOGIN, LOGOUT, REGISTER } from './mutations';
 
@@ -26,6 +28,7 @@ interface RegisterInput {
 
 export function useAuthMutations() {
   const t = useTranslations('auth');
+  const { setAuthData } = useAuthStore();
 
   const [login] = useMutation<{ login: LoginResponse }>(LOGIN);
   const [logout] = useMutation<{ logout: boolean }>(LOGOUT);
@@ -47,6 +50,16 @@ export function useAuthMutations() {
       });
 
       const loginData = result.data?.login;
+
+      if (loginData?.accessToken && loginData?.refreshToken && loginData?.accounts) {
+        setStoredTokens(loginData.accessToken, loginData.refreshToken);
+
+        setAuthData({
+          accounts: loginData.accounts,
+          accessToken: loginData.accessToken,
+          refreshToken: loginData.refreshToken,
+        });
+      }
 
       // Handle verification status
       if (loginData?.requiresEmailVerification) {
@@ -87,13 +100,29 @@ export function useAuthMutations() {
 
       const registerData = result.data?.register;
 
-      if (registerData?.requiresEmailVerification) {
-        toast.warning(t('register.verificationRequired'), {
-          description: t('register.verifyEmailDescription'),
-          duration: 8000, // Longer duration for important message
+      if (registerData?.accessToken && registerData?.refreshToken && registerData?.account) {
+        // Store tokens locally
+        setStoredTokens(registerData.accessToken, registerData.refreshToken);
+
+        // Create accounts array from single account
+        const accounts = [registerData.account];
+
+        // Store account data in Zustand store
+        setAuthData({
+          accounts,
+          accessToken: registerData.accessToken,
+          refreshToken: registerData.refreshToken,
         });
-      } else {
-        toast.success(t('register.success'));
+
+        // Handle verification status
+        if (registerData?.requiresEmailVerification) {
+          toast.warning(t('register.verificationRequired'), {
+            description: t('register.verificationRequired'),
+            duration: 8000, // Longer duration for important message
+          });
+        } else {
+          toast.success(t('register.success'));
+        }
       }
 
       return registerData;
@@ -121,6 +150,7 @@ export function useAuthMutations() {
   const handleLogout = async () => {
     try {
       const result = await logout();
+      // Clear auth store will be handled by the logout function in useAuth hook
 
       toast.success(t('notifications.logoutSuccess'));
       return result.data?.logout;

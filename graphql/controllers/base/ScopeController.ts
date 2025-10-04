@@ -77,6 +77,13 @@ export class ScopeController {
 
     let roleIds: string[];
     switch (scope.tenant) {
+      case Tenant.Account: {
+        // Personal accounts don't have account-level roles, users, groups, permissions, or tags
+        // These entities exist only at the project level for personal accounts
+        roleIds = [];
+        break;
+      }
+
       case Tenant.Organization: {
         const organizationRoles = await this.services.organizationRoles.getOrganizationRoles({
           organizationId: scope.id,
@@ -111,6 +118,13 @@ export class ScopeController {
 
     let userIds: string[];
     switch (scope.tenant) {
+      case Tenant.Account: {
+        // Personal accounts don't have account-level users
+        // Users exist only at the project level for personal accounts
+        userIds = [];
+        break;
+      }
+
       case Tenant.Organization: {
         const organizationUsers = await this.services.organizationUsers.getOrganizationUsers({
           organizationId: scope.id,
@@ -145,6 +159,13 @@ export class ScopeController {
 
     let groupIds: string[];
     switch (scope.tenant) {
+      case Tenant.Account: {
+        // Personal accounts don't have account-level groups
+        // Groups exist only at the project level for personal accounts
+        groupIds = [];
+        break;
+      }
+
       case Tenant.Organization: {
         const organizationGroups = await this.services.organizationGroups.getOrganizationGroups({
           organizationId: scope.id,
@@ -179,6 +200,13 @@ export class ScopeController {
 
     let permissionIds: string[];
     switch (scope.tenant) {
+      case Tenant.Account: {
+        // Personal accounts don't have account-level permissions
+        // Permissions exist only at the project level for personal accounts
+        permissionIds = [];
+        break;
+      }
+
       case Tenant.Organization: {
         const organizationPermissions =
           await this.services.organizationPermissions.getOrganizationPermissions({
@@ -214,6 +242,13 @@ export class ScopeController {
 
     let tagIds: string[];
     switch (scope.tenant) {
+      case Tenant.Account: {
+        // Personal accounts don't have account-level tags
+        // Tags exist only at the project level for personal accounts
+        tagIds = [];
+        break;
+      }
+
       case Tenant.Organization: {
         const organizationTags = await this.services.organizationTags.getOrganizationTags({
           organizationId: scope.id,

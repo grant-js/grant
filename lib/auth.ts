@@ -1,6 +1,8 @@
 import Cookies from 'js-cookie';
 import { jwtDecode } from 'jwt-decode';
 
+import { AccountType } from '@/graphql/generated/types';
+
 import {
   AUTH_ACCESS_TOKEN_KEY,
   AUTH_REFRESH_TOKEN_KEY,
@@ -13,14 +15,7 @@ interface JWTPayload {
   email: string;
 }
 
-export function getStoredAccessToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem(AUTH_ACCESS_TOKEN_KEY);
-}
-
 export function setStoredTokens(accessToken: string, refreshToken: string): void {
-  localStorage.setItem(AUTH_ACCESS_TOKEN_KEY, accessToken);
-  localStorage.setItem(AUTH_REFRESH_TOKEN_KEY, refreshToken);
   Cookies.set(AUTH_ACCESS_TOKEN_KEY, accessToken, {
     expires: REFRESH_TOKEN_EXPIRATION_DAYS,
     path: '/',
@@ -35,9 +30,7 @@ export function setStoredTokens(accessToken: string, refreshToken: string): void
   });
 }
 
-export function removeStoredToken(): void {
-  localStorage.removeItem(AUTH_ACCESS_TOKEN_KEY);
-  localStorage.removeItem(AUTH_REFRESH_TOKEN_KEY);
+export function removeStoredTokens(): void {
   Cookies.remove(AUTH_ACCESS_TOKEN_KEY, { path: '/' });
   Cookies.remove(AUTH_REFRESH_TOKEN_KEY, { path: '/' });
 }
@@ -52,32 +45,17 @@ export function isTokenValid(token: string): boolean {
   }
 }
 
-export function isAuthenticated(): boolean {
-  const token = getStoredAccessToken();
-  return token !== null && isTokenValid(token);
-}
-
-export function getDecodedToken(): JWTPayload | null {
-  const token = getStoredAccessToken();
-  if (!token) return null;
-
-  try {
-    return jwtDecode<JWTPayload>(token);
-  } catch {
-    return null;
+export function getRedirectPath(
+  accountType: AccountType,
+  accountId: string,
+  locale: string
+): string {
+  switch (accountType) {
+    case AccountType.Personal:
+      return `/${locale}/dashboard/accounts/${accountId}`;
+    case AccountType.Organization:
+      return `/${locale}/dashboard/organizations`;
+    default:
+      return `/${locale}/dashboard`;
   }
-}
-
-export function getCurrentLocale(): string {
-  if (typeof window === 'undefined') return 'en';
-  const path = window.location.pathname;
-  const firstSegment = path.split('/')[1];
-  const supportedLocales = ['en', 'de'];
-  return supportedLocales.includes(firstSegment) ? firstSegment : 'en';
-}
-
-export function logout(): void {
-  removeStoredToken();
-  const locale = getCurrentLocale();
-  window.location.href = `/${locale}/auth/login`;
 }

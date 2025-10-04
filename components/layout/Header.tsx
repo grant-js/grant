@@ -15,13 +15,12 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/auth';
 import { Link } from '@/i18n/navigation';
-import { logout } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
 export function Header() {
   const t = useTranslations('common');
   const themeT = useTranslations('theme');
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const themeToggleRef = useRef<HTMLButtonElement>(null);
   const languageSwitcherRef = useRef<HTMLButtonElement>(null);

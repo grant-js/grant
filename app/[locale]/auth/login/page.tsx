@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { useSearchParams, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -19,8 +19,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { useAuthMutations, usePageTitle } from '@/hooks';
-import { setStoredTokens } from '@/lib/auth';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -31,10 +31,8 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const t = useTranslations('auth');
-  const searchParams = useSearchParams();
   const params = useParams();
   const locale = params.locale as string;
-  const from = searchParams.get('from') || '/dashboard';
   const [isSubmitting, setIsSubmitting] = useState(false);
   usePageTitle('auth.login');
 
@@ -52,16 +50,10 @@ export default function LoginPage() {
   const onSubmit = async (values: LoginFormValues) => {
     setIsSubmitting(true);
     try {
-      const data = await login({
+      await login({
         email: values.email,
         password: values.password,
       });
-
-      if (data?.accessToken && data?.refreshToken) {
-        setStoredTokens(data.accessToken, data.refreshToken);
-        const redirectTo = from.startsWith(`/${locale}`) ? from : `/${locale}${from}`;
-        window.location.href = redirectTo;
-      }
     } finally {
       setIsSubmitting(false);
     }
@@ -105,9 +97,8 @@ export default function LoginPage() {
               <FormItem>
                 <FormLabel>{t('login.password')}</FormLabel>
                 <FormControl>
-                  <Input
+                  <PasswordInput
                     disabled={isSubmitting}
-                    type="password"
                     placeholder={t('login.passwordPlaceholder')}
                     {...field}
                     className={form.formState.errors.password ? 'border-red-500' : ''}
