@@ -183,71 +183,66 @@ export class AccountController extends ScopeController {
   public async createAccount(
     params: Omit<CreateAccountInput, 'ownerId'>
   ): Promise<CreateAccountResult> {
-    try {
-      return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
-        const { name, type, provider, providerId, providerData } = params;
+    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+      const { name, type, provider, providerId, providerData } = params;
 
-        const { providerData: processedProviderData, isVerified } =
-          await this.services.userAuthenticationMethods.processProvider(
-            provider,
-            providerId,
-            providerData as Record<string, unknown>
-          );
-
-        const user = await this.services.users.createUser({ name }, tx);
-
-        const userAuthenticationMethod =
-          await this.services.userAuthenticationMethods.createUserAuthenticationMethod(
-            {
-              userId: user.id,
-              provider,
-              providerId,
-              providerData: processedProviderData,
-              isVerified,
-            },
-            tx
-          );
-
-        const account = await this.services.accounts.createAccount(
-          { name, type, ownerId: user.id },
-          tx
+      const { providerData: processedProviderData, isVerified } =
+        await this.services.userAuthenticationMethods.processProvider(
+          provider,
+          providerId,
+          providerData as Record<string, unknown>
         );
 
-        const session = await this.services.userSessions.createSession(
+      const user = await this.services.users.createUser({ name }, tx);
+
+      const userAuthenticationMethod =
+        await this.services.userAuthenticationMethods.createUserAuthenticationMethod(
           {
             userId: user.id,
-            userAuthenticationMethodId: userAuthenticationMethod.id,
-            scopeTenant: type === AccountType.Organization ? Tenant.Organization : Tenant.Account,
-            scopeId: account.id,
+            provider,
+            providerId,
+            providerData: processedProviderData,
+            isVerified,
           },
           tx
         );
 
-        if (provider === UserAuthenticationMethodProvider.Email) {
-          const { token } = processedProviderData.otp as { token: string };
-          if (token) {
-            try {
-              await this.services.userAuthenticationMethods.sendOtp(providerId, token);
-            } catch (error) {
-              console.error('Error sending OTP', error);
-            }
+      const account = await this.services.accounts.createAccount(
+        { name, type, ownerId: user.id },
+        tx
+      );
+
+      const session = await this.services.userSessions.createSession(
+        {
+          userId: user.id,
+          userAuthenticationMethodId: userAuthenticationMethod.id,
+          scopeTenant: type === AccountType.Organization ? Tenant.Organization : Tenant.Account,
+          scopeId: account.id,
+        },
+        tx
+      );
+
+      if (provider === UserAuthenticationMethodProvider.Email) {
+        const { token } = processedProviderData.otp as { token: string };
+        if (token) {
+          try {
+            await this.services.userAuthenticationMethods.sendOtp(providerId, token);
+          } catch (error) {
+            console.error('Error sending OTP', error);
           }
         }
+      }
 
-        const result = {
-          account,
-          accessToken: session.accessToken,
-          refreshToken: session.refreshToken,
-          requiresEmailVerification: !isVerified,
-          verificationExpiry: isVerified ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-        };
+      const result = {
+        account,
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+        requiresEmailVerification: !isVerified,
+        verificationExpiry: isVerified ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      };
 
-        return result;
-      });
-    } catch (error) {
-      console.error('❌ createAccount transaction failed:', error);
-      throw error;
-    }
+      return result;
+    });
   }
 
   public async updateAccount(params: MutationUpdateAccountArgs): Promise<Account> {

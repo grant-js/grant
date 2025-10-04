@@ -400,7 +400,6 @@ export type LoginResponse = {
 export type Mutation = {
   __typename?: 'Mutation';
   _empty?: Maybe<Scalars['String']['output']>;
-  createAccount: CreateAccountResult;
   createGroup: Group;
   createOrganization: Organization;
   createPermission: Permission;
@@ -426,11 +425,6 @@ export type Mutation = {
   updateRole: Role;
   updateTag: Tag;
   updateUser: User;
-};
-
-
-export type MutationCreateAccountArgs = {
-  input: CreateAccountInput;
 };
 
 
@@ -1324,6 +1318,11 @@ export type User = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
+export enum UserAuthenticationEmailProviderAction {
+  Login = 'login',
+  Signup = 'signup'
+}
+
 export type UserAuthenticationMethod = Auditable & {
   __typename?: 'UserAuthenticationMethod';
   createdAt: Scalars['Date']['output'];
@@ -1672,6 +1671,7 @@ export type ResolversTypes = ResolversObject<{
   UpdateUserSessionInput: UpdateUserSessionInput;
   UpdateUserTagInput: UpdateUserTagInput;
   User: ResolverTypeWrapper<User>;
+  UserAuthenticationEmailProviderAction: UserAuthenticationEmailProviderAction;
   UserAuthenticationMethod: ResolverTypeWrapper<UserAuthenticationMethod>;
   UserAuthenticationMethodProvider: UserAuthenticationMethodProvider;
   UserPage: ResolverTypeWrapper<UserPage>;
@@ -1947,7 +1947,6 @@ export type LoginResponseResolvers<ContextType = GraphqlContext, ParentType exte
 
 export type MutationResolvers<ContextType = GraphqlContext, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = ResolversObject<{
   _empty?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  createAccount?: Resolver<ResolversTypes['CreateAccountResult'], ParentType, ContextType, RequireFields<MutationCreateAccountArgs, 'input'>>;
   createGroup?: Resolver<ResolversTypes['Group'], ParentType, ContextType, RequireFields<MutationCreateGroupArgs, 'input'>>;
   createOrganization?: Resolver<ResolversTypes['Organization'], ParentType, ContextType, RequireFields<MutationCreateOrganizationArgs, 'input'>>;
   createPermission?: Resolver<ResolversTypes['Permission'], ParentType, ContextType, RequireFields<MutationCreatePermissionArgs, 'input'>>;

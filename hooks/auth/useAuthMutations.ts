@@ -7,6 +7,7 @@ import {
   CreateAccountResult,
   UserAuthenticationMethodProvider,
   AccountType,
+  UserAuthenticationEmailProviderAction,
 } from '@/graphql/generated/types';
 
 import { LOGIN, LOGOUT, REGISTER } from './mutations';
@@ -39,7 +40,7 @@ export function useAuthMutations() {
             providerId: input.email,
             providerData: {
               password: input.password,
-              action: 'login',
+              action: UserAuthenticationEmailProviderAction.Login,
             },
           },
         },
@@ -78,7 +79,7 @@ export function useAuthMutations() {
             providerId: input.email,
             providerData: {
               password: input.password,
-              action: 'signup',
+              action: UserAuthenticationEmailProviderAction.Signup,
             },
           },
         },

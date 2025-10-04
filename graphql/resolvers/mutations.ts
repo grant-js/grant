@@ -10,7 +10,6 @@ import * as userMutations from './users/mutations';
 export const Mutation = {
   login: authMutations.login,
   register: authMutations.register,
-  createAccount: accountMutations.createAccount,
   updateAccount: accountMutations.updateAccount,
   deleteAccount: accountMutations.deleteAccount,
   createUser: userMutations.createUser,

@@ -9,6 +9,7 @@ import {
   CreateUserAuthenticationMethodInput,
   UserAuthenticationMethodProvider,
   UpdateUserAuthenticationMethodInput,
+  UserAuthenticationEmailProviderAction,
 } from '@/graphql/generated/types';
 import { DbSchema } from '@/graphql/lib/database/connection';
 import { Transaction } from '@/graphql/lib/transactions/TransactionManager';
@@ -287,14 +288,14 @@ export class UserAuthenticationMethodService extends AuditService {
     }
     validateInput(emailSchema, email, context);
     switch (action) {
-      case 'login':
+      case UserAuthenticationEmailProviderAction.Login:
         return {
           providerData: {
             password,
           },
           isVerified: false,
         };
-      case 'signup': {
+      case UserAuthenticationEmailProviderAction.Signup: {
         const validatedPassword = validateInput(passwordPolicySchema, password, context);
         const hashedPassword = this.hashPassword(validatedPassword);
         const otp = this.generateOtp();
