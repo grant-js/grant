@@ -4,18 +4,22 @@ export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
-export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = { [_ in K]?: never };
-export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
+export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = {
+  [_ in K]?: never;
+};
+export type Incremental<T> =
+  | T
+  | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 export type RequireFields<T, K extends keyof T> = Omit<T, K> & { [P in K]-?: NonNullable<T[P]> };
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
-  ID: { input: string; output: string; }
-  String: { input: string; output: string; }
-  Boolean: { input: boolean; output: boolean; }
-  Int: { input: number; output: number; }
-  Float: { input: number; output: number; }
-  Date: { input: any; output: any; }
-  JSON: { input: Record<string, any>; output: Record<string, any>; }
+  ID: { input: string; output: string };
+  String: { input: string; output: string };
+  Boolean: { input: boolean; output: boolean };
+  Int: { input: number; output: number };
+  Float: { input: number; output: number };
+  Date: { input: any; output: any };
+  JSON: { input: Record<string, any>; output: Record<string, any> };
 };
 
 export type Account = Auditable & {
@@ -53,7 +57,7 @@ export type AccountProject = Auditable & {
 
 export enum AccountSearchableField {
   Name = 'name',
-  Slug = 'slug'
+  Slug = 'slug',
 }
 
 export type AccountSortInput = {
@@ -66,12 +70,12 @@ export enum AccountSortableField {
   Name = 'name',
   Slug = 'slug',
   Type = 'type',
-  UpdatedAt = 'updatedAt'
+  UpdatedAt = 'updatedAt',
 }
 
 export enum AccountType {
   Organization = 'organization',
-  Personal = 'personal'
+  Personal = 'personal',
 }
 
 export type AddAccountProjectInput = {
@@ -336,11 +340,9 @@ export type GroupPermission = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
-
 export type GroupPermissionGroupArgs = {
   scope: Scope;
 };
-
 
 export type GroupPermissionPermissionArgs = {
   scope: Scope;
@@ -348,7 +350,7 @@ export type GroupPermissionPermissionArgs = {
 
 export enum GroupSearchableField {
   Description = 'description',
-  Name = 'name'
+  Name = 'name',
 }
 
 export type GroupSortInput = {
@@ -357,7 +359,7 @@ export type GroupSortInput = {
 };
 
 export enum GroupSortableField {
-  Name = 'name'
+  Name = 'name',
 }
 
 export type GroupTag = Auditable & {
@@ -373,11 +375,9 @@ export type GroupTag = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
-
 export type GroupTagGroupArgs = {
   scope: Scope;
 };
-
 
 export type GroupTagTagArgs = {
   scope: Scope;
@@ -429,145 +429,119 @@ export type Mutation = {
   updateUser: User;
 };
 
-
 export type MutationCreateGroupArgs = {
   input: CreateGroupInput;
 };
-
 
 export type MutationCreateOrganizationArgs = {
   input: CreateOrganizationInput;
 };
 
-
 export type MutationCreatePermissionArgs = {
   input: CreatePermissionInput;
 };
-
 
 export type MutationCreateProjectArgs = {
   input: CreateProjectInput;
 };
 
-
 export type MutationCreateRoleArgs = {
   input: CreateRoleInput;
 };
-
 
 export type MutationCreateTagArgs = {
   input: CreateTagInput;
 };
 
-
 export type MutationCreateUserArgs = {
   input: CreateUserInput;
 };
 
-
 export type MutationDeleteAccountArgs = {
   id: Scalars['ID']['input'];
 };
-
 
 export type MutationDeleteGroupArgs = {
   id: Scalars['ID']['input'];
   scope: Scope;
 };
 
-
 export type MutationDeleteOrganizationArgs = {
   id: Scalars['ID']['input'];
 };
-
 
 export type MutationDeletePermissionArgs = {
   id: Scalars['ID']['input'];
   scope: Scope;
 };
 
-
 export type MutationDeleteProjectArgs = {
   id: Scalars['ID']['input'];
   scope: Scope;
 };
-
 
 export type MutationDeleteRoleArgs = {
   id: Scalars['ID']['input'];
   scope: Scope;
 };
 
-
 export type MutationDeleteTagArgs = {
   id: Scalars['ID']['input'];
   scope: Scope;
 };
-
 
 export type MutationDeleteUserArgs = {
   id: Scalars['ID']['input'];
   scope: Scope;
 };
 
-
 export type MutationLoginArgs = {
   input: LoginInput;
 };
-
 
 export type MutationRefreshSessionArgs = {
   accessToken: Scalars['String']['input'];
   refreshToken: Scalars['String']['input'];
 };
 
-
 export type MutationRegisterArgs = {
   input: RegisterInput;
 };
-
 
 export type MutationUpdateAccountArgs = {
   id: Scalars['ID']['input'];
   input: UpdateAccountInput;
 };
 
-
 export type MutationUpdateGroupArgs = {
   id: Scalars['ID']['input'];
   input: UpdateGroupInput;
 };
-
 
 export type MutationUpdateOrganizationArgs = {
   id: Scalars['ID']['input'];
   input: UpdateOrganizationInput;
 };
 
-
 export type MutationUpdatePermissionArgs = {
   id: Scalars['ID']['input'];
   input: UpdatePermissionInput;
 };
-
 
 export type MutationUpdateProjectArgs = {
   id: Scalars['ID']['input'];
   input: UpdateProjectInput;
 };
 
-
 export type MutationUpdateRoleArgs = {
   id: Scalars['ID']['input'];
   input: UpdateRoleInput;
 };
 
-
 export type MutationUpdateTagArgs = {
   id: Scalars['ID']['input'];
   input: UpdateTagInput;
 };
-
 
 export type MutationUpdateUserArgs = {
   id: Scalars['ID']['input'];
@@ -647,7 +621,7 @@ export type OrganizationRole = Auditable & {
 
 export enum OrganizationSearchableField {
   Name = 'name',
-  Slug = 'slug'
+  Slug = 'slug',
 }
 
 export type OrganizationSortInput = {
@@ -658,7 +632,7 @@ export type OrganizationSortInput = {
 export enum OrganizationSortableField {
   CreatedAt = 'createdAt',
   Name = 'name',
-  UpdatedAt = 'updatedAt'
+  UpdatedAt = 'updatedAt',
 }
 
 export type OrganizationTag = Auditable & {
@@ -713,7 +687,7 @@ export type PermissionPage = PaginatedResults & {
 export enum PermissionSearchableField {
   Action = 'action',
   Description = 'description',
-  Name = 'name'
+  Name = 'name',
 }
 
 export type PermissionSortInput = {
@@ -723,7 +697,7 @@ export type PermissionSortInput = {
 
 export enum PermissionSortableField {
   Action = 'action',
-  Name = 'name'
+  Name = 'name',
 }
 
 export type PermissionTag = Auditable & {
@@ -739,11 +713,9 @@ export type PermissionTag = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
-
 export type PermissionTagPermissionArgs = {
   scope: Scope;
 };
-
 
 export type PermissionTagTagArgs = {
   scope: Scope;
@@ -777,7 +749,6 @@ export type ProjectGroup = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
-
 export type ProjectGroupProjectArgs = {
   organizationId: Scalars['ID']['input'];
 };
@@ -801,7 +772,6 @@ export type ProjectPermission = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
-
 export type ProjectPermissionProjectArgs = {
   organizationId: Scalars['ID']['input'];
 };
@@ -818,7 +788,6 @@ export type ProjectRole = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
-
 export type ProjectRoleProjectArgs = {
   organizationId: Scalars['ID']['input'];
 };
@@ -826,7 +795,7 @@ export type ProjectRoleProjectArgs = {
 export enum ProjectSearchableField {
   Description = 'description',
   Name = 'name',
-  Slug = 'slug'
+  Slug = 'slug',
 }
 
 export type ProjectSortInput = {
@@ -837,7 +806,7 @@ export type ProjectSortInput = {
 export enum ProjectSortableField {
   CreatedAt = 'createdAt',
   Name = 'name',
-  UpdatedAt = 'updatedAt'
+  UpdatedAt = 'updatedAt',
 }
 
 export type ProjectTag = Auditable & {
@@ -852,7 +821,6 @@ export type ProjectTag = Auditable & {
   tagId: Scalars['ID']['output'];
   updatedAt: Scalars['Date']['output'];
 };
-
 
 export type ProjectTagProjectArgs = {
   organizationId: Scalars['ID']['input'];
@@ -869,7 +837,6 @@ export type ProjectUser = Auditable & {
   user?: Maybe<User>;
   userId: Scalars['ID']['output'];
 };
-
 
 export type ProjectUserProjectArgs = {
   organizationId: Scalars['ID']['input'];
@@ -889,7 +856,6 @@ export type Query = {
   users: UserPage;
 };
 
-
 export type QueryAccountsArgs = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   limit?: InputMaybe<Scalars['Int']['input']>;
@@ -898,11 +864,9 @@ export type QueryAccountsArgs = {
   sort?: InputMaybe<AccountSortInput>;
 };
 
-
 export type QueryCheckUsernameArgs = {
   username: Scalars['String']['input'];
 };
-
 
 export type QueryGroupsArgs = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -914,7 +878,6 @@ export type QueryGroupsArgs = {
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
-
 export type QueryOrganizationsArgs = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   limit?: InputMaybe<Scalars['Int']['input']>;
@@ -922,7 +885,6 @@ export type QueryOrganizationsArgs = {
   search?: InputMaybe<Scalars['String']['input']>;
   sort?: InputMaybe<OrganizationSortInput>;
 };
-
 
 export type QueryPermissionsArgs = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -934,7 +896,6 @@ export type QueryPermissionsArgs = {
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
-
 export type QueryProjectsArgs = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   limit?: InputMaybe<Scalars['Int']['input']>;
@@ -944,7 +905,6 @@ export type QueryProjectsArgs = {
   sort?: InputMaybe<ProjectSortInput>;
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
-
 
 export type QueryRolesArgs = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -956,7 +916,6 @@ export type QueryRolesArgs = {
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
-
 export type QueryTagsArgs = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   limit?: InputMaybe<Scalars['Int']['input']>;
@@ -965,7 +924,6 @@ export type QueryTagsArgs = {
   search?: InputMaybe<Scalars['String']['input']>;
   sort?: InputMaybe<TagSortInput>;
 };
-
 
 export type QueryUsersArgs = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -1111,11 +1069,9 @@ export type RoleGroup = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
-
 export type RoleGroupGroupArgs = {
   scope: Scope;
 };
-
 
 export type RoleGroupRoleArgs = {
   scope: Scope;
@@ -1130,7 +1086,7 @@ export type RolePage = PaginatedResults & {
 
 export enum RoleSearchableField {
   Description = 'description',
-  Name = 'name'
+  Name = 'name',
 }
 
 export type RoleSortInput = {
@@ -1139,7 +1095,7 @@ export type RoleSortInput = {
 };
 
 export enum RoleSortableField {
-  Name = 'name'
+  Name = 'name',
 }
 
 export type RoleTag = Auditable & {
@@ -1155,11 +1111,9 @@ export type RoleTag = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
-
 export type RoleTagRoleArgs = {
   scope: Scope;
 };
-
 
 export type RoleTagTagArgs = {
   scope: Scope;
@@ -1179,7 +1133,7 @@ export type Searchable = {
 
 export enum SortOrder {
   Asc = 'ASC',
-  Desc = 'DESC'
+  Desc = 'DESC',
 }
 
 export type Tag = Auditable & {
@@ -1201,14 +1155,14 @@ export type TagPage = PaginatedResults & {
 };
 
 export enum TagSearchableField {
-  Name = 'name'
+  Name = 'name',
 }
 
 export enum TagSortField {
   Color = 'color',
   CreatedAt = 'createdAt',
   Name = 'name',
-  UpdatedAt = 'updatedAt'
+  UpdatedAt = 'updatedAt',
 }
 
 export type TagSortInput = {
@@ -1219,7 +1173,7 @@ export type TagSortInput = {
 export enum Tenant {
   Account = 'account',
   Organization = 'organization',
-  Project = 'project'
+  Project = 'project',
 }
 
 export type UpdateAccountInput = {
@@ -1341,7 +1295,7 @@ export type User = Auditable & {
 
 export enum UserAuthenticationEmailProviderAction {
   Login = 'login',
-  Signup = 'signup'
+  Signup = 'signup',
 }
 
 export type UserAuthenticationMethod = Auditable & {
@@ -1363,7 +1317,7 @@ export type UserAuthenticationMethod = Auditable & {
 export enum UserAuthenticationMethodProvider {
   Email = 'email',
   Github = 'github',
-  Google = 'google'
+  Google = 'google',
 }
 
 export type UserPage = PaginatedResults & {
@@ -1385,18 +1339,16 @@ export type UserRole = Auditable & {
   userId: Scalars['ID']['output'];
 };
 
-
 export type UserRoleRoleArgs = {
   scope: Scope;
 };
-
 
 export type UserRoleUserArgs = {
   scope: Scope;
 };
 
 export enum UserSearchableField {
-  Name = 'name'
+  Name = 'name',
 }
 
 export type UserSession = Auditable & {
@@ -1428,7 +1380,7 @@ export type UserSessionPage = PaginatedResults & {
 export enum UserSessionSearchableField {
   ScopeId = 'scopeId',
   ScopeTenant = 'scopeTenant',
-  Token = 'token'
+  Token = 'token',
 }
 
 export type UserSessionSortInput = {
@@ -1437,7 +1389,7 @@ export type UserSessionSortInput = {
 };
 
 export enum UserSessionSortableField {
-  LastUsedAt = 'lastUsedAt'
+  LastUsedAt = 'lastUsedAt',
 }
 
 export type UserSortInput = {
@@ -1446,7 +1398,7 @@ export type UserSortInput = {
 };
 
 export enum UserSortableField {
-  Name = 'name'
+  Name = 'name',
 }
 
 export type UserTag = Auditable & {
@@ -1462,11 +1414,9 @@ export type UserTag = Auditable & {
   userId: Scalars['ID']['output'];
 };
 
-
 export type UserTagTagArgs = {
   scope: Scope;
 };
-
 
 export type UserTagUserArgs = {
   scope: Scope;
@@ -1483,11 +1433,17 @@ export type ResolversObject<TObject> = WithIndex<TObject>;
 
 export type ResolverTypeWrapper<T> = Promise<T> | T;
 
-
 export type ResolverWithResolve<TResult, TParent, TContext, TArgs> = {
   resolve: ResolverFn<TResult, TParent, TContext, TArgs>;
 };
-export type Resolver<TResult, TParent = Record<PropertyKey, never>, TContext = Record<PropertyKey, never>, TArgs = Record<PropertyKey, never>> = ResolverFn<TResult, TParent, TContext, TArgs> | ResolverWithResolve<TResult, TParent, TContext, TArgs>;
+export type Resolver<
+  TResult,
+  TParent = Record<PropertyKey, never>,
+  TContext = Record<PropertyKey, never>,
+  TArgs = Record<PropertyKey, never>,
+> =
+  | ResolverFn<TResult, TParent, TContext, TArgs>
+  | ResolverWithResolve<TResult, TParent, TContext, TArgs>;
 
 export type ResolverFn<TResult, TParent, TContext, TArgs> = (
   parent: TParent,
@@ -1510,7 +1466,13 @@ export type SubscriptionResolveFn<TResult, TParent, TContext, TArgs> = (
   info: GraphQLResolveInfo
 ) => TResult | Promise<TResult>;
 
-export interface SubscriptionSubscriberObject<TResult, TKey extends string, TParent, TContext, TArgs> {
+export interface SubscriptionSubscriberObject<
+  TResult,
+  TKey extends string,
+  TParent,
+  TContext,
+  TArgs,
+> {
   subscribe: SubscriptionSubscribeFn<{ [key in TKey]: TResult }, TParent, TContext, TArgs>;
   resolve?: SubscriptionResolveFn<TResult, { [key in TKey]: TResult }, TContext, TArgs>;
 }
@@ -1524,21 +1486,39 @@ export type SubscriptionObject<TResult, TKey extends string, TParent, TContext, 
   | SubscriptionSubscriberObject<TResult, TKey, TParent, TContext, TArgs>
   | SubscriptionResolverObject<TResult, TParent, TContext, TArgs>;
 
-export type SubscriptionResolver<TResult, TKey extends string, TParent = Record<PropertyKey, never>, TContext = Record<PropertyKey, never>, TArgs = Record<PropertyKey, never>> =
+export type SubscriptionResolver<
+  TResult,
+  TKey extends string,
+  TParent = Record<PropertyKey, never>,
+  TContext = Record<PropertyKey, never>,
+  TArgs = Record<PropertyKey, never>,
+> =
   | ((...args: any[]) => SubscriptionObject<TResult, TKey, TParent, TContext, TArgs>)
   | SubscriptionObject<TResult, TKey, TParent, TContext, TArgs>;
 
-export type TypeResolveFn<TTypes, TParent = Record<PropertyKey, never>, TContext = Record<PropertyKey, never>> = (
+export type TypeResolveFn<
+  TTypes,
+  TParent = Record<PropertyKey, never>,
+  TContext = Record<PropertyKey, never>,
+> = (
   parent: TParent,
   context: TContext,
   info: GraphQLResolveInfo
 ) => Maybe<TTypes> | Promise<Maybe<TTypes>>;
 
-export type IsTypeOfResolverFn<T = Record<PropertyKey, never>, TContext = Record<PropertyKey, never>> = (obj: T, context: TContext, info: GraphQLResolveInfo) => boolean | Promise<boolean>;
+export type IsTypeOfResolverFn<
+  T = Record<PropertyKey, never>,
+  TContext = Record<PropertyKey, never>,
+> = (obj: T, context: TContext, info: GraphQLResolveInfo) => boolean | Promise<boolean>;
 
 export type NextResolverFn<T> = () => Promise<T>;
 
-export type DirectiveResolverFn<TResult = Record<PropertyKey, never>, TParent = Record<PropertyKey, never>, TContext = Record<PropertyKey, never>, TArgs = Record<PropertyKey, never>> = (
+export type DirectiveResolverFn<
+  TResult = Record<PropertyKey, never>,
+  TParent = Record<PropertyKey, never>,
+  TContext = Record<PropertyKey, never>,
+  TArgs = Record<PropertyKey, never>,
+> = (
   next: NextResolverFn<TResult>,
   parent: TParent,
   args: TArgs,
@@ -1546,54 +1526,49 @@ export type DirectiveResolverFn<TResult = Record<PropertyKey, never>, TParent = 
   info: GraphQLResolveInfo
 ) => TResult | Promise<TResult>;
 
-
-
-
 /** Mapping of interface types */
 export type ResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
   Auditable:
-    | ( Account )
-    | ( AccountProject )
-    | ( Group )
-    | ( GroupPermission )
-    | ( GroupTag )
-    | ( Organization )
-    | ( OrganizationGroup )
-    | ( OrganizationPermission )
-    | ( OrganizationProject )
-    | ( OrganizationRole )
-    | ( OrganizationTag )
-    | ( OrganizationUser )
-    | ( Permission )
-    | ( PermissionTag )
-    | ( Project )
-    | ( ProjectGroup )
-    | ( ProjectPermission )
-    | ( ProjectRole )
-    | ( ProjectTag )
-    | ( ProjectUser )
-    | ( Role )
-    | ( RoleGroup )
-    | ( RoleTag )
-    | ( Tag )
-    | ( User )
-    | ( UserAuthenticationMethod )
-    | ( UserRole )
-    | ( UserSession )
-    | ( UserTag )
-  ;
+    | Account
+    | AccountProject
+    | Group
+    | GroupPermission
+    | GroupTag
+    | Organization
+    | OrganizationGroup
+    | OrganizationPermission
+    | OrganizationProject
+    | OrganizationRole
+    | OrganizationTag
+    | OrganizationUser
+    | Permission
+    | PermissionTag
+    | Project
+    | ProjectGroup
+    | ProjectPermission
+    | ProjectRole
+    | ProjectTag
+    | ProjectUser
+    | Role
+    | RoleGroup
+    | RoleTag
+    | Tag
+    | User
+    | UserAuthenticationMethod
+    | UserRole
+    | UserSession
+    | UserTag;
   Creatable: never;
   PaginatedResults:
-    | ( AccountPage )
-    | ( GroupPage )
-    | ( OrganizationPage )
-    | ( PermissionPage )
-    | ( ProjectPage )
-    | ( RolePage )
-    | ( TagPage )
-    | ( UserPage )
-    | ( UserSessionPage )
-  ;
+    | AccountPage
+    | GroupPage
+    | OrganizationPage
+    | PermissionPage
+    | ProjectPage
+    | RolePage
+    | TagPage
+    | UserPage
+    | UserSessionPage;
   Searchable: never;
 }>;
 
@@ -1668,7 +1643,9 @@ export type ResolversTypes = ResolversObject<{
   OrganizationSortableField: OrganizationSortableField;
   OrganizationTag: ResolverTypeWrapper<OrganizationTag>;
   OrganizationUser: ResolverTypeWrapper<OrganizationUser>;
-  PaginatedResults: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['PaginatedResults']>;
+  PaginatedResults: ResolverTypeWrapper<
+    ResolversInterfaceTypes<ResolversTypes>['PaginatedResults']
+  >;
   Permission: ResolverTypeWrapper<Permission>;
   PermissionPage: ResolverTypeWrapper<PermissionPage>;
   PermissionSearchableField: PermissionSearchableField;
@@ -1896,7 +1873,10 @@ export type ResolversParentTypes = ResolversObject<{
   UsernameAvailability: UsernameAvailability;
 }>;
 
-export type AccountResolvers<ContextType = any, ParentType extends ResolversParentTypes['Account'] = ResolversParentTypes['Account']> = ResolversObject<{
+export type AccountResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['Account'] = ResolversParentTypes['Account'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -1910,14 +1890,21 @@ export type AccountResolvers<ContextType = any, ParentType extends ResolversPare
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type AccountPageResolvers<ContextType = any, ParentType extends ResolversParentTypes['AccountPage'] = ResolversParentTypes['AccountPage']> = ResolversObject<{
+export type AccountPageResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['AccountPage'] = ResolversParentTypes['AccountPage'],
+> = ResolversObject<{
   accounts?: Resolver<Array<ResolversTypes['Account']>, ParentType, ContextType>;
   hasNextPage?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type AccountProjectResolvers<ContextType = any, ParentType extends ResolversParentTypes['AccountProject'] = ResolversParentTypes['AccountProject']> = ResolversObject<{
+export type AccountProjectResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['AccountProject'] = ResolversParentTypes['AccountProject'],
+> = ResolversObject<{
   account?: Resolver<Maybe<ResolversTypes['Account']>, ParentType, ContextType>;
   accountId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -1929,15 +1916,57 @@ export type AccountProjectResolvers<ContextType = any, ParentType extends Resolv
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type AuditableResolvers<ContextType = any, ParentType extends ResolversParentTypes['Auditable'] = ResolversParentTypes['Auditable']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'Account' | 'AccountProject' | 'Group' | 'GroupPermission' | 'GroupTag' | 'Organization' | 'OrganizationGroup' | 'OrganizationPermission' | 'OrganizationProject' | 'OrganizationRole' | 'OrganizationTag' | 'OrganizationUser' | 'Permission' | 'PermissionTag' | 'Project' | 'ProjectGroup' | 'ProjectPermission' | 'ProjectRole' | 'ProjectTag' | 'ProjectUser' | 'Role' | 'RoleGroup' | 'RoleTag' | 'Tag' | 'User' | 'UserAuthenticationMethod' | 'UserRole' | 'UserSession' | 'UserTag', ParentType, ContextType>;
+export type AuditableResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['Auditable'] = ResolversParentTypes['Auditable'],
+> = ResolversObject<{
+  __resolveType: TypeResolveFn<
+    | 'Account'
+    | 'AccountProject'
+    | 'Group'
+    | 'GroupPermission'
+    | 'GroupTag'
+    | 'Organization'
+    | 'OrganizationGroup'
+    | 'OrganizationPermission'
+    | 'OrganizationProject'
+    | 'OrganizationRole'
+    | 'OrganizationTag'
+    | 'OrganizationUser'
+    | 'Permission'
+    | 'PermissionTag'
+    | 'Project'
+    | 'ProjectGroup'
+    | 'ProjectPermission'
+    | 'ProjectRole'
+    | 'ProjectTag'
+    | 'ProjectUser'
+    | 'Role'
+    | 'RoleGroup'
+    | 'RoleTag'
+    | 'Tag'
+    | 'User'
+    | 'UserAuthenticationMethod'
+    | 'UserRole'
+    | 'UserSession'
+    | 'UserTag',
+    ParentType,
+    ContextType
+  >;
 }>;
 
-export type CreatableResolvers<ContextType = any, ParentType extends ResolversParentTypes['Creatable'] = ResolversParentTypes['Creatable']> = ResolversObject<{
+export type CreatableResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['Creatable'] = ResolversParentTypes['Creatable'],
+> = ResolversObject<{
   __resolveType: TypeResolveFn<null, ParentType, ContextType>;
 }>;
 
-export type CreateAccountResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['CreateAccountResult'] = ResolversParentTypes['CreateAccountResult']> = ResolversObject<{
+export type CreateAccountResultResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['CreateAccountResult'] = ResolversParentTypes['CreateAccountResult'],
+> = ResolversObject<{
   accessToken?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   account?: Resolver<ResolversTypes['Account'], ParentType, ContextType>;
   refreshToken?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -1949,11 +1978,18 @@ export interface DateScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes
   name: 'Date';
 }
 
-export type DeleteUserAuthenticationMethodInputResolvers<ContextType = any, ParentType extends ResolversParentTypes['DeleteUserAuthenticationMethodInput'] = ResolversParentTypes['DeleteUserAuthenticationMethodInput']> = ResolversObject<{
+export type DeleteUserAuthenticationMethodInputResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['DeleteUserAuthenticationMethodInput'] = ResolversParentTypes['DeleteUserAuthenticationMethodInput'],
+> = ResolversObject<{
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
 }>;
 
-export type GroupResolvers<ContextType = any, ParentType extends ResolversParentTypes['Group'] = ResolversParentTypes['Group']> = ResolversObject<{
+export type GroupResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['Group'] = ResolversParentTypes['Group'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -1965,33 +2001,63 @@ export type GroupResolvers<ContextType = any, ParentType extends ResolversParent
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GroupPageResolvers<ContextType = any, ParentType extends ResolversParentTypes['GroupPage'] = ResolversParentTypes['GroupPage']> = ResolversObject<{
+export type GroupPageResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['GroupPage'] = ResolversParentTypes['GroupPage'],
+> = ResolversObject<{
   groups?: Resolver<Array<ResolversTypes['Group']>, ParentType, ContextType>;
   hasNextPage?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GroupPermissionResolvers<ContextType = any, ParentType extends ResolversParentTypes['GroupPermission'] = ResolversParentTypes['GroupPermission']> = ResolversObject<{
+export type GroupPermissionResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['GroupPermission'] = ResolversParentTypes['GroupPermission'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
-  group?: Resolver<Maybe<ResolversTypes['Group']>, ParentType, ContextType, RequireFields<GroupPermissionGroupArgs, 'scope'>>;
+  group?: Resolver<
+    Maybe<ResolversTypes['Group']>,
+    ParentType,
+    ContextType,
+    RequireFields<GroupPermissionGroupArgs, 'scope'>
+  >;
   groupId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  permission?: Resolver<Maybe<ResolversTypes['Permission']>, ParentType, ContextType, RequireFields<GroupPermissionPermissionArgs, 'scope'>>;
+  permission?: Resolver<
+    Maybe<ResolversTypes['Permission']>,
+    ParentType,
+    ContextType,
+    RequireFields<GroupPermissionPermissionArgs, 'scope'>
+  >;
   permissionId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GroupTagResolvers<ContextType = any, ParentType extends ResolversParentTypes['GroupTag'] = ResolversParentTypes['GroupTag']> = ResolversObject<{
+export type GroupTagResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['GroupTag'] = ResolversParentTypes['GroupTag'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
-  group?: Resolver<Maybe<ResolversTypes['Group']>, ParentType, ContextType, RequireFields<GroupTagGroupArgs, 'scope'>>;
+  group?: Resolver<
+    Maybe<ResolversTypes['Group']>,
+    ParentType,
+    ContextType,
+    RequireFields<GroupTagGroupArgs, 'scope'>
+  >;
   groupId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  tag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType, RequireFields<GroupTagTagArgs, 'scope'>>;
+  tag?: Resolver<
+    Maybe<ResolversTypes['Tag']>,
+    ParentType,
+    ContextType,
+    RequireFields<GroupTagTagArgs, 'scope'>
+  >;
   tagId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -2001,7 +2067,10 @@ export interface JsonScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes
   name: 'JSON';
 }
 
-export type LoginResponseResolvers<ContextType = any, ParentType extends ResolversParentTypes['LoginResponse'] = ResolversParentTypes['LoginResponse']> = ResolversObject<{
+export type LoginResponseResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['LoginResponse'] = ResolversParentTypes['LoginResponse'],
+> = ResolversObject<{
   accessToken?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   accounts?: Resolver<Array<ResolversTypes['Account']>, ParentType, ContextType>;
   refreshToken?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -2009,37 +2078,173 @@ export type LoginResponseResolvers<ContextType = any, ParentType extends Resolve
   verificationExpiry?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
 }>;
 
-export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = ResolversObject<{
+export type MutationResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation'],
+> = ResolversObject<{
   _empty?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  createGroup?: Resolver<ResolversTypes['Group'], ParentType, ContextType, RequireFields<MutationCreateGroupArgs, 'input'>>;
-  createOrganization?: Resolver<ResolversTypes['Organization'], ParentType, ContextType, RequireFields<MutationCreateOrganizationArgs, 'input'>>;
-  createPermission?: Resolver<ResolversTypes['Permission'], ParentType, ContextType, RequireFields<MutationCreatePermissionArgs, 'input'>>;
-  createProject?: Resolver<ResolversTypes['Project'], ParentType, ContextType, RequireFields<MutationCreateProjectArgs, 'input'>>;
-  createRole?: Resolver<ResolversTypes['Role'], ParentType, ContextType, RequireFields<MutationCreateRoleArgs, 'input'>>;
-  createTag?: Resolver<ResolversTypes['Tag'], ParentType, ContextType, RequireFields<MutationCreateTagArgs, 'input'>>;
-  createUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationCreateUserArgs, 'input'>>;
-  deleteAccount?: Resolver<ResolversTypes['Account'], ParentType, ContextType, RequireFields<MutationDeleteAccountArgs, 'id'>>;
-  deleteGroup?: Resolver<ResolversTypes['Group'], ParentType, ContextType, RequireFields<MutationDeleteGroupArgs, 'id' | 'scope'>>;
-  deleteOrganization?: Resolver<ResolversTypes['Organization'], ParentType, ContextType, RequireFields<MutationDeleteOrganizationArgs, 'id'>>;
-  deletePermission?: Resolver<ResolversTypes['Permission'], ParentType, ContextType, RequireFields<MutationDeletePermissionArgs, 'id' | 'scope'>>;
-  deleteProject?: Resolver<ResolversTypes['Project'], ParentType, ContextType, RequireFields<MutationDeleteProjectArgs, 'id' | 'scope'>>;
-  deleteRole?: Resolver<ResolversTypes['Role'], ParentType, ContextType, RequireFields<MutationDeleteRoleArgs, 'id' | 'scope'>>;
-  deleteTag?: Resolver<ResolversTypes['Tag'], ParentType, ContextType, RequireFields<MutationDeleteTagArgs, 'id' | 'scope'>>;
-  deleteUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationDeleteUserArgs, 'id' | 'scope'>>;
-  login?: Resolver<ResolversTypes['LoginResponse'], ParentType, ContextType, RequireFields<MutationLoginArgs, 'input'>>;
-  refreshSession?: Resolver<ResolversTypes['RefreshSessionResponse'], ParentType, ContextType, RequireFields<MutationRefreshSessionArgs, 'accessToken' | 'refreshToken'>>;
-  register?: Resolver<ResolversTypes['CreateAccountResult'], ParentType, ContextType, RequireFields<MutationRegisterArgs, 'input'>>;
-  updateAccount?: Resolver<ResolversTypes['Account'], ParentType, ContextType, RequireFields<MutationUpdateAccountArgs, 'id' | 'input'>>;
-  updateGroup?: Resolver<ResolversTypes['Group'], ParentType, ContextType, RequireFields<MutationUpdateGroupArgs, 'id' | 'input'>>;
-  updateOrganization?: Resolver<ResolversTypes['Organization'], ParentType, ContextType, RequireFields<MutationUpdateOrganizationArgs, 'id' | 'input'>>;
-  updatePermission?: Resolver<ResolversTypes['Permission'], ParentType, ContextType, RequireFields<MutationUpdatePermissionArgs, 'id' | 'input'>>;
-  updateProject?: Resolver<ResolversTypes['Project'], ParentType, ContextType, RequireFields<MutationUpdateProjectArgs, 'id' | 'input'>>;
-  updateRole?: Resolver<ResolversTypes['Role'], ParentType, ContextType, RequireFields<MutationUpdateRoleArgs, 'id' | 'input'>>;
-  updateTag?: Resolver<ResolversTypes['Tag'], ParentType, ContextType, RequireFields<MutationUpdateTagArgs, 'id' | 'input'>>;
-  updateUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationUpdateUserArgs, 'id' | 'input'>>;
+  createGroup?: Resolver<
+    ResolversTypes['Group'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateGroupArgs, 'input'>
+  >;
+  createOrganization?: Resolver<
+    ResolversTypes['Organization'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateOrganizationArgs, 'input'>
+  >;
+  createPermission?: Resolver<
+    ResolversTypes['Permission'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreatePermissionArgs, 'input'>
+  >;
+  createProject?: Resolver<
+    ResolversTypes['Project'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateProjectArgs, 'input'>
+  >;
+  createRole?: Resolver<
+    ResolversTypes['Role'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateRoleArgs, 'input'>
+  >;
+  createTag?: Resolver<
+    ResolversTypes['Tag'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateTagArgs, 'input'>
+  >;
+  createUser?: Resolver<
+    ResolversTypes['User'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateUserArgs, 'input'>
+  >;
+  deleteAccount?: Resolver<
+    ResolversTypes['Account'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteAccountArgs, 'id'>
+  >;
+  deleteGroup?: Resolver<
+    ResolversTypes['Group'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteGroupArgs, 'id' | 'scope'>
+  >;
+  deleteOrganization?: Resolver<
+    ResolversTypes['Organization'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteOrganizationArgs, 'id'>
+  >;
+  deletePermission?: Resolver<
+    ResolversTypes['Permission'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeletePermissionArgs, 'id' | 'scope'>
+  >;
+  deleteProject?: Resolver<
+    ResolversTypes['Project'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteProjectArgs, 'id' | 'scope'>
+  >;
+  deleteRole?: Resolver<
+    ResolversTypes['Role'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteRoleArgs, 'id' | 'scope'>
+  >;
+  deleteTag?: Resolver<
+    ResolversTypes['Tag'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteTagArgs, 'id' | 'scope'>
+  >;
+  deleteUser?: Resolver<
+    ResolversTypes['User'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteUserArgs, 'id' | 'scope'>
+  >;
+  login?: Resolver<
+    ResolversTypes['LoginResponse'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationLoginArgs, 'input'>
+  >;
+  refreshSession?: Resolver<
+    ResolversTypes['RefreshSessionResponse'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationRefreshSessionArgs, 'accessToken' | 'refreshToken'>
+  >;
+  register?: Resolver<
+    ResolversTypes['CreateAccountResult'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationRegisterArgs, 'input'>
+  >;
+  updateAccount?: Resolver<
+    ResolversTypes['Account'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateAccountArgs, 'id' | 'input'>
+  >;
+  updateGroup?: Resolver<
+    ResolversTypes['Group'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateGroupArgs, 'id' | 'input'>
+  >;
+  updateOrganization?: Resolver<
+    ResolversTypes['Organization'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateOrganizationArgs, 'id' | 'input'>
+  >;
+  updatePermission?: Resolver<
+    ResolversTypes['Permission'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdatePermissionArgs, 'id' | 'input'>
+  >;
+  updateProject?: Resolver<
+    ResolversTypes['Project'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateProjectArgs, 'id' | 'input'>
+  >;
+  updateRole?: Resolver<
+    ResolversTypes['Role'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateRoleArgs, 'id' | 'input'>
+  >;
+  updateTag?: Resolver<
+    ResolversTypes['Tag'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateTagArgs, 'id' | 'input'>
+  >;
+  updateUser?: Resolver<
+    ResolversTypes['User'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateUserArgs, 'id' | 'input'>
+  >;
 }>;
 
-export type OrganizationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Organization'] = ResolversParentTypes['Organization']> = ResolversObject<{
+export type OrganizationResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['Organization'] = ResolversParentTypes['Organization'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   groups?: Resolver<Maybe<Array<ResolversTypes['Group']>>, ParentType, ContextType>;
@@ -2055,7 +2260,11 @@ export type OrganizationResolvers<ContextType = any, ParentType extends Resolver
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type OrganizationGroupResolvers<ContextType = any, ParentType extends ResolversParentTypes['OrganizationGroup'] = ResolversParentTypes['OrganizationGroup']> = ResolversObject<{
+export type OrganizationGroupResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['OrganizationGroup'] = ResolversParentTypes['OrganizationGroup'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   group?: Resolver<Maybe<ResolversTypes['Group']>, ParentType, ContextType>;
@@ -2067,14 +2276,22 @@ export type OrganizationGroupResolvers<ContextType = any, ParentType extends Res
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type OrganizationPageResolvers<ContextType = any, ParentType extends ResolversParentTypes['OrganizationPage'] = ResolversParentTypes['OrganizationPage']> = ResolversObject<{
+export type OrganizationPageResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['OrganizationPage'] = ResolversParentTypes['OrganizationPage'],
+> = ResolversObject<{
   hasNextPage?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   organizations?: Resolver<Array<ResolversTypes['Organization']>, ParentType, ContextType>;
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type OrganizationPermissionResolvers<ContextType = any, ParentType extends ResolversParentTypes['OrganizationPermission'] = ResolversParentTypes['OrganizationPermission']> = ResolversObject<{
+export type OrganizationPermissionResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['OrganizationPermission'] = ResolversParentTypes['OrganizationPermission'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -2086,7 +2303,11 @@ export type OrganizationPermissionResolvers<ContextType = any, ParentType extend
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type OrganizationProjectResolvers<ContextType = any, ParentType extends ResolversParentTypes['OrganizationProject'] = ResolversParentTypes['OrganizationProject']> = ResolversObject<{
+export type OrganizationProjectResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['OrganizationProject'] = ResolversParentTypes['OrganizationProject'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -2098,7 +2319,11 @@ export type OrganizationProjectResolvers<ContextType = any, ParentType extends R
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type OrganizationRoleResolvers<ContextType = any, ParentType extends ResolversParentTypes['OrganizationRole'] = ResolversParentTypes['OrganizationRole']> = ResolversObject<{
+export type OrganizationRoleResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['OrganizationRole'] = ResolversParentTypes['OrganizationRole'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -2110,7 +2335,11 @@ export type OrganizationRoleResolvers<ContextType = any, ParentType extends Reso
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type OrganizationTagResolvers<ContextType = any, ParentType extends ResolversParentTypes['OrganizationTag'] = ResolversParentTypes['OrganizationTag']> = ResolversObject<{
+export type OrganizationTagResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['OrganizationTag'] = ResolversParentTypes['OrganizationTag'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -2123,7 +2352,11 @@ export type OrganizationTagResolvers<ContextType = any, ParentType extends Resol
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type OrganizationUserResolvers<ContextType = any, ParentType extends ResolversParentTypes['OrganizationUser'] = ResolversParentTypes['OrganizationUser']> = ResolversObject<{
+export type OrganizationUserResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['OrganizationUser'] = ResolversParentTypes['OrganizationUser'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -2135,11 +2368,30 @@ export type OrganizationUserResolvers<ContextType = any, ParentType extends Reso
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type PaginatedResultsResolvers<ContextType = any, ParentType extends ResolversParentTypes['PaginatedResults'] = ResolversParentTypes['PaginatedResults']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AccountPage' | 'GroupPage' | 'OrganizationPage' | 'PermissionPage' | 'ProjectPage' | 'RolePage' | 'TagPage' | 'UserPage' | 'UserSessionPage', ParentType, ContextType>;
+export type PaginatedResultsResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['PaginatedResults'] = ResolversParentTypes['PaginatedResults'],
+> = ResolversObject<{
+  __resolveType: TypeResolveFn<
+    | 'AccountPage'
+    | 'GroupPage'
+    | 'OrganizationPage'
+    | 'PermissionPage'
+    | 'ProjectPage'
+    | 'RolePage'
+    | 'TagPage'
+    | 'UserPage'
+    | 'UserSessionPage',
+    ParentType,
+    ContextType
+  >;
 }>;
 
-export type PermissionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Permission'] = ResolversParentTypes['Permission']> = ResolversObject<{
+export type PermissionResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['Permission'] = ResolversParentTypes['Permission'],
+> = ResolversObject<{
   action?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
@@ -2151,27 +2403,47 @@ export type PermissionResolvers<ContextType = any, ParentType extends ResolversP
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type PermissionPageResolvers<ContextType = any, ParentType extends ResolversParentTypes['PermissionPage'] = ResolversParentTypes['PermissionPage']> = ResolversObject<{
+export type PermissionPageResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['PermissionPage'] = ResolversParentTypes['PermissionPage'],
+> = ResolversObject<{
   hasNextPage?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   permissions?: Resolver<Array<ResolversTypes['Permission']>, ParentType, ContextType>;
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type PermissionTagResolvers<ContextType = any, ParentType extends ResolversParentTypes['PermissionTag'] = ResolversParentTypes['PermissionTag']> = ResolversObject<{
+export type PermissionTagResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['PermissionTag'] = ResolversParentTypes['PermissionTag'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  permission?: Resolver<Maybe<ResolversTypes['Permission']>, ParentType, ContextType, RequireFields<PermissionTagPermissionArgs, 'scope'>>;
+  permission?: Resolver<
+    Maybe<ResolversTypes['Permission']>,
+    ParentType,
+    ContextType,
+    RequireFields<PermissionTagPermissionArgs, 'scope'>
+  >;
   permissionId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  tag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType, RequireFields<PermissionTagTagArgs, 'scope'>>;
+  tag?: Resolver<
+    Maybe<ResolversTypes['Tag']>,
+    ParentType,
+    ContextType,
+    RequireFields<PermissionTagTagArgs, 'scope'>
+  >;
   tagId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type ProjectResolvers<ContextType = any, ParentType extends ResolversParentTypes['Project'] = ResolversParentTypes['Project']> = ResolversObject<{
+export type ProjectResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['Project'] = ResolversParentTypes['Project'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -2187,42 +2459,70 @@ export type ProjectResolvers<ContextType = any, ParentType extends ResolversPare
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type ProjectGroupResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProjectGroup'] = ResolversParentTypes['ProjectGroup']> = ResolversObject<{
+export type ProjectGroupResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['ProjectGroup'] = ResolversParentTypes['ProjectGroup'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   group?: Resolver<Maybe<ResolversTypes['Group']>, ParentType, ContextType>;
   groupId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  project?: Resolver<Maybe<ResolversTypes['Project']>, ParentType, ContextType, RequireFields<ProjectGroupProjectArgs, 'organizationId'>>;
+  project?: Resolver<
+    Maybe<ResolversTypes['Project']>,
+    ParentType,
+    ContextType,
+    RequireFields<ProjectGroupProjectArgs, 'organizationId'>
+  >;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type ProjectPageResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProjectPage'] = ResolversParentTypes['ProjectPage']> = ResolversObject<{
+export type ProjectPageResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['ProjectPage'] = ResolversParentTypes['ProjectPage'],
+> = ResolversObject<{
   hasNextPage?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   projects?: Resolver<Array<ResolversTypes['Project']>, ParentType, ContextType>;
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type ProjectPermissionResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProjectPermission'] = ResolversParentTypes['ProjectPermission']> = ResolversObject<{
+export type ProjectPermissionResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['ProjectPermission'] = ResolversParentTypes['ProjectPermission'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   permission?: Resolver<Maybe<ResolversTypes['Permission']>, ParentType, ContextType>;
   permissionId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  project?: Resolver<Maybe<ResolversTypes['Project']>, ParentType, ContextType, RequireFields<ProjectPermissionProjectArgs, 'organizationId'>>;
+  project?: Resolver<
+    Maybe<ResolversTypes['Project']>,
+    ParentType,
+    ContextType,
+    RequireFields<ProjectPermissionProjectArgs, 'organizationId'>
+  >;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type ProjectRoleResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProjectRole'] = ResolversParentTypes['ProjectRole']> = ResolversObject<{
+export type ProjectRoleResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['ProjectRole'] = ResolversParentTypes['ProjectRole'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  project?: Resolver<Maybe<ResolversTypes['Project']>, ParentType, ContextType, RequireFields<ProjectRoleProjectArgs, 'organizationId'>>;
+  project?: Resolver<
+    Maybe<ResolversTypes['Project']>,
+    ParentType,
+    ContextType,
+    RequireFields<ProjectRoleProjectArgs, 'organizationId'>
+  >;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   role?: Resolver<Maybe<ResolversTypes['Role']>, ParentType, ContextType>;
   roleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -2230,12 +2530,20 @@ export type ProjectRoleResolvers<ContextType = any, ParentType extends Resolvers
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type ProjectTagResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProjectTag'] = ResolversParentTypes['ProjectTag']> = ResolversObject<{
+export type ProjectTagResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['ProjectTag'] = ResolversParentTypes['ProjectTag'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  project?: Resolver<Maybe<ResolversTypes['Project']>, ParentType, ContextType, RequireFields<ProjectTagProjectArgs, 'organizationId'>>;
+  project?: Resolver<
+    Maybe<ResolversTypes['Project']>,
+    ParentType,
+    ContextType,
+    RequireFields<ProjectTagProjectArgs, 'organizationId'>
+  >;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   tag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
   tagId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -2243,11 +2551,19 @@ export type ProjectTagResolvers<ContextType = any, ParentType extends ResolversP
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type ProjectUserResolvers<ContextType = any, ParentType extends ResolversParentTypes['ProjectUser'] = ResolversParentTypes['ProjectUser']> = ResolversObject<{
+export type ProjectUserResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['ProjectUser'] = ResolversParentTypes['ProjectUser'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  project?: Resolver<Maybe<ResolversTypes['Project']>, ParentType, ContextType, RequireFields<ProjectUserProjectArgs, 'organizationId'>>;
+  project?: Resolver<
+    Maybe<ResolversTypes['Project']>,
+    ParentType,
+    ContextType,
+    RequireFields<ProjectUserProjectArgs, 'organizationId'>
+  >;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
@@ -2255,25 +2571,80 @@ export type ProjectUserResolvers<ContextType = any, ParentType extends Resolvers
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = ResolversObject<{
+export type QueryResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query'],
+> = ResolversObject<{
   _empty?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  accounts?: Resolver<ResolversTypes['AccountPage'], ParentType, ContextType, Partial<QueryAccountsArgs>>;
-  checkUsername?: Resolver<ResolversTypes['UsernameAvailability'], ParentType, ContextType, RequireFields<QueryCheckUsernameArgs, 'username'>>;
-  groups?: Resolver<ResolversTypes['GroupPage'], ParentType, ContextType, RequireFields<QueryGroupsArgs, 'scope'>>;
-  organizations?: Resolver<ResolversTypes['OrganizationPage'], ParentType, ContextType, Partial<QueryOrganizationsArgs>>;
-  permissions?: Resolver<ResolversTypes['PermissionPage'], ParentType, ContextType, RequireFields<QueryPermissionsArgs, 'scope'>>;
-  projects?: Resolver<ResolversTypes['ProjectPage'], ParentType, ContextType, RequireFields<QueryProjectsArgs, 'scope'>>;
-  roles?: Resolver<ResolversTypes['RolePage'], ParentType, ContextType, RequireFields<QueryRolesArgs, 'scope'>>;
-  tags?: Resolver<ResolversTypes['TagPage'], ParentType, ContextType, RequireFields<QueryTagsArgs, 'scope'>>;
-  users?: Resolver<ResolversTypes['UserPage'], ParentType, ContextType, RequireFields<QueryUsersArgs, 'scope'>>;
+  accounts?: Resolver<
+    ResolversTypes['AccountPage'],
+    ParentType,
+    ContextType,
+    Partial<QueryAccountsArgs>
+  >;
+  checkUsername?: Resolver<
+    ResolversTypes['UsernameAvailability'],
+    ParentType,
+    ContextType,
+    RequireFields<QueryCheckUsernameArgs, 'username'>
+  >;
+  groups?: Resolver<
+    ResolversTypes['GroupPage'],
+    ParentType,
+    ContextType,
+    RequireFields<QueryGroupsArgs, 'scope'>
+  >;
+  organizations?: Resolver<
+    ResolversTypes['OrganizationPage'],
+    ParentType,
+    ContextType,
+    Partial<QueryOrganizationsArgs>
+  >;
+  permissions?: Resolver<
+    ResolversTypes['PermissionPage'],
+    ParentType,
+    ContextType,
+    RequireFields<QueryPermissionsArgs, 'scope'>
+  >;
+  projects?: Resolver<
+    ResolversTypes['ProjectPage'],
+    ParentType,
+    ContextType,
+    RequireFields<QueryProjectsArgs, 'scope'>
+  >;
+  roles?: Resolver<
+    ResolversTypes['RolePage'],
+    ParentType,
+    ContextType,
+    RequireFields<QueryRolesArgs, 'scope'>
+  >;
+  tags?: Resolver<
+    ResolversTypes['TagPage'],
+    ParentType,
+    ContextType,
+    RequireFields<QueryTagsArgs, 'scope'>
+  >;
+  users?: Resolver<
+    ResolversTypes['UserPage'],
+    ParentType,
+    ContextType,
+    RequireFields<QueryUsersArgs, 'scope'>
+  >;
 }>;
 
-export type RefreshSessionResponseResolvers<ContextType = any, ParentType extends ResolversParentTypes['RefreshSessionResponse'] = ResolversParentTypes['RefreshSessionResponse']> = ResolversObject<{
+export type RefreshSessionResponseResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['RefreshSessionResponse'] = ResolversParentTypes['RefreshSessionResponse'],
+> = ResolversObject<{
   accessToken?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   refreshToken?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
-export type RoleResolvers<ContextType = any, ParentType extends ResolversParentTypes['Role'] = ResolversParentTypes['Role']> = ResolversObject<{
+export type RoleResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['Role'] = ResolversParentTypes['Role'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -2285,43 +2656,78 @@ export type RoleResolvers<ContextType = any, ParentType extends ResolversParentT
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type RoleGroupResolvers<ContextType = any, ParentType extends ResolversParentTypes['RoleGroup'] = ResolversParentTypes['RoleGroup']> = ResolversObject<{
+export type RoleGroupResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['RoleGroup'] = ResolversParentTypes['RoleGroup'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
-  group?: Resolver<Maybe<ResolversTypes['Group']>, ParentType, ContextType, RequireFields<RoleGroupGroupArgs, 'scope'>>;
+  group?: Resolver<
+    Maybe<ResolversTypes['Group']>,
+    ParentType,
+    ContextType,
+    RequireFields<RoleGroupGroupArgs, 'scope'>
+  >;
   groupId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  role?: Resolver<Maybe<ResolversTypes['Role']>, ParentType, ContextType, RequireFields<RoleGroupRoleArgs, 'scope'>>;
+  role?: Resolver<
+    Maybe<ResolversTypes['Role']>,
+    ParentType,
+    ContextType,
+    RequireFields<RoleGroupRoleArgs, 'scope'>
+  >;
   roleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type RolePageResolvers<ContextType = any, ParentType extends ResolversParentTypes['RolePage'] = ResolversParentTypes['RolePage']> = ResolversObject<{
+export type RolePageResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['RolePage'] = ResolversParentTypes['RolePage'],
+> = ResolversObject<{
   hasNextPage?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   roles?: Resolver<Array<ResolversTypes['Role']>, ParentType, ContextType>;
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type RoleTagResolvers<ContextType = any, ParentType extends ResolversParentTypes['RoleTag'] = ResolversParentTypes['RoleTag']> = ResolversObject<{
+export type RoleTagResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['RoleTag'] = ResolversParentTypes['RoleTag'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  role?: Resolver<Maybe<ResolversTypes['Role']>, ParentType, ContextType, RequireFields<RoleTagRoleArgs, 'scope'>>;
+  role?: Resolver<
+    Maybe<ResolversTypes['Role']>,
+    ParentType,
+    ContextType,
+    RequireFields<RoleTagRoleArgs, 'scope'>
+  >;
   roleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  tag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType, RequireFields<RoleTagTagArgs, 'scope'>>;
+  tag?: Resolver<
+    Maybe<ResolversTypes['Tag']>,
+    ParentType,
+    ContextType,
+    RequireFields<RoleTagTagArgs, 'scope'>
+  >;
   tagId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type SearchableResolvers<ContextType = any, ParentType extends ResolversParentTypes['Searchable'] = ResolversParentTypes['Searchable']> = ResolversObject<{
+export type SearchableResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['Searchable'] = ResolversParentTypes['Searchable'],
+> = ResolversObject<{
   __resolveType: TypeResolveFn<null, ParentType, ContextType>;
 }>;
 
-export type TagResolvers<ContextType = any, ParentType extends ResolversParentTypes['Tag'] = ResolversParentTypes['Tag']> = ResolversObject<{
+export type TagResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['Tag'] = ResolversParentTypes['Tag'],
+> = ResolversObject<{
   color?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
@@ -2332,16 +2738,26 @@ export type TagResolvers<ContextType = any, ParentType extends ResolversParentTy
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type TagPageResolvers<ContextType = any, ParentType extends ResolversParentTypes['TagPage'] = ResolversParentTypes['TagPage']> = ResolversObject<{
+export type TagPageResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['TagPage'] = ResolversParentTypes['TagPage'],
+> = ResolversObject<{
   hasNextPage?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   tags?: Resolver<Array<ResolversTypes['Tag']>, ParentType, ContextType>;
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type UserResolvers<ContextType = any, ParentType extends ResolversParentTypes['User'] = ResolversParentTypes['User']> = ResolversObject<{
+export type UserResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['User'] = ResolversParentTypes['User'],
+> = ResolversObject<{
   accounts?: Resolver<Maybe<Array<ResolversTypes['Account']>>, ParentType, ContextType>;
-  authenticationMethods?: Resolver<Maybe<Array<ResolversTypes['UserAuthenticationMethod']>>, ParentType, ContextType>;
+  authenticationMethods?: Resolver<
+    Maybe<Array<ResolversTypes['UserAuthenticationMethod']>>,
+    ParentType,
+    ContextType
+  >;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -2352,7 +2768,11 @@ export type UserResolvers<ContextType = any, ParentType extends ResolversParentT
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type UserAuthenticationMethodResolvers<ContextType = any, ParentType extends ResolversParentTypes['UserAuthenticationMethod'] = ResolversParentTypes['UserAuthenticationMethod']> = ResolversObject<{
+export type UserAuthenticationMethodResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['UserAuthenticationMethod'] = ResolversParentTypes['UserAuthenticationMethod'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -2368,26 +2788,45 @@ export type UserAuthenticationMethodResolvers<ContextType = any, ParentType exte
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type UserPageResolvers<ContextType = any, ParentType extends ResolversParentTypes['UserPage'] = ResolversParentTypes['UserPage']> = ResolversObject<{
+export type UserPageResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['UserPage'] = ResolversParentTypes['UserPage'],
+> = ResolversObject<{
   hasNextPage?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   users?: Resolver<Array<ResolversTypes['User']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type UserRoleResolvers<ContextType = any, ParentType extends ResolversParentTypes['UserRole'] = ResolversParentTypes['UserRole']> = ResolversObject<{
+export type UserRoleResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['UserRole'] = ResolversParentTypes['UserRole'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  role?: Resolver<Maybe<ResolversTypes['Role']>, ParentType, ContextType, RequireFields<UserRoleRoleArgs, 'scope'>>;
+  role?: Resolver<
+    Maybe<ResolversTypes['Role']>,
+    ParentType,
+    ContextType,
+    RequireFields<UserRoleRoleArgs, 'scope'>
+  >;
   roleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType, RequireFields<UserRoleUserArgs, 'scope'>>;
+  user?: Resolver<
+    Maybe<ResolversTypes['User']>,
+    ParentType,
+    ContextType,
+    RequireFields<UserRoleUserArgs, 'scope'>
+  >;
   userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type UserSessionResolvers<ContextType = any, ParentType extends ResolversParentTypes['UserSession'] = ResolversParentTypes['UserSession']> = ResolversObject<{
+export type UserSessionResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['UserSession'] = ResolversParentTypes['UserSession'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   expiresAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -2400,33 +2839,58 @@ export type UserSessionResolvers<ContextType = any, ParentType extends Resolvers
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
   userAgent?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  userAuthenticationMethod?: Resolver<Maybe<ResolversTypes['UserAuthenticationMethod']>, ParentType, ContextType>;
+  userAuthenticationMethod?: Resolver<
+    Maybe<ResolversTypes['UserAuthenticationMethod']>,
+    ParentType,
+    ContextType
+  >;
   userAuthenticationMethodId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type UserSessionPageResolvers<ContextType = any, ParentType extends ResolversParentTypes['UserSessionPage'] = ResolversParentTypes['UserSessionPage']> = ResolversObject<{
+export type UserSessionPageResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['UserSessionPage'] = ResolversParentTypes['UserSessionPage'],
+> = ResolversObject<{
   hasNextPage?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   userSessions?: Resolver<Array<ResolversTypes['UserSession']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type UserTagResolvers<ContextType = any, ParentType extends ResolversParentTypes['UserTag'] = ResolversParentTypes['UserTag']> = ResolversObject<{
+export type UserTagResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['UserTag'] = ResolversParentTypes['UserTag'],
+> = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  tag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType, RequireFields<UserTagTagArgs, 'scope'>>;
+  tag?: Resolver<
+    Maybe<ResolversTypes['Tag']>,
+    ParentType,
+    ContextType,
+    RequireFields<UserTagTagArgs, 'scope'>
+  >;
   tagId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType, RequireFields<UserTagUserArgs, 'scope'>>;
+  user?: Resolver<
+    Maybe<ResolversTypes['User']>,
+    ParentType,
+    ContextType,
+    RequireFields<UserTagUserArgs, 'scope'>
+  >;
   userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type UsernameAvailabilityResolvers<ContextType = any, ParentType extends ResolversParentTypes['UsernameAvailability'] = ResolversParentTypes['UsernameAvailability']> = ResolversObject<{
+export type UsernameAvailabilityResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['UsernameAvailability'] = ResolversParentTypes['UsernameAvailability'],
+> = ResolversObject<{
   available?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   username?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
@@ -2484,4 +2948,3 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   UserTag?: UserTagResolvers<ContextType>;
   UsernameAvailability?: UsernameAvailabilityResolvers<ContextType>;
 }>;
-
