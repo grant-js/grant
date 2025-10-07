@@ -23,18 +23,22 @@ npm run test:coverage
 ## 📁 Test Structure
 
 ```
-tests/
-├── setup.ts                    # Global test setup and mocks
-├── unit/                       # Unit tests
-│   └── graphql/               # GraphQL-related unit tests
-│       ├── field-selection.test.ts
-│       └── scalars.test.ts
-└── README.md                   # This file
+apps/
+├── api/
+│   └── tests/                    # API-specific tests
+│       └── unit/
+│           └── graphql/         # GraphQL-related unit tests
+│               ├── field-selection.test.ts
+│               └── scalars.test.ts
+└── web/
+    └── tests/                    # Web app-specific tests (future)
+        └── unit/                # Unit tests
+            └── components/      # Component tests
 ```
 
 ## 🧪 Test Categories
 
-### Unit Tests (`tests/unit/`)
+### Unit Tests (`apps/api/tests/unit/`)
 
 - **Field Selection Tests**: Test the GraphQL field selection optimization utilities
 - **Scalar Tests**: Test custom GraphQL scalar implementations (e.g., Date scalar)
@@ -46,25 +50,25 @@ tests/
 
 ## ⚙️ Configuration
 
-### Vitest Config (`vitest.config.ts`)
+### API Tests (`apps/api/vitest.config.ts`)
+
+- **Environment**: `node` for API testing
+- **Path Resolution**: Uses `vite-tsconfig-paths` for `@/` imports
+- **Coverage**: V8 coverage provider with HTML, JSON, and text reports
+- **No Setup Files**: API tests don't need Next.js mocks
+
+### Web Tests (`apps/web/vitest.config.ts`) - Future
 
 - **Environment**: `jsdom` for DOM testing
-- **Setup Files**: `./tests/setup.ts` for global test configuration
-- **Coverage**: V8 coverage provider with HTML, JSON, and text reports
-- **Aliases**: `@` maps to project root for clean imports
-
-### Test Setup (`tests/setup.ts`)
-
-- **Jest DOM**: Custom matchers for DOM testing
-- **Next.js Mocks**: Router, Image component, and navigation mocks
-- **Global Mocks**: ResizeObserver, IntersectionObserver
+- **Setup Files**: Will include component testing setup
+- **Coverage**: V8 coverage provider
 
 ## 📝 Writing Tests
 
 ### Test File Naming
 
 - Use `.test.ts` or `.spec.ts` extension
-- Place in appropriate subdirectory under `tests/`
+- Place in appropriate subdirectory under `apps/{api|web}/tests/`
 
 ### Test Structure
 

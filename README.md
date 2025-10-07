@@ -1,169 +1,163 @@
-# Identity Central
+# Grant Platform
 
-A comprehensive identity and access management system built with Next.js, GraphQL, and PostgreSQL.
+An open-source, multi-tenant RBAC/ACL platform with self-hosting capabilities via AWS CloudFormation.
 
-## Features
+## 🚀 Features
 
-- **Multi-tenant Architecture**: Support for organizations, projects, and teams
-- **Role-Based Access Control**: Flexible permission system with roles and groups
-- **GraphQL API**: Modern, type-safe API with Apollo Server
-- **PostgreSQL Backend**: Robust database with Drizzle ORM
-- **Internationalization**: Multi-language support with next-intl
-- **Modern UI**: Beautiful, responsive interface with Tailwind CSS and Radix UI
+- **Multi-tenant RBAC/ACL** - Organization and project-level access control
+- **Self-hosting** - Deploy with AWS CloudFormation templates
+- **Containerized** - Docker containers for web and API
+- **Scalable** - Auto-scaling with AWS Fargate
+- **Open Source** - MIT licensed with active community
 
-## Quick Start
+## 🏗️ Architecture
 
-### Prerequisites
-
-- Node.js 18+
-- Docker and Docker Compose
-- PostgreSQL 16+
-
-### Installation
-
-1. **Clone the repository**:
-
-   ```bash
-   git clone <repository-url>
-   cd identity-central
-   ```
-
-2. **Install dependencies**:
-
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment**:
-
-   ```bash
-   cp .env.example .env
-   # Edit .env with your database configuration
-   ```
-
-4. **Start the database**:
-
-   ```bash
-   npm run docker:up
-   ```
-
-5. **Set up the database**:
-
-   ```bash
-   # Generate schema migrations
-   npm run db:generate
-
-   # Apply migrations
-   npm run db:migrate
-
-   # Seed with sample data
-   npm run db:seed
-   ```
-
-6. **Start the development server**:
-   ```bash
-   npm run dev
-   ```
-
-## Database Management
-
-### Seeding System
-
-The project includes a comprehensive seeding system for populating the database with sample data:
-
-- **`npm run db:seed`** - Generate fake data using drizzle-seed
-- **`npm run db:seed:json`** - Import data from existing JSON files
-- **`npm run db:reset`** - Clear all data and reset tables
-
-### Complete Database Workflow
-
-```bash
-# 1. Start database
-npm run docker:up
-
-# 2. Generate schema migrations
-npm run db:generate
-
-# 3. Apply migrations
-npm run db:migrate
-
-# 4. Seed with data (choose one)
-npm run db:seed          # Generate fake data
-npm run db:seed:json     # Import from JSON files
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Web App       │    │   API Server     │    │   Database      │
+│   (Next.js)     │◄──►│   (Apollo)      │◄──►│   (PostgreSQL)  │
+│   Container     │    │   Container      │    │   (RDS)         │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-For detailed information about the seeding system and database management, see [docs/DRIZZLE_IMPLEMENTATION.md](docs/DRIZZLE_IMPLEMENTATION.md).
+## 📦 Packages
+
+### Published Packages (npm)
+
+- **`@logusgraphics/grant-core`** - Core RBAC/ACL system
+
+### Self-Hosting Components
+
+- **Web App** - Containerized Next.js frontend
+- **API** - Containerized Apollo Server backend
+- **Database** - AWS RDS PostgreSQL cluster
+- **Infrastructure** - CloudFormation templates
+
+## 🚀 Quick Start
+
+### Self-Hosting (AWS)
+
+1. **Launch CloudFormation Stack**
+
+   ```bash
+   aws cloudformation create-stack \
+     --stack-name grant-platform \
+     --template-body file://infrastructure/cloudformation/main.yaml \
+     --parameters file://infrastructure/cloudformation/parameters/dev.json \
+     --capabilities CAPABILITY_IAM
+   ```
+
+2. **Configure via AWS Console**
+   - Use the CloudFormation wizard
+   - Configure parameters
+   - Launch the stack
+
+### Local Development
+
+```bash
+# Clone repository
+git clone https://github.com/logusgraphics/grant-platform.git
+cd grant-platform
+
+# Install dependencies
+pnpm install
+
+# Start development
+pnpm dev
+```
 
 ## 📚 Documentation
 
-All project documentation is centralized in the `docs/` directory. Start with the **[Documentation Index](docs/README.md)** for a complete overview of all available documentation.
+### Open Source
 
-### Quick Links
+- [Self-Hosting Guide](./docs/self-hosting/README.md)
+- [CloudFormation Setup](./infrastructure/cloudformation/README.md)
+- [Docker Configuration](./infrastructure/docker/README.md)
+- [API Documentation](./docs/api/README.md)
 
-- **[📖 Documentation Index](docs/README.md)** - Complete documentation overview and navigation
-- **[🏗️ Architecture](docs/MULTI_TENANCY_SPECIFICATION.md)** - System architecture and design
-- **[🗄️ Database](docs/DRIZZLE_IMPLEMENTATION.md)** - Database implementation and seeding
-- **[🛠️ Development](docs/DEVELOPMENT_GUIDE.md)** - Development setup and workflows
-- **[🧪 Testing](docs/TESTING.md)** - Testing framework and practices
+### SaaS Enterprise
 
-## Development
+- [SaaS Features](./docs/saas/README.md)
+- [Migration Guide](./docs/migration/README.md)
+- [Feature Comparison](./docs/FEATURE_COMPARISON.md)
+- [Enterprise Support](./docs/enterprise/README.md)
+
+## 🔧 Development
 
 ### Available Scripts
 
-- **`npm run dev`** - Start development server
-- **`npm run build`** - Build for production
-- **`npm run start`** - Start production server
-- **`npm run lint`** - Run ESLint
-- **`npm run format`** - Format code with Prettier
-- **`npm run test`** - Run tests with Vitest
+```bash
+# Development
+pnpm dev              # Start all services
+pnpm build            # Build all packages
+pnpm test             # Run tests
+pnpm lint             # Lint all packages
 
-### Database Scripts
-
-- **`npm run db:generate`** - Generate Drizzle migrations
-- **`npm run db:migrate`** - Apply database migrations
-- **`npm run db:seed`** - Seed with fake data
-- **`npm run db:seed:json`** - Import from JSON files
-- **`npm run db:reset`** - Reset database
-
-### Docker Commands
-
-- **`npm run docker:up`** - Start database containers
-- **`npm run docker:down`** - Stop database containers
-- **`npm run docker:logs`** - View container logs
-
-## Architecture
-
-### Tech Stack
-
-- **Frontend**: Next.js 15, React 19, TypeScript
-- **Backend**: GraphQL with Apollo Server
-- **Database**: PostgreSQL with Drizzle ORM
-- **Styling**: Tailwind CSS with Radix UI components
-- **State Management**: Zustand
-- **Testing**: Vitest with Testing Library
-
-### Project Structure
-
-```
-identity-central/
-├── app/                    # Next.js app directory
-├── components/            # React components
-├── graphql/              # GraphQL schema and resolvers
-├── hooks/                # Custom React hooks
-├── lib/                  # Utility libraries
-├── scripts/              # Database and utility scripts
-├── data/                 # Sample data files
-└── docs/                 # Documentation
+# Package management
+pnpm publish:core     # Publish core package
+pnpm clean            # Clean build outputs
 ```
 
-## Contributing
+### Working on Specific Components
+
+```bash
+# Web app
+pnpm --filter grant-web dev
+
+# API
+pnpm --filter grant-api dev
+
+# Core package
+pnpm --filter @logusgraphics/grant-core dev
+```
+
+## 🌐 Deployment Options
+
+### Open Source (Self-Hosting)
+
+- **AWS CloudFormation** - One-click deployment
+- **Docker Compose** - Local development
+- **Manual Deployment** - Custom infrastructure
+
+### SaaS Enterprise (Hosted)
+
+- **Managed Platform** - Fully hosted solution
+- **Enterprise Features** - Advanced RBAC/ACL
+- **Premium Support** - 24/7 assistance
+- **Custom Integrations** - SSO, LDAP, SAML
+
+## 💰 Pricing
+
+### Open Source
+
+- **Free Forever** - Complete self-hosting
+- **Community Support** - GitHub issues, Discord
+- **Core Features** - Basic RBAC/ACL
+
+### SaaS Enterprise
+
+- **Starter**: $99/month (up to 100 users)
+- **Professional**: $299/month (up to 1,000 users)
+- **Enterprise**: Custom pricing (unlimited users)
+
+[View Full Feature Comparison](./docs/FEATURE_COMPARISON.md) | [SaaS Platform](https://grant.logus.graphics)
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests if applicable
+4. Run tests and linting
 5. Submit a pull request
 
-## License
+## 📄 License
 
-This project is licensed under the MIT License.
+MIT License - see [LICENSE](./LICENSE) for details.
+
+## 👨‍💻 Author
+
+**Alejandro Heredia**
+
+- Email: ale@logus.graphics
+- Website: https://logus.graphics
+- GitHub: @logusgraphics

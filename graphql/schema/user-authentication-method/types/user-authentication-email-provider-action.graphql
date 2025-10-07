@@ -1,4 +1,0 @@
-enum UserAuthenticationEmailProviderAction {
-  login
-  signup
-}

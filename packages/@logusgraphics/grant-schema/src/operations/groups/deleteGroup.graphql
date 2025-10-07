@@ -1,0 +1,9 @@
+mutation DeleteGroup($id: ID!, $scope: Scope!) {
+  deleteGroup(id: $id, scope: $scope) {
+    id
+    name
+    description
+    createdAt
+    updatedAt
+  }
+}

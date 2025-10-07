@@ -1,8 +1,0 @@
-input CreateUserAuthenticationMethodInput {
-  userId: String!
-  provider: UserAuthenticationMethodProvider!
-  providerId: String!
-  providerData: JSON!
-  isVerified: Boolean
-  isPrimary: Boolean
-}

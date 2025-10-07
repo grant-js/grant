@@ -5,18 +5,14 @@ This guide covers the development practices, project structure, and collaboratio
 ## Project Structure
 
 ```
-├── app/                    # Next.js app directory
-│   ├── [locale]/          # Internationalized routes
-│   ├── api/               # API routes
-│   └── layout.tsx         # Root layout
-├── components/            # React components
-│   ├── providers/        # Context providers
-│   └── ui/              # UI components
+├── apps/                  # Applications
+│   ├── api/              # Apollo Server API
+│   │   └── tests/        # API tests
+│   └── web/              # Next.js web app
+│       └── tests/        # Web app tests (future)
+├── packages/             # Shared packages
+│   └── @logusgraphics/   # Scoped packages
 ├── docs/                 # Documentation
-├── graphql/              # GraphQL schema and resolvers
-├── i18n/                 # Internationalization
-├── lib/                  # Utility functions
-├── tests/               # Test files
 └── public/              # Static assets
 ```
 

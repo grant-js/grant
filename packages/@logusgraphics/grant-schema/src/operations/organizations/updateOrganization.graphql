@@ -1,0 +1,9 @@
+mutation UpdateOrganization($id: ID!, $input: UpdateOrganizationInput!) {
+  updateOrganization(id: $id, input: $input) {
+    id
+    name
+    slug
+    createdAt
+    updatedAt
+  }
+}

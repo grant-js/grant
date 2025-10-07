@@ -137,15 +137,15 @@ For detailed information about database scripts, see the **[Database Scripts Gui
 
 ```
 identity-central/
-├── app/                    # Next.js app directory
-├── components/            # React components
-├── docs/                  # 📚 All documentation (this directory)
-├── graphql/              # GraphQL schema and resolvers
-├── hooks/                # Custom React hooks
-├── lib/                  # Utility libraries
-├── scripts/              # Database and utility scripts
-├── data/                 # Sample data files
-└── tests/                # Test files
+├── apps/                  # Applications
+│   ├── api/              # Apollo Server API
+│   │   └── tests/        # API tests
+│   └── web/              # Next.js web app
+│       └── tests/        # Web app tests (future)
+├── packages/             # Shared packages
+│   └── @logusgraphics/   # Scoped packages
+├── docs/                 # 📚 All documentation (this directory)
+└── public/              # Static assets
 ```
 
 ## 🔄 Database Workflow Quick Reference

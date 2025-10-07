@@ -1,0 +1,1220 @@
+{
+  "common": {
+    "app": {
+      "title": "Grant",
+      "description": "Eine moderne Autorisierungsplattform für Einzelpersonen und Organisationen."
+    },
+    "auth": {
+      "login": "Anmelden",
+      "logout": "Abmelden",
+      "email": "E-Mail",
+      "password": "Passwort",
+      "submit": "Anmelden",
+      "errors": {
+        "invalidCredentials": "Ungültige E-Mail oder Passwort"
+      }
+    },
+    "navigation": {
+      "home": "Startseite",
+      "dashboard": "Dashboard",
+      "toggleMenu": "Navigationstabelle umschalten"
+    },
+    "theme": {
+      "label": "Design"
+    },
+    "language": {
+      "label": "Sprache"
+    },
+    "accessibility": {
+      "openMenu": "Menü öffnen",
+      "closeMenu": "Menü schließen"
+    },
+    "pagination": {
+      "previous": "Zurück",
+      "next": "Weiter",
+      "info": "Seite {current} von {total}"
+    },
+    "audit": {
+      "id": "ID",
+      "created": "Erstellt",
+      "updated": "Aktualisiert"
+    },
+    "copy": {
+      "title": "In Zwischenablage kopieren",
+      "action": "Kopieren",
+      "copied": "Kopiert!",
+      "success": "In Zwischenablage kopiert",
+      "error": "Kopieren in Zwischenablage fehlgeschlagen"
+    },
+    "tags": {
+      "title": "Nach Tags filtern",
+      "placeholder": "Tags auswählen",
+      "selected": "{count} ausgewählt",
+      "clearAll": "Alle löschen",
+      "loading": "Tags werden geladen..."
+    },
+    "emptyElements": "Keine {title} zum Anzeigen",
+    "loading": "Wird geladen...",
+    "redirecting": "Wird weitergeleitet...",
+    "error": "Fehler",
+    "organizations": {
+      "select": "Organisation auswählen",
+      "search": "Organisationen suchen...",
+      "notFound": "Keine Organisationen gefunden",
+      "title": "Organisationen",
+      "organization": "Organisation"
+    },
+    "projects": {
+      "select": "Projekt auswählen",
+      "search": "Projekte suchen...",
+      "notFound": "Keine Projekte gefunden",
+      "title": "Projekte",
+      "project": "Projekt"
+    },
+    "view": {
+      "card": "Kartenansicht",
+      "table": "Tabellenansicht"
+    }
+  },
+  "dashboard": {
+    "navigation": {
+      "users": "Benutzer",
+      "roles": "Rollen",
+      "groups": "Gruppen",
+      "permissions": "Berechtigungen",
+      "tags": "Tags",
+      "members": "Mitglieder",
+      "organizationTags": "Organisations-Tags",
+      "projectTags": "Projekt-Tags",
+      "projects": "Projekte",
+      "account": "Account",
+      "settings": "Einstellungen",
+      "backToOrganization": "Zurück zur Organisation"
+    }
+  },
+  "theme": {
+    "toggle": "Design umschalten",
+    "switchTo": "Zum {theme} Design wechseln",
+    "light": "Hell",
+    "dark": "Dunkel",
+    "system": "System"
+  },
+  "auth": {
+    "welcome": {
+      "title": "Willkommen bei Grant",
+      "description": "Eine moderne Autorisierungsplattform für Einzelpersonen und Organisationen. Verwalten Sie Benutzerzugriff, Berechtigungen und Rollen für Ihre Anwendungen mit Einfachheit."
+    },
+    "form": {
+      "name": {
+        "label": "Name",
+        "placeholder": "Geben Sie Ihren Namen ein"
+      },
+      "username": {
+        "label": "Benutzername",
+        "placeholder": "Geben Sie Ihren Benutzernamen ein",
+        "description": "Dies wird Ihr eindeutiger Identifikator sein. Wenn leer gelassen, wird er aus Ihrem Namen generiert.",
+        "popover": {
+          "title": "Benutzername",
+          "description": "Dies wird Ihr eindeutiger Identifikator sein. Wenn leer gelassen, wird er aus Ihrem Namen generiert.",
+          "autoGeneration": {
+            "title": "Auto-Generierung",
+            "description": "Ihr Benutzername wird automatisch aus Ihrem Namen generiert. Sie können ihn jederzeit bearbeiten, aber sobald Sie das tun, wird er nicht mehr automatisch aktualisiert, wenn Sie Ihren Namen ändern."
+          }
+        },
+        "availability": {
+          "checking": "Verfügbarkeit wird geprüft...",
+          "available": "✓ Benutzername ist verfügbar",
+          "unavailable": "✗ Benutzername ist bereits vergeben",
+          "error": "Fehler beim Prüfen der Benutzername-Verfügbarkeit"
+        }
+      },
+      "email": {
+        "label": "E-Mail",
+        "placeholder": "Geben Sie Ihre E-Mail ein"
+      },
+      "password": {
+        "label": "Passwort",
+        "placeholder": "Geben Sie Ihr Passwort ein"
+      },
+      "confirmPassword": {
+        "label": "Passwort bestätigen",
+        "placeholder": "Bestätigen Sie Ihr Passwort"
+      },
+      "accountType": {
+        "label": "Kontotyp",
+        "placeholder": "Kontotyp auswählen",
+        "options": {
+          "personal": "Persönliches Konto",
+          "organization": "Organisationskonto"
+        },
+        "explanations": {
+          "personal": {
+            "title": "Persönliches Konto",
+            "description": "Perfekt für Einzelpersonen, die ihre eigenen Projekte und Zugriffskontrolle verwalten möchten. Ideal für Entwickler, Freiberufler und persönliche Projekte."
+          },
+          "organization": {
+            "title": "Organisationskonto",
+            "description": "Entwickelt für Teams und Unternehmen. Enthält erweiterte Funktionen wie Team-Management, rollenbasierte Zugriffskontrolle und zentrale Verwaltung für mehrere Benutzer und Projekte."
+          }
+        }
+      }
+    },
+    "login": {
+      "title": "Anmelden",
+      "description": "Melden Sie sich an, um den Zugriff für Ihre Projekte zu verwalten",
+      "email": "E-Mail",
+      "emailPlaceholder": "E-Mail eingeben",
+      "emailError": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+      "password": "Passwort",
+      "passwordPlaceholder": "Passwort eingeben",
+      "passwordError": "Das Passwort muss mindestens 6 Zeichen lang sein",
+      "forgotPassword": "Passwort vergessen?",
+      "submit": "Anmelden",
+      "noAccount": "Noch keine Identität?",
+      "register": "Identität erstellen",
+      "success": "Identitätszugriff gewährt",
+      "error": "Identitätsverifizierung fehlgeschlagen",
+      "errorUnknown": "Ein unbekannter Fehler ist aufgetreten",
+      "verificationRequired": "E-Mail-Verification erforderlich",
+      "verifyEmailDescription": "Bitte verifizieren Sie Ihre E-Mail für vollen Zugriff"
+    },
+    "register": {
+      "title": "Identität erstellen",
+      "description": "Erstellen Sie Ihr Konto, um mit der Verwaltung des Zugriffs für Ihre Projekte zu beginnen",
+      "submit": "Registrieren",
+      "submitting": "Konto wird erstellt...",
+      "haveAccount": "Bereits eine Identität?",
+      "login": "Anmelden",
+      "success": "Konto erfolgreich erstellt",
+      "error": "Konto konnte nicht erstellt werden",
+      "verificationRequired": "E-Mail-Verification erforderlich",
+      "verifyEmailDescription": "Bitte prüfen Sie Ihre E-Mails und verifizieren Sie Ihr Konto für vollen Zugriff"
+    },
+    "accountTypes": {
+      "personal": "Persönliches Konto",
+      "organization": "Organisationskonto"
+    },
+    "forgotPassword": {
+      "title": "Identitätszugriff zurücksetzen",
+      "description": "Geben Sie Ihre E-Mail-Adresse ein und wir senden Ihnen einen sicheren Link zum Zurücksetzen Ihres Identitätszugriffs über alle verbundenen Systeme.",
+      "submit": "Link senden",
+      "rememberPassword": "Anmeldedaten wieder eingefallen?",
+      "backToLogin": "Zurück zur Anmeldung"
+    },
+    "validation": {
+      "email": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+      "password": "Das Passwort muss mindestens 8 Zeichen lang sein",
+      "name": "Der Name muss mindestens 2 Zeichen lang sein",
+      "passwordMatch": "Die Passwörter stimmen nicht überein",
+      "username": "Der Benutzername muss mindestens 3 Zeichen lang sein",
+      "usernameUnique": "Dieser Benutzername ist bereits vergeben. Bitte wählen Sie einen anderen."
+    }
+  },
+  "users": {
+    "title": "Benutzerverwaltung",
+    "members": "Mitglieder",
+    "noUsers": {
+      "title": "Keine Benutzer gefunden",
+      "description": "Erstellen Sie Ihren ersten Benutzer"
+    },
+    "noSearchResults": {
+      "title": "Keine Benutzer gefunden",
+      "description": "Versuchen Sie, Ihre Suchbegriffe anzupassen oder erstellen Sie einen neuen Benutzer"
+    },
+    "actions": {
+      "create": "Benutzer erstellen",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert...",
+      "label": "Aktionen anzeigen/ausblenden"
+    },
+    "sort": {
+      "label": "Sortieren nach",
+      "name": "Name",
+      "email": "E-Mail",
+      "default": "Standard"
+    },
+    "limit": "Einträge pro Seite",
+    "search": {
+      "placeholder": "Benutzer suchen..."
+    },
+    "form": {
+      "name": "Name",
+      "email": "E-Mail",
+      "roles": "Rollen",
+      "tags": "Tags",
+      "primaryTag": "Haupt-Tag",
+      "validation": {
+        "rolesRequired": "Benutzer muss mindestens eine Rolle haben"
+      },
+      "rolesLoading": "Rollen werden geladen...",
+      "noRolesAvailable": "Keine Rollen verfügbar",
+      "tagsLoading": "Tags werden geladen...",
+      "noTagsAvailable": "Keine Tags verfügbar"
+    },
+    "roles": {
+      "admin": "Administrator",
+      "customer": "Kunde"
+    },
+    "createDialog": {
+      "title": "Neuen Benutzer erstellen",
+      "description": "Fügen Sie einen neuen Benutzer zum System hinzu",
+      "trigger": "Benutzer erstellen",
+      "confirm": "Benutzer erstellen",
+      "submitting": "Wird erstellt..."
+    },
+    "editDialog": {
+      "title": "Benutzer bearbeiten",
+      "description": "Aktualisieren Sie die Benutzerinformationen",
+      "confirm": "Änderungen speichern",
+      "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert..."
+    },
+    "deleteDialog": {
+      "title": "Benutzer löschen",
+      "description": "Sind Sie sicher, dass Sie {name} löschen möchten?",
+      "cancel": "Abbrechen",
+      "confirm": "Löschen",
+      "deleting": "Wird gelöscht..."
+    },
+    "notifications": {
+      "createSuccess": "Benutzer erstellt",
+      "createError": "Benutzer konnte nicht erstellt werden",
+      "updateSuccess": "Benutzer aktualisiert",
+      "updateError": "Benutzer konnte nicht aktualisiert werden",
+      "deleteSuccess": "Benutzer gelöscht",
+      "deleteError": "Benutzer konnte nicht gelöscht werden",
+      "roleAddedSuccess": "Rolle zum Benutzer hinzugefügt",
+      "roleAddedError": "Rolle konnte nicht zum Benutzer hinzugefügt werden",
+      "roleRemovedSuccess": "Rolle vom Benutzer entfernt",
+      "roleRemovedError": "Rolle konnte nicht vom Benutzer entfernt werden",
+      "tagAddedSuccess": "Tag zum Benutzer hinzugefügt",
+      "tagAddedError": "Tag konnte nicht zum Benutzer hinzugefügt werden",
+      "tagRemovedSuccess": "Tag vom Benutzer entfernt",
+      "tagRemovedError": "Tag konnte nicht vom Benutzer entfernt werden"
+    },
+    "view": {
+      "card": "Kartenansicht",
+      "table": "Tabellenansicht"
+    },
+    "toolbar": {
+      "tags": {
+        "title": "Nach Tags filtern",
+        "placeholder": "Tags auswählen",
+        "selected": "{count} ausgewählt",
+        "clearAll": "Alle löschen",
+        "loading": "Tags werden geladen..."
+      }
+    },
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "email": "E-Mail",
+      "roles": "Rollen",
+      "tags": "Tags",
+      "audit": "Audit",
+      "created": "Erstellt",
+      "updated": "Aktualisiert",
+      "actions": "Aktionen",
+      "loading": "Benutzer werden geladen..."
+    }
+  },
+  "members": {
+    "title": "Organisationsmitglieder",
+    "noUsers": {
+      "title": "Keine Mitglieder gefunden",
+      "description": "Fügen Sie Ihr erstes Mitglied hinzu"
+    },
+    "noSearchResults": {
+      "title": "Keine Mitglieder gefunden",
+      "description": "Versuchen Sie, Ihre Suchbegriffe anzupassen oder fügen Sie ein neues Mitglied hinzu"
+    },
+    "actions": {
+      "create": "Mitglied hinzufügen",
+      "edit": "Bearbeiten",
+      "delete": "Entfernen",
+      "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert...",
+      "label": "Aktionen anzeigen/ausblenden"
+    },
+    "sort": {
+      "label": "Sortieren nach",
+      "name": "Name",
+      "email": "E-Mail",
+      "default": "Standard"
+    },
+    "limit": "Einträge pro Seite",
+    "search": {
+      "placeholder": "Mitglieder suchen..."
+    },
+    "form": {
+      "name": "Name",
+      "email": "E-Mail",
+      "roles": "Rollen",
+      "tags": "Tags",
+      "validation": {
+        "rolesRequired": "Mitglied muss mindestens eine Rolle haben"
+      },
+      "rolesLoading": "Rollen werden geladen...",
+      "noRolesAvailable": "Keine Rollen verfügbar",
+      "tagsLoading": "Tags werden geladen...",
+      "noTagsAvailable": "Keine Tags verfügbar"
+    },
+    "roles": {
+      "admin": "Administrator",
+      "customer": "Kunde"
+    },
+    "createDialog": {
+      "title": "Neues Mitglied hinzufügen",
+      "description": "Fügen Sie ein neues Mitglied zur Organisation hinzu",
+      "trigger": "Mitglied hinzufügen",
+      "confirm": "Mitglied hinzufügen",
+      "submitting": "Wird hinzugefügt..."
+    },
+    "editDialog": {
+      "title": "Mitglied bearbeiten",
+      "description": "Aktualisieren Sie die Mitgliedsinformationen",
+      "confirm": "Änderungen speichern",
+      "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert..."
+    },
+    "deleteDialog": {
+      "title": "Mitglied entfernen",
+      "description": "Sind Sie sicher, dass Sie {name} aus der Organisation entfernen möchten?",
+      "cancel": "Abbrechen",
+      "confirm": "Entfernen",
+      "deleting": "Wird entfernt..."
+    },
+    "notifications": {
+      "createSuccess": "Mitglied hinzugefügt",
+      "createError": "Mitglied konnte nicht hinzugefügt werden",
+      "updateSuccess": "Mitglied aktualisiert",
+      "updateError": "Mitglied konnte nicht aktualisiert werden",
+      "deleteSuccess": "Mitglied entfernt",
+      "deleteError": "Mitglied konnte nicht entfernt werden",
+      "roleAddedSuccess": "Rolle zum Mitglied hinzugefügt",
+      "roleAddedError": "Rolle konnte nicht zum Mitglied hinzugefügt werden",
+      "roleRemovedSuccess": "Rolle vom Mitglied entfernt",
+      "roleRemovedError": "Rolle konnte nicht vom Mitglied entfernt werden",
+      "tagAddedSuccess": "Tag zum Mitglied hinzugefügt",
+      "tagAddedError": "Tag konnte nicht zum Mitglied hinzugefügt werden",
+      "tagRemovedSuccess": "Tag vom Mitglied entfernt",
+      "tagRemovedError": "Tag konnte nicht vom Mitglied entfernt werden"
+    },
+    "view": {
+      "card": "Kartenansicht",
+      "table": "Tabellenansicht"
+    },
+    "toolbar": {
+      "tags": {
+        "title": "Nach Tags filtern",
+        "placeholder": "Tags auswählen",
+        "selected": "{count} ausgewählt",
+        "clearAll": "Alle löschen",
+        "loading": "Tags werden geladen..."
+      }
+    },
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "email": "E-Mail",
+      "roles": "Rollen",
+      "tags": "Tags",
+      "audit": "Audit",
+      "created": "Erstellt",
+      "updated": "Aktualisiert",
+      "actions": "Aktionen",
+      "loading": "Mitglieder werden geladen..."
+    }
+  },
+  "roles": {
+    "title": "Rollenverwaltung",
+    "noRoles": {
+      "title": "Keine Rollen gefunden",
+      "description": "Erstellen Sie Ihre erste Rolle"
+    },
+    "noSearchResults": {
+      "title": "Keine Rollen gefunden",
+      "description": "Versuchen Sie, Ihre Suchbegriffe anzupassen oder erstellen Sie eine neue Rolle"
+    },
+    "actions": {
+      "create": "Rolle erstellen",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert...",
+      "label": "Aktionen anzeigen/ausblenden"
+    },
+    "sort": {
+      "label": "Sortieren nach",
+      "name": "Name",
+      "default": "Standard"
+    },
+    "limit": "Einträge pro Seite",
+    "search": {
+      "placeholder": "Rollen suchen..."
+    },
+    "form": {
+      "label": "Bezeichnung",
+      "name": "Name",
+      "description": "Beschreibung",
+      "groups": "Gruppen",
+      "tags": "Tags",
+      "primaryTag": "Haupt-Tag",
+      "groupsLoading": "Gruppen werden geladen...",
+      "noGroupsAvailable": "Keine Gruppen verfügbar",
+      "tagsLoading": "Tags werden geladen...",
+      "noTagsAvailable": "Keine Tags verfügbar",
+      "validation": {
+        "groupsRequired": "Rolle muss mindestens eine Gruppe haben"
+      }
+    },
+    "createDialog": {
+      "title": "Neue Rolle erstellen",
+      "description": "Fügen Sie eine neue Rolle zum System hinzu",
+      "trigger": "Rolle erstellen",
+      "confirm": "Rolle erstellen",
+      "submitting": "Wird erstellt..."
+    },
+    "editDialog": {
+      "title": "Rolle bearbeiten",
+      "description": "Aktualisieren Sie die Rolleninformationen",
+      "confirm": "Änderungen speichern",
+      "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert..."
+    },
+    "deleteDialog": {
+      "title": "Rolle löschen",
+      "description": "Sind Sie sicher, dass Sie {name} löschen möchten?",
+      "cancel": "Abbrechen",
+      "confirm": "Löschen",
+      "deleting": "Wird gelöscht..."
+    },
+    "notifications": {
+      "createSuccess": "Rolle erstellt",
+      "createError": "Rolle konnte nicht erstellt werden",
+      "updateSuccess": "Rolle aktualisiert",
+      "updateError": "Rolle konnte nicht aktualisiert werden",
+      "deleteSuccess": "Rolle gelöscht",
+      "deleteError": "Rolle konnte nicht gelöscht werden",
+      "groupAddedSuccess": "Gruppe zur Rolle hinzugefügt",
+      "groupAddedError": "Gruppe konnte nicht zur Rolle hinzugefügt werden",
+      "groupRemovedSuccess": "Gruppe von der Rolle entfernt",
+      "groupRemovedError": "Gruppe konnte nicht von der Rolle entfernt werden",
+      "tagAddedSuccess": "Tag zur Rolle hinzugefügt",
+      "tagAddedError": "Tag konnte nicht zur Rolle hinzugefügt werden",
+      "tagRemovedSuccess": "Tag von der Rolle entfernt",
+      "tagRemovedError": "Tag konnte nicht von der Rolle entfernt werden"
+    },
+    "view": {
+      "card": "Kartenansicht",
+      "table": "Tabellenansicht"
+    },
+    "table": {
+      "label": "Bezeichnung",
+      "name": "Name",
+      "description": "Beschreibung",
+      "groups": "Gruppen",
+      "tags": "Tags",
+      "audit": "Audit",
+      "id": "ID",
+      "created": "Erstellt",
+      "updated": "Aktualisiert",
+      "actions": "Aktionen",
+      "loading": "Rollen werden geladen..."
+    },
+    "toolbar": {
+      "tags": {
+        "title": "Nach Tags filtern",
+        "placeholder": "Tags auswählen",
+        "selected": "{count} ausgewählt",
+        "clearAll": "Alle löschen",
+        "loading": "Tags werden geladen..."
+      }
+    },
+    "groups": "Gruppen",
+    "emptyElements": "Es gibt keine {title} zum Anzeigen",
+    "noDescription": "Keine Beschreibung"
+  },
+  "groups": {
+    "title": "Gruppenverwaltung",
+    "noGroups": {
+      "title": "Keine Gruppen gefunden",
+      "description": "Erstellen Sie Ihre erste Gruppe"
+    },
+    "noSearchResults": {
+      "title": "Keine Gruppen gefunden",
+      "description": "Versuchen Sie, Ihre Suchbegriffe anzupassen oder erstellen Sie eine neue Gruppe"
+    },
+    "actions": {
+      "create": "Gruppe erstellen",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "update": "Aktualisieren",
+      "cancel": "Abbrechen",
+      "creating": "Wird erstellt...",
+      "updating": "Wird aktualisiert...",
+      "deleting": "Wird gelöscht...",
+      "label": "Aktionen anzeigen/ausblenden"
+    },
+    "sort": {
+      "label": "Sortieren nach",
+      "name": "Name",
+      "default": "Standard"
+    },
+    "limit": {
+      "label": "Einträge pro Seite",
+      "option": "{count} Einträge"
+    },
+    "search": {
+      "placeholder": "Gruppen suchen..."
+    },
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Gruppenname eingeben",
+      "description": "Beschreibung",
+      "descriptionPlaceholder": "Gruppenbeschreibung eingeben",
+      "permissions": "Berechtigungen",
+      "tags": "Tags",
+      "primaryTag": "Haupt-Tag",
+      "permissionsLoading": "Berechtigungen werden geladen...",
+      "noPermissionsAvailable": "Keine Berechtigungen verfügbar",
+      "tagsLoading": "Tags werden geladen...",
+      "noTagsAvailable": "Keine Tags verfügbar"
+    },
+    "create": {
+      "title": "Neue Gruppe erstellen",
+      "description": "Fügen Sie eine neue Gruppe zum System hinzu"
+    },
+    "edit": {
+      "title": "Gruppe bearbeiten",
+      "description": "Aktualisieren Sie die Gruppeninformationen"
+    },
+    "delete": {
+      "title": "Gruppe löschen",
+      "description": "Sind Sie sicher, dass Sie {name} löschen möchten?"
+    },
+    "createDialog": {
+      "title": "Neue Gruppe erstellen",
+      "description": "Fügen Sie eine neue Gruppe zum System hinzu",
+      "trigger": "Gruppe erstellen",
+      "confirm": "Gruppe erstellen",
+      "submitting": "Wird erstellt...",
+      "cancel": "Abbrechen"
+    },
+    "editDialog": {
+      "title": "Gruppe bearbeiten",
+      "description": "Aktualisieren Sie die Gruppeninformationen",
+      "confirm": "Änderungen speichern",
+      "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert..."
+    },
+    "deleteDialog": {
+      "title": "Gruppe löschen",
+      "description": "Sind Sie sicher, dass Sie {name} löschen möchten?",
+      "cancel": "Abbrechen",
+      "confirm": "Löschen",
+      "deleting": "Wird gelöscht..."
+    },
+    "notifications": {
+      "createSuccess": "Gruppe erstellt",
+      "createError": "Gruppe konnte nicht erstellt werden",
+      "updateSuccess": "Gruppe aktualisiert",
+      "updateError": "Gruppe konnte nicht aktualisiert werden",
+      "deleteSuccess": "Gruppe gelöscht",
+      "deleteError": "Gruppe konnte nicht gelöscht werden",
+      "permissionAddedSuccess": "Berechtigung zur Gruppe hinzugefügt",
+      "permissionAddedError": "Berechtigung konnte nicht zur Gruppe hinzugefügt werden",
+      "permissionRemovedSuccess": "Berechtigung von der Gruppe entfernt",
+      "permissionRemovedError": "Berechtigung konnte nicht von der Gruppe entfernt werden",
+      "tagAddedSuccess": "Tag zur Gruppe hinzugefügt",
+      "tagAddedError": "Tag konnte nicht zur Gruppe hinzugefügt werden",
+      "tagRemovedSuccess": "Tag von der Gruppe entfernt",
+      "tagRemovedError": "Tag konnte nicht von der Gruppe entfernt werden"
+    },
+    "view": {
+      "cards": "Kartenansicht",
+      "table": "Tabellenansicht"
+    },
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "description": "Beschreibung",
+      "permissions": "Berechtigungen",
+      "tags": "Tags",
+      "audit": "Audit",
+      "created": "Erstellt",
+      "updated": "Aktualisiert",
+      "actions": "Aktionen",
+      "loading": "Gruppen werden geladen..."
+    },
+    "toolbar": {
+      "tags": {
+        "title": "Nach Tags filtern",
+        "placeholder": "Tags auswählen",
+        "selected": "{count} ausgewählt",
+        "clearAll": "Alle löschen",
+        "loading": "Tags werden geladen..."
+      }
+    },
+    "permissions": "Berechtigungen",
+    "emptyElements": "Es gibt keine {title} zum Anzeigen",
+    "noDescription": "Keine Beschreibung"
+  },
+  "permissions": {
+    "title": "Berechtigungsverwaltung",
+    "noPermissions": {
+      "title": "Keine Berechtigungen gefunden",
+      "description": "Erstellen Sie Ihre erste Berechtigung"
+    },
+    "noSearchResults": {
+      "title": "Keine Berechtigungen gefunden",
+      "description": "Versuchen Sie, Ihre Suchbegriffe anzupassen oder erstellen Sie eine neue Berechtigung"
+    },
+    "actions": {
+      "create": "Berechtigung erstellen",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert...",
+      "label": "Aktionen anzeigen/ausblenden"
+    },
+    "sort": {
+      "label": "Sortieren nach",
+      "name": "Name",
+      "action": "Aktion",
+      "default": "Standard"
+    },
+    "limit": "Einträge pro Seite",
+    "search": {
+      "placeholder": "Berechtigungen suchen..."
+    },
+    "form": {
+      "name": "Name",
+      "description": "Beschreibung",
+      "action": "Aktion",
+      "tags": "Tags",
+      "primaryTag": "Haupt-Tag",
+      "tagsLoading": "Tags werden geladen...",
+      "noTagsAvailable": "Keine Tags verfügbar",
+      "validation": {
+        "nameRequired": "Berechtigungsname ist erforderlich"
+      }
+    },
+    "createDialog": {
+      "title": "Neue Berechtigung erstellen",
+      "description": "Fügen Sie eine neue Berechtigung zum System hinzu",
+      "trigger": "Berechtigung erstellen",
+      "confirm": "Berechtigung erstellen",
+      "cancel": "Abbrechen",
+      "submitting": "Wird erstellt..."
+    },
+    "editDialog": {
+      "title": "Berechtigung bearbeiten",
+      "description": "Berechtigungsinformationen aktualisieren",
+      "confirm": "Änderungen speichern",
+      "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert..."
+    },
+    "deleteDialog": {
+      "title": "Berechtigung löschen",
+      "description": "Sind Sie sicher, dass Sie {name} löschen möchten?",
+      "cancel": "Abbrechen",
+      "confirm": "Löschen",
+      "deleting": "Wird gelöscht..."
+    },
+    "notifications": {
+      "createSuccess": "Berechtigung erstellt",
+      "createError": "Berechtigung konnte nicht erstellt werden",
+      "updateSuccess": "Berechtigung aktualisiert",
+      "updateError": "Berechtigung konnte nicht aktualisiert werden",
+      "deleteSuccess": "Berechtigung gelöscht",
+      "deleteError": "Berechtigung konnte nicht gelöscht werden",
+      "tagAddedSuccess": "Tag zur Berechtigung hinzugefügt",
+      "tagAddedError": "Tag konnte nicht zur Berechtigung hinzugefügt werden",
+      "tagRemovedSuccess": "Tag von der Berechtigung entfernt",
+      "tagRemovedError": "Tag konnte nicht von der Berechtigung entfernt werden"
+    },
+    "view": {
+      "card": "Kartenansicht",
+      "table": "Tabellenansicht"
+    },
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "action": "Aktion",
+      "description": "Beschreibung",
+      "tags": "Tags",
+      "audit": "Audit",
+      "created": "Erstellt",
+      "updated": "Aktualisiert",
+      "actions": "Aktionen",
+      "loading": "Berechtigungen werden geladen..."
+    },
+    "toolbar": {
+      "tags": {
+        "title": "Nach Tags filtern",
+        "placeholder": "Tags auswählen",
+        "selected": "{count} ausgewählt",
+        "clearAll": "Alle löschen",
+        "loading": "Tags werden geladen..."
+      }
+    }
+  },
+  "account": {
+    "title": "Kontoverwaltung",
+    "description": "Anzeigen und verwalten Sie Ihre Kontodetails"
+  },
+  "organizations": {
+    "title": "Organisationen",
+    "description": "Verwalten Sie Ihre Organisationen",
+    "redirectingToProjects": "Weiterleitung zu Projekten...",
+    "noOrganizations": {
+      "title": "Keine Organisationen gefunden",
+      "description": "Erstellen Sie Ihre erste Organisation"
+    },
+    "noSearchResults": {
+      "title": "Keine Organisationen gefunden",
+      "description": "Versuchen Sie, Ihre Suchbegriffe anzupassen oder erstellen Sie eine neue Organisation"
+    },
+    "actions": {
+      "create": "Organisation erstellen",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert...",
+      "label": "Aktionen anzeigen/ausblenden"
+    },
+    "sort": {
+      "label": "Sortieren nach",
+      "name": "Name",
+      "default": "Standard"
+    },
+    "limit": "Einträge pro Seite",
+    "search": {
+      "placeholder": "Organisationen suchen..."
+    },
+    "form": {
+      "name": "Name",
+      "description": "Beschreibung",
+      "tags": "Tags",
+      "tagsLoading": "Tags werden geladen...",
+      "noTagsAvailable": "Keine Tags verfügbar",
+      "validation": {
+        "nameRequired": "Organisationsname ist erforderlich"
+      }
+    },
+    "createDialog": {
+      "title": "Neue Organisation erstellen",
+      "description": "Fügen Sie eine neue Organisation zum System hinzu",
+      "trigger": "Organisation erstellen",
+      "confirm": "Organisation erstellen",
+      "submitting": "Wird erstellt..."
+    },
+    "editDialog": {
+      "title": "Organisation bearbeiten",
+      "description": "Organisationsinformationen aktualisieren",
+      "confirm": "Änderungen speichern",
+      "updating": "Wird aktualisiert..."
+    },
+    "deleteDialog": {
+      "title": "Organisation löschen",
+      "description": "Sind Sie sicher, dass Sie {name} löschen möchten?",
+      "cancel": "Abbrechen",
+      "confirm": "Löschen",
+      "deleting": "Wird gelöscht..."
+    },
+    "notifications": {
+      "createSuccess": "Organisation erstellt",
+      "createError": "Organisation konnte nicht erstellt werden",
+      "updateSuccess": "Organisation aktualisiert",
+      "updateError": "Organisation konnte nicht aktualisiert werden",
+      "deleteSuccess": "Organisation gelöscht",
+      "deleteError": "Organisation konnte nicht gelöscht werden",
+      "roleAddedSuccess": "Rolle zur Organisation hinzugefügt",
+      "roleAddedError": "Rolle konnte nicht zur Organisation hinzugefügt werden",
+      "roleRemovedSuccess": "Rolle von der Organisation entfernt",
+      "roleRemovedError": "Rolle konnte nicht von der Organisation entfernt werden",
+      "tagAddedSuccess": "Tag zur Organisation hinzugefügt",
+      "tagAddedError": "Tag konnte nicht zur Organisation hinzugefügt werden",
+      "tagRemovedSuccess": "Tag von der Organisation entfernt",
+      "tagRemovedError": "Tag konnte nicht von der Organisation entfernt werden"
+    },
+    "view": {
+      "card": "Kartenansicht",
+      "table": "Tabellenansicht"
+    },
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "description": "Beschreibung",
+      "audit": "Audit",
+      "created": "Erstellt",
+      "updated": "Aktualisiert",
+      "actions": "Aktionen",
+      "loading": "Organisationen werden geladen..."
+    },
+    "toolbar": {
+      "tags": {
+        "title": "Nach Tags filtern",
+        "placeholder": "Tags auswählen",
+        "selected": "{count} ausgewählt",
+        "clearAll": "Alle löschen",
+        "loading": "Tags werden geladen..."
+      }
+    }
+  },
+  "projects": {
+    "title": "Projekte",
+    "description": "Verwalten Sie Ihre Projekte",
+    "empty": {
+      "title": "Keine Projekte gefunden",
+      "description": "Erstellen Sie Ihr erstes Projekt"
+    },
+    "noSearchResults": {
+      "title": "Keine Projekte gefunden",
+      "description": "Versuchen Sie, Ihre Suchbegriffe anzupassen oder erstellen Sie ein neues Projekt"
+    },
+    "actions": {
+      "create": "Projekt erstellen",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "view": "Projekt anzeigen",
+      "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert..."
+    },
+    "sort": {
+      "label": "Sortieren nach",
+      "name": "Name",
+      "createdAt": "Erstellungsdatum",
+      "updatedAt": "Aktualisierungsdatum",
+      "default": "Standard"
+    },
+    "limit": {
+      "label": "Einträge pro Seite"
+    },
+    "search": {
+      "placeholder": "Projekte suchen..."
+    },
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Projektname eingeben",
+      "description": "Beschreibung",
+      "descriptionPlaceholder": "Projektbeschreibung eingeben",
+      "roles": "Rollen",
+      "tags": "Tags",
+      "primaryTag": "Haupt-Tag",
+      "tagsLoading": "Tags werden geladen...",
+      "noTagsAvailable": "Keine Tags verfügbar",
+      "validation": {
+        "nameRequired": "Projektname ist erforderlich"
+      }
+    },
+    "createDialog": {
+      "title": "Neues Projekt erstellen",
+      "description": "Fügen Sie ein neues Projekt zum System hinzu",
+      "trigger": "Projekt erstellen",
+      "confirm": "Projekt erstellen",
+      "cancel": "Abbrechen",
+      "submitting": "Wird erstellt..."
+    },
+    "editDialog": {
+      "title": "Projekt bearbeiten",
+      "description": "Projektinformationen aktualisieren",
+      "confirm": "Änderungen speichern",
+      "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert..."
+    },
+    "deleteDialog": {
+      "title": "Projekt löschen",
+      "description": "Sind Sie sicher, dass Sie {name} löschen möchten?",
+      "cancel": "Abbrechen",
+      "confirm": "Löschen",
+      "deleting": "Wird gelöscht..."
+    },
+    "notifications": {
+      "createSuccess": "Projekt erstellt",
+      "createError": "Projekt konnte nicht erstellt werden",
+      "updateSuccess": "Projekt aktualisiert",
+      "updateError": "Projekt konnte nicht aktualisiert werden",
+      "deleteSuccess": "Projekt gelöscht",
+      "deleteError": "Projekt konnte nicht gelöscht werden",
+      "tagAddedSuccess": "Tag zum Projekt hinzugefügt",
+      "tagAddedError": "Tag konnte nicht zum Projekt hinzugefügt werden",
+      "tagRemovedSuccess": "Tag vom Projekt entfernt",
+      "tagRemovedError": "Tag konnte nicht vom Projekt entfernt werden",
+      "roleAddedSuccess": "Rolle zum Projekt hinzugefügt",
+      "roleAddedError": "Rolle konnte nicht zum Projekt hinzugefügt werden"
+    },
+    "view": {
+      "card": "Kartenansicht",
+      "table": "Tabellenansicht"
+    },
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "description": "Beschreibung",
+      "noDescription": "Keine Beschreibung",
+      "roles": "Rollen",
+      "tags": "Tags",
+      "audit": "Audit",
+      "created": "Erstellt",
+      "updated": "Aktualisiert",
+      "actions": "Aktionen",
+      "loading": "Projekte werden geladen..."
+    },
+    "card": {
+      "noDescription": "Keine Beschreibung"
+    },
+    "toolbar": {
+      "title": "Projektverwaltung",
+      "tags": {
+        "title": "Nach Tags filtern",
+        "placeholder": "Tags auswählen",
+        "selected": "{count} ausgewählt",
+        "clearAll": "Alle löschen",
+        "loading": "Tags werden geladen..."
+      }
+    },
+    "audit": {
+      "created": "Erstellt",
+      "updated": "Aktualisiert"
+    }
+  },
+  "organization": {
+    "projects": {
+      "title": "Projekte",
+      "description": "Verwalten Sie Projekte für diese Organisation",
+      "noProjects": {
+        "title": "Keine Projekte gefunden",
+        "description": "Erstellen Sie Ihr erstes Projekt"
+      },
+      "noSearchResults": {
+        "title": "Keine Projekte gefunden",
+        "description": "Versuchen Sie, Ihre Suchbegriffe anzupassen oder erstellen Sie ein neues Projekt"
+      },
+      "actions": {
+        "create": "Projekt erstellen",
+        "edit": "Bearbeiten",
+        "delete": "Löschen",
+        "cancel": "Abbrechen",
+        "updating": "Wird aktualisiert...",
+        "label": "Aktionen anzeigen/ausblenden"
+      },
+      "sort": {
+        "label": "Sortieren nach",
+        "name": "Name",
+        "default": "Standard"
+      },
+      "limit": {
+        "label": "Einträge pro Seite"
+      },
+      "search": {
+        "placeholder": "Projekte suchen..."
+      },
+      "form": {
+        "name": "Name",
+        "description": "Beschreibung",
+        "validation": {
+          "nameRequired": "Projektname ist erforderlich"
+        }
+      },
+      "createDialog": {
+        "title": "Neues Projekt erstellen",
+        "description": "Fügen Sie ein neues Projekt zur Organisation hinzu",
+        "trigger": "Projekt erstellen",
+        "confirm": "Projekt erstellen",
+        "submitting": "Wird erstellt..."
+      },
+      "editDialog": {
+        "title": "Projekt bearbeiten",
+        "description": "Projektinformationen aktualisieren",
+        "confirm": "Änderungen speichern",
+        "updating": "Wird aktualisiert..."
+      },
+      "deleteDialog": {
+        "title": "Projekt löschen",
+        "description": "Sind Sie sicher, dass Sie {name} löschen möchten?",
+        "cancel": "Abbrechen",
+        "confirm": "Löschen",
+        "deleting": "Wird gelöscht..."
+      },
+      "notifications": {
+        "createSuccess": "Projekt erstellt",
+        "createError": "Projekt konnte nicht erstellt werden",
+        "updateSuccess": "Projekt aktualisiert",
+        "updateError": "Projekt konnte nicht aktualisiert werden",
+        "deleteSuccess": "Projekt gelöscht",
+        "deleteError": "Projekt konnte nicht gelöscht werden"
+      },
+      "view": {
+        "card": "Kartenansicht",
+        "table": "Tabellenansicht"
+      },
+      "table": {
+        "id": "ID",
+        "name": "Name",
+        "description": "Beschreibung",
+        "audit": "Audit",
+        "created": "Erstellt",
+        "updated": "Aktualisiert",
+        "actions": "Aktionen",
+        "loading": "Projekte werden geladen..."
+      },
+      "toolbar": {
+        "tags": {
+          "title": "Nach Tags filtern",
+          "placeholder": "Tags auswählen",
+          "selected": "{count} ausgewählt",
+          "clearAll": "Alle löschen",
+          "loading": "Tags werden geladen..."
+        }
+      }
+    }
+  },
+  "organizationProjects": {
+    "notifications": {
+      "addSuccess": "Projekt zur Organisation hinzugefügt",
+      "addError": "Projekt konnte nicht zur Organisation hinzugefügt werden",
+      "removeSuccess": "Projekt aus der Organisation entfernt",
+      "removeError": "Projekt konnte nicht aus der Organisation entfernt werden"
+    }
+  },
+  "organizationUsers": {
+    "notifications": {
+      "addSuccess": "Benutzer zur Organisation hinzugefügt",
+      "addError": "Benutzer konnte nicht zur Organisation hinzugefügt werden",
+      "removeSuccess": "Benutzer aus der Organisation entfernt",
+      "removeError": "Benutzer konnte nicht aus der Organisation entfernt werden"
+    }
+  },
+  "organizationGroups": {
+    "notifications": {
+      "addSuccess": "Gruppe zur Organisation hinzugefügt",
+      "addError": "Gruppe konnte nicht zur Organisation hinzugefügt werden",
+      "removeSuccess": "Gruppe aus der Organisation entfernt",
+      "removeError": "Gruppe konnte nicht aus der Organisation entfernt werden"
+    }
+  },
+  "projectGroups": {
+    "notifications": {
+      "addSuccess": "Gruppe zum Projekt hinzugefügt",
+      "addError": "Gruppe konnte nicht zum Projekt hinzugefügt werden",
+      "removeSuccess": "Gruppe aus dem Projekt entfernt",
+      "removeError": "Gruppe konnte nicht aus dem Projekt entfernt werden"
+    }
+  },
+  "organizationPermissions": {
+    "notifications": {
+      "addSuccess": "Berechtigung zur Organisation hinzugefügt",
+      "addError": "Berechtigung konnte nicht zur Organisation hinzugefügt werden",
+      "removeSuccess": "Berechtigung aus der Organisation entfernt",
+      "removeError": "Berechtigung konnte nicht aus der Organisation entfernt werden"
+    }
+  },
+  "projectPermissions": {
+    "notifications": {
+      "addSuccess": "Berechtigung zum Projekt hinzugefügt",
+      "addError": "Berechtigung konnte nicht zum Projekt hinzugefügt werden",
+      "removeSuccess": "Berechtigung aus dem Projekt entfernt",
+      "removeError": "Berechtigung konnte nicht aus dem Projekt entfernt werden"
+    }
+  },
+  "projectUsers": {
+    "notifications": {
+      "addSuccess": "Benutzer zum Projekt hinzugefügt",
+      "addError": "Benutzer konnte nicht zum Projekt hinzugefügt werden",
+      "removeSuccess": "Benutzer aus dem Projekt entfernt",
+      "removeError": "Benutzer konnte nicht aus dem Projekt entfernt werden"
+    }
+  },
+  "tags": {
+    "title": "Tags",
+    "description": "Verwalten Sie Ihre Tags",
+    "noTags": {
+      "title": "Keine Tags gefunden",
+      "description": "Erstellen Sie Ihren ersten Tag"
+    },
+    "noSearchResults": {
+      "title": "Keine Tags gefunden",
+      "description": "Versuchen Sie, Ihre Suchbegriffe anzupassen oder erstellen Sie einen neuen Tag"
+    },
+    "actions": {
+      "create": "Tag erstellen",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert..."
+    },
+    "sort": {
+      "label": "Sortieren nach",
+      "name": "Name",
+      "color": "Farbe",
+      "createdAt": "Erstellungsdatum",
+      "updatedAt": "Aktualisierungsdatum",
+      "default": "Standard"
+    },
+    "limit": "Elemente pro Seite",
+    "search": {
+      "placeholder": "Tags suchen..."
+    },
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Tag-Namen eingeben",
+      "color": "Farbe",
+      "colorPlaceholder": "Tag-Farbe auswählen",
+      "validation": {
+        "nameRequired": "Tag-Name ist erforderlich"
+      }
+    },
+    "colorPicker": {
+      "loadingColors": "Farben werden geladen...",
+      "noColorsAvailable": "Keine Farben verfügbar"
+    },
+    "createDialog": {
+      "title": "Neuen Tag erstellen",
+      "description": "Fügen Sie einen neuen Tag zum System hinzu",
+      "trigger": "Tag erstellen",
+      "confirm": "Tag erstellen",
+      "cancel": "Abbrechen",
+      "submitting": "Wird erstellt..."
+    },
+    "editDialog": {
+      "title": "Tag bearbeiten",
+      "description": "Tag-Informationen aktualisieren",
+      "confirm": "Änderungen speichern",
+      "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert..."
+    },
+    "deleteDialog": {
+      "title": "Tag löschen",
+      "description": "Sind Sie sicher, dass Sie {name} löschen möchten?",
+      "cancel": "Abbrechen",
+      "confirm": "Löschen",
+      "deleting": "Wird gelöscht..."
+    },
+    "notifications": {
+      "createSuccess": "Tag erstellt",
+      "createError": "Tag konnte nicht erstellt werden",
+      "updateSuccess": "Tag aktualisiert",
+      "updateError": "Tag konnte nicht aktualisiert werden",
+      "deleteSuccess": "Tag gelöscht",
+      "deleteError": "Tag konnte nicht gelöscht werden"
+    },
+    "view": {
+      "card": "Kartenansicht",
+      "table": "Tabellenansicht"
+    },
+    "table": {
+      "name": "Name",
+      "color": "Farbe",
+      "audit": "Prüfung",
+      "actions": "Aktionen"
+    }
+  },
+  "settings": {
+    "title": "Systemeinstellungen",
+    "description": "Konfigurieren Sie Systemeinstellungen und Optionen"
+  }
+}

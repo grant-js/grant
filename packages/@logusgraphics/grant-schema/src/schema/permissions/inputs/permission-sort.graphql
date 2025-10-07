@@ -1,0 +1,4 @@
+input PermissionSortInput {
+  field: PermissionSortableField!
+  order: SortOrder!
+}

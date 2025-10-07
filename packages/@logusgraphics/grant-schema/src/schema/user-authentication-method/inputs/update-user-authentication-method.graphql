@@ -1,0 +1,8 @@
+input UpdateUserAuthenticationMethodInput {
+  id: ID!
+  providerId: String
+  provider: UserAuthenticationMethodProvider
+  providerData: JSON
+  isVerified: Boolean
+  isPrimary: Boolean
+}

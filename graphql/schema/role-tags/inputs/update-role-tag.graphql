@@ -1,5 +1,0 @@
-input UpdateRoleTagInput {
-  roleId: ID!
-  tagId: ID!
-  isPrimary: Boolean!
-}

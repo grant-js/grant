@@ -1,5 +1,0 @@
-
-input RoleSortInput {
-  field: RoleSortableField!
-  order: SortOrder!
-}

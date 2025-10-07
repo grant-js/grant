@@ -1,6 +1,0 @@
-input UpdateUserSessionInput {
-  id: ID!
-  lastUsedAt: Date
-  userAgent: String
-  ipAddress: String
-}

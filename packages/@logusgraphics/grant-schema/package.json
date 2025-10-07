@@ -1,0 +1,32 @@
+{
+  "name": "@logusgraphics/grant-schema",
+  "version": "1.0.0",
+  "description": "GraphQL schema and generated types for Grant platform",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "files": [
+    "dist/**/*",
+    "src/**/*"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "generate": "graphql-codegen --config codegen.ts generate",
+    "generate:watch": "graphql-codegen --config codegen.ts generate --watch",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@graphql-codegen/cli": "^5.0.5",
+    "@graphql-codegen/client-preset": "^5.0.0",
+    "@graphql-codegen/typescript": "^5.0.0",
+    "@graphql-codegen/typescript-resolvers": "^5.0.0",
+    "@types/node": "^20.19.17",
+    "eslint": "^8.57.0",
+    "typescript": "^5"
+  },
+  "peerDependencies": {}
+}

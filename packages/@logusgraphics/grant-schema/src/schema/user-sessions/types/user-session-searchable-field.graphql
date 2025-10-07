@@ -1,0 +1,5 @@
+enum UserSessionSearchableField {
+  token
+  scopeTenant
+  scopeId
+}

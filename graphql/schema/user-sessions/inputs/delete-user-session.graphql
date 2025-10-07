@@ -1,3 +1,0 @@
-input DeleteUserSessionInput {
-  id: ID!
-}

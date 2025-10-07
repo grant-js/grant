@@ -1,0 +1,78 @@
+{
+  "name": "@logusgraphics/grant-core",
+  "version": "1.0.0",
+  "description": "Core RBAC/ACL system for the Grant platform",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./middleware": {
+      "types": "./dist/middleware.d.ts",
+      "import": "./dist/middleware.mjs",
+      "require": "./dist/middleware.js"
+    },
+    "./resolvers": {
+      "types": "./dist/resolvers.d.ts",
+      "import": "./dist/resolvers.mjs",
+      "require": "./dist/resolvers.js"
+    }
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "rbac",
+    "acl",
+    "permissions",
+    "multi-tenant",
+    "nodejs",
+    "typescript",
+    "grant"
+  ],
+  "author": {
+    "name": "Alejandro Heredia",
+    "email": "ale@logus.graphics",
+    "url": "https://logus.graphics"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/logusgraphics/grant-platform.git",
+    "directory": "packages/@logusgraphics/grant-acl"
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "type-check": "tsc --noEmit",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build && npm run test",
+    "publish-package": "npm publish --access public",
+    "version-patch": "npm version patch",
+    "version-minor": "npm version minor",
+    "version-major": "npm version major"
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.17",
+    "eslint": "^8.57.0",
+    "typescript": "^5",
+    "tsup": "^8.0.0",
+    "vitest": "^3.2.4"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

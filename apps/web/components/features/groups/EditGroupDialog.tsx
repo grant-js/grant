@@ -1,0 +1,132 @@
+'use client';
+
+import { Group, Permission, Tag } from '@logusgraphics/grant-schema';
+
+import {
+  EditDialog,
+  EditDialogField,
+  EditDialogRelationship,
+} from '@/components/common/EditDialog';
+import { CheckboxList } from '@/components/ui/checkbox-list';
+import { PrimaryTagSelector } from '@/components/ui/primary-tag-selector';
+import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
+import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
+import { useGroupMutations } from '@/hooks/groups';
+import { usePermissions } from '@/hooks/permissions';
+import { useTags } from '@/hooks/tags';
+import { useGroupsStore } from '@/stores/groups.store';
+
+import { editGroupSchema, EditGroupFormValues } from './types';
+
+export function EditGroupDialog() {
+  const scope = useScopeFromParams();
+  const { permissions, loading: permissionsLoading } = usePermissions({ scope: scope! });
+  const { tags, loading: tagsLoading } = useTags({ scope: scope! });
+  const { updateGroup } = useGroupMutations();
+
+  const groupToEdit = useGroupsStore((state) => state.groupToEdit);
+  const setGroupToEdit = useGroupsStore((state) => state.setGroupToEdit);
+
+  const fields: EditDialogField[] = [
+    {
+      name: 'name',
+      label: 'form.name',
+      placeholder: 'form.name',
+      type: 'text',
+      required: true,
+    },
+    {
+      name: 'description',
+      label: 'form.description',
+      placeholder: 'form.description',
+      type: 'textarea',
+    },
+  ];
+
+  const relationships: EditDialogRelationship[] = [
+    {
+      name: 'permissionIds',
+      label: 'form.permissions',
+      renderComponent: (props: any) => <CheckboxList {...props} />,
+      items: permissions.map((permission: Permission) => ({
+        id: permission.id,
+        name: permission.name,
+        description: permission.description || undefined,
+      })),
+      loading: permissionsLoading,
+      loadingText: 'form.permissionsLoading',
+      emptyText: 'form.noPermissionsAvailable',
+    },
+    {
+      name: 'tagIds',
+      label: 'form.tags',
+      renderComponent: (props: any) => <TagCheckboxList {...props} />,
+      items: tags,
+      loading: tagsLoading,
+      loadingText: 'form.tagsLoading',
+      emptyText: 'form.noTagsAvailable',
+    },
+    {
+      name: 'primaryTagId',
+      label: 'form.primaryTag',
+      renderComponent: (props: any) => <PrimaryTagSelector {...props} />,
+      items: tags,
+      loading: tagsLoading,
+      loadingText: 'form.tagsLoading',
+      emptyText: 'form.noTagsAvailable',
+    },
+  ];
+
+  const mapGroupToFormValues = (group: Group): EditGroupFormValues => ({
+    name: group.name,
+    description: group.description || '',
+    permissionIds: group.permissions?.map((permission: Permission) => permission.id),
+    tagIds: group.tags?.map((tag: Tag) => tag.id),
+    primaryTagId: group.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
+  });
+
+  const handleUpdate = async (groupId: string, values: EditGroupFormValues) => {
+    await updateGroup({
+      id: groupId,
+      input: {
+        name: values.name,
+        description: values.description,
+        permissionIds: values.permissionIds,
+        tagIds: values.tagIds,
+        primaryTagId: values.primaryTagId,
+      },
+    });
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setGroupToEdit(null);
+    }
+  };
+
+  return (
+    <EditDialog
+      entity={groupToEdit}
+      open={!!groupToEdit}
+      onOpenChange={handleOpenChange}
+      title="editDialog.title"
+      description="editDialog.description"
+      confirmText="editDialog.confirm"
+      cancelText="editDialog.cancel"
+      updatingText="editDialog.updating"
+      schema={editGroupSchema}
+      defaultValues={{
+        name: '',
+        description: '',
+        permissionIds: [],
+        tagIds: [],
+        primaryTagId: '',
+      }}
+      fields={fields}
+      relationships={relationships}
+      mapEntityToFormValues={mapGroupToFormValues}
+      onUpdate={handleUpdate}
+      translationNamespace="groups"
+    />
+  );
+}

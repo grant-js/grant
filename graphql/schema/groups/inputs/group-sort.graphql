@@ -1,5 +1,0 @@
-
-input GroupSortInput {
-  field: GroupSortableField!
-  order: SortOrder!
-}

@@ -1,0 +1,1222 @@
+{
+  "common": {
+    "app": {
+      "title": "Grant",
+      "description": "A modern authorization platform for individuals and organizations."
+    },
+    "auth": {
+      "login": "Sign In",
+      "logout": "Sign Out",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign In",
+      "errors": {
+        "invalidCredentials": "Invalid email or password"
+      }
+    },
+    "navigation": {
+      "home": "Home",
+      "dashboard": "Dashboard",
+      "toggleMenu": "Toggle navigation menu"
+    },
+    "theme": {
+      "label": "Theme"
+    },
+    "language": {
+      "label": "Language"
+    },
+    "accessibility": {
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "info": "Page {current} of {total}"
+    },
+    "audit": {
+      "id": "ID",
+      "created": "Created",
+      "updated": "Updated"
+    },
+    "copy": {
+      "title": "Copy to clipboard",
+      "action": "Copy",
+      "copied": "Copied!",
+      "success": "Copied to clipboard",
+      "error": "Failed to copy to clipboard"
+    },
+    "tags": {
+      "title": "Filter by Tags",
+      "placeholder": "Select tags",
+      "selected": "{count} selected",
+      "clearAll": "Clear all",
+      "loading": "Loading tags..."
+    },
+    "emptyElements": "No {title} to display",
+    "loading": "Loading...",
+    "redirecting": "Redirecting...",
+    "error": "Error",
+    "organizations": {
+      "select": "Select organization",
+      "search": "Search organizations...",
+      "notFound": "No organizations found",
+      "title": "Organizations",
+      "organization": "Organization"
+    },
+    "projects": {
+      "select": "Select project",
+      "search": "Search projects...",
+      "notFound": "No projects found",
+      "title": "Projects",
+      "project": "Project"
+    },
+    "view": {
+      "card": "Card View",
+      "table": "Table View"
+    }
+  },
+  "dashboard": {
+    "navigation": {
+      "users": "Users",
+      "roles": "Roles",
+      "groups": "Groups",
+      "permissions": "Permissions",
+      "tags": "Tags",
+      "members": "Members",
+      "organizationTags": "Organization Tags",
+      "projectTags": "Project Tags",
+      "projects": "Projects",
+      "account": "Account",
+      "settings": "Settings",
+      "backToOrganization": "Back to Organization"
+    }
+  },
+  "theme": {
+    "toggle": "Toggle theme",
+    "switchTo": "Switch to {theme} theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "auth": {
+    "welcome": {
+      "title": "Welcome to Grant",
+      "description": "A modern authorization platform for individuals and organizations. Manage user access, permissions and roles for your applications with simplicity."
+    },
+    "form": {
+      "name": {
+        "label": "Name",
+        "placeholder": "Enter your name"
+      },
+      "username": {
+        "label": "Username",
+        "placeholder": "Enter your username",
+        "description": "This will be your unique identifier. If left empty, it will be generated from your name.",
+        "popover": {
+          "title": "Username",
+          "description": "This will be your unique identifier. If left empty, it will be generated from your name.",
+          "autoGeneration": {
+            "title": "Auto-Generation",
+            "description": "Your username is automatically generated from your name. You can edit it anytime, but once you do, it won't auto-update when you change your name."
+          }
+        },
+        "availability": {
+          "checking": "Checking availability...",
+          "available": "✓ Username is available",
+          "unavailable": "✗ Username is already taken",
+          "error": "Error checking username availability"
+        }
+      },
+      "email": {
+        "label": "Email",
+        "placeholder": "Enter your email"
+      },
+      "password": {
+        "label": "Password",
+        "placeholder": "Enter your password"
+      },
+      "confirmPassword": {
+        "label": "Confirm Password",
+        "placeholder": "Confirm your password"
+      },
+      "accountType": {
+        "label": "Account Type",
+        "placeholder": "Select account type",
+        "options": {
+          "personal": "Personal Account",
+          "organization": "Organization Account"
+        },
+        "explanations": {
+          "personal": {
+            "title": "Personal Account",
+            "description": "Perfect for individual users who want to manage their own projects and access control. Ideal for developers, freelancers, and personal projects."
+          },
+          "organization": {
+            "title": "Organization Account",
+            "description": "Designed for teams and companies. Includes advanced features like team management, role-based access control, and centralized administration for multiple users and projects."
+          }
+        }
+      }
+    },
+    "login": {
+      "title": "Sign In",
+      "description": "Sign in to manage access for your projects",
+      "email": "Email",
+      "emailPlaceholder": "Enter your email",
+      "emailError": "Please enter a valid email address",
+      "password": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "passwordError": "Password must be at least 6 characters",
+      "forgotPassword": "Forgot password?",
+      "submit": "Login",
+      "noAccount": "Don't have an account?",
+      "register": "Create account",
+      "success": "Identity access granted",
+      "error": "Identity verification failed",
+      "errorUnknown": "An unknown error occurred",
+      "verificationRequired": "Email verification needed",
+      "verifyEmailDescription": "Please verify your email to access all features"
+    },
+    "register": {
+      "title": "Create Account",
+      "description": "Create your account to start managing access for your projects",
+      "submit": "Sign Up",
+      "submitting": "Creating Account...",
+      "haveAccount": "Already have an account?",
+      "login": "Sign in",
+      "success": "Account created successfully",
+      "error": "Failed to create account",
+      "verificationRequired": "Email verification required",
+      "verifyEmailDescription": "Please check your email and verify your account to access all features"
+    },
+    "forgotPassword": {
+      "title": "Reset Password",
+      "description": "Enter your email address and we'll send you a secure link to reset your password.",
+      "submit": "Send Reset Link",
+      "rememberPassword": "Remember your credentials?",
+      "backToLogin": "Back to login"
+    },
+    "validation": {
+      "email": "Please enter a valid email address",
+      "password": "Password must be at least 8 characters",
+      "name": "Name must be at least 2 characters",
+      "passwordMatch": "Passwords don't match",
+      "username": "Username must be at least 3 characters",
+      "usernameUnique": "This username is already taken. Please choose a different one."
+    }
+  },
+  "users": {
+    "title": "User Management",
+    "members": "Members",
+    "noUsers": {
+      "title": "No users found",
+      "description": "Get started by creating your first user"
+    },
+    "noSearchResults": {
+      "title": "No users found",
+      "description": "Try adjusting your search terms or create a new user"
+    },
+    "actions": {
+      "create": "Create User",
+      "edit": "Edit",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "updating": "Updating...",
+      "label": "Show/Hide Actions"
+    },
+    "sort": {
+      "label": "Sort by",
+      "name": "Name",
+      "email": "Email",
+      "default": "Default"
+    },
+    "limit": "Items per page",
+    "search": {
+      "placeholder": "Search users..."
+    },
+    "form": {
+      "name": "Name",
+      "email": "Email",
+      "roles": "Roles",
+      "tags": "Tags",
+      "primaryTag": "Primary Tag",
+      "validation": {
+        "rolesRequired": "User must have at least one role"
+      },
+      "rolesLoading": "Loading roles...",
+      "noRolesAvailable": "No roles available",
+      "tagsLoading": "Loading tags...",
+      "noTagsAvailable": "No tags available"
+    },
+    "roles": {
+      "admin": "Administrator",
+      "customer": "Customer"
+    },
+    "createDialog": {
+      "title": "Create New User",
+      "description": "Add a new user to the system",
+      "trigger": "Create User",
+      "confirm": "Create User",
+      "submitting": "Creating..."
+    },
+    "editDialog": {
+      "title": "Edit User",
+      "description": "Update user information",
+      "confirm": "Save Changes",
+      "cancel": "Cancel",
+      "updating": "Updating..."
+    },
+    "deleteDialog": {
+      "title": "Delete User",
+      "description": "Are you sure you want to delete {name}?",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "deleting": "Deleting..."
+    },
+    "notifications": {
+      "createSuccess": "User created",
+      "createError": "Failed to create user",
+      "updateSuccess": "User updated",
+      "updateError": "Failed to update user",
+      "deleteSuccess": "User deleted",
+      "deleteError": "Failed to delete user",
+      "roleAddedSuccess": "Role added to user",
+      "roleAddedError": "Failed to add role to user",
+      "roleRemovedSuccess": "Role removed from user",
+      "roleRemovedError": "Failed to remove role from user",
+      "tagAddedSuccess": "Tag added to user",
+      "tagAddedError": "Failed to add tag to user",
+      "tagRemovedSuccess": "Tag removed from user",
+      "tagRemovedError": "Failed to remove tag from user"
+    },
+    "view": {
+      "card": "Card View",
+      "table": "Table View"
+    },
+    "toolbar": {
+      "tags": {
+        "title": "Filter by Tags",
+        "placeholder": "Select tags",
+        "selected": "{count} selected",
+        "clearAll": "Clear all",
+        "loading": "Loading tags..."
+      }
+    },
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "email": "Email",
+      "roles": "Roles",
+      "tags": "Tags",
+      "audit": "Audit",
+      "created": "Created",
+      "updated": "Updated",
+      "actions": "Actions",
+      "loading": "Loading users..."
+    }
+  },
+  "members": {
+    "title": "Organization Members",
+    "noUsers": {
+      "title": "No members found",
+      "description": "Get started by adding your first member"
+    },
+    "noSearchResults": {
+      "title": "No members found",
+      "description": "Try adjusting your search terms or add a new member"
+    },
+    "actions": {
+      "create": "Add Member",
+      "edit": "Edit",
+      "delete": "Remove",
+      "cancel": "Cancel",
+      "updating": "Updating...",
+      "label": "Show/Hide Actions"
+    },
+    "sort": {
+      "label": "Sort by",
+      "name": "Name",
+      "email": "Email",
+      "default": "Default"
+    },
+    "limit": "Items per page",
+    "search": {
+      "placeholder": "Search members..."
+    },
+    "form": {
+      "name": "Name",
+      "email": "Email",
+      "roles": "Roles",
+      "tags": "Tags",
+      "validation": {
+        "rolesRequired": "Member must have at least one role"
+      },
+      "rolesLoading": "Loading roles...",
+      "noRolesAvailable": "No roles available",
+      "tagsLoading": "Loading tags...",
+      "noTagsAvailable": "No tags available"
+    },
+    "roles": {
+      "admin": "Administrator",
+      "customer": "Customer"
+    },
+    "createDialog": {
+      "title": "Add New Member",
+      "description": "Add a new member to the organization",
+      "trigger": "Add Member",
+      "confirm": "Add Member",
+      "submitting": "Adding..."
+    },
+    "editDialog": {
+      "title": "Edit Member",
+      "description": "Update member information",
+      "confirm": "Save Changes",
+      "cancel": "Cancel",
+      "updating": "Updating..."
+    },
+    "deleteDialog": {
+      "title": "Remove Member",
+      "description": "Are you sure you want to remove {name} from the organization?",
+      "cancel": "Cancel",
+      "confirm": "Remove",
+      "deleting": "Removing..."
+    },
+    "notifications": {
+      "createSuccess": "Member added",
+      "createError": "Failed to add member",
+      "updateSuccess": "Member updated",
+      "updateError": "Failed to update member",
+      "deleteSuccess": "Member removed",
+      "deleteError": "Failed to remove member",
+      "roleAddedSuccess": "Role added to member",
+      "roleAddedError": "Failed to add role to member",
+      "roleRemovedSuccess": "Role removed from member",
+      "roleRemovedError": "Failed to remove role from member",
+      "tagAddedSuccess": "Tag added to member",
+      "tagAddedError": "Failed to add tag to member",
+      "tagRemovedSuccess": "Tag removed from member",
+      "tagRemovedError": "Failed to remove tag from member"
+    },
+    "view": {
+      "card": "Card View",
+      "table": "Table View"
+    },
+    "toolbar": {
+      "tags": {
+        "title": "Filter by Tags",
+        "placeholder": "Select tags",
+        "selected": "{count} selected",
+        "clearAll": "Clear all",
+        "loading": "Loading tags..."
+      }
+    },
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "email": "Email",
+      "roles": "Roles",
+      "tags": "Tags",
+      "audit": "Audit",
+      "created": "Created",
+      "updated": "Updated",
+      "actions": "Actions",
+      "loading": "Loading members..."
+    }
+  },
+  "roles": {
+    "title": "Role Management",
+    "noRoles": {
+      "title": "No roles found",
+      "description": "Get started by creating your first role"
+    },
+    "noSearchResults": {
+      "title": "No roles found",
+      "description": "Try adjusting your search terms or create a new role"
+    },
+    "actions": {
+      "create": "Create Role",
+      "edit": "Edit",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "updating": "Updating...",
+      "label": "Show/Hide Actions"
+    },
+    "sort": {
+      "label": "Sort by",
+      "name": "Name",
+      "default": "Default"
+    },
+    "limit": "Items per page",
+    "search": {
+      "placeholder": "Search roles..."
+    },
+    "form": {
+      "label": "Label",
+      "name": "Name",
+      "description": "Description",
+      "groups": "Groups",
+      "tags": "Tags",
+      "primaryTag": "Primary Tag",
+      "groupsLoading": "Loading groups...",
+      "noGroupsAvailable": "No groups available",
+      "tagsLoading": "Loading tags...",
+      "noTagsAvailable": "No tags available",
+      "validation": {
+        "groupsRequired": "Role must have at least one group"
+      }
+    },
+    "createDialog": {
+      "title": "Create New Role",
+      "description": "Add a new role to the system",
+      "trigger": "Create Role",
+      "confirm": "Create Role",
+      "submitting": "Creating..."
+    },
+    "editDialog": {
+      "title": "Edit Role",
+      "description": "Update role information",
+      "confirm": "Save Changes",
+      "cancel": "Cancel",
+      "updating": "Updating..."
+    },
+    "deleteDialog": {
+      "title": "Delete Role",
+      "description": "Are you sure you want to delete {name}?",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "deleting": "Deleting..."
+    },
+    "notifications": {
+      "createSuccess": "Role created",
+      "createError": "Failed to create role",
+      "updateSuccess": "Role updated",
+      "updateError": "Failed to update role",
+      "deleteSuccess": "Role deleted",
+      "deleteError": "Failed to delete role",
+      "groupAddedSuccess": "Group added to role",
+      "groupAddedError": "Failed to add group to role",
+      "groupRemovedSuccess": "Group removed from role",
+      "groupRemovedError": "Failed to remove group from role",
+      "tagAddedSuccess": "Tag added to role",
+      "tagAddedError": "Failed to add tag to role",
+      "tagRemovedSuccess": "Tag removed from role",
+      "tagRemovedError": "Failed to remove tag from role"
+    },
+    "view": {
+      "card": "Card View",
+      "table": "Table View"
+    },
+    "table": {
+      "label": "Label",
+      "name": "Name",
+      "description": "Description",
+      "groups": "Groups",
+      "tags": "Tags",
+      "audit": "Audit",
+      "id": "ID",
+      "created": "Created",
+      "updated": "Updated",
+      "actions": "Actions",
+      "loading": "Loading roles..."
+    },
+    "toolbar": {
+      "tags": {
+        "title": "Filter by Tags",
+        "placeholder": "Select tags",
+        "selected": "{count} selected",
+        "clearAll": "Clear all",
+        "loading": "Loading tags..."
+      }
+    },
+    "groups": "Groups",
+    "emptyElements": "There are no {title} to display",
+    "noDescription": "No description"
+  },
+  "groups": {
+    "title": "Group Management",
+    "noGroups": {
+      "title": "No groups found",
+      "description": "Get started by creating your first group"
+    },
+    "noSearchResults": {
+      "title": "No groups found",
+      "description": "Try adjusting your search terms or create a new group"
+    },
+    "actions": {
+      "create": "Create Group",
+      "edit": "Edit",
+      "delete": "Delete",
+      "update": "Update",
+      "cancel": "Cancel",
+      "creating": "Creating...",
+      "updating": "Updating...",
+      "deleting": "Deleting...",
+      "label": "Show/Hide Actions"
+    },
+    "sort": {
+      "label": "Sort by",
+      "name": "Name",
+      "default": "Default"
+    },
+    "limit": {
+      "label": "Items per page",
+      "option": "{count} items"
+    },
+    "search": {
+      "placeholder": "Search groups..."
+    },
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Enter group name",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter group description",
+      "permissions": "Permissions",
+      "tags": "Tags",
+      "primaryTag": "Primary Tag",
+      "permissionsLoading": "Loading permissions...",
+      "noPermissionsAvailable": "No permissions available",
+      "tagsLoading": "Loading tags...",
+      "noTagsAvailable": "No tags available"
+    },
+    "create": {
+      "title": "Create New Group",
+      "description": "Add a new group to the system"
+    },
+    "edit": {
+      "title": "Edit Group",
+      "description": "Update group information"
+    },
+    "delete": {
+      "title": "Delete Group",
+      "description": "Are you sure you want to delete {name}?"
+    },
+    "createDialog": {
+      "title": "Create New Group",
+      "description": "Add a new group to the system",
+      "trigger": "Create Group",
+      "confirm": "Create Group",
+      "submitting": "Creating...",
+      "cancel": "Cancel"
+    },
+    "editDialog": {
+      "title": "Edit Group",
+      "description": "Update group information",
+      "confirm": "Save Changes",
+      "cancel": "Cancel",
+      "updating": "Updating..."
+    },
+    "deleteDialog": {
+      "title": "Delete Group",
+      "description": "Are you sure you want to delete {name}?",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "deleting": "Deleting..."
+    },
+    "notifications": {
+      "createSuccess": "Group created",
+      "createError": "Failed to create group",
+      "updateSuccess": "Group updated",
+      "updateError": "Failed to update group",
+      "deleteSuccess": "Group deleted",
+      "deleteError": "Failed to delete group",
+      "permissionAddedSuccess": "Permission added to group",
+      "permissionAddedError": "Failed to add permission to group",
+      "permissionRemovedSuccess": "Permission removed from group",
+      "permissionRemovedError": "Failed to remove permission from group",
+      "tagAddedSuccess": "Tag added to group",
+      "tagAddedError": "Failed to add tag to group",
+      "tagRemovedSuccess": "Tag removed from group",
+      "tagRemovedError": "Failed to remove tag from group"
+    },
+    "view": {
+      "cards": "Card View",
+      "table": "Table View"
+    },
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "description": "Description",
+      "permissions": "Permissions",
+      "tags": "Tags",
+      "audit": "Audit",
+      "created": "Created",
+      "updated": "Updated",
+      "actions": "Actions",
+      "loading": "Loading groups..."
+    },
+    "toolbar": {
+      "tags": {
+        "title": "Filter by Tags",
+        "placeholder": "Select tags",
+        "selected": "{count} selected",
+        "clearAll": "Clear all",
+        "loading": "Loading tags..."
+      }
+    },
+    "permissions": "Permissions",
+    "emptyElements": "There are no {title} to display",
+    "noDescription": "No description"
+  },
+  "permissions": {
+    "title": "Permission Management",
+    "noPermissions": {
+      "title": "No permissions found",
+      "description": "Get started by creating your first permission"
+    },
+    "noSearchResults": {
+      "title": "No permissions found",
+      "description": "Try adjusting your search terms or create a new permission"
+    },
+    "actions": {
+      "create": "Create Permission",
+      "edit": "Edit",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "updating": "Updating...",
+      "label": "Show/Hide Actions"
+    },
+    "sort": {
+      "label": "Sort by",
+      "name": "Name",
+      "action": "Action",
+      "default": "Default"
+    },
+    "limit": "Items per page",
+    "search": {
+      "placeholder": "Search permissions..."
+    },
+    "form": {
+      "name": "Name",
+      "description": "Description",
+      "action": "Action",
+      "tags": "Tags",
+      "primaryTag": "Primary Tag",
+      "tagsLoading": "Loading tags...",
+      "noTagsAvailable": "No tags available",
+      "validation": {
+        "nameRequired": "Permission name is required"
+      }
+    },
+    "createDialog": {
+      "title": "Create New Permission",
+      "description": "Add a new permission to the system",
+      "trigger": "Create Permission",
+      "confirm": "Create Permission",
+      "cancel": "Cancel",
+      "submitting": "Creating..."
+    },
+    "editDialog": {
+      "title": "Edit Permission",
+      "description": "Update permission information",
+      "confirm": "Save Changes",
+      "cancel": "Cancel",
+      "updating": "Updating..."
+    },
+    "deleteDialog": {
+      "title": "Delete Permission",
+      "description": "Are you sure you want to delete {name}?",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "deleting": "Deleting..."
+    },
+    "notifications": {
+      "createSuccess": "Permission created",
+      "createError": "Failed to create permission",
+      "updateSuccess": "Permission updated",
+      "updateError": "Failed to update permission",
+      "deleteSuccess": "Permission deleted",
+      "deleteError": "Failed to delete permission",
+      "tagAddedSuccess": "Tag added to permission",
+      "tagAddedError": "Failed to add tag to permission",
+      "tagRemovedSuccess": "Tag removed from permission",
+      "tagRemovedError": "Failed to remove tag from permission"
+    },
+    "view": {
+      "card": "Card View",
+      "table": "Table View"
+    },
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "action": "Action",
+      "description": "Description",
+      "tags": "Tags",
+      "audit": "Audit",
+      "created": "Created",
+      "updated": "Updated",
+      "actions": "Actions",
+      "loading": "Loading permissions..."
+    },
+    "toolbar": {
+      "tags": {
+        "title": "Filter by Tags",
+        "placeholder": "Select tags",
+        "selected": "{count} selected",
+        "clearAll": "Clear all",
+        "loading": "Loading tags..."
+      }
+    }
+  },
+  "account": {
+    "title": "Account Management",
+    "description": "View and manage your account details"
+  },
+  "organizations": {
+    "title": "Organizations",
+    "description": "Manage your organizations",
+    "redirectingToProjects": "Redirecting to projects...",
+    "noOrganizations": {
+      "title": "No organizations found",
+      "description": "Get started by creating your first organization"
+    },
+    "noSearchResults": {
+      "title": "No organizations found",
+      "description": "Try adjusting your search terms or create a new organization"
+    },
+    "actions": {
+      "create": "Create Organization",
+      "edit": "Edit",
+      "delete": "Delete",
+      "view": "View Organization",
+      "cancel": "Cancel",
+      "updating": "Updating...",
+      "label": "Show/Hide Actions"
+    },
+    "sort": {
+      "label": "Sort by",
+      "name": "Name",
+      "createdAt": "Created Date",
+      "updatedAt": "Updated Date",
+      "default": "Default"
+    },
+    "limit": "Items per page",
+    "search": {
+      "placeholder": "Search organizations..."
+    },
+    "form": {
+      "name": "Name",
+      "description": "Description",
+      "roles": "Roles",
+      "tags": "Tags",
+      "tagsLoading": "Loading tags...",
+      "noTagsAvailable": "No tags available",
+      "validation": {
+        "nameRequired": "Organization name is required"
+      }
+    },
+    "createDialog": {
+      "title": "Create New Organization",
+      "description": "Add a new organization to the system",
+      "trigger": "Create Organization",
+      "confirm": "Create Organization",
+      "submitting": "Creating..."
+    },
+    "editDialog": {
+      "title": "Edit Organization",
+      "description": "Update organization information",
+      "confirm": "Save Changes",
+      "cancel": "Cancel",
+      "updating": "Updating..."
+    },
+    "deleteDialog": {
+      "title": "Delete Organization",
+      "description": "Are you sure you want to delete {name}?",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "deleting": "Deleting..."
+    },
+    "notifications": {
+      "createSuccess": "Organization created",
+      "createError": "Failed to create organization",
+      "updateSuccess": "Organization updated",
+      "updateError": "Failed to update organization",
+      "deleteSuccess": "Organization deleted",
+      "deleteError": "Failed to delete organization",
+      "roleAddedSuccess": "Role added to organization",
+      "roleAddedError": "Failed to add role to organization",
+      "roleRemovedSuccess": "Role removed from organization",
+      "roleRemovedError": "Failed to remove role from organization",
+      "tagAddedSuccess": "Tag added to organization",
+      "tagAddedError": "Failed to add tag to organization",
+      "tagRemovedSuccess": "Tag removed from organization",
+      "tagRemovedError": "Failed to remove tag from organization"
+    },
+    "view": {
+      "card": "Card View",
+      "table": "Table View"
+    },
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "slug": "Slug",
+      "roles": "Roles",
+      "tags": "Tags",
+      "description": "Description",
+      "audit": "Audit",
+      "created": "Created",
+      "updated": "Updated",
+      "actions": "Actions",
+      "loading": "Loading organizations..."
+    },
+    "toolbar": {
+      "tags": {
+        "title": "Filter by Tags",
+        "placeholder": "Select tags",
+        "selected": "{count} selected",
+        "clearAll": "Clear all",
+        "loading": "Loading tags..."
+      }
+    }
+  },
+  "projects": {
+    "title": "Projects",
+    "description": "Manage your projects",
+    "empty": {
+      "title": "No projects found",
+      "description": "Get started by creating your first project"
+    },
+    "noSearchResults": {
+      "title": "No projects found",
+      "description": "Try adjusting your search terms or create a new project"
+    },
+    "actions": {
+      "create": "Create Project",
+      "edit": "Edit",
+      "delete": "Delete",
+      "view": "View Project",
+      "cancel": "Cancel",
+      "updating": "Updating..."
+    },
+    "sort": {
+      "label": "Sort by",
+      "name": "Name",
+      "createdAt": "Created Date",
+      "updatedAt": "Updated Date",
+      "default": "Default"
+    },
+    "limit": {
+      "label": "Items per page"
+    },
+    "search": {
+      "placeholder": "Search projects..."
+    },
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Enter project name",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter project description",
+      "roles": "Roles",
+      "tags": "Tags",
+      "primaryTag": "Primary Tag",
+      "tagsLoading": "Loading tags...",
+      "noTagsAvailable": "No tags available",
+      "validation": {
+        "nameRequired": "Project name is required"
+      }
+    },
+    "createDialog": {
+      "title": "Create New Project",
+      "description": "Add a new project to the system",
+      "trigger": "Create Project",
+      "confirm": "Create Project",
+      "cancel": "Cancel",
+      "submitting": "Creating..."
+    },
+    "editDialog": {
+      "title": "Edit Project",
+      "description": "Update project information",
+      "confirm": "Save Changes",
+      "cancel": "Cancel",
+      "updating": "Updating..."
+    },
+    "deleteDialog": {
+      "title": "Delete Project",
+      "description": "Are you sure you want to delete {name}?",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "deleting": "Deleting..."
+    },
+    "notifications": {
+      "createSuccess": "Project created",
+      "createError": "Failed to create project",
+      "updateSuccess": "Project updated",
+      "updateError": "Failed to update project",
+      "deleteSuccess": "Project deleted",
+      "deleteError": "Failed to delete project",
+      "tagAddedSuccess": "Tag added to project",
+      "tagAddedError": "Failed to add tag to project",
+      "tagRemovedSuccess": "Tag removed from project",
+      "tagRemovedError": "Failed to remove tag from project",
+      "roleAddedSuccess": "Role added to project",
+      "roleAddedError": "Failed to add role to project"
+    },
+    "view": {
+      "card": "Card View",
+      "table": "Table View"
+    },
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "description": "Description",
+      "noDescription": "No description",
+      "roles": "Roles",
+      "tags": "Tags",
+      "audit": "Audit",
+      "created": "Created",
+      "updated": "Updated",
+      "actions": "Actions",
+      "loading": "Loading projects..."
+    },
+    "card": {
+      "noDescription": "No description"
+    },
+    "toolbar": {
+      "title": "Project Management",
+      "tags": {
+        "title": "Filter by Tags",
+        "placeholder": "Select tags",
+        "selected": "{count} selected",
+        "clearAll": "Clear all",
+        "loading": "Loading tags..."
+      }
+    },
+    "audit": {
+      "created": "Created",
+      "updated": "Updated"
+    }
+  },
+  "organization": {
+    "projects": {
+      "title": "Projects",
+      "description": "Manage projects for this organization",
+      "noProjects": {
+        "title": "No projects found",
+        "description": "Get started by creating your first project"
+      },
+      "noSearchResults": {
+        "title": "No projects found",
+        "description": "Try adjusting your search terms or create a new project"
+      },
+      "actions": {
+        "create": "Create Project",
+        "edit": "Edit",
+        "delete": "Delete",
+        "cancel": "Cancel",
+        "updating": "Updating...",
+        "label": "Show/Hide Actions"
+      },
+      "sort": {
+        "label": "Sort by",
+        "name": "Name",
+        "default": "Default"
+      },
+      "limit": "Items per page",
+      "search": {
+        "placeholder": "Search projects..."
+      },
+      "form": {
+        "name": "Name",
+        "description": "Description",
+        "validation": {
+          "nameRequired": "Project name is required"
+        }
+      },
+      "createDialog": {
+        "title": "Create New Project",
+        "description": "Add a new project to the organization",
+        "trigger": "Create Project",
+        "confirm": "Create Project",
+        "submitting": "Creating..."
+      },
+      "editDialog": {
+        "title": "Edit Project",
+        "description": "Update project information",
+        "confirm": "Save Changes",
+        "updating": "Updating..."
+      },
+      "deleteDialog": {
+        "title": "Delete Project",
+        "description": "Are you sure you want to delete {name}?",
+        "cancel": "Cancel",
+        "confirm": "Delete",
+        "deleting": "Deleting..."
+      },
+      "notifications": {
+        "createSuccess": "Project created",
+        "createError": "Failed to create project",
+        "updateSuccess": "Project updated",
+        "updateError": "Failed to update project",
+        "deleteSuccess": "Project deleted",
+        "deleteError": "Failed to delete project"
+      },
+      "view": {
+        "card": "Card View",
+        "table": "Table View"
+      },
+      "table": {
+        "id": "ID",
+        "name": "Name",
+        "description": "Description",
+        "audit": "Audit",
+        "created": "Created",
+        "updated": "Updated",
+        "actions": "Actions",
+        "loading": "Loading projects..."
+      },
+      "toolbar": {
+        "tags": {
+          "title": "Filter by Tags",
+          "placeholder": "Select tags",
+          "selected": "{count} selected",
+          "clearAll": "Clear all",
+          "loading": "Loading tags..."
+        }
+      }
+    }
+  },
+  "organizationProjects": {
+    "notifications": {
+      "addSuccess": "Project added to organization",
+      "addError": "Failed to add project to organization",
+      "removeSuccess": "Project removed from organization",
+      "removeError": "Failed to remove project from organization"
+    }
+  },
+  "organizationUsers": {
+    "notifications": {
+      "addSuccess": "User added to organization",
+      "addError": "Failed to add user to organization",
+      "removeSuccess": "User removed from organization",
+      "removeError": "Failed to remove user from organization"
+    }
+  },
+  "organizationGroups": {
+    "notifications": {
+      "addSuccess": "Group added to organization",
+      "addError": "Failed to add group to organization",
+      "removeSuccess": "Group removed from organization",
+      "removeError": "Failed to remove group from organization"
+    }
+  },
+  "projectGroups": {
+    "notifications": {
+      "addSuccess": "Group added to project",
+      "addError": "Failed to add group to project",
+      "removeSuccess": "Group removed from project",
+      "removeError": "Failed to remove group from project"
+    }
+  },
+  "organizationPermissions": {
+    "notifications": {
+      "addSuccess": "Permission added to organization",
+      "addError": "Failed to add permission to organization",
+      "removeSuccess": "Permission removed from organization",
+      "removeError": "Failed to remove permission from organization"
+    }
+  },
+  "projectPermissions": {
+    "notifications": {
+      "addSuccess": "Permission added to project",
+      "addError": "Failed to add permission to project",
+      "removeSuccess": "Permission removed from project",
+      "removeError": "Failed to remove permission from project"
+    }
+  },
+  "projectUsers": {
+    "notifications": {
+      "addSuccess": "User added to project",
+      "addError": "Failed to add user to project",
+      "removeSuccess": "User removed from project",
+      "removeError": "Failed to remove user from project"
+    }
+  },
+  "tags": {
+    "title": "Tags",
+    "description": "Manage your tags",
+    "noTags": {
+      "title": "No tags found",
+      "description": "Get started by creating your first tag"
+    },
+    "noSearchResults": {
+      "title": "No tags found",
+      "description": "Try adjusting your search terms or create a new tag"
+    },
+    "actions": {
+      "create": "Create Tag",
+      "edit": "Edit",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "updating": "Updating..."
+    },
+    "sort": {
+      "label": "Sort by",
+      "name": "Name",
+      "color": "Color",
+      "createdAt": "Created Date",
+      "updatedAt": "Updated Date",
+      "default": "Default"
+    },
+    "limit": "Items per page",
+    "search": {
+      "placeholder": "Search tags..."
+    },
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Enter tag name",
+      "color": "Color",
+      "colorPlaceholder": "Select tag color",
+      "validation": {
+        "nameRequired": "Tag name is required"
+      }
+    },
+    "colorPicker": {
+      "loadingColors": "Loading colors...",
+      "noColorsAvailable": "No colors available"
+    },
+    "createDialog": {
+      "title": "Create New Tag",
+      "description": "Add a new tag to the system",
+      "trigger": "Create Tag",
+      "confirm": "Create Tag",
+      "cancel": "Cancel",
+      "submitting": "Creating..."
+    },
+    "editDialog": {
+      "title": "Edit Tag",
+      "description": "Update tag information",
+      "confirm": "Save Changes",
+      "cancel": "Cancel",
+      "updating": "Updating..."
+    },
+    "deleteDialog": {
+      "title": "Delete Tag",
+      "description": "Are you sure you want to delete {name}?",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "deleting": "Deleting..."
+    },
+    "notifications": {
+      "createSuccess": "Tag created",
+      "createError": "Failed to create tag",
+      "updateSuccess": "Tag updated",
+      "updateError": "Failed to update tag",
+      "deleteSuccess": "Tag deleted",
+      "deleteError": "Failed to delete tag"
+    },
+    "view": {
+      "card": "Card View",
+      "table": "Table View"
+    },
+    "table": {
+      "name": "Name",
+      "color": "Color",
+      "audit": "Audit",
+      "actions": "Actions"
+    }
+  },
+  "settings": {
+    "title": "System Settings",
+    "description": "Configure system preferences and options"
+  }
+}

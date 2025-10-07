@@ -1,5 +1,0 @@
-enum ProjectSearchableField {
-  name
-  slug
-  description
-}

@@ -1,0 +1,3 @@
+extend type Mutation {
+  register(input: RegisterInput!): CreateAccountResult!
+}

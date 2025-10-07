@@ -1,0 +1,7 @@
+enum AccountSortableField {
+  name
+  slug
+  type
+  createdAt
+  updatedAt
+}

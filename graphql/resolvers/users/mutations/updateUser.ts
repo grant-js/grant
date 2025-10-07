@@ -1,9 +1,0 @@
-import { MutationResolvers } from '@/graphql/generated/types';
-export const updateUserResolver: MutationResolvers['updateUser'] = async (
-  _parent,
-  { id, input },
-  context
-) => {
-  const updatedUser = await context.controllers.users.updateUser({ id, input });
-  return updatedUser;
-};

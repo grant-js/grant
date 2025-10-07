@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "dev"
+  },
+  {
+    "ParameterKey": "DomainName",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "DatabaseInstanceClass",
+    "ParameterValue": "db.t3.micro"
+  },
+  {
+    "ParameterKey": "WebDesiredCount",
+    "ParameterValue": "1"
+  },
+  {
+    "ParameterKey": "ApiDesiredCount",
+    "ParameterValue": "1"
+  }
+]
