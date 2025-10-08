@@ -2,9 +2,9 @@
 layout: home
 
 hero:
-  name: "Modern RBAC"
-  text: "Authorization Platform"
-  tagline: "Open-source, self-hosting, ready to deploy"
+  name: 'Modern RBAC'
+  text: 'Authorization Platform'
+  tagline: 'Open-source, self-hosting, ready to deploy'
   actions:
     - theme: brand
       text: Get Started
@@ -34,9 +34,9 @@ features:
     details: Transparent development, community support, no vendor lock-in, self-hosting option available.
 ---
 
-# Grant Platform Documentation
+# Documentation
 
-Welcome to the Grant Platform documentation! This site provides comprehensive guides, API references, and tutorials for the Grant Platform - an open-source, multi-tenant RBAC/ACL platform.
+Welcome to the Grant documentation! This site provides comprehensive guides, API references, and tutorials for the Grant Platform - an open-source, multi-tenant RBAC/ACL platform.
 
 ## 🚀 Quick Start
 

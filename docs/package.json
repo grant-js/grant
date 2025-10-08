@@ -1,29 +1,32 @@
 {
-    "name": "grant-platform-docs",
-    "version": "1.0.0",
-    "description": "Grant Platform Documentation Site",
-    "type": "module",
-    "scripts": {
-        "dev": "vitepress dev .",
-        "build": "vitepress build .",
-        "preview": "vitepress preview .",
-        "docs:dev": "vitepress dev .",
-        "docs:build": "vitepress build .",
-        "docs:preview": "vitepress preview ."
-    },
-    "devDependencies": {
-        "vitepress": "^1.0.0",
-        "@types/node": "^20.0.0",
-        "typescript": "^5.0.0"
-    },
-    "keywords": [
-        "documentation",
-        "vitepress",
-        "grant-platform",
-        "rbac",
-        "acl",
-        "multi-tenant"
-    ],
-    "author": "Alejandro Heredia <ale@logus.graphics>",
-    "license": "MIT"
+  "name": "grant-platform-docs",
+  "version": "1.0.0",
+  "description": "Grant Platform Documentation Site",
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev .",
+    "build": "vitepress build .",
+    "preview": "vitepress preview .",
+    "docs:dev": "vitepress dev .",
+    "docs:build": "vitepress build .",
+    "docs:preview": "vitepress preview ."
+  },
+  "devDependencies": {
+    "@mermaid-js/mermaid-mindmap": "9.3.0",
+    "@types/node": "^20.0.0",
+    "mermaid": "8.14.0",
+    "typescript": "^5.0.0",
+    "vitepress": "^1.0.0",
+    "vitepress-plugin-mermaid": "2.0.10"
+  },
+  "keywords": [
+    "documentation",
+    "vitepress",
+    "grant-platform",
+    "rbac",
+    "acl",
+    "multi-tenant"
+  ],
+  "author": "Alejandro Heredia <ale@logus.graphics>",
+  "license": "MIT"
 }

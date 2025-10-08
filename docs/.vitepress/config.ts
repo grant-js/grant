@@ -1,12 +1,23 @@
 import { defineConfig } from 'vitepress';
+import { withMermaid } from 'vitepress-plugin-mermaid';
 
-export default defineConfig({
+export default withMermaid({
   title: 'Grant Platform',
   description: 'Open-source, multi-tenant RBAC/ACL platform with self-hosting capabilities',
 
   // Site configuration
   base: '/',
   lang: 'en-US',
+
+  // Vite configuration to fix dependency issues
+  vite: {
+    optimizeDeps: { include: ['@braintree/sanitize-url'] },
+    resolve: {
+      alias: {
+        dayjs: 'dayjs/',
+      },
+    },
+  },
 
   // Head configuration
   head: [
@@ -206,15 +217,23 @@ export default defineConfig({
     },
   },
 
-  // Build configuration
-  build: {
-    outDir: '../dist',
-    emptyOutDir: true,
-  },
+  // Mermaid theme configuration
+  mermaid: {
+    theme: 'neutral',
+    themeVariables: {
+      // Line colors
+      lineColor: 'rgb(120, 178, 219)',
+      arrowheadColor: 'rgb(120, 178, 219)',
 
-  // Development server
-  server: {
-    port: 3001,
-    host: 'localhost',
+      // Node colors
+      nodeBorder: 'rgba(0, 100, 255, 1)',
+
+      // Cluster colors
+      clusterBkg: 'rgba(0, 100, 255, 0.05)',
+      clusterBorder: 'rgba(0, 100, 255, 0.3)',
+
+      // Edge colors
+      edgeLabelBackground: 'transparent',
+    },
   },
 });

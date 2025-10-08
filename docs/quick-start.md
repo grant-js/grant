@@ -5,12 +5,15 @@ Get Grant Platform up and running in minutes! This guide covers the fastest ways
 ## 🚀 Choose Your Path
 
 ### Option 1: Self-Hosting (Recommended)
+
 Deploy Grant Platform on your own infrastructure with full control and customization.
 
 ### Option 2: SaaS Trial
+
 Try our hosted solution with a free trial account.
 
 ### Option 3: Local Development
+
 Set up a local development environment for contributing or testing.
 
 ## Self-Hosting Setup
@@ -156,16 +159,19 @@ pnpm dev:web    # Web app on :3000
 ## Next Steps
 
 ### For Self-Hosting
+
 - **[Configuration Guide](/configuration)** - Detailed configuration options
 - **[Deployment Guide](/deployment/self-hosting)** - Production deployment
 - **[Monitoring Setup](/deployment/monitoring)** - Logging and metrics
 
 ### For SaaS Users
+
 - **[SaaS Features](/saas/)** - Available features and limitations
 - **[API Integration](/api/)** - Connect your applications
 - **[User Management](/concepts/users-roles)** - Managing users and roles
 
 ### For Developers
+
 - **[Development Guide](/development/guide)** - Project structure and workflow
 - **[API Reference](/api/)** - Complete GraphQL API documentation
 - **[Contributing](/development/contributing)** - How to contribute
@@ -173,16 +179,19 @@ pnpm dev:web    # Web app on :3000
 ## Common Issues
 
 ### Database Connection Issues
+
 - Verify PostgreSQL is running and accessible
 - Check connection string format
 - Ensure database exists and user has permissions
 
 ### CloudFormation Deployment Issues
+
 - Check AWS CLI configuration
 - Verify IAM permissions for CloudFormation
 - Review CloudFormation events for specific errors
 
 ### Local Development Issues
+
 - Ensure all dependencies are installed (`pnpm install`)
 - Check Node.js version compatibility
 - Verify environment variables are set correctly

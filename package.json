@@ -11,6 +11,7 @@
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
+    "dev:docs": "pnpm --filter grant-platform-docs dev",
     "dev:web": "pnpm --filter grant-web dev",
     "dev:api": "pnpm --filter grant-api dev",
     "dev:both": "concurrently \"pnpm dev:api\" \"pnpm dev:web\"",

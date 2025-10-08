@@ -418,3 +418,8 @@
 .VPHome .VPFeatures {
   margin-bottom: 4rem;
 }
+
+/* Header anchor positioning */
+.vp-doc h2 .header-anchor {
+  top: 15px;
+}
