@@ -9,10 +9,6 @@ import {
   CreateRoleInput,
 } from '@logusgraphics/grant-schema';
 
-import { AuthenticatedUser } from '@/types';
-import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
-
 import {
   AuditService,
   validateInput,
@@ -22,7 +18,6 @@ import {
   SelectedFields,
   DeleteParams,
 } from './common';
-
 import {
   getRolesParamsSchema,
   roleSchema,
@@ -30,6 +25,10 @@ import {
   updateRoleArgsSchema,
   deleteRoleArgsSchema,
 } from './roles.schemas';
+
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { Repositories } from '@/repositories';
+import { AuthenticatedUser } from '@/types';
 
 export class RoleService extends AuditService {
   constructor(

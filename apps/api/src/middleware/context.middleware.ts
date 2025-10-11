@@ -1,10 +1,10 @@
+import { db } from '@logusgraphics/grant-database';
 import { NextFunction, Response } from 'express';
 
 import { createHandlers } from '@/handlers';
 import { createRepositories } from '@/repositories';
 import { createServices } from '@/services';
 import { AuthenticatedRequest, ContextRequest } from '@/types';
-import { db } from '@logusgraphics/grant-database';
 
 /**
  * Middleware that creates and injects the request context

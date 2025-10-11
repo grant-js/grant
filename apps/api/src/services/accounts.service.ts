@@ -8,10 +8,13 @@ import {
   MutationDeleteAccountArgs,
 } from '@logusgraphics/grant-schema';
 
-import { AuthenticatedUser } from '@/types';
-import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
-
+import {
+  accountSchema,
+  createAccountInputSchema,
+  deleteAccountParamsSchema,
+  getAccountsParamsSchema,
+  updateAccountParamsSchema,
+} from './accounts.schemas';
 import {
   AuditService,
   validateInput,
@@ -22,13 +25,9 @@ import {
   DeleteParams,
 } from './common';
 
-import {
-  accountSchema,
-  createAccountInputSchema,
-  deleteAccountParamsSchema,
-  getAccountsParamsSchema,
-  updateAccountParamsSchema,
-} from './accounts.schemas';
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { Repositories } from '@/repositories';
+import { AuthenticatedUser } from '@/types';
 
 export class AccountService extends AuditService {
   constructor(

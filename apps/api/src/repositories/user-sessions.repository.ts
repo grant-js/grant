@@ -15,15 +15,15 @@ import {
   DeleteUserSessionInput,
 } from '@logusgraphics/grant-schema';
 
-import { Transaction } from '@/lib/transaction-manager.lib';
-import { SelectedFields } from '@/services/common';
-
 import {
   BaseUpdateArgs,
   EntityRepository,
   FilterCondition,
   RelationsConfig,
 } from './common/EntityRepository';
+
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { SelectedFields } from '@/services/common';
 
 export class UserSessionRepository extends EntityRepository<UserSessionModel, UserSession> {
   protected table = userSessions;

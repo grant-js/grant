@@ -1,5 +1,15 @@
 import { OpenAPIRegistry, OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi';
 
+import { registerAccountsOpenApi } from './accounts.openapi';
+import { registerAuthEndpoints } from './auth.openapi';
+import { registerGroupsOpenApi } from './groups.openapi';
+import { registerOrganizationsOpenApi } from './organizations.openapi';
+import { registerPermissionsOpenApi } from './permissions.openapi';
+import { registerProjectsOpenApi } from './projects.openapi';
+import { registerRolesOpenApi } from './roles.openapi';
+import { registerTagsOpenApi } from './tags.openapi';
+import { registerUserEndpoints } from './users.openapi';
+
 import {
   authTokensSchema,
   authenticationErrorResponseSchema,
@@ -13,16 +23,6 @@ import {
   registerRequestSchema,
   validationErrorResponseSchema,
 } from '@/rest/schemas';
-
-import { registerAccountsOpenApi } from './accounts.openapi';
-import { registerAuthEndpoints } from './auth.openapi';
-import { registerGroupsOpenApi } from './groups.openapi';
-import { registerOrganizationsOpenApi } from './organizations.openapi';
-import { registerPermissionsOpenApi } from './permissions.openapi';
-import { registerProjectsOpenApi } from './projects.openapi';
-import { registerRolesOpenApi } from './roles.openapi';
-import { registerTagsOpenApi } from './tags.openapi';
-import { registerUserEndpoints } from './users.openapi';
 
 /**
  * OpenAPI registry for the REST API

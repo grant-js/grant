@@ -6,10 +6,6 @@ import {
   RemoveOrganizationPermissionInput,
 } from '@logusgraphics/grant-schema';
 
-import { AuthenticatedUser } from '@/types';
-import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
-
 import {
   AuditService,
   validateInput,
@@ -17,13 +13,16 @@ import {
   createDynamicSingleSchema,
   DeleteParams,
 } from './common';
-
 import {
   organizationPermissionSchema,
   addOrganizationPermissionInputSchema,
   queryOrganizationPermissionsArgsSchema,
   removeOrganizationPermissionInputSchema,
 } from './organization-permissions.schemas';
+
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { Repositories } from '@/repositories';
+import { AuthenticatedUser } from '@/types';
 
 export class OrganizationPermissionService extends AuditService {
   constructor(

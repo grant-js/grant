@@ -2,8 +2,9 @@
 
 import { useCallback } from 'react';
 
-import { Users, Shield, Group, Key, Tag } from 'lucide-react';
 import { useParams } from 'next/navigation';
+
+import { Users, Shield, Group, Key, Tag } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { usePathname } from '@/i18n/navigation';

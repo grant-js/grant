@@ -2,8 +2,9 @@
 
 import { forwardRef } from 'react';
 
-import { Globe } from 'lucide-react';
 import { redirect, useSearchParams } from 'next/navigation';
+
+import { Globe } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';

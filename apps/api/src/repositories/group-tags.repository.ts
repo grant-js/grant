@@ -1,9 +1,9 @@
 import { GroupTag, groupTags } from '@logusgraphics/grant-database';
 import { AddGroupTagInput, UpdateGroupTagInput } from '@logusgraphics/grant-schema';
 
-import { Transaction } from '@/lib/transaction-manager.lib';
-
 import { PivotRepository, BasePivotRemoveArgs } from './common/PivotRepository';
+
+import { Transaction } from '@/lib/transaction-manager.lib';
 
 export class GroupTagRepository extends PivotRepository<GroupTag, GroupTag> {
   protected table = groupTags;

@@ -6,10 +6,6 @@ import {
 } from '@logusgraphics/grant-schema';
 import { Response } from 'express';
 
-import { parseRelations } from '@/lib/field-selection.lib';
-import { TypedRequest } from '@/rest/types';
-import { RequestContext } from '@/types';
-
 import {
   createOrganizationRequestSchema,
   deleteOrganizationQuerySchema,
@@ -17,7 +13,12 @@ import {
   organizationParamsSchema,
   updateOrganizationRequestSchema,
 } from '../schemas/organizations.schemas';
+
 import { BaseController } from './base.controller';
+
+import { parseRelations } from '@/lib/field-selection.lib';
+import { TypedRequest } from '@/rest/types';
+import { RequestContext } from '@/types';
 
 /**
  * Controller for organization-related REST endpoints

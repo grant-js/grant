@@ -9,10 +9,6 @@ import {
   CreateOrganizationInput,
 } from '@logusgraphics/grant-schema';
 
-import { AuthenticatedUser } from '@/types';
-import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
-
 import {
   AuditService,
   validateInput,
@@ -22,7 +18,6 @@ import {
   SelectedFields,
   DeleteParams,
 } from './common';
-
 import {
   getOrganizationsParamsSchema,
   updateOrganizationParamsSchema,
@@ -30,6 +25,10 @@ import {
   organizationSchema,
   createOrganizationInputSchema,
 } from './organizations.schemas';
+
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { Repositories } from '@/repositories';
+import { AuthenticatedUser } from '@/types';
 
 export class OrganizationService extends AuditService {
   constructor(

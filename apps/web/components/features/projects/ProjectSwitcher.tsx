@@ -2,9 +2,10 @@
 
 import * as React from 'react';
 
+import { redirect, useParams } from 'next/navigation';
+
 import { ProjectSortableField, SortOrder, Tenant } from '@logusgraphics/grant-schema';
 import { Check, ChevronsUpDown, FolderOpen } from 'lucide-react';
-import { redirect, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';

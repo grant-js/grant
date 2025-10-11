@@ -6,10 +6,6 @@ import {
   RemoveOrganizationRoleInput,
 } from '@logusgraphics/grant-schema';
 
-import { AuthenticatedUser } from '@/types';
-import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
-
 import {
   AuditService,
   validateInput,
@@ -17,13 +13,16 @@ import {
   createDynamicSingleSchema,
   DeleteParams,
 } from './common';
-
 import {
   getOrganizationRolesParamsSchema,
   organizationRoleSchema,
   addOrganizationRoleInputSchema,
   removeOrganizationRoleInputSchema,
 } from './organization-roles.schemas';
+
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { Repositories } from '@/repositories';
+import { AuthenticatedUser } from '@/types';
 
 export class OrganizationRoleService extends AuditService {
   constructor(

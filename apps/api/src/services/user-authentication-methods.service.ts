@@ -13,10 +13,6 @@ import {
 } from '@logusgraphics/grant-schema';
 import { hashSync, compareSync } from 'bcrypt';
 
-import { AuthenticatedUser } from '@/types';
-import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
-
 import {
   AuditService,
   validateInput,
@@ -26,7 +22,6 @@ import {
   DeleteParams,
   emailSchema,
 } from './common';
-
 import {
   userAuthenticationMethodSchema,
   queryUserAuthenticationMethodsArgsSchema,
@@ -37,6 +32,10 @@ import {
   parseProviderDataSchema,
   passwordPolicySchema,
 } from './user-authentication-methods.schemas';
+
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { Repositories } from '@/repositories';
+import { AuthenticatedUser } from '@/types';
 
 interface ProcessedProvider {
   providerData: Record<string, unknown>;

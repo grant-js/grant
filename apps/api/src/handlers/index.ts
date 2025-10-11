@@ -1,7 +1,5 @@
 import { DbSchema } from '@logusgraphics/grant-database';
 
-import { Services } from '@/services';
-
 import { AccountHandler } from './accounts.handler';
 import { EntityCache } from './base/scope-handler';
 import { GroupHandler } from './groups.handler';
@@ -11,6 +9,8 @@ import { ProjectHandler } from './projects.handler';
 import { RoleHandler } from './roles.handler';
 import { TagHandler } from './tags.handler';
 import { UserHandler } from './users.handler';
+
+import { Services } from '@/services';
 
 export type Handlers = ReturnType<typeof createHandlers>;
 

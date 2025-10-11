@@ -6,10 +6,6 @@ import {
   RemoveOrganizationTagInput,
 } from '@logusgraphics/grant-schema';
 
-import { AuthenticatedUser } from '@/types';
-import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
-
 import {
   AuditService,
   validateInput,
@@ -17,13 +13,16 @@ import {
   createDynamicSingleSchema,
   DeleteParams,
 } from './common';
-
 import {
   getOrganizationTagsParamsSchema,
   organizationTagSchema,
   addOrganizationTagInputSchema,
   removeOrganizationTagInputSchema,
 } from './organization-tags.schemas';
+
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { Repositories } from '@/repositories';
+import { AuthenticatedUser } from '@/types';
 
 export class OrganizationTagService extends AuditService {
   constructor(

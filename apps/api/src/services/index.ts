@@ -1,8 +1,5 @@
 import { DbSchema } from '@logusgraphics/grant-database';
 
-import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
-
 import { AccountProjectService } from './account-projects.service';
 import { AccountService } from './accounts.service';
 import { GroupPermissionService } from './group-permissions.service';
@@ -32,6 +29,9 @@ import { UserRoleService } from './user-roles.service';
 import { UserSessionService } from './user-sessions.service';
 import { UserTagService } from './user-tags.service';
 import { UserService } from './users.service';
+
+import { Repositories } from '@/repositories';
+import { AuthenticatedUser } from '@/types';
 
 export type Services = ReturnType<typeof createServices>;
 

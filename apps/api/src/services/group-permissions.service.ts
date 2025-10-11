@@ -6,10 +6,6 @@ import {
   RemoveGroupPermissionInput,
 } from '@logusgraphics/grant-schema';
 
-import { AuthenticatedUser } from '@/types';
-import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
-
 import {
   AuditService,
   validateInput,
@@ -17,13 +13,16 @@ import {
   createDynamicSingleSchema,
   DeleteParams,
 } from './common';
-
 import {
   getGroupPermissionsParamsSchema,
   addGroupPermissionParamsSchema,
   removeGroupPermissionParamsSchema,
   groupPermissionSchema,
 } from './group-permissions.schemas';
+
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { Repositories } from '@/repositories';
+import { AuthenticatedUser } from '@/types';
 
 export class GroupPermissionService extends AuditService {
   constructor(

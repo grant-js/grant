@@ -7,10 +7,6 @@ import {
   UpdateGroupTagInput,
 } from '@logusgraphics/grant-schema';
 
-import { AuthenticatedUser } from '@/types';
-import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
-
 import {
   AuditService,
   validateInput,
@@ -18,7 +14,6 @@ import {
   createDynamicSingleSchema,
   DeleteParams,
 } from './common';
-
 import {
   addGroupTagInputSchema,
   getGroupTagIntersectionInputSchema,
@@ -28,6 +23,10 @@ import {
   removeGroupTagsInputSchema,
   updateGroupTagInputSchema,
 } from './group-tags.schemas';
+
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { Repositories } from '@/repositories';
+import { AuthenticatedUser } from '@/types';
 
 export class GroupTagService extends AuditService {
   constructor(

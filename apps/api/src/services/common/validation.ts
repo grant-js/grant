@@ -41,7 +41,7 @@ function formatValidationError(error: z.ZodIssue): string {
   // Use any cast for Zod v4 compatibility
   const err = error as any;
 
-  let message = `Field "${field}": ${error.message}`;
+  const message = `Field "${field}": ${error.message}`;
 
   return message;
 }

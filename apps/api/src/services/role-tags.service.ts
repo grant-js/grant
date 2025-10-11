@@ -7,10 +7,6 @@ import {
   UpdateRoleTagInput,
 } from '@logusgraphics/grant-schema';
 
-import { AuthenticatedUser } from '@/types';
-import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
-
 import {
   AuditService,
   validateInput,
@@ -18,7 +14,6 @@ import {
   createDynamicSingleSchema,
   DeleteParams,
 } from './common';
-
 import {
   getRoleTagsParamsSchema,
   roleTagSchema,
@@ -28,6 +23,10 @@ import {
   removeRoleTagsInputSchema,
   updateRoleTagInputSchema,
 } from './role-tags.schemas';
+
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { Repositories } from '@/repositories';
+import { AuthenticatedUser } from '@/types';
 
 export class RoleTagService extends AuditService {
   constructor(

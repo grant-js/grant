@@ -2,8 +2,9 @@
 
 import { useEffect } from 'react';
 
-import { AccountType } from '@logusgraphics/grant-schema';
 import { useParams } from 'next/navigation';
+
+import { AccountType } from '@logusgraphics/grant-schema';
 import { useLocale } from 'next-intl';
 
 import { FullPageLoader } from '@/components/common';

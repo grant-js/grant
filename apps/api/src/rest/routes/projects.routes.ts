@@ -1,5 +1,7 @@
 import { Router } from 'express';
 
+import { ProjectsController } from '../controllers/projects.controller';
+
 import { validate } from '@/middleware/validation.middleware';
 import {
   createProjectRequestSchema,
@@ -15,8 +17,6 @@ import {
   TypedRequestQuery,
 } from '@/rest/types';
 import { RequestContext } from '@/types';
-
-import { ProjectsController } from '../controllers/projects.controller';
 
 export function createProjectsRouter(context: RequestContext): Router {
   const router = Router();

@@ -11,17 +11,7 @@ import {
 } from '@logusgraphics/grant-schema';
 import { sign, verify, JwtPayload } from 'jsonwebtoken';
 
-import { AuthenticatedUser } from '@/types';
-import {
-  ACCESS_TOKEN_EXPIRATION_MINUTES,
-  JWT_SECRET,
-  REFRESH_TOKEN_EXPIRATION_DAYS,
-} from '@/config/constants.config';
-import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
-
 import { AuditService, SelectedFields, validateInput, validateOutput } from './common';
-
 import {
   userSessionSchema,
   createSessionSchema,
@@ -30,6 +20,15 @@ import {
   sessionResultSchema,
   validateAccessTokenSchema,
 } from './user-sessions.schemas';
+
+import {
+  ACCESS_TOKEN_EXPIRATION_MINUTES,
+  JWT_SECRET,
+  REFRESH_TOKEN_EXPIRATION_DAYS,
+} from '@/config/constants.config';
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { Repositories } from '@/repositories';
+import { AuthenticatedUser } from '@/types';
 
 interface CreateSessionResult {
   refreshToken: string;

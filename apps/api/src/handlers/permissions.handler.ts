@@ -11,12 +11,12 @@ import {
   Tag,
 } from '@logusgraphics/grant-schema';
 
+import { ScopeHandler } from './base/scope-handler';
+
 import { EntityCache } from '@/handlers/base/scope-handler';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 import { DeleteParams, SelectedFields } from '@/services/common';
-
-import { ScopeHandler } from './base/scope-handler';
 
 export class PermissionHandler extends ScopeHandler {
   constructor(

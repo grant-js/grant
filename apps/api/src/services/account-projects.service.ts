@@ -5,10 +5,13 @@ import {
   RemoveAccountProjectInput,
 } from '@logusgraphics/grant-schema';
 
-import { AuthenticatedUser } from '@/types';
-import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
-
+import {
+  accountProjectSchema,
+  addAccountProjectInputSchema,
+  queryAccountProjectArgsSchema,
+  queryAccountProjectsArgsSchema,
+  removeAccountProjectInputSchema,
+} from './account-projects.schemas';
 import {
   AuditService,
   validateInput,
@@ -17,13 +20,9 @@ import {
   DeleteParams,
 } from './common';
 
-import {
-  accountProjectSchema,
-  addAccountProjectInputSchema,
-  queryAccountProjectArgsSchema,
-  queryAccountProjectsArgsSchema,
-  removeAccountProjectInputSchema,
-} from './account-projects.schemas';
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { Repositories } from '@/repositories';
+import { AuthenticatedUser } from '@/types';
 
 export class AccountProjectService extends AuditService {
   constructor(

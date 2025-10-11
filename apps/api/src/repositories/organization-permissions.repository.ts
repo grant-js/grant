@@ -3,14 +3,14 @@ import {
   organizationPermissions,
 } from '@logusgraphics/grant-database';
 
-import { Transaction } from '@/lib/transaction-manager.lib';
-
 import {
   PivotRepository,
   BasePivotQueryArgs,
   BasePivotAddArgs,
   BasePivotRemoveArgs,
 } from './common/PivotRepository';
+
+import { Transaction } from '@/lib/transaction-manager.lib';
 
 export class OrganizationPermissionRepository extends PivotRepository<
   OrganizationPermissionModel,

@@ -1,14 +1,14 @@
 import { accountProjects, AccountProjectModel } from '@logusgraphics/grant-database';
 import { AddAccountProjectInput, RemoveAccountProjectInput } from '@logusgraphics/grant-schema';
 
-import { Transaction } from '@/lib/transaction-manager.lib';
-
 import {
   BasePivotAddArgs,
   BasePivotQueryArgs,
   BasePivotRemoveArgs,
   PivotRepository,
 } from './common/PivotRepository';
+
+import { Transaction } from '@/lib/transaction-manager.lib';
 
 // Define the GraphQL AccountProject type interface
 interface AccountProject {

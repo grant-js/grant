@@ -2,6 +2,7 @@
   "name": "grant-platform",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "author": {
     "name": "Alejandro Heredia",
     "email": "ale@logus.graphics",

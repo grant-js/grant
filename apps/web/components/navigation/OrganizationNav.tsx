@@ -2,8 +2,9 @@
 
 import { useCallback } from 'react';
 
-import { Users, Tag, FolderOpen } from 'lucide-react';
 import { useParams } from 'next/navigation';
+
+import { Users, Tag, FolderOpen } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { usePathname } from '@/i18n/navigation';

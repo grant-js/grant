@@ -30,7 +30,7 @@
     "@types/node": "^24.7.2",
     "@types/pg": "^8.15.5",
     "drizzle-kit": "^0.31.4",
-    "eslint": "^8.57.0",
+    "eslint": "^9.37.0",
     "tsx": "^4.20.4",
     "typescript": "^5"
   },

@@ -1,5 +1,7 @@
 import { Router } from 'express';
 
+import { RolesController } from '../controllers/roles.controller';
+
 import { validate } from '@/middleware/validation.middleware';
 import {
   createRoleRequestSchema,
@@ -15,8 +17,6 @@ import {
   TypedRequestQuery,
 } from '@/rest/types';
 import { RequestContext } from '@/types';
-
-import { RolesController } from '../controllers/roles.controller';
 
 export function createRolesRouter(context: RequestContext): Router {
   const router = Router();

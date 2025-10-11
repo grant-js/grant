@@ -1,7 +1,8 @@
 import { DbSchema } from '@logusgraphics/grant-database';
-import type { Schema } from '@logusgraphics/grant-database';
 import { Auditable, Searchable, SortOrder } from '@logusgraphics/grant-schema';
 import { eq, inArray, ilike, or, and, isNull, count, desc, asc, gte, lte, SQL } from 'drizzle-orm';
+
+import type { Schema } from '@logusgraphics/grant-database';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 

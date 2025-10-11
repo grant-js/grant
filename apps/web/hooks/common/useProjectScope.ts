@@ -1,7 +1,8 @@
 'use client';
 
-import { Scope, Tenant } from '@logusgraphics/grant-schema';
 import { useParams } from 'next/navigation';
+
+import { Scope, Tenant } from '@logusgraphics/grant-schema';
 
 export function useProjectScope(): Scope | null {
   const params = useParams();

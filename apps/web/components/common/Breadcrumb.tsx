@@ -3,6 +3,7 @@
 import React from 'react';
 
 import { usePathname, useParams } from 'next/navigation';
+
 import { useTranslations } from 'next-intl';
 
 import {

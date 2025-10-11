@@ -6,12 +6,13 @@ import {
 } from '@logusgraphics/grant-schema';
 import { Response } from 'express';
 
+import { accountParamsSchema, getAccountsQuerySchema } from '../schemas/accounts.schemas';
+
+import { BaseController } from './base.controller';
+
 import { parseRelations } from '@/lib/field-selection.lib';
 import { TypedRequest } from '@/rest/types';
 import { RequestContext } from '@/types';
-
-import { accountParamsSchema, getAccountsQuerySchema } from '../schemas/accounts.schemas';
-import { BaseController } from './base.controller';
 
 /**
  * Controller for account-related REST endpoints

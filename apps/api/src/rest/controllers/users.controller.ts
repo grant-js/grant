@@ -1,10 +1,6 @@
 import { SortOrder, User, UserSortableField, UserSortInput } from '@logusgraphics/grant-schema';
 import { Response } from 'express';
 
-import { parseRelations } from '@/lib/field-selection.lib';
-import { TypedRequest } from '@/rest/types';
-import { RequestContext } from '@/types';
-
 import {
   createUserRequestSchema,
   deleteUserQuerySchema,
@@ -12,7 +8,12 @@ import {
   updateUserRequestSchema,
   userParamsSchema,
 } from '../schemas/users.schemas';
+
 import { BaseController } from './base.controller';
+
+import { parseRelations } from '@/lib/field-selection.lib';
+import { TypedRequest } from '@/rest/types';
+import { RequestContext } from '@/types';
 
 /**
  * Controller for user-related REST endpoints

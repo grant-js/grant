@@ -1,11 +1,12 @@
-import { Response } from 'express';
-
 import {
   CreatePermissionMutationVariables,
   DeletePermissionMutationVariables,
   Permission,
   UpdatePermissionMutationVariables,
 } from '@logusgraphics/grant-schema';
+import { Response } from 'express';
+
+import { BaseController } from './base.controller';
 
 import { parseRelations } from '@/lib/field-selection.lib';
 import {
@@ -22,8 +23,6 @@ import {
   TypedRequestQuery,
 } from '@/rest/types';
 import { RequestContext } from '@/types';
-
-import { BaseController } from './base.controller';
 
 export class PermissionsController extends BaseController {
   constructor(context: RequestContext) {

@@ -16,14 +16,13 @@ import {
   UserSessionSortableField,
 } from '@logusgraphics/grant-schema';
 
-import { EntityCache } from '@/handlers/base/scope-handler';
-import { AuthenticationError } from '@/graphql/errors';
 import { PROVIDER_VERIFICATION_EXPIRATION_DAYS } from '@/config/constants.config';
+import { AuthenticationError } from '@/graphql/errors';
+import { EntityCache } from '@/handlers/base/scope-handler';
+import { ScopeHandler } from '@/handlers/base/scope-handler';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 import { DeleteParams, SelectedFields } from '@/services/common';
-
-import { ScopeHandler } from '@/handlers/base/scope-handler';
 
 export class AccountHandler extends ScopeHandler {
   constructor(

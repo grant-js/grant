@@ -12,10 +12,6 @@ import {
 } from '@logusgraphics/grant-schema';
 import { and, eq, isNull } from 'drizzle-orm';
 
-import { slugifySafe } from '@/lib/slugify.lib';
-import { Transaction } from '@/lib/transaction-manager.lib';
-import { SelectedFields } from '@/services/common';
-
 import {
   BaseCreateArgs,
   BaseDeleteArgs,
@@ -23,6 +19,10 @@ import {
   EntityRepository,
   RelationsConfig,
 } from './common/EntityRepository';
+
+import { slugifySafe } from '@/lib/slugify.lib';
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { SelectedFields } from '@/services/common';
 
 export class AccountRepository extends EntityRepository<AccountModel, Account> {
   protected table = accounts;

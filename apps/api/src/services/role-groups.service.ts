@@ -2,10 +2,6 @@ import { DbSchema } from '@logusgraphics/grant-database';
 import { roleGroupsAuditLogs } from '@logusgraphics/grant-database';
 import { RoleGroup, AddRoleGroupInput, RemoveRoleGroupInput } from '@logusgraphics/grant-schema';
 
-import { AuthenticatedUser } from '@/types';
-import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
-
 import {
   AuditService,
   validateInput,
@@ -13,13 +9,16 @@ import {
   createDynamicSingleSchema,
   DeleteParams,
 } from './common';
-
 import {
   addRoleGroupInputSchema,
   queryRoleGroupsArgsSchema,
   removeRoleGroupInputSchema,
   roleGroupSchema,
 } from './role-groups.schemas';
+
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { Repositories } from '@/repositories';
+import { AuthenticatedUser } from '@/types';
 
 export class RoleGroupService extends AuditService {
   constructor(

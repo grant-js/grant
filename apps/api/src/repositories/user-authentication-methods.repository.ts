@@ -12,15 +12,15 @@ import {
   UserAuthenticationMethod,
 } from '@logusgraphics/grant-schema';
 
-import { Transaction } from '@/lib/transaction-manager.lib';
-import { SelectedFields } from '@/services/common';
-
 import {
   EntityRepository,
   RelationsConfig,
   FilterCondition,
   BaseUpdateArgs,
 } from './common/EntityRepository';
+
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { SelectedFields } from '@/services/common';
 
 export class UserAuthenticationMethodRepository extends EntityRepository<
   UserAuthenticationMethodModel,

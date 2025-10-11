@@ -1,8 +1,8 @@
 import { DbSchema } from '@logusgraphics/grant-database';
 
-import { AuthenticatedUser } from '@/types';
 import { SYSTEM_USER_ID } from '@/config/constants.config';
 import { Transaction } from '@/lib/transaction-manager.lib';
+import { AuthenticatedUser } from '@/types';
 
 export interface AuditLogParams {
   entityId: string;

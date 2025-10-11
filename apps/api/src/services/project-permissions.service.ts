@@ -6,10 +6,6 @@ import {
   AddProjectPermissionInput,
 } from '@logusgraphics/grant-schema';
 
-import { AuthenticatedUser } from '@/types';
-import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
-
 import {
   AuditService,
   validateInput,
@@ -17,13 +13,16 @@ import {
   createDynamicSingleSchema,
   DeleteParams,
 } from './common';
-
 import {
   getProjectPermissionsParamsSchema,
   projectPermissionSchema,
   addProjectPermissionInputSchema,
   removeProjectPermissionInputSchema,
 } from './project-permissions.schemas';
+
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { Repositories } from '@/repositories';
+import { AuthenticatedUser } from '@/types';
 
 export class ProjectPermissionService extends AuditService {
   constructor(

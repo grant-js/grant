@@ -1,6 +1,7 @@
 'use client';
 
 import { redirect, useParams } from 'next/navigation';
+
 import { useLocale } from 'next-intl';
 
 export default function PersonalProjectPage() {
