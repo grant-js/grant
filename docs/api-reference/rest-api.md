@@ -241,6 +241,206 @@ When registering, you can create two types of accounts:
 | `personal`     | Individual user account      |
 | `organization` | Organization/company account |
 
+## API Endpoints
+
+The REST API provides comprehensive CRUD operations for all core resources. All endpoints except authentication require a valid JWT token in the `Authorization` header.
+
+### Accounts
+
+Manage personal and organization accounts.
+
+- `GET /api/accounts` - List all accounts (paginated, searchable)
+- `GET /api/accounts/:id` - Get account by ID with optional relations
+- `POST /api/accounts` - Create a new account (handled via registration)
+- `PATCH /api/accounts/:id` - Update account details
+- `DELETE /api/accounts/:id` - Delete account (soft/hard delete)
+
+**Example**: Get an account with projects loaded
+
+```bash
+GET /api/accounts/acc_123?relations=projects
+```
+
+### Organizations
+
+Manage organizations and their hierarchical structure.
+
+- `GET /api/organizations` - List organizations with pagination and search
+- `GET /api/organizations/:id` - Get organization by ID
+- `POST /api/organizations` - Create a new organization
+- `PATCH /api/organizations/:id` - Update organization details
+- `DELETE /api/organizations/:id` - Delete organization
+
+### Projects
+
+Projects provide multi-tenant isolation within accounts or organizations.
+
+- `GET /api/projects` - List projects within a scope
+- `POST /api/projects` - Create a new project
+- `PATCH /api/projects/:id` - Update project details
+- `DELETE /api/projects/:id` - Delete project (soft/hard delete)
+
+**Required Parameters**: `scopeId`, `tenant` (parent scope context)
+
+**Example**: List projects in an organization
+
+```bash
+GET /api/projects?scopeId=org_456&tenant=organization&relations=roles,users
+```
+
+### Users
+
+Manage users within different scopes (account/organization/project).
+
+- `GET /api/users` - List users with filtering and pagination
+- `GET /api/users/:id` - Get user by ID
+- `POST /api/users` - Create a new user
+- `PATCH /api/users/:id` - Update user details
+- `DELETE /api/users/:id` - Delete user (soft/hard delete)
+
+**Scope-based Filtering**: Users are always queried within a specific scope context.
+
+**Example**: Get users in a project with roles loaded
+
+```bash
+GET /api/users?scopeId=proj_789&tenant=project&relations=roles,tags
+```
+
+### Roles
+
+Manage roles for role-based access control (RBAC).
+
+- `GET /api/roles` - List roles within a scope
+- `POST /api/roles` - Create a new role
+- `PATCH /api/roles/:id` - Update role details
+- `DELETE /api/roles/:id` - Delete role (soft/hard delete)
+
+**Features**: Assign permissions to roles, tag roles for organization, filter by tags.
+
+**Example**: Create a role with permissions
+
+```bash
+POST /api/roles
+{
+  "name": "Project Manager",
+  "description": "Can manage projects and users",
+  "scope": { "id": "org_456", "tenant": "organization" },
+  "permissionIds": ["perm_1", "perm_2"],
+  "tagIds": ["tag_management"]
+}
+```
+
+### Groups
+
+Manage groups of users for collective permission assignment.
+
+- `GET /api/groups` - List groups within a scope
+- `POST /api/groups` - Create a new group
+- `PATCH /api/groups/:id` - Update group details
+- `DELETE /api/groups/:id` - Delete group (soft/hard delete)
+
+**Features**: Assign permissions to groups, tag groups, manage group memberships.
+
+**Example**: Update a group's permissions
+
+```bash
+PATCH /api/groups/grp_123
+{
+  "permissionIds": ["perm_1", "perm_3", "perm_5"]
+}
+```
+
+### Permissions
+
+Manage granular permissions for access control.
+
+- `GET /api/permissions` - List permissions within a scope
+- `POST /api/permissions` - Create a new permission
+- `PATCH /api/permissions/:id` - Update permission details
+- `DELETE /api/permissions/:id` - Delete permission (soft/hard delete)
+
+**Action Field**: Permissions use an action string (e.g., `read:users`, `write:projects`) to define what operation is allowed.
+
+**Example**: Create a permission
+
+```bash
+POST /api/permissions
+{
+  "name": "Read Projects",
+  "action": "read:projects",
+  "description": "Allows reading project data",
+  "scope": { "id": "org_456", "tenant": "organization" }
+}
+```
+
+### Tags
+
+Manage tags for categorizing and organizing resources.
+
+- `GET /api/tags` - List tags within a scope
+- `POST /api/tags` - Create a new tag
+- `PATCH /api/tags/:id` - Update tag details
+- `DELETE /api/tags/:id` - Delete tag (soft/hard delete)
+
+**Color Coding**: Tags use hex colors (`#RRGGBB`) for visual categorization.
+
+**Use Cases**: Tags can be assigned to users, groups, roles, permissions, and projects for:
+
+- Visual organization
+- Filtering and searching
+- Access control grouping
+- Primary tag designation
+
+**Example**: Create a tag
+
+```bash
+POST /api/tags
+{
+  "name": "Frontend",
+  "color": "#3498DB",
+  "scope": { "id": "org_456", "tenant": "organization" }
+}
+```
+
+## Multi-Tenancy & Scoping
+
+The Grant Platform implements hierarchical multi-tenancy with three levels:
+
+1. **Account** - Top-level tenant (personal or organization)
+2. **Organization** - Mid-level tenant (within an account)
+3. **Project** - Bottom-level tenant (within account or organization)
+
+### Scope Parameters
+
+Most endpoints require `scopeId` and `tenant` query parameters to specify the context:
+
+```bash
+# Get roles within a project
+GET /api/roles?scopeId=proj_789&tenant=project
+
+# Get users within an organization
+GET /api/users?scopeId=org_456&tenant=organization
+```
+
+### Tenant Hierarchy
+
+Resources inherit from their parent scope:
+
+```
+Account (acc_123)
+├── Organization (org_456)
+│   ├── Project (proj_789)
+│   │   ├── Users
+│   │   ├── Roles
+│   │   └── Permissions
+│   └── Users
+└── Users
+```
+
+::: tip Learn More
+See [Multi-Tenancy Architecture](/architecture/multi-tenancy) for detailed information about tenant isolation and data segregation.
+:::
+
 ## Rate Limiting
 
 ::: warning

@@ -16,6 +16,10 @@
 export { registerAccountsOpenApi } from './accounts.openapi';
 export { registerAuthEndpoints } from './auth.openapi';
 export { generateOpenApiDocument, initializeOpenApiRegistry, registry } from './config.openapi';
+export { registerGroupsOpenApi } from './groups.openapi';
 export { registerOrganizationsOpenApi } from './organizations.openapi';
+export { registerPermissionsOpenApi } from './permissions.openapi';
+export { registerProjectsOpenApi } from './projects.openapi';
 export { registerRolesOpenApi } from './roles.openapi';
+export { registerTagsOpenApi } from './tags.openapi';
 export { registerUserEndpoints } from './users.openapi';

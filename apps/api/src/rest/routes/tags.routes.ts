@@ -9,18 +9,12 @@ import {
   updateTagRequestSchema,
 } from '@/rest/schemas';
 import {
-  RequestContext,
-  TypedRequest,
-  TypedRequestBody,
-  TypedRequestParams,
-  TypedRequestQuery,
-} from '@/types'; // RequestContext
-import {
   TypedRequest,
   TypedRequestBody,
   TypedRequestParams,
   TypedRequestQuery,
 } from '@/rest/types';
+import { RequestContext } from '@/types';
 
 import { TagsController } from '../controllers/tags.controller';
 

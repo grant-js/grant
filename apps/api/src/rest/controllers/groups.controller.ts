@@ -4,8 +4,6 @@ import {
   CreateGroupMutationVariables,
   DeleteGroupMutationVariables,
   Group,
-  GroupWithRelations,
-  QueryGroupsArgs,
   UpdateGroupMutationVariables,
 } from '@logusgraphics/grant-schema';
 
@@ -18,12 +16,12 @@ import {
   updateGroupRequestSchema,
 } from '@/rest/schemas';
 import {
-  RequestContext,
   TypedRequest,
   TypedRequestBody,
   TypedRequestParams,
   TypedRequestQuery,
-} from '@/types';
+} from '@/rest/types';
+import { RequestContext } from '@/types';
 
 import { BaseController } from './base.controller';
 
@@ -39,22 +37,18 @@ export class GroupsController extends BaseController {
     const { page, limit, search, sortField, sortOrder, tagIds, scopeId, tenant, relations } =
       req.query;
 
-    const requestedFields = parseRelations<GroupWithRelations>(relations);
+    const requestedFields = parseRelations<Group>(relations);
 
     try {
-      const args: QueryGroupsArgs = {
-        pagination: { page, limit },
+      const result = await this.handlers.groups.getGroups({
+        page,
+        limit,
         search: search || undefined,
-        sortBy: sortField || undefined,
-        sortOrder: sortOrder || undefined,
+        sort: sortField && sortOrder ? { field: sortField, order: sortOrder } : undefined,
         tagIds: tagIds || undefined,
-        scope: { scopeId, tenant },
-      };
-
-      const result = await req.context.handlers.groups.getGroups(
-        args,
-        requestedFields || (['id', 'name', 'description'] as any)
-      );
+        scope: { id: scopeId, tenant },
+        requestedFields: requestedFields || (['id', 'name', 'description'] as any),
+      });
 
       this.ok(res, result);
     } catch (error) {
@@ -71,11 +65,7 @@ export class GroupsController extends BaseController {
         input: req.body,
       };
 
-      const group: Group = await req.context.handlers.groups.createGroup(variables, [
-        'id',
-        'name',
-        'description',
-      ] as any);
+      const group: Group = await this.handlers.groups.createGroup(variables);
 
       this.created(res, group);
     } catch (error) {
@@ -98,11 +88,7 @@ export class GroupsController extends BaseController {
         input: req.body,
       };
 
-      const group: Group = await req.context.handlers.groups.updateGroup(variables, [
-        'id',
-        'name',
-        'description',
-      ] as any);
+      const group: Group = await this.handlers.groups.updateGroup(variables);
 
       this.ok(res, group);
     } catch (error) {
@@ -118,19 +104,15 @@ export class GroupsController extends BaseController {
     res: Response
   ): Promise<void> {
     const { id } = req.params;
-    const { scopeId, tenant, hardDelete } = req.query;
+    const { scopeId, tenant } = req.query;
 
     try {
       const variables: DeleteGroupMutationVariables = {
         id,
-        scope: { scopeId, tenant },
-        hardDelete: hardDelete || false,
+        scope: { id: scopeId, tenant },
       };
 
-      const group: Group = await req.context.handlers.groups.deleteGroup(variables, [
-        'id',
-        'name',
-      ] as any);
+      const group: Group = await this.handlers.groups.deleteGroup(variables);
 
       this.ok(res, group);
     } catch (error) {

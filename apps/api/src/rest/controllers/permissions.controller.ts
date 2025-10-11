@@ -4,8 +4,6 @@ import {
   CreatePermissionMutationVariables,
   DeletePermissionMutationVariables,
   Permission,
-  PermissionWithRelations,
-  QueryPermissionsArgs,
   UpdatePermissionMutationVariables,
 } from '@logusgraphics/grant-schema';
 
@@ -18,7 +16,6 @@ import {
   updatePermissionRequestSchema,
 } from '@/rest/schemas';
 import {
-  RequestContext,
   TypedRequest,
   TypedRequestBody,
   TypedRequestParams,
@@ -40,22 +37,18 @@ export class PermissionsController extends BaseController {
     const { page, limit, search, sortField, sortOrder, tagIds, scopeId, tenant, relations } =
       req.query;
 
-    const requestedFields = parseRelations<PermissionWithRelations>(relations);
+    const requestedFields = parseRelations<Permission>(relations);
 
     try {
-      const args: QueryPermissionsArgs = {
-        pagination: { page, limit },
+      const result = await this.handlers.permissions.getPermissions({
+        page,
+        limit,
         search: search || undefined,
-        sortBy: sortField || undefined,
-        sortOrder: sortOrder || undefined,
+        sort: sortField && sortOrder ? { field: sortField, order: sortOrder } : undefined,
         tagIds: tagIds || undefined,
         scope: { id: scopeId, tenant },
-      };
-
-      const result = await req.context.handlers.permissions.getPermissions(
-        args,
-        requestedFields || (['id', 'name', 'description', 'action'] as any)
-      );
+        requestedFields: requestedFields || (['id', 'name', 'description', 'action'] as any),
+      });
 
       this.ok(res, result);
     } catch (error) {
@@ -72,10 +65,7 @@ export class PermissionsController extends BaseController {
         input: req.body,
       };
 
-      const permission: Permission = await req.context.handlers.permissions.createPermission(
-        variables,
-        ['id', 'name', 'description', 'action'] as any
-      );
+      const permission: Permission = await this.handlers.permissions.createPermission(variables);
 
       this.created(res, permission);
     } catch (error) {
@@ -98,10 +88,7 @@ export class PermissionsController extends BaseController {
         input: req.body,
       };
 
-      const permission: Permission = await req.context.handlers.permissions.updatePermission(
-        variables,
-        ['id', 'name', 'description', 'action'] as any
-      );
+      const permission: Permission = await this.handlers.permissions.updatePermission(variables);
 
       this.ok(res, permission);
     } catch (error) {
@@ -117,19 +104,15 @@ export class PermissionsController extends BaseController {
     res: Response
   ): Promise<void> {
     const { id } = req.params;
-    const { scopeId, tenant, hardDelete } = req.query;
+    const { scopeId, tenant } = req.query;
 
     try {
       const variables: DeletePermissionMutationVariables = {
         id,
         scope: { id: scopeId, tenant },
-        hardDelete: hardDelete || false,
       };
 
-      const permission: Permission = await req.context.handlers.permissions.deletePermission(
-        variables,
-        ['id', 'name', 'action'] as any
-      );
+      const permission: Permission = await this.handlers.permissions.deletePermission(variables);
 
       this.ok(res, permission);
     } catch (error) {

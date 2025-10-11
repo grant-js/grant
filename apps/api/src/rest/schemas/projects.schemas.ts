@@ -4,6 +4,7 @@ import { z } from '@/lib/zod-openapi.lib';
 import {
   createSuccessResponseSchema,
   listQuerySchema,
+  scopeSchema,
   tenantSchema,
 } from '@/rest/schemas/common.schemas';
 
@@ -63,10 +64,7 @@ export const getProjectsResponseSchema = createSuccessResponseSchema(
 export const createProjectRequestSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
   description: z.string().optional(),
-  scope: z.object({
-    scopeId: z.string().uuid('Invalid scope ID'),
-    tenant: tenantSchema,
-  }),
+  scope: scopeSchema,
   tagIds: z.array(z.string()).optional(),
   primaryTagId: z.string().optional(),
 });

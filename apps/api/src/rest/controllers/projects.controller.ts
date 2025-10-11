@@ -4,8 +4,6 @@ import {
   CreateProjectMutationVariables,
   DeleteProjectMutationVariables,
   Project,
-  ProjectWithRelations,
-  QueryProjectsArgs,
   UpdateProjectMutationVariables,
 } from '@logusgraphics/grant-schema';
 
@@ -18,12 +16,12 @@ import {
   updateProjectRequestSchema,
 } from '@/rest/schemas';
 import {
-  RequestContext,
   TypedRequest,
   TypedRequestBody,
   TypedRequestParams,
   TypedRequestQuery,
-} from '@/types';
+} from '@/rest/types';
+import { RequestContext } from '@/types';
 
 import { BaseController } from './base.controller';
 
@@ -39,22 +37,18 @@ export class ProjectsController extends BaseController {
     const { page, limit, search, sortField, sortOrder, tagIds, scopeId, tenant, relations } =
       req.query;
 
-    const requestedFields = parseRelations<ProjectWithRelations>(relations);
+    const requestedFields = parseRelations<Project>(relations);
 
     try {
-      const args: QueryProjectsArgs = {
-        pagination: { page, limit },
+      const result = await this.handlers.projects.getProjects({
+        page,
+        limit,
         search: search || undefined,
-        sortBy: sortField || undefined,
-        sortOrder: sortOrder || undefined,
+        sort: sortField && sortOrder ? { field: sortField, order: sortOrder } : undefined,
         tagIds: tagIds || undefined,
-        scope: { scopeId, tenant },
-      };
-
-      const result = await this.handlers.projects.getProjects(
-        args,
-        requestedFields || (['id', 'name', 'slug', 'description'] as any)
-      );
+        scope: { id: scopeId, tenant },
+        requestedFields: requestedFields || (['id', 'name', 'slug', 'description'] as any),
+      });
 
       this.ok(res, result);
     } catch (error) {
@@ -71,12 +65,7 @@ export class ProjectsController extends BaseController {
         input: req.body,
       };
 
-      const project: Project = await this.handlers.projects.createProject(variables, [
-        'id',
-        'name',
-        'slug',
-        'description',
-      ] as any);
+      const project: Project = await this.handlers.projects.createProject(variables);
 
       this.created(res, project);
     } catch (error) {
@@ -99,12 +88,7 @@ export class ProjectsController extends BaseController {
         input: req.body,
       };
 
-      const project: Project = await this.handlers.projects.updateProject(variables, [
-        'id',
-        'name',
-        'slug',
-        'description',
-      ] as any);
+      const project: Project = await this.handlers.projects.updateProject(variables);
 
       this.ok(res, project);
     } catch (error) {
@@ -120,20 +104,15 @@ export class ProjectsController extends BaseController {
     res: Response
   ): Promise<void> {
     const { id } = req.params;
-    const { scopeId, tenant, hardDelete } = req.query;
+    const { scopeId, tenant } = req.query;
 
     try {
       const variables: DeleteProjectMutationVariables = {
         id,
-        scope: { scopeId, tenant },
-        hardDelete: hardDelete || false,
+        scope: { id: scopeId, tenant },
       };
 
-      const project: Project = await this.handlers.projects.deleteProject(variables, [
-        'id',
-        'name',
-        'slug',
-      ] as any);
+      const project: Project = await this.handlers.projects.deleteProject(variables);
 
       this.ok(res, project);
     } catch (error) {

@@ -16,8 +16,12 @@ import {
 
 import { registerAccountsOpenApi } from './accounts.openapi';
 import { registerAuthEndpoints } from './auth.openapi';
+import { registerGroupsOpenApi } from './groups.openapi';
 import { registerOrganizationsOpenApi } from './organizations.openapi';
+import { registerPermissionsOpenApi } from './permissions.openapi';
+import { registerProjectsOpenApi } from './projects.openapi';
 import { registerRolesOpenApi } from './roles.openapi';
+import { registerTagsOpenApi } from './tags.openapi';
 import { registerUserEndpoints } from './users.openapi';
 
 /**
@@ -53,7 +57,11 @@ function registerAllEndpoints() {
   registerAccountsOpenApi(registry);
   registerUserEndpoints(registry);
   registerOrganizationsOpenApi(registry);
+  registerProjectsOpenApi(registry);
   registerRolesOpenApi(registry);
+  registerGroupsOpenApi(registry);
+  registerPermissionsOpenApi(registry);
+  registerTagsOpenApi(registry);
 }
 
 /**

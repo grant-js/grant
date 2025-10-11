@@ -3,7 +3,6 @@ import { Response } from 'express';
 import {
   CreateTagMutationVariables,
   DeleteTagMutationVariables,
-  QueryTagsArgs,
   Tag,
   UpdateTagMutationVariables,
 } from '@logusgraphics/grant-schema';
@@ -16,7 +15,6 @@ import {
   updateTagRequestSchema,
 } from '@/rest/schemas';
 import {
-  RequestContext,
   TypedRequest,
   TypedRequestBody,
   TypedRequestParams,
@@ -38,20 +36,13 @@ export class TagsController extends BaseController {
     const { page, limit, search, sortField, sortOrder, scopeId, tenant } = req.query;
 
     try {
-      const args: QueryTagsArgs = {
-        pagination: { page, limit },
+      const result = await this.handlers.tags.getTags({
+        page,
+        limit,
         search: search || undefined,
-        sortBy: sortField || undefined,
-        sortOrder: sortOrder || undefined,
+        sort: sortField && sortOrder ? { field: sortField, order: sortOrder } : undefined,
         scope: { id: scopeId, tenant },
-      };
-
-      const result = await req.context.handlers.tags.getTags(args, [
-        'id',
-        'name',
-        'color',
-        'isPrimary',
-      ] as any);
+      });
 
       this.ok(res, result);
     } catch (error) {
@@ -68,11 +59,7 @@ export class TagsController extends BaseController {
         input: req.body,
       };
 
-      const tag: Tag = await req.context.handlers.tags.createTag(variables, [
-        'id',
-        'name',
-        'color',
-      ] as any);
+      const tag: Tag = await this.handlers.tags.createTag(variables);
 
       this.created(res, tag);
     } catch (error) {
@@ -94,11 +81,7 @@ export class TagsController extends BaseController {
         input: req.body,
       };
 
-      const tag: Tag = await req.context.handlers.tags.updateTag(variables, [
-        'id',
-        'name',
-        'color',
-      ] as any);
+      const tag: Tag = await this.handlers.tags.updateTag(variables);
 
       this.ok(res, tag);
     } catch (error) {
@@ -113,16 +96,15 @@ export class TagsController extends BaseController {
     res: Response
   ): Promise<void> {
     const { id } = req.params;
-    const { scopeId, tenant, hardDelete } = req.query;
+    const { scopeId, tenant } = req.query;
 
     try {
       const variables: DeleteTagMutationVariables = {
         id,
         scope: { id: scopeId, tenant },
-        hardDelete: hardDelete || false,
       };
 
-      const tag: Tag = await req.context.handlers.tags.deleteTag(variables, ['id', 'name'] as any);
+      const tag: Tag = await this.handlers.tags.deleteTag(variables);
 
       this.ok(res, tag);
     } catch (error) {

@@ -22,14 +22,14 @@ export function createProjectsRouter(context: RequestContext): Router {
   const router = Router();
   const projectsController = new ProjectsController(context);
 
-  router.get('/', validateRequest({ query: getProjectsQuerySchema }), (req, res) =>
+  router.get('/', validate({ query: getProjectsQuerySchema }), (req, res) =>
     projectsController.getProjects(
       req as TypedRequest<TypedRequestQuery<typeof getProjectsQuerySchema>>,
       res
     )
   );
 
-  router.post('/', validateRequest({ body: createProjectRequestSchema }), (req, res) =>
+  router.post('/', validate({ body: createProjectRequestSchema }), (req, res) =>
     projectsController.createProject(
       req as TypedRequest<TypedRequestBody<typeof createProjectRequestSchema>>,
       res
@@ -38,7 +38,7 @@ export function createProjectsRouter(context: RequestContext): Router {
 
   router.patch(
     '/:id',
-    validateRequest({ params: projectParamsSchema, body: updateProjectRequestSchema }),
+    validate({ params: projectParamsSchema, body: updateProjectRequestSchema }),
     (req, res) =>
       projectsController.updateProject(
         req as TypedRequest<
@@ -51,7 +51,7 @@ export function createProjectsRouter(context: RequestContext): Router {
 
   router.delete(
     '/:id',
-    validateRequest({ params: projectParamsSchema, query: deleteProjectQuerySchema }),
+    validate({ params: projectParamsSchema, query: deleteProjectQuerySchema }),
     (req, res) =>
       projectsController.deleteProject(
         req as TypedRequest<
