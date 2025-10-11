@@ -16,17 +16,11 @@ export function createAuthRoutes(context: RequestContext) {
   const authController = new AuthController(context);
 
   router.post('/login', validateBody(loginRequestSchema), (req, res) =>
-    authController.login(
-      req as TypedRequest<{ body: typeof loginRequestSchema; context: RequestContext }>,
-      res
-    )
+    authController.login(req as TypedRequest<{ body: typeof loginRequestSchema }>, res)
   );
 
   router.post('/register', validateBody(registerRequestSchema), (req, res) =>
-    authController.register(
-      req as TypedRequest<{ body: typeof registerRequestSchema; context: RequestContext }>,
-      res
-    )
+    authController.register(req as TypedRequest<{ body: typeof registerRequestSchema }>, res)
   );
 
   router.post('/refresh', validateBody(refreshSessionRequestSchema), (req, res) =>

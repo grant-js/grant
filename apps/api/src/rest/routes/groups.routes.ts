@@ -1,31 +1,72 @@
 import { Router } from 'express';
 
-import { authMiddleware, requireAuth } from '@/middleware/auth.middleware';
+import { validate } from '@/middleware/validation.middleware';
+import {
+  createGroupRequestSchema,
+  deleteGroupQuerySchema,
+  getGroupsQuerySchema,
+  groupParamsSchema,
+  updateGroupRequestSchema,
+} from '@/rest/schemas';
+import {
+  RequestContext,
+  TypedRequest,
+  TypedRequestBody,
+  TypedRequestParams,
+  TypedRequestQuery,
+} from '@/types'; // RequestContext
+import {
+  TypedRequest,
+  TypedRequestBody,
+  TypedRequestParams,
+  TypedRequestQuery,
+} from '@/rest/types';
 
-export function createGroupRoutes(context: any) {
+import { GroupsController } from '../controllers/groups.controller';
+
+export function createGroupsRouter(context: RequestContext): Router {
   const router = Router();
+  const groupsController = new GroupsController(context);
 
-  router.get('/', authMiddleware, (req, res) => {
-    res.json({ message: 'Groups endpoint - TODO: implement' });
-  });
+  router.get('/', validate({ query: getGroupsQuerySchema }), (req, res) =>
+    groupsController.getGroups(
+      req as TypedRequest<TypedRequestQuery<typeof getGroupsQuerySchema>>,
+      res
+    )
+  );
 
-  router.get('/:id', authMiddleware, (req, res) => {
-    res.json({ message: 'Get group endpoint - TODO: implement' });
-  });
+  router.post('/', validate({ body: createGroupRequestSchema }), (req, res) =>
+    groupsController.createGroup(
+      req as TypedRequest<TypedRequestBody<typeof createGroupRequestSchema>>,
+      res
+    )
+  );
 
-  router.post('/', authMiddleware, requireAuth, (req, res) => {
-    res.json({ message: 'Create group endpoint - TODO: implement' });
-  });
+  router.patch(
+    '/:id',
+    validate({ params: groupParamsSchema, body: updateGroupRequestSchema }),
+    (req, res) =>
+      groupsController.updateGroup(
+        req as TypedRequest<
+          TypedRequestBody<typeof updateGroupRequestSchema> &
+            TypedRequestParams<typeof groupParamsSchema>
+        >,
+        res
+      )
+  );
 
-  router.put('/:id', authMiddleware, requireAuth, (req, res) => {
-    res.json({ message: 'Update group endpoint - TODO: implement' });
-  });
-
-  router.delete('/:id', authMiddleware, requireAuth, (req, res) => {
-    res.json({ message: 'Delete group endpoint - TODO: implement' });
-  });
+  router.delete(
+    '/:id',
+    validate({ params: groupParamsSchema, query: deleteGroupQuerySchema }),
+    (req, res) =>
+      groupsController.deleteGroup(
+        req as TypedRequest<
+          TypedRequestParams<typeof groupParamsSchema> &
+            TypedRequestQuery<typeof deleteGroupQuerySchema>
+        >,
+        res
+      )
+  );
 
   return router;
 }
-
-export const groupRoutes = Router();

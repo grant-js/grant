@@ -21,7 +21,16 @@ export const organizationWithRelationsSchema = organizationSchema.extend({
   tags: z.array(z.unknown()).optional(),
 });
 
-export const getOrganizationsQuerySchema = listQuerySchema.extend({
+export const organizationRelationsEnum = z.enum([
+  'projects',
+  'roles',
+  'groups',
+  'permissions',
+  'users',
+  'tags',
+]);
+
+export const getOrganizationsQuerySchema = listQuerySchema.omit({ relations: true }).extend({
   sortField: z
     .enum(
       Object.values(OrganizationSortableField) as [
@@ -31,6 +40,13 @@ export const getOrganizationsQuerySchema = listQuerySchema.extend({
     )
     .optional(),
   sortOrder: z.nativeEnum(SortOrder).optional(),
+  relations: z
+    .array(organizationRelationsEnum)
+    .optional()
+    .openapi({
+      description: 'Related entities to include in the response',
+      example: ['projects', 'users', 'tags'],
+    }),
 });
 
 export const getOrganizationsResponseSchema = createSuccessResponseSchema(

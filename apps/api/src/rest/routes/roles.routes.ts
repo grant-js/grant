@@ -1,47 +1,66 @@
 import { Router } from 'express';
 
-import { RoleController } from '@/rest/controllers/role.controller';
-import { authMiddleware, requireAuth } from '@/middleware/auth.middleware';
+import { validate } from '@/middleware/validation.middleware';
+import {
+  createRoleRequestSchema,
+  deleteRoleQuerySchema,
+  getRolesQuerySchema,
+  roleParamsSchema,
+  updateRoleRequestSchema,
+} from '@/rest/schemas';
+import {
+  TypedRequest,
+  TypedRequestBody,
+  TypedRequestParams,
+  TypedRequestQuery,
+} from '@/rest/types';
+import { RequestContext } from '@/types';
 
-export function createRoleRoutes(context: any) {
+import { RolesController } from '../controllers/roles.controller';
+
+export function createRolesRouter(context: RequestContext): Router {
   const router = Router();
-  const roleController = new RoleController(context);
+  const rolesController = new RolesController(context);
 
-  router.get('/', authMiddleware, (req, res) => roleController.getRoles(req, res));
-
-  router.get('/:id', authMiddleware, (req, res) => roleController.getRole(req, res));
-
-  router.post('/', authMiddleware, requireAuth, (req, res) => roleController.createRole(req, res));
-
-  router.put('/:id', authMiddleware, requireAuth, (req, res) =>
-    roleController.updateRole(req, res)
+  router.get('/', validate({ query: getRolesQuerySchema }), (req, res) =>
+    rolesController.getRoles(
+      req as TypedRequest<TypedRequestQuery<typeof getRolesQuerySchema>>,
+      res
+    )
   );
 
-  router.delete('/:id', authMiddleware, requireAuth, (req, res) =>
-    roleController.deleteRole(req, res)
+  router.post('/', validate({ body: createRoleRequestSchema }), (req, res) =>
+    rolesController.createRole(
+      req as TypedRequest<TypedRequestBody<typeof createRoleRequestSchema>>,
+      res
+    )
   );
 
-  router.get('/:id/groups', authMiddleware, (req, res) => roleController.getRoleGroups(req, res));
-
-  router.post('/:id/groups', authMiddleware, requireAuth, (req, res) =>
-    roleController.addRoleGroup(req, res)
+  router.patch(
+    '/:id',
+    validate({ params: roleParamsSchema, body: updateRoleRequestSchema }),
+    (req, res) =>
+      rolesController.updateRole(
+        req as TypedRequest<
+          TypedRequestBody<typeof updateRoleRequestSchema> &
+            TypedRequestParams<typeof roleParamsSchema>
+        >,
+        res
+      )
   );
 
-  router.delete('/:id/groups/:groupId', authMiddleware, requireAuth, (req, res) =>
-    roleController.removeRoleGroup(req, res)
-  );
-
-  router.get('/:id/tags', authMiddleware, (req, res) => roleController.getRoleTags(req, res));
-
-  router.post('/:id/tags', authMiddleware, requireAuth, (req, res) =>
-    roleController.addRoleTag(req, res)
-  );
-
-  router.delete('/:id/tags/:tagId', authMiddleware, requireAuth, (req, res) =>
-    roleController.removeRoleTag(req, res)
+  router.delete(
+    '/:id',
+    validate({ params: roleParamsSchema, query: deleteRoleQuerySchema }),
+    (req, res) =>
+      rolesController.deleteRole(
+        req as TypedRequest<
+          TypedRequestParams<typeof roleParamsSchema> &
+            TypedRequestQuery<typeof deleteRoleQuerySchema>
+        >,
+        res
+      )
   );
 
   return router;
 }
-
-export const roleRoutes = Router();

@@ -24,9 +24,18 @@ export const accountWithRelationsSchema = accountSchema.extend({
   owner: z.unknown().optional(),
 });
 
-export const getAccountsQuerySchema = listQuerySchema.extend({
+export const accountRelationsEnum = z.enum(['projects', 'owner']);
+
+export const getAccountsQuerySchema = listQuerySchema.omit({ relations: true }).extend({
   sortField: z.enum(['name', 'createdAt', 'updatedAt']).optional(),
   sortOrder: z.nativeEnum(SortOrder).optional(),
+  relations: z
+    .array(accountRelationsEnum)
+    .optional()
+    .openapi({
+      description: 'Related entities to include in the response',
+      example: ['projects', 'owner'],
+    }),
 });
 
 export const getAccountsResponseSchema = createSuccessResponseSchema(

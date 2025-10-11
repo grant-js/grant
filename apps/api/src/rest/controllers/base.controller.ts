@@ -40,15 +40,25 @@ export abstract class BaseController {
     });
   }
 
-  protected success(res: Response, data: any, statusCode: number = 200) {
-    res.status(statusCode).json({
+  protected ok(res: Response, data: any) {
+    res.status(200).json({
       success: true,
       data,
     });
   }
 
   protected created(res: Response, data: any) {
-    this.success(res, data, 201);
+    res.status(201).json({
+      success: true,
+      data,
+    });
+  }
+
+  protected success(res: Response, data: any, statusCode: number = 200) {
+    res.status(statusCode).json({
+      success: true,
+      data,
+    });
   }
 
   protected paginatedResponse(res: Response, data: any, pagination: any) {

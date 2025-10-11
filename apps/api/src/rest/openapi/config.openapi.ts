@@ -8,6 +8,7 @@ import {
   loginResultSchema,
   logoutRequestSchema,
   logoutResultSchema,
+  notFoundErrorResponseSchema,
   refreshSessionRequestSchema,
   registerRequestSchema,
   validationErrorResponseSchema,
@@ -15,6 +16,8 @@ import {
 
 import { registerAccountsOpenApi } from './accounts.openapi';
 import { registerAuthEndpoints } from './auth.openapi';
+import { registerOrganizationsOpenApi } from './organizations.openapi';
+import { registerRolesOpenApi } from './roles.openapi';
 import { registerUserEndpoints } from './users.openapi';
 
 /**
@@ -38,6 +41,8 @@ function registerCommonSchemas() {
   registry.register('RefreshSessionRequest', refreshSessionRequestSchema);
   registry.register('LogoutRequest', logoutRequestSchema);
   registry.register('LogoutResult', logoutResultSchema);
+  registry.register('Not Found Error Response', notFoundErrorResponseSchema);
+  registry.register('Validation Error Response', validationErrorResponseSchema);
 }
 
 /**
@@ -47,6 +52,8 @@ function registerAllEndpoints() {
   registerAuthEndpoints(registry);
   registerAccountsOpenApi(registry);
   registerUserEndpoints(registry);
+  registerOrganizationsOpenApi(registry);
+  registerRolesOpenApi(registry);
 }
 
 /**

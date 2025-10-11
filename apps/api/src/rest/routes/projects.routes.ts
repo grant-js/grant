@@ -1,31 +1,66 @@
 import { Router } from 'express';
 
-import { authMiddleware, requireAuth } from '@/middleware/auth.middleware';
+import { validate } from '@/middleware/validation.middleware';
+import {
+  createProjectRequestSchema,
+  deleteProjectQuerySchema,
+  getProjectsQuerySchema,
+  projectParamsSchema,
+  updateProjectRequestSchema,
+} from '@/rest/schemas';
+import {
+  TypedRequest,
+  TypedRequestBody,
+  TypedRequestParams,
+  TypedRequestQuery,
+} from '@/rest/types';
+import { RequestContext } from '@/types';
 
-export function createProjectRoutes(context: any) {
+import { ProjectsController } from '../controllers/projects.controller';
+
+export function createProjectsRouter(context: RequestContext): Router {
   const router = Router();
+  const projectsController = new ProjectsController(context);
 
-  router.get('/', authMiddleware, (req, res) => {
-    res.json({ message: 'Projects endpoint - TODO: implement' });
-  });
+  router.get('/', validateRequest({ query: getProjectsQuerySchema }), (req, res) =>
+    projectsController.getProjects(
+      req as TypedRequest<TypedRequestQuery<typeof getProjectsQuerySchema>>,
+      res
+    )
+  );
 
-  router.get('/:id', authMiddleware, (req, res) => {
-    res.json({ message: 'Get project endpoint - TODO: implement' });
-  });
+  router.post('/', validateRequest({ body: createProjectRequestSchema }), (req, res) =>
+    projectsController.createProject(
+      req as TypedRequest<TypedRequestBody<typeof createProjectRequestSchema>>,
+      res
+    )
+  );
 
-  router.post('/', authMiddleware, requireAuth, (req, res) => {
-    res.json({ message: 'Create project endpoint - TODO: implement' });
-  });
+  router.patch(
+    '/:id',
+    validateRequest({ params: projectParamsSchema, body: updateProjectRequestSchema }),
+    (req, res) =>
+      projectsController.updateProject(
+        req as TypedRequest<
+          TypedRequestBody<typeof updateProjectRequestSchema> &
+            TypedRequestParams<typeof projectParamsSchema>
+        >,
+        res
+      )
+  );
 
-  router.put('/:id', authMiddleware, requireAuth, (req, res) => {
-    res.json({ message: 'Update project endpoint - TODO: implement' });
-  });
-
-  router.delete('/:id', authMiddleware, requireAuth, (req, res) => {
-    res.json({ message: 'Delete project endpoint - TODO: implement' });
-  });
+  router.delete(
+    '/:id',
+    validateRequest({ params: projectParamsSchema, query: deleteProjectQuerySchema }),
+    (req, res) =>
+      projectsController.deleteProject(
+        req as TypedRequest<
+          TypedRequestParams<typeof projectParamsSchema> &
+            TypedRequestQuery<typeof deleteProjectQuerySchema>
+        >,
+        res
+      )
+  );
 
   return router;
 }
-
-export const projectRoutes = Router();

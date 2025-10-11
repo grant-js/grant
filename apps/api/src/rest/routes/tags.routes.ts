@@ -1,31 +1,69 @@
 import { Router } from 'express';
 
-import { authMiddleware, requireAuth } from '@/middleware/auth.middleware';
+import { validate } from '@/middleware/validation.middleware';
+import {
+  createTagRequestSchema,
+  deleteTagQuerySchema,
+  getTagsQuerySchema,
+  tagParamsSchema,
+  updateTagRequestSchema,
+} from '@/rest/schemas';
+import {
+  RequestContext,
+  TypedRequest,
+  TypedRequestBody,
+  TypedRequestParams,
+  TypedRequestQuery,
+} from '@/types'; // RequestContext
+import {
+  TypedRequest,
+  TypedRequestBody,
+  TypedRequestParams,
+  TypedRequestQuery,
+} from '@/rest/types';
 
-export function createTagRoutes(context: any) {
+import { TagsController } from '../controllers/tags.controller';
+
+export function createTagsRouter(context: RequestContext): Router {
   const router = Router();
+  const tagsController = new TagsController(context);
 
-  router.get('/', authMiddleware, (req, res) => {
-    res.json({ message: 'Tags endpoint - TODO: implement' });
-  });
+  router.get('/', validate({ query: getTagsQuerySchema }), (req, res) =>
+    tagsController.getTags(req as TypedRequest<TypedRequestQuery<typeof getTagsQuerySchema>>, res)
+  );
 
-  router.get('/:id', authMiddleware, (req, res) => {
-    res.json({ message: 'Get tag endpoint - TODO: implement' });
-  });
+  router.post('/', validate({ body: createTagRequestSchema }), (req, res) =>
+    tagsController.createTag(
+      req as TypedRequest<TypedRequestBody<typeof createTagRequestSchema>>,
+      res
+    )
+  );
 
-  router.post('/', authMiddleware, requireAuth, (req, res) => {
-    res.json({ message: 'Create tag endpoint - TODO: implement' });
-  });
+  router.patch(
+    '/:id',
+    validate({ params: tagParamsSchema, body: updateTagRequestSchema }),
+    (req, res) =>
+      tagsController.updateTag(
+        req as TypedRequest<
+          TypedRequestBody<typeof updateTagRequestSchema> &
+            TypedRequestParams<typeof tagParamsSchema>
+        >,
+        res
+      )
+  );
 
-  router.put('/:id', authMiddleware, requireAuth, (req, res) => {
-    res.json({ message: 'Update tag endpoint - TODO: implement' });
-  });
-
-  router.delete('/:id', authMiddleware, requireAuth, (req, res) => {
-    res.json({ message: 'Delete tag endpoint - TODO: implement' });
-  });
+  router.delete(
+    '/:id',
+    validate({ params: tagParamsSchema, query: deleteTagQuerySchema }),
+    (req, res) =>
+      tagsController.deleteTag(
+        req as TypedRequest<
+          TypedRequestParams<typeof tagParamsSchema> &
+            TypedRequestQuery<typeof deleteTagQuerySchema>
+        >,
+        res
+      )
+  );
 
   return router;
 }
-
-export const tagRoutes = Router();

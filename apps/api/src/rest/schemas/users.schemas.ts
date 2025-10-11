@@ -1,14 +1,12 @@
-import { SortOrder, Tenant } from '@logusgraphics/grant-schema';
+import { SortOrder } from '@logusgraphics/grant-schema';
 
 import { z } from '@/lib/zod-openapi.lib';
-import { createSuccessResponseSchema, listQuerySchema } from '@/rest/schemas/common.schemas';
-
-export const tenantSchema = z.enum(Object.values(Tenant) as [Tenant, ...Tenant[]]);
-
-export const scopeSchema = z.object({
-  id: z.string().uuid('Invalid scope ID'),
-  tenant: tenantSchema,
-});
+import {
+  createSuccessResponseSchema,
+  listQuerySchema,
+  scopeSchema,
+  tenantSchema,
+} from '@/rest/schemas/common.schemas';
 
 export const userSchema = z.object({
   id: z.string(),
@@ -25,7 +23,9 @@ export const userWithRelationsSchema = userSchema.extend({
   authenticationMethods: z.array(z.unknown()).optional(),
 });
 
-export const getUsersQuerySchema = listQuerySchema.extend({
+export const userRelationsEnum = z.enum(['roles', 'tags', 'accounts', 'authenticationMethods']);
+
+export const getUsersQuerySchema = listQuerySchema.omit({ relations: true }).extend({
   scopeId: z.string().uuid('Invalid scope ID'),
   tenant: tenantSchema,
   sortField: z.enum(['name', 'createdAt', 'updatedAt']).optional(),
@@ -39,6 +39,13 @@ export const getUsersQuerySchema = listQuerySchema.extend({
       return val;
     })
     .optional(),
+  relations: z
+    .array(userRelationsEnum)
+    .optional()
+    .openapi({
+      description: 'Related entities to include in the response',
+      example: ['roles', 'tags'],
+    }),
 });
 
 export const getUsersResponseSchema = createSuccessResponseSchema(

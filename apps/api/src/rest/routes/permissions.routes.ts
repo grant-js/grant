@@ -1,31 +1,72 @@
 import { Router } from 'express';
 
-import { authMiddleware, requireAuth } from '@/middleware/auth.middleware';
+import { validate } from '@/middleware/validation.middleware';
+import {
+  createPermissionRequestSchema,
+  deletePermissionQuerySchema,
+  getPermissionsQuerySchema,
+  permissionParamsSchema,
+  updatePermissionRequestSchema,
+} from '@/rest/schemas';
+import {
+  RequestContext,
+  TypedRequest,
+  TypedRequestBody,
+  TypedRequestParams,
+  TypedRequestQuery,
+} from '@/types'; // RequestContext
+import {
+  TypedRequest,
+  TypedRequestBody,
+  TypedRequestParams,
+  TypedRequestQuery,
+} from '@/rest/types';
 
-export function createPermissionRoutes(context: any) {
+import { PermissionsController } from '../controllers/permissions.controller';
+
+export function createPermissionsRouter(context: RequestContext): Router {
   const router = Router();
+  const permissionsController = new PermissionsController(context);
 
-  router.get('/', authMiddleware, (req, res) => {
-    res.json({ message: 'Permissions endpoint - TODO: implement' });
-  });
+  router.get('/', validate({ query: getPermissionsQuerySchema }), (req, res) =>
+    permissionsController.getPermissions(
+      req as TypedRequest<TypedRequestQuery<typeof getPermissionsQuerySchema>>,
+      res
+    )
+  );
 
-  router.get('/:id', authMiddleware, (req, res) => {
-    res.json({ message: 'Get permission endpoint - TODO: implement' });
-  });
+  router.post('/', validate({ body: createPermissionRequestSchema }), (req, res) =>
+    permissionsController.createPermission(
+      req as TypedRequest<TypedRequestBody<typeof createPermissionRequestSchema>>,
+      res
+    )
+  );
 
-  router.post('/', authMiddleware, requireAuth, (req, res) => {
-    res.json({ message: 'Create permission endpoint - TODO: implement' });
-  });
+  router.patch(
+    '/:id',
+    validate({ params: permissionParamsSchema, body: updatePermissionRequestSchema }),
+    (req, res) =>
+      permissionsController.updatePermission(
+        req as TypedRequest<
+          TypedRequestBody<typeof updatePermissionRequestSchema> &
+            TypedRequestParams<typeof permissionParamsSchema>
+        >,
+        res
+      )
+  );
 
-  router.put('/:id', authMiddleware, requireAuth, (req, res) => {
-    res.json({ message: 'Update permission endpoint - TODO: implement' });
-  });
-
-  router.delete('/:id', authMiddleware, requireAuth, (req, res) => {
-    res.json({ message: 'Delete permission endpoint - TODO: implement' });
-  });
+  router.delete(
+    '/:id',
+    validate({ params: permissionParamsSchema, query: deletePermissionQuerySchema }),
+    (req, res) =>
+      permissionsController.deletePermission(
+        req as TypedRequest<
+          TypedRequestParams<typeof permissionParamsSchema> &
+            TypedRequestQuery<typeof deletePermissionQuerySchema>
+        >,
+        res
+      )
+  );
 
   return router;
 }
-
-export const permissionRoutes = Router();

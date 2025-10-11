@@ -2,58 +2,56 @@ import { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 
 import {
   authenticationErrorResponseSchema,
-  createUserRequestSchema,
-  createUserResponseSchema,
-  deleteUserQuerySchema,
-  deleteUserResponseSchema,
+  createRoleRequestSchema,
+  createRoleResponseSchema,
+  deleteRoleQuerySchema,
+  deleteRoleResponseSchema,
   errorResponseSchema,
-  getUsersQuerySchema,
-  getUsersResponseSchema,
+  getRolesQuerySchema,
+  getRolesResponseSchema,
   notFoundErrorResponseSchema,
-  updateUserRequestSchema,
-  updateUserResponseSchema,
-  userParamsSchema,
-  userSchema,
-  userWithRelationsSchema,
+  roleParamsSchema,
+  roleSchema,
+  roleWithRelationsSchema,
+  updateRoleRequestSchema,
+  updateRoleResponseSchema,
   validationErrorResponseSchema,
 } from '@/rest/schemas';
 import { createSuccessResponseSchema } from '@/rest/schemas/common.schemas';
 
-export function registerUserEndpoints(registry: OpenAPIRegistry) {
-  registry.register('User', userSchema);
-  registry.register('UserWithRelations', userWithRelationsSchema);
-  registry.register('GetUsersQuery', getUsersQuerySchema);
-  registry.register('GetUsersResponse', getUsersResponseSchema);
-  registry.register('GetUserResponse', createSuccessResponseSchema(userWithRelationsSchema));
-  registry.register('UserParams', userParamsSchema);
+export function registerRolesOpenApi(registry: OpenAPIRegistry) {
+  registry.register('Role', roleSchema);
+  registry.register('RoleWithRelations', roleWithRelationsSchema);
+  registry.register('GetRolesQuery', getRolesQuerySchema);
+  registry.register('GetRolesResponse', getRolesResponseSchema);
+  registry.register('GetRoleResponse', createSuccessResponseSchema(roleWithRelationsSchema));
+  registry.register('RoleParams', roleParamsSchema);
 
   /**
-   * GET /api/users
+   * GET /api/roles
    */
   registry.registerPath({
     method: 'get',
-    path: '/api/users',
-    tags: ['Users'],
-    summary: 'List users',
+    path: '/api/roles',
+    tags: ['Roles'],
+    summary: 'List roles',
     description: `
-List users with optional filtering, pagination, and relation loading.
+List roles with optional filtering, pagination, and relation loading.
 
 ### Relations
 You can load related data by specifying the \`relations\` query parameter:
-- \`roles\`: Load user's roles
-- \`tags\`: Load user's tags
-- \`accounts\`: Load user's accounts
-- \`authenticationMethods\`: Load user's authentication methods
+- \`groups\`: Load role's groups
+- \`tags\`: Load role's tags
 
-Example: \`?relations=roles,tags\`
+Example: \`?relations=groups,tags\`
 
 ### Scope
-Users are scoped to a tenant context. You must provide:
+Roles are scoped to a tenant context. You must provide:
 - \`scopeId\`: The UUID of the scope (account, organization, or project)
 - \`tenant\`: The tenant type (\`account\`, \`organization\`, or \`project\`)
 
 ### Filtering
-- \`search\`: Search by user name
+- \`search\`: Search by role name
 - \`tagIds\`: Filter by tag IDs (comma-separated or array)
 - \`sortField\`: Sort by field (\`name\`, \`createdAt\`, \`updatedAt\`)
 - \`sortOrder\`: Sort order (\`ASC\` or \`DESC\`)
@@ -63,14 +61,14 @@ Users are scoped to a tenant context. You must provide:
 - \`limit\`: Items per page (default: 50, use -1 for all)
     `.trim(),
     request: {
-      query: getUsersQuerySchema,
+      query: getRolesQuerySchema,
     },
     responses: {
       200: {
-        description: 'Successfully retrieved users',
+        description: 'Successfully retrieved roles',
         content: {
           'application/json': {
-            schema: getUsersResponseSchema,
+            schema: getRolesResponseSchema,
           },
         },
       },
@@ -102,27 +100,23 @@ Users are scoped to a tenant context. You must provide:
   });
 
   /**
-   * POST /api/users
+   * POST /api/roles
    */
   registry.registerPath({
     method: 'post',
-    path: '/api/users',
-    tags: ['Users'],
-    summary: 'Create a new user',
+    path: '/api/roles',
+    tags: ['Roles'],
+    summary: 'Create a new role',
     description: `
-Create a new user within a scope.
+Create a new role within a scope.
 
 ### Scope
-The user is created within the specified scope:
+The role is created within the specified scope:
 - \`scope.id\`: The UUID of the scope (account, organization, or project)
 - \`scope.tenant\`: The tenant type (\`account\`, \`organization\`, or \`project\`)
 
-### Roles
-You can optionally assign roles to the user:
-- \`roleIds\`: Array of role UUIDs
-
 ### Tags
-You can optionally assign tags to the user:
+You can optionally assign tags to the role:
 - \`tagIds\`: Array of tag UUIDs
 - \`primaryTagId\`: UUID of the primary tag (must be included in tagIds)
     `.trim(),
@@ -130,17 +124,17 @@ You can optionally assign tags to the user:
       body: {
         content: {
           'application/json': {
-            schema: createUserRequestSchema,
+            schema: createRoleRequestSchema,
           },
         },
       },
     },
     responses: {
       201: {
-        description: 'User created successfully',
+        description: 'Role created successfully',
         content: {
           'application/json': {
-            schema: createUserResponseSchema,
+            schema: createRoleResponseSchema,
           },
         },
       },
@@ -172,41 +166,38 @@ You can optionally assign tags to the user:
   });
 
   /**
-   * PATCH /api/users/:id
+   * PATCH /api/roles/:id
    */
   registry.registerPath({
     method: 'patch',
-    path: '/api/users/{id}',
-    tags: ['Users'],
-    summary: 'Update a user',
+    path: '/api/roles/{id}',
+    tags: ['Roles'],
+    summary: 'Update a role',
     description: `
-Update an existing user's details.
+Update an existing role's details.
 
 All fields are optional - only provide the fields you want to update.
-
-### Roles
-- \`roleIds\`: Replace all roles with new array
 
 ### Tags
 - \`tagIds\`: Replace all tags with new array
 - \`primaryTagId\`: Set or update the primary tag (must be included in tagIds)
     `.trim(),
     request: {
-      params: userParamsSchema,
+      params: roleParamsSchema,
       body: {
         content: {
           'application/json': {
-            schema: updateUserRequestSchema,
+            schema: updateRoleRequestSchema,
           },
         },
       },
     },
     responses: {
       200: {
-        description: 'User updated successfully',
+        description: 'Role updated successfully',
         content: {
           'application/json': {
-            schema: updateUserResponseSchema,
+            schema: updateRoleResponseSchema,
           },
         },
       },
@@ -227,7 +218,7 @@ All fields are optional - only provide the fields you want to update.
         },
       },
       404: {
-        description: 'User not found',
+        description: 'Role not found',
         content: {
           'application/json': {
             schema: notFoundErrorResponseSchema,
@@ -246,37 +237,37 @@ All fields are optional - only provide the fields you want to update.
   });
 
   /**
-   * DELETE /api/users/:id
+   * DELETE /api/roles/:id
    */
   registry.registerPath({
     method: 'delete',
-    path: '/api/users/{id}',
-    tags: ['Users'],
-    summary: 'Delete a user',
+    path: '/api/roles/{id}',
+    tags: ['Roles'],
+    summary: 'Delete a role',
     description: `
-Delete a user (soft delete by default).
+Delete a role (soft delete by default).
 
 ### Scope
 You must provide the scope context:
-- \`scopeId\`: The UUID of the scope where the user exists
+- \`scopeId\`: The UUID of the scope where the role exists
 - \`tenant\`: The tenant type (\`account\`, \`organization\`, or \`project\`)
 
 ### Deletion Type
-- By default, users are soft deleted (marked as deleted but retained in the database)
-- Set \`hardDelete=true\` to permanently delete the user
+- By default, roles are soft deleted (marked as deleted but retained in the database)
+- Set \`hardDelete=true\` to permanently delete the role
 
 **Warning**: Hard deletion is irreversible and will cascade to related records.
     `.trim(),
     request: {
-      params: userParamsSchema,
-      query: deleteUserQuerySchema,
+      params: roleParamsSchema,
+      query: deleteRoleQuerySchema,
     },
     responses: {
       200: {
-        description: 'User deleted successfully',
+        description: 'Role deleted successfully',
         content: {
           'application/json': {
-            schema: deleteUserResponseSchema,
+            schema: deleteRoleResponseSchema,
           },
         },
       },
@@ -297,7 +288,7 @@ You must provide the scope context:
         },
       },
       404: {
-        description: 'User not found',
+        description: 'Role not found',
         content: {
           'application/json': {
             schema: notFoundErrorResponseSchema,
