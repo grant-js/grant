@@ -38,7 +38,15 @@ pnpm audit
 - Identifies high-risk packages
 - Generates detailed timestamped report
 
-**Output:** Generates `security-audit-report-YYYYMMDD-HHMMSS.txt`
+**Output:**
+
+- Timestamped report: `audit-reports/audit-YYYYMMDD-HHMMSS.txt`
+- Latest audit JSON: `audit-reports/audit-latest.json`
+- Outdated packages: `audit-reports/outdated-latest.txt`
+
+::: info Reports Location
+All audit reports are automatically stored in the `audit-reports/` directory (git-ignored). The scripts create this directory automatically if it doesn't exist.
+:::
 
 **When to use:**
 
@@ -57,7 +65,9 @@ pnpm audit:quick
 
 - Fast check for HIGH and CRITICAL vulnerabilities only
 - Quick pass/fail result
-- No detailed reporting
+- Saves minimal report for reference
+
+**Output:** Quick audit JSON saved to `audit-reports/quick-audit-latest.json`
 
 **Exit codes:**
 
@@ -78,11 +88,16 @@ pnpm audit:fix
 
 **What it does:**
 
-- Creates backup of `pnpm-lock.yaml`
+- Creates timestamped backup in `audit-reports/`
 - Attempts automatic fixes via `pnpm audit --fix`
 - Reinstalls dependencies
-- Verifies fixes
+- Verifies fixes and generates post-fix report
 - Provides rollback instructions if needed
+
+**Output:**
+
+- Backup: `audit-reports/pnpm-lock.yaml.backup-YYYYMMDD-HHMMSS`
+- Report: `audit-reports/post-fix-audit-YYYYMMDD-HHMMSS.json`
 
 ::: warning Important
 Always test your application after running automatic fixes. Some fixes may introduce breaking changes.
@@ -123,7 +138,20 @@ scripts/
 ├── audit-quick.sh       # Fast critical check
 ├── audit-fix.sh         # Automatic fixes
 └── README.md            # Detailed documentation
+
+audit-reports/           # Git-ignored (auto-created)
+├── README.md            # Reports directory documentation
+├── audit-*.txt          # Timestamped full audit reports
+├── audit-latest.json    # Latest audit JSON
+├── outdated-latest.txt  # Latest outdated packages
+├── quick-audit-latest.json  # Latest quick audit
+├── post-fix-audit-*.json    # Post-fix reports
+└── pnpm-lock.yaml.backup-*  # Lockfile backups
 ```
+
+::: tip Clean Repository
+The `audit-reports/` directory is git-ignored to keep your repository clean. Reports are local-only and won't be committed. The directory is created automatically when you run any audit script.
+:::
 
 ## Recommended Workflow
 
@@ -252,7 +280,7 @@ pnpm audit:quick || {
 
 ## Audit Report Structure
 
-The full audit generates a comprehensive report with:
+The full audit generates a comprehensive report in `audit-reports/` with:
 
 1. **PNPM Audit Results**
    - List of all vulnerabilities
@@ -272,6 +300,19 @@ The full audit generates a comprehensive report with:
 
 4. **Lock File Integrity**
    - Sync status with package.json files
+
+### Viewing Reports
+
+```bash
+# View latest full audit
+cat audit-reports/audit-*.txt | tail -1000
+
+# Process latest JSON report
+jq '.' audit-reports/audit-latest.json
+
+# Clean old reports (older than 30 days)
+find audit-reports/ -name "audit-*.txt" -mtime +30 -delete
+```
 
 ## Troubleshooting
 

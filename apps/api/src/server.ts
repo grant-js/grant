@@ -1,10 +1,10 @@
 import http from 'http';
 
 import { ApolloServer } from '@apollo/server';
-import { expressMiddleware } from '@apollo/server/express4';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 import { ApolloServerPluginInlineTrace } from '@apollo/server/plugin/inlineTrace';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
+import { expressMiddleware } from '@as-integrations/express5';
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
@@ -83,7 +83,7 @@ async function startServer() {
     authMiddleware,
     contextMiddleware(scopeCache),
     expressMiddleware(server, {
-      context: async ({ req }) => {
+      context: async ({ req }: { req: express.Request }) => {
         const contextReq = req as ContextRequest;
         return contextReq.context;
       },

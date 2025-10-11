@@ -10,6 +10,10 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+# Create audit-reports directory if it doesn't exist
+REPORT_DIR="audit-reports"
+mkdir -p "$REPORT_DIR"
+
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  Automatic Vulnerability Fixes${NC}"
 echo -e "${BLUE}========================================${NC}"
@@ -17,8 +21,9 @@ echo ""
 
 # 1. Create backup
 echo -e "${BLUE}▶ Creating backup...${NC}"
-cp pnpm-lock.yaml pnpm-lock.yaml.backup
-echo -e "${GREEN}✓ Backup created: pnpm-lock.yaml.backup${NC}"
+BACKUP_FILE="$REPORT_DIR/pnpm-lock.yaml.backup-$(date +%Y%m%d-%H%M%S)"
+cp pnpm-lock.yaml "$BACKUP_FILE"
+echo -e "${GREEN}✓ Backup created: $BACKUP_FILE${NC}"
 echo ""
 
 # 2. Run audit fix
@@ -39,10 +44,10 @@ echo ""
 
 # 4. Run audit again to check
 echo -e "${BLUE}▶ Verifying fixes...${NC}"
-if pnpm audit --json > /tmp/post-fix-audit.json 2>&1; then
+POST_FIX_REPORT="$REPORT_DIR/post-fix-audit-$(date +%Y%m%d-%H%M%S).json"
+if pnpm audit --json > "$POST_FIX_REPORT" 2>&1; then
     echo -e "${GREEN}✓ All vulnerabilities resolved!${NC}"
-    rm -f pnpm-lock.yaml.backup
-    echo -e "${GREEN}✓ Backup removed${NC}"
+    echo -e "${GREEN}✓ Backup available at: $BACKUP_FILE${NC}"
 else
     echo -e "${YELLOW}⚠ Some vulnerabilities remain${NC}"
     echo ""
@@ -51,8 +56,9 @@ else
     echo ""
     echo -e "${BLUE}Options:${NC}"
     echo -e "  1. Review and update packages manually"
-    echo -e "  2. Restore backup: ${YELLOW}cp pnpm-lock.yaml.backup pnpm-lock.yaml${NC}"
+    echo -e "  2. Restore backup: ${YELLOW}cp $BACKUP_FILE pnpm-lock.yaml${NC}"
     echo -e "  3. Check for breaking changes in updated packages"
+    echo -e "  4. Review report: ${BLUE}$POST_FIX_REPORT${NC}"
 fi
 echo ""
 

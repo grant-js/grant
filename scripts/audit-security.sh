@@ -12,6 +12,10 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Create audit-reports directory if it doesn't exist
+REPORT_DIR="audit-reports"
+mkdir -p "$REPORT_DIR"
+
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  Grant Platform Security Audit${NC}"
 echo -e "${BLUE}========================================${NC}"
@@ -39,7 +43,7 @@ VULNERABILITIES_FOUND=0
 
 # 1. Run pnpm audit
 print_header "Running pnpm audit (all workspaces)"
-if pnpm audit --json > /tmp/audit-report.json 2>&1; then
+if pnpm audit --json > "$REPORT_DIR/audit-latest.json" 2>&1; then
     echo -e "${GREEN}✓ No vulnerabilities found!${NC}"
 else
     AUDIT_EXIT_CODE=$?
@@ -50,7 +54,7 @@ else
         # Parse and display summary
         if command -v jq &> /dev/null; then
             print_header "Vulnerability Summary"
-            jq -r '.metadata.vulnerabilities | to_entries[] | "\(.key): \(.value)"' /tmp/audit-report.json 2>/dev/null || echo "Run 'pnpm audit' for details"
+            jq -r '.metadata.vulnerabilities | to_entries[] | "\(.key): \(.value)"' "$REPORT_DIR/audit-latest.json" 2>/dev/null || echo "Run 'pnpm audit' for details"
         else
             echo "Install 'jq' for detailed JSON parsing, or run 'pnpm audit' directly"
         fi
@@ -59,10 +63,10 @@ fi
 
 # 2. Check for outdated packages with known vulnerabilities
 print_header "Checking for outdated packages"
-pnpm outdated --recursive > /tmp/outdated.txt 2>&1 || true
-if [ -s /tmp/outdated.txt ]; then
+pnpm outdated --recursive > "$REPORT_DIR/outdated-latest.txt" 2>&1 || true
+if [ -s "$REPORT_DIR/outdated-latest.txt" ]; then
     echo -e "${YELLOW}⚠ Outdated packages found:${NC}"
-    head -20 /tmp/outdated.txt
+    head -20 "$REPORT_DIR/outdated-latest.txt"
     echo ""
     echo -e "${BLUE}ℹ Run 'pnpm update --recursive' to update packages${NC}"
 else
@@ -103,7 +107,7 @@ fi
 
 # 5. Generate detailed report
 print_header "Generating detailed report"
-REPORT_FILE="security-audit-report-$(date +%Y%m%d-%H%M%S).txt"
+REPORT_FILE="$REPORT_DIR/audit-$(date +%Y%m%d-%H%M%S).txt"
 
 {
     echo "==================================="
