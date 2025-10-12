@@ -1,15 +1,19 @@
 import eslint from '@eslint/js';
 import prettierConfig from 'eslint-config-prettier';
 import importPlugin from 'eslint-plugin-import';
+import reactHooks from 'eslint-plugin-react-hooks';
 import unusedImports from 'eslint-plugin-unused-imports';
+import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
-export default [
+export default defineConfig(
   // Ignore patterns
   {
     ignores: [
       '**/node_modules/**',
       '**/dist/**',
+      '**/.next/**',
+      '**/.turbo/**',
       '**/build/**',
       '**/graphql/generated/**',
       '**/coverage/**',
@@ -23,16 +27,18 @@ export default [
 
   // Global settings
   {
-    files: ['**/*.ts', '**/*.tsx'],
+    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     plugins: {
       '@typescript-eslint': tseslint.plugin,
       'unused-imports': unusedImports,
       import: importPlugin,
+      'react-hooks': reactHooks,
     },
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
         projectService: true,
+        tsconfigRootDir: import.meta.dirname,
       },
     },
     rules: {
@@ -59,6 +65,10 @@ export default [
         },
       ],
 
+      // React Hooks
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+
       // Import order
       'import/order': [
         'error',
@@ -73,6 +83,29 @@ export default [
             'object',
             'type',
           ],
+          pathGroups: [
+            {
+              pattern: 'react',
+              group: 'external',
+              position: 'before',
+            },
+            {
+              pattern: 'next',
+              group: 'external',
+              position: 'before',
+            },
+            {
+              pattern: 'next/**',
+              group: 'external',
+              position: 'before',
+            },
+            {
+              pattern: '@/**',
+              group: 'internal',
+              position: 'after',
+            },
+          ],
+          pathGroupsExcludedImportTypes: ['react', 'builtin'],
           'newlines-between': 'always',
           alphabetize: {
             order: 'asc',
@@ -81,5 +114,5 @@ export default [
         },
       ],
     },
-  },
-];
+  }
+);

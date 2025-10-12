@@ -46,13 +46,20 @@
     "audit:pnpm": "pnpm audit --recursive"
   },
   "devDependencies": {
+    "@eslint/js": "^9.37.0",
     "@types/node": "^24.7.2",
     "concurrently": "^9.2.1",
+    "eslint": "^9.37.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "eslint-plugin-unused-imports": "^4.2.0",
     "graphql": "^16.10.0",
     "lint-staged": "^16.2.4",
     "prettier": "^3.5.3",
     "turbo": "^2.0.0",
     "typescript": "^5",
+    "typescript-eslint": "^8.46.0",
     "vitepress": "^1.6.4"
   },
   "engines": {
