@@ -1,7 +1,6 @@
 import { DbSchema } from '@logusgraphics/grant-database';
 
 import { AccountHandler } from './accounts.handler';
-import { EntityCache } from './base/scope-handler';
 import { GroupHandler } from './groups.handler';
 import { OrganizationHandler } from './organizations.handler';
 import { PermissionHandler } from './permissions.handler';
@@ -10,11 +9,12 @@ import { RoleHandler } from './roles.handler';
 import { TagHandler } from './tags.handler';
 import { UserHandler } from './users.handler';
 
+import { IEntityCacheAdapter } from '@/lib/cache/cache-adapter.interface';
 import { Services } from '@/services';
 
 export type Handlers = ReturnType<typeof createHandlers>;
 
-export function createHandlers(scopeCache: EntityCache, services: Services, db: DbSchema) {
+export function createHandlers(scopeCache: IEntityCacheAdapter, services: Services, db: DbSchema) {
   return {
     accounts: new AccountHandler(scopeCache, services, db),
     organizations: new OrganizationHandler(scopeCache, services, db),

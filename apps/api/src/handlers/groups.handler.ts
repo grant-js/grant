@@ -1,27 +1,26 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { GroupModel } from '@logusgraphics/grant-database';
+import { DbSchema, GroupModel } from '@logusgraphics/grant-database';
 import {
-  QueryGroupsArgs,
-  MutationCreateGroupArgs,
-  MutationUpdateGroupArgs,
-  MutationDeleteGroupArgs,
   Group,
   GroupPage,
-  Tenant,
-  Tag,
+  MutationCreateGroupArgs,
+  MutationDeleteGroupArgs,
+  MutationUpdateGroupArgs,
   Permission,
+  QueryGroupsArgs,
+  Tag,
+  Tenant,
 } from '@logusgraphics/grant-schema';
 
 import { ScopeHandler } from './base/scope-handler';
 
-import { EntityCache } from '@/handlers/base/scope-handler';
+import { IEntityCacheAdapter } from '@/lib/cache';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 import { DeleteParams, SelectedFields } from '@/services/common';
 
 export class GroupHandler extends ScopeHandler {
   constructor(
-    readonly scopeCache: EntityCache,
+    readonly scopeCache: IEntityCacheAdapter,
     readonly services: Services,
     readonly db: DbSchema
   ) {
@@ -104,6 +103,8 @@ export class GroupHandler extends ScopeHandler {
           )
         );
       }
+
+      this.addGroupIdToScopeCache(scope, groupId);
 
       return group;
     });
@@ -204,6 +205,9 @@ export class GroupHandler extends ScopeHandler {
           this.services.groupPermissions.removeGroupPermission({ groupId, permissionId }, tx)
         ),
       ]);
+
+      this.removeGroupIdFromScopeCache(scope, groupId);
+
       return await this.services.groups.deleteGroup(params, tx);
     });
   }

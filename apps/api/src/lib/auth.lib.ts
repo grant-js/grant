@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 
 import type { JwtPayload } from 'jsonwebtoken';
 
-import { JWT_SECRET } from '@/config/constants.config';
+import { config } from '@/config';
 import { AuthenticatedUser } from '@/types';
 
 export function extractUserFromToken(authHeader: string | null): AuthenticatedUser | null {
@@ -12,7 +12,7 @@ export function extractUserFromToken(authHeader: string | null): AuthenticatedUs
 
   try {
     const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    const decoded = jwt.verify(token, config.jwt.secret) as JwtPayload;
     const aud = decoded.aud as string;
     const id = decoded.sub as string;
 

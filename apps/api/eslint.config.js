@@ -1,11 +1,10 @@
-// @ts-check
 import eslint from '@eslint/js';
 import prettierConfig from 'eslint-config-prettier';
 import importPlugin from 'eslint-plugin-import';
 import unusedImports from 'eslint-plugin-unused-imports';
 import tseslint from 'typescript-eslint';
 
-export default tseslint.config(
+export default [
   // Ignore patterns
   {
     ignores: [
@@ -33,7 +32,7 @@ export default tseslint.config(
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
-        project: './tsconfig.json',
+        projectService: true,
       },
     },
     rules: {
@@ -82,5 +81,5 @@ export default tseslint.config(
         },
       ],
     },
-  }
-);
+  },
+];

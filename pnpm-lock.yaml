@@ -88,6 +88,9 @@ importers:
       helmet:
         specifier: ^8.1.0
         version: 8.1.0
+      ioredis:
+        specifier: ^5.4.2
+        version: 5.8.1
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
@@ -335,6 +338,19 @@ importers:
         version: 3.2.4(@types/node@24.7.2)(jsdom@27.0.0)
 
   docs:
+    dependencies:
+      '@braintree/sanitize-url':
+        specifier: ^7.1.1
+        version: 7.1.1
+      cytoscape:
+        specifier: ^3.33.1
+        version: 3.33.1
+      cytoscape-cose-bilkent:
+        specifier: ^4.1.0
+        version: 4.1.0(cytoscape@3.33.1)
+      dayjs:
+        specifier: ^1.11.18
+        version: 1.11.18
     devDependencies:
       '@mermaid-js/mermaid-mindmap':
         specifier: 9.3.0
@@ -1343,7 +1359,6 @@ packages:
       {
         integrity: sha512-i1L7noDNxtFyL5DmZafWy1wRVhGehQmzZaz1HiN5e7iylJMSZR7ekOV7NsIqa5qBldlLrsKv4HbgFUVlQrz8Mw==,
       }
-    dev: true
 
   /@chevrotain/cst-dts-gen@11.0.3:
     resolution:
@@ -4080,6 +4095,13 @@ packages:
     dependencies:
       '@types/node': 24.7.2
     dev: true
+
+  /@ioredis/commands@1.4.0:
+    resolution:
+      {
+        integrity: sha512-aFT2yemJJo+TZCmieA7qnYGQooOS7QfNmYrzGtsYd3g9j5iDP8AimYYAesf79ohjbLG12XxC4nG5DyEnC88AsQ==,
+      }
+    dev: false
 
   /@isaacs/cliui@8.0.2:
     resolution:
@@ -8218,6 +8240,14 @@ packages:
     engines: { node: '>=6' }
     dev: false
 
+  /cluster-key-slot@1.1.2:
+    resolution:
+      {
+        integrity: sha512-RMr0FhtfXemyinomL4hrWcYJxmX6deFdCxpJzhDttxgO1+bcCnkk+9drydLVDmAMG7NE6aN/fl4F7ucU/90gAA==,
+      }
+    engines: { node: '>=0.10.0' }
+    dev: false
+
   /cmdk@1.1.1(@types/react-dom@19.2.1)(@types/react@19.2.2)(react-dom@19.2.0)(react@19.2.0):
     resolution:
       {
@@ -8437,7 +8467,6 @@ packages:
       }
     dependencies:
       layout-base: 1.0.2
-    dev: true
 
   /cose-base@2.2.0:
     resolution:
@@ -8573,7 +8602,6 @@ packages:
     dependencies:
       cose-base: 1.0.3
       cytoscape: 3.33.1
-    dev: true
 
   /cytoscape-fcose@2.2.0(cytoscape@3.33.1):
     resolution:
@@ -8593,7 +8621,6 @@ packages:
         integrity: sha512-iJc4TwyANnOGR1OmWhsS9ayRS3s+XQ185FmuHObThD+5AeJCakAAbWv8KimMTt08xCCLNgneQwFp+JRJOr9qGQ==,
       }
     engines: { node: '>=0.10' }
-    dev: true
 
   /d3-array@2.12.1:
     resolution:
@@ -9055,7 +9082,6 @@ packages:
       {
         integrity: sha512-zFBQ7WFRvVRhKcWoUh+ZA1g2HVgUbsZm9sbddh8EC5iv93sui8DVVz1Npvz+r6meo9VKfa8NyLWBsQK1VvIKPA==,
       }
-    dev: true
 
   /debounce@2.2.0:
     resolution:
@@ -9160,6 +9186,14 @@ packages:
     dependencies:
       robust-predicates: 3.0.2
     dev: true
+
+  /denque@2.1.0:
+    resolution:
+      {
+        integrity: sha512-HVQE3AAb/pxF8fQAoiqpvg9i3evqug3hoiwakOyZAwJm+6vZehbkYXZ0l4JxS+I3QxM97v5aaRNhj8v5oBhekw==,
+      }
+    engines: { node: '>=0.10' }
+    dev: false
 
   /depd@2.0.0:
     resolution:
@@ -11261,6 +11295,26 @@ packages:
       loose-envify: 1.4.0
     dev: true
 
+  /ioredis@5.8.1:
+    resolution:
+      {
+        integrity: sha512-Qho8TgIamqEPdgiMadJwzRMW3TudIg6vpg4YONokGDudy4eqRIJtDbVX72pfLBcWxvbn3qm/40TyGUObdW4tLQ==,
+      }
+    engines: { node: '>=12.22.0' }
+    dependencies:
+      '@ioredis/commands': 1.4.0
+      cluster-key-slot: 1.1.2
+      debug: 4.4.3
+      denque: 2.1.0
+      lodash.defaults: 4.2.0
+      lodash.isarguments: 3.1.0
+      redis-errors: 1.2.0
+      redis-parser: 3.0.0
+      standard-as-callback: 2.1.0
+    transitivePeerDependencies:
+      - supports-color
+    dev: false
+
   /ipaddr.js@1.9.1:
     resolution:
       {
@@ -12005,7 +12059,6 @@ packages:
       {
         integrity: sha512-8h2oVEZNktL4BH2JCOI90iD1yXwL6iNW7KcCKT2QZgQJR2vbqDsldCTPRU9NifTCqHZci57XvQQ15YTu+sTYPg==,
       }
-    dev: true
 
   /layout-base@2.0.1:
     resolution:
@@ -12115,10 +12168,24 @@ packages:
       }
     dev: true
 
+  /lodash.defaults@4.2.0:
+    resolution:
+      {
+        integrity: sha512-qjxPLHd3r5DnsdGacqOMU6pb/avJzdh9tFX2ymgoZE27BmjXrNy/y4LoaiTeAb+O3gL8AfpJGtqfX/ae2leYYQ==,
+      }
+    dev: false
+
   /lodash.includes@4.3.0:
     resolution:
       {
         integrity: sha512-W3Bx6mdkRTGtlJISOvVD/lbqjTlPPUDTMnlXZFnVwi9NKJ6tiAk6LVdlhZMm17VZisqhKcgzpO5Wz91PCt5b0w==,
+      }
+    dev: false
+
+  /lodash.isarguments@3.1.0:
+    resolution:
+      {
+        integrity: sha512-chi4NHZlZqZD18a0imDHnZPrDeBbTtVN7GXMwuGdRH9qotxAjYs3aVLKc7zNOG9eddR5Ksd8rvFEBc9SsggPpg==,
       }
     dev: false
 
@@ -13792,6 +13859,24 @@ packages:
       strip-indent: 3.0.0
     dev: true
 
+  /redis-errors@1.2.0:
+    resolution:
+      {
+        integrity: sha512-1qny3OExCf0UvUV/5wpYKf2YwPcOqXzkwKKSmKHiE6ZMQs5heeE/c8eXK+PNllPvmjgAbfnsbpkGZWy8cBpn9w==,
+      }
+    engines: { node: '>=4' }
+    dev: false
+
+  /redis-parser@3.0.0:
+    resolution:
+      {
+        integrity: sha512-DJnGAeenTdpMEH6uAJRK/uiyEIH9WVsUmoLwzudwGJUwZPp80PDBWPHXSAGNPwNvIXAbe7MSUB1zQFugFml66A==,
+      }
+    engines: { node: '>=4' }
+    dependencies:
+      redis-errors: 1.2.0
+    dev: false
+
   /reflect.getprototypeof@1.0.10:
     resolution:
       {
@@ -14576,6 +14661,13 @@ packages:
         integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==,
       }
     dev: true
+
+  /standard-as-callback@2.1.0:
+    resolution:
+      {
+        integrity: sha512-qoRRSyROncaz1z0mvYqIE4lCd9p2R90i6GxW3uZv5ucSu8tU7B5HXUP1gG8pVZsYNVaXjk8ClXHPttLyxAL48A==,
+      }
+    dev: false
 
   /statuses@2.0.1:
     resolution:

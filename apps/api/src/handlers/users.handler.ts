@@ -1,27 +1,26 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { UserModel } from '@logusgraphics/grant-database';
+import { DbSchema, UserModel } from '@logusgraphics/grant-database';
 import {
-  QueryUsersArgs,
   MutationCreateUserArgs,
-  MutationUpdateUserArgs,
   MutationDeleteUserArgs,
+  MutationUpdateUserArgs,
+  QueryUsersArgs,
+  Role,
+  Tag,
+  Tenant,
   User,
   UserPage,
-  Tenant,
-  Tag,
-  Role,
 } from '@logusgraphics/grant-schema';
 
 import { ScopeHandler } from './base/scope-handler';
 
-import { EntityCache } from '@/handlers/base/scope-handler';
+import { IEntityCacheAdapter } from '@/lib/cache';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 import { DeleteParams, SelectedFields } from '@/services/common';
 
 export class UserHandler extends ScopeHandler {
   constructor(
-    readonly scopeCache: EntityCache,
+    readonly scopeCache: IEntityCacheAdapter,
     readonly services: Services,
     readonly db: DbSchema
   ) {
@@ -99,6 +98,9 @@ export class UserHandler extends ScopeHandler {
           )
         );
       }
+
+      this.addUserIdToScopeCache(scope, userId);
+
       return user;
     });
   }
@@ -185,6 +187,8 @@ export class UserHandler extends ScopeHandler {
         ...tagIds.map((tagId) => this.services.userTags.removeUserTag({ userId, tagId }, tx)),
         ...roleIds.map((roleId) => this.services.userRoles.removeUserRole({ userId, roleId }, tx)),
       ]);
+
+      this.removeUserIdFromScopeCache(scope, userId);
 
       return await this.services.users.deleteUser(params, tx);
     });

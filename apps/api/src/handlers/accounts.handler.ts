@@ -16,17 +16,17 @@ import {
   UserSessionSortableField,
 } from '@logusgraphics/grant-schema';
 
-import { PROVIDER_VERIFICATION_EXPIRATION_DAYS } from '@/config/constants.config';
+import { config } from '@/config';
 import { AuthenticationError } from '@/graphql/errors';
-import { EntityCache } from '@/handlers/base/scope-handler';
 import { ScopeHandler } from '@/handlers/base/scope-handler';
+import { IEntityCacheAdapter } from '@/lib/cache';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 import { DeleteParams, SelectedFields } from '@/services/common';
 
 export class AccountHandler extends ScopeHandler {
   constructor(
-    readonly scopeCache: EntityCache,
+    readonly scopeCache: IEntityCacheAdapter,
     readonly services: Services,
     readonly db: DbSchema
   ) {
@@ -34,7 +34,7 @@ export class AccountHandler extends ScopeHandler {
   }
 
   private getVerificationExpirationMs(): number {
-    return PROVIDER_VERIFICATION_EXPIRATION_DAYS * 24 * 60 * 60 * 1000;
+    return config.auth.providerVerificationExpirationDays * 24 * 60 * 60 * 1000;
   }
 
   private getVerificationExpiryDate(): Date {

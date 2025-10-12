@@ -1,10 +1,9 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { TagModel } from '@logusgraphics/grant-database';
+import { DbSchema, TagModel } from '@logusgraphics/grant-database';
 import {
-  QueryTagsArgs,
   MutationCreateTagArgs,
-  MutationUpdateTagArgs,
   MutationDeleteTagArgs,
+  MutationUpdateTagArgs,
+  QueryTagsArgs,
   Tag,
   TagPage,
   Tenant,
@@ -12,14 +11,14 @@ import {
 
 import { ScopeHandler } from './base/scope-handler';
 
-import { EntityCache } from '@/handlers/base/scope-handler';
+import { IEntityCacheAdapter } from '@/lib/cache';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 import { DeleteParams, SelectedFields } from '@/services/common';
 
 export class TagHandler extends ScopeHandler {
   constructor(
-    readonly scopeCache: EntityCache,
+    readonly scopeCache: IEntityCacheAdapter,
     readonly services: Services,
     readonly db: DbSchema
   ) {
@@ -90,6 +89,8 @@ export class TagHandler extends ScopeHandler {
           break;
       }
 
+      this.addTagIdToScopeCache(scope, tagId);
+
       return tag;
     });
   }
@@ -125,6 +126,8 @@ export class TagHandler extends ScopeHandler {
         this.services.groupTags.removeGroupTags({ tagId, hardDelete }, tx),
         this.services.permissionTags.removePermissionTags({ tagId, hardDelete }, tx),
       ]);
+
+      this.removeTagIdFromScopeCache(scope, tagId);
 
       return await this.services.tags.deleteTag(params, tx);
     });

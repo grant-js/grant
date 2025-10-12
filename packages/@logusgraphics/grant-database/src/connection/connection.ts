@@ -6,7 +6,8 @@ import { schema } from '../schemas';
 
 dotenv.config();
 
-const connectionString = `${process.env.DATABASE_URL}`;
+// Support both DATABASE_URL (legacy) and DB_URL (new standard)
+const connectionString = `${process.env.DB_URL || process.env.DATABASE_URL}`;
 
 const client = postgres(connectionString, {
   max: 10,

@@ -1,6 +1,6 @@
 import { DbSchema } from '@logusgraphics/grant-database';
 
-import { SYSTEM_USER_ID } from '@/config/constants.config';
+import { config } from '@/config';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { AuthenticatedUser } from '@/types';
 
@@ -21,7 +21,7 @@ export abstract class AuditService {
   ) {}
 
   protected getPerformedBy(): string {
-    return this.user !== null ? this.user.id : SYSTEM_USER_ID;
+    return this.user !== null ? this.user.id : config.system.systemUserId;
   }
 
   protected async logAction(params: AuditLogParams, transaction?: Transaction): Promise<void> {

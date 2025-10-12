@@ -33,19 +33,19 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
       <div className="hidden lg:flex items-center justify-center bg-gradient-to-r from-blue-600/90 to-blue-400/90 p-8 relative overflow-hidden">
         {/* Background protection concept image with black and white filter */}
         <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat filter grayscale opacity-40"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
-            backgroundImage: `url('/protection-concept-with-lock.jpg')`,
+            backgroundImage: `url('/grant-auth-bg.jpg')`,
             backgroundPosition: 'center bottom',
           }}
         />
         {/* Blue gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/90 to-blue-400/90" />
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/90 to-blue-500/90" />
         <div className="max-w-lg text-white relative z-10">
           <div className="flex items-center">
             <div className="space-y-4">
-              <h2 className="text-3xl font-bold">{t('welcome.title')}</h2>
-              <p className="text-lg opacity-90">{t('welcome.description')}</p>
+              <h2 className="text-4xl font-bold">{t('welcome.title')}</h2>
+              <p className="text-xl opacity-90">{t('welcome.description')}</p>
             </div>
           </div>
         </div>

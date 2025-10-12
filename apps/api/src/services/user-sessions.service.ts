@@ -22,11 +22,7 @@ import {
 
 import type { JwtPayload } from 'jsonwebtoken';
 
-import {
-  ACCESS_TOKEN_EXPIRATION_MINUTES,
-  JWT_SECRET,
-  REFRESH_TOKEN_EXPIRATION_DAYS,
-} from '@/config/constants.config';
+import { config } from '@/config';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -50,15 +46,15 @@ export class UserSessionService extends AuditService {
   }
 
   private getAccessTokenExpirationDate(from: number = Date.now()): Date {
-    return new Date(from + ACCESS_TOKEN_EXPIRATION_MINUTES * 60 * 1000);
+    return new Date(from + config.jwt.accessTokenExpirationMinutes * 60 * 1000);
   }
 
   private getRefreshTokenExpirationDate(from: number = Date.now()): Date {
-    return new Date(from + REFRESH_TOKEN_EXPIRATION_DAYS * 24 * 60 * 60 * 1000);
+    return new Date(from + config.jwt.refreshTokenExpirationDays * 24 * 60 * 60 * 1000);
   }
 
   private decodeJwt(token: string, ignoreExpiration: boolean = false): JwtPayload {
-    const decoded = jwt.verify(token, JWT_SECRET, { ignoreExpiration });
+    const decoded = jwt.verify(token, config.jwt.secret, { ignoreExpiration });
     if (!decoded) {
       throw new Error('Invalid token');
     }
@@ -130,7 +126,7 @@ export class UserSessionService extends AuditService {
 
     const jwtPayload: JwtPayload = { sub, aud, exp, iat, jti };
 
-    const accessToken = jwt.sign(jwtPayload, JWT_SECRET);
+    const accessToken = jwt.sign(jwtPayload, config.jwt.secret);
     const refreshToken = session.token;
 
     return validateOutput(sessionResultSchema, { accessToken, refreshToken }, context);

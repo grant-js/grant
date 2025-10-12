@@ -11,16 +11,6 @@ export default withMermaid({
   // Ignore dead links during development (docs are being built incrementally)
   ignoreDeadLinks: true,
 
-  // Vite configuration to fix dependency issues
-  vite: {
-    optimizeDeps: { include: ['@braintree/sanitize-url'] },
-    resolve: {
-      alias: {
-        dayjs: 'dayjs/',
-      },
-    },
-  },
-
   // Head configuration
   head: [
     ['link', { rel: 'icon', href: '/favicon.svg' }],
@@ -161,6 +151,8 @@ export default withMermaid({
         {
           text: 'Advanced Topics',
           items: [
+            { text: 'Caching System', link: '/advanced-topics/caching' },
+            { text: 'Cache Setup Guide', link: '/advanced-topics/caching-setup' },
             { text: 'Performance Optimization', link: '/advanced-topics/performance' },
             { text: 'Field Selection', link: '/advanced-topics/field-selection' },
             { text: 'Audit Logging', link: '/advanced-topics/audit-logging' },
@@ -217,7 +209,10 @@ export default withMermaid({
   // Markdown configuration
   markdown: {
     lineNumbers: true,
-    config: (md) => {
+    languageAlias: {
+      conf: 'ini', // Map .conf files to INI syntax highlighting
+    },
+    config: (_md) => {
       // Add custom markdown plugins here
     },
   },

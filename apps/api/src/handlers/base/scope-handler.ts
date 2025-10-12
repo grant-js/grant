@@ -1,47 +1,69 @@
 import { Scope, Tenant } from '@logusgraphics/grant-schema';
 
+import { ICacheAdapter, IEntityCacheAdapter } from '@/lib/cache/cache-adapter.interface';
 import { Services } from '@/services';
 
 export type CacheKey = `${Tenant}:${string}`;
 
+/**
+ * @deprecated Use IEntityCacheAdapter instead
+ * Kept for backward compatibility during migration
+ */
 export type EntityCache = {
-  roles: Map<CacheKey, string[]>;
-  users: Map<CacheKey, string[]>;
-  groups: Map<CacheKey, string[]>;
-  permissions: Map<CacheKey, string[]>;
-  tags: Map<CacheKey, string[]>;
-  projects: Map<CacheKey, string[]>;
+  roles: Map<CacheKey, Set<string>>;
+  users: Map<CacheKey, Set<string>>;
+  groups: Map<CacheKey, Set<string>>;
+  permissions: Map<CacheKey, Set<string>>;
+  tags: Map<CacheKey, Set<string>>;
+  projects: Map<CacheKey, Set<string>>;
 };
+
 export class ScopeHandler {
   constructor(
-    protected scopeCache: EntityCache,
+    protected scopeCache: IEntityCacheAdapter,
     protected readonly services: Services
   ) {}
-
-  private getScopeCache(): EntityCache {
-    if (!this.scopeCache) {
-      this.scopeCache = {
-        roles: new Map(),
-        users: new Map(),
-        groups: new Map(),
-        permissions: new Map(),
-        tags: new Map(),
-        projects: new Map(),
-      };
-    }
-    return this.scopeCache;
-  }
 
   private createCacheKey(scope: Scope): CacheKey {
     return `${scope.tenant}:${scope.id}`;
   }
 
+  private async addIdToCache(cacheAdapter: ICacheAdapter, scope: Scope, id: string): Promise<void> {
+    const cacheKey = this.createCacheKey(scope);
+    const exists = await cacheAdapter.has(cacheKey);
+
+    if (exists) {
+      const idsSet = await cacheAdapter.get(cacheKey);
+      if (idsSet && !idsSet.has(id)) {
+        idsSet.add(id);
+        await cacheAdapter.set(cacheKey, idsSet);
+      }
+    }
+  }
+
+  private async removeIdFromCache(
+    cacheAdapter: ICacheAdapter,
+    scope: Scope,
+    id: string
+  ): Promise<void> {
+    const cacheKey = this.createCacheKey(scope);
+    const exists = await cacheAdapter.has(cacheKey);
+
+    if (exists) {
+      const idsSet = await cacheAdapter.get(cacheKey);
+      if (idsSet && idsSet.has(id)) {
+        idsSet.delete(id);
+        await cacheAdapter.set(cacheKey, idsSet);
+      }
+    }
+  }
+
   async getScopedProjectIds(scope: Scope): Promise<string[]> {
-    const cache = this.getScopeCache();
     const cacheKey = this.createCacheKey(scope);
 
-    if (cache.projects.has(cacheKey)) {
-      return cache.projects.get(cacheKey)!;
+    const cachedProjects = await this.scopeCache.projects.get(cacheKey);
+    if (cachedProjects) {
+      return Array.from(cachedProjects.values());
     }
 
     let projectIds: string[];
@@ -64,16 +86,16 @@ export class ScopeHandler {
       default:
         throw new Error(`Unsupported tenant type: ${scope.tenant}`);
     }
-    cache.projects.set(cacheKey, projectIds);
+    await this.scopeCache.projects.set(cacheKey, new Set(projectIds));
     return projectIds;
   }
 
   async getScopedRoleIds(scope: Scope): Promise<string[]> {
-    const cache = this.getScopeCache();
     const cacheKey = this.createCacheKey(scope);
 
-    if (cache.roles.has(cacheKey)) {
-      return cache.roles.get(cacheKey)!;
+    const cachedRoles = await this.scopeCache.roles.get(cacheKey);
+    if (cachedRoles) {
+      return Array.from(cachedRoles.values());
     }
 
     let roleIds: string[];
@@ -105,16 +127,16 @@ export class ScopeHandler {
         throw new Error(`Unsupported tenant type: ${scope.tenant}`);
     }
 
-    cache.roles.set(cacheKey, roleIds);
+    await this.scopeCache.roles.set(cacheKey, new Set(roleIds));
     return roleIds;
   }
 
   async getScopedUserIds(scope: Scope): Promise<string[]> {
-    const cache = this.getScopeCache();
     const cacheKey = this.createCacheKey(scope);
 
-    if (cache.users.has(cacheKey)) {
-      return cache.users.get(cacheKey)!;
+    const cachedUsers = await this.scopeCache.users.get(cacheKey);
+    if (cachedUsers) {
+      return Array.from(cachedUsers.values());
     }
 
     let userIds: string[];
@@ -146,16 +168,16 @@ export class ScopeHandler {
         throw new Error(`Unsupported tenant type: ${scope.tenant}`);
     }
 
-    cache.users.set(cacheKey, userIds);
+    await this.scopeCache.users.set(cacheKey, new Set(userIds));
     return userIds;
   }
 
   async getScopedGroupIds(scope: Scope): Promise<string[]> {
-    const cache = this.getScopeCache();
     const cacheKey = this.createCacheKey(scope);
 
-    if (cache.groups.has(cacheKey)) {
-      return cache.groups.get(cacheKey)!;
+    const cachedGroups = await this.scopeCache.groups.get(cacheKey);
+    if (cachedGroups) {
+      return Array.from(cachedGroups.values());
     }
 
     let groupIds: string[];
@@ -187,16 +209,16 @@ export class ScopeHandler {
         throw new Error(`Unsupported tenant type: ${scope.tenant}`);
     }
 
-    cache.groups.set(cacheKey, groupIds);
+    await this.scopeCache.groups.set(cacheKey, new Set(groupIds));
     return groupIds;
   }
 
   async getScopedPermissionIds(scope: Scope): Promise<string[]> {
-    const cache = this.getScopeCache();
     const cacheKey = this.createCacheKey(scope);
 
-    if (cache.permissions.has(cacheKey)) {
-      return cache.permissions.get(cacheKey)!;
+    const cachedPermissions = await this.scopeCache.permissions.get(cacheKey);
+    if (cachedPermissions) {
+      return Array.from(cachedPermissions.values());
     }
 
     let permissionIds: string[];
@@ -229,16 +251,16 @@ export class ScopeHandler {
         throw new Error(`Unsupported tenant type: ${scope.tenant}`);
     }
 
-    cache.permissions.set(cacheKey, permissionIds);
+    await this.scopeCache.permissions.set(cacheKey, new Set(permissionIds));
     return permissionIds;
   }
 
   async getScopedTagIds(scope: Scope): Promise<string[]> {
-    const cache = this.getScopeCache();
     const cacheKey = this.createCacheKey(scope);
 
-    if (cache.tags.has(cacheKey)) {
-      return cache.tags.get(cacheKey)!;
+    const cachedTags = await this.scopeCache.tags.get(cacheKey);
+    if (cachedTags) {
+      return Array.from(cachedTags.values());
     }
 
     let tagIds: string[];
@@ -270,7 +292,55 @@ export class ScopeHandler {
         throw new Error(`Unsupported tenant type: ${scope.tenant}`);
     }
 
-    cache.tags.set(cacheKey, tagIds);
+    await this.scopeCache.tags.set(cacheKey, new Set(tagIds));
     return tagIds;
+  }
+
+  async addTagIdToScopeCache(scope: Scope, tagId: string): Promise<void> {
+    await this.addIdToCache(this.scopeCache.tags, scope, tagId);
+  }
+
+  async removeTagIdFromScopeCache(scope: Scope, tagId: string): Promise<void> {
+    await this.removeIdFromCache(this.scopeCache.tags, scope, tagId);
+  }
+
+  async addRoleIdToScopeCache(scope: Scope, roleId: string): Promise<void> {
+    await this.addIdToCache(this.scopeCache.roles, scope, roleId);
+  }
+
+  async removeRoleIdFromScopeCache(scope: Scope, roleId: string): Promise<void> {
+    await this.removeIdFromCache(this.scopeCache.roles, scope, roleId);
+  }
+
+  async addUserIdToScopeCache(scope: Scope, userId: string): Promise<void> {
+    await this.addIdToCache(this.scopeCache.users, scope, userId);
+  }
+
+  async removeUserIdFromScopeCache(scope: Scope, userId: string): Promise<void> {
+    await this.removeIdFromCache(this.scopeCache.users, scope, userId);
+  }
+
+  async addGroupIdToScopeCache(scope: Scope, groupId: string): Promise<void> {
+    await this.addIdToCache(this.scopeCache.groups, scope, groupId);
+  }
+
+  async removeGroupIdFromScopeCache(scope: Scope, groupId: string): Promise<void> {
+    await this.removeIdFromCache(this.scopeCache.groups, scope, groupId);
+  }
+
+  async addPermissionIdToScopeCache(scope: Scope, permissionId: string): Promise<void> {
+    await this.addIdToCache(this.scopeCache.permissions, scope, permissionId);
+  }
+
+  async removePermissionIdFromScopeCache(scope: Scope, permissionId: string): Promise<void> {
+    await this.removeIdFromCache(this.scopeCache.permissions, scope, permissionId);
+  }
+
+  async addProjectIdToScopeCache(scope: Scope, projectId: string): Promise<void> {
+    await this.addIdToCache(this.scopeCache.projects, scope, projectId);
+  }
+
+  async removeProjectIdFromScopeCache(scope: Scope, projectId: string): Promise<void> {
+    await this.removeIdFromCache(this.scopeCache.projects, scope, projectId);
   }
 }

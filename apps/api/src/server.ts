@@ -10,10 +10,18 @@ import express from 'express';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 
-import { APOLLO_CONFIG, CORS_CONFIG, HELMET_CONFIG, SERVER_CONFIG } from '@/config';
+import {
+  APOLLO_CONFIG,
+  CORS_CONFIG,
+  HELMET_CONFIG,
+  SERVER_CONFIG,
+  config,
+  printConfigSummary,
+  validateConfig,
+} from '@/config';
 import { schema } from '@/graphql/resolvers';
 import { GraphqlContext } from '@/graphql/types';
-import { createScopeCache } from '@/lib/scope-cache.lib';
+import { CacheFactory } from '@/lib/cache/cache.factory';
 import { authMiddleware } from '@/middleware/auth.middleware';
 import { contextMiddleware } from '@/middleware/context.middleware';
 import { createRestRouter } from '@/rest';
@@ -21,6 +29,10 @@ import { generateOpenApiDocument } from '@/rest/openapi';
 import { ContextRequest } from '@/types';
 
 async function startServer() {
+  // Validate configuration before starting
+  validateConfig();
+  printConfigSummary();
+
   const app = express();
   const httpServer = http.createServer(app);
 
@@ -38,7 +50,18 @@ async function startServer() {
   await server.start();
 
   // Centralized scope cache - shared between GraphQL and REST APIs
-  const scopeCache = createScopeCache();
+  // Factory creates the appropriate adapter based on CACHE_STRATEGY env variable
+  const scopeCache = CacheFactory.createEntityCache({
+    strategy: config.cache.strategy,
+    redis:
+      config.cache.strategy === 'redis'
+        ? {
+            host: config.redis.host,
+            port: config.redis.port,
+            password: config.redis.password,
+          }
+        : undefined,
+  });
 
   // Apply CORS and security middleware
   app.use(cors<cors.CorsRequest>(CORS_CONFIG));
@@ -102,6 +125,35 @@ async function startServer() {
   console.log(`📚 API Documentation at http://localhost:${SERVER_CONFIG.port}/api-docs`);
   console.log(`📄 OpenAPI Spec at http://localhost:${SERVER_CONFIG.port}/api-docs.json`);
   console.log(`📊 Health check available at http://localhost:${SERVER_CONFIG.port}/health`);
+
+  // Graceful shutdown
+  const gracefulShutdown = async (signal: string) => {
+    console.log(`\n${signal} received. Starting graceful shutdown...`);
+
+    // Close HTTP server
+    httpServer.close(async () => {
+      console.log('HTTP server closed');
+
+      // Disconnect cache
+      try {
+        await CacheFactory.disconnect(scopeCache);
+        console.log('Cache disconnected');
+      } catch (error) {
+        console.error('Error disconnecting cache:', error);
+      }
+
+      process.exit(0);
+    });
+
+    // Force shutdown after 30 seconds
+    setTimeout(() => {
+      console.error('Forced shutdown after timeout');
+      process.exit(1);
+    }, 30000);
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 }
 
 startServer().catch((error) => {

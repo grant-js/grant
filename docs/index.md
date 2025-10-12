@@ -7,8 +7,11 @@ hero:
   tagline: 'Open-source, self-hosting, ready to deploy'
   actions:
     - theme: brand
-      text: Get Started
+      text: What is Grant?
       link: /getting-started/introduction
+    - theme: alt
+      text: Get Started
+      link: /getting-started/quick-start
     - theme: alt
       text: View on GitHub
       link: https://github.com/logusgraphics/grant-platform

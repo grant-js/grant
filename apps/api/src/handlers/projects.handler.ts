@@ -1,24 +1,24 @@
 import { DbSchema } from '@logusgraphics/grant-database';
 import {
-  QueryProjectsArgs,
   MutationCreateProjectArgs,
-  MutationUpdateProjectArgs,
   MutationDeleteProjectArgs,
+  MutationUpdateProjectArgs,
   Project,
   ProjectPage,
+  QueryProjectsArgs,
   Tenant,
 } from '@logusgraphics/grant-schema';
 
 import { ScopeHandler } from './base/scope-handler';
 
-import { EntityCache } from '@/handlers/base/scope-handler';
+import { IEntityCacheAdapter } from '@/lib/cache';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 import { DeleteParams, SelectedFields } from '@/services/common';
 
 export class ProjectHandler extends ScopeHandler {
   constructor(
-    readonly scopeCache: EntityCache,
+    readonly scopeCache: IEntityCacheAdapter,
     readonly services: Services,
     readonly db: DbSchema
   ) {
@@ -118,6 +118,8 @@ export class ProjectHandler extends ScopeHandler {
         );
       }
 
+      this.addProjectIdToScopeCache(scope, projectId);
+
       return project;
     });
   }
@@ -213,6 +215,8 @@ export class ProjectHandler extends ScopeHandler {
           this.services.projectUsers.removeProjectUser({ projectId, userId }, tx)
         ),
       ]);
+
+      this.removeProjectIdFromScopeCache(scope, projectId);
 
       return await this.services.projects.deleteProject(params, tx);
     });

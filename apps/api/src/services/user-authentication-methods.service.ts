@@ -1,36 +1,35 @@
 import { randomBytes } from 'crypto';
 
-import { DbSchema } from '@logusgraphics/grant-database';
-import { userAuthenticationMethodsAuditLogs } from '@logusgraphics/grant-database';
+import { DbSchema, userAuthenticationMethodsAuditLogs } from '@logusgraphics/grant-database';
 import {
-  GetUserAuthenticationMethodsInput,
-  DeleteUserAuthenticationMethodInput,
-  UserAuthenticationMethod,
   CreateUserAuthenticationMethodInput,
-  UserAuthenticationMethodProvider,
+  DeleteUserAuthenticationMethodInput,
+  GetUserAuthenticationMethodsInput,
   UpdateUserAuthenticationMethodInput,
   UserAuthenticationEmailProviderAction,
+  UserAuthenticationMethod,
+  UserAuthenticationMethodProvider,
 } from '@logusgraphics/grant-schema';
-import { hashSync, compareSync } from 'bcrypt';
+import { compareSync, hashSync } from 'bcrypt';
 
 import {
   AuditService,
+  DeleteParams,
+  SelectedFields,
+  createDynamicSingleSchema,
+  emailSchema,
   validateInput,
   validateOutput,
-  createDynamicSingleSchema,
-  SelectedFields,
-  DeleteParams,
-  emailSchema,
 } from './common';
 import {
-  userAuthenticationMethodSchema,
-  queryUserAuthenticationMethodsArgsSchema,
   createUserAuthenticationMethodInputSchema,
   deleteUserAuthenticationMethodArgsSchema,
-  updateUserAuthenticationMethodInputSchema,
-  sendOtpSchema,
   parseProviderDataSchema,
   passwordPolicySchema,
+  queryUserAuthenticationMethodsArgsSchema,
+  sendOtpSchema,
+  updateUserAuthenticationMethodInputSchema,
+  userAuthenticationMethodSchema,
 } from './user-authentication-methods.schemas';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -406,11 +405,8 @@ export class UserAuthenticationMethodService extends AuditService {
 
   public generateOtp(): Otp {
     const token = randomBytes(32).toString('hex');
-    const DEFAULT_OTP_VALIDITY_MINUTES = 5;
-    const otpValidityMinutes = Number(
-      process.env.OTP_VALIDITY_MINUTES || DEFAULT_OTP_VALIDITY_MINUTES
-    );
-    const validUntil = Date.now() + 1000 * 60 * otpValidityMinutes;
+    const { AUTH_CONFIG } = require('@/config');
+    const validUntil = Date.now() + 1000 * 60 * AUTH_CONFIG.otpValidityMinutes;
     return { token, validUntil };
   }
 

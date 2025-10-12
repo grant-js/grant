@@ -32,7 +32,7 @@
   .custom-logo {
     height: 28px;
   }
-  
+
   .VPSidebar .VPSidebarBrand .VPSidebarBrandLogo {
     height: 20px;
   }
@@ -278,7 +278,7 @@
 }
 
 .what-youll-find .audience-card .feature-list li:before {
-  content: "→";
+  content: '→';
   position: absolute;
   left: 0;
   color: var(--vp-c-brand-1);
@@ -295,7 +295,7 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 1.5rem;
   }
-  
+
   .what-youll-find .audience-card {
     padding: 1.5rem 1.25rem;
   }
@@ -305,26 +305,26 @@
   .feature-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .feature-card {
     padding: 1rem;
   }
-  
+
   .what-youll-find {
     grid-template-columns: 1fr;
     gap: 1.5rem;
     margin: 2rem 0;
   }
-  
+
   .what-youll-find h2 {
     font-size: 1.5rem;
     margin-bottom: 2rem;
   }
-  
+
   .what-youll-find .audience-card {
     padding: 1.5rem 1.25rem;
   }
-  
+
   .what-youll-find .audience-card h3 {
     font-size: 1.1rem;
     margin-bottom: 1.25rem;
@@ -338,7 +338,6 @@
   background-position: center 20%;
   background-repeat: no-repeat;
   position: relative;
-  min-height: 70vh;
 }
 
 .VPHome .VPHero::before {
@@ -348,13 +347,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
-    linear-gradient(
-      to left,
-      rgba(0, 0, 0, 0.3) 0%,
-      rgba(0, 0, 0, 0.7) 60%,
-      rgba(0, 0, 0, 1) 100%
-    ),
+  background:
+    linear-gradient(to left, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.7) 60%, rgba(0, 0, 0, 1) 100%),
     linear-gradient(
       to left,
       rgba(37, 99, 235, 0.4) 0%,
@@ -365,13 +359,11 @@
   z-index: 1;
 }
 
-
 .VPHome .VPHero .container {
   position: relative;
   z-index: 2;
   display: flex;
-  align-items: center;
-  padding-top: 2.5rem;
+  padding: 0 0 2rem 0;
 }
 
 /* Ensure text is readable over the background */
@@ -393,13 +385,8 @@
 
 /* Dark mode adjustments for hero - using layered blue and black overlays */
 .dark .VPHome .VPHero::before {
-  background: 
-    linear-gradient(
-      to left,
-      rgba(0, 0, 0, 0.3) 0%,
-      rgba(0, 0, 0, 0.7) 60%,
-      rgba(0, 0, 0, 1) 100%
-    ),
+  background:
+    linear-gradient(to left, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.7) 60%, rgba(0, 0, 0, 1) 100%),
     linear-gradient(
       to left,
       rgba(59, 130, 246, 0.3) 0%,

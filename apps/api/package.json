@@ -38,6 +38,7 @@
     "express": "^5.1.0",
     "graphql-type-json": "^0.3.2",
     "helmet": "^8.1.0",
+    "ioredis": "^5.4.2",
     "jsonwebtoken": "^9.0.2",
     "postgres": "^3.4.7",
     "slugify": "^1.6.6",

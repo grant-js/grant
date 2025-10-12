@@ -1,2 +1,2 @@
-export * from './constants.config';
-export * from './cors.config';
+// Centralized configuration system
+export * from './env.config';
