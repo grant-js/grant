@@ -14,11 +14,7 @@ import { ProjectCardSkeleton } from './ProjectCardSkeleton';
 import { ProjectHeader } from './ProjectHeader';
 import { ProjectNavigationButton } from './ProjectNavigationButton';
 
-interface ProjectCardsProps {
-  organizationId: string;
-}
-
-export function ProjectCards({ organizationId }: ProjectCardsProps) {
+export function ProjectCards() {
   const t = useTranslations('projects');
 
   const limit = useProjectsStore((state) => state.limit);

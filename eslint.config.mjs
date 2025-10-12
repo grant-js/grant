@@ -1,10 +1,20 @@
+import { FlatCompat } from '@eslint/eslintrc';
 import eslint from '@eslint/js';
 import prettierConfig from 'eslint-config-prettier';
 import importPlugin from 'eslint-plugin-import';
 import reactHooks from 'eslint-plugin-react-hooks';
 import unusedImports from 'eslint-plugin-unused-imports';
 import { defineConfig } from 'eslint/config';
+import { dirname } from 'path';
 import tseslint from 'typescript-eslint';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const compat = new FlatCompat({
+  baseDirectory: __dirname,
+});
 
 export default defineConfig(
   // Ignore patterns
@@ -24,6 +34,18 @@ export default defineConfig(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   prettierConfig,
+
+  // Next.js config for web app
+  ...compat.extends('next/core-web-vitals').map((config) => ({
+    ...config,
+    files: ['apps/web/**/*.{js,jsx,ts,tsx}'],
+    settings: {
+      ...config.settings,
+      next: {
+        rootDir: 'apps/web',
+      },
+    },
+  })),
 
   // Global settings
   {
@@ -116,17 +138,30 @@ export default defineConfig(
     },
   },
 
-  // Allow 'any' in generic utility files and base classes
+  // Allow 'any' in generic utility files, base classes, and reusable components
   {
     files: [
+      // API utilities and base classes
       'apps/api/src/lib/**/*.ts',
       'apps/api/src/repositories/common/**/*.ts',
       'apps/api/src/services/common/**/*.ts',
       'apps/api/src/rest/controllers/base.controller.ts',
       'apps/api/src/middleware/validation.middleware.ts',
+      // Web generic/reusable utilities
+      'apps/web/components/common/**/*.{ts,tsx}',
+      'apps/web/components/ui/**/*.{ts,tsx}',
+      'apps/web/hooks/common/**/*.ts',
     ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+
+  // Ignore Next.js generated files
+  {
+    files: ['apps/web/next-env.d.ts'],
+    rules: {
+      '@typescript-eslint/triple-slash-reference': 'off',
     },
   }
 );

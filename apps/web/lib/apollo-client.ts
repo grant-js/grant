@@ -52,7 +52,7 @@ const errorLink = onError(({ error, operation, forward }) => {
     const { accessToken, refreshToken } = useAuthStore.getState();
 
     if (accessToken && refreshToken) {
-      return new Observable<any>((observer) => {
+      return new Observable((observer) => {
         if (!refreshInProgress) {
           refreshInProgress = true;
           refreshPromise = refreshSession(accessToken, refreshToken);

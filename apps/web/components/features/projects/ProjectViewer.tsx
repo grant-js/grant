@@ -48,10 +48,10 @@ export function ProjectViewer() {
 
   switch (view) {
     case ProjectView.CARD:
-      return <ProjectCards organizationId={scope!.id} />;
+      return <ProjectCards />;
     case ProjectView.TABLE:
-      return <ProjectTable organizationId={scope!.id} />;
+      return <ProjectTable />;
     default:
-      return <ProjectCards organizationId={scope!.id} />;
+      return <ProjectCards />;
   }
 }

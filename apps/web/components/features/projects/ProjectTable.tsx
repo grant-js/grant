@@ -6,11 +6,11 @@ import { FolderOpen } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import {
+  Avatar,
   DataTable,
+  ScrollBadges,
   type ColumnConfig,
   type SkeletonColumnConfig,
-  ScrollBadges,
-  Avatar,
 } from '@/components/common';
 import { transformTagsToBadges } from '@/lib/tag-utils';
 import { cn } from '@/lib/utils';
@@ -21,11 +21,7 @@ import { ProjectActions } from './ProjectActions';
 import { ProjectAudit } from './ProjectAudit';
 import { ProjectNavigationButton } from './ProjectNavigationButton';
 
-interface ProjectTableProps {
-  organizationId: string;
-}
-
-export function ProjectTable({ organizationId }: ProjectTableProps) {
+export function ProjectTable() {
   const t = useTranslations('projects');
 
   // Use selective subscriptions to prevent unnecessary re-renders
