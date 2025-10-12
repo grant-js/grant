@@ -9,13 +9,12 @@ import {
   EditDialogField,
   EditDialogRelationship,
 } from '@/components/common/EditDialog';
-import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
+import { TagCheckboxList, TagCheckboxListProps } from '@/components/ui/tag-checkbox-list';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
-import { useTags } from '@/hooks/tags';
-import { useTagMutations } from '@/hooks/tags';
+import { useTagMutations, useTags } from '@/hooks/tags';
 import { useTagsStore } from '@/stores/tags.store';
 
-import { editTagSchema, EditTagFormValues } from './types';
+import { EditTagFormValues, editTagSchema } from './types';
 
 export function EditTagDialog() {
   const t = useTranslations('tags');
@@ -28,7 +27,7 @@ export function EditTagDialog() {
   const usedColors = tags.map((tag) => tag.color);
   const availableColors = getAvailableTagColors();
 
-  const colorItems = availableColors.map((color) => ({
+  const colorItems: Partial<Tag>[] = availableColors.map((color) => ({
     id: color,
     name: color,
     color: color,
@@ -49,7 +48,7 @@ export function EditTagDialog() {
     {
       name: 'color',
       label: 'form.color',
-      renderComponent: (props: any) => (
+      renderComponent: (props: TagCheckboxListProps) => (
         <TagCheckboxList
           {...props}
           items={colorItems}

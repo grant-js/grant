@@ -7,14 +7,14 @@ import {
   CreateDialogField,
   CreateDialogRelationship,
 } from '@/components/common/CreateDialog';
-import { PrimaryTagSelector } from '@/components/ui/primary-tag-selector';
-import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
+import { PrimaryTagSelector, PrimaryTagSelectorProps } from '@/components/ui/primary-tag-selector';
+import { TagCheckboxList, TagCheckboxListProps } from '@/components/ui/tag-checkbox-list';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { usePermissionMutations } from '@/hooks/permissions';
 import { useTags } from '@/hooks/tags';
 import { usePermissionsStore } from '@/stores/permissions.store';
 
-import { createPermissionSchema, CreatePermissionFormValues } from './types';
+import { CreatePermissionFormValues, createPermissionSchema } from './types';
 
 export function CreatePermissionDialog() {
   const scope = useScopeFromParams();
@@ -49,7 +49,7 @@ export function CreatePermissionDialog() {
     {
       name: 'tagIds',
       label: 'form.tags',
-      renderComponent: (props: any) => <TagCheckboxList {...props} />,
+      renderComponent: (props: TagCheckboxListProps) => <TagCheckboxList {...props} />,
       items: tags,
       loading: tagsLoading,
       loadingText: 'form.tagsLoading',
@@ -58,7 +58,7 @@ export function CreatePermissionDialog() {
     {
       name: 'primaryTagId',
       label: 'form.primaryTag',
-      renderComponent: (props: any) => <PrimaryTagSelector {...props} />,
+      renderComponent: (props: PrimaryTagSelectorProps) => <PrimaryTagSelector {...props} />,
       items: tags,
       loading: tagsLoading,
       loadingText: 'form.tagsLoading',

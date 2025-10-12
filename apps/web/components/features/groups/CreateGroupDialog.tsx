@@ -8,16 +8,16 @@ import {
   CreateDialogField,
   CreateDialogRelationship,
 } from '@/components/common/CreateDialog';
-import { CheckboxList } from '@/components/ui/checkbox-list';
-import { PrimaryTagSelector } from '@/components/ui/primary-tag-selector';
-import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
+import { CheckboxList, CheckboxListProps } from '@/components/ui/checkbox-list';
+import { PrimaryTagSelector, PrimaryTagSelectorProps } from '@/components/ui/primary-tag-selector';
+import { TagCheckboxList, TagCheckboxListProps } from '@/components/ui/tag-checkbox-list';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useGroupMutations } from '@/hooks/groups/useGroupMutations';
 import { usePermissions } from '@/hooks/permissions';
 import { useTags } from '@/hooks/tags';
 import { useGroupsStore } from '@/stores/groups.store';
 
-import { createGroupSchema, CreateGroupFormValues } from './types';
+import { CreateGroupFormValues, createGroupSchema } from './types';
 
 export function CreateGroupDialog() {
   const scope = useScopeFromParams();
@@ -47,7 +47,7 @@ export function CreateGroupDialog() {
     {
       name: 'permissionIds',
       label: 'form.permissions',
-      renderComponent: (props: any) => <CheckboxList {...props} />,
+      renderComponent: (props: CheckboxListProps) => <CheckboxList {...props} />,
       items: permissions.map((permission: Permission) => ({
         id: permission.id,
         name: permission.name,
@@ -60,7 +60,7 @@ export function CreateGroupDialog() {
     {
       name: 'tagIds',
       label: 'form.tags',
-      renderComponent: (props: any) => <TagCheckboxList {...props} />,
+      renderComponent: (props: TagCheckboxListProps) => <TagCheckboxList {...props} />,
       items: tags,
       loading: tagsLoading,
       loadingText: 'form.tagsLoading',
@@ -69,7 +69,7 @@ export function CreateGroupDialog() {
     {
       name: 'primaryTagId',
       label: 'form.primaryTag',
-      renderComponent: (props: any) => <PrimaryTagSelector {...props} />,
+      renderComponent: (props: PrimaryTagSelectorProps) => <PrimaryTagSelector {...props} />,
       items: tags,
       loading: tagsLoading,
       loadingText: 'form.tagsLoading',

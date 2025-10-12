@@ -27,6 +27,7 @@ export default defineConfig(
       '**/build/**',
       '**/coverage/**',
       '**/generated/**',
+      '**/next-env.d.ts',
     ],
   },
 
@@ -36,7 +37,7 @@ export default defineConfig(
   prettierConfig,
 
   // Next.js config for web app
-  ...compat.extends('next/core-web-vitals').map((config) => ({
+  ...compat.extends('next/core-web-vitals', 'next/typescript').map((config) => ({
     ...config,
     files: ['apps/web/**/*.{js,jsx,ts,tsx}'],
     settings: {
@@ -150,7 +151,6 @@ export default defineConfig(
       // Web generic/reusable utilities
       'apps/web/components/common/**/*.{ts,tsx}',
       'apps/web/components/ui/**/*.{ts,tsx}',
-      'apps/web/hooks/common/**/*.ts',
     ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',

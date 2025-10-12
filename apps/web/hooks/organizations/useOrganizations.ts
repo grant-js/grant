@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 
+import { ApolloClient } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import {
   Organization,
@@ -14,7 +15,9 @@ interface UseOrganizationsResult {
   loading: boolean;
   error: Error | undefined;
   totalCount: number;
-  refetch: () => Promise<any>;
+  refetch: (
+    variables?: Partial<QueryOrganizationsArgs>
+  ) => Promise<ApolloClient.QueryResult<{ organizations: OrganizationPage }>>;
 }
 
 export function useOrganizations(options: QueryOrganizationsArgs): UseOrganizationsResult {
@@ -28,7 +31,7 @@ export function useOrganizations(options: QueryOrganizationsArgs): UseOrganizati
       search,
       sort,
     }),
-    [ids, limit, page, search, sort?.field, sort?.order]
+    [ids, limit, page, search, sort]
   );
 
   const { data, loading, error, refetch } = useQuery<{ organizations: OrganizationPage }>(

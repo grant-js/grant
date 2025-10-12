@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 
 import { Control } from 'react-hook-form';
 
@@ -12,7 +12,7 @@ export interface CheckboxItem {
   description?: string;
 }
 
-interface CheckboxListProps {
+export interface CheckboxListProps {
   control: Control<any>;
   name: string;
   label: string;

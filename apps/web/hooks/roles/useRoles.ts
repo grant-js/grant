@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 
+import { ApolloClient } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { QueryRolesArgs, Role, RolePage } from '@logusgraphics/grant-schema';
 
@@ -10,13 +11,15 @@ interface UseRolesResult {
   loading: boolean;
   error: Error | undefined;
   totalCount: number;
-  refetch: () => Promise<any>;
+  refetch: (
+    variables?: Partial<QueryRolesArgs>
+  ) => Promise<ApolloClient.QueryResult<{ roles: RolePage }>>;
 }
 
 export function useRoles(params: QueryRolesArgs): UseRolesResult {
   const { scope, ids, limit, page, search, sort, tagIds } = params;
 
-  const skip = useMemo(() => !scope || !scope.id || !scope.tenant, [scope?.id, scope?.tenant]);
+  const skip = useMemo(() => !scope || !scope.id || !scope.tenant, [scope]);
 
   const variables = useMemo(
     () => ({
@@ -28,7 +31,7 @@ export function useRoles(params: QueryRolesArgs): UseRolesResult {
       sort,
       tagIds,
     }),
-    [scope?.id, scope?.tenant, ids, limit, page, search, sort?.field, sort?.order, tagIds]
+    [scope, ids, limit, page, search, sort, tagIds]
   );
 
   const { data, loading, error, refetch } = useQuery<{ roles: RolePage }>(GET_ROLES, {

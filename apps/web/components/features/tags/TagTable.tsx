@@ -19,7 +19,7 @@ export function TagTable() {
   const t = useTranslations('tags');
   const { tags, loading } = useTagsStore();
 
-  const columns: ColumnConfig<any>[] = [
+  const columns: ColumnConfig<Tag>[] = [
     {
       key: 'avatar',
       header: '',

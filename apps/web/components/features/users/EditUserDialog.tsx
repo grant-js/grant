@@ -1,24 +1,22 @@
 'use client';
 
-import React from 'react';
-
-import { Role, User as UserType, Tag } from '@logusgraphics/grant-schema';
+import { Role, Tag, User as UserType } from '@logusgraphics/grant-schema';
 
 import {
   EditDialog,
   EditDialogField,
   EditDialogRelationship,
 } from '@/components/common/EditDialog';
-import { CheckboxList } from '@/components/ui/checkbox-list';
-import { PrimaryTagSelector } from '@/components/ui/primary-tag-selector';
-import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
+import { CheckboxList, CheckboxListProps } from '@/components/ui/checkbox-list';
+import { PrimaryTagSelector, PrimaryTagSelectorProps } from '@/components/ui/primary-tag-selector';
+import { TagCheckboxList, TagCheckboxListProps } from '@/components/ui/tag-checkbox-list';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useRoles } from '@/hooks/roles';
 import { useTags } from '@/hooks/tags';
 import { useUserMutations } from '@/hooks/users';
 import { useUsersStore } from '@/stores/users.store';
 
-import { editUserSchema, EditUserFormValues } from './types';
+import { EditUserFormValues, editUserSchema } from './types';
 
 const mapUserToFormValues = (user: UserType): EditUserFormValues => ({
   name: user.name,
@@ -27,8 +25,8 @@ const mapUserToFormValues = (user: UserType): EditUserFormValues => ({
   primaryTagId: user.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
 });
 
-const renderCheckboxList = (props: any) => <CheckboxList {...props} />;
-const renderTagCheckboxList = (props: any) => <TagCheckboxList {...props} />;
+const renderCheckboxList = (props: CheckboxListProps) => <CheckboxList {...props} />;
+const renderTagCheckboxList = (props: TagCheckboxListProps) => <TagCheckboxList {...props} />;
 
 export function EditUserDialog() {
   const scope = useScopeFromParams();
@@ -85,7 +83,7 @@ export function EditUserDialog() {
     {
       name: 'primaryTagId',
       label: 'form.primaryTag',
-      renderComponent: (props: any) => <PrimaryTagSelector {...props} />,
+      renderComponent: (props: PrimaryTagSelectorProps) => <PrimaryTagSelector {...props} />,
       items: tags,
       loading: tagsLoading,
       loadingText: 'form.tagsLoading',

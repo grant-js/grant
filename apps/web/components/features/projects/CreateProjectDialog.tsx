@@ -3,8 +3,8 @@
 import { Plus } from 'lucide-react';
 
 import { CreateDialog, CreateDialogRelationship } from '@/components/common';
-import { PrimaryTagSelector } from '@/components/ui/primary-tag-selector';
-import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
+import { PrimaryTagSelector, PrimaryTagSelectorProps } from '@/components/ui/primary-tag-selector';
+import { TagCheckboxList, TagCheckboxListProps } from '@/components/ui/tag-checkbox-list';
 import { useProjectMutations } from '@/hooks';
 import { useProjectScope } from '@/hooks/common/useProjectScope';
 import { useTags } from '@/hooks/tags';
@@ -38,7 +38,7 @@ export function CreateProjectDialog() {
     {
       name: 'tagIds',
       label: 'form.tags',
-      renderComponent: (props: any) => <TagCheckboxList {...props} />,
+      renderComponent: (props: TagCheckboxListProps) => <TagCheckboxList {...props} />,
       items: tags,
       loading: tagsLoading,
       loadingText: 'form.tagsLoading',
@@ -47,7 +47,7 @@ export function CreateProjectDialog() {
     {
       name: 'primaryTagId',
       label: 'form.primaryTag',
-      renderComponent: (props: any) => <PrimaryTagSelector {...props} />,
+      renderComponent: (props: PrimaryTagSelectorProps) => <PrimaryTagSelector {...props} />,
       items: tags,
       loading: tagsLoading,
       loadingText: 'form.tagsLoading',

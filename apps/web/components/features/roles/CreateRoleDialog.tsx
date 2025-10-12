@@ -8,16 +8,16 @@ import {
   CreateDialogField,
   CreateDialogRelationship,
 } from '@/components/common/CreateDialog';
-import { CheckboxList } from '@/components/ui/checkbox-list';
-import { PrimaryTagSelector } from '@/components/ui/primary-tag-selector';
-import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
+import { CheckboxList, CheckboxListProps } from '@/components/ui/checkbox-list';
+import { PrimaryTagSelector, PrimaryTagSelectorProps } from '@/components/ui/primary-tag-selector';
+import { TagCheckboxList, TagCheckboxListProps } from '@/components/ui/tag-checkbox-list';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useGroups } from '@/hooks/groups';
 import { useRoleMutations } from '@/hooks/roles';
 import { useTags } from '@/hooks/tags';
 import { useRolesStore } from '@/stores/roles.store';
 
-import { createRoleSchema, CreateRoleFormValues } from './types';
+import { CreateRoleFormValues, createRoleSchema } from './types';
 
 export function CreateRoleDialog() {
   const scope = useScopeFromParams();
@@ -47,7 +47,7 @@ export function CreateRoleDialog() {
     {
       name: 'groupIds',
       label: 'form.groups',
-      renderComponent: (props: any) => <CheckboxList {...props} />,
+      renderComponent: (props: CheckboxListProps) => <CheckboxList {...props} />,
       items: groups.map((group: Group) => ({
         id: group.id,
         name: group.name,
@@ -60,7 +60,7 @@ export function CreateRoleDialog() {
     {
       name: 'tagIds',
       label: 'form.tags',
-      renderComponent: (props: any) => <TagCheckboxList {...props} />,
+      renderComponent: (props: TagCheckboxListProps) => <TagCheckboxList {...props} />,
       items: tags,
       loading: tagsLoading,
       loadingText: 'form.tagsLoading',
@@ -69,7 +69,7 @@ export function CreateRoleDialog() {
     {
       name: 'primaryTagId',
       label: 'form.primaryTag',
-      renderComponent: (props: any) => <PrimaryTagSelector {...props} />,
+      renderComponent: (props: PrimaryTagSelectorProps) => <PrimaryTagSelector {...props} />,
       items: tags,
       loading: tagsLoading,
       loadingText: 'form.tagsLoading',

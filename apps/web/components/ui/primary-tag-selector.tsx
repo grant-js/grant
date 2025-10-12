@@ -1,18 +1,18 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 
 import { getTagBorderClasses, TagColor } from '@logusgraphics/grant-constants';
 import { Tag } from '@logusgraphics/grant-schema';
 import { ChevronDownIcon } from 'lucide-react';
-import { Control, useWatch, useFormContext } from 'react-hook-form';
+import { Control, useFormContext, useWatch } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import { FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
-interface PrimaryTagSelectorProps {
+export interface PrimaryTagSelectorProps {
   control: Control<any>;
   name: string;
   label: string;

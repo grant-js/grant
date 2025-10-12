@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 
+import { ApolloClient } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { Group, GroupPage, QueryGroupsArgs } from '@logusgraphics/grant-schema';
 
@@ -10,13 +11,15 @@ interface UseGroupsResult {
   loading: boolean;
   error: Error | undefined;
   totalCount: number;
-  refetch: () => Promise<any>;
+  refetch: (
+    variables?: Partial<QueryGroupsArgs>
+  ) => Promise<ApolloClient.QueryResult<{ groups: GroupPage }>>;
 }
 
 export function useGroups(params: QueryGroupsArgs): UseGroupsResult {
   const { scope, ids, limit, page, search, sort, tagIds } = params;
 
-  const skip = useMemo(() => !scope || !scope.id || !scope.tenant, [scope?.id, scope?.tenant]);
+  const skip = useMemo(() => !scope || !scope.id || !scope.tenant, [scope]);
 
   const variables = useMemo(
     () => ({
@@ -28,7 +31,7 @@ export function useGroups(params: QueryGroupsArgs): UseGroupsResult {
       sort,
       tagIds,
     }),
-    [scope?.id, scope?.tenant, ids, limit, page, search, sort?.field, sort?.order, tagIds]
+    [scope, ids, limit, page, search, sort, tagIds]
   );
 
   const { data, loading, error, refetch } = useQuery<{ groups: GroupPage }>(GET_GROUPS, {

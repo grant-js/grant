@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 
 import { getTagBorderClasses, TagColor } from '@logusgraphics/grant-constants';
 import { Tag } from '@logusgraphics/grant-schema';
@@ -8,11 +8,11 @@ import { FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/for
 import { AutoScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
-interface TagCheckboxListProps {
+export interface TagCheckboxListProps {
   control: Control<any>;
   name: string;
   label: string;
-  items: Array<Tag & { disabled?: boolean }>;
+  items: Array<Partial<Tag> & { disabled?: boolean }>;
   multiple?: boolean;
   loading?: boolean;
   loadingText?: string;

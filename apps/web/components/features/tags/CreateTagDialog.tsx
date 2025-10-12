@@ -9,13 +9,12 @@ import {
   CreateDialogField,
   CreateDialogRelationship,
 } from '@/components/common/CreateDialog';
-import { TagCheckboxList } from '@/components/ui/tag-checkbox-list';
+import { TagCheckboxList, TagCheckboxListProps } from '@/components/ui/tag-checkbox-list';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
-import { useTags } from '@/hooks/tags';
-import { useTagMutations } from '@/hooks/tags';
+import { useTagMutations, useTags } from '@/hooks/tags';
 import { useTagsStore } from '@/stores/tags.store';
 
-import { createTagSchema, CreateTagFormValues } from './types';
+import { CreateTagFormValues, createTagSchema } from './types';
 
 export function CreateTagDialog() {
   const t = useTranslations('tags');
@@ -50,7 +49,7 @@ export function CreateTagDialog() {
     {
       name: 'color',
       label: 'form.color',
-      renderComponent: (props: any) => (
+      renderComponent: (props: TagCheckboxListProps) => (
         <TagCheckboxList
           {...props}
           items={colorItems}

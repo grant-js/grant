@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 
+import { ApolloClient } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { Permission, PermissionPage, QueryPermissionsArgs } from '@logusgraphics/grant-schema';
 
@@ -10,13 +11,15 @@ interface UsePermissionsResult {
   loading: boolean;
   error: Error | undefined;
   totalCount: number;
-  refetch: () => Promise<any>;
+  refetch: (
+    variables?: Partial<QueryPermissionsArgs>
+  ) => Promise<ApolloClient.QueryResult<{ permissions: PermissionPage }>>;
 }
 
 export function usePermissions(options: QueryPermissionsArgs): UsePermissionsResult {
   const { scope, page, limit, search, sort, tagIds } = options;
 
-  const skip = useMemo(() => !scope || !scope.id || !scope.tenant, [scope?.id, scope?.tenant]);
+  const skip = useMemo(() => !scope || !scope.id || !scope.tenant, [scope]);
 
   const variables = useMemo(
     () => ({
@@ -27,7 +30,7 @@ export function usePermissions(options: QueryPermissionsArgs): UsePermissionsRes
       sort,
       tagIds,
     }),
-    [scope?.id, scope?.tenant, page, limit, search, sort?.field, sort?.order, tagIds]
+    [scope, page, limit, search, sort, tagIds]
   );
 
   const { data, loading, error, refetch } = useQuery<{ permissions: PermissionPage }>(
