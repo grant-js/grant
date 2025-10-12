@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
 import { useQuery } from '@apollo/client/react';
-import { Tag, QueryTagsArgs, TagPage } from '@logusgraphics/grant-schema';
+import { QueryTagsArgs, Tag, TagPage } from '@logusgraphics/grant-schema';
 
 import { GET_TAGS } from './queries';
 
@@ -14,15 +14,27 @@ interface UseTagsResult {
 }
 
 export function useTags(params: QueryTagsArgs): UseTagsResult {
-  const { scope } = params;
+  const { scope, ids, limit, page, search, sort } = params;
 
-  const variables = useMemo(() => params, [params]);
+  const skip = useMemo(() => !scope || !scope.id || !scope.tenant, [scope?.id, scope?.tenant]);
 
-  const skip = useMemo(() => !scope || !scope.id, [scope]);
+  const variables = useMemo(
+    () => ({
+      scope,
+      ids,
+      limit,
+      page,
+      search,
+      sort,
+    }),
+    [scope?.id, scope?.tenant, ids, limit, page, search, sort?.field, sort?.order]
+  );
 
   const { data, loading, error, refetch } = useQuery<{ tags: TagPage }>(GET_TAGS, {
     variables,
     skip,
+    fetchPolicy: 'cache-and-network',
+    notifyOnNetworkStatusChange: true,
   });
 
   const { tags, totalCount } = useMemo(

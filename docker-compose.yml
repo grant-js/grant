@@ -58,10 +58,24 @@ services:
     networks:
       - grant-platform-network
 
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: grant-platform-redisinsight
+    ports:
+      - '5540:5540'
+    volumes:
+      - redisinsight_data:/data
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - grant-platform-network
+
 volumes:
   postgres_data:
   pgadmin_data:
   redis_data:
+  redisinsight_data:
 
 networks:
   grant-platform-network:

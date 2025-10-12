@@ -14,17 +14,29 @@ interface UsePermissionsResult {
 }
 
 export function usePermissions(options: QueryPermissionsArgs): UsePermissionsResult {
-  const { scope } = options;
+  const { scope, page, limit, search, sort, tagIds } = options;
 
-  const skip = useMemo(() => !scope || !scope.id || !scope.tenant, [scope]);
+  const skip = useMemo(() => !scope || !scope.id || !scope.tenant, [scope?.id, scope?.tenant]);
 
-  const variables = useMemo(() => options, [options]);
+  const variables = useMemo(
+    () => ({
+      scope,
+      page,
+      limit,
+      search,
+      sort,
+      tagIds,
+    }),
+    [scope?.id, scope?.tenant, page, limit, search, sort?.field, sort?.order, tagIds]
+  );
 
   const { data, loading, error, refetch } = useQuery<{ permissions: PermissionPage }>(
     GET_PERMISSIONS,
     {
       variables,
       skip,
+      fetchPolicy: 'cache-and-network',
+      notifyOnNetworkStatusChange: true,
     }
   );
 

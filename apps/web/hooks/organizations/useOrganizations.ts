@@ -18,11 +18,26 @@ interface UseOrganizationsResult {
 }
 
 export function useOrganizations(options: QueryOrganizationsArgs): UseOrganizationsResult {
-  const variables = useMemo(() => options, [options]);
+  const { ids, limit, page, search, sort } = options;
+
+  const variables = useMemo(
+    () => ({
+      ids,
+      limit,
+      page,
+      search,
+      sort,
+    }),
+    [ids, limit, page, search, sort?.field, sort?.order]
+  );
 
   const { data, loading, error, refetch } = useQuery<{ organizations: OrganizationPage }>(
     GET_ORGANIZATIONS,
-    { variables }
+    {
+      variables,
+      fetchPolicy: 'cache-and-network',
+      notifyOnNetworkStatusChange: true,
+    }
   );
 
   const { organizations, totalCount } = useMemo(

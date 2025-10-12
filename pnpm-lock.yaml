@@ -338,10 +338,16 @@ importers:
         version: 3.2.4(@types/node@24.7.2)(jsdom@27.0.0)
 
   docs:
-    dependencies:
+    devDependencies:
       '@braintree/sanitize-url':
         specifier: ^7.1.1
         version: 7.1.1
+      '@mermaid-js/mermaid-mindmap':
+        specifier: 9.3.0
+        version: 9.3.0
+      '@types/node':
+        specifier: ^24.7.2
+        version: 24.7.2
       cytoscape:
         specifier: ^3.33.1
         version: 3.33.1
@@ -351,13 +357,6 @@ importers:
       dayjs:
         specifier: ^1.11.18
         version: 1.11.18
-    devDependencies:
-      '@mermaid-js/mermaid-mindmap':
-        specifier: 9.3.0
-        version: 9.3.0
-      '@types/node':
-        specifier: ^24.7.2
-        version: 24.7.2
       mermaid:
         specifier: 11.12.0
         version: 11.12.0
@@ -1359,6 +1358,7 @@ packages:
       {
         integrity: sha512-i1L7noDNxtFyL5DmZafWy1wRVhGehQmzZaz1HiN5e7iylJMSZR7ekOV7NsIqa5qBldlLrsKv4HbgFUVlQrz8Mw==,
       }
+    dev: true
 
   /@chevrotain/cst-dts-gen@11.0.3:
     resolution:
@@ -8467,6 +8467,7 @@ packages:
       }
     dependencies:
       layout-base: 1.0.2
+    dev: true
 
   /cose-base@2.2.0:
     resolution:
@@ -8602,6 +8603,7 @@ packages:
     dependencies:
       cose-base: 1.0.3
       cytoscape: 3.33.1
+    dev: true
 
   /cytoscape-fcose@2.2.0(cytoscape@3.33.1):
     resolution:
@@ -8621,6 +8623,7 @@ packages:
         integrity: sha512-iJc4TwyANnOGR1OmWhsS9ayRS3s+XQ185FmuHObThD+5AeJCakAAbWv8KimMTt08xCCLNgneQwFp+JRJOr9qGQ==,
       }
     engines: { node: '>=0.10' }
+    dev: true
 
   /d3-array@2.12.1:
     resolution:
@@ -9082,6 +9085,7 @@ packages:
       {
         integrity: sha512-zFBQ7WFRvVRhKcWoUh+ZA1g2HVgUbsZm9sbddh8EC5iv93sui8DVVz1Npvz+r6meo9VKfa8NyLWBsQK1VvIKPA==,
       }
+    dev: true
 
   /debounce@2.2.0:
     resolution:
@@ -12059,6 +12063,7 @@ packages:
       {
         integrity: sha512-8h2oVEZNktL4BH2JCOI90iD1yXwL6iNW7KcCKT2QZgQJR2vbqDsldCTPRU9NifTCqHZci57XvQQ15YTu+sTYPg==,
       }
+    dev: true
 
   /layout-base@2.0.1:
     resolution:

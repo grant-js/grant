@@ -14,15 +14,28 @@ interface UseProjectsResult {
 }
 
 export function useProjects(params: QueryProjectsArgs): UseProjectsResult {
-  const { scope } = params;
+  const { scope, ids, limit, page, search, sort, tagIds } = params;
 
-  const variables = useMemo(() => params, [params]);
+  const skip = useMemo(() => !scope || !scope.id || !scope.tenant, [scope?.id, scope?.tenant]);
 
-  const skip = useMemo(() => !scope, [scope]);
+  const variables = useMemo(
+    () => ({
+      scope,
+      ids,
+      limit,
+      page,
+      search,
+      sort,
+      tagIds,
+    }),
+    [scope?.id, scope?.tenant, ids, limit, page, search, sort?.field, sort?.order, tagIds]
+  );
 
   const { data, loading, error, refetch } = useQuery<{ projects: ProjectPage }>(GET_PROJECTS, {
     variables,
     skip,
+    fetchPolicy: 'cache-and-network',
+    notifyOnNetworkStatusChange: true,
   });
 
   const { projects, totalCount } = useMemo(

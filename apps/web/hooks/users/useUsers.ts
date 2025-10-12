@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
 import { useQuery } from '@apollo/client/react';
-import { User, QueryUsersArgs, UserPage } from '@logusgraphics/grant-schema';
+import { QueryUsersArgs, User, UserPage } from '@logusgraphics/grant-schema';
 
 import { GET_USERS } from './queries';
 
@@ -14,15 +14,28 @@ interface UseUsersResult {
 }
 
 export function useUsers(params: QueryUsersArgs): UseUsersResult {
-  const { scope } = params;
+  const { scope, ids, limit, page, search, sort, tagIds } = params;
 
-  const skip = useMemo(() => !scope || !scope.id || !scope.tenant, [scope]);
+  const skip = useMemo(() => !scope || !scope.id || !scope.tenant, [scope?.id, scope?.tenant]);
 
-  const variables = useMemo(() => params, [params]);
+  const variables = useMemo(
+    () => ({
+      scope,
+      ids,
+      limit,
+      page,
+      search,
+      sort,
+      tagIds,
+    }),
+    [scope?.id, scope?.tenant, ids, limit, page, search, sort?.field, sort?.order, tagIds]
+  );
 
   const { data, loading, error, refetch } = useQuery<{ users: UserPage }>(GET_USERS, {
     variables,
     skip,
+    fetchPolicy: 'cache-and-network',
+    notifyOnNetworkStatusChange: true,
   });
 
   const { users, totalCount } = useMemo(
