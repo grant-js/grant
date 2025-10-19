@@ -6,6 +6,7 @@ import { GroupPermissionRepository } from './group-permissions.repository';
 import { GroupTagRepository } from './group-tags.repository';
 import { GroupRepository } from './groups.repository';
 import { OrganizationGroupRepository } from './organization-groups.repository';
+import { OrganizationInvitationRepository } from './organization-invitations.repository';
 import { OrganizationPermissionRepository } from './organization-permissions.repository';
 import { OrganizationProjectRepository } from './organization-projects.repository';
 import { OrganizationRoleRepository } from './organization-roles.repository';
@@ -40,6 +41,7 @@ export function createRepositories(db: DbSchema) {
     groupTagRepository: new GroupTagRepository(db),
     groupRepository: new GroupRepository(db),
     organizationGroupRepository: new OrganizationGroupRepository(db),
+    organizationInvitationRepository: new OrganizationInvitationRepository(db),
     organizationPermissionRepository: new OrganizationPermissionRepository(db),
     organizationProjectRepository: new OrganizationProjectRepository(db),
     organizationRoleRepository: new OrganizationRoleRepository(db),

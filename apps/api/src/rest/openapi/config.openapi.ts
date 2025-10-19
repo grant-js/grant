@@ -17,6 +17,7 @@ import {
 import { registerAccountsOpenApi } from './accounts.openapi';
 import { registerAuthEndpoints } from './auth.openapi';
 import { registerGroupsOpenApi } from './groups.openapi';
+import { registerOrganizationInvitationsOpenApi } from './organization-invitations.openapi';
 import { registerOrganizationsOpenApi } from './organizations.openapi';
 import { registerPermissionsOpenApi } from './permissions.openapi';
 import { registerProjectsOpenApi } from './projects.openapi';
@@ -57,6 +58,7 @@ function registerAllEndpoints() {
   registerAccountsOpenApi(registry);
   registerUserEndpoints(registry);
   registerOrganizationsOpenApi(registry);
+  registerOrganizationInvitationsOpenApi(registry);
   registerProjectsOpenApi(registry);
   registerRolesOpenApi(registry);
   registerGroupsOpenApi(registry);
@@ -123,6 +125,10 @@ export function generateOpenApiDocument() {
       {
         name: 'Organizations',
         description: 'Organization management endpoints',
+      },
+      {
+        name: 'Organization Invitations',
+        description: 'Organization member invitation and onboarding endpoints',
       },
       {
         name: 'Projects',

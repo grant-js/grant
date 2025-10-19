@@ -22,6 +22,20 @@ export type Scalars = {
   JSON: { input: Record<string, unknown>; output: Record<string, unknown> };
 };
 
+export type AcceptInvitationInput = {
+  token: Scalars['String']['input'];
+  userData?: InputMaybe<UserRegistrationData>;
+};
+
+export type AcceptInvitationResult = {
+  __typename?: 'AcceptInvitationResult';
+  account?: Maybe<Account>;
+  invitation?: Maybe<OrganizationInvitation>;
+  isNewUser?: Maybe<Scalars['Boolean']['output']>;
+  requiresRegistration: Scalars['Boolean']['output'];
+  user?: Maybe<User>;
+};
+
 export type Account = Auditable & {
   __typename?: 'Account';
   createdAt: Scalars['Date']['output'];
@@ -381,6 +395,12 @@ export type GroupTagTagArgs = {
   scope: Scope;
 };
 
+export type InviteMemberInput = {
+  email: Scalars['String']['input'];
+  organizationId: Scalars['ID']['input'];
+  roleId: Scalars['ID']['input'];
+};
+
 export type LoginInput = {
   provider: UserAuthenticationMethodProvider;
   providerData: Scalars['JSON']['input'];
@@ -399,6 +419,7 @@ export type LoginResponse = {
 export type Mutation = {
   __typename?: 'Mutation';
   _empty?: Maybe<Scalars['String']['output']>;
+  acceptInvitation: AcceptInvitationResult;
   createGroup: Group;
   createOrganization: Organization;
   createPermission: Permission;
@@ -414,9 +435,11 @@ export type Mutation = {
   deleteRole: Role;
   deleteTag: Tag;
   deleteUser: User;
+  inviteMember: OrganizationInvitation;
   login: LoginResponse;
   refreshSession: RefreshSessionResponse;
   register: CreateAccountResult;
+  revokeInvitation: OrganizationInvitation;
   updateAccount: Account;
   updateGroup: Group;
   updateOrganization: Organization;
@@ -425,6 +448,10 @@ export type Mutation = {
   updateRole: Role;
   updateTag: Tag;
   updateUser: User;
+};
+
+export type MutationAcceptInvitationArgs = {
+  input: AcceptInvitationInput;
 };
 
 export type MutationCreateGroupArgs = {
@@ -493,6 +520,10 @@ export type MutationDeleteUserArgs = {
   scope: Scope;
 };
 
+export type MutationInviteMemberArgs = {
+  input: InviteMemberInput;
+};
+
 export type MutationLoginArgs = {
   input: LoginInput;
 };
@@ -504,6 +535,10 @@ export type MutationRefreshSessionArgs = {
 
 export type MutationRegisterArgs = {
   input: RegisterInput;
+};
+
+export type MutationRevokeInvitationArgs = {
+  id: Scalars['ID']['input'];
 };
 
 export type MutationUpdateAccountArgs = {
@@ -573,6 +608,38 @@ export type OrganizationGroup = Auditable & {
   organizationId: Scalars['ID']['output'];
   updatedAt: Scalars['Date']['output'];
 };
+
+export type OrganizationInvitation = Auditable & {
+  __typename?: 'OrganizationInvitation';
+  acceptedAt?: Maybe<Scalars['Date']['output']>;
+  createdAt: Scalars['Date']['output'];
+  deletedAt?: Maybe<Scalars['Date']['output']>;
+  email: Scalars['String']['output'];
+  expiresAt: Scalars['Date']['output'];
+  id: Scalars['ID']['output'];
+  invitedBy: Scalars['ID']['output'];
+  inviter: User;
+  organization: Organization;
+  organizationId: Scalars['ID']['output'];
+  role: Role;
+  roleId: Scalars['ID']['output'];
+  status: OrganizationInvitationStatus;
+  updatedAt: Scalars['Date']['output'];
+};
+
+export type OrganizationInvitationPage = {
+  __typename?: 'OrganizationInvitationPage';
+  hasNextPage: Scalars['Boolean']['output'];
+  invitations: Array<OrganizationInvitation>;
+  totalCount: Scalars['Int']['output'];
+};
+
+export enum OrganizationInvitationStatus {
+  Accepted = 'accepted',
+  Expired = 'expired',
+  Pending = 'pending',
+  Revoked = 'revoked',
+}
 
 export type OrganizationPage = PaginatedResults & {
   __typename?: 'OrganizationPage';
@@ -846,6 +913,8 @@ export type Query = {
   accounts: AccountPage;
   checkUsername: UsernameAvailability;
   groups: GroupPage;
+  invitation?: Maybe<OrganizationInvitation>;
+  organizationInvitations: OrganizationInvitationPage;
   organizations: OrganizationPage;
   permissions: PermissionPage;
   projects: ProjectPage;
@@ -874,6 +943,15 @@ export type QueryGroupsArgs = {
   search?: InputMaybe<Scalars['String']['input']>;
   sort?: InputMaybe<GroupSortInput>;
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
+export type QueryInvitationArgs = {
+  token: Scalars['String']['input'];
+};
+
+export type QueryOrganizationInvitationsArgs = {
+  organizationId: Scalars['ID']['input'];
+  status?: InputMaybe<OrganizationInvitationStatus>;
 };
 
 export type QueryOrganizationsArgs = {
@@ -1325,6 +1403,12 @@ export type UserPage = PaginatedResults & {
   users: Array<User>;
 };
 
+export type UserRegistrationData = {
+  name: Scalars['String']['input'];
+  password: Scalars['String']['input'];
+  username: Scalars['String']['input'];
+};
+
 export type UserRole = Auditable & {
   __typename?: 'UserRole';
   createdAt: Scalars['Date']['output'];
@@ -1532,6 +1616,7 @@ export type ResolversInterfaceTypes<_RefType extends Record<string, unknown>> = 
     | GroupTag
     | Organization
     | OrganizationGroup
+    | OrganizationInvitation
     | OrganizationPermission
     | OrganizationProject
     | OrganizationRole
@@ -1570,6 +1655,8 @@ export type ResolversInterfaceTypes<_RefType extends Record<string, unknown>> = 
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = ResolversObject<{
+  AcceptInvitationInput: AcceptInvitationInput;
+  AcceptInvitationResult: ResolverTypeWrapper<AcceptInvitationResult>;
   Account: ResolverTypeWrapper<Account>;
   AccountPage: ResolverTypeWrapper<AccountPage>;
   AccountProject: ResolverTypeWrapper<AccountProject>;
@@ -1624,12 +1711,16 @@ export type ResolversTypes = ResolversObject<{
   GroupTag: ResolverTypeWrapper<GroupTag>;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
+  InviteMemberInput: InviteMemberInput;
   JSON: ResolverTypeWrapper<Scalars['JSON']['output']>;
   LoginInput: LoginInput;
   LoginResponse: ResolverTypeWrapper<LoginResponse>;
   Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
   Organization: ResolverTypeWrapper<Organization>;
   OrganizationGroup: ResolverTypeWrapper<OrganizationGroup>;
+  OrganizationInvitation: ResolverTypeWrapper<OrganizationInvitation>;
+  OrganizationInvitationPage: ResolverTypeWrapper<OrganizationInvitationPage>;
+  OrganizationInvitationStatus: OrganizationInvitationStatus;
   OrganizationPage: ResolverTypeWrapper<OrganizationPage>;
   OrganizationPermission: ResolverTypeWrapper<OrganizationPermission>;
   OrganizationProject: ResolverTypeWrapper<OrganizationProject>;
@@ -1718,6 +1809,7 @@ export type ResolversTypes = ResolversObject<{
   UserAuthenticationMethod: ResolverTypeWrapper<UserAuthenticationMethod>;
   UserAuthenticationMethodProvider: UserAuthenticationMethodProvider;
   UserPage: ResolverTypeWrapper<UserPage>;
+  UserRegistrationData: UserRegistrationData;
   UserRole: ResolverTypeWrapper<UserRole>;
   UserSearchableField: UserSearchableField;
   UserSession: ResolverTypeWrapper<UserSession>;
@@ -1733,6 +1825,8 @@ export type ResolversTypes = ResolversObject<{
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = ResolversObject<{
+  AcceptInvitationInput: AcceptInvitationInput;
+  AcceptInvitationResult: AcceptInvitationResult;
   Account: Account;
   AccountPage: AccountPage;
   AccountProject: AccountProject;
@@ -1782,12 +1876,15 @@ export type ResolversParentTypes = ResolversObject<{
   GroupTag: GroupTag;
   ID: Scalars['ID']['output'];
   Int: Scalars['Int']['output'];
+  InviteMemberInput: InviteMemberInput;
   JSON: Scalars['JSON']['output'];
   LoginInput: LoginInput;
   LoginResponse: LoginResponse;
   Mutation: Record<PropertyKey, never>;
   Organization: Organization;
   OrganizationGroup: OrganizationGroup;
+  OrganizationInvitation: OrganizationInvitation;
+  OrganizationInvitationPage: OrganizationInvitationPage;
   OrganizationPage: OrganizationPage;
   OrganizationPermission: OrganizationPermission;
   OrganizationProject: OrganizationProject;
@@ -1860,6 +1957,7 @@ export type ResolversParentTypes = ResolversObject<{
   User: User;
   UserAuthenticationMethod: UserAuthenticationMethod;
   UserPage: UserPage;
+  UserRegistrationData: UserRegistrationData;
   UserRole: UserRole;
   UserSession: UserSession;
   UserSessionPage: UserSessionPage;
@@ -1867,6 +1965,18 @@ export type ResolversParentTypes = ResolversObject<{
   UserSortInput: UserSortInput;
   UserTag: UserTag;
   UsernameAvailability: UsernameAvailability;
+}>;
+
+export type AcceptInvitationResultResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['AcceptInvitationResult'] = ResolversParentTypes['AcceptInvitationResult'],
+> = ResolversObject<{
+  account?: Resolver<Maybe<ResolversTypes['Account']>, ParentType, ContextType>;
+  invitation?: Resolver<Maybe<ResolversTypes['OrganizationInvitation']>, ParentType, ContextType>;
+  isNewUser?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
+  requiresRegistration?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
 }>;
 
 export type AccountResolvers<
@@ -1924,6 +2034,7 @@ export type AuditableResolvers<
     | 'GroupTag'
     | 'Organization'
     | 'OrganizationGroup'
+    | 'OrganizationInvitation'
     | 'OrganizationPermission'
     | 'OrganizationProject'
     | 'OrganizationRole'
@@ -2079,6 +2190,12 @@ export type MutationResolvers<
   ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation'],
 > = ResolversObject<{
   _empty?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  acceptInvitation?: Resolver<
+    ResolversTypes['AcceptInvitationResult'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationAcceptInvitationArgs, 'input'>
+  >;
   createGroup?: Resolver<
     ResolversTypes['Group'],
     ParentType,
@@ -2169,6 +2286,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationDeleteUserArgs, 'id' | 'scope'>
   >;
+  inviteMember?: Resolver<
+    ResolversTypes['OrganizationInvitation'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationInviteMemberArgs, 'input'>
+  >;
   login?: Resolver<
     ResolversTypes['LoginResponse'],
     ParentType,
@@ -2186,6 +2309,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationRegisterArgs, 'input'>
+  >;
+  revokeInvitation?: Resolver<
+    ResolversTypes['OrganizationInvitation'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationRevokeInvitationArgs, 'id'>
   >;
   updateAccount?: Resolver<
     ResolversTypes['Account'],
@@ -2270,6 +2399,38 @@ export type OrganizationGroupResolvers<
   organizationId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type OrganizationInvitationResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['OrganizationInvitation'] = ResolversParentTypes['OrganizationInvitation'],
+> = ResolversObject<{
+  acceptedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  email?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  expiresAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  invitedBy?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  inviter?: Resolver<ResolversTypes['User'], ParentType, ContextType>;
+  organization?: Resolver<ResolversTypes['Organization'], ParentType, ContextType>;
+  organizationId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  role?: Resolver<ResolversTypes['Role'], ParentType, ContextType>;
+  roleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  status?: Resolver<ResolversTypes['OrganizationInvitationStatus'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type OrganizationInvitationPageResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['OrganizationInvitationPage'] = ResolversParentTypes['OrganizationInvitationPage'],
+> = ResolversObject<{
+  hasNextPage?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  invitations?: Resolver<Array<ResolversTypes['OrganizationInvitation']>, ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 }>;
 
 export type OrganizationPageResolvers<
@@ -2590,6 +2751,18 @@ export type QueryResolvers<
     ContextType,
     RequireFields<QueryGroupsArgs, 'scope'>
   >;
+  invitation?: Resolver<
+    Maybe<ResolversTypes['OrganizationInvitation']>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryInvitationArgs, 'token'>
+  >;
+  organizationInvitations?: Resolver<
+    ResolversTypes['OrganizationInvitationPage'],
+    ParentType,
+    ContextType,
+    RequireFields<QueryOrganizationInvitationsArgs, 'organizationId'>
+  >;
   organizations?: Resolver<
     ResolversTypes['OrganizationPage'],
     ParentType,
@@ -2891,6 +3064,7 @@ export type UsernameAvailabilityResolvers<
 }>;
 
 export type Resolvers<ContextType = any> = ResolversObject<{
+  AcceptInvitationResult?: AcceptInvitationResultResolvers<ContextType>;
   Account?: AccountResolvers<ContextType>;
   AccountPage?: AccountPageResolvers<ContextType>;
   AccountProject?: AccountProjectResolvers<ContextType>;
@@ -2908,6 +3082,8 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   Mutation?: MutationResolvers<ContextType>;
   Organization?: OrganizationResolvers<ContextType>;
   OrganizationGroup?: OrganizationGroupResolvers<ContextType>;
+  OrganizationInvitation?: OrganizationInvitationResolvers<ContextType>;
+  OrganizationInvitationPage?: OrganizationInvitationPageResolvers<ContextType>;
   OrganizationPage?: OrganizationPageResolvers<ContextType>;
   OrganizationPermission?: OrganizationPermissionResolvers<ContextType>;
   OrganizationProject?: OrganizationProjectResolvers<ContextType>;

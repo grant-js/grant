@@ -41,12 +41,34 @@ export class OrganizationHandler extends ScopeHandler {
     return organizationsResult;
   }
 
-  public async createOrganization(params: MutationCreateOrganizationArgs): Promise<Organization> {
+  public async createOrganization(
+    params: MutationCreateOrganizationArgs,
+    userId: string
+  ): Promise<Organization> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { input } = params;
       const { name } = input;
 
+      // 1. Create organization
       const organization = await this.services.organizations.createOrganization({ name }, tx);
+
+      // 2. Seed standard roles (owner, admin, dev, viewer)
+      const seededRoles = await this.services.organizationRoles.seedOrganizationRoles(
+        organization.id,
+        tx
+      );
+
+      // 3. Add current user to organization_users
+      await this.services.organizationUsers.addOrganizationUser(
+        { organizationId: organization.id, userId },
+        tx
+      );
+
+      // 4. Assign owner role to current user
+      const ownerRole = seededRoles.find((r) => r.role.name === 'owner');
+      if (ownerRole) {
+        await this.services.userRoles.addUserRole({ userId, roleId: ownerRole.role.id }, tx);
+      }
 
       return organization;
     });

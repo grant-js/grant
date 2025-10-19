@@ -1,0 +1,5 @@
+input UserRegistrationData {
+  name: String!
+  username: String!
+  password: String!
+}

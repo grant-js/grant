@@ -5,6 +5,10 @@ import { groupTags, groupTagsRelations } from './group-tags/schema';
 import { groups, groupsRelations } from './groups/schema';
 import { organizationGroups, organizationGroupsRelations } from './organization-groups/schema';
 import {
+  organizationInvitations,
+  organizationInvitationsRelations,
+} from './organization-invitations/schema';
+import {
   organizationPermissions,
   organizationPermissionsRelations,
 } from './organization-permissions/schema';
@@ -46,6 +50,7 @@ export const schema = {
   groupTags,
   groups,
   organizationGroups,
+  organizationInvitations,
   organizationPermissions,
   organizationProjects,
   organizationRoles,
@@ -73,6 +78,7 @@ export const schema = {
   groupTagsRelations,
   groupsRelations,
   organizationGroupsRelations,
+  organizationInvitationsRelations,
   organizationPermissionsRelations,
   organizationProjectsRelations,
   organizationRolesRelations,

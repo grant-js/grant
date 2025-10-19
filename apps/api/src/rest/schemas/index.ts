@@ -2,6 +2,7 @@ export * from './accounts.schemas';
 export * from './auth.schemas';
 export * from './common.schemas';
 export * from './groups.schemas';
+export * from './organization-invitations.schemas';
 export * from './organizations.schemas';
 export * from './permissions.schemas';
 export * from './projects.schemas';

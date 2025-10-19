@@ -22,6 +22,20 @@ export type Scalars = {
   JSON: { input: Record<string, unknown>; output: Record<string, unknown> };
 };
 
+export type AcceptInvitationInput = {
+  token: Scalars['String']['input'];
+  userData?: InputMaybe<UserRegistrationData>;
+};
+
+export type AcceptInvitationResult = {
+  __typename?: 'AcceptInvitationResult';
+  account?: Maybe<Account>;
+  invitation?: Maybe<OrganizationInvitation>;
+  isNewUser?: Maybe<Scalars['Boolean']['output']>;
+  requiresRegistration: Scalars['Boolean']['output'];
+  user?: Maybe<User>;
+};
+
 export type Account = Auditable & {
   __typename?: 'Account';
   createdAt: Scalars['Date']['output'];
@@ -381,6 +395,12 @@ export type GroupTagTagArgs = {
   scope: Scope;
 };
 
+export type InviteMemberInput = {
+  email: Scalars['String']['input'];
+  organizationId: Scalars['ID']['input'];
+  roleId: Scalars['ID']['input'];
+};
+
 export type LoginInput = {
   provider: UserAuthenticationMethodProvider;
   providerData: Scalars['JSON']['input'];
@@ -399,6 +419,7 @@ export type LoginResponse = {
 export type Mutation = {
   __typename?: 'Mutation';
   _empty?: Maybe<Scalars['String']['output']>;
+  acceptInvitation: AcceptInvitationResult;
   createGroup: Group;
   createOrganization: Organization;
   createPermission: Permission;
@@ -414,9 +435,11 @@ export type Mutation = {
   deleteRole: Role;
   deleteTag: Tag;
   deleteUser: User;
+  inviteMember: OrganizationInvitation;
   login: LoginResponse;
   refreshSession: RefreshSessionResponse;
   register: CreateAccountResult;
+  revokeInvitation: OrganizationInvitation;
   updateAccount: Account;
   updateGroup: Group;
   updateOrganization: Organization;
@@ -425,6 +448,10 @@ export type Mutation = {
   updateRole: Role;
   updateTag: Tag;
   updateUser: User;
+};
+
+export type MutationAcceptInvitationArgs = {
+  input: AcceptInvitationInput;
 };
 
 export type MutationCreateGroupArgs = {
@@ -493,6 +520,10 @@ export type MutationDeleteUserArgs = {
   scope: Scope;
 };
 
+export type MutationInviteMemberArgs = {
+  input: InviteMemberInput;
+};
+
 export type MutationLoginArgs = {
   input: LoginInput;
 };
@@ -504,6 +535,10 @@ export type MutationRefreshSessionArgs = {
 
 export type MutationRegisterArgs = {
   input: RegisterInput;
+};
+
+export type MutationRevokeInvitationArgs = {
+  id: Scalars['ID']['input'];
 };
 
 export type MutationUpdateAccountArgs = {
@@ -573,6 +608,38 @@ export type OrganizationGroup = Auditable & {
   organizationId: Scalars['ID']['output'];
   updatedAt: Scalars['Date']['output'];
 };
+
+export type OrganizationInvitation = Auditable & {
+  __typename?: 'OrganizationInvitation';
+  acceptedAt?: Maybe<Scalars['Date']['output']>;
+  createdAt: Scalars['Date']['output'];
+  deletedAt?: Maybe<Scalars['Date']['output']>;
+  email: Scalars['String']['output'];
+  expiresAt: Scalars['Date']['output'];
+  id: Scalars['ID']['output'];
+  invitedBy: Scalars['ID']['output'];
+  inviter: User;
+  organization: Organization;
+  organizationId: Scalars['ID']['output'];
+  role: Role;
+  roleId: Scalars['ID']['output'];
+  status: OrganizationInvitationStatus;
+  updatedAt: Scalars['Date']['output'];
+};
+
+export type OrganizationInvitationPage = {
+  __typename?: 'OrganizationInvitationPage';
+  hasNextPage: Scalars['Boolean']['output'];
+  invitations: Array<OrganizationInvitation>;
+  totalCount: Scalars['Int']['output'];
+};
+
+export enum OrganizationInvitationStatus {
+  Accepted = 'accepted',
+  Expired = 'expired',
+  Pending = 'pending',
+  Revoked = 'revoked',
+}
 
 export type OrganizationPage = PaginatedResults & {
   __typename?: 'OrganizationPage';
@@ -846,6 +913,8 @@ export type Query = {
   accounts: AccountPage;
   checkUsername: UsernameAvailability;
   groups: GroupPage;
+  invitation?: Maybe<OrganizationInvitation>;
+  organizationInvitations: OrganizationInvitationPage;
   organizations: OrganizationPage;
   permissions: PermissionPage;
   projects: ProjectPage;
@@ -874,6 +943,15 @@ export type QueryGroupsArgs = {
   search?: InputMaybe<Scalars['String']['input']>;
   sort?: InputMaybe<GroupSortInput>;
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
+export type QueryInvitationArgs = {
+  token: Scalars['String']['input'];
+};
+
+export type QueryOrganizationInvitationsArgs = {
+  organizationId: Scalars['ID']['input'];
+  status?: InputMaybe<OrganizationInvitationStatus>;
 };
 
 export type QueryOrganizationsArgs = {
@@ -1323,6 +1401,12 @@ export type UserPage = PaginatedResults & {
   hasNextPage: Scalars['Boolean']['output'];
   totalCount: Scalars['Int']['output'];
   users: Array<User>;
+};
+
+export type UserRegistrationData = {
+  name: Scalars['String']['input'];
+  password: Scalars['String']['input'];
+  username: Scalars['String']['input'];
 };
 
 export type UserRole = Auditable & {

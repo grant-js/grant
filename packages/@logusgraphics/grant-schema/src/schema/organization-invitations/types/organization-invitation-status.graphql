@@ -1,0 +1,6 @@
+enum OrganizationInvitationStatus {
+  pending
+  accepted
+  expired
+  revoked
+}

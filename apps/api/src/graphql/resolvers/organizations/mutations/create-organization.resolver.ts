@@ -4,8 +4,13 @@ import { GraphqlContext } from '@/graphql/types';
 
 export const createOrganizationResolver: MutationResolvers<GraphqlContext>['createOrganization'] =
   async (_parent, { input }, context) => {
-    const createdOrganization = await context.handlers.organizations.createOrganization({
-      input,
-    });
+    if (!context.user) {
+      throw new Error('Authentication required');
+    }
+
+    const createdOrganization = await context.handlers.organizations.createOrganization(
+      { input },
+      context.user.id
+    );
     return createdOrganization;
   };

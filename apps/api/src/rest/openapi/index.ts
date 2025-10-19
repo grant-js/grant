@@ -6,6 +6,7 @@
  * - accounts.openapi.ts: Account management endpoints
  * - users.openapi.ts: User management endpoints
  * - organizations.openapi.ts: Organization endpoints
+ * - organization-invitations.openapi.ts: Organization invitation endpoints
  * - projects.openapi.ts: Project endpoints
  * - roles.openapi.ts: Role endpoints
  * - groups.openapi.ts: Group endpoints
@@ -17,6 +18,7 @@ export { registerAccountsOpenApi } from './accounts.openapi';
 export { registerAuthEndpoints } from './auth.openapi';
 export { generateOpenApiDocument, initializeOpenApiRegistry, registry } from './config.openapi';
 export { registerGroupsOpenApi } from './groups.openapi';
+export { registerOrganizationInvitationsOpenApi } from './organization-invitations.openapi';
 export { registerOrganizationsOpenApi } from './organizations.openapi';
 export { registerPermissionsOpenApi } from './permissions.openapi';
 export { registerProjectsOpenApi } from './projects.openapi';

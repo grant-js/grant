@@ -1,5 +1,6 @@
 import * as accountQueries from './accounts/queries';
 import * as groupQueries from './groups/queries';
+import * as organizationInvitationQueries from './organization-invitations/queries';
 import * as organizationQueries from './organizations/queries';
 import * as permissionQueries from './permissions/queries';
 import * as projectQueries from './projects/queries';
@@ -14,6 +15,8 @@ export const Query = {
   roles: roleQueries.getRoles,
   groups: groupQueries.getGroups,
   organizations: organizationQueries.getOrganizations,
+  organizationInvitations: organizationInvitationQueries.organizationInvitations,
+  invitation: organizationInvitationQueries.invitation,
   projects: projectQueries.getProjects,
   permissions: permissionQueries.getPermissions,
   tags: tagQueries.getTags,

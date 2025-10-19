@@ -1,9 +1,9 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { organizationRolesAuditLogs } from '@logusgraphics/grant-database';
+import { DbSchema, organizationRolesAuditLogs } from '@logusgraphics/grant-database';
 import {
   AddOrganizationRoleInput,
   OrganizationRole,
   RemoveOrganizationRoleInput,
+  Role,
 } from '@logusgraphics/grant-schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -12,15 +12,15 @@ import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
+  DeleteParams,
+  createDynamicSingleSchema,
   validateInput,
   validateOutput,
-  createDynamicSingleSchema,
-  DeleteParams,
 } from './common';
 import {
+  addOrganizationRoleInputSchema,
   getOrganizationRolesParamsSchema,
   organizationRoleSchema,
-  addOrganizationRoleInputSchema,
   removeOrganizationRoleInputSchema,
 } from './organization-roles.schemas';
 
@@ -192,5 +192,84 @@ export class OrganizationRoleService extends AuditService {
       organizationRole,
       context
     );
+  }
+
+  /**
+   * Seed standard organization roles (owner, admin, dev, viewer)
+   * This is called when a new organization is created
+   */
+  public async seedOrganizationRoles(
+    organizationId: string,
+    transaction?: Transaction
+  ): Promise<Array<{ role: Role; organizationRole: OrganizationRole }>> {
+    const context = 'OrganizationRoleService.seedOrganizationRoles';
+
+    await this.organizationExists(organizationId, transaction);
+
+    const standardRoles = [
+      {
+        name: 'owner',
+        description: 'Full control over the organization and all its resources',
+      },
+      {
+        name: 'admin',
+        description: 'Administrative access to manage organization settings and members',
+      },
+      {
+        name: 'dev',
+        description: 'Developer access to manage projects and resources',
+      },
+      {
+        name: 'viewer',
+        description: 'Read-only access to organization resources',
+      },
+    ];
+
+    const results = [];
+
+    for (const roleData of standardRoles) {
+      // Create the role
+      const role = await this.repositories.roleRepository.createRole(
+        {
+          name: roleData.name,
+          description: roleData.description,
+        },
+        transaction
+      );
+
+      // Associate role with organization
+      const organizationRole =
+        await this.repositories.organizationRoleRepository.addOrganizationRole(
+          {
+            organizationId,
+            roleId: role.id,
+          },
+          transaction
+        );
+
+      // Log the creation
+      const newValues = {
+        id: organizationRole.id,
+        organizationId: organizationRole.organizationId,
+        roleId: organizationRole.roleId,
+        createdAt: organizationRole.createdAt,
+        updatedAt: organizationRole.updatedAt,
+      };
+
+      const metadata = {
+        context,
+        roleName: roleData.name,
+        seeded: true,
+      };
+
+      await this.logCreate(organizationRole.id, newValues, metadata, transaction);
+
+      results.push({
+        role,
+        organizationRole,
+      });
+    }
+
+    return results;
   }
 }

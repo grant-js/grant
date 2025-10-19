@@ -114,10 +114,23 @@ export class OrganizationsController extends BaseController {
   ) {
     try {
       const { name } = req.body;
+      const userId = this.context.user?.id;
 
-      const organization = await this.context.handlers.organizations.createOrganization({
-        input: { name },
-      });
+      if (!userId) {
+        return this.handleError(
+          res,
+          new Error('Authentication required'),
+          'createOrganization',
+          401
+        );
+      }
+
+      const organization = await this.context.handlers.organizations.createOrganization(
+        {
+          input: { name },
+        },
+        userId
+      );
 
       return this.created(res, organization);
     } catch (error) {

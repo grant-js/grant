@@ -243,6 +243,46 @@ export const APOLLO_CONFIG = {
 } as const;
 
 // ============================================================================
+// Email Configuration
+// ============================================================================
+
+export const EMAIL_CONFIG = {
+  /** Email provider */
+  provider: getEnvEnum(
+    'EMAIL_PROVIDER',
+    ['console', 'mailgun', 'mailjet', 'smtp'] as const,
+    'console'
+  ),
+
+  /** From email address */
+  from: getEnv('EMAIL_FROM', 'noreply@yourdomain.com'),
+
+  /** From name displayed in emails */
+  fromName: process.env.EMAIL_FROM_NAME || 'Grant Platform',
+
+  /** Mailgun configuration */
+  mailgun: {
+    apiKey: process.env.MAILGUN_API_KEY || '',
+    domain: process.env.MAILGUN_DOMAIN || '',
+  },
+
+  /** Mailjet configuration */
+  mailjet: {
+    apiKey: process.env.MAILJET_API_KEY || '',
+    secretKey: process.env.MAILJET_SECRET_KEY || '',
+  },
+
+  /** SMTP configuration */
+  smtp: {
+    host: process.env.SMTP_HOST || 'smtp.example.com',
+    port: getEnvNumber('SMTP_PORT', 587),
+    secure: getEnvBoolean('SMTP_SECURE', false),
+    user: process.env.SMTP_USER || '',
+    password: process.env.SMTP_PASSWORD || '',
+  },
+} as const;
+
+// ============================================================================
 // System Constants (Not Configurable via ENV)
 // ============================================================================
 
@@ -293,6 +333,37 @@ export function validateConfig(): void {
     errors.push('SECURITY_FRONTEND_URL must be set in production');
   }
 
+  // Validate email configuration
+  if (EMAIL_CONFIG.provider !== 'console') {
+    if (!EMAIL_CONFIG.from) {
+      errors.push('EMAIL_FROM is required when not using console provider');
+    }
+
+    switch (EMAIL_CONFIG.provider) {
+      case 'mailgun':
+        if (!EMAIL_CONFIG.mailgun.apiKey || !EMAIL_CONFIG.mailgun.domain) {
+          errors.push(
+            'MAILGUN_API_KEY and MAILGUN_DOMAIN are required when using mailgun provider'
+          );
+        }
+        break;
+      case 'mailjet':
+        if (!EMAIL_CONFIG.mailjet.apiKey || !EMAIL_CONFIG.mailjet.secretKey) {
+          errors.push(
+            'MAILJET_API_KEY and MAILJET_SECRET_KEY are required when using mailjet provider'
+          );
+        }
+        break;
+      case 'smtp':
+        if (!EMAIL_CONFIG.smtp.host || !EMAIL_CONFIG.smtp.user || !EMAIL_CONFIG.smtp.password) {
+          errors.push(
+            'SMTP_HOST, SMTP_USER, and SMTP_PASSWORD are required when using smtp provider'
+          );
+        }
+        break;
+    }
+  }
+
   if (errors.length > 0) {
     throw new Error(
       `Configuration validation failed:\n${errors.map((e) => `  - ${e}`).join('\n')}`
@@ -312,6 +383,7 @@ export function printConfigSummary(): void {
   console.log(
     `   JWT Expiration: ${JWT_CONFIG.accessTokenExpirationMinutes}min / ${JWT_CONFIG.refreshTokenExpirationDays}d`
   );
+  console.log(`   Email Provider: ${EMAIL_CONFIG.provider}`);
   if (CACHE_CONFIG.strategy === 'redis') {
     console.log(`   Redis: ${REDIS_CONFIG.host}:${REDIS_CONFIG.port}`);
   }
@@ -328,6 +400,7 @@ export const config = {
   redis: REDIS_CONFIG,
   security: SECURITY_CONFIG,
   apollo: APOLLO_CONFIG,
+  email: EMAIL_CONFIG,
   system: SYSTEM_CONSTANTS,
 } as const;
 

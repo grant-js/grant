@@ -1,0 +1,3 @@
+extend type Mutation {
+  inviteMember(input: InviteMemberInput!): OrganizationInvitation!
+}

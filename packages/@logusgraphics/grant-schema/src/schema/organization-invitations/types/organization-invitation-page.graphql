@@ -1,0 +1,5 @@
+type OrganizationInvitationPage {
+  invitations: [OrganizationInvitation!]!
+  totalCount: Int!
+  hasNextPage: Boolean!
+}

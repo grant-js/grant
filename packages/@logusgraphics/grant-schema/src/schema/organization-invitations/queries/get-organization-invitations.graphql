@@ -1,0 +1,6 @@
+extend type Query {
+  organizationInvitations(
+    organizationId: ID!
+    status: OrganizationInvitationStatus
+  ): OrganizationInvitationPage!
+}

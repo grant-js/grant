@@ -5,6 +5,7 @@ import { Services } from '@/services';
 
 import { AccountHandler } from './accounts.handler';
 import { GroupHandler } from './groups.handler';
+import { OrganizationInvitationsHandler } from './organization-invitations.handler';
 import { OrganizationHandler } from './organizations.handler';
 import { PermissionHandler } from './permissions.handler';
 import { ProjectHandler } from './projects.handler';
@@ -17,6 +18,7 @@ export type Handlers = ReturnType<typeof createHandlers>;
 export function createHandlers(scopeCache: IEntityCacheAdapter, services: Services, db: DbSchema) {
   return {
     accounts: new AccountHandler(scopeCache, services, db),
+    organizationInvitations: new OrganizationInvitationsHandler(services, db),
     organizations: new OrganizationHandler(scopeCache, services, db),
     projects: new ProjectHandler(scopeCache, services, db),
     users: new UserHandler(scopeCache, services, db),

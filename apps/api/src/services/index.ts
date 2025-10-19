@@ -5,10 +5,12 @@ import { AuthenticatedUser } from '@/types';
 
 import { AccountProjectService } from './account-projects.service';
 import { AccountService } from './accounts.service';
+import { EmailService } from './email.service';
 import { GroupPermissionService } from './group-permissions.service';
 import { GroupTagService } from './group-tags.service';
 import { GroupService } from './groups.service';
 import { OrganizationGroupService } from './organization-groups.service';
+import { OrganizationInvitationService } from './organization-invitations.service';
 import { OrganizationPermissionService } from './organization-permissions.service';
 import { OrganizationProjectService } from './organization-projects.service';
 import { OrganizationRoleService } from './organization-roles.service';
@@ -43,6 +45,7 @@ export function createServices(
   return {
     accounts: new AccountService(repositories, user, db),
     accountProjects: new AccountProjectService(repositories, user, db),
+    email: new EmailService(),
     users: new UserService(repositories, user, db),
     userAuthenticationMethods: new UserAuthenticationMethodService(repositories, user, db),
     userSessions: new UserSessionService(repositories, user, db),
@@ -59,6 +62,7 @@ export function createServices(
     projectTags: new ProjectTagService(repositories, user, db),
     projectUsers: new ProjectUserService(repositories, user, db),
     organizations: new OrganizationService(repositories, user, db),
+    organizationInvitations: new OrganizationInvitationService(repositories, user, db),
     organizationRoles: new OrganizationRoleService(repositories, user, db),
     organizationTags: new OrganizationTagService(repositories, user, db),
     roleTags: new RoleTagService(repositories, user, db),

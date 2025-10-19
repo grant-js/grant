@@ -1,6 +1,7 @@
 import * as accountMutations from './accounts/mutations';
 import * as authMutations from './auth/mutations';
 import * as groupMutations from './groups/mutations';
+import * as organizationInvitationMutations from './organization-invitations/mutations';
 import * as organizationMutations from './organizations/mutations';
 import * as permissionMutations from './permissions/mutations';
 import * as projectMutations from './projects/mutations';
@@ -25,6 +26,9 @@ export const Mutation = {
   createOrganization: organizationMutations.createOrganization,
   updateOrganization: organizationMutations.updateOrganization,
   deleteOrganization: organizationMutations.deleteOrganization,
+  inviteMember: organizationInvitationMutations.inviteMember,
+  acceptInvitation: organizationInvitationMutations.acceptInvitation,
+  revokeInvitation: organizationInvitationMutations.revokeInvitation,
   createProject: projectMutations.createProject,
   updateProject: projectMutations.updateProject,
   deleteProject: projectMutations.deleteProject,
