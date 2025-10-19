@@ -1,6 +1,4 @@
-// Export all user-related hooks, queries, mutations, and cache utilities
-export { useUsers } from './useUsers';
-export { useUserMutations } from './useUserMutations';
-export * from './queries';
-export * from './mutations';
+// Export all user-related hooks and cache utilities
 export * from './cache';
+export { useUserMutations } from './useUserMutations';
+export { useUsers } from './useUsers';

@@ -6,11 +6,15 @@ import {
   Organization,
   UpdateOrganizationInput,
 } from '@logusgraphics/grant-schema';
+import {
+  CreateOrganizationDocument,
+  UpdateOrganizationDocument,
+  DeleteOrganizationDocument,
+} from '@logusgraphics/grant-schema';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { evictOrganizationsCache } from './cache';
-import { CREATE_ORGANIZATION, UPDATE_ORGANIZATION, DELETE_ORGANIZATION } from './mutations';
 
 export function useOrganizationMutations() {
   const t = useTranslations('organizations');
@@ -20,21 +24,21 @@ export function useOrganizationMutations() {
   };
 
   const [createOrganization] = useMutation<{ createOrganization: Organization }>(
-    CREATE_ORGANIZATION,
+    CreateOrganizationDocument,
     {
       update,
     }
   );
 
   const [updateOrganization] = useMutation<{ updateOrganization: Organization }>(
-    UPDATE_ORGANIZATION,
+    UpdateOrganizationDocument,
     {
       update,
     }
   );
 
   const [deleteOrganization] = useMutation<{ deleteOrganization: Organization }>(
-    DELETE_ORGANIZATION,
+    DeleteOrganizationDocument,
     {
       update,
     }

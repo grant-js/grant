@@ -7,11 +7,15 @@ import {
   Tag,
   TagPage,
 } from '@logusgraphics/grant-schema';
+import {
+  CreateTagDocument,
+  UpdateTagDocument,
+  DeleteTagDocument,
+} from '@logusgraphics/grant-schema';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { evictTagsCache } from './cache';
-import { CREATE_TAG, UPDATE_TAG, DELETE_TAG } from './mutations';
 
 export function useTagMutations() {
   const t = useTranslations('tags');
@@ -20,15 +24,15 @@ export function useTagMutations() {
     evictTagsCache(cache);
   };
 
-  const [createTag] = useMutation<{ createTag: TagPage }>(CREATE_TAG, {
+  const [createTag] = useMutation<{ createTag: TagPage }>(CreateTagDocument, {
     update,
   });
 
-  const [updateTag] = useMutation<{ updateTag: Tag }>(UPDATE_TAG, {
+  const [updateTag] = useMutation<{ updateTag: Tag }>(UpdateTagDocument, {
     update,
   });
 
-  const [deleteTag] = useMutation<{ deleteTag: Tag }>(DELETE_TAG, {
+  const [deleteTag] = useMutation<{ deleteTag: Tag }>(DeleteTagDocument, {
     update,
   });
 

@@ -6,12 +6,11 @@ import {
   AccountType,
   UserAuthenticationEmailProviderAction,
 } from '@logusgraphics/grant-schema';
+import { LoginDocument, RegisterDocument } from '@logusgraphics/grant-schema';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { useAuthStore } from '@/stores/auth.store';
-
-import { LOGIN, REGISTER } from './mutations';
 
 interface LoginInput {
   email: string;
@@ -30,8 +29,8 @@ export function useAuthMutations() {
   const t = useTranslations('auth');
   const { setAuthData, clearAuth } = useAuthStore();
 
-  const [login] = useMutation<{ login: LoginResponse }>(LOGIN);
-  const [register] = useMutation<{ register: CreateAccountResult }>(REGISTER);
+  const [login] = useMutation<{ login: LoginResponse }>(LoginDocument);
+  const [register] = useMutation<{ register: CreateAccountResult }>(RegisterDocument);
 
   const handleLogin = async (input: LoginInput) => {
     try {

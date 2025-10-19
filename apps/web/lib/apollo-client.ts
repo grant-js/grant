@@ -93,7 +93,7 @@ const errorLink = onError(({ error, operation, forward }) => {
 
 const refreshSession = async (accessToken: string, refreshToken: string) => {
   try {
-    const { REFRESH_SESSION } = await import('@/hooks/auth/mutations');
+    const { RefreshSessionDocument } = await import('@logusgraphics/grant-schema');
 
     const tempClient = new ApolloClient({
       cache: new InMemoryCache(),
@@ -104,7 +104,7 @@ const refreshSession = async (accessToken: string, refreshToken: string) => {
     });
 
     const result = await tempClient.mutate({
-      mutation: REFRESH_SESSION,
+      mutation: RefreshSessionDocument,
       variables: {
         accessToken,
         refreshToken,

@@ -1,11 +1,9 @@
 import { useCallback, useState } from 'react';
 
 import { useLazyQuery } from '@apollo/client/react';
-import { UsernameAvailability } from '@logusgraphics/grant-schema';
+import { CheckUsernameDocument, UsernameAvailability } from '@logusgraphics/grant-schema';
 
 import { useDebounce } from '@/hooks/common/useDebounce';
-
-import { CHECK_USERNAME } from './queries/checkUsername';
 
 interface UseUsernameValidationReturn {
   isChecking: boolean;
@@ -17,7 +15,7 @@ interface UseUsernameValidationReturn {
 export function useUsernameValidation(): UseUsernameValidationReturn {
   const [checkUsernameQuery, { loading, error }] = useLazyQuery<{
     checkUsername: UsernameAvailability;
-  }>(CHECK_USERNAME);
+  }>(CheckUsernameDocument);
 
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
 

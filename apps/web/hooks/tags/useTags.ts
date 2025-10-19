@@ -3,8 +3,7 @@ import { useMemo } from 'react';
 import { ApolloClient } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { QueryTagsArgs, Tag, TagPage } from '@logusgraphics/grant-schema';
-
-import { GET_TAGS } from './queries';
+import { GetTagsDocument } from '@logusgraphics/grant-schema';
 
 interface UseTagsResult {
   tags: Tag[];
@@ -23,7 +22,7 @@ export function useTags(params: QueryTagsArgs): UseTagsResult {
 
   const variables = useMemo(() => params, [params]);
 
-  const { data, loading, error, refetch } = useQuery<{ tags: TagPage }>(GET_TAGS, {
+  const { data, loading, error, refetch } = useQuery<{ tags: TagPage }>(GetTagsDocument, {
     variables,
     skip,
     fetchPolicy: 'cache-and-network',

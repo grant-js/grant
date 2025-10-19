@@ -6,11 +6,15 @@ import {
   Permission,
   UpdatePermissionInput,
 } from '@logusgraphics/grant-schema';
+import {
+  CreatePermissionDocument,
+  UpdatePermissionDocument,
+  DeletePermissionDocument,
+} from '@logusgraphics/grant-schema';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { evictPermissionsCache } from './cache';
-import { CREATE_PERMISSION, UPDATE_PERMISSION, DELETE_PERMISSION } from './mutations';
 
 export function usePermissionMutations() {
   const t = useTranslations('permissions');
@@ -18,17 +22,26 @@ export function usePermissionMutations() {
     evictPermissionsCache(cache);
   };
 
-  const [createPermission] = useMutation<{ createPermission: Permission }>(CREATE_PERMISSION, {
-    update,
-  });
+  const [createPermission] = useMutation<{ createPermission: Permission }>(
+    CreatePermissionDocument,
+    {
+      update,
+    }
+  );
 
-  const [updatePermission] = useMutation<{ updatePermission: Permission }>(UPDATE_PERMISSION, {
-    update,
-  });
+  const [updatePermission] = useMutation<{ updatePermission: Permission }>(
+    UpdatePermissionDocument,
+    {
+      update,
+    }
+  );
 
-  const [deletePermission] = useMutation<{ deletePermission: Permission }>(DELETE_PERMISSION, {
-    update,
-  });
+  const [deletePermission] = useMutation<{ deletePermission: Permission }>(
+    DeletePermissionDocument,
+    {
+      update,
+    }
+  );
 
   const handleCreatePermission = async (input: CreatePermissionInput) => {
     try {

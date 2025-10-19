@@ -1,0 +1,12 @@
+query GetInvitation($token: String!) {
+  invitation(token: $token) {
+    id
+    organizationId
+    email
+    roleId
+    status
+    expiresAt
+    invitedBy
+    createdAt
+  }
+}

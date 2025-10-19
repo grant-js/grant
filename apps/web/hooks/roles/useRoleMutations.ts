@@ -1,16 +1,18 @@
 import { ApolloCache } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import {
+  CreateRoleDocument,
   CreateRoleInput,
+  DeleteRoleDocument,
   MutationDeleteRoleArgs,
   Role,
+  UpdateRoleDocument,
   UpdateRoleInput,
 } from '@logusgraphics/grant-schema';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { evictRolesCache } from './cache';
-import { CREATE_ROLE, UPDATE_ROLE, DELETE_ROLE } from './mutations';
 
 export function useRoleMutations() {
   const t = useTranslations('roles');
@@ -19,15 +21,15 @@ export function useRoleMutations() {
     evictRolesCache(cache);
   };
 
-  const [createRole] = useMutation<{ createRole: Role }>(CREATE_ROLE, {
+  const [createRole] = useMutation<{ createRole: Role }>(CreateRoleDocument, {
     update,
   });
 
-  const [updateRole] = useMutation<{ updateRole: Role }>(UPDATE_ROLE, {
+  const [updateRole] = useMutation<{ updateRole: Role }>(UpdateRoleDocument, {
     update,
   });
 
-  const [deleteRole] = useMutation<{ deleteRole: Role }>(DELETE_ROLE, {
+  const [deleteRole] = useMutation<{ deleteRole: Role }>(DeleteRoleDocument, {
     update,
   });
 

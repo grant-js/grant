@@ -1,21 +1,29 @@
+import { GraphQLResolveInfo } from 'graphql';
 import { describe, expect, it } from 'vitest';
 
 import { getDirectFieldSelection } from '@/lib/field-selection.lib';
 
+interface MockFieldNode {
+  selectionSet?: {
+    selections: unknown[];
+  };
+}
+
 // Mock GraphQLResolveInfo structure
-const createMockResolveInfo = (fieldNodes: any[]) => ({
-  fieldNodes,
-  fieldName: 'users',
-  returnType: {} as any,
-  parentType: {} as any,
-  path: { key: 'users', typename: 'User', prev: undefined },
-  variableValues: {},
-  operation: {} as any,
-  rootValue: {},
-  schema: {} as any,
-  fragments: {},
-  cacheControl: {} as any,
-});
+const createMockResolveInfo = (fieldNodes: MockFieldNode[]): GraphQLResolveInfo =>
+  ({
+    fieldNodes,
+    fieldName: 'users',
+    returnType: {} as unknown,
+    parentType: {} as unknown,
+    path: { key: 'users', typename: 'User', prev: undefined },
+    variableValues: {},
+    operation: {} as unknown,
+    rootValue: {},
+    schema: {} as unknown,
+    fragments: {},
+    cacheControl: {} as unknown,
+  }) as unknown as GraphQLResolveInfo;
 
 describe('Field Selection Optimization', () => {
   describe('getDirectFieldSelection', () => {

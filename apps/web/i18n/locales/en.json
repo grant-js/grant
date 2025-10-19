@@ -1217,6 +1217,54 @@
       "actions": "Actions"
     }
   },
+  "members": {
+    "title": "Members",
+    "description": "Manage organization members and invitations",
+    "inviteButton": "Invite Member",
+    "empty": {
+      "title": "No members yet",
+      "description": "Invite members to join your organization"
+    },
+    "table": {
+      "name": "Name",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "expired": "Expired",
+      "revoked": "Revoked"
+    },
+    "actions": {
+      "revoke": "Revoke",
+      "resend": "Resend"
+    },
+    "inviteDialog": {
+      "title": "Invite Member",
+      "description": "Send an invitation to join this organization",
+      "confirm": "Send Invitation",
+      "cancel": "Cancel",
+      "sending": "Sending..."
+    },
+    "form": {
+      "email": "Email Address",
+      "emailPlaceholder": "member@example.com",
+      "role": "Role",
+      "rolePlaceholder": "Select a role",
+      "rolesLoading": "Loading roles...",
+      "noRolesAvailable": "No roles available"
+    },
+    "notifications": {
+      "inviteSuccess": "Invitation sent successfully",
+      "inviteError": "Failed to send invitation",
+      "acceptSuccess": "Invitation accepted",
+      "acceptError": "Failed to accept invitation",
+      "revokeSuccess": "Invitation revoked",
+      "revokeError": "Failed to revoke invitation"
+    }
+  },
   "settings": {
     "title": "System Settings",
     "description": "Configure system preferences and options"

@@ -3,8 +3,7 @@ import { useMemo } from 'react';
 import { ApolloClient } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { QueryRolesArgs, Role, RolePage } from '@logusgraphics/grant-schema';
-
-import { GET_ROLES } from './queries';
+import { GetRolesDocument } from '@logusgraphics/grant-schema';
 
 interface UseRolesResult {
   roles: Role[];
@@ -34,7 +33,7 @@ export function useRoles(params: QueryRolesArgs): UseRolesResult {
     [scope, ids, limit, page, search, sort, tagIds]
   );
 
-  const { data, loading, error, refetch } = useQuery<{ roles: RolePage }>(GET_ROLES, {
+  const { data, loading, error, refetch } = useQuery<{ roles: RolePage }>(GetRolesDocument, {
     variables,
     skip,
     fetchPolicy: 'cache-and-network',

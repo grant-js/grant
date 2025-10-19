@@ -1,7 +1,6 @@
-/* eslint-disable */
 import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/core';
 export type Maybe<T> = T | null;
-export type InputMaybe<T> = T | null | undefined;
+export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
@@ -1662,6 +1661,105 @@ export type UpdateGroupMutation = {
   };
 };
 
+export type AcceptInvitationMutationVariables = Exact<{
+  input: AcceptInvitationInput;
+}>;
+
+export type AcceptInvitationMutation = {
+  __typename?: 'Mutation';
+  acceptInvitation: {
+    __typename?: 'AcceptInvitationResult';
+    requiresRegistration: boolean;
+    isNewUser?: boolean | null;
+    user?: { __typename?: 'User'; id: string; name: string; createdAt: Date } | null;
+    account?: { __typename?: 'Account'; id: string; name: string; slug: string } | null;
+    invitation?: {
+      __typename?: 'OrganizationInvitation';
+      id: string;
+      email: string;
+      status: OrganizationInvitationStatus;
+    } | null;
+  };
+};
+
+export type GetInvitationQueryVariables = Exact<{
+  token: Scalars['String']['input'];
+}>;
+
+export type GetInvitationQuery = {
+  __typename?: 'Query';
+  invitation?: {
+    __typename?: 'OrganizationInvitation';
+    id: string;
+    organizationId: string;
+    email: string;
+    roleId: string;
+    status: OrganizationInvitationStatus;
+    expiresAt: Date;
+    invitedBy: string;
+    createdAt: Date;
+  } | null;
+};
+
+export type GetOrganizationInvitationsQueryVariables = Exact<{
+  organizationId: Scalars['ID']['input'];
+  status?: InputMaybe<OrganizationInvitationStatus>;
+}>;
+
+export type GetOrganizationInvitationsQuery = {
+  __typename?: 'Query';
+  organizationInvitations: {
+    __typename?: 'OrganizationInvitationPage';
+    totalCount: number;
+    hasNextPage: boolean;
+    invitations: Array<{
+      __typename?: 'OrganizationInvitation';
+      id: string;
+      organizationId: string;
+      email: string;
+      roleId: string;
+      status: OrganizationInvitationStatus;
+      expiresAt: Date;
+      invitedBy: string;
+      createdAt: Date;
+    }>;
+  };
+};
+
+export type InviteMemberMutationVariables = Exact<{
+  input: InviteMemberInput;
+}>;
+
+export type InviteMemberMutation = {
+  __typename?: 'Mutation';
+  inviteMember: {
+    __typename?: 'OrganizationInvitation';
+    id: string;
+    organizationId: string;
+    email: string;
+    roleId: string;
+    status: OrganizationInvitationStatus;
+    expiresAt: Date;
+    invitedBy: string;
+    createdAt: Date;
+  };
+};
+
+export type RevokeInvitationMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+export type RevokeInvitationMutation = {
+  __typename?: 'Mutation';
+  revokeInvitation: {
+    __typename?: 'OrganizationInvitation';
+    id: string;
+    email: string;
+    status: OrganizationInvitationStatus;
+    deletedAt?: Date | null;
+  };
+};
+
 export type CreateOrganizationMutationVariables = Exact<{
   input: CreateOrganizationInput;
 }>;
@@ -2707,6 +2805,304 @@ export const UpdateGroupDocument = {
     },
   ],
 } as unknown as DocumentNode<UpdateGroupMutation, UpdateGroupMutationVariables>;
+export const AcceptInvitationDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'AcceptInvitation' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'AcceptInvitationInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'acceptInvitation' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'requiresRegistration' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isNewUser' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'user' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'account' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'invitation' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<AcceptInvitationMutation, AcceptInvitationMutationVariables>;
+export const GetInvitationDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'GetInvitation' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'token' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'invitation' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'token' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'token' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'organizationId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'roleId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'expiresAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'invitedBy' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<GetInvitationQuery, GetInvitationQueryVariables>;
+export const GetOrganizationInvitationsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'GetOrganizationInvitations' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'organizationId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'status' } },
+          type: {
+            kind: 'NamedType',
+            name: { kind: 'Name', value: 'OrganizationInvitationStatus' },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'organizationInvitations' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'organizationId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'organizationId' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'status' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'status' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'invitations' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'organizationId' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'roleId' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'expiresAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'invitedBy' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'totalCount' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'hasNextPage' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  GetOrganizationInvitationsQuery,
+  GetOrganizationInvitationsQueryVariables
+>;
+export const InviteMemberDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'InviteMember' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'InviteMemberInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'inviteMember' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'organizationId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'roleId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'expiresAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'invitedBy' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<InviteMemberMutation, InviteMemberMutationVariables>;
+export const RevokeInvitationDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'RevokeInvitation' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'revokeInvitation' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'id' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'deletedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<RevokeInvitationMutation, RevokeInvitationMutationVariables>;
 export const CreateOrganizationDocument = {
   kind: 'Document',
   definitions: [

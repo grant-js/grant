@@ -3,8 +3,7 @@ import { useMemo } from 'react';
 import { ApolloClient } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { Project, ProjectPage, QueryProjectsArgs } from '@logusgraphics/grant-schema';
-
-import { GET_PROJECTS } from './queries';
+import { GetProjectsDocument } from '@logusgraphics/grant-schema';
 
 interface UseProjectsResult {
   projects: Project[];
@@ -34,12 +33,15 @@ export function useProjects(params: QueryProjectsArgs): UseProjectsResult {
     [scope, ids, limit, page, search, sort, tagIds]
   );
 
-  const { data, loading, error, refetch } = useQuery<{ projects: ProjectPage }>(GET_PROJECTS, {
-    variables,
-    skip,
-    fetchPolicy: 'cache-and-network',
-    notifyOnNetworkStatusChange: true,
-  });
+  const { data, loading, error, refetch } = useQuery<{ projects: ProjectPage }>(
+    GetProjectsDocument,
+    {
+      variables,
+      skip,
+      fetchPolicy: 'cache-and-network',
+      notifyOnNetworkStatusChange: true,
+    }
+  );
 
   const { projects, totalCount } = useMemo(
     () => ({

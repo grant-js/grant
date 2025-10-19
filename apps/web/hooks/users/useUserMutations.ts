@@ -1,8 +1,11 @@
 import { ApolloCache } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import {
+  CreateUserDocument,
   CreateUserInput,
+  DeleteUserDocument,
   MutationDeleteUserArgs,
+  UpdateUserDocument,
   UpdateUserInput,
   User,
 } from '@logusgraphics/grant-schema';
@@ -10,7 +13,6 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { evictUsersCache } from './cache';
-import { CREATE_USER, UPDATE_USER, DELETE_USER } from './mutations';
 
 export function useUserMutations() {
   const t = useTranslations('users');
@@ -19,15 +21,15 @@ export function useUserMutations() {
     evictUsersCache(cache);
   };
 
-  const [createUser] = useMutation<{ createUser: User }>(CREATE_USER, {
+  const [createUser] = useMutation<{ createUser: User }>(CreateUserDocument, {
     update,
   });
 
-  const [updateUser] = useMutation<{ updateUser: User }>(UPDATE_USER, {
+  const [updateUser] = useMutation<{ updateUser: User }>(UpdateUserDocument, {
     update,
   });
 
-  const [deleteUser] = useMutation<{ deleteUser: User }>(DELETE_USER, {
+  const [deleteUser] = useMutation<{ deleteUser: User }>(DeleteUserDocument, {
     update,
   });
 

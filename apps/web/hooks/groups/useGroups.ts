@@ -3,8 +3,7 @@ import { useMemo } from 'react';
 import { ApolloClient } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { Group, GroupPage, QueryGroupsArgs } from '@logusgraphics/grant-schema';
-
-import { GET_GROUPS } from './queries';
+import { GetGroupsDocument } from '@logusgraphics/grant-schema';
 
 interface UseGroupsResult {
   groups: Group[];
@@ -34,7 +33,7 @@ export function useGroups(params: QueryGroupsArgs): UseGroupsResult {
     [scope, ids, limit, page, search, sort, tagIds]
   );
 
-  const { data, loading, error, refetch } = useQuery<{ groups: GroupPage }>(GET_GROUPS, {
+  const { data, loading, error, refetch } = useQuery<{ groups: GroupPage }>(GetGroupsDocument, {
     variables,
     skip,
     fetchPolicy: 'cache-and-network',

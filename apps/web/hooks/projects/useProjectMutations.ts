@@ -1,11 +1,15 @@
 import { ApolloCache } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import { CreateProjectInput, Project, UpdateProjectInput } from '@logusgraphics/grant-schema';
+import {
+  CreateProjectDocument,
+  UpdateProjectDocument,
+  DeleteProjectDocument,
+} from '@logusgraphics/grant-schema';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { evictProjectsCache } from './cache';
-import { CREATE_PROJECT, UPDATE_PROJECT, DELETE_PROJECT } from './mutations';
 
 export function useProjectMutations() {
   const t = useTranslations('projects');
@@ -14,15 +18,15 @@ export function useProjectMutations() {
     evictProjectsCache(cache);
   };
 
-  const [createProject] = useMutation<{ createProject: Project }>(CREATE_PROJECT, {
+  const [createProject] = useMutation<{ createProject: Project }>(CreateProjectDocument, {
     update,
   });
 
-  const [updateProject] = useMutation<{ updateProject: Project }>(UPDATE_PROJECT, {
+  const [updateProject] = useMutation<{ updateProject: Project }>(UpdateProjectDocument, {
     update,
   });
 
-  const [deleteProject] = useMutation<{ deleteProject: Project }>(DELETE_PROJECT, {
+  const [deleteProject] = useMutation<{ deleteProject: Project }>(DeleteProjectDocument, {
     update,
   });
 

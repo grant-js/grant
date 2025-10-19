@@ -1,5 +1,5 @@
-import { Kind, IntValueNode, StringValueNode } from 'graphql';
-import { describe, it, expect } from 'vitest';
+import { IntValueNode, Kind, StringValueNode } from 'graphql';
+import { describe, expect, it } from 'vitest';
 
 import { resolvers } from '@/graphql/resolvers/scalars';
 
@@ -73,7 +73,7 @@ describe('Date Scalar', () => {
 
     it('should throw error for invalid literal kind', () => {
       const invalidAst = { kind: 'INVALID', value: 'test' };
-      expect(() => DateScalar.parseLiteral(invalidAst as any, {})).toThrow(
+      expect(() => DateScalar.parseLiteral(invalidAst as never, {})).toThrow(
         'Can only parse strings to dates but got a: INVALID'
       );
     });

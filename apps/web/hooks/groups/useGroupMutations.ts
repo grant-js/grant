@@ -1,16 +1,18 @@
 import { ApolloCache } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import {
+  CreateGroupDocument,
   CreateGroupInput,
+  DeleteGroupDocument,
   Group,
   MutationDeleteGroupArgs,
   MutationUpdateGroupArgs,
+  UpdateGroupDocument,
 } from '@logusgraphics/grant-schema';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { evictGroupsCache } from './cache';
-import { CREATE_GROUP, UPDATE_GROUP, DELETE_GROUP } from './mutations';
 
 export function useGroupMutations() {
   const t = useTranslations('groups');
@@ -19,15 +21,15 @@ export function useGroupMutations() {
     evictGroupsCache(cache);
   };
 
-  const [createGroup] = useMutation<{ createGroup: Group }>(CREATE_GROUP, {
+  const [createGroup] = useMutation<{ createGroup: Group }>(CreateGroupDocument, {
     update,
   });
 
-  const [updateGroup] = useMutation<{ updateGroup: Group }>(UPDATE_GROUP, {
+  const [updateGroup] = useMutation<{ updateGroup: Group }>(UpdateGroupDocument, {
     update,
   });
 
-  const [deleteGroup] = useMutation<{ deleteGroup: Group }>(DELETE_GROUP, {
+  const [deleteGroup] = useMutation<{ deleteGroup: Group }>(DeleteGroupDocument, {
     update,
   });
 

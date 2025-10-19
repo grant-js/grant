@@ -1,7 +1,8 @@
 'use client';
 
-import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+
+import { useParams } from 'next/navigation';
 
 import { FullPageLoader } from '@/components/common';
 import { Header } from '@/components/layout/Header';
@@ -14,7 +15,7 @@ interface LocaleLayoutProps {
 export default function LocaleLayout({ children }: LocaleLayoutProps) {
   const params = useParams();
   const locale = params.locale as string;
-  const [messages, setMessages] = useState<any>(null);
+  const [messages, setMessages] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

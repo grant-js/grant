@@ -3,8 +3,7 @@ import { useMemo } from 'react';
 import { ApolloClient } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { Permission, PermissionPage, QueryPermissionsArgs } from '@logusgraphics/grant-schema';
-
-import { GET_PERMISSIONS } from './queries';
+import { GetPermissionsDocument } from '@logusgraphics/grant-schema';
 
 interface UsePermissionsResult {
   permissions: Permission[];
@@ -34,7 +33,7 @@ export function usePermissions(options: QueryPermissionsArgs): UsePermissionsRes
   );
 
   const { data, loading, error, refetch } = useQuery<{ permissions: PermissionPage }>(
-    GET_PERMISSIONS,
+    GetPermissionsDocument,
     {
       variables,
       skip,

@@ -4,9 +4,9 @@ const config: CodegenConfig = {
   schema: './src/schema/**/*.graphql',
   documents: './src/operations/**/*.graphql',
   generates: {
-    // Client-side types
-    './src/generated/': {
-      preset: 'client',
+    // Client-side types and operations (optimized - no unused utilities)
+    './src/generated/graphql.ts': {
+      plugins: ['typescript', 'typescript-operations', 'typed-document-node'],
       config: {
         useIndexSignature: true,
         enumsAsTypes: false,
@@ -14,6 +14,7 @@ const config: CodegenConfig = {
           Date: 'Date',
           JSON: 'Record<string, unknown>',
         },
+        // Optimization: Skip unused hooks/components
         withHooks: false,
         withComponent: false,
         withHOC: false,

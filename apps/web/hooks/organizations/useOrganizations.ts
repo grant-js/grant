@@ -7,8 +7,7 @@ import {
   OrganizationPage,
   QueryOrganizationsArgs,
 } from '@logusgraphics/grant-schema';
-
-import { GET_ORGANIZATIONS } from './queries';
+import { GetOrganizationsDocument } from '@logusgraphics/grant-schema';
 
 interface UseOrganizationsResult {
   organizations: Organization[];
@@ -35,7 +34,7 @@ export function useOrganizations(options: QueryOrganizationsArgs): UseOrganizati
   );
 
   const { data, loading, error, refetch } = useQuery<{ organizations: OrganizationPage }>(
-    GET_ORGANIZATIONS,
+    GetOrganizationsDocument,
     {
       variables,
       fetchPolicy: 'cache-and-network',

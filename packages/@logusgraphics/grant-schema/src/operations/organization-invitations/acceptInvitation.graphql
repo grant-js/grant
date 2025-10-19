@@ -1,0 +1,21 @@
+mutation AcceptInvitation($input: AcceptInvitationInput!) {
+  acceptInvitation(input: $input) {
+    requiresRegistration
+    isNewUser
+    user {
+      id
+      name
+      createdAt
+    }
+    account {
+      id
+      name
+      slug
+    }
+    invitation {
+      id
+      email
+      status
+    }
+  }
+}

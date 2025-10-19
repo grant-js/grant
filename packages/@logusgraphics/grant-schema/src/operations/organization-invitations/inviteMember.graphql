@@ -1,0 +1,12 @@
+mutation InviteMember($input: InviteMemberInput!) {
+  inviteMember(input: $input) {
+    id
+    organizationId
+    email
+    roleId
+    status
+    expiresAt
+    invitedBy
+    createdAt
+  }
+}
