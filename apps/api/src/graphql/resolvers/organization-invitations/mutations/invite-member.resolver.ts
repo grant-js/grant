@@ -1,6 +1,7 @@
 import { MutationResolvers } from '@logusgraphics/grant-schema';
 
 import { GraphqlContext } from '@/graphql/types';
+import { AuthenticationError } from '@/lib/errors';
 
 export const inviteMemberResolver: MutationResolvers<GraphqlContext>['inviteMember'] = async (
   _parent,
@@ -8,7 +9,7 @@ export const inviteMemberResolver: MutationResolvers<GraphqlContext>['inviteMemb
   context
 ) => {
   if (!context.user) {
-    throw new Error('Authentication required');
+    throw new AuthenticationError('Authentication required', 'errors:auth.unauthorized');
   }
 
   const invitation = await context.handlers.organizationInvitations.inviteMember(

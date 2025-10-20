@@ -1,5 +1,7 @@
 import Mailjet, { Client } from 'node-mailjet';
 
+import { ApiError } from '@/lib/errors';
+
 import { IEmailService, SendInvitationParams, SendOtpParams } from '../email.interface';
 import {
   getInvitationEmailHtml,
@@ -57,8 +59,13 @@ export class MailjetEmailAdapter implements IEmailService {
       });
     } catch (error) {
       console.error('Mailjet send error:', error);
-      throw new Error(
-        `Failed to send invitation email: ${error instanceof Error ? error.message : 'Unknown error'}`
+      throw new ApiError(
+        `Failed to send invitation email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        {
+          statusCode: 500,
+          code: 'EMAIL_SEND_FAILED',
+          translationKey: 'errors:common.internalError',
+        }
       );
     }
   }
@@ -89,8 +96,13 @@ export class MailjetEmailAdapter implements IEmailService {
       });
     } catch (error) {
       console.error('Mailjet send error:', error);
-      throw new Error(
-        `Failed to send OTP email: ${error instanceof Error ? error.message : 'Unknown error'}`
+      throw new ApiError(
+        `Failed to send OTP email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        {
+          statusCode: 500,
+          code: 'EMAIL_SEND_FAILED',
+          translationKey: 'errors:common.internalError',
+        }
       );
     }
   }

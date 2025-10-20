@@ -6,6 +6,7 @@ import {
   AddProjectPermissionInput,
 } from '@logusgraphics/grant-schema';
 
+import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -40,7 +41,7 @@ export class ProjectPermissionService extends AuditService {
     );
 
     if (projects.projects.length === 0) {
-      throw new Error('Project not found');
+      throw new NotFoundError('Project not found', 'errors:notFound.project');
     }
   }
 
@@ -51,7 +52,7 @@ export class ProjectPermissionService extends AuditService {
     );
 
     if (permissions.permissions.length === 0) {
-      throw new Error('Permission not found');
+      throw new NotFoundError('Permission not found', 'errors:notFound.permission');
     }
   }
 
@@ -102,7 +103,11 @@ export class ProjectPermissionService extends AuditService {
     const hasPermission = await this.projectHasPermission(projectId, permissionId, transaction);
 
     if (hasPermission) {
-      throw new Error('Project already has this permission');
+      throw new ConflictError(
+        'Project already has this permission',
+        'errors:conflict.duplicateEntry',
+        { resource: 'ProjectPermission', field: 'permissionId' }
+      );
     }
 
     const projectPermission =
@@ -144,7 +149,10 @@ export class ProjectPermissionService extends AuditService {
     const hasPermission = await this.projectHasPermission(projectId, permissionId, transaction);
 
     if (!hasPermission) {
-      throw new Error('Project does not have this permission');
+      throw new NotFoundError(
+        'Project does not have this permission',
+        'errors:notFound.permission'
+      );
     }
 
     const isHardDelete = hardDelete === true;

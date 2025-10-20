@@ -5,6 +5,7 @@ import {
   RemoveAccountProjectInput,
 } from '@logusgraphics/grant-schema';
 
+import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -43,7 +44,7 @@ export class AccountProjectService extends AuditService {
     );
 
     if (accounts.accounts.length === 0) {
-      throw new Error('Account not found');
+      throw new NotFoundError('Account not found', 'errors:notFound.account');
     }
   }
 
@@ -57,7 +58,7 @@ export class AccountProjectService extends AuditService {
     );
 
     if (projects.projects.length === 0) {
-      throw new Error('Project not found');
+      throw new NotFoundError('Project not found', 'errors:notFound.project');
     }
   }
 
@@ -136,7 +137,11 @@ export class AccountProjectService extends AuditService {
     const hasProject = await this.accountHasProject(accountId, projectId, transaction);
 
     if (hasProject) {
-      throw new Error('Account already has this project');
+      throw new ConflictError(
+        'Account already has this project',
+        'errors:conflict.duplicateEntry',
+        { resource: 'AccountProject', field: 'projectId' }
+      );
     }
 
     const accountProject = await this.repositories.accountProjectRepository.addAccountProject(
@@ -173,7 +178,7 @@ export class AccountProjectService extends AuditService {
     const hasProject = await this.accountHasProject(accountId, projectId);
 
     if (!hasProject) {
-      throw new Error('Account does not have this project');
+      throw new NotFoundError('Account does not have this project', 'errors:notFound.project');
     }
 
     const isHardDelete = hardDelete === true;

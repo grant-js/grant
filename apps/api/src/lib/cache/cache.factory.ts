@@ -1,3 +1,5 @@
+import { BadRequestError } from '@/lib/errors';
+
 import { InMemoryCacheAdapter } from './adapters/in-memory-cache.adapter';
 import { RedisCacheAdapter } from './adapters/redis-cache.adapter';
 import { IEntityCacheAdapter } from './cache-adapter.interface';
@@ -46,7 +48,11 @@ export class CacheFactory {
     switch (config.strategy) {
       case 'redis':
         if (!config.redis) {
-          throw new Error('Redis configuration is required when using redis strategy');
+          throw new BadRequestError(
+            'Redis configuration is required when using redis strategy',
+            'errors:validation.required',
+            { field: 'redis' }
+          );
         }
         return new RedisCacheAdapter({
           ...config.redis,

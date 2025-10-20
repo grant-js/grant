@@ -16,6 +16,8 @@
 
 import * as dotenv from 'dotenv';
 
+import { BadRequestError } from '@/lib/errors';
+
 // Load environment variables from .env file
 dotenv.config();
 
@@ -25,7 +27,7 @@ dotenv.config();
 function getEnv(key: string, defaultValue?: string): string {
   const value = process.env[key];
   if (value === undefined && defaultValue === undefined) {
-    throw new Error(`Missing required environment variable: ${key}`);
+    throw new BadRequestError(`Missing required environment variable: ${key}`);
   }
   return value ?? defaultValue!;
 }
@@ -35,7 +37,11 @@ function getEnvNumber(key: string, defaultValue: number): number {
   if (value === undefined) return defaultValue;
   const parsed = Number(value);
   if (isNaN(parsed)) {
-    throw new Error(`Environment variable ${key} must be a valid number, got: ${value}`);
+    throw new BadRequestError(
+      `Environment variable ${key} must be a valid number`,
+      'errors:validation.invalid',
+      { field: key }
+    );
   }
   return parsed;
 }
@@ -53,7 +59,7 @@ function getEnvEnum<T extends string>(
 ): T {
   const value = (process.env[key] as T) ?? defaultValue;
   if (!allowedValues.includes(value)) {
-    throw new Error(
+    throw new BadRequestError(
       `Environment variable ${key} must be one of [${allowedValues.join(', ')}], got: ${value}`
     );
   }
@@ -298,6 +304,21 @@ export const SWAGGER_CONFIG = {
 } as const;
 
 // ============================================================================
+// i18n Configuration
+// ============================================================================
+
+export const I18N_CONFIG = {
+  /** Supported locales */
+  supportedLocales: ['en', 'de'] as const,
+
+  /** Default locale */
+  defaultLocale: getEnvEnum('I18N_DEFAULT_LOCALE', ['en', 'de'] as const, 'en'),
+
+  /** Enable i18n debug mode */
+  debug: getEnvBoolean('I18N_DEBUG', APP_CONFIG.isDevelopment),
+} as const;
+
+// ============================================================================
 // Email Configuration
 // ============================================================================
 
@@ -420,7 +441,7 @@ export function validateConfig(): void {
   }
 
   if (errors.length > 0) {
-    throw new Error(
+    throw new BadRequestError(
       `Configuration validation failed:\n${errors.map((e) => `  - ${e}`).join('\n')}`
     );
   }
@@ -508,6 +529,7 @@ export const config = {
   swagger: SWAGGER_CONFIG,
   swaggerSetup: SWAGGER_UI_SETUP_CONFIG,
   email: EMAIL_CONFIG,
+  i18n: I18N_CONFIG,
   system: SYSTEM_CONSTANTS,
   cors: CORS_CONFIG,
   helmet: HELMET_CONFIG,

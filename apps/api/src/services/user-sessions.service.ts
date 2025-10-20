@@ -11,6 +11,7 @@ import {
 import jwt from 'jsonwebtoken';
 
 import { config } from '@/config';
+import { AuthenticationError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -56,7 +57,7 @@ export class UserSessionService extends AuditService {
   private decodeJwt(token: string, ignoreExpiration: boolean = false): JwtPayload {
     const decoded = jwt.verify(token, config.jwt.secret, { ignoreExpiration });
     if (!decoded) {
-      throw new Error('Invalid token');
+      throw new AuthenticationError('Invalid token', 'errors:auth.invalidToken');
     }
     return decoded as JwtPayload;
   }
@@ -72,7 +73,7 @@ export class UserSessionService extends AuditService {
     const audience = decoded.aud as string;
 
     if (!userId || !audience) {
-      throw new Error('Invalid token');
+      throw new AuthenticationError('Invalid token', 'errors:auth.invalidToken');
     }
 
     const session = await this.repositories.userSessionRepository.getLastValidUserSession(
@@ -82,7 +83,7 @@ export class UserSessionService extends AuditService {
     );
 
     if (!session) {
-      throw new Error('Invalid session');
+      throw new AuthenticationError('Invalid session', 'errors:auth.invalidSession');
     }
 
     return session;
@@ -101,7 +102,7 @@ export class UserSessionService extends AuditService {
     );
 
     if (existingUserSessions.userSessions.length === 0) {
-      throw new Error('User session not found');
+      throw new NotFoundError('User session not found', 'errors:auth.sessionNotFound');
     }
 
     return existingUserSessions.userSessions[0];

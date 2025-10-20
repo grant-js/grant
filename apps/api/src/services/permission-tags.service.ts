@@ -7,6 +7,7 @@ import {
   UpdatePermissionTagInput,
 } from '@logusgraphics/grant-schema';
 
+import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -44,7 +45,7 @@ export class PermissionTagService extends AuditService {
     );
 
     if (permissions.permissions.length === 0) {
-      throw new Error('Permission not found');
+      throw new NotFoundError('Permission not found', 'errors:notFound.permission');
     }
   }
 
@@ -55,7 +56,7 @@ export class PermissionTagService extends AuditService {
     );
 
     if (tags.tags.length === 0) {
-      throw new Error('Tag not found');
+      throw new NotFoundError('Tag not found', 'errors:notFound.tag');
     }
   }
 
@@ -130,7 +131,10 @@ export class PermissionTagService extends AuditService {
     const hasTag = await this.permissionHasTag(permissionId, tagId, transaction);
 
     if (hasTag) {
-      throw new Error('Permission already has this tag');
+      throw new ConflictError('Permission already has this tag', 'errors:conflict.duplicateEntry', {
+        resource: 'PermissionTag',
+        field: 'tagId',
+      });
     }
 
     const permissionTag = await this.repositories.permissionTagRepository.addPermissionTag(
@@ -205,7 +209,7 @@ export class PermissionTagService extends AuditService {
     const hasTag = await this.permissionHasTag(permissionId, tagId, transaction);
 
     if (!hasTag) {
-      throw new Error('Permission does not have this tag');
+      throw new NotFoundError('Permission does not have this tag', 'errors:notFound.tag');
     }
 
     const isHardDelete = hardDelete === true;

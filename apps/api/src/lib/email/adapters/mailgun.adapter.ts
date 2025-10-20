@@ -1,6 +1,8 @@
 import FormData from 'form-data';
 import Mailgun from 'mailgun.js';
 
+import { ApiError } from '@/lib/errors';
+
 import { IEmailService, SendInvitationParams, SendOtpParams } from '../email.interface';
 import {
   getInvitationEmailHtml,
@@ -50,8 +52,13 @@ export class MailgunEmailAdapter implements IEmailService {
       });
     } catch (error) {
       console.error('Mailgun send error:', error);
-      throw new Error(
-        `Failed to send invitation email: ${error instanceof Error ? error.message : 'Unknown error'}`
+      throw new ApiError(
+        `Failed to send invitation email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        {
+          statusCode: 500,
+          code: 'EMAIL_SEND_FAILED',
+          translationKey: 'errors:common.internalError',
+        }
       );
     }
   }
@@ -71,8 +78,13 @@ export class MailgunEmailAdapter implements IEmailService {
       });
     } catch (error) {
       console.error('Mailgun send error:', error);
-      throw new Error(
-        `Failed to send OTP email: ${error instanceof Error ? error.message : 'Unknown error'}`
+      throw new ApiError(
+        `Failed to send OTP email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        {
+          statusCode: 500,
+          code: 'EMAIL_SEND_FAILED',
+          translationKey: 'errors:common.internalError',
+        }
       );
     }
   }

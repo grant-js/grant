@@ -1,0 +1,48 @@
+{
+  "auth": {
+    "invalidCredentials": "Invalid email or password",
+    "userNotFound": "User not found",
+    "userNotVerified": "Please verify your email before logging in",
+    "methodNotFound": "Authentication method not found",
+    "noAccount": "User does not have an account",
+    "invalidToken": "Invalid or expired token",
+    "invalidRefreshToken": "Invalid refresh token",
+    "invalidSession": "Session has expired",
+    "sessionNotFound": "User session not found",
+    "unauthorized": "You are not authorized to perform this action",
+    "forbidden": "Access forbidden",
+    "passwordRequired": "Password is required and must be a string",
+    "emailRequired": "Email is required and must be a string",
+    "invalidAction": "Invalid authentication action"
+  },
+  "validation": {
+    "required": "{{field}} is required",
+    "invalid": "{{field}} is invalid",
+    "tooShort": "{{field}} must be at least {{min}} characters",
+    "tooLong": "{{field}} must not exceed {{max}} characters",
+    "invalidFormat": "{{field}} has an invalid format",
+    "fieldError": "Field \"{{field}}\": {{message}}"
+  },
+  "notFound": {
+    "resource": "{{resource}} not found",
+    "organization": "Organization not found",
+    "role": "Role not found",
+    "user": "User not found",
+    "invitation": "Invitation with ID {{id}} not found",
+    "tag": "Tag not found",
+    "project": "Project not found",
+    "account": "Account not found",
+    "group": "Group not found",
+    "permission": "Permission not found"
+  },
+  "conflict": {
+    "duplicateEntry": "A {{resource}} with this {{field}} already exists",
+    "duplicateAuthMethod": "Duplicate authentication method: A user with provider '{{provider}}' and identifier '{{providerId}}' already exists"
+  },
+  "common": {
+    "internalError": "Internal server error",
+    "badRequest": "Bad request",
+    "originRequired": "Origin is required",
+    "unknownError": "An unknown error occurred"
+  }
+}

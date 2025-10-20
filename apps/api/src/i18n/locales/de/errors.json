@@ -1,0 +1,48 @@
+{
+  "auth": {
+    "invalidCredentials": "Ungültige E-Mail oder Passwort",
+    "userNotFound": "Benutzer nicht gefunden",
+    "userNotVerified": "Bitte verifizieren Sie Ihre E-Mail vor der Anmeldung",
+    "methodNotFound": "Authentifizierungsmethode nicht gefunden",
+    "noAccount": "Benutzer hat kein Konto",
+    "invalidToken": "Ungültiger oder abgelaufener Token",
+    "invalidRefreshToken": "Ungültiger Aktualisierungstoken",
+    "invalidSession": "Sitzung ist abgelaufen",
+    "sessionNotFound": "Benutzersitzung nicht gefunden",
+    "unauthorized": "Sie sind nicht berechtigt, diese Aktion auszuführen",
+    "forbidden": "Zugriff verboten",
+    "passwordRequired": "Passwort ist erforderlich und muss eine Zeichenkette sein",
+    "emailRequired": "E-Mail ist erforderlich und muss eine Zeichenkette sein",
+    "invalidAction": "Ungültige Authentifizierungsaktion"
+  },
+  "validation": {
+    "required": "{{field}} ist erforderlich",
+    "invalid": "{{field}} ist ungültig",
+    "tooShort": "{{field}} muss mindestens {{min}} Zeichen lang sein",
+    "tooLong": "{{field}} darf {{max}} Zeichen nicht überschreiten",
+    "invalidFormat": "{{field}} hat ein ungültiges Format",
+    "fieldError": "Feld \"{{field}}\": {{message}}"
+  },
+  "notFound": {
+    "resource": "{{resource}} nicht gefunden",
+    "organization": "Organisation nicht gefunden",
+    "role": "Rolle nicht gefunden",
+    "user": "Benutzer nicht gefunden",
+    "invitation": "Einladung mit ID {{id}} nicht gefunden",
+    "tag": "Tag nicht gefunden",
+    "project": "Projekt nicht gefunden",
+    "account": "Konto nicht gefunden",
+    "group": "Gruppe nicht gefunden",
+    "permission": "Berechtigung nicht gefunden"
+  },
+  "conflict": {
+    "duplicateEntry": "Ein {{resource}} mit diesem {{field}} existiert bereits",
+    "duplicateAuthMethod": "Doppelte Authentifizierungsmethode: Ein Benutzer mit Anbieter '{{provider}}' und Kennung '{{providerId}}' existiert bereits"
+  },
+  "common": {
+    "internalError": "Interner Serverfehler",
+    "badRequest": "Ungültige Anfrage",
+    "originRequired": "Herkunft ist erforderlich",
+    "unknownError": "Ein unbekannter Fehler ist aufgetreten"
+  }
+}

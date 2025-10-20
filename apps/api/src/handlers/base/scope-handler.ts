@@ -1,6 +1,7 @@
 import { Scope, Tenant } from '@logusgraphics/grant-schema';
 
 import { ICacheAdapter, IEntityCacheAdapter } from '@/lib/cache/cache-adapter.interface';
+import { BadRequestError } from '@/lib/errors';
 import { Services } from '@/services';
 
 export type CacheKey = `${Tenant}:${string}`;
@@ -84,7 +85,11 @@ export class ScopeHandler {
         break;
       }
       default:
-        throw new Error(`Unsupported tenant type: ${scope.tenant}`);
+        throw new BadRequestError(
+          `Unsupported tenant type: ${scope.tenant}`,
+          'errors:validation.invalid',
+          { field: 'tenant' }
+        );
     }
     await this.scopeCache.projects.set(cacheKey, new Set(projectIds));
     return projectIds;
@@ -124,7 +129,11 @@ export class ScopeHandler {
       }
 
       default:
-        throw new Error(`Unsupported tenant type: ${scope.tenant}`);
+        throw new BadRequestError(
+          `Unsupported tenant type: ${scope.tenant}`,
+          'errors:validation.invalid',
+          { field: 'tenant' }
+        );
     }
 
     await this.scopeCache.roles.set(cacheKey, new Set(roleIds));
@@ -165,7 +174,11 @@ export class ScopeHandler {
       }
 
       default:
-        throw new Error(`Unsupported tenant type: ${scope.tenant}`);
+        throw new BadRequestError(
+          `Unsupported tenant type: ${scope.tenant}`,
+          'errors:validation.invalid',
+          { field: 'tenant' }
+        );
     }
 
     await this.scopeCache.users.set(cacheKey, new Set(userIds));
@@ -206,7 +219,11 @@ export class ScopeHandler {
       }
 
       default:
-        throw new Error(`Unsupported tenant type: ${scope.tenant}`);
+        throw new BadRequestError(
+          `Unsupported tenant type: ${scope.tenant}`,
+          'errors:validation.invalid',
+          { field: 'tenant' }
+        );
     }
 
     await this.scopeCache.groups.set(cacheKey, new Set(groupIds));
@@ -248,7 +265,11 @@ export class ScopeHandler {
       }
 
       default:
-        throw new Error(`Unsupported tenant type: ${scope.tenant}`);
+        throw new BadRequestError(
+          `Unsupported tenant type: ${scope.tenant}`,
+          'errors:validation.invalid',
+          { field: 'tenant' }
+        );
     }
 
     await this.scopeCache.permissions.set(cacheKey, new Set(permissionIds));
@@ -289,7 +310,11 @@ export class ScopeHandler {
       }
 
       default:
-        throw new Error(`Unsupported tenant type: ${scope.tenant}`);
+        throw new BadRequestError(
+          `Unsupported tenant type: ${scope.tenant}`,
+          'errors:validation.invalid',
+          { field: 'tenant' }
+        );
     }
 
     await this.scopeCache.tags.set(cacheKey, new Set(tagIds));

@@ -6,6 +6,7 @@ import {
   RemoveGroupPermissionInput,
 } from '@logusgraphics/grant-schema';
 
+import { ConflictError, NotFoundError, ValidationError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -40,7 +41,7 @@ export class GroupPermissionService extends AuditService {
     );
 
     if (groups.groups.length === 0) {
-      throw new Error('Group not found');
+      throw new NotFoundError('Group not found', 'errors:notFound.group');
     }
   }
 
@@ -51,7 +52,7 @@ export class GroupPermissionService extends AuditService {
     );
 
     if (permissions.permissions.length === 0) {
-      throw new Error('Permission not found');
+      throw new NotFoundError('Permission not found', 'errors:notFound.permission');
     }
   }
 
@@ -80,7 +81,9 @@ export class GroupPermissionService extends AuditService {
     const { groupId } = validatedParams;
 
     if (!groupId) {
-      throw new Error('Group ID is required');
+      throw new ValidationError('Group ID is required', [], 'errors:validation.required', {
+        field: 'groupId',
+      });
     }
     await this.groupExists(groupId, transaction);
 
@@ -107,7 +110,11 @@ export class GroupPermissionService extends AuditService {
     const hasPermission = await this.groupHasPermission(groupId, permissionId, transaction);
 
     if (hasPermission) {
-      throw new Error('Group already has this permission');
+      throw new ConflictError(
+        'Group already has this permission',
+        'errors:conflict.duplicateEntry',
+        { resource: 'GroupPermission', field: 'permissionId' }
+      );
     }
 
     const groupPermission = await this.repositories.groupPermissionRepository.addGroupPermission(
@@ -147,7 +154,7 @@ export class GroupPermissionService extends AuditService {
     const hasPermission = await this.groupHasPermission(groupId, permissionId, transaction);
 
     if (!hasPermission) {
-      throw new Error('Group does not have this permission');
+      throw new NotFoundError('Group does not have this permission', 'errors:notFound.permission');
     }
 
     const isHardDelete = hardDelete === true;

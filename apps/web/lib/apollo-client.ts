@@ -1,27 +1,43 @@
 'use client';
 
-import { ApolloClient, from, HttpLink, InMemoryCache, Observable } from '@apollo/client';
-import { setContext } from '@apollo/client/link/context';
-import { onError } from '@apollo/client/link/error';
+import { ApolloClient, ApolloLink, HttpLink, InMemoryCache, Observable } from '@apollo/client';
+import { SetContextLink } from '@apollo/client/link/context';
+import { ErrorLink } from '@apollo/client/link/error';
 
 import { useAuthStore } from '@/stores/auth.store';
 
 let refreshPromise: Promise<void> | null = null;
 let refreshInProgress = false;
 
-const authLink = setContext((_, { headers }) => {
+/**
+ * Helper to get current locale from the URL
+ * @returns Current locale (en or de)
+ */
+function getCurrentLocale(): string {
+  if (typeof window !== 'undefined') {
+    const pathSegments = window.location.pathname.split('/');
+    const locale = pathSegments[1];
+    // Validate locale is supported
+    return ['en', 'de'].includes(locale) ? locale : 'en';
+  }
+  return 'en';
+}
+
+const authLink = new SetContextLink((prevContext, _operation) => {
   try {
     const accessToken = useAuthStore.getState().accessToken;
+    const locale = getCurrentLocale();
 
     return {
       headers: {
-        ...headers,
+        ...prevContext.headers,
         ...(accessToken && { authorization: `Bearer ${accessToken}` }),
+        'accept-language': locale,
       },
     };
   } catch (error) {
     console.error('Error in auth link:', error);
-    return { headers };
+    return { headers: prevContext.headers };
   }
 });
 
@@ -34,7 +50,7 @@ const redirectToLogin = () => {
   }
 };
 
-const errorLink = onError(({ error, operation, forward }) => {
+const errorLink = new ErrorLink(({ error, operation, forward }) => {
   // Check if the error indicates unauthorized access
   const isUnauthorized =
     (error && 'statusCode' in error && error.statusCode === 401) ||
@@ -175,6 +191,6 @@ export function getClient() {
         },
       },
     }),
-    link: from([authLink, errorLink, httpLink]),
+    link: ApolloLink.from([authLink, errorLink, httpLink]),
   });
 }

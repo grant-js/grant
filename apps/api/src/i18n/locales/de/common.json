@@ -1,0 +1,14 @@
+{
+  "success": {
+    "created": "{{resource}} erfolgreich erstellt",
+    "updated": "{{resource}} erfolgreich aktualisiert",
+    "deleted": "{{resource}} erfolgreich gelöscht"
+  },
+  "actions": {
+    "create": "Erstellen",
+    "update": "Aktualisieren",
+    "delete": "Löschen",
+    "view": "Anzeigen",
+    "list": "Liste"
+  }
+}

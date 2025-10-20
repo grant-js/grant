@@ -14,10 +14,12 @@ import swaggerUi from 'swagger-ui-express';
 import { config, printConfigSummary, validateConfig } from '@/config';
 import { schema } from '@/graphql/resolvers';
 import { GraphqlContext } from '@/graphql/types';
+import { i18nMiddleware, initializeI18n } from '@/i18n';
 import { CacheFactory } from '@/lib/cache/cache.factory';
 import { formatGraphQLError } from '@/lib/errors';
 import { authMiddleware } from '@/middleware/auth.middleware';
 import { contextMiddleware } from '@/middleware/context.middleware';
+import { errorHandler } from '@/middleware/error.middleware';
 import { createRestRouter } from '@/rest';
 import { generateOpenApiDocument } from '@/rest/openapi';
 import { ContextRequest } from '@/types';
@@ -25,6 +27,10 @@ import { ContextRequest } from '@/types';
 async function startServer() {
   validateConfig();
   printConfigSummary();
+
+  // Initialize i18n
+  await initializeI18n();
+  console.log('✅ i18n initialized with locales:', config.i18n.supportedLocales.join(', '));
 
   const db = initializeDatabase({
     connectionString: config.db.url,
@@ -65,6 +71,7 @@ async function startServer() {
   app.use(cors<cors.CorsRequest>(config.cors));
   app.use(helmet(config.helmet));
   app.use(express.json());
+  app.use(i18nMiddleware);
 
   const openApiDocument = generateOpenApiDocument();
 
@@ -98,6 +105,9 @@ async function startServer() {
   app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
+
+  // Global error handler - MUST be last!
+  app.use(errorHandler);
 
   await new Promise<void>((resolve) => httpServer.listen({ port: config.app.port }, resolve));
 

@@ -3,6 +3,7 @@ import { NextFunction, Response } from 'express';
 
 import { createHandlers } from '@/handlers';
 import { IEntityCacheAdapter } from '@/lib/cache/cache-adapter.interface';
+import { BadRequestError } from '@/lib/errors';
 import { createRepositories } from '@/repositories';
 import { createServices } from '@/services';
 import { AuthenticatedRequest, ContextRequest } from '@/types';
@@ -13,10 +14,7 @@ export function contextMiddleware(db: DbSchema, scopeCache: IEntityCacheAdapter)
     const origin = headers['origin'] || headers['host'];
 
     if (!origin) {
-      return res.status(400).json({
-        error: 'Origin is required',
-        code: 'BAD_USER_INPUT',
-      });
+      throw new BadRequestError('Origin is required', 'errors:common.originRequired');
     }
 
     const repositories = createRepositories(db);

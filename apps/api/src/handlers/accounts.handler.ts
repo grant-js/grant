@@ -50,7 +50,7 @@ export class AccountHandler extends ScopeHandler {
       );
 
       if (!session) {
-        throw new Error('Invalid refresh token');
+        throw new AuthenticationError('Invalid refresh token', 'errors:auth.invalidRefreshToken');
       }
 
       return session;
@@ -76,7 +76,10 @@ export class AccountHandler extends ScopeHandler {
         );
 
       if (!userAuthenticationMethod) {
-        throw new AuthenticationError('User authentication method not found');
+        throw new AuthenticationError(
+          'User authentication method not found',
+          'errors:auth.methodNotFound'
+        );
       }
 
       if (provider === UserAuthenticationMethodProvider.Email) {
@@ -90,7 +93,7 @@ export class AccountHandler extends ScopeHandler {
             storedHashedPassword
           )
         ) {
-          throw new AuthenticationError('Invalid credentials');
+          throw new AuthenticationError('Invalid credentials', 'errors:auth.invalidCredentials');
         }
       }
 
@@ -105,7 +108,7 @@ export class AccountHandler extends ScopeHandler {
         verificationCreatedAt &&
         now.getTime() - verificationCreatedAt.getTime() > verificationExpirationMs
       ) {
-        throw new AuthenticationError('User not verified');
+        throw new AuthenticationError('User not verified', 'errors:auth.userNotVerified');
       }
 
       const usersResult = await this.services.users.getUsers(
@@ -122,13 +125,13 @@ export class AccountHandler extends ScopeHandler {
         !Array.isArray(usersResult.users) ||
         usersResult.users.length === 0
       ) {
-        throw new AuthenticationError('User not found');
+        throw new AuthenticationError('User not found', 'errors:auth.userNotFound');
       }
 
       const user = usersResult.users[0];
 
       if (!Array.isArray(user.accounts) || user.accounts.length === 0) {
-        throw new AuthenticationError('User does not have an account');
+        throw new AuthenticationError('User does not have an account', 'errors:auth.noAccount');
       }
 
       const userSessionsResult = await this.services.userSessions.getUserSessions(

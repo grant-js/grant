@@ -6,6 +6,7 @@ import {
   RemoveOrganizationTagInput,
 } from '@logusgraphics/grant-schema';
 
+import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -46,7 +47,7 @@ export class OrganizationTagService extends AuditService {
     );
 
     if (organizations.organizations.length === 0) {
-      throw new Error('Organization not found');
+      throw new NotFoundError('Organization not found', 'errors:notFound.organization');
     }
   }
 
@@ -60,7 +61,7 @@ export class OrganizationTagService extends AuditService {
     );
 
     if (tags.tags.length === 0) {
-      throw new Error('Tag not found');
+      throw new NotFoundError('Tag not found', 'errors:notFound.tag');
     }
   }
 
@@ -113,7 +114,11 @@ export class OrganizationTagService extends AuditService {
     const hasTag = await this.organizationHasTag(organizationId, tagId, transaction);
 
     if (hasTag) {
-      throw new Error('Organization already has this tag');
+      throw new ConflictError(
+        'Organization already has this tag',
+        'errors:conflict.duplicateEntry',
+        { resource: 'OrganizationTag', field: 'tagId' }
+      );
     }
 
     const organizationTag = await this.repositories.organizationTagRepository.addOrganizationTag(
@@ -154,7 +159,7 @@ export class OrganizationTagService extends AuditService {
     const hasTag = await this.organizationHasTag(organizationId, tagId, transaction);
 
     if (!hasTag) {
-      throw new Error('Organization does not have this tag');
+      throw new NotFoundError('Organization does not have this tag', 'errors:notFound.tag');
     }
 
     const isHardDelete = hardDelete === true;

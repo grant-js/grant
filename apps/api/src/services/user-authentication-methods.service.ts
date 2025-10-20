@@ -13,6 +13,7 @@ import {
 import { compareSync, hashSync } from 'bcrypt';
 
 import { AUTH_CONFIG } from '@/config';
+import { BadRequestError, ConflictError, NotFoundError, ValidationError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -61,7 +62,7 @@ export class UserAuthenticationMethodService extends AuditService {
       await this.repositories.userAuthenticationMethodRepository.getUserAuthenticationMethod(id);
 
     if (!method) {
-      throw new Error('User authentication method not found');
+      throw new NotFoundError('User authentication method not found', 'errors:auth.methodNotFound');
     }
 
     return method;
@@ -280,10 +281,18 @@ export class UserAuthenticationMethodService extends AuditService {
   ): ProcessedProvider {
     const { password, action } = providerData;
     if (!password || typeof password !== 'string') {
-      throw new Error('Password is required and must be a string');
+      throw new ValidationError(
+        'Password is required and must be a string',
+        [],
+        'errors:auth.passwordRequired'
+      );
     }
     if (!email || typeof email !== 'string') {
-      throw new Error('Email is required and must be a string');
+      throw new ValidationError(
+        'Email is required and must be a string',
+        [],
+        'errors:auth.emailRequired'
+      );
     }
     validateInput(emailSchema, email, context);
     switch (action) {
@@ -307,7 +316,7 @@ export class UserAuthenticationMethodService extends AuditService {
         };
       }
       default:
-        throw new Error('Invalid action');
+        throw new BadRequestError('Invalid action', 'errors:auth.invalidAction');
     }
   }
 
@@ -373,8 +382,10 @@ export class UserAuthenticationMethodService extends AuditService {
     );
 
     if (existingMethod) {
-      throw new Error(
-        `Duplicate authentication method: A user with provider '${provider}' and identifier '${providerId}' already exists. Each provider-identifier combination must be unique.`
+      throw new ConflictError(
+        `Duplicate authentication method: A user with provider '${provider}' and identifier '${providerId}' already exists. Each provider-identifier combination must be unique.`,
+        'errors:conflict.duplicateAuthMethod',
+        { provider, providerId }
       );
     }
   }
@@ -389,7 +400,12 @@ export class UserAuthenticationMethodService extends AuditService {
 
     // providerData is now a direct JSON object, no need to parse
     if (!providerData || typeof providerData !== 'object') {
-      throw new Error('Invalid provider data: must be a valid JSON object');
+      throw new ValidationError(
+        'Invalid provider data: must be a valid JSON object',
+        [],
+        'errors:validation.invalid',
+        { field: 'providerData' }
+      );
     }
 
     switch (provider) {
@@ -400,7 +416,9 @@ export class UserAuthenticationMethodService extends AuditService {
       case UserAuthenticationMethodProvider.Github:
         return this.processGithubProvider(providerId, providerData, context);
       default:
-        throw new Error('Invalid provider');
+        throw new BadRequestError('Invalid provider', 'errors:validation.invalid', {
+          field: 'provider',
+        });
     }
   }
 

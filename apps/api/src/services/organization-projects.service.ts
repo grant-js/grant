@@ -6,6 +6,7 @@ import {
   RemoveOrganizationProjectInput,
 } from '@logusgraphics/grant-schema';
 
+import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -47,7 +48,7 @@ export class OrganizationProjectService extends AuditService {
     );
 
     if (organizations.organizations.length === 0) {
-      throw new Error('Organization not found');
+      throw new NotFoundError('Organization not found', 'errors:notFound.organization');
     }
   }
 
@@ -61,7 +62,7 @@ export class OrganizationProjectService extends AuditService {
     );
 
     if (projects.projects.length === 0) {
-      throw new Error('Project not found');
+      throw new NotFoundError('Project not found', 'errors:notFound.project');
     }
   }
 
@@ -144,7 +145,11 @@ export class OrganizationProjectService extends AuditService {
     const hasProject = await this.organizationHasProject(organizationId, projectId, transaction);
 
     if (hasProject) {
-      throw new Error('Organization already has this project');
+      throw new ConflictError(
+        'Organization already has this project',
+        'errors:conflict.duplicateEntry',
+        { resource: 'OrganizationProject', field: 'projectId' }
+      );
     }
 
     const organizationProject =
@@ -186,7 +191,7 @@ export class OrganizationProjectService extends AuditService {
     const hasProject = await this.organizationHasProject(organizationId, projectId);
 
     if (!hasProject) {
-      throw new Error('Organization does not have this project');
+      throw new NotFoundError('Organization does not have this project', 'errors:notFound.project');
     }
 
     const isHardDelete = hardDelete === true;

@@ -9,6 +9,7 @@ import {
   CreateUserInput,
 } from '@logusgraphics/grant-schema';
 
+import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -46,7 +47,7 @@ export class UserService extends AuditService {
     });
 
     if (existingUsers.users.length === 0) {
-      throw new Error('User not found');
+      throw new NotFoundError('User not found', 'errors:notFound.user');
     }
 
     return existingUsers.users[0];

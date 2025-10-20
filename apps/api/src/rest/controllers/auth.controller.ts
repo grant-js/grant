@@ -25,25 +25,21 @@ export class AuthController extends BaseController {
    * Body is validated by loginRequestSchema middleware
    */
   async login(req: TypedRequest<{ body: typeof loginRequestSchema }>, res: Response) {
-    try {
-      const { body } = req;
-      const { provider, providerId, providerData } = body;
+    const { body } = req;
+    const { provider, providerId, providerData } = body;
 
-      const result = await this.handlers.accounts.login(
-        {
-          input: {
-            provider,
-            providerId,
-            providerData,
-          },
+    const result = await this.handlers.accounts.login(
+      {
+        input: {
+          provider,
+          providerId,
+          providerData,
         },
-        this.origin
-      );
+      },
+      this.origin
+    );
 
-      this.success(res, result);
-    } catch (error) {
-      this.handleError(res, error, 401);
-    }
+    this.success(res, result);
   }
 
   /**
@@ -53,26 +49,22 @@ export class AuthController extends BaseController {
    * Returns CreateAccountResult with account, accessToken, and refreshToken
    */
   async register(req: TypedRequest<{ body: typeof registerRequestSchema }>, res: Response) {
-    try {
-      const { body } = req;
-      const { name, username, type, provider, providerId, providerData } = body;
+    const { body } = req;
+    const { name, username, type, provider, providerId, providerData } = body;
 
-      const result = await this.handlers.accounts.createAccount(
-        {
-          name,
-          username,
-          type,
-          provider,
-          providerId,
-          providerData,
-        },
-        this.origin
-      );
+    const result = await this.handlers.accounts.createAccount(
+      {
+        name,
+        username,
+        type,
+        provider,
+        providerId,
+        providerData,
+      },
+      this.origin
+    );
 
-      this.success(res, result, 201);
-    } catch (error) {
-      this.handleError(res, error, 400);
-    }
+    this.success(res, result, 201);
   }
 
   /**
@@ -84,18 +76,14 @@ export class AuthController extends BaseController {
     req: TypedRequest<{ body: typeof refreshSessionRequestSchema }>,
     res: Response
   ) {
-    try {
-      const { accessToken, refreshToken } = req.body;
+    const { accessToken, refreshToken } = req.body;
 
-      const result = await this.handlers.accounts.refreshSession({
-        accessToken,
-        refreshToken,
-      });
+    const result = await this.handlers.accounts.refreshSession({
+      accessToken,
+      refreshToken,
+    });
 
-      this.success(res, result);
-    } catch (error) {
-      this.handleError(res, error, 401);
-    }
+    this.success(res, result);
   }
 
   /**
@@ -104,10 +92,6 @@ export class AuthController extends BaseController {
    * Body is validated by logoutRequestSchema middleware
    */
   async logout(req: TypedRequest<{ body: typeof logoutRequestSchema }>, res: Response) {
-    try {
-      this.success(res, { message: 'Logged out successfully' });
-    } catch (error) {
-      this.handleError(res, error);
-    }
+    this.success(res, { message: 'Logged out successfully' });
   }
 }

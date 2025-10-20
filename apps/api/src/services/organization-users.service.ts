@@ -6,6 +6,7 @@ import {
   RemoveOrganizationUserInput,
 } from '@logusgraphics/grant-schema';
 
+import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -40,7 +41,7 @@ export class OrganizationUserService extends AuditService {
     });
 
     if (organizations.organizations.length === 0) {
-      throw new Error('Organization not found');
+      throw new NotFoundError('Organization not found', 'errors:notFound.organization');
     }
   }
 
@@ -51,7 +52,7 @@ export class OrganizationUserService extends AuditService {
     });
 
     if (users.users.length === 0) {
-      throw new Error('User not found');
+      throw new NotFoundError('User not found', 'errors:notFound.user');
     }
   }
 
@@ -109,7 +110,11 @@ export class OrganizationUserService extends AuditService {
     const hasUser = await this.organizationHasUser(organizationId, userId, transaction);
 
     if (hasUser) {
-      throw new Error('Organization already has this user');
+      throw new ConflictError(
+        'Organization already has this user',
+        'errors:conflict.duplicateEntry',
+        { resource: 'OrganizationUser', field: 'userId' }
+      );
     }
 
     const organizationUser = await this.repositories.organizationUserRepository.addOrganizationUser(
@@ -149,7 +154,7 @@ export class OrganizationUserService extends AuditService {
     const hasUser = await this.organizationHasUser(organizationId, userId, transaction);
 
     if (!hasUser) {
-      throw new Error('Organization does not have this user');
+      throw new NotFoundError('Organization does not have this user', 'errors:notFound.user');
     }
 
     const isHardDelete = hardDelete === true;

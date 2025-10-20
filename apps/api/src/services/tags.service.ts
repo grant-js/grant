@@ -9,6 +9,7 @@ import {
   CreateTagInput,
 } from '@logusgraphics/grant-schema';
 
+import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -46,7 +47,7 @@ export class TagService extends AuditService {
     );
 
     if (existingTags.tags.length === 0) {
-      throw new Error('Tag not found');
+      throw new NotFoundError('Tag not found', 'errors:notFound.tag');
     }
 
     return existingTags.tags[0];

@@ -9,6 +9,7 @@ import {
   CreatePermissionInput,
 } from '@logusgraphics/grant-schema';
 
+import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -49,7 +50,7 @@ export class PermissionService extends AuditService {
     );
 
     if (existingPermissions.permissions.length === 0) {
-      throw new Error('Permission not found');
+      throw new NotFoundError('Permission not found', 'errors:notFound.permission');
     }
 
     return existingPermissions.permissions[0];

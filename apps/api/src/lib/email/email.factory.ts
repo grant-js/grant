@@ -1,3 +1,5 @@
+import { BadRequestError } from '@/lib/errors';
+
 import { ConsoleEmailAdapter } from './adapters/console.adapter';
 import { MailgunConfig, MailgunEmailAdapter } from './adapters/mailgun.adapter';
 import { MailjetConfig, MailjetEmailAdapter } from './adapters/mailjet.adapter';
@@ -26,7 +28,11 @@ export class EmailFactory {
 
       case 'mailgun':
         if (!config.mailgun) {
-          throw new Error('Mailgun configuration is required when using mailgun adapter');
+          throw new BadRequestError(
+            'Mailgun configuration is required when using mailgun adapter',
+            'errors:validation.required',
+            { field: 'mailgun' }
+          );
         }
         return new MailgunEmailAdapter({
           ...config.mailgun,
@@ -36,7 +42,11 @@ export class EmailFactory {
 
       case 'mailjet':
         if (!config.mailjet) {
-          throw new Error('Mailjet configuration is required when using mailjet adapter');
+          throw new BadRequestError(
+            'Mailjet configuration is required when using mailjet adapter',
+            'errors:validation.required',
+            { field: 'mailjet' }
+          );
         }
         return new MailjetEmailAdapter({
           ...config.mailjet,
@@ -46,7 +56,11 @@ export class EmailFactory {
 
       case 'smtp':
         if (!config.smtp) {
-          throw new Error('SMTP configuration is required when using smtp adapter');
+          throw new BadRequestError(
+            'SMTP configuration is required when using smtp adapter',
+            'errors:validation.required',
+            { field: 'smtp' }
+          );
         }
         return new SmtpEmailAdapter({
           ...config.smtp,
@@ -55,7 +69,11 @@ export class EmailFactory {
         });
 
       default:
-        throw new Error(`Unknown email provider: ${config.provider}`);
+        throw new BadRequestError(
+          `Unknown email provider: ${config.provider}`,
+          'errors:validation.invalid',
+          { field: 'provider' }
+        );
     }
   }
 }

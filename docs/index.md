@@ -29,15 +29,15 @@ features:
   - icon: 🚀
     title: Developer Experience
     details: TypeScript-first with full type safety, comprehensive SDK for Node.js, Express, Next.js, and more.
+  - icon: 🌍
+    title: Internationalization
+    details: Built-in i18n/l10n support with automatic error message translation in multiple languages (English, German).
   - icon: 🌐
     title: Deployment Options
     details: Self-hosting with CloudFormation templates, SaaS platform with managed infrastructure, Docker containers.
   - icon: 📊
     title: Enterprise Ready
     details: Comprehensive audit logging, compliance features, scalable architecture that grows with your needs.
-  - icon: 🤝
-    title: Open Source
-    details: Transparent development, community support, no vendor lock-in, self-hosting option available.
 ---
 
 # Documentation

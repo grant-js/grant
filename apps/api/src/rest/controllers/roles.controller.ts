@@ -38,38 +38,30 @@ export class RolesController extends BaseController {
 
     const requestedFields = parseRelations<Role>(relations);
 
-    try {
-      const result = await this.handlers.roles.getRoles({
-        page,
-        limit,
-        search: search || undefined,
-        sort: sortField && sortOrder ? { field: sortField, order: sortOrder } : undefined,
-        tagIds: tagIds || undefined,
-        scope: { id: scopeId, tenant },
-        requestedFields,
-      });
+    const result = await this.handlers.roles.getRoles({
+      page,
+      limit,
+      search: search || undefined,
+      sort: sortField && sortOrder ? { field: sortField, order: sortOrder } : undefined,
+      tagIds: tagIds || undefined,
+      scope: { id: scopeId, tenant },
+      requestedFields,
+    });
 
-      this.ok(res, result);
-    } catch (error) {
-      this.handleError(res, error, 'Failed to fetch roles');
-    }
+    this.success(res, result);
   }
 
   async createRole(
     req: TypedRequest<TypedRequestBody<typeof createRoleRequestSchema>>,
     res: Response
   ): Promise<void> {
-    try {
-      const variables: CreateRoleMutationVariables = {
-        input: req.body,
-      };
+    const variables: CreateRoleMutationVariables = {
+      input: req.body,
+    };
 
-      const role: Role = await this.handlers.roles.createRole(variables);
+    const role: Role = await this.handlers.roles.createRole(variables);
 
-      this.created(res, role);
-    } catch (error) {
-      this.handleError(res, error, 'Failed to create role');
-    }
+    this.success(res, role, 201);
   }
 
   async updateRole(
@@ -80,18 +72,14 @@ export class RolesController extends BaseController {
   ): Promise<void> {
     const { id } = req.params;
 
-    try {
-      const variables: UpdateRoleMutationVariables = {
-        id,
-        input: req.body,
-      };
+    const variables: UpdateRoleMutationVariables = {
+      id,
+      input: req.body,
+    };
 
-      const role: Role = await this.handlers.roles.updateRole(variables);
+    const role: Role = await this.handlers.roles.updateRole(variables);
 
-      this.ok(res, role);
-    } catch (error) {
-      this.handleError(res, error, 'Failed to update role');
-    }
+    this.success(res, role);
   }
 
   async deleteRole(
@@ -103,17 +91,13 @@ export class RolesController extends BaseController {
     const { id } = req.params;
     const { scopeId, tenant } = req.query;
 
-    try {
-      const variables: DeleteRoleMutationVariables = {
-        id,
-        scope: { id: scopeId, tenant },
-      };
+    const variables: DeleteRoleMutationVariables = {
+      id,
+      scope: { id: scopeId, tenant },
+    };
 
-      const role: Role = await this.handlers.roles.deleteRole(variables);
+    const role: Role = await this.handlers.roles.deleteRole(variables);
 
-      this.ok(res, role);
-    } catch (error) {
-      this.handleError(res, error, 'Failed to delete role');
-    }
+    this.success(res, role);
   }
 }

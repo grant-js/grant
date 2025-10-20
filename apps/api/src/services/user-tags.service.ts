@@ -1,5 +1,4 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { userTagsAuditLogs } from '@logusgraphics/grant-database';
+import { DbSchema, userTagsAuditLogs } from '@logusgraphics/grant-database';
 import {
   AddUserTagInput,
   RemoveUserTagInput,
@@ -7,25 +6,26 @@ import {
   UserTag,
 } from '@logusgraphics/grant-schema';
 
+import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
+  DeleteParams,
+  createDynamicSingleSchema,
   validateInput,
   validateOutput,
-  createDynamicSingleSchema,
-  DeleteParams,
 } from './common';
 import {
-  userTagSchema,
-  queryUserTagsArgsSchema,
   addUserTagInputSchema,
-  removeUserTagInputSchema,
   getUserTagIntersectionInputSchema,
+  queryUserTagsArgsSchema,
+  removeUserTagInputSchema,
   removeUsersTagsInputSchema,
   updateUserTagInputSchema,
+  userTagSchema,
 } from './user-tags.schemas';
 
 export class UserTagService extends AuditService {
@@ -44,7 +44,7 @@ export class UserTagService extends AuditService {
     );
 
     if (users.users.length === 0) {
-      throw new Error('User not found');
+      throw new NotFoundError('User not found', 'errors:notFound.user');
     }
   }
 
@@ -55,7 +55,7 @@ export class UserTagService extends AuditService {
     );
 
     if (tags.tags.length === 0) {
-      throw new Error('Tag not found');
+      throw new NotFoundError('Tag not found', 'errors:notFound.tag');
     }
   }
   private async userHasTag(
@@ -113,7 +113,10 @@ export class UserTagService extends AuditService {
     const hasTag = await this.userHasTag(userId, tagId, transaction);
 
     if (hasTag) {
-      throw new Error('User already has this tag');
+      throw new ConflictError('User already has this tag', 'errors:conflict.duplicateEntry', {
+        resource: 'UserTag',
+        field: 'tagId',
+      });
     }
 
     const userTag = await this.repositories.userTagRepository.addUserTag(
@@ -176,7 +179,7 @@ export class UserTagService extends AuditService {
     const hasTag = await this.userHasTag(userId, tagId, transaction);
 
     if (!hasTag) {
-      throw new Error('User does not have this tag');
+      throw new NotFoundError('User does not have this tag', 'errors:notFound.tag');
     }
 
     const isHardDelete = params.hardDelete === true;

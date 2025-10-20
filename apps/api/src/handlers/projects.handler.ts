@@ -10,6 +10,7 @@ import {
 } from '@logusgraphics/grant-schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
+import { BadRequestError } from '@/lib/errors';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 import { DeleteParams, SelectedFields } from '@/services/common';
@@ -104,7 +105,9 @@ export class ProjectHandler extends ScopeHandler {
           );
           break;
         default:
-          throw new Error('Invalid scope');
+          throw new BadRequestError('Invalid scope', 'errors:validation.invalid', {
+            field: 'scope',
+          });
       }
 
       if (tagIds && tagIds.length > 0) {
@@ -196,7 +199,9 @@ export class ProjectHandler extends ScopeHandler {
           );
           break;
         default:
-          throw new Error('Invalid scope');
+          throw new BadRequestError('Invalid scope', 'errors:validation.invalid', {
+            field: 'scope',
+          });
       }
       await Promise.all([
         ...tagIds.map((tagId) =>

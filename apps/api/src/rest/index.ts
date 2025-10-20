@@ -1,6 +1,5 @@
 import { Router } from 'express';
 
-import { errorHandler } from '@/middleware/auth.middleware';
 import { createAccountsRoutes } from '@/rest/routes/accounts.routes';
 import { createAuthRoutes } from '@/rest/routes/auth.routes';
 import { createGroupsRouter } from '@/rest/routes/groups.routes';
@@ -26,8 +25,6 @@ export function createRestRouter(context: RequestContext): Router {
   router.use('/projects', createProjectsRouter(context));
   router.use('/tags', createTagsRouter(context));
   router.use('/accounts', createAccountsRoutes(context));
-
-  router.use(errorHandler);
 
   return router;
 }

@@ -2,6 +2,7 @@ import { DbSchema } from '@logusgraphics/grant-database';
 import { roleGroupsAuditLogs } from '@logusgraphics/grant-database';
 import { RoleGroup, AddRoleGroupInput, RemoveRoleGroupInput } from '@logusgraphics/grant-schema';
 
+import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -36,7 +37,7 @@ export class RoleGroupService extends AuditService {
     );
 
     if (roles.roles.length === 0) {
-      throw new Error('Role not found');
+      throw new NotFoundError('Role not found', 'errors:notFound.role');
     }
   }
 
@@ -47,7 +48,7 @@ export class RoleGroupService extends AuditService {
     );
 
     if (groups.groups.length === 0) {
-      throw new Error('Group not found');
+      throw new NotFoundError('Group not found', 'errors:notFound.group');
     }
   }
 
@@ -96,7 +97,10 @@ export class RoleGroupService extends AuditService {
     const hasGroup = await this.roleHasGroup(roleId, groupId, transaction);
 
     if (hasGroup) {
-      throw new Error('Role already has this group');
+      throw new ConflictError('Role already has this group', 'errors:conflict.duplicateEntry', {
+        resource: 'RoleGroup',
+        field: 'groupId',
+      });
     }
 
     const roleGroup = await this.repositories.roleGroupRepository.addRoleGroup(
@@ -134,7 +138,7 @@ export class RoleGroupService extends AuditService {
     const hasGroup = await this.roleHasGroup(roleId, groupId, transaction);
 
     if (!hasGroup) {
-      throw new Error('Role does not have this group');
+      throw new NotFoundError('Role does not have this group', 'errors:notFound.group');
     }
 
     const isHardDelete = hardDelete === true;

@@ -38,38 +38,30 @@ export class ProjectsController extends BaseController {
 
     const requestedFields = parseRelations<Project>(relations);
 
-    try {
-      const result = await this.handlers.projects.getProjects({
-        page,
-        limit,
-        search: search || undefined,
-        sort: sortField && sortOrder ? { field: sortField, order: sortOrder } : undefined,
-        tagIds: tagIds || undefined,
-        scope: { id: scopeId, tenant },
-        requestedFields,
-      });
+    const result = await this.handlers.projects.getProjects({
+      page,
+      limit,
+      search: search || undefined,
+      sort: sortField && sortOrder ? { field: sortField, order: sortOrder } : undefined,
+      tagIds: tagIds || undefined,
+      scope: { id: scopeId, tenant },
+      requestedFields,
+    });
 
-      this.ok(res, result);
-    } catch (error) {
-      this.handleError(res, error, 'Failed to fetch projects');
-    }
+    this.success(res, result);
   }
 
   async createProject(
     req: TypedRequest<TypedRequestBody<typeof createProjectRequestSchema>>,
     res: Response
   ): Promise<void> {
-    try {
-      const variables: CreateProjectMutationVariables = {
-        input: req.body,
-      };
+    const variables: CreateProjectMutationVariables = {
+      input: req.body,
+    };
 
-      const project: Project = await this.handlers.projects.createProject(variables);
+    const project: Project = await this.handlers.projects.createProject(variables);
 
-      this.created(res, project);
-    } catch (error) {
-      this.handleError(res, error, 'Failed to create project');
-    }
+    this.success(res, project, 201);
   }
 
   async updateProject(
@@ -81,18 +73,14 @@ export class ProjectsController extends BaseController {
   ): Promise<void> {
     const { id } = req.params;
 
-    try {
-      const variables: UpdateProjectMutationVariables = {
-        id,
-        input: req.body,
-      };
+    const variables: UpdateProjectMutationVariables = {
+      id,
+      input: req.body,
+    };
 
-      const project: Project = await this.handlers.projects.updateProject(variables);
+    const project: Project = await this.handlers.projects.updateProject(variables);
 
-      this.ok(res, project);
-    } catch (error) {
-      this.handleError(res, error, 'Failed to update project');
-    }
+    this.success(res, project);
   }
 
   async deleteProject(
@@ -105,17 +93,13 @@ export class ProjectsController extends BaseController {
     const { id } = req.params;
     const { scopeId, tenant } = req.query;
 
-    try {
-      const variables: DeleteProjectMutationVariables = {
-        id,
-        scope: { id: scopeId, tenant },
-      };
+    const variables: DeleteProjectMutationVariables = {
+      id,
+      scope: { id: scopeId, tenant },
+    };
 
-      const project: Project = await this.handlers.projects.deleteProject(variables);
+    const project: Project = await this.handlers.projects.deleteProject(variables);
 
-      this.ok(res, project);
-    } catch (error) {
-      this.handleError(res, error, 'Failed to delete project');
-    }
+    this.success(res, project);
   }
 }

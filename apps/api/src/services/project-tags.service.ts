@@ -7,6 +7,7 @@ import {
   UpdateProjectTagInput,
 } from '@logusgraphics/grant-schema';
 
+import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -46,7 +47,7 @@ export class ProjectTagService extends AuditService {
     );
 
     if (projects.projects.length === 0) {
-      throw new Error('Project not found');
+      throw new NotFoundError('Project not found', 'errors:notFound.project');
     }
   }
 
@@ -60,7 +61,7 @@ export class ProjectTagService extends AuditService {
     );
 
     if (tags.tags.length === 0) {
-      throw new Error('Tag not found');
+      throw new NotFoundError('Tag not found', 'errors:notFound.tag');
     }
   }
 
@@ -120,7 +121,10 @@ export class ProjectTagService extends AuditService {
     const hasTag = await this.projectHasTag(projectId, tagId, transaction);
 
     if (hasTag) {
-      throw new Error('Project already has this tag');
+      throw new ConflictError('Project already has this tag', 'errors:conflict.duplicateEntry', {
+        resource: 'ProjectTag',
+        field: 'tagId',
+      });
     }
 
     const projectTag = await this.repositories.projectTagRepository.addProjectTag(
@@ -202,7 +206,7 @@ export class ProjectTagService extends AuditService {
     const hasTag = await this.projectHasTag(projectId, tagId, transaction);
 
     if (!hasTag) {
-      throw new Error('Project does not have this tag');
+      throw new NotFoundError('Project does not have this tag', 'errors:notFound.tag');
     }
 
     const isHardDelete = hardDelete === true;

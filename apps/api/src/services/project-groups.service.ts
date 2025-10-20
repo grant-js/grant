@@ -6,6 +6,7 @@ import {
   AddProjectGroupInput,
 } from '@logusgraphics/grant-schema';
 
+import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -40,7 +41,7 @@ export class ProjectGroupService extends AuditService {
     );
 
     if (projects.projects.length === 0) {
-      throw new Error('Project not found');
+      throw new NotFoundError('Project not found', 'errors:notFound.project');
     }
   }
 
@@ -51,7 +52,7 @@ export class ProjectGroupService extends AuditService {
     );
 
     if (groups.groups.length === 0) {
-      throw new Error('Group not found');
+      throw new NotFoundError('Group not found', 'errors:notFound.group');
     }
   }
 
@@ -98,7 +99,10 @@ export class ProjectGroupService extends AuditService {
     const hasGroup = await this.projectHasGroup(projectId, groupId, transaction);
 
     if (hasGroup) {
-      throw new Error('Project already has this group');
+      throw new ConflictError('Project already has this group', 'errors:conflict.duplicateEntry', {
+        resource: 'ProjectGroup',
+        field: 'groupId',
+      });
     }
 
     const projectGroup = await this.repositories.projectGroupRepository.addProjectGroup(
@@ -135,7 +139,7 @@ export class ProjectGroupService extends AuditService {
     const hasGroup = await this.projectHasGroup(projectId, groupId, transaction);
 
     if (!hasGroup) {
-      throw new Error('Project does not have this group');
+      throw new NotFoundError('Project does not have this group', 'errors:notFound.group');
     }
 
     const isHardDelete = hardDelete === true;

@@ -6,6 +6,7 @@ import {
 } from '@logusgraphics/grant-schema';
 import { Response } from 'express';
 
+import { AuthenticationError, NotFoundError } from '@/lib/errors';
 import { parseRelations } from '@/lib/field-selection.lib';
 import { TypedRequest } from '@/rest/types';
 import { RequestContext } from '@/types';
@@ -36,36 +37,32 @@ export class OrganizationsController extends BaseController {
     req: TypedRequest<{ query: typeof getOrganizationsQuerySchema }>,
     res: Response
   ) {
-    try {
-      const { page, limit, search, ids, relations, sortField, sortOrder } = req.query;
+    const { page, limit, search, ids, relations, sortField, sortOrder } = req.query;
 
-      const requestedFields = parseRelations<Organization>(relations);
+    const requestedFields = parseRelations<Organization>(relations);
 
-      const sort =
-        sortField && sortOrder
-          ? ({
-              field: sortField as OrganizationSortableField,
-              order: sortOrder as SortOrder,
-            } as OrganizationSortInput)
-          : undefined;
+    const sort =
+      sortField && sortOrder
+        ? ({
+            field: sortField as OrganizationSortableField,
+            order: sortOrder as SortOrder,
+          } as OrganizationSortInput)
+        : undefined;
 
-      const result = await this.context.handlers.organizations.getOrganizations({
-        page,
-        limit,
-        search,
-        ids,
-        sort,
-        requestedFields,
-      });
+    const result = await this.context.handlers.organizations.getOrganizations({
+      page,
+      limit,
+      search,
+      ids,
+      sort,
+      requestedFields,
+    });
 
-      return this.success(res, {
-        items: result.organizations,
-        totalCount: result.totalCount,
-        hasNextPage: result.hasNextPage,
-      });
-    } catch (error) {
-      return this.handleError(res, error, 'getOrganizations');
-    }
+    return this.success(res, {
+      items: result.organizations,
+      totalCount: result.totalCount,
+      hasNextPage: result.hasNextPage,
+    });
   }
 
   /**
@@ -79,29 +76,22 @@ export class OrganizationsController extends BaseController {
     }>,
     res: Response
   ) {
-    try {
-      const { id } = req.params;
-      const { relations } = req.query;
+    const { id } = req.params;
+    const { relations } = req.query;
 
-      const requestedFields = parseRelations<Organization>(relations);
+    const requestedFields = parseRelations<Organization>(relations);
 
-      const result = await this.context.handlers.organizations.getOrganizations({
-        ids: [id],
-        limit: 1,
-        requestedFields,
-      });
+    const result = await this.context.handlers.organizations.getOrganizations({
+      ids: [id],
+      limit: 1,
+      requestedFields,
+    });
 
-      if (result.organizations.length === 0) {
-        return res.status(404).json({
-          error: 'Organization not found',
-          code: 'NOT_FOUND',
-        });
-      }
-
-      return this.success(res, result.organizations[0]);
-    } catch (error) {
-      return this.handleError(res, error, 'getOrganization');
+    if (result.organizations.length === 0) {
+      throw new NotFoundError('Organization not found', 'errors:notFound.organization');
     }
+
+    return this.success(res, result.organizations[0]);
   }
 
   /**
@@ -112,30 +102,21 @@ export class OrganizationsController extends BaseController {
     req: TypedRequest<{ body: typeof createOrganizationRequestSchema }>,
     res: Response
   ) {
-    try {
-      const { name } = req.body;
-      const userId = this.context.user?.id;
+    const { name } = req.body;
+    const userId = this.context.user?.id;
 
-      if (!userId) {
-        return this.handleError(
-          res,
-          new Error('Authentication required'),
-          'createOrganization',
-          401
-        );
-      }
-
-      const organization = await this.context.handlers.organizations.createOrganization(
-        {
-          input: { name },
-        },
-        userId
-      );
-
-      return this.created(res, organization);
-    } catch (error) {
-      return this.handleError(res, error, 'createOrganization');
+    if (!userId) {
+      throw new AuthenticationError('Authentication required', 'errors:auth.unauthorized');
     }
+
+    const organization = await this.context.handlers.organizations.createOrganization(
+      {
+        input: { name },
+      },
+      userId
+    );
+
+    return this.success(res, organization, 201);
   }
 
   /**
@@ -149,19 +130,15 @@ export class OrganizationsController extends BaseController {
     }>,
     res: Response
   ) {
-    try {
-      const { id } = req.params;
-      const { name } = req.body;
+    const { id } = req.params;
+    const { name } = req.body;
 
-      const organization = await this.context.handlers.organizations.updateOrganization({
-        id,
-        input: { name },
-      });
+    const organization = await this.context.handlers.organizations.updateOrganization({
+      id,
+      input: { name },
+    });
 
-      return this.success(res, organization);
-    } catch (error) {
-      return this.handleError(res, error, 'updateOrganization');
-    }
+    return this.success(res, organization);
   }
 
   /**
@@ -175,18 +152,14 @@ export class OrganizationsController extends BaseController {
     }>,
     res: Response
   ) {
-    try {
-      const { id } = req.params;
-      const { hardDelete } = req.query;
+    const { id } = req.params;
+    const { hardDelete } = req.query;
 
-      const organization = await this.context.handlers.organizations.deleteOrganization({
-        id,
-        hardDelete: hardDelete || false,
-      });
+    const organization = await this.context.handlers.organizations.deleteOrganization({
+      id,
+      hardDelete: hardDelete || false,
+    });
 
-      return this.success(res, organization);
-    } catch (error) {
-      return this.handleError(res, error, 'deleteOrganization');
-    }
+    return this.success(res, organization);
   }
 }

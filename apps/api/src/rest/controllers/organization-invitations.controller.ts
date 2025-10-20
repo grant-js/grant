@@ -1,6 +1,7 @@
 import { OrganizationInvitationStatus } from '@logusgraphics/grant-schema';
 import { Response } from 'express';
 
+import { AuthenticationError, NotFoundError } from '@/lib/errors';
 import { TypedRequest } from '@/rest/types';
 import { RequestContext } from '@/types';
 
@@ -27,23 +28,19 @@ export class OrganizationInvitationsController extends BaseController {
    * Invite a member to an organization
    */
   async inviteMember(req: TypedRequest<{ body: typeof inviteMemberRequestSchema }>, res: Response) {
-    try {
-      const { organizationId, email, roleId } = req.body;
-      const invitedBy = this.context.user?.id;
+    const { organizationId, email, roleId } = req.body;
+    const invitedBy = this.context.user?.id;
 
-      if (!invitedBy) {
-        return this.handleError(res, new Error('Authentication required'), 'inviteMember', 401);
-      }
-
-      const invitation = await this.context.handlers.organizationInvitations.inviteMember(
-        { organizationId, email, roleId },
-        invitedBy
-      );
-
-      return this.success(res, invitation, 201);
-    } catch (error) {
-      return this.handleError(res, error, 'inviteMember');
+    if (!invitedBy) {
+      throw new AuthenticationError('Authentication required', 'errors:auth.unauthorized');
     }
+
+    const invitation = await this.context.handlers.organizationInvitations.inviteMember(
+      { organizationId, email, roleId },
+      invitedBy
+    );
+
+    return this.success(res, invitation, 201);
   }
 
   /**
@@ -54,18 +51,14 @@ export class OrganizationInvitationsController extends BaseController {
     req: TypedRequest<{ body: typeof acceptInvitationRequestSchema }>,
     res: Response
   ) {
-    try {
-      const { token, userData } = req.body;
+    const { token, userData } = req.body;
 
-      const result = await this.context.handlers.organizationInvitations.acceptInvitation({
-        token,
-        userData,
-      });
+    const result = await this.context.handlers.organizationInvitations.acceptInvitation({
+      token,
+      userData,
+    });
 
-      return this.success(res, result);
-    } catch (error) {
-      return this.handleError(res, error, 'acceptInvitation');
-    }
+    return this.success(res, result);
   }
 
   /**
@@ -76,24 +69,15 @@ export class OrganizationInvitationsController extends BaseController {
     req: TypedRequest<{ params: typeof invitationTokenParamsSchema }>,
     res: Response
   ) {
-    try {
-      const { token } = req.params;
+    const { token } = req.params;
 
-      const invitation = await this.context.handlers.organizationInvitations.getInvitation(token);
+    const invitation = await this.context.handlers.organizationInvitations.getInvitation(token);
 
-      if (!invitation) {
-        return this.handleError(
-          res,
-          new Error('Invitation not found or has expired'),
-          'getInvitationByToken',
-          404
-        );
-      }
-
-      return this.success(res, invitation);
-    } catch (error) {
-      return this.handleError(res, error, 'getInvitationByToken');
+    if (!invitation) {
+      throw new NotFoundError('Invitation not found or has expired', 'errors:auth.invalidToken');
     }
+
+    return this.success(res, invitation);
   }
 
   /**
@@ -104,22 +88,18 @@ export class OrganizationInvitationsController extends BaseController {
     req: TypedRequest<{ query: typeof getOrganizationInvitationsQuerySchema }>,
     res: Response
   ) {
-    try {
-      const { organizationId, status } = req.query;
+    const { organizationId, status } = req.query;
 
-      const result = await this.context.handlers.organizationInvitations.getOrganizationInvitations(
-        organizationId,
-        status as OrganizationInvitationStatus | undefined
-      );
+    const result = await this.context.handlers.organizationInvitations.getOrganizationInvitations(
+      organizationId,
+      status as OrganizationInvitationStatus | undefined
+    );
 
-      return this.success(res, {
-        items: result.invitations,
-        totalCount: result.totalCount,
-        hasNextPage: result.hasNextPage,
-      });
-    } catch (error) {
-      return this.handleError(res, error, 'getOrganizationInvitations');
-    }
+    return this.success(res, {
+      items: result.invitations,
+      totalCount: result.totalCount,
+      hasNextPage: result.hasNextPage,
+    });
   }
 
   /**
@@ -130,14 +110,10 @@ export class OrganizationInvitationsController extends BaseController {
     req: TypedRequest<{ params: typeof invitationParamsSchema }>,
     res: Response
   ) {
-    try {
-      const { id } = req.params;
+    const { id } = req.params;
 
-      const invitation = await this.context.handlers.organizationInvitations.revokeInvitation(id);
+    const invitation = await this.context.handlers.organizationInvitations.revokeInvitation(id);
 
-      return this.success(res, invitation);
-    } catch (error) {
-      return this.handleError(res, error, 'revokeInvitation');
-    }
+    return this.success(res, invitation);
   }
 }

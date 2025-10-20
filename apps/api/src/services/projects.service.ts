@@ -9,6 +9,7 @@ import {
   CreateProjectInput,
 } from '@logusgraphics/grant-schema';
 
+import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -46,7 +47,7 @@ export class ProjectService extends AuditService {
     });
 
     if (project.projects.length === 0) {
-      throw new Error('Project not found');
+      throw new NotFoundError('Project not found', 'errors:notFound.project');
     }
 
     return project.projects[0];

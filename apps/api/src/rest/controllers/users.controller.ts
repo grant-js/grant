@@ -1,6 +1,7 @@
 import { SortOrder, User, UserSortableField, UserSortInput } from '@logusgraphics/grant-schema';
 import { Response } from 'express';
 
+import { NotFoundError } from '@/lib/errors';
 import { parseRelations } from '@/lib/field-selection.lib';
 import { TypedRequest } from '@/rest/types';
 import { RequestContext } from '@/types';
@@ -28,39 +29,35 @@ export class UsersController extends BaseController {
    * List users with optional filtering, pagination, and relations
    */
   async getUsers(req: TypedRequest<{ query: typeof getUsersQuerySchema }>, res: Response) {
-    try {
-      const { page, limit, search, ids, relations, sortField, sortOrder, tagIds, scopeId, tenant } =
-        req.query;
+    const { page, limit, search, ids, relations, sortField, sortOrder, tagIds, scopeId, tenant } =
+      req.query;
 
-      const requestedFields = parseRelations<User>(relations);
+    const requestedFields = parseRelations<User>(relations);
 
-      const sort =
-        sortField && sortOrder
-          ? ({
-              field: sortField as UserSortableField,
-              order: sortOrder as SortOrder,
-            } as UserSortInput)
-          : undefined;
+    const sort =
+      sortField && sortOrder
+        ? ({
+            field: sortField as UserSortableField,
+            order: sortOrder as SortOrder,
+          } as UserSortInput)
+        : undefined;
 
-      const result = await this.context.handlers.users.getUsers({
-        page,
-        limit,
-        search,
-        ids,
-        sort,
-        tagIds,
-        scope: { id: scopeId, tenant },
-        requestedFields,
-      });
+    const result = await this.context.handlers.users.getUsers({
+      page,
+      limit,
+      search,
+      ids,
+      sort,
+      tagIds,
+      scope: { id: scopeId, tenant },
+      requestedFields,
+    });
 
-      return this.success(res, {
-        items: result.users,
-        totalCount: result.totalCount,
-        hasNextPage: result.hasNextPage,
-      });
-    } catch (error) {
-      return this.handleError(res, error, 'getUsers');
-    }
+    return this.success(res, {
+      items: result.users,
+      totalCount: result.totalCount,
+      hasNextPage: result.hasNextPage,
+    });
   }
 
   /**
@@ -74,30 +71,23 @@ export class UsersController extends BaseController {
     }>,
     res: Response
   ) {
-    try {
-      const { id } = req.params;
-      const { relations, scopeId, tenant } = req.query;
+    const { id } = req.params;
+    const { relations, scopeId, tenant } = req.query;
 
-      const requestedFields = parseRelations<User>(relations);
+    const requestedFields = parseRelations<User>(relations);
 
-      const result = await this.context.handlers.users.getUsers({
-        ids: [id],
-        limit: 1,
-        scope: { id: scopeId, tenant },
-        requestedFields,
-      });
+    const result = await this.context.handlers.users.getUsers({
+      ids: [id],
+      limit: 1,
+      scope: { id: scopeId, tenant },
+      requestedFields,
+    });
 
-      if (result.users.length === 0) {
-        return res.status(404).json({
-          error: 'User not found',
-          code: 'NOT_FOUND',
-        });
-      }
-
-      return this.success(res, result.users[0]);
-    } catch (error) {
-      return this.handleError(res, error, 'getUser');
+    if (result.users.length === 0) {
+      throw new NotFoundError('User not found', 'errors:notFound.user');
     }
+
+    return this.success(res, result.users[0]);
   }
 
   /**
@@ -105,23 +95,19 @@ export class UsersController extends BaseController {
    * Create a new user
    */
   async createUser(req: TypedRequest<{ body: typeof createUserRequestSchema }>, res: Response) {
-    try {
-      const { name, scope, roleIds, tagIds, primaryTagId } = req.body;
+    const { name, scope, roleIds, tagIds, primaryTagId } = req.body;
 
-      const user = await this.context.handlers.users.createUser({
-        input: {
-          name,
-          scope,
-          roleIds,
-          tagIds,
-          primaryTagId,
-        },
-      });
+    const user = await this.context.handlers.users.createUser({
+      input: {
+        name,
+        scope,
+        roleIds,
+        tagIds,
+        primaryTagId,
+      },
+    });
 
-      return this.created(res, user);
-    } catch (error) {
-      return this.handleError(res, error, 'createUser');
-    }
+    return this.success(res, user, 201);
   }
 
   /**
@@ -135,19 +121,15 @@ export class UsersController extends BaseController {
     }>,
     res: Response
   ) {
-    try {
-      const { id } = req.params;
-      const { name, roleIds, tagIds, primaryTagId } = req.body;
+    const { id } = req.params;
+    const { name, roleIds, tagIds, primaryTagId } = req.body;
 
-      const user = await this.context.handlers.users.updateUser({
-        id,
-        input: { name, roleIds, tagIds, primaryTagId },
-      });
+    const user = await this.context.handlers.users.updateUser({
+      id,
+      input: { name, roleIds, tagIds, primaryTagId },
+    });
 
-      return this.success(res, user);
-    } catch (error) {
-      return this.handleError(res, error, 'updateUser');
-    }
+    return this.success(res, user);
   }
 
   /**
@@ -161,19 +143,15 @@ export class UsersController extends BaseController {
     }>,
     res: Response
   ) {
-    try {
-      const { id } = req.params;
-      const { scopeId, tenant, hardDelete } = req.query;
+    const { id } = req.params;
+    const { scopeId, tenant, hardDelete } = req.query;
 
-      const user = await this.context.handlers.users.deleteUser({
-        id,
-        scope: { id: scopeId, tenant },
-        hardDelete: hardDelete || false,
-      });
+    const user = await this.context.handlers.users.deleteUser({
+      id,
+      scope: { id: scopeId, tenant },
+      hardDelete: hardDelete || false,
+    });
 
-      return this.success(res, user);
-    } catch (error) {
-      return this.handleError(res, error, 'deleteUser');
-    }
+    return this.success(res, user);
   }
 }

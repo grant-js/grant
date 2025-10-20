@@ -38,38 +38,30 @@ export class GroupsController extends BaseController {
 
     const requestedFields = parseRelations<Group>(relations);
 
-    try {
-      const result = await this.handlers.groups.getGroups({
-        page,
-        limit,
-        search: search || undefined,
-        sort: sortField && sortOrder ? { field: sortField, order: sortOrder } : undefined,
-        tagIds: tagIds || undefined,
-        scope: { id: scopeId, tenant },
-        requestedFields,
-      });
+    const result = await this.handlers.groups.getGroups({
+      page,
+      limit,
+      search: search || undefined,
+      sort: sortField && sortOrder ? { field: sortField, order: sortOrder } : undefined,
+      tagIds: tagIds || undefined,
+      scope: { id: scopeId, tenant },
+      requestedFields,
+    });
 
-      this.ok(res, result);
-    } catch (error) {
-      this.handleError(res, error, 'Failed to fetch groups');
-    }
+    this.success(res, result);
   }
 
   async createGroup(
     req: TypedRequest<TypedRequestBody<typeof createGroupRequestSchema>>,
     res: Response
   ): Promise<void> {
-    try {
-      const variables: CreateGroupMutationVariables = {
-        input: req.body,
-      };
+    const variables: CreateGroupMutationVariables = {
+      input: req.body,
+    };
 
-      const group: Group = await this.handlers.groups.createGroup(variables);
+    const group: Group = await this.handlers.groups.createGroup(variables);
 
-      this.created(res, group);
-    } catch (error) {
-      this.handleError(res, error, 'Failed to create group');
-    }
+    this.success(res, group, 201);
   }
 
   async updateGroup(
@@ -81,18 +73,14 @@ export class GroupsController extends BaseController {
   ): Promise<void> {
     const { id } = req.params;
 
-    try {
-      const variables: UpdateGroupMutationVariables = {
-        id,
-        input: req.body,
-      };
+    const variables: UpdateGroupMutationVariables = {
+      id,
+      input: req.body,
+    };
 
-      const group: Group = await this.handlers.groups.updateGroup(variables);
+    const group: Group = await this.handlers.groups.updateGroup(variables);
 
-      this.ok(res, group);
-    } catch (error) {
-      this.handleError(res, error, 'Failed to update group');
-    }
+    this.success(res, group);
   }
 
   async deleteGroup(
@@ -105,17 +93,13 @@ export class GroupsController extends BaseController {
     const { id } = req.params;
     const { scopeId, tenant } = req.query;
 
-    try {
-      const variables: DeleteGroupMutationVariables = {
-        id,
-        scope: { id: scopeId, tenant },
-      };
+    const variables: DeleteGroupMutationVariables = {
+      id,
+      scope: { id: scopeId, tenant },
+    };
 
-      const group: Group = await this.handlers.groups.deleteGroup(variables);
+    const group: Group = await this.handlers.groups.deleteGroup(variables);
 
-      this.ok(res, group);
-    } catch (error) {
-      this.handleError(res, error, 'Failed to delete group');
-    }
+    this.success(res, group);
   }
 }

@@ -6,6 +6,7 @@ import {
   RemoveProjectUserInput,
 } from '@logusgraphics/grant-schema';
 
+import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -40,7 +41,7 @@ export class ProjectUserService extends AuditService {
     );
 
     if (projects.projects.length === 0) {
-      throw new Error('Project not found');
+      throw new NotFoundError('Project not found', 'errors:notFound.project');
     }
   }
 
@@ -51,7 +52,7 @@ export class ProjectUserService extends AuditService {
     );
 
     if (users.users.length === 0) {
-      throw new Error('User not found');
+      throw new NotFoundError('User not found', 'errors:notFound.user');
     }
   }
 
@@ -99,7 +100,10 @@ export class ProjectUserService extends AuditService {
     const hasUser = await this.projectHasUser(projectId, userId, transaction);
 
     if (hasUser) {
-      throw new Error('Project already has this user');
+      throw new ConflictError('Project already has this user', 'errors:conflict.duplicateEntry', {
+        resource: 'ProjectUser',
+        field: 'userId',
+      });
     }
 
     const projectUser = await this.repositories.projectUserRepository.addProjectUser(
@@ -139,7 +143,7 @@ export class ProjectUserService extends AuditService {
     const hasUser = await this.projectHasUser(projectId, userId, transaction);
 
     if (!hasUser) {
-      throw new Error('Project does not have this user');
+      throw new NotFoundError('Project does not have this user', 'errors:notFound.user');
     }
 
     const isHardDelete = hardDelete === true;

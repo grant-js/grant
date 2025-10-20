@@ -6,6 +6,7 @@ import {
   AddProjectRoleInput,
 } from '@logusgraphics/grant-schema';
 
+import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -40,7 +41,7 @@ export class ProjectRoleService extends AuditService {
     );
 
     if (projects.projects.length === 0) {
-      throw new Error('Project not found');
+      throw new NotFoundError('Project not found', 'errors:notFound.project');
     }
   }
 
@@ -51,7 +52,7 @@ export class ProjectRoleService extends AuditService {
     );
 
     if (roles.roles.length === 0) {
-      throw new Error('Role not found');
+      throw new NotFoundError('Role not found', 'errors:notFound.role');
     }
   }
 
@@ -97,7 +98,10 @@ export class ProjectRoleService extends AuditService {
     const hasRole = await this.projectHasRole(projectId, roleId, transaction);
 
     if (hasRole) {
-      throw new Error('Project already has this role');
+      throw new ConflictError('Project already has this role', 'errors:conflict.duplicateEntry', {
+        resource: 'ProjectRole',
+        field: 'roleId',
+      });
     }
 
     const projectRole = await this.repositories.projectRoleRepository.addProjectRole(
@@ -134,7 +138,7 @@ export class ProjectRoleService extends AuditService {
     const hasRole = await this.projectHasRole(projectId, roleId, transaction);
 
     if (!hasRole) {
-      throw new Error('Project does not have this role');
+      throw new NotFoundError('Project does not have this role', 'errors:notFound.role');
     }
 
     const isHardDelete = hardDelete === true;

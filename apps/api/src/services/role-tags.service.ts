@@ -7,6 +7,7 @@ import {
   UpdateRoleTagInput,
 } from '@logusgraphics/grant-schema';
 
+import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -44,7 +45,7 @@ export class RoleTagService extends AuditService {
     );
 
     if (roles.roles.length === 0) {
-      throw new Error('Role not found');
+      throw new NotFoundError('Role not found', 'errors:notFound.role');
     }
   }
 
@@ -55,7 +56,7 @@ export class RoleTagService extends AuditService {
     );
 
     if (tags.tags.length === 0) {
-      throw new Error('Tag not found');
+      throw new NotFoundError('Tag not found', 'errors:notFound.tag');
     }
   }
 
@@ -114,7 +115,10 @@ export class RoleTagService extends AuditService {
     const hasTag = await this.roleHasTag(roleId, tagId, transaction);
 
     if (hasTag) {
-      throw new Error('Role already has this tag');
+      throw new ConflictError('Role already has this tag', 'errors:conflict.duplicateEntry', {
+        resource: 'RoleTag',
+        field: 'tagId',
+      });
     }
 
     const roleTag = await this.repositories.roleTagRepository.addRoleTag(
@@ -177,7 +181,7 @@ export class RoleTagService extends AuditService {
     const hasTag = await this.roleHasTag(roleId, tagId, transaction);
 
     if (!hasTag) {
-      throw new Error('Role does not have this tag');
+      throw new NotFoundError('Role does not have this tag', 'errors:notFound.tag');
     }
 
     const isHardDelete = hardDelete === true;

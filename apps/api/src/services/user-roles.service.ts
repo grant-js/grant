@@ -1,23 +1,23 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { userRolesAuditLogs } from '@logusgraphics/grant-database';
+import { DbSchema, userRolesAuditLogs } from '@logusgraphics/grant-database';
 import { AddUserRoleInput, RemoveUserRoleInput, UserRole } from '@logusgraphics/grant-schema';
 
+import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
+  DeleteParams,
+  createDynamicSingleSchema,
   validateInput,
   validateOutput,
-  createDynamicSingleSchema,
-  DeleteParams,
 } from './common';
 import {
-  userRoleSchema,
-  queryUserRolesArgsSchema,
   addUserRoleInputSchema,
+  queryUserRolesArgsSchema,
   removeUserRoleInputSchema,
+  userRoleSchema,
 } from './user-roles.schemas';
 
 export class UserRoleService extends AuditService {
@@ -36,7 +36,7 @@ export class UserRoleService extends AuditService {
     );
 
     if (users.users.length === 0) {
-      throw new Error('User not found');
+      throw new NotFoundError('User not found', 'errors:notFound.user');
     }
   }
 
@@ -47,7 +47,7 @@ export class UserRoleService extends AuditService {
     );
 
     if (roles.roles.length === 0) {
-      throw new Error('Role not found');
+      throw new NotFoundError('Role not found', 'errors:notFound.role');
     }
   }
 
@@ -88,7 +88,10 @@ export class UserRoleService extends AuditService {
     const hasRole = await this.userHasRole(userId, roleId, transaction);
 
     if (hasRole) {
-      throw new Error('User already has this role');
+      throw new ConflictError('User already has this role', 'errors:conflict.duplicateEntry', {
+        resource: 'UserRole',
+        field: 'roleId',
+      });
     }
 
     const userRole = await this.repositories.userRoleRepository.addUserRole(
@@ -124,7 +127,7 @@ export class UserRoleService extends AuditService {
     const hasRole = await this.userHasRole(userId, roleId, transaction);
 
     if (!hasRole) {
-      throw new Error('User does not have this role');
+      throw new NotFoundError('User does not have this role', 'errors:notFound.role');
     }
 
     const isHardDelete = hardDelete === true;

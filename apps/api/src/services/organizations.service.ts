@@ -8,6 +8,7 @@ import {
   QueryOrganizationsArgs,
 } from '@logusgraphics/grant-schema';
 
+import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -51,7 +52,7 @@ export class OrganizationService extends AuditService {
     );
 
     if (existingOrganizations.organizations.length === 0) {
-      throw new Error('Organization not found');
+      throw new NotFoundError('Organization not found', 'errors:notFound.organization');
     }
 
     return existingOrganizations.organizations[0];

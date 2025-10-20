@@ -6,6 +6,7 @@ import {
   RemoveOrganizationGroupInput,
 } from '@logusgraphics/grant-schema';
 
+import { BadRequestError, ConflictError, NotFoundError, ValidationError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -44,7 +45,7 @@ export class OrganizationGroupService extends AuditService {
     );
 
     if (organizations.organizations.length === 0) {
-      throw new Error('Organization not found');
+      throw new NotFoundError('Organization not found', 'errors:notFound.organization');
     }
   }
 
@@ -55,7 +56,7 @@ export class OrganizationGroupService extends AuditService {
     );
 
     if (groups.groups.length === 0) {
-      throw new Error('Group not found');
+      throw new NotFoundError('Group not found', 'errors:notFound.group');
     }
   }
 
@@ -85,7 +86,9 @@ export class OrganizationGroupService extends AuditService {
     const { organizationId } = validatedParams;
 
     if (!organizationId) {
-      throw new Error('Organization ID is required');
+      throw new ValidationError('Organization ID is required', [], 'errors:validation.required', {
+        field: 'organizationId',
+      });
     }
     await this.organizationExists(organizationId, transaction);
 
@@ -111,7 +114,11 @@ export class OrganizationGroupService extends AuditService {
     const hasGroup = await this.organizationHasGroup(organizationId, groupId, transaction);
 
     if (hasGroup) {
-      throw new Error('Organization already has this group');
+      throw new ConflictError(
+        'Organization already has this group',
+        'errors:conflict.duplicateEntry',
+        { resource: 'OrganizationGroup', field: 'groupId' }
+      );
     }
 
     const result = await this.repositories.organizationGroupRepository.addOrganizationGroup(
@@ -149,7 +156,7 @@ export class OrganizationGroupService extends AuditService {
     const hasGroup = await this.organizationHasGroup(organizationId, groupId, transaction);
 
     if (!hasGroup) {
-      throw new Error('Organization does not have this group');
+      throw new NotFoundError('Organization does not have this group', 'errors:notFound.group');
     }
 
     const isHardDelete = hardDelete === true;
@@ -167,7 +174,7 @@ export class OrganizationGroupService extends AuditService {
         );
 
     if (!result) {
-      throw new Error('Failed to remove organization group');
+      throw new BadRequestError('Failed to remove organization group', 'errors:common.badRequest');
     }
 
     const oldValues = {

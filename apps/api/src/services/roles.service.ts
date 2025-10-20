@@ -9,6 +9,7 @@ import {
   CreateRoleInput,
 } from '@logusgraphics/grant-schema';
 
+import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -46,7 +47,7 @@ export class RoleService extends AuditService {
     });
 
     if (existingRoles.roles.length === 0) {
-      throw new Error('Role not found');
+      throw new NotFoundError('Role not found', 'errors:notFound.role');
     }
 
     return existingRoles.roles[0];

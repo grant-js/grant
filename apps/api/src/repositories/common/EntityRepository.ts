@@ -2,6 +2,7 @@ import { DbSchema } from '@logusgraphics/grant-database';
 import { Auditable, Searchable, SortOrder } from '@logusgraphics/grant-schema';
 import { eq, inArray, ilike, or, and, isNull, count, desc, asc, gte, lte, SQL } from 'drizzle-orm';
 
+import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 import type { Schema } from '@logusgraphics/grant-database';
@@ -359,7 +360,7 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
 
       const deletedItem = this.first(result);
       if (!deletedItem) {
-        throw new Error('Entity not found');
+        throw new NotFoundError('Entity not found', 'errors:notFound.resource');
       }
       return deletedItem as TEntity;
     } catch (error) {

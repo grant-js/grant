@@ -8,6 +8,7 @@ import {
   MutationDeleteAccountArgs,
 } from '@logusgraphics/grant-schema';
 
+import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -48,7 +49,7 @@ export class AccountService extends AuditService {
     );
 
     if (existingAccounts.accounts.length === 0) {
-      throw new Error('Account not found');
+      throw new NotFoundError('Account not found', 'errors:notFound.account');
     }
 
     return existingAccounts.accounts[0];

@@ -1,10 +1,35 @@
 import { Response } from 'express';
 
 import { Handlers } from '@/handlers';
-import { ApiError } from '@/lib/errors';
 import { AuthenticatedUser } from '@/types/auth';
 import { RequestContext } from '@/types/context';
 
+/**
+ * Base controller class with common response helpers
+ *
+ * Error Handling Strategy:
+ * - Controllers should NOT catch errors (no try-catch needed!)
+ * - Just throw ApiError instances from business logic
+ * - The global error middleware will translate, format, and send the response
+ *
+ * @example
+ * // ❌ Old way (DON'T do this)
+ * async getUser(req, res) {
+ *   try {
+ *     const user = await this.handlers.users.getUser(id);
+ *     return this.success(res, user);
+ *   } catch (error) {
+ *     return this.handleError(res, error, 'getUser');
+ *   }
+ * }
+ *
+ * // ✅ New way (DO this - much cleaner!)
+ * async getUser(req, res) {
+ *   const user = await this.handlers.users.getUser(id);
+ *   return this.success(res, user);
+ * }
+ * // Errors automatically caught by error middleware!
+ */
 export abstract class BaseController {
   protected context: RequestContext;
   protected handlers: Handlers;
@@ -18,57 +43,12 @@ export abstract class BaseController {
     this.origin = context.origin;
   }
 
-  protected handleError(
-    res: Response,
-    error: any,
-    contextOrStatusCode: string | number = 'unknown',
-    statusCodeOverride?: number
-  ) {
-    const context = typeof contextOrStatusCode === 'string' ? contextOrStatusCode : 'unknown';
-
-    console.error(`REST Controller Error (${context}):`, error);
-
-    // Handle ApiError instances with proper status codes and error codes
-    if (error instanceof ApiError) {
-      return res.status(error.statusCode).json({
-        error: error.message,
-        code: error.code,
-        ...(error.extensions && { extensions: error.extensions }),
-        ...(process.env.NODE_ENV === 'development' && {
-          stack: error.stack,
-        }),
-      });
-    }
-
-    // Fallback for other errors
-    const statusCode =
-      statusCodeOverride ||
-      (typeof contextOrStatusCode === 'number' ? contextOrStatusCode : error.statusCode || 500);
-
-    res.status(statusCode).json({
-      error: error.message || 'Internal server error',
-      code: error.code || 'INTERNAL_ERROR',
-      ...(process.env.NODE_ENV === 'development' && {
-        stack: error.stack,
-        details: error,
-      }),
-    });
-  }
-
-  protected ok(res: Response, data: object) {
-    res.status(200).json({
-      success: true,
-      data,
-    });
-  }
-
-  protected created(res: Response, data: object) {
-    res.status(201).json({
-      success: true,
-      data,
-    });
-  }
-
+  /**
+   * Send a success response with optional status code
+   * @param res - Express response object
+   * @param data - Response data
+   * @param statusCode - HTTP status code (default: 200, use 201 for created resources)
+   */
   protected success(res: Response, data: object, statusCode: number = 200) {
     res.status(statusCode).json({
       success: true,

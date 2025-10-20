@@ -1,6 +1,8 @@
 import nodemailer, { Transporter } from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
 
+import { ApiError } from '@/lib/errors';
+
 import { IEmailService, SendInvitationParams, SendOtpParams } from '../email.interface';
 import {
   getInvitationEmailHtml,
@@ -56,8 +58,13 @@ export class SmtpEmailAdapter implements IEmailService {
       });
     } catch (error) {
       console.error('SMTP send error:', error);
-      throw new Error(
-        `Failed to send invitation email: ${error instanceof Error ? error.message : 'Unknown error'}`
+      throw new ApiError(
+        `Failed to send invitation email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        {
+          statusCode: 500,
+          code: 'EMAIL_SEND_FAILED',
+          translationKey: 'errors:common.internalError',
+        }
       );
     }
   }
@@ -77,8 +84,13 @@ export class SmtpEmailAdapter implements IEmailService {
       });
     } catch (error) {
       console.error('SMTP send error:', error);
-      throw new Error(
-        `Failed to send OTP email: ${error instanceof Error ? error.message : 'Unknown error'}`
+      throw new ApiError(
+        `Failed to send OTP email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        {
+          statusCode: 500,
+          code: 'EMAIL_SEND_FAILED',
+          translationKey: 'errors:common.internalError',
+        }
       );
     }
   }

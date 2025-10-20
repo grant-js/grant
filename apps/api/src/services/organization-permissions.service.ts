@@ -6,6 +6,7 @@ import {
   RemoveOrganizationPermissionInput,
 } from '@logusgraphics/grant-schema';
 
+import { BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -43,7 +44,7 @@ export class OrganizationPermissionService extends AuditService {
     );
 
     if (organizations.organizations.length === 0) {
-      throw new Error('Organization not found');
+      throw new NotFoundError('Organization not found', 'errors:notFound.organization');
     }
   }
 
@@ -54,7 +55,7 @@ export class OrganizationPermissionService extends AuditService {
     );
 
     if (permissions.permissions.length === 0) {
-      throw new Error('Permission not found');
+      throw new NotFoundError('Permission not found', 'errors:notFound.permission');
     }
   }
 
@@ -119,7 +120,11 @@ export class OrganizationPermissionService extends AuditService {
     );
 
     if (hasPermission) {
-      throw new Error('Organization already has this permission');
+      throw new ConflictError(
+        'Organization already has this permission',
+        'errors:conflict.duplicateEntry',
+        { resource: 'OrganizationPermission', field: 'permissionId' }
+      );
     }
 
     const result =
@@ -162,7 +167,10 @@ export class OrganizationPermissionService extends AuditService {
     );
 
     if (!hasPermission) {
-      throw new Error('Organization does not have this permission');
+      throw new NotFoundError(
+        'Organization does not have this permission',
+        'errors:notFound.permission'
+      );
     }
 
     const isHardDelete = hardDelete === true;
@@ -180,7 +188,10 @@ export class OrganizationPermissionService extends AuditService {
         );
 
     if (!result) {
-      throw new Error('Failed to remove organization permission');
+      throw new BadRequestError(
+        'Failed to remove organization permission',
+        'errors:common.badRequest'
+      );
     }
 
     const oldValues = {

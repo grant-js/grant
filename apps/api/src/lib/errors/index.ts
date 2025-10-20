@@ -30,4 +30,4 @@ export {
 } from './error-classes';
 
 // Export GraphQL formatters
-export { formatGraphQLError, toGraphQLError } from './graphql-formatter';
+export { formatGraphQLError } from './graphql-formatter';

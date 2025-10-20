@@ -1,6 +1,7 @@
 import { DbSchema, organizationInvitationsAuditLogs } from '@logusgraphics/grant-database';
 import { OrganizationInvitation } from '@logusgraphics/grant-schema';
 
+import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import {
@@ -163,7 +164,11 @@ export class OrganizationInvitationService extends AuditService {
       );
 
     if (!oldInvitation) {
-      throw new Error(`Invitation with id ${invitationId} not found`);
+      throw new NotFoundError(
+        `Invitation with id ${invitationId} not found`,
+        'errors:notFound.invitation',
+        { id: invitationId }
+      );
     }
 
     const invitation = await this.repositories.organizationInvitationRepository.updateInvitation(

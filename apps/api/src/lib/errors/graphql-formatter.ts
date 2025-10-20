@@ -60,26 +60,3 @@ export function formatGraphQLError(
   // For all other errors, return as-is
   return formattedError;
 }
-
-/**
- * Converts an ApiError to a GraphQLError
- * This is useful when you need to throw errors in GraphQL resolvers
- */
-export function toGraphQLError(error: Error): GraphQLError {
-  if (error instanceof ApiError) {
-    return new GraphQLError(error.message, {
-      extensions: {
-        code: error.code,
-        ...error.extensions,
-      },
-      originalError: error,
-    });
-  }
-
-  return new GraphQLError(error.message, {
-    extensions: {
-      code: 'INTERNAL_SERVER_ERROR',
-    },
-    originalError: error,
-  });
-}

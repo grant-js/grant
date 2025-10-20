@@ -38,38 +38,30 @@ export class PermissionsController extends BaseController {
 
     const requestedFields = parseRelations<Permission>(relations);
 
-    try {
-      const result = await this.handlers.permissions.getPermissions({
-        page,
-        limit,
-        search: search || undefined,
-        sort: sortField && sortOrder ? { field: sortField, order: sortOrder } : undefined,
-        tagIds: tagIds || undefined,
-        scope: { id: scopeId, tenant },
-        requestedFields,
-      });
+    const result = await this.handlers.permissions.getPermissions({
+      page,
+      limit,
+      search: search || undefined,
+      sort: sortField && sortOrder ? { field: sortField, order: sortOrder } : undefined,
+      tagIds: tagIds || undefined,
+      scope: { id: scopeId, tenant },
+      requestedFields,
+    });
 
-      this.ok(res, result);
-    } catch (error) {
-      this.handleError(res, error, 'Failed to fetch permissions');
-    }
+    this.success(res, result);
   }
 
   async createPermission(
     req: TypedRequest<TypedRequestBody<typeof createPermissionRequestSchema>>,
     res: Response
   ): Promise<void> {
-    try {
-      const variables: CreatePermissionMutationVariables = {
-        input: req.body,
-      };
+    const variables: CreatePermissionMutationVariables = {
+      input: req.body,
+    };
 
-      const permission: Permission = await this.handlers.permissions.createPermission(variables);
+    const permission: Permission = await this.handlers.permissions.createPermission(variables);
 
-      this.created(res, permission);
-    } catch (error) {
-      this.handleError(res, error, 'Failed to create permission');
-    }
+    this.success(res, permission, 201);
   }
 
   async updatePermission(
@@ -81,18 +73,14 @@ export class PermissionsController extends BaseController {
   ): Promise<void> {
     const { id } = req.params;
 
-    try {
-      const variables: UpdatePermissionMutationVariables = {
-        id,
-        input: req.body,
-      };
+    const variables: UpdatePermissionMutationVariables = {
+      id,
+      input: req.body,
+    };
 
-      const permission: Permission = await this.handlers.permissions.updatePermission(variables);
+    const permission: Permission = await this.handlers.permissions.updatePermission(variables);
 
-      this.ok(res, permission);
-    } catch (error) {
-      this.handleError(res, error, 'Failed to update permission');
-    }
+    this.success(res, permission);
   }
 
   async deletePermission(
@@ -105,17 +93,13 @@ export class PermissionsController extends BaseController {
     const { id } = req.params;
     const { scopeId, tenant } = req.query;
 
-    try {
-      const variables: DeletePermissionMutationVariables = {
-        id,
-        scope: { id: scopeId, tenant },
-      };
+    const variables: DeletePermissionMutationVariables = {
+      id,
+      scope: { id: scopeId, tenant },
+    };
 
-      const permission: Permission = await this.handlers.permissions.deletePermission(variables);
+    const permission: Permission = await this.handlers.permissions.deletePermission(variables);
 
-      this.ok(res, permission);
-    } catch (error) {
-      this.handleError(res, error, 'Failed to delete permission');
-    }
+    this.success(res, permission);
   }
 }

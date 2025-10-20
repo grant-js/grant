@@ -7,6 +7,7 @@ import {
   UpdateGroupTagInput,
 } from '@logusgraphics/grant-schema';
 
+import { BadRequestError, ConflictError, NotFoundError, ValidationError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -44,7 +45,7 @@ export class GroupTagService extends AuditService {
     );
 
     if (groups.groups.length === 0) {
-      throw new Error('Group not found');
+      throw new NotFoundError('Group not found', 'errors:notFound.group');
     }
   }
 
@@ -55,7 +56,7 @@ export class GroupTagService extends AuditService {
     );
 
     if (tags.tags.length === 0) {
-      throw new Error('Tag not found');
+      throw new NotFoundError('Tag not found', 'errors:notFound.tag');
     }
   }
 
@@ -83,7 +84,9 @@ export class GroupTagService extends AuditService {
     const { groupId } = validatedParams;
 
     if (!groupId) {
-      throw new Error('Group ID is required');
+      throw new ValidationError('Group ID is required', [], 'errors:validation.required', {
+        field: 'groupId',
+      });
     }
     await this.groupExists(groupId, transaction);
 
@@ -121,7 +124,10 @@ export class GroupTagService extends AuditService {
     const hasTag = await this.groupHasTag(groupId, tagId, transaction);
 
     if (hasTag) {
-      throw new Error('Group already has this tag');
+      throw new ConflictError('Group already has this tag', 'errors:conflict.duplicateEntry', {
+        resource: 'GroupTag',
+        field: 'tagId',
+      });
     }
 
     const result = await this.repositories.groupTagRepository.addGroupTag(
@@ -184,7 +190,7 @@ export class GroupTagService extends AuditService {
     const hasTag = await this.groupHasTag(groupId, tagId, transaction);
 
     if (!hasTag) {
-      throw new Error('Group does not have this tag');
+      throw new NotFoundError('Group does not have this tag', 'errors:notFound.tag');
     }
 
     const isHardDelete = hardDelete === true;
@@ -200,7 +206,7 @@ export class GroupTagService extends AuditService {
         );
 
     if (!result) {
-      throw new Error('Failed to remove group tag');
+      throw new BadRequestError('Failed to remove group tag', 'errors:common.badRequest');
     }
 
     const oldValues = {

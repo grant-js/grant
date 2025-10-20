@@ -1,0 +1,14 @@
+{
+  "success": {
+    "created": "{{resource}} created successfully",
+    "updated": "{{resource}} updated successfully",
+    "deleted": "{{resource}} deleted successfully"
+  },
+  "actions": {
+    "create": "Create",
+    "update": "Update",
+    "delete": "Delete",
+    "view": "View",
+    "list": "List"
+  }
+}

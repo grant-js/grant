@@ -1,6 +1,7 @@
 import { DbSchema } from '@logusgraphics/grant-database';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 
+import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 export interface BasePivotModel {
@@ -247,7 +248,7 @@ export abstract class PivotRepository<
 
       const deletedItem = this.first(result);
       if (!deletedItem) {
-        throw new Error('Relationship not found');
+        throw new NotFoundError('Relationship not found', 'errors:notFound.resource');
       }
 
       return this.toEntity(deletedItem as TPivotModel);
@@ -276,7 +277,7 @@ export abstract class PivotRepository<
 
       const deletedItem = this.first(result);
       if (!deletedItem) {
-        throw new Error('Relationship not found');
+        throw new NotFoundError('Relationship not found', 'errors:notFound.resource');
       }
 
       return this.toEntity(deletedItem as TPivotModel);

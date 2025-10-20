@@ -155,6 +155,7 @@ export default withMermaid({
         {
           text: 'Advanced Topics',
           items: [
+            { text: 'Internationalization (i18n)', link: '/advanced-topics/internationalization' },
             { text: 'Caching System', link: '/advanced-topics/caching' },
             { text: 'Cache Setup Guide', link: '/advanced-topics/caching-setup' },
             { text: 'Email Service & Adapters', link: '/advanced-topics/email-service' },

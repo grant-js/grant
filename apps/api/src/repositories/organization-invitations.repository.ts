@@ -13,6 +13,7 @@ import {
 } from '@logusgraphics/grant-schema';
 import { and, eq, isNull } from 'drizzle-orm';
 
+import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { EntityRepository, FilterCondition, RelationsConfig } from '@/repositories/common';
 
@@ -200,7 +201,9 @@ export class OrganizationInvitationRepository extends EntityRepository<
       .returning();
 
     if (!updated) {
-      throw new Error(`Invitation with id ${id} not found`);
+      throw new NotFoundError(`Invitation with id ${id} not found`, 'errors:notFound.invitation', {
+        id,
+      });
     }
 
     return updated as unknown as OrganizationInvitation;

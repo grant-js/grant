@@ -7,6 +7,7 @@ import {
   Role,
 } from '@logusgraphics/grant-schema';
 
+import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -44,7 +45,7 @@ export class OrganizationRoleService extends AuditService {
     );
 
     if (organizations.organizations.length === 0) {
-      throw new Error('Organization not found');
+      throw new NotFoundError('Organization not found', 'errors:notFound.organization');
     }
   }
 
@@ -55,7 +56,7 @@ export class OrganizationRoleService extends AuditService {
     );
 
     if (roles.roles.length === 0) {
-      throw new Error('Role not found');
+      throw new NotFoundError('Role not found', 'errors:notFound.role');
     }
   }
 
@@ -109,7 +110,11 @@ export class OrganizationRoleService extends AuditService {
     const hasRole = await this.organizationHasRole(organizationId, roleId, transaction);
 
     if (hasRole) {
-      throw new Error('Organization already has this role');
+      throw new ConflictError(
+        'Organization already has this role',
+        'errors:conflict.duplicateEntry',
+        { resource: 'OrganizationRole', field: 'roleId' }
+      );
     }
 
     const organizationRole = await this.repositories.organizationRoleRepository.addOrganizationRole(
@@ -149,7 +154,7 @@ export class OrganizationRoleService extends AuditService {
     const hasRole = await this.organizationHasRole(organizationId, roleId, transaction);
 
     if (!hasRole) {
-      throw new Error('Organization does not have this role');
+      throw new NotFoundError('Organization does not have this role', 'errors:notFound.role');
     }
 
     const isHardDelete = hardDelete === true;

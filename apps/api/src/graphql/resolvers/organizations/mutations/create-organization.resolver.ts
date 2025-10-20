@@ -1,11 +1,12 @@
 import { MutationResolvers } from '@logusgraphics/grant-schema';
 
 import { GraphqlContext } from '@/graphql/types';
+import { AuthenticationError } from '@/lib/errors';
 
 export const createOrganizationResolver: MutationResolvers<GraphqlContext>['createOrganization'] =
   async (_parent, { input }, context) => {
     if (!context.user) {
-      throw new Error('Authentication required');
+      throw new AuthenticationError('Authentication required', 'errors:auth.unauthorized');
     }
 
     const createdOrganization = await context.handlers.organizations.createOrganization(

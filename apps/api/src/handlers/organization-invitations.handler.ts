@@ -14,6 +14,7 @@ import {
 } from '@logusgraphics/grant-schema';
 
 import { config } from '@/config';
+import { BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 
@@ -51,7 +52,11 @@ export class OrganizationInvitationsHandler {
         );
 
         if (isInOrg) {
-          throw new Error('User already part of the organization');
+          throw new ConflictError(
+            'User already part of the organization',
+            'errors:conflict.duplicateEntry',
+            { resource: 'OrganizationUser', field: 'userId' }
+          );
         }
       }
 
@@ -63,7 +68,11 @@ export class OrganizationInvitationsHandler {
       );
 
       if (existingInvitation) {
-        throw new Error('Invitation already sent to this email');
+        throw new ConflictError(
+          'Invitation already sent to this email',
+          'errors:conflict.duplicateEntry',
+          { resource: 'Invitation', field: 'email' }
+        );
       }
 
       // 4. Verify role exists and belongs to organization
@@ -73,7 +82,7 @@ export class OrganizationInvitationsHandler {
       );
       const roleExists = organizationRoles.some((or) => or.roleId === roleId);
       if (!roleExists) {
-        throw new Error('Role not found in organization');
+        throw new NotFoundError('Role not found in organization', 'errors:notFound.role');
       }
 
       // 5. Get organization and inviter details for email
@@ -142,11 +151,11 @@ export class OrganizationInvitationsHandler {
       );
 
       if (!invitation || invitation.status !== 'pending') {
-        throw new Error('Invalid or expired invitation');
+        throw new BadRequestError('Invalid or expired invitation', 'errors:auth.invalidToken');
       }
 
       if (new Date() > invitation.expiresAt) {
-        throw new Error('Invitation has expired');
+        throw new BadRequestError('Invitation has expired', 'errors:auth.invalidToken');
       }
 
       // 2. Check if user authentication method exists
