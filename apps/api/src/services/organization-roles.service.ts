@@ -206,8 +206,6 @@ export class OrganizationRoleService extends AuditService {
   ): Promise<Array<{ role: Role; organizationRole: OrganizationRole }>> {
     const context = 'OrganizationRoleService.seedOrganizationRoles';
 
-    await this.organizationExists(organizationId, transaction);
-
     const results = [];
 
     for (const roleData of STANDARD_ROLES) {

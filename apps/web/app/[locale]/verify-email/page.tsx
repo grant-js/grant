@@ -5,19 +5,21 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 
-import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useAuthMutations, usePageTitle } from '@/hooks';
+import { useAuthStore } from '@/stores/auth.store';
 
-type VerificationStatus = 'verifying' | 'success' | 'error' | 'missing-token';
+type VerificationStatus = 'verifying' | 'success' | 'error' | 'expired' | 'missing-token';
 
 export default function VerifyEmailPage() {
   const t = useTranslations('auth');
   const params = useParams();
   const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
   const searchParams = useSearchParams();
   const locale = params.locale as string;
   const [status, setStatus] = useState<VerificationStatus>('verifying');
@@ -36,24 +38,36 @@ export default function VerifyEmailPage() {
         return;
       }
 
-      // Prevent duplicate calls (React Strict Mode in dev)
       if (hasVerified.current) {
         return;
       }
+
       hasVerified.current = true;
 
       try {
         await verifyEmail(token);
         setStatus('success');
 
-        // Redirect to login after 3 seconds
         setTimeout(() => {
-          router.push(`/${locale}/auth/login`);
+          if (isAuthenticated()) {
+            router.push(`/${locale}/dashboard`);
+          } else {
+            router.push(`/${locale}/auth/login`);
+          }
         }, 3000);
       } catch (error) {
-        console.error('Verification error:', error);
-        setStatus('error');
-        setErrorMessage(error instanceof Error ? error.message : 'An unknown error occurred');
+        const apolloError = error as {
+          errors?: Array<{ extensions?: { translationKey?: string } }>;
+        };
+        const graphQLError = apolloError.errors?.[0];
+        const translationKey = graphQLError?.extensions?.translationKey;
+
+        if (translationKey === 'errors:auth.tokenExpired') {
+          setStatus('expired');
+        } else {
+          setStatus('error');
+          setErrorMessage(error instanceof Error ? error.message : 'An unknown error occurred');
+        }
       }
     };
 
@@ -95,6 +109,24 @@ export default function VerifyEmailPage() {
               <AlertDescription>
                 {errorMessage || t('verifyEmail.errorDescription')}
               </AlertDescription>
+            </Alert>
+            <div>
+              <Link href={`/${locale}/auth/login`}>
+                <Button className="w-full" variant="default">
+                  {t('verifyEmail.goToLogin')}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        );
+
+      case 'expired':
+        return (
+          <div className="space-y-8">
+            <Alert variant="warning">
+              <AlertTriangle />
+              <AlertTitle>{t('verifyEmail.expiredToken')}</AlertTitle>
+              <AlertDescription>{t('verifyEmail.expiredTokenDescription')}</AlertDescription>
             </Alert>
             <div>
               <Link href={`/${locale}/auth/login`}>

@@ -1,6 +1,20 @@
 import { DbSchema } from '@logusgraphics/grant-database';
 import { Auditable, Searchable, SortOrder } from '@logusgraphics/grant-schema';
-import { eq, inArray, ilike, or, and, isNull, count, desc, asc, gte, lte, SQL } from 'drizzle-orm';
+import {
+  SQL,
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  ilike,
+  inArray,
+  isNull,
+  lte,
+  or,
+  sql,
+} from 'drizzle-orm';
 
 import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -139,8 +153,59 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
 
     // Handle single filter condition
     if ('field' in filter && 'operator' in filter) {
+      const fieldStr = String(filter.field);
+
+      // Check if this is a JSON field access (contains dot notation)
+      if (fieldStr.includes('.')) {
+        // Split the field path (e.g., "providerData.otp.token" or "provider_data.otp.token")
+        const parts = fieldStr.split('.');
+        const rootField = parts[0] as keyof TModel;
+        const column = this.table[rootField];
+
+        if (!column) {
+          return undefined;
+        }
+
+        // Build JSON path for nested access
+        const jsonPath = parts.slice(1);
+
+        // Use Drizzle's SQL builder for JSON field access
+        // For PostgreSQL: column->'path'->'to'->>'field'
+        let jsonAccessor = column;
+        for (let i = 0; i < jsonPath.length; i++) {
+          const part = jsonPath[i];
+          if (i === jsonPath.length - 1) {
+            // Last part: use ->> to get text value
+            jsonAccessor = sql`${jsonAccessor}->>${part}`;
+          } else {
+            // Intermediate parts: use -> to navigate
+            jsonAccessor = sql`${jsonAccessor}->${part}`;
+          }
+        }
+
+        switch (filter.operator) {
+          case 'eq':
+            return eq(jsonAccessor, filter.value);
+          case 'gte':
+            return gte(jsonAccessor, filter.value);
+          case 'lte':
+            return lte(jsonAccessor, filter.value);
+          case 'in':
+            return Array.isArray(filter.value) ? inArray(jsonAccessor, filter.value) : undefined;
+          case 'ilike':
+            return ilike(jsonAccessor, filter.value);
+          case 'isNull':
+            return isNull(jsonAccessor);
+          default:
+            return undefined;
+        }
+      }
+
+      // Regular column access (no dot notation)
       const column = this.table[filter.field];
-      if (!column) return undefined;
+      if (!column) {
+        return undefined;
+      }
 
       switch (filter.operator) {
         case 'eq':
@@ -172,9 +237,10 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
       : [desc(this.table[sort.field])];
   }
 
-  private async getTotalCount(where: any): Promise<number> {
+  private async getTotalCount(where: any, transaction?: Transaction): Promise<number> {
     try {
-      const countResult = await this.db.select({ count: count() }).from(this.table).where(where);
+      const dbInstance = transaction ?? this.db;
+      const countResult = await dbInstance.select({ count: count() }).from(this.table).where(where);
       return Number(countResult[0]?.count ?? 0);
     } catch (error) {
       console.error('Count error:', error);
@@ -244,7 +310,7 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
       const where = this.where(ids, search, params.filters);
       const orderBy = this.orderBy(sort);
       const hasRelations = withRelations && Object.keys(withRelations).length > 0;
-      const totalCount = await this.getTotalCount(where);
+      const totalCount = await this.getTotalCount(where, transaction);
       const hasNextPage = limit ? page * limit < totalCount : false;
       const filter = {
         where,

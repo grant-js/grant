@@ -154,7 +154,7 @@ export class UserAuthenticationMethodRepository extends EntityRepository<
   ): Promise<UserAuthenticationMethod | null> {
     const filters: FilterCondition<UserAuthenticationMethodModel>[] = [
       {
-        field: 'provider_data.otp.token' as keyof UserAuthenticationMethodModel,
+        field: 'providerData.otp.token' as keyof UserAuthenticationMethodModel,
         operator: 'eq',
         value: token,
       },

@@ -106,7 +106,7 @@ export class AuthController extends BaseController {
   async verifyEmail(req: TypedRequest<{ body: typeof verifyEmailRequestSchema }>, res: Response) {
     const { token } = req.body;
 
-    const result = await this.handlers.accounts.verifyEmail(token);
+    const result = await this.handlers.accounts.verifyEmail(token, this.context.locale);
 
     this.success(res, result);
   }

@@ -1139,6 +1139,7 @@ export type ResendVerificationInput = {
 export type ResendVerificationResponse = {
   __typename?: 'ResendVerificationResponse';
   message: Scalars['String']['output'];
+  messageKey?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
 };
 
@@ -1536,6 +1537,7 @@ export type VerifyEmailInput = {
 export type VerifyEmailResponse = {
   __typename?: 'VerifyEmailResponse';
   message: Scalars['String']['output'];
+  messageKey?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
 };
 

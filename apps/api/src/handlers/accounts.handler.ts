@@ -11,13 +11,16 @@ import {
   MutationUpdateAccountArgs,
   QueryAccountsArgs,
   RefreshSessionResponse,
+  ResendVerificationResponse,
   SortOrder,
   UserAuthenticationMethodProvider,
   UserSessionSortableField,
+  VerifyEmailResponse,
 } from '@logusgraphics/grant-schema';
 
 import { config } from '@/config';
 import { ScopeHandler } from '@/handlers/base/scope-handler';
+import { translateStatic, type SupportedLocale } from '@/i18n';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { AuthenticationError } from '@/lib/errors';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
@@ -308,20 +311,21 @@ export class AccountHandler extends ScopeHandler {
     });
   }
 
-  public async verifyEmail(token: string): Promise<{ success: boolean; message: string }> {
+  public async verifyEmail(token: string, locale?: SupportedLocale): Promise<VerifyEmailResponse> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       await this.services.userAuthenticationMethods.verifyEmail(token, tx);
       return {
         success: true,
-        message: 'Email verified successfully',
+        message: translateStatic('common:success.emailVerified', locale),
+        messageKey: 'common:success.emailVerified',
       };
     });
   }
 
   public async resendVerificationEmail(
     email: string,
-    locale?: string
-  ): Promise<{ success: boolean; message: string }> {
+    locale?: SupportedLocale
+  ): Promise<ResendVerificationResponse> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { token, validUntil } =
         await this.services.userAuthenticationMethods.resendVerificationEmail(email, tx);
@@ -338,7 +342,8 @@ export class AccountHandler extends ScopeHandler {
 
       return {
         success: true,
-        message: 'Verification email sent successfully',
+        message: translateStatic('common:success.verificationEmailSent', locale),
+        messageKey: 'common:success.verificationEmailSent',
       };
     });
   }

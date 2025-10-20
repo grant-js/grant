@@ -1,5 +1,4 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { organizationUsersAuditLogs } from '@logusgraphics/grant-database';
+import { DbSchema, organizationUsersAuditLogs } from '@logusgraphics/grant-database';
 import {
   AddOrganizationUserInput,
   OrganizationUser,
@@ -13,16 +12,16 @@ import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
+  DeleteParams,
+  createDynamicSingleSchema,
   validateInput,
   validateOutput,
-  createDynamicSingleSchema,
-  DeleteParams,
 } from './common';
 import {
-  getOrganizationUsersParamsSchema,
   addOrganizationUserParamsSchema,
-  removeOrganizationUserParamsSchema,
+  getOrganizationUsersParamsSchema,
   organizationUserSchema,
+  removeOrganizationUserParamsSchema,
 } from './organization-users.schemas';
 
 export class OrganizationUserService extends AuditService {
@@ -34,22 +33,31 @@ export class OrganizationUserService extends AuditService {
     super(organizationUsersAuditLogs, 'organizationUserId', user, db);
   }
 
-  private async organizationExists(organizationId: string): Promise<void> {
-    const organizations = await this.repositories.organizationRepository.getOrganizations({
-      ids: [organizationId],
-      limit: 1,
-    });
+  private async organizationExists(
+    organizationId: string,
+    transaction?: Transaction
+  ): Promise<void> {
+    const organizations = await this.repositories.organizationRepository.getOrganizations(
+      {
+        ids: [organizationId],
+        limit: 1,
+      },
+      transaction
+    );
 
     if (organizations.organizations.length === 0) {
       throw new NotFoundError('Organization not found', 'errors:notFound.organization');
     }
   }
 
-  private async userExists(userId: string): Promise<void> {
-    const users = await this.repositories.userRepository.getUsers({
-      ids: [userId],
-      limit: 1,
-    });
+  private async userExists(userId: string, transaction?: Transaction): Promise<void> {
+    const users = await this.repositories.userRepository.getUsers(
+      {
+        ids: [userId],
+        limit: 1,
+      },
+      transaction
+    );
 
     if (users.users.length === 0) {
       throw new NotFoundError('User not found', 'errors:notFound.user');
@@ -61,8 +69,8 @@ export class OrganizationUserService extends AuditService {
     userId: string,
     transaction?: Transaction
   ): Promise<boolean> {
-    await this.organizationExists(organizationId);
-    await this.userExists(userId);
+    await this.organizationExists(organizationId, transaction);
+    await this.userExists(userId, transaction);
     const existingOrganizationUsers =
       await this.repositories.organizationUserRepository.getOrganizationUsers(
         {
@@ -84,7 +92,7 @@ export class OrganizationUserService extends AuditService {
     const validatedParams = validateInput(getOrganizationUsersParamsSchema, params, context);
     const { organizationId } = validatedParams;
 
-    await this.organizationExists(organizationId);
+    await this.organizationExists(organizationId, transaction);
 
     const result = await this.repositories.organizationUserRepository.getOrganizationUsers(
       {

@@ -2,7 +2,9 @@
   "success": {
     "created": "{{resource}} erfolgreich erstellt",
     "updated": "{{resource}} erfolgreich aktualisiert",
-    "deleted": "{{resource}} erfolgreich gelöscht"
+    "deleted": "{{resource}} erfolgreich gelöscht",
+    "emailVerified": "E-Mail erfolgreich verifiziert",
+    "verificationEmailSent": "Verifizierungs-E-Mail erfolgreich gesendet"
   },
   "actions": {
     "create": "Erstellen",

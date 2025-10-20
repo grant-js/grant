@@ -12,7 +12,7 @@ import {
 } from '@logusgraphics/grant-schema';
 import { compareSync, hashSync } from 'bcrypt';
 
-import { AUTH_CONFIG } from '@/config';
+import { config } from '@/config';
 import { BadRequestError, ConflictError, NotFoundError, ValidationError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
@@ -397,7 +397,6 @@ export class UserAuthenticationMethodService extends AuditService {
     const context = 'UserAuthenticationMethodService.processProvider';
     validateInput(parseProviderDataSchema, { providerId, provider, providerData }, context);
 
-    // providerData is now a direct JSON object, no need to parse
     if (!providerData || typeof providerData !== 'object') {
       throw new ValidationError(
         'Invalid provider data: must be a valid JSON object',
@@ -423,7 +422,7 @@ export class UserAuthenticationMethodService extends AuditService {
 
   public generateOtp(): Otp {
     const token = randomBytes(32).toString('hex');
-    const validUntil = Date.now() + 1000 * 60 * AUTH_CONFIG.otpValidityMinutes;
+    const validUntil = Date.now() + 1000 * 60 * config.auth.otpValidityMinutes;
     return { token, validUntil };
   }
 
@@ -441,7 +440,6 @@ export class UserAuthenticationMethodService extends AuditService {
   ): Promise<UserAuthenticationMethod> {
     const context = 'UserAuthenticationMethodService.verifyEmail';
 
-    // Find authentication method by token
     const targetMethod = await this.repositories.userAuthenticationMethodRepository.findByToken(
       token,
       transaction
@@ -451,18 +449,7 @@ export class UserAuthenticationMethodService extends AuditService {
       throw new NotFoundError('Invalid or expired verification token', 'errors:auth.invalidToken');
     }
 
-    console.log('[verifyEmail] Found method:', {
-      id: targetMethod.id,
-      userId: targetMethod.userId,
-      provider: targetMethod.provider,
-      isVerified: targetMethod.isVerified,
-      hasOtp: !!(targetMethod.providerData as Record<string, unknown>)?.otp,
-    });
-
-    // Check if already verified
     if (targetMethod.isVerified) {
-      console.log('[verifyEmail] Method already verified:', targetMethod.id);
-      // Return success instead of error for better UX - verification was already completed
       return validateOutput(
         createDynamicSingleSchema(userAuthenticationMethodSchema),
         targetMethod,
@@ -474,10 +461,6 @@ export class UserAuthenticationMethodService extends AuditService {
     const otp = providerData.otp as Otp | undefined;
 
     if (!otp || !otp.validUntil) {
-      console.log('[verifyEmail] Invalid OTP data:', {
-        hasOtp: !!otp,
-        hasValidUntil: !!otp?.validUntil,
-      });
       throw new BadRequestError('Invalid verification token', 'errors:auth.invalidToken');
     }
 
@@ -485,7 +468,6 @@ export class UserAuthenticationMethodService extends AuditService {
       throw new BadRequestError('Verification token has expired', 'errors:auth.tokenExpired');
     }
 
-    // Mark as verified and remove OTP
     const updatedProviderData = { ...providerData };
     delete updatedProviderData.otp;
 
@@ -499,11 +481,6 @@ export class UserAuthenticationMethodService extends AuditService {
         },
         transaction
       );
-
-    console.log('[verifyEmail] Updated method:', {
-      id: updatedMethod.id,
-      isVerified: updatedMethod.isVerified,
-    });
 
     return validateOutput(
       createDynamicSingleSchema(userAuthenticationMethodSchema),
@@ -534,7 +511,6 @@ export class UserAuthenticationMethodService extends AuditService {
       throw new BadRequestError('Email is already verified', 'errors:auth.alreadyVerified');
     }
 
-    // Generate new OTP
     const otp = this.generateOtp();
     const providerData = (method.providerData as Record<string, unknown>) || {};
     providerData.otp = otp;

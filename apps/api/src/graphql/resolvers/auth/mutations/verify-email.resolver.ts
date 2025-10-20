@@ -7,5 +7,5 @@ export const verifyEmail: MutationResolvers<GraphqlContext>['verifyEmail'] = asy
   args: MutationVerifyEmailArgs,
   context: GraphqlContext
 ) => {
-  return context.handlers.accounts.verifyEmail(args.input.token);
+  return context.handlers.accounts.verifyEmail(args.input.token, context.locale);
 };

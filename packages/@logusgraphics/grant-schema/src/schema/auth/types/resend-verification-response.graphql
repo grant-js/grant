@@ -1,4 +1,5 @@
 type ResendVerificationResponse {
   success: Boolean!
   message: String!
+  messageKey: String
 }

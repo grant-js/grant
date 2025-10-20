@@ -203,6 +203,42 @@
       "rememberPassword": "Anmeldedaten wieder eingefallen?",
       "backToLogin": "Zurück zur Anmeldung"
     },
+    "verifyEmail": {
+      "title": "E-Mail-Verifizierung",
+      "description": "Wir verifizieren Ihre E-Mail-Adresse",
+      "verifying": "E-Mail wird verifiziert...",
+      "verifyingDescription": "Bitte warten Sie, während wir Ihre E-Mail-Adresse verifizieren",
+      "success": "E-Mail erfolgreich verifiziert!",
+      "successMessage": "Ihre E-Mail wurde erfolgreich verifiziert",
+      "successDescription": "Ihre E-Mail wurde verifiziert. Sie können jetzt auf alle Funktionen zugreifen.",
+      "error": "Verifizierung fehlgeschlagen",
+      "errorDescription": "Wir konnten Ihre E-Mail nicht verifizieren. Der Link ist möglicherweise abgelaufen oder ungültig.",
+      "expiredToken": "Verifizierungslink abgelaufen",
+      "expiredTokenDescription": "Ihr Verifizierungslink ist abgelaufen. Bitte melden Sie sich erneut an, um eine neue Verifizierungs-E-Mail zu erhalten.",
+      "missingToken": "Ungültiger Verifizierungslink",
+      "missingTokenDescription": "Dieser Verifizierungslink ist ungültig oder enthält nicht die erforderlichen Informationen.",
+      "goToLogin": "Zur Anmeldung",
+      "redirecting": "Weiterleitung zur Anmeldung..."
+    },
+    "resendVerification": {
+      "title": "Verifizierungs-E-Mail erneut senden",
+      "description": "Geben Sie Ihre E-Mail-Adresse ein, um einen neuen Verifizierungslink zu erhalten",
+      "email": "E-Mail",
+      "emailPlaceholder": "Geben Sie Ihre E-Mail ein",
+      "submit": "Verifizierung erneut senden",
+      "success": "Verifizierungs-E-Mail gesendet!",
+      "successMessage": "Verifizierungs-E-Mail wurde erfolgreich gesendet",
+      "successDescription": "Überprüfen Sie Ihren Posteingang auf den Verifizierungslink",
+      "error": "Verifizierungs-E-Mail konnte nicht gesendet werden",
+      "backToLogin": "Zurück zur Anmeldung"
+    },
+    "notifications": {
+      "logoutSuccess": "Sie wurden abgemeldet",
+      "logoutError": "Abmeldung fehlgeschlagen",
+      "verificationWarning": "Bitte verifizieren Sie Ihre E-Mail, um auf alle Funktionen zugreifen zu können. Ihr Verifizierungslink läuft in {days} Tagen ab.",
+      "verificationExpired": "Ihre E-Mail-Verifizierung ist abgelaufen. Bitte fordern Sie eine neue Verifizierungs-E-Mail an.",
+      "userNotVerified": "E-Mail-Verifizierung erforderlich"
+    },
     "validation": {
       "email": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
       "password": "Das Passwort muss mindestens 8 Zeichen lang sein",
@@ -320,114 +356,6 @@
       "updated": "Aktualisiert",
       "actions": "Aktionen",
       "loading": "Benutzer werden geladen..."
-    }
-  },
-  "members": {
-    "title": "Organisationsmitglieder",
-    "noUsers": {
-      "title": "Keine Mitglieder gefunden",
-      "description": "Fügen Sie Ihr erstes Mitglied hinzu"
-    },
-    "noSearchResults": {
-      "title": "Keine Mitglieder gefunden",
-      "description": "Versuchen Sie, Ihre Suchbegriffe anzupassen oder fügen Sie ein neues Mitglied hinzu"
-    },
-    "actions": {
-      "create": "Mitglied hinzufügen",
-      "edit": "Bearbeiten",
-      "delete": "Entfernen",
-      "cancel": "Abbrechen",
-      "updating": "Wird aktualisiert...",
-      "label": "Aktionen anzeigen/ausblenden"
-    },
-    "sort": {
-      "label": "Sortieren nach",
-      "name": "Name",
-      "email": "E-Mail",
-      "default": "Standard"
-    },
-    "limit": "Einträge pro Seite",
-    "search": {
-      "placeholder": "Mitglieder suchen..."
-    },
-    "form": {
-      "name": "Name",
-      "email": "E-Mail",
-      "roles": "Rollen",
-      "tags": "Tags",
-      "validation": {
-        "rolesRequired": "Mitglied muss mindestens eine Rolle haben"
-      },
-      "rolesLoading": "Rollen werden geladen...",
-      "noRolesAvailable": "Keine Rollen verfügbar",
-      "tagsLoading": "Tags werden geladen...",
-      "noTagsAvailable": "Keine Tags verfügbar"
-    },
-    "roles": {
-      "admin": "Administrator",
-      "customer": "Kunde"
-    },
-    "createDialog": {
-      "title": "Neues Mitglied hinzufügen",
-      "description": "Fügen Sie ein neues Mitglied zur Organisation hinzu",
-      "trigger": "Mitglied hinzufügen",
-      "confirm": "Mitglied hinzufügen",
-      "submitting": "Wird hinzugefügt..."
-    },
-    "editDialog": {
-      "title": "Mitglied bearbeiten",
-      "description": "Aktualisieren Sie die Mitgliedsinformationen",
-      "confirm": "Änderungen speichern",
-      "cancel": "Abbrechen",
-      "updating": "Wird aktualisiert..."
-    },
-    "deleteDialog": {
-      "title": "Mitglied entfernen",
-      "description": "Sind Sie sicher, dass Sie {name} aus der Organisation entfernen möchten?",
-      "cancel": "Abbrechen",
-      "confirm": "Entfernen",
-      "deleting": "Wird entfernt..."
-    },
-    "notifications": {
-      "createSuccess": "Mitglied hinzugefügt",
-      "createError": "Mitglied konnte nicht hinzugefügt werden",
-      "updateSuccess": "Mitglied aktualisiert",
-      "updateError": "Mitglied konnte nicht aktualisiert werden",
-      "deleteSuccess": "Mitglied entfernt",
-      "deleteError": "Mitglied konnte nicht entfernt werden",
-      "roleAddedSuccess": "Rolle zum Mitglied hinzugefügt",
-      "roleAddedError": "Rolle konnte nicht zum Mitglied hinzugefügt werden",
-      "roleRemovedSuccess": "Rolle vom Mitglied entfernt",
-      "roleRemovedError": "Rolle konnte nicht vom Mitglied entfernt werden",
-      "tagAddedSuccess": "Tag zum Mitglied hinzugefügt",
-      "tagAddedError": "Tag konnte nicht zum Mitglied hinzugefügt werden",
-      "tagRemovedSuccess": "Tag vom Mitglied entfernt",
-      "tagRemovedError": "Tag konnte nicht vom Mitglied entfernt werden"
-    },
-    "view": {
-      "card": "Kartenansicht",
-      "table": "Tabellenansicht"
-    },
-    "toolbar": {
-      "tags": {
-        "title": "Nach Tags filtern",
-        "placeholder": "Tags auswählen",
-        "selected": "{count} ausgewählt",
-        "clearAll": "Alle löschen",
-        "loading": "Tags werden geladen..."
-      }
-    },
-    "table": {
-      "id": "ID",
-      "name": "Name",
-      "email": "E-Mail",
-      "roles": "Rollen",
-      "tags": "Tags",
-      "audit": "Audit",
-      "created": "Erstellt",
-      "updated": "Aktualisiert",
-      "actions": "Aktionen",
-      "loading": "Mitglieder werden geladen..."
     }
   },
   "roles": {
@@ -784,6 +712,7 @@
       "create": "Organisation erstellen",
       "edit": "Bearbeiten",
       "delete": "Löschen",
+      "view": "Organisation anzeigen",
       "cancel": "Abbrechen",
       "updating": "Wird aktualisiert...",
       "label": "Aktionen anzeigen/ausblenden"
@@ -791,6 +720,8 @@
     "sort": {
       "label": "Sortieren nach",
       "name": "Name",
+      "createdAt": "Erstellungsdatum",
+      "updatedAt": "Aktualisierungsdatum",
       "default": "Standard"
     },
     "limit": "Einträge pro Seite",
@@ -800,6 +731,7 @@
     "form": {
       "name": "Name",
       "description": "Beschreibung",
+      "roles": "Rollen",
       "tags": "Tags",
       "tagsLoading": "Tags werden geladen...",
       "noTagsAvailable": "Keine Tags verfügbar",
@@ -818,6 +750,7 @@
       "title": "Organisation bearbeiten",
       "description": "Organisationsinformationen aktualisieren",
       "confirm": "Änderungen speichern",
+      "cancel": "Abbrechen",
       "updating": "Wird aktualisiert..."
     },
     "deleteDialog": {
@@ -850,6 +783,9 @@
     "table": {
       "id": "ID",
       "name": "Name",
+      "slug": "Slug",
+      "roles": "Rollen",
+      "tags": "Tags",
       "description": "Beschreibung",
       "audit": "Audit",
       "created": "Erstellt",
@@ -1213,6 +1149,54 @@
       "color": "Farbe",
       "audit": "Prüfung",
       "actions": "Aktionen"
+    }
+  },
+  "members": {
+    "title": "Mitglieder",
+    "description": "Organisationsmitglieder und Einladungen verwalten",
+    "inviteButton": "Mitglied einladen",
+    "empty": {
+      "title": "Noch keine Mitglieder",
+      "description": "Laden Sie Mitglieder ein, Ihrer Organisation beizutreten"
+    },
+    "table": {
+      "name": "Name",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "status": {
+      "active": "Aktiv",
+      "pending": "Ausstehend",
+      "accepted": "Akzeptiert",
+      "expired": "Abgelaufen",
+      "revoked": "Widerrufen"
+    },
+    "actions": {
+      "revoke": "Widerrufen",
+      "resend": "Erneut senden"
+    },
+    "inviteDialog": {
+      "title": "Mitglied einladen",
+      "description": "Senden Sie eine Einladung, dieser Organisation beizutreten",
+      "confirm": "Einladung senden",
+      "cancel": "Abbrechen",
+      "sending": "Wird gesendet..."
+    },
+    "form": {
+      "email": "E-Mail-Adresse",
+      "emailPlaceholder": "mitglied@beispiel.de",
+      "role": "Rolle",
+      "rolePlaceholder": "Wählen Sie eine Rolle",
+      "rolesLoading": "Rollen werden geladen...",
+      "noRolesAvailable": "Keine Rollen verfügbar"
+    },
+    "notifications": {
+      "inviteSuccess": "Einladung erfolgreich gesendet",
+      "inviteError": "Einladung konnte nicht gesendet werden",
+      "acceptSuccess": "Einladung akzeptiert",
+      "acceptError": "Einladung konnte nicht akzeptiert werden",
+      "revokeSuccess": "Einladung widerrufen",
+      "revokeError": "Einladung konnte nicht widerrufen werden"
     }
   },
   "settings": {

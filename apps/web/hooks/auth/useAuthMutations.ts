@@ -83,14 +83,10 @@ export function useAuthMutations() {
 
       return loginData;
     } catch (error) {
-      console.error('Error logging in:', error);
-
-      // Check if the error is due to user not being verified using translationKey (language-agnostic)
-      // GraphQL errors have a graphQLErrors array with extensions
-      const graphqlError = error as {
-        graphQLErrors?: Array<{ extensions?: { translationKey?: string } }>;
+      const apolloError = error as {
+        errors?: Array<{ extensions?: { translationKey?: string } }>;
       };
-      const translationKey = graphqlError.graphQLErrors?.[0]?.extensions?.translationKey;
+      const translationKey = apolloError.errors?.[0]?.extensions?.translationKey;
 
       if (translationKey === 'errors:auth.userNotVerified') {
         toast.error(t('notifications.userNotVerified'), {
@@ -250,9 +246,23 @@ export function useAuthMutations() {
       return verifyData;
     } catch (error) {
       console.error('Error verifying email:', error);
-      toast.error(t('verifyEmail.error'), {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
-      });
+
+      // Check for specific error types
+      // Apollo Client error structure has 'errors' not 'graphQLErrors'
+      const apolloError = error as { errors?: Array<{ extensions?: { translationKey?: string } }> };
+      const graphQLError = apolloError.errors?.[0];
+      const translationKey = graphQLError?.extensions?.translationKey;
+
+      if (translationKey === 'errors:auth.tokenExpired') {
+        toast.error(t('verifyEmail.expiredToken'), {
+          description: t('verifyEmail.expiredTokenDescription'),
+        });
+      } else {
+        toast.error(t('verifyEmail.error'), {
+          description: error instanceof Error ? error.message : 'An unknown error occurred',
+        });
+      }
+
       throw error;
     }
   };

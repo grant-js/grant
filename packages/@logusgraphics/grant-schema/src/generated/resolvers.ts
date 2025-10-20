@@ -1140,6 +1140,7 @@ export type ResendVerificationInput = {
 export type ResendVerificationResponse = {
   __typename?: 'ResendVerificationResponse';
   message: Scalars['String']['output'];
+  messageKey?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
 };
 
@@ -1537,6 +1538,7 @@ export type VerifyEmailInput = {
 export type VerifyEmailResponse = {
   __typename?: 'VerifyEmailResponse';
   message: Scalars['String']['output'];
+  messageKey?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
 };
 
@@ -2870,6 +2872,7 @@ export type ResendVerificationResponseResolvers<
     ResolversParentTypes['ResendVerificationResponse'] = ResolversParentTypes['ResendVerificationResponse'],
 > = ResolversObject<{
   message?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  messageKey?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
 }>;
 
@@ -3132,6 +3135,7 @@ export type VerifyEmailResponseResolvers<
     ResolversParentTypes['VerifyEmailResponse'] = ResolversParentTypes['VerifyEmailResponse'],
 > = ResolversObject<{
   message?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  messageKey?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
 }>;
 
