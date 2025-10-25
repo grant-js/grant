@@ -119,7 +119,19 @@ async function startServer() {
   }
   console.log(`📊 Health check available at http://localhost:${config.app.port}/health`);
 
+  const isDevelopment = config.app.isDevelopment;
+
   const gracefulShutdown = async (signal: string) => {
+    // In development, exit quickly without verbose logging
+    if (isDevelopment) {
+      console.log(`\n👋 Shutting down...`);
+      httpServer.close(() => {
+        process.exit(0);
+      });
+      return;
+    }
+
+    // Production/Staging: Full graceful shutdown with detailed logging
     console.log(`\n${signal} received. Starting graceful shutdown...`);
 
     httpServer.close(async () => {
