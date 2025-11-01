@@ -16,6 +16,7 @@ export { DeleteDialog } from './DeleteDialog';
 export { EditDialog } from './EditDialog';
 export { EmailVerificationBanner } from './EmailVerificationBanner';
 export { FullPageLoader } from './FullPageLoader';
+export { InfoPanel, type InfoRow } from './InfoPanel';
 export { Limit, type LimitProps } from './Limit';
 export { Logo } from './Logo';
 export { Pagination, type PaginationProps } from './Pagination';

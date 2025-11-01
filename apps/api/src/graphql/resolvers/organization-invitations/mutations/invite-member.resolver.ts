@@ -14,7 +14,8 @@ export const inviteMemberResolver: MutationResolvers<GraphqlContext>['inviteMemb
 
   const invitation = await context.handlers.organizationInvitations.inviteMember(
     input,
-    context.user.id
+    context.user.id,
+    context.locale
   );
 
   return invitation;

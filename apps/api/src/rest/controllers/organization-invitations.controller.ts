@@ -1,4 +1,5 @@
 import {
+  OrganizationInvitation,
   OrganizationInvitationStatus,
   QueryOrganizationInvitationsArgs,
   SortOrder,
@@ -6,6 +7,7 @@ import {
 import { Response } from 'express';
 
 import { AuthenticationError, NotFoundError } from '@/lib/errors';
+import { parseRelations } from '@/lib/field-selection.lib';
 import { TypedRequest } from '@/rest/types';
 import { RequestContext } from '@/types';
 
@@ -41,7 +43,8 @@ export class OrganizationInvitationsController extends BaseController {
 
     const invitation = await this.context.handlers.organizationInvitations.inviteMember(
       { organizationId, email, roleId },
-      invitedBy
+      invitedBy,
+      this.context.locale
     );
 
     return this.success(res, invitation, 201);
@@ -70,12 +73,21 @@ export class OrganizationInvitationsController extends BaseController {
    * Get invitation details by token (for public access)
    */
   async getInvitationByToken(
-    req: TypedRequest<{ params: typeof invitationTokenParamsSchema }>,
+    req: TypedRequest<{
+      params: typeof invitationTokenParamsSchema;
+      query: { relations?: string | string[] };
+    }>,
     res: Response
   ) {
     const { token } = req.params;
+    const { relations } = req.query;
 
-    const invitation = await this.context.handlers.organizationInvitations.getInvitation(token);
+    const requestedFields = parseRelations<OrganizationInvitation>(relations);
+
+    const invitation = await this.context.handlers.organizationInvitations.getInvitation({
+      token,
+      requestedFields,
+    });
 
     if (!invitation) {
       throw new NotFoundError('Invitation not found or has expired', 'errors:auth.invalidToken');

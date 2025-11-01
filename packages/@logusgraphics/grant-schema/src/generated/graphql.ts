@@ -1895,6 +1895,9 @@ export type GetInvitationQuery = {
     expiresAt: Date;
     invitedBy: string;
     createdAt: Date;
+    organization: { __typename?: 'Organization'; id: string; name: string; slug: string };
+    role: { __typename?: 'Role'; id: string; name: string; description?: string | null };
+    inviter: { __typename?: 'User'; id: string; name: string };
   } | null;
 };
 
@@ -3332,11 +3335,46 @@ export const GetInvitationDocument = {
               selections: [
                 { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'organizationId' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'organization' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
+                    ],
+                  },
+                },
                 { kind: 'Field', name: { kind: 'Name', value: 'email' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'roleId' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'role' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                    ],
+                  },
+                },
                 { kind: 'Field', name: { kind: 'Name', value: 'status' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'expiresAt' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'invitedBy' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'inviter' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    ],
+                  },
+                },
                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
               ],
             },

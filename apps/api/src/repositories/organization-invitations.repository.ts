@@ -6,6 +6,7 @@ import {
   users,
 } from '@logusgraphics/grant-database';
 import {
+  GetInvitationQueryVariables,
   OrganizationInvitation,
   OrganizationInvitationPage,
   OrganizationInvitationSearchableField,
@@ -14,8 +15,10 @@ import {
 import { and, eq, isNull } from 'drizzle-orm';
 
 import { NotFoundError } from '@/lib/errors';
+import { createModuleLogger } from '@/lib/logger';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { EntityRepository, FilterCondition, RelationsConfig } from '@/repositories/common';
+import { SelectedFields } from '@/services/common';
 
 // Internal repository types (not exposed via GraphQL)
 export interface CreateOrganizationInvitationInput {
@@ -60,6 +63,7 @@ export class OrganizationInvitationRepository extends EntityRepository<
       extract: (v) => v,
     },
   };
+  protected logger = createModuleLogger('OrganizationInvitationRepository');
 
   public async createInvitation(
     params: CreateOrganizationInvitationInput,
@@ -88,20 +92,41 @@ export class OrganizationInvitationRepository extends EntityRepository<
   }
 
   public async getInvitationByToken(
-    token: string,
+    params: GetInvitationQueryVariables & SelectedFields<OrganizationInvitation>,
     transaction?: Transaction
   ): Promise<OrganizationInvitation | null> {
-    const dbInstance = transaction ?? this.db;
+    const { token, requestedFields } = params;
 
-    const [invitation] = await dbInstance
-      .select()
-      .from(organizationInvitations)
-      .where(
-        and(eq(organizationInvitations.token, token), isNull(organizationInvitations.deletedAt))
-      )
-      .limit(1);
+    const filters: FilterCondition<OrganizationInvitationModel>[] = [
+      {
+        field: 'token',
+        operator: 'eq',
+        value: token,
+      },
+    ];
 
-    return (invitation as unknown as OrganizationInvitation) || null;
+    this.logger.info({
+      msg: 'getInvitationByToken',
+      token,
+      requestedFields,
+    });
+
+    const result = await this.query(
+      {
+        filters,
+        limit: 1,
+        requestedFields,
+      },
+      transaction
+    );
+
+    this.logger.info({
+      msg: 'getInvitationByToken result',
+      result,
+      requestedFields,
+    });
+
+    return result.items[0] || null;
   }
 
   public async getOrganizationInvitations(

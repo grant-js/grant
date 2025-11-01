@@ -1,5 +1,5 @@
 import { config } from '@/config';
-import { EmailFactory, IEmailService } from '@/lib/email';
+import { EmailFactory, IEmailService, SendInvitationParams } from '@/lib/email';
 
 /**
  * Email Service
@@ -53,13 +53,7 @@ export class EmailService {
   /**
    * Send an invitation email
    */
-  public async sendInvitation(params: {
-    to: string;
-    organizationName: string;
-    inviterName: string;
-    invitationUrl: string;
-    roleName: string;
-  }): Promise<void> {
+  public async sendInvitation(params: SendInvitationParams): Promise<void> {
     return this.emailAdapter.sendInvitation(params);
   }
 

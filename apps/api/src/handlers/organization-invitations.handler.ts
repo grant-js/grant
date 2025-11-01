@@ -4,6 +4,7 @@ import {
   AcceptInvitationResult,
   Account,
   AccountType,
+  GetInvitationQueryVariables,
   InviteMemberInput,
   OrganizationInvitation,
   OrganizationInvitationPage,
@@ -12,11 +13,13 @@ import {
 } from '@logusgraphics/grant-schema';
 
 import { config } from '@/config';
+import { defaultLocale } from '@/i18n';
 import { BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
 import { createModuleLogger } from '@/lib/logger';
 import { generateSecureTokenMs } from '@/lib/token.lib';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
+import { SelectedFields } from '@/services/common';
 
 export class OrganizationInvitationsHandler {
   private readonly logger = createModuleLogger('OrganizationInvitationsHandler');
@@ -31,7 +34,8 @@ export class OrganizationInvitationsHandler {
    */
   public async inviteMember(
     params: InviteMemberInput,
-    invitedBy: string
+    invitedBy: string,
+    locale?: string
   ): Promise<OrganizationInvitation> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { organizationId, email, roleId } = params;
@@ -120,7 +124,8 @@ export class OrganizationInvitationsHandler {
       );
 
       // 7. Send invitation email (async, fire-and-forget)
-      const invitationUrl = `${config.security.frontendUrl}/invitations/${token}`;
+      const localePrefix = locale || defaultLocale;
+      const invitationUrl = `${config.security.frontendUrl}/${localePrefix}/invitations/${token}`;
 
       this.services.email
         .sendInvitation({
@@ -129,6 +134,7 @@ export class OrganizationInvitationsHandler {
           inviterName: inviter.name,
           invitationUrl,
           roleName: role.name,
+          locale,
         })
         .catch((error) => {
           this.logger.error({
@@ -151,7 +157,7 @@ export class OrganizationInvitationsHandler {
 
       // 1. Get invitation
       const invitation = await this.services.organizationInvitations.getInvitationByToken(
-        token,
+        { token },
         tx
       );
 
@@ -281,8 +287,10 @@ export class OrganizationInvitationsHandler {
   /**
    * Get a single invitation by token (for public invitation acceptance)
    */
-  public async getInvitation(token: string): Promise<OrganizationInvitation | null> {
-    const invitation = await this.services.organizationInvitations.getInvitationByToken(token);
+  public async getInvitation(
+    params: GetInvitationQueryVariables & SelectedFields<OrganizationInvitation>
+  ): Promise<OrganizationInvitation | null> {
+    const invitation = await this.services.organizationInvitations.getInvitationByToken(params);
     return invitation as OrganizationInvitation | null;
   }
 

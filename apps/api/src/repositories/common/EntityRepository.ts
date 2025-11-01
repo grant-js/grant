@@ -267,10 +267,17 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
       (acc, field) => {
         const relation = this.relations[field];
         if (relation) {
-          acc[field] = {
-            with: { [relation.field]: true },
-            where: isNull(relation.table.deletedAt),
-          };
+          const isDirectRelation = String(field) === relation.field;
+          if (isDirectRelation) {
+            acc[field] = {
+              where: isNull(relation.table.deletedAt),
+            };
+          } else {
+            acc[field] = {
+              with: { [relation.field]: true },
+              where: isNull(relation.table.deletedAt),
+            };
+          }
         }
         return acc;
       },

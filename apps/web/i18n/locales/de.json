@@ -1251,5 +1251,62 @@
   "settings": {
     "title": "Systemeinstellungen",
     "description": "Konfigurieren Sie Systemeinstellungen und Optionen"
+  },
+  "invitations": {
+    "title": "Organisationseinladung",
+    "description": "Sie wurden eingeladen, einer Organisation beizutreten",
+    "loading": "Einladung wird geladen...",
+    "loadingDescription": "Bitte warten Sie, während wir Ihre Einladung überprüfen",
+    "invalidToken": {
+      "title": "Ungültige Einladung",
+      "description": "Dieser Einladungslink ist ungültig oder wurde widerrufen. Bitte kontaktieren Sie die Person, die Sie eingeladen hat, für eine neue Einladung.",
+      "goToLogin": "Zum Anmelden"
+    },
+    "expired": {
+      "title": "Einladung abgelaufen",
+      "description": "Diese Einladung ist abgelaufen. Bitte kontaktieren Sie die Person, die Sie eingeladen hat, für eine neue Einladung.",
+      "goToLogin": "Zum Anmelden"
+    },
+    "alreadyAccepted": {
+      "title": "Einladung bereits angenommen",
+      "description": "Sie haben diese Einladung bereits angenommen und sind Mitglied dieser Organisation.",
+      "goToOrganization": "Zur Organisation"
+    },
+    "requiresLogin": {
+      "title": "Anmeldung erforderlich",
+      "description": "Bitte melden Sie sich an oder registrieren Sie sich mit einem Organisationskonto unter Verwendung derselben E-Mail-Adresse wie die Einladung, um diese Einladung anzunehmen.",
+      "login": "Anmelden",
+      "register": "Registrieren"
+    },
+    "requiresOrgAccount": {
+      "title": "Organisationskonto erforderlich",
+      "description": "Sie müssen mit einem Organisationskonto angemeldet sein, um diese Einladung anzunehmen. Bitte wechseln Sie zu Ihrem Organisationskonto oder melden Sie sich mit einem an.",
+      "switchAccount": "Konto wechseln"
+    },
+    "ready": {
+      "title": "Einladung annehmen",
+      "description": "Sie wurden eingeladen, dieser Organisation beizutreten. Überprüfen Sie die unten stehenden Details und nehmen Sie die Einladung an, um Mitglied zu werden."
+    },
+    "accept": "Einladung annehmen",
+    "accepting": "Wird angenommen...",
+    "decline": "Ablehnen",
+    "success": {
+      "title": "Einladung angenommen",
+      "description": "Sie sind der Organisation erfolgreich beigetreten!",
+      "redirecting": "Weiterleitung zur Organisation..."
+    },
+    "error": {
+      "title": "Fehler beim Annehmen der Einladung",
+      "description": "Beim Annehmen der Einladung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+      "tryAgain": "Erneut versuchen"
+    },
+    "details": {
+      "organization": "Organisation",
+      "role": "Rolle",
+      "invitedBy": "Eingeladen von",
+      "email": "E-Mail",
+      "createdAt": "Eingeladen am",
+      "expiresAt": "Läuft ab am"
+    }
   }
 }

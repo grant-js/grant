@@ -2,11 +2,25 @@ query GetInvitation($token: String!) {
   invitation(token: $token) {
     id
     organizationId
+    organization {
+      id
+      name
+      slug
+    }
     email
     roleId
+    role {
+      id
+      name
+      description
+    }
     status
     expiresAt
     invitedBy
+    inviter {
+      id
+      name
+    }
     createdAt
   }
 }

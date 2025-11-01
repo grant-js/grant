@@ -4,7 +4,13 @@ import {
 } from '@logusgraphics/grant-schema';
 import { z } from 'zod';
 
-import { emailSchema, idSchema, queryParamsSchema, sortOrderSchema } from './common/schemas';
+import {
+  emailSchema,
+  idSchema,
+  queryParamsSchema,
+  requestedFieldsSchema,
+  sortOrderSchema,
+} from './common/schemas';
 
 export const createInvitationParamsSchema = z.object({
   organizationId: idSchema,
@@ -25,6 +31,7 @@ export const createInvitationParamsSchema = z.object({
 
 export const getInvitationByTokenParamsSchema = z.object({
   token: z.string().min(1),
+  requestedFields: requestedFieldsSchema,
 });
 
 export const organizationInvitationSortableFieldSchema = z.enum(
@@ -87,4 +94,7 @@ export const organizationInvitationSchema = z.object({
   createdAt: z.date(),
   updatedAt: z.date(),
   deletedAt: z.date().nullable(),
+  organization: z.any().nullable().optional(),
+  role: z.any().nullable().optional(),
+  inviter: z.any().nullable().optional(),
 });

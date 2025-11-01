@@ -5,6 +5,7 @@ import {
   acceptInvitationResponseSchema,
   authenticationErrorResponseSchema,
   errorResponseSchema,
+  getInvitationByTokenQuerySchema,
   getInvitationResponseSchema,
   getOrganizationInvitationsQuerySchema,
   getOrganizationInvitationsResponseSchema,
@@ -216,9 +217,18 @@ Use this to display invitation information before acceptance, such as:
 - Role being offered
 - Inviter information
 - Expiration date
+
+### Relations:
+You can load related data by specifying the \`relations\` query parameter:
+- \`organization\`: Include organization details
+- \`role\`: Include role details
+- \`inviter\`: Include inviter (user) details
+
+Example: \`/api/organization-invitations/{token}?relations=organization,role,inviter\`
     `.trim(),
     request: {
       params: invitationTokenParamsSchema,
+      query: getInvitationByTokenQuerySchema,
     },
     responses: {
       200: {

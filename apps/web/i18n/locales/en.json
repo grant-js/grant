@@ -1251,5 +1251,62 @@
   "settings": {
     "title": "System Settings",
     "description": "Configure system preferences and options"
+  },
+  "invitations": {
+    "title": "Organization Invitation",
+    "description": "You've been invited to join an organization",
+    "loading": "Loading invitation...",
+    "loadingDescription": "Please wait while we verify your invitation",
+    "invalidToken": {
+      "title": "Invalid Invitation",
+      "description": "This invitation link is invalid or has been revoked. Please contact the person who invited you for a new invitation.",
+      "goToLogin": "Go to Login"
+    },
+    "expired": {
+      "title": "Invitation Expired",
+      "description": "This invitation has expired. Please contact the person who invited you for a new invitation.",
+      "goToLogin": "Go to Login"
+    },
+    "alreadyAccepted": {
+      "title": "Invitation Already Accepted",
+      "description": "You have already accepted this invitation and are a member of this organization.",
+      "goToOrganization": "Go to Organization"
+    },
+    "requiresLogin": {
+      "title": "Login Required",
+      "description": "Please log in or register with an organization account using the same email address as the invitation to accept this invitation.",
+      "login": "Log In",
+      "register": "Register"
+    },
+    "requiresOrgAccount": {
+      "title": "Organization Account Required",
+      "description": "You need to be logged in with an organization account to accept this invitation. Please switch to your organization account or log in with one.",
+      "switchAccount": "Switch Account"
+    },
+    "ready": {
+      "title": "Accept Invitation",
+      "description": "You've been invited to join this organization. Review the details below and accept to become a member."
+    },
+    "accept": "Accept Invitation",
+    "accepting": "Accepting...",
+    "decline": "Decline",
+    "success": {
+      "title": "Invitation Accepted",
+      "description": "You have successfully joined the organization!",
+      "redirecting": "Redirecting to organization..."
+    },
+    "error": {
+      "title": "Error Accepting Invitation",
+      "description": "An error occurred while accepting the invitation. Please try again.",
+      "tryAgain": "Try Again"
+    },
+    "details": {
+      "organization": "Organization",
+      "role": "Role",
+      "invitedBy": "Invited By",
+      "email": "Email",
+      "createdAt": "Invited On",
+      "expiresAt": "Expires On"
+    }
   }
 }

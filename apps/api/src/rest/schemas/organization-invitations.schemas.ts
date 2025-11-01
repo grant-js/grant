@@ -176,5 +176,22 @@ export const revokeInvitationResponseSchema = createSuccessResponseSchema(
 );
 
 export const getInvitationResponseSchema = createSuccessResponseSchema(
-  organizationInvitationSchema
+  organizationInvitationWithRelationsSchema
 );
+
+export const getInvitationByTokenQuerySchema = z.object({
+  relations: z
+    .union([z.string(), z.array(z.string())])
+    .transform((val) => {
+      if (typeof val === 'string') {
+        return val.split(',').map((v) => v.trim());
+      }
+      return val;
+    })
+    .optional()
+    .openapi({
+      description:
+        'Comma-separated list of relations to include. Available: organization, role, inviter',
+      example: 'organization,role,inviter',
+    }),
+});

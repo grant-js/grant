@@ -1,5 +1,6 @@
 import { DbSchema, organizationInvitationsAuditLogs } from '@logusgraphics/grant-database';
 import {
+  GetInvitationQueryVariables,
   OrganizationInvitation,
   OrganizationInvitationPage,
   QueryOrganizationInvitationsArgs,
@@ -79,15 +80,15 @@ export class OrganizationInvitationService extends AuditService {
   }
 
   public async getInvitationByToken(
-    token: string,
+    params: GetInvitationQueryVariables & SelectedFields<OrganizationInvitation>,
     transaction?: Transaction
   ): Promise<OrganizationInvitation | null> {
     const context = 'OrganizationInvitationService.getInvitationByToken';
-    const validatedParams = validateInput(getInvitationByTokenParamsSchema, { token }, context);
+    validateInput(getInvitationByTokenParamsSchema, params, context);
 
     const invitation =
       await this.repositories.organizationInvitationRepository.getInvitationByToken(
-        validatedParams.token,
+        params,
         transaction
       );
 
