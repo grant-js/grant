@@ -2,6 +2,7 @@ import nodemailer, { Transporter } from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
 
 import { ApiError } from '@/lib/errors';
+import { createModuleLogger } from '@/lib/logger';
 
 import {
   IEmailService,
@@ -37,6 +38,7 @@ export interface SmtpConfig {
  * SMTP email adapter using nodemailer
  */
 export class SmtpEmailAdapter implements IEmailService {
+  private readonly logger = createModuleLogger('SmtpEmailAdapter');
   private transporter: Transporter<SMTPTransport.SentMessageInfo>;
   private from: string;
 
@@ -65,7 +67,11 @@ export class SmtpEmailAdapter implements IEmailService {
         html,
       });
     } catch (error) {
-      console.error('SMTP send error:', error);
+      this.logger.error({
+        msg: 'SMTP send error',
+        err: error,
+        emailType: 'invitation',
+      });
       throw new ApiError(
         `Failed to send invitation email: ${error instanceof Error ? error.message : 'Unknown error'}`,
         {
@@ -91,7 +97,11 @@ export class SmtpEmailAdapter implements IEmailService {
         html,
       });
     } catch (error) {
-      console.error('SMTP send error:', error);
+      this.logger.error({
+        msg: 'SMTP send error',
+        err: error,
+        emailType: 'otp',
+      });
       throw new ApiError(
         `Failed to send OTP email: ${error instanceof Error ? error.message : 'Unknown error'}`,
         {

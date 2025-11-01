@@ -2,6 +2,7 @@ import FormData from 'form-data';
 import Mailgun from 'mailgun.js';
 
 import { ApiError } from '@/lib/errors';
+import { createModuleLogger } from '@/lib/logger';
 
 import {
   IEmailService,
@@ -32,6 +33,7 @@ export interface MailgunConfig {
  * Mailgun email adapter
  */
 export class MailgunEmailAdapter implements IEmailService {
+  private readonly logger = createModuleLogger('MailgunEmailAdapter');
   private client: ReturnType<Mailgun['client']>;
   private from: string;
 
@@ -59,7 +61,11 @@ export class MailgunEmailAdapter implements IEmailService {
         html,
       });
     } catch (error) {
-      console.error('Mailgun send error:', error);
+      this.logger.error({
+        msg: 'Mailgun send error',
+        err: error,
+        emailType: 'invitation',
+      });
       throw new ApiError(
         `Failed to send invitation email: ${error instanceof Error ? error.message : 'Unknown error'}`,
         {
@@ -85,7 +91,11 @@ export class MailgunEmailAdapter implements IEmailService {
         html,
       });
     } catch (error) {
-      console.error('Mailgun send error:', error);
+      this.logger.error({
+        msg: 'Mailgun send error',
+        err: error,
+        emailType: 'otp',
+      });
       throw new ApiError(
         `Failed to send OTP email: ${error instanceof Error ? error.message : 'Unknown error'}`,
         {

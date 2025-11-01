@@ -2,6 +2,7 @@ import Redis from 'ioredis';
 
 import { CacheKey } from '@/handlers/base/scope-handler';
 import { ICacheAdapter } from '@/lib/cache/cache-adapter.interface';
+import { createModuleLogger } from '@/lib/logger';
 
 /**
  * Redis cache adapter for distributed caching
@@ -9,6 +10,7 @@ import { ICacheAdapter } from '@/lib/cache/cache-adapter.interface';
  * Requires a Redis server to be running and accessible
  */
 export class RedisCacheAdapter implements ICacheAdapter {
+  private readonly logger = createModuleLogger('RedisCacheAdapter');
   private client: Redis;
   private prefix: string;
 
@@ -27,11 +29,16 @@ export class RedisCacheAdapter implements ICacheAdapter {
     this.prefix = config.prefix || 'grant:cache:';
 
     this.client.on('error', (err: Error) => {
-      console.error('Redis Client Error:', err);
+      this.logger.error({
+        msg: 'Redis Client Error',
+        err,
+      });
     });
 
     this.client.on('connect', () => {
-      console.log('Redis Client Connected');
+      this.logger.info({
+        msg: 'Redis Client Connected',
+      });
     });
   }
 
@@ -51,7 +58,11 @@ export class RedisCacheAdapter implements ICacheAdapter {
       const parsed = JSON.parse(value) as string[];
       return new Set(parsed);
     } catch (error) {
-      console.error(`Failed to parse cache value for key ${key}:`, error);
+      this.logger.error({
+        msg: 'Failed to parse cache value',
+        err: error,
+        key,
+      });
       return null;
     }
   }

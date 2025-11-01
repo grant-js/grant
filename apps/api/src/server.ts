@@ -17,20 +17,24 @@ import { GraphqlContext } from '@/graphql/types';
 import { i18nMiddleware, initializeI18n } from '@/i18n';
 import { CacheFactory } from '@/lib/cache/cache.factory';
 import { formatGraphQLError } from '@/lib/errors';
+import { logger } from '@/lib/logger';
 import { authMiddleware } from '@/middleware/auth.middleware';
 import { contextMiddleware } from '@/middleware/context.middleware';
 import { errorHandler } from '@/middleware/error.middleware';
+import { requestLoggingMiddleware } from '@/middleware/request-logging.middleware';
 import { createRestRouter } from '@/rest';
 import { generateOpenApiDocument } from '@/rest/openapi';
 import { ContextRequest } from '@/types';
 
 async function startServer() {
   validateConfig();
-  printConfigSummary();
+  await printConfigSummary();
 
-  // Initialize i18n
   await initializeI18n();
-  console.log('✅ i18n initialized with locales:', config.i18n.supportedLocales.join(', '));
+  logger.info({
+    msg: 'i18n initialized',
+    locales: config.i18n.supportedLocales,
+  });
 
   const db = initializeDatabase({
     connectionString: config.db.url,
@@ -72,6 +76,9 @@ async function startServer() {
   app.use(helmet(config.helmet));
   app.use(express.json());
   app.use(i18nMiddleware);
+  app.use(authMiddleware);
+  app.use(contextMiddleware(db, scopeCache));
+  app.use(requestLoggingMiddleware);
 
   const openApiDocument = generateOpenApiDocument();
 
@@ -84,7 +91,7 @@ async function startServer() {
     res.send(openApiDocument);
   });
 
-  app.use('/api', authMiddleware, contextMiddleware(db, scopeCache), (req, res, next) => {
+  app.use('/api', (req, res, next) => {
     const contextReq = req as ContextRequest;
     const restRouter = createRestRouter(contextReq.context);
     restRouter(req, res, next);
@@ -92,8 +99,6 @@ async function startServer() {
 
   app.use(
     '/graphql',
-    authMiddleware,
-    contextMiddleware(db, scopeCache),
     expressMiddleware(apolloServer, {
       context: async ({ req }: { req: express.Request }) => {
         const contextReq = req as ContextRequest;
@@ -106,55 +111,63 @@ async function startServer() {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  // Global error handler - MUST be last!
   app.use(errorHandler);
 
   await new Promise<void>((resolve) => httpServer.listen({ port: config.app.port }, resolve));
 
-  console.log(`🚀 Apollo Server ready at http://localhost:${config.app.port}/graphql`);
-  console.log(`🌐 REST API ready at http://localhost:${config.app.port}/api`);
-  if (config.swagger.enabled) {
-    console.log(`📚 API Documentation at http://localhost:${config.app.port}/api-docs`);
-    console.log(`📄 OpenAPI Spec at http://localhost:${config.app.port}/api-docs.json`);
-  }
-  console.log(`📊 Health check available at http://localhost:${config.app.port}/health`);
+  logger.info({
+    msg: 'Server started successfully',
+    port: config.app.port,
+    graphql: `http://localhost:${config.app.port}/graphql`,
+    restApi: `http://localhost:${config.app.port}/api`,
+    health: `http://localhost:${config.app.port}/health`,
+    swagger: config.swagger.enabled ? `http://localhost:${config.app.port}/api-docs` : undefined,
+  });
 
   const isDevelopment = config.app.isDevelopment;
 
   const gracefulShutdown = async (signal: string) => {
-    // In development, exit quickly without verbose logging
     if (isDevelopment) {
-      console.log(`\n👋 Shutting down...`);
+      logger.info('Shutting down...');
       httpServer.close(() => {
         process.exit(0);
       });
       return;
     }
 
-    // Production/Staging: Full graceful shutdown with detailed logging
-    console.log(`\n${signal} received. Starting graceful shutdown...`);
+    logger.info({
+      msg: 'Starting graceful shutdown',
+      signal,
+    });
 
     httpServer.close(async () => {
-      console.log('HTTP server closed');
+      logger.info('HTTP server closed');
 
       try {
         await CacheFactory.disconnect(scopeCache);
-        console.log('Cache disconnected');
+        logger.info('Cache disconnected');
       } catch (error) {
-        console.error('Error disconnecting cache:', error);
+        logger.error({
+          msg: 'Error disconnecting cache',
+          err: error,
+        });
       }
 
       try {
         await closeDatabase();
+        logger.info('Database closed');
       } catch (error) {
-        console.error('Error closing database:', error);
+        logger.error({
+          msg: 'Error closing database',
+          err: error,
+        });
       }
 
       process.exit(0);
     });
 
     setTimeout(() => {
-      console.error('Forced shutdown after timeout');
+      logger.error('Forced shutdown after timeout');
       process.exit(1);
     }, 30000);
   };
@@ -164,6 +177,9 @@ async function startServer() {
 }
 
 startServer().catch((error) => {
-  console.error('Failed to start server:', error);
+  logger.fatal({
+    msg: 'Failed to start server',
+    err: error,
+  });
   process.exit(1);
 });

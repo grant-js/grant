@@ -167,6 +167,17 @@ export default withMermaid({
           ],
         },
         {
+          text: 'Observability',
+          collapsed: false,
+          items: [
+            { text: 'Overview', link: '/advanced-topics/observability-overview' },
+            { text: 'Structured Logging', link: '/advanced-topics/logging' },
+            { text: 'Distributed Tracing', link: '/advanced-topics/tracing' },
+            { text: 'Metrics & Monitoring', link: '/advanced-topics/metrics' },
+            { text: 'Business Analytics', link: '/advanced-topics/analytics' },
+          ],
+        },
+        {
           text: 'Troubleshooting',
           items: [
             { text: 'Common Issues', link: '/troubleshooting/common-issues' },

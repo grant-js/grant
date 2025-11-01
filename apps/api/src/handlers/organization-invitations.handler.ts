@@ -13,11 +13,14 @@ import {
 
 import { config } from '@/config';
 import { BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
+import { createModuleLogger } from '@/lib/logger';
 import { generateSecureTokenMs } from '@/lib/token.lib';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 
 export class OrganizationInvitationsHandler {
+  private readonly logger = createModuleLogger('OrganizationInvitationsHandler');
+
   constructor(
     readonly services: Services,
     readonly db: DbSchema
@@ -128,7 +131,10 @@ export class OrganizationInvitationsHandler {
           roleName: role.name,
         })
         .catch((error) => {
-          console.error('Failed to send invitation email:', error);
+          this.logger.error({
+            msg: 'Failed to send invitation email',
+            err: error,
+          });
           // Don't throw - invitation is already created
         });
 

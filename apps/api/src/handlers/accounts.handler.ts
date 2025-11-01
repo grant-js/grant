@@ -25,12 +25,15 @@ import { ScopeHandler } from '@/handlers/base/scope-handler';
 import { translateStatic, type SupportedLocale } from '@/i18n';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { AuthenticationError } from '@/lib/errors';
+import { createModuleLogger } from '@/lib/logger';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 import { DeleteParams, SelectedFields } from '@/services/common';
 import { Otp } from '@/services/user-authentication-methods.service';
 
 export class AccountHandler extends ScopeHandler {
+  private readonly logger = createModuleLogger('AccountHandler');
+
   constructor(
     readonly scopeCache: IEntityCacheAdapter,
     readonly services: Services,
@@ -269,7 +272,10 @@ export class AccountHandler extends ScopeHandler {
           try {
             await this.services.email.sendOtp({ to: providerId, token, validUntil, locale });
           } catch (error) {
-            console.error('Error sending OTP', error);
+            this.logger.error({
+              msg: 'Error sending OTP',
+              err: error,
+            });
           }
         }
       }
@@ -335,7 +341,10 @@ export class AccountHandler extends ScopeHandler {
       try {
         await this.services.email.sendOtp({ to: email, token, validUntil, locale });
       } catch (error) {
-        console.error('Error sending verification email', error);
+        this.logger.error({
+          msg: 'Error sending verification email',
+          err: error,
+        });
         throw new AuthenticationError(
           'Failed to send verification email',
           'errors:auth.emailSendFailed'
@@ -373,7 +382,10 @@ export class AccountHandler extends ScopeHandler {
           locale,
         });
       } catch (error) {
-        console.error('Error sending password reset email', error);
+        this.logger.error({
+          msg: 'Error sending password reset email',
+          err: error,
+        });
         throw new AuthenticationError(
           'Failed to send password reset email',
           'errors:auth.emailSendFailed'
@@ -411,7 +423,10 @@ export class AccountHandler extends ScopeHandler {
         // TODO: Implement password change confirmation email
         // await this.services.email.sendPasswordChangeConfirmation({ to: email, locale });
       } catch (error) {
-        console.error('Error sending password change confirmation email', error);
+        this.logger.error({
+          msg: 'Error sending password change confirmation email',
+          err: error,
+        });
         // Don't throw - password reset succeeded, confirmation email is optional
       }
 

@@ -1,6 +1,7 @@
 import { DbSchema } from '@logusgraphics/grant-database';
 
 import { config } from '@/config';
+import { createModuleLogger } from '@/lib/logger';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { AuthenticatedUser } from '@/types';
 
@@ -13,6 +14,8 @@ export interface AuditLogParams {
 }
 
 export abstract class AuditService {
+  protected readonly logger = createModuleLogger('AuditService');
+
   constructor(
     protected readonly auditLogsTable: any,
     protected readonly entityIdField: string,
@@ -39,7 +42,10 @@ export abstract class AuditService {
 
       await dbInstance.insert(this.auditLogsTable).values(insertData);
     } catch (error) {
-      console.error('Error creating audit log:', error);
+      this.logger.error({
+        msg: 'Error creating audit log',
+        err: error,
+      });
     }
   }
 

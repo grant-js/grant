@@ -1,3 +1,5 @@
+import { createModuleLogger } from '@/lib/logger';
+
 import {
   IEmailService,
   SendInvitationParams,
@@ -18,50 +20,49 @@ import {
  * Logs emails to console instead of actually sending them
  */
 export class ConsoleEmailAdapter implements IEmailService {
+  private readonly logger = createModuleLogger('ConsoleEmailAdapter');
+
   constructor(private readonly from: string) {}
 
   async sendInvitation(params: SendInvitationParams): Promise<void> {
     const subject = getInvitationEmailSubject(params);
     const text = getInvitationEmailText(params);
 
-    console.log('\n' + '='.repeat(80));
-    console.log('📧 EMAIL (Console Adapter - Development Mode)');
-    console.log('='.repeat(80));
-    console.log(`From: ${this.from}`);
-    console.log(`To: ${params.to}`);
-    console.log(`Subject: ${subject}`);
-    console.log('-'.repeat(80));
-    console.log(text);
-    console.log('='.repeat(80) + '\n');
+    this.logger.info({
+      msg: '📧 EMAIL (Console Adapter - Development Mode)',
+      emailType: 'invitation',
+      from: this.from,
+      to: params.to,
+      subject,
+      text,
+    });
   }
 
   async sendOtp(params: SendOtpParams): Promise<void> {
     const subject = getOtpEmailSubject(params);
     const text = getOtpEmailText(params);
 
-    console.log('\n' + '='.repeat(80));
-    console.log('📧 EMAIL (Console Adapter - Development Mode)');
-    console.log('='.repeat(80));
-    console.log(`From: ${this.from}`);
-    console.log(`To: ${params.to}`);
-    console.log(`Subject: ${subject}`);
-    console.log('-'.repeat(80));
-    console.log(text);
-    console.log('='.repeat(80) + '\n');
+    this.logger.info({
+      msg: '📧 EMAIL (Console Adapter - Development Mode)',
+      emailType: 'otp',
+      from: this.from,
+      to: params.to,
+      subject,
+      text,
+    });
   }
 
   async sendPasswordReset(params: SendPasswordResetParams): Promise<void> {
     const subject = getPasswordResetEmailSubject(params);
     const text = getPasswordResetEmailText(params);
 
-    console.log('\n' + '='.repeat(80));
-    console.log('📧 PASSWORD RESET EMAIL (Console Adapter - Development Mode)');
-    console.log('='.repeat(80));
-    console.log(`From: ${this.from}`);
-    console.log(`To: ${params.to}`);
-    console.log(`Subject: ${subject}`);
-    console.log('-'.repeat(80));
-    console.log(text);
-    console.log('='.repeat(80) + '\n');
+    this.logger.info({
+      msg: '📧 PASSWORD RESET EMAIL (Console Adapter - Development Mode)',
+      emailType: 'password-reset',
+      from: this.from,
+      to: params.to,
+      subject,
+      text,
+    });
   }
 }

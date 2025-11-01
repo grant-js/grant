@@ -363,6 +363,22 @@ export const EMAIL_CONFIG = {
 } as const;
 
 // ============================================================================
+// Logging Configuration
+// ============================================================================
+
+export const LOGGING_CONFIG = {
+  /** Log level: trace, debug, info, warn, error, fatal */
+  level: getEnvEnum(
+    'LOG_LEVEL',
+    ['fatal', 'error', 'warn', 'info', 'debug', 'trace'] as const,
+    APP_CONFIG.isProduction ? 'info' : 'debug'
+  ),
+
+  /** Pretty print logs (development only) */
+  prettyPrint: getEnvBoolean('LOG_PRETTY_PRINT', APP_CONFIG.isDevelopment),
+} as const;
+
+// ============================================================================
 // System Constants (Not Configurable via ENV)
 // ============================================================================
 
@@ -454,20 +470,22 @@ export function validateConfig(): void {
 /**
  * Print configuration summary (safe for logging - no secrets)
  */
-export function printConfigSummary(): void {
-  console.log('📋 Configuration Summary:');
-  console.log(`   Environment: ${APP_CONFIG.nodeEnv}`);
-  console.log(`   Port: ${APP_CONFIG.port}`);
-  console.log(`   Cache Strategy: ${CACHE_CONFIG.strategy}`);
-  console.log(`   Database: ${DB_CONFIG.url.split('@')[1] || 'configured'}`);
-  console.log(
-    `   JWT Expiration: ${JWT_CONFIG.accessTokenExpirationMinutes}min / ${JWT_CONFIG.refreshTokenExpirationDays}d`
-  );
-  console.log(`   Email Provider: ${EMAIL_CONFIG.provider}`);
-  if (CACHE_CONFIG.strategy === 'redis') {
-    console.log(`   Redis: ${REDIS_CONFIG.host}:${REDIS_CONFIG.port}`);
-  }
-  console.log('');
+export async function printConfigSummary(): Promise<void> {
+  // Dynamic import to avoid circular dependency with logger
+  const { logger } = await import('@/lib/logger');
+
+  logger.info({
+    msg: '📋 Configuration Summary',
+    environment: APP_CONFIG.nodeEnv,
+    port: APP_CONFIG.port,
+    cacheStrategy: CACHE_CONFIG.strategy,
+    database: DB_CONFIG.url.split('@')[1] || 'configured',
+    jwtExpiration: `${JWT_CONFIG.accessTokenExpirationMinutes}min / ${JWT_CONFIG.refreshTokenExpirationDays}d`,
+    emailProvider: EMAIL_CONFIG.provider,
+    ...(CACHE_CONFIG.strategy === 'redis' && {
+      redis: `${REDIS_CONFIG.host}:${REDIS_CONFIG.port}`,
+    }),
+  });
 }
 
 // ============================================================================
@@ -534,6 +552,7 @@ export const config = {
   swaggerSetup: SWAGGER_UI_SETUP_CONFIG,
   email: EMAIL_CONFIG,
   i18n: I18N_CONFIG,
+  logging: LOGGING_CONFIG,
   system: SYSTEM_CONSTANTS,
   cors: CORS_CONFIG,
   helmet: HELMET_CONFIG,

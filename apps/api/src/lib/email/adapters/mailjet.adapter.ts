@@ -1,6 +1,7 @@
 import Mailjet, { Client } from 'node-mailjet';
 
 import { ApiError } from '@/lib/errors';
+import { createModuleLogger } from '@/lib/logger';
 
 import {
   IEmailService,
@@ -31,6 +32,7 @@ export interface MailjetConfig {
  * Mailjet email adapter
  */
 export class MailjetEmailAdapter implements IEmailService {
+  private readonly logger = createModuleLogger('MailjetEmailAdapter');
   private client: Client;
   private from: string;
   private fromName: string;
@@ -66,7 +68,11 @@ export class MailjetEmailAdapter implements IEmailService {
         ],
       });
     } catch (error) {
-      console.error('Mailjet send error:', error);
+      this.logger.error({
+        msg: 'Mailjet send error',
+        err: error,
+        emailType: 'invitation',
+      });
       throw new ApiError(
         `Failed to send invitation email: ${error instanceof Error ? error.message : 'Unknown error'}`,
         {
@@ -103,7 +109,11 @@ export class MailjetEmailAdapter implements IEmailService {
         ],
       });
     } catch (error) {
-      console.error('Mailjet send error:', error);
+      this.logger.error({
+        msg: 'Mailjet send error',
+        err: error,
+        emailType: 'otp',
+      });
       throw new ApiError(
         `Failed to send OTP email: ${error instanceof Error ? error.message : 'Unknown error'}`,
         {

@@ -2,6 +2,7 @@ import { DbSchema } from '@logusgraphics/grant-database';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 import { NotFoundError } from '@/lib/errors';
+import { createModuleLogger } from '@/lib/logger';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 export interface BasePivotModel {
@@ -41,6 +42,7 @@ export abstract class PivotRepository<
   TPivotModel extends BasePivotModel,
   TPivotEntity extends BasePivotEntity,
 > {
+  protected readonly logger = createModuleLogger('PivotRepository');
   protected abstract table: any;
   protected abstract parentIdField: keyof TPivotModel;
   protected abstract relatedIdField: keyof TPivotModel;
@@ -121,7 +123,10 @@ export abstract class PivotRepository<
 
       return result.map((item: TPivotModel) => this.toEntity(item));
     } catch (error) {
-      console.error('Error querying pivot table:', error);
+      this.logger.error({
+        msg: 'Error querying pivot table',
+        err: error,
+      });
       throw error;
     }
   }
@@ -197,7 +202,10 @@ export abstract class PivotRepository<
       const insertedItem = this.first(result);
       return this.toEntity(insertedItem as TPivotModel);
     } catch (error) {
-      console.error('Error adding pivot relationship:', error);
+      this.logger.error({
+        msg: 'Error adding pivot relationship',
+        err: error,
+      });
       throw error;
     }
   }
@@ -253,7 +261,10 @@ export abstract class PivotRepository<
 
       return this.toEntity(deletedItem as TPivotModel);
     } catch (error) {
-      console.error('Error soft deleting pivot relationship:', error);
+      this.logger.error({
+        msg: 'Error soft deleting pivot relationship',
+        err: error,
+      });
       throw error;
     }
   }
@@ -282,7 +293,10 @@ export abstract class PivotRepository<
 
       return this.toEntity(deletedItem as TPivotModel);
     } catch (error) {
-      console.error('Error hard deleting pivot relationship:', error);
+      this.logger.error({
+        msg: 'Error hard deleting pivot relationship',
+        err: error,
+      });
       throw error;
     }
   }

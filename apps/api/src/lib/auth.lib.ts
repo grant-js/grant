@@ -1,9 +1,12 @@
 import jwt from 'jsonwebtoken';
 
 import { config } from '@/config';
+import { createModuleLogger } from '@/lib/logger';
 import { AuthenticatedUser } from '@/types';
 
 import type { JwtPayload } from 'jsonwebtoken';
+
+const logger = createModuleLogger('auth');
 
 export function extractUserFromToken(authHeader: string | null): AuthenticatedUser | null {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -17,12 +20,16 @@ export function extractUserFromToken(authHeader: string | null): AuthenticatedUs
     const id = decoded.sub as string;
 
     if (!aud) {
-      console.warn('JWT token missing required field (aud)');
+      logger.warn({
+        msg: 'JWT token missing required field (aud)',
+      });
       return null;
     }
 
     if (!id) {
-      console.warn('JWT token missing required field (sub)');
+      logger.warn({
+        msg: 'JWT token missing required field (sub)',
+      });
       return null;
     }
 
@@ -31,10 +38,10 @@ export function extractUserFromToken(authHeader: string | null): AuthenticatedUs
       aud,
     };
   } catch (error) {
-    console.warn(
-      'JWT token verification failed:',
-      error instanceof Error ? error.message : 'Unknown error'
-    );
+    logger.warn({
+      msg: 'JWT token verification failed',
+      err: error,
+    });
     return null;
   }
 }

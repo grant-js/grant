@@ -17,6 +17,7 @@ import {
 } from 'drizzle-orm';
 
 import { NotFoundError } from '@/lib/errors';
+import { createModuleLogger } from '@/lib/logger';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 import type { Schema } from '@logusgraphics/grant-database';
@@ -82,6 +83,7 @@ export interface BaseDeleteArgs {
 
 export type RelationsConfig<TEntity> = Partial<Record<keyof TEntity, RelationConfig>>;
 export abstract class EntityRepository<TModel extends Auditable, TEntity extends BaseEntity> {
+  protected readonly logger = createModuleLogger('EntityRepository');
   protected abstract table: any;
   protected abstract schemaName: keyof Schema;
   protected abstract searchFields: Array<keyof TModel>;
@@ -243,7 +245,10 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
       const countResult = await dbInstance.select({ count: count() }).from(this.table).where(where);
       return Number(countResult[0]?.count ?? 0);
     } catch (error) {
-      console.error('Count error:', error);
+      this.logger.error({
+        msg: 'Count error',
+        err: error,
+      });
       return 0;
     }
   }
@@ -339,7 +344,10 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
         hasNextPage,
       };
     } catch (error) {
-      console.error('Query error:', error);
+      this.logger.error({
+        msg: 'Query error',
+        err: error,
+      });
       return { items: [], totalCount: 0, hasNextPage: false };
     }
   }
@@ -361,7 +369,10 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
       const insertedItem = this.first(result);
       return insertedItem as TEntity;
     } catch (error) {
-      console.error('Create error:', error);
+      this.logger.error({
+        msg: 'Create error',
+        err: error,
+      });
       throw error;
     }
   }
@@ -389,7 +400,10 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
       const updatedItem = this.first(result);
       return updatedItem as TEntity;
     } catch (error) {
-      console.error('Update error:', error);
+      this.logger.error({
+        msg: 'Update error',
+        err: error,
+      });
       throw error;
     }
   }
@@ -410,7 +424,10 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
       const deletedItem = this.first(result);
       return deletedItem as TEntity;
     } catch (error) {
-      console.error('Soft delete error:', error);
+      this.logger.error({
+        msg: 'Soft delete error',
+        err: error,
+      });
       throw error;
     }
   }
@@ -430,7 +447,10 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
       }
       return deletedItem as TEntity;
     } catch (error) {
-      console.error('Hard delete error:', error);
+      this.logger.error({
+        msg: 'Hard delete error',
+        err: error,
+      });
       throw error;
     }
   }
