@@ -8,6 +8,7 @@ import {
   InviteMemberInput,
   OrganizationInvitation,
   OrganizationInvitationPage,
+  OrganizationInvitationStatus,
   QueryOrganizationInvitationsArgs,
   UserAuthenticationMethodProvider,
 } from '@logusgraphics/grant-schema';
@@ -16,6 +17,7 @@ import { config } from '@/config';
 import { defaultLocale } from '@/i18n';
 import { BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
 import { createModuleLogger } from '@/lib/logger';
+import { slugifySafe } from '@/lib/slugify.lib';
 import { generateSecureTokenMs } from '@/lib/token.lib';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
@@ -161,7 +163,7 @@ export class OrganizationInvitationsHandler {
         tx
       );
 
-      if (!invitation || invitation.status !== 'pending') {
+      if (!invitation || invitation.status !== OrganizationInvitationStatus.Pending) {
         throw new BadRequestError('Invalid or expired invitation', 'errors:auth.invalidToken');
       }
 
@@ -179,7 +181,6 @@ export class OrganizationInvitationsHandler {
         );
 
       let user;
-      let account;
       let isNewUser = false;
 
       // 3. If user doesn't exist and userData not provided, require registration
@@ -188,7 +189,7 @@ export class OrganizationInvitationsHandler {
           requiresRegistration: true,
           invitation: invitation as OrganizationInvitation,
           user: null,
-          account: null,
+          accounts: [],
           isNewUser: false,
         };
       }
@@ -223,7 +224,7 @@ export class OrganizationInvitationsHandler {
           );
 
         // Create account
-        account = await this.services.accounts.createAccount(
+        await this.services.accounts.createAccount(
           {
             name: userData.name,
             username: userData.username,
@@ -233,7 +234,7 @@ export class OrganizationInvitationsHandler {
           tx
         );
       } else {
-        // Get existing user
+        // Get existing user with accounts
         const usersResult = await this.services.users.getUsers(
           {
             ids: [userAuthMethod!.userId],
@@ -243,7 +244,70 @@ export class OrganizationInvitationsHandler {
           tx
         );
         user = usersResult.users[0];
-        account = user.accounts?.[0] || null;
+
+        // Check if user has an Organization account
+        const organizationAccount = user.accounts?.find(
+          (acc) => acc.type === AccountType.Organization
+        );
+
+        if (!organizationAccount) {
+          // User doesn't have Organization account
+          // Check account limit (max 2 accounts per user: 1 Personal + 1 Organization)
+          // A user can only have 1 Personal account (enforced by unique email registration in createAccount)
+          const accountCount = user.accounts?.length || 0;
+          if (accountCount >= 2) {
+            throw new BadRequestError(
+              'User has reached maximum account limit',
+              'errors:validation.maxAccountsReached'
+            );
+          }
+
+          // Create Organization account for existing user
+          // Fetch organization to get its name for username generation
+          const organizationsResult = await this.services.organizations.getOrganizations(
+            {
+              ids: [invitation.organizationId],
+              limit: 1,
+            },
+            tx
+          );
+          const organization = organizationsResult.organizations[0];
+
+          // Generate username from user name using slugify
+          let accountUsername = slugifySafe(user.name);
+
+          // Ensure username is unique by checking availability through service
+          // If not available, append organization name (slugified) to make it unique
+          // Note: Database unique constraint will catch any race conditions
+          let isAvailable = await this.services.accounts.checkUsernameAvailability(accountUsername);
+
+          if (!isAvailable) {
+            // Append organization slug to make username unique
+            accountUsername = `${accountUsername}-${organization.slug}`;
+            isAvailable = await this.services.accounts.checkUsernameAvailability(accountUsername);
+
+            // If still not available, append user ID substring
+            if (!isAvailable) {
+              accountUsername = `${accountUsername}-${user.id.substring(0, 8)}`;
+              isAvailable = await this.services.accounts.checkUsernameAvailability(accountUsername);
+            }
+
+            // If still not available, use timestamp
+            if (!isAvailable) {
+              accountUsername = `${accountUsername}-${Date.now().toString(36)}`;
+            }
+          }
+
+          await this.services.accounts.createAccount(
+            {
+              name: user.name,
+              username: accountUsername,
+              type: AccountType.Organization,
+              ownerId: user.id,
+            },
+            tx
+          );
+        }
       }
 
       // 5. Add user to organization
@@ -274,10 +338,22 @@ export class OrganizationInvitationsHandler {
         tx
       );
 
+      // 8. Fetch all user accounts (after potential account creation)
+      const updatedUsersResult = await this.services.users.getUsers(
+        {
+          ids: [user!.id],
+          limit: 1,
+          requestedFields: ['accounts'],
+        },
+        tx
+      );
+      const updatedUser = updatedUsersResult.users[0];
+      const allAccounts = (updatedUser.accounts || []) as Account[];
+
       return {
         requiresRegistration: false,
         user: user!,
-        account: (account as Account) || null,
+        accounts: allAccounts,
         isNewUser,
         invitation: invitation as OrganizationInvitation,
       };

@@ -15,7 +15,6 @@ import {
 import { and, eq, isNull } from 'drizzle-orm';
 
 import { NotFoundError } from '@/lib/errors';
-import { createModuleLogger } from '@/lib/logger';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { EntityRepository, FilterCondition, RelationsConfig } from '@/repositories/common';
 import { SelectedFields } from '@/services/common';
@@ -63,7 +62,6 @@ export class OrganizationInvitationRepository extends EntityRepository<
       extract: (v) => v,
     },
   };
-  protected logger = createModuleLogger('OrganizationInvitationRepository');
 
   public async createInvitation(
     params: CreateOrganizationInvitationInput,
@@ -105,12 +103,6 @@ export class OrganizationInvitationRepository extends EntityRepository<
       },
     ];
 
-    this.logger.info({
-      msg: 'getInvitationByToken',
-      token,
-      requestedFields,
-    });
-
     const result = await this.query(
       {
         filters,
@@ -119,12 +111,6 @@ export class OrganizationInvitationRepository extends EntityRepository<
       },
       transaction
     );
-
-    this.logger.info({
-      msg: 'getInvitationByToken result',
-      result,
-      requestedFields,
-    });
 
     return result.items[0] || null;
   }

@@ -25,7 +25,6 @@ type InvitationStatus =
   | 'expired'
   | 'already-accepted'
   | 'requires-login'
-  | 'requires-org-account'
   | 'ready'
   | 'accepting'
   | 'success'
@@ -50,7 +49,7 @@ export default function InvitationPage() {
   });
 
   const { acceptInvitation } = useMemberMutations();
-  const { isAuthenticated, getCurrentOrganizationAccount } = useAuthStore();
+  const { isAuthenticated, updateAccountsAndSwitch } = useAuthStore();
 
   usePageTitle('invitations');
 
@@ -91,22 +90,10 @@ export default function InvitationPage() {
       return 'requires-login';
     }
 
-    // User logged in but with personal account
-    const orgAccount = getCurrentOrganizationAccount();
-    if (!orgAccount) {
-      return 'requires-org-account';
-    }
-
-    // User logged in with organization account - ready to accept
+    // User is authenticated - ready to accept
+    // Backend will automatically create Organization account if user doesn't have one
     return 'ready';
-  }, [
-    actionStatus,
-    invitationLoading,
-    invitationError,
-    invitation,
-    isAuthenticated,
-    getCurrentOrganizationAccount,
-  ]);
+  }, [actionStatus, invitationLoading, invitationError, invitation, isAuthenticated]);
 
   // Handle redirect on success
   useEffect(() => {
@@ -133,6 +120,11 @@ export default function InvitationPage() {
         // User needs to register first
         setActionStatus('requires-login');
         return;
+      }
+
+      // Update accounts and switch to the Organization account
+      if (result?.accounts && result.accounts.length > 0) {
+        updateAccountsAndSwitch(result.accounts);
       }
 
       setActionStatus('success');
@@ -275,45 +267,6 @@ export default function InvitationPage() {
           </div>
         );
 
-      case 'requires-org-account':
-        return (
-          <div className="space-y-8">
-            <Alert variant="warning">
-              <AlertTriangle />
-              <AlertTitle>{t('requiresOrgAccount.title')}</AlertTitle>
-              <AlertDescription>{t('requiresOrgAccount.description')}</AlertDescription>
-            </Alert>
-            {invitation && (
-              <InfoPanel
-                compact
-                rows={[
-                  {
-                    label: t('details.organization'),
-                    value: (
-                      <span className="font-semibold text-foreground">
-                        {invitation.organization?.name}
-                      </span>
-                    ),
-                  },
-                  {
-                    label: t('details.role'),
-                    value: (
-                      <span className="font-semibold text-foreground">{invitation.role?.name}</span>
-                    ),
-                  },
-                ]}
-              />
-            )}
-            <div>
-              <Link href={`/${locale}/auth/login`}>
-                <Button className="w-full" variant="default">
-                  {t('requiresOrgAccount.switchAccount')}
-                </Button>
-              </Link>
-            </div>
-          </div>
-        );
-
       case 'ready':
         return (
           <div className="space-y-8">
@@ -382,12 +335,12 @@ export default function InvitationPage() {
                     },
                   ]}
                 />
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-4">
                   <Button
-                    className="flex-1"
                     variant="default"
                     onClick={handleAcceptInvitation}
                     disabled={actionStatus === 'accepting'}
+                    className="w-full"
                   >
                     {actionStatus === 'accepting' ? (
                       <>
@@ -399,7 +352,7 @@ export default function InvitationPage() {
                     )}
                   </Button>
                   <Link href={`/${locale}/dashboard`}>
-                    <Button className="flex-1" variant="outline">
+                    <Button className="w-full" variant="outline">
                       {t('decline')}
                     </Button>
                   </Link>

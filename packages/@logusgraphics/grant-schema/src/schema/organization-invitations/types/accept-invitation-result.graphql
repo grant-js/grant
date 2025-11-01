@@ -1,7 +1,7 @@
 type AcceptInvitationResult {
   requiresRegistration: Boolean!
   user: User
-  account: Account
+  accounts: [Account!]!
   isNewUser: Boolean
   invitation: OrganizationInvitation
 }

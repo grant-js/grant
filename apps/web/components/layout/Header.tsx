@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useRef, useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
-import { Menu, X, Sun, Moon, Globe, LogOut } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { Globe, LogOut, Menu, Moon, Sun, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
+import { AccountDropdown } from '@/components/common/AccountDropdown';
 import { Breadcrumb } from '@/components/common/Breadcrumb';
 import { Logo } from '@/components/common/Logo';
 import { OrganizationSwitcher } from '@/components/features/organizations/OrganizationSwitcher';
@@ -20,8 +21,7 @@ import { useAuthStore } from '@/stores/auth.store';
 export function Header() {
   const t = useTranslations('common');
   const themeT = useTranslations('theme');
-  const locale = useLocale();
-  const { loading, isAuthenticated, clearAuth } = useAuthStore();
+  const { loading, isAuthenticated } = useAuthStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const themeToggleRef = useRef<HTMLButtonElement>(null);
   const languageSwitcherRef = useRef<HTMLButtonElement>(null);
@@ -29,12 +29,6 @@ export function Header() {
   const showLoginButton = useMemo(() => {
     return !loading && !isAuthenticated();
   }, [isAuthenticated, loading]);
-
-  const handleLogout = (e: React.MouseEvent) => {
-    e.preventDefault();
-    clearAuth();
-    window.location.href = `/${locale}/auth/login`;
-  };
 
   const mobileThemeTrigger = (
     <div className="flex w-full items-center justify-between py-2 hover:bg-accent rounded-md px-2 -mx-2 cursor-pointer">
@@ -120,19 +114,7 @@ export function Header() {
                 </Tooltip>
               </TooltipProvider>
             ) : (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" onClick={handleLogout}>
-                      <LogOut className="h-[1.2rem] w-[1.2rem]" />
-                      <span className="sr-only">{t('auth.logout')}</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{t('auth.logout')}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <AccountDropdown />
             )}
           </div>
         </div>
@@ -166,19 +148,14 @@ export function Header() {
             </div>
             <div className="h-px bg-border" />
             <div className="flex flex-col space-y-2">
-              {!isAuthenticated ? (
+              {!isAuthenticated() ? (
                 <div className="block py-2">
                   <Link href="/auth/login">{t('auth.login')}</Link>
                 </div>
               ) : (
-                <div className="block py-2">
-                  <div className="flex items-center gap-2">
-                    <LogOut className="h-4 w-4" />
-                    <Link href="/auth/login" onClick={handleLogout}>
-                      {t('auth.logout')}
-                    </Link>
-                  </div>
-                </div>
+                <>
+                  <AccountDropdown />
+                </>
               )}
             </div>
           </div>

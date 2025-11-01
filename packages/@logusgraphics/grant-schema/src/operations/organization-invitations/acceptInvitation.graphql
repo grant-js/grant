@@ -7,10 +7,11 @@ mutation AcceptInvitation($input: AcceptInvitationInput!) {
       name
       createdAt
     }
-    account {
+    accounts {
       id
       name
       slug
+      type
     }
     invitation {
       id

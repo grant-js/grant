@@ -2,6 +2,8 @@
 
 import React, { useRef, useState } from 'react';
 
+import { useSearchParams } from 'next/navigation';
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AccountType } from '@logusgraphics/grant-schema';
 import { ChevronDown, Info } from 'lucide-react';
@@ -37,11 +39,22 @@ import { passwordPolicySchema } from '@/lib/validation/password-policy';
 
 export default function RegisterPage() {
   const t = useTranslations('auth');
+  const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAuthSuccess, setIsAuthSuccess] = useState(false);
   const [usernameManuallySet, setUsernameManuallySet] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   usePageTitle('auth.register');
+
+  // Preserve redirect and email parameters
+  const redirectParam = searchParams.get('redirect');
+  const emailParam = searchParams.get('email');
+
+  // Detect if redirect is from organization invitation page
+  const isInvitationRedirect = redirectParam?.includes('/invitations/');
+
+  // Default to Organization account type if coming from invitation
+  const defaultAccountType = isInvitationRedirect ? AccountType.Organization : AccountType.Personal;
 
   const { register: handleRegister } = useAuthMutations();
   const { isChecking, isAvailable, checkUsername } = useUsernameValidation();
@@ -78,10 +91,10 @@ export default function RegisterPage() {
     defaultValues: {
       name: '',
       username: '',
-      email: '',
+      email: emailParam || '',
       password: '',
       confirmPassword: '',
-      accountType: AccountType.Personal,
+      accountType: defaultAccountType,
     },
   });
 
@@ -374,7 +387,10 @@ export default function RegisterPage() {
         </Button>
         <p className="text-sm text-gray-600 dark:text-gray-400">
           {t('register.haveAccount')}{' '}
-          <Link href="/auth/login" className="text-primary hover:text-primary/80">
+          <Link
+            href={`/auth/login${redirectParam || emailParam ? `?${new URLSearchParams({ ...(redirectParam && { redirect: redirectParam }), ...(emailParam && { email: emailParam }) }).toString()}` : ''}`}
+            className="text-primary hover:text-primary/80"
+          >
             {t('register.login')}
           </Link>
         </p>

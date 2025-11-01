@@ -29,7 +29,7 @@ export type AcceptInvitationInput = {
 
 export type AcceptInvitationResult = {
   __typename?: 'AcceptInvitationResult';
-  account?: Maybe<Account>;
+  accounts: Array<Account>;
   invitation?: Maybe<OrganizationInvitation>;
   isNewUser?: Maybe<Scalars['Boolean']['output']>;
   requiresRegistration: Scalars['Boolean']['output'];
@@ -2142,7 +2142,7 @@ export type AcceptInvitationResultResolvers<
   ParentType extends
     ResolversParentTypes['AcceptInvitationResult'] = ResolversParentTypes['AcceptInvitationResult'],
 > = ResolversObject<{
-  account?: Resolver<Maybe<ResolversTypes['Account']>, ParentType, ContextType>;
+  accounts?: Resolver<Array<ResolversTypes['Account']>, ParentType, ContextType>;
   invitation?: Resolver<Maybe<ResolversTypes['OrganizationInvitation']>, ParentType, ContextType>;
   isNewUser?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   requiresRegistration?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;

@@ -14,6 +14,14 @@
         "invalidCredentials": "Ungültige E-Mail oder Passwort"
       }
     },
+    "account": {
+      "switchAccount": "Konten",
+      "currentAccount": "Aktuelles Konto"
+    },
+    "accountTypes": {
+      "personal": "Persönlich",
+      "organization": "Organisation"
+    },
     "navigation": {
       "home": "Startseite",
       "dashboard": "Dashboard",
@@ -193,8 +201,8 @@
       "redirecting": "Weiterleitung zum Dashboard..."
     },
     "accountTypes": {
-      "personal": "Persönliches Konto",
-      "organization": "Organisationskonto"
+      "personal": "Persönlich",
+      "organization": "Organisation"
     },
     "forgotPassword": {
       "title": "Identitätszugriff zurücksetzen",

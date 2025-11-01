@@ -14,6 +14,14 @@
         "invalidCredentials": "Invalid email or password"
       }
     },
+    "account": {
+      "switchAccount": "Accounts",
+      "currentAccount": "Current Account"
+    },
+    "accountTypes": {
+      "personal": "Personal",
+      "organization": "Organization"
+    },
     "navigation": {
       "home": "Home",
       "dashboard": "Dashboard",
@@ -193,8 +201,8 @@
       "redirecting": "Redirecting to dashboard..."
     },
     "accountTypes": {
-      "personal": "Personal Account",
-      "organization": "Organization Account"
+      "personal": "Personal",
+      "organization": "Organization"
     },
     "forgotPassword": {
       "title": "Reset Password",

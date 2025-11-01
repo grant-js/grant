@@ -26,6 +26,7 @@ interface AuthState {
   setTokens: (accessToken: string, refreshToken: string) => void;
   clearAuth: () => void;
   switchAccount: (accountId: string) => void;
+  updateAccountsAndSwitch: (accounts: Account[], accountId?: string) => void;
   setAuthData: (data: {
     accounts: Account[];
     accessToken: string;
@@ -84,6 +85,17 @@ export const useAuthStore = create<AuthState>()(
           if (targetAccount) {
             set({ currentAccount: targetAccount });
           }
+        },
+
+        updateAccountsAndSwitch: (accounts: Account[], accountId?: string) => {
+          const targetAccount = accountId
+            ? accounts.find((account) => account.id === accountId)
+            : accounts.find((account) => account.type === AccountType.Organization) || accounts[0];
+
+          set({
+            accounts,
+            currentAccount: targetAccount || null,
+          });
         },
 
         setAuthData: (data) => {

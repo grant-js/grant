@@ -28,7 +28,7 @@ export type AcceptInvitationInput = {
 
 export type AcceptInvitationResult = {
   __typename?: 'AcceptInvitationResult';
-  account?: Maybe<Account>;
+  accounts: Array<Account>;
   invitation?: Maybe<OrganizationInvitation>;
   isNewUser?: Maybe<Scalars['Boolean']['output']>;
   requiresRegistration: Scalars['Boolean']['output'];
@@ -1869,7 +1869,13 @@ export type AcceptInvitationMutation = {
     requiresRegistration: boolean;
     isNewUser?: boolean | null;
     user?: { __typename?: 'User'; id: string; name: string; createdAt: Date } | null;
-    account?: { __typename?: 'Account'; id: string; name: string; slug: string } | null;
+    accounts: Array<{
+      __typename?: 'Account';
+      id: string;
+      name: string;
+      slug: string;
+      type: AccountType;
+    }>;
     invitation?: {
       __typename?: 'OrganizationInvitation';
       id: string;
@@ -3270,13 +3276,14 @@ export const AcceptInvitationDocument = {
                 },
                 {
                   kind: 'Field',
-                  name: { kind: 'Name', value: 'account' },
+                  name: { kind: 'Name', value: 'accounts' },
                   selectionSet: {
                     kind: 'SelectionSet',
                     selections: [
                       { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'type' } },
                     ],
                   },
                 },

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
@@ -34,21 +34,34 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const t = useTranslations('auth');
   const params = useParams();
+  const searchParams = useSearchParams();
   const locale = params.locale as string;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAuthSuccess, setIsAuthSuccess] = useState(false);
   usePageTitle('auth.login');
 
+  // Preserve redirect parameter
+  const redirectParam = searchParams.get('redirect');
+  const emailParam = searchParams.get('email');
+
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
+      email: emailParam || '',
       password: '',
     },
     mode: 'onSubmit',
   });
 
   const { login } = useAuthMutations();
+
+  const registerUrl = useMemo(() => {
+    const params = new URLSearchParams();
+    if (redirectParam) params.set('redirect', redirectParam);
+    if (emailParam) params.set('email', emailParam);
+    const queryString = params.toString();
+    return `/${locale}/auth/register${queryString ? `?${queryString}` : ''}`;
+  }, [locale, redirectParam, emailParam]);
 
   const onSubmit = async (values: LoginFormValues) => {
     setIsSubmitting(true);
@@ -140,12 +153,7 @@ export default function LoginPage() {
       </Form>
       <div className="text-sm">
         {t('login.noAccount')}{' '}
-        <Link
-          href={{
-            pathname: `/${locale}/auth/register`,
-          }}
-          className="text-primary hover:text-primary/80"
-        >
+        <Link href={registerUrl} className="text-primary hover:text-primary/80">
           {t('login.register')}
         </Link>
       </div>

@@ -24,7 +24,7 @@ import { config } from '@/config';
 import { ScopeHandler } from '@/handlers/base/scope-handler';
 import { translateStatic, type SupportedLocale } from '@/i18n';
 import { IEntityCacheAdapter } from '@/lib/cache';
-import { AuthenticationError } from '@/lib/errors';
+import { AuthenticationError, ConflictError } from '@/lib/errors';
 import { createModuleLogger } from '@/lib/logger';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
@@ -230,6 +230,22 @@ export class AccountHandler extends ScopeHandler {
   ): Promise<CreateAccountResult> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { name, username, type, provider, providerId, providerData } = params;
+
+      const existingAuthMethod =
+        await this.services.userAuthenticationMethods.getUserAuthenticationMethodByProvider(
+          provider,
+          providerId,
+          undefined,
+          tx
+        );
+
+      if (existingAuthMethod) {
+        throw new ConflictError(
+          'An account with this email already exists',
+          'errors:conflict.duplicateAuthMethod',
+          { provider, providerId }
+        );
+      }
 
       const { providerData: processedProviderData, isVerified } =
         await this.services.userAuthenticationMethods.processProvider(

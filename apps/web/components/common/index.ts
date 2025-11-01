@@ -1,3 +1,4 @@
+export { AccountDropdown } from './AccountDropdown';
 export { Actions, type ActionItem } from './Actions';
 export { Audit, type AuditField, type AuditProps } from './Audit';
 export { Avatar, type AvatarProps } from './Avatar';
