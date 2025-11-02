@@ -20,7 +20,7 @@ export function createHandlers(scopeCache: IEntityCacheAdapter, services: Servic
   return {
     accounts: new AccountHandler(scopeCache, services, db),
     organizationInvitations: new OrganizationInvitationsHandler(services, db),
-    organizationMembers: new OrganizationMembersHandler(services),
+    organizationMembers: new OrganizationMembersHandler(services, db),
     organizations: new OrganizationHandler(scopeCache, services, db),
     projects: new ProjectHandler(scopeCache, services, db),
     users: new UserHandler(scopeCache, services, db),

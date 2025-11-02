@@ -2,6 +2,7 @@ import * as accountMutations from './accounts/mutations';
 import * as authMutations from './auth/mutations';
 import * as groupMutations from './groups/mutations';
 import * as organizationInvitationMutations from './organization-invitations/mutations';
+import * as organizationMemberMutations from './organization-members/mutations';
 import * as organizationMutations from './organizations/mutations';
 import * as permissionMutations from './permissions/mutations';
 import * as projectMutations from './projects/mutations';
@@ -33,6 +34,8 @@ export const Mutation = {
   inviteMember: organizationInvitationMutations.inviteMember,
   acceptInvitation: organizationInvitationMutations.acceptInvitation,
   revokeInvitation: organizationInvitationMutations.revokeInvitation,
+  updateOrganizationMember: organizationMemberMutations.updateOrganizationMember,
+  removeOrganizationMember: organizationMemberMutations.removeOrganizationMember,
   createProject: projectMutations.createProject,
   updateProject: projectMutations.updateProject,
   deleteProject: projectMutations.deleteProject,

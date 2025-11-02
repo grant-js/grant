@@ -446,6 +446,7 @@ export type Mutation = {
   login: LoginResponse;
   refreshSession: RefreshSessionResponse;
   register: CreateAccountResult;
+  removeOrganizationMember: OrganizationMember;
   requestPasswordReset: RequestPasswordResetResponse;
   resendVerification: ResendVerificationResponse;
   resetPassword: ResetPasswordResponse;
@@ -453,6 +454,7 @@ export type Mutation = {
   updateAccount: Account;
   updateGroup: Group;
   updateOrganization: Organization;
+  updateOrganizationMember: OrganizationMember;
   updatePermission: Permission;
   updateProject: Project;
   updateRole: Role;
@@ -548,6 +550,10 @@ export type MutationRegisterArgs = {
   input: RegisterInput;
 };
 
+export type MutationRemoveOrganizationMemberArgs = {
+  input: RemoveOrganizationMemberInput;
+};
+
 export type MutationRequestPasswordResetArgs = {
   input: RequestPasswordResetInput;
 };
@@ -577,6 +583,12 @@ export type MutationUpdateGroupArgs = {
 export type MutationUpdateOrganizationArgs = {
   id: Scalars['ID']['input'];
   input: UpdateOrganizationInput;
+};
+
+export type MutationUpdateOrganizationMemberArgs = {
+  input: UpdateOrganizationMemberInput;
+  organizationId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 export type MutationUpdatePermissionArgs = {
@@ -1141,6 +1153,11 @@ export type RemoveOrganizationGroupInput = {
   organizationId: Scalars['ID']['input'];
 };
 
+export type RemoveOrganizationMemberInput = {
+  organizationId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
 export type RemoveOrganizationPermissionInput = {
   organizationId: Scalars['ID']['input'];
   permissionId: Scalars['ID']['input'];
@@ -1402,6 +1419,10 @@ export type UpdateGroupTagInput = {
 
 export type UpdateOrganizationInput = {
   name?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateOrganizationMemberInput = {
+  roleId: Scalars['ID']['input'];
 };
 
 export type UpdateOrganizationTagInput = {
@@ -1999,6 +2020,58 @@ export type GetOrganizationMembersQuery = {
         expiresAt: Date;
       } | null;
     }>;
+  };
+};
+
+export type RemoveOrganizationMemberMutationVariables = Exact<{
+  input: RemoveOrganizationMemberInput;
+}>;
+
+export type RemoveOrganizationMemberMutation = {
+  __typename?: 'Mutation';
+  removeOrganizationMember: {
+    __typename?: 'OrganizationMember';
+    id: string;
+    name: string;
+    email?: string | null;
+    type: MemberType;
+    status?: OrganizationInvitationStatus | null;
+    createdAt: Date;
+    role: { __typename?: 'Role'; id: string; name: string; description?: string | null };
+    user?: { __typename?: 'User'; id: string; name: string } | null;
+    invitation?: {
+      __typename?: 'OrganizationInvitation';
+      id: string;
+      email: string;
+      status: OrganizationInvitationStatus;
+    } | null;
+  };
+};
+
+export type UpdateOrganizationMemberMutationVariables = Exact<{
+  userId: Scalars['ID']['input'];
+  organizationId: Scalars['ID']['input'];
+  input: UpdateOrganizationMemberInput;
+}>;
+
+export type UpdateOrganizationMemberMutation = {
+  __typename?: 'Mutation';
+  updateOrganizationMember: {
+    __typename?: 'OrganizationMember';
+    id: string;
+    name: string;
+    email?: string | null;
+    type: MemberType;
+    status?: OrganizationInvitationStatus | null;
+    createdAt: Date;
+    role: { __typename?: 'Role'; id: string; name: string; description?: string | null };
+    user?: { __typename?: 'User'; id: string; name: string } | null;
+    invitation?: {
+      __typename?: 'OrganizationInvitation';
+      id: string;
+      email: string;
+      status: OrganizationInvitationStatus;
+    } | null;
   };
 };
 
@@ -3708,6 +3781,208 @@ export const GetOrganizationMembersDocument = {
     },
   ],
 } as unknown as DocumentNode<GetOrganizationMembersQuery, GetOrganizationMembersQueryVariables>;
+export const RemoveOrganizationMemberDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'RemoveOrganizationMember' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'RemoveOrganizationMemberInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'removeOrganizationMember' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'type' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'role' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'user' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'invitation' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  RemoveOrganizationMemberMutation,
+  RemoveOrganizationMemberMutationVariables
+>;
+export const UpdateOrganizationMemberDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'UpdateOrganizationMember' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'userId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'organizationId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'UpdateOrganizationMemberInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'updateOrganizationMember' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'userId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'userId' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'organizationId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'organizationId' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'type' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'role' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'user' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'invitation' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UpdateOrganizationMemberMutation,
+  UpdateOrganizationMemberMutationVariables
+>;
 export const CreateOrganizationDocument = {
   kind: 'Document',
   definitions: [

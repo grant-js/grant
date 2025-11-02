@@ -12,11 +12,7 @@ import { useMembersStore } from '@/stores/members.store';
 import { MemberActions } from './MemberActions';
 import { MemberCardSkeleton } from './MemberCardSkeleton';
 
-interface MemberCardsProps {
-  onRevokeInvitation: (id: string, email: string) => void;
-}
-
-export function MemberCards({ onRevokeInvitation }: MemberCardsProps) {
+export function MemberCards() {
   const t = useTranslations('members');
 
   const limit = useMembersStore((state) => state.limit);
@@ -81,7 +77,7 @@ export function MemberCards({ onRevokeInvitation }: MemberCardsProps) {
           }}
           title={member.name}
           description={member.email}
-          actions={<MemberActions member={member} onRevokeInvitation={onRevokeInvitation} />}
+          actions={<MemberActions member={member} />}
         />
       )}
       renderBody={(member: MemberWithInvitation) => (

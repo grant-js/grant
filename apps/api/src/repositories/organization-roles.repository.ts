@@ -30,10 +30,17 @@ export class OrganizationRoleRepository extends PivotRepository<
   public async getOrganizationRoles(
     params: {
       organizationId: string;
+      roleId?: string;
     },
     transaction?: Transaction
   ): Promise<OrganizationRole[]> {
-    return this.query({ parentId: params.organizationId }, transaction);
+    return this.query(
+      {
+        parentId: params.organizationId,
+        relatedId: params.roleId,
+      },
+      transaction
+    );
   }
 
   public async addOrganizationRole(

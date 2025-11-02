@@ -447,6 +447,7 @@ export type Mutation = {
   login: LoginResponse;
   refreshSession: RefreshSessionResponse;
   register: CreateAccountResult;
+  removeOrganizationMember: OrganizationMember;
   requestPasswordReset: RequestPasswordResetResponse;
   resendVerification: ResendVerificationResponse;
   resetPassword: ResetPasswordResponse;
@@ -454,6 +455,7 @@ export type Mutation = {
   updateAccount: Account;
   updateGroup: Group;
   updateOrganization: Organization;
+  updateOrganizationMember: OrganizationMember;
   updatePermission: Permission;
   updateProject: Project;
   updateRole: Role;
@@ -549,6 +551,10 @@ export type MutationRegisterArgs = {
   input: RegisterInput;
 };
 
+export type MutationRemoveOrganizationMemberArgs = {
+  input: RemoveOrganizationMemberInput;
+};
+
 export type MutationRequestPasswordResetArgs = {
   input: RequestPasswordResetInput;
 };
@@ -578,6 +584,12 @@ export type MutationUpdateGroupArgs = {
 export type MutationUpdateOrganizationArgs = {
   id: Scalars['ID']['input'];
   input: UpdateOrganizationInput;
+};
+
+export type MutationUpdateOrganizationMemberArgs = {
+  input: UpdateOrganizationMemberInput;
+  organizationId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 export type MutationUpdatePermissionArgs = {
@@ -1142,6 +1154,11 @@ export type RemoveOrganizationGroupInput = {
   organizationId: Scalars['ID']['input'];
 };
 
+export type RemoveOrganizationMemberInput = {
+  organizationId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
 export type RemoveOrganizationPermissionInput = {
   organizationId: Scalars['ID']['input'];
   permissionId: Scalars['ID']['input'];
@@ -1403,6 +1420,10 @@ export type UpdateGroupTagInput = {
 
 export type UpdateOrganizationInput = {
   name?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateOrganizationMemberInput = {
+  roleId: Scalars['ID']['input'];
 };
 
 export type UpdateOrganizationTagInput = {
@@ -1906,6 +1927,7 @@ export type ResolversTypes = ResolversObject<{
   RemoveGroupPermissionInput: RemoveGroupPermissionInput;
   RemoveGroupTagInput: RemoveGroupTagInput;
   RemoveOrganizationGroupInput: RemoveOrganizationGroupInput;
+  RemoveOrganizationMemberInput: RemoveOrganizationMemberInput;
   RemoveOrganizationPermissionInput: RemoveOrganizationPermissionInput;
   RemoveOrganizationProjectInput: RemoveOrganizationProjectInput;
   RemoveOrganizationRoleInput: RemoveOrganizationRoleInput;
@@ -1948,6 +1970,7 @@ export type ResolversTypes = ResolversObject<{
   UpdateGroupInput: UpdateGroupInput;
   UpdateGroupTagInput: UpdateGroupTagInput;
   UpdateOrganizationInput: UpdateOrganizationInput;
+  UpdateOrganizationMemberInput: UpdateOrganizationMemberInput;
   UpdateOrganizationTagInput: UpdateOrganizationTagInput;
   UpdatePermissionInput: UpdatePermissionInput;
   UpdatePermissionTagInput: UpdatePermissionTagInput;
@@ -2074,6 +2097,7 @@ export type ResolversParentTypes = ResolversObject<{
   RemoveGroupPermissionInput: RemoveGroupPermissionInput;
   RemoveGroupTagInput: RemoveGroupTagInput;
   RemoveOrganizationGroupInput: RemoveOrganizationGroupInput;
+  RemoveOrganizationMemberInput: RemoveOrganizationMemberInput;
   RemoveOrganizationPermissionInput: RemoveOrganizationPermissionInput;
   RemoveOrganizationProjectInput: RemoveOrganizationProjectInput;
   RemoveOrganizationRoleInput: RemoveOrganizationRoleInput;
@@ -2110,6 +2134,7 @@ export type ResolversParentTypes = ResolversObject<{
   UpdateGroupInput: UpdateGroupInput;
   UpdateGroupTagInput: UpdateGroupTagInput;
   UpdateOrganizationInput: UpdateOrganizationInput;
+  UpdateOrganizationMemberInput: UpdateOrganizationMemberInput;
   UpdateOrganizationTagInput: UpdateOrganizationTagInput;
   UpdatePermissionInput: UpdatePermissionInput;
   UpdatePermissionTagInput: UpdatePermissionTagInput;
@@ -2482,6 +2507,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationRegisterArgs, 'input'>
   >;
+  removeOrganizationMember?: Resolver<
+    ResolversTypes['OrganizationMember'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationRemoveOrganizationMemberArgs, 'input'>
+  >;
   requestPasswordReset?: Resolver<
     ResolversTypes['RequestPasswordResetResponse'],
     ParentType,
@@ -2523,6 +2554,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationUpdateOrganizationArgs, 'id' | 'input'>
+  >;
+  updateOrganizationMember?: Resolver<
+    ResolversTypes['OrganizationMember'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateOrganizationMemberArgs, 'input' | 'organizationId' | 'userId'>
   >;
   updatePermission?: Resolver<
     ResolversTypes['Permission'],

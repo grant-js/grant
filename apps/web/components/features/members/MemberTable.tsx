@@ -13,11 +13,7 @@ import { useMembersStore } from '@/stores/members.store';
 
 import { MemberActions } from './MemberActions';
 
-interface MemberTableProps {
-  onRevokeInvitation: (id: string, email: string) => void;
-}
-
-export function MemberTable({ onRevokeInvitation }: MemberTableProps) {
+export function MemberTable() {
   const t = useTranslations('members');
 
   const limit = useMembersStore((state) => state.limit);
@@ -139,9 +135,7 @@ export function MemberTable({ onRevokeInvitation }: MemberTableProps) {
         description: search ? t('noSearchResults.description') : t('empty.description'),
       }}
       actionsColumn={{
-        render: (member) => (
-          <MemberActions member={member} onRevokeInvitation={onRevokeInvitation} />
-        ),
+        render: (member) => <MemberActions member={member} />,
       }}
       skeletonConfig={skeletonConfig}
     />

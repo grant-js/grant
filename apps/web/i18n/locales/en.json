@@ -1215,7 +1215,9 @@
     },
     "actions": {
       "revoke": "Revoke",
-      "resend": "Resend"
+      "resend": "Resend",
+      "updateRole": "Update Role",
+      "remove": "Remove"
     },
     "sort": {
       "label": "Sort by",
@@ -1253,7 +1255,48 @@
       "acceptSuccess": "Invitation accepted",
       "acceptError": "Failed to accept invitation",
       "revokeSuccess": "Invitation revoked",
-      "revokeError": "Failed to revoke invitation"
+      "revokeError": "Failed to revoke invitation",
+      "updateRoleSuccess": "Member role updated successfully",
+      "updateRoleError": "Failed to update member role",
+      "removeMemberSuccess": "Member removed successfully",
+      "removeMemberError": "Failed to remove member",
+      "resendInvitationSuccess": "Invitation resent successfully",
+      "resendInvitationError": "Failed to resend invitation"
+    },
+    "updateRoleDialog": {
+      "title": "Update Member Role",
+      "description": "Change the role for {name}",
+      "currentRole": "Current Role",
+      "newRole": "New Role",
+      "rolePlaceholder": "Select a role",
+      "rolesLoading": "Loading roles...",
+      "noRolesAvailable": "No roles available",
+      "cancel": "Cancel",
+      "updating": "Updating...",
+      "confirm": "Update Role"
+    },
+    "removeMemberDialog": {
+      "title": "Remove Member",
+      "description": "Are you sure you want to remove {name} from this organization? This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Remove Member"
+    },
+    "resendInvitationDialog": {
+      "title": "Resend Invitation",
+      "description": "Resend an invitation to {email}",
+      "role": "Role",
+      "rolePlaceholder": "Select a role",
+      "rolesLoading": "Loading roles...",
+      "noRolesAvailable": "No roles available",
+      "cancel": "Cancel",
+      "sending": "Sending...",
+      "confirm": "Resend Invitation"
+    },
+    "revokeInvitationDialog": {
+      "title": "Revoke Invitation",
+      "description": "Are you sure you want to revoke the invitation for {email}? This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Revoke Invitation"
     }
   },
   "settings": {

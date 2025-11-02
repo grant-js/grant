@@ -7,6 +7,7 @@ import { Role } from '@logusgraphics/grant-schema';
 import { ChevronDown, Mail } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useForm, useWatch } from 'react-hook-form';
+import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -31,53 +32,70 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
-import { useMemberMutations } from '@/hooks/members';
+import { MemberWithInvitation, useMemberMutations } from '@/hooks/members';
 import { useRoles } from '@/hooks/roles';
 
-import { InviteMemberDialogProps, InviteMemberFormValues, inviteMemberSchema } from './types';
+const resendInvitationSchema = z.object({
+  roleId: z.string().min(1, 'Please select a role'),
+});
 
-export function InviteMemberDialog({
+type ResendInvitationFormValues = z.infer<typeof resendInvitationSchema>;
+
+interface ResendInvitationDialogProps {
+  member: MemberWithInvitation;
+  organizationId: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
+}
+
+export function ResendInvitationDialog({
+  member,
   organizationId,
   open,
   onOpenChange,
   onSuccess,
-}: InviteMemberDialogProps) {
+}: ResendInvitationDialogProps) {
   const t = useTranslations('members');
   const scope = useScopeFromParams();
   const { roles, loading: rolesLoading } = useRoles({ scope: scope! });
-  const { inviteMember } = useMemberMutations();
+  const { resendInvitation } = useMemberMutations();
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  const form = useForm<InviteMemberFormValues>({
-    resolver: zodResolver(inviteMemberSchema),
+  const form = useForm<ResendInvitationFormValues>({
+    resolver: zodResolver(resendInvitationSchema),
     defaultValues: {
-      email: '',
-      roleId: '',
+      roleId: member.roleId || '',
     },
   });
 
-  const onSubmit = async (values: InviteMemberFormValues) => {
+  const onSubmit = async (values: ResendInvitationFormValues) => {
+    if (!member.email) {
+      console.error('Member does not have an email');
+      return;
+    }
+
     try {
-      await inviteMember({
+      await resendInvitation({
         organizationId,
-        email: values.email,
+        email: member.email,
         roleId: values.roleId,
       });
       form.reset();
       onOpenChange(false);
-      // Cache eviction in mutation hook will trigger automatic refetch
       onSuccess?.();
     } catch (error) {
       // Error is handled by the mutation hook
-      console.error('Failed to invite member:', error);
+      console.error('Failed to resend invitation:', error);
     }
   };
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      form.reset();
+      form.reset({
+        roleId: member.roleId || '',
+      });
     }
     onOpenChange(open);
   };
@@ -91,40 +109,22 @@ export function InviteMemberDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5" />
-            {t('inviteDialog.title')}
+            {t('resendInvitationDialog.title')}
           </DialogTitle>
-          <DialogDescription>{t('inviteDialog.description')}</DialogDescription>
+          <DialogDescription>
+            {t('resendInvitationDialog.description', { email: member.email || '' })}
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Email Field */}
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('form.email')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder={t('form.emailPlaceholder')}
-                      disabled={form.formState.isSubmitting}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             {/* Role Selection */}
             <FormField
               control={form.control}
               name="roleId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('form.role')}</FormLabel>
+                  <FormLabel>{t('resendInvitationDialog.role')}</FormLabel>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <FormControl>
@@ -134,7 +134,9 @@ export function InviteMemberDialog({
                           className="w-full justify-between"
                           disabled={form.formState.isSubmitting || rolesLoading}
                         >
-                          {selectedRole ? selectedRole.name : t('form.rolePlaceholder')}
+                          {selectedRole
+                            ? selectedRole.name
+                            : t('resendInvitationDialog.rolePlaceholder')}
                           <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
                         </Button>
                       </FormControl>
@@ -144,9 +146,13 @@ export function InviteMemberDialog({
                       style={{ width: buttonRef.current?.offsetWidth + 'px' }}
                     >
                       {rolesLoading ? (
-                        <DropdownMenuItem disabled>{t('form.rolesLoading')}</DropdownMenuItem>
+                        <DropdownMenuItem disabled>
+                          {t('resendInvitationDialog.rolesLoading')}
+                        </DropdownMenuItem>
                       ) : roles.length === 0 ? (
-                        <DropdownMenuItem disabled>{t('form.noRolesAvailable')}</DropdownMenuItem>
+                        <DropdownMenuItem disabled>
+                          {t('resendInvitationDialog.noRolesAvailable')}
+                        </DropdownMenuItem>
                       ) : (
                         roles.map((role: Role) => (
                           <DropdownMenuItem key={role.id} onClick={() => field.onChange(role.id)}>
@@ -175,13 +181,13 @@ export function InviteMemberDialog({
                 onClick={() => handleOpenChange(false)}
                 disabled={form.formState.isSubmitting}
               >
-                {t('inviteDialog.cancel')}
+                {t('resendInvitationDialog.cancel')}
               </Button>
               <Button type="submit" disabled={form.formState.isSubmitting || rolesLoading}>
                 <Mail className="mr-2 h-4 w-4" />
                 {form.formState.isSubmitting
-                  ? t('inviteDialog.sending')
-                  : t('inviteDialog.confirm')}
+                  ? t('resendInvitationDialog.sending')
+                  : t('resendInvitationDialog.confirm')}
               </Button>
             </DialogFooter>
           </form>

@@ -7,7 +7,10 @@ import {
   InviteMemberDocument,
   InviteMemberInput,
   OrganizationInvitation,
+  OrganizationMember,
+  RemoveOrganizationMemberDocument,
   RevokeInvitationDocument,
+  UpdateOrganizationMemberDocument,
 } from '@logusgraphics/grant-schema';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -41,6 +44,18 @@ export function useMemberMutations() {
       update,
     }
   );
+
+  const [updateOrganizationMember] = useMutation<{
+    updateOrganizationMember: OrganizationMember;
+  }>(UpdateOrganizationMemberDocument, {
+    update,
+  });
+
+  const [removeOrganizationMember] = useMutation<{
+    removeOrganizationMember: OrganizationMember;
+  }>(RemoveOrganizationMemberDocument, {
+    update,
+  });
 
   const handleInviteMember = async (input: InviteMemberInput) => {
     try {
@@ -76,7 +91,10 @@ export function useMemberMutations() {
     }
   };
 
-  const handleRevokeInvitation = async (id: string, email: string) => {
+  const handleRevokeInvitation = async (
+    id: string,
+    email: string
+  ): Promise<OrganizationInvitation | undefined> => {
     try {
       const result = await revokeInvitation({
         variables: { id },
@@ -95,9 +113,75 @@ export function useMemberMutations() {
     }
   };
 
+  const handleUpdateMemberRole = async (userId: string, organizationId: string, roleId: string) => {
+    try {
+      const result = await updateOrganizationMember({
+        variables: {
+          userId,
+          organizationId,
+          input: {
+            roleId,
+          },
+        },
+      });
+
+      toast.success(t('notifications.updateRoleSuccess'));
+      return result.data?.updateOrganizationMember;
+    } catch (error) {
+      console.error('Error updating member role:', error);
+      toast.error(t('notifications.updateRoleError'), {
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+      });
+      throw error;
+    }
+  };
+
+  const handleRemoveMember = async (userId: string, organizationId: string) => {
+    try {
+      const result = await removeOrganizationMember({
+        variables: {
+          input: {
+            userId,
+            organizationId,
+          },
+        },
+      });
+
+      toast.success(t('notifications.removeMemberSuccess'));
+      return result.data?.removeOrganizationMember;
+    } catch (error) {
+      console.error('Error removing member:', error);
+      toast.error(t('notifications.removeMemberError'), {
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+      });
+      throw error;
+    }
+  };
+
+  const handleResendInvitation = async (input: InviteMemberInput) => {
+    try {
+      // Resending an invitation is the same as inviting - backend should handle creating new or updating existing
+      const result = await inviteMember({
+        variables: { input },
+      });
+
+      toast.success(t('notifications.resendInvitationSuccess'));
+      return result.data?.inviteMember;
+    } catch (error) {
+      console.error('Error resending invitation:', error);
+      toast.error(t('notifications.resendInvitationError'), {
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+      });
+      throw error;
+    }
+  };
+
   return {
     inviteMember: handleInviteMember,
     acceptInvitation: handleAcceptInvitation,
     revokeInvitation: handleRevokeInvitation,
+    updateMemberRole: handleUpdateMemberRole,
+    removeMember: handleRemoveMember,
+    resendInvitation: handleResendInvitation,
   };
 }

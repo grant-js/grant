@@ -1215,7 +1215,9 @@
     },
     "actions": {
       "revoke": "Widerrufen",
-      "resend": "Erneut senden"
+      "resend": "Erneut senden",
+      "updateRole": "Rolle aktualisieren",
+      "remove": "Entfernen"
     },
     "sort": {
       "label": "Sortieren nach",
@@ -1253,7 +1255,48 @@
       "acceptSuccess": "Einladung akzeptiert",
       "acceptError": "Einladung konnte nicht akzeptiert werden",
       "revokeSuccess": "Einladung widerrufen",
-      "revokeError": "Einladung konnte nicht widerrufen werden"
+      "revokeError": "Einladung konnte nicht widerrufen werden",
+      "updateRoleSuccess": "Mitgliedsrolle erfolgreich aktualisiert",
+      "updateRoleError": "Mitgliedsrolle konnte nicht aktualisiert werden",
+      "removeMemberSuccess": "Mitglied erfolgreich entfernt",
+      "removeMemberError": "Mitglied konnte nicht entfernt werden",
+      "resendInvitationSuccess": "Einladung erfolgreich erneut gesendet",
+      "resendInvitationError": "Einladung konnte nicht erneut gesendet werden"
+    },
+    "updateRoleDialog": {
+      "title": "Mitgliedsrolle aktualisieren",
+      "description": "Rolle für {name} ändern",
+      "currentRole": "Aktuelle Rolle",
+      "newRole": "Neue Rolle",
+      "rolePlaceholder": "Rolle auswählen",
+      "rolesLoading": "Rollen werden geladen...",
+      "noRolesAvailable": "Keine Rollen verfügbar",
+      "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert...",
+      "confirm": "Rolle aktualisieren"
+    },
+    "removeMemberDialog": {
+      "title": "Mitglied entfernen",
+      "description": "Sind Sie sicher, dass Sie {name} aus dieser Organisation entfernen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+      "cancel": "Abbrechen",
+      "confirm": "Mitglied entfernen"
+    },
+    "resendInvitationDialog": {
+      "title": "Einladung erneut senden",
+      "description": "Einladung erneut an {email} senden",
+      "role": "Rolle",
+      "rolePlaceholder": "Rolle auswählen",
+      "rolesLoading": "Rollen werden geladen...",
+      "noRolesAvailable": "Keine Rollen verfügbar",
+      "cancel": "Abbrechen",
+      "sending": "Wird gesendet...",
+      "confirm": "Einladung erneut senden"
+    },
+    "revokeInvitationDialog": {
+      "title": "Einladung widerrufen",
+      "description": "Sind Sie sicher, dass Sie die Einladung für {email} widerrufen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+      "cancel": "Abbrechen",
+      "confirm": "Einladung widerrufen"
     }
   },
   "settings": {

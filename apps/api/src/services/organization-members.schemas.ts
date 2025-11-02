@@ -48,3 +48,12 @@ export const organizationMemberPageSchema = z.object({
   totalCount: z.number(),
   hasNextPage: z.boolean(),
 });
+
+export const updateOrganizationMemberInputSchema = z.object({
+  roleId: idSchema,
+});
+
+export const removeOrganizationMemberInputSchema = z.object({
+  organizationId: idSchema,
+  userId: idSchema,
+});

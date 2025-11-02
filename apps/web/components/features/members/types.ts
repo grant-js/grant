@@ -12,6 +12,7 @@ export interface InviteMemberDialogProps {
   organizationId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
 export interface RevokeInvitationDialogProps {

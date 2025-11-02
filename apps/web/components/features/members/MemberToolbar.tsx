@@ -38,6 +38,7 @@ export function MemberToolbar({ organizationId }: MemberToolbarProps) {
         organizationId={organizationId}
         open={isInviteDialogOpen}
         onOpenChange={setInviteDialogOpen}
+        // Cache eviction in mutation hook will trigger automatic refetch
       />
     </>
   );

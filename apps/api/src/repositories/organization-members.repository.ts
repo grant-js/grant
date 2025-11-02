@@ -1,6 +1,7 @@
 import {
   DbSchema,
   organizationInvitations,
+  organizationRoles,
   organizationUsers,
   roles,
   userAuthenticationMethods,
@@ -78,6 +79,14 @@ export class OrganizationMemberRepository {
         )
         .leftJoin(userRoles, and(eq(userRoles.userId, users.id), isNull(userRoles.deletedAt)))
         .leftJoin(roles, eq(userRoles.roleId, roles.id))
+        .leftJoin(
+          organizationRoles,
+          and(
+            eq(organizationRoles.organizationId, organizationId),
+            eq(organizationRoles.roleId, roles.id),
+            isNull(organizationRoles.deletedAt)
+          )
+        )
         .where(and(...memberWhereConditions));
 
       // Fetch invitations
@@ -126,20 +135,43 @@ export class OrganizationMemberRepository {
         invitationId?: string;
       }> = [];
 
-      // Add members
+      // Add members (deduplicate by userId, preferring entries with roles)
+      const memberMap = new Map<
+        string,
+        {
+          id: string;
+          name: string;
+          email: string | null;
+          roleId: string | null;
+          roleName: string | null;
+          type: MemberType;
+          status: OrganizationInvitationStatus | null;
+          createdAt: Date;
+          userId?: string;
+          invitationId?: string;
+        }
+      >();
+
       for (const member of membersData) {
-        allMembers.push({
-          id: member.userId,
-          name: member.userName,
-          email: member.userEmail || null,
-          roleId: member.roleId || null,
-          roleName: member.roleName || null,
-          type: MemberType.Member,
-          status: null,
-          createdAt: member.userCreatedAt,
-          userId: member.userId,
-        });
+        const existing = memberMap.get(member.userId);
+        // Prefer entry with a role, or if both have roles, keep the first one
+        if (!existing || (!existing.roleId && member.roleId)) {
+          memberMap.set(member.userId, {
+            id: member.userId,
+            name: member.userName,
+            email: member.userEmail || null,
+            roleId: member.roleId || null,
+            roleName: member.roleName || null,
+            type: MemberType.Member,
+            status: null,
+            createdAt: member.userCreatedAt,
+            userId: member.userId,
+          });
+        }
       }
+
+      // Add deduplicated members to allMembers
+      allMembers.push(...Array.from(memberMap.values()));
 
       // Add invitations
       for (const invitation of invitationsData) {
@@ -202,12 +234,21 @@ export class OrganizationMemberRepository {
               .where(eq(users.id, member.userId))
               .limit(1);
 
+            // Fetch user's role that belongs to this organization
             const [userRole] = await dbInstance
               .select({
                 role: roles,
               })
               .from(userRoles)
               .innerJoin(roles, eq(userRoles.roleId, roles.id))
+              .innerJoin(
+                organizationRoles,
+                and(
+                  eq(organizationRoles.roleId, roles.id),
+                  eq(organizationRoles.organizationId, organizationId),
+                  isNull(organizationRoles.deletedAt)
+                )
+              )
               .where(and(eq(userRoles.userId, member.userId), isNull(userRoles.deletedAt)))
               .limit(1);
 
@@ -289,6 +330,99 @@ export class OrganizationMemberRepository {
         msg: 'Error fetching organization members',
         err: error,
         organizationId,
+      });
+      throw error;
+    }
+  }
+
+  public async getOrganizationMember(
+    params: {
+      organizationId: string;
+      userId: string;
+    },
+    tx?: Transaction
+  ): Promise<OrganizationMember | null> {
+    const dbInstance = tx ?? this.db;
+
+    try {
+      // Fetch member (user) data
+      const [memberData] = await dbInstance
+        .select({
+          userId: users.id,
+          userName: users.name,
+          userEmail: userAuthenticationMethods.providerId,
+          roleId: roles.id,
+          roleName: roles.name,
+          userCreatedAt: users.createdAt,
+        })
+        .from(organizationUsers)
+        .innerJoin(users, eq(organizationUsers.userId, users.id))
+        .leftJoin(
+          userAuthenticationMethods,
+          and(
+            eq(userAuthenticationMethods.userId, users.id),
+            eq(userAuthenticationMethods.provider, 'email'),
+            isNull(userAuthenticationMethods.deletedAt)
+          )
+        )
+        .leftJoin(userRoles, and(eq(userRoles.userId, users.id), isNull(userRoles.deletedAt)))
+        .leftJoin(roles, eq(userRoles.roleId, roles.id))
+        .where(
+          and(
+            eq(organizationUsers.organizationId, params.organizationId),
+            eq(organizationUsers.userId, params.userId),
+            isNull(organizationUsers.deletedAt),
+            isNull(users.deletedAt)
+          )
+        )
+        .limit(1);
+
+      if (!memberData) {
+        return null;
+      }
+
+      // Fetch full user and role
+      const [user] = await dbInstance
+        .select()
+        .from(users)
+        .where(eq(users.id, memberData.userId))
+        .limit(1);
+
+      const [userRole] = await dbInstance
+        .select({
+          role: roles,
+        })
+        .from(userRoles)
+        .innerJoin(roles, eq(userRoles.roleId, roles.id))
+        .where(and(eq(userRoles.userId, memberData.userId), isNull(userRoles.deletedAt)))
+        .limit(1);
+
+      if (!userRole?.role) {
+        throw new BadRequestError(
+          `User ${memberData.userId} does not have a role assigned`,
+          'errors:validation.required',
+          { field: 'role', userId: memberData.userId },
+          { userId: memberData.userId }
+        );
+      }
+
+      return {
+        id: memberData.userId,
+        name: memberData.userName,
+        email: memberData.userEmail || null,
+        type: MemberType.Member,
+        role: userRole.role as unknown as Role,
+        user: user as unknown as User,
+        invitation: null,
+        status: null,
+        createdAt: memberData.userCreatedAt,
+      } as OrganizationMember;
+    } catch (error) {
+      this.logger.error({
+        msg: 'Error fetching organization member',
+        err: error,
+        organizationId: params.organizationId,
+        userId: params.userId,
       });
       throw error;
     }

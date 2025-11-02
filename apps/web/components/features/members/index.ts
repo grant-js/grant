@@ -10,4 +10,8 @@ export * from './MemberTable';
 export * from './MemberToolbar';
 export * from './MemberViewSwitcher';
 export * from './MemberViewer';
+export * from './RemoveMemberDialog';
+export * from './ResendInvitationDialog';
+export * from './RevokeInvitationDialog';
+export * from './UpdateMemberRoleDialog';
 export * from './types';

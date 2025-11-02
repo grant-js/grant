@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-import { useMemberMutations, useMembers } from '@/hooks/members';
+import { useMembers } from '@/hooks/members';
 import { useMembersStore } from '@/stores/members.store';
 
 import { MemberCards } from './MemberCards';
@@ -23,15 +23,13 @@ export function MemberViewer({ organizationId }: MemberViewerProps) {
   const setLoading = useMembersStore((state) => state.setLoading);
   const setTotalCount = useMembersStore((state) => state.setTotalCount);
 
-  const { members, loading, totalCount, refetch } = useMembers({
+  const { members, loading, totalCount } = useMembers({
     organizationId,
     page,
     limit,
     search,
     sort,
   });
-
-  const { revokeInvitation } = useMemberMutations();
 
   useEffect(() => {
     setMembers(members);
@@ -45,16 +43,11 @@ export function MemberViewer({ organizationId }: MemberViewerProps) {
     setTotalCount(totalCount);
   }, [totalCount, setTotalCount]);
 
-  const handleRevokeInvitation = async (id: string, email: string) => {
-    await revokeInvitation(id, email);
-    refetch();
-  };
-
   switch (view) {
     case MemberView.CARD:
-      return <MemberCards onRevokeInvitation={handleRevokeInvitation} />;
+      return <MemberCards />;
     case MemberView.TABLE:
     default:
-      return <MemberTable onRevokeInvitation={handleRevokeInvitation} />;
+      return <MemberTable />;
   }
 }

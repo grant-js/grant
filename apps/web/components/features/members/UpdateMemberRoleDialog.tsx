@@ -4,9 +4,10 @@ import { useRef } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Role } from '@logusgraphics/grant-schema';
-import { ChevronDown, Mail } from 'lucide-react';
+import { ChevronDown, UserCog } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useForm, useWatch } from 'react-hook-form';
+import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -31,53 +32,65 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
-import { useMemberMutations } from '@/hooks/members';
+import { MemberWithInvitation, useMemberMutations } from '@/hooks/members';
 import { useRoles } from '@/hooks/roles';
 
-import { InviteMemberDialogProps, InviteMemberFormValues, inviteMemberSchema } from './types';
+const updateMemberRoleSchema = z.object({
+  roleId: z.string().min(1, 'Please select a role'),
+});
 
-export function InviteMemberDialog({
-  organizationId,
+type UpdateMemberRoleFormValues = z.infer<typeof updateMemberRoleSchema>;
+
+interface UpdateMemberRoleDialogProps {
+  member: MemberWithInvitation;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
+}
+
+export function UpdateMemberRoleDialog({
+  member,
   open,
   onOpenChange,
   onSuccess,
-}: InviteMemberDialogProps) {
+}: UpdateMemberRoleDialogProps) {
   const t = useTranslations('members');
   const scope = useScopeFromParams();
   const { roles, loading: rolesLoading } = useRoles({ scope: scope! });
-  const { inviteMember } = useMemberMutations();
+  const { updateMemberRole } = useMemberMutations();
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const organizationId = scope?.id || '';
 
-  const form = useForm<InviteMemberFormValues>({
-    resolver: zodResolver(inviteMemberSchema),
+  const form = useForm<UpdateMemberRoleFormValues>({
+    resolver: zodResolver(updateMemberRoleSchema),
     defaultValues: {
-      email: '',
-      roleId: '',
+      roleId: member.roleId || '',
     },
   });
 
-  const onSubmit = async (values: InviteMemberFormValues) => {
+  const onSubmit = async (values: UpdateMemberRoleFormValues) => {
+    if (!member.user?.id) {
+      console.error('Member does not have a user ID');
+      return;
+    }
+
     try {
-      await inviteMember({
-        organizationId,
-        email: values.email,
-        roleId: values.roleId,
-      });
+      await updateMemberRole(member.user.id, organizationId, values.roleId);
       form.reset();
       onOpenChange(false);
-      // Cache eviction in mutation hook will trigger automatic refetch
       onSuccess?.();
     } catch (error) {
       // Error is handled by the mutation hook
-      console.error('Failed to invite member:', error);
+      console.error('Failed to update member role:', error);
     }
   };
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      form.reset();
+      form.reset({
+        roleId: member.roleId || '',
+      });
     }
     onOpenChange(open);
   };
@@ -90,33 +103,25 @@ export function InviteMemberDialog({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5" />
-            {t('inviteDialog.title')}
+            <UserCog className="h-5 w-5" />
+            {t('updateRoleDialog.title')}
           </DialogTitle>
-          <DialogDescription>{t('inviteDialog.description')}</DialogDescription>
+          <DialogDescription>
+            {t('updateRoleDialog.description', { name: member.name })}
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Email Field */}
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('form.email')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder={t('form.emailPlaceholder')}
-                      disabled={form.formState.isSubmitting}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Current Role Display */}
+            {member.role && (
+              <div className="rounded-lg bg-muted p-3">
+                <div className="text-sm text-muted-foreground">
+                  {t('updateRoleDialog.currentRole')}
+                </div>
+                <div className="mt-1 font-medium">{member.role.name}</div>
+              </div>
+            )}
 
             {/* Role Selection */}
             <FormField
@@ -124,7 +129,7 @@ export function InviteMemberDialog({
               name="roleId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('form.role')}</FormLabel>
+                  <FormLabel>{t('updateRoleDialog.newRole')}</FormLabel>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <FormControl>
@@ -134,7 +139,7 @@ export function InviteMemberDialog({
                           className="w-full justify-between"
                           disabled={form.formState.isSubmitting || rolesLoading}
                         >
-                          {selectedRole ? selectedRole.name : t('form.rolePlaceholder')}
+                          {selectedRole ? selectedRole.name : t('updateRoleDialog.rolePlaceholder')}
                           <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
                         </Button>
                       </FormControl>
@@ -144,9 +149,13 @@ export function InviteMemberDialog({
                       style={{ width: buttonRef.current?.offsetWidth + 'px' }}
                     >
                       {rolesLoading ? (
-                        <DropdownMenuItem disabled>{t('form.rolesLoading')}</DropdownMenuItem>
+                        <DropdownMenuItem disabled>
+                          {t('updateRoleDialog.rolesLoading')}
+                        </DropdownMenuItem>
                       ) : roles.length === 0 ? (
-                        <DropdownMenuItem disabled>{t('form.noRolesAvailable')}</DropdownMenuItem>
+                        <DropdownMenuItem disabled>
+                          {t('updateRoleDialog.noRolesAvailable')}
+                        </DropdownMenuItem>
                       ) : (
                         roles.map((role: Role) => (
                           <DropdownMenuItem key={role.id} onClick={() => field.onChange(role.id)}>
@@ -175,13 +184,13 @@ export function InviteMemberDialog({
                 onClick={() => handleOpenChange(false)}
                 disabled={form.formState.isSubmitting}
               >
-                {t('inviteDialog.cancel')}
+                {t('updateRoleDialog.cancel')}
               </Button>
               <Button type="submit" disabled={form.formState.isSubmitting || rolesLoading}>
-                <Mail className="mr-2 h-4 w-4" />
+                <UserCog className="mr-2 h-4 w-4" />
                 {form.formState.isSubmitting
-                  ? t('inviteDialog.sending')
-                  : t('inviteDialog.confirm')}
+                  ? t('updateRoleDialog.updating')
+                  : t('updateRoleDialog.confirm')}
               </Button>
             </DialogFooter>
           </form>

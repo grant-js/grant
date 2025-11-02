@@ -1,4 +1,4 @@
-import { organizationUsers, OrganizationUserModel } from '@logusgraphics/grant-database';
+import { OrganizationUserModel, organizationUsers } from '@logusgraphics/grant-database';
 import {
   AddOrganizationUserInput,
   OrganizationUser,
@@ -7,10 +7,10 @@ import {
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import {
-  PivotRepository,
-  BasePivotQueryArgs,
   BasePivotAddArgs,
+  BasePivotQueryArgs,
   BasePivotRemoveArgs,
+  PivotRepository,
 } from '@/repositories/common';
 
 export class OrganizationUserRepository extends PivotRepository<
@@ -35,11 +35,13 @@ export class OrganizationUserRepository extends PivotRepository<
   public async getOrganizationUsers(
     params: {
       organizationId: string;
+      userId?: string;
     },
     transaction?: Transaction
   ): Promise<OrganizationUser[]> {
     const baseParams: BasePivotQueryArgs = {
       parentId: params.organizationId,
+      relatedId: params.userId,
     };
 
     return this.query(baseParams, transaction);

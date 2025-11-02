@@ -12,7 +12,7 @@ export function evictInvitationsCache(cache: ApolloCache) {
  * Evict organization members cache
  */
 export function evictMembersCache(cache: ApolloCache) {
-  cache.evict({ fieldName: 'users' });
+  cache.evict({ fieldName: 'organizationMembers' });
   cache.gc();
 }
 

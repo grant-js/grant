@@ -1,0 +1,4 @@
+input RemoveOrganizationMemberInput {
+  organizationId: ID!
+  userId: ID!
+}
