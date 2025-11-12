@@ -10,6 +10,7 @@ import { MemberWithInvitation } from '@/hooks/members';
 import { useMembersStore } from '@/stores/members.store';
 
 import { MemberActions } from './MemberActions';
+import { MemberAudit } from './MemberAudit';
 import { MemberCardSkeleton } from './MemberCardSkeleton';
 
 export function MemberCards() {
@@ -101,6 +102,7 @@ export function MemberCards() {
           </div>
         </div>
       )}
+      renderFooter={(member: MemberWithInvitation) => <MemberAudit member={member} />}
     />
   );
 }

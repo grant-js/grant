@@ -146,4 +146,22 @@ export class OrganizationInvitationsController extends BaseController {
 
     return this.success(res, invitation);
   }
+
+  /**
+   * POST /api/organization-invitations/:id/resend-email
+   * Resend invitation email for a pending invitation
+   */
+  async resendInvitationEmail(
+    req: TypedRequest<{ params: typeof invitationParamsSchema }>,
+    res: Response
+  ) {
+    const { id } = req.params;
+
+    const invitation = await this.context.handlers.organizationInvitations.resendInvitationEmail(
+      id,
+      this.context.locale
+    );
+
+    return this.success(res, invitation);
+  }
 }

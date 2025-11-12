@@ -1204,7 +1204,14 @@
       "email": "Email",
       "role": "Role",
       "status": "Status",
+      "audit": "Audit",
       "actions": "Actions"
+    },
+    "audit": {
+      "joined": "Joined",
+      "invitedBy": "Invited by",
+      "sent": "Sent",
+      "expires": "Expires"
     },
     "status": {
       "active": "Active",
@@ -1216,8 +1223,12 @@
     "actions": {
       "revoke": "Revoke",
       "resend": "Resend",
+      "resendEmail": "Resend Email",
       "updateRole": "Update Role",
-      "remove": "Remove"
+      "remove": "Remove",
+      "copyLink": "Copy Invitation Link",
+      "copyLinkSuccess": "Invitation link copied to clipboard",
+      "copyLinkError": "Failed to copy invitation link"
     },
     "sort": {
       "label": "Sort by",
@@ -1261,7 +1272,9 @@
       "removeMemberSuccess": "Member removed successfully",
       "removeMemberError": "Failed to remove member",
       "resendInvitationSuccess": "Invitation resent successfully",
-      "resendInvitationError": "Failed to resend invitation"
+      "resendInvitationError": "Failed to resend invitation",
+      "resendEmailSuccess": "Invitation email sent successfully",
+      "resendEmailError": "Failed to resend invitation email"
     },
     "updateRoleDialog": {
       "title": "Update Member Role",

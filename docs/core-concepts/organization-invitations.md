@@ -1,11 +1,11 @@
 ---
 title: Organization Members & Invitations
-description: Email-based invitation system for adding members to organizations
+description: Email-based invitation system and comprehensive member management for organizations
 ---
 
 # Organization Members & Invitations
 
-Grant Platform provides a robust email-based invitation system for adding members to organizations. This document explains how the invitation flow works, the role of organization roles, and best practices for member management.
+Grant Platform provides a robust email-based invitation system for adding members to organizations, along with comprehensive member management capabilities. This document explains how the invitation flow works, member management actions, the role of organization roles, and best practices for member management.
 
 ## Overview
 
@@ -14,8 +14,10 @@ When building multi-tenant applications, securely onboarding users to organizati
 - **Email-based invitations** with secure, expiring tokens
 - **Role pre-assignment** during invitation
 - **Flexible acceptance flow** supporting both new and existing users
+- **Comprehensive member management** with role updates, removal, and invitation actions
 - **Audit logging** for compliance and security
 - **Automatic role seeding** for new organizations
+- **Unified member view** combining active members and pending invitations
 
 ## Why Email Invitations?
 
@@ -440,6 +442,40 @@ mutation RevokeInvitation($id: ID!) {
     status
   }
 }
+
+# Resend invitation email (for pending invitations)
+mutation ResendInvitationEmail($id: ID!) {
+  resendInvitationEmail(id: $id) {
+    id
+    email
+    status
+    expiresAt
+  }
+}
+
+# Update member role
+mutation UpdateOrganizationMember(
+  $userId: ID!
+  $organizationId: ID!
+  $input: UpdateOrganizationMemberInput!
+) {
+  updateOrganizationMember(userId: $userId, organizationId: $organizationId, input: $input) {
+    id
+    name
+    role {
+      id
+      name
+    }
+  }
+}
+
+# Remove member from organization
+mutation RemoveOrganizationMember($input: RemoveOrganizationMemberInput!) {
+  removeOrganizationMember(input: $input) {
+    id
+    name
+  }
+}
 ```
 
 ### GraphQL Queries
@@ -480,6 +516,55 @@ query GetOrganizationInvitations($organizationId: ID!, $status: OrganizationInvi
     totalCount
   }
 }
+
+# Get unified members list (active members + pending invitations)
+query GetOrganizationMembers(
+  $organizationId: ID!
+  $page: Int
+  $limit: Int
+  $search: String
+  $sort: OrganizationMemberSortInput
+) {
+  organizationMembers(
+    organizationId: $organizationId
+    page: $page
+    limit: $limit
+    search: $search
+    sort: $sort
+  ) {
+    members {
+      id
+      name
+      email
+      type
+      role {
+        id
+        name
+        description
+      }
+      status
+      user {
+        id
+        name
+      }
+      invitation {
+        id
+        email
+        status
+        expiresAt
+        createdAt
+        token
+        inviter {
+          id
+          name
+        }
+      }
+      createdAt
+    }
+    totalCount
+    hasNextPage
+  }
+}
 ```
 
 ### REST API
@@ -497,8 +582,80 @@ Body: { "userData": { "name": "...", "password": "..." } }
 GET /api/organizations/:organizationId/invitations?status=pending
 
 # Revoke invitation
-DELETE /api/invitations/:id
+DELETE /api/organization-invitations/:id
+
+# Resend invitation email (for pending invitations)
+POST /api/organization-invitations/:id/resend-email
+
+# Update member role
+PUT /api/organization-members/:userId/role
+Body: { "organizationId": "...", "roleId": "..." }
+
+# Remove member from organization
+DELETE /api/organization-members/:userId
+Body: { "organizationId": "..." }
 ```
+
+## Member Management Actions
+
+Once members are part of an organization, administrators can perform various management actions:
+
+### Available Actions
+
+#### For Active Members
+
+1. **Update Role**
+   - Change a member's role within the organization
+   - Only roles below the admin's own level can be assigned
+   - Automatically handles role transitions (soft-deletes old role, assigns new one)
+
+2. **Remove Member**
+   - Remove a member from the organization
+   - Soft-deletes organization membership and role assignments
+   - Preserves audit trail
+
+#### For Pending Invitations
+
+1. **Resend Email**
+   - Resend the invitation email to the recipient
+   - Uses the existing invitation token (does not create a new invitation)
+   - Only works for pending invitations that haven't expired
+   - Useful when the original email wasn't received
+
+2. **Copy Invitation Link**
+   - Copy the invitation URL to clipboard
+   - Allows sharing the invitation link directly
+   - Only available for pending invitations
+
+3. **Revoke Invitation**
+   - Cancel a pending invitation
+   - Prevents the invitation from being accepted
+   - Can be renewed later if needed
+
+#### For Revoked/Expired Invitations
+
+1. **Resend/Renew Invitation**
+   - Create a new invitation for revoked or expired ones
+   - Generates a new token and expiration date
+   - Allows re-inviting after cancellation or expiration
+
+### Member Details & Audit Information
+
+The member management interface displays comprehensive audit information:
+
+**For Active Members:**
+
+- Member ID
+- Join date (when they were added to the organization)
+
+**For Invitations:**
+
+- Invitation ID
+- Invited by (who sent the invitation)
+- Sent date (when the invitation was created)
+- Expiration date (for pending invitations)
+
+This information is displayed in both card and table views, providing transparency and auditability.
 
 ## Frontend Integration
 
@@ -506,24 +663,38 @@ DELETE /api/invitations/:id
 
 ```tsx
 import { useMembers, useMemberMutations } from '@/hooks/members';
+import { MemberCards, MemberTable, MemberViewer } from '@/components/features/members';
 
 function MembersPage({ organizationId }) {
-  const { members, loading } = useMembers(organizationId);
-  const { inviteMember, revokeInvitation } = useMemberMutations();
+  const { members, loading } = useMembers({ organizationId });
+  const { inviteMember, revokeInvitation, resendInvitationEmail, updateMemberRole, removeMember } =
+    useMemberMutations();
 
   // members = [{
-  //   id, name, email, status ('active' | 'pending'), roleName, createdAt
+  //   id, name, email, type ('member' | 'invitation'),
+  //   status ('pending' | 'accepted' | 'expired' | 'revoked'),
+  //   role, user, invitation, createdAt, inviter
   // }]
+
+  return <MemberViewer organizationId={organizationId} />;
+}
+```
+
+### Member Actions Example
+
+```tsx
+import { MemberActions } from '@/components/features/members';
+
+function MemberRow({ member }) {
+  // MemberActions automatically shows appropriate actions based on member type and status
+  // - For pending invitations: Copy Link, Resend Email, Revoke
+  // - For active members: Update Role, Remove
+  // - For revoked/expired: Resend/Renew
 
   return (
     <div>
-      {members.map((member) => (
-        <MemberRow
-          key={member.id}
-          member={member}
-          onRevoke={member.status === 'pending' ? revokeInvitation : null}
-        />
-      ))}
+      <MemberInfo member={member} />
+      <MemberActions member={member} />
     </div>
   );
 }
@@ -557,8 +728,10 @@ function InviteButton({ organizationId }) {
 ### 2. Invitation Management
 
 - **Monitor Pending**: Regularly review pending invitations
-- **Resend Capability**: Allow admins to resend expired invitations
-- **Bulk Actions**: Support bulk revocation for cleanup
+- **Resend Email**: Use "Resend Email" for pending invitations that weren't received
+- **Renew Invitations**: Use "Resend/Renew" for revoked or expired invitations
+- **Copy Links**: Share invitation links directly when needed
+- **Audit Trail**: Review invitation details (who invited, when sent, expiration) for compliance
 
 ### 3. User Experience
 
@@ -621,6 +794,57 @@ function InviteButton({ organizationId }) {
 3. System sets status to revoked
 4. Invitation link no longer works
 5. Audit log records who revoked and when
+```
+
+### Scenario 4: Resending Invitation Email
+
+```typescript
+// User reports not receiving the invitation email
+
+1. Admin views pending invitations
+2. Admin clicks "Resend Email" on invitation
+3. System resends email using existing token
+4. User receives email with same invitation link
+5. No new invitation created (uses existing one)
+```
+
+### Scenario 5: Updating Member Role
+
+```typescript
+// Member needs different permissions
+
+1. Admin views active members
+2. Admin clicks "Update Role" on member
+3. Admin selects new role from dropdown
+4. System soft-deletes old organization-scoped role
+5. System assigns new role
+6. Member immediately has new permissions
+```
+
+### Scenario 6: Copying Invitation Link
+
+```typescript
+// Admin wants to share invitation link directly
+
+1. Admin views pending invitations
+2. Admin clicks "Copy Invitation Link"
+3. System copies full invitation URL to clipboard
+4. Admin can paste and share link via other channels
+5. Link works same as email link
+```
+
+### Scenario 7: Removing a Member
+
+```typescript
+// Member no longer needs access to organization
+
+1. Admin views active members
+2. Admin clicks "Remove" on member
+3. Admin confirms removal in dialog
+4. System soft-deletes organization membership
+5. System soft-deletes organization-scoped role assignments
+6. Member can no longer access organization resources
+7. Audit log records removal with timestamp
 ```
 
 ## Migration from Direct User Creation
@@ -700,6 +924,63 @@ mutation InviteMember($input: InviteMemberInput!) {
 - **Invitation Lookup**: Cache invitation details by token (5-minute TTL)
 - **Role Lists**: Cache organization roles for invite dialog
 - **Invalidation**: Evict cache on invitation status change
+
+## Future Enhancements
+
+The following features are planned for future releases:
+
+### View Member Activity / Last Seen
+
+**Status:** Planned
+
+Track and display member activity information:
+
+- Last login timestamp
+- Last active date
+- Activity history/logs
+- Useful for identifying inactive members and security auditing
+
+**Implementation Notes:**
+
+- Requires activity tracking infrastructure
+- May need user consent for privacy compliance
+- Consider performance impact of activity logging
+
+### Bulk Actions
+
+**Status:** Planned
+
+Enable administrators to perform actions on multiple members simultaneously:
+
+- Bulk role updates
+- Bulk member removal
+- Bulk invitation revocation
+- Requires selection UI in both table and card views
+
+**Implementation Notes:**
+
+- Add checkbox selection to member list components
+- Implement bulk mutation endpoints
+- Consider transaction management for atomic operations
+- Add confirmation dialogs for destructive bulk actions
+
+### Export Members
+
+**Status:** Planned
+
+Export member lists in various formats:
+
+- CSV export for spreadsheet analysis
+- JSON export for data integration
+- Filtered exports (by role, status, etc.)
+- Likely implemented as a toolbar action, not per-member
+
+**Implementation Notes:**
+
+- Consider pagination for large exports
+- Include all relevant member fields
+- Support filtering before export
+- May require background job processing for large datasets
 
 ## Related Documentation
 

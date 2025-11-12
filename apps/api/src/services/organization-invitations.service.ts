@@ -103,6 +103,22 @@ export class OrganizationInvitationService extends AuditService {
     );
   }
 
+  public async getInvitationById(
+    id: string,
+    transaction?: Transaction
+  ): Promise<OrganizationInvitation | null> {
+    const invitation = await this.repositories.organizationInvitationRepository.getInvitationById(
+      id,
+      transaction
+    );
+
+    if (!invitation) {
+      return null;
+    }
+
+    return invitation as OrganizationInvitation;
+  }
+
   public async getInvitationsByOrganization(
     params: QueryOrganizationInvitationsArgs & SelectedFields<OrganizationInvitation>,
     transaction?: Transaction

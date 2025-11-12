@@ -1204,7 +1204,14 @@
       "email": "E-Mail",
       "role": "Rolle",
       "status": "Status",
+      "audit": "Audit",
       "actions": "Aktionen"
+    },
+    "audit": {
+      "joined": "Beigetreten",
+      "invitedBy": "Eingeladen von",
+      "sent": "Gesendet",
+      "expires": "Läuft ab"
     },
     "status": {
       "active": "Aktiv",
@@ -1216,8 +1223,12 @@
     "actions": {
       "revoke": "Widerrufen",
       "resend": "Erneut senden",
+      "resendEmail": "E-Mail erneut senden",
       "updateRole": "Rolle aktualisieren",
-      "remove": "Entfernen"
+      "remove": "Entfernen",
+      "copyLink": "Einladungslink kopieren",
+      "copyLinkSuccess": "Einladungslink in die Zwischenablage kopiert",
+      "copyLinkError": "Einladungslink konnte nicht kopiert werden"
     },
     "sort": {
       "label": "Sortieren nach",
@@ -1261,7 +1272,9 @@
       "removeMemberSuccess": "Mitglied erfolgreich entfernt",
       "removeMemberError": "Mitglied konnte nicht entfernt werden",
       "resendInvitationSuccess": "Einladung erfolgreich erneut gesendet",
-      "resendInvitationError": "Einladung konnte nicht erneut gesendet werden"
+      "resendInvitationError": "Einladung konnte nicht erneut gesendet werden",
+      "resendEmailSuccess": "Einladungs-E-Mail erfolgreich gesendet",
+      "resendEmailError": "Einladungs-E-Mail konnte nicht gesendet werden"
     },
     "updateRoleDialog": {
       "title": "Mitgliedsrolle aktualisieren",

@@ -33,6 +33,7 @@ export const Mutation = {
   deleteOrganization: organizationMutations.deleteOrganization,
   inviteMember: organizationInvitationMutations.inviteMember,
   acceptInvitation: organizationInvitationMutations.acceptInvitation,
+  resendInvitationEmail: organizationInvitationMutations.resendInvitationEmail,
   revokeInvitation: organizationInvitationMutations.revokeInvitation,
   updateOrganizationMember: organizationMemberMutations.updateOrganizationMember,
   removeOrganizationMember: organizationMemberMutations.removeOrganizationMember,

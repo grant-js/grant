@@ -388,4 +388,73 @@ export class OrganizationInvitationsHandler {
       return invitation as OrganizationInvitation;
     });
   }
+
+  /**
+   * Resend invitation email for a pending invitation
+   */
+  public async resendInvitationEmail(id: string, locale?: string): Promise<OrganizationInvitation> {
+    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+      // 1. Get invitation by ID
+      const invitation = await this.services.organizationInvitations.getInvitationById(id, tx);
+
+      if (!invitation) {
+        throw new NotFoundError('Invitation not found', 'errors:notFound.invitation');
+      }
+
+      // 2. Verify invitation is pending
+      if (invitation.status !== OrganizationInvitationStatus.Pending) {
+        throw new BadRequestError(
+          'Can only resend email for pending invitations',
+          'errors:validation.invalidStatus',
+          { status: invitation.status }
+        );
+      }
+
+      // 3. Verify invitation hasn't expired
+      if (new Date() > invitation.expiresAt) {
+        throw new BadRequestError('Invitation has expired', 'errors:auth.invalidToken');
+      }
+
+      // 4. Get organization and inviter details for email
+      const organization = (
+        await this.services.organizations.getOrganizations(
+          { ids: [invitation.organizationId], limit: 1, requestedFields: [] },
+          tx
+        )
+      ).organizations[0];
+
+      const inviter = (
+        await this.services.users.getUsers(
+          { ids: [invitation.invitedBy], limit: 1, requestedFields: [] },
+          tx
+        )
+      ).users[0];
+
+      const roles = await this.services.roles.getRoles({ ids: [invitation.roleId], limit: 1 });
+      const role = roles.roles[0];
+
+      // 5. Resend invitation email (async, fire-and-forget)
+      const localePrefix = locale || defaultLocale;
+      const invitationUrl = `${config.security.frontendUrl}/${localePrefix}/invitations/${invitation.token}`;
+
+      this.services.email
+        .sendInvitation({
+          to: invitation.email,
+          organizationName: organization.name,
+          inviterName: inviter.name,
+          invitationUrl,
+          roleName: role.name,
+          locale,
+        })
+        .catch((error) => {
+          this.logger.error({
+            msg: 'Failed to resend invitation email',
+            err: error,
+          });
+          // Don't throw - invitation still exists
+        });
+
+      return invitation as OrganizationInvitation;
+    });
+  }
 }

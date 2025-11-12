@@ -5,11 +5,12 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 
 import { OrganizationInvitationStatus } from '@logusgraphics/grant-schema';
-import { Ban, Mail, Trash2, UserCog } from 'lucide-react';
+import { Ban, Copy, Mail, Trash2, UserCog } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 
 import { ActionItem, Actions } from '@/components/common';
-import { MemberWithInvitation } from '@/hooks/members';
+import { MemberWithInvitation, useMemberMutations } from '@/hooks/members';
 
 import { RemoveMemberDialog } from './RemoveMemberDialog';
 import { ResendInvitationDialog } from './ResendInvitationDialog';
@@ -24,10 +25,29 @@ export function MemberActions({ member }: MemberActionsProps) {
   const t = useTranslations('members.actions');
   const params = useParams();
   const organizationId = params.organizationId as string;
+  const locale = params.locale as string;
+  const { resendInvitationEmail } = useMemberMutations();
   const [isUpdateRoleDialogOpen, setIsUpdateRoleDialogOpen] = useState(false);
   const [isRemoveMemberDialogOpen, setIsRemoveMemberDialogOpen] = useState(false);
   const [isResendInvitationDialogOpen, setIsResendInvitationDialogOpen] = useState(false);
   const [isRevokeInvitationDialogOpen, setIsRevokeInvitationDialogOpen] = useState(false);
+
+  const handleCopyInvitationLink = async () => {
+    if (!member.invitationToken) {
+      toast.error(t('copyLinkError'));
+      return;
+    }
+
+    const invitationUrl = `${window.location.origin}/${locale}/invitations/${member.invitationToken}`;
+
+    try {
+      await navigator.clipboard.writeText(invitationUrl);
+      toast.success(t('copyLinkSuccess'));
+    } catch (err) {
+      console.error('Failed to copy invitation link:', err);
+      toast.error(t('copyLinkError'));
+    }
+  };
 
   const actions: ActionItem<MemberWithInvitation>[] = [];
 
@@ -55,6 +75,33 @@ export function MemberActions({ member }: MemberActionsProps) {
 
   // Actions for invitations
   if (member.type === 'invitation') {
+    // Copy invitation link action for pending invitations
+    if (member.status === OrganizationInvitationStatus.Pending && member.invitationToken) {
+      actions.push({
+        key: 'copyLink',
+        label: t('copyLink'),
+        icon: <Copy className="mr-2 h-4 w-4" />,
+        onClick: handleCopyInvitationLink,
+      });
+    }
+
+    // Resend email action for pending invitations
+    if (member.status === OrganizationInvitationStatus.Pending) {
+      actions.push({
+        key: 'resendEmail',
+        label: t('resendEmail'),
+        icon: <Mail className="mr-2 h-4 w-4" />,
+        onClick: async () => {
+          try {
+            await resendInvitationEmail(member.id);
+          } catch (error) {
+            // Error is handled by the mutation hook
+            console.error('Failed to resend invitation email:', error);
+          }
+        },
+      });
+    }
+
     // Revoke action for pending invitations
     if (member.status === OrganizationInvitationStatus.Pending) {
       actions.push({

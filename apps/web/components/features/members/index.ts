@@ -1,5 +1,6 @@
 export * from './InviteMemberDialog';
 export * from './MemberActions';
+export * from './MemberAudit';
 export * from './MemberCardSkeleton';
 export * from './MemberCards';
 export * from './MemberLimit';

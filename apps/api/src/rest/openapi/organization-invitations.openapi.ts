@@ -16,6 +16,7 @@ import {
   notFoundErrorResponseSchema,
   organizationInvitationSchema,
   organizationInvitationWithRelationsSchema,
+  resendInvitationEmailResponseSchema,
   revokeInvitationResponseSchema,
   validationErrorResponseSchema,
 } from '@/rest/schemas';
@@ -307,6 +308,76 @@ List all invitations for a specific organization with optional status filtering.
         content: {
           'application/json': {
             schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * POST /api/organization-invitations/:id/resend-email
+   */
+  registry.registerPath({
+    method: 'post',
+    path: '/api/organization-invitations/{id}/resend-email',
+    tags: ['Organization Invitations'],
+    summary: 'Resend invitation email',
+    description: `
+Resend the invitation email for a pending invitation.
+
+This action:
+- Resends the invitation email to the recipient
+- Uses the existing invitation token (does not create a new invitation)
+- Only works for pending invitations that haven't expired
+
+Use this when:
+- The original email wasn't received
+- The recipient needs the invitation link again
+- You want to remind someone about a pending invitation
+
+**Note:** This is different from "renewing" an invitation (which creates a new invitation for revoked/expired ones).
+    `.trim(),
+    request: {
+      params: invitationParamsSchema,
+    },
+    responses: {
+      200: {
+        description: 'Successfully resent invitation email',
+        content: {
+          'application/json': {
+            schema: resendInvitationEmailResponseSchema,
+          },
+        },
+      },
+      400: {
+        description: 'Validation error or invitation is not pending/expired',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      404: {
+        description: 'Invitation not found',
+        content: {
+          'application/json': {
+            schema: notFoundErrorResponseSchema,
           },
         },
       },

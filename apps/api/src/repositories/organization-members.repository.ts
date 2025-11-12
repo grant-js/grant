@@ -116,6 +116,7 @@ export class OrganizationMemberRepository {
           roleName: roles.name,
           status: organizationInvitations.status,
           invitationCreatedAt: organizationInvitations.createdAt,
+          invitedBy: organizationInvitations.invitedBy,
         })
         .from(organizationInvitations)
         .innerJoin(roles, eq(organizationInvitations.roleId, roles.id))
@@ -273,12 +274,28 @@ export class OrganizationMemberRepository {
               createdAt: member.createdAt,
             } as OrganizationMember;
           } else if (member.type === MemberType.Invitation && member.invitationId) {
-            // Fetch full invitation and role
-            const [invitationData] = await dbInstance
-              .select()
+            // Fetch full invitation with inviter and role
+            const [invitationWithInviter] = await dbInstance
+              .select({
+                invitation: organizationInvitations,
+                inviter: users,
+              })
               .from(organizationInvitations)
+              .innerJoin(
+                users,
+                and(eq(organizationInvitations.invitedBy, users.id), isNull(users.deletedAt))
+              )
               .where(eq(organizationInvitations.id, member.invitationId))
               .limit(1);
+
+            if (!invitationWithInviter) {
+              throw new NotFoundError(
+                `Invitation not found: ${member.invitationId}`,
+                'errors:notFound.invitation',
+                { invitationId: member.invitationId },
+                { invitationId: member.invitationId }
+              );
+            }
 
             const [roleData] = await dbInstance
               .select()
@@ -295,6 +312,12 @@ export class OrganizationMemberRepository {
               );
             }
 
+            // Construct invitation with inviter relation
+            const invitationData = {
+              ...invitationWithInviter.invitation,
+              inviter: invitationWithInviter.inviter,
+            } as unknown as OrganizationInvitation;
+
             return {
               id: member.id,
               name: member.name,
@@ -302,7 +325,7 @@ export class OrganizationMemberRepository {
               type: MemberType.Invitation,
               role: roleData as unknown as Role,
               user: null,
-              invitation: invitationData as unknown as OrganizationInvitation,
+              invitation: invitationData,
               status: member.status,
               createdAt: member.createdAt,
             } as OrganizationMember;

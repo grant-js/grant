@@ -9,6 +9,7 @@ import {
   OrganizationInvitation,
   OrganizationMember,
   RemoveOrganizationMemberDocument,
+  ResendInvitationEmailDocument,
   RevokeInvitationDocument,
   UpdateOrganizationMemberDocument,
 } from '@logusgraphics/grant-schema';
@@ -40,6 +41,13 @@ export function useMemberMutations() {
 
   const [revokeInvitation] = useMutation<{ revokeInvitation: OrganizationInvitation }>(
     RevokeInvitationDocument,
+    {
+      update,
+    }
+  );
+
+  const [resendInvitationEmail] = useMutation<{ resendInvitationEmail: OrganizationInvitation }>(
+    ResendInvitationEmailDocument,
     {
       update,
     }
@@ -176,6 +184,25 @@ export function useMemberMutations() {
     }
   };
 
+  const handleResendInvitationEmail = async (
+    id: string
+  ): Promise<OrganizationInvitation | undefined> => {
+    try {
+      const result = await resendInvitationEmail({
+        variables: { id },
+      });
+
+      toast.success(t('notifications.resendEmailSuccess'));
+      return result.data?.resendInvitationEmail;
+    } catch (error) {
+      console.error('Error resending invitation email:', error);
+      toast.error(t('notifications.resendEmailError'), {
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+      });
+      throw error;
+    }
+  };
+
   return {
     inviteMember: handleInviteMember,
     acceptInvitation: handleAcceptInvitation,
@@ -183,5 +210,6 @@ export function useMemberMutations() {
     updateMemberRole: handleUpdateMemberRole,
     removeMember: handleRemoveMember,
     resendInvitation: handleResendInvitation,
+    resendInvitationEmail: handleResendInvitationEmail,
   };
 }

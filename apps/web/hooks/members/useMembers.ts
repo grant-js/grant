@@ -31,6 +31,8 @@ export interface MemberWithInvitation {
   updatedAt: Date;
   user?: User | null;
   role?: Role | null;
+  inviter?: User | null;
+  invitationToken?: string;
 }
 
 interface UseMembersParams {
@@ -114,6 +116,8 @@ export function useMembers({
         updatedAt: new Date(member.createdAt), // Use createdAt as fallback since OrganizationMember doesn't have updatedAt
         user: member.user || undefined,
         role: member.role || undefined,
+        inviter: member.invitation?.inviter || undefined,
+        invitationToken: (member.invitation as { token?: string })?.token || undefined,
       })) ?? []
     );
   }, [data]);

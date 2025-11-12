@@ -175,6 +175,10 @@ export const revokeInvitationResponseSchema = createSuccessResponseSchema(
   organizationInvitationSchema
 );
 
+export const resendInvitationEmailResponseSchema = createSuccessResponseSchema(
+  organizationInvitationSchema
+);
+
 export const getInvitationResponseSchema = createSuccessResponseSchema(
   organizationInvitationWithRelationsSchema
 );

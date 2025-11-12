@@ -449,6 +449,7 @@ export type Mutation = {
   register: CreateAccountResult;
   removeOrganizationMember: OrganizationMember;
   requestPasswordReset: RequestPasswordResetResponse;
+  resendInvitationEmail: OrganizationInvitation;
   resendVerification: ResendVerificationResponse;
   resetPassword: ResetPasswordResponse;
   revokeInvitation: OrganizationInvitation;
@@ -559,6 +560,10 @@ export type MutationRequestPasswordResetArgs = {
   input: RequestPasswordResetInput;
 };
 
+export type MutationResendInvitationEmailArgs = {
+  id: Scalars['ID']['input'];
+};
+
 export type MutationResendVerificationArgs = {
   input: ResendVerificationInput;
 };
@@ -664,6 +669,7 @@ export type OrganizationInvitation = Auditable & {
   role: Role;
   roleId: Scalars['ID']['output'];
   status: OrganizationInvitationStatus;
+  token: Scalars['String']['output'];
   updatedAt: Scalars['Date']['output'];
 };
 
@@ -2519,6 +2525,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationRequestPasswordResetArgs, 'input'>
   >;
+  resendInvitationEmail?: Resolver<
+    ResolversTypes['OrganizationInvitation'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationResendInvitationEmailArgs, 'id'>
+  >;
   resendVerification?: Resolver<
     ResolversTypes['ResendVerificationResponse'],
     ParentType,
@@ -2652,6 +2664,7 @@ export type OrganizationInvitationResolvers<
   role?: Resolver<ResolversTypes['Role'], ParentType, ContextType>;
   roleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   status?: Resolver<ResolversTypes['OrganizationInvitationStatus'], ParentType, ContextType>;
+  token?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;

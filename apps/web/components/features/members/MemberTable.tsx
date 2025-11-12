@@ -12,6 +12,7 @@ import { MemberWithInvitation } from '@/hooks/members';
 import { useMembersStore } from '@/stores/members.store';
 
 import { MemberActions } from './MemberActions';
+import { MemberAudit } from './MemberAudit';
 
 export function MemberTable() {
   const t = useTranslations('members');
@@ -111,6 +112,12 @@ export function MemberTable() {
           getStatusBadge(member.status)
         ),
     },
+    {
+      key: 'audit',
+      header: t('table.audit'),
+      width: '200px',
+      render: (member: MemberWithInvitation) => <MemberAudit member={member} />,
+    },
   ];
 
   const skeletonConfig: { columns: SkeletonColumnConfig[]; rowCount?: number } = {
@@ -120,6 +127,7 @@ export function MemberTable() {
       { key: 'email', type: 'text' },
       { key: 'role', type: 'badge' },
       { key: 'status', type: 'badge' },
+      { key: 'audit', type: 'text' },
     ],
     rowCount: limit,
   };

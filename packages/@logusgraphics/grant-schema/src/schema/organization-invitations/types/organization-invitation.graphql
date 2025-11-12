@@ -7,6 +7,7 @@ type OrganizationInvitation implements Auditable {
   role: Role!
   status: OrganizationInvitationStatus!
   expiresAt: Date!
+  token: String!
   invitedBy: ID!
   inviter: User!
   acceptedAt: Date

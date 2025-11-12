@@ -448,6 +448,7 @@ export type Mutation = {
   register: CreateAccountResult;
   removeOrganizationMember: OrganizationMember;
   requestPasswordReset: RequestPasswordResetResponse;
+  resendInvitationEmail: OrganizationInvitation;
   resendVerification: ResendVerificationResponse;
   resetPassword: ResetPasswordResponse;
   revokeInvitation: OrganizationInvitation;
@@ -558,6 +559,10 @@ export type MutationRequestPasswordResetArgs = {
   input: RequestPasswordResetInput;
 };
 
+export type MutationResendInvitationEmailArgs = {
+  id: Scalars['ID']['input'];
+};
+
 export type MutationResendVerificationArgs = {
   input: ResendVerificationInput;
 };
@@ -663,6 +668,7 @@ export type OrganizationInvitation = Auditable & {
   role: Role;
   roleId: Scalars['ID']['output'];
   status: OrganizationInvitationStatus;
+  token: Scalars['String']['output'];
   updatedAt: Scalars['Date']['output'];
 };
 
@@ -1972,6 +1978,25 @@ export type InviteMemberMutation = {
   };
 };
 
+export type ResendInvitationEmailMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+export type ResendInvitationEmailMutation = {
+  __typename?: 'Mutation';
+  resendInvitationEmail: {
+    __typename?: 'OrganizationInvitation';
+    id: string;
+    organizationId: string;
+    email: string;
+    roleId: string;
+    status: OrganizationInvitationStatus;
+    expiresAt: Date;
+    invitedBy: string;
+    createdAt: Date;
+  };
+};
+
 export type RevokeInvitationMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -2018,6 +2043,9 @@ export type GetOrganizationMembersQuery = {
         email: string;
         status: OrganizationInvitationStatus;
         expiresAt: Date;
+        createdAt: Date;
+        token: string;
+        inviter: { __typename?: 'User'; id: string; name: string };
       } | null;
     }>;
   };
@@ -3589,6 +3617,55 @@ export const InviteMemberDocument = {
     },
   ],
 } as unknown as DocumentNode<InviteMemberMutation, InviteMemberMutationVariables>;
+export const ResendInvitationEmailDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ResendInvitationEmail' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'resendInvitationEmail' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'id' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'organizationId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'roleId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'expiresAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'invitedBy' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<ResendInvitationEmailMutation, ResendInvitationEmailMutationVariables>;
 export const RevokeInvitationDocument = {
   kind: 'Document',
   definitions: [
@@ -3764,6 +3841,19 @@ export const GetOrganizationMembersDocument = {
                             { kind: 'Field', name: { kind: 'Name', value: 'email' } },
                             { kind: 'Field', name: { kind: 'Name', value: 'status' } },
                             { kind: 'Field', name: { kind: 'Name', value: 'expiresAt' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'token' } },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'inviter' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                ],
+                              },
+                            },
                           ],
                         },
                       },

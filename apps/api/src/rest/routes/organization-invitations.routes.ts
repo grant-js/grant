@@ -4,6 +4,7 @@ import { validate } from '@/middleware/validation.middleware';
 import { OrganizationInvitationsController } from '@/rest/controllers/organization-invitations.controller';
 import {
   acceptInvitationRequestSchema,
+  getInvitationByTokenQuerySchema,
   getOrganizationInvitationsQuerySchema,
   invitationParamsSchema,
   invitationTokenParamsSchema,
@@ -39,11 +40,17 @@ export function createOrganizationInvitationsRoutes(context: RequestContext) {
    * GET /api/organization-invitations/:token
    * Get invitation details by token (for public access)
    */
-  router.get('/:token', validate({ params: invitationTokenParamsSchema }), (req, res) =>
-    controller.getInvitationByToken(
-      req as TypedRequest<{ params: typeof invitationTokenParamsSchema }>,
-      res
-    )
+  router.get(
+    '/:token',
+    validate({ params: invitationTokenParamsSchema, query: getInvitationByTokenQuerySchema }),
+    (req, res) =>
+      controller.getInvitationByToken(
+        req as TypedRequest<{
+          params: typeof invitationTokenParamsSchema;
+          query: { relations?: string | string[] };
+        }>,
+        res
+      )
   );
 
   /**
@@ -53,6 +60,17 @@ export function createOrganizationInvitationsRoutes(context: RequestContext) {
   router.get('/', validate({ query: getOrganizationInvitationsQuerySchema }), (req, res) =>
     controller.getOrganizationInvitations(
       req as TypedRequest<{ query: typeof getOrganizationInvitationsQuerySchema }>,
+      res
+    )
+  );
+
+  /**
+   * POST /api/organization-invitations/:id/resend-email
+   * Resend invitation email for a pending invitation
+   */
+  router.post('/:id/resend-email', validate({ params: invitationParamsSchema }), (req, res) =>
+    controller.resendInvitationEmail(
+      req as TypedRequest<{ params: typeof invitationParamsSchema }>,
       res
     )
   );
