@@ -19,6 +19,7 @@ export const Mutation = {
   resetPassword: authMutations.resetPassword,
   updateAccount: accountMutations.updateAccount,
   deleteAccount: accountMutations.deleteAccount,
+  createComplementaryAccount: accountMutations.createComplementaryAccount,
   createUser: userMutations.createUser,
   updateUser: userMutations.updateUser,
   deleteUser: userMutations.deleteUser,

@@ -61,3 +61,8 @@ export const accountPageSchema = paginatedResponseSchema(accountSchema).transfor
   totalCount: data.totalCount,
   hasNextPage: data.hasNextPage,
 }));
+
+export const createComplementaryAccountInputSchema = z.object({
+  name: nonEmptyNameSchema,
+  username: z.string().nullable().optional(),
+});

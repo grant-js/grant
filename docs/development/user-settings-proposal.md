@@ -4,9 +4,9 @@
 
 This document evaluates the current Account model and proposes a comprehensive user settings module structure. The settings will be organized into logical categories to provide a clear and intuitive user experience.
 
-**Status:** ✅ Scaffolding Complete - Ready for Content Implementation
+**Status:** ✅ Phase 1 Complete - Account Settings Fully Integrated
 
-**Last Updated:** After Phase 0 completion (Navigation, Layout, Pages Structure)
+**Last Updated:** After Phase 1 completion (Account Settings with API Integration)
 
 ## Current Data Model Analysis
 
@@ -97,12 +97,11 @@ This document evaluates the current Account model and proposes a comprehensive u
 
 - **Username (Slug)**
   - Editable username/URL-friendly identifier
-  - Updates `Account.slug` via `UpdateAccountInput` (requires schema update to add `slug` field)
-  - Must validate uniqueness using `checkUsername` query
-  - Real-time availability checking (reuse `useUsernameValidation` hook from registration)
-  - Minimum length validation (3+ characters)
-  - Shows availability status (available/unavailable/checking)
-  - ⚠️ **Note:** Schema update required - `slug` field needs to be added to `UpdateAccountInput`
+  - Updates `Account.slug` via `UpdateAccountInput`
+  - ✅ **Implemented:** Schema updated to include `slug` field in `UpdateAccountInput`
+  - ✅ **Implemented:** Real-time availability checking using `useUsernameValidation` hook
+  - ✅ **Implemented:** Minimum length validation (3+ characters)
+  - ✅ **Implemented:** Shows availability status (available/unavailable/checking)
 
 - **Account Type**
   - Display current account type (Personal/Organization)
@@ -113,10 +112,12 @@ This document evaluates the current Account model and proposes a comprehensive u
     - Benefits of having both account types
 
 - **Complementary Account**
-  - If user has only Personal account: Show option to create Organization account
-  - If user has only Organization account: Show option to create Personal account
-  - If user has both: Show information about account switching via header dropdown
-  - Link to account creation flow with pre-selected complementary type
+  - ✅ **Implemented:** Dialog-based creation flow for complementary accounts
+  - ✅ **Implemented:** Account type automatically inferred (Personal ↔ Organization)
+  - ✅ **Implemented:** Maximum 2 accounts per user enforced (backend + frontend)
+  - ✅ **Implemented:** Account switcher integrated into settings page (radio button style)
+  - ✅ **Implemented:** All user accounts returned after creation for immediate switching
+  - ✅ **Implemented:** REST endpoint `/api/accounts/complementary` and GraphQL mutation `createComplementaryAccount`
 
 - **Account Owner**
   - Display current owner information
@@ -128,11 +129,12 @@ This document evaluates the current Account model and proposes a comprehensive u
 
 **UI Considerations:**
 
-- Simple form layout with inline editing for name/username
-- Username field with real-time availability indicator (reuse registration patterns)
-- Informational card for account type with clear explanation
-- Prominent call-to-action for creating complementary account (if applicable)
-- Reference to account switcher in header if user has multiple accounts
+- ✅ **Implemented:** Merged account details card combining account switcher and form
+- ✅ **Implemented:** Dynamic card title ("Account" vs "Accounts" based on count)
+- ✅ **Implemented:** Radio button-style account switcher with tooltips
+- ✅ **Implemented:** Username field with real-time availability indicator
+- ✅ **Implemented:** Complementary account creation dialog with form validation
+- ✅ **Implemented:** Account type features displayed in tooltips on hover
 
 ---
 
@@ -360,17 +362,21 @@ This document evaluates the current Account model and proposes a comprehensive u
 
 ### GraphQL Mutations Available
 
-- `updateAccount(id: ID!, input: UpdateAccountInput!)` - Update account name (slug support needs to be added to schema)
+- ✅ `updateAccount(id: ID!, input: UpdateAccountInput!)` - Update account name and slug (fully implemented)
+- ✅ `createComplementaryAccount(input: CreateComplementaryAccountInput!)` - Create complementary account (fully implemented)
 - `updateUser(id: ID!, input: UpdateUserInput!)` - Update user name
 - `updateUserAuthenticationMethod(id: ID!, input: UpdateUserAuthenticationMethodInput!)` - Update auth methods
 - `createUserAuthenticationMethod(input: CreateUserAuthenticationMethodInput!)` - Add auth method
 - `deleteUserAuthenticationMethod(id: ID!)` - Remove auth method
-- `checkUsername(username: String!)` - Check username availability (returns `{ available: Boolean, username: String }`)
+- ✅ `checkUsername(username: String!)` - Check username availability (fully integrated)
 - Session management via `UserSessionService` methods
 
-**Schema Updates Needed:**
+**Schema Updates Completed:**
 
-- Add `slug: String` to `UpdateAccountInput` in `packages/@logusgraphics/grant-schema/src/schema/accounts/inputs/update-account.graphql`
+- ✅ Added `slug: String` to `UpdateAccountInput` in `packages/@logusgraphics/grant-schema/src/schema/accounts/inputs/update-account.graphql`
+- ✅ Created `CreateComplementaryAccountInput` input type
+- ✅ Created `CreateComplementaryAccountResult` return type
+- ✅ Added `createComplementaryAccount` mutation
 
 ### GraphQL Queries Available
 
@@ -480,15 +486,20 @@ This document evaluates the current Account model and proposes a comprehensive u
 6. ✅ **Translation Keys** - Added all navigation and page translations for English and German
 7. ✅ **AccountDropdown Integration** - Added Settings navigation button to AccountDropdown component
 
-### 📋 Next Steps (Phase 1: Core Settings - MVP)
+### ✅ Completed (Phase 1: Core Settings - Account Integration)
 
-1. **Account Information Section**
-   - Account name editing form
-   - Username (slug) editing with real-time availability checking (reuse `useUsernameValidation` hook)
-   - Account type display (read-only) with informational card
-   - Complementary account creation flow (if user doesn't have both account types)
-   - Account creation date display
-   - Schema update: Add `slug: String` to `UpdateAccountInput`
+1. **Account Information Section** ✅
+   - ✅ Account name editing form with API integration
+   - ✅ Username (slug) editing with real-time availability checking (`useUsernameValidation` hook)
+   - ✅ Account type display with account switcher (radio button style)
+   - ✅ Complementary account creation flow (dialog-based, type inference)
+   - ✅ Account limit enforcement (max 2 accounts per user)
+   - ✅ Schema update: Added `slug: String` to `UpdateAccountInput`
+   - ✅ Merged account details card component (`AccountDetailsCard`)
+   - ✅ Tooltip implementation for account type features
+   - ✅ REST endpoint `/api/accounts/complementary` and GraphQL mutation
+
+### 📋 Next Steps (Phase 1: Remaining Core Settings)
 
 2. **Profile Information Section**
    - User display name editing form
@@ -537,10 +548,32 @@ This document evaluates the current Account model and proposes a comprehensive u
 - `apps/web/app/[locale]/dashboard/settings/security/page.tsx` - Security settings page
 - `apps/web/app/[locale]/dashboard/settings/preferences/page.tsx` - Preferences settings page
 - `apps/web/app/[locale]/dashboard/settings/privacy/page.tsx` - Privacy settings page
+- `apps/web/components/settings/AccountDetailsCard.tsx` - Merged account details card (replaces AccountInformationForm + AccountTypeCard)
+- `apps/web/components/settings/CreateComplementaryAccountDialog.tsx` - Dialog for creating complementary accounts
+- `apps/web/hooks/accounts/useCreateComplementaryAccount.ts` - Hook for complementary account creation
+- `packages/@logusgraphics/grant-schema/src/schema/accounts/inputs/create-complementary-account.graphql` - GraphQL input schema
+- `packages/@logusgraphics/grant-schema/src/schema/accounts/types/create-complementary-account-result.graphql` - GraphQL result type
+- `packages/@logusgraphics/grant-schema/src/schema/accounts/mutations/create-complementary-account.graphql` - GraphQL mutation
+- `packages/@logusgraphics/grant-schema/src/operations/accounts/createComplementaryAccount.graphql` - Frontend operation
+- `apps/api/src/graphql/resolvers/accounts/mutations/create-complementary-account.resolver.ts` - GraphQL resolver
+- `apps/api/src/rest/schemas/accounts.schemas.ts` - REST API schemas (updated)
+- `apps/api/src/rest/controllers/accounts.controller.ts` - REST controller (updated)
+- `apps/api/src/rest/routes/accounts.routes.ts` - REST routes (updated)
 
 ### Modified Files:
 
 - `apps/web/app/[locale]/dashboard/settings/page.tsx` - Updated to redirect to account settings
-- `apps/web/components/common/AccountDropdown.tsx` - Added Settings navigation button
-- `apps/web/i18n/locales/en.json` - Added settings translations
+- `apps/web/app/[locale]/dashboard/settings/account/page.tsx` - Integrated with real API, uses AccountDetailsCard
+- `apps/web/components/common/AccountDropdown.tsx` - Added Settings navigation button, displays username
+- `apps/web/components/settings/AccountInformationForm.tsx` - Integrated with API, username validation
+- `apps/web/components/settings/AccountTypeCard.tsx` - Updated for complementary account creation
+- `apps/web/hooks/accounts/useAccountMutations.ts` - Added updateAccount mutation hook
+- `apps/web/hooks/accounts/useUsernameValidation.ts` - Added reset function
+- `apps/web/lib/schemas/settings.ts` - Updated validation schemas
+- `apps/web/i18n/locales/en.json` - Added settings translations, complementary account translations
 - `apps/web/i18n/locales/de.json` - Added settings translations (German)
+- `apps/api/src/services/accounts.schemas.ts` - Added createComplementaryAccountInputSchema
+- `apps/api/src/services/accounts.service.ts` - Added createComplementaryAccount method
+- `apps/api/src/handlers/accounts.handler.ts` - Added createComplementaryAccount handler
+- `apps/api/src/graphql/resolvers/mutations.ts` - Registered createComplementaryAccount resolver
+- `packages/@logusgraphics/grant-schema/src/schema/accounts/inputs/update-account.graphql` - Added slug field

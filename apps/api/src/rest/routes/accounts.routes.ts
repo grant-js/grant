@@ -2,7 +2,11 @@ import { Router } from 'express';
 
 import { validate } from '@/middleware/validation.middleware';
 import { AccountsController } from '@/rest/controllers/accounts.controller';
-import { accountParamsSchema, getAccountsQuerySchema } from '@/rest/schemas/accounts.schemas';
+import {
+  accountParamsSchema,
+  createComplementaryAccountRequestSchema,
+  getAccountsQuerySchema,
+} from '@/rest/schemas/accounts.schemas';
 import { TypedRequest } from '@/rest/types';
 import { RequestContext } from '@/types';
 
@@ -36,6 +40,17 @@ export function createAccountsRoutes(context: RequestContext) {
         }>,
         res
       )
+  );
+
+  /**
+   * POST /api/accounts/complementary
+   * Create a complementary account (Personal if user has Organization, Organization if user has Personal)
+   */
+  router.post('/complementary', validate({ body: createComplementaryAccountRequestSchema }), (req, res) =>
+    accountsController.createComplementaryAccount(
+      req as TypedRequest<{ body: typeof createComplementaryAccountRequestSchema }>,
+      res
+    )
   );
 
   return router;

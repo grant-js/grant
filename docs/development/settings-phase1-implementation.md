@@ -2,7 +2,7 @@
 
 ## Overview
 
-Successfully implemented forms and state management for the User Settings Module (Phase 1: Core Settings - MVP). This implementation follows the specifications outlined in the User Settings Proposal document and provides a solid foundation for API integration.
+Successfully implemented and integrated the Account Settings section of the User Settings Module (Phase 1: Core Settings - MVP). This implementation includes full API integration, real-time username validation, complementary account creation, and account switching functionality. The implementation follows the specifications outlined in the User Settings Proposal document.
 
 ## Completed Components
 
@@ -31,31 +31,43 @@ Zod validation schemas for settings forms:
 
 ### 2. Account Settings Components
 
-#### AccountInformationForm
+#### AccountDetailsCard (Merged Component)
 
-**Location:** `apps/web/components/settings/AccountInformationForm.tsx`
+**Location:** `apps/web/components/settings/AccountDetailsCard.tsx`
 
-Features:
-
-- Account name field (required, 2-100 characters)
-- Username/slug field (required, 3-50 characters, lowercase alphanumeric + hyphens)
-- Real-time form validation using react-hook-form + zod
-- Username availability checking placeholder (ready for API integration)
-- Save/Cancel buttons with dirty state detection
-- Loading states for form submission
-
-#### AccountTypeCard
-
-**Location:** `apps/web/components/settings/AccountTypeCard.tsx`
+✅ **Fully Integrated with API**
 
 Features:
 
-- Display current account type (Personal/Organization)
-- Read-only account type information
-- Feature comparison for account types
-- Complementary account creation prompt (if user only has one account type)
-- Multi-account switching instructions
-- Immutable account type warning
+- **Account Switcher:** Radio button-style selector for multiple accounts (if user has 2 accounts)
+- **Account Information Form:** 
+  - Account name field (required, 2-100 characters) - ✅ API integrated
+  - Username/slug field (required, 3-50 characters) - ✅ API integrated with real-time validation
+  - Real-time username availability checking using `useUsernameValidation` hook
+  - Form validation using react-hook-form + zod
+  - Save/Cancel buttons with dirty state detection
+  - Loading states for form submission
+  - Form resets when switching accounts
+- **Account Type Display:** Shows current account type with tooltips explaining features
+- **Complementary Account Creation:** Dialog-based creation flow (if user has < 2 accounts)
+- **Dynamic Card Title:** "Account" (singular) or "Accounts" (plural) based on account count
+- **Tooltips:** Information icons with account type feature descriptions
+
+#### CreateComplementaryAccountDialog
+
+**Location:** `apps/web/components/settings/CreateComplementaryAccountDialog.tsx`
+
+✅ **Fully Integrated with API**
+
+Features:
+
+- Dialog-based form for creating complementary accounts
+- Account type automatically inferred (Personal ↔ Organization)
+- Account name field with validation
+- Username field with real-time availability checking
+- Maximum 2 accounts per user enforced (frontend + backend)
+- Returns all user accounts after creation for immediate switching
+- Success/error toast notifications
 
 ### 3. Profile Settings Components
 
@@ -90,9 +102,13 @@ Features:
 
 **Location:** `apps/web/app/[locale]/dashboard/settings/account/page.tsx`
 
-- Integrated AccountInformationForm with mock data
-- Integrated AccountTypeCard
-- Placeholder handlers for form submission and account creation
+✅ **Fully Integrated with API**
+
+- Uses `AccountDetailsCard` component (merged form + switcher)
+- Fetches account data from `useAuthStore` (current account)
+- Integrates with `useAccountMutations` for account updates
+- Handles account switching via auth store
+- Real-time form updates when switching accounts
 
 #### Profile Settings Page
 
@@ -151,54 +167,137 @@ All forms use react-hook-form for state management with:
 - Loading states during submission
 - TypeScript type safety
 
-## Next Steps (API Integration Phase)
+## ✅ Completed API Integration
 
-1. **Create GraphQL Mutations:**
-   - Implement account update mutation handlers
-   - Implement profile update mutation handlers
-   - Add username availability checking query
+### Backend Implementation
 
-2. **Create Custom Hooks:**
-   - `useAccountSettings` - Fetch and update account data
-   - `useProfileSettings` - Fetch and update profile data
-   - `useUsernameValidation` - Real-time username availability checking (reuse from registration)
+1. **GraphQL Schema Updates:**
+   - ✅ Added `slug: String` to `UpdateAccountInput`
+   - ✅ Created `CreateComplementaryAccountInput` input type
+   - ✅ Created `CreateComplementaryAccountResult` return type
+   - ✅ Added `createComplementaryAccount` mutation
 
-3. **Replace Mock Data:**
-   - Replace mock data in pages with actual API queries
-   - Implement error handling and success notifications
-   - Add optimistic updates where appropriate
+2. **Backend Services:**
+   - ✅ `AccountService.createComplementaryAccount()` - Business logic with validation
+   - ✅ Maximum 2 accounts per user enforcement
+   - ✅ Account type inference (Personal ↔ Organization)
+   - ✅ Returns all user accounts after creation
 
-4. **Add Security Features (Phase 2):**
-   - Authentication methods management
-   - Active sessions viewing and revocation
-   - Password change functionality
-   - 2FA placeholder with "Coming Soon" indicator
+3. **API Endpoints:**
+   - ✅ GraphQL: `createComplementaryAccount` mutation
+   - ✅ REST: `POST /api/accounts/complementary`
+   - ✅ GraphQL: `updateAccount` mutation (with slug support)
 
-5. **Add Privacy Features (Phase 3):**
-   - Data export functionality
-   - Account deletion flow
+### Frontend Implementation
+
+1. **Custom Hooks:**
+   - ✅ `useAccountMutations` - Account update mutations
+   - ✅ `useCreateComplementaryAccount` - Complementary account creation
+   - ✅ `useUsernameValidation` - Real-time username availability (with reset function)
+
+2. **API Integration:**
+   - ✅ Account data fetched from `useAuthStore`
+   - ✅ Account updates via GraphQL mutation
+   - ✅ Username availability checking via `checkUsername` query
+   - ✅ Complementary account creation with full state management
+   - ✅ Error handling and success notifications (toast)
+
+3. **State Management:**
+   - ✅ Account switching updates auth store
+   - ✅ Form resets when switching accounts
+   - ✅ Optimistic updates for account changes
+
+## Next Steps (Remaining Phase 1)
+
+1. **Profile Information Section:**
+   - User display name editing form
+   - API integration for profile updates
+   - Avatar placeholder with "Coming Soon" indicator
+
+2. **Preferences Section:**
+   - ✅ Theme toggle (already functional)
+   - ✅ Language switcher (already functional)
+   - Notification preferences structure (placeholder)
+
+## Future Phases
+
+**Phase 2: Security Features**
+- Authentication methods management
+- Active sessions viewing and revocation
+- Password change functionality
+- 2FA placeholder with "Coming Soon" indicator
+
+**Phase 3: Advanced Features**
+- Complete notification preferences
+- Display preferences (date/time format, timezone)
+- Privacy section (data export, account deletion)
 
 ## File Structure
 
 ```
 apps/web/
 ├── components/
-│   └── settings/
-│       ├── SettingsCard.tsx (new)
-│       ├── AccountInformationForm.tsx (new)
-│       ├── AccountTypeCard.tsx (new)
-│       ├── ProfileInformationForm.tsx (new)
-│       └── PreferencesSettings.tsx (new)
+│   ├── settings/
+│   │   ├── SettingsCard.tsx
+│   │   ├── AccountDetailsCard.tsx (new - merged component)
+│   │   ├── CreateComplementaryAccountDialog.tsx (new)
+│   │   ├── AccountInformationForm.tsx (updated - API integrated)
+│   │   ├── AccountTypeCard.tsx (updated)
+│   │   ├── ProfileInformationForm.tsx
+│   │   └── PreferencesSettings.tsx
+│   └── ui/
+│       └── tooltip.tsx (updated - shadcn/ui base)
+├── hooks/
+│   └── accounts/
+│       ├── useAccountMutations.ts (updated)
+│       ├── useCreateComplementaryAccount.ts (new)
+│       └── useUsernameValidation.ts (updated - added reset)
 ├── lib/
 │   └── schemas/
-│       └── settings.ts (new)
+│       └── settings.ts (updated)
 ├── app/[locale]/dashboard/settings/
-│   ├── account/page.tsx (updated)
-│   ├── profile/page.tsx (updated)
-│   └── preferences/page.tsx (updated)
+│   ├── account/page.tsx (updated - API integrated)
+│   ├── profile/page.tsx
+│   └── preferences/page.tsx
 └── i18n/locales/
     ├── en.json (updated)
     └── de.json (updated)
+
+apps/api/
+├── src/
+│   ├── services/
+│   │   ├── accounts.schemas.ts (updated)
+│   │   └── accounts.service.ts (updated - createComplementaryAccount)
+│   ├── handlers/
+│   │   └── accounts.handler.ts (updated)
+│   ├── graphql/
+│   │   └── resolvers/
+│   │       ├── mutations.ts (updated)
+│   │       └── accounts/
+│   │           └── mutations/
+│   │               └── create-complementary-account.resolver.ts (new)
+│   └── rest/
+│       ├── schemas/
+│       │   └── accounts.schemas.ts (updated)
+│       ├── controllers/
+│       │   └── accounts.controller.ts (updated)
+│       └── routes/
+│           └── accounts.routes.ts (updated)
+
+packages/@logusgraphics/grant-schema/
+└── src/
+    ├── schema/
+    │   └── accounts/
+    │       ├── inputs/
+    │       │   ├── update-account.graphql (updated - added slug)
+    │       │   └── create-complementary-account.graphql (new)
+    │       ├── types/
+    │       │   └── create-complementary-account-result.graphql (new)
+    │       └── mutations/
+    │           └── create-complementary-account.graphql (new)
+    └── operations/
+        └── accounts/
+            └── createComplementaryAccount.graphql (new)
 ```
 
 ## Design Patterns Used
@@ -223,11 +322,44 @@ When API integration is complete, ensure testing for:
 - Account type immutability
 - Complementary account creation flow
 
+## Key Features Implemented
+
+### Account Settings Integration
+
+1. **Account Name & Username Editing:**
+   - ✅ Full API integration with `updateAccount` mutation
+   - ✅ Real-time username availability checking
+   - ✅ Form validation and error handling
+   - ✅ Success/error toast notifications
+
+2. **Account Switching:**
+   - ✅ Radio button-style account selector
+   - ✅ Integrated into settings page (not just header)
+   - ✅ Form resets when switching accounts
+   - ✅ Tooltips with account type feature descriptions
+
+3. **Complementary Account Creation:**
+   - ✅ Dialog-based creation flow
+   - ✅ Account type automatically inferred
+   - ✅ Maximum 2 accounts per user enforced (frontend + backend)
+   - ✅ Real-time username validation in dialog
+   - ✅ Returns all accounts for immediate switching
+   - ✅ REST endpoint: `POST /api/accounts/complementary`
+   - ✅ GraphQL mutation: `createComplementaryAccount`
+
+4. **UI/UX Improvements:**
+   - ✅ Merged account details card (single card for all account info)
+   - ✅ Dynamic card title based on account count
+   - ✅ Tooltip implementation (shadcn/ui base)
+   - ✅ Clean, elegant account switcher design
+
 ## Notes
 
-- All forms are ready for API integration with clear placeholder handlers
-- Username validation follows the same pattern as registration flow
-- Account type is properly marked as immutable with clear user messaging
-- Theme and language switching are fully functional
-- All components follow existing codebase patterns and conventions
-- No linter errors in any of the created/modified files
+- ✅ Account settings fully integrated with API
+- ✅ Username validation follows the same pattern as registration flow
+- ✅ Account type is properly marked as immutable with clear user messaging
+- ✅ Complementary account creation fully functional
+- ✅ Theme and language switching are fully functional
+- ✅ All components follow existing codebase patterns and conventions
+- ✅ No linter errors in any of the created/modified files
+- ✅ Backend validation ensures data integrity (max 2 accounts, type inference)

@@ -225,6 +225,17 @@ export type CreateAccountResult = {
   verificationExpiry?: Maybe<Scalars['Date']['output']>;
 };
 
+export type CreateComplementaryAccountInput = {
+  name: Scalars['String']['input'];
+  username?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type CreateComplementaryAccountResult = {
+  __typename?: 'CreateComplementaryAccountResult';
+  account: Account;
+  accounts: Array<Account>;
+};
+
 export type CreateGroupInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
@@ -428,6 +439,7 @@ export type Mutation = {
   __typename?: 'Mutation';
   _empty?: Maybe<Scalars['String']['output']>;
   acceptInvitation: AcceptInvitationResult;
+  createComplementaryAccount: CreateComplementaryAccountResult;
   createGroup: Group;
   createOrganization: Organization;
   createPermission: Permission;
@@ -467,6 +479,10 @@ export type Mutation = {
 
 export type MutationAcceptInvitationArgs = {
   input: AcceptInvitationInput;
+};
+
+export type MutationCreateComplementaryAccountArgs = {
+  input: CreateComplementaryAccountInput;
 };
 
 export type MutationCreateGroupArgs = {
@@ -1856,6 +1872,8 @@ export type ResolversTypes = ResolversObject<{
   Creatable: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['Creatable']>;
   CreateAccountInput: CreateAccountInput;
   CreateAccountResult: ResolverTypeWrapper<CreateAccountResult>;
+  CreateComplementaryAccountInput: CreateComplementaryAccountInput;
+  CreateComplementaryAccountResult: ResolverTypeWrapper<CreateComplementaryAccountResult>;
   CreateGroupInput: CreateGroupInput;
   CreateOrganizationInput: CreateOrganizationInput;
   CreatePermissionInput: CreatePermissionInput;
@@ -2042,6 +2060,8 @@ export type ResolversParentTypes = ResolversObject<{
   Creatable: ResolversInterfaceTypes<ResolversParentTypes>['Creatable'];
   CreateAccountInput: CreateAccountInput;
   CreateAccountResult: CreateAccountResult;
+  CreateComplementaryAccountInput: CreateComplementaryAccountInput;
+  CreateComplementaryAccountResult: CreateComplementaryAccountResult;
   CreateGroupInput: CreateGroupInput;
   CreateOrganizationInput: CreateOrganizationInput;
   CreatePermissionInput: CreatePermissionInput;
@@ -2283,6 +2303,15 @@ export type CreateAccountResultResolvers<
   verificationExpiry?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
 }>;
 
+export type CreateComplementaryAccountResultResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['CreateComplementaryAccountResult'] = ResolversParentTypes['CreateComplementaryAccountResult'],
+> = ResolversObject<{
+  account?: Resolver<ResolversTypes['Account'], ParentType, ContextType>;
+  accounts?: Resolver<Array<ResolversTypes['Account']>, ParentType, ContextType>;
+}>;
+
 export interface DateScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['Date'], any> {
   name: 'Date';
 }
@@ -2398,6 +2427,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationAcceptInvitationArgs, 'input'>
+  >;
+  createComplementaryAccount?: Resolver<
+    ResolversTypes['CreateComplementaryAccountResult'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateComplementaryAccountArgs, 'input'>
   >;
   createGroup?: Resolver<
     ResolversTypes['Group'],
@@ -3389,6 +3424,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   Auditable?: AuditableResolvers<ContextType>;
   Creatable?: CreatableResolvers<ContextType>;
   CreateAccountResult?: CreateAccountResultResolvers<ContextType>;
+  CreateComplementaryAccountResult?: CreateComplementaryAccountResultResolvers<ContextType>;
   Date?: GraphQLScalarType;
   DeleteUserAuthenticationMethodInput?: DeleteUserAuthenticationMethodInputResolvers<ContextType>;
   Group?: GroupResolvers<ContextType>;

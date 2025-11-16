@@ -10,6 +10,7 @@ interface UseUsernameValidationReturn {
   isAvailable: boolean | null;
   error: string | null;
   checkUsername: (username: string) => void;
+  reset: () => void;
 }
 
 export function useUsernameValidation(): UseUsernameValidationReturn {
@@ -53,10 +54,15 @@ export function useUsernameValidation(): UseUsernameValidationReturn {
     [debouncedCheckUsername]
   );
 
+  const reset = useCallback(() => {
+    setIsAvailable(null);
+  }, []);
+
   return {
     isChecking: loading,
     isAvailable,
     error: error?.message || null,
     checkUsername,
+    reset,
   };
 }

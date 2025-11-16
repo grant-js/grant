@@ -214,6 +214,16 @@ export class AccountHandler extends ScopeHandler {
     return accountsResult;
   }
 
+  public async createComplementaryAccount(params: {
+    name: string;
+    username?: string | null;
+  }): Promise<{ account: Account; accounts: Account[] }> {
+    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+      const result = await this.services.accounts.createComplementaryAccount(params, tx);
+      return result;
+    });
+  }
+
   public async checkUsername(username: string): Promise<{ available: boolean; username: string }> {
     const isAvailable = await this.services.accounts.checkUsernameAvailability(username);
 

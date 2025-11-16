@@ -1,0 +1,4 @@
+type CreateComplementaryAccountResult {
+  account: Account!
+  accounts: [Account!]!
+}

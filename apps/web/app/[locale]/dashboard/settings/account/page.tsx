@@ -6,8 +6,7 @@ import { AccountType } from '@logusgraphics/grant-schema';
 import { useTranslations } from 'next-intl';
 
 import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
-import { AccountInformationForm } from '@/components/settings/AccountInformationForm';
-import { AccountTypeCard } from '@/components/settings/AccountTypeCard';
+import { AccountDetailsCard } from '@/components/settings/AccountDetailsCard';
 import { useAccountMutations, usePageTitle } from '@/hooks';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -71,10 +70,6 @@ export default function AccountSettingsPage() {
     });
   };
 
-  const handleCreateComplementaryAccount = () => {
-    console.log('Create complementary account');
-    // Navigation to account creation will be added later
-  };
 
   if (!currentAccount) {
     return (
@@ -87,11 +82,13 @@ export default function AccountSettingsPage() {
   return (
     <DashboardPageLayout title={t('title')} variant="simple">
       <div className="space-y-6">
-        <AccountInformationForm defaultValues={accountData} onSubmit={handleAccountUpdate} />
-        <AccountTypeCard
+        <AccountDetailsCard
           accountType={accountType}
           hasComplementaryAccount={hasComplementaryAccount}
-          onCreateComplementaryAccount={handleCreateComplementaryAccount}
+          accountCount={accounts.length}
+          defaultValues={accountData}
+          accountId={currentAccount.id}
+          onSubmit={handleAccountUpdate}
         />
       </div>
     </DashboardPageLayout>

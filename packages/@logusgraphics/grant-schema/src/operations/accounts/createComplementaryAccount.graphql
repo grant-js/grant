@@ -1,0 +1,22 @@
+mutation CreateComplementaryAccount($input: CreateComplementaryAccountInput!) {
+  createComplementaryAccount(input: $input) {
+    account {
+      id
+      name
+      slug
+      type
+      ownerId
+      createdAt
+      updatedAt
+    }
+    accounts {
+      id
+      name
+      slug
+      type
+      ownerId
+      createdAt
+      updatedAt
+    }
+  }
+}

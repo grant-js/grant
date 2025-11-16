@@ -224,6 +224,17 @@ export type CreateAccountResult = {
   verificationExpiry?: Maybe<Scalars['Date']['output']>;
 };
 
+export type CreateComplementaryAccountInput = {
+  name: Scalars['String']['input'];
+  username?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type CreateComplementaryAccountResult = {
+  __typename?: 'CreateComplementaryAccountResult';
+  account: Account;
+  accounts: Array<Account>;
+};
+
 export type CreateGroupInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
@@ -427,6 +438,7 @@ export type Mutation = {
   __typename?: 'Mutation';
   _empty?: Maybe<Scalars['String']['output']>;
   acceptInvitation: AcceptInvitationResult;
+  createComplementaryAccount: CreateComplementaryAccountResult;
   createGroup: Group;
   createOrganization: Organization;
   createPermission: Permission;
@@ -466,6 +478,10 @@ export type Mutation = {
 
 export type MutationAcceptInvitationArgs = {
   input: AcceptInvitationInput;
+};
+
+export type MutationCreateComplementaryAccountArgs = {
+  input: CreateComplementaryAccountInput;
 };
 
 export type MutationCreateGroupArgs = {
@@ -1684,6 +1700,37 @@ export type CheckUsernameQuery = {
   checkUsername: { __typename?: 'UsernameAvailability'; available: boolean; username: string };
 };
 
+export type CreateComplementaryAccountMutationVariables = Exact<{
+  input: CreateComplementaryAccountInput;
+}>;
+
+export type CreateComplementaryAccountMutation = {
+  __typename?: 'Mutation';
+  createComplementaryAccount: {
+    __typename?: 'CreateComplementaryAccountResult';
+    account: {
+      __typename?: 'Account';
+      id: string;
+      name: string;
+      slug: string;
+      type: AccountType;
+      ownerId: string;
+      createdAt: Date;
+      updatedAt: Date;
+    };
+    accounts: Array<{
+      __typename?: 'Account';
+      id: string;
+      name: string;
+      slug: string;
+      type: AccountType;
+      ownerId: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
+  };
+};
+
 export type GetAccountsQueryVariables = Exact<{
   page?: InputMaybe<Scalars['Int']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
@@ -2695,6 +2742,85 @@ export const CheckUsernameDocument = {
     },
   ],
 } as unknown as DocumentNode<CheckUsernameQuery, CheckUsernameQueryVariables>;
+export const CreateComplementaryAccountDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'CreateComplementaryAccount' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'CreateComplementaryAccountInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'createComplementaryAccount' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'account' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'type' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'ownerId' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'accounts' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'type' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'ownerId' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  CreateComplementaryAccountMutation,
+  CreateComplementaryAccountMutationVariables
+>;
 export const GetAccountsDocument = {
   kind: 'Document',
   definitions: [

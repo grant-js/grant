@@ -23,14 +23,19 @@ import { AccountSettingsFormValues, accountSettingsSchema } from '@/lib/schemas/
 
 interface AccountInformationFormProps {
   defaultValues: AccountSettingsFormValues;
+  accountId?: string;
   onSubmit: (values: AccountSettingsFormValues) => Promise<void>;
 }
 
-export function AccountInformationForm({ defaultValues, onSubmit }: AccountInformationFormProps) {
+export function AccountInformationForm({
+  defaultValues,
+  accountId,
+  onSubmit,
+}: AccountInformationFormProps) {
   const t = useTranslations('settings.account');
   const tCommon = useTranslations('common');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { isChecking, isAvailable, checkUsername } = useUsernameValidation();
+  const { isChecking, isAvailable, checkUsername, reset: resetUsernameValidation } = useUsernameValidation();
 
   const form = useForm<AccountSettingsFormValues>({
     resolver: zodResolver(accountSettingsSchema),
@@ -38,6 +43,15 @@ export function AccountInformationForm({ defaultValues, onSubmit }: AccountInfor
   });
 
   const currentUsername = form.watch('slug');
+
+  // Reset form when account changes (account switch)
+  useEffect(() => {
+    if (accountId) {
+      form.reset(defaultValues);
+      resetUsernameValidation();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountId]);
 
   // Revalidate form when username availability changes
   useEffect(() => {

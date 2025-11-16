@@ -68,6 +68,7 @@
       "edit": "Edit",
       "delete": "Delete",
       "create": "Create",
+      "creating": "Creating...",
       "update": "Update"
     },
     "emptyElements": "No {title} to display",
@@ -1334,6 +1335,11 @@
     "account": {
       "title": "Account Information",
       "description": "Manage your account settings and information",
+      "details": {
+        "title": "Account",
+        "titlePlural": "Accounts",
+        "description": "Manage your account details and switch between accounts"
+      },
       "information": {
         "title": "Account Details",
         "description": "Update your account name and username",
@@ -1356,8 +1362,7 @@
       "type": {
         "title": "Account Type",
         "description": "Your account type determines the features available to you",
-        "current": "Current Account Type",
-        "currentDescription": "This account type cannot be changed after creation",
+        "currentAccount": "Current account",
         "features": {
           "personal": {
             "title": "Personal Account Features",
@@ -1375,12 +1380,11 @@
         "complementary": {
           "title": "Create a Complementary Account",
           "description": "You can also create a {type} account to access additional features.",
-          "action": "Create {type} Account"
+          "action": "Create {type} Account",
+          "dialogTitle": "Create {type} Account",
+          "dialogDescription": "Enter the details for your new {type} account. This account will be separate from your current account."
         },
-        "multipleAccounts": {
-          "description": "You have both a personal and organization account.",
-          "switchInstruction": "Use the account switcher in the header to switch between your accounts."
-        },
+        "switchAccount": "Switch Account",
         "immutable": {
           "title": "Note:",
           "description": "Account type cannot be changed after creation for security and billing purposes."
@@ -1388,7 +1392,14 @@
       },
       "notifications": {
         "updateSuccess": "Account updated successfully",
-        "updateError": "Failed to update account"
+        "updateError": "Failed to update account",
+        "createComplementaryAccountSuccess": "Account created successfully",
+        "createComplementaryAccountSuccessDescription": "Your new {type} account has been created. You can switch between accounts using the account switcher.",
+        "createComplementaryAccountError": "Failed to create account"
+      },
+      "selection": {
+        "title": "Select Account",
+        "description": "Choose which account you want to manage"
       }
     },
     "profile": {

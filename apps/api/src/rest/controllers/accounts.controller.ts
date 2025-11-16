@@ -11,7 +11,11 @@ import { parseRelations } from '@/lib/field-selection.lib';
 import { TypedRequest } from '@/rest/types';
 import { RequestContext } from '@/types';
 
-import { accountParamsSchema, getAccountsQuerySchema } from '../schemas/accounts.schemas';
+import {
+  accountParamsSchema,
+  createComplementaryAccountRequestSchema,
+  getAccountsQuerySchema,
+} from '../schemas/accounts.schemas';
 
 import { BaseController } from './base.controller';
 
@@ -83,5 +87,23 @@ export class AccountsController extends BaseController {
     }
 
     return this.success(res, result.accounts[0]);
+  }
+
+  /**
+   * POST /api/accounts/complementary
+   * Create a complementary account (Personal if user has Organization, Organization if user has Personal)
+   */
+  async createComplementaryAccount(
+    req: TypedRequest<{ body: typeof createComplementaryAccountRequestSchema }>,
+    res: Response
+  ) {
+    const { name, username } = req.body;
+
+    const result = await this.context.handlers.accounts.createComplementaryAccount({
+      name,
+      username: username || null,
+    });
+
+    return this.success(res, result, 201);
   }
 }

@@ -84,3 +84,16 @@ export const deleteAccountResponseSchema = createSuccessResponseSchema(
   accountSchema,
   'Successfully deleted account'
 );
+
+export const createComplementaryAccountRequestSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
+  username: z.string().optional().nullable(),
+});
+
+export const createComplementaryAccountResponseSchema = createSuccessResponseSchema(
+  z.object({
+    account: accountSchema,
+    accounts: z.array(accountSchema),
+  }),
+  'Successfully created complementary account'
+);
