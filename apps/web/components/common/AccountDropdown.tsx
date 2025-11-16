@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 
 import { AccountType } from '@logusgraphics/grant-schema';
-import { Building2, Check, LogOut, Mail, User } from 'lucide-react';
+import { Building2, Check, LogOut, Mail, Settings, User } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 
 import { Avatar } from '@/components/common/Avatar';
@@ -19,10 +19,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Link } from '@/i18n/navigation';
 import { useAuthStore } from '@/stores/auth.store';
 
 export function AccountDropdown() {
   const t = useTranslations('common');
+  const dashboardT = useTranslations('dashboard.navigation');
   const locale = useLocale();
   const router = useRouter();
   const { currentAccount, accounts, email, isAuthenticated, switchAccount, clearAuth } =
@@ -146,6 +148,18 @@ export function AccountDropdown() {
             <DropdownMenuSeparator />
           </>
         )}
+
+        {/* Settings */}
+        <DropdownMenuGroup>
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard/settings" className="flex items-center gap-2 cursor-pointer">
+              <Settings className="h-4 w-4" />
+              <span>{dashboardT('settings')}</span>
+            </Link>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
 
         {/* Logout */}
         <DropdownMenuGroup>

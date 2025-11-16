@@ -1313,8 +1313,35 @@
     }
   },
   "settings": {
-    "title": "System Settings",
-    "description": "Configure system preferences and options"
+    "title": "Settings",
+    "description": "Configure your account preferences and options",
+    "navigation": {
+      "account": "Account",
+      "profile": "Profile",
+      "security": "Security",
+      "preferences": "Preferences",
+      "privacy": "Privacy"
+    },
+    "account": {
+      "title": "Account Information",
+      "description": "Manage your account settings and information"
+    },
+    "profile": {
+      "title": "Profile Information",
+      "description": "Manage your profile details"
+    },
+    "security": {
+      "title": "Login & Security",
+      "description": "Manage your authentication methods and security settings"
+    },
+    "preferences": {
+      "title": "Preferences",
+      "description": "Configure your user interface and application preferences"
+    },
+    "privacy": {
+      "title": "Privacy",
+      "description": "Manage your privacy settings and data"
+    }
   },
   "invitations": {
     "title": "Organization Invitation",

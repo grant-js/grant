@@ -1,6 +1,6 @@
 'use client';
 
-import { Avatar as UIAvatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AvatarFallback, AvatarImage, Avatar as UIAvatar } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
 export interface AvatarProps {
@@ -27,7 +27,7 @@ export function Avatar({
   return (
     <UIAvatar className={cn('bg-primary/10', sizeClasses[size], className)}>
       {imageUrl && <AvatarImage src={imageUrl} alt={initial} />}
-      <AvatarFallback className={cn('text-primary font-medium', fallbackClassName)}>
+      <AvatarFallback className={cn('font-medium', fallbackClassName)}>
         {initial.toUpperCase()}
       </AvatarFallback>
     </UIAvatar>

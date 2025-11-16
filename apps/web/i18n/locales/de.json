@@ -1313,8 +1313,35 @@
     }
   },
   "settings": {
-    "title": "Systemeinstellungen",
-    "description": "Konfigurieren Sie Systemeinstellungen und Optionen"
+    "title": "Einstellungen",
+    "description": "Konfigurieren Sie Ihre Kontoeinstellungen und Optionen",
+    "navigation": {
+      "account": "Konto",
+      "profile": "Profil",
+      "security": "Sicherheit",
+      "preferences": "Einstellungen",
+      "privacy": "Datenschutz"
+    },
+    "account": {
+      "title": "Kontoinformationen",
+      "description": "Verwalten Sie Ihre Kontoeinstellungen und Informationen"
+    },
+    "profile": {
+      "title": "Profilinformationen",
+      "description": "Verwalten Sie Ihre Profildetails"
+    },
+    "security": {
+      "title": "Anmeldung & Sicherheit",
+      "description": "Verwalten Sie Ihre Authentifizierungsmethoden und Sicherheitseinstellungen"
+    },
+    "preferences": {
+      "title": "Einstellungen",
+      "description": "Konfigurieren Sie Ihre Benutzeroberfläche und Anwendungseinstellungen"
+    },
+    "privacy": {
+      "title": "Datenschutz",
+      "description": "Verwalten Sie Ihre Datenschutzeinstellungen und Daten"
+    }
   },
   "invitations": {
     "title": "Organisationseinladung",

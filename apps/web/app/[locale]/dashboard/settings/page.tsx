@@ -1,17 +1,20 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useEffect } from 'react';
 
-import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
-import { usePageTitle } from '@/hooks';
+import { useLocale } from 'next-intl';
+import { useRouter } from 'next/navigation';
+
+import { FullPageLoader } from '@/components/common';
 
 export default function SettingsPage() {
-  const t = useTranslations('settings');
-  usePageTitle('settings');
+  const router = useRouter();
+  const locale = useLocale();
 
-  return (
-    <DashboardPageLayout title={t('title')} variant="simple">
-      <p className="text-muted-foreground">{t('description')}</p>
-    </DashboardPageLayout>
-  );
+  useEffect(() => {
+    // Redirect to account settings by default
+    router.replace(`/${locale}/dashboard/settings/account`);
+  }, [locale, router]);
+
+  return <FullPageLoader />;
 }
