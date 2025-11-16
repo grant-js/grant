@@ -1346,7 +1346,7 @@
           "username": {
             "label": "Benutzername",
             "placeholder": "Benutzernamen eingeben",
-            "description": "Dies ist Ihr eindeutiger Identifikator. Er muss mindestens 3 Zeichen lang sein und darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten.",
+            "description": "Ihr eindeutiger Identifikator auf der Plattform. Muss mindestens 3 Zeichen lang sein und darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten.",
             "checking": "Verfügbarkeit wird geprüft...",
             "available": "✓ Benutzername ist verfügbar",
             "unavailable": "✗ Benutzername ist bereits vergeben"
@@ -1385,6 +1385,10 @@
           "title": "Hinweis:",
           "description": "Der Kontotyp kann aus Sicherheits- und Abrechnungsgründen nach der Erstellung nicht mehr geändert werden."
         }
+      },
+      "notifications": {
+        "updateSuccess": "Konto erfolgreich aktualisiert",
+        "updateError": "Fehler beim Aktualisieren des Kontos"
       }
     },
     "profile": {

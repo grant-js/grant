@@ -1407,7 +1407,7 @@ export enum Tenant {
 
 export type UpdateAccountInput = {
   name?: InputMaybe<Scalars['String']['input']>;
-  type?: InputMaybe<AccountType>;
+  slug?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateGroupInput = {

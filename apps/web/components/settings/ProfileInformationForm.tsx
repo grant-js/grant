@@ -9,7 +9,15 @@ import { useForm } from 'react-hook-form';
 
 import { SettingsCard } from '@/components/settings/SettingsCard';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { profileSettingsSchema, ProfileSettingsFormValues } from '@/lib/schemas/settings';
 
@@ -63,7 +71,11 @@ export function ProfileInformationForm({ defaultValues, onSubmit }: ProfileInfor
         }
       >
         <Form {...form}>
-          <form id="profile-information-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          <form
+            id="profile-information-form"
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-6"
+          >
             <FormField
               control={form.control}
               name="name"
@@ -71,7 +83,11 @@ export function ProfileInformationForm({ defaultValues, onSubmit }: ProfileInfor
                 <FormItem>
                   <FormLabel>{t('information.fields.name.label')}</FormLabel>
                   <FormControl>
-                    <Input placeholder={t('information.fields.name.placeholder')} {...field} disabled={isSubmitting} />
+                    <Input
+                      placeholder={t('information.fields.name.placeholder')}
+                      {...field}
+                      disabled={isSubmitting}
+                    />
                   </FormControl>
                   <FormDescription>{t('information.fields.name.description')}</FormDescription>
                   <FormMessage />
@@ -98,4 +114,3 @@ export function ProfileInformationForm({ defaultValues, onSubmit }: ProfileInfor
     </div>
   );
 }
-

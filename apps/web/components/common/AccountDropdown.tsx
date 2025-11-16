@@ -70,7 +70,7 @@ export function AccountDropdown() {
           {initials}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent align="end" className="min-w-64">
         {/* User Info Section */}
         <DropdownMenuGroup>
           <DropdownMenuLabel className="flex flex-col gap-1">
@@ -106,19 +106,28 @@ export function AccountDropdown() {
                     value={account.id}
                     className="flex items-center justify-between"
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
                       {account.type === AccountType.Organization ? (
-                        <Building2 className="h-4 w-4" />
+                        <Building2 className="h-4 w-4 flex-shrink-0" />
                       ) : (
-                        <User className="h-4 w-4" />
+                        <User className="h-4 w-4 flex-shrink-0" />
                       )}
-                      <span className="text-sm">
-                        {account.type === AccountType.Organization
-                          ? t('accountTypes.organization')
-                          : t('accountTypes.personal')}
-                      </span>
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="text-sm">
+                          {account.type === AccountType.Organization
+                            ? t('accountTypes.organization')
+                            : t('accountTypes.personal')}
+                        </span>
+                        {account.slug && (
+                          <span className="text-xs text-muted-foreground truncate">
+                            @{account.slug}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    {account.id === currentAccount?.id && <Check className="h-4 w-4 ml-auto" />}
+                    {account.id === currentAccount?.id && (
+                      <Check className="h-4 w-4 ml-auto flex-shrink-0" />
+                    )}
                   </DropdownMenuRadioItem>
                 ))}
               </DropdownMenuRadioGroup>
@@ -134,15 +143,22 @@ export function AccountDropdown() {
               <DropdownMenuLabel>{t('account.currentAccount')}</DropdownMenuLabel>
               <DropdownMenuItem disabled className="flex items-center gap-2">
                 {currentAccount?.type === AccountType.Organization ? (
-                  <Building2 className="h-4 w-4" />
+                  <Building2 className="h-4 w-4 flex-shrink-0" />
                 ) : (
-                  <User className="h-4 w-4" />
+                  <User className="h-4 w-4 flex-shrink-0" />
                 )}
-                <span className="text-sm">
-                  {currentAccount?.type === AccountType.Organization
-                    ? t('accountTypes.organization')
-                    : t('accountTypes.personal')}
-                </span>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="text-sm">
+                    {currentAccount?.type === AccountType.Organization
+                      ? t('accountTypes.organization')
+                      : t('accountTypes.personal')}
+                  </span>
+                  {currentAccount?.slug && (
+                    <span className="text-xs text-muted-foreground truncate">
+                      @{currentAccount.slug}
+                    </span>
+                  )}
+                </div>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

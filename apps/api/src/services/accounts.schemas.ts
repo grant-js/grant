@@ -2,15 +2,15 @@ import { AccountSortableField, AccountType } from '@logusgraphics/grant-schema';
 import { z } from 'zod';
 
 import {
+  baseEntitySchema,
+  deleteSchema,
   idSchema,
   nameSchema,
-  slugSchema,
-  baseEntitySchema,
-  paginatedResponseSchema,
   nonEmptyNameSchema,
-  sortOrderSchema,
+  paginatedResponseSchema,
   queryParamsSchema,
-  deleteSchema,
+  slugSchema,
+  sortOrderSchema,
 } from './common/schemas';
 
 export const accountSortableFieldSchema = z.enum(
@@ -41,7 +41,7 @@ export const updateAccountParamsSchema = z.object({
   id: idSchema,
   input: z.object({
     name: nonEmptyNameSchema.nullable().optional(),
-    type: accountTypeSchema.nullable().optional(),
+    slug: slugSchema.nullable().optional(),
   }),
 });
 
@@ -53,6 +53,7 @@ export const accountSchema = baseEntitySchema.extend({
   name: nameSchema,
   slug: slugSchema,
   type: accountTypeSchema,
+  ownerId: idSchema,
 });
 
 export const accountPageSchema = paginatedResponseSchema(accountSchema).transform((data) => ({

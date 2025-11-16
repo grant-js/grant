@@ -91,10 +91,11 @@ export function PreferencesSettings() {
       <SettingsCard title={t('notifications.title')} description={t('notifications.description')}>
         <div className="rounded-lg border border-dashed p-6 text-center">
           <p className="text-sm text-muted-foreground">{t('notifications.comingSoon')}</p>
-          <p className="mt-2 text-sm text-muted-foreground">{t('notifications.comingSoonDescription')}</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {t('notifications.comingSoonDescription')}
+          </p>
         </div>
       </SettingsCard>
     </div>
   );
 }
-

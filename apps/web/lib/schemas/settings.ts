@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 /**
  * Account Information Settings Schema
+ * Note: Both name and username (slug) can be updated independently
  */
 export const accountSettingsSchema = z.object({
   name: z
@@ -32,4 +33,3 @@ export const profileSettingsSchema = z.object({
 });
 
 export type ProfileSettingsFormValues = z.infer<typeof profileSettingsSchema>;
-

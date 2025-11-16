@@ -1,5 +1,4 @@
-import { accountProjects } from '@logusgraphics/grant-database';
-import { accounts, AccountModel } from '@logusgraphics/grant-database';
+import { AccountModel, accountProjects, accounts } from '@logusgraphics/grant-database';
 import {
   Account,
   AccountPage,
@@ -84,8 +83,7 @@ export class AccountRepository extends EntityRepository<AccountModel, Account> {
       id: params.id,
       input: {
         name: params.input.name,
-        slug: params.input.name ? this.generateSlug(params.input.name) : undefined,
-        type: params.input.type,
+        slug: params.input.slug,
       },
     };
     return this.update(baseParams, transaction);

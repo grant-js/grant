@@ -58,8 +58,12 @@ export function AccountTypeCard({
 
         {hasComplementaryAccount && (
           <div className="rounded-lg border bg-muted/50 p-4">
-            <p className="text-sm text-muted-foreground">{t('type.multipleAccounts.description')}</p>
-            <p className="mt-2 text-sm text-muted-foreground">{t('type.multipleAccounts.switchInstruction')}</p>
+            <p className="text-sm text-muted-foreground">
+              {t('type.multipleAccounts.description')}
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t('type.multipleAccounts.switchInstruction')}
+            </p>
           </div>
         )}
 
@@ -72,4 +76,3 @@ export function AccountTypeCard({
     </SettingsCard>
   );
 }
-

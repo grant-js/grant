@@ -1,0 +1,11 @@
+mutation UpdateAccount($id: ID!, $input: UpdateAccountInput!) {
+  updateAccount(id: $id, input: $input) {
+    id
+    name
+    slug
+    type
+    ownerId
+    createdAt
+    updatedAt
+  }
+}

@@ -2,7 +2,14 @@
 
 import { ReactNode } from 'react';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
 interface SettingsCardProps {
@@ -20,14 +27,13 @@ export function SettingsCard({ title, description, children, footer }: SettingsC
         {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
       <Separator />
-      <CardContent className="pt-6">{children}</CardContent>
+      <CardContent>{children}</CardContent>
       {footer && (
         <>
           <Separator />
-          <div className="p-6">{footer}</div>
+          <CardFooter>{footer}</CardFooter>
         </>
       )}
     </Card>
   );
 }
-

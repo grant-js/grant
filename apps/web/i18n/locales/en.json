@@ -1346,7 +1346,7 @@
           "username": {
             "label": "Username",
             "placeholder": "Enter username",
-            "description": "This is your unique identifier. It must be at least 3 characters and can only contain lowercase letters, numbers, and hyphens.",
+            "description": "Your unique identifier across the platform. Must be at least 3 characters and can only contain lowercase letters, numbers, and hyphens.",
             "checking": "Checking availability...",
             "available": "✓ Username is available",
             "unavailable": "✗ Username is already taken"
@@ -1385,6 +1385,10 @@
           "title": "Note:",
           "description": "Account type cannot be changed after creation for security and billing purposes."
         }
+      },
+      "notifications": {
+        "updateSuccess": "Account updated successfully",
+        "updateError": "Failed to update account"
       }
     },
     "profile": {

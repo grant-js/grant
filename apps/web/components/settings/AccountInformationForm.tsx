@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
@@ -8,9 +8,18 @@ import { useForm } from 'react-hook-form';
 
 import { SettingsCard } from '@/components/settings/SettingsCard';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { accountSettingsSchema, AccountSettingsFormValues } from '@/lib/schemas/settings';
+import { useUsernameValidation } from '@/hooks/accounts/useUsernameValidation';
+import { AccountSettingsFormValues, accountSettingsSchema } from '@/lib/schemas/settings';
 
 interface AccountInformationFormProps {
   defaultValues: AccountSettingsFormValues;
@@ -21,14 +30,47 @@ export function AccountInformationForm({ defaultValues, onSubmit }: AccountInfor
   const t = useTranslations('settings.account');
   const tCommon = useTranslations('common');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'unavailable'>('idle');
+  const { isChecking, isAvailable, checkUsername } = useUsernameValidation();
 
   const form = useForm<AccountSettingsFormValues>({
     resolver: zodResolver(accountSettingsSchema),
     defaultValues,
   });
 
+  const currentUsername = form.watch('slug');
+
+  // Revalidate form when username availability changes
+  useEffect(() => {
+    if (currentUsername && currentUsername !== defaultValues.slug && isAvailable !== null) {
+      form.trigger('slug');
+    }
+  }, [isAvailable, currentUsername, defaultValues.slug, form]);
+
+  const handleUsernameChange = (value: string) => {
+    form.setValue('slug', value, { shouldDirty: true, shouldValidate: true });
+
+    // Only check availability if username is different from the current one
+    // and meets minimum length requirements
+    if (value && value.trim().length >= 3 && value !== defaultValues.slug) {
+      checkUsername(value);
+    }
+  };
+
   const handleSubmit = async (values: AccountSettingsFormValues) => {
+    // Check if username is unavailable before submitting
+    if (
+      values.slug &&
+      values.slug !== defaultValues.slug &&
+      values.slug.length >= 3 &&
+      isAvailable === false
+    ) {
+      form.setError('slug', {
+        type: 'manual',
+        message: t('information.fields.username.unavailable'),
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await onSubmit(values);
@@ -37,18 +79,12 @@ export function AccountInformationForm({ defaultValues, onSubmit }: AccountInfor
     }
   };
 
-  const handleUsernameChange = (value: string) => {
-    form.setValue('slug', value);
-    // Username validation will be handled when API integration is added
-    // For now, we just update the form value
-  };
-
   return (
     <SettingsCard
       title={t('information.title')}
       description={t('information.description')}
       footer={
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-end gap-4 w-full">
           <Button
             type="button"
             variant="outline"
@@ -68,7 +104,11 @@ export function AccountInformationForm({ defaultValues, onSubmit }: AccountInfor
       }
     >
       <Form {...form}>
-        <form id="account-information-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <form
+          id="account-information-form"
+          onSubmit={form.handleSubmit(handleSubmit)}
+          className="space-y-6"
+        >
           <FormField
             control={form.control}
             name="name"
@@ -76,7 +116,11 @@ export function AccountInformationForm({ defaultValues, onSubmit }: AccountInfor
               <FormItem>
                 <FormLabel>{t('information.fields.name.label')}</FormLabel>
                 <FormControl>
-                  <Input placeholder={t('information.fields.name.placeholder')} {...field} disabled={isSubmitting} />
+                  <Input
+                    placeholder={t('information.fields.name.placeholder')}
+                    {...field}
+                    disabled={isSubmitting}
+                  />
                 </FormControl>
                 <FormDescription>{t('information.fields.name.description')}</FormDescription>
                 <FormMessage />
@@ -98,16 +142,20 @@ export function AccountInformationForm({ defaultValues, onSubmit }: AccountInfor
                       onChange={(e) => handleUsernameChange(e.target.value)}
                       disabled={isSubmitting}
                     />
-                    {usernameStatus === 'checking' && (
-                      <p className="text-sm text-muted-foreground">{t('information.fields.username.checking')}</p>
+                    {isChecking && field.value !== defaultValues.slug && (
+                      <p className="text-sm text-muted-foreground">
+                        {t('information.fields.username.checking')}
+                      </p>
                     )}
-                    {usernameStatus === 'available' && (
+                    {isAvailable === true && field.value !== defaultValues.slug && (
                       <p className="text-sm text-green-600 dark:text-green-400">
                         {t('information.fields.username.available')}
                       </p>
                     )}
-                    {usernameStatus === 'unavailable' && (
-                      <p className="text-sm text-destructive">{t('information.fields.username.unavailable')}</p>
+                    {isAvailable === false && field.value !== defaultValues.slug && (
+                      <p className="text-sm text-destructive">
+                        {t('information.fields.username.unavailable')}
+                      </p>
                     )}
                   </div>
                 </FormControl>
@@ -121,4 +169,3 @@ export function AccountInformationForm({ defaultValues, onSubmit }: AccountInfor
     </SettingsCard>
   );
 }
-
