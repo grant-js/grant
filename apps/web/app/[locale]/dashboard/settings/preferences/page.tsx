@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 
+import { PreferencesSettings } from '@/components/settings/PreferencesSettings';
 import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
 import { usePageTitle } from '@/hooks';
 
@@ -11,8 +12,7 @@ export default function PreferencesSettingsPage() {
 
   return (
     <DashboardPageLayout title={t('title')} variant="simple">
-      <p className="text-muted-foreground">{t('description')}</p>
-      {/* Preferences settings content will be implemented here */}
+      <PreferencesSettings />
     </DashboardPageLayout>
   );
 }

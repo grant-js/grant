@@ -3,7 +3,7 @@ services:
     image: postgres:16-alpine
     container_name: grant-platform-postgres
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-grant_platform}
+      POSTGRES_DB: ${POSTGRES_DB:-grant_platform_db}
       POSTGRES_USER: ${POSTGRES_USER:-grant_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-grant_password}
       POSTGRES_INITDB_ARGS: '--encoding=UTF-8 --lc-collate=C --lc-ctype=C'
@@ -15,7 +15,7 @@ services:
       test:
         [
           'CMD-SHELL',
-          'pg_isready -U ${POSTGRES_USER:-grant_user} -d ${POSTGRES_DB:-grant_platform}',
+          'pg_isready -U ${POSTGRES_USER:-grant_user} -d ${POSTGRES_DB:-grant_platform_db}',
         ]
       interval: 10s
       timeout: 5s

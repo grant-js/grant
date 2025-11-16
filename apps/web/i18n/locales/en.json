@@ -61,6 +61,15 @@
       "clearAll": "Clear all",
       "loading": "Loading tags..."
     },
+    "actions": {
+      "save": "Save Changes",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "delete": "Delete",
+      "create": "Create",
+      "update": "Update"
+    },
     "emptyElements": "No {title} to display",
     "loading": "Loading...",
     "redirecting": "Redirecting...",
@@ -1324,11 +1333,80 @@
     },
     "account": {
       "title": "Account Information",
-      "description": "Manage your account settings and information"
+      "description": "Manage your account settings and information",
+      "information": {
+        "title": "Account Details",
+        "description": "Update your account name and username",
+        "fields": {
+          "name": {
+            "label": "Account Name",
+            "placeholder": "Enter account name",
+            "description": "This is your account's display name. It can be your personal name or your organization name."
+          },
+          "username": {
+            "label": "Username",
+            "placeholder": "Enter username",
+            "description": "This is your unique identifier. It must be at least 3 characters and can only contain lowercase letters, numbers, and hyphens.",
+            "checking": "Checking availability...",
+            "available": "✓ Username is available",
+            "unavailable": "✗ Username is already taken"
+          }
+        }
+      },
+      "type": {
+        "title": "Account Type",
+        "description": "Your account type determines the features available to you",
+        "current": "Current Account Type",
+        "currentDescription": "This account type cannot be changed after creation",
+        "features": {
+          "personal": {
+            "title": "Personal Account Features",
+            "feature1": "Individual user access and permissions",
+            "feature2": "Personal project management",
+            "feature3": "Basic collaboration features"
+          },
+          "organization": {
+            "title": "Organization Account Features",
+            "feature1": "Team management and collaboration",
+            "feature2": "Advanced project management",
+            "feature3": "Organization-wide settings and controls"
+          }
+        },
+        "complementary": {
+          "title": "Create a Complementary Account",
+          "description": "You can also create a {type} account to access additional features.",
+          "action": "Create {type} Account"
+        },
+        "multipleAccounts": {
+          "description": "You have both a personal and organization account.",
+          "switchInstruction": "Use the account switcher in the header to switch between your accounts."
+        },
+        "immutable": {
+          "title": "Note:",
+          "description": "Account type cannot be changed after creation for security and billing purposes."
+        }
+      }
     },
     "profile": {
       "title": "Profile Information",
-      "description": "Manage your profile details"
+      "description": "Manage your profile details",
+      "information": {
+        "title": "Personal Details",
+        "description": "Update your personal information",
+        "fields": {
+          "name": {
+            "label": "Display Name",
+            "placeholder": "Enter your name",
+            "description": "This is your full name displayed across the platform."
+          }
+        }
+      },
+      "avatar": {
+        "title": "Profile Picture",
+        "description": "Upload a profile picture to personalize your account",
+        "comingSoon": "Profile picture support is coming soon! You'll be able to upload a custom avatar to personalize your account.",
+        "uploadButton": "Upload Picture"
+      }
     },
     "security": {
       "title": "Login & Security",
@@ -1336,7 +1414,30 @@
     },
     "preferences": {
       "title": "Preferences",
-      "description": "Configure your user interface and application preferences"
+      "description": "Configure your user interface and application preferences",
+      "appearance": {
+        "title": "Appearance",
+        "description": "Customize how the application looks",
+        "theme": {
+          "label": "Theme",
+          "description": "Choose your preferred theme or match your system settings",
+          "light": "Light",
+          "dark": "Dark",
+          "system": "System"
+        }
+      },
+      "language": {
+        "title": "Language & Region",
+        "description": "Set your preferred language",
+        "label": "Language",
+        "selectDescription": "Choose your preferred language for the interface"
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Manage your notification preferences",
+        "comingSoon": "Notification preferences are coming soon!",
+        "comingSoonDescription": "You'll be able to customize email notifications, in-app alerts, and notification frequency."
+      }
     },
     "privacy": {
       "title": "Privacy",

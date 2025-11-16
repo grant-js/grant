@@ -61,6 +61,15 @@
       "clearAll": "Alle löschen",
       "loading": "Tags werden geladen..."
     },
+    "actions": {
+      "save": "Änderungen speichern",
+      "saving": "Wird gespeichert...",
+      "cancel": "Abbrechen",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "create": "Erstellen",
+      "update": "Aktualisieren"
+    },
     "emptyElements": "Keine {title} zum Anzeigen",
     "loading": "Wird geladen...",
     "redirecting": "Wird weitergeleitet...",
@@ -1324,11 +1333,80 @@
     },
     "account": {
       "title": "Kontoinformationen",
-      "description": "Verwalten Sie Ihre Kontoeinstellungen und Informationen"
+      "description": "Verwalten Sie Ihre Kontoeinstellungen und Informationen",
+      "information": {
+        "title": "Kontodetails",
+        "description": "Aktualisieren Sie Ihren Kontonamen und Benutzernamen",
+        "fields": {
+          "name": {
+            "label": "Kontoname",
+            "placeholder": "Kontonamen eingeben",
+            "description": "Dies ist der Anzeigename Ihres Kontos. Es kann Ihr persönlicher Name oder Ihr Organisationsname sein."
+          },
+          "username": {
+            "label": "Benutzername",
+            "placeholder": "Benutzernamen eingeben",
+            "description": "Dies ist Ihr eindeutiger Identifikator. Er muss mindestens 3 Zeichen lang sein und darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten.",
+            "checking": "Verfügbarkeit wird geprüft...",
+            "available": "✓ Benutzername ist verfügbar",
+            "unavailable": "✗ Benutzername ist bereits vergeben"
+          }
+        }
+      },
+      "type": {
+        "title": "Kontotyp",
+        "description": "Ihr Kontotyp bestimmt die verfügbaren Funktionen",
+        "current": "Aktueller Kontotyp",
+        "currentDescription": "Dieser Kontotyp kann nach der Erstellung nicht mehr geändert werden",
+        "features": {
+          "personal": {
+            "title": "Funktionen des persönlichen Kontos",
+            "feature1": "Individueller Benutzerzugriff und Berechtigungen",
+            "feature2": "Persönliche Projektverwaltung",
+            "feature3": "Grundlegende Kollaborationsfunktionen"
+          },
+          "organization": {
+            "title": "Funktionen des Organisationskontos",
+            "feature1": "Team-Management und Zusammenarbeit",
+            "feature2": "Erweiterte Projektverwaltung",
+            "feature3": "Organisationsweite Einstellungen und Kontrollen"
+          }
+        },
+        "complementary": {
+          "title": "Erstellen Sie ein ergänzendes Konto",
+          "description": "Sie können auch ein {type}-Konto erstellen, um auf zusätzliche Funktionen zuzugreifen.",
+          "action": "{type}-Konto erstellen"
+        },
+        "multipleAccounts": {
+          "description": "Sie haben sowohl ein persönliches als auch ein Organisationskonto.",
+          "switchInstruction": "Verwenden Sie den Kontowechsler im Header, um zwischen Ihren Konten zu wechseln."
+        },
+        "immutable": {
+          "title": "Hinweis:",
+          "description": "Der Kontotyp kann aus Sicherheits- und Abrechnungsgründen nach der Erstellung nicht mehr geändert werden."
+        }
+      }
     },
     "profile": {
       "title": "Profilinformationen",
-      "description": "Verwalten Sie Ihre Profildetails"
+      "description": "Verwalten Sie Ihre Profildetails",
+      "information": {
+        "title": "Persönliche Daten",
+        "description": "Aktualisieren Sie Ihre persönlichen Informationen",
+        "fields": {
+          "name": {
+            "label": "Anzeigename",
+            "placeholder": "Geben Sie Ihren Namen ein",
+            "description": "Dies ist Ihr vollständiger Name, der auf der Plattform angezeigt wird."
+          }
+        }
+      },
+      "avatar": {
+        "title": "Profilbild",
+        "description": "Laden Sie ein Profilbild hoch, um Ihr Konto zu personalisieren",
+        "comingSoon": "Profilbild-Unterstützung kommt bald! Sie werden in der Lage sein, einen benutzerdefinierten Avatar hochzuladen, um Ihr Konto zu personalisieren.",
+        "uploadButton": "Bild hochladen"
+      }
     },
     "security": {
       "title": "Anmeldung & Sicherheit",
@@ -1336,7 +1414,30 @@
     },
     "preferences": {
       "title": "Einstellungen",
-      "description": "Konfigurieren Sie Ihre Benutzeroberfläche und Anwendungseinstellungen"
+      "description": "Konfigurieren Sie Ihre Benutzeroberfläche und Anwendungseinstellungen",
+      "appearance": {
+        "title": "Erscheinungsbild",
+        "description": "Passen Sie das Aussehen der Anwendung an",
+        "theme": {
+          "label": "Design",
+          "description": "Wählen Sie Ihr bevorzugtes Design oder passen Sie es an Ihre Systemeinstellungen an",
+          "light": "Hell",
+          "dark": "Dunkel",
+          "system": "System"
+        }
+      },
+      "language": {
+        "title": "Sprache & Region",
+        "description": "Legen Sie Ihre bevorzugte Sprache fest",
+        "label": "Sprache",
+        "selectDescription": "Wählen Sie Ihre bevorzugte Sprache für die Benutzeroberfläche"
+      },
+      "notifications": {
+        "title": "Benachrichtigungen",
+        "description": "Verwalten Sie Ihre Benachrichtigungseinstellungen",
+        "comingSoon": "Benachrichtigungseinstellungen kommen bald!",
+        "comingSoonDescription": "Sie können E-Mail-Benachrichtigungen, In-App-Benachrichtigungen und Benachrichtigungshäufigkeit anpassen."
+      }
     },
     "privacy": {
       "title": "Datenschutz",
