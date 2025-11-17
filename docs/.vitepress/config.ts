@@ -1,4 +1,9 @@
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
 import { withMermaid } from 'vitepress-plugin-mermaid';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export default withMermaid({
   title: 'Grant Platform',
@@ -252,5 +257,59 @@ export default withMermaid({
       // Edge colors
       edgeLabelBackground: 'transparent',
     },
+  },
+
+  // Vite configuration
+  vite: {
+    optimizeDeps: {
+      exclude: ['debug'], // Exclude debug - we're using a shim instead
+    },
+    ssr: {
+      noExternal: ['vitepress-plugin-mermaid'], // Ensure Mermaid plugin is processed by Vite
+    },
+    resolve: {
+      alias: [
+        // Replace debug/src/browser.js with our ESM shim
+        {
+          find: /^debug\/src\/browser\.js$/,
+          replacement: resolve(__dirname, '.vitepress/debug-shim.js'),
+        },
+        // Also handle the full path pattern
+        {
+          find: /debug\/src\/browser/,
+          replacement: resolve(__dirname, '.vitepress/debug-shim.js'),
+        },
+      ],
+    },
+    plugins: [
+      {
+        name: 'fix-debug-import',
+        enforce: 'pre',
+        resolveId(id) {
+          // Intercept debug/src/browser.js imports and redirect to our shim
+          if (id.includes('debug/src/browser.js') || id === 'debug/src/browser.js') {
+            // Return absolute path to our shim
+            return resolve(__dirname, '.vitepress/debug-shim.js');
+          }
+        },
+        transform(code, id) {
+          // Transform problematic default import of debug to named import
+          if (
+            code.includes('import createDebugger from') &&
+            code.includes('debug') &&
+            !code.includes('__debug_mod') &&
+            !id.includes('debug-shim.js')
+          ) {
+            return code.replace(
+              /import\s+createDebugger\s+from\s+['"](.*debug.*)['"]/g,
+              (match, importPath) => {
+                // Transform to named import from our shim
+                return `import { createDebugger } from '/.vitepress/debug-shim.js';`;
+              }
+            );
+          }
+        },
+      },
+    ],
   },
 });
