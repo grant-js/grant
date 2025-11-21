@@ -80,6 +80,7 @@ export default withMermaid({
             { text: 'RBAC/ACL System', link: '/architecture/rbac-acl' },
             { text: 'Data Model', link: '/architecture/data-model' },
             { text: 'Security', link: '/architecture/security' },
+            { text: 'File Storage', link: '/architecture/file-storage' },
           ],
         },
         {
