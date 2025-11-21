@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { User } from 'lucide-react';
@@ -19,7 +19,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { profileSettingsSchema, ProfileSettingsFormValues } from '@/lib/schemas/settings';
+import { ProfileSettingsFormValues, profileSettingsSchema } from '@/lib/schemas/settings';
 
 interface ProfileInformationFormProps {
   defaultValues: ProfileSettingsFormValues;
@@ -35,6 +35,10 @@ export function ProfileInformationForm({ defaultValues, onSubmit }: ProfileInfor
     resolver: zodResolver(profileSettingsSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    form.reset(defaultValues);
+  }, [defaultValues, form]);
 
   const handleSubmit = async (values: ProfileSettingsFormValues) => {
     setIsSubmitting(true);

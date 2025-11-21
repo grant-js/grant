@@ -1,4 +1,4 @@
-import { AccountModel, accountProjects, accounts } from '@logusgraphics/grant-database';
+import { AccountModel, accountProjects, accounts, users } from '@logusgraphics/grant-database';
 import {
   Account,
   AccountPage,
@@ -8,6 +8,7 @@ import {
   MutationDeleteAccountArgs,
   MutationUpdateAccountArgs,
   QueryAccountsArgs,
+  User,
 } from '@logusgraphics/grant-schema';
 import { and, eq, isNull } from 'drizzle-orm';
 
@@ -33,6 +34,11 @@ export class AccountRepository extends EntityRepository<AccountModel, Account> {
       field: 'project',
       table: accountProjects,
       extract: (v: AccountProject[]) => v.map(({ project }) => project),
+    },
+    owner: {
+      field: 'owner',
+      table: users,
+      extract: (v: User) => v, // owner is a single User object, not an array
     },
   };
 
