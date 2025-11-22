@@ -189,6 +189,26 @@ Expired sessions are automatically filtered out when querying active sessions.
 - **Last Used** - Timestamp of last activity
 - **Expiration** - Automatic expiration of inactive sessions
 
+### CSRF Protection
+
+**Current Status:** Partially Protected
+
+The platform uses multiple layers of CSRF protection:
+
+1. **JWT in Authorization Headers** - All authenticated requests use `Authorization: Bearer <token>` headers, which are **not vulnerable to CSRF** because browsers don't automatically send custom headers in cross-site requests.
+
+2. **SameSite Cookie Attribute** - Cookies use `sameSite: 'lax'` which provides partial protection by blocking cross-site POST/PUT/DELETE requests.
+
+3. **Apollo Server CSRF Prevention** - GraphQL endpoints have built-in CSRF protection enabled via Apollo Server's `csrfPrevention` feature.
+
+4. **CSRF Token Protection** - Full CSRF token implementation is planned (see [CSRF Protection Implementation Plan](../implementation-plans/csrf-protection.md)).
+
+**Why Additional CSRF Protection is Recommended:**
+- Defense in depth (multiple security layers)
+- Future-proofing for cookie-based authentication
+- Industry best practice and compliance requirements
+- Protection against edge cases
+
 ### Security Best Practices
 
 1. **HTTPS Only** - Tokens should only be transmitted over HTTPS
@@ -196,6 +216,7 @@ Expired sessions are automatically filtered out when querying active sessions.
 3. **Token Rotation** - Refresh tokens are rotated on use
 4. **Session Revocation** - Users can revoke suspicious sessions
 5. **Audit Logging** - All session operations are logged
+6. **CSRF Protection** - CSRF tokens for state-changing operations (planned)
 
 ## User Session Management UI
 
@@ -306,11 +327,12 @@ return createSession({
 
 Potential improvements to session management:
 
-1. **Device Fingerprinting** - More sophisticated device identification using browser fingerprinting libraries
-2. **Geolocation** - Track session location for security alerts
-3. **Session Limits** - Configurable maximum concurrent sessions per user
-4. **Automatic Revocation** - Revoke sessions based on suspicious activity
-5. **Session Notifications** - Email alerts for new device logins
+1. **CSRF Token Protection** - Full implementation of CSRF tokens for all state-changing operations (see [Implementation Plan](../implementation-plans/csrf-protection.md))
+2. **Device Fingerprinting** - More sophisticated device identification using browser fingerprinting libraries
+3. **Geolocation** - Track session location for security alerts
+4. **Session Limits** - Configurable maximum concurrent sessions per user
+5. **Automatic Revocation** - Revoke sessions based on suspicious activity
+6. **Session Notifications** - Email alerts for new device logins
 
 ## Related Documentation
 
