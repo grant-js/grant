@@ -66,7 +66,12 @@ export class AccountHandler extends ScopeHandler {
     });
   }
 
-  public async login(params: MutationLoginArgs, audience: string): Promise<LoginResponse> {
+  public async login(
+    params: MutationLoginArgs,
+    audience: string,
+    userAgent?: string | null,
+    ipAddress?: string | null
+  ): Promise<LoginResponse> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { provider, providerId, providerData } = params.input;
       const { providerData: processedProviderData } =
@@ -143,11 +148,12 @@ export class AccountHandler extends ScopeHandler {
         throw new AuthenticationError('User does not have an account', 'errors:auth.noAccount');
       }
 
+      // Check for existing session with same userAgent and ipAddress
       const userSessionsResult = await this.services.userSessions.getUserSessions(
         {
           userId: user.id,
           audience,
-          limit: 1,
+          limit: 100, // Get more sessions to find matching one
           sort: {
             field: UserSessionSortableField.LastUsedAt,
             order: SortOrder.Desc,
@@ -156,23 +162,29 @@ export class AccountHandler extends ScopeHandler {
         tx
       );
 
-      if (userSessionsResult.totalCount > 0) {
-        const lastSession = userSessionsResult.userSessions[0];
-        if (lastSession.expiresAt > new Date()) {
-          await this.services.userSessions.refreshSessionLastUsed(lastSession.id, tx);
+      // Find matching session by userAgent and ipAddress
+      const matchingSession = userSessionsResult.userSessions.find(
+        (session) =>
+          session.expiresAt > new Date() &&
+          session.userAgent === (userAgent || null) &&
+          session.ipAddress === (ipAddress || null)
+      );
 
-          const { accessToken, refreshToken } = this.services.userSessions.signSession(lastSession);
-          return {
-            accessToken,
-            refreshToken,
-            accounts: user.accounts ?? [],
-            requiresEmailVerification: !userAuthenticationMethod.isVerified,
-            verificationExpiry: userAuthenticationMethod.isVerified
-              ? null
-              : this.getVerificationExpiryDate(),
-            email: provider === UserAuthenticationMethodProvider.Email ? providerId : null,
-          };
-        }
+      if (matchingSession) {
+        await this.services.userSessions.refreshSessionLastUsed(matchingSession.id, tx);
+
+        const { accessToken, refreshToken } =
+          this.services.userSessions.signSession(matchingSession);
+        return {
+          accessToken,
+          refreshToken,
+          accounts: user.accounts ?? [],
+          requiresEmailVerification: !userAuthenticationMethod.isVerified,
+          verificationExpiry: userAuthenticationMethod.isVerified
+            ? null
+            : this.getVerificationExpiryDate(),
+          email: provider === UserAuthenticationMethodProvider.Email ? providerId : null,
+        };
       }
 
       const session = await this.services.userSessions.createSession(
@@ -180,6 +192,8 @@ export class AccountHandler extends ScopeHandler {
           userId: user.id,
           userAuthenticationMethodId: userAuthenticationMethod.id,
           audience,
+          userAgent: userAgent || null,
+          ipAddress: ipAddress || null,
         },
         tx
       );
@@ -236,7 +250,9 @@ export class AccountHandler extends ScopeHandler {
   public async createAccount(
     params: Omit<CreateAccountInput, 'ownerId'>,
     audience: string,
-    locale?: string
+    locale?: string,
+    userAgent?: string | null,
+    ipAddress?: string | null
   ): Promise<CreateAccountResult> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { name, username, type, provider, providerId, providerData } = params;
@@ -288,6 +304,8 @@ export class AccountHandler extends ScopeHandler {
           userId: user.id,
           userAuthenticationMethodId: userAuthenticationMethod.id,
           audience,
+          userAgent: userAgent || null,
+          ipAddress: ipAddress || null,
         },
         tx
       );

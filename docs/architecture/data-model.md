@@ -589,4 +589,28 @@ The database schema is automatically exposed through GraphQL:
 
 ---
 
+## Authentication & Sessions
+
+The platform includes comprehensive authentication and session management:
+
+### User Authentication Methods
+
+Users can authenticate using multiple methods stored in `user_authentication_methods`:
+
+- **Email/Password** - Traditional authentication with hashed passwords
+- **OAuth Providers** - Google, GitHub, and other OAuth providers
+- Each method tracks verification status and last used timestamp
+
+### User Sessions
+
+Sessions are stored in `user_sessions` with device-aware tracking:
+
+- **Device Identification** - `userAgent` and `ipAddress` fields
+- **Session Isolation** - Unique sessions per device/browser combination
+- **Token Management** - Refresh tokens stored securely
+- **Audience Scoping** - Sessions scoped to specific accounts (`audience` field)
+- **Expiration Tracking** - Automatic expiration of inactive sessions
+
+For detailed information about session management, device tracking, and security features, see the [Security & Session Management](/architecture/security) documentation.
+
 **Next:** Learn about [Security](/architecture/security) to understand authentication and authorization mechanisms.

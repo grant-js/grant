@@ -7,6 +7,8 @@ import * as permissionQueries from './permissions/queries';
 import * as projectQueries from './projects/queries';
 import * as roleQueries from './roles/queries';
 import * as tagQueries from './tags/queries';
+import * as userAuthenticationMethodQueries from './user-authentication-methods/queries';
+import * as userSessionQueries from './user-sessions/queries';
 import * as userQueries from './users/queries';
 export const Query = {
   _empty: () => null,
@@ -22,4 +24,6 @@ export const Query = {
   projects: projectQueries.getProjects,
   permissions: permissionQueries.getPermissions,
   tags: tagQueries.getTags,
+  userAuthenticationMethods: userAuthenticationMethodQueries.userAuthenticationMethods,
+  userSessions: userSessionQueries.userSessions,
 } as const;

@@ -1,21 +1,31 @@
 import { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
+import { z } from 'zod';
 
 import {
   authenticationErrorResponseSchema,
+  changePasswordRequestSchema,
+  changePasswordResponseSchema,
   createUserRequestSchema,
   createUserResponseSchema,
   deleteUserQuerySchema,
   deleteUserResponseSchema,
   errorResponseSchema,
+  getUserAuthenticationMethodsQuerySchema,
+  getUserAuthenticationMethodsResponseSchema,
+  getUserSessionsQuerySchema,
+  getUserSessionsResponseSchema,
   getUsersQuerySchema,
   getUsersResponseSchema,
   notFoundErrorResponseSchema,
+  revokeUserSessionResponseSchema,
   updateUserRequestSchema,
   updateUserResponseSchema,
   uploadUserPictureRequestSchema,
   uploadUserPictureResponseSchema,
+  userAuthenticationMethodSchema,
   userParamsSchema,
   userSchema,
+  userSessionSchema,
   userWithRelationsSchema,
   validationErrorResponseSchema,
 } from '@/rest/schemas';
@@ -30,6 +40,18 @@ export function registerUserEndpoints(registry: OpenAPIRegistry) {
   registry.register('UserParams', userParamsSchema);
   registry.register('UploadUserPictureRequest', uploadUserPictureRequestSchema);
   registry.register('UploadUserPictureResponse', uploadUserPictureResponseSchema);
+  registry.register('UserAuthenticationMethod', userAuthenticationMethodSchema);
+  registry.register('GetUserAuthenticationMethodsQuery', getUserAuthenticationMethodsQuerySchema);
+  registry.register(
+    'GetUserAuthenticationMethodsResponse',
+    getUserAuthenticationMethodsResponseSchema
+  );
+  registry.register('ChangePasswordRequest', changePasswordRequestSchema);
+  registry.register('ChangePasswordResponse', changePasswordResponseSchema);
+  registry.register('UserSession', userSessionSchema);
+  registry.register('GetUserSessionsQuery', getUserSessionsQuerySchema);
+  registry.register('GetUserSessionsResponse', getUserSessionsResponseSchema);
+  registry.register('RevokeUserSessionResponse', revokeUserSessionResponseSchema);
 
   /**
    * GET /api/users
@@ -397,6 +419,282 @@ Returns the public URL and storage path of the uploaded file. The user's \`pictu
       },
       404: {
         description: 'User not found',
+        content: {
+          'application/json': {
+            schema: notFoundErrorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * GET /api/users/{id}/authentication-methods
+   */
+  registry.registerPath({
+    method: 'get',
+    path: '/api/users/{id}/authentication-methods',
+    tags: ['Users'],
+    summary: 'Get user authentication methods',
+    description: `
+Get all authentication methods for a user.
+
+### Authorization
+Users can only query their own authentication methods.
+
+### Filtering
+- \`provider\`: Filter by provider type (\`email\`, \`google\`, \`github\`)
+    `.trim(),
+    request: {
+      params: userParamsSchema,
+      query: getUserAuthenticationMethodsQuerySchema,
+    },
+    responses: {
+      200: {
+        description: 'Successfully retrieved authentication methods',
+        content: {
+          'application/json': {
+            schema: getUserAuthenticationMethodsResponseSchema,
+          },
+        },
+      },
+      400: {
+        description: 'Invalid request parameters',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized - Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      404: {
+        description: 'User not found or unauthorized',
+        content: {
+          'application/json': {
+            schema: notFoundErrorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * POST /api/users/{id}/change-password
+   */
+  registry.registerPath({
+    method: 'post',
+    path: '/api/users/{id}/change-password',
+    tags: ['Users'],
+    summary: 'Change user password',
+    description: `
+Change the password for a user's email authentication method.
+
+### Authorization
+Users can only change their own password.
+
+### Password Requirements
+- Minimum 8 characters
+- Maximum 128 characters
+- At least one uppercase letter
+- At least one lowercase letter
+- At least one number
+- At least one special character
+- Must be different from current password
+    `.trim(),
+    request: {
+      params: userParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: changePasswordRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Password changed successfully',
+        content: {
+          'application/json': {
+            schema: changePasswordResponseSchema,
+          },
+        },
+      },
+      400: {
+        description: 'Invalid request or password does not meet requirements',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized - Authentication required or incorrect current password',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      404: {
+        description: 'User not found or unauthorized',
+        content: {
+          'application/json': {
+            schema: notFoundErrorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * GET /api/users/{id}/sessions
+   */
+  registry.registerPath({
+    method: 'get',
+    path: '/api/users/{id}/sessions',
+    tags: ['Users'],
+    summary: 'Get user sessions',
+    description: `
+Get all active sessions for a user.
+
+### Authorization
+Users can only query their own sessions.
+
+### Filtering
+- \`audience\`: Filter by session audience (scope)
+- \`page\`: Page number for pagination
+- \`limit\`: Number of items per page
+    `.trim(),
+    request: {
+      params: userParamsSchema,
+      query: getUserSessionsQuerySchema,
+    },
+    responses: {
+      200: {
+        description: 'Successfully retrieved user sessions',
+        content: {
+          'application/json': {
+            schema: getUserSessionsResponseSchema,
+          },
+        },
+      },
+      400: {
+        description: 'Invalid request parameters',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized - Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      404: {
+        description: 'User not found or unauthorized',
+        content: {
+          'application/json': {
+            schema: notFoundErrorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * DELETE /api/users/{id}/sessions/{sessionId}
+   */
+  registry.registerPath({
+    method: 'delete',
+    path: '/api/users/{id}/sessions/{sessionId}',
+    tags: ['Users'],
+    summary: 'Revoke a user session',
+    description: `
+Revoke (delete) a specific user session.
+
+### Authorization
+Users can only revoke their own sessions.
+
+### Effects
+- The session token will be invalidated immediately
+- The user will need to log in again if this was their current session
+    `.trim(),
+    request: {
+      params: userParamsSchema.extend({
+        sessionId: z.string().uuid('Invalid session ID'),
+      }),
+    },
+    responses: {
+      200: {
+        description: 'Session revoked successfully',
+        content: {
+          'application/json': {
+            schema: revokeUserSessionResponseSchema,
+          },
+        },
+      },
+      400: {
+        description: 'Invalid request parameters',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized - Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      404: {
+        description: 'User or session not found, or unauthorized',
         content: {
           'application/json': {
             schema: notFoundErrorResponseSchema,

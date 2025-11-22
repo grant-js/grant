@@ -8,6 +8,7 @@ import {
   Tag,
   Tenant,
   User,
+  UserAuthenticationMethodProvider,
   UserPage,
 } from '@logusgraphics/grant-schema';
 
@@ -245,5 +246,72 @@ export class UserHandler extends ScopeHandler {
         path: result.path,
       };
     });
+  }
+
+  public async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string
+  ): Promise<void> {
+    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+      await this.services.userAuthenticationMethods.changePassword(
+        userId,
+        currentPassword,
+        newPassword,
+        tx
+      );
+    });
+  }
+
+  public async getUserAuthenticationMethods(params: {
+    userId: string;
+    provider?: UserAuthenticationMethodProvider;
+  }) {
+    return await this.services.userAuthenticationMethods.getUserAuthenticationMethods({
+      userId: params.userId,
+      provider: params.provider,
+      requestedFields: [
+        'id',
+        'userId',
+        'provider',
+        'providerId',
+        'isVerified',
+        'isPrimary',
+        'lastUsedAt',
+        'createdAt',
+        'updatedAt',
+      ],
+    });
+  }
+
+  public async getUserSessions(params: {
+    userId: string;
+    audience?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    return await this.services.userSessions.getUserSessions({
+      userId: params.userId,
+      audience: params.audience,
+      page: params.page,
+      limit: params.limit,
+      requestedFields: [
+        'id',
+        'userId',
+        'userAuthenticationMethodId',
+        'token',
+        'audience',
+        'expiresAt',
+        'lastUsedAt',
+        'userAgent',
+        'ipAddress',
+        'createdAt',
+        'updatedAt',
+      ],
+    });
+  }
+
+  public async revokeUserSession(sessionId: string) {
+    return await this.services.userSessions.revokeSession(sessionId);
   }
 }

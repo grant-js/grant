@@ -1,11 +1,16 @@
 import { Router } from 'express';
+import { z } from 'zod';
 
 import { validate } from '@/middleware/validation.middleware';
 import { UsersController } from '@/rest/controllers/users.controller';
 import {
+  changePasswordRequestSchema,
   createUserRequestSchema,
   deleteUserQuerySchema,
+  getUserAuthenticationMethodsQuerySchema,
+  getUserSessionsQuerySchema,
   getUsersQuerySchema,
+  revokeUserSessionParamsSchema,
   updateUserRequestSchema,
   uploadUserPictureRequestSchema,
   userParamsSchema,
@@ -96,6 +101,79 @@ export function createUserRoutes(context: RequestContext) {
         req as TypedRequest<{
           params: typeof userParamsSchema;
           body: typeof uploadUserPictureRequestSchema;
+        }>,
+        res
+      )
+  );
+
+  /**
+   * GET /api/users/:id/authentication-methods
+   * Get user authentication methods
+   */
+  router.get(
+    '/:id/authentication-methods',
+    validate({ params: userParamsSchema, query: getUserAuthenticationMethodsQuerySchema }),
+    (req, res) =>
+      usersController.getAuthenticationMethods(
+        req as TypedRequest<{
+          params: typeof userParamsSchema;
+          query: typeof getUserAuthenticationMethodsQuerySchema;
+        }>,
+        res
+      )
+  );
+
+  /**
+   * POST /api/users/:id/change-password
+   * Change user password
+   */
+  router.post(
+    '/:id/change-password',
+    validate({ params: userParamsSchema, body: changePasswordRequestSchema }),
+    (req, res) =>
+      usersController.changePassword(
+        req as TypedRequest<{
+          params: typeof userParamsSchema;
+          body: typeof changePasswordRequestSchema;
+        }>,
+        res
+      )
+  );
+
+  /**
+   * GET /api/users/:id/sessions
+   * Get user sessions
+   */
+  router.get(
+    '/:id/sessions',
+    validate({ params: userParamsSchema, query: getUserSessionsQuerySchema }),
+    (req, res) =>
+      usersController.getSessions(
+        req as TypedRequest<{
+          params: typeof userParamsSchema;
+          query: typeof getUserSessionsQuerySchema;
+        }>,
+        res
+      )
+  );
+
+  /**
+   * DELETE /api/users/:id/sessions/:sessionId
+   * Revoke a user session
+   */
+  router.delete(
+    '/:id/sessions/:sessionId',
+    validate({
+      params: userParamsSchema.merge(
+        z.object({
+          sessionId: z.string().uuid('Invalid session ID'),
+        })
+      ),
+    }),
+    (req, res) =>
+      usersController.revokeSession(
+        req as TypedRequest<{
+          params: typeof userParamsSchema & { sessionId: string };
         }>,
         res
       )

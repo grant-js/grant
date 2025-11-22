@@ -11,7 +11,13 @@ import {
 import { compareSync, hashSync } from 'bcrypt';
 
 import { config } from '@/config';
-import { BadRequestError, ConflictError, NotFoundError, ValidationError } from '@/lib/errors';
+import {
+  AuthenticationError,
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+  ValidationError,
+} from '@/lib/errors';
 import { generateSecureToken, isTokenValid, type Token } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
@@ -626,5 +632,57 @@ export class UserAuthenticationMethodService extends AuditService {
         transaction
       );
     }
+  }
+
+  public async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+    transaction?: Transaction
+  ): Promise<void> {
+    const context = 'UserAuthenticationMethodService.changePassword';
+
+    validateInput(passwordPolicySchema, newPassword, context);
+
+    const methods =
+      await this.repositories.userAuthenticationMethodRepository.getUserAuthenticationMethods(
+        {
+          userId,
+          provider: UserAuthenticationMethodProvider.Email,
+          requestedFields: ['id', 'userId', 'providerData'],
+        },
+        transaction
+      );
+
+    if (methods.length === 0) {
+      throw new NotFoundError(
+        'Email authentication method not found',
+        'errors:auth.methodNotFound'
+      );
+    }
+
+    const emailMethod = methods[0];
+    const providerData = (emailMethod.providerData as Record<string, unknown>) || {};
+    const hashedPassword = providerData.hashedPassword as string | undefined;
+
+    if (!hashedPassword) {
+      throw new BadRequestError('Password not set for this account', 'errors:auth.passwordNotSet');
+    }
+
+    if (!this.verifyPassword(currentPassword, hashedPassword)) {
+      throw new AuthenticationError('Current password is incorrect', 'errors:auth.invalidPassword');
+    }
+
+    const newHashedPassword = this.hashPassword(newPassword);
+    providerData.hashedPassword = newHashedPassword;
+
+    await this.repositories.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
+      emailMethod.id,
+      {
+        id: emailMethod.id,
+        providerData,
+      },
+      transaction
+    );
   }
 }

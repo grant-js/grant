@@ -171,3 +171,217 @@ export const uploadUserPictureResponseSchema = createSuccessResponseSchema(
   }),
   'Successfully uploaded user picture'
 );
+
+export const getUserAuthenticationMethodsQuerySchema = z.object({
+  provider: z.enum(['email', 'google', 'github']).optional().openapi({
+    description: 'Filter by authentication provider',
+    example: 'email',
+  }),
+});
+
+export const userAuthenticationMethodSchema = z.object({
+  id: z.string().openapi({
+    description: 'Authentication method ID',
+    example: '123e4567-e89b-12d3-a456-426614174001',
+  }),
+  userId: z.string().openapi({
+    description: 'User ID',
+    example: '123e4567-e89b-12d3-a456-426614174002',
+  }),
+  provider: z.enum(['email', 'google', 'github']).openapi({
+    description: 'Authentication provider',
+    example: 'email',
+  }),
+  providerId: z.string().openapi({
+    description: 'Provider-specific identifier (e.g., email address)',
+    example: 'user@example.com',
+  }),
+  isVerified: z.boolean().openapi({
+    description: 'Whether the authentication method is verified',
+    example: true,
+  }),
+  isPrimary: z.boolean().openapi({
+    description: 'Whether this is the primary authentication method',
+    example: true,
+  }),
+  lastUsedAt: z.string().nullable().optional().openapi({
+    description: 'Last time this authentication method was used',
+    example: '2024-01-01T00:00:00Z',
+  }),
+  createdAt: z.string().openapi({
+    description: 'Creation timestamp',
+    example: '2024-01-01T00:00:00Z',
+  }),
+  updatedAt: z.string().openapi({
+    description: 'Last update timestamp',
+    example: '2024-01-01T00:00:00Z',
+  }),
+});
+
+export const getUserAuthenticationMethodsResponseSchema = createSuccessResponseSchema(
+  z.array(userAuthenticationMethodSchema),
+  'Successfully retrieved user authentication methods'
+);
+
+export const changePasswordRequestSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Current password is required').openapi({
+      description: 'Current password',
+      example: 'CurrentPassword123!',
+    }),
+    newPassword: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .max(128, 'Password must be at most 128 characters')
+      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+      .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+      .regex(/[0-9]/, 'Password must contain at least one number')
+      .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character')
+      .openapi({
+        description: 'New password (must meet password policy requirements)',
+        example: 'NewPassword123!',
+      }),
+    confirmPassword: z.string().min(1, 'Password confirmation is required').openapi({
+      description: 'Password confirmation (must match new password)',
+      example: 'NewPassword123!',
+    }),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  })
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: 'New password must be different from current password',
+    path: ['newPassword'],
+  });
+
+export const changePasswordResponseSchema = createSuccessResponseSchema(
+  z.object({
+    success: z.boolean().openapi({
+      description: 'Whether the password change was successful',
+      example: true,
+    }),
+    message: z.string().openapi({
+      description: 'Success message',
+      example: 'Password changed successfully',
+    }),
+  }),
+  'Successfully changed password'
+);
+
+export const getUserSessionsQuerySchema = z.object({
+  page: z
+    .string()
+    .optional()
+    .transform((val) => (val ? parseInt(val, 10) : undefined))
+    .pipe(z.number().int().positive().optional())
+    .openapi({
+      description: 'Page number for pagination',
+      example: 1,
+    }),
+  limit: z
+    .string()
+    .optional()
+    .transform((val) => (val ? parseInt(val, 10) : undefined))
+    .pipe(z.number().int().optional())
+    .openapi({
+      description: 'Number of items per page',
+      example: 50,
+    }),
+  audience: z.string().optional().openapi({
+    description: 'Filter by session audience',
+    example: 'account:123e4567-e89b-12d3-a456-426614174001',
+  }),
+});
+
+export const userSessionSchema = z.object({
+  id: z.string().openapi({
+    description: 'Session ID',
+    example: '123e4567-e89b-12d3-a456-426614174001',
+  }),
+  userId: z.string().openapi({
+    description: 'User ID',
+    example: '123e4567-e89b-12d3-a456-426614174002',
+  }),
+  userAuthenticationMethodId: z.string().openapi({
+    description: 'Authentication method ID used for this session',
+    example: '123e4567-e89b-12d3-a456-426614174003',
+  }),
+  userAuthenticationMethod: z
+    .object({
+      provider: z.enum(['email', 'google', 'github']),
+      providerId: z.string(),
+    })
+    .optional()
+    .openapi({
+      description: 'Authentication method details',
+    }),
+  audience: z.string().openapi({
+    description: 'Session audience (scope)',
+    example: 'account:123e4567-e89b-12d3-a456-426614174001',
+  }),
+  expiresAt: z.string().openapi({
+    description: 'Session expiration timestamp',
+    example: '2024-01-01T00:00:00Z',
+  }),
+  lastUsedAt: z.string().nullable().optional().openapi({
+    description: 'Last time the session was used',
+    example: '2024-01-01T00:00:00Z',
+  }),
+  userAgent: z.string().nullable().optional().openapi({
+    description: 'User agent string',
+    example: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+  }),
+  ipAddress: z.string().nullable().optional().openapi({
+    description: 'IP address',
+    example: '192.168.1.1',
+  }),
+  createdAt: z.string().openapi({
+    description: 'Creation timestamp',
+    example: '2024-01-01T00:00:00Z',
+  }),
+  updatedAt: z.string().openapi({
+    description: 'Last update timestamp',
+    example: '2024-01-01T00:00:00Z',
+  }),
+});
+
+export const getUserSessionsResponseSchema = createSuccessResponseSchema(
+  z.object({
+    userSessions: z.array(userSessionSchema),
+    totalCount: z.number().openapi({
+      description: 'Total number of sessions',
+      example: 5,
+    }),
+    hasNextPage: z.boolean().openapi({
+      description: 'Whether there are more pages',
+      example: false,
+    }),
+  }),
+  'Successfully retrieved user sessions'
+);
+
+export const revokeUserSessionParamsSchema = z.object({
+  id: z
+    .string()
+    .uuid('Invalid session ID')
+    .openapi({
+      description: 'Session ID to revoke',
+      example: '123e4567-e89b-12d3-a456-426614174001',
+      param: { in: 'path', name: 'sessionId' },
+    }),
+});
+
+export const revokeUserSessionResponseSchema = createSuccessResponseSchema(
+  z.object({
+    success: z.boolean().openapi({
+      description: 'Whether the session revocation was successful',
+      example: true,
+    }),
+    message: z.string().openapi({
+      description: 'Success message',
+      example: 'Session revoked successfully',
+    }),
+  }),
+  'Successfully revoked user session'
+);

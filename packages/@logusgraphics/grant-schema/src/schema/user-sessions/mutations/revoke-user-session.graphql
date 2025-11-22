@@ -1,0 +1,8 @@
+type RevokeUserSessionResult {
+  success: Boolean!
+  message: String!
+}
+
+extend type Mutation {
+  revokeUserSession(id: ID!): RevokeUserSessionResult!
+}

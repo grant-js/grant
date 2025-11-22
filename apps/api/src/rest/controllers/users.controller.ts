@@ -1,4 +1,10 @@
-import { SortOrder, User, UserSortableField, UserSortInput } from '@logusgraphics/grant-schema';
+import {
+  SortOrder,
+  User,
+  UserAuthenticationMethodProvider,
+  UserSortableField,
+  UserSortInput,
+} from '@logusgraphics/grant-schema';
 import { Response } from 'express';
 
 import { config } from '@/config';
@@ -8,8 +14,11 @@ import { TypedRequest } from '@/rest/types';
 import { RequestContext } from '@/types';
 
 import {
+  changePasswordRequestSchema,
   createUserRequestSchema,
   deleteUserQuerySchema,
+  getUserAuthenticationMethodsQuerySchema,
+  getUserSessionsQuerySchema,
   getUsersQuerySchema,
   updateUserRequestSchema,
   uploadUserPictureRequestSchema,
@@ -230,5 +239,127 @@ export class UsersController extends BaseController {
     });
 
     return this.success(res, result, 201);
+  }
+
+  /**
+   * GET /api/users/:id/authentication-methods
+   * Get user authentication methods
+   */
+  async getAuthenticationMethods(
+    req: TypedRequest<{
+      params: typeof userParamsSchema;
+      query: typeof getUserAuthenticationMethodsQuerySchema;
+    }>,
+    res: Response
+  ) {
+    const { id } = req.params;
+    const { provider } = req.query;
+
+    if (!this.user || this.user.id !== id) {
+      throw new NotFoundError(
+        'You can only query your own authentication methods',
+        'errors:auth.unauthorized'
+      );
+    }
+
+    const methods = await this.handlers.users.getUserAuthenticationMethods({
+      userId: id,
+      provider: provider as UserAuthenticationMethodProvider | undefined,
+    });
+
+    return this.success(res, methods);
+  }
+
+  /**
+   * POST /api/users/:id/change-password
+   * Change user password
+   */
+  async changePassword(
+    req: TypedRequest<{
+      params: typeof userParamsSchema;
+      body: typeof changePasswordRequestSchema;
+    }>,
+    res: Response
+  ) {
+    const { id } = req.params;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!this.user || this.user.id !== id) {
+      throw new NotFoundError('You can only change your own password', 'errors:auth.unauthorized');
+    }
+
+    await this.context.handlers.users.changePassword(id, currentPassword, newPassword);
+
+    return this.success(res, {
+      success: true,
+      message: 'Password changed successfully',
+    });
+  }
+
+  /**
+   * GET /api/users/:id/sessions
+   * Get user sessions
+   */
+  async getSessions(
+    req: TypedRequest<{
+      params: typeof userParamsSchema;
+      query: typeof getUserSessionsQuerySchema;
+    }>,
+    res: Response
+  ) {
+    const { id } = req.params;
+    const { page, limit, audience } = req.query;
+
+    if (!this.user || this.user.id !== id) {
+      throw new NotFoundError('You can only query your own sessions', 'errors:auth.unauthorized');
+    }
+
+    const result = await this.handlers.users.getUserSessions({
+      userId: id,
+      audience,
+      page,
+      limit,
+    });
+
+    return this.success(res, result);
+  }
+
+  /**
+   * DELETE /api/users/:id/sessions/:sessionId
+   * Revoke a user session
+   */
+  async revokeSession(
+    req: TypedRequest<{
+      params: typeof userParamsSchema & { sessionId: string };
+    }>,
+    res: Response
+  ) {
+    const { id, sessionId } = req.params;
+
+    if (!this.user || this.user.id !== id) {
+      throw new NotFoundError('You can only revoke your own sessions', 'errors:auth.unauthorized');
+    }
+
+    const sessions = await this.handlers.users.getUserSessions({
+      userId: id,
+      limit: 1,
+    });
+
+    const session = sessions.userSessions.find((s) => s.id === sessionId);
+
+    if (!session) {
+      throw new NotFoundError('Session not found', 'errors:common.notFound');
+    }
+
+    if (session.userId !== id) {
+      throw new NotFoundError('You can only revoke your own sessions', 'errors:auth.unauthorized');
+    }
+
+    await this.handlers.users.revokeUserSession(sessionId);
+
+    return this.success(res, {
+      success: true,
+      message: 'Session revoked successfully',
+    });
   }
 }

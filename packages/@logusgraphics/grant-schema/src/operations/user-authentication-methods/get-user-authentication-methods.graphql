@@ -1,0 +1,13 @@
+query GetUserAuthenticationMethods($input: GetUserAuthenticationMethodsInput!) {
+  userAuthenticationMethods(input: $input) {
+    id
+    userId
+    provider
+    providerId
+    isVerified
+    isPrimary
+    lastUsedAt
+    createdAt
+    updatedAt
+  }
+}

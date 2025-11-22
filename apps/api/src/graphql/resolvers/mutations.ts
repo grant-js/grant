@@ -8,7 +8,9 @@ import * as permissionMutations from './permissions/mutations';
 import * as projectMutations from './projects/mutations';
 import * as roleMutations from './roles/mutations';
 import * as tagMutations from './tags/mutations';
+import * as userAuthenticationMethodMutations from './user-authentication-methods/mutations';
 import * as userMutations from './users/mutations';
+import * as userSessionMutations from './user-sessions/mutations';
 export const Mutation = {
   login: authMutations.login,
   register: authMutations.register,
@@ -24,6 +26,7 @@ export const Mutation = {
   updateUser: userMutations.updateUser,
   deleteUser: userMutations.deleteUser,
   uploadUserPicture: userMutations.uploadUserPicture,
+  changePassword: userAuthenticationMethodMutations.changePassword,
   createRole: roleMutations.createRole,
   deleteRole: roleMutations.deleteRole,
   updateRole: roleMutations.updateRole,
@@ -48,4 +51,5 @@ export const Mutation = {
   createTag: tagMutations.createTag,
   updateTag: tagMutations.updateTag,
   deleteTag: tagMutations.deleteTag,
+  revokeUserSession: userSessionMutations.revokeUserSession,
 } as const;

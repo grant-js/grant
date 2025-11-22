@@ -72,6 +72,7 @@
       "update": "Update",
       "uploading": "Uploading..."
     },
+    "saving": "Saving...",
     "emptyElements": "No {title} to display",
     "loading": "Loading...",
     "redirecting": "Redirecting...",
@@ -372,6 +373,10 @@
       "deleteError": "Failed to delete user",
       "uploadPictureSuccess": "Profile picture uploaded",
       "uploadPictureError": "Failed to upload profile picture",
+      "changePasswordSuccess": "Password changed successfully",
+      "changePasswordError": "Failed to change password",
+      "revokeSessionSuccess": "Session revoked successfully",
+      "revokeSessionError": "Failed to revoke session",
       "roleAddedSuccess": "Role added to user",
       "roleAddedError": "Failed to add role to user",
       "roleRemovedSuccess": "Role removed from user",
@@ -1453,7 +1458,49 @@
     },
     "security": {
       "title": "Login & Security",
-      "description": "Manage your authentication methods and security settings"
+      "description": "Manage your authentication methods and security settings",
+      "userNotFound": "User not found",
+      "authenticationMethods": {
+        "title": "Authentication Methods",
+        "description": "Manage how you sign in to your account",
+        "empty": "No authentication methods found",
+        "providers": {
+          "email": "Email",
+          "google": "Google",
+          "github": "GitHub"
+        },
+        "primary": "Primary",
+        "verified": "Verified",
+        "unverified": "Unverified",
+        "lastUsed": "Last used",
+        "changePassword": "Change Password",
+        "connect": "Connect"
+      },
+      "changePassword": {
+        "title": "Change Password",
+        "description": "Update your password to keep your account secure",
+        "currentPassword": "Current Password",
+        "newPassword": "New Password",
+        "confirmPassword": "Confirm Password",
+        "submit": "Change Password"
+      },
+      "activeSessions": {
+        "title": "Active Sessions",
+        "description": "Manage your active login sessions across all devices",
+        "empty": "No active sessions found",
+        "currentSession": "Current Session",
+        "expired": "Expired",
+        "ipAddress": "IP Address",
+        "lastUsed": "Last used",
+        "expiresAt": "Expires at",
+        "revoke": "Revoke",
+        "revokeConfirmTitle": "Revoke Session?",
+        "revokeConfirmDescription": "Are you sure you want to revoke this session? The user will need to log in again on that device.",
+        "revokeCurrentSessionTitle": "Revoke Current Session?",
+        "revokeCurrentSessionDescription": "Are you sure you want to revoke your current session? You will be logged out immediately and redirected to the login page. You will need to log in again to continue.",
+        "cancel": "Cancel",
+        "expiredSessionsCount": "{count} expired session(s) are hidden"
+      }
     },
     "preferences": {
       "title": "Preferences",

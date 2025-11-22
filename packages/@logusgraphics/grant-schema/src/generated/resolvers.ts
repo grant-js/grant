@@ -200,6 +200,18 @@ export type Auditable = {
   updatedAt: Scalars['Date']['output'];
 };
 
+export type ChangePasswordInput = {
+  confirmPassword: Scalars['String']['input'];
+  currentPassword: Scalars['String']['input'];
+  newPassword: Scalars['String']['input'];
+};
+
+export type ChangePasswordResult = {
+  __typename?: 'ChangePasswordResult';
+  message: Scalars['String']['output'];
+  success: Scalars['Boolean']['output'];
+};
+
 export type Creatable = {
   createdAt: Scalars['String']['output'];
   updatedAt: Scalars['String']['output'];
@@ -439,6 +451,7 @@ export type Mutation = {
   __typename?: 'Mutation';
   _empty?: Maybe<Scalars['String']['output']>;
   acceptInvitation: AcceptInvitationResult;
+  changePassword: ChangePasswordResult;
   createComplementaryAccount: CreateComplementaryAccountResult;
   createGroup: Group;
   createOrganization: Organization;
@@ -465,6 +478,7 @@ export type Mutation = {
   resendVerification: ResendVerificationResponse;
   resetPassword: ResetPasswordResponse;
   revokeInvitation: OrganizationInvitation;
+  revokeUserSession: RevokeUserSessionResult;
   updateAccount: Account;
   updateGroup: Group;
   updateOrganization: Organization;
@@ -480,6 +494,10 @@ export type Mutation = {
 
 export type MutationAcceptInvitationArgs = {
   input: AcceptInvitationInput;
+};
+
+export type MutationChangePasswordArgs = {
+  input: ChangePasswordInput;
 };
 
 export type MutationCreateComplementaryAccountArgs = {
@@ -590,6 +608,10 @@ export type MutationResetPasswordArgs = {
 };
 
 export type MutationRevokeInvitationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+export type MutationRevokeUserSessionArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -1041,6 +1063,8 @@ export type Query = {
   projects: ProjectPage;
   roles: RolePage;
   tags: TagPage;
+  userAuthenticationMethods: Array<UserAuthenticationMethod>;
+  userSessions: UserSessionPage;
   users: UserPage;
 };
 
@@ -1134,6 +1158,14 @@ export type QueryTagsArgs = {
   scope: Scope;
   search?: InputMaybe<Scalars['String']['input']>;
   sort?: InputMaybe<TagSortInput>;
+};
+
+export type QueryUserAuthenticationMethodsArgs = {
+  input: GetUserAuthenticationMethodsInput;
+};
+
+export type QueryUserSessionsArgs = {
+  input: GetUserSessionsInput;
 };
 
 export type QueryUsersArgs = {
@@ -1292,6 +1324,12 @@ export type ResetPasswordResponse = {
   __typename?: 'ResetPasswordResponse';
   message: Scalars['String']['output'];
   messageKey: Scalars['String']['output'];
+  success: Scalars['Boolean']['output'];
+};
+
+export type RevokeUserSessionResult = {
+  __typename?: 'RevokeUserSessionResult';
+  message: Scalars['String']['output'];
   success: Scalars['Boolean']['output'];
 };
 
@@ -1889,6 +1927,8 @@ export type ResolversTypes = ResolversObject<{
   AddUserTagInput: AddUserTagInput;
   Auditable: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['Auditable']>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
+  ChangePasswordInput: ChangePasswordInput;
+  ChangePasswordResult: ResolverTypeWrapper<ChangePasswordResult>;
   Creatable: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['Creatable']>;
   CreateAccountInput: CreateAccountInput;
   CreateAccountResult: ResolverTypeWrapper<CreateAccountResult>;
@@ -1993,6 +2033,7 @@ export type ResolversTypes = ResolversObject<{
   ResendVerificationResponse: ResolverTypeWrapper<ResendVerificationResponse>;
   ResetPasswordInput: ResetPasswordInput;
   ResetPasswordResponse: ResolverTypeWrapper<ResetPasswordResponse>;
+  RevokeUserSessionResult: ResolverTypeWrapper<RevokeUserSessionResult>;
   Role: ResolverTypeWrapper<Role>;
   RoleGroup: ResolverTypeWrapper<RoleGroup>;
   RolePage: ResolverTypeWrapper<RolePage>;
@@ -2079,6 +2120,8 @@ export type ResolversParentTypes = ResolversObject<{
   AddUserTagInput: AddUserTagInput;
   Auditable: ResolversInterfaceTypes<ResolversParentTypes>['Auditable'];
   Boolean: Scalars['Boolean']['output'];
+  ChangePasswordInput: ChangePasswordInput;
+  ChangePasswordResult: ChangePasswordResult;
   Creatable: ResolversInterfaceTypes<ResolversParentTypes>['Creatable'];
   CreateAccountInput: CreateAccountInput;
   CreateAccountResult: CreateAccountResult;
@@ -2167,6 +2210,7 @@ export type ResolversParentTypes = ResolversObject<{
   ResendVerificationResponse: ResendVerificationResponse;
   ResetPasswordInput: ResetPasswordInput;
   ResetPasswordResponse: ResetPasswordResponse;
+  RevokeUserSessionResult: RevokeUserSessionResult;
   Role: Role;
   RoleGroup: RoleGroup;
   RolePage: RolePage;
@@ -2305,6 +2349,15 @@ export type AuditableResolvers<
     ParentType,
     ContextType
   >;
+}>;
+
+export type ChangePasswordResultResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['ChangePasswordResult'] = ResolversParentTypes['ChangePasswordResult'],
+> = ResolversObject<{
+  message?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
 }>;
 
 export type CreatableResolvers<
@@ -2451,6 +2504,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationAcceptInvitationArgs, 'input'>
+  >;
+  changePassword?: Resolver<
+    ResolversTypes['ChangePasswordResult'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationChangePasswordArgs, 'input'>
   >;
   createComplementaryAccount?: Resolver<
     ResolversTypes['CreateComplementaryAccountResult'],
@@ -2607,6 +2666,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationRevokeInvitationArgs, 'id'>
+  >;
+  revokeUserSession?: Resolver<
+    ResolversTypes['RevokeUserSessionResult'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationRevokeUserSessionArgs, 'id'>
   >;
   updateAccount?: Resolver<
     ResolversTypes['Account'],
@@ -3136,6 +3201,18 @@ export type QueryResolvers<
     ContextType,
     RequireFields<QueryTagsArgs, 'scope'>
   >;
+  userAuthenticationMethods?: Resolver<
+    Array<ResolversTypes['UserAuthenticationMethod']>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryUserAuthenticationMethodsArgs, 'input'>
+  >;
+  userSessions?: Resolver<
+    ResolversTypes['UserSessionPage'],
+    ParentType,
+    ContextType,
+    RequireFields<QueryUserSessionsArgs, 'input'>
+  >;
   users?: Resolver<
     ResolversTypes['UserPage'],
     ParentType,
@@ -3180,6 +3257,15 @@ export type ResetPasswordResponseResolvers<
 > = ResolversObject<{
   message?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   messageKey?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+}>;
+
+export type RevokeUserSessionResultResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['RevokeUserSessionResult'] = ResolversParentTypes['RevokeUserSessionResult'],
+> = ResolversObject<{
+  message?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
 }>;
 
@@ -3462,6 +3548,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   AccountPage?: AccountPageResolvers<ContextType>;
   AccountProject?: AccountProjectResolvers<ContextType>;
   Auditable?: AuditableResolvers<ContextType>;
+  ChangePasswordResult?: ChangePasswordResultResolvers<ContextType>;
   Creatable?: CreatableResolvers<ContextType>;
   CreateAccountResult?: CreateAccountResultResolvers<ContextType>;
   CreateComplementaryAccountResult?: CreateComplementaryAccountResultResolvers<ContextType>;
@@ -3502,6 +3589,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   RequestPasswordResetResponse?: RequestPasswordResetResponseResolvers<ContextType>;
   ResendVerificationResponse?: ResendVerificationResponseResolvers<ContextType>;
   ResetPasswordResponse?: ResetPasswordResponseResolvers<ContextType>;
+  RevokeUserSessionResult?: RevokeUserSessionResultResolvers<ContextType>;
   Role?: RoleResolvers<ContextType>;
   RoleGroup?: RoleGroupResolvers<ContextType>;
   RolePage?: RolePageResolvers<ContextType>;

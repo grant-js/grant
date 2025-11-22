@@ -199,6 +199,18 @@ export type Auditable = {
   updatedAt: Scalars['Date']['output'];
 };
 
+export type ChangePasswordInput = {
+  confirmPassword: Scalars['String']['input'];
+  currentPassword: Scalars['String']['input'];
+  newPassword: Scalars['String']['input'];
+};
+
+export type ChangePasswordResult = {
+  __typename?: 'ChangePasswordResult';
+  message: Scalars['String']['output'];
+  success: Scalars['Boolean']['output'];
+};
+
 export type Creatable = {
   createdAt: Scalars['String']['output'];
   updatedAt: Scalars['String']['output'];
@@ -438,6 +450,7 @@ export type Mutation = {
   __typename?: 'Mutation';
   _empty?: Maybe<Scalars['String']['output']>;
   acceptInvitation: AcceptInvitationResult;
+  changePassword: ChangePasswordResult;
   createComplementaryAccount: CreateComplementaryAccountResult;
   createGroup: Group;
   createOrganization: Organization;
@@ -464,6 +477,7 @@ export type Mutation = {
   resendVerification: ResendVerificationResponse;
   resetPassword: ResetPasswordResponse;
   revokeInvitation: OrganizationInvitation;
+  revokeUserSession: RevokeUserSessionResult;
   updateAccount: Account;
   updateGroup: Group;
   updateOrganization: Organization;
@@ -479,6 +493,10 @@ export type Mutation = {
 
 export type MutationAcceptInvitationArgs = {
   input: AcceptInvitationInput;
+};
+
+export type MutationChangePasswordArgs = {
+  input: ChangePasswordInput;
 };
 
 export type MutationCreateComplementaryAccountArgs = {
@@ -589,6 +607,10 @@ export type MutationResetPasswordArgs = {
 };
 
 export type MutationRevokeInvitationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+export type MutationRevokeUserSessionArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -1040,6 +1062,8 @@ export type Query = {
   projects: ProjectPage;
   roles: RolePage;
   tags: TagPage;
+  userAuthenticationMethods: Array<UserAuthenticationMethod>;
+  userSessions: UserSessionPage;
   users: UserPage;
 };
 
@@ -1133,6 +1157,14 @@ export type QueryTagsArgs = {
   scope: Scope;
   search?: InputMaybe<Scalars['String']['input']>;
   sort?: InputMaybe<TagSortInput>;
+};
+
+export type QueryUserAuthenticationMethodsArgs = {
+  input: GetUserAuthenticationMethodsInput;
+};
+
+export type QueryUserSessionsArgs = {
+  input: GetUserSessionsInput;
 };
 
 export type QueryUsersArgs = {
@@ -1291,6 +1323,12 @@ export type ResetPasswordResponse = {
   __typename?: 'ResetPasswordResponse';
   message: Scalars['String']['output'];
   messageKey: Scalars['String']['output'];
+  success: Scalars['Boolean']['output'];
+};
+
+export type RevokeUserSessionResult = {
+  __typename?: 'RevokeUserSessionResult';
+  message: Scalars['String']['output'];
   success: Scalars['Boolean']['output'];
 };
 
@@ -2684,6 +2722,74 @@ export type UpdateTagMutation = {
     createdAt: Date;
     updatedAt: Date;
   };
+};
+
+export type ChangePasswordMutationVariables = Exact<{
+  input: ChangePasswordInput;
+}>;
+
+export type ChangePasswordMutation = {
+  __typename?: 'Mutation';
+  changePassword: { __typename?: 'ChangePasswordResult'; success: boolean; message: string };
+};
+
+export type GetUserAuthenticationMethodsQueryVariables = Exact<{
+  input: GetUserAuthenticationMethodsInput;
+}>;
+
+export type GetUserAuthenticationMethodsQuery = {
+  __typename?: 'Query';
+  userAuthenticationMethods: Array<{
+    __typename?: 'UserAuthenticationMethod';
+    id: string;
+    userId: string;
+    provider: UserAuthenticationMethodProvider;
+    providerId: string;
+    isVerified: boolean;
+    isPrimary: boolean;
+    lastUsedAt?: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }>;
+};
+
+export type GetUserSessionsQueryVariables = Exact<{
+  input: GetUserSessionsInput;
+}>;
+
+export type GetUserSessionsQuery = {
+  __typename?: 'Query';
+  userSessions: {
+    __typename?: 'UserSessionPage';
+    totalCount: number;
+    hasNextPage: boolean;
+    userSessions: Array<{
+      __typename?: 'UserSession';
+      id: string;
+      userId: string;
+      userAuthenticationMethodId: string;
+      audience: string;
+      expiresAt: Date;
+      lastUsedAt?: Date | null;
+      userAgent?: string | null;
+      ipAddress?: string | null;
+      createdAt: Date;
+      userAuthenticationMethod?: {
+        __typename?: 'UserAuthenticationMethod';
+        provider: UserAuthenticationMethodProvider;
+        providerId: string;
+      } | null;
+    }>;
+  };
+};
+
+export type RevokeUserSessionMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+export type RevokeUserSessionMutation = {
+  __typename?: 'Mutation';
+  revokeUserSession: { __typename?: 'RevokeUserSessionResult'; success: boolean; message: string };
 };
 
 export type CreateUserMutationVariables = Exact<{
@@ -6034,6 +6140,223 @@ export const UpdateTagDocument = {
     },
   ],
 } as unknown as DocumentNode<UpdateTagMutation, UpdateTagMutationVariables>;
+export const ChangePasswordDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ChangePassword' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ChangePasswordInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'changePassword' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<ChangePasswordMutation, ChangePasswordMutationVariables>;
+export const GetUserAuthenticationMethodsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'GetUserAuthenticationMethods' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'GetUserAuthenticationMethodsInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'userAuthenticationMethods' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'userId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'provider' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'providerId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isVerified' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isPrimary' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'lastUsedAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  GetUserAuthenticationMethodsQuery,
+  GetUserAuthenticationMethodsQueryVariables
+>;
+export const GetUserSessionsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'GetUserSessions' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'GetUserSessionsInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'userSessions' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'userSessions' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'userId' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'userAuthenticationMethodId' },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'userAuthenticationMethod' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'provider' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'providerId' } },
+                          ],
+                        },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'audience' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'expiresAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'lastUsedAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'userAgent' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'ipAddress' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'totalCount' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'hasNextPage' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<GetUserSessionsQuery, GetUserSessionsQueryVariables>;
+export const RevokeUserSessionDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'RevokeUserSession' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'revokeUserSession' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'id' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<RevokeUserSessionMutation, RevokeUserSessionMutationVariables>;
 export const CreateUserDocument = {
   kind: 'Document',
   definitions: [

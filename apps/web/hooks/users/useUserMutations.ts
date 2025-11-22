@@ -1,10 +1,15 @@
 import { ApolloCache } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import {
+  ChangePasswordDocument,
+  ChangePasswordInput,
+  ChangePasswordResult,
   CreateUserDocument,
   CreateUserInput,
   DeleteUserDocument,
   MutationDeleteUserArgs,
+  RevokeUserSessionDocument,
+  RevokeUserSessionResult,
   UpdateUserDocument,
   UpdateUserInput,
   UploadUserPictureDocument,
@@ -41,6 +46,14 @@ export function useUserMutations() {
     {
       update,
     }
+  );
+
+  const [changePassword] = useMutation<{ changePassword: ChangePasswordResult }>(
+    ChangePasswordDocument
+  );
+
+  const [revokeUserSession] = useMutation<{ revokeUserSession: RevokeUserSessionResult }>(
+    RevokeUserSessionDocument
   );
 
   const handleCreateUser = async (input: CreateUserInput) => {
@@ -114,10 +127,46 @@ export function useUserMutations() {
     }
   };
 
+  const handleChangePassword = async (input: ChangePasswordInput) => {
+    try {
+      const result = await changePassword({
+        variables: { input },
+      });
+
+      toast.success(t('notifications.changePasswordSuccess'));
+      return result.data?.changePassword;
+    } catch (error) {
+      console.error('Error changing password:', error);
+      toast.error(t('notifications.changePasswordError'), {
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+      });
+      throw error;
+    }
+  };
+
+  const handleRevokeUserSession = async (sessionId: string) => {
+    try {
+      const result = await revokeUserSession({
+        variables: { id: sessionId },
+      });
+
+      toast.success(t('notifications.revokeSessionSuccess'));
+      return result.data?.revokeUserSession;
+    } catch (error) {
+      console.error('Error revoking session:', error);
+      toast.error(t('notifications.revokeSessionError'), {
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+      });
+      throw error;
+    }
+  };
+
   return {
     createUser: handleCreateUser,
     updateUser: handleUpdateUser,
     deleteUser: handleDeleteUser,
     uploadUserPicture: handleUploadUserPicture,
+    changePassword: handleChangePassword,
+    revokeUserSession: handleRevokeUserSession,
   };
 }

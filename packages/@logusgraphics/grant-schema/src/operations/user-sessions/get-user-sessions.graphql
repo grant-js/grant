@@ -1,0 +1,21 @@
+query GetUserSessions($input: GetUserSessionsInput!) {
+  userSessions(input: $input) {
+    userSessions {
+      id
+      userId
+      userAuthenticationMethodId
+      userAuthenticationMethod {
+        provider
+        providerId
+      }
+      audience
+      expiresAt
+      lastUsedAt
+      userAgent
+      ipAddress
+      createdAt
+    }
+    totalCount
+    hasNextPage
+  }
+}

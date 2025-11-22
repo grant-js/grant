@@ -8,4 +8,6 @@ export interface RequestContext {
   handlers: Handlers;
   origin: string;
   locale: SupportedLocale;
+  userAgent: string | null;
+  ipAddress: string | null;
 }

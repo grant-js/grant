@@ -11,7 +11,10 @@ import {
 interface JWTPayload {
   exp: number;
   sub: string;
-  email: string;
+  email?: string;
+  jti?: string;
+  aud?: string;
+  iat?: number;
 }
 
 export function setStoredTokens(accessToken: string, refreshToken: string): void {
@@ -56,5 +59,18 @@ export function getRedirectPath(
       return `/${locale}/dashboard/organizations`;
     default:
       return `/${locale}/dashboard`;
+  }
+}
+
+export function getCurrentSessionId(): string | null {
+  try {
+    const accessToken = Cookies.get(AUTH_ACCESS_TOKEN_KEY);
+    if (!accessToken) {
+      return null;
+    }
+    const decoded = jwtDecode<JWTPayload>(accessToken);
+    return decoded.jti || null;
+  } catch {
+    return null;
   }
 }

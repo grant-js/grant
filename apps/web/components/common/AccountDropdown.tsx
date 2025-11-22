@@ -88,7 +88,7 @@ export function AccountDropdown() {
             <div className="flex items-center gap-2">
               <Avatar
                 initial={initials}
-                imageUrl={userPictureUrl}
+                imageUrl={userPictureUrl ?? undefined}
                 cacheBuster={userUpdatedAt}
                 size="lg"
               />

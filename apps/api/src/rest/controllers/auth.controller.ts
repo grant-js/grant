@@ -40,7 +40,9 @@ export class AuthController extends BaseController {
           providerData,
         },
       },
-      this.origin
+      this.origin,
+      this.context.userAgent,
+      this.context.ipAddress
     );
 
     this.success(res, result);
@@ -66,7 +68,9 @@ export class AuthController extends BaseController {
         providerData,
       },
       this.origin,
-      this.context.locale
+      this.context.locale,
+      this.context.userAgent,
+      this.context.ipAddress
     );
 
     this.success(res, result, 201);
