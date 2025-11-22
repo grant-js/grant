@@ -87,10 +87,14 @@ export class AuthController extends BaseController {
   ) {
     const { accessToken, refreshToken } = req.body;
 
-    const result = await this.handlers.accounts.refreshSession({
-      accessToken,
-      refreshToken,
-    });
+    const result = await this.handlers.accounts.refreshSession(
+      {
+        accessToken,
+        refreshToken,
+      },
+      this.context.userAgent,
+      this.context.ipAddress
+    );
 
     this.success(res, result);
   }

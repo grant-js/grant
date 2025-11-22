@@ -18,7 +18,7 @@ export default function SecuritySettingsPage() {
   const t = useTranslations('settings.security');
   usePageTitle('settings.security');
 
-  const { currentAccount } = useAuthStore();
+  const { currentAccount, accessToken } = useAuthStore();
   const { changePassword, revokeUserSession } = useUserMutations();
   const [showChangePassword, setShowChangePassword] = useState(false);
 
@@ -38,7 +38,7 @@ export default function SecuritySettingsPage() {
     limit: 50,
   });
 
-  const currentSessionId = useMemo(() => getCurrentSessionId(), []);
+  const currentSessionId = useMemo(() => getCurrentSessionId(), [accessToken]);
 
   const emailMethod = authenticationMethods.find((method) => method.provider === 'email');
 

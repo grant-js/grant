@@ -1,18 +1,21 @@
-import { userAuthenticationMethods } from '@logusgraphics/grant-database';
-import { users } from '@logusgraphics/grant-database';
-import { userSessions, UserSessionModel } from '@logusgraphics/grant-database';
 import {
-  UserSession,
+  UserSessionModel,
+  userAuthenticationMethods,
+  userSessions,
+  users,
+} from '@logusgraphics/grant-database';
+import {
   CreateUserSessionInput,
-  UserAuthenticationMethod,
-  User,
-  UserSessionSearchableField,
-  UpdateUserSessionInput,
-  GetUserSessionsInput,
-  UserSessionPage,
-  SortOrder,
-  UserSessionSortableField,
   DeleteUserSessionInput,
+  GetUserSessionsInput,
+  SortOrder,
+  UpdateUserSessionInput,
+  User,
+  UserAuthenticationMethod,
+  UserSession,
+  UserSessionPage,
+  UserSessionSearchableField,
+  UserSessionSortableField,
 } from '@logusgraphics/grant-schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -131,6 +134,29 @@ export class UserSessionRepository extends EntityRepository<UserSessionModel, Us
         lastUsedAt: params.lastUsedAt,
         userAgent: params.userAgent,
         ipAddress: params.ipAddress,
+      },
+    };
+
+    return this.update(baseUpdateArgs, transaction);
+  }
+
+  async refreshUserSession(
+    id: string,
+    token: string,
+    expiresAt: Date,
+    lastUsedAt: Date,
+    userAgent?: string | null,
+    ipAddress?: string | null,
+    transaction?: Transaction
+  ): Promise<UserSession> {
+    const baseUpdateArgs: BaseUpdateArgs = {
+      id,
+      input: {
+        token,
+        expiresAt,
+        lastUsedAt,
+        userAgent: userAgent ?? null,
+        ipAddress: ipAddress ?? null,
       },
     };
 

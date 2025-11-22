@@ -50,12 +50,18 @@ export class AccountHandler extends ScopeHandler {
     return new Date(Date.now() + this.getVerificationExpirationMs());
   }
 
-  public async refreshSession(params: MutationRefreshSessionArgs): Promise<RefreshSessionResponse> {
+  public async refreshSession(
+    params: MutationRefreshSessionArgs,
+    userAgent?: string | null,
+    ipAddress?: string | null
+  ): Promise<RefreshSessionResponse> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const session = await this.services.userSessions.refreshSession(
         params.accessToken,
         params.refreshToken,
-        tx
+        tx,
+        userAgent,
+        ipAddress
       );
 
       if (!session) {

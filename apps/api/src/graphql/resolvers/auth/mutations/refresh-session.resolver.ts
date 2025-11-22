@@ -7,5 +7,5 @@ export const refreshSession: MutationResolvers<GraphqlContext>['refreshSession']
   args: MutationRefreshSessionArgs,
   context: GraphqlContext
 ) => {
-  return context.handlers.accounts.refreshSession(args);
+  return context.handlers.accounts.refreshSession(args, context.userAgent, context.ipAddress);
 };

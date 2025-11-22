@@ -65,7 +65,10 @@ export const useAuthStore = create<AuthState>()(
         setLoading: (loading) => set({ loading }),
         setAccounts: (accounts) => set({ accounts }),
         setCurrentAccount: (currentAccount) => set({ currentAccount }),
-        setTokens: (accessToken, refreshToken) => set({ accessToken, refreshToken }),
+        setTokens: (accessToken, refreshToken) => {
+          setStoredTokens(accessToken, refreshToken);
+          set({ accessToken, refreshToken });
+        },
 
         clearAuth: () => {
           removeStoredTokens();

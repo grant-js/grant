@@ -122,8 +122,8 @@ export class UserSessionService extends AuditService {
     const sub = userId;
     const aud = audience;
     const jti = session.id;
-    const iat = Math.floor(Date.now() / 1000); // in seconds
-    const exp = Math.floor(this.getAccessTokenExpirationDate(Date.now()).getTime() / 1000); // in seconds
+    const iat = Math.floor(Date.now() / 1000);
+    const exp = Math.floor(this.getAccessTokenExpirationDate(Date.now()).getTime() / 1000);
 
     const jwtPayload: JwtPayload = { sub, aud, exp, iat, jti };
 
@@ -183,23 +183,32 @@ export class UserSessionService extends AuditService {
   public async refreshSession(
     accessToken: string,
     refreshToken: string,
-    transaction?: Transaction
+    transaction?: Transaction,
+    userAgent?: string | null,
+    ipAddress?: string | null
   ): Promise<CreateSessionResult | null> {
     const context = 'UserSessionService.refreshSession';
     validateInput(refreshSessionSchema, { accessToken, refreshToken }, context);
 
     const currentSession = await this.getSessionFromTokens(accessToken, refreshToken, true);
 
-    await this.revokeSession(currentSession.id, transaction);
+    const newRefreshToken = this.generateRefreshToken();
+    const now = Date.now();
 
-    return await this.createSession(
-      {
-        userId: currentSession.userId,
-        userAuthenticationMethodId: currentSession.userAuthenticationMethodId,
-        audience: currentSession.audience,
-      },
+    const finalUserAgent = userAgent ?? currentSession.userAgent ?? null;
+    const finalIpAddress = ipAddress ?? currentSession.ipAddress ?? null;
+
+    const refreshedSession = await this.repositories.userSessionRepository.refreshUserSession(
+      currentSession.id,
+      newRefreshToken,
+      this.getRefreshTokenExpirationDate(now),
+      new Date(),
+      finalUserAgent,
+      finalIpAddress,
       transaction
     );
+
+    return this.signSession(refreshedSession);
   }
 
   public async revokeSession(id: string, transaction?: Transaction): Promise<UserSession> {
