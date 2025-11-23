@@ -50,6 +50,16 @@ export type Account = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
+export type AccountExportData = {
+  __typename?: 'AccountExportData';
+  createdAt: Scalars['Date']['output'];
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  slug: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+  updatedAt: Scalars['Date']['output'];
+};
+
 export type AccountPage = PaginatedResults & {
   __typename?: 'AccountPage';
   accounts: Array<Account>;
@@ -200,6 +210,16 @@ export type Auditable = {
   updatedAt: Scalars['Date']['output'];
 };
 
+export type AuthenticationMethodExportData = {
+  __typename?: 'AuthenticationMethodExportData';
+  createdAt: Scalars['Date']['output'];
+  isPrimary: Scalars['Boolean']['output'];
+  isVerified: Scalars['Boolean']['output'];
+  lastUsedAt?: Maybe<Scalars['Date']['output']>;
+  provider: Scalars['String']['output'];
+  providerId: Scalars['String']['output'];
+};
+
 export type ChangePasswordInput = {
   confirmPassword: Scalars['String']['input'];
   currentPassword: Scalars['String']['input'];
@@ -318,6 +338,11 @@ export type CreateUserSessionInput = {
   token: Scalars['String']['input'];
   userAgent?: InputMaybe<Scalars['String']['input']>;
   userAuthenticationMethodId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+export type DeleteAccountInput = {
+  hardDelete?: InputMaybe<Scalars['Boolean']['input']>;
   userId: Scalars['ID']['input'];
 };
 
@@ -460,7 +485,7 @@ export type Mutation = {
   createRole: Role;
   createTag: Tag;
   createUser: User;
-  deleteAccount: Account;
+  deleteAccount: User;
   deleteGroup: Group;
   deleteOrganization: Organization;
   deletePermission: Permission;
@@ -533,7 +558,7 @@ export type MutationCreateUserArgs = {
 };
 
 export type MutationDeleteAccountArgs = {
-  id: Scalars['ID']['input'];
+  input: DeleteAccountInput;
 };
 
 export type MutationDeleteGroupArgs = {
@@ -783,6 +808,14 @@ export enum OrganizationMemberSortableField {
   Role = 'role',
 }
 
+export type OrganizationMembershipExportData = {
+  __typename?: 'OrganizationMembershipExportData';
+  joinedAt: Scalars['Date']['output'];
+  organizationId: Scalars['ID']['output'];
+  organizationName: Scalars['String']['output'];
+  role: Scalars['String']['output'];
+};
+
 export type OrganizationPage = PaginatedResults & {
   __typename?: 'OrganizationPage';
   hasNextPage: Scalars['Boolean']['output'];
@@ -960,6 +993,14 @@ export type ProjectGroupProjectArgs = {
   organizationId: Scalars['ID']['input'];
 };
 
+export type ProjectMembershipExportData = {
+  __typename?: 'ProjectMembershipExportData';
+  joinedAt: Scalars['Date']['output'];
+  projectId: Scalars['ID']['output'];
+  projectName: Scalars['String']['output'];
+  role: Scalars['String']['output'];
+};
+
 export type ProjectPage = PaginatedResults & {
   __typename?: 'ProjectPage';
   hasNextPage: Scalars['Boolean']['output'];
@@ -1054,6 +1095,7 @@ export type Query = {
   _empty?: Maybe<Scalars['String']['output']>;
   accounts: AccountPage;
   checkUsername: UsernameAvailability;
+  exportUserData: UserDataExport;
   groups: GroupPage;
   invitation?: Maybe<OrganizationInvitation>;
   organizationInvitations: OrganizationInvitationPage;
@@ -1419,6 +1461,15 @@ export type Searchable = {
   search?: Maybe<Scalars['String']['output']>;
 };
 
+export type SessionExportData = {
+  __typename?: 'SessionExportData';
+  createdAt: Scalars['Date']['output'];
+  expiresAt: Scalars['Date']['output'];
+  ipAddress?: Maybe<Scalars['String']['output']>;
+  lastUsedAt?: Maybe<Scalars['Date']['output']>;
+  userAgent?: Maybe<Scalars['String']['output']>;
+};
+
 export enum SortOrder {
   Asc = 'ASC',
   Desc = 'DESC',
@@ -1626,6 +1677,26 @@ export enum UserAuthenticationMethodProvider {
   Github = 'github',
   Google = 'google',
 }
+
+export type UserDataExport = {
+  __typename?: 'UserDataExport';
+  accounts: Array<AccountExportData>;
+  authenticationMethods: Array<AuthenticationMethodExportData>;
+  exportedAt: Scalars['Date']['output'];
+  organizationMemberships: Array<OrganizationMembershipExportData>;
+  projectMemberships: Array<ProjectMembershipExportData>;
+  sessions: Array<SessionExportData>;
+  user: UserExportData;
+};
+
+export type UserExportData = {
+  __typename?: 'UserExportData';
+  createdAt: Scalars['Date']['output'];
+  email?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  updatedAt: Scalars['Date']['output'];
+};
 
 export type UserPage = PaginatedResults & {
   __typename?: 'UserPage';
@@ -1900,6 +1971,7 @@ export type ResolversTypes = ResolversObject<{
   AcceptInvitationInput: AcceptInvitationInput;
   AcceptInvitationResult: ResolverTypeWrapper<AcceptInvitationResult>;
   Account: ResolverTypeWrapper<Account>;
+  AccountExportData: ResolverTypeWrapper<AccountExportData>;
   AccountPage: ResolverTypeWrapper<AccountPage>;
   AccountProject: ResolverTypeWrapper<AccountProject>;
   AccountSearchableField: AccountSearchableField;
@@ -1926,6 +1998,7 @@ export type ResolversTypes = ResolversObject<{
   AddUserRoleInput: AddUserRoleInput;
   AddUserTagInput: AddUserTagInput;
   Auditable: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['Auditable']>;
+  AuthenticationMethodExportData: ResolverTypeWrapper<AuthenticationMethodExportData>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   ChangePasswordInput: ChangePasswordInput;
   ChangePasswordResult: ResolverTypeWrapper<ChangePasswordResult>;
@@ -1944,6 +2017,7 @@ export type ResolversTypes = ResolversObject<{
   CreateUserInput: CreateUserInput;
   CreateUserSessionInput: CreateUserSessionInput;
   Date: ResolverTypeWrapper<Scalars['Date']['output']>;
+  DeleteAccountInput: DeleteAccountInput;
   DeleteUserAuthenticationMethodInput: ResolverTypeWrapper<DeleteUserAuthenticationMethodInput>;
   DeleteUserSessionInput: DeleteUserSessionInput;
   GetUserAuthenticationMethodsInput: GetUserAuthenticationMethodsInput;
@@ -1976,6 +2050,7 @@ export type ResolversTypes = ResolversObject<{
   OrganizationMemberSearchableField: OrganizationMemberSearchableField;
   OrganizationMemberSortInput: OrganizationMemberSortInput;
   OrganizationMemberSortableField: OrganizationMemberSortableField;
+  OrganizationMembershipExportData: ResolverTypeWrapper<OrganizationMembershipExportData>;
   OrganizationPage: ResolverTypeWrapper<OrganizationPage>;
   OrganizationPermission: ResolverTypeWrapper<OrganizationPermission>;
   OrganizationProject: ResolverTypeWrapper<OrganizationProject>;
@@ -1996,6 +2071,7 @@ export type ResolversTypes = ResolversObject<{
   PermissionTag: ResolverTypeWrapper<PermissionTag>;
   Project: ResolverTypeWrapper<Project>;
   ProjectGroup: ResolverTypeWrapper<ProjectGroup>;
+  ProjectMembershipExportData: ResolverTypeWrapper<ProjectMembershipExportData>;
   ProjectPage: ResolverTypeWrapper<ProjectPage>;
   ProjectPermission: ResolverTypeWrapper<ProjectPermission>;
   ProjectRole: ResolverTypeWrapper<ProjectRole>;
@@ -2043,6 +2119,7 @@ export type ResolversTypes = ResolversObject<{
   RoleTag: ResolverTypeWrapper<RoleTag>;
   Scope: Scope;
   Searchable: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['Searchable']>;
+  SessionExportData: ResolverTypeWrapper<SessionExportData>;
   SortOrder: SortOrder;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Tag: ResolverTypeWrapper<Tag>;
@@ -2074,6 +2151,8 @@ export type ResolversTypes = ResolversObject<{
   UserAuthenticationEmailProviderAction: UserAuthenticationEmailProviderAction;
   UserAuthenticationMethod: ResolverTypeWrapper<UserAuthenticationMethod>;
   UserAuthenticationMethodProvider: UserAuthenticationMethodProvider;
+  UserDataExport: ResolverTypeWrapper<UserDataExport>;
+  UserExportData: ResolverTypeWrapper<UserExportData>;
   UserPage: ResolverTypeWrapper<UserPage>;
   UserRegistrationData: UserRegistrationData;
   UserRole: ResolverTypeWrapper<UserRole>;
@@ -2096,6 +2175,7 @@ export type ResolversParentTypes = ResolversObject<{
   AcceptInvitationInput: AcceptInvitationInput;
   AcceptInvitationResult: AcceptInvitationResult;
   Account: Account;
+  AccountExportData: AccountExportData;
   AccountPage: AccountPage;
   AccountProject: AccountProject;
   AccountSortInput: AccountSortInput;
@@ -2119,6 +2199,7 @@ export type ResolversParentTypes = ResolversObject<{
   AddUserRoleInput: AddUserRoleInput;
   AddUserTagInput: AddUserTagInput;
   Auditable: ResolversInterfaceTypes<ResolversParentTypes>['Auditable'];
+  AuthenticationMethodExportData: AuthenticationMethodExportData;
   Boolean: Scalars['Boolean']['output'];
   ChangePasswordInput: ChangePasswordInput;
   ChangePasswordResult: ChangePasswordResult;
@@ -2137,6 +2218,7 @@ export type ResolversParentTypes = ResolversObject<{
   CreateUserInput: CreateUserInput;
   CreateUserSessionInput: CreateUserSessionInput;
   Date: Scalars['Date']['output'];
+  DeleteAccountInput: DeleteAccountInput;
   DeleteUserAuthenticationMethodInput: DeleteUserAuthenticationMethodInput;
   DeleteUserSessionInput: DeleteUserSessionInput;
   GetUserAuthenticationMethodsInput: GetUserAuthenticationMethodsInput;
@@ -2161,6 +2243,7 @@ export type ResolversParentTypes = ResolversObject<{
   OrganizationMember: OrganizationMember;
   OrganizationMemberPage: OrganizationMemberPage;
   OrganizationMemberSortInput: OrganizationMemberSortInput;
+  OrganizationMembershipExportData: OrganizationMembershipExportData;
   OrganizationPage: OrganizationPage;
   OrganizationPermission: OrganizationPermission;
   OrganizationProject: OrganizationProject;
@@ -2175,6 +2258,7 @@ export type ResolversParentTypes = ResolversObject<{
   PermissionTag: PermissionTag;
   Project: Project;
   ProjectGroup: ProjectGroup;
+  ProjectMembershipExportData: ProjectMembershipExportData;
   ProjectPage: ProjectPage;
   ProjectPermission: ProjectPermission;
   ProjectRole: ProjectRole;
@@ -2218,6 +2302,7 @@ export type ResolversParentTypes = ResolversObject<{
   RoleTag: RoleTag;
   Scope: Scope;
   Searchable: ResolversInterfaceTypes<ResolversParentTypes>['Searchable'];
+  SessionExportData: SessionExportData;
   String: Scalars['String']['output'];
   Tag: Tag;
   TagPage: TagPage;
@@ -2243,6 +2328,8 @@ export type ResolversParentTypes = ResolversObject<{
   UploadUserPictureResult: UploadUserPictureResult;
   User: User;
   UserAuthenticationMethod: UserAuthenticationMethod;
+  UserDataExport: UserDataExport;
+  UserExportData: UserExportData;
   UserPage: UserPage;
   UserRegistrationData: UserRegistrationData;
   UserRole: UserRole;
@@ -2283,6 +2370,19 @@ export type AccountResolvers<
   type?: Resolver<ResolversTypes['AccountType'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type AccountExportDataResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['AccountExportData'] = ResolversParentTypes['AccountExportData'],
+> = ResolversObject<{
+  createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  slug?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
 }>;
 
 export type AccountPageResolvers<
@@ -2349,6 +2449,19 @@ export type AuditableResolvers<
     ParentType,
     ContextType
   >;
+}>;
+
+export type AuthenticationMethodExportDataResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['AuthenticationMethodExportData'] = ResolversParentTypes['AuthenticationMethodExportData'],
+> = ResolversObject<{
+  createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  isVerified?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  lastUsedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  provider?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  providerId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
 export type ChangePasswordResultResolvers<
@@ -2560,10 +2673,10 @@ export type MutationResolvers<
     RequireFields<MutationCreateUserArgs, 'input'>
   >;
   deleteAccount?: Resolver<
-    ResolversTypes['Account'],
+    ResolversTypes['User'],
     ParentType,
     ContextType,
-    RequireFields<MutationDeleteAccountArgs, 'id'>
+    RequireFields<MutationDeleteAccountArgs, 'input'>
   >;
   deleteGroup?: Resolver<
     ResolversTypes['Group'],
@@ -2835,6 +2948,17 @@ export type OrganizationMemberPageResolvers<
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 }>;
 
+export type OrganizationMembershipExportDataResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['OrganizationMembershipExportData'] = ResolversParentTypes['OrganizationMembershipExportData'],
+> = ResolversObject<{
+  joinedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  organizationId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  organizationName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  role?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+}>;
+
 export type OrganizationPageResolvers<
   ContextType = any,
   ParentType extends
@@ -3038,6 +3162,17 @@ export type ProjectGroupResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type ProjectMembershipExportDataResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['ProjectMembershipExportData'] = ResolversParentTypes['ProjectMembershipExportData'],
+> = ResolversObject<{
+  joinedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  projectName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  role?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+}>;
+
 export type ProjectPageResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['ProjectPage'] = ResolversParentTypes['ProjectPage'],
@@ -3147,6 +3282,7 @@ export type QueryResolvers<
     ContextType,
     RequireFields<QueryCheckUsernameArgs, 'username'>
   >;
+  exportUserData?: Resolver<ResolversTypes['UserDataExport'], ParentType, ContextType>;
   groups?: Resolver<
     ResolversTypes['GroupPage'],
     ParentType,
@@ -3352,6 +3488,18 @@ export type SearchableResolvers<
   __resolveType: TypeResolveFn<null, ParentType, ContextType>;
 }>;
 
+export type SessionExportDataResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['SessionExportData'] = ResolversParentTypes['SessionExportData'],
+> = ResolversObject<{
+  createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  expiresAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  ipAddress?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  lastUsedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  userAgent?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+}>;
+
 export type TagResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['Tag'] = ResolversParentTypes['Tag'],
@@ -3424,6 +3572,44 @@ export type UserAuthenticationMethodResolvers<
   user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
   userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type UserDataExportResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['UserDataExport'] = ResolversParentTypes['UserDataExport'],
+> = ResolversObject<{
+  accounts?: Resolver<Array<ResolversTypes['AccountExportData']>, ParentType, ContextType>;
+  authenticationMethods?: Resolver<
+    Array<ResolversTypes['AuthenticationMethodExportData']>,
+    ParentType,
+    ContextType
+  >;
+  exportedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  organizationMemberships?: Resolver<
+    Array<ResolversTypes['OrganizationMembershipExportData']>,
+    ParentType,
+    ContextType
+  >;
+  projectMemberships?: Resolver<
+    Array<ResolversTypes['ProjectMembershipExportData']>,
+    ParentType,
+    ContextType
+  >;
+  sessions?: Resolver<Array<ResolversTypes['SessionExportData']>, ParentType, ContextType>;
+  user?: Resolver<ResolversTypes['UserExportData'], ParentType, ContextType>;
+}>;
+
+export type UserExportDataResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['UserExportData'] = ResolversParentTypes['UserExportData'],
+> = ResolversObject<{
+  createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  email?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
 }>;
 
 export type UserPageResolvers<
@@ -3545,9 +3731,11 @@ export type VerifyEmailResponseResolvers<
 export type Resolvers<ContextType = any> = ResolversObject<{
   AcceptInvitationResult?: AcceptInvitationResultResolvers<ContextType>;
   Account?: AccountResolvers<ContextType>;
+  AccountExportData?: AccountExportDataResolvers<ContextType>;
   AccountPage?: AccountPageResolvers<ContextType>;
   AccountProject?: AccountProjectResolvers<ContextType>;
   Auditable?: AuditableResolvers<ContextType>;
+  AuthenticationMethodExportData?: AuthenticationMethodExportDataResolvers<ContextType>;
   ChangePasswordResult?: ChangePasswordResultResolvers<ContextType>;
   Creatable?: CreatableResolvers<ContextType>;
   CreateAccountResult?: CreateAccountResultResolvers<ContextType>;
@@ -3567,6 +3755,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   OrganizationInvitationPage?: OrganizationInvitationPageResolvers<ContextType>;
   OrganizationMember?: OrganizationMemberResolvers<ContextType>;
   OrganizationMemberPage?: OrganizationMemberPageResolvers<ContextType>;
+  OrganizationMembershipExportData?: OrganizationMembershipExportDataResolvers<ContextType>;
   OrganizationPage?: OrganizationPageResolvers<ContextType>;
   OrganizationPermission?: OrganizationPermissionResolvers<ContextType>;
   OrganizationProject?: OrganizationProjectResolvers<ContextType>;
@@ -3579,6 +3768,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   PermissionTag?: PermissionTagResolvers<ContextType>;
   Project?: ProjectResolvers<ContextType>;
   ProjectGroup?: ProjectGroupResolvers<ContextType>;
+  ProjectMembershipExportData?: ProjectMembershipExportDataResolvers<ContextType>;
   ProjectPage?: ProjectPageResolvers<ContextType>;
   ProjectPermission?: ProjectPermissionResolvers<ContextType>;
   ProjectRole?: ProjectRoleResolvers<ContextType>;
@@ -3595,11 +3785,14 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   RolePage?: RolePageResolvers<ContextType>;
   RoleTag?: RoleTagResolvers<ContextType>;
   Searchable?: SearchableResolvers<ContextType>;
+  SessionExportData?: SessionExportDataResolvers<ContextType>;
   Tag?: TagResolvers<ContextType>;
   TagPage?: TagPageResolvers<ContextType>;
   UploadUserPictureResult?: UploadUserPictureResultResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
   UserAuthenticationMethod?: UserAuthenticationMethodResolvers<ContextType>;
+  UserDataExport?: UserDataExportResolvers<ContextType>;
+  UserExportData?: UserExportDataResolvers<ContextType>;
   UserPage?: UserPageResolvers<ContextType>;
   UserRole?: UserRoleResolvers<ContextType>;
   UserSession?: UserSessionResolvers<ContextType>;

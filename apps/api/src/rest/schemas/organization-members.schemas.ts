@@ -7,7 +7,7 @@ import { z } from '@/lib/zod-openapi.lib';
 import { createSuccessResponseSchema } from '@/rest/schemas/common.schemas';
 
 export const getOrganizationMembersQuerySchema = z.object({
-  organizationId: z.string().uuid('Invalid organization ID').openapi({
+  organizationId: z.uuid('Invalid organization ID').openapi({
     description: 'UUID of the organization to list members for',
     example: '123e4567-e89b-12d3-a456-426614174000',
   }),

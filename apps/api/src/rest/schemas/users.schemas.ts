@@ -26,7 +26,7 @@ export const userWithRelationsSchema = userSchema.extend({
 export const userRelationsEnum = z.enum(['roles', 'tags', 'accounts', 'authenticationMethods']);
 
 export const getUsersQuerySchema = listQuerySchema.omit({ relations: true }).extend({
-  scopeId: z.string().uuid('Invalid scope ID'),
+  scopeId: z.uuid('Invalid scope ID'),
   tenant: tenantSchema,
   sortField: z.enum(['name', 'createdAt', 'updatedAt']).optional(),
   sortOrder: z.nativeEnum(SortOrder).optional(),
@@ -130,7 +130,7 @@ export const updateUserResponseSchema = createSuccessResponseSchema(
 );
 
 export const deleteUserQuerySchema = z.object({
-  scopeId: z.string().uuid('Invalid scope ID'),
+  scopeId: z.uuid('Invalid scope ID'),
   tenant: tenantSchema,
   hardDelete: z
     .string()
@@ -385,3 +385,64 @@ export const revokeUserSessionResponseSchema = createSuccessResponseSchema(
   }),
   'Successfully revoked user session'
 );
+
+export const exportUserDataResponseSchema = z.object({
+  user: z.object({
+    id: z.uuid(),
+    name: z.string(),
+    email: z.string().nullable(),
+    createdAt: z.string().datetime(),
+    updatedAt: z.string().datetime(),
+  }),
+  accounts: z.array(
+    z.object({
+      id: z.uuid(),
+      name: z.string(),
+      slug: z.string(),
+      type: z.string(),
+      createdAt: z.string().datetime(),
+      updatedAt: z.string().datetime(),
+    })
+  ),
+  authenticationMethods: z.array(
+    z.object({
+      provider: z.string(),
+      providerId: z.string(),
+      isVerified: z.boolean(),
+      isPrimary: z.boolean(),
+      lastUsedAt: z.string().datetime().nullable(),
+      createdAt: z.string().datetime(),
+    })
+  ),
+  sessions: z.array(
+    z.object({
+      userAgent: z.string().nullable(),
+      ipAddress: z.string().nullable(),
+      lastUsedAt: z.string().datetime().nullable(),
+      expiresAt: z.string().datetime(),
+      createdAt: z.string().datetime(),
+    })
+  ),
+  organizationMemberships: z.array(
+    z.object({
+      organizationId: z.uuid(),
+      organizationName: z.string(),
+      role: z.string(),
+      joinedAt: z.string().datetime(),
+    })
+  ),
+  projectMemberships: z.array(
+    z.object({
+      projectId: z.uuid(),
+      projectName: z.string(),
+      role: z.string(),
+      joinedAt: z.string().datetime(),
+    })
+  ),
+  exportedAt: z.string().datetime(),
+});
+
+export const deleteUserAccountRequestSchema = z.object({
+  userId: z.uuid('Invalid user ID'),
+  hardDelete: z.boolean().optional().default(false),
+});

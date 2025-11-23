@@ -20,9 +20,9 @@ features:
   - icon: 🔐
     title: Multi-Tenant RBAC/ACL
     details: Account-based multi-tenancy with organization and project isolation, flexible permission system with action-based scoping.
-  - icon: 📧
-    title: Email Invitations
-    details: Secure, token-based invitation system for organization members with automatic role seeding and flexible email providers (Mailgun, Mailjet, SMTP).
+  - icon: 🏢
+    title: Account Workspaces
+    details: Flexible workspace model supporting both personal accounts for individual users and organization accounts for teams, with seamless switching and role-based access.
   - icon: 🏗️
     title: Modern Architecture
     details: Monorepo structure with shared packages, GraphQL API with type-safe operations, PostgreSQL with Drizzle ORM.
@@ -38,6 +38,9 @@ features:
   - icon: 📊
     title: Enterprise Ready
     details: Comprehensive audit logging, compliance features, scalable architecture that grows with your needs.
+  - icon: 🛡️
+    title: Privacy Compliance
+    details: GDPR-compliant data export and account deletion with configurable retention periods, ensuring user privacy rights and regulatory compliance.
 ---
 
 # Documentation

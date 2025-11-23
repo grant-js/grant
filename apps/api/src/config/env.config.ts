@@ -390,6 +390,16 @@ export const STORAGE_CONFIG = {
   local: {
     /** Base path for local file storage (can be local directory, Docker volume mount, etc.) */
     basePath: getEnv('STORAGE_LOCAL_BASE_PATH', './storage'),
+    /** Content type mappings for file extensions */
+    contentTypes: {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+      '.svg': 'image/svg+xml',
+      '.pdf': 'application/pdf',
+    } as Record<string, string>,
   },
 
   /** S3 storage configuration */
@@ -420,12 +430,84 @@ export const STORAGE_CONFIG = {
 } as const;
 
 // ============================================================================
-// System Constants (Not Configurable via ENV)
+// Privacy & Data Retention Configuration
+// ============================================================================
+
+export const PRIVACY_CONFIG = {
+  /** Data retention period in days for deleted accounts (default: 30) */
+  accountDeletionRetentionDays: getEnvNumber('PRIVACY_ACCOUNT_DELETION_RETENTION_DAYS', 30),
+
+  /** Data retention period in days for backups (default: 90) */
+  backupRetentionDays: getEnvNumber('PRIVACY_BACKUP_RETENTION_DAYS', 90),
+} as const;
+
+// ============================================================================
+// Job Scheduling Configuration
+// ============================================================================
+
+export const JOB_CONFIG = {
+  /** Enable job scheduling */
+  enabled: getEnvBoolean('JOBS_ENABLED', true),
+
+  /** Job scheduling provider: 'node-cron' | 'bullmq' */
+  provider: getEnvEnum('JOBS_PROVIDER', ['node-cron', 'bullmq'] as const, 'node-cron'),
+
+  /** Redis connection for BullMQ (uses existing Redis config if available) */
+  redis:
+    CACHE_CONFIG.strategy === 'redis'
+      ? {
+          host: REDIS_CONFIG.host,
+          port: REDIS_CONFIG.port,
+          password: REDIS_CONFIG.password,
+        }
+      : undefined,
+
+  /** Job-specific settings */
+  dataRetention: {
+    /** Cron pattern for data retention cleanup */
+    schedule: getEnv('JOBS_DATA_RETENTION_SCHEDULE', '0 2 * * *'),
+    /** Enable data retention cleanup job */
+    enabled: getEnvBoolean('JOBS_DATA_RETENTION_ENABLED', true),
+  },
+
+  /** BullMQ default job options */
+  bullmq: {
+    /** Number of retry attempts for failed jobs */
+    attempts: getEnvNumber('JOBS_BULLMQ_ATTEMPTS', 3),
+
+    /** Backoff configuration for retries */
+    backoff: {
+      /** Backoff type: 'exponential' | 'fixed' */
+      type: getEnvEnum(
+        'JOBS_BULLMQ_BACKOFF_TYPE',
+        ['exponential', 'fixed'] as const,
+        'exponential'
+      ),
+      /** Delay in milliseconds before retry */
+      delay: getEnvNumber('JOBS_BULLMQ_BACKOFF_DELAY', 2000),
+    },
+
+    /** Completed job retention (in seconds) */
+    removeOnComplete: {
+      /** Age in seconds to keep completed jobs (default: 7 days) */
+      age: getEnvNumber('JOBS_BULLMQ_REMOVE_ON_COMPLETE_AGE', 7 * 24 * 3600),
+    },
+
+    /** Failed job retention (in seconds) */
+    removeOnFail: {
+      /** Age in seconds to keep failed jobs (default: 30 days) */
+      age: getEnvNumber('JOBS_BULLMQ_REMOVE_ON_FAIL_AGE', 30 * 24 * 3600),
+    },
+  },
+} as const;
+
+// ============================================================================
+// System Constants
 // ============================================================================
 
 export const SYSTEM_CONSTANTS = {
-  /** System user ID for internal operations */
-  systemUserId: '00000000-0000-0000-0000-000000000000',
+  /** System user ID for internal operations (configurable via SYSTEM_USER_ID env var) */
+  systemUserId: getEnv('SYSTEM_USER_ID', '00000000-0000-0000-0000-000000000000'),
 
   /** Default page size for pagination */
   defaultPageSize: 20,
@@ -608,6 +690,8 @@ export const config = {
   i18n: I18N_CONFIG,
   logging: LOGGING_CONFIG,
   storage: STORAGE_CONFIG,
+  privacy: PRIVACY_CONFIG,
+  jobs: JOB_CONFIG,
   system: SYSTEM_CONSTANTS,
   cors: CORS_CONFIG,
   helmet: HELMET_CONFIG,

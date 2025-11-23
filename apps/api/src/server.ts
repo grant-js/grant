@@ -1,5 +1,4 @@
 import http from 'http';
-import * as path from 'path';
 
 import { ApolloServer } from '@apollo/server';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
@@ -16,13 +15,16 @@ import { config, printConfigSummary, validateConfig } from '@/config';
 import { schema } from '@/graphql/resolvers';
 import { GraphqlContext } from '@/graphql/types';
 import { i18nMiddleware, initializeI18n } from '@/i18n';
+import { createAppContext } from '@/lib/app-context';
 import { CacheFactory } from '@/lib/cache/cache.factory';
 import { formatGraphQLError } from '@/lib/errors';
+import { initializeJobs, shutdownJobs } from '@/lib/jobs/initialize';
 import { logger } from '@/lib/logger';
 import { authMiddleware } from '@/middleware/auth.middleware';
 import { contextMiddleware } from '@/middleware/context.middleware';
 import { errorHandler } from '@/middleware/error.middleware';
 import { requestLoggingMiddleware } from '@/middleware/request-logging.middleware';
+import { storageMiddleware } from '@/middleware/storage.middleware';
 import { createRestRouter } from '@/rest';
 import { generateOpenApiDocument } from '@/rest/openapi';
 import { ContextRequest } from '@/types';
@@ -79,36 +81,7 @@ async function startServer() {
   app.use(i18nMiddleware);
 
   if (config.storage.provider === 'local') {
-    const storagePath = path.resolve(config.storage.local.basePath);
-    app.use(
-      '/storage',
-      express.static(storagePath, {
-        dotfiles: 'deny',
-        etag: true,
-        lastModified: true,
-        maxAge: 31536000,
-        setHeaders: (res, filePath) => {
-          const ext = path.extname(filePath).toLowerCase();
-          const contentTypes: Record<string, string> = {
-            '.jpg': 'image/jpeg',
-            '.jpeg': 'image/jpeg',
-            '.png': 'image/png',
-            '.gif': 'image/gif',
-            '.webp': 'image/webp',
-            '.svg': 'image/svg+xml',
-            '.pdf': 'application/pdf',
-          };
-          if (contentTypes[ext]) {
-            res.setHeader('Content-Type', contentTypes[ext]);
-          }
-        },
-      })
-    );
-    logger.info({
-      msg: 'Static file serving enabled for local storage',
-      path: '/storage',
-      basePath: storagePath,
-    });
+    app.use('/storage', storageMiddleware());
   }
 
   app.use(authMiddleware);
@@ -150,6 +123,12 @@ async function startServer() {
 
   await new Promise<void>((resolve) => httpServer.listen({ port: config.app.port }, resolve));
 
+  try {
+    await initializeJobs(createAppContext(db));
+  } catch (error) {
+    logger.warn({ err: error }, 'Failed to initialize job scheduling, continuing without jobs');
+  }
+
   logger.info({
     msg: 'Server started successfully',
     port: config.app.port,
@@ -177,6 +156,16 @@ async function startServer() {
 
     httpServer.close(async () => {
       logger.info('HTTP server closed');
+
+      try {
+        await shutdownJobs();
+        logger.info('Job scheduling shut down');
+      } catch (error) {
+        logger.error({
+          msg: 'Error shutting down job scheduling',
+          err: error,
+        });
+      }
 
       try {
         await CacheFactory.disconnect(scopeCache);

@@ -1,0 +1,4 @@
+input DeleteAccountInput {
+  userId: ID!
+  hardDelete: Boolean
+}

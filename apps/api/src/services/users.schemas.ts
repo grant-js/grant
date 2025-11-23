@@ -2,14 +2,14 @@ import { UserSortableField } from '@logusgraphics/grant-schema';
 import { z } from 'zod';
 
 import {
+  baseEntitySchema,
+  deleteSchema,
   idSchema,
   nameSchema,
-  sortOrderSchema,
-  baseEntitySchema,
-  paginatedResponseSchema,
   nonEmptyNameSchema,
+  paginatedResponseSchema,
   queryParamsSchema,
-  deleteSchema,
+  sortOrderSchema,
 } from './common/schemas';
 
 export const userSortableFieldSchema = z.enum(

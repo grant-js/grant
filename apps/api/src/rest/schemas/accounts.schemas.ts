@@ -65,7 +65,7 @@ export const updateAccountRequestSchema = z.object({
 });
 
 export const accountParamsSchema = z.object({
-  id: z.string().uuid('Invalid account ID'),
+  id: z.uuid('Invalid account ID'),
 });
 
 export const updateAccountResponseSchema = createSuccessResponseSchema(
@@ -78,6 +78,11 @@ export const deleteAccountQuerySchema = z.object({
     .string()
     .optional()
     .transform((val) => val === 'true'),
+});
+
+export const deleteAccountRequestSchema = z.object({
+  userId: z.uuid('Invalid user ID'),
+  hardDelete: z.boolean().optional().default(false),
 });
 
 export const deleteAccountResponseSchema = createSuccessResponseSchema(

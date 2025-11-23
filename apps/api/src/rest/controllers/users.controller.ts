@@ -8,7 +8,7 @@ import {
 import { Response } from 'express';
 
 import { config } from '@/config';
-import { BadRequestError, NotFoundError } from '@/lib/errors';
+import { AuthorizationError, BadRequestError, NotFoundError } from '@/lib/errors';
 import { parseRelations } from '@/lib/field-selection.lib';
 import { TypedRequest } from '@/rest/types';
 import { RequestContext } from '@/types';
@@ -16,6 +16,7 @@ import { RequestContext } from '@/types';
 import {
   changePasswordRequestSchema,
   createUserRequestSchema,
+  deleteUserAccountRequestSchema,
   deleteUserQuerySchema,
   getUserAuthenticationMethodsQuerySchema,
   getUserSessionsQuerySchema,
@@ -361,5 +362,68 @@ export class UsersController extends BaseController {
       success: true,
       message: 'Session revoked successfully',
     });
+  }
+
+  /**
+   * GET /api/users/:id/export
+   * Export user data (GDPR compliance)
+   */
+  async exportUserData(
+    req: TypedRequest<{
+      params: typeof userParamsSchema;
+    }>,
+    res: Response
+  ) {
+    const userId = req.params.id;
+
+    // Verify user can only export their own data
+    if (!this.user || this.user.id !== userId) {
+      throw new NotFoundError('You can only export your own data', 'errors:auth.unauthorized');
+    }
+
+    const exportData = await this.handlers.users.exportUserData(userId);
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="user-data-${userId}-${Date.now()}.json"`
+    );
+    res.json(exportData);
+  }
+
+  /**
+   * DELETE /api/users/:id/account
+   * Delete user account from privacy settings (marks all accounts and user for deletion)
+   * Uses accounts handler to delete all user's accounts and the user itself
+   */
+  async deleteUserAccount(
+    req: TypedRequest<{
+      params: typeof userParamsSchema;
+      body: typeof deleteUserAccountRequestSchema;
+    }>,
+    res: Response
+  ) {
+    const userId = req.params.id;
+    const { userId: bodyUserId, hardDelete } = req.body;
+
+    // Verify user can only delete their own account
+    if (!this.user || this.user.id !== userId) {
+      throw new AuthorizationError('You can only delete your own account', 'errors:auth.forbidden');
+    }
+
+    // Verify userId from body matches authenticated user
+    if (bodyUserId !== userId) {
+      throw new AuthorizationError('User ID must match your user ID', 'errors:auth.forbidden');
+    }
+
+    // Use accounts handler to delete (which handles all accounts and user)
+    const deletedUser = await this.context.handlers.accounts.deleteAccount({
+      input: {
+        userId,
+        hardDelete,
+      },
+    });
+
+    return this.success(res, deletedUser);
   }
 }

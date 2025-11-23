@@ -1,0 +1,1 @@
+export { usePrivacySettings } from './usePrivacySettings';

@@ -49,6 +49,16 @@ export type Account = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
+export type AccountExportData = {
+  __typename?: 'AccountExportData';
+  createdAt: Scalars['Date']['output'];
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  slug: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+  updatedAt: Scalars['Date']['output'];
+};
+
 export type AccountPage = PaginatedResults & {
   __typename?: 'AccountPage';
   accounts: Array<Account>;
@@ -199,6 +209,16 @@ export type Auditable = {
   updatedAt: Scalars['Date']['output'];
 };
 
+export type AuthenticationMethodExportData = {
+  __typename?: 'AuthenticationMethodExportData';
+  createdAt: Scalars['Date']['output'];
+  isPrimary: Scalars['Boolean']['output'];
+  isVerified: Scalars['Boolean']['output'];
+  lastUsedAt?: Maybe<Scalars['Date']['output']>;
+  provider: Scalars['String']['output'];
+  providerId: Scalars['String']['output'];
+};
+
 export type ChangePasswordInput = {
   confirmPassword: Scalars['String']['input'];
   currentPassword: Scalars['String']['input'];
@@ -317,6 +337,11 @@ export type CreateUserSessionInput = {
   token: Scalars['String']['input'];
   userAgent?: InputMaybe<Scalars['String']['input']>;
   userAuthenticationMethodId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+export type DeleteAccountInput = {
+  hardDelete?: InputMaybe<Scalars['Boolean']['input']>;
   userId: Scalars['ID']['input'];
 };
 
@@ -459,7 +484,7 @@ export type Mutation = {
   createRole: Role;
   createTag: Tag;
   createUser: User;
-  deleteAccount: Account;
+  deleteAccount: User;
   deleteGroup: Group;
   deleteOrganization: Organization;
   deletePermission: Permission;
@@ -532,7 +557,7 @@ export type MutationCreateUserArgs = {
 };
 
 export type MutationDeleteAccountArgs = {
-  id: Scalars['ID']['input'];
+  input: DeleteAccountInput;
 };
 
 export type MutationDeleteGroupArgs = {
@@ -782,6 +807,14 @@ export enum OrganizationMemberSortableField {
   Role = 'role',
 }
 
+export type OrganizationMembershipExportData = {
+  __typename?: 'OrganizationMembershipExportData';
+  joinedAt: Scalars['Date']['output'];
+  organizationId: Scalars['ID']['output'];
+  organizationName: Scalars['String']['output'];
+  role: Scalars['String']['output'];
+};
+
 export type OrganizationPage = PaginatedResults & {
   __typename?: 'OrganizationPage';
   hasNextPage: Scalars['Boolean']['output'];
@@ -959,6 +992,14 @@ export type ProjectGroupProjectArgs = {
   organizationId: Scalars['ID']['input'];
 };
 
+export type ProjectMembershipExportData = {
+  __typename?: 'ProjectMembershipExportData';
+  joinedAt: Scalars['Date']['output'];
+  projectId: Scalars['ID']['output'];
+  projectName: Scalars['String']['output'];
+  role: Scalars['String']['output'];
+};
+
 export type ProjectPage = PaginatedResults & {
   __typename?: 'ProjectPage';
   hasNextPage: Scalars['Boolean']['output'];
@@ -1053,6 +1094,7 @@ export type Query = {
   _empty?: Maybe<Scalars['String']['output']>;
   accounts: AccountPage;
   checkUsername: UsernameAvailability;
+  exportUserData: UserDataExport;
   groups: GroupPage;
   invitation?: Maybe<OrganizationInvitation>;
   organizationInvitations: OrganizationInvitationPage;
@@ -1418,6 +1460,15 @@ export type Searchable = {
   search?: Maybe<Scalars['String']['output']>;
 };
 
+export type SessionExportData = {
+  __typename?: 'SessionExportData';
+  createdAt: Scalars['Date']['output'];
+  expiresAt: Scalars['Date']['output'];
+  ipAddress?: Maybe<Scalars['String']['output']>;
+  lastUsedAt?: Maybe<Scalars['Date']['output']>;
+  userAgent?: Maybe<Scalars['String']['output']>;
+};
+
 export enum SortOrder {
   Asc = 'ASC',
   Desc = 'DESC',
@@ -1626,6 +1677,26 @@ export enum UserAuthenticationMethodProvider {
   Google = 'google',
 }
 
+export type UserDataExport = {
+  __typename?: 'UserDataExport';
+  accounts: Array<AccountExportData>;
+  authenticationMethods: Array<AuthenticationMethodExportData>;
+  exportedAt: Scalars['Date']['output'];
+  organizationMemberships: Array<OrganizationMembershipExportData>;
+  projectMemberships: Array<ProjectMembershipExportData>;
+  sessions: Array<SessionExportData>;
+  user: UserExportData;
+};
+
+export type UserExportData = {
+  __typename?: 'UserExportData';
+  createdAt: Scalars['Date']['output'];
+  email?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  updatedAt: Scalars['Date']['output'];
+};
+
 export type UserPage = PaginatedResults & {
   __typename?: 'UserPage';
   hasNextPage: Scalars['Boolean']['output'];
@@ -1800,6 +1871,22 @@ export type CreateComplementaryAccountMutation = {
         updatedAt: Date;
       };
     }>;
+  };
+};
+
+export type DeleteAccountMutationVariables = Exact<{
+  input: DeleteAccountInput;
+}>;
+
+export type DeleteAccountMutation = {
+  __typename?: 'Mutation';
+  deleteAccount: {
+    __typename?: 'User';
+    id: string;
+    name: string;
+    createdAt: Date;
+    updatedAt: Date;
+    deletedAt?: Date | null;
   };
 };
 
@@ -2811,6 +2898,64 @@ export type DeleteUserMutation = {
   deleteUser: { __typename?: 'User'; id: string; name: string; createdAt: Date; updatedAt: Date };
 };
 
+export type ExportUserDataQueryVariables = Exact<{ [key: string]: never }>;
+
+export type ExportUserDataQuery = {
+  __typename?: 'Query';
+  exportUserData: {
+    __typename?: 'UserDataExport';
+    exportedAt: Date;
+    user: {
+      __typename?: 'UserExportData';
+      id: string;
+      name: string;
+      email?: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+    };
+    accounts: Array<{
+      __typename?: 'AccountExportData';
+      id: string;
+      name: string;
+      slug: string;
+      type: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
+    authenticationMethods: Array<{
+      __typename?: 'AuthenticationMethodExportData';
+      provider: string;
+      providerId: string;
+      isVerified: boolean;
+      isPrimary: boolean;
+      lastUsedAt?: Date | null;
+      createdAt: Date;
+    }>;
+    sessions: Array<{
+      __typename?: 'SessionExportData';
+      userAgent?: string | null;
+      ipAddress?: string | null;
+      lastUsedAt?: Date | null;
+      expiresAt: Date;
+      createdAt: Date;
+    }>;
+    organizationMemberships: Array<{
+      __typename?: 'OrganizationMembershipExportData';
+      organizationId: string;
+      organizationName: string;
+      role: string;
+      joinedAt: Date;
+    }>;
+    projectMemberships: Array<{
+      __typename?: 'ProjectMembershipExportData';
+      projectId: string;
+      projectName: string;
+      role: string;
+      joinedAt: Date;
+    }>;
+  };
+};
+
 export type GetUsersQueryVariables = Exact<{
   scope: Scope;
   page?: InputMaybe<Scalars['Int']['input']>;
@@ -3023,6 +3168,52 @@ export const CreateComplementaryAccountDocument = {
   CreateComplementaryAccountMutation,
   CreateComplementaryAccountMutationVariables
 >;
+export const DeleteAccountDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'DeleteAccount' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'DeleteAccountInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'deleteAccount' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'deletedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<DeleteAccountMutation, DeleteAccountMutationVariables>;
 export const GetAccountsDocument = {
   kind: 'Document',
   definitions: [
@@ -6460,6 +6651,115 @@ export const DeleteUserDocument = {
     },
   ],
 } as unknown as DocumentNode<DeleteUserMutation, DeleteUserMutationVariables>;
+export const ExportUserDataDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'ExportUserData' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'exportUserData' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'user' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'accounts' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'type' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'authenticationMethods' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'provider' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'providerId' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'isVerified' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'isPrimary' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'lastUsedAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'sessions' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'userAgent' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'ipAddress' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'lastUsedAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'expiresAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'organizationMemberships' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'organizationId' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'organizationName' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'role' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'joinedAt' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'projectMemberships' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'projectName' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'role' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'joinedAt' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'exportedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<ExportUserDataQuery, ExportUserDataQueryVariables>;
 export const GetUsersDocument = {
   kind: 'Document',
   definitions: [

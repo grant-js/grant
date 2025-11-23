@@ -1,8 +1,16 @@
 import { Account, AccountType } from '@logusgraphics/grant-schema';
+import { jwtDecode } from 'jwt-decode';
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 
 import { removeStoredTokens, setStoredTokens } from '@/lib/auth';
+
+interface JWTPayload {
+  sub: string;
+  exp?: number;
+  iat?: number;
+  [key: string]: unknown;
+}
 
 interface AuthState {
   // Authentication state
@@ -38,6 +46,7 @@ interface AuthState {
 
   // Computed
   isAuthenticated: () => boolean;
+  getCurrentUserId: () => string | null;
   getCurrentPersonalAccount: () => Account | null;
   getCurrentOrganizationAccount: () => Account | null;
   hasMultipleAccounts: () => boolean;
@@ -126,6 +135,19 @@ export const useAuthStore = create<AuthState>()(
         },
 
         // Computed getters
+        getCurrentUserId: () => {
+          try {
+            const { accessToken } = get();
+            if (!accessToken) {
+              return null;
+            }
+            const decoded = jwtDecode<JWTPayload>(accessToken);
+            return decoded.sub || null;
+          } catch {
+            return null;
+          }
+        },
+
         getCurrentPersonalAccount: () => {
           const { accounts } = get();
           return accounts.find((account) => account.type === AccountType.Personal) || null;

@@ -14,6 +14,7 @@ export const Query = {
   _empty: () => null,
   accounts: accountQueries.getAccounts,
   checkUsername: accountQueries.checkUsername,
+  exportUserData: userQueries.exportUserData,
   users: userQueries.getUsers,
   roles: roleQueries.getRoles,
   groups: groupQueries.getGroups,

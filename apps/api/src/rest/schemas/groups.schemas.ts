@@ -25,7 +25,7 @@ export const groupWithRelationsSchema = groupSchema.extend({
 export const groupRelationsEnum = z.enum(['permissions', 'tags']);
 
 export const getGroupsQuerySchema = listQuerySchema.omit({ relations: true }).extend({
-  scopeId: z.string().uuid('Invalid scope ID'),
+  scopeId: z.uuid('Invalid scope ID'),
   tenant: tenantSchema,
   sortField: z
     .enum(Object.values(GroupSortableField) as [GroupSortableField, ...GroupSortableField[]])
@@ -132,7 +132,7 @@ export const groupParamsSchema = z.object({
 export const updateGroupResponseSchema = createSuccessResponseSchema(groupSchema);
 
 export const deleteGroupQuerySchema = z.object({
-  scopeId: z.string().uuid('Invalid scope ID'),
+  scopeId: z.uuid('Invalid scope ID'),
   tenant: tenantSchema,
   hardDelete: z
     .string()

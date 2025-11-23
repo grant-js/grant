@@ -207,4 +207,33 @@ export class OrganizationUserService extends AuditService {
       context
     );
   }
+
+  /**
+   * Get user's organization memberships with roles
+   * Returns organizations the user belongs to along with their role in each organization
+   */
+  public async getUserOrganizationMemberships(
+    userId: string,
+    transaction?: Transaction
+  ): Promise<
+    Array<{
+      organizationId: string;
+      organizationName: string;
+      role: string;
+      joinedAt: Date;
+    }>
+  > {
+    const memberships =
+      await this.repositories.organizationUserRepository.getUserOrganizationMemberships(
+        userId,
+        transaction
+      );
+
+    return memberships.map((m) => ({
+      organizationId: m.organizationId,
+      organizationName: m.organizationName,
+      role: m.role,
+      joinedAt: m.joinedAt instanceof Date ? m.joinedAt : new Date(m.joinedAt),
+    }));
+  }
 }

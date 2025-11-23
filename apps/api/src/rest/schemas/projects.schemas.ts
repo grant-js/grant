@@ -29,7 +29,7 @@ export const projectWithRelationsSchema = projectSchema.extend({
 export const projectRelationsEnum = z.enum(['roles', 'groups', 'permissions', 'users', 'tags']);
 
 export const getProjectsQuerySchema = listQuerySchema.omit({ relations: true }).extend({
-  scopeId: z.string().uuid('Invalid scope ID'),
+  scopeId: z.uuid('Invalid scope ID'),
   tenant: tenantSchema,
   sortField: z
     .enum(Object.values(ProjectSortableField) as [ProjectSortableField, ...ProjectSortableField[]])
@@ -122,7 +122,7 @@ export const projectParamsSchema = z.object({
 export const updateProjectResponseSchema = createSuccessResponseSchema(projectSchema);
 
 export const deleteProjectQuerySchema = z.object({
-  scopeId: z.string().uuid('Invalid scope ID'),
+  scopeId: z.uuid('Invalid scope ID'),
   tenant: tenantSchema,
   hardDelete: z
     .string()

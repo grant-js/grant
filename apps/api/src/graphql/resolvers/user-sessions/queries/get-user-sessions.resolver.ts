@@ -20,9 +20,9 @@ export const getUserSessionsResolver: QueryResolvers<GraphqlContext>['userSessio
 
   const result = await context.handlers.users.getUserSessions({
     userId,
-    audience: input.audience,
-    page: input.page,
-    limit: input.limit,
+    audience: input.audience ?? undefined,
+    page: input.page ?? undefined,
+    limit: input.limit ?? undefined,
   });
 
   return result;

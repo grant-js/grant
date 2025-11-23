@@ -13,11 +13,58 @@ import {
 } from '@logusgraphics/grant-schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
+import { NotFoundError } from '@/lib/errors';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 import { DeleteParams, SelectedFields } from '@/services/common';
 
 import { ScopeHandler } from './base/scope-handler';
+
+export interface UserDataExport {
+  user: {
+    id: string;
+    name: string;
+    email: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+  accounts: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    type: string;
+    createdAt: Date;
+    updatedAt: Date;
+  }>;
+  authenticationMethods: Array<{
+    provider: string;
+    providerId: string;
+    isVerified: boolean;
+    isPrimary: boolean;
+    lastUsedAt: Date | null;
+    createdAt: Date;
+  }>;
+  sessions: Array<{
+    userAgent: string | null;
+    ipAddress: string | null;
+    lastUsedAt: Date | null;
+    expiresAt: Date;
+    createdAt: Date;
+  }>;
+  organizationMemberships: Array<{
+    organizationId: string;
+    organizationName: string;
+    role: string;
+    joinedAt: Date;
+  }>;
+  projectMemberships: Array<{
+    projectId: string;
+    projectName: string;
+    role: string;
+    joinedAt: Date;
+  }>;
+  exportedAt: Date;
+}
 
 export class UserHandler extends ScopeHandler {
   constructor(
@@ -313,5 +360,114 @@ export class UserHandler extends ScopeHandler {
 
   public async revokeUserSession(sessionId: string) {
     return await this.services.userSessions.revokeSession(sessionId);
+  }
+
+  /**
+   * Export all user data for GDPR compliance
+   * Collects user profile, accounts, authentication methods, sessions,
+   * organization memberships, and project memberships
+   *
+   * @param userId - User ID to export data for
+   * @returns Structured user data export
+   */
+  public async exportUserData(userId: string): Promise<UserDataExport> {
+    // Get user profile
+    const userPage = await this.services.users.getUsers({
+      ids: [userId],
+      limit: 1,
+      requestedFields: ['id', 'name', 'createdAt', 'updatedAt'],
+    });
+
+    if (!userPage.users || userPage.users.length === 0) {
+      throw new NotFoundError('User not found', 'errors:notFound.user', { userId });
+    }
+
+    const user = userPage.users[0];
+
+    // Get user's authentication methods
+    const authMethods = await this.services.userAuthenticationMethods.getUserAuthenticationMethods({
+      userId,
+      requestedFields: [
+        'provider',
+        'providerId',
+        'isVerified',
+        'isPrimary',
+        'lastUsedAt',
+        'createdAt',
+      ],
+    });
+
+    // Extract email from authentication methods
+    const emailAuthMethod = authMethods.find((m) => m.provider === 'email');
+    const userEmail = emailAuthMethod?.providerId || null;
+
+    // Get accounts owned by user
+    const accounts = await this.services.accounts.getAccountsByOwnerId(userId);
+
+    // Format authentication methods (excluding sensitive data like hashed passwords)
+    const authenticationMethodsData = authMethods.map((method) => ({
+      provider: method.provider,
+      providerId: method.providerId,
+      isVerified: method.isVerified || false,
+      isPrimary: method.isPrimary || false,
+      lastUsedAt: method.lastUsedAt ? new Date(method.lastUsedAt) : null,
+      createdAt: new Date(method.createdAt),
+    }));
+
+    // Get user sessions
+    const sessionsPage = await this.services.userSessions.getUserSessions({
+      userId,
+      limit: -1,
+      requestedFields: ['userAgent', 'ipAddress', 'lastUsedAt', 'expiresAt', 'createdAt'],
+    });
+
+    const sessionsData = (sessionsPage.userSessions || []).map((session) => ({
+      userAgent: session.userAgent || null,
+      ipAddress: session.ipAddress || null,
+      lastUsedAt: session.lastUsedAt ? new Date(session.lastUsedAt) : null,
+      expiresAt: new Date(session.expiresAt),
+      createdAt: new Date(session.createdAt),
+    }));
+
+    // Get organization memberships with roles
+    const organizationMembershipsRaw =
+      await this.services.organizationUsers.getUserOrganizationMemberships(userId);
+
+    // Get project memberships with roles
+    const projectMembershipsRaw =
+      await this.services.projectUsers.getUserProjectMemberships(userId);
+
+    return {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: userEmail,
+        createdAt: new Date(user.createdAt),
+        updatedAt: new Date(user.updatedAt),
+      },
+      accounts: accounts.map((account) => ({
+        id: account.id,
+        name: account.name,
+        slug: account.slug,
+        type: account.type,
+        createdAt: new Date(account.createdAt),
+        updatedAt: new Date(account.updatedAt),
+      })),
+      authenticationMethods: authenticationMethodsData,
+      sessions: sessionsData,
+      organizationMemberships: organizationMembershipsRaw.map((m) => ({
+        organizationId: m.organizationId,
+        organizationName: m.organizationName,
+        role: m.role,
+        joinedAt: m.joinedAt,
+      })),
+      projectMemberships: projectMembershipsRaw.map((m) => ({
+        projectId: m.projectId,
+        projectName: m.projectName,
+        role: m.role,
+        joinedAt: m.joinedAt,
+      })),
+      exportedAt: new Date(),
+    };
   }
 }

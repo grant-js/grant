@@ -30,6 +30,7 @@ description: Plan for implementing comprehensive CSRF protection
 **CSRF (Cross-Site Request Forgery)** attacks exploit the fact that browsers automatically include cookies with requests to the same domain, even from malicious sites.
 
 **Attack Scenario:**
+
 ```
 1. User logs into your app (gets auth cookie)
 2. User visits malicious site (evil.com)
@@ -41,12 +42,14 @@ description: Plan for implementing comprehensive CSRF protection
 ### Current Protection Level: **Medium-High**
 
 **Why it's relatively safe:**
+
 - ✅ JWT tokens in Authorization headers (not auto-sent by browsers)
 - ✅ SameSite: 'lax' cookies (blocks most cross-site POST requests)
 - ✅ Apollo CSRF prevention (GraphQL protected)
 - ✅ No cookie-based authentication currently
 
 **Why we should still implement it:**
+
 - 🔒 Defense in depth (multiple layers of security)
 - 🔒 Future-proofing (if we add cookie-based auth)
 - 🔒 Protects against edge cases
@@ -60,6 +63,7 @@ description: Plan for implementing comprehensive CSRF protection
 **Goal:** Generate and store CSRF tokens server-side
 
 **Implementation:**
+
 1. Create CSRF middleware that:
    - Generates random CSRF token on first request
    - Stores token in httpOnly cookie (for validation)
@@ -67,6 +71,7 @@ description: Plan for implementing comprehensive CSRF protection
    - Validates token on state-changing requests
 
 **Files to Create/Modify:**
+
 - `apps/api/src/middleware/csrf.middleware.ts` - CSRF token generation and validation
 - `apps/api/src/server.ts` - Add CSRF middleware to Express app
 
@@ -77,6 +82,7 @@ description: Plan for implementing comprehensive CSRF protection
 **Goal:** Make CSRF tokens available to frontend and include in requests
 
 **Implementation:**
+
 1. Create endpoint to fetch CSRF token: `GET /api/csrf-token`
 2. Update frontend to:
    - Fetch CSRF token on app initialization
@@ -85,6 +91,7 @@ description: Plan for implementing comprehensive CSRF protection
    - Refresh token periodically or on 403 errors
 
 **Files to Create/Modify:**
+
 - `apps/api/src/rest/routes/csrf.routes.ts` - CSRF token endpoint
 - `apps/web/lib/csrf.ts` - CSRF token management utility
 - `apps/web/lib/apollo-client.ts` - Include CSRF token in GraphQL requests
@@ -97,6 +104,7 @@ description: Plan for implementing comprehensive CSRF protection
 **Goal:** Validate CSRF tokens on all state-changing requests
 
 **Implementation:**
+
 1. CSRF middleware validates:
    - Token exists in request header (`X-CSRF-Token`)
    - Token matches stored token in cookie
@@ -105,6 +113,7 @@ description: Plan for implementing comprehensive CSRF protection
 3. Provide clear error messages
 
 **Files to Modify:**
+
 - `apps/api/src/middleware/csrf.middleware.ts` - Add validation logic
 - `apps/api/src/middleware/error.middleware.ts` - Handle CSRF errors
 
@@ -115,6 +124,7 @@ description: Plan for implementing comprehensive CSRF protection
 **Goal:** Ensure CSRF protection works correctly and document it
 
 **Implementation:**
+
 1. Write tests for:
    - Token generation
    - Token validation (success and failure cases)
@@ -124,6 +134,7 @@ description: Plan for implementing comprehensive CSRF protection
 3. Add configuration examples
 
 **Files to Create/Modify:**
+
 - `apps/api/src/middleware/__tests__/csrf.middleware.test.ts`
 - `docs/architecture/security.md` - Add CSRF section
 - `docs/getting-started/configuration.md` - Update CSRF config docs
@@ -139,26 +150,32 @@ description: Plan for implementing comprehensive CSRF protection
 ## Implementation Strategy
 
 ### Option 1: Full Implementation (Recommended)
+
 Implement all phases at once for comprehensive protection.
 
 **Pros:**
+
 - Complete protection immediately
 - No partial implementation gaps
 - Easier to test end-to-end
 
 **Cons:**
+
 - Requires more upfront work
 - All-or-nothing approach
 
 ### Option 2: Incremental Implementation
+
 Implement phase by phase, testing after each.
 
 **Pros:**
+
 - Can validate each phase independently
 - Lower risk of breaking changes
 - Can pause if issues arise
 
 **Cons:**
+
 - Partial protection during implementation
 - May need to refactor between phases
 
@@ -167,6 +184,7 @@ Implement phase by phase, testing after each.
 ### CSRF Token Strategy: Double Submit Cookie Pattern
 
 **How it works:**
+
 1. Server generates random token, stores in httpOnly cookie
 2. Server also sends token in response (header or body)
 3. Client reads token and includes in custom header (`X-CSRF-Token`)
@@ -175,6 +193,7 @@ Implement phase by phase, testing after each.
 6. If mismatch: request is CSRF (different origin can't read cookie)
 
 **Why this works:**
+
 - Attacker can't read httpOnly cookie (can't get token)
 - Attacker can't set custom headers (browser restriction)
 - Only legitimate same-origin requests can include token
@@ -182,16 +201,19 @@ Implement phase by phase, testing after each.
 ### Token Storage Options
 
 **Option A: In-Memory (Recommended)**
+
 - Store tokens in Map/Redis keyed by session ID
 - Pros: Fast, scalable, can expire tokens
 - Cons: Requires session management
 
 **Option B: Signed Cookie**
+
 - Store token in signed cookie
 - Pros: Stateless, simple
 - Cons: Harder to invalidate, larger cookies
 
 **Option C: Database**
+
 - Store tokens in database
 - Pros: Full control, audit trail
 - Cons: Database overhead, slower
@@ -233,6 +255,7 @@ Response: {
 ### Request Headers
 
 All state-changing requests must include:
+
 ```
 X-CSRF-Token: <token-from-csrf-endpoint>
 ```
@@ -316,6 +339,7 @@ const csrfLink = new ApolloLink((operation, forward) => {
 ## Rollback Plan
 
 If issues arise:
+
 1. Set `SECURITY_ENABLE_CSRF=false` to disable
 2. Frontend continues to work (just includes unused header)
 3. No breaking changes to existing functionality
@@ -332,4 +356,3 @@ If issues arise:
 - [OWASP CSRF Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)
 - [Express CSRF Protection](https://expressjs.com/en/advanced/best-practice-security.html#use-csrf-protection)
 - [Apollo Server CSRF Prevention](https://www.apollographql.com/docs/apollo-server/security/cors/#preventing-cross-site-request-forgery-csrf)
-

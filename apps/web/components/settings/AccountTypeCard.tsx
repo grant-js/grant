@@ -68,12 +68,16 @@ export function AccountTypeCard({
             <h4 className="mb-2 text-sm font-semibold">{t('type.complementary.title')}</h4>
             <p className="mb-3 text-sm text-muted-foreground">
               {t('type.complementary.description', {
-                type: tCommon(complementaryType === AccountType.Organization ? 'organization' : 'personal'),
+                type: tCommon(
+                  complementaryType === AccountType.Organization ? 'organization' : 'personal'
+                ),
               })}
             </p>
             <Button variant="outline" size="sm" onClick={() => setDialogOpen(true)}>
               {t('type.complementary.action', {
-                type: tCommon(complementaryType === AccountType.Organization ? 'organization' : 'personal'),
+                type: tCommon(
+                  complementaryType === AccountType.Organization ? 'organization' : 'personal'
+                ),
               })}
             </Button>
           </div>
@@ -105,9 +109,7 @@ export function AccountTypeCard({
                           : 'border-muted-foreground/40 bg-background'
                       )}
                     >
-                      {isSelected && (
-                        <div className="h-2 w-2 rounded-full bg-primary-foreground" />
-                      )}
+                      {isSelected && <div className="h-2 w-2 rounded-full bg-primary-foreground" />}
                     </div>
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       {account.type === AccountType.Organization ? (

@@ -4,7 +4,6 @@ import {
   AccountPage,
   AccountType,
   CreateAccountInput,
-  MutationDeleteAccountArgs,
   MutationUpdateAccountArgs,
   QueryAccountsArgs,
 } from '@logusgraphics/grant-schema';
@@ -27,7 +26,6 @@ import {
   AuditService,
   createDynamicPaginatedSchema,
   createDynamicSingleSchema,
-  DeleteParams,
   SelectedFields,
   validateInput,
   validateOutput,
@@ -79,6 +77,20 @@ export class AccountService extends AuditService {
     );
 
     return result;
+  }
+
+  public async getAccountsByOwnerId(
+    ownerId: string,
+    transaction?: Transaction
+  ): Promise<Account[]> {
+    return await this.repositories.accountRepository.getAccountsByOwnerId(ownerId, transaction);
+  }
+
+  public async getExpiredAccounts(
+    retentionDate: Date,
+    transaction?: Transaction
+  ): Promise<Array<{ id: string; ownerId: string }>> {
+    return await this.repositories.accountRepository.getExpiredAccounts(retentionDate, transaction);
   }
 
   public async createAccount(
@@ -241,7 +253,7 @@ export class AccountService extends AuditService {
   }
 
   public async deleteAccount(
-    params: MutationDeleteAccountArgs & DeleteParams,
+    params: { id: string; hardDelete?: boolean },
     transaction?: Transaction
   ): Promise<Account> {
     const context = 'AccountService.deleteAccount';
@@ -253,14 +265,15 @@ export class AccountService extends AuditService {
     const isHardDelete = hardDelete === true;
 
     const deletedAccount = isHardDelete
-      ? await this.repositories.accountRepository.hardDeleteAccount(validatedParams, transaction)
-      : await this.repositories.accountRepository.softDeleteAccount(validatedParams, transaction);
+      ? await this.repositories.accountRepository.hardDeleteAccount(id, transaction)
+      : await this.repositories.accountRepository.softDeleteAccount(id, transaction);
 
     const oldValues = {
       id: oldAccount.id,
       name: oldAccount.name,
       slug: oldAccount.slug,
       type: oldAccount.type,
+      ownerId: oldAccount.ownerId,
       createdAt: oldAccount.createdAt,
       updatedAt: oldAccount.updatedAt,
     };

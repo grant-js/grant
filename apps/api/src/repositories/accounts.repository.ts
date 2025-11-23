@@ -5,12 +5,11 @@ import {
   AccountProject,
   AccountSearchableField,
   CreateAccountInput,
-  MutationDeleteAccountArgs,
   MutationUpdateAccountArgs,
   QueryAccountsArgs,
   User,
 } from '@logusgraphics/grant-schema';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNotNull, isNull, lt } from 'drizzle-orm';
 
 import { slugifySafe } from '@/lib/slugify.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -68,6 +67,38 @@ export class AccountRepository extends EntityRepository<AccountModel, Account> {
     };
   }
 
+  /**
+   * Get all accounts owned by a specific user
+   * Used internally for operations that need to find all user's accounts
+   */
+  public async getAccountsByOwnerId(
+    ownerId: string,
+    transaction?: Transaction
+  ): Promise<Account[]> {
+    const result = await this.query(
+      {
+        filters: [{ field: 'ownerId', operator: 'eq', value: ownerId }],
+        limit: -1, // Get all accounts
+      },
+      transaction
+    );
+    return result.items;
+  }
+
+  public async getExpiredAccounts(
+    retentionDate: Date,
+    transaction?: Transaction
+  ): Promise<Array<{ id: string; ownerId: string }>> {
+    const dbInstance = transaction ?? this.db;
+
+    const result = await dbInstance
+      .select({ id: this.table.id, ownerId: this.table.ownerId })
+      .from(this.table)
+      .where(and(isNotNull(this.table.deletedAt), lt(this.table.deletedAt, retentionDate)));
+
+    return result;
+  }
+
   public async createAccount(
     params: Omit<CreateAccountInput, 'provider' | 'providerId' | 'providerData'>,
     transaction?: Transaction
@@ -95,22 +126,16 @@ export class AccountRepository extends EntityRepository<AccountModel, Account> {
     return this.update(baseParams, transaction);
   }
 
-  public async softDeleteAccount(
-    params: MutationDeleteAccountArgs,
-    transaction?: Transaction
-  ): Promise<Account> {
+  public async softDeleteAccount(accountId: string, transaction?: Transaction): Promise<Account> {
     const baseParams: BaseDeleteArgs = {
-      id: params.id,
+      id: accountId,
     };
     return this.softDelete(baseParams, transaction);
   }
 
-  public async hardDeleteAccount(
-    params: MutationDeleteAccountArgs,
-    transaction?: Transaction
-  ): Promise<Account> {
+  public async hardDeleteAccount(accountId: string, transaction?: Transaction): Promise<Account> {
     const baseParams: BaseDeleteArgs = {
-      id: params.id,
+      id: accountId,
     };
     return this.hardDelete(baseParams, transaction);
   }

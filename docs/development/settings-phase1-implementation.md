@@ -40,7 +40,7 @@ Zod validation schemas for settings forms:
 Features:
 
 - **Account Switcher:** Radio button-style selector for multiple accounts (if user has 2 accounts)
-- **Account Information Form:** 
+- **Account Information Form:**
   - Account name field (required, 2-100 characters) - ✅ API integrated
   - Username/slug field (required, 3-50 characters) - ✅ API integrated with real-time validation
   - Real-time username availability checking using `useUsernameValidation` hook
@@ -222,12 +222,14 @@ All forms use react-hook-form for state management with:
 ## Future Phases
 
 **Phase 2: Security Features**
+
 - Authentication methods management
 - Active sessions viewing and revocation
 - Password change functionality
 - 2FA placeholder with "Coming Soon" indicator
 
 **Phase 3: Advanced Features**
+
 - Complete notification preferences
 - Display preferences (date/time format, timezone)
 - Privacy section (data export, account deletion)

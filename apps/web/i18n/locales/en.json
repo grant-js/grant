@@ -1531,7 +1531,66 @@
     },
     "privacy": {
       "title": "Privacy",
-      "description": "Manage your privacy settings and data"
+      "description": "Manage your privacy settings and data",
+      "dataExport": {
+        "title": "Data Export",
+        "description": "Download a copy of your account data",
+        "info": "You can request a copy of all your personal data stored in your account. This includes your account information, profile data, sessions, and activity history.",
+        "includes": {
+          "title": "Your data export will include:",
+          "account": "Account information and settings",
+          "profile": "Profile information and preferences",
+          "sessions": "Active and expired session history",
+          "activity": "Account activity and audit logs"
+        },
+        "export": "Export My Data",
+        "exporting": "Preparing Export...",
+        "success": "Data exported successfully",
+        "error": "Failed to export data"
+      },
+      "dataRetention": {
+        "title": "Data Retention",
+        "description": "Learn about how we handle your data",
+        "active": {
+          "title": "Active Accounts",
+          "description": "Data for active accounts is retained indefinitely while your account is in use. You can request data deletion at any time."
+        },
+        "deleted": {
+          "title": "Deleted Accounts",
+          "description": "When you delete your account, your data is marked for deletion and will be permanently removed after 30 days. During this period, you can restore your account."
+        },
+        "backup": {
+          "title": "Backup & Recovery",
+          "description": "We maintain encrypted backups of your data for disaster recovery purposes. These backups are retained for up to 90 days after account deletion."
+        }
+      },
+      "accountDeletion": {
+        "title": "Account Deletion",
+        "description": "Permanently delete your account and all associated data",
+        "warning": "This action cannot be undone. All your data will be permanently deleted.",
+        "consequences": {
+          "title": "What happens when you delete your account:",
+          "data": "All your account data, projects, and settings will be permanently deleted",
+          "access": "You will lose access to all organizations and projects you're a member of",
+          "irreversible": "This action is irreversible and cannot be undone"
+        },
+        "deleteButton": "Delete My Account",
+        "dialog": {
+          "title": "Delete Account",
+          "description": "Are you absolutely sure you want to delete your account? This action cannot be undone and all your data will be permanently removed.",
+          "warning": "Please confirm your user ID to proceed with account deletion.",
+          "userIdLabel": "Your User ID",
+          "userIdHint": "Copy your user ID using the button above.",
+          "confirmUserIdLabel": "Confirm User ID",
+          "confirmUserIdPlaceholder": "Paste your user ID here",
+          "confirmUserIdHint": "Enter your user ID above to confirm account deletion. This prevents accidental deletions.",
+          "confirm": "Delete Account",
+          "deleting": "Deleting..."
+        },
+        "success": "Account deleted successfully",
+        "error": "Failed to delete account",
+        "userIdMismatch": "The entered user ID does not match your user ID. Please try again."
+      }
     }
   },
   "invitations": {

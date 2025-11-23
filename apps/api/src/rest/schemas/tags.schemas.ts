@@ -19,7 +19,7 @@ export const tagSchema = z.object({
 });
 
 export const getTagsQuerySchema = listQuerySchema.extend({
-  scopeId: z.string().uuid('Invalid scope ID'),
+  scopeId: z.uuid('Invalid scope ID'),
   tenant: tenantSchema,
   sortField: z.enum(Object.values(TagSortField) as [TagSortField, ...TagSortField[]]).optional(),
   sortOrder: z.nativeEnum(SortOrder).optional(),
@@ -79,7 +79,7 @@ export const tagParamsSchema = z.object({
 export const updateTagResponseSchema = createSuccessResponseSchema(tagSchema);
 
 export const deleteTagQuerySchema = z.object({
-  scopeId: z.string().uuid('Invalid scope ID'),
+  scopeId: z.uuid('Invalid scope ID'),
   tenant: tenantSchema,
   hardDelete: z
     .string()

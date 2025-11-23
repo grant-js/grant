@@ -72,7 +72,13 @@ export default function ProfileSettingsPage() {
         onSubmit={handleProfileUpdate}
         onUploadPicture={handleUploadPicture}
         currentPictureUrl={userData.pictureUrl || undefined}
-        currentPictureUpdatedAt={userData.updatedAt || undefined}
+        currentPictureUpdatedAt={
+          userData.updatedAt
+            ? userData.updatedAt instanceof Date
+              ? userData.updatedAt.toISOString()
+              : String(userData.updatedAt)
+            : undefined
+        }
       />
     </DashboardPageLayout>
   );

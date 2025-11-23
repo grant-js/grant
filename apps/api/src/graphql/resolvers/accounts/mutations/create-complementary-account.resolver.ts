@@ -10,4 +10,3 @@ export const createComplementaryAccountResolver: MutationResolvers<GraphqlContex
     });
     return result;
   };
-

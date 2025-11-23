@@ -35,7 +35,12 @@ export function AccountInformationForm({
   const t = useTranslations('settings.account');
   const tCommon = useTranslations('common');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { isChecking, isAvailable, checkUsername, reset: resetUsernameValidation } = useUsernameValidation();
+  const {
+    isChecking,
+    isAvailable,
+    checkUsername,
+    reset: resetUsernameValidation,
+  } = useUsernameValidation();
 
   const form = useForm<AccountSettingsFormValues>({
     resolver: zodResolver(accountSettingsSchema),

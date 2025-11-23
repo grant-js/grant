@@ -25,7 +25,7 @@ export const permissionWithRelationsSchema = permissionSchema.extend({
 export const permissionRelationsEnum = z.enum(['tags']);
 
 export const getPermissionsQuerySchema = listQuerySchema.omit({ relations: true }).extend({
-  scopeId: z.string().uuid('Invalid scope ID'),
+  scopeId: z.uuid('Invalid scope ID'),
   tenant: tenantSchema,
   sortField: z
     .enum(
@@ -131,7 +131,7 @@ export const permissionParamsSchema = z.object({
 export const updatePermissionResponseSchema = createSuccessResponseSchema(permissionSchema);
 
 export const deletePermissionQuerySchema = z.object({
-  scopeId: z.string().uuid('Invalid scope ID'),
+  scopeId: z.uuid('Invalid scope ID'),
   tenant: tenantSchema,
   hardDelete: z
     .string()

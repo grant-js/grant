@@ -165,6 +165,8 @@ export default withMermaid({
             { text: 'Caching System', link: '/advanced-topics/caching' },
             { text: 'Cache Setup Guide', link: '/advanced-topics/caching-setup' },
             { text: 'Email Service & Adapters', link: '/advanced-topics/email-service' },
+            { text: 'Job Scheduling & Background Tasks', link: '/advanced-topics/job-scheduling' },
+            { text: 'Privacy Settings', link: '/advanced-topics/privacy-settings' },
             { text: 'Performance Optimization', link: '/advanced-topics/performance' },
             { text: 'Field Selection', link: '/advanced-topics/field-selection' },
             { text: 'Audit Logging', link: '/advanced-topics/audit-logging' },

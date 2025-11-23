@@ -44,7 +44,8 @@ const createComplementaryAccountSchema = z.object({
         return val.length >= 3 && val.length <= 50 && /^[a-z0-9-]+$/.test(val);
       },
       {
-        message: 'Username must be 3-50 characters and contain only lowercase letters, numbers, and hyphens',
+        message:
+          'Username must be 3-50 characters and contain only lowercase letters, numbers, and hyphens',
       }
     ),
 });
@@ -207,4 +208,3 @@ export function CreateComplementaryAccountDialog({
     </Dialog>
   );
 }
-

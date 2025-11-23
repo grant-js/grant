@@ -21,7 +21,7 @@ interface SettingsCardProps {
 
 export function SettingsCard({ title, description, children, footer }: SettingsCardProps) {
   return (
-    <Card>
+    <Card className="max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         {description && <CardDescription>{description}</CardDescription>}

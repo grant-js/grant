@@ -1,5 +1,4 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { projectUserAuditLogs } from '@logusgraphics/grant-database';
+import { DbSchema, projectUserAuditLogs } from '@logusgraphics/grant-database';
 import {
   AddProjectUserInput,
   ProjectUser,
@@ -13,16 +12,16 @@ import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
+  DeleteParams,
+  createDynamicSingleSchema,
   validateInput,
   validateOutput,
-  createDynamicSingleSchema,
-  DeleteParams,
 } from './common';
 import {
-  getProjectUsersParamsSchema,
   addProjectUserParamsSchema,
-  removeProjectUserParamsSchema,
+  getProjectUsersParamsSchema,
   projectUserSchema,
+  removeProjectUserParamsSchema,
 } from './project-users.schemas';
 
 export class ProjectUserService extends AuditService {
@@ -183,5 +182,33 @@ export class ProjectUserService extends AuditService {
     }
 
     return validateOutput(createDynamicSingleSchema(projectUserSchema), projectUser, context);
+  }
+
+  /**
+   * Get user's project memberships with roles
+   * Returns projects the user belongs to along with their role in each project
+   */
+  public async getUserProjectMemberships(
+    userId: string,
+    transaction?: Transaction
+  ): Promise<
+    Array<{
+      projectId: string;
+      projectName: string;
+      role: string;
+      joinedAt: Date;
+    }>
+  > {
+    const memberships = await this.repositories.projectUserRepository.getUserProjectMemberships(
+      userId,
+      transaction
+    );
+
+    return memberships.map((m) => ({
+      projectId: m.projectId,
+      projectName: m.projectName,
+      role: m.role,
+      joinedAt: m.joinedAt instanceof Date ? m.joinedAt : new Date(m.joinedAt),
+    }));
   }
 }

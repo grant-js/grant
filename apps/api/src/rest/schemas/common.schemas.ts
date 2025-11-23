@@ -5,7 +5,7 @@ import { z } from '@/lib/zod-openapi.lib';
 export const tenantSchema = z.enum(Object.values(Tenant) as [Tenant, ...Tenant[]]);
 
 export const scopeSchema = z.object({
-  id: z.string().uuid('Invalid scope ID'),
+  id: z.uuid('Invalid scope ID'),
   tenant: tenantSchema,
 });
 

@@ -1,12 +1,11 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { userAuditLogs } from '@logusgraphics/grant-database';
+import { DbSchema, userAuditLogs } from '@logusgraphics/grant-database';
 import {
-  QueryUsersArgs,
-  MutationUpdateUserArgs,
+  CreateUserInput,
   MutationDeleteUserArgs,
+  MutationUpdateUserArgs,
+  QueryUsersArgs,
   User,
   UserPage,
-  CreateUserInput,
 } from '@logusgraphics/grant-schema';
 
 import { NotFoundError } from '@/lib/errors';
@@ -16,19 +15,19 @@ import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
-  validateInput,
-  validateOutput,
+  DeleteParams,
+  SelectedFields,
   createDynamicPaginatedSchema,
   createDynamicSingleSchema,
-  SelectedFields,
-  DeleteParams,
+  validateInput,
+  validateOutput,
 } from './common';
 import {
-  userSchema,
-  queryUsersArgsSchema,
   createUserInputSchema,
-  updateUserArgsSchema,
   deleteUserArgsSchema,
+  queryUsersArgsSchema,
+  updateUserArgsSchema,
+  userSchema,
 } from './users.schemas';
 
 export class UserService extends AuditService {

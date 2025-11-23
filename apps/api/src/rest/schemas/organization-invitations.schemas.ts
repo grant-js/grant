@@ -54,7 +54,7 @@ export const invitationTokenParamsSchema = z.object({
 });
 
 export const inviteMemberRequestSchema = z.object({
-  organizationId: z.string().uuid('Invalid organization ID').openapi({
+  organizationId: z.uuid('Invalid organization ID').openapi({
     description: 'UUID of the organization to invite the member to',
     example: '123e4567-e89b-12d3-a456-426614174000',
   }),
@@ -62,7 +62,7 @@ export const inviteMemberRequestSchema = z.object({
     description: 'Email address of the user to invite',
     example: 'newmember@example.com',
   }),
-  roleId: z.string().uuid('Invalid role ID').openapi({
+  roleId: z.uuid('Invalid role ID').openapi({
     description: 'UUID of the role to assign to the invited member',
     example: '123e4567-e89b-12d3-a456-426614174001',
   }),
@@ -71,7 +71,7 @@ export const inviteMemberRequestSchema = z.object({
 export const inviteMemberResponseSchema = createSuccessResponseSchema(organizationInvitationSchema);
 
 export const getOrganizationInvitationsQuerySchema = z.object({
-  organizationId: z.string().uuid('Invalid organization ID').openapi({
+  organizationId: z.uuid('Invalid organization ID').openapi({
     description: 'UUID of the organization to list invitations for',
     example: '123e4567-e89b-12d3-a456-426614174000',
   }),
@@ -119,7 +119,7 @@ export const getOrganizationInvitationsQuerySchema = z.object({
       example: 'desc',
     }),
   ids: z
-    .array(z.string().uuid())
+    .array(z.uuid())
     .optional()
     .openapi({
       description: 'Filter by specific invitation IDs',

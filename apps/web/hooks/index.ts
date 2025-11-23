@@ -5,6 +5,7 @@ export * from './groups';
 export * from './members';
 export * from './organizations';
 export * from './permissions';
+export * from './privacy';
 export * from './projects';
 export * from './roles';
 export * from './tags';

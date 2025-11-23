@@ -7,9 +7,11 @@ import {
   changePasswordResponseSchema,
   createUserRequestSchema,
   createUserResponseSchema,
+  deleteUserAccountRequestSchema,
   deleteUserQuerySchema,
   deleteUserResponseSchema,
   errorResponseSchema,
+  exportUserDataResponseSchema,
   getUserAuthenticationMethodsQuerySchema,
   getUserAuthenticationMethodsResponseSchema,
   getUserSessionsQuerySchema,
@@ -52,6 +54,8 @@ export function registerUserEndpoints(registry: OpenAPIRegistry) {
   registry.register('GetUserSessionsQuery', getUserSessionsQuerySchema);
   registry.register('GetUserSessionsResponse', getUserSessionsResponseSchema);
   registry.register('RevokeUserSessionResponse', revokeUserSessionResponseSchema);
+  registry.register('ExportUserDataResponse', exportUserDataResponseSchema);
+  registry.register('DeleteUserAccountRequest', deleteUserAccountRequestSchema);
 
   /**
    * GET /api/users
@@ -665,7 +669,7 @@ Users can only revoke their own sessions.
     `.trim(),
     request: {
       params: userParamsSchema.extend({
-        sessionId: z.string().uuid('Invalid session ID'),
+        sessionId: z.uuid('Invalid session ID'),
       }),
     },
     responses: {
@@ -695,6 +699,273 @@ Users can only revoke their own sessions.
       },
       404: {
         description: 'User or session not found, or unauthorized',
+        content: {
+          'application/json': {
+            schema: notFoundErrorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * GET /api/users/{id}/export
+   */
+  registry.registerPath({
+    method: 'get',
+    path: '/api/users/{id}/export',
+    tags: ['Users'],
+    summary: 'Export user data',
+    description: `
+Export all personal data for the authenticated user (GDPR compliance).
+
+### Authorization
+Users can only export their own data.
+
+### Data Included
+The export includes:
+- User profile information (name, email, timestamps)
+- All accounts owned by the user
+- Authentication methods (excluding sensitive data like hashed passwords)
+- Active and expired sessions
+- Organization memberships with roles
+- Project memberships with roles
+
+### Response Format
+The response is a JSON file download with:
+- Content-Type: \`application/json\`
+- Content-Disposition: \`attachment; filename="user-data-{userId}-{timestamp}.json"\`
+
+### GDPR Compliance
+This endpoint supports the GDPR "Right to Data Portability" requirement, allowing users to obtain a copy of their personal data in a structured, commonly used, and machine-readable format.
+    `.trim(),
+    request: {
+      params: userParamsSchema,
+    },
+    responses: {
+      200: {
+        description: 'User data export file',
+        content: {
+          'application/json': {
+            schema: exportUserDataResponseSchema,
+            example: {
+              user: {
+                id: '123e4567-e89b-12d3-a456-426614174000',
+                name: 'John Doe',
+                email: 'john.doe@example.com',
+                createdAt: '2024-01-01T00:00:00.000Z',
+                updatedAt: '2024-01-15T10:30:00.000Z',
+              },
+              accounts: [
+                {
+                  id: 'acc_123',
+                  name: 'Personal Account',
+                  slug: 'personal-account',
+                  type: 'personal',
+                  createdAt: '2024-01-01T00:00:00.000Z',
+                  updatedAt: '2024-01-01T00:00:00.000Z',
+                },
+              ],
+              authenticationMethods: [
+                {
+                  provider: 'email',
+                  providerId: 'john.doe@example.com',
+                  isVerified: true,
+                  isPrimary: true,
+                  lastUsedAt: '2024-01-15T10:30:00.000Z',
+                  createdAt: '2024-01-01T00:00:00.000Z',
+                },
+              ],
+              sessions: [
+                {
+                  userAgent: 'Mozilla/5.0...',
+                  ipAddress: '192.168.1.1',
+                  lastUsedAt: '2024-01-15T10:30:00.000Z',
+                  expiresAt: '2024-02-01T00:00:00.000Z',
+                  createdAt: '2024-01-01T00:00:00.000Z',
+                },
+              ],
+              organizationMemberships: [
+                {
+                  organizationId: 'org_123',
+                  organizationName: 'Acme Corp',
+                  role: 'Member',
+                  joinedAt: '2024-01-05T00:00:00.000Z',
+                },
+              ],
+              projectMemberships: [
+                {
+                  projectId: 'prj_123',
+                  projectName: 'Project Alpha',
+                  role: 'Developer',
+                  joinedAt: '2024-01-10T00:00:00.000Z',
+                },
+              ],
+              exportedAt: '2024-01-15T10:30:00.000Z',
+            },
+          },
+        },
+        headers: {
+          'Content-Disposition': {
+            description: 'Attachment header with filename',
+            schema: {
+              type: 'string',
+              example:
+                'attachment; filename="user-data-123e4567-e89b-12d3-a456-426614174000-1705312200000.json"',
+            },
+          },
+        },
+      },
+      400: {
+        description: 'Invalid request parameters',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized - Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      403: {
+        description: 'Forbidden - You can only export your own data',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      404: {
+        description: 'User not found',
+        content: {
+          'application/json': {
+            schema: notFoundErrorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * DELETE /api/users/{id}/account
+   * Delete user account from privacy settings (marks all accounts and user for deletion)
+   */
+  registry.registerPath({
+    method: 'delete',
+    path: '/api/users/{id}/account',
+    tags: ['Users'],
+    summary: 'Delete user account',
+    description: `
+Delete user account from privacy settings. This marks ALL user's accounts and the user itself for deletion.
+
+### Authorization
+Users can only delete their own account. The \`id\` parameter must match your authenticated user ID, and the \`userId\` in the request body must also match.
+
+### Confirmation
+The request body must include the user's \`userId\` to confirm the deletion. This prevents accidental or unauthorized account deletions.
+
+### Deletion Type
+- **Soft Delete** (default): The user and all their accounts are marked as deleted with a \`deletedAt\` timestamp but can be restored within the retention period (30 days by default).
+- **Hard Delete**: Set \`hardDelete: true\` to permanently delete the user and all accounts immediately. This action cannot be undone.
+
+### Data Retention
+- Soft-deleted accounts and users are retained for 30 days (configurable via \`PRIVACY_ACCOUNT_DELETION_RETENTION_DAYS\`)
+- After the retention period, accounts and users are permanently deleted by the data retention cleanup job
+- During the retention period, accounts can be restored
+
+### Effects
+- All accounts owned by the user are marked as deleted (\`deletedAt\` is set)
+- The user is marked as deleted (\`deletedAt\` is set)
+- All user relationships (roles, groups, permissions, memberships) are handled via database cascade rules
+- The user will lose access to all accounts, organizations, and projects
+- Accounts can be restored within the retention period
+
+### Security
+- User ID verification is required to prevent accidental deletions
+- Only the account owner can delete their account
+- All deletions are logged for audit purposes
+    `.trim(),
+    request: {
+      params: userParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: deleteUserAccountRequestSchema,
+            example: {
+              userId: '123e4567-e89b-12d3-a456-426614174000',
+              hardDelete: false,
+            },
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'User account deleted successfully',
+        content: {
+          'application/json': {
+            schema: createSuccessResponseSchema(userSchema),
+            example: {
+              success: true,
+              data: {
+                id: '123e4567-e89b-12d3-a456-426614174000',
+                name: 'John Doe',
+                email: 'john.doe@example.com',
+                createdAt: '2024-01-01T00:00:00.000Z',
+                updatedAt: '2024-01-15T10:30:00.000Z',
+                deletedAt: '2024-01-15T10:30:00.000Z',
+              },
+            },
+          },
+        },
+      },
+      400: {
+        description: 'Validation error or userId mismatch',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized - Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      403: {
+        description: 'Forbidden - You can only delete your own account',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      404: {
+        description: 'User not found',
         content: {
           'application/json': {
             schema: notFoundErrorResponseSchema,

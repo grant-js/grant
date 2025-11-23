@@ -46,11 +46,14 @@ export function createAccountsRoutes(context: RequestContext) {
    * POST /api/accounts/complementary
    * Create a complementary account (Personal if user has Organization, Organization if user has Personal)
    */
-  router.post('/complementary', validate({ body: createComplementaryAccountRequestSchema }), (req, res) =>
-    accountsController.createComplementaryAccount(
-      req as TypedRequest<{ body: typeof createComplementaryAccountRequestSchema }>,
-      res
-    )
+  router.post(
+    '/complementary',
+    validate({ body: createComplementaryAccountRequestSchema }),
+    (req, res) =>
+      accountsController.createComplementaryAccount(
+        req as TypedRequest<{ body: typeof createComplementaryAccountRequestSchema }>,
+        res
+      )
   );
 
   return router;

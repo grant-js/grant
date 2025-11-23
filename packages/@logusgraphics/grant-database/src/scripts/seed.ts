@@ -1,13 +1,21 @@
 #!/usr/bin/env tsx
 
 import * as dotenv from 'dotenv';
-import { seed } from 'drizzle-seed';
+import { eq } from 'drizzle-orm';
 
 import { closeDatabase, initializeDatabase } from '@/connection';
-import { roles, users } from '@/schemas';
+import { users } from '@/schemas';
 
 // Load environment variables
 dotenv.config();
+
+/**
+ * System user ID for internal operations
+ * Can be configured via SYSTEM_USER_ID environment variable
+ * Defaults to '00000000-0000-0000-0000-000000000000' if not set
+ * This should match the system user ID configured in apps/api/.env
+ */
+const SYSTEM_USER_ID = process.env.SYSTEM_USER_ID || '00000000-0000-0000-0000-000000000000';
 
 async function main() {
   console.log('🌱 Starting database seeding...');
@@ -22,68 +30,42 @@ async function main() {
 
     const db = initializeDatabase({ connectionString });
 
-    // Check if data already exists
-    const existingUsers = await db.select().from(users).limit(1);
-    const existingRoles = await db.select().from(roles).limit(1);
+    // Check if system user already exists
+    const existingSystemUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, SYSTEM_USER_ID))
+      .limit(1);
 
-    if (existingUsers.length > 0 || existingRoles.length > 0) {
-      console.log('⚠️  Database already contains data!');
+    if (existingSystemUser.length > 0) {
+      console.log('⚠️  System user already exists!');
+      console.log(`   ID: ${SYSTEM_USER_ID}`);
+      console.log(`   Name: ${existingSystemUser[0].name}`);
+      console.log('');
       console.log('💡 To seed fresh data, first reset the database:');
       console.log('   npm run db:reset');
-      console.log('');
-      console.log('💡 Or import from existing JSON files:');
-      console.log('   npm run db:seed:json');
       return;
     }
 
-    // Seed users first (no dependencies)
-    console.log('📝 Seeding users...');
-    await seed(db, { users }).refine((f) => ({
-      users: {
-        count: 50,
-        columns: {
-          name: f.fullName(),
-          email: f.email(),
-          createdAt: f.date({ minDate: '2024-01-01', maxDate: '2025-01-01' }),
-          updatedAt: f.date({ minDate: '2024-01-01', maxDate: '2025-01-01' }),
-        },
-      },
-    }));
-
-    // Seed roles
-    console.log('🎭 Seeding roles...');
-    await seed(db, { roles }).refine((f) => ({
-      roles: {
-        count: 10,
-        columns: {
-          name: f.valuesFromArray({
-            values: [
-              'Admin',
-              'User',
-              'Manager',
-              'Editor',
-              'Viewer',
-              'Developer',
-              'Designer',
-              'Analyst',
-              'Support',
-              'Guest',
-            ],
-          }),
-          description: f.loremIpsum({ sentencesCount: 2 }),
-          createdAt: f.date({ minDate: '2024-01-01', maxDate: '2025-01-01' }),
-          updatedAt: f.date({ minDate: '2024-01-01', maxDate: '2025-01-01' }),
-        },
-      },
-    }));
+    // Insert system user
+    console.log('📝 Seeding system user...');
+    const now = new Date();
+    await db.insert(users).values({
+      id: SYSTEM_USER_ID,
+      name: 'System',
+      pictureUrl: null,
+      deletedAt: null,
+      createdAt: now,
+      updatedAt: now,
+    });
 
     console.log('✅ Database seeding completed successfully!');
     console.log('📊 Seeded data:');
-    console.log('   - 50 users');
-    console.log('   - 10 roles');
+    console.log(`   - System user (ID: ${SYSTEM_USER_ID})`);
     console.log('');
-    console.log('💡 Note: User-role relationships are not seeded due to foreign key constraints.');
-    console.log('   Use npm run db:seed:json to import existing relationships from JSON files.');
+    console.log(
+      '💡 The system user is used for internal operations like background jobs and audit logging.'
+    );
   } catch (error) {
     console.error('❌ Error during seeding:', error);
     process.exit(1);

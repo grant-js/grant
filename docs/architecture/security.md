@@ -204,6 +204,7 @@ The platform uses multiple layers of CSRF protection:
 4. **CSRF Token Protection** - Full CSRF token implementation is planned (see [CSRF Protection Implementation Plan](../implementation-plans/csrf-protection.md)).
 
 **Why Additional CSRF Protection is Recommended:**
+
 - Defense in depth (multiple security layers)
 - Future-proofing for cookie-based authentication
 - Industry best practice and compliance requirements

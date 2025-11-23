@@ -6,11 +6,11 @@ import { UsersController } from '@/rest/controllers/users.controller';
 import {
   changePasswordRequestSchema,
   createUserRequestSchema,
+  deleteUserAccountRequestSchema,
   deleteUserQuerySchema,
   getUserAuthenticationMethodsQuerySchema,
   getUserSessionsQuerySchema,
   getUsersQuerySchema,
-  revokeUserSessionParamsSchema,
   updateUserRequestSchema,
   uploadUserPictureRequestSchema,
   userParamsSchema,
@@ -29,6 +29,20 @@ export function createUserRoutes(context: RequestContext) {
   router.get('/', validate({ query: getUsersQuerySchema }), (req, res) =>
     usersController.getUsers(req as TypedRequest<{ query: typeof getUsersQuerySchema }>, res)
   );
+
+  /**
+   * GET /api/users/:id/export
+   * Export user data (GDPR compliance)
+   * NOTE: This route must come before /:id to avoid route matching conflicts
+   */
+  router.get('/:id/export', validate({ params: userParamsSchema }), async (req, res) => {
+    await usersController.exportUserData(
+      req as TypedRequest<{
+        params: typeof userParamsSchema;
+      }>,
+      res
+    );
+  });
 
   /**
    * GET /api/users/:id
@@ -166,7 +180,7 @@ export function createUserRoutes(context: RequestContext) {
     validate({
       params: userParamsSchema.merge(
         z.object({
-          sessionId: z.string().uuid('Invalid session ID'),
+          sessionId: z.uuid('Invalid session ID'),
         })
       ),
     }),
@@ -174,6 +188,24 @@ export function createUserRoutes(context: RequestContext) {
       usersController.revokeSession(
         req as TypedRequest<{
           params: typeof userParamsSchema & { sessionId: string };
+        }>,
+        res
+      )
+  );
+
+  /**
+   * DELETE /api/users/:id/account
+   * Delete user account from privacy settings (marks all accounts and user for deletion)
+   * NOTE: This route must come before /:id to avoid route matching conflicts
+   */
+  router.delete(
+    '/:id/account',
+    validate({ params: userParamsSchema, body: deleteUserAccountRequestSchema }),
+    (req, res) =>
+      usersController.deleteUserAccount(
+        req as TypedRequest<{
+          params: typeof userParamsSchema;
+          body: typeof deleteUserAccountRequestSchema;
         }>,
         res
       )

@@ -70,7 +70,6 @@ export default function AccountSettingsPage() {
     });
   };
 
-
   if (!currentAccount) {
     return (
       <DashboardPageLayout title={t('title')} variant="simple">

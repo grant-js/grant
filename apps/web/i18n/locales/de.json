@@ -1531,7 +1531,66 @@
     },
     "privacy": {
       "title": "Datenschutz",
-      "description": "Verwalten Sie Ihre Datenschutzeinstellungen und Daten"
+      "description": "Verwalten Sie Ihre Datenschutzeinstellungen und Daten",
+      "dataExport": {
+        "title": "Datenexport",
+        "description": "Laden Sie eine Kopie Ihrer Kontodaten herunter",
+        "info": "Sie können eine Kopie aller Ihrer persönlichen Daten anfordern, die in Ihrem Konto gespeichert sind. Dies umfasst Ihre Kontoinformationen, Profildaten, Sitzungen und Aktivitätsverlauf.",
+        "includes": {
+          "title": "Ihr Datenexport umfasst:",
+          "account": "Kontoinformationen und Einstellungen",
+          "profile": "Profilinformationen und Präferenzen",
+          "sessions": "Aktive und abgelaufene Sitzungshistorie",
+          "activity": "Kontoaktivität und Audit-Protokolle"
+        },
+        "export": "Meine Daten exportieren",
+        "exporting": "Export wird vorbereitet...",
+        "success": "Daten erfolgreich exportiert",
+        "error": "Datenexport fehlgeschlagen"
+      },
+      "dataRetention": {
+        "title": "Datenspeicherung",
+        "description": "Erfahren Sie, wie wir mit Ihren Daten umgehen",
+        "active": {
+          "title": "Aktive Konten",
+          "description": "Daten für aktive Konten werden unbegrenzt aufbewahrt, solange Ihr Konto verwendet wird. Sie können jederzeit die Löschung von Daten anfordern."
+        },
+        "deleted": {
+          "title": "Gelöschte Konten",
+          "description": "Wenn Sie Ihr Konto löschen, werden Ihre Daten zur Löschung markiert und nach 30 Tagen dauerhaft entfernt. Während dieser Zeit können Sie Ihr Konto wiederherstellen."
+        },
+        "backup": {
+          "title": "Backup & Wiederherstellung",
+          "description": "Wir führen verschlüsselte Backups Ihrer Daten für Disaster-Recovery-Zwecke durch. Diese Backups werden bis zu 90 Tage nach der Kontolöschung aufbewahrt."
+        }
+      },
+      "accountDeletion": {
+        "title": "Kontolöschung",
+        "description": "Löschen Sie Ihr Konto und alle zugehörigen Daten dauerhaft",
+        "warning": "Diese Aktion kann nicht rückgängig gemacht werden. Alle Ihre Daten werden dauerhaft gelöscht.",
+        "consequences": {
+          "title": "Was passiert, wenn Sie Ihr Konto löschen:",
+          "data": "Alle Ihre Kontodaten, Projekte und Einstellungen werden dauerhaft gelöscht",
+          "access": "Sie verlieren den Zugriff auf alle Organisationen und Projekte, in denen Sie Mitglied sind",
+          "irreversible": "Diese Aktion ist unwiderruflich und kann nicht rückgängig gemacht werden"
+        },
+        "deleteButton": "Mein Konto löschen",
+        "dialog": {
+          "title": "Konto löschen",
+          "description": "Sind Sie sich absolut sicher, dass Sie Ihr Konto löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden und alle Ihre Daten werden dauerhaft entfernt.",
+          "warning": "Bitte bestätigen Sie Ihre Benutzer-ID, um mit der Kontolöschung fortzufahren.",
+          "userIdLabel": "Ihre Benutzer-ID",
+          "userIdHint": "Kopieren Sie Ihre Benutzer-ID mit der Schaltfläche oben.",
+          "confirmUserIdLabel": "Benutzer-ID bestätigen",
+          "confirmUserIdPlaceholder": "Fügen Sie hier Ihre Benutzer-ID ein",
+          "confirmUserIdHint": "Geben Sie Ihre Benutzer-ID oben ein, um die Kontolöschung zu bestätigen. Dies verhindert versehentliche Löschungen.",
+          "confirm": "Konto löschen",
+          "deleting": "Wird gelöscht..."
+        },
+        "success": "Konto erfolgreich gelöscht",
+        "error": "Kontolöschung fehlgeschlagen",
+        "userIdMismatch": "Die eingegebene Benutzer-ID stimmt nicht mit Ihrer Benutzer-ID überein. Bitte versuchen Sie es erneut."
+      }
     }
   },
   "invitations": {

@@ -15,6 +15,7 @@ import {
   ResendVerificationResponse,
   ResetPasswordResponse,
   SortOrder,
+  User,
   UserAuthenticationMethodProvider,
   UserSessionSortableField,
   VerifyEmailResponse,
@@ -350,22 +351,34 @@ export class AccountHandler extends ScopeHandler {
     });
   }
 
-  public async deleteAccount(params: MutationDeleteAccountArgs & DeleteParams): Promise<Account> {
+  public async deleteAccount(params: MutationDeleteAccountArgs & DeleteParams): Promise<User> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
-      const { id: accountId } = params;
-      const [accountProjects] = await Promise.all([
-        this.services.accountProjects.getAccountProjects({ accountId }, tx),
-      ]);
-      await Promise.all([
-        ...accountProjects.map((ap) =>
-          this.services.accountProjects.removeAccountProject(
-            { accountId, projectId: ap.projectId },
+      const userId = params.input.userId;
+      const hardDelete = params.input.hardDelete;
+
+      const userAccounts = await this.services.accounts.getAccountsByOwnerId(userId, tx);
+
+      await Promise.all(
+        userAccounts.map((account: Account) =>
+          this.services.accounts.deleteAccount(
+            {
+              id: account.id,
+              hardDelete: hardDelete ?? false,
+            },
             tx
           )
-        ),
-      ]);
+        )
+      );
 
-      return await this.services.accounts.deleteAccount(params, tx);
+      const deletedUser = await this.services.users.deleteUser(
+        {
+          id: userId,
+          hardDelete: hardDelete ?? false,
+        },
+        tx
+      );
+
+      return deletedUser;
     });
   }
 

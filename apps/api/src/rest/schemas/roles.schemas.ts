@@ -25,7 +25,7 @@ export const roleWithRelationsSchema = roleSchema.extend({
 export const roleRelationsEnum = z.enum(['groups', 'tags']);
 
 export const getRolesQuerySchema = listQuerySchema.omit({ relations: true }).extend({
-  scopeId: z.string().uuid('Invalid scope ID'),
+  scopeId: z.uuid('Invalid scope ID'),
   tenant: tenantSchema,
   sortField: z
     .enum(Object.values(RoleSortableField) as [RoleSortableField, ...RoleSortableField[]])
@@ -118,7 +118,7 @@ export const roleParamsSchema = z.object({
 export const updateRoleResponseSchema = createSuccessResponseSchema(roleSchema);
 
 export const deleteRoleQuerySchema = z.object({
-  scopeId: z.string().uuid('Invalid scope ID'),
+  scopeId: z.uuid('Invalid scope ID'),
   tenant: tenantSchema,
 });
 
