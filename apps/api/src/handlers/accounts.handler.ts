@@ -5,10 +5,10 @@ import {
   CreateAccountInput,
   CreateAccountResult,
   LoginResponse,
+  MeResponse,
   MutationDeleteAccountArgs,
   MutationLoginArgs,
   MutationRefreshSessionArgs,
-  MutationUpdateAccountArgs,
   QueryAccountsArgs,
   RefreshSessionResponse,
   RequestPasswordResetResponse,
@@ -36,19 +36,19 @@ export class AccountHandler extends ScopeHandler {
   private readonly logger = createModuleLogger('AccountHandler');
 
   constructor(
-    readonly scopeCache: IEntityCacheAdapter,
+    readonly cache: IEntityCacheAdapter,
     readonly services: Services,
     readonly db: DbSchema
   ) {
-    super(scopeCache, services);
+    super(cache, services);
   }
 
   private getVerificationExpirationMs(): number {
     return config.auth.providerVerificationExpirationDays * 24 * 60 * 60 * 1000;
   }
 
-  private getVerificationExpiryDate(): Date {
-    return new Date(Date.now() + this.getVerificationExpirationMs());
+  private getVerificationExpiryDate(from: Date): Date {
+    return new Date(from.getTime() + this.getVerificationExpirationMs());
   }
 
   public async refreshSession(
@@ -186,7 +186,9 @@ export class AccountHandler extends ScopeHandler {
           requiresEmailVerification: !userAuthenticationMethod.isVerified,
           verificationExpiry: userAuthenticationMethod.isVerified
             ? null
-            : this.getVerificationExpiryDate(),
+            : verificationCreatedAt
+              ? this.getVerificationExpiryDate(verificationCreatedAt)
+              : null,
           email: provider === UserAuthenticationMethodProvider.Email ? providerId : null,
         };
       }
@@ -209,7 +211,9 @@ export class AccountHandler extends ScopeHandler {
         requiresEmailVerification: !userAuthenticationMethod.isVerified,
         verificationExpiry: userAuthenticationMethod.isVerified
           ? null
-          : this.getVerificationExpiryDate(),
+          : verificationCreatedAt
+            ? this.getVerificationExpiryDate(verificationCreatedAt)
+            : null,
         email: provider === UserAuthenticationMethodProvider.Email ? providerId : null,
       };
     });
@@ -232,23 +236,92 @@ export class AccountHandler extends ScopeHandler {
     return accountsResult;
   }
 
-  public async createComplementaryAccount(params: {
-    name: string;
-    username?: string | null;
-  }): Promise<{ account: Account; accounts: Account[] }> {
+  public async getMe(userId: string): Promise<MeResponse> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
-      const result = await this.services.accounts.createComplementaryAccount(params, tx);
-      return result;
+      const usersResult = await this.services.users.getUsers(
+        {
+          ids: [userId],
+          limit: 1,
+          requestedFields: ['accounts'],
+        },
+        tx
+      );
+
+      if (
+        usersResult.totalCount === 0 ||
+        !Array.isArray(usersResult.users) ||
+        usersResult.users.length === 0
+      ) {
+        throw new AuthenticationError('User not found', 'errors:auth.userNotFound');
+      }
+
+      const user = usersResult.users[0];
+
+      if (!Array.isArray(user.accounts) || user.accounts.length === 0) {
+        throw new AuthenticationError('User does not have an account', 'errors:auth.noAccount');
+      }
+
+      const allAuthMethods =
+        await this.services.userAuthenticationMethods.getUserAuthenticationMethods(
+          {
+            userId,
+          },
+          tx
+        );
+
+      const emailAuthMethod = allAuthMethods.find(
+        (method) => method.provider === UserAuthenticationMethodProvider.Email
+      );
+
+      const githubAuthMethod = allAuthMethods.find(
+        (method) => method.provider === UserAuthenticationMethodProvider.Github
+      );
+
+      let requiresEmailVerification = false;
+      let verificationExpiry: Date | null = null;
+      let email: string | null = null;
+
+      if (emailAuthMethod) {
+        email = emailAuthMethod.providerId;
+        const verificationCreatedAt = emailAuthMethod.createdAt
+          ? new Date(emailAuthMethod.createdAt)
+          : null;
+        const verificationExpirationMs = this.getVerificationExpirationMs();
+        const now = new Date();
+
+        requiresEmailVerification =
+          !emailAuthMethod.isVerified &&
+          verificationCreatedAt !== null &&
+          now.getTime() - verificationCreatedAt.getTime() <= verificationExpirationMs;
+
+        verificationExpiry =
+          requiresEmailVerification && verificationCreatedAt
+            ? this.getVerificationExpiryDate(verificationCreatedAt)
+            : null;
+      } else if (githubAuthMethod) {
+        const providerData = githubAuthMethod.providerData as
+          | { email?: string | null }
+          | null
+          | undefined;
+        email = providerData?.email || null;
+        requiresEmailVerification = false;
+        verificationExpiry = null;
+      }
+
+      return {
+        accounts: user.accounts ?? [],
+        requiresEmailVerification: requiresEmailVerification ?? false,
+        verificationExpiry,
+        email,
+      };
     });
   }
 
-  public async checkUsername(username: string): Promise<{ available: boolean; username: string }> {
-    const isAvailable = await this.services.accounts.checkUsernameAvailability(username);
-
-    return {
-      available: isAvailable,
-      username,
-    };
+  public async createComplementaryAccount(): Promise<{ account: Account; accounts: Account[] }> {
+    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+      const result = await this.services.accounts.createComplementaryAccount(tx);
+      return result;
+    });
   }
 
   public async createAccount(
@@ -258,9 +331,9 @@ export class AccountHandler extends ScopeHandler {
     userAgent?: string | null,
     ipAddress?: string | null
   ): Promise<CreateAccountResult> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
-      const { name, username, type, provider, providerId, providerData } = params;
+    const { type, provider, providerId, providerData } = params;
 
+    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const existingAuthMethod =
         await this.services.userAuthenticationMethods.getUserAuthenticationMethodByProvider(
           provider,
@@ -277,12 +350,15 @@ export class AccountHandler extends ScopeHandler {
         );
       }
 
-      const { providerData: processedProviderData, isVerified } =
-        await this.services.userAuthenticationMethods.processProvider(
-          provider,
-          providerId,
-          providerData as Record<string, unknown>
-        );
+      const {
+        providerData: processedProviderData,
+        isVerified,
+        name,
+      } = await this.services.userAuthenticationMethods.processProvider(
+        provider,
+        providerId,
+        providerData as Record<string, unknown>
+      );
 
       const user = await this.services.users.createUser({ name }, tx);
 
@@ -299,7 +375,10 @@ export class AccountHandler extends ScopeHandler {
         );
 
       const account = await this.services.accounts.createAccount(
-        { name, username, type, ownerId: user.id },
+        {
+          type,
+          ownerId: user.id,
+        },
         tx
       );
 
@@ -328,12 +407,16 @@ export class AccountHandler extends ScopeHandler {
         }
       }
 
+      const authMethodCreatedAt = userAuthenticationMethod.createdAt
+        ? new Date(userAuthenticationMethod.createdAt)
+        : new Date();
+
       const result = {
         account,
         accessToken: session.accessToken,
         refreshToken: session.refreshToken,
         requiresEmailVerification: !isVerified,
-        verificationExpiry: isVerified ? null : this.getVerificationExpiryDate(),
+        verificationExpiry: isVerified ? null : this.getVerificationExpiryDate(authMethodCreatedAt),
         email: provider === UserAuthenticationMethodProvider.Email ? providerId : null,
       };
 
@@ -341,10 +424,80 @@ export class AccountHandler extends ScopeHandler {
     });
   }
 
-  public async updateAccount(params: MutationUpdateAccountArgs): Promise<Account> {
+  public async linkGithubAuthToExistingUser(
+    params: {
+      userId: string;
+      providerId: string;
+      providerData: Record<string, unknown>;
+    },
+    audience: string,
+    userAgent?: string | null,
+    ipAddress?: string | null
+  ): Promise<LoginResponse> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
-      const updatedAccount = await this.services.accounts.updateAccount(params, tx);
-      return updatedAccount;
+      const { userId, providerId, providerData } = params;
+
+      const { providerData: processedProviderData, isVerified } =
+        await this.services.userAuthenticationMethods.processProvider(
+          UserAuthenticationMethodProvider.Github,
+          providerId,
+          providerData
+        );
+
+      const userAuthenticationMethod =
+        await this.services.userAuthenticationMethods.createUserAuthenticationMethod(
+          {
+            userId,
+            provider: UserAuthenticationMethodProvider.Github,
+            providerId,
+            providerData: processedProviderData,
+            isVerified,
+          },
+          tx
+        );
+
+      const usersResult = await this.services.users.getUsers(
+        {
+          ids: [userId],
+          limit: 1,
+          requestedFields: ['accounts'],
+        },
+        tx
+      );
+
+      if (
+        usersResult.totalCount === 0 ||
+        !Array.isArray(usersResult.users) ||
+        usersResult.users.length === 0
+      ) {
+        throw new AuthenticationError('User not found', 'errors:auth.userNotFound');
+      }
+
+      const user = usersResult.users[0];
+
+      if (!Array.isArray(user.accounts) || user.accounts.length === 0) {
+        throw new AuthenticationError('User does not have an account', 'errors:auth.noAccount');
+      }
+
+      const session = await this.services.userSessions.createSession(
+        {
+          userId: user.id,
+          userAuthenticationMethodId: userAuthenticationMethod.id,
+          audience,
+          userAgent: userAgent || null,
+          ipAddress: ipAddress || null,
+        },
+        tx
+      );
+
+      return {
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+        accounts: user.accounts ?? [],
+        requiresEmailVerification: false,
+        verificationExpiry: null,
+        email: null,
+      };
     });
   }
 

@@ -1,4 +1,0 @@
-input UpdateAccountInput {
-  name: String
-  slug: String
-}

@@ -5,6 +5,8 @@ import {
   accountSchema,
   accountWithRelationsSchema,
   authenticationErrorResponseSchema,
+  createComplementaryAccountRequestSchema,
+  createComplementaryAccountResponseSchema,
   errorResponseSchema,
   getAccountsQuerySchema,
   getAccountsResponseSchema,
@@ -55,9 +57,6 @@ Example: \`?relations=projects,owner\`
                 items: [
                   {
                     id: 'acc_123',
-                    name: 'Acme Corp',
-                    slug: 'acme-corp',
-                    username: 'acme',
                     type: 'organization',
                     ownerId: 'usr_456',
                     createdAt: '2025-10-11T00:00:00Z',
@@ -124,7 +123,7 @@ You can load related data by specifying the \`relations\` query parameter:
 
 Example: \`?relations=projects,owner\`
 
-**Note**: Account creation, update, and deletion are handled through the authentication registration flow (POST /api/auth/register).
+**Note**: Account creation is handled through the authentication registration flow (POST /api/auth/register). Account updates are not supported.
     `.trim(),
     request: {
       params: accountParamsSchema,
@@ -140,9 +139,6 @@ Example: \`?relations=projects,owner\`
               success: true,
               data: {
                 id: 'acc_123',
-                name: 'Acme Corp',
-                slug: 'acme-corp',
-                username: 'acme',
                 type: 'organization',
                 ownerId: 'usr_456',
                 createdAt: '2025-10-11T00:00:00Z',
@@ -180,6 +176,100 @@ Example: \`?relations=projects,owner\`
         content: {
           'application/json': {
             schema: notFoundErrorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * POST /api/accounts/complementary
+   * Create a complementary account
+   */
+  registry.registerPath({
+    method: 'post',
+    path: '/api/accounts/complementary',
+    tags: ['Accounts'],
+    summary: 'Create complementary account',
+    description: `
+Create a complementary account for the authenticated user.
+
+If the user has a Personal account, this creates an Organization account.
+If the user has an Organization account, this creates a Personal account.
+
+Users can have a maximum of 2 accounts (one Personal and one Organization).
+    `.trim(),
+    request: {
+      body: {
+        content: {
+          'application/json': {
+            schema: createComplementaryAccountRequestSchema,
+            example: {},
+          },
+        },
+      },
+    },
+    responses: {
+      201: {
+        description: 'Successfully created complementary account',
+        content: {
+          'application/json': {
+            schema: createComplementaryAccountResponseSchema,
+            example: {
+              success: true,
+              data: {
+                account: {
+                  id: 'acc_456',
+                  type: 'organization',
+                  ownerId: 'usr_456',
+                  createdAt: '2025-10-11T00:00:00Z',
+                  updatedAt: '2025-10-11T00:00:00Z',
+                  deletedAt: null,
+                },
+                accounts: [
+                  {
+                    id: 'acc_123',
+                    type: 'personal',
+                    ownerId: 'usr_456',
+                    createdAt: '2025-10-10T00:00:00Z',
+                    updatedAt: '2025-10-10T00:00:00Z',
+                    deletedAt: null,
+                  },
+                  {
+                    id: 'acc_456',
+                    type: 'organization',
+                    ownerId: 'usr_456',
+                    createdAt: '2025-10-11T00:00:00Z',
+                    updatedAt: '2025-10-11T00:00:00Z',
+                    deletedAt: null,
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+      400: {
+        description: 'Validation error or user already has 2 accounts',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
           },
         },
       },

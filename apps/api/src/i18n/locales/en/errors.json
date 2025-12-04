@@ -16,7 +16,15 @@
     "passwordRequired": "Password is required and must be a string",
     "emailRequired": "Email is required and must be a string",
     "invalidAction": "Invalid authentication action",
-    "emailSendFailed": "Failed to send verification email"
+    "emailSendFailed": "Failed to send verification email",
+    "githubNotConfigured": "GitHub OAuth is not configured. Please contact the administrator.",
+    "githubTokenExchangeFailed": "Failed to exchange authorization code for access token",
+    "githubOAuthError": "GitHub OAuth authentication error",
+    "githubNoToken": "No access token received from GitHub",
+    "githubUserInfoFailed": "Failed to fetch user information from GitHub",
+    "stateRequired": "State parameter is required for security",
+    "stateNotFound": "Invalid or expired state parameter",
+    "invalidState": "Invalid or expired state parameter"
   },
   "validation": {
     "required": "{{field}} is required",

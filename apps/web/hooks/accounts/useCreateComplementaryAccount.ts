@@ -9,11 +9,6 @@ import { toast } from 'sonner';
 
 import { useAuthStore } from '@/stores/auth.store';
 
-interface CreateComplementaryAccountParams {
-  name: string;
-  username?: string | null;
-}
-
 interface CreateComplementaryAccountResult {
   account: Account;
   accounts: Account[];
@@ -28,23 +23,18 @@ export function useCreateComplementaryAccount() {
     { input: CreateComplementaryAccountInput }
   >(CreateComplementaryAccountDocument);
 
-  const createComplementaryAccount = async (params: CreateComplementaryAccountParams) => {
+  const createComplementaryAccount = async () => {
     try {
       const result = await createComplementaryAccountMutation({
         variables: {
-          input: {
-            name: params.name,
-            username: params.username || null,
-          },
+          input: {},
         },
       });
 
       const data = result.data?.createComplementaryAccount;
 
       if (data) {
-        // Update the auth store with all accounts
         setAccounts(data.accounts);
-
         toast.success(t('notifications.createComplementaryAccountSuccess'), {
           description: t('notifications.createComplementaryAccountSuccessDescription', {
             type: data.account.type === 'organization' ? 'organization' : 'personal',

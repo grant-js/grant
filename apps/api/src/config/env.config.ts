@@ -164,6 +164,36 @@ export const AUTH_CONFIG = {
 } as const;
 
 // ============================================================================
+// GitHub OAuth Configuration
+// ============================================================================
+
+export const GITHUB_OAUTH_CONFIG = {
+  /** GitHub OAuth Client ID */
+  clientId: getEnv('GITHUB_CLIENT_ID', ''),
+
+  /** GitHub OAuth Client Secret */
+  clientSecret: getEnv('GITHUB_CLIENT_SECRET', ''),
+
+  /** GitHub OAuth callback URL */
+  callbackUrl: getEnv('GITHUB_CALLBACK_URL', 'http://localhost:4000/api/auth/github/callback'),
+
+  /** GitHub OAuth authorization URL */
+  authorizationUrl: 'https://github.com/login/oauth/authorize',
+
+  /** GitHub OAuth token URL */
+  tokenUrl: 'https://github.com/login/oauth/access_token',
+
+  /** GitHub API base URL */
+  apiUrl: 'https://api.github.com',
+
+  /** OAuth scopes to request */
+  scopes: ['user:email', 'read:user'],
+
+  /** State token validity in minutes (for CSRF protection) */
+  stateValidityMinutes: getEnvNumber('GITHUB_OAUTH_STATE_VALIDITY_MINUTES', 10),
+} as const;
+
+// ============================================================================
 // Cache Configuration
 // ============================================================================
 
@@ -596,6 +626,16 @@ export function validateConfig(): void {
     }
   }
 
+  // Validate GitHub OAuth configuration (optional, but warn if partially configured)
+  if (GITHUB_OAUTH_CONFIG.clientId || GITHUB_OAUTH_CONFIG.clientSecret) {
+    if (!GITHUB_OAUTH_CONFIG.clientId) {
+      errors.push('GITHUB_CLIENT_ID is required when GITHUB_CLIENT_SECRET is set');
+    }
+    if (!GITHUB_OAUTH_CONFIG.clientSecret) {
+      errors.push('GITHUB_CLIENT_SECRET is required when GITHUB_CLIENT_ID is set');
+    }
+  }
+
   if (errors.length > 0) {
     throw new BadRequestError(
       `Configuration validation failed:\n${errors.map((e) => `  - ${e}`).join('\n')}`
@@ -680,6 +720,7 @@ export const config = {
   db: DB_CONFIG,
   jwt: JWT_CONFIG,
   auth: AUTH_CONFIG,
+  githubOAuth: GITHUB_OAUTH_CONFIG,
   cache: CACHE_CONFIG,
   redis: REDIS_CONFIG,
   security: SECURITY_CONFIG,

@@ -46,11 +46,6 @@ export function AccountSelectionCard() {
                       ? tAccountTypes('organization')
                       : tAccountTypes('personal')}
                   </span>
-                  {account.slug && (
-                    <span className="text-xs text-muted-foreground truncate w-full">
-                      @{account.slug}
-                    </span>
-                  )}
                 </div>
                 {isCurrent && <Check className="h-4 w-4 ml-auto flex-shrink-0" />}
               </div>

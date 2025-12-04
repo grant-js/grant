@@ -7,8 +7,6 @@ mutation Login($input: LoginInput!) {
     email
     accounts {
       id
-      name
-      slug
       type
       owner {
         id

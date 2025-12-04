@@ -79,7 +79,7 @@ export default function SecuritySettingsPage() {
     <DashboardPageLayout title={t('title')} variant="simple">
       <div className="space-y-6">
         <AuthenticationMethodsList
-          methods={authenticationMethods}
+          userId={userId!}
           loading={authMethodsLoading}
           onChangePassword={emailMethod ? () => setShowChangePassword(true) : undefined}
         />

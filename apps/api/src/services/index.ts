@@ -1,5 +1,6 @@
 import { DbSchema } from '@logusgraphics/grant-database';
 
+import { IEntityCacheAdapter } from '@/lib/cache';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
 
@@ -7,9 +8,11 @@ import { AccountProjectService } from './account-projects.service';
 import { AccountService } from './accounts.service';
 import { EmailService } from './email.service';
 import { FileStorageService } from './file-storage.service';
+import { GitHubOAuthService } from './github-oauth.service';
 import { GroupPermissionService } from './group-permissions.service';
 import { GroupTagService } from './group-tags.service';
 import { GroupService } from './groups.service';
+import { OAuthStateService } from './oauth-state.service';
 import { OrganizationGroupService } from './organization-groups.service';
 import { OrganizationInvitationService } from './organization-invitations.service';
 import { OrganizationMemberService } from './organization-members.service';
@@ -42,13 +45,16 @@ export type Services = ReturnType<typeof createServices>;
 export function createServices(
   repositories: Repositories,
   user: AuthenticatedUser | null,
-  db: DbSchema
+  db: DbSchema,
+  cache: IEntityCacheAdapter
 ) {
   return {
     accounts: new AccountService(repositories, user, db),
     accountProjects: new AccountProjectService(repositories, user, db),
     email: new EmailService(),
     fileStorage: new FileStorageService(),
+    githubOAuth: new GitHubOAuthService(),
+    oauthState: new OAuthStateService(cache.oauth),
     users: new UserService(repositories, user, db),
     userAuthenticationMethods: new UserAuthenticationMethodService(repositories, user, db),
     userSessions: new UserSessionService(repositories, user, db),

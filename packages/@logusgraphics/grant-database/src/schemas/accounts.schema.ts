@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { pgTable, uuid, varchar, timestamp, index } from 'drizzle-orm/pg-core';
+import { index, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 
 import { accountProjects } from './account-projects.schema';
 import { users } from './users.schema';
@@ -8,8 +8,6 @@ export const accounts = pgTable(
   'accounts',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    name: varchar('name', { length: 255 }).notNull(),
-    slug: varchar('slug', { length: 255 }).notNull().unique(),
     type: varchar('type', { length: 20 }).default('personal').notNull(), // 'personal' | 'organization'
     ownerId: uuid('owner_id')
       .references(() => users.id)
@@ -20,7 +18,6 @@ export const accounts = pgTable(
   },
   (t) => [
     index('accounts_owner_id_idx').on(t.ownerId),
-    index('accounts_slug_idx').on(t.slug),
     index('accounts_type_idx').on(t.type),
     index('accounts_deleted_at_idx').on(t.deletedAt),
   ]

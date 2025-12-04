@@ -2,8 +2,6 @@ query GetAccounts($page: Int, $limit: Int, $sort: AccountSortInput, $search: Str
   accounts(page: $page, limit: $limit, sort: $sort, search: $search, ids: $ids) {
     accounts {
       id
-      name
-      slug
       type
       ownerId
       owner {

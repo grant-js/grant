@@ -2,7 +2,7 @@ import { Account, AccountType } from '@logusgraphics/grant-schema';
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 
-import { removeStoredTokens, setStoredTokens } from '@/lib/auth';
+import { getStoredTokens, removeStoredTokens, setStoredTokens } from '@/lib/auth';
 
 interface AuthState {
   // Authentication state
@@ -26,7 +26,13 @@ interface AuthState {
   setTokens: (accessToken: string, refreshToken: string) => void;
   clearAuth: () => void;
   switchAccount: (accountId: string) => void;
-  updateAccountsAndSwitch: (accounts: Account[], accountId?: string) => void;
+  updateAccounts: (accounts: Account[], accountId?: string) => void;
+  syncFromMe: (data: {
+    accounts: Account[];
+    email: string | null;
+    requiresEmailVerification: boolean;
+    verificationExpiry: Date | null;
+  }) => void;
   setAuthData: (data: {
     accounts: Account[];
     accessToken: string;
@@ -42,6 +48,9 @@ interface AuthState {
   getCurrentPersonalAccount: () => Account | null;
   getCurrentOrganizationAccount: () => Account | null;
   hasMultipleAccounts: () => boolean;
+  setEmail: (email: string | null) => void;
+  setRequiresEmailVerification: (requiresEmailVerification: boolean) => void;
+  setVerificationExpiry: (verificationExpiry: Date | null) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -92,16 +101,27 @@ export const useAuthStore = create<AuthState>()(
           }
         },
 
-        updateAccountsAndSwitch: (accounts: Account[], accountId?: string) => {
-          const targetAccountId = accountId
-            ? accountId
-            : accounts.find((account) => account.type === AccountType.Organization)?.id ||
-              accounts[0]?.id ||
-              null;
+        updateAccounts: (accounts: Account[]) => {
+          set({ accounts });
+        },
+
+        syncFromMe: (data) => {
+          const { accounts, email, requiresEmailVerification, verificationExpiry } = data;
+          const currentAccountId = get().currentAccountId;
+
+          const targetAccountId =
+            currentAccountId && accounts.some((account) => account.id === currentAccountId)
+              ? currentAccountId
+              : accounts.find((account) => account.type === AccountType.Organization)?.id ||
+                accounts[0]?.id ||
+                null;
 
           set({
             accounts,
             currentAccountId: targetAccountId,
+            email,
+            requiresEmailVerification,
+            verificationExpiry,
           });
         },
 
@@ -160,8 +180,32 @@ export const useAuthStore = create<AuthState>()(
           return accounts.length > 1;
         },
 
+        setEmail: (email: string | null) => {
+          set({ email });
+        },
+        setRequiresEmailVerification: (requiresEmailVerification: boolean) => {
+          set({ requiresEmailVerification });
+        },
+        setVerificationExpiry: (verificationExpiry: Date | null) => {
+          set({ verificationExpiry });
+        },
+
         isAuthenticated: () => {
-          const { accessToken, refreshToken } = get();
+          let { accessToken, refreshToken } = get();
+
+          // Sync tokens from cookies if not in state (e.g., after OAuth redirect)
+          if (!accessToken || !refreshToken) {
+            const cookieTokens = getStoredTokens();
+            if (cookieTokens.accessToken && cookieTokens.refreshToken) {
+              accessToken = cookieTokens.accessToken;
+              refreshToken = cookieTokens.refreshToken;
+              // Update state with tokens from cookies
+              // setStoredTokens ensures cookies and localStorage stay in sync
+              setStoredTokens(accessToken, refreshToken);
+              set({ accessToken, refreshToken });
+            }
+          }
+
           return !!accessToken && !!refreshToken;
         },
       }),
@@ -178,7 +222,18 @@ export const useAuthStore = create<AuthState>()(
           verificationExpiry: state.verificationExpiry,
         }),
         onRehydrateStorage: () => (state) => {
-          state?.setLoading(false);
+          // Sync tokens from cookies on rehydration (e.g., page refresh)
+          if (state) {
+            const cookieTokens = getStoredTokens();
+            if (cookieTokens.accessToken && cookieTokens.refreshToken) {
+              // If cookies have tokens but state doesn't, sync them
+              if (!state.accessToken || !state.refreshToken) {
+                state.accessToken = cookieTokens.accessToken;
+                state.refreshToken = cookieTokens.refreshToken;
+              }
+            }
+            state.setLoading(false);
+          }
         },
       }
     ),

@@ -27,7 +27,7 @@ function getClientIp(req: AuthenticatedRequest): string | null {
   return req.ip || null;
 }
 
-export function contextMiddleware(db: DbSchema, scopeCache: IEntityCacheAdapter) {
+export function contextMiddleware(db: DbSchema, cache: IEntityCacheAdapter) {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const headers = req.headers;
     const origin = headers['origin'] || headers['host'] || 'unknown';
@@ -36,8 +36,8 @@ export function contextMiddleware(db: DbSchema, scopeCache: IEntityCacheAdapter)
 
     const locale = getLocale(req);
     const repositories = createRepositories(db);
-    const services = createServices(repositories, req.user || null, db);
-    const handlers = createHandlers(scopeCache, services, db);
+    const services = createServices(repositories, req.user || null, db, cache);
+    const handlers = createHandlers(cache, services, db);
 
     (req as ContextRequest).context = {
       user: req.user || null,

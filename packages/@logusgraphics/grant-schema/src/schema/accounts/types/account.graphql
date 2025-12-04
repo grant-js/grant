@@ -1,7 +1,5 @@
 type Account implements Auditable {
   id: ID!
-  name: String!
-  slug: String!
   type: AccountType!
   ownerId: ID!
   owner: User!

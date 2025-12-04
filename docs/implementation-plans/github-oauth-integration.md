@@ -342,12 +342,14 @@ When GitHub user registers:
    - Provider ID: GitHub user ID (numeric)
    - Provider Data: Store access token, email, name, avatar
    - Is Verified: `true` (GitHub accounts are verified)
-   - Is Primary: `true` if first auth method
+   - **Is Primary: `true`** - MUST be set to `true` for the first authentication method
 
 3. **Create Session**:
    - Generate JWT tokens
    - Create user session record
    - Return tokens to frontend
+
+**CRITICAL**: When creating the first authentication method for a user (during registration), `isPrimary` MUST be set to `true`. This ensures every user has exactly one primary authentication method.
 
 #### 4.2 Account Linking Flow
 
@@ -360,8 +362,15 @@ When existing user adds GitHub:
 
 2. **Link Authentication Method**:
    - Add GitHub auth method to existing user
-   - Set as primary if no primary exists
+   - **Set as primary ONLY if no primary exists** (check existing methods first)
    - Update user profile with GitHub info if missing
+
+**CRITICAL**: When linking a new authentication method to an existing user:
+
+- Check if user has any existing authentication methods
+- If no primary method exists, set the new method as primary
+- If a primary method already exists, set `isPrimary: false` for the new method
+- Ensure exactly one method is marked as primary at all times
 
 #### 4.3 Email Handling
 
@@ -547,36 +556,65 @@ Add to `apps/web/i18n/locales/en.json`:
 
 ### Backend
 
-- [ ] Add GitHub OAuth environment variables to config
-- [ ] Install @octokit/rest dependency
-- [ ] Create GitHub OAuth service
-- [ ] Implement OAuth routes (initiate, callback)
-- [ ] Create OAuth controller
-- [ ] Implement `processGithubProvider()` method
-- [ ] Add state management (CSRF protection)
+- [x] Add GitHub OAuth environment variables to config
+- [x] Install @octokit/rest dependency (or equivalent - using native fetch)
+- [x] Create GitHub OAuth service
+- [x] Implement OAuth routes (initiate, callback)
+- [x] Create OAuth controller
+- [x] Implement `processGithubProvider()` method
+- [x] Add state management (CSRF protection)
 - [ ] Add rate limiting for OAuth endpoints
-- [ ] Handle GitHub API errors
-- [ ] Add logging for OAuth flows
+- [x] Handle GitHub API errors
+- [x] Add logging for OAuth flows
+- [x] Update `createUserAuthenticationMethod` to set isPrimary correctly
+- [x] Update `createUserAuthenticationMethod` to prevent duplicate providers per user
+- [x] Update `createUserAuthenticationMethod` to check for cross-user provider conflicts
+- [x] Update `deleteUserAuthenticationMethod` to prevent primary deletion
+- [x] Update `deleteUserAuthenticationMethod` to prevent last method deletion
+- [x] Add `setPrimaryAuthenticationMethod` service method
+- [x] Add GraphQL mutations for delete and set primary
+- [x] Add GraphQL mutation for createUserAuthenticationMethod
+- [x] Update OAuth callback to support "connect" flow from settings
+- [x] Update OAuth callback to handle errors and redirect appropriately
+- [x] Ensure isPrimary is set on first method during registration
+- [x] Add error handling for provider already connected to another user
+- [x] Add email verification email sending when adding email auth method
+- [x] Add handler method for createUserAuthenticationMethod with email sending
 
 ### Frontend
 
-- [ ] Create GitHubAuthButton component
-- [ ] Add GitHub button to login page
-- [ ] Add GitHub button to register page
-- [ ] Create OAuth callback handler page
-- [ ] Update auth mutations hook
-- [ ] Add loading states
-- [ ] Add error handling UI
-- [ ] Add internationalization strings
+- [x] Create GitHubAuthButton component
+- [x] Add GitHub button to login page
+- [x] Add GitHub button to register page
+- [x] Create OAuth callback handler page
+- [x] Update auth mutations hook
+- [x] Add loading states
+- [x] Add error handling UI
+- [x] Add internationalization strings (basic GitHub OAuth strings)
+- [x] Update AuthenticationMethodsList to show all providers
+- [x] Add connect/disconnect functionality
+- [x] Add set primary functionality
+- [x] Handle OAuth connection from settings page
+- [x] Handle OAuth callback redirect with success/error states
+- [x] Prevent UI actions on primary method deletion
+- [x] Prevent UI actions on last method deletion
+- [x] Add email addition form component (AddEmailAuthMethodForm)
+- [x] Handle email provider addition
+- [x] Show appropriate error messages for provider conflicts
+- [x] Update UI state to toggle connect/disconnect based on connection status
+- [x] Create AuthenticationMethodActions component with dropdown menu
+- [x] Replace action buttons with Actions dropdown component
+- [x] Add cache invalidation for me() query after adding email auth method
+- [x] Add English and German translations for all new strings
 
 ### Security
 
-- [ ] Implement CSRF protection (state parameter)
-- [ ] Secure token storage
-- [ ] Add rate limiting
-- [ ] Validate all inputs
-- [ ] Handle token expiration
-- [ ] Audit OAuth flows
+- [x] Implement CSRF protection (state parameter)
+- [x] Secure token storage (tokens stored in providerData JSONB field)
+- [ ] Add rate limiting for OAuth endpoints
+- [x] Validate all inputs (Zod schemas for all inputs)
+- [ ] Handle token expiration (GitHub tokens)
+- [x] Audit OAuth flows (logging added)
 
 ### Testing
 
@@ -586,6 +624,16 @@ Add to `apps/web/i18n/locales/en.json`:
 - [ ] E2E tests for user flows
 - [ ] Test error scenarios
 - [ ] Test edge cases (private email, etc.)
+- [ ] Test isPrimary logic (first method, multiple methods, deletion)
+- [ ] Test preventing deletion of primary method
+- [ ] Test preventing deletion of last method
+- [ ] Test setting primary method
+- [ ] Test connecting/disconnecting OAuth methods from settings page
+- [ ] Test preventing duplicate providers per user
+- [ ] Test preventing cross-user provider conflicts
+- [ ] Test error handling when provider already connected to another user
+- [ ] Test email provider addition flow
+- [ ] Test OAuth callback redirect handling
 
 ### Documentation
 
@@ -622,6 +670,477 @@ Add to `apps/web/i18n/locales/en.json`:
 4. **Implement frontend integration** (Phase 3)
 5. **Test thoroughly** (Phase 6)
 6. **Deploy and monitor** OAuth flows
+
+### Phase 9: Security Settings Page Integration
+
+#### 9.1 Backend: Ensure isPrimary Logic
+
+**File**: `apps/api/src/services/user-authentication-methods.service.ts`
+
+**Update `createUserAuthenticationMethod()` method**:
+
+```typescript
+public async createUserAuthenticationMethod(
+  params: Omit<CreateUserAuthenticationMethodInput, 'providerData'> & {
+    providerData?: Record<string, unknown>;
+  },
+  transaction?: Transaction
+): Promise<UserAuthenticationMethod> {
+  const context = 'UserAuthenticationMethodService.createUserAuthenticationMethod';
+
+  validateInput(createUserAuthenticationMethodInputSchema, params, context);
+
+  // Validate provider uniqueness globally (prevent duplicate provider+providerId across users)
+  await this.validateProviderUniqueness(params.provider, params.providerId, transaction);
+
+  // Check if THIS USER already has this provider type
+  const existingMethods = await this.getUserAuthenticationMethods(
+    { userId: params.userId },
+    transaction
+  );
+
+  // Prevent user from adding duplicate provider type
+  const hasProvider = existingMethods.some((m) => m.provider === params.provider);
+  if (hasProvider) {
+    throw new BadRequestError(
+      `User already has a ${params.provider} authentication method`,
+      'errors:auth.duplicateProvider',
+      { provider: params.provider }
+    );
+  }
+
+  // Check if provider+providerId combination exists for another user
+  const existingAuthMethod = await this.repositories.userAuthenticationMethodRepository
+    .findByProviderAndProviderId(params.provider, params.providerId, undefined, transaction);
+
+  if (existingAuthMethod && existingAuthMethod.userId !== params.userId) {
+    throw new ConflictError(
+      'This authentication method is already connected to another account',
+      'errors:auth.providerAlreadyConnected',
+      { provider: params.provider, providerId: params.providerId }
+    );
+  }
+
+  // Determine if this should be primary
+  const hasPrimaryMethod = existingMethods.some((m) => m.isPrimary);
+  const isPrimary = !hasPrimaryMethod; // Set as primary if no primary exists
+
+  const userAuthenticationMethod =
+    await this.repositories.userAuthenticationMethodRepository.createUserAuthenticationMethod(
+      {
+        ...params,
+        isPrimary, // Explicitly set isPrimary
+      },
+      transaction
+    );
+
+  // ... rest of method (audit logging, validation, etc.) ...
+}
+```
+
+**Update `deleteUserAuthenticationMethod()` method**:
+
+```typescript
+public async deleteUserAuthenticationMethod(
+  params: DeleteUserAuthenticationMethodInput,
+  transaction?: Transaction
+): Promise<UserAuthenticationMethod> {
+  const method = await this.getUserAuthenticationMethod(params.id);
+
+  // Prevent deletion of primary authentication method
+  if (method.isPrimary) {
+    throw new BadRequestError(
+      'Cannot delete primary authentication method',
+      'errors:auth.cannotDeletePrimary'
+    );
+  }
+
+  // Prevent deletion of last authentication method
+  const allMethods = await this.getUserAuthenticationMethods(
+    { userId: method.userId },
+    transaction
+  );
+
+  if (allMethods.length === 1) {
+    throw new BadRequestError(
+      'Cannot delete last authentication method',
+      'errors:auth.cannotDeleteLastMethod'
+    );
+  }
+
+  // ... rest of deletion logic ...
+}
+```
+
+**Add method to set primary authentication method**:
+
+```typescript
+public async setPrimaryAuthenticationMethod(
+  id: string,
+  transaction?: Transaction
+): Promise<UserAuthenticationMethod> {
+  const method = await this.getUserAuthenticationMethod(id);
+
+  // Get all user's authentication methods
+  const allMethods = await this.getUserAuthenticationMethods(
+    { userId: method.userId },
+    transaction
+  );
+
+  // Unset all other primary methods
+  await Promise.all(
+    allMethods
+      .filter((m) => m.id !== id && m.isPrimary)
+      .map((m) =>
+        this.updateUserAuthenticationMethod(m.id, { isPrimary: false }, transaction)
+      )
+  );
+
+  // Set this method as primary
+  return await this.updateUserAuthenticationMethod(id, { isPrimary: true }, transaction);
+}
+```
+
+#### 9.2 Backend: OAuth Connection Endpoint
+
+**File**: `apps/api/src/rest/controllers/oauth.controller.ts`
+
+**Add method for connecting OAuth from settings page**:
+
+```typescript
+async connectGithubFromSettings(
+  req: TypedRequest,
+  res: Response
+) {
+  // Similar to initiateGithubAuth but with redirectUrl set to settings page
+  // Store state with userId from authenticated session
+  // Redirect to GitHub OAuth
+}
+```
+
+**Update callback handler** to support linking to existing authenticated user:
+
+```typescript
+async handleGithubCallback(
+  req: TypedRequest<{
+    query: { code?: string; state?: string; error?: string; error_description?: string };
+  }>,
+  res: Response
+) {
+  // ... existing callback logic (code exchange, user info fetch) ...
+
+  // Check if this is a "connect" flow (user already authenticated from settings page)
+  if (storedState.userId && storedState.action === 'connect') {
+    try {
+      // Link GitHub to existing user account
+      await this.handlers.accounts.linkGithubAuthToExistingUser(
+        {
+          userId: storedState.userId,
+          providerId: oauthResult.providerId,
+          providerData: {
+            accessToken: oauthResult.accessToken,
+            githubId: oauthResult.githubUser.id,
+            email: oauthResult.githubUser.email,
+            name: oauthResult.githubUser.name,
+            username: oauthResult.githubUser.login,
+            avatarUrl: oauthResult.githubUser.avatar_url,
+          },
+        },
+        this.origin,
+        this.context.userAgent,
+        this.context.ipAddress
+      );
+
+      // Redirect back to settings page with success indicator
+      const redirectUrl = storedState.redirectUrl || `${this.origin}/dashboard/settings/security`;
+      return res.redirect(`${redirectUrl}?connected=github&success=true`);
+    } catch (error) {
+      // Handle errors (e.g., provider already connected to another user)
+      const redirectUrl = storedState.redirectUrl || `${this.origin}/dashboard/settings/security`;
+      const errorMessage = error instanceof Error ? error.message : 'Failed to connect GitHub account';
+      return res.redirect(`${redirectUrl}?connected=github&error=${encodeURIComponent(errorMessage)}`);
+    }
+  }
+
+  // ... rest of existing callback logic (login/register flows) ...
+}
+```
+
+#### 9.3 Backend: GraphQL Mutations
+
+**File**: `packages/@logusgraphics/grant-schema/src/schema/user-authentication-method/mutations/delete-user-authentication-method.graphql`
+
+```graphql
+extend type Mutation {
+  deleteUserAuthenticationMethod(
+    input: DeleteUserAuthenticationMethodInput!
+  ): UserAuthenticationMethod!
+}
+```
+
+**File**: `packages/@logusgraphics/grant-schema/src/schema/user-authentication-method/mutations/set-primary-authentication-method.graphql`
+
+```graphql
+extend type Mutation {
+  setPrimaryAuthenticationMethod(id: ID!): UserAuthenticationMethod!
+}
+```
+
+**File**: `apps/api/src/graphql/resolvers/user-authentication-methods/mutations/delete-user-authentication-method.resolver.ts`
+
+- Validate user owns the authentication method
+- Prevent deletion of primary method
+- Call service method
+
+**File**: `apps/api/src/graphql/resolvers/user-authentication-methods/mutations/set-primary-authentication-method.resolver.ts`
+
+- Validate user owns the authentication method
+- Call service method to set primary
+
+#### 9.4 Frontend: Update AuthenticationMethodsList Component
+
+**File**: `apps/web/components/settings/AuthenticationMethodsList.tsx`
+
+**Key Changes**:
+
+1. **Display all available providers** (email, GitHub) even if not connected:
+
+   ```typescript
+   const availableProviders: UserAuthenticationMethodProvider[] = ['email', 'github'];
+
+   // Show all providers, mark which ones are connected
+   const providerStatus = availableProviders.map((provider) => {
+     const method = methods.find((m) => m.provider === provider);
+     return {
+       provider,
+       connected: !!method,
+       method,
+       isPrimary: method?.isPrimary || false,
+     };
+   });
+   ```
+
+2. **Show appropriate actions**:
+   - **Connected OAuth methods**: Show "Disconnect" button (disabled if primary or last method)
+   - **Unconnected OAuth methods**: Show "Connect" button
+   - **Connected Email method**: Show "Change Password" button
+   - **Unconnected Email**: Show "Add Email" button (opens email registration form)
+   - **All connected methods**: Show "Set as Primary" button (disabled if already primary)
+
+3. **Handle connect action**:
+
+   ```typescript
+   const handleConnect = (provider: 'github' | 'email') => {
+     if (provider === 'github') {
+       // Redirect to OAuth initiation endpoint with connect=true
+       const redirectUrl = `${window.location.origin}${window.location.pathname}`;
+       window.location.href = `/api/auth/github?action=connect&redirectUrl=${encodeURIComponent(redirectUrl)}`;
+     } else if (provider === 'email') {
+       // Show email registration form or redirect to email setup
+       setShowAddEmail(true);
+     }
+   };
+   ```
+
+4. **Handle disconnect action**:
+
+   ```typescript
+   const handleDisconnect = async (methodId: string, isPrimary: boolean, isLastMethod: boolean) => {
+     if (isPrimary) {
+       toast.error(t('cannotDisconnectPrimary'));
+       return;
+     }
+     if (isLastMethod) {
+       toast.error(t('cannotDisconnectLastMethod'));
+       return;
+     }
+
+     try {
+       await deleteUserAuthenticationMethod({ id: methodId });
+       toast.success(t('disconnected', { provider: /* provider name */ }));
+       refetch(); // Refresh list - UI will toggle to "Connect" state
+     } catch (error) {
+       toast.error(t('disconnectError'));
+     }
+   };
+   ```
+
+5. **Handle set primary action**:
+
+   ```typescript
+   const handleSetPrimary = async (methodId: string) => {
+     try {
+       await setPrimaryAuthenticationMethod({ id: methodId });
+       toast.success(t('primarySet'));
+       refetch(); // Refresh list to update primary badges
+     } catch (error) {
+       toast.error(t('setPrimaryError'));
+     }
+   };
+   ```
+
+6. **Handle OAuth callback result**:
+
+   ```typescript
+   useEffect(() => {
+     const params = new URLSearchParams(window.location.search);
+     const connected = params.get('connected');
+     const success = params.get('success');
+     const error = params.get('error');
+
+     if (connected === 'github') {
+       if (success === 'true') {
+         toast.success(t('githubConnected'));
+       } else if (error) {
+         toast.error(t('githubConnectError'), {
+           description: decodeURIComponent(error),
+         });
+       }
+
+       // Clean URL
+       window.history.replaceState({}, '', window.location.pathname);
+       refetch(); // Refresh list - UI will toggle to "Disconnect" state
+     }
+   }, []);
+   ```
+
+#### 9.5 Frontend: Add Hooks for Mutations
+
+**File**: `apps/web/hooks/users/useUserAuthenticationMethods.ts`
+
+**Add mutations**:
+
+```typescript
+export function useUserAuthenticationMethods(userId: string) {
+  // ... existing query ...
+
+  const [deleteMethod] = useMutation(DeleteUserAuthenticationMethodDocument);
+  const [setPrimary] = useMutation(SetPrimaryAuthenticationMethodDocument);
+
+  const deleteAuthenticationMethod = async (id: string) => {
+    await deleteMethod({ variables: { input: { id } } });
+    await refetch();
+  };
+
+  const setPrimaryMethod = async (id: string) => {
+    await setPrimary({ variables: { id } });
+    await refetch();
+  };
+
+  return {
+    authenticationMethods,
+    loading,
+    error,
+    refetch,
+    deleteAuthenticationMethod,
+    setPrimaryMethod,
+  };
+}
+```
+
+#### 9.6 Frontend: Update Security Settings Page
+
+**File**: `apps/web/app/[locale]/dashboard/settings/security/page.tsx`
+
+**Update to handle OAuth connection callback**:
+
+```typescript
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('connected') === 'github') {
+    toast.success(t('githubConnected'));
+    // Clean URL
+    window.history.replaceState({}, '', window.location.pathname);
+    refetch();
+  }
+}, []);
+```
+
+#### 9.7 Translation Keys
+
+**File**: `apps/web/i18n/locales/en.json`
+
+```json
+{
+  "settings": {
+    "security": {
+      "authenticationMethods": {
+        "connect": "Connect",
+        "disconnect": "Disconnect",
+        "add": "Add",
+        "remove": "Remove",
+        "setAsPrimary": "Set as Primary",
+        "cannotDisconnectPrimary": "Cannot disconnect primary authentication method",
+        "cannotDisconnectLastMethod": "Cannot disconnect your last authentication method. Please add another method first.",
+        "cannotRemovePrimary": "Cannot remove primary authentication method",
+        "cannotRemoveLastMethod": "Cannot remove your last authentication method. Please add another method first.",
+        "connectGithub": "Connect GitHub Account",
+        "disconnectGithub": "Disconnect GitHub Account",
+        "addEmail": "Add Email",
+        "githubConnected": "GitHub account connected successfully",
+        "githubDisconnected": "GitHub account disconnected successfully",
+        "githubConnectError": "Failed to connect GitHub account",
+        "emailAdded": "Email authentication method added successfully",
+        "disconnected": "{{provider}} account disconnected successfully",
+        "disconnectError": "Failed to disconnect authentication method",
+        "primarySet": "Primary authentication method updated",
+        "setPrimaryError": "Failed to set primary authentication method",
+        "notConnected": "Not connected",
+        "providerAlreadyConnected": "This account is already connected to another user. Please disconnect it from the other account first.",
+        "duplicateProvider": "You already have a {{provider}} authentication method connected"
+      }
+    }
+  },
+  "errors": {
+    "auth": {
+      "cannotDeletePrimary": "Cannot delete primary authentication method",
+      "cannotDeleteLastMethod": "Cannot delete your last authentication method",
+      "providerAlreadyConnected": "This authentication method is already connected to another account",
+      "duplicateProvider": "You already have a {{provider}} authentication method"
+    }
+  }
+}
+```
+
+#### 9.8 Validation Rules
+
+**CRITICAL RULES**:
+
+1. **Exactly one primary method**: Always ensure exactly one authentication method per user has `isPrimary: true`
+2. **Cannot delete primary**: Never allow deletion of the primary authentication method
+3. **Cannot delete last method**: Never allow deletion of the last remaining authentication method
+4. **Auto-set primary on first method**: When creating the first authentication method for a user, automatically set `isPrimary: true`
+5. **Set primary on connect**: When connecting a new method, only set as primary if no primary exists
+6. **Prevent duplicate providers per user**: A user cannot have multiple authentication methods of the same provider type (e.g., cannot have two GitHub methods)
+7. **Prevent cross-user provider conflicts**: If a provider+providerId combination already exists for another user, prevent connection and inform the user they must disconnect from the other account first
+8. **User can set primary on demand**: Users can change which method is primary at any time (except when it's the only method)
+
+#### 9.9 Email Provider Addition
+
+**File**: `apps/web/components/settings/AddEmailForm.tsx` (new component)
+
+Create a form component for adding email authentication method:
+
+```typescript
+interface AddEmailFormProps {
+  onSubmit: (email: string, password: string) => Promise<void>;
+  onCancel: () => void;
+}
+
+export function AddEmailForm({ onSubmit, onCancel }: AddEmailFormProps) {
+  // Form with email and password fields
+  // Validation for email format
+  // Password strength requirements
+  // Submit handler that calls the create email auth method mutation
+}
+```
+
+**Backend**: Email authentication method creation should follow the same validation rules as OAuth methods:
+
+- Check for duplicate provider per user
+- Check for provider+providerId conflicts
+- Set as primary if first method
+- Send verification email if needed
 
 ## Future Enhancements
 

@@ -7,8 +7,6 @@ mutation Register($input: RegisterInput!) {
     email
     account {
       id
-      name
-      slug
       type
       owner {
         id

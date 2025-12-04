@@ -1,27 +1,6 @@
 import { z } from 'zod';
 
 /**
- * Account Information Settings Schema
- * Note: Both name and username (slug) can be updated independently
- */
-export const accountSettingsSchema = z.object({
-  name: z
-    .string()
-    .min(1, { message: 'Account name is required' })
-    .min(2, { message: 'Account name must be at least 2 characters' })
-    .max(100, { message: 'Account name must be less than 100 characters' }),
-  slug: z
-    .string()
-    .min(3, { message: 'Username must be at least 3 characters' })
-    .max(50, { message: 'Username must be less than 50 characters' })
-    .regex(/^[a-z0-9-]+$/, {
-      message: 'Username can only contain lowercase letters, numbers, and hyphens',
-    }),
-});
-
-export type AccountSettingsFormValues = z.infer<typeof accountSettingsSchema>;
-
-/**
  * Profile Settings Schema
  */
 export const profileSettingsSchema = z.object({

@@ -1,4 +1,0 @@
-type UsernameAvailability {
-  available: Boolean!
-  username: String!
-}

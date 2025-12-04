@@ -23,6 +23,7 @@ export {
   AuthenticationError,
   AuthorizationError,
   BadRequestError,
+  ConfigurationError,
   ConflictError,
   NotFoundError,
   ValidationError,

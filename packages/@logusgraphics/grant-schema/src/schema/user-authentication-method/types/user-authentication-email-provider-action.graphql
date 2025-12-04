@@ -1,4 +1,5 @@
 enum UserAuthenticationEmailProviderAction {
   login
-  signup
+  register
+  connect
 }

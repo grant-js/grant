@@ -16,7 +16,15 @@
     "passwordRequired": "Passwort ist erforderlich und muss eine Zeichenkette sein",
     "emailRequired": "E-Mail ist erforderlich und muss eine Zeichenkette sein",
     "invalidAction": "Ungültige Authentifizierungsaktion",
-    "emailSendFailed": "Fehler beim Senden der Verifizierungs-E-Mail"
+    "emailSendFailed": "Fehler beim Senden der Verifizierungs-E-Mail",
+    "githubNotConfigured": "GitHub OAuth ist nicht konfiguriert. Bitte kontaktieren Sie den Administrator.",
+    "githubTokenExchangeFailed": "Fehler beim Austausch des Autorisierungscodes gegen ein Zugriffstoken",
+    "githubOAuthError": "GitHub OAuth-Authentifizierungsfehler",
+    "githubNoToken": "Kein Zugriffstoken von GitHub erhalten",
+    "githubUserInfoFailed": "Fehler beim Abrufen der Benutzerinformationen von GitHub",
+    "stateRequired": "State-Parameter ist aus Sicherheitsgründen erforderlich",
+    "stateNotFound": "Ungültiger oder abgelaufener State-Parameter",
+    "invalidState": "Ungültiger oder abgelaufener State-Parameter"
   },
   "validation": {
     "required": "{{field}} ist erforderlich",

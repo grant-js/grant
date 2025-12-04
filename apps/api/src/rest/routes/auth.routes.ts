@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import { validateBody } from '@/middleware/validation.middleware';
 import { AuthController } from '@/rest/controllers/auth.controller';
+import { OAuthController } from '@/rest/controllers/oauth.controller';
 import {
   loginRequestSchema,
   logoutRequestSchema,
@@ -18,6 +19,7 @@ import { RequestContext } from '@/types';
 export function createAuthRoutes(context: RequestContext) {
   const router = Router();
   const authController = new AuthController(context);
+  const oauthController = new OAuthController(context);
 
   router.post('/login', validateBody(loginRequestSchema), (req, res) =>
     authController.login(req as TypedRequest<{ body: typeof loginRequestSchema }>, res)
@@ -65,6 +67,21 @@ export function createAuthRoutes(context: RequestContext) {
       res
     )
   );
+
+  router.get('/github', (req, res) =>
+    oauthController.initiateGithubAuth(req as TypedRequest<{ query: { redirect?: string } }>, res)
+  );
+
+  router.get('/github/callback', (req, res) =>
+    oauthController.handleGithubCallback(
+      req as TypedRequest<{
+        query: { code?: string; state?: string; error?: string; error_description?: string };
+      }>,
+      res
+    )
+  );
+
+  router.get('/me', (req, res) => authController.me(req as TypedRequest, res));
 
   return router;
 }

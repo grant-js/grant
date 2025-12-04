@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
@@ -11,7 +11,7 @@ import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
-import { FullPageLoader } from '@/components/common';
+import { FullPageLoader, GithubOAuthButton } from '@/components/common';
 import { PasswordStrengthIndicator } from '@/components/common/PasswordStrengthIndicator';
 import { Button } from '@/components/ui/button';
 import {
@@ -32,9 +32,7 @@ import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuthMutations, usePageTitle } from '@/hooks';
-import { useUsernameValidation } from '@/hooks/accounts/useUsernameValidation';
 import { Link } from '@/i18n/navigation';
-import { slugifySafe } from '@/lib/slugify';
 import { passwordPolicySchema } from '@/lib/validation/password-policy';
 
 export default function RegisterPage() {
@@ -42,7 +40,6 @@ export default function RegisterPage() {
   const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAuthSuccess, setIsAuthSuccess] = useState(false);
-  const [usernameManuallySet, setUsernameManuallySet] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   usePageTitle('auth.register');
 
@@ -57,43 +54,18 @@ export default function RegisterPage() {
   const defaultAccountType = isInvitationRedirect ? AccountType.Organization : AccountType.Personal;
 
   const { register: handleRegister } = useAuthMutations();
-  const { isChecking, isAvailable, checkUsername } = useUsernameValidation();
 
-  const formSchema = z
-    .object({
-      name: z.string().min(2, t('validation.name')),
-      username: z.string().min(3, t('validation.username')).optional().or(z.literal('')),
-      email: z.string().email(t('validation.email')),
-      password: passwordPolicySchema,
-      confirmPassword: z.string(),
-      accountType: z.nativeEnum(AccountType),
-    })
-    .refine((data) => data.password === data.confirmPassword, {
-      message: t('validation.passwordMatch'),
-      path: ['confirmPassword'],
-    })
-    .refine(
-      (data) => {
-        // If username is provided and we've checked availability, it must be available
-        if (data.username && data.username.length >= 3 && isAvailable === false) {
-          return false;
-        }
-        return true;
-      },
-      {
-        message: t('validation.usernameUnique'),
-        path: ['username'],
-      }
-    );
+  const formSchema = z.object({
+    email: z.email(t('validation.email')),
+    password: passwordPolicySchema,
+    accountType: z.enum(Object.values(AccountType) as [AccountType, ...AccountType[]]),
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
-      username: '',
       email: emailParam || '',
       password: '',
-      confirmPassword: '',
       accountType: defaultAccountType,
     },
   });
@@ -102,8 +74,6 @@ export default function RegisterPage() {
     setIsSubmitting(true);
     try {
       await handleRegister({
-        name: values.name,
-        username: values.username || undefined,
         email: values.email,
         password: values.password,
         accountType: values.accountType,
@@ -118,52 +88,12 @@ export default function RegisterPage() {
 
   const passwordValue = form.watch('password') || '';
 
-  // Auto-slugify username when name changes (if username hasn't been manually set)
-  const nameValue = form.watch('name');
-  const currentUsername = form.watch('username');
-
-  React.useEffect(() => {
-    if (nameValue && !usernameManuallySet) {
-      const slugifiedName = slugifySafe(nameValue);
-
-      // Only update if the username is different to prevent infinite loops
-      if (slugifiedName !== currentUsername) {
-        form.setValue('username', slugifiedName);
-
-        // Check availability of auto-generated username
-        if (slugifiedName.length >= 3) {
-          checkUsername(slugifiedName);
-        }
-      }
-    }
-    // form.setValue is stable in react-hook-form and doesn't need to be in deps
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nameValue, currentUsername, usernameManuallySet, checkUsername]);
-
-  // Track when user manually changes username
-  const handleUsernameChange = (value: string) => {
-    setUsernameManuallySet(true);
-    form.setValue('username', value);
-
-    // Trigger debounced username availability check
-    if (value && value.trim().length >= 3) {
-      checkUsername(value);
-    }
-  };
-
-  // Revalidate form when username availability changes
-  React.useEffect(() => {
-    if (isAvailable !== null) {
-      form.trigger('username');
-    }
-    // form.trigger is stable in react-hook-form and doesn't need to be in deps
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAvailable]);
-
   // Show full page loader during redirect after successful registration
   if (isAuthSuccess) {
     return <FullPageLoader />;
   }
+
+  const accountTypeValue = form.watch('accountType');
 
   return (
     <Form {...form}>
@@ -171,7 +101,7 @@ export default function RegisterPage() {
         <h2 className="text-2xl font-bold tracking-tight">{t('register.title')}</h2>
         <p className="text-muted-foreground mt-2">{t('register.description')}</p>
       </div>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <div className="mb-4">
         <FormField
           control={form.control}
           name="accountType"
@@ -245,87 +175,25 @@ export default function RegisterPage() {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('form.name.label')}</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder={t('form.name.placeholder')}
-                  disabled={isSubmitting}
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="username"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="flex items-center gap-2">
-                {t('form.username.label')}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      className="inline-flex items-center justify-center w-4 h-4 text-muted-foreground hover:text-foreground transition-colors"
-                      aria-label="Username information"
-                    >
-                      <Info className="w-4 h-4" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 z-[99999999]" align="start">
-                    <div className="space-y-3">
-                      <div>
-                        <h4 className="font-medium text-sm">{t('form.username.popover.title')}</h4>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {t('form.username.popover.description')}
-                        </p>
-                      </div>
-                      <div className="border-t pt-3">
-                        <h4 className="font-medium text-sm">
-                          {t('form.username.popover.autoGeneration.title')}
-                        </h4>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {t('form.username.popover.autoGeneration.description')}
-                        </p>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </FormLabel>
-              <FormControl>
-                <Input
-                  placeholder={t('form.username.placeholder')}
-                  disabled={isSubmitting}
-                  {...field}
-                  onChange={(e) => handleUsernameChange(e.target.value)}
-                />
-              </FormControl>
-              <FormMessage />
-
-              {/* Username Availability Status */}
-              {field.value && field.value.length >= 3 && (
-                <p className="text-sm">
-                  {isChecking ? (
-                    <span className="text-muted-foreground">
-                      {t('form.username.availability.checking')}
-                    </span>
-                  ) : isAvailable === true ? (
-                    <span className="text-success">
-                      {t('form.username.availability.available')}
-                    </span>
-                  ) : null}
-                </p>
-              )}
-            </FormItem>
-          )}
-        />
+      </div>
+      <div className="relative mb-4">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">{t('github.signUpWith')}</span>
+        </div>
+      </div>
+      <GithubOAuthButton className="w-full mb-4" accountType={accountTypeValue} />
+      <div className="relative mb-4">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">{t('github.or')}</span>
+        </div>
+      </div>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="email"
@@ -359,25 +227,7 @@ export default function RegisterPage() {
               </FormControl>
               <FormMessage />
 
-              {/* Password Strength Indicator */}
               <PasswordStrengthIndicator password={passwordValue} />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="confirmPassword"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('form.confirmPassword.label')}</FormLabel>
-              <FormControl>
-                <PasswordInput
-                  placeholder={t('form.confirmPassword.placeholder')}
-                  disabled={isSubmitting}
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
             </FormItem>
           )}
         />

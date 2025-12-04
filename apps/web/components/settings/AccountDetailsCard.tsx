@@ -1,29 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
-import { zodResolver } from '@hookform/resolvers/zod';
 import { AccountType } from '@logusgraphics/grant-schema';
 import { Building2, Info, User } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useForm } from 'react-hook-form';
 
-import { CreateComplementaryAccountDialog } from '@/components/settings/CreateComplementaryAccountDialog';
 import { SettingsCard } from '@/components/settings/SettingsCard';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useUsernameValidation } from '@/hooks/accounts';
-import { AccountSettingsFormValues, accountSettingsSchema } from '@/lib/schemas/settings';
+import { useCreateComplementaryAccount } from '@/hooks/accounts';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -31,91 +17,35 @@ interface AccountDetailsCardProps {
   accountType: 'personal' | 'organization';
   hasComplementaryAccount: boolean;
   accountCount: number;
-  defaultValues: AccountSettingsFormValues;
-  accountId: string;
-  onSubmit: (values: AccountSettingsFormValues) => Promise<void>;
 }
 
 export function AccountDetailsCard({
   accountType,
   hasComplementaryAccount,
   accountCount,
-  defaultValues,
-  accountId,
-  onSubmit,
 }: AccountDetailsCardProps) {
   const t = useTranslations('settings.account');
   const tCommon = useTranslations('common');
   const tAccountTypes = useTranslations('common.accountTypes');
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const { accounts, getCurrentAccount, setCurrentAccount } = useAuthStore();
+  const { createComplementaryAccount } = useCreateComplementaryAccount();
   const currentAccount = getCurrentAccount();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const {
-    isChecking,
-    isAvailable,
-    checkUsername,
-    reset: resetUsernameValidation,
-  } = useUsernameValidation();
 
   const complementaryType =
     accountType === 'personal' ? AccountType.Organization : AccountType.Personal;
   const canCreateComplementary = accountCount < 2 && !hasComplementaryAccount;
 
-  const form = useForm<AccountSettingsFormValues>({
-    resolver: zodResolver(accountSettingsSchema),
-    defaultValues,
-  });
-
-  const currentUsername = form.watch('slug');
-
-  // Reset form when account changes (account switch)
-  useEffect(() => {
-    if (accountId) {
-      form.reset(defaultValues);
-      resetUsernameValidation();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accountId]);
-
-  // Revalidate form when username availability changes
-  useEffect(() => {
-    if (currentUsername && currentUsername !== defaultValues.slug && isAvailable !== null) {
-      form.trigger('slug');
-    }
-  }, [isAvailable, currentUsername, defaultValues.slug, form]);
-
   const handleAccountSwitch = (accountId: string) => {
     setCurrentAccount(accountId);
   };
 
-  const handleUsernameChange = (value: string) => {
-    form.setValue('slug', value, { shouldDirty: true, shouldValidate: true });
-
-    if (value && value.trim().length >= 3 && value !== defaultValues.slug) {
-      checkUsername(value);
-    }
-  };
-
-  const handleSubmit = async (values: AccountSettingsFormValues) => {
-    if (
-      values.slug &&
-      values.slug !== defaultValues.slug &&
-      values.slug.length >= 3 &&
-      isAvailable === false
-    ) {
-      form.setError('slug', {
-        type: 'manual',
-        message: t('information.fields.username.unavailable'),
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
+  const handleCreateComplementary = async () => {
+    setIsCreating(true);
     try {
-      await onSubmit(values);
+      await createComplementaryAccount();
     } finally {
-      setIsSubmitting(false);
+      setIsCreating(false);
     }
   };
 
@@ -123,29 +53,7 @@ export function AccountDetailsCard({
 
   return (
     <>
-      <SettingsCard
-        title={cardTitle}
-        description={t('details.description')}
-        footer={
-          <div className="flex justify-end gap-4 w-full">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => form.reset(defaultValues)}
-              disabled={!form.formState.isDirty || isSubmitting}
-            >
-              {tCommon('actions.cancel')}
-            </Button>
-            <Button
-              type="submit"
-              form="account-details-form"
-              disabled={!form.formState.isDirty || isSubmitting}
-            >
-              {isSubmitting ? tCommon('actions.saving') : tCommon('actions.save')}
-            </Button>
-          </div>
-        }
-      >
+      <SettingsCard title={cardTitle} description={t('details.description')}>
         <div className="space-y-6">
           {/* Account Switcher (always shown) */}
           <div>
@@ -193,11 +101,6 @@ export function AccountDetailsCard({
                             ? tAccountTypes('organization')
                             : tAccountTypes('personal')}
                         </span>
-                        {account.slug && (
-                          <span className="text-xs text-muted-foreground truncate">
-                            @{account.slug}
-                          </span>
-                        )}
                       </div>
                     </div>
                     <TooltipProvider delayDuration={0}>
@@ -241,97 +144,24 @@ export function AccountDetailsCard({
                   ),
                 })}
               </p>
-              <Button variant="outline" size="sm" onClick={() => setDialogOpen(true)}>
-                {t('type.complementary.action', {
-                  type: tAccountTypes(
-                    complementaryType === AccountType.Organization ? 'organization' : 'personal'
-                  ),
-                })}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCreateComplementary}
+                disabled={isCreating}
+              >
+                {isCreating
+                  ? tCommon('actions.creating')
+                  : t('type.complementary.action', {
+                      type: tAccountTypes(
+                        complementaryType === AccountType.Organization ? 'organization' : 'personal'
+                      ),
+                    })}
               </Button>
             </div>
           )}
-
-          {/* Account Information Form */}
-          <div className="space-y-6 pt-4 border-t">
-            <div>
-              <h4 className="text-sm font-semibold mb-1">{t('information.title')}</h4>
-              <p className="text-sm text-muted-foreground">{t('information.description')}</p>
-            </div>
-
-            <Form {...form}>
-              <form
-                id="account-details-form"
-                onSubmit={form.handleSubmit(handleSubmit)}
-                className="space-y-6"
-              >
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('information.fields.name.label')}</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder={t('information.fields.name.placeholder')}
-                          {...field}
-                          disabled={isSubmitting}
-                        />
-                      </FormControl>
-                      <FormDescription>{t('information.fields.name.description')}</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="slug"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('information.fields.username.label')}</FormLabel>
-                      <FormControl>
-                        <div className="space-y-2">
-                          <Input
-                            placeholder={t('information.fields.username.placeholder')}
-                            {...field}
-                            onChange={(e) => handleUsernameChange(e.target.value)}
-                            disabled={isSubmitting}
-                          />
-                          {isChecking && field.value !== defaultValues.slug && (
-                            <p className="text-sm text-muted-foreground">
-                              {t('information.fields.username.checking')}
-                            </p>
-                          )}
-                          {isAvailable === true && field.value !== defaultValues.slug && (
-                            <p className="text-sm text-green-600 dark:text-green-400">
-                              {t('information.fields.username.available')}
-                            </p>
-                          )}
-                          {isAvailable === false && field.value !== defaultValues.slug && (
-                            <p className="text-sm text-destructive">
-                              {t('information.fields.username.unavailable')}
-                            </p>
-                          )}
-                        </div>
-                      </FormControl>
-                      <FormDescription>
-                        {t('information.fields.username.description')}
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </form>
-            </Form>
-          </div>
         </div>
       </SettingsCard>
-
-      <CreateComplementaryAccountDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        complementaryType={complementaryType}
-      />
     </>
   );
 }

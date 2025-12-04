@@ -9,8 +9,8 @@ import * as projectMutations from './projects/mutations';
 import * as roleMutations from './roles/mutations';
 import * as tagMutations from './tags/mutations';
 import * as userAuthenticationMethodMutations from './user-authentication-methods/mutations';
-import * as userMutations from './users/mutations';
 import * as userSessionMutations from './user-sessions/mutations';
+import * as userMutations from './users/mutations';
 export const Mutation = {
   login: authMutations.login,
   register: authMutations.register,
@@ -19,7 +19,6 @@ export const Mutation = {
   resendVerification: authMutations.resendVerification,
   requestPasswordReset: authMutations.requestPasswordReset,
   resetPassword: authMutations.resetPassword,
-  updateAccount: accountMutations.updateAccount,
   deleteAccount: accountMutations.deleteAccount,
   createComplementaryAccount: accountMutations.createComplementaryAccount,
   createUser: userMutations.createUser,
@@ -27,6 +26,9 @@ export const Mutation = {
   deleteUser: userMutations.deleteUser,
   uploadUserPicture: userMutations.uploadUserPicture,
   changePassword: userAuthenticationMethodMutations.changePassword,
+  createUserAuthenticationMethod: userAuthenticationMethodMutations.createUserAuthenticationMethod,
+  deleteUserAuthenticationMethod: userAuthenticationMethodMutations.deleteUserAuthenticationMethod,
+  setPrimaryAuthenticationMethod: userAuthenticationMethodMutations.setPrimaryAuthenticationMethod,
   createRole: roleMutations.createRole,
   deleteRole: roleMutations.deleteRole,
   updateRole: roleMutations.updateRole,

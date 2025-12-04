@@ -9,8 +9,6 @@ mutation AcceptInvitation($input: AcceptInvitationInput!) {
     }
     accounts {
       id
-      name
-      slug
       type
     }
     invitation {

@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl';
 
 import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
 import { AccountDetailsCard } from '@/components/settings/AccountDetailsCard';
-import { useAccountMutations, usePageTitle } from '@/hooks';
+import { usePageTitle } from '@/hooks';
 import { useAuthStore } from '@/stores/auth.store';
 
 export default function AccountSettingsPage() {
@@ -16,25 +16,11 @@ export default function AccountSettingsPage() {
 
   const { getCurrentAccount, accounts } = useAuthStore();
   const currentAccount = getCurrentAccount();
-  const { updateAccount } = useAccountMutations();
 
-  // Get account data from the current account in the auth store
-  const accountData = useMemo(() => {
-    if (!currentAccount) {
-      return { name: '', slug: '' };
-    }
-    return {
-      name: currentAccount.name,
-      slug: currentAccount.slug,
-    };
-  }, [currentAccount]);
-
-  // Determine account type for display
   const accountType: 'personal' | 'organization' = useMemo(() => {
     return currentAccount?.type === AccountType.Personal ? 'personal' : 'organization';
   }, [currentAccount?.type]);
 
-  // Check if user has a complementary account (e.g., personal has org, or org has personal)
   const hasComplementaryAccount = useMemo(() => {
     if (currentAccount?.type === AccountType.Personal) {
       return accounts.some((acc) => acc.type === AccountType.Organization);
@@ -42,34 +28,6 @@ export default function AccountSettingsPage() {
       return accounts.some((acc) => acc.type === AccountType.Personal);
     }
   }, [accounts, currentAccount?.type]);
-
-  const handleAccountUpdate = async (values: { name: string; slug: string }) => {
-    if (!currentAccount?.id) {
-      console.error('No current account to update');
-      return;
-    }
-
-    // Only send fields that have changed
-    const input: { name?: string; slug?: string } = {};
-
-    if (values.name !== currentAccount.name) {
-      input.name = values.name;
-    }
-
-    if (values.slug !== currentAccount.slug) {
-      input.slug = values.slug;
-    }
-
-    // Only update if something changed
-    if (Object.keys(input).length === 0) {
-      return;
-    }
-
-    await updateAccount({
-      id: currentAccount.id,
-      input,
-    });
-  };
 
   if (!currentAccount) {
     return (
@@ -86,9 +44,6 @@ export default function AccountSettingsPage() {
           accountType={accountType}
           hasComplementaryAccount={hasComplementaryAccount}
           accountCount={accounts.length}
-          defaultValues={accountData}
-          accountId={currentAccount.id}
-          onSubmit={handleAccountUpdate}
         />
       </div>
     </DashboardPageLayout>

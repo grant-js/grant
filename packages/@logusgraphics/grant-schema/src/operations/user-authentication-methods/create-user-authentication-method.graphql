@@ -1,0 +1,13 @@
+mutation CreateUserAuthenticationMethod($input: CreateUserAuthenticationMethodInput!) {
+  createUserAuthenticationMethod(input: $input) {
+    id
+    userId
+    provider
+    providerId
+    isVerified
+    isPrimary
+    lastUsedAt
+    createdAt
+    updatedAt
+  }
+}

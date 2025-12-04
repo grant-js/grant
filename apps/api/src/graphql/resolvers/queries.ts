@@ -1,4 +1,5 @@
 import * as accountQueries from './accounts/queries';
+import * as authQueries from './auth/queries';
 import * as groupQueries from './groups/queries';
 import * as organizationInvitationQueries from './organization-invitations/queries';
 import * as organizationMemberQueries from './organization-members/queries';
@@ -13,7 +14,6 @@ import * as userQueries from './users/queries';
 export const Query = {
   _empty: () => null,
   accounts: accountQueries.getAccounts,
-  checkUsername: accountQueries.checkUsername,
   exportUserData: userQueries.exportUserData,
   users: userQueries.getUsers,
   roles: roleQueries.getRoles,
@@ -27,4 +27,5 @@ export const Query = {
   tags: tagQueries.getTags,
   userAuthenticationMethods: userAuthenticationMethodQueries.userAuthenticationMethods,
   userSessions: userSessionQueries.userSessions,
+  me: authQueries.me,
 } as const;

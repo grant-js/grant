@@ -8,15 +8,19 @@ import {
   Tag,
   Tenant,
   User,
+  UserAuthenticationMethod,
   UserAuthenticationMethodProvider,
   UserPage,
 } from '@logusgraphics/grant-schema';
 
+import { SupportedLocale } from '@/i18n';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { NotFoundError } from '@/lib/errors';
+import { createModuleLogger } from '@/lib/logger';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 import { DeleteParams, SelectedFields } from '@/services/common';
+import { Otp } from '@/services/user-authentication-methods.service';
 
 import { ScopeHandler } from './base/scope-handler';
 
@@ -30,8 +34,6 @@ export interface UserDataExport {
   };
   accounts: Array<{
     id: string;
-    name: string;
-    slug: string;
     type: string;
     createdAt: Date;
     updatedAt: Date;
@@ -67,12 +69,14 @@ export interface UserDataExport {
 }
 
 export class UserHandler extends ScopeHandler {
+  private readonly logger = createModuleLogger('UserHandler');
+
   constructor(
-    readonly scopeCache: IEntityCacheAdapter,
+    readonly cache: IEntityCacheAdapter,
     readonly services: Services,
     readonly db: DbSchema
   ) {
-    super(scopeCache, services);
+    super(cache, services);
   }
 
   public async getUsers(params: QueryUsersArgs & SelectedFields<User>): Promise<UserPage> {
@@ -331,6 +335,112 @@ export class UserHandler extends ScopeHandler {
     });
   }
 
+  public async deleteUserAuthenticationMethod(
+    userId: string,
+    methodId: string
+  ): Promise<UserAuthenticationMethod> {
+    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+      // Verify the method belongs to the user
+      const method = await this.services.userAuthenticationMethods.getUserAuthenticationMethod(
+        methodId,
+        tx
+      );
+
+      if (method.userId !== userId) {
+        throw new NotFoundError(
+          'Authentication method not found or does not belong to user',
+          'errors:auth.methodNotFound'
+        );
+      }
+
+      return await this.services.userAuthenticationMethods.deleteUserAuthenticationMethod(
+        { id: methodId },
+        tx
+      );
+    });
+  }
+
+  public async setPrimaryAuthenticationMethod(
+    userId: string,
+    methodId: string
+  ): Promise<UserAuthenticationMethod> {
+    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+      const method = await this.services.userAuthenticationMethods.getUserAuthenticationMethod(
+        methodId,
+        tx
+      );
+
+      if (method.userId !== userId) {
+        throw new NotFoundError(
+          'Authentication method not found or does not belong to user',
+          'errors:auth.methodNotFound'
+        );
+      }
+
+      return await this.services.userAuthenticationMethods.setPrimaryAuthenticationMethod(
+        methodId,
+        tx
+      );
+    });
+  }
+
+  public async createUserAuthenticationMethod(
+    userId: string,
+    input: {
+      provider: UserAuthenticationMethodProvider;
+      providerId: string;
+      providerData: Record<string, unknown>;
+      isVerified?: boolean;
+      isPrimary?: boolean;
+    },
+    locale?: SupportedLocale
+  ): Promise<UserAuthenticationMethod> {
+    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+      const { providerData: processedProviderData, isVerified } =
+        await this.services.userAuthenticationMethods.processProvider(
+          input.provider,
+          input.providerId,
+          input.providerData
+        );
+
+      const userAuthenticationMethod =
+        await this.services.userAuthenticationMethods.createUserAuthenticationMethod(
+          {
+            userId,
+            provider: input.provider,
+            providerId: input.providerId,
+            providerData: processedProviderData,
+            isVerified: input.isVerified ?? isVerified,
+            isPrimary: input.isPrimary,
+          },
+          tx
+        );
+
+      if (input.provider === UserAuthenticationMethodProvider.Email) {
+        const { token, validUntil } = processedProviderData.otp as Otp;
+        if (token && validUntil > Date.now()) {
+          try {
+            await this.services.email.sendOtp({
+              to: input.providerId,
+              token,
+              validUntil,
+              locale: locale || 'en',
+            });
+          } catch (error) {
+            this.logger.error({
+              msg: 'Error sending OTP email for new authentication method',
+              err: error,
+              userId,
+              providerId: input.providerId,
+            });
+          }
+        }
+      }
+
+      return userAuthenticationMethod;
+    });
+  }
+
   public async getUserSessions(params: {
     userId: string;
     audience?: string;
@@ -362,16 +472,7 @@ export class UserHandler extends ScopeHandler {
     return await this.services.userSessions.revokeSession(sessionId);
   }
 
-  /**
-   * Export all user data for GDPR compliance
-   * Collects user profile, accounts, authentication methods, sessions,
-   * organization memberships, and project memberships
-   *
-   * @param userId - User ID to export data for
-   * @returns Structured user data export
-   */
   public async exportUserData(userId: string): Promise<UserDataExport> {
-    // Get user profile
     const userPage = await this.services.users.getUsers({
       ids: [userId],
       limit: 1,
@@ -384,7 +485,6 @@ export class UserHandler extends ScopeHandler {
 
     const user = userPage.users[0];
 
-    // Get user's authentication methods
     const authMethods = await this.services.userAuthenticationMethods.getUserAuthenticationMethods({
       userId,
       requestedFields: [
@@ -397,14 +497,11 @@ export class UserHandler extends ScopeHandler {
       ],
     });
 
-    // Extract email from authentication methods
     const emailAuthMethod = authMethods.find((m) => m.provider === 'email');
     const userEmail = emailAuthMethod?.providerId || null;
 
-    // Get accounts owned by user
     const accounts = await this.services.accounts.getAccountsByOwnerId(userId);
 
-    // Format authentication methods (excluding sensitive data like hashed passwords)
     const authenticationMethodsData = authMethods.map((method) => ({
       provider: method.provider,
       providerId: method.providerId,
@@ -414,7 +511,6 @@ export class UserHandler extends ScopeHandler {
       createdAt: new Date(method.createdAt),
     }));
 
-    // Get user sessions
     const sessionsPage = await this.services.userSessions.getUserSessions({
       userId,
       limit: -1,
@@ -429,11 +525,9 @@ export class UserHandler extends ScopeHandler {
       createdAt: new Date(session.createdAt),
     }));
 
-    // Get organization memberships with roles
     const organizationMembershipsRaw =
       await this.services.organizationUsers.getUserOrganizationMemberships(userId);
 
-    // Get project memberships with roles
     const projectMembershipsRaw =
       await this.services.projectUsers.getUserProjectMemberships(userId);
 
@@ -447,8 +541,6 @@ export class UserHandler extends ScopeHandler {
       },
       accounts: accounts.map((account) => ({
         id: account.id,
-        name: account.name,
-        slug: account.slug,
         type: account.type,
         createdAt: new Date(account.createdAt),
         updatedAt: new Date(account.updatedAt),

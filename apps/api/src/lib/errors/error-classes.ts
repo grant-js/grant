@@ -140,3 +140,21 @@ export class BadRequestError extends ApiError {
     this.name = 'BadRequestError';
   }
 }
+
+export class ConfigurationError extends ApiError {
+  constructor(
+    message: string,
+    translationKey?: string,
+    translationParams?: Record<string, any>,
+    extensions?: Record<string, any>
+  ) {
+    super(message, {
+      statusCode: 500,
+      code: 'CONFIGURATION_ERROR',
+      translationKey,
+      translationParams,
+      extensions,
+    });
+    this.name = 'ConfigurationError';
+  }
+}

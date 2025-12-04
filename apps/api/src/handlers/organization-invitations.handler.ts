@@ -10,6 +10,7 @@ import {
   OrganizationInvitationPage,
   OrganizationInvitationStatus,
   QueryOrganizationInvitationsArgs,
+  UserAuthenticationEmailProviderAction,
   UserAuthenticationMethodProvider,
 } from '@logusgraphics/grant-schema';
 
@@ -17,7 +18,6 @@ import { config } from '@/config';
 import { defaultLocale } from '@/i18n';
 import { BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
 import { createModuleLogger } from '@/lib/logger';
-import { slugifySafe } from '@/lib/slugify.lib';
 import { generateSecureTokenMs } from '@/lib/token.lib';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
@@ -207,7 +207,7 @@ export class OrganizationInvitationsHandler {
           invitation.email,
           {
             password: userData.password,
-            action: 'signup',
+            action: UserAuthenticationEmailProviderAction.Register,
           }
         );
 
@@ -226,8 +226,6 @@ export class OrganizationInvitationsHandler {
         // Create account
         await this.services.accounts.createAccount(
           {
-            name: userData.name,
-            username: userData.username,
             type: AccountType.Organization,
             ownerId: user.id,
           },
@@ -263,45 +261,8 @@ export class OrganizationInvitationsHandler {
           }
 
           // Create Organization account for existing user
-          // Fetch organization to get its name for username generation
-          const organizationsResult = await this.services.organizations.getOrganizations(
-            {
-              ids: [invitation.organizationId],
-              limit: 1,
-            },
-            tx
-          );
-          const organization = organizationsResult.organizations[0];
-
-          // Generate username from user name using slugify
-          let accountUsername = slugifySafe(user.name);
-
-          // Ensure username is unique by checking availability through service
-          // If not available, append organization name (slugified) to make it unique
-          // Note: Database unique constraint will catch any race conditions
-          let isAvailable = await this.services.accounts.checkUsernameAvailability(accountUsername);
-
-          if (!isAvailable) {
-            // Append organization slug to make username unique
-            accountUsername = `${accountUsername}-${organization.slug}`;
-            isAvailable = await this.services.accounts.checkUsernameAvailability(accountUsername);
-
-            // If still not available, append user ID substring
-            if (!isAvailable) {
-              accountUsername = `${accountUsername}-${user.id.substring(0, 8)}`;
-              isAvailable = await this.services.accounts.checkUsernameAvailability(accountUsername);
-            }
-
-            // If still not available, use timestamp
-            if (!isAvailable) {
-              accountUsername = `${accountUsername}-${Date.now().toString(36)}`;
-            }
-          }
-
           await this.services.accounts.createAccount(
             {
-              name: user.name,
-              username: accountUsername,
               type: AccountType.Organization,
               ownerId: user.id,
             },

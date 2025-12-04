@@ -6,6 +6,7 @@ import { ErrorLink } from '@apollo/client/link/error';
 import { DEFAULT_LOCALE, isSupportedLocale } from '@logusgraphics/grant-constants';
 import { GraphQLError } from 'graphql';
 
+import { getApiBaseUrl } from '@/lib/constants';
 import { useAuthStore } from '@/stores/auth.store';
 
 let refreshPromise: Promise<void> | null = null;
@@ -16,7 +17,7 @@ let refreshInProgress = false;
  * Uses environment variable with fallback to localhost
  */
 function getGraphQLUrl(): string {
-  return process.env.NEXT_PUBLIC_GRAPHQL_URL || 'http://localhost:4000/graphql';
+  return `${getApiBaseUrl()}/graphql`;
 }
 
 /**

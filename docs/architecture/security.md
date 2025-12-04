@@ -11,13 +11,54 @@ Grant Platform implements a comprehensive security model with JWT-based authenti
 
 ### Authentication Methods
 
-Users can authenticate using multiple methods:
+Users can authenticate using multiple methods, each stored independently in the `user_authentication_methods` table:
 
-- **Email/Password** - Traditional email and password authentication
-- **OAuth Providers** - Google, GitHub, and other OAuth providers
-- **Future** - Additional providers can be added via the adapter pattern
+- **Email/Password** - Traditional email and password authentication with email verification
+- **GitHub OAuth** - OAuth-based authentication using GitHub accounts
+- **Future Providers** - Additional OAuth providers (Google, Microsoft, etc.) can be added via the adapter pattern
 
-Each authentication method is stored in the `user_authentication_methods` table and can be verified independently.
+#### Primary Authentication Method
+
+Each user must have exactly **one primary authentication method** (`isPrimary: true`):
+
+- The first authentication method created during registration is automatically set as primary
+- Users can change their primary method at any time
+- The primary method cannot be deleted (users must set another method as primary first)
+- Users cannot delete their last remaining authentication method
+
+#### Authentication Method Management
+
+Users can manage their authentication methods through the Security Settings page:
+
+- **Connect Methods** - Add new authentication providers (GitHub OAuth, additional email addresses)
+- **Disconnect Methods** - Remove authentication methods (except primary and last remaining)
+- **Set Primary** - Change which authentication method is used as the primary
+- **Change Password** - Update password for email authentication methods
+- **Verification Status** - View verification status for each method
+
+#### GitHub OAuth Flow
+
+GitHub OAuth authentication follows the standard OAuth 2.0 authorization code flow:
+
+1. **Initiation** - User clicks "Connect GitHub" → Redirected to GitHub authorization page
+2. **Authorization** - User authorizes the application on GitHub
+3. **Callback** - GitHub redirects back with authorization code
+4. **Token Exchange** - Backend exchanges code for access token
+5. **User Info** - Backend fetches user information from GitHub API
+6. **Account Linking** - System creates or links authentication method to user account
+
+The OAuth flow supports three actions:
+
+- **Login** - Authenticate existing user
+- **Register** - Create new account with GitHub
+- **Connect** - Link GitHub to existing authenticated user account
+
+#### Security Constraints
+
+- **Duplicate Prevention** - Users cannot have multiple authentication methods of the same provider
+- **Cross-User Protection** - A GitHub account cannot be linked to multiple user accounts
+- **Last Method Protection** - Users must always have at least one authentication method
+- **Primary Protection** - The primary authentication method cannot be deleted
 
 ### JWT Token Structure
 
@@ -210,20 +251,65 @@ The platform uses multiple layers of CSRF protection:
 - Industry best practice and compliance requirements
 - Protection against edge cases
 
+### Authentication Method Security
+
+- **Email Verification** - Email authentication methods require verification via OTP before use
+- **Password Hashing** - Passwords are hashed using bcrypt before storage
+- **OTP Expiration** - Email verification OTPs expire after a configured time period
+- **Provider Data Encryption** - Sensitive OAuth provider data (tokens, etc.) stored securely
+- **Duplicate Prevention** - System prevents multiple methods of the same provider per user
+- **Cross-User Validation** - Prevents linking OAuth accounts already connected to other users
+
 ### Security Best Practices
 
 1. **HTTPS Only** - Tokens should only be transmitted over HTTPS
 2. **HttpOnly Cookies** - Refresh tokens stored in HttpOnly cookies (when applicable)
 3. **Token Rotation** - Refresh tokens are rotated on use
 4. **Session Revocation** - Users can revoke suspicious sessions
-5. **Audit Logging** - All session operations are logged
+5. **Audit Logging** - All session and authentication method operations are logged
 6. **CSRF Protection** - CSRF tokens for state-changing operations (planned)
+7. **OAuth State Validation** - OAuth flows use state parameters for CSRF protection
+8. **Primary Method Enforcement** - System ensures exactly one primary authentication method per user
 
-## User Session Management UI
+## User Security Management UI
 
-Users can manage their sessions through the Security Settings page:
+Users can manage their security settings through the Security Settings page:
 
-### Features
+### Authentication Methods Management
+
+The authentication methods section displays all available providers and their connection status:
+
+- **Provider List** - Shows all available providers (Email, GitHub, etc.)
+- **Connection Status** - Indicates whether each provider is connected
+- **Primary Badge** - Highlights the primary authentication method
+- **Verification Status** - Shows verified/unverified status for each method
+- **Provider Actions** - Dropdown menu with available actions:
+  - Connect (for unconnected providers)
+  - Set as Primary (for non-primary connected methods)
+  - Change Password (for email methods)
+  - Disconnect (for non-primary, non-last methods)
+
+#### Adding Email Authentication Methods
+
+Users can add additional email/password authentication methods:
+
+- Form includes email, password, and password confirmation
+- Password strength indicator validates password requirements
+- Verification email is automatically sent upon creation
+- Email must be verified before use
+
+#### OAuth Connection Flow
+
+When connecting OAuth providers (e.g., GitHub):
+
+- User clicks "Connect" → Redirected to provider authorization page
+- After authorization → Redirected back to settings page
+- Success/error indicators shown via URL query parameters
+- UI automatically refreshes to show updated connection status
+
+### Session Management
+
+Users can manage their active sessions:
 
 - **View Active Sessions** - List all active sessions with device info
 - **Current Session Indicator** - Clearly marked current session
@@ -231,7 +317,7 @@ Users can manage their sessions through the Security Settings page:
 - **Revoke Sessions** - Individual session revocation with confirmation
 - **Current Session Warning** - Special warning when revoking current session
 
-### Session Display
+#### Session Display
 
 Each session shows:
 
@@ -245,6 +331,53 @@ Each session shows:
 ## API Endpoints
 
 ### GraphQL
+
+#### Authentication Methods
+
+```graphql
+# Query user authentication methods
+query GetUserAuthenticationMethods($input: GetUserAuthenticationMethodsInput!) {
+  userAuthenticationMethods(input: $input) {
+    id
+    userId
+    provider
+    providerId
+    isVerified
+    isPrimary
+    lastUsedAt
+    createdAt
+    updatedAt
+  }
+}
+
+# Create authentication method (e.g., add email)
+mutation CreateUserAuthenticationMethod($input: CreateUserAuthenticationMethodInput!) {
+  createUserAuthenticationMethod(input: $input) {
+    id
+    provider
+    providerId
+    isVerified
+    isPrimary
+  }
+}
+
+# Set primary authentication method
+mutation SetPrimaryAuthenticationMethod($id: ID!) {
+  setPrimaryAuthenticationMethod(id: $id) {
+    id
+    isPrimary
+  }
+}
+
+# Delete authentication method
+mutation DeleteUserAuthenticationMethod($input: DeleteUserAuthenticationMethodInput!) {
+  deleteUserAuthenticationMethod(input: $input) {
+    id
+  }
+}
+```
+
+#### User Sessions
 
 ```graphql
 # Query user sessions
@@ -271,6 +404,18 @@ mutation RevokeUserSession($input: RevokeUserSessionInput!) {
 ```
 
 ### REST API
+
+#### OAuth Endpoints
+
+```http
+# Initiate GitHub OAuth flow
+GET /api/auth/github?action=connect&redirect=<redirect_url>
+
+# GitHub OAuth callback (handled by GitHub)
+GET /api/auth/github/callback?code=<code>&state=<state>
+```
+
+#### User Sessions
 
 ```http
 # Get user sessions
@@ -326,14 +471,23 @@ return createSession({
 
 ## Future Enhancements
 
-Potential improvements to session management:
+Potential improvements to authentication and session management:
+
+### Authentication Methods
+
+1. **Additional OAuth Providers** - Google, Microsoft, Apple Sign-In, etc.
+2. **Multi-Factor Authentication (MFA)** - TOTP, SMS, or hardware keys
+3. **WebAuthn/Passkeys** - Passwordless authentication using biometrics
+4. **Account Recovery** - Enhanced recovery flows for lost authentication methods
+
+### Session Management
 
 1. **CSRF Token Protection** - Full implementation of CSRF tokens for all state-changing operations (see [Implementation Plan](../implementation-plans/csrf-protection.md))
 2. **Device Fingerprinting** - More sophisticated device identification using browser fingerprinting libraries
 3. **Geolocation** - Track session location for security alerts
 4. **Session Limits** - Configurable maximum concurrent sessions per user
 5. **Automatic Revocation** - Revoke sessions based on suspicious activity
-6. **Session Notifications** - Email alerts for new device logins
+6. **Session Notifications** - Email alerts for new device logins and OAuth connections
 
 ## Related Documentation
 

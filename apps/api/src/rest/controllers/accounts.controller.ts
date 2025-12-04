@@ -97,12 +97,7 @@ export class AccountsController extends BaseController {
     req: TypedRequest<{ body: typeof createComplementaryAccountRequestSchema }>,
     res: Response
   ) {
-    const { name, username } = req.body;
-
-    const result = await this.context.handlers.accounts.createComplementaryAccount({
-      name,
-      username: username || null,
-    });
+    const result = await this.context.handlers.accounts.createComplementaryAccount();
 
     return this.success(res, result, 201);
   }

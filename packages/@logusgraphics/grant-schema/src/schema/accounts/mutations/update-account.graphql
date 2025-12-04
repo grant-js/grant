@@ -1,3 +1,0 @@
-extend type Mutation {
-  updateAccount(id: ID!, input: UpdateAccountInput!): Account!
-}

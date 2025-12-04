@@ -9,8 +9,6 @@ query ExportUserData {
     }
     accounts {
       id
-      name
-      slug
       type
       createdAt
       updatedAt

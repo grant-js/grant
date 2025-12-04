@@ -4,8 +4,8 @@ import {
   AccountPage,
   AccountType,
   CreateAccountInput,
-  MutationUpdateAccountArgs,
   QueryAccountsArgs,
+  User,
 } from '@logusgraphics/grant-schema';
 import { and, eq, isNull } from 'drizzle-orm';
 
@@ -17,10 +17,8 @@ import { AuthenticatedUser } from '@/types';
 import {
   accountSchema,
   createAccountInputSchema,
-  createComplementaryAccountInputSchema,
   deleteAccountParamsSchema,
   getAccountsParamsSchema,
-  updateAccountParamsSchema,
 } from './accounts.schemas';
 import {
   AuditService,
@@ -99,22 +97,38 @@ export class AccountService extends AuditService {
   ): Promise<Account> {
     const context = 'AccountService.createAccount';
     const validatedParams = validateInput(createAccountInputSchema, params, context);
-    const { name, username, type, ownerId } = validatedParams;
+    const { type, ownerId } = validatedParams;
 
-    const account = await this.repositories.accountRepository.createAccount(
+    const createdAccount = await this.repositories.accountRepository.createAccount(
       {
-        name,
-        username,
         type,
         ownerId,
       },
       transaction
     );
 
+    // Fetch the account with owner relationship loaded to satisfy GraphQL schema requirements
+    const accountsResult = await this.repositories.accountRepository.getAccounts(
+      {
+        ids: [createdAccount.id],
+        limit: 1,
+        requestedFields: ['owner'],
+      },
+      transaction
+    );
+
+    const account = accountsResult.accounts[0];
+    if (!account) {
+      throw new NotFoundError('Account not found after creation', 'errors:notFound.account');
+    }
+
+    if (!account.owner) {
+      throw new NotFoundError('Owner not loaded for account', 'errors:notFound.user');
+    }
+
     const newValues = {
       id: account.id,
-      name: account.name,
-      slug: account.slug,
+      type: account.type,
       createdAt: account.createdAt,
       updatedAt: account.updatedAt,
     };
@@ -125,16 +139,25 @@ export class AccountService extends AuditService {
 
     await this.logCreate(account.id, newValues, metadata, transaction);
 
-    return validateOutput(createDynamicSingleSchema(accountSchema), account, context);
+    // Validate the account schema (which doesn't include relations like owner)
+    // Then preserve the owner relation that was loaded
+    const validatedAccount = validateOutput(
+      createDynamicSingleSchema(accountSchema),
+      account,
+      context
+    );
+
+    // Preserve the owner relation after validation (validation strips it because it's not in the schema)
+    if (account.owner) {
+      (validatedAccount as Account & { owner: User }).owner = account.owner;
+    }
+
+    return validatedAccount;
   }
 
   public async createComplementaryAccount(
-    params: { name: string; username?: string | null },
     transaction?: Transaction
   ): Promise<{ account: Account; accounts: Account[] }> {
-    const context = 'AccountService.createComplementaryAccount';
-    const validatedParams = validateInput(createComplementaryAccountInputSchema, params, context);
-
     if (!this.user) {
       throw new BadRequestError(
         'User must be authenticated to create complementary account',
@@ -179,77 +202,23 @@ export class AccountService extends AuditService {
     // Create the complementary account
     const newAccount = await this.createAccount(
       {
-        name: validatedParams.name,
-        username: validatedParams.username || undefined,
         type: complementaryType,
         ownerId: userId,
       },
       transaction
     );
 
-    // Fetch all accounts for the user after creation
-    const allUserAccounts = await dbInstance
-      .select()
-      .from(accounts)
-      .where(and(eq(accounts.ownerId, userId), isNull(accounts.deletedAt)));
+    // Fetch all accounts for the user after creation using repository to properly load owner relationship
+    const allUserAccounts = await this.repositories.accountRepository.getAccountsByOwnerId(
+      userId,
+      transaction,
+      ['owner']
+    );
 
     return {
       account: newAccount,
-      accounts: allUserAccounts as Account[],
+      accounts: allUserAccounts,
     };
-  }
-
-  public async checkUsernameAvailability(username: string): Promise<boolean> {
-    if (!username || username.trim().length < 3) {
-      return false;
-    }
-
-    const slugifiedUsername = this.repositories.accountRepository.generateSlug(username);
-    const existingAccount = await this.repositories.accountRepository.findBySlug(slugifiedUsername);
-
-    return !existingAccount;
-  }
-
-  public async updateAccount(
-    params: MutationUpdateAccountArgs,
-    transaction?: Transaction
-  ): Promise<Account> {
-    const context = 'AccountService.updateAccount';
-    const validatedParams = validateInput(updateAccountParamsSchema, params, context);
-
-    const { id, input } = validatedParams;
-
-    const oldAccount = await this.getAccount(id);
-    const updatedAccount = await this.repositories.accountRepository.updateAccount(
-      { id, input },
-      transaction
-    );
-
-    const oldValues = {
-      id: oldAccount.id,
-      name: oldAccount.name,
-      slug: oldAccount.slug,
-      type: oldAccount.type,
-      createdAt: oldAccount.createdAt,
-      updatedAt: oldAccount.updatedAt,
-    };
-
-    const newValues = {
-      id: updatedAccount.id,
-      name: updatedAccount.name,
-      slug: updatedAccount.slug,
-      type: updatedAccount.type,
-      createdAt: updatedAccount.createdAt,
-      updatedAt: updatedAccount.updatedAt,
-    };
-
-    const metadata = {
-      context,
-    };
-
-    await this.logUpdate(updatedAccount.id, oldValues, newValues, metadata, transaction);
-
-    return validateOutput(createDynamicSingleSchema(accountSchema), updatedAccount, context);
   }
 
   public async deleteAccount(
@@ -270,8 +239,6 @@ export class AccountService extends AuditService {
 
     const oldValues = {
       id: oldAccount.id,
-      name: oldAccount.name,
-      slug: oldAccount.slug,
       type: oldAccount.type,
       ownerId: oldAccount.ownerId,
       createdAt: oldAccount.createdAt,

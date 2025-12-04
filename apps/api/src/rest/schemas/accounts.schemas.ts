@@ -9,9 +9,6 @@ export const accountTypeSchema = z.enum(
 
 export const accountSchema = z.object({
   id: z.string(),
-  name: z.string(),
-  slug: z.string(),
-  username: z.string().nullable(),
   type: accountTypeSchema,
   ownerId: z.string().nullable(),
   createdAt: z.string(),
@@ -27,7 +24,7 @@ export const accountWithRelationsSchema = accountSchema.extend({
 export const accountRelationsEnum = z.enum(['projects', 'owner']);
 
 export const getAccountsQuerySchema = listQuerySchema.omit({ relations: true }).extend({
-  sortField: z.enum(['name', 'createdAt', 'updatedAt']).optional(),
+  sortField: z.enum(['type', 'createdAt', 'updatedAt']).optional(),
   sortOrder: z.nativeEnum(SortOrder).optional(),
   relations: z
     .array(accountRelationsEnum)
@@ -59,19 +56,9 @@ export const createAccountResponseSchema = createSuccessResponseSchema(
   'Successfully created account'
 );
 
-export const updateAccountRequestSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255, 'Name too long').optional(),
-  type: accountTypeSchema.optional(),
-});
-
 export const accountParamsSchema = z.object({
   id: z.uuid('Invalid account ID'),
 });
-
-export const updateAccountResponseSchema = createSuccessResponseSchema(
-  accountSchema,
-  'Successfully updated account'
-);
 
 export const deleteAccountQuerySchema = z.object({
   hardDelete: z
@@ -90,10 +77,7 @@ export const deleteAccountResponseSchema = createSuccessResponseSchema(
   'Successfully deleted account'
 );
 
-export const createComplementaryAccountRequestSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
-  username: z.string().optional().nullable(),
-});
+export const createComplementaryAccountRequestSchema = z.object({});
 
 export const createComplementaryAccountResponseSchema = createSuccessResponseSchema(
   z.object({

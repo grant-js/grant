@@ -6,22 +6,9 @@ import { Services } from '@/services';
 
 export type CacheKey = `${Tenant}:${string}`;
 
-/**
- * @deprecated Use IEntityCacheAdapter instead
- * Kept for backward compatibility during migration
- */
-export type EntityCache = {
-  roles: Map<CacheKey, Set<string>>;
-  users: Map<CacheKey, Set<string>>;
-  groups: Map<CacheKey, Set<string>>;
-  permissions: Map<CacheKey, Set<string>>;
-  tags: Map<CacheKey, Set<string>>;
-  projects: Map<CacheKey, Set<string>>;
-};
-
 export class ScopeHandler {
   constructor(
-    protected scopeCache: IEntityCacheAdapter,
+    protected cache: IEntityCacheAdapter,
     protected readonly services: Services
   ) {}
 
@@ -62,7 +49,7 @@ export class ScopeHandler {
   async getScopedProjectIds(scope: Scope): Promise<string[]> {
     const cacheKey = this.createCacheKey(scope);
 
-    const cachedProjects = await this.scopeCache.projects.get(cacheKey);
+    const cachedProjects = await this.cache.projects.get(cacheKey);
     if (cachedProjects) {
       return Array.from(cachedProjects.values());
     }
@@ -91,14 +78,14 @@ export class ScopeHandler {
           { field: 'tenant' }
         );
     }
-    await this.scopeCache.projects.set(cacheKey, new Set(projectIds));
+    await this.cache.projects.set(cacheKey, new Set(projectIds));
     return projectIds;
   }
 
   async getScopedRoleIds(scope: Scope): Promise<string[]> {
     const cacheKey = this.createCacheKey(scope);
 
-    const cachedRoles = await this.scopeCache.roles.get(cacheKey);
+    const cachedRoles = await this.cache.roles.get(cacheKey);
     if (cachedRoles) {
       return Array.from(cachedRoles.values());
     }
@@ -136,14 +123,14 @@ export class ScopeHandler {
         );
     }
 
-    await this.scopeCache.roles.set(cacheKey, new Set(roleIds));
+    await this.cache.roles.set(cacheKey, new Set(roleIds));
     return roleIds;
   }
 
   async getScopedUserIds(scope: Scope): Promise<string[]> {
     const cacheKey = this.createCacheKey(scope);
 
-    const cachedUsers = await this.scopeCache.users.get(cacheKey);
+    const cachedUsers = await this.cache.users.get(cacheKey);
     if (cachedUsers) {
       return Array.from(cachedUsers.values());
     }
@@ -181,14 +168,14 @@ export class ScopeHandler {
         );
     }
 
-    await this.scopeCache.users.set(cacheKey, new Set(userIds));
+    await this.cache.users.set(cacheKey, new Set(userIds));
     return userIds;
   }
 
   async getScopedGroupIds(scope: Scope): Promise<string[]> {
     const cacheKey = this.createCacheKey(scope);
 
-    const cachedGroups = await this.scopeCache.groups.get(cacheKey);
+    const cachedGroups = await this.cache.groups.get(cacheKey);
     if (cachedGroups) {
       return Array.from(cachedGroups.values());
     }
@@ -226,14 +213,14 @@ export class ScopeHandler {
         );
     }
 
-    await this.scopeCache.groups.set(cacheKey, new Set(groupIds));
+    await this.cache.groups.set(cacheKey, new Set(groupIds));
     return groupIds;
   }
 
   async getScopedPermissionIds(scope: Scope): Promise<string[]> {
     const cacheKey = this.createCacheKey(scope);
 
-    const cachedPermissions = await this.scopeCache.permissions.get(cacheKey);
+    const cachedPermissions = await this.cache.permissions.get(cacheKey);
     if (cachedPermissions) {
       return Array.from(cachedPermissions.values());
     }
@@ -272,14 +259,14 @@ export class ScopeHandler {
         );
     }
 
-    await this.scopeCache.permissions.set(cacheKey, new Set(permissionIds));
+    await this.cache.permissions.set(cacheKey, new Set(permissionIds));
     return permissionIds;
   }
 
   async getScopedTagIds(scope: Scope): Promise<string[]> {
     const cacheKey = this.createCacheKey(scope);
 
-    const cachedTags = await this.scopeCache.tags.get(cacheKey);
+    const cachedTags = await this.cache.tags.get(cacheKey);
     if (cachedTags) {
       return Array.from(cachedTags.values());
     }
@@ -317,55 +304,55 @@ export class ScopeHandler {
         );
     }
 
-    await this.scopeCache.tags.set(cacheKey, new Set(tagIds));
+    await this.cache.tags.set(cacheKey, new Set(tagIds));
     return tagIds;
   }
 
   async addTagIdToScopeCache(scope: Scope, tagId: string): Promise<void> {
-    await this.addIdToCache(this.scopeCache.tags, scope, tagId);
+    await this.addIdToCache(this.cache.tags, scope, tagId);
   }
 
   async removeTagIdFromScopeCache(scope: Scope, tagId: string): Promise<void> {
-    await this.removeIdFromCache(this.scopeCache.tags, scope, tagId);
+    await this.removeIdFromCache(this.cache.tags, scope, tagId);
   }
 
   async addRoleIdToScopeCache(scope: Scope, roleId: string): Promise<void> {
-    await this.addIdToCache(this.scopeCache.roles, scope, roleId);
+    await this.addIdToCache(this.cache.roles, scope, roleId);
   }
 
   async removeRoleIdFromScopeCache(scope: Scope, roleId: string): Promise<void> {
-    await this.removeIdFromCache(this.scopeCache.roles, scope, roleId);
+    await this.removeIdFromCache(this.cache.roles, scope, roleId);
   }
 
   async addUserIdToScopeCache(scope: Scope, userId: string): Promise<void> {
-    await this.addIdToCache(this.scopeCache.users, scope, userId);
+    await this.addIdToCache(this.cache.users, scope, userId);
   }
 
   async removeUserIdFromScopeCache(scope: Scope, userId: string): Promise<void> {
-    await this.removeIdFromCache(this.scopeCache.users, scope, userId);
+    await this.removeIdFromCache(this.cache.users, scope, userId);
   }
 
   async addGroupIdToScopeCache(scope: Scope, groupId: string): Promise<void> {
-    await this.addIdToCache(this.scopeCache.groups, scope, groupId);
+    await this.addIdToCache(this.cache.groups, scope, groupId);
   }
 
   async removeGroupIdFromScopeCache(scope: Scope, groupId: string): Promise<void> {
-    await this.removeIdFromCache(this.scopeCache.groups, scope, groupId);
+    await this.removeIdFromCache(this.cache.groups, scope, groupId);
   }
 
   async addPermissionIdToScopeCache(scope: Scope, permissionId: string): Promise<void> {
-    await this.addIdToCache(this.scopeCache.permissions, scope, permissionId);
+    await this.addIdToCache(this.cache.permissions, scope, permissionId);
   }
 
   async removePermissionIdFromScopeCache(scope: Scope, permissionId: string): Promise<void> {
-    await this.removeIdFromCache(this.scopeCache.permissions, scope, permissionId);
+    await this.removeIdFromCache(this.cache.permissions, scope, permissionId);
   }
 
   async addProjectIdToScopeCache(scope: Scope, projectId: string): Promise<void> {
-    await this.addIdToCache(this.scopeCache.projects, scope, projectId);
+    await this.addIdToCache(this.cache.projects, scope, projectId);
   }
 
   async removeProjectIdFromScopeCache(scope: Scope, projectId: string): Promise<void> {
-    await this.removeIdFromCache(this.scopeCache.projects, scope, projectId);
+    await this.removeIdFromCache(this.cache.projects, scope, projectId);
   }
 }

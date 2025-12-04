@@ -6,10 +6,10 @@ import { AccountType } from '@logusgraphics/grant-schema';
 import { Building2, User } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import { CreateComplementaryAccountDialog } from '@/components/settings/CreateComplementaryAccountDialog';
 import { SettingsCard } from '@/components/settings/SettingsCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useCreateComplementaryAccount } from '@/hooks/accounts';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -25,10 +25,11 @@ export function AccountTypeCard({
   accountCount,
 }: AccountTypeCardProps) {
   const t = useTranslations('settings.account');
-  const tCommon = useTranslations('common.accountTypes');
+  const tCommon = useTranslations('common');
   const tAccountTypes = useTranslations('common.accountTypes');
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const { accounts, getCurrentAccount, setCurrentAccount } = useAuthStore();
+  const { createComplementaryAccount } = useCreateComplementaryAccount();
   const currentAccount = getCurrentAccount();
 
   const complementaryType =
@@ -37,6 +38,15 @@ export function AccountTypeCard({
 
   const handleAccountSwitch = (accountId: string) => {
     setCurrentAccount(accountId);
+  };
+
+  const handleCreateComplementary = async () => {
+    setIsCreating(true);
+    try {
+      await createComplementaryAccount();
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   return (
@@ -71,12 +81,19 @@ export function AccountTypeCard({
                 ),
               })}
             </p>
-            <Button variant="outline" size="sm" onClick={() => setDialogOpen(true)}>
-              {t('type.complementary.action', {
-                type: tCommon(
-                  complementaryType === AccountType.Organization ? 'organization' : 'personal'
-                ),
-              })}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCreateComplementary}
+              disabled={isCreating}
+            >
+              {isCreating
+                ? tCommon('actions.creating')
+                : t('type.complementary.action', {
+                    type: tAccountTypes(
+                      complementaryType === AccountType.Organization ? 'organization' : 'personal'
+                    ),
+                  })}
             </Button>
           </div>
         )}
@@ -121,11 +138,6 @@ export function AccountTypeCard({
                             ? tAccountTypes('organization')
                             : tAccountTypes('personal')}
                         </span>
-                        {account.slug && (
-                          <span className="text-xs text-muted-foreground truncate">
-                            @{account.slug}
-                          </span>
-                        )}
                       </div>
                     </div>
                   </button>
@@ -141,12 +153,6 @@ export function AccountTypeCard({
           </p>
         </div>
       </div>
-
-      <CreateComplementaryAccountDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        complementaryType={complementaryType}
-      />
     </SettingsCard>
   );
 }

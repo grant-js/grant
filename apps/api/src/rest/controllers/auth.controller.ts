@@ -1,5 +1,6 @@
 import { Response } from 'express';
 
+import { AuthenticationError } from '@/lib/errors';
 import { BaseController } from '@/rest/controllers/base.controller';
 import {
   loginRequestSchema,
@@ -56,12 +57,10 @@ export class AuthController extends BaseController {
    */
   async register(req: TypedRequest<{ body: typeof registerRequestSchema }>, res: Response) {
     const { body } = req;
-    const { name, username, type, provider, providerId, providerData } = body;
+    const { type, provider, providerId, providerData } = body;
 
     const result = await this.handlers.accounts.createAccount(
       {
-        name,
-        username,
         type,
         provider,
         providerId,
@@ -169,6 +168,21 @@ export class AuthController extends BaseController {
       newPassword,
       this.context.locale
     );
+
+    this.success(res, result);
+  }
+
+  /**
+   * Get current user info endpoint
+   * GET /api/auth/me
+   * Requires authentication via Authorization header
+   */
+  async me(req: TypedRequest, res: Response) {
+    if (!this.context.user) {
+      throw new AuthenticationError('Authentication required', 'errors:auth.unauthorized');
+    }
+
+    const result = await this.handlers.accounts.getMe(this.context.user.id);
 
     this.success(res, result);
   }

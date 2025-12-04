@@ -60,4 +60,5 @@ export interface IEntityCacheAdapter {
   permissions: ICacheAdapter;
   tags: ICacheAdapter;
   projects: ICacheAdapter;
+  oauth: ICacheAdapter;
 }

@@ -18,8 +18,6 @@ type UserExportData {
 
 type AccountExportData {
   id: ID!
-  name: String!
-  slug: String!
   type: String!
   createdAt: Date!
   updatedAt: Date!

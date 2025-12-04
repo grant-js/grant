@@ -18,11 +18,11 @@ import { ScopeHandler } from './base/scope-handler';
 
 export class TagHandler extends ScopeHandler {
   constructor(
-    readonly scopeCache: IEntityCacheAdapter,
+    readonly cache: IEntityCacheAdapter,
     readonly services: Services,
     readonly db: DbSchema
   ) {
-    super(scopeCache, services);
+    super(cache, services);
   }
 
   public async getTags(params: QueryTagsArgs & SelectedFields<TagModel>): Promise<TagPage> {

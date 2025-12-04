@@ -10,6 +10,7 @@ import {
   UpdateUserAuthenticationMethodInput,
   User,
   UserAuthenticationMethod,
+  UserAuthenticationMethodProvider,
 } from '@logusgraphics/grant-schema';
 
 import { BadRequestError } from '@/lib/errors';
@@ -184,5 +185,46 @@ export class UserAuthenticationMethodRepository extends EntityRepository<
     );
 
     return result.items[0] || null;
+  }
+
+  async findByEmail(
+    email: string,
+    transaction?: Transaction
+  ): Promise<UserAuthenticationMethod | null> {
+    const emailProviderResult = await this.query(
+      {
+        filters: [
+          { field: 'provider', operator: 'eq', value: UserAuthenticationMethodProvider.Email },
+          { field: 'providerId', operator: 'eq', value: email },
+        ],
+        limit: 1,
+      },
+      transaction
+    );
+
+    if (emailProviderResult.items.length > 0) {
+      return emailProviderResult.items[0];
+    }
+
+    const githubProviderResult = await this.query(
+      {
+        filters: [
+          { field: 'provider', operator: 'eq', value: UserAuthenticationMethodProvider.Github },
+          {
+            field: 'providerData.email' as keyof UserAuthenticationMethodModel,
+            operator: 'eq',
+            value: email,
+          },
+        ],
+        limit: 1,
+      },
+      transaction
+    );
+
+    if (githubProviderResult.items.length > 0) {
+      return githubProviderResult.items[0];
+    }
+
+    return null;
   }
 }

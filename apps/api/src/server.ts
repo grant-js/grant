@@ -63,7 +63,7 @@ async function startServer() {
 
   await apolloServer.start();
 
-  const scopeCache = CacheFactory.createEntityCache({
+  const cache = CacheFactory.createEntityCache({
     strategy: config.cache.strategy,
     redis:
       config.cache.strategy === 'redis'
@@ -85,7 +85,7 @@ async function startServer() {
   }
 
   app.use(authMiddleware);
-  app.use(contextMiddleware(db, scopeCache));
+  app.use(contextMiddleware(db, cache));
   app.use(requestLoggingMiddleware);
 
   const openApiDocument = generateOpenApiDocument();
@@ -124,7 +124,7 @@ async function startServer() {
   await new Promise<void>((resolve) => httpServer.listen({ port: config.app.port }, resolve));
 
   try {
-    await initializeJobs(createAppContext(db));
+    await initializeJobs(createAppContext(db, cache));
   } catch (error) {
     logger.warn({ err: error }, 'Failed to initialize job scheduling, continuing without jobs');
   }
@@ -168,7 +168,7 @@ async function startServer() {
       }
 
       try {
-        await CacheFactory.disconnect(scopeCache);
+        await CacheFactory.disconnect(cache);
         logger.info('Cache disconnected');
       } catch (error) {
         logger.error({

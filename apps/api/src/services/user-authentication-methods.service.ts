@@ -35,6 +35,8 @@ import {
 import {
   createUserAuthenticationMethodInputSchema,
   deleteUserAuthenticationMethodArgsSchema,
+  emailProviderDataSchema,
+  githubProviderDataSchema,
   parseProviderDataSchema,
   passwordPolicySchema,
   queryUserAuthenticationMethodsArgsSchema,
@@ -45,6 +47,7 @@ import {
 interface ProcessedProvider {
   providerData: Record<string, unknown>;
   isVerified: boolean;
+  name: string;
 }
 
 export type Otp = Token;
@@ -58,9 +61,15 @@ export class UserAuthenticationMethodService extends AuditService {
     super(userAuthenticationMethodsAuditLogs, 'userAuthenticationMethodId', user, db);
   }
 
-  private async getUserAuthenticationMethod(id: string): Promise<UserAuthenticationMethod> {
+  public async getUserAuthenticationMethod(
+    id: string,
+    transaction?: Transaction
+  ): Promise<UserAuthenticationMethod> {
     const method =
-      await this.repositories.userAuthenticationMethodRepository.getUserAuthenticationMethod(id);
+      await this.repositories.userAuthenticationMethodRepository.getUserAuthenticationMethod(
+        id,
+        transaction
+      );
 
     if (!method) {
       throw new NotFoundError('User authentication method not found', 'errors:auth.methodNotFound');
@@ -90,14 +99,28 @@ export class UserAuthenticationMethodService extends AuditService {
     return null;
   }
 
+  public async getUserAuthenticationMethodByEmail(
+    email: string,
+    transaction?: Transaction
+  ): Promise<UserAuthenticationMethod | null> {
+    const method = await this.repositories.userAuthenticationMethodRepository.findByEmail(
+      email,
+      transaction
+    );
+
+    return method || null;
+  }
+
   public async getUserAuthenticationMethods(
-    params: GetUserAuthenticationMethodsInput & SelectedFields<UserAuthenticationMethod>
+    params: GetUserAuthenticationMethodsInput & SelectedFields<UserAuthenticationMethod>,
+    transaction?: Transaction
   ): Promise<UserAuthenticationMethod[]> {
     const context = 'UserAuthenticationMethodService.getUserAuthenticationMethods';
     validateInput(queryUserAuthenticationMethodsArgsSchema, params, context);
     const result =
       await this.repositories.userAuthenticationMethodRepository.getUserAuthenticationMethods(
-        params
+        params,
+        transaction
       );
 
     return result.map((method: UserAuthenticationMethod) => {
@@ -115,11 +138,47 @@ export class UserAuthenticationMethodService extends AuditService {
 
     validateInput(createUserAuthenticationMethodInputSchema, params, context);
 
-    await this.validateProviderUniqueness(params.provider, params.providerId, transaction);
+    // Check if THIS USER already has this provider type (prevent duplicate providers per user)
+    const existingMethods = await this.getUserAuthenticationMethods(
+      { userId: params.userId },
+      transaction
+    );
+
+    const hasProvider = existingMethods.some((m) => m.provider === params.provider);
+    if (hasProvider) {
+      throw new BadRequestError(
+        `User already has a ${params.provider} authentication method`,
+        'errors:auth.duplicateProvider',
+        { provider: params.provider }
+      );
+    }
+
+    // Check if provider+providerId combination exists for another user (cross-user conflict)
+    // This validates global uniqueness and provides a better error message
+    const existingAuthMethod = await this.findByProviderAndProviderId(
+      params.provider,
+      params.providerId,
+      transaction
+    );
+
+    if (existingAuthMethod && existingAuthMethod.userId !== params.userId) {
+      throw new ConflictError(
+        'This authentication method is already connected to another account',
+        'errors:auth.providerAlreadyConnected',
+        { provider: params.provider, providerId: params.providerId }
+      );
+    }
+
+    // Determine if this should be primary (set as primary if no primary exists)
+    const hasPrimaryMethod = existingMethods.some((m) => m.isPrimary);
+    const isPrimary = !hasPrimaryMethod;
 
     const userAuthenticationMethod =
       await this.repositories.userAuthenticationMethodRepository.createUserAuthenticationMethod(
-        params,
+        {
+          ...params,
+          isPrimary, // Explicitly set isPrimary
+        },
         transaction
       );
 
@@ -206,6 +265,28 @@ export class UserAuthenticationMethodService extends AuditService {
     );
   }
 
+  public async setPrimaryAuthenticationMethod(
+    id: string,
+    transaction?: Transaction
+  ): Promise<UserAuthenticationMethod> {
+    const method = await this.getUserAuthenticationMethod(id);
+
+    // Get all user's authentication methods
+    const allMethods = await this.getUserAuthenticationMethods(
+      { userId: method.userId },
+      transaction
+    );
+
+    // Unset all other primary methods
+    const otherPrimaryMethods = allMethods.filter((m) => m.id !== id && m.isPrimary);
+    for (const otherMethod of otherPrimaryMethods) {
+      await this.updateUserAuthenticationMethod(otherMethod.id, { isPrimary: false }, transaction);
+    }
+
+    // Set this method as primary
+    return await this.updateUserAuthenticationMethod(id, { isPrimary: true }, transaction);
+  }
+
   public async deleteUserAuthenticationMethod(
     params: Omit<DeleteUserAuthenticationMethodInput, 'scope'> & DeleteParams,
     transaction?: Transaction
@@ -219,6 +300,28 @@ export class UserAuthenticationMethodService extends AuditService {
     const { id, hardDelete } = validatedParams;
 
     const oldUserAuthenticationMethod = await this.getUserAuthenticationMethod(id);
+
+    // Prevent deletion of primary authentication method
+    if (oldUserAuthenticationMethod.isPrimary) {
+      throw new BadRequestError(
+        'Cannot delete primary authentication method',
+        'errors:auth.cannotDeletePrimary'
+      );
+    }
+
+    // Prevent deletion of last authentication method
+    const allMethods = await this.getUserAuthenticationMethods(
+      { userId: oldUserAuthenticationMethod.userId },
+      transaction
+    );
+
+    if (allMethods.length === 1) {
+      throw new BadRequestError(
+        'Cannot delete last authentication method',
+        'errors:auth.cannotDeleteLastMethod'
+      );
+    }
+
     const isHardDelete = hardDelete === true;
 
     const deletedUserAuthenticationMethod = isHardDelete
@@ -280,32 +383,32 @@ export class UserAuthenticationMethodService extends AuditService {
     providerData: Record<string, unknown>,
     context: string
   ): ProcessedProvider {
-    const { password, action } = providerData;
-    if (!password || typeof password !== 'string') {
-      throw new ValidationError(
-        'Password is required and must be a string',
-        [],
-        'errors:auth.passwordRequired'
-      );
-    }
-    if (!email || typeof email !== 'string') {
-      throw new ValidationError(
-        'Email is required and must be a string',
-        [],
-        'errors:auth.emailRequired'
-      );
-    }
+    // Validate email format
     validateInput(emailSchema, email, context);
-    switch (action) {
+
+    // Extract name from email (left side before @)
+    const emailName = email.split('@')[0] || 'User';
+
+    // Validate provider data structure
+    const validatedProviderData = validateInput(emailProviderDataSchema, providerData, context);
+
+    switch (validatedProviderData.action) {
       case UserAuthenticationEmailProviderAction.Login:
         return {
           providerData: {
-            password,
+            password: validatedProviderData.password,
           },
           isVerified: false,
+          name: emailName,
         };
-      case UserAuthenticationEmailProviderAction.Signup: {
-        const validatedPassword = validateInput(passwordPolicySchema, password, context);
+      case UserAuthenticationEmailProviderAction.Register:
+      case UserAuthenticationEmailProviderAction.Connect: {
+        // Validate password meets policy requirements
+        const validatedPassword = validateInput(
+          passwordPolicySchema,
+          validatedProviderData.password,
+          context
+        );
         const hashedPassword = this.hashPassword(validatedPassword);
         const otp = this.generateOtp();
         return {
@@ -314,6 +417,7 @@ export class UserAuthenticationMethodService extends AuditService {
             hashedPassword,
           },
           isVerified: false,
+          name: emailName,
         };
       }
       default:
@@ -327,16 +431,45 @@ export class UserAuthenticationMethodService extends AuditService {
     _context: string
   ): ProcessedProvider {
     // TODO: implement google provider
-    return { providerData, isVerified: false };
+    const name = (providerData.name as string) || providerId || 'User';
+    return { providerData, isVerified: false, name };
   }
 
   private processGithubProvider(
     providerId: string,
     providerData: Record<string, unknown>,
-    _context: string
+    context: string
   ): ProcessedProvider {
-    // TODO: implement github provider
-    return { providerData, isVerified: false };
+    // Validate provider data structure
+    const validatedProviderData = validateInput(githubProviderDataSchema, providerData, context);
+
+    // Validate providerId matches githubId
+    const githubIdStr = validatedProviderData.githubId.toString();
+    if (providerId !== githubIdStr) {
+      throw new ValidationError(
+        'Provider ID must match GitHub user ID',
+        [],
+        'errors:auth.providerIdMismatch'
+      );
+    }
+
+    // Extract name from GitHub provider data
+    const name = validatedProviderData.name || providerId || 'User';
+
+    // Store GitHub-specific data
+    // GitHub accounts are considered verified (no email verification needed)
+    return {
+      providerData: {
+        accessToken: validatedProviderData.accessToken, // Store for future GitHub API calls
+        githubId: validatedProviderData.githubId,
+        email: validatedProviderData.email || null, // Email may be null if private
+        name: validatedProviderData.name || null, // Display name
+        avatarUrl: validatedProviderData.avatarUrl || null, // Profile picture URL
+        verifiedAt: new Date().toISOString(), // GitHub accounts are pre-verified
+      },
+      isVerified: true, // GitHub accounts are pre-verified
+      name,
+    };
   }
 
   private async findByProviderAndProviderId(
@@ -479,7 +612,6 @@ export class UserAuthenticationMethodService extends AuditService {
       await this.repositories.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
         targetMethod.id,
         {
-          id: targetMethod.id,
           isVerified: true,
           providerData: updatedProviderData,
         },
@@ -522,7 +654,6 @@ export class UserAuthenticationMethodService extends AuditService {
     await this.repositories.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
       method.id,
       {
-        id: method.id,
         providerData,
       },
       transaction
@@ -555,7 +686,6 @@ export class UserAuthenticationMethodService extends AuditService {
     await this.repositories.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
       method.id,
       {
-        id: method.id,
         providerData,
       },
       transaction
@@ -608,7 +738,6 @@ export class UserAuthenticationMethodService extends AuditService {
     await this.repositories.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
       targetMethod.id,
       {
-        id: targetMethod.id,
         providerData,
       },
       transaction
@@ -679,7 +808,6 @@ export class UserAuthenticationMethodService extends AuditService {
     await this.repositories.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
       emailMethod.id,
       {
-        id: emailMethod.id,
         providerData,
       },
       transaction

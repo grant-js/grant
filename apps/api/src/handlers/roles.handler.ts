@@ -20,11 +20,11 @@ import { ScopeHandler } from './base/scope-handler';
 
 export class RoleHandler extends ScopeHandler {
   constructor(
-    readonly scopeCache: IEntityCacheAdapter,
+    readonly cache: IEntityCacheAdapter,
     readonly services: Services,
     readonly db: DbSchema
   ) {
-    super(scopeCache, services);
+    super(cache, services);
   }
 
   public async getRoles(params: QueryRolesArgs & SelectedFields<Role>): Promise<RolePage> {

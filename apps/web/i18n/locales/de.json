@@ -15,8 +15,8 @@
       }
     },
     "account": {
-      "switchAccount": "Konten",
-      "currentAccount": "Aktuelles Konto"
+      "switchAccount": "Arbeitsbereiche",
+      "currentAccount": "Aktueller Arbeitsbereich"
     },
     "accountTypes": {
       "personal": "Persönlich",
@@ -294,6 +294,20 @@
       "passwordMatch": "Die Passwörter stimmen nicht überein",
       "username": "Der Benutzername muss mindestens 3 Zeichen lang sein",
       "usernameUnique": "Dieser Benutzername ist bereits vergeben. Bitte wählen Sie einen anderen."
+    },
+    "github": {
+      "signIn": "Mit GitHub anmelden",
+      "signInWith": "Anmelden mit",
+      "signUp": "Mit GitHub registrieren",
+      "signUpWith": "Registrieren mit",
+      "continue": "Mit GitHub fortfahren",
+      "or": "Oder",
+      "callback": {
+        "processing": "Authentifizierung wird verarbeitet...",
+        "success": "Erfolgreich mit GitHub authentifiziert",
+        "error": "GitHub-Authentifizierung fehlgeschlagen",
+        "errorDescription": "Bei der GitHub-Authentifizierung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut."
+      }
     }
   },
   "users": {
@@ -1342,11 +1356,11 @@
     },
     "account": {
       "title": "Kontoinformationen",
-      "description": "Verwalten Sie Ihre Kontoeinstellungen und Informationen",
+      "description": "Anzeigen, zwischen Arbeitsbereichen wechseln und/oder einen ergänzenden Arbeitsbereich erstellen",
       "details": {
         "title": "Konto",
         "titlePlural": "Konten",
-        "description": "Verwalten Sie Ihre Kontodetails und wechseln Sie zwischen Konten"
+        "description": "Anzeigen und zwischen Arbeitsbereichen wechseln"
       },
       "information": {
         "title": "Kontodetails",
@@ -1370,7 +1384,7 @@
       "type": {
         "title": "Kontotyp",
         "description": "Ihr Kontotyp bestimmt die verfügbaren Funktionen",
-        "currentAccount": "Aktuelles Konto",
+        "currentAccount": "Aktueller Arbeitsbereich",
         "features": {
           "personal": {
             "title": "Funktionen des persönlichen Kontos",
@@ -1386,11 +1400,11 @@
           }
         },
         "complementary": {
-          "title": "Erstellen Sie ein ergänzendes Konto",
-          "description": "Sie können auch ein {type} Konto erstellen, um auf zusätzliche Funktionen zuzugreifen.",
-          "action": "{type} Konto erstellen",
-          "dialogTitle": "{type} Konto erstellen",
-          "dialogDescription": "Geben Sie die Details für Ihr neues {type} Konto ein. Dieses Konto wird von Ihrem aktuellen Konto getrennt sein."
+          "title": "Erstellen Sie einen ergänzenden Arbeitsbereich",
+          "description": "Sie können auch einen {type} Arbeitsbereich erstellen, um auf zusätzliche Funktionen zuzugreifen.",
+          "action": "{type} Arbeitsbereich erstellen",
+          "dialogTitle": "{type} Arbeitsbereich erstellen",
+          "dialogDescription": "Sind Sie sicher, dass Sie einen {type} Arbeitsbereich erstellen möchten? Dieser Arbeitsbereich wird von Ihrem aktuellen Arbeitsbereich getrennt sein."
         },
         "switchAccount": "Konto wechseln",
         "immutable": {
@@ -1474,7 +1488,28 @@
         "unverified": "Nicht verifiziert",
         "lastUsed": "Zuletzt verwendet",
         "changePassword": "Passwort ändern",
-        "connect": "Verbinden"
+        "connect": "Verbinden",
+        "disconnect": "Trennen",
+        "setAsPrimary": "Als primär festlegen",
+        "cannotDisconnectPrimary": "Primäre Authentifizierungsmethode kann nicht getrennt werden",
+        "cannotDisconnectLastMethod": "Ihre letzte Authentifizierungsmethode kann nicht getrennt werden. Bitte fügen Sie zuerst eine andere Methode hinzu.",
+        "githubConnected": "GitHub-Konto erfolgreich verbunden",
+        "githubConnectError": "GitHub-Konto konnte nicht verbunden werden",
+        "emailConnected": "E-Mail-Authentifizierungsmethode erfolgreich hinzugefügt",
+        "emailConnectError": "E-Mail-Authentifizierungsmethode konnte nicht hinzugefügt werden",
+        "disconnected": "{provider} Konto erfolgreich getrennt",
+        "disconnectError": "Authentifizierungsmethode konnte nicht getrennt werden",
+        "primarySet": "Primäre Authentifizierungsmethode aktualisiert",
+        "setPrimaryError": "Primäre Authentifizierungsmethode konnte nicht festgelegt werden"
+      },
+      "addEmailAuthMethod": {
+        "title": "E-Mail-Authentifizierungsmethode hinzufügen",
+        "description": "Fügen Sie eine E-Mail-Adresse und ein Passwort hinzu, um sich bei Ihrem Konto anzumelden",
+        "email": "E-Mail",
+        "emailPlaceholder": "Geben Sie Ihre E-Mail-Adresse ein",
+        "password": "Passwort",
+        "confirmPassword": "Passwort bestätigen",
+        "submit": "E-Mail-Methode hinzufügen"
       },
       "changePassword": {
         "title": "Passwort ändern",

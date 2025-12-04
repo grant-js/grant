@@ -40,11 +40,9 @@ export type Account = Auditable & {
   createdAt: Scalars['Date']['output'];
   deletedAt?: Maybe<Scalars['Date']['output']>;
   id: Scalars['ID']['output'];
-  name: Scalars['String']['output'];
   owner: User;
   ownerId: Scalars['ID']['output'];
   projects?: Maybe<Array<Project>>;
-  slug: Scalars['String']['output'];
   type: AccountType;
   updatedAt: Scalars['Date']['output'];
 };
@@ -53,8 +51,6 @@ export type AccountExportData = {
   __typename?: 'AccountExportData';
   createdAt: Scalars['Date']['output'];
   id: Scalars['ID']['output'];
-  name: Scalars['String']['output'];
-  slug: Scalars['String']['output'];
   type: Scalars['String']['output'];
   updatedAt: Scalars['Date']['output'];
 };
@@ -79,8 +75,7 @@ export type AccountProject = Auditable & {
 };
 
 export enum AccountSearchableField {
-  Name = 'name',
-  Slug = 'slug',
+  Type = 'type',
 }
 
 export type AccountSortInput = {
@@ -90,8 +85,6 @@ export type AccountSortInput = {
 
 export enum AccountSortableField {
   CreatedAt = 'createdAt',
-  Name = 'name',
-  Slug = 'slug',
   Type = 'type',
   UpdatedAt = 'updatedAt',
 }
@@ -237,13 +230,11 @@ export type Creatable = {
 };
 
 export type CreateAccountInput = {
-  name: Scalars['String']['input'];
   ownerId: Scalars['String']['input'];
   provider: UserAuthenticationMethodProvider;
   providerData: Scalars['JSON']['input'];
   providerId: Scalars['String']['input'];
   type: AccountType;
-  username?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type CreateAccountResult = {
@@ -257,8 +248,7 @@ export type CreateAccountResult = {
 };
 
 export type CreateComplementaryAccountInput = {
-  name: Scalars['String']['input'];
-  username?: InputMaybe<Scalars['String']['input']>;
+  _unused?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type CreateComplementaryAccountResult = {
@@ -346,8 +336,7 @@ export type DeleteAccountInput = {
 };
 
 export type DeleteUserAuthenticationMethodInput = {
-  __typename?: 'DeleteUserAuthenticationMethodInput';
-  id: Scalars['ID']['output'];
+  id: Scalars['ID']['input'];
 };
 
 export type DeleteUserSessionInput = {
@@ -469,6 +458,14 @@ export type LoginResponse = {
   verificationExpiry?: Maybe<Scalars['Date']['output']>;
 };
 
+export type MeResponse = {
+  __typename?: 'MeResponse';
+  accounts: Array<Account>;
+  email?: Maybe<Scalars['String']['output']>;
+  requiresEmailVerification?: Maybe<Scalars['Boolean']['output']>;
+  verificationExpiry?: Maybe<Scalars['Date']['output']>;
+};
+
 export enum MemberType {
   Invitation = 'invitation',
   Member = 'member',
@@ -487,6 +484,7 @@ export type Mutation = {
   createRole: Role;
   createTag: Tag;
   createUser: User;
+  createUserAuthenticationMethod: UserAuthenticationMethod;
   deleteAccount: User;
   deleteGroup: Group;
   deleteOrganization: Organization;
@@ -495,6 +493,7 @@ export type Mutation = {
   deleteRole: Role;
   deleteTag: Tag;
   deleteUser: User;
+  deleteUserAuthenticationMethod: UserAuthenticationMethod;
   inviteMember: OrganizationInvitation;
   login: LoginResponse;
   refreshSession: RefreshSessionResponse;
@@ -506,7 +505,7 @@ export type Mutation = {
   resetPassword: ResetPasswordResponse;
   revokeInvitation: OrganizationInvitation;
   revokeUserSession: RevokeUserSessionResult;
-  updateAccount: Account;
+  setPrimaryAuthenticationMethod: UserAuthenticationMethod;
   updateGroup: Group;
   updateOrganization: Organization;
   updateOrganizationMember: OrganizationMember;
@@ -559,6 +558,10 @@ export type MutationCreateUserArgs = {
   input: CreateUserInput;
 };
 
+export type MutationCreateUserAuthenticationMethodArgs = {
+  input: CreateUserAuthenticationMethodInput;
+};
+
 export type MutationDeleteAccountArgs = {
   input: DeleteAccountInput;
 };
@@ -595,6 +598,10 @@ export type MutationDeleteTagArgs = {
 export type MutationDeleteUserArgs = {
   id: Scalars['ID']['input'];
   scope: Scope;
+};
+
+export type MutationDeleteUserAuthenticationMethodArgs = {
+  input: DeleteUserAuthenticationMethodInput;
 };
 
 export type MutationInviteMemberArgs = {
@@ -642,9 +649,8 @@ export type MutationRevokeUserSessionArgs = {
   id: Scalars['ID']['input'];
 };
 
-export type MutationUpdateAccountArgs = {
+export type MutationSetPrimaryAuthenticationMethodArgs = {
   id: Scalars['ID']['input'];
-  input: UpdateAccountInput;
 };
 
 export type MutationUpdateGroupArgs = {
@@ -1096,10 +1102,10 @@ export type Query = {
   __typename?: 'Query';
   _empty?: Maybe<Scalars['String']['output']>;
   accounts: AccountPage;
-  checkUsername: UsernameAvailability;
   exportUserData: UserDataExport;
   groups: GroupPage;
   invitation?: Maybe<OrganizationInvitation>;
+  me: MeResponse;
   organizationInvitations: OrganizationInvitationPage;
   organizationMembers: OrganizationMemberPage;
   organizations: OrganizationPage;
@@ -1118,10 +1124,6 @@ export type QueryAccountsArgs = {
   page?: InputMaybe<Scalars['Int']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
   sort?: InputMaybe<AccountSortInput>;
-};
-
-export type QueryCheckUsernameArgs = {
-  username: Scalars['String']['input'];
 };
 
 export type QueryGroupsArgs = {
@@ -1229,12 +1231,10 @@ export type RefreshSessionResponse = {
 };
 
 export type RegisterInput = {
-  name: Scalars['String']['input'];
   provider: UserAuthenticationMethodProvider;
   providerData: Scalars['JSON']['input'];
   providerId: Scalars['String']['input'];
   type: AccountType;
-  username?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type RemoveAccountProjectInput = {
@@ -1517,11 +1517,6 @@ export enum Tenant {
   Project = 'project',
 }
 
-export type UpdateAccountInput = {
-  name?: InputMaybe<Scalars['String']['input']>;
-  slug?: InputMaybe<Scalars['String']['input']>;
-};
-
 export type UpdateGroupInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
@@ -1597,7 +1592,6 @@ export type UpdateTagInput = {
 };
 
 export type UpdateUserAuthenticationMethodInput = {
-  id: Scalars['ID']['input'];
   isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
   isVerified?: InputMaybe<Scalars['Boolean']['input']>;
   provider?: InputMaybe<UserAuthenticationMethodProvider>;
@@ -1654,8 +1648,9 @@ export type User = Auditable & {
 };
 
 export enum UserAuthenticationEmailProviderAction {
+  Connect = 'connect',
   Login = 'login',
-  Signup = 'signup',
+  Register = 'register',
 }
 
 export type UserAuthenticationMethod = Auditable & {
@@ -1806,12 +1801,6 @@ export type UserTagUserArgs = {
   scope: Scope;
 };
 
-export type UsernameAvailability = {
-  __typename?: 'UsernameAvailability';
-  available: Scalars['Boolean']['output'];
-  username: Scalars['String']['output'];
-};
-
 export type VerifyEmailInput = {
   token: Scalars['String']['input'];
 };
@@ -1821,15 +1810,6 @@ export type VerifyEmailResponse = {
   message: Scalars['String']['output'];
   messageKey?: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
-};
-
-export type CheckUsernameQueryVariables = Exact<{
-  username: Scalars['String']['input'];
-}>;
-
-export type CheckUsernameQuery = {
-  __typename?: 'Query';
-  checkUsername: { __typename?: 'UsernameAvailability'; available: boolean; username: string };
 };
 
 export type CreateComplementaryAccountMutationVariables = Exact<{
@@ -1843,8 +1823,6 @@ export type CreateComplementaryAccountMutation = {
     account: {
       __typename?: 'Account';
       id: string;
-      name: string;
-      slug: string;
       type: AccountType;
       ownerId: string;
       createdAt: Date;
@@ -1860,8 +1838,6 @@ export type CreateComplementaryAccountMutation = {
     accounts: Array<{
       __typename?: 'Account';
       id: string;
-      name: string;
-      slug: string;
       type: AccountType;
       ownerId: string;
       createdAt: Date;
@@ -1910,8 +1886,6 @@ export type GetAccountsQuery = {
     accounts: Array<{
       __typename?: 'Account';
       id: string;
-      name: string;
-      slug: string;
       type: AccountType;
       ownerId: string;
       createdAt: Date;
@@ -1924,25 +1898,6 @@ export type GetAccountsQuery = {
         updatedAt: Date;
       };
     }>;
-  };
-};
-
-export type UpdateAccountMutationVariables = Exact<{
-  id: Scalars['ID']['input'];
-  input: UpdateAccountInput;
-}>;
-
-export type UpdateAccountMutation = {
-  __typename?: 'Mutation';
-  updateAccount: {
-    __typename?: 'Account';
-    id: string;
-    name: string;
-    slug: string;
-    type: AccountType;
-    ownerId: string;
-    createdAt: Date;
-    updatedAt: Date;
   };
 };
 
@@ -1962,14 +1917,40 @@ export type LoginMutation = {
     accounts: Array<{
       __typename?: 'Account';
       id: string;
-      name: string;
-      slug: string;
       type: AccountType;
       owner: {
         __typename?: 'User';
         id: string;
         name: string;
         pictureUrl?: string | null;
+        updatedAt: Date;
+      };
+    }>;
+  };
+};
+
+export type MeQueryVariables = Exact<{ [key: string]: never }>;
+
+export type MeQuery = {
+  __typename?: 'Query';
+  me: {
+    __typename?: 'MeResponse';
+    requiresEmailVerification?: boolean | null;
+    verificationExpiry?: Date | null;
+    email?: string | null;
+    accounts: Array<{
+      __typename?: 'Account';
+      id: string;
+      type: AccountType;
+      ownerId: string;
+      createdAt: Date;
+      updatedAt: Date;
+      owner: {
+        __typename?: 'User';
+        id: string;
+        name: string;
+        pictureUrl?: string | null;
+        createdAt: Date;
         updatedAt: Date;
       };
     }>;
@@ -2006,8 +1987,6 @@ export type RegisterMutation = {
     account: {
       __typename?: 'Account';
       id: string;
-      name: string;
-      slug: string;
       type: AccountType;
       owner: {
         __typename?: 'User';
@@ -2178,13 +2157,7 @@ export type AcceptInvitationMutation = {
     requiresRegistration: boolean;
     isNewUser?: boolean | null;
     user?: { __typename?: 'User'; id: string; name: string; createdAt: Date } | null;
-    accounts: Array<{
-      __typename?: 'Account';
-      id: string;
-      name: string;
-      slug: string;
-      type: AccountType;
-    }>;
+    accounts: Array<{ __typename?: 'Account'; id: string; type: AccountType }>;
     invitation?: {
       __typename?: 'OrganizationInvitation';
       id: string;
@@ -2823,6 +2796,46 @@ export type ChangePasswordMutation = {
   changePassword: { __typename?: 'ChangePasswordResult'; success: boolean; message: string };
 };
 
+export type CreateUserAuthenticationMethodMutationVariables = Exact<{
+  input: CreateUserAuthenticationMethodInput;
+}>;
+
+export type CreateUserAuthenticationMethodMutation = {
+  __typename?: 'Mutation';
+  createUserAuthenticationMethod: {
+    __typename?: 'UserAuthenticationMethod';
+    id: string;
+    userId: string;
+    provider: UserAuthenticationMethodProvider;
+    providerId: string;
+    isVerified: boolean;
+    isPrimary: boolean;
+    lastUsedAt?: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+};
+
+export type DeleteUserAuthenticationMethodMutationVariables = Exact<{
+  input: DeleteUserAuthenticationMethodInput;
+}>;
+
+export type DeleteUserAuthenticationMethodMutation = {
+  __typename?: 'Mutation';
+  deleteUserAuthenticationMethod: {
+    __typename?: 'UserAuthenticationMethod';
+    id: string;
+    userId: string;
+    provider: UserAuthenticationMethodProvider;
+    providerId: string;
+    isVerified: boolean;
+    isPrimary: boolean;
+    lastUsedAt?: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+};
+
 export type GetUserAuthenticationMethodsQueryVariables = Exact<{
   input: GetUserAuthenticationMethodsInput;
 }>;
@@ -2841,6 +2854,26 @@ export type GetUserAuthenticationMethodsQuery = {
     createdAt: Date;
     updatedAt: Date;
   }>;
+};
+
+export type SetPrimaryAuthenticationMethodMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+export type SetPrimaryAuthenticationMethodMutation = {
+  __typename?: 'Mutation';
+  setPrimaryAuthenticationMethod: {
+    __typename?: 'UserAuthenticationMethod';
+    id: string;
+    userId: string;
+    provider: UserAuthenticationMethodProvider;
+    providerId: string;
+    isVerified: boolean;
+    isPrimary: boolean;
+    lastUsedAt?: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+  };
 };
 
 export type GetUserSessionsQueryVariables = Exact<{
@@ -2919,8 +2952,6 @@ export type ExportUserDataQuery = {
     accounts: Array<{
       __typename?: 'AccountExportData';
       id: string;
-      name: string;
-      slug: string;
       type: string;
       createdAt: Date;
       updatedAt: Date;
@@ -3023,49 +3054,6 @@ export type UploadUserPictureMutation = {
   uploadUserPicture: { __typename?: 'UploadUserPictureResult'; url: string; path: string };
 };
 
-export const CheckUsernameDocument = {
-  kind: 'Document',
-  definitions: [
-    {
-      kind: 'OperationDefinition',
-      operation: 'query',
-      name: { kind: 'Name', value: 'CheckUsername' },
-      variableDefinitions: [
-        {
-          kind: 'VariableDefinition',
-          variable: { kind: 'Variable', name: { kind: 'Name', value: 'username' } },
-          type: {
-            kind: 'NonNullType',
-            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: 'SelectionSet',
-        selections: [
-          {
-            kind: 'Field',
-            name: { kind: 'Name', value: 'checkUsername' },
-            arguments: [
-              {
-                kind: 'Argument',
-                name: { kind: 'Name', value: 'username' },
-                value: { kind: 'Variable', name: { kind: 'Name', value: 'username' } },
-              },
-            ],
-            selectionSet: {
-              kind: 'SelectionSet',
-              selections: [
-                { kind: 'Field', name: { kind: 'Name', value: 'available' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'username' } },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<CheckUsernameQuery, CheckUsernameQueryVariables>;
 export const CreateComplementaryAccountDocument = {
   kind: 'Document',
   definitions: [
@@ -3109,8 +3097,6 @@ export const CreateComplementaryAccountDocument = {
                     kind: 'SelectionSet',
                     selections: [
                       { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'type' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'ownerId' } },
                       {
@@ -3138,8 +3124,6 @@ export const CreateComplementaryAccountDocument = {
                     kind: 'SelectionSet',
                     selections: [
                       { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'type' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'ownerId' } },
                       {
@@ -3300,8 +3284,6 @@ export const GetAccountsDocument = {
                     kind: 'SelectionSet',
                     selections: [
                       { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'type' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'ownerId' } },
                       {
@@ -3332,67 +3314,6 @@ export const GetAccountsDocument = {
     },
   ],
 } as unknown as DocumentNode<GetAccountsQuery, GetAccountsQueryVariables>;
-export const UpdateAccountDocument = {
-  kind: 'Document',
-  definitions: [
-    {
-      kind: 'OperationDefinition',
-      operation: 'mutation',
-      name: { kind: 'Name', value: 'UpdateAccount' },
-      variableDefinitions: [
-        {
-          kind: 'VariableDefinition',
-          variable: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
-          type: {
-            kind: 'NonNullType',
-            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
-          },
-        },
-        {
-          kind: 'VariableDefinition',
-          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
-          type: {
-            kind: 'NonNullType',
-            type: { kind: 'NamedType', name: { kind: 'Name', value: 'UpdateAccountInput' } },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: 'SelectionSet',
-        selections: [
-          {
-            kind: 'Field',
-            name: { kind: 'Name', value: 'updateAccount' },
-            arguments: [
-              {
-                kind: 'Argument',
-                name: { kind: 'Name', value: 'id' },
-                value: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
-              },
-              {
-                kind: 'Argument',
-                name: { kind: 'Name', value: 'input' },
-                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
-              },
-            ],
-            selectionSet: {
-              kind: 'SelectionSet',
-              selections: [
-                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'type' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'ownerId' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<UpdateAccountMutation, UpdateAccountMutationVariables>;
 export const LoginDocument = {
   kind: 'Document',
   definitions: [
@@ -3438,8 +3359,6 @@ export const LoginDocument = {
                     kind: 'SelectionSet',
                     selections: [
                       { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'type' } },
                       {
                         kind: 'Field',
@@ -3465,6 +3384,61 @@ export const LoginDocument = {
     },
   ],
 } as unknown as DocumentNode<LoginMutation, LoginMutationVariables>;
+export const MeDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'Me' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'me' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'accounts' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'type' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'ownerId' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'owner' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'requiresEmailVerification' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'verificationExpiry' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<MeQuery, MeQueryVariables>;
 export const RefreshSessionDocument = {
   kind: 'Document',
   definitions: [
@@ -3566,8 +3540,6 @@ export const RegisterDocument = {
                     kind: 'SelectionSet',
                     selections: [
                       { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'type' } },
                       {
                         kind: 'Field',
@@ -4152,8 +4124,6 @@ export const AcceptInvitationDocument = {
                     kind: 'SelectionSet',
                     selections: [
                       { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'type' } },
                     ],
                   },
@@ -6377,6 +6347,118 @@ export const ChangePasswordDocument = {
     },
   ],
 } as unknown as DocumentNode<ChangePasswordMutation, ChangePasswordMutationVariables>;
+export const CreateUserAuthenticationMethodDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'CreateUserAuthenticationMethod' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'CreateUserAuthenticationMethodInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'createUserAuthenticationMethod' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'userId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'provider' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'providerId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isVerified' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isPrimary' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'lastUsedAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  CreateUserAuthenticationMethodMutation,
+  CreateUserAuthenticationMethodMutationVariables
+>;
+export const DeleteUserAuthenticationMethodDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'DeleteUserAuthenticationMethod' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'DeleteUserAuthenticationMethodInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'deleteUserAuthenticationMethod' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'userId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'provider' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'providerId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isVerified' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isPrimary' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'lastUsedAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  DeleteUserAuthenticationMethodMutation,
+  DeleteUserAuthenticationMethodMutationVariables
+>;
 export const GetUserAuthenticationMethodsDocument = {
   kind: 'Document',
   definitions: [
@@ -6432,6 +6514,59 @@ export const GetUserAuthenticationMethodsDocument = {
 } as unknown as DocumentNode<
   GetUserAuthenticationMethodsQuery,
   GetUserAuthenticationMethodsQueryVariables
+>;
+export const SetPrimaryAuthenticationMethodDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'SetPrimaryAuthenticationMethod' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'setPrimaryAuthenticationMethod' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'id' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'userId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'provider' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'providerId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isVerified' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isPrimary' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'lastUsedAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  SetPrimaryAuthenticationMethodMutation,
+  SetPrimaryAuthenticationMethodMutationVariables
 >;
 export const GetUserSessionsDocument = {
   kind: 'Document',
@@ -6691,8 +6826,6 @@ export const ExportUserDataDocument = {
                     kind: 'SelectionSet',
                     selections: [
                       { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'type' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },

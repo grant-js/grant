@@ -3,22 +3,18 @@ import {
   Account,
   AccountPage,
   AccountProject,
-  AccountSearchableField,
   CreateAccountInput,
-  MutationUpdateAccountArgs,
   QueryAccountsArgs,
   User,
 } from '@logusgraphics/grant-schema';
-import { and, eq, isNotNull, isNull, lt } from 'drizzle-orm';
+import { and, isNotNull, lt } from 'drizzle-orm';
 
-import { slugifySafe } from '@/lib/slugify.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { SelectedFields } from '@/services/common';
 
 import {
   BaseCreateArgs,
   BaseDeleteArgs,
-  BaseUpdateArgs,
   EntityRepository,
   RelationsConfig,
 } from './common/EntityRepository';
@@ -26,7 +22,7 @@ import {
 export class AccountRepository extends EntityRepository<AccountModel, Account> {
   protected table = accounts;
   protected schemaName = 'accounts' as const;
-  protected searchFields: Array<keyof AccountModel> = Object.values(AccountSearchableField);
+  protected searchFields: Array<keyof AccountModel> = [];
   protected defaultSortField: keyof AccountModel = 'createdAt';
   protected relations: RelationsConfig<Account> = {
     projects: {
@@ -40,20 +36,6 @@ export class AccountRepository extends EntityRepository<AccountModel, Account> {
       extract: (v: User) => v, // owner is a single User object, not an array
     },
   };
-
-  public generateSlug(name: string): string {
-    return slugifySafe(name);
-  }
-
-  public async findBySlug(slug: string, _transaction?: Transaction): Promise<Account | null> {
-    const result = await this.db
-      .select()
-      .from(this.table)
-      .where(and(eq(this.table.slug, slug), isNull(this.table.deletedAt)))
-      .limit(1);
-
-    return result.length > 0 ? (result[0] as Account) : null;
-  }
 
   public async getAccounts(
     params: QueryAccountsArgs & SelectedFields<Account>,
@@ -73,12 +55,14 @@ export class AccountRepository extends EntityRepository<AccountModel, Account> {
    */
   public async getAccountsByOwnerId(
     ownerId: string,
-    transaction?: Transaction
+    transaction?: Transaction,
+    requestedFields?: Array<keyof Account>
   ): Promise<Account[]> {
     const result = await this.query(
       {
         filters: [{ field: 'ownerId', operator: 'eq', value: ownerId }],
         limit: -1, // Get all accounts
+        requestedFields,
       },
       transaction
     );
@@ -104,26 +88,11 @@ export class AccountRepository extends EntityRepository<AccountModel, Account> {
     transaction?: Transaction
   ): Promise<Account> {
     const baseParams: BaseCreateArgs = {
-      name: params.name,
-      slug: params.username || this.generateSlug(params.name),
       ownerId: params.ownerId,
       type: params.type,
     };
-    return this.create(baseParams, transaction);
-  }
 
-  public async updateAccount(
-    params: MutationUpdateAccountArgs,
-    transaction?: Transaction
-  ): Promise<Account> {
-    const baseParams: BaseUpdateArgs = {
-      id: params.id,
-      input: {
-        name: params.input.name,
-        slug: params.input.slug,
-      },
-    };
-    return this.update(baseParams, transaction);
+    return this.create(baseParams, transaction);
   }
 
   public async softDeleteAccount(accountId: string, transaction?: Transaction): Promise<Account> {

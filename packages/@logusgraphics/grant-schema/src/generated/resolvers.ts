@@ -41,11 +41,9 @@ export type Account = Auditable & {
   createdAt: Scalars['Date']['output'];
   deletedAt?: Maybe<Scalars['Date']['output']>;
   id: Scalars['ID']['output'];
-  name: Scalars['String']['output'];
   owner: User;
   ownerId: Scalars['ID']['output'];
   projects?: Maybe<Array<Project>>;
-  slug: Scalars['String']['output'];
   type: AccountType;
   updatedAt: Scalars['Date']['output'];
 };
@@ -54,8 +52,6 @@ export type AccountExportData = {
   __typename?: 'AccountExportData';
   createdAt: Scalars['Date']['output'];
   id: Scalars['ID']['output'];
-  name: Scalars['String']['output'];
-  slug: Scalars['String']['output'];
   type: Scalars['String']['output'];
   updatedAt: Scalars['Date']['output'];
 };
@@ -80,8 +76,7 @@ export type AccountProject = Auditable & {
 };
 
 export enum AccountSearchableField {
-  Name = 'name',
-  Slug = 'slug',
+  Type = 'type',
 }
 
 export type AccountSortInput = {
@@ -91,8 +86,6 @@ export type AccountSortInput = {
 
 export enum AccountSortableField {
   CreatedAt = 'createdAt',
-  Name = 'name',
-  Slug = 'slug',
   Type = 'type',
   UpdatedAt = 'updatedAt',
 }
@@ -238,13 +231,11 @@ export type Creatable = {
 };
 
 export type CreateAccountInput = {
-  name: Scalars['String']['input'];
   ownerId: Scalars['String']['input'];
   provider: UserAuthenticationMethodProvider;
   providerData: Scalars['JSON']['input'];
   providerId: Scalars['String']['input'];
   type: AccountType;
-  username?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type CreateAccountResult = {
@@ -258,8 +249,7 @@ export type CreateAccountResult = {
 };
 
 export type CreateComplementaryAccountInput = {
-  name: Scalars['String']['input'];
-  username?: InputMaybe<Scalars['String']['input']>;
+  _unused?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type CreateComplementaryAccountResult = {
@@ -347,8 +337,7 @@ export type DeleteAccountInput = {
 };
 
 export type DeleteUserAuthenticationMethodInput = {
-  __typename?: 'DeleteUserAuthenticationMethodInput';
-  id: Scalars['ID']['output'];
+  id: Scalars['ID']['input'];
 };
 
 export type DeleteUserSessionInput = {
@@ -470,6 +459,14 @@ export type LoginResponse = {
   verificationExpiry?: Maybe<Scalars['Date']['output']>;
 };
 
+export type MeResponse = {
+  __typename?: 'MeResponse';
+  accounts: Array<Account>;
+  email?: Maybe<Scalars['String']['output']>;
+  requiresEmailVerification?: Maybe<Scalars['Boolean']['output']>;
+  verificationExpiry?: Maybe<Scalars['Date']['output']>;
+};
+
 export enum MemberType {
   Invitation = 'invitation',
   Member = 'member',
@@ -488,6 +485,7 @@ export type Mutation = {
   createRole: Role;
   createTag: Tag;
   createUser: User;
+  createUserAuthenticationMethod: UserAuthenticationMethod;
   deleteAccount: User;
   deleteGroup: Group;
   deleteOrganization: Organization;
@@ -496,6 +494,7 @@ export type Mutation = {
   deleteRole: Role;
   deleteTag: Tag;
   deleteUser: User;
+  deleteUserAuthenticationMethod: UserAuthenticationMethod;
   inviteMember: OrganizationInvitation;
   login: LoginResponse;
   refreshSession: RefreshSessionResponse;
@@ -507,7 +506,7 @@ export type Mutation = {
   resetPassword: ResetPasswordResponse;
   revokeInvitation: OrganizationInvitation;
   revokeUserSession: RevokeUserSessionResult;
-  updateAccount: Account;
+  setPrimaryAuthenticationMethod: UserAuthenticationMethod;
   updateGroup: Group;
   updateOrganization: Organization;
   updateOrganizationMember: OrganizationMember;
@@ -560,6 +559,10 @@ export type MutationCreateUserArgs = {
   input: CreateUserInput;
 };
 
+export type MutationCreateUserAuthenticationMethodArgs = {
+  input: CreateUserAuthenticationMethodInput;
+};
+
 export type MutationDeleteAccountArgs = {
   input: DeleteAccountInput;
 };
@@ -596,6 +599,10 @@ export type MutationDeleteTagArgs = {
 export type MutationDeleteUserArgs = {
   id: Scalars['ID']['input'];
   scope: Scope;
+};
+
+export type MutationDeleteUserAuthenticationMethodArgs = {
+  input: DeleteUserAuthenticationMethodInput;
 };
 
 export type MutationInviteMemberArgs = {
@@ -643,9 +650,8 @@ export type MutationRevokeUserSessionArgs = {
   id: Scalars['ID']['input'];
 };
 
-export type MutationUpdateAccountArgs = {
+export type MutationSetPrimaryAuthenticationMethodArgs = {
   id: Scalars['ID']['input'];
-  input: UpdateAccountInput;
 };
 
 export type MutationUpdateGroupArgs = {
@@ -1097,10 +1103,10 @@ export type Query = {
   __typename?: 'Query';
   _empty?: Maybe<Scalars['String']['output']>;
   accounts: AccountPage;
-  checkUsername: UsernameAvailability;
   exportUserData: UserDataExport;
   groups: GroupPage;
   invitation?: Maybe<OrganizationInvitation>;
+  me: MeResponse;
   organizationInvitations: OrganizationInvitationPage;
   organizationMembers: OrganizationMemberPage;
   organizations: OrganizationPage;
@@ -1119,10 +1125,6 @@ export type QueryAccountsArgs = {
   page?: InputMaybe<Scalars['Int']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
   sort?: InputMaybe<AccountSortInput>;
-};
-
-export type QueryCheckUsernameArgs = {
-  username: Scalars['String']['input'];
 };
 
 export type QueryGroupsArgs = {
@@ -1230,12 +1232,10 @@ export type RefreshSessionResponse = {
 };
 
 export type RegisterInput = {
-  name: Scalars['String']['input'];
   provider: UserAuthenticationMethodProvider;
   providerData: Scalars['JSON']['input'];
   providerId: Scalars['String']['input'];
   type: AccountType;
-  username?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type RemoveAccountProjectInput = {
@@ -1518,11 +1518,6 @@ export enum Tenant {
   Project = 'project',
 }
 
-export type UpdateAccountInput = {
-  name?: InputMaybe<Scalars['String']['input']>;
-  slug?: InputMaybe<Scalars['String']['input']>;
-};
-
 export type UpdateGroupInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
@@ -1598,7 +1593,6 @@ export type UpdateTagInput = {
 };
 
 export type UpdateUserAuthenticationMethodInput = {
-  id: Scalars['ID']['input'];
   isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
   isVerified?: InputMaybe<Scalars['Boolean']['input']>;
   provider?: InputMaybe<UserAuthenticationMethodProvider>;
@@ -1655,8 +1649,9 @@ export type User = Auditable & {
 };
 
 export enum UserAuthenticationEmailProviderAction {
+  Connect = 'connect',
   Login = 'login',
-  Signup = 'signup',
+  Register = 'register',
 }
 
 export type UserAuthenticationMethod = Auditable & {
@@ -1805,12 +1800,6 @@ export type UserTagTagArgs = {
 
 export type UserTagUserArgs = {
   scope: Scope;
-};
-
-export type UsernameAvailability = {
-  __typename?: 'UsernameAvailability';
-  available: Scalars['Boolean']['output'];
-  username: Scalars['String']['output'];
 };
 
 export type VerifyEmailInput = {
@@ -2021,7 +2010,7 @@ export type ResolversTypes = ResolversObject<{
   CreateUserSessionInput: CreateUserSessionInput;
   Date: ResolverTypeWrapper<Scalars['Date']['output']>;
   DeleteAccountInput: DeleteAccountInput;
-  DeleteUserAuthenticationMethodInput: ResolverTypeWrapper<DeleteUserAuthenticationMethodInput>;
+  DeleteUserAuthenticationMethodInput: DeleteUserAuthenticationMethodInput;
   DeleteUserSessionInput: DeleteUserSessionInput;
   GetUserAuthenticationMethodsInput: GetUserAuthenticationMethodsInput;
   GetUserSessionsInput: GetUserSessionsInput;
@@ -2038,6 +2027,7 @@ export type ResolversTypes = ResolversObject<{
   JSON: ResolverTypeWrapper<Scalars['JSON']['output']>;
   LoginInput: LoginInput;
   LoginResponse: ResolverTypeWrapper<LoginResponse>;
+  MeResponse: ResolverTypeWrapper<MeResponse>;
   MemberType: MemberType;
   Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
   Organization: ResolverTypeWrapper<Organization>;
@@ -2131,7 +2121,6 @@ export type ResolversTypes = ResolversObject<{
   TagSortField: TagSortField;
   TagSortInput: TagSortInput;
   Tenant: Tenant;
-  UpdateAccountInput: UpdateAccountInput;
   UpdateGroupInput: UpdateGroupInput;
   UpdateGroupTagInput: UpdateGroupTagInput;
   UpdateOrganizationInput: UpdateOrganizationInput;
@@ -2168,7 +2157,6 @@ export type ResolversTypes = ResolversObject<{
   UserSortInput: UserSortInput;
   UserSortableField: UserSortableField;
   UserTag: ResolverTypeWrapper<UserTag>;
-  UsernameAvailability: ResolverTypeWrapper<UsernameAvailability>;
   VerifyEmailInput: VerifyEmailInput;
   VerifyEmailResponse: ResolverTypeWrapper<VerifyEmailResponse>;
 }>;
@@ -2237,6 +2225,7 @@ export type ResolversParentTypes = ResolversObject<{
   JSON: Scalars['JSON']['output'];
   LoginInput: LoginInput;
   LoginResponse: LoginResponse;
+  MeResponse: MeResponse;
   Mutation: Record<PropertyKey, never>;
   Organization: Organization;
   OrganizationGroup: OrganizationGroup;
@@ -2310,7 +2299,6 @@ export type ResolversParentTypes = ResolversObject<{
   Tag: Tag;
   TagPage: TagPage;
   TagSortInput: TagSortInput;
-  UpdateAccountInput: UpdateAccountInput;
   UpdateGroupInput: UpdateGroupInput;
   UpdateGroupTagInput: UpdateGroupTagInput;
   UpdateOrganizationInput: UpdateOrganizationInput;
@@ -2341,7 +2329,6 @@ export type ResolversParentTypes = ResolversObject<{
   UserSessionSortInput: UserSessionSortInput;
   UserSortInput: UserSortInput;
   UserTag: UserTag;
-  UsernameAvailability: UsernameAvailability;
   VerifyEmailInput: VerifyEmailInput;
   VerifyEmailResponse: VerifyEmailResponse;
 }>;
@@ -2365,11 +2352,9 @@ export type AccountResolvers<
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   owner?: Resolver<ResolversTypes['User'], ParentType, ContextType>;
   ownerId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   projects?: Resolver<Maybe<Array<ResolversTypes['Project']>>, ParentType, ContextType>;
-  slug?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   type?: Resolver<ResolversTypes['AccountType'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -2382,8 +2367,6 @@ export type AccountExportDataResolvers<
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  slug?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
 }>;
@@ -2509,14 +2492,6 @@ export interface DateScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes
   name: 'Date';
 }
 
-export type DeleteUserAuthenticationMethodInputResolvers<
-  ContextType = any,
-  ParentType extends
-    ResolversParentTypes['DeleteUserAuthenticationMethodInput'] = ResolversParentTypes['DeleteUserAuthenticationMethodInput'],
-> = ResolversObject<{
-  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-}>;
-
 export type GroupResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['Group'] = ResolversParentTypes['Group'],
@@ -2610,6 +2585,16 @@ export type LoginResponseResolvers<
   verificationExpiry?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
 }>;
 
+export type MeResponseResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['MeResponse'] = ResolversParentTypes['MeResponse'],
+> = ResolversObject<{
+  accounts?: Resolver<Array<ResolversTypes['Account']>, ParentType, ContextType>;
+  email?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  requiresEmailVerification?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
+  verificationExpiry?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+}>;
+
 export type MutationResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation'],
@@ -2675,6 +2660,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationCreateUserArgs, 'input'>
   >;
+  createUserAuthenticationMethod?: Resolver<
+    ResolversTypes['UserAuthenticationMethod'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateUserAuthenticationMethodArgs, 'input'>
+  >;
   deleteAccount?: Resolver<
     ResolversTypes['User'],
     ParentType,
@@ -2722,6 +2713,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationDeleteUserArgs, 'id' | 'scope'>
+  >;
+  deleteUserAuthenticationMethod?: Resolver<
+    ResolversTypes['UserAuthenticationMethod'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteUserAuthenticationMethodArgs, 'input'>
   >;
   inviteMember?: Resolver<
     ResolversTypes['OrganizationInvitation'],
@@ -2789,11 +2786,11 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationRevokeUserSessionArgs, 'id'>
   >;
-  updateAccount?: Resolver<
-    ResolversTypes['Account'],
+  setPrimaryAuthenticationMethod?: Resolver<
+    ResolversTypes['UserAuthenticationMethod'],
     ParentType,
     ContextType,
-    RequireFields<MutationUpdateAccountArgs, 'id' | 'input'>
+    RequireFields<MutationSetPrimaryAuthenticationMethodArgs, 'id'>
   >;
   updateGroup?: Resolver<
     ResolversTypes['Group'],
@@ -3279,12 +3276,6 @@ export type QueryResolvers<
     ContextType,
     Partial<QueryAccountsArgs>
   >;
-  checkUsername?: Resolver<
-    ResolversTypes['UsernameAvailability'],
-    ParentType,
-    ContextType,
-    RequireFields<QueryCheckUsernameArgs, 'username'>
-  >;
   exportUserData?: Resolver<ResolversTypes['UserDataExport'], ParentType, ContextType>;
   groups?: Resolver<
     ResolversTypes['GroupPage'],
@@ -3298,6 +3289,7 @@ export type QueryResolvers<
     ContextType,
     RequireFields<QueryInvitationArgs, 'token'>
   >;
+  me?: Resolver<ResolversTypes['MeResponse'], ParentType, ContextType>;
   organizationInvitations?: Resolver<
     ResolversTypes['OrganizationInvitationPage'],
     ParentType,
@@ -3712,15 +3704,6 @@ export type UserTagResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type UsernameAvailabilityResolvers<
-  ContextType = any,
-  ParentType extends
-    ResolversParentTypes['UsernameAvailability'] = ResolversParentTypes['UsernameAvailability'],
-> = ResolversObject<{
-  available?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  username?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-}>;
-
 export type VerifyEmailResponseResolvers<
   ContextType = any,
   ParentType extends
@@ -3744,13 +3727,13 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   CreateAccountResult?: CreateAccountResultResolvers<ContextType>;
   CreateComplementaryAccountResult?: CreateComplementaryAccountResultResolvers<ContextType>;
   Date?: GraphQLScalarType;
-  DeleteUserAuthenticationMethodInput?: DeleteUserAuthenticationMethodInputResolvers<ContextType>;
   Group?: GroupResolvers<ContextType>;
   GroupPage?: GroupPageResolvers<ContextType>;
   GroupPermission?: GroupPermissionResolvers<ContextType>;
   GroupTag?: GroupTagResolvers<ContextType>;
   JSON?: GraphQLScalarType;
   LoginResponse?: LoginResponseResolvers<ContextType>;
+  MeResponse?: MeResponseResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   Organization?: OrganizationResolvers<ContextType>;
   OrganizationGroup?: OrganizationGroupResolvers<ContextType>;
@@ -3801,6 +3784,5 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   UserSession?: UserSessionResolvers<ContextType>;
   UserSessionPage?: UserSessionPageResolvers<ContextType>;
   UserTag?: UserTagResolvers<ContextType>;
-  UsernameAvailability?: UsernameAvailabilityResolvers<ContextType>;
   VerifyEmailResponse?: VerifyEmailResponseResolvers<ContextType>;
 }>;

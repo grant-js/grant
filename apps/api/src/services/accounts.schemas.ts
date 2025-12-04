@@ -5,11 +5,8 @@ import {
   baseEntitySchema,
   deleteSchema,
   idSchema,
-  nameSchema,
-  nonEmptyNameSchema,
   paginatedResponseSchema,
   queryParamsSchema,
-  slugSchema,
   sortOrderSchema,
 } from './common/schemas';
 
@@ -31,18 +28,8 @@ export const accountTypeSchema = z.enum(
 );
 
 export const createAccountInputSchema = z.object({
-  name: nonEmptyNameSchema,
-  username: z.string().nullable().optional(),
   type: accountTypeSchema,
   ownerId: idSchema,
-});
-
-export const updateAccountParamsSchema = z.object({
-  id: idSchema,
-  input: z.object({
-    name: nonEmptyNameSchema.nullable().optional(),
-    slug: slugSchema.nullable().optional(),
-  }),
 });
 
 export const deleteAccountParamsSchema = deleteSchema.extend({
@@ -50,8 +37,6 @@ export const deleteAccountParamsSchema = deleteSchema.extend({
 });
 
 export const accountSchema = baseEntitySchema.extend({
-  name: nameSchema,
-  slug: slugSchema,
   type: accountTypeSchema,
   ownerId: idSchema,
 });
@@ -61,8 +46,3 @@ export const accountPageSchema = paginatedResponseSchema(accountSchema).transfor
   totalCount: data.totalCount,
   hasNextPage: data.hasNextPage,
 }));
-
-export const createComplementaryAccountInputSchema = z.object({
-  name: nonEmptyNameSchema,
-  username: z.string().nullable().optional(),
-});

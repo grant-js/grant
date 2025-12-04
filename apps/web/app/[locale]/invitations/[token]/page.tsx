@@ -49,7 +49,7 @@ export default function InvitationPage() {
   });
 
   const { acceptInvitation } = useMemberMutations();
-  const { isAuthenticated, updateAccountsAndSwitch } = useAuthStore();
+  const { isAuthenticated, updateAccounts } = useAuthStore();
 
   usePageTitle('invitations');
 
@@ -124,7 +124,7 @@ export default function InvitationPage() {
 
       // Update accounts and switch to the Organization account
       if (result?.accounts && result.accounts.length > 0) {
-        updateAccountsAndSwitch(result.accounts);
+        updateAccounts(result.accounts);
       }
 
       setActionStatus('success');

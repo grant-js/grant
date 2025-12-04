@@ -130,12 +130,11 @@ export function AccountDropdown() {
                         <User className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
                       )}
                       <div className="flex flex-col min-w-0 flex-1">
-                        <span className="text-sm font-medium truncate">{account.name}</span>
-                        {account.slug && (
-                          <span className="text-xs text-muted-foreground truncate">
-                            @{account.slug}
-                          </span>
-                        )}
+                        <span className="text-sm font-medium truncate">
+                          {account.type === AccountType.Organization
+                            ? t('accountTypes.organization')
+                            : t('accountTypes.personal')}
+                        </span>
                       </div>
                     </div>
                     {account.id === currentAccount?.id && (
@@ -161,12 +160,11 @@ export function AccountDropdown() {
                   <User className="h-4 w-4 flex-shrink-0" />
                 )}
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-sm font-medium truncate">{currentAccount?.name}</span>
-                  {currentAccount?.slug && (
-                    <span className="text-xs text-muted-foreground truncate">
-                      @{currentAccount.slug}
-                    </span>
-                  )}
+                  <span className="text-sm font-medium truncate">
+                    {currentAccount?.type === AccountType.Organization
+                      ? t('accountTypes.organization')
+                      : t('accountTypes.personal')}
+                  </span>
                 </div>
               </DropdownMenuItem>
             </DropdownMenuGroup>

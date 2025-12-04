@@ -8,7 +8,7 @@ import { useTranslations } from 'next-intl';
 import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
 import { ProfileInformationForm } from '@/components/settings/ProfileInformationForm';
 import { usePageTitle, useUserMutations } from '@/hooks';
-import { evictAccountsCache } from '@/hooks/accounts';
+import { evictMeCache } from '@/hooks/auth/cache';
 import { useAuthStore } from '@/stores/auth.store';
 
 export default function ProfileSettingsPage() {
@@ -39,7 +39,7 @@ export default function ProfileSettingsPage() {
     }
 
     await updateUser(userData.id, { name: values.name });
-    evictAccountsCache(apolloClient.cache);
+    evictMeCache(apolloClient.cache);
   };
 
   const handleUploadPicture = async (file: string, filename: string, contentType: string) => {
@@ -53,7 +53,7 @@ export default function ProfileSettingsPage() {
       filename,
       contentType,
     });
-    evictAccountsCache(apolloClient.cache);
+    evictMeCache(apolloClient.cache);
   };
 
   if (!userData) {

@@ -1,4 +1,7 @@
-import { UserAuthenticationMethodProvider } from '@logusgraphics/grant-schema';
+import {
+  UserAuthenticationEmailProviderAction,
+  UserAuthenticationMethodProvider,
+} from '@logusgraphics/grant-schema';
 import { z } from 'zod';
 
 import {
@@ -247,3 +250,34 @@ export const passwordChangeSchema = z
     message: 'New password must be different from current password',
     path: ['newPassword'],
   });
+
+// Email provider data schema
+export const emailProviderDataSchema = z.object({
+  password: z.string().min(1, 'Password is required'),
+  action: z.enum(
+    Object.values(UserAuthenticationEmailProviderAction) as [
+      UserAuthenticationEmailProviderAction,
+      ...UserAuthenticationEmailProviderAction[],
+    ]
+  ),
+});
+
+// GitHub provider data schema
+export const githubProviderDataSchema = z.object({
+  accessToken: z.string().min(1, 'GitHub access token is required'),
+  githubId: z.union([z.number(), z.string()]).transform((val) => {
+    // Normalize to number
+    return typeof val === 'number' ? val : parseInt(val, 10);
+  }),
+  email: z
+    .union([z.string().email(), z.string().length(0), z.null()])
+    .transform((val) => (val === '' ? null : val))
+    .nullable()
+    .optional(),
+  name: z.string().nullable().optional(),
+  avatarUrl: z
+    .union([z.string().url(), z.string().length(0), z.null()])
+    .transform((val) => (val === '' ? null : val))
+    .nullable()
+    .optional(),
+});

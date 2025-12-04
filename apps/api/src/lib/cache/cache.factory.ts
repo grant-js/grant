@@ -27,7 +27,15 @@ export class CacheFactory {
    * @returns IEntityCacheAdapter with all entity-specific adapters
    */
   static createEntityCache(config: CacheConfig): IEntityCacheAdapter {
-    const entityTypes = ['roles', 'users', 'groups', 'permissions', 'tags', 'projects'] as const;
+    const entityTypes = [
+      'roles',
+      'users',
+      'groups',
+      'permissions',
+      'tags',
+      'projects',
+      'oauth',
+    ] as const;
 
     const cache: Partial<IEntityCacheAdapter> = {};
 
@@ -77,6 +85,7 @@ export class CacheFactory {
       cache.permissions.disconnect(),
       cache.tags.disconnect(),
       cache.projects.disconnect(),
+      cache.oauth.disconnect(),
     ]);
   }
 }
