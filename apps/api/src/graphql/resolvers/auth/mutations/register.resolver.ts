@@ -4,7 +4,7 @@ import { GraphqlContext } from '@/graphql/types';
 
 export const register: MutationResolvers<GraphqlContext>['register'] = async (_, args, context) => {
   const { type, provider, providerId, providerData } = args.input;
-  const { origin: audience, locale, userAgent, ipAddress } = context;
+  const { locale, userAgent, ipAddress } = context;
   return context.handlers.accounts.createAccount(
     {
       type,
@@ -12,7 +12,6 @@ export const register: MutationResolvers<GraphqlContext>['register'] = async (_,
       providerId,
       providerData,
     },
-    audience,
     locale,
     userAgent,
     ipAddress

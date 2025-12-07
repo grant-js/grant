@@ -2,10 +2,10 @@ import { Tenant } from '@logusgraphics/grant-schema';
 import { z } from 'zod';
 
 import {
-  idSchema,
   baseEntitySchema,
-  paginatedResponseSchema,
   deleteSchema,
+  idSchema,
+  paginatedResponseSchema,
   requestedFieldsSchema,
 } from './common/schemas';
 
@@ -68,7 +68,6 @@ export const userSessionPageSchema = paginatedResponseSchema(userSessionSchema).
 export const createSessionSchema = z.object({
   userId: idSchema,
   userAuthenticationMethodId: idSchema,
-  audience: z.string(),
   userAgent: z.string().max(500).nullable().optional(),
   ipAddress: z.string().max(45).nullable().optional(),
 });

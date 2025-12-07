@@ -75,7 +75,6 @@ export class AccountHandler extends ScopeHandler {
 
   public async login(
     params: MutationLoginArgs,
-    audience: string,
     userAgent?: string | null,
     ipAddress?: string | null
   ): Promise<LoginResponse> {
@@ -155,11 +154,10 @@ export class AccountHandler extends ScopeHandler {
         throw new AuthenticationError('User does not have an account', 'errors:auth.noAccount');
       }
 
-      // Check for existing session with same userAgent and ipAddress
       const userSessionsResult = await this.services.userSessions.getUserSessions(
         {
           userId: user.id,
-          audience,
+          audience: config.app.url,
           expiresAtMin: new Date(),
           userAgent: userAgent || null,
           ipAddress: ipAddress || null,
@@ -197,7 +195,6 @@ export class AccountHandler extends ScopeHandler {
         {
           userId: user.id,
           userAuthenticationMethodId: userAuthenticationMethod.id,
-          audience,
           userAgent: userAgent || null,
           ipAddress: ipAddress || null,
         },
@@ -326,7 +323,6 @@ export class AccountHandler extends ScopeHandler {
 
   public async createAccount(
     params: Omit<CreateAccountInput, 'ownerId'>,
-    audience: string,
     locale?: string,
     userAgent?: string | null,
     ipAddress?: string | null
@@ -386,7 +382,6 @@ export class AccountHandler extends ScopeHandler {
         {
           userId: user.id,
           userAuthenticationMethodId: userAuthenticationMethod.id,
-          audience,
           userAgent: userAgent || null,
           ipAddress: ipAddress || null,
         },
@@ -430,7 +425,6 @@ export class AccountHandler extends ScopeHandler {
       providerId: string;
       providerData: Record<string, unknown>;
     },
-    audience: string,
     userAgent?: string | null,
     ipAddress?: string | null
   ): Promise<LoginResponse> {
@@ -483,7 +477,6 @@ export class AccountHandler extends ScopeHandler {
         {
           userId: user.id,
           userAuthenticationMethodId: userAuthenticationMethod.id,
-          audience,
           userAgent: userAgent || null,
           ipAddress: ipAddress || null,
         },

@@ -92,6 +92,9 @@ export const APP_CONFIG = {
 
   /** Whether the app is running in test mode */
   isTest: getEnv('NODE_ENV', 'development') === 'test',
+
+  /** API base URL for JWT audience/issuer claims */
+  url: getEnv('APP_URL', 'http://localhost:4000'),
 } as const;
 
 // ============================================================================

@@ -41,7 +41,6 @@ export class AuthController extends BaseController {
           providerData,
         },
       },
-      this.origin,
       this.context.userAgent,
       this.context.ipAddress
     );
@@ -66,7 +65,6 @@ export class AuthController extends BaseController {
         providerId,
         providerData,
       },
-      this.origin,
       this.context.locale,
       this.context.userAgent,
       this.context.ipAddress

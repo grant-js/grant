@@ -1,7 +1,6 @@
 input CreateUserSessionInput {
   userId: ID!
   userAuthenticationMethodId: ID!
-  audience: String!
   token: String!
   lastUsedAt: Date!
   expiresAt: Date!

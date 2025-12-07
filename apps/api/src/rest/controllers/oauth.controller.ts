@@ -152,7 +152,6 @@ export class OAuthController extends BaseController {
                 avatarUrl: oauthResult.githubUser.avatar_url,
               },
             },
-            this.origin,
             this.context.userAgent,
             this.context.ipAddress
           );
@@ -199,7 +198,6 @@ export class OAuthController extends BaseController {
               },
             },
           },
-          this.origin,
           this.context.userAgent,
           this.context.ipAddress
         );
@@ -217,7 +215,6 @@ export class OAuthController extends BaseController {
               avatarUrl: oauthResult.githubUser.avatar_url,
             },
           },
-          this.origin,
           this.context.userAgent,
           this.context.ipAddress
         );
@@ -241,7 +238,6 @@ export class OAuthController extends BaseController {
               avatarUrl: oauthResult.githubUser.avatar_url,
             },
           },
-          this.origin,
           this.context.locale,
           this.context.userAgent,
           this.context.ipAddress

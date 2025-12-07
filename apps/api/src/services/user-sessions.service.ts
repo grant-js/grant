@@ -118,14 +118,15 @@ export class UserSessionService extends AuditService {
   public signSession(session: UserSession): CreateSessionResult {
     const context = 'UserSessionService.signSession';
     const validatedSession = validateInput(userSessionSchema, session, context);
-    const { userId, audience } = validatedSession;
+    const { userId } = validatedSession;
     const sub = userId;
-    const aud = audience;
+    const aud = config.app.url;
+    const iss = config.app.url;
     const jti = session.id;
     const iat = Math.floor(Date.now() / 1000);
     const exp = Math.floor(this.getAccessTokenExpirationDate(Date.now()).getTime() / 1000);
 
-    const jwtPayload: JwtPayload = { sub, aud, exp, iat, jti };
+    const jwtPayload: JwtPayload = { sub, aud, iss, exp, iat, jti };
 
     const accessToken = jwt.sign(jwtPayload, config.jwt.secret);
     const refreshToken = session.token;
@@ -142,7 +143,9 @@ export class UserSessionService extends AuditService {
 
     const validatedParams = validateInput(createSessionSchema, params, context);
 
-    const { userId, userAuthenticationMethodId, audience, userAgent, ipAddress } = validatedParams;
+    const { userId, userAuthenticationMethodId, userAgent, ipAddress } = validatedParams;
+
+    const audience = config.app.url;
 
     const session = await this.repositories.userSessionRepository.createUserSession(
       {
@@ -152,8 +155,8 @@ export class UserSessionService extends AuditService {
         token: this.generateRefreshToken(),
         expiresAt: this.getRefreshTokenExpirationDate(now),
         lastUsedAt: new Date(),
-        userAgent,
-        ipAddress,
+        userAgent: userAgent || null,
+        ipAddress: ipAddress || null,
       },
       transaction
     );
