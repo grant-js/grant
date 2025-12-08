@@ -26,6 +26,12 @@ import { projectGroups, projectGroupsRelations } from './project-groups.schema';
 import { projectPermissions, projectPermissionsRelations } from './project-permissions.schema';
 import { projectRoles, projectRolesRelations } from './project-roles.schema';
 import { projectTags, projectTagsRelations } from './project-tags.schema';
+import {
+  projectUserApiKeys,
+  projectUserApiKeysRelations,
+  projectUserApiKeyAuditLogs,
+  projectUserApiKeyAuditLogsRelations,
+} from './project-user-api-keys.schema';
 import { projectUsers, projectUsersRelations } from './project-users.schema';
 import { projects, projectsRelations } from './projects.schema';
 import { roleGroups, roleGroupsRelations } from './role-groups.schema';
@@ -63,6 +69,8 @@ export const schema = {
   projectPermissions,
   projectRoles,
   projectTags,
+  projectUserApiKeys,
+  projectUserApiKeyAuditLogs,
   projectUsers,
   projects,
   roleGroups,
@@ -91,6 +99,8 @@ export const schema = {
   projectPermissionsRelations,
   projectRolesRelations,
   projectTagsRelations,
+  projectUserApiKeysRelations,
+  projectUserApiKeyAuditLogsRelations,
   projectUsersRelations,
   projectsRelations,
   roleGroupsRelations,

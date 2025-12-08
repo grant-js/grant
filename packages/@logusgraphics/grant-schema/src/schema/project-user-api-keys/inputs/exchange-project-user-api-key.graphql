@@ -1,0 +1,4 @@
+input ExchangeProjectUserApiKeyInput {
+  clientId: String!
+  clientSecret: String!
+}

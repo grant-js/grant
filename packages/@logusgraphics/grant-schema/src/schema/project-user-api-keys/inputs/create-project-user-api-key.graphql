@@ -1,0 +1,7 @@
+input CreateProjectUserApiKeyInput {
+  projectId: ID!
+  userId: ID!
+  name: String
+  description: String
+  expiresAt: Date
+}

@@ -225,12 +225,10 @@ POST /api/projects/:projectId/users/:userId/api-keys
    - `iss`: API base URL from `config.app.url` (configured via `APP_URL` env var, e.g., `https://api.grant-platform.com`) - identifies the issuer (RFC 7519 standard)
    - `exp`: Token expiration (configurable, e.g., 1 hour)
    - `iat`: Issued at timestamp
-   - `jti`: API key ID (JWT ID for revocation tracking)
-   - `type`: `project_user_api_key` (to distinguish from regular sessions)
-   - `scope`: `project:{project-id}` (tenant scope for permission evaluation - custom claim)
-   - `api_key_id`: API key ID (for revocation checks - custom claim)
-   - `project_id`: Project ID (for convenience - custom claim)
-   - `user_id`: User ID (for convenience - custom claim)
+
+- `jti`: API key ID (JWT ID for revocation tracking)
+- `scope`: `project:{project-id}` (tenant scope for permission evaluation - custom claim)
+
 4. Return access token (no refresh token for API keys)
 
 **Note**: The `aud` and `iss` claims are automatically set from `config.app.url` (configured via `APP_URL` environment variable, defaults to `http://localhost:4000`). This ensures consistency with regular user sessions and allows both REST (`/api`) and GraphQL (`/graphql`) endpoints to validate the same token. The same URL is used for both claims since the API is self-contained (both issues and validates tokens).
@@ -242,8 +240,8 @@ POST /api/auth/project-user/token
 Content-Type: application/json
 
 {
-  "clientId": "pk_live_...",
-  "clientSecret": "sk_live_..."
+  "clientId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "clientSecret": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6"
 }
 ```
 
@@ -440,68 +438,69 @@ mutation DeleteProjectUserApiKey($input: DeleteProjectUserApiKeyInput!) {
 
 ### Implementation Phases
 
-#### Phase 1: Database Schema & Core Models
+#### Phase 1: Database Schema & Core Models ✅
 
-- [ ] Create `project_user_api_keys` table migration
-- [ ] Create `project_user_api_key_audit_logs` table migration
-- [ ] Create Drizzle schema files
-- [ ] Export types from database package
+- [x] Create `project_user_api_keys` table migration
+- [x] Create `project_user_api_key_audit_logs` table migration
+- [x] Create Drizzle schema files
+- [x] Export types from database package
 
-**Files to Create:**
+**Files Created:**
 
 - `packages/@logusgraphics/grant-database/src/schemas/project-user-api-keys.schema.ts`
-- `packages/@logusgraphics/grant-database/src/migrations/00XX_project_user_api_keys.sql`
+- `packages/@logusgraphics/grant-database/src/migrations/0019_broken_the_hood.sql` (includes project_user_api_keys)
 
-#### Phase 2: Repository Layer
+#### Phase 2: Repository Layer ✅
 
-- [ ] Create `ProjectUserApiKeyRepository`
-- [ ] Implement CRUD operations
-- [ ] Implement secret hashing/verification
-- [ ] Implement query methods (by clientId, by project/user, etc.)
+- [x] Create `ProjectUserApiKeyRepository`
+- [x] Implement CRUD operations
+- [x] Implement secret hashing/verification (via service layer)
+- [x] Implement query methods (by clientId, by project/user, etc.)
 
-**Files to Create:**
+**Files Created:**
 
 - `apps/api/src/repositories/project-user-api-keys.repository.ts`
 
-#### Phase 3: Service Layer
+#### Phase 3: Service Layer ✅
 
-- [ ] Create `ProjectUserApiKeyService`
-- [ ] Implement key generation (clientId/secret)
-- [ ] Implement secret hashing
-- [ ] Implement validation logic
-- [ ] Implement audit logging
-- [ ] Create token generation service for API keys
+- [x] Create `ProjectUserApiKeyService`
+- [x] Implement key generation (clientId/secret)
+- [x] Implement secret hashing
+- [x] Implement validation logic
+- [x] Implement audit logging
+- [x] Create token generation service for API keys (integrated into service)
 
-**Files to Create:**
+**Files Created:**
 
 - `apps/api/src/services/project-user-api-keys.service.ts`
-- `apps/api/src/services/project-user-token.service.ts` (or extend existing token service)
+- `apps/api/src/services/project-user-api-keys.schemas.ts`
 
-#### Phase 4: GraphQL Schema & Handlers
+#### Phase 4: GraphQL Schema & Handlers ✅
 
-- [ ] Add GraphQL types and inputs
-- [ ] Create `ProjectUserApiKeyHandler`
-- [ ] Implement mutations (create, revoke, delete)
-- [ ] Implement queries (list, get)
-- [ ] Implement token exchange mutation
-- [ ] Implement permission reading query
+- [x] Add GraphQL types and inputs
+- [x] Create `ProjectUserApiKeyHandler`
+- [x] Implement mutations (create, revoke, delete)
+- [x] Implement queries (list with pagination)
+- [x] Implement token exchange mutation
+- [ ] Implement permission reading query (Phase 7)
 
-**Files to Create:**
+**Files Created:**
 
 - `packages/@logusgraphics/grant-schema/src/schema/project-user-api-keys/types/*.graphql`
 - `packages/@logusgraphics/grant-schema/src/schema/project-user-api-keys/inputs/*.graphql`
 - `packages/@logusgraphics/grant-schema/src/schema/project-user-api-keys/mutations/*.graphql`
 - `packages/@logusgraphics/grant-schema/src/schema/project-user-api-keys/queries/*.graphql`
 - `apps/api/src/handlers/project-user-api-keys.handler.ts`
+- `apps/api/src/graphql/resolvers/project-user-api-keys/**/*.ts`
 
-#### Phase 5: REST API
+#### Phase 5: REST API ✅
 
-- [ ] Create REST routes
-- [ ] Create REST controllers
-- [ ] Create request/response schemas
-- [ ] Add OpenAPI documentation
+- [x] Create REST routes
+- [x] Create REST controllers
+- [x] Create request/response schemas
+- [x] Add OpenAPI documentation
 
-**Files to Create:**
+**Files Created:**
 
 - `apps/api/src/rest/routes/project-user-api-keys.routes.ts`
 - `apps/api/src/rest/controllers/project-user-api-keys.controller.ts`
@@ -526,6 +525,7 @@ mutation DeleteProjectUserApiKey($input: DeleteProjectUserApiKeyInput!) {
 - [ ] Integrate with existing permission evaluation logic
 - [ ] Optimize queries for external system use
 - [ ] Add caching for permission reads
+- [ ] Implement permission reading GraphQL query
 
 **Files to Create/Modify:**
 
@@ -546,35 +546,81 @@ mutation DeleteProjectUserApiKey($input: DeleteProjectUserApiKeyInput!) {
 - [ ] Security best practices
 - [ ] Example code snippets
 
+#### Phase 10: Web Integration (Frontend)
+
+- [ ] Create React hooks for API key management
+  - [ ] `useProjectUserApiKeys` - List and manage API keys
+  - [ ] `useCreateProjectUserApiKey` - Create new API key
+  - [ ] `useRevokeProjectUserApiKey` - Revoke API key
+  - [ ] `useDeleteProjectUserApiKey` - Delete API key
+  - [ ] `useExchangeProjectUserApiKey` - Exchange credentials for token (for testing)
+- [ ] Create API key management components
+  - [ ] `ProjectUserApiKeyList` - Display list of API keys with pagination
+  - [ ] `ProjectUserApiKeyForm` - Create/edit API key form
+  - [ ] `ProjectUserApiKeyCard` - Individual API key card with actions
+  - [ ] `CreateApiKeyModal` - Modal for creating new API key (with secret display)
+  - [ ] `RevokeApiKeyConfirmDialog` - Confirmation dialog for revocation
+  - [ ] `DeleteApiKeyConfirmDialog` - Confirmation dialog for deletion
+- [ ] Add navigation and routing
+  - [ ] Add API keys section to project settings
+  - [ ] Add API keys section to user management
+  - [ ] Create dedicated API keys page/route
+- [ ] Implement UI features
+  - [ ] Secret visibility toggle (show/hide)
+  - [ ] Copy to clipboard functionality
+  - [ ] Expiration date display and warnings
+  - [ ] Last used timestamp display
+  - [ ] Revoked status indicators
+  - [ ] Empty state for no API keys
+  - [ ] Loading states and error handling
+- [ ] Add permissions checks
+  - [ ] Verify user has permission to manage API keys
+  - [ ] Show/hide actions based on permissions
+  - [ ] Display appropriate error messages
+
+**Files to Create:**
+
+- `apps/web/src/hooks/project-user-api-keys/use-project-user-api-keys.ts`
+- `apps/web/src/hooks/project-user-api-keys/use-create-project-user-api-key.ts`
+- `apps/web/src/hooks/project-user-api-keys/use-revoke-project-user-api-key.ts`
+- `apps/web/src/hooks/project-user-api-keys/use-delete-project-user-api-key.ts`
+- `apps/web/src/components/project-user-api-keys/project-user-api-key-list.tsx`
+- `apps/web/src/components/project-user-api-keys/project-user-api-key-form.tsx`
+- `apps/web/src/components/project-user-api-keys/project-user-api-key-card.tsx`
+- `apps/web/src/components/project-user-api-keys/create-api-key-modal.tsx`
+- `apps/web/src/components/project-user-api-keys/revoke-api-key-confirm-dialog.tsx`
+- `apps/web/src/components/project-user-api-keys/delete-api-key-confirm-dialog.tsx`
+
 ### API Key Format
 
 **Client ID Format:**
 
 ```
-pk_{environment}_{random_uuid}
+{random_uuid}
 ```
 
 Examples:
 
-- `pk_live_a1b2c3d4-e5f6-7890-abcd-ef1234567890`
-- `pk_test_a1b2c3d4-e5f6-7890-abcd-ef1234567890`
+- `a1b2c3d4-e5f6-7890-abcd-ef1234567890`
+- `b2c3d4e5-f6a7-8901-bcde-f12345678901`
 
 **Client Secret Format:**
 
 ```
-sk_{environment}_{random_base64}
+{random_base64}
 ```
 
 Examples:
 
-- `sk_live_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6`
-- `sk_test_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6`
+- `a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6`
+- `b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7`
 
 **Rationale:**
 
-- Prefix indicates key type (`pk` = public key/client ID, `sk` = secret key)
-- Environment prefix helps identify test vs production keys
-- UUID/base64 ensures uniqueness and security
+- UUID for client ID ensures uniqueness and is easily identifiable
+- Base64 random string for client secret provides high entropy
+- No prefixes to avoid exposing implementation details
+- Simple format that's easy to work with programmatically
 
 ### Token Claims
 
@@ -588,11 +634,7 @@ Examples:
   "exp": 1234567890,
   "iat": 1234564290,
   "jti": "api-key-uuid",
-  "type": "project_user_api_key",
-  "scope": "project:project-uuid",
-  "api_key_id": "api-key-uuid",
-  "project_id": "project-uuid",
-  "user_id": "user-uuid"
+  "scope": "project:project-uuid"
 }
 ```
 
@@ -603,22 +645,18 @@ Examples:
 - `iss` (Issuer): API URL from `config.app.url` (configured via `APP_URL` env var) - identifies who issued the token (same as audience for self-contained APIs)
 - `exp` (Expiration): Token expiration timestamp
 - `iat` (Issued At): Token issuance timestamp
-- `jti` (JWT ID): API key ID - unique identifier for this token (used for revocation tracking)
-- `type`: Custom claim - `project_user_api_key` to distinguish from regular user sessions
+- `jti` (JWT ID): API key ID - unique identifier for this token (used for revocation tracking and identifying the source API key)
 - `scope`: Custom claim - tenant scope in format `project:{project-id}` for permission evaluation
-- `api_key_id`: Custom claim - reference to API key (for revocation checks)
-- `project_id`: Custom claim - project ID for convenience
-- `user_id`: Custom claim - user ID for convenience
 
 **Key Differences from Regular Sessions:**
 
 - `aud`: Uses API URL from `config.app.url` (same as regular sessions)
 - `iss`: Uses API URL from `config.app.url` (same as regular sessions - both use `config.app.url`)
-- `type`: `project_user_api_key` (vs `user_session`)
-- `scope`: Explicit tenant scope claim (vs parsing from `aud` in regular sessions)
-- `api_key_id`: Reference to API key (for revocation checks)
+- `scope`: Explicit tenant scope claim in format `project:{project-id}` (vs parsing from operation context in regular sessions)
+- `jti`: Contains API key ID (vs session ID in regular sessions)
 - No `session_id` (API keys don't create sessions)
 - Shorter expiration (1 hour vs 7 days for sessions)
+- Simplified claims: removed redundant `type`, `api_key_id`, `project_id`, and `user_id` claims as `sub`, `jti`, and `scope` provide sufficient information
 
 **Configuration:**
 

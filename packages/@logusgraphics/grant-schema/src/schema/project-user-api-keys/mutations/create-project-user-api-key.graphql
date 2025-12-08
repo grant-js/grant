@@ -1,0 +1,3 @@
+extend type Mutation {
+  createProjectUserApiKey(input: CreateProjectUserApiKeyInput!): CreateProjectUserApiKeyResult!
+}

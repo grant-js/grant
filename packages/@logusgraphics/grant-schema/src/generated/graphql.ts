@@ -287,6 +287,25 @@ export type CreateProjectInput = {
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
+export type CreateProjectUserApiKeyInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  expiresAt?: InputMaybe<Scalars['Date']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  projectId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+export type CreateProjectUserApiKeyResult = {
+  __typename?: 'CreateProjectUserApiKeyResult';
+  clientId: Scalars['String']['output'];
+  clientSecret: Scalars['String']['output'];
+  createdAt: Scalars['Date']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  expiresAt?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['ID']['output'];
+  name?: Maybe<Scalars['String']['output']>;
+};
+
 export type CreateRoleInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   groupIds?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -334,12 +353,28 @@ export type DeleteAccountInput = {
   userId: Scalars['ID']['input'];
 };
 
+export type DeleteProjectUserApiKeyInput = {
+  hardDelete?: InputMaybe<Scalars['Boolean']['input']>;
+  id: Scalars['ID']['input'];
+};
+
 export type DeleteUserAuthenticationMethodInput = {
   id: Scalars['ID']['input'];
 };
 
 export type DeleteUserSessionInput = {
   id: Scalars['ID']['input'];
+};
+
+export type ExchangeProjectUserApiKeyInput = {
+  clientId: Scalars['String']['input'];
+  clientSecret: Scalars['String']['input'];
+};
+
+export type ExchangeProjectUserApiKeyResult = {
+  __typename?: 'ExchangeProjectUserApiKeyResult';
+  accessToken: Scalars['String']['output'];
+  expiresIn: Scalars['Int']['output'];
 };
 
 export type GetUserAuthenticationMethodsInput = {
@@ -480,6 +515,7 @@ export type Mutation = {
   createOrganization: Organization;
   createPermission: Permission;
   createProject: Project;
+  createProjectUserApiKey: CreateProjectUserApiKeyResult;
   createRole: Role;
   createTag: Tag;
   createUser: User;
@@ -489,10 +525,12 @@ export type Mutation = {
   deleteOrganization: Organization;
   deletePermission: Permission;
   deleteProject: Project;
+  deleteProjectUserApiKey: ProjectUserApiKey;
   deleteRole: Role;
   deleteTag: Tag;
   deleteUser: User;
   deleteUserAuthenticationMethod: UserAuthenticationMethod;
+  exchangeProjectUserApiKey: ExchangeProjectUserApiKeyResult;
   inviteMember: OrganizationInvitation;
   login: LoginResponse;
   refreshSession: RefreshSessionResponse;
@@ -503,6 +541,7 @@ export type Mutation = {
   resendVerification: ResendVerificationResponse;
   resetPassword: ResetPasswordResponse;
   revokeInvitation: OrganizationInvitation;
+  revokeProjectUserApiKey: ProjectUserApiKey;
   revokeUserSession: RevokeUserSessionResult;
   setPrimaryAuthenticationMethod: UserAuthenticationMethod;
   updateGroup: Group;
@@ -545,6 +584,10 @@ export type MutationCreateProjectArgs = {
   input: CreateProjectInput;
 };
 
+export type MutationCreateProjectUserApiKeyArgs = {
+  input: CreateProjectUserApiKeyInput;
+};
+
 export type MutationCreateRoleArgs = {
   input: CreateRoleInput;
 };
@@ -584,6 +627,10 @@ export type MutationDeleteProjectArgs = {
   scope: Scope;
 };
 
+export type MutationDeleteProjectUserApiKeyArgs = {
+  input: DeleteProjectUserApiKeyInput;
+};
+
 export type MutationDeleteRoleArgs = {
   id: Scalars['ID']['input'];
   scope: Scope;
@@ -601,6 +648,10 @@ export type MutationDeleteUserArgs = {
 
 export type MutationDeleteUserAuthenticationMethodArgs = {
   input: DeleteUserAuthenticationMethodInput;
+};
+
+export type MutationExchangeProjectUserApiKeyArgs = {
+  input: ExchangeProjectUserApiKeyInput;
 };
 
 export type MutationInviteMemberArgs = {
@@ -642,6 +693,10 @@ export type MutationResetPasswordArgs = {
 
 export type MutationRevokeInvitationArgs = {
   id: Scalars['ID']['input'];
+};
+
+export type MutationRevokeProjectUserApiKeyArgs = {
+  input: RevokeProjectUserApiKeyInput;
 };
 
 export type MutationRevokeUserSessionArgs = {
@@ -1097,6 +1152,46 @@ export type ProjectUserProjectArgs = {
   organizationId: Scalars['ID']['input'];
 };
 
+export type ProjectUserApiKey = Auditable & {
+  __typename?: 'ProjectUserApiKey';
+  clientId: Scalars['String']['output'];
+  createdAt: Scalars['Date']['output'];
+  createdBy: Scalars['ID']['output'];
+  deletedAt?: Maybe<Scalars['Date']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  expiresAt?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['ID']['output'];
+  isRevoked: Scalars['Boolean']['output'];
+  lastUsedAt?: Maybe<Scalars['Date']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  project?: Maybe<Project>;
+  projectId: Scalars['ID']['output'];
+  revokedAt?: Maybe<Scalars['Date']['output']>;
+  revokedBy?: Maybe<Scalars['ID']['output']>;
+  updatedAt: Scalars['Date']['output'];
+  user?: Maybe<User>;
+  userId: Scalars['ID']['output'];
+};
+
+export type ProjectUserApiKeyPage = PaginatedResults & {
+  __typename?: 'ProjectUserApiKeyPage';
+  hasNextPage: Scalars['Boolean']['output'];
+  projectUserApiKeys: Array<ProjectUserApiKey>;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type ProjectUserApiKeySortInput = {
+  field: ProjectUserApiKeySortableField;
+  order: SortOrder;
+};
+
+export enum ProjectUserApiKeySortableField {
+  CreatedAt = 'createdAt',
+  ExpiresAt = 'expiresAt',
+  LastUsedAt = 'lastUsedAt',
+  Name = 'name',
+}
+
 export type Query = {
   __typename?: 'Query';
   _empty?: Maybe<Scalars['String']['output']>;
@@ -1109,6 +1204,7 @@ export type Query = {
   organizationMembers: OrganizationMemberPage;
   organizations: OrganizationPage;
   permissions: PermissionPage;
+  projectUserApiKeys: ProjectUserApiKeyPage;
   projects: ProjectPage;
   roles: RolePage;
   tags: TagPage;
@@ -1174,6 +1270,15 @@ export type QueryPermissionsArgs = {
   search?: InputMaybe<Scalars['String']['input']>;
   sort?: InputMaybe<PermissionSortInput>;
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
+export type QueryProjectUserApiKeysArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  projectId: Scalars['ID']['input'];
+  search?: InputMaybe<Scalars['String']['input']>;
+  sort?: InputMaybe<ProjectUserApiKeySortInput>;
+  userId: Scalars['ID']['input'];
 };
 
 export type QueryProjectsArgs = {
@@ -1368,6 +1473,10 @@ export type ResetPasswordResponse = {
   message: Scalars['String']['output'];
   messageKey: Scalars['String']['output'];
   success: Scalars['Boolean']['output'];
+};
+
+export type RevokeProjectUserApiKeyInput = {
+  id: Scalars['ID']['input'];
 };
 
 export type RevokeUserSessionResult = {

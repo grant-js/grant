@@ -1,0 +1,3 @@
+extend type Mutation {
+  revokeProjectUserApiKey(input: RevokeProjectUserApiKeyInput!): ProjectUserApiKey!
+}

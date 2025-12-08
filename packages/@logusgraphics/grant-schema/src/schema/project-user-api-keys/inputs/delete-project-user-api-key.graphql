@@ -1,0 +1,4 @@
+input DeleteProjectUserApiKeyInput {
+  id: ID!
+  hardDelete: Boolean
+}

@@ -20,6 +20,7 @@ import { ProjectGroupRepository } from './project-groups.repository';
 import { ProjectPermissionRepository } from './project-permissions.repository';
 import { ProjectRoleRepository } from './project-roles.repository';
 import { ProjectTagRepository } from './project-tags.repository';
+import { ProjectUserApiKeyRepository } from './project-user-api-keys.repository';
 import { ProjectUserRepository } from './project-users.repository';
 import { ProjectRepository } from './projects.repository';
 import { RoleGroupRepository } from './role-groups.repository';
@@ -56,6 +57,7 @@ export function createRepositories(db: DbSchema) {
     projectPermissionRepository: new ProjectPermissionRepository(db),
     projectRoleRepository: new ProjectRoleRepository(db),
     projectTagRepository: new ProjectTagRepository(db),
+    projectUserApiKeyRepository: new ProjectUserApiKeyRepository(db),
     projectUserRepository: new ProjectUserRepository(db),
     projectRepository: new ProjectRepository(db),
     roleGroupRepository: new RoleGroupRepository(db),

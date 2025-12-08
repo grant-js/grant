@@ -1,5 +1,4 @@
-import { randomBytes } from 'crypto';
-
+import { MILLISECONDS_PER_DAY, MILLISECONDS_PER_MINUTE } from '@logusgraphics/grant-constants';
 import { DbSchema, userSessionAuditLogs } from '@logusgraphics/grant-database';
 import {
   CreateUserSessionInput,
@@ -12,6 +11,7 @@ import jwt from 'jsonwebtoken';
 
 import { config } from '@/config';
 import { AuthenticationError, NotFoundError } from '@/lib/errors';
+import { generateRandomBytes } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -43,15 +43,15 @@ export class UserSessionService extends AuditService {
   }
 
   private generateRefreshToken(): string {
-    return randomBytes(32).toString('base64url');
+    return generateRandomBytes(32).toString('base64url');
   }
 
   private getAccessTokenExpirationDate(from: number = Date.now()): Date {
-    return new Date(from + config.jwt.accessTokenExpirationMinutes * 60 * 1000);
+    return new Date(from + config.jwt.accessTokenExpirationMinutes * MILLISECONDS_PER_MINUTE);
   }
 
   private getRefreshTokenExpirationDate(from: number = Date.now()): Date {
-    return new Date(from + config.jwt.refreshTokenExpirationDays * 24 * 60 * 60 * 1000);
+    return new Date(from + config.jwt.refreshTokenExpirationDays * MILLISECONDS_PER_DAY);
   }
 
   private decodeJwt(token: string, ignoreExpiration: boolean = false): JwtPayload {

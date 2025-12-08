@@ -1,4 +1,4 @@
-import { randomBytes } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 
 export interface Token {
   token: string;
@@ -7,14 +7,22 @@ export interface Token {
 
 export type { Token as SecureToken };
 
+export function generateUUID(): string {
+  return randomUUID();
+}
+
+export function generateRandomBytes(length: number): Buffer {
+  return randomBytes(length);
+}
+
 export function generateSecureToken(validityMinutes: number = 60, tokenLength: number = 32): Token {
-  const token = randomBytes(tokenLength).toString('hex');
+  const token = generateRandomBytes(tokenLength).toString('hex');
   const validUntil = Date.now() + validityMinutes * 60 * 1000;
   return { token, validUntil };
 }
 
 export function generateSecureTokenMs(validityMs: number, tokenLength: number = 32): Token {
-  const token = randomBytes(tokenLength).toString('hex');
+  const token = generateRandomBytes(tokenLength).toString('hex');
   const validUntil = Date.now() + validityMs;
   return { token, validUntil };
 }

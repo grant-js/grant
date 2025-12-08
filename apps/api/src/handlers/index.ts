@@ -10,6 +10,7 @@ import { OrganizationInvitationsHandler } from './organization-invitations.handl
 import { OrganizationMembersHandler } from './organization-members.handler';
 import { OrganizationHandler } from './organizations.handler';
 import { PermissionHandler } from './permissions.handler';
+import { ProjectUserApiKeysHandler } from './project-user-api-keys.handler';
 import { ProjectHandler } from './projects.handler';
 import { RoleHandler } from './roles.handler';
 import { TagHandler } from './tags.handler';
@@ -25,6 +26,7 @@ export function createHandlers(cache: IEntityCacheAdapter, services: Services, d
     organizationMembers: new OrganizationMembersHandler(services, db),
     organizations: new OrganizationHandler(cache, services, db),
     projects: new ProjectHandler(cache, services, db),
+    projectUserApiKeys: new ProjectUserApiKeysHandler(services, db),
     users: new UserHandler(cache, services, db),
     roles: new RoleHandler(cache, services, db),
     groups: new GroupHandler(cache, services, db),

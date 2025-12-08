@@ -1,0 +1,10 @@
+extend type Query {
+  projectUserApiKeys(
+    projectId: ID!
+    userId: ID!
+    page: Int
+    limit: Int
+    search: String
+    sort: ProjectUserApiKeySortInput
+  ): ProjectUserApiKeyPage!
+}

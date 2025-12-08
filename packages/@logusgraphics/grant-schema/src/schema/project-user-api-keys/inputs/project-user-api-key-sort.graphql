@@ -1,0 +1,4 @@
+input ProjectUserApiKeySortInput {
+  field: ProjectUserApiKeySortableField!
+  order: SortOrder!
+}

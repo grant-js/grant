@@ -1,0 +1,5 @@
+type ProjectUserApiKeyPage implements PaginatedResults {
+  projectUserApiKeys: [ProjectUserApiKey!]!
+  totalCount: Int!
+  hasNextPage: Boolean!
+}

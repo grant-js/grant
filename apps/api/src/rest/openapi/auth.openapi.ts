@@ -539,7 +539,7 @@ Returns user account information including:
   registry.registerPath({
     method: 'get',
     path: '/api/auth/github',
-    tags: ['Authentication', 'OAuth'],
+    tags: ['Authentication'],
     summary: 'Initiate GitHub OAuth',
     description: `
 Initiate the GitHub OAuth authentication flow.
@@ -606,7 +606,7 @@ user's ID is automatically used, and the redirect URL defaults to the security s
   registry.registerPath({
     method: 'get',
     path: '/api/auth/github/callback',
-    tags: ['Authentication', 'OAuth'],
+    tags: ['Authentication'],
     summary: 'GitHub OAuth callback',
     description: `
 Handle the callback from GitHub OAuth flow.

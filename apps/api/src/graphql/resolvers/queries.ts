@@ -5,6 +5,7 @@ import * as organizationInvitationQueries from './organization-invitations/queri
 import * as organizationMemberQueries from './organization-members/queries';
 import * as organizationQueries from './organizations/queries';
 import * as permissionQueries from './permissions/queries';
+import * as projectUserApiKeyQueries from './project-user-api-keys/queries';
 import * as projectQueries from './projects/queries';
 import * as roleQueries from './roles/queries';
 import * as tagQueries from './tags/queries';
@@ -27,5 +28,6 @@ export const Query = {
   tags: tagQueries.getTags,
   userAuthenticationMethods: userAuthenticationMethodQueries.userAuthenticationMethods,
   userSessions: userSessionQueries.userSessions,
+  projectUserApiKeys: projectUserApiKeyQueries.projectUserApiKeys,
   me: authQueries.me,
 } as const;

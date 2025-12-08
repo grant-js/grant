@@ -28,6 +28,7 @@ import { ProjectGroupService } from './project-groups.service';
 import { ProjectPermissionService } from './project-permissions.service';
 import { ProjectRoleService } from './project-roles.service';
 import { ProjectTagService } from './project-tags.service';
+import { ProjectUserApiKeyService } from './project-user-api-keys.service';
 import { ProjectUserService } from './project-users.service';
 import { ProjectService } from './projects.service';
 import { RoleGroupService } from './role-groups.service';
@@ -69,6 +70,7 @@ export function createServices(
     projectRoles: new ProjectRoleService(repositories, user, db),
     projectPermissions: new ProjectPermissionService(repositories, user, db),
     projectTags: new ProjectTagService(repositories, user, db),
+    projectUserApiKeys: new ProjectUserApiKeyService(repositories, user, db),
     projectUsers: new ProjectUserService(repositories, user, db),
     organizations: new OrganizationService(repositories, user, db),
     organizationInvitations: new OrganizationInvitationService(repositories, user, db),

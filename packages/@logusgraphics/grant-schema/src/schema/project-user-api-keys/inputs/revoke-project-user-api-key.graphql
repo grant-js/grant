@@ -1,0 +1,3 @@
+input RevokeProjectUserApiKeyInput {
+  id: ID!
+}
