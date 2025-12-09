@@ -5,6 +5,7 @@ import {
   MutationUpdateUserArgs,
   QueryUsersArgs,
   Role,
+  Scope,
   Tag,
   Tenant,
   User,
@@ -22,7 +23,7 @@ import { Services } from '@/services';
 import { DeleteParams, SelectedFields } from '@/services/common';
 import { Otp } from '@/services/user-authentication-methods.service';
 
-import { ScopeHandler } from './base/scope-handler';
+import { CacheKey, ScopeHandler } from './base/scope-handler';
 
 export interface UserDataExport {
   user: {
@@ -207,6 +208,10 @@ export class UserHandler extends ScopeHandler {
             this.services.userRoles.removeUserRole({ userId, roleId }, tx)
           )
         );
+
+        if (newRoleIds.length > 0 || removedRoleIds.length > 0) {
+          await this.invalidateProjectUserRoleCache(userId);
+        }
       }
       return updatedUser;
     });
@@ -232,6 +237,7 @@ export class UserHandler extends ScopeHandler {
           break;
         case Tenant.Project:
           await this.services.projectUsers.removeProjectUser({ projectId: scope.id, userId }, tx);
+          await this.invalidateProjectUserRoleCache(userId);
           break;
       }
 
@@ -240,10 +246,26 @@ export class UserHandler extends ScopeHandler {
         ...roleIds.map((roleId) => this.services.userRoles.removeUserRole({ userId, roleId }, tx)),
       ]);
 
-      this.removeUserIdFromScopeCache(scope, userId);
+      await this.removeUserIdFromScopeCache(scope, userId);
 
       return await this.services.users.deleteUser(params, tx);
     });
+  }
+
+  private async invalidateProjectUserRoleCache(userId: string): Promise<void> {
+    const projectUsers = await this.services.projectUsers.getProjectUsers({ userId });
+    const projectIds = projectUsers.map((pu) => pu.projectId);
+
+    await Promise.all(
+      projectIds.map(async (projectId) => {
+        const scope: Scope = {
+          tenant: Tenant.ProjectUser,
+          id: `${projectId}:${userId}`,
+        };
+        const cacheKey: CacheKey = `${scope.tenant}:${scope.id}`;
+        await this.cache.roles.delete(cacheKey);
+      })
+    );
   }
 
   public async getUserTags(params: { userId: string } & SelectedFields<User>): Promise<Array<Tag>> {

@@ -442,8 +442,40 @@
     "roles": {
       "title": "Roles",
       "empty": "No roles assigned",
+      "emptyDescription": "This user has no roles assigned in this project",
       "loading": "Loading roles...",
-      "error": "Error loading roles"
+      "error": "Error loading roles",
+      "addButton": "Add Role",
+      "search": {
+        "placeholder": "Search roles..."
+      },
+      "sort": {
+        "label": "Sort by",
+        "name": "Name"
+      },
+      "table": {
+        "name": "Name",
+        "description": "Description",
+        "groups": "Groups",
+        "tags": "Tags",
+        "audit": "Audit"
+      },
+      "noDescription": "No description",
+      "actions": {
+        "remove": "Remove"
+      },
+      "removeDialog": {
+        "title": "Remove Role",
+        "description": "Are you sure you want to remove the role \"{name}\" from this user?",
+        "confirm": "Remove",
+        "cancel": "Cancel",
+        "removing": "Removing..."
+      },
+      "addDropdown": {
+        "title": "Add Role",
+        "loading": "Loading roles...",
+        "noRolesAvailable": "No roles available to add"
+      }
     },
     "tags": {
       "title": "Tags",

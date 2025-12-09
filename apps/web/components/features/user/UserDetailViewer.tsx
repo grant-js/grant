@@ -30,7 +30,7 @@ export function UserDetailViewer() {
 
   const user = useMemo(() => users[0], [users]);
 
-  if (loading) {
+  if (loading && !user) {
     return <div>{t('loading.title')}</div>;
   }
 
@@ -42,7 +42,7 @@ export function UserDetailViewer() {
     <div className="space-y-6">
       <UserInfo user={user} />
       <div className="grid gap-6 md:grid-cols-2">
-        <UserRoles userId={user.id} />
+        <UserRoles userId={user.id} user={user} />
         <UserTags userId={user.id} />
       </div>
       <UserApiKeys userId={user.id} />

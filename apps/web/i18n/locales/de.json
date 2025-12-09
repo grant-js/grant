@@ -442,8 +442,40 @@
     "roles": {
       "title": "Rollen",
       "empty": "Keine Rollen zugewiesen",
+      "emptyDescription": "Diesem Benutzer sind in diesem Projekt keine Rollen zugewiesen",
       "loading": "Rollen werden geladen...",
-      "error": "Fehler beim Laden der Rollen"
+      "error": "Fehler beim Laden der Rollen",
+      "addButton": "Rolle hinzufügen",
+      "search": {
+        "placeholder": "Rollen suchen..."
+      },
+      "sort": {
+        "label": "Sortieren nach",
+        "name": "Name"
+      },
+      "table": {
+        "name": "Name",
+        "description": "Beschreibung",
+        "groups": "Gruppen",
+        "tags": "Tags",
+        "audit": "Audit"
+      },
+      "noDescription": "Keine Beschreibung",
+      "actions": {
+        "remove": "Entfernen"
+      },
+      "removeDialog": {
+        "title": "Rolle entfernen",
+        "description": "Sind Sie sicher, dass Sie die Rolle \"{name}\" von diesem Benutzer entfernen möchten?",
+        "confirm": "Entfernen",
+        "cancel": "Abbrechen",
+        "removing": "Wird entfernt..."
+      },
+      "addDropdown": {
+        "title": "Rolle hinzufügen",
+        "loading": "Rollen werden geladen...",
+        "noRolesAvailable": "Keine Rollen zum Hinzufügen verfügbar"
+      }
     },
     "tags": {
       "title": "Tags",

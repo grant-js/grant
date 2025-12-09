@@ -73,13 +73,15 @@ export class ProjectUserService extends AuditService {
   }
 
   public async getProjectUsers(
-    params: { projectId: string },
+    params: { projectId?: string; userId?: string },
     transaction?: Transaction
   ): Promise<ProjectUser[]> {
     const context = 'ProjectUserService.getProjectUsers';
     const validatedParams = validateInput(getProjectUsersParamsSchema, params, context);
 
-    await this.projectExists(validatedParams.projectId, transaction);
+    if (validatedParams.projectId) {
+      await this.projectExists(validatedParams.projectId, transaction);
+    }
 
     const result = await this.repositories.projectUserRepository.getProjectUsers(
       validatedParams,

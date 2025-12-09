@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { deleteSchema, idSchema } from './common/schemas';
 
 export const getProjectUsersParamsSchema = z.object({
-  projectId: idSchema,
+  projectId: idSchema.optional(),
+  userId: idSchema.optional(),
 });
 
 export const addProjectUserParamsSchema = z.object({

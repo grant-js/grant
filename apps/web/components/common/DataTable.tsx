@@ -12,7 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-import { TableSkeleton, ColumnConfig as SkeletonColumnConfig } from './TableSkeleton';
+import { ColumnConfig as SkeletonColumnConfig, TableSkeleton } from './TableSkeleton';
 
 export interface ColumnConfig<T> {
   key: string;
@@ -38,6 +38,7 @@ export interface DataTableProps<T> {
     render: (item: T) => ReactNode;
   };
   skeletonConfig?: {
+    columns?: SkeletonColumnConfig[];
     rowCount?: number;
   };
 }
@@ -58,12 +59,14 @@ export function DataTable<T>({
   }
 
   if (loading) {
-    // Convert columns to skeleton configs
-    const skeletonColumns: SkeletonColumnConfig[] = columns.map((column) => ({
-      key: column.key,
-      type: 'text', // Default to text for skeleton
-      width: column.width,
-    }));
+    // Use provided skeleton config columns if available, otherwise convert columns to skeleton configs
+    const skeletonColumns: SkeletonColumnConfig[] =
+      skeletonConfig?.columns ||
+      columns.map((column) => ({
+        key: column.key,
+        type: 'text', // Default to text for skeleton
+        width: column.width,
+      }));
 
     return (
       <TableSkeleton

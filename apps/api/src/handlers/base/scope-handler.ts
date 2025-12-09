@@ -115,6 +115,33 @@ export class ScopeHandler {
         break;
       }
 
+      case Tenant.ProjectUser: {
+        // Parse projectUser scope: id format is "projectId:userId"
+        const [projectId, userId] = scope.id.split(':');
+        if (!projectId || !userId) {
+          throw new BadRequestError(
+            'Invalid projectUser scope: id must be in format "projectId:userId"',
+            'errors:validation.invalid',
+            { field: 'scope.id' }
+          );
+        }
+
+        // Get user roles and project roles, then find intersection
+        const [userRoles, projectRoles] = await Promise.all([
+          this.services.userRoles.getUserRoles({ userId }),
+          this.services.projectRoles.getProjectRoles({ projectId }),
+        ]);
+
+        const userRoleIds = new Set(userRoles.map((ur) => ur.roleId));
+        const projectRoleIds = projectRoles.map((pr) => pr.roleId);
+
+        // Return roles that are both assigned to the user AND available in the project
+        // Note: We filter project roles by user roles to ensure we only return roles
+        // that the user actually has, and that exist in the project
+        roleIds = projectRoleIds.filter((roleId) => userRoleIds.has(roleId));
+        break;
+      }
+
       default:
         throw new BadRequestError(
           `Unsupported tenant type: ${scope.tenant}`,
