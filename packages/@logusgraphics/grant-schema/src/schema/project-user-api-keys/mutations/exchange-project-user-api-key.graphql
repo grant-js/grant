@@ -1,5 +1,0 @@
-extend type Mutation {
-  exchangeProjectUserApiKey(
-    input: ExchangeProjectUserApiKeyInput!
-  ): ExchangeProjectUserApiKeyResult!
-}

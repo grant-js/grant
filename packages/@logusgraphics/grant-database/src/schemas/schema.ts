@@ -1,5 +1,11 @@
 import { accountProjects, accountProjectsRelations } from './account-projects.schema';
 import { accounts, accountsRelations } from './accounts.schema';
+import {
+  apiKeys,
+  apiKeysRelations,
+  apiKeyAuditLogs,
+  apiKeyAuditLogsRelations,
+} from './api-keys.schema';
 import { groupPermissions, groupPermissionsRelations } from './group-permissions.schema';
 import { groupTags, groupTagsRelations } from './group-tags.schema';
 import { groups, groupsRelations } from './groups.schema';
@@ -52,6 +58,8 @@ import { users, usersRelations } from './users.schema';
 export const schema = {
   accountProjects,
   accounts,
+  apiKeys,
+  apiKeyAuditLogs,
   groupPermissions,
   groupTags,
   groups,
@@ -102,6 +110,8 @@ export const schema = {
   projectUserApiKeysRelations,
   projectUserApiKeyAuditLogsRelations,
   projectUsersRelations,
+  apiKeysRelations,
+  apiKeyAuditLogsRelations,
   projectsRelations,
   roleGroupsRelations,
   roleTagsRelations,

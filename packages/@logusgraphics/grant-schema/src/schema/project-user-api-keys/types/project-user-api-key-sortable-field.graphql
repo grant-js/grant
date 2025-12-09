@@ -1,6 +1,0 @@
-enum ProjectUserApiKeySortableField {
-  name
-  createdAt
-  lastUsedAt
-  expiresAt
-}

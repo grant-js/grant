@@ -1,0 +1,11 @@
+mutation CreateApiKey($input: CreateApiKeyInput!) {
+  createApiKey(input: $input) {
+    id
+    clientId
+    clientSecret
+    name
+    description
+    expiresAt
+    createdAt
+  }
+}

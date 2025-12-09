@@ -308,6 +308,48 @@ export class ScopeHandler {
     return tagIds;
   }
 
+  async getScopedApiKeyIds(scope: Scope): Promise<string[]> {
+    const cacheKey = this.createCacheKey(scope);
+
+    const cachedApiKeys = await this.cache.apiKeys?.get(cacheKey);
+    if (cachedApiKeys) {
+      return Array.from(cachedApiKeys.values());
+    }
+
+    let apiKeyIds: string[];
+    switch (scope.tenant) {
+      case Tenant.ProjectUser: {
+        // Parse projectUser scope: id format is "projectId:userId"
+        const [projectId, userId] = scope.id.split(':');
+        if (!projectId || !userId) {
+          throw new BadRequestError(
+            'Invalid projectUser scope: id must be in format "projectId:userId"',
+            'errors:validation.invalid',
+            { field: 'scope.id' }
+          );
+        }
+        const projectUserApiKeys = await this.services.projectUserApiKeys.getProjectUserApiKeys({
+          projectId,
+          userId,
+        });
+        apiKeyIds = projectUserApiKeys.map((pivot) => pivot.apiKeyId);
+        break;
+      }
+
+      default:
+        throw new BadRequestError(
+          `Unsupported tenant type: ${scope.tenant}`,
+          'errors:validation.invalid',
+          { field: 'tenant' }
+        );
+    }
+
+    if (this.cache.apiKeys) {
+      await this.cache.apiKeys.set(cacheKey, new Set(apiKeyIds));
+    }
+    return apiKeyIds;
+  }
+
   async addTagIdToScopeCache(scope: Scope, tagId: string): Promise<void> {
     await this.addIdToCache(this.cache.tags, scope, tagId);
   }
@@ -354,5 +396,17 @@ export class ScopeHandler {
 
   async removeProjectIdFromScopeCache(scope: Scope, projectId: string): Promise<void> {
     await this.removeIdFromCache(this.cache.projects, scope, projectId);
+  }
+
+  async addApiKeyIdToScopeCache(scope: Scope, apiKeyId: string): Promise<void> {
+    if (this.cache.apiKeys) {
+      await this.addIdToCache(this.cache.apiKeys, scope, apiKeyId);
+    }
+  }
+
+  async removeApiKeyIdFromScopeCache(scope: Scope, apiKeyId: string): Promise<void> {
+    if (this.cache.apiKeys) {
+      await this.removeIdFromCache(this.cache.apiKeys, scope, apiKeyId);
+    }
   }
 }

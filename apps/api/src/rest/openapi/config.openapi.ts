@@ -20,7 +20,7 @@ import { registerGroupsOpenApi } from './groups.openapi';
 import { registerOrganizationInvitationsOpenApi } from './organization-invitations.openapi';
 import { registerOrganizationsOpenApi } from './organizations.openapi';
 import { registerPermissionsOpenApi } from './permissions.openapi';
-import { registerProjectUserApiKeysOpenApi } from './project-user-api-keys.openapi';
+import { registerApiKeysOpenApi } from './api-keys.openapi';
 import { registerProjectsOpenApi } from './projects.openapi';
 import { registerRolesOpenApi } from './roles.openapi';
 import { registerTagsOpenApi } from './tags.openapi';
@@ -61,7 +61,7 @@ function registerAllEndpoints() {
   registerOrganizationsOpenApi(registry);
   registerOrganizationInvitationsOpenApi(registry);
   registerProjectsOpenApi(registry);
-  registerProjectUserApiKeysOpenApi(registry);
+  registerApiKeysOpenApi(registry);
   registerRolesOpenApi(registry);
   registerGroupsOpenApi(registry);
   registerPermissionsOpenApi(registry);
@@ -137,8 +137,8 @@ export function generateOpenApiDocument() {
         description: 'Project management endpoints',
       },
       {
-        name: 'Project User API Keys',
-        description: 'Project user API key management and authentication endpoints',
+        name: 'API Keys',
+        description: 'API key management and authentication endpoints',
       },
       {
         name: 'Roles',

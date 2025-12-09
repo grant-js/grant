@@ -1,0 +1,10 @@
+extend type Query {
+  apiKeys(
+    scope: Scope!
+    page: Int
+    limit: Int
+    search: String
+    sort: ApiKeySortInput
+    ids: [ID!]
+  ): ApiKeyPage!
+}

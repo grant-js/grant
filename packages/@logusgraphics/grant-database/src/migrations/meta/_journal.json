@@ -148,6 +148,20 @@
       "when": 1765239469728,
       "tag": "0020_closed_paper_doll",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1765268501260,
+      "tag": "0021_happy_enchantress",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1765269005010,
+      "tag": "0022_foamy_doctor_doom",
+      "breakpoints": true
     }
   ]
 }

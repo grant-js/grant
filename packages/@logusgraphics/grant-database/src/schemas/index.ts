@@ -1,6 +1,7 @@
 // Consolidated database schema exports
 export * from './account-projects.schema';
 export * from './accounts.schema';
+export * from './api-keys.schema';
 export * from './group-permissions.schema';
 export * from './group-tags.schema';
 export * from './groups.schema';

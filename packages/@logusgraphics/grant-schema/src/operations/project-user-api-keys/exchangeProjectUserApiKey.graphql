@@ -1,6 +1,0 @@
-mutation ExchangeProjectUserApiKey($input: ExchangeProjectUserApiKeyInput!) {
-  exchangeProjectUserApiKey(input: $input) {
-    accessToken
-    expiresIn
-  }
-}

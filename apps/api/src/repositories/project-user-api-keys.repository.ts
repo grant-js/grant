@@ -1,261 +1,91 @@
-import {
-  ProjectUserApiKeyModel,
-  projectUserApiKeys,
-  projects,
-  users,
-} from '@logusgraphics/grant-database';
-import {
-  Project,
-  ProjectUserApiKey,
-  ProjectUserApiKeyPage,
-  QueryProjectUserApiKeysArgs,
-  User,
-} from '@logusgraphics/grant-schema';
-import { eq } from 'drizzle-orm';
+import { ProjectUserApiKeyModel, projectUserApiKeys } from '@logusgraphics/grant-database';
+import { ProjectUserApiKey } from '@logusgraphics/grant-schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { SelectedFields } from '@/services/common';
 
 import {
-  BaseUpdateArgs,
-  EntityRepository,
-  FilterCondition,
-  RelationsConfig,
-} from './common/EntityRepository';
+  BasePivotAddArgs,
+  BasePivotQueryArgs,
+  BasePivotRemoveArgs,
+  PivotRepository,
+} from './common/PivotRepository';
 
-export class ProjectUserApiKeyRepository extends EntityRepository<
+export class ProjectUserApiKeyRepository extends PivotRepository<
   ProjectUserApiKeyModel,
   ProjectUserApiKey
 > {
   protected table = projectUserApiKeys;
-  protected schemaName = 'projectUserApiKeys' as const;
-  protected searchFields: Array<keyof ProjectUserApiKeyModel> = ['clientId', 'name'];
-  protected defaultSortField: keyof ProjectUserApiKeyModel = 'createdAt';
-  protected relations: RelationsConfig<ProjectUserApiKey> = {
-    project: {
-      field: 'project',
-      table: projects,
-      extract: (v: Project) => v,
-    },
-    user: {
-      field: 'user',
-      table: users,
-      extract: (v: User) => v,
-    },
-  };
+  protected parentIdField: keyof ProjectUserApiKeyModel = 'projectId';
+  protected relatedIdField: keyof ProjectUserApiKeyModel = 'userId';
 
-  public async findByClientId(
-    clientId: string,
-    transaction?: Transaction
-  ): Promise<ProjectUserApiKey | null> {
-    const filters: FilterCondition<ProjectUserApiKeyModel>[] = [
-      {
-        field: 'clientId',
-        operator: 'eq',
-        value: clientId,
-      },
-    ];
-
-    const result = await this.query(
-      {
-        filters,
-        limit: 1,
-      },
-      transaction
-    );
-
-    return result.items[0] || null;
-  }
-
-  public async getProjectUserApiKey(
-    id: string,
-    transaction?: Transaction
-  ): Promise<ProjectUserApiKey | null> {
-    const result = await this.query({ ids: [id], limit: 1 }, transaction);
-    return result.items[0] || null;
-  }
-
-  public async getClientSecretHash(id: string, transaction?: Transaction): Promise<string | null> {
-    const dbInstance = transaction ?? this.db;
-    const result = await dbInstance
-      .select({ clientSecretHash: this.table.clientSecretHash })
-      .from(this.table)
-      .where(eq(this.table.id, id))
-      .limit(1);
-
-    return result[0]?.clientSecretHash || null;
-  }
-
-  public async findActiveByClientId(
-    clientId: string,
-    transaction?: Transaction
-  ): Promise<ProjectUserApiKey | null> {
-    const now = new Date();
-    const filters: FilterCondition<ProjectUserApiKeyModel>[] = [
-      {
-        field: 'clientId',
-        operator: 'eq',
-        value: clientId,
-      },
-      {
-        field: 'isRevoked',
-        operator: 'eq',
-        value: false,
-      },
-      {
-        field: 'deletedAt',
-        operator: 'isNull',
-        value: undefined,
-      },
-    ];
-
-    const result = await this.query(
-      {
-        filters,
-        limit: 1,
-      },
-      transaction
-    );
-
-    if (result.items.length === 0) {
-      return null;
-    }
-
-    const key = result.items[0];
-
-    if (key.expiresAt && new Date(key.expiresAt) < now) {
-      return null;
-    }
-
-    return key;
-  }
-
-  public async findByProjectAndUser(
-    projectId: string,
-    userId: string,
-    transaction?: Transaction
-  ): Promise<ProjectUserApiKey[]> {
-    const filters: FilterCondition<ProjectUserApiKeyModel>[] = [
-      {
-        field: 'projectId',
-        operator: 'eq',
-        value: projectId,
-      },
-      {
-        field: 'userId',
-        operator: 'eq',
-        value: userId,
-      },
-    ];
-
-    const result = await this.query(
-      {
-        filters,
-        limit: -1,
-      },
-      transaction
-    );
-
-    return result.items;
+  protected toEntity(dbPivot: ProjectUserApiKeyModel): ProjectUserApiKey {
+    return {
+      id: dbPivot.id,
+      projectId: dbPivot.projectId,
+      userId: dbPivot.userId,
+      apiKeyId: dbPivot.apiKeyId,
+      createdAt: dbPivot.createdAt,
+      updatedAt: dbPivot.updatedAt,
+      deletedAt: dbPivot.deletedAt ?? undefined,
+    };
   }
 
   public async getProjectUserApiKeys(
-    params: QueryProjectUserApiKeysArgs & SelectedFields<ProjectUserApiKey>,
+    params: { projectId: string; userId: string },
     transaction?: Transaction
-  ): Promise<ProjectUserApiKeyPage> {
-    const filters: FilterCondition<ProjectUserApiKeyModel>[] = [
-      {
-        field: 'projectId',
-        operator: 'eq',
-        value: params.projectId,
-      },
-      {
-        field: 'userId',
-        operator: 'eq',
-        value: params.userId,
-      },
-    ];
-
-    const { page, limit, search, sort, requestedFields } = params;
-
-    const result = await this.query(
-      {
-        page,
-        limit,
-        search,
-        sort,
-        requestedFields,
-        filters,
-      },
-      transaction
-    );
-
-    return {
-      projectUserApiKeys: result.items,
-      totalCount: result.totalCount,
-      hasNextPage: result.hasNextPage,
+  ): Promise<ProjectUserApiKey[]> {
+    const baseParams: BasePivotQueryArgs = {
+      parentId: params.projectId,
+      relatedId: params.userId,
     };
+
+    return this.query(baseParams, transaction);
   }
 
-  public async createProjectUserApiKey(
+  public async attachApiKey(
     params: {
+      apiKeyId: string;
       projectId: string;
       userId: string;
-      clientId: string;
-      clientSecretHash: string;
-      name?: string | null;
-      description?: string | null;
-      expiresAt?: Date | null;
-      createdBy: string;
     },
     transaction?: Transaction
   ): Promise<ProjectUserApiKey> {
-    return this.create(params, transaction);
-  }
-
-  public async updateLastUsedAt(
-    id: string,
-    lastUsedAt: Date,
-    transaction?: Transaction
-  ): Promise<ProjectUserApiKey> {
-    const baseUpdateArgs: BaseUpdateArgs = {
-      id,
-      input: {
-        lastUsedAt,
-      },
+    const baseParams: BasePivotAddArgs = {
+      parentId: params.projectId,
+      relatedId: params.userId,
+      apiKeyId: params.apiKeyId,
     };
 
-    return this.update(baseUpdateArgs, transaction);
+    return this.add(baseParams, transaction);
   }
 
-  public async revokeApiKey(
-    id: string,
-    revokedBy: string,
+  public async detachApiKey(
+    params: {
+      projectId: string;
+      userId: string;
+    },
     transaction?: Transaction
   ): Promise<ProjectUserApiKey> {
-    const baseUpdateArgs: BaseUpdateArgs = {
-      id,
-      input: {
-        isRevoked: true,
-        revokedAt: new Date(),
-        revokedBy,
-      },
+    const baseParams: BasePivotRemoveArgs = {
+      parentId: params.projectId,
+      relatedId: params.userId,
     };
 
-    return this.update(baseUpdateArgs, transaction);
+    return this.softDelete(baseParams, transaction);
   }
 
-  public async softDeleteProjectUserApiKey(
-    id: string,
+  public async hardDetachApiKey(
+    params: {
+      projectId: string;
+      userId: string;
+    },
     transaction?: Transaction
   ): Promise<ProjectUserApiKey> {
-    return this.softDelete({ id }, transaction);
-  }
+    const baseParams: BasePivotRemoveArgs = {
+      parentId: params.projectId,
+      relatedId: params.userId,
+    };
 
-  public async hardDeleteProjectUserApiKey(
-    id: string,
-    transaction?: Transaction
-  ): Promise<ProjectUserApiKey> {
-    return this.hardDelete({ id }, transaction);
+    return this.hardDelete(baseParams, transaction);
   }
 }

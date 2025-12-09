@@ -1,0 +1,3 @@
+extend type Mutation {
+  revokeApiKey(input: RevokeApiKeyInput!): ApiKey!
+}

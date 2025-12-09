@@ -2,15 +2,8 @@ type ProjectUserApiKey implements Auditable {
   id: ID!
   projectId: ID!
   userId: ID!
-  clientId: String!
-  name: String
-  description: String
-  expiresAt: Date
-  lastUsedAt: Date
-  isRevoked: Boolean!
-  revokedAt: Date
-  revokedBy: ID
-  createdBy: ID!
+  apiKeyId: ID!
+  apiKey: ApiKey
   project: Project
   user: User
   createdAt: Date!

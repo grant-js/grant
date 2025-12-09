@@ -1,0 +1,4 @@
+input RemoveProjectUserApiKeyInput {
+  projectId: ID!
+  userId: ID!
+}

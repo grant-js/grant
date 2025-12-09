@@ -1,0 +1,6 @@
+input CreateApiKeyInput {
+  name: String
+  description: String
+  expiresAt: Date
+  scope: Scope!
+}

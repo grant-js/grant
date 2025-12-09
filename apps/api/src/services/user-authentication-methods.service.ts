@@ -8,7 +8,6 @@ import {
   UserAuthenticationMethod,
   UserAuthenticationMethodProvider,
 } from '@logusgraphics/grant-schema';
-import { compareSync, hashSync } from 'bcrypt';
 
 import { config } from '@/config';
 import {
@@ -18,7 +17,13 @@ import {
   NotFoundError,
   ValidationError,
 } from '@/lib/errors';
-import { generateSecureToken, isTokenValid, type Token } from '@/lib/token.lib';
+import {
+  generateSecureToken,
+  hashSecret,
+  isTokenValid,
+  verifySecret,
+  type Token,
+} from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -409,7 +414,7 @@ export class UserAuthenticationMethodService extends AuditService {
           validatedProviderData.password,
           context
         );
-        const hashedPassword = this.hashPassword(validatedPassword);
+        const hashedPassword = hashSecret(validatedPassword);
         const otp = this.generateOtp();
         return {
           providerData: {
@@ -561,14 +566,6 @@ export class UserAuthenticationMethodService extends AuditService {
 
   public generatePasswordResetOtp(): Otp {
     return generateSecureToken(config.auth.passwordResetOtpValidityMinutes);
-  }
-
-  public hashPassword(password: string): string {
-    return hashSync(password, 10);
-  }
-
-  public verifyPassword(password: string, hashedPassword: string): boolean {
-    return compareSync(password, hashedPassword);
   }
 
   public async verifyEmail(
@@ -728,7 +725,7 @@ export class UserAuthenticationMethodService extends AuditService {
       return null;
     }
 
-    const hashedPassword = this.hashPassword(newPassword);
+    const hashedPassword = hashSecret(newPassword);
 
     const providerData = (targetMethod.providerData as Record<string, unknown>) || {};
     providerData.hashedPassword = hashedPassword;
@@ -798,11 +795,11 @@ export class UserAuthenticationMethodService extends AuditService {
       throw new BadRequestError('Password not set for this account', 'errors:auth.passwordNotSet');
     }
 
-    if (!this.verifyPassword(currentPassword, hashedPassword)) {
+    if (!verifySecret(currentPassword, hashedPassword)) {
       throw new AuthenticationError('Current password is incorrect', 'errors:auth.invalidPassword');
     }
 
-    const newHashedPassword = this.hashPassword(newPassword);
+    const newHashedPassword = hashSecret(newPassword);
     providerData.hashedPassword = newHashedPassword;
 
     await this.repositories.userAuthenticationMethodRepository.updateUserAuthenticationMethod(

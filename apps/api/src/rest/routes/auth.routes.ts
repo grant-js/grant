@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
-import { validateBody } from '@/middleware/validation.middleware';
+import { validate, validateBody } from '@/middleware/validation.middleware';
+import { ApiKeysController } from '@/rest/controllers/api-keys.controller';
 import { AuthController } from '@/rest/controllers/auth.controller';
 import { OAuthController } from '@/rest/controllers/oauth.controller';
 import {
@@ -13,6 +14,7 @@ import {
   resetPasswordRequestSchema,
   verifyEmailRequestSchema,
 } from '@/rest/schemas';
+import { exchangeApiKeyRequestSchema } from '@/rest/schemas/api-keys.schemas';
 import { TypedRequest } from '@/rest/types';
 import { RequestContext } from '@/types';
 
@@ -20,6 +22,7 @@ export function createAuthRoutes(context: RequestContext) {
   const router = Router();
   const authController = new AuthController(context);
   const oauthController = new OAuthController(context);
+  const apiKeysController = new ApiKeysController(context);
 
   router.post('/login', validateBody(loginRequestSchema), (req, res) =>
     authController.login(req as TypedRequest<{ body: typeof loginRequestSchema }>, res)
@@ -82,6 +85,15 @@ export function createAuthRoutes(context: RequestContext) {
   );
 
   router.get('/me', (req, res) => authController.me(req as TypedRequest, res));
+
+  router.post('/api-keys/token', validate({ body: exchangeApiKeyRequestSchema }), (req, res) =>
+    apiKeysController.exchangeApiKey(
+      req as TypedRequest<{
+        body: typeof exchangeApiKeyRequestSchema;
+      }>,
+      res
+    )
+  );
 
   return router;
 }

@@ -1,5 +1,7 @@
 import { randomBytes, randomUUID } from 'crypto';
 
+import { compareSync, hashSync } from 'bcrypt';
+
 export interface Token {
   token: string;
   validUntil: number;
@@ -33,4 +35,12 @@ export function isTokenValid(token: Token): boolean {
 
 export function getTokenRemainingTime(token: Token): number {
   return token.validUntil - Date.now();
+}
+
+export function hashSecret(value: string, rounds: number = 10): string {
+  return hashSync(value, rounds);
+}
+
+export function verifySecret(value: string, hash: string): boolean {
+  return compareSync(value, hash);
 }

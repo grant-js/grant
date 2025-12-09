@@ -27,6 +27,7 @@ import { translateStatic, type SupportedLocale } from '@/i18n';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { AuthenticationError, ConflictError } from '@/lib/errors';
 import { createModuleLogger } from '@/lib/logger';
+import { verifySecret } from '@/lib/token.lib';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 import { DeleteParams, SelectedFields } from '@/services/common';
@@ -108,10 +109,7 @@ export class AccountHandler extends ScopeHandler {
         const storedHashedPassword = userAuthenticationMethodProviderData.hashedPassword;
         if (
           !storedHashedPassword ||
-          !this.services.userAuthenticationMethods.verifyPassword(
-            processedProviderData.password as string,
-            storedHashedPassword
-          )
+          !verifySecret(processedProviderData.password as string, storedHashedPassword)
         ) {
           throw new AuthenticationError('Invalid credentials', 'errors:auth.invalidCredentials');
         }

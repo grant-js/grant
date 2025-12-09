@@ -1,0 +1,5 @@
+input ExchangeApiKeyInput {
+  clientId: String!
+  clientSecret: String!
+  scope: Scope!
+}

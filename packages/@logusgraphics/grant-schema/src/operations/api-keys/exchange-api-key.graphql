@@ -1,0 +1,6 @@
+mutation ExchangeApiKey($input: ExchangeApiKeyInput!) {
+  exchangeApiKey(input: $input) {
+    accessToken
+    expiresIn
+  }
+}

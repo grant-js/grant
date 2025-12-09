@@ -1,0 +1,3 @@
+extend type Mutation {
+  createApiKey(input: CreateApiKeyInput!): CreateApiKeyResult!
+}

@@ -5,7 +5,7 @@ export * from './groups.schemas';
 export * from './organization-invitations.schemas';
 export * from './organizations.schemas';
 export * from './permissions.schemas';
-export * from './project-user-api-keys.schemas';
+export * from './api-keys.schemas';
 export * from './projects.schemas';
 export * from './roles.schemas';
 export * from './tags.schemas';

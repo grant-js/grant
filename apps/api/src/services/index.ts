@@ -6,6 +6,7 @@ import { AuthenticatedUser } from '@/types';
 
 import { AccountProjectService } from './account-projects.service';
 import { AccountService } from './accounts.service';
+import { ApiKeyService } from './api-keys.service';
 import { EmailService } from './email.service';
 import { FileStorageService } from './file-storage.service';
 import { GitHubOAuthService } from './github-oauth.service';
@@ -70,6 +71,7 @@ export function createServices(
     projectRoles: new ProjectRoleService(repositories, user, db),
     projectPermissions: new ProjectPermissionService(repositories, user, db),
     projectTags: new ProjectTagService(repositories, user, db),
+    apiKeys: new ApiKeyService(repositories, user, db),
     projectUserApiKeys: new ProjectUserApiKeyService(repositories, user, db),
     projectUsers: new ProjectUserService(repositories, user, db),
     organizations: new OrganizationService(repositories, user, db),

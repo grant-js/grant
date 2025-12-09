@@ -1,0 +1,5 @@
+type ApiKeyPage implements PaginatedResults {
+  apiKeys: [ApiKey!]!
+  totalCount: Int!
+  hasNextPage: Boolean!
+}

@@ -1,9 +1,0 @@
-type CreateProjectUserApiKeyResult {
-  id: ID!
-  clientId: String!
-  clientSecret: String!
-  name: String
-  description: String
-  expiresAt: Date
-  createdAt: Date!
-}

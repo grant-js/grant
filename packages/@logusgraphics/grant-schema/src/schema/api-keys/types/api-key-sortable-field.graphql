@@ -1,0 +1,6 @@
+enum ApiKeySortableField {
+  name
+  createdAt
+  lastUsedAt
+  expiresAt
+}

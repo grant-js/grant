@@ -1,14 +1,7 @@
 import { relations, sql } from 'drizzle-orm';
-import {
-  boolean,
-  index,
-  pgTable,
-  timestamp,
-  uniqueIndex,
-  uuid,
-  varchar,
-} from 'drizzle-orm/pg-core';
+import { index, pgTable, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
 
+import { apiKeys } from './api-keys.schema';
 import { projects } from './projects.schema';
 import { users } from './users.schema';
 
@@ -16,41 +9,35 @@ export const projectUserApiKeys = pgTable(
   'project_user_api_keys',
   {
     id: uuid('id').primaryKey().defaultRandom(),
+    apiKeyId: uuid('api_key_id')
+      .references(() => apiKeys.id, { onDelete: 'cascade' })
+      .notNull(),
     projectId: uuid('project_id')
       .references(() => projects.id, { onDelete: 'cascade' })
       .notNull(),
     userId: uuid('user_id')
       .references(() => users.id, { onDelete: 'cascade' })
       .notNull(),
-    clientId: varchar('client_id', { length: 255 }).notNull(),
-    clientSecretHash: varchar('client_secret_hash', { length: 255 }).notNull(),
-    name: varchar('name', { length: 255 }),
-    description: varchar('description', { length: 1000 }),
-    expiresAt: timestamp('expires_at'),
-    lastUsedAt: timestamp('last_used_at'),
-    isRevoked: boolean('is_revoked').default(false).notNull(),
-    revokedAt: timestamp('revoked_at'),
-    revokedBy: uuid('revoked_by').references(() => users.id),
-    createdBy: uuid('created_by')
-      .references(() => users.id)
-      .notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
     deletedAt: timestamp('deleted_at'),
   },
   (table) => [
-    uniqueIndex('project_user_api_keys_client_id_unique').on(table.clientId),
-    uniqueIndex('project_user_api_keys_project_user_unique')
-      .on(table.projectId, table.userId)
-      .where(sql`${table.deletedAt} IS NULL AND ${table.isRevoked} = false`),
-    uniqueIndex('project_user_api_keys_deleted_at_idx').on(table.deletedAt),
+    uniqueIndex('project_user_api_keys_api_key_project_user_unique')
+      .on(table.apiKeyId, table.projectId, table.userId)
+      .where(sql`${table.deletedAt} IS NULL`),
+    index('project_user_api_keys_api_key_id_idx').on(table.apiKeyId),
     index('project_user_api_keys_project_id_idx').on(table.projectId),
     index('project_user_api_keys_user_id_idx').on(table.userId),
-    index('project_user_api_keys_is_revoked_idx').on(table.isRevoked),
+    index('project_user_api_keys_deleted_at_idx').on(table.deletedAt),
   ]
 );
 
 export const projectUserApiKeysRelations = relations(projectUserApiKeys, ({ one }) => ({
+  apiKey: one(apiKeys, {
+    fields: [projectUserApiKeys.apiKeyId],
+    references: [apiKeys.id],
+  }),
   project: one(projects, {
     fields: [projectUserApiKeys.projectId],
     references: [projects.id],
@@ -60,16 +47,6 @@ export const projectUserApiKeysRelations = relations(projectUserApiKeys, ({ one 
     references: [users.id],
     relationName: 'projectUserApiKeyUser',
   }),
-  createdByUser: one(users, {
-    fields: [projectUserApiKeys.createdBy],
-    references: [users.id],
-    relationName: 'projectUserApiKeyCreatedBy',
-  }),
-  revokedByUser: one(users, {
-    fields: [projectUserApiKeys.revokedBy],
-    references: [users.id],
-    relationName: 'projectUserApiKeyRevokedBy',
-  }),
 }));
 
 export const projectUserApiKeyAuditLogs = pgTable(
@@ -77,7 +54,7 @@ export const projectUserApiKeyAuditLogs = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     projectUserApiKeyId: uuid('project_user_api_key_id')
-      .references(() => projectUserApiKeys.id)
+      .references(() => projectUserApiKeys.id, { onDelete: 'cascade' })
       .notNull(),
     action: varchar('action', { length: 50 }).notNull(),
     oldValues: varchar('old_values', { length: 1000 }),
@@ -89,7 +66,7 @@ export const projectUserApiKeyAuditLogs = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (t) => [
-    index('project_user_api_key_audit_logs_key_id_idx').on(t.projectUserApiKeyId),
+    index('project_user_api_key_audit_logs_project_user_api_key_id_idx').on(t.projectUserApiKeyId),
     index('project_user_api_key_audit_logs_action_idx').on(t.action),
   ]
 );

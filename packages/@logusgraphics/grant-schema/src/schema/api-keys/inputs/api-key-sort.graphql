@@ -1,0 +1,4 @@
+input ApiKeySortInput {
+  field: ApiKeySortableField!
+  order: SortOrder!
+}

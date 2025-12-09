@@ -1,0 +1,17 @@
+mutation RevokeApiKey($input: RevokeApiKeyInput!) {
+  revokeApiKey(input: $input) {
+    id
+    clientId
+    name
+    description
+    expiresAt
+    lastUsedAt
+    isRevoked
+    revokedAt
+    revokedBy
+    createdBy
+    createdAt
+    updatedAt
+    deletedAt
+  }
+}

@@ -1,0 +1,38 @@
+query GetApiKeys(
+  $scope: Scope!
+  $page: Int
+  $limit: Int
+  $sort: ApiKeySortInput
+  $search: String
+  $ids: [ID!]
+) {
+  apiKeys(scope: $scope, page: $page, limit: $limit, sort: $sort, search: $search, ids: $ids) {
+    apiKeys {
+      id
+      clientId
+      name
+      description
+      expiresAt
+      lastUsedAt
+      isRevoked
+      revokedAt
+      revokedBy
+      createdBy
+      createdAt
+      updatedAt
+      deletedAt
+      createdByUser {
+        id
+        name
+        pictureUrl
+      }
+      revokedByUser {
+        id
+        name
+        pictureUrl
+      }
+    }
+    totalCount
+    hasNextPage
+  }
+}

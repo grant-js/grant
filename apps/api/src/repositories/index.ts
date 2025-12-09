@@ -2,6 +2,7 @@ import { DbSchema } from '@logusgraphics/grant-database';
 
 import { AccountProjectRepository } from './account-projects.repository';
 import { AccountRepository } from './accounts.repository';
+import { ApiKeyRepository } from './api-keys.repository';
 import { GroupPermissionRepository } from './group-permissions.repository';
 import { GroupTagRepository } from './group-tags.repository';
 import { GroupRepository } from './groups.repository';
@@ -39,6 +40,7 @@ export function createRepositories(db: DbSchema) {
   return {
     accountProjectRepository: new AccountProjectRepository(db),
     accountRepository: new AccountRepository(db),
+    apiKeyRepository: new ApiKeyRepository(db),
     groupPermissionRepository: new GroupPermissionRepository(db),
     groupTagRepository: new GroupTagRepository(db),
     groupRepository: new GroupRepository(db),

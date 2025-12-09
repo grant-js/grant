@@ -1,0 +1,17 @@
+type ApiKey implements Auditable {
+  id: ID!
+  clientId: String!
+  name: String
+  description: String
+  expiresAt: Date
+  lastUsedAt: Date
+  isRevoked: Boolean!
+  revokedAt: Date
+  revokedBy: ID
+  createdBy: ID!
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+  createdByUser: User
+  revokedByUser: User
+}

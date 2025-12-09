@@ -1,14 +1,15 @@
 import { z } from 'zod';
 
-import { baseEntitySchema, descriptionSchema, idSchema, nameSchema } from './common/schemas';
+import {
+  baseEntitySchema,
+  deleteSchema,
+  descriptionSchema,
+  idSchema,
+  nameSchema,
+} from './common/schemas';
+import { clientIdSchema, clientSecretSchema } from './api-keys.schemas';
 
 const dateSchema = z.date().nullable().optional();
-
-export const clientIdSchema = z.uuid('Invalid client ID format');
-
-export const clientSecretSchema = z
-  .string()
-  .min(32, 'Client secret must be at least 32 characters');
 
 export const createProjectUserApiKeyParamsSchema = z.object({
   projectId: idSchema,
@@ -30,6 +31,19 @@ export const revokeProjectUserApiKeyParamsSchema = z.object({
 export const deleteProjectUserApiKeyParamsSchema = z.object({
   id: idSchema,
   hardDelete: z.boolean().optional(),
+});
+
+// Pivot operation schemas
+export const addProjectUserApiKeyParamsSchema = z.object({
+  projectId: idSchema,
+  userId: idSchema,
+  apiKeyId: idSchema,
+});
+
+export const removeProjectUserApiKeyParamsSchema = deleteSchema.extend({
+  projectId: idSchema,
+  userId: idSchema,
+  apiKeyId: idSchema,
 });
 
 export const projectUserApiKeySchema = baseEntitySchema.extend({

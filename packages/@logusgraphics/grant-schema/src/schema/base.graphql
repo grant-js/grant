@@ -29,6 +29,7 @@ enum Tenant {
   account
   organization
   project
+  projectUser
 }
 
 enum SortOrder {

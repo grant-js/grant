@@ -83,23 +83,44 @@ For project-scoped permissions:
 ```mermaid
 flowchart TD
     A[External System] -->|1. Create API Key| B[Platform Admin]
-    B -->|2. Store Credentials| C[project_user_api_keys Table]
-    A -->|3. Exchange clientId/secret| D[Token Exchange Endpoint]
-    D -->|4. Validate & Generate| E[JWT Access Token]
-    E -->|5. Read Permissions| F[Permission API]
-    F -->|6. Return Permissions| A
-    A -->|7. Use in ACL| G[External System ACL]
+    B -->|2. Create API Key| C[api_keys Table]
+    B -->|3. Attach to Tenant| D[project_user_api_keys Pivot]
+    A -->|4. Exchange clientId/secret| E[Token Exchange Endpoint]
+    E -->|5. Validate & Generate| F[JWT Access Token]
+    F -->|6. Read Permissions| G[Permission API]
+    G -->|7. Return Permissions| A
+    A -->|8. Use in ACL| H[External System ACL]
+
+    C -->|References| D
+    D -->|Links to| I[projects + users]
 ```
+
+**Key Architectural Decisions:**
+
+- **Separation of Concerns**: API key data (credentials, metadata) is stored separately from tenant relationships
+- **Flexible Tenancy**: Same API key structure can support project, organization, or project-user attachments
+- **API Contract Stability**: API-level contracts remain unchanged - creating a key always involves attaching to a tenant
+- **Handler Orchestration**: Handler layer orchestrates multiple services to create key and attach to tenant
 
 ### Database Schema
 
-#### New Table: `project_user_api_keys`
+#### Architecture Overview
+
+The API keys system uses a **decoupled architecture** with a generic `api_keys` table and pivot tables for tenant relationships. This design allows API keys to be attached to different tenant types (projects, organizations, project-users) while keeping the core key data separate.
+
+**Tables:**
+
+1. `api_keys` - Generic API key storage (no tenant bindings)
+2. `project_user_api_keys` - Pivot table linking API keys to project-user combinations (current implementation)
+3. `project_api_keys` - Pivot table for project-level keys (future)
+4. `organization_api_keys` - Pivot table for organization-level keys (future)
+5. `api_key_audit_logs` - Audit trail for all API key operations
+
+#### Core Table: `api_keys`
 
 ```sql
-CREATE TABLE "project_user_api_keys" (
+CREATE TABLE "api_keys" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-  "project_id" uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  "user_id" uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   "client_id" varchar(255) NOT NULL UNIQUE,
   "client_secret_hash" varchar(255) NOT NULL,
   "name" varchar(255), -- Optional human-readable name
@@ -112,34 +133,92 @@ CREATE TABLE "project_user_api_keys" (
   "created_by" uuid REFERENCES users(id) NOT NULL,
   "created_at" timestamp DEFAULT now() NOT NULL,
   "updated_at" timestamp DEFAULT now() NOT NULL,
-  "deleted_at" timestamp,
-  CONSTRAINT "project_user_api_keys_project_user_unique"
-    UNIQUE("project_id", "user_id")
-    WHERE deleted_at IS NULL AND is_revoked = false
+  "deleted_at" timestamp
 );
 
-CREATE INDEX "project_user_api_keys_client_id_idx" ON "project_user_api_keys"("client_id");
-CREATE INDEX "project_user_api_keys_project_id_idx" ON "project_user_api_keys"("project_id");
-CREATE INDEX "project_user_api_keys_user_id_idx" ON "project_user_api_keys"("user_id");
-CREATE INDEX "project_user_api_keys_deleted_at_idx" ON "project_user_api_keys"("deleted_at");
-CREATE INDEX "project_user_api_keys_is_revoked_idx" ON "project_user_api_keys"("is_revoked");
+CREATE INDEX "api_keys_client_id_idx" ON "api_keys"("client_id");
+CREATE INDEX "api_keys_deleted_at_idx" ON "api_keys"("deleted_at");
+CREATE INDEX "api_keys_is_revoked_idx" ON "api_keys"("is_revoked");
 ```
 
 **Key Design Decisions:**
 
-- **Unique Constraint**: One active API key per project-user combination (prevents multiple keys)
+- **Decoupled from Tenants**: API keys are stored independently, allowing flexible attachment to different tenant types
 - **Soft Delete**: Support soft deletion for audit trail
 - **Revocation**: Separate `is_revoked` flag for immediate revocation without deletion
 - **Expiration**: Optional `expires_at` for time-limited keys
 - **Secret Hashing**: Store hashed `client_secret` (similar to password hashing)
 - **Usage Tracking**: `last_used_at` for monitoring
 
-#### Audit Log Table: `project_user_api_key_audit_logs`
+#### Pivot Table: `project_user_api_keys`
 
 ```sql
-CREATE TABLE "project_user_api_key_audit_logs" (
+CREATE TABLE "project_user_api_keys" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-  "project_user_api_key_id" uuid NOT NULL REFERENCES project_user_api_keys(id),
+  "api_key_id" uuid NOT NULL REFERENCES api_keys(id) ON DELETE CASCADE,
+  "project_id" uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  "user_id" uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  "created_at" timestamp DEFAULT now() NOT NULL,
+  "updated_at" timestamp DEFAULT now() NOT NULL,
+  "deleted_at" timestamp,
+  CONSTRAINT "project_user_api_keys_api_key_project_user_unique"
+    UNIQUE("api_key_id", "project_id", "user_id")
+    WHERE deleted_at IS NULL
+);
+
+CREATE INDEX "project_user_api_keys_api_key_id_idx" ON "project_user_api_keys"("api_key_id");
+CREATE INDEX "project_user_api_keys_project_id_idx" ON "project_user_api_keys"("project_id");
+CREATE INDEX "project_user_api_keys_user_id_idx" ON "project_user_api_keys"("user_id");
+CREATE INDEX "project_user_api_keys_deleted_at_idx" ON "project_user_api_keys"("deleted_at");
+```
+
+**Key Design Decisions:**
+
+- **Pivot Pattern**: Follows the same pattern as other pivot tables (`project_users`, `project_groups`, etc.)
+- **Unique Constraint**: One active API key per project-user combination (prevents duplicate attachments)
+- **Cascade Deletes**: Deleting an API key removes all tenant attachments
+- **Soft Delete**: Support soft deletion for audit trail
+
+#### Future Pivot Tables (Not Implemented Yet)
+
+**`project_api_keys`** - For project-level API keys:
+
+```sql
+CREATE TABLE "project_api_keys" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "api_key_id" uuid NOT NULL REFERENCES api_keys(id) ON DELETE CASCADE,
+  "project_id" uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  "created_at" timestamp DEFAULT now() NOT NULL,
+  "updated_at" timestamp DEFAULT now() NOT NULL,
+  "deleted_at" timestamp,
+  CONSTRAINT "project_api_keys_api_key_project_unique"
+    UNIQUE("api_key_id", "project_id")
+    WHERE deleted_at IS NULL
+);
+```
+
+**`organization_api_keys`** - For organization-level API keys:
+
+```sql
+CREATE TABLE "organization_api_keys" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "api_key_id" uuid NOT NULL REFERENCES api_keys(id) ON DELETE CASCADE,
+  "organization_id" uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  "created_at" timestamp DEFAULT now() NOT NULL,
+  "updated_at" timestamp DEFAULT now() NOT NULL,
+  "deleted_at" timestamp,
+  CONSTRAINT "organization_api_keys_api_key_organization_unique"
+    UNIQUE("api_key_id", "organization_id")
+    WHERE deleted_at IS NULL
+);
+```
+
+#### Audit Log Table: `api_key_audit_logs`
+
+```sql
+CREATE TABLE "api_key_audit_logs" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "api_key_id" uuid NOT NULL REFERENCES api_keys(id),
   "action" varchar(50) NOT NULL,
   "old_values" varchar(1000),
   "new_values" varchar(1000),
@@ -148,11 +227,13 @@ CREATE TABLE "project_user_api_key_audit_logs" (
   "created_at" timestamp DEFAULT now() NOT NULL
 );
 
-CREATE INDEX "project_user_api_key_audit_logs_key_id_idx"
-  ON "project_user_api_key_audit_logs"("project_user_api_key_id");
-CREATE INDEX "project_user_api_key_audit_logs_action_idx"
-  ON "project_user_api_key_audit_logs"("action");
+CREATE INDEX "api_key_audit_logs_api_key_id_idx"
+  ON "api_key_audit_logs"("api_key_id");
+CREATE INDEX "api_key_audit_logs_action_idx"
+  ON "api_key_audit_logs"("action");
 ```
+
+**Note**: Audit logs reference the generic `api_keys` table, allowing tracking of all API key operations regardless of tenant attachment.
 
 ### Authentication Flow
 
@@ -436,76 +517,161 @@ mutation DeleteProjectUserApiKey($input: DeleteProjectUserApiKeyInput!) {
 - Grace period for key rotation (allow both keys temporarily)
 - Clear documentation for external systems
 
+### Refactoring Notes
+
+**Why Decouple?**
+
+The initial implementation bound API keys directly to `project_id` and `user_id`. This refactoring decouples the core API key data from tenant relationships, enabling:
+
+1. **Future Flexibility**: Support for organization-level and project-level API keys without schema changes
+2. **Reusability**: Same API key structure across different tenant types
+3. **Consistency**: Follows the same pivot table pattern used throughout the codebase (`project_users`, `project_groups`, etc.)
+4. **Maintainability**: Clear separation between key data and tenant relationships
+
+**What Changes?**
+
+- **Database Schema**: Split into `api_keys` (core) + `project_user_api_keys` (pivot)
+- **Repository Layer**: Split into `ApiKeyRepository` (core) + `ProjectUserApiKeyRepository` (pivot)
+- **Handler Layer**: Orchestrates multiple services to create key and attach to tenant
+- **API Contracts**: **No changes** - GraphQL/REST interfaces remain the same
+
+**Migration Impact:**
+
+- Existing data needs migration from monolithic table to decoupled structure
+- Repository and service methods need updates to work with new structure
+- Handler orchestration becomes more complex but provides better separation of concerns
+
 ### Implementation Phases
 
 #### Phase 1: Database Schema & Core Models ✅
 
-- [x] Create `project_user_api_keys` table migration
-- [x] Create `project_user_api_key_audit_logs` table migration
-- [x] Create Drizzle schema files
-- [x] Export types from database package
+**Current Status**: Refactoring completed. API keys are now decoupled from tenants using a generic `api_keys` table with pivot tables for tenant relationships.
 
-**Files Created:**
+**Completed:**
 
-- `packages/@logusgraphics/grant-database/src/schemas/project-user-api-keys.schema.ts`
-- `packages/@logusgraphics/grant-database/src/migrations/0019_broken_the_hood.sql` (includes project_user_api_keys)
+- [x] **Decouple API Keys from Tenants**
+  - [x] Created `api_keys` table (generic table for core API key data)
+  - [x] Removed `project_id` and `user_id` columns from core `api_keys` table
+  - [x] Created `project_user_api_keys` as pivot table (following `project_users` pattern)
+  - [x] Updated `api_key_audit_logs` to reference `api_keys` instead of pivot table
+  - [x] Created and executed migration to transform existing data structure
+
+- [x] **Update Schema Files**
+  - [x] Created `api-keys.schema.ts` for core `api_keys` table
+  - [x] Refactored `project-user-api-keys.schema.ts` as pivot table
+  - [x] Updated relations and exports
+  - [x] Updated type exports
+
+- [ ] **Future Pivot Tables (Not Implemented Yet)**
+  - [ ] `project_api_keys` schema (for project-level keys)
+  - [ ] `organization_api_keys` schema (for organization-level keys)
+
+**Files to Refactor:**
+
+- `packages/@logusgraphics/grant-database/src/schemas/project-user-api-keys.schema.ts` → Split into:
+  - `packages/@logusgraphics/grant-database/src/schemas/api-keys.schema.ts` (core table)
+  - `packages/@logusgraphics/grant-database/src/schemas/project-user-api-keys.schema.ts` (pivot table)
+
+**Migration Strategy:**
+
+1. Create new `api_keys` table
+2. Migrate data from `project_user_api_keys` to `api_keys` (extract key data)
+3. Create new `project_user_api_keys` pivot table
+4. Populate pivot table with relationships from old table
+5. Drop old `project_user_api_keys` table
+6. Rename audit log table and update references
 
 #### Phase 2: Repository Layer ✅
 
-- [x] Create `ProjectUserApiKeyRepository`
-- [x] Implement CRUD operations
-- [x] Implement secret hashing/verification (via service layer)
-- [x] Implement query methods (by clientId, by project/user, etc.)
+**Current Status**: Refactoring completed. Repositories are now split into core and pivot repositories.
 
-**Files Created:**
+**Completed:**
 
-- `apps/api/src/repositories/project-user-api-keys.repository.ts`
+- [x] **Split Repository Responsibilities**
+  - [x] Created `ApiKeyRepository` for core `api_keys` table operations
+  - [x] Refactored `ProjectUserApiKeyRepository` as `PivotRepository` for pivot table operations
+  - [x] Updated query methods to work with decoupled structure
+  - [x] Updated `findByClientId` to query `api_keys` and resolve tenant context via scope
+
+- [x] **Update Repository Methods**
+  - [x] `createApiKey`: Creates key in `api_keys` table
+  - [x] `getProjectUserApiKeys`: Queries pivot table and returns pivot entities
+  - [x] `findByClientId`: Queries `api_keys` table directly
+  - [x] All methods updated to work with decoupled structure
+
+**Files Created/Refactored:**
+
+- `apps/api/src/repositories/api-keys.repository.ts` (core repository) ✅
+- `apps/api/src/repositories/project-user-api-keys.repository.ts` (pivot repository, extends `PivotRepository`) ✅
 
 #### Phase 3: Service Layer ✅
 
-- [x] Create `ProjectUserApiKeyService`
-- [x] Implement key generation (clientId/secret)
-- [x] Implement secret hashing
-- [x] Implement validation logic
-- [x] Implement audit logging
-- [x] Create token generation service for API keys (integrated into service)
+- [x] Created `ApiKeyService` for generic API key operations
+- [x] Refactored `ProjectUserApiKeyService` to orchestrate pivot operations
+- [x] Implemented key generation (clientId/secret)
+- [x] Implemented secret hashing (centralized in `token.lib.ts`)
+- [x] Implemented validation logic
+- [x] Implemented audit logging
+- [x] Created token generation service for API keys (integrated into service)
+- [x] Moved scope-agnostic operations (exchange, revoke, delete) to `ApiKeyService`
+- [x] Simplified `ProjectUserApiKeyService` to only handle pivot operations (add/remove)
 
-**Files Created:**
+**Files Created/Refactored:**
 
-- `apps/api/src/services/project-user-api-keys.service.ts`
-- `apps/api/src/services/project-user-api-keys.schemas.ts`
+- `apps/api/src/services/api-keys.service.ts` ✅
+- `apps/api/src/services/api-keys.schemas.ts` ✅
+- `apps/api/src/services/project-user-api-keys.service.ts` (refactored to pivot-only) ✅
+- `apps/api/src/services/project-user-api-keys.schemas.ts` (updated) ✅
 
 #### Phase 4: GraphQL Schema & Handlers ✅
 
-- [x] Add GraphQL types and inputs
-- [x] Create `ProjectUserApiKeyHandler`
-- [x] Implement mutations (create, revoke, delete)
-- [x] Implement queries (list with pagination)
-- [x] Implement token exchange mutation
-- [ ] Implement permission reading query (Phase 7)
+**Current Status**: GraphQL schema refactored to use generic `api-keys` API with scope-based queries. Handler orchestrates services based on scope.
 
-**Files Created:**
+**Completed:**
 
-- `packages/@logusgraphics/grant-schema/src/schema/project-user-api-keys/types/*.graphql`
-- `packages/@logusgraphics/grant-schema/src/schema/project-user-api-keys/inputs/*.graphql`
-- `packages/@logusgraphics/grant-schema/src/schema/project-user-api-keys/mutations/*.graphql`
-- `packages/@logusgraphics/grant-schema/src/schema/project-user-api-keys/queries/*.graphql`
-- `apps/api/src/handlers/project-user-api-keys.handler.ts`
-- `apps/api/src/graphql/resolvers/project-user-api-keys/**/*.ts`
+- [x] **Created Generic API Keys Handler**
+  - [x] Created `ApiKeysHandler` extending `ScopeHandler`
+  - [x] Implemented `getApiKeys` with scope-based ID resolution
+  - [x] Implemented `createApiKey` with orchestration (create key + attach to pivot)
+  - [x] Implemented `exchangeApiKey` with scope-based pivot resolution
+  - [x] Implemented `revokeApiKey` and `deleteApiKey` delegating to service
+
+- [x] **Updated GraphQL Schema**
+  - [x] Created generic `apiKeys` query with scope parameter
+  - [x] Created generic `createApiKey`, `exchangeApiKey`, `revokeApiKey`, `deleteApiKey` mutations
+  - [x] Added `projectUser` to `Tenant` enum
+  - [x] Removed project-user-specific queries/mutations
+  - [x] Added `scope` parameter to `ExchangeApiKeyInput`
+
+- [x] **Updated GraphQL Resolvers**
+  - [x] Created resolvers for generic `api-keys` operations
+  - [x] Removed old project-user-specific resolvers
+  - [x] Updated main query and mutation resolvers
+
+**Files Created/Refactored:**
+
+- `apps/api/src/handlers/api-keys.handler.ts` ✅
+- `apps/api/src/graphql/resolvers/api-keys/` (all resolvers) ✅
+- `packages/@logusgraphics/grant-schema/src/schema/api-keys/` (all schema files) ✅
+- Removed `apps/api/src/handlers/project-user-api-keys.handler.ts` ✅
 
 #### Phase 5: REST API ✅
 
-- [x] Create REST routes
-- [x] Create REST controllers
-- [x] Create request/response schemas
-- [x] Add OpenAPI documentation
+- [x] Created REST routes for generic API keys
+- [x] Created REST controllers
+- [x] Created request/response schemas
+- [x] Added OpenAPI documentation
+- [x] Moved token exchange endpoint to auth routes (`/api/auth/api-keys/token`)
+- [x] Added `scope` parameter to exchange endpoint
 
-**Files Created:**
+**Files Created/Refactored:**
 
-- `apps/api/src/rest/routes/project-user-api-keys.routes.ts`
-- `apps/api/src/rest/controllers/project-user-api-keys.controller.ts`
-- `apps/api/src/rest/schemas/project-user-api-keys.schemas.ts`
-- `apps/api/src/rest/openapi/project-user-api-keys.openapi.ts`
+- `apps/api/src/rest/routes/api-keys.routes.ts` ✅
+- `apps/api/src/rest/controllers/api-keys.controller.ts` ✅
+- `apps/api/src/rest/schemas/api-keys.schemas.ts` ✅
+- `apps/api/src/rest/openapi/api-keys.openapi.ts` ✅
+- Updated `apps/api/src/rest/routes/auth.routes.ts` (added token exchange) ✅
+- Removed old project-user-specific REST files ✅
 
 #### Phase 6: Authentication Middleware
 
@@ -546,26 +712,30 @@ mutation DeleteProjectUserApiKey($input: DeleteProjectUserApiKeyInput!) {
 - [ ] Security best practices
 - [ ] Example code snippets
 
-#### Phase 10: Web Integration (Frontend)
+#### Phase 10: Web Integration (Frontend) ✅
 
-- [ ] Create React hooks for API key management
-  - [ ] `useProjectUserApiKeys` - List and manage API keys
-  - [ ] `useCreateProjectUserApiKey` - Create new API key
-  - [ ] `useRevokeProjectUserApiKey` - Revoke API key
-  - [ ] `useDeleteProjectUserApiKey` - Delete API key
-  - [ ] `useExchangeProjectUserApiKey` - Exchange credentials for token (for testing)
-- [ ] Create API key management components
-  - [ ] `ProjectUserApiKeyList` - Display list of API keys with pagination
-  - [ ] `ProjectUserApiKeyForm` - Create/edit API key form
-  - [ ] `ProjectUserApiKeyCard` - Individual API key card with actions
+- [x] Created React hooks for API key management
+  - [x] `useApiKeys` - Generic hook for listing API keys with scope
+  - [x] `useApiKeyMutations` - Generic hook for all API key mutations (create, delete, revoke, exchange)
+  - [x] Removed project-user-specific hooks (now use generic hooks with scope)
+- [x] Created GraphQL operation files
+  - [x] `get-api-keys.graphql` - Query for listing API keys
+  - [x] `create-api-key.graphql` - Mutation for creating API keys
+  - [x] `exchange-api-key.graphql` - Mutation for exchanging credentials
+  - [x] `revoke-api-key.graphql` - Mutation for revoking API keys
+  - [x] `delete-api-key.graphql` - Mutation for deleting API keys
+- [ ] Create API key management components (TODO)
+  - [ ] `ApiKeyList` - Display list of API keys with pagination
+  - [ ] `ApiKeyForm` - Create/edit API key form
+  - [ ] `ApiKeyCard` - Individual API key card with actions
   - [ ] `CreateApiKeyModal` - Modal for creating new API key (with secret display)
   - [ ] `RevokeApiKeyConfirmDialog` - Confirmation dialog for revocation
   - [ ] `DeleteApiKeyConfirmDialog` - Confirmation dialog for deletion
-- [ ] Add navigation and routing
+- [ ] Add navigation and routing (TODO)
   - [ ] Add API keys section to project settings
   - [ ] Add API keys section to user management
   - [ ] Create dedicated API keys page/route
-- [ ] Implement UI features
+- [ ] Implement UI features (TODO)
   - [ ] Secret visibility toggle (show/hide)
   - [ ] Copy to clipboard functionality
   - [ ] Expiration date display and warnings
@@ -573,23 +743,26 @@ mutation DeleteProjectUserApiKey($input: DeleteProjectUserApiKeyInput!) {
   - [ ] Revoked status indicators
   - [ ] Empty state for no API keys
   - [ ] Loading states and error handling
-- [ ] Add permissions checks
+- [ ] Add permissions checks (TODO)
   - [ ] Verify user has permission to manage API keys
   - [ ] Show/hide actions based on permissions
   - [ ] Display appropriate error messages
 
-**Files to Create:**
+**Files Created:**
 
-- `apps/web/src/hooks/project-user-api-keys/use-project-user-api-keys.ts`
-- `apps/web/src/hooks/project-user-api-keys/use-create-project-user-api-key.ts`
-- `apps/web/src/hooks/project-user-api-keys/use-revoke-project-user-api-key.ts`
-- `apps/web/src/hooks/project-user-api-keys/use-delete-project-user-api-key.ts`
-- `apps/web/src/components/project-user-api-keys/project-user-api-key-list.tsx`
-- `apps/web/src/components/project-user-api-keys/project-user-api-key-form.tsx`
-- `apps/web/src/components/project-user-api-keys/project-user-api-key-card.tsx`
-- `apps/web/src/components/project-user-api-keys/create-api-key-modal.tsx`
-- `apps/web/src/components/project-user-api-keys/revoke-api-key-confirm-dialog.tsx`
-- `apps/web/src/components/project-user-api-keys/delete-api-key-confirm-dialog.tsx`
+- `apps/web/hooks/api-keys/useApiKeys.ts` ✅
+- `apps/web/hooks/api-keys/useApiKeyMutations.ts` ✅
+- `apps/web/hooks/api-keys/cache.ts` ✅
+- `apps/web/hooks/api-keys/index.ts` ✅
+- `packages/@logusgraphics/grant-schema/src/operations/api-keys/get-api-keys.graphql` ✅
+- `packages/@logusgraphics/grant-schema/src/operations/api-keys/create-api-key.graphql` ✅
+- `packages/@logusgraphics/grant-schema/src/operations/api-keys/exchange-api-key.graphql` ✅
+- `packages/@logusgraphics/grant-schema/src/operations/api-keys/revoke-api-key.graphql` ✅
+- `packages/@logusgraphics/grant-schema/src/operations/api-keys/delete-api-key.graphql` ✅
+
+**Files Removed:**
+
+- `apps/web/hooks/project-user-api-keys/` (entire directory) ✅
 
 ### API Key Format
 

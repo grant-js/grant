@@ -1,0 +1,17 @@
+mutation DeleteApiKey($input: DeleteApiKeyInput!) {
+  deleteApiKey(input: $input) {
+    id
+    clientId
+    name
+    description
+    expiresAt
+    lastUsedAt
+    isRevoked
+    revokedAt
+    revokedBy
+    createdBy
+    createdAt
+    updatedAt
+    deletedAt
+  }
+}

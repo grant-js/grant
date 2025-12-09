@@ -1,0 +1,5 @@
+input AddProjectUserApiKeyInput {
+  projectId: ID!
+  userId: ID!
+  apiKeyId: ID!
+}

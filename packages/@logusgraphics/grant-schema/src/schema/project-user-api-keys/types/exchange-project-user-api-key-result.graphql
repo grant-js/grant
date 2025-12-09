@@ -1,4 +1,0 @@
-type ExchangeProjectUserApiKeyResult {
-  accessToken: String!
-  expiresIn: Int!
-}
