@@ -10,13 +10,6 @@ export const uploadUserPictureResolver: MutationResolvers<GraphqlContext>['uploa
       throw new BadRequestError('Authentication required', 'errors:auth.required');
     }
 
-    if (input.userId !== context.user.id) {
-      throw new BadRequestError(
-        'You can only upload pictures for your own account',
-        'errors:auth.unauthorized'
-      );
-    }
-
     if (
       !config.storage.upload.allowedTypes.includes(
         input.contentType as (typeof config.storage.upload.allowedTypes)[number]

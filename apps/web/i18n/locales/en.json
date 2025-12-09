@@ -329,6 +329,7 @@
       "create": "Create User",
       "edit": "Edit",
       "delete": "Delete",
+      "view": "View",
       "cancel": "Cancel",
       "updating": "Updating...",
       "label": "Show/Hide Actions"
@@ -437,7 +438,8 @@
     "info": {
       "title": "User Information",
       "userId": "User ID",
-      "created": "Created"
+      "created": "Created",
+      "updated": "Updated"
     },
     "roles": {
       "title": "Roles",

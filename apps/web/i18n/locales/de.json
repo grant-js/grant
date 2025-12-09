@@ -329,6 +329,7 @@
       "create": "Benutzer erstellen",
       "edit": "Bearbeiten",
       "delete": "Löschen",
+      "view": "Ansehen",
       "cancel": "Abbrechen",
       "updating": "Wird aktualisiert...",
       "label": "Aktionen anzeigen/ausblenden"
@@ -437,7 +438,8 @@
     "info": {
       "title": "Benutzerinformationen",
       "userId": "Benutzer-ID",
-      "created": "Erstellt"
+      "created": "Erstellt",
+      "updated": "Aktualisiert"
     },
     "roles": {
       "title": "Rollen",

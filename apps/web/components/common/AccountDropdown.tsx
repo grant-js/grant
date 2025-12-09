@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Link } from '@/i18n/navigation';
+import { getInitials } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
 
 export function AccountDropdown() {
@@ -55,12 +56,7 @@ export function AccountDropdown() {
   const userDisplayName = currentAccount?.owner?.name || email || 'User';
   const userPictureUrl = currentAccount?.owner?.pictureUrl;
   const userUpdatedAt = currentAccount?.owner?.updatedAt;
-  const initials = userDisplayName
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
+  const initials = getInitials(userDisplayName);
 
   return (
     <DropdownMenu>

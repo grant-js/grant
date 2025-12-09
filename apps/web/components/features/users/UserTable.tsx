@@ -9,6 +9,7 @@ import { ScrollBadges } from '@/components/common';
 import { Avatar } from '@/components/common/Avatar';
 import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
 import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
+import { getInitials } from '@/lib/utils';
 import { transformTagsToBadges } from '@/lib/tag-utils';
 import { cn } from '@/lib/utils';
 import { useUsersStore } from '@/stores/users.store';
@@ -44,7 +45,9 @@ export function UserTable() {
       className: 'pl-4',
       render: (user: User) => (
         <Avatar
-          initial={user.name.charAt(0)}
+          initial={getInitials(user.name)}
+          imageUrl={user.pictureUrl || undefined}
+          cacheBuster={user.updatedAt}
           size="md"
           className={
             user.tags?.find((tag: Tag) => tag.isPrimary)?.color

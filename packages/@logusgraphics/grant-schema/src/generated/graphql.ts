@@ -3268,6 +3268,7 @@ export type GetUsersQuery = {
       __typename?: 'User';
       id: string;
       name: string;
+      pictureUrl?: string | null;
       createdAt: Date;
       updatedAt: Date;
       roles?: Array<{
@@ -7611,6 +7612,7 @@ export const GetUsersDocument = {
                     selections: [
                       { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
                       {

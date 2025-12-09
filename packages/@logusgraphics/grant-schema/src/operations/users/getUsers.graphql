@@ -19,6 +19,7 @@ query GetUsers(
     users {
       id
       name
+      pictureUrl
       createdAt
       updatedAt
       roles {

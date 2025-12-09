@@ -181,13 +181,6 @@ export class UsersController extends BaseController {
     const { id } = req.params;
     const { file, filename, contentType } = req.body;
 
-    if (!this.user || this.user.id !== id) {
-      throw new NotFoundError(
-        'You can only upload pictures for your own account',
-        'errors:auth.unauthorized'
-      );
-    }
-
     if (
       !config.storage.upload.allowedTypes.includes(
         contentType as (typeof config.storage.upload.allowedTypes)[number]

@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 
 import { CardGrid, CardHeader, ScrollBadges } from '@/components/common';
 import { transformTagsToBadges } from '@/lib/tag-utils';
+import { getInitials } from '@/lib/utils';
 import { useUsersStore } from '@/stores/users.store';
 
 import { CreateUserDialog } from './CreateUserDialog';
@@ -52,7 +53,9 @@ export function UserCards() {
       renderHeader={(user: User) => (
         <CardHeader
           avatar={{
-            initial: user.name.charAt(0),
+            initial: getInitials(user.name),
+            imageUrl: user.pictureUrl || undefined,
+            cacheBuster: user.updatedAt,
             size: 'lg',
           }}
           title={user.name}

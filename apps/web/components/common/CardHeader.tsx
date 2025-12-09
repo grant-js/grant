@@ -4,7 +4,7 @@ import { ReactNode } from 'react';
 
 import { getTagBorderClasses, TagColor } from '@logusgraphics/grant-constants';
 
-import { CardTitle, CardDescription } from '@/components/ui/card';
+import { CardDescription, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 import { Avatar, type AvatarProps } from './Avatar';
@@ -13,6 +13,7 @@ export interface CardHeaderProps {
   avatar: {
     initial: string;
     imageUrl?: string;
+    cacheBuster?: string | Date | null;
     size?: AvatarProps['size'];
   };
   title: string;
@@ -35,11 +36,12 @@ export function CardHeader({
   descriptionClassName,
 }: CardHeaderProps) {
   return (
-    <div className={cn('flex items-start justify-between space-y-0 pb-1 w-full', className)}>
-      <div className="flex items-start gap-4 min-w-0">
+    <div className={cn('flex items-center justify-between space-y-0 pb-1 w-full', className)}>
+      <div className="flex items-center gap-4 min-w-0">
         <Avatar
           initial={avatar.initial}
           imageUrl={avatar.imageUrl}
+          cacheBuster={avatar.cacheBuster}
           size={avatar.size || 'lg'}
           className={color ? cn('border-2', getTagBorderClasses(color)) : undefined}
         />
