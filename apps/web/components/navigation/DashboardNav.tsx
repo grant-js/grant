@@ -90,8 +90,8 @@ export function DashboardNav() {
   const renderNavItems = (items: NavItem[]) => (
     <>
       {items.map((item) => (
-        <div key={item.path} className={cn(navItemClasses(item.path), 'md:flex-none')}>
-          <NavLink href={item.path}>
+        <NavLink key={item.path} href={item.path}>
+          <div className={cn(navItemClasses(item.path), 'md:flex-none')}>
             <div className="flex flex-col md:flex-row items-center justify-center md:justify-start space-y-1 md:space-y-0 md:space-x-2 px-3 py-2">
               {item.icon}
               <span
@@ -103,8 +103,8 @@ export function DashboardNav() {
                 {t(item.translationKey)}
               </span>
             </div>
-          </NavLink>
-        </div>
+          </div>
+        </NavLink>
       ))}
     </>
   );

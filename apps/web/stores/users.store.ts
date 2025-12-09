@@ -1,4 +1,4 @@
-import { UserSortableField, User, SortOrder } from '@logusgraphics/grant-schema';
+import { SortOrder, User, UserSortableField } from '@logusgraphics/grant-schema';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
@@ -24,6 +24,9 @@ interface UsersState {
   userToEdit: User | null;
   isCreateDialogOpen: boolean;
 
+  // Current user (for breadcrumb)
+  currentUser: User | null;
+
   // Actions
   setPage: (page: number) => void;
   setLimit: (limit: number) => void;
@@ -41,6 +44,7 @@ interface UsersState {
   setUserToDelete: (user: User | null) => void;
   setUserToEdit: (user: User | null) => void;
   setCreateDialogOpen: (open: boolean) => void;
+  setCurrentUser: (user: User | null) => void;
 }
 
 const defaultSort = { field: UserSortableField.Name, order: SortOrder.Asc };
@@ -67,6 +71,9 @@ export const useUsersStore = create<UsersState>()(
       userToEdit: null,
       isCreateDialogOpen: false,
 
+      // Current user
+      currentUser: null,
+
       // Actions
       setPage: (page) => set({ page }),
       setLimit: (limit) => set({ limit, page: 1 }),
@@ -92,6 +99,7 @@ export const useUsersStore = create<UsersState>()(
           userToDelete: null,
           userToEdit: null,
           isCreateDialogOpen: false,
+          currentUser: null,
         }),
       initializeFromUrl: (params) => {
         const currentState = get();
@@ -124,6 +132,7 @@ export const useUsersStore = create<UsersState>()(
       setUserToDelete: (user) => set({ userToDelete: user }),
       setUserToEdit: (user) => set({ userToEdit: user }),
       setCreateDialogOpen: (open) => set({ isCreateDialogOpen: open }),
+      setCurrentUser: (user) => set({ currentUser: user }),
     }),
     { name: 'users-store' }
   )

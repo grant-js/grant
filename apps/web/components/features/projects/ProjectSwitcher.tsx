@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { redirect, useParams } from 'next/navigation';
 
@@ -22,6 +23,7 @@ import { useProjectScope } from '@/hooks/common/useProjectScope';
 import { useProjects } from '@/hooks/projects/useProjects';
 import { usePathname } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
+import { useProjectsStore } from '@/stores/projects.store';
 
 interface ProjectSwitcherProps {
   className?: string;
@@ -33,6 +35,7 @@ export function ProjectSwitcher({ className }: ProjectSwitcherProps) {
   const scope = useProjectScope();
   const params = useParams();
   const [open, setOpen] = React.useState(false);
+  const setCurrentProject = useProjectsStore((state) => state.setCurrentProject);
 
   const { projects, loading, error } = useProjects({
     scope: scope!,
@@ -41,13 +44,26 @@ export function ProjectSwitcher({ className }: ProjectSwitcherProps) {
   });
 
   const isProjectPage = !!params.projectId;
+  const currentProjectId = params.projectId as string;
+
+  const currentProject = useMemo(
+    () => (isProjectPage ? projects.find((project) => project.id === currentProjectId) : undefined),
+    [projects, currentProjectId, isProjectPage]
+  );
+
+  // Update store when current project changes
+  useEffect(() => {
+    if (isProjectPage) {
+      setCurrentProject(currentProject || null);
+      return () => {
+        setCurrentProject(null);
+      };
+    }
+  }, [currentProject, setCurrentProject, isProjectPage]);
 
   if (!isProjectPage) {
     return null;
   }
-
-  const currentProjectId = params.projectId as string;
-  const currentProject = projects.find((project) => project.id === currentProjectId);
 
   const handleProjectSelect = (projectId: string) => {
     setOpen(false);

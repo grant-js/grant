@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { useParams } from 'next/navigation';
 
@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl';
 
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useUsers } from '@/hooks/users';
+import { useUsersStore } from '@/stores/users.store';
 
 import { UserApiKeys } from './UserApiKeys';
 import { UserGroups } from './UserGroups';
@@ -21,6 +22,7 @@ export function UserDetailViewer() {
   const params = useParams();
   const userId = params.userId as string;
   const scope = useScopeFromParams();
+  const setCurrentUser = useUsersStore((state) => state.setCurrentUser);
 
   const { users, loading, error } = useUsers({
     scope: scope!,
@@ -29,6 +31,14 @@ export function UserDetailViewer() {
   });
 
   const user = useMemo(() => users[0], [users]);
+
+  // Update store when user changes
+  useEffect(() => {
+    setCurrentUser(user || null);
+    return () => {
+      setCurrentUser(null);
+    };
+  }, [user, setCurrentUser]);
 
   if (loading && !user) {
     return <div>{t('loading.title')}</div>;

@@ -1,11 +1,12 @@
 'use client';
 
 import * as React from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { redirect, useParams } from 'next/navigation';
 
 import { OrganizationSortableField, SortOrder } from '@logusgraphics/grant-schema';
-import { Check, ChevronsUpDown, Building2 } from 'lucide-react';
+import { Building2, Check, ChevronsUpDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useOrganizations } from '@/hooks/organizations/useOrganizations';
 import { usePathname } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
+import { useOrganizationsStore } from '@/stores/organizations.store';
 
 interface OrganizationSwitcherProps {
   className?: string;
@@ -41,12 +43,19 @@ export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
 
   const isProjectPage = !!params.projectId;
   const isOrganizationPage = !!params.organizationId;
+  const setCurrentOrganization = useOrganizationsStore((state) => state.setCurrentOrganization);
 
-  if (!isProjectPage && !isOrganizationPage) {
-    return null;
-  }
+  const selectedOrganization = useMemo(
+    () => organizations.find((org) => org.id === currentOrganizationId),
+    [organizations, currentOrganizationId]
+  );
 
-  const selectedOrganization = organizations.find((org) => org.id === currentOrganizationId);
+  useEffect(() => {
+    setCurrentOrganization(selectedOrganization || null);
+    return () => {
+      setCurrentOrganization(null);
+    };
+  }, [selectedOrganization, setCurrentOrganization]);
 
   const handleOrganizationSelect = (organizationId: string) => {
     setOpen(false);
@@ -56,6 +65,10 @@ export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
       redirect(newPath);
     }
   };
+
+  if (!isProjectPage && !isOrganizationPage) {
+    return null;
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

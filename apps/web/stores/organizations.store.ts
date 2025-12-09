@@ -1,4 +1,4 @@
-import { OrganizationSortableField, Organization, SortOrder } from '@logusgraphics/grant-schema';
+import { Organization, OrganizationSortableField, SortOrder } from '@logusgraphics/grant-schema';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
@@ -24,6 +24,9 @@ interface OrganizationsState {
   organizationToEdit: Organization | null;
   isCreateDialogOpen: boolean;
 
+  // Current organization detail (for breadcrumb)
+  currentOrganization: Organization | null;
+
   // Actions
   setPage: (page: number) => void;
   setLimit: (limit: number) => void;
@@ -41,6 +44,7 @@ interface OrganizationsState {
   setOrganizationToDelete: (organization: { id: string; name: string } | null) => void;
   setOrganizationToEdit: (organization: Organization | null) => void;
   setCreateDialogOpen: (open: boolean) => void;
+  setCurrentOrganization: (organization: Organization | null) => void;
 }
 
 const defaultSort = { field: OrganizationSortableField.Name, order: SortOrder.Asc };
@@ -67,6 +71,9 @@ export const useOrganizationsStore = create<OrganizationsState>()(
       organizationToEdit: null,
       isCreateDialogOpen: false,
 
+      // Current organization detail
+      currentOrganization: null,
+
       // Actions
       setPage: (page) => set({ page }),
       setLimit: (limit) => set({ limit, page: 1 }),
@@ -92,6 +99,7 @@ export const useOrganizationsStore = create<OrganizationsState>()(
           organizationToDelete: null,
           organizationToEdit: null,
           isCreateDialogOpen: false,
+          currentOrganization: null,
         }),
       initializeFromUrl: (params) => {
         const state = get();
@@ -121,6 +129,7 @@ export const useOrganizationsStore = create<OrganizationsState>()(
       setOrganizationToDelete: (organization) => set({ organizationToDelete: organization }),
       setOrganizationToEdit: (organization) => set({ organizationToEdit: organization }),
       setCreateDialogOpen: (open) => set({ isCreateDialogOpen: open }),
+      setCurrentOrganization: (organization) => set({ currentOrganization: organization }),
     }),
     {
       name: 'organizations-store',

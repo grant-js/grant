@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 
 import { useParams } from 'next/navigation';
 
-import { Users, Shield, Group, Key, Tag } from 'lucide-react';
+import { Group, Key, Shield, Tag, Users } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { usePathname } from '@/i18n/navigation';
@@ -29,7 +29,7 @@ export function ProjectNav() {
 
   const isActive = useCallback(
     (path: string) => {
-      return pathname.endsWith(path);
+      return pathname === path || pathname.startsWith(`${path}/`);
     },
     [pathname]
   );
@@ -119,8 +119,8 @@ export function ProjectNav() {
   const renderNavItems = (items: NavItem[]) => (
     <>
       {items.map((item) => (
-        <div key={item.path} className={cn(navItemClasses(item.path), 'md:flex-none')}>
-          <NavLink href={item.path}>
+        <NavLink key={item.path} href={item.path}>
+          <div className={cn(navItemClasses(item.path), 'md:flex-none')}>
             <div className="flex flex-col md:flex-row items-center justify-center md:justify-start space-y-1 md:space-y-0 md:space-x-2 px-3 py-2">
               {item.icon}
               <span
@@ -132,8 +132,8 @@ export function ProjectNav() {
                 {t(item.translationKey)}
               </span>
             </div>
-          </NavLink>
-        </div>
+          </div>
+        </NavLink>
       ))}
     </>
   );
