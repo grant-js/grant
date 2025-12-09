@@ -86,7 +86,7 @@ export function createAuthRoutes(context: RequestContext) {
 
   router.get('/me', (req, res) => authController.me(req as TypedRequest, res));
 
-  router.post('/api-keys/token', validate({ body: exchangeApiKeyRequestSchema }), (req, res) =>
+  router.post('/token', validate({ body: exchangeApiKeyRequestSchema }), (req, res) =>
     apiKeysController.exchangeApiKey(
       req as TypedRequest<{
         body: typeof exchangeApiKeyRequestSchema;

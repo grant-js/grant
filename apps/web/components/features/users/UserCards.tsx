@@ -1,12 +1,11 @@
 'use client';
 
 import { getTagBorderClasses, TagColor } from '@logusgraphics/grant-constants';
-import { User, Tag } from '@logusgraphics/grant-schema';
-import { UserPlus, Shield, Tags } from 'lucide-react';
+import { Tag, User } from '@logusgraphics/grant-schema';
+import { Shield, Tags, UserPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import { CardGrid, CardHeader } from '@/components/common';
-import { ScrollBadges } from '@/components/common';
+import { CardGrid, CardHeader, ScrollBadges } from '@/components/common';
 import { transformTagsToBadges } from '@/lib/tag-utils';
 import { useUsersStore } from '@/stores/users.store';
 
@@ -14,6 +13,7 @@ import { CreateUserDialog } from './CreateUserDialog';
 import { UserActions } from './UserActions';
 import { UserAudit } from './UserAudit';
 import { UserCardSkeleton } from './UserCardSkeleton';
+import { UserNavigationButton } from './UserNavigationButton';
 
 export function UserCards() {
   const t = useTranslations('users');
@@ -48,6 +48,7 @@ export function UserCards() {
         component: <UserCardSkeleton />,
         count: limit,
       }}
+      cardClassName="min-w-[300px]"
       renderHeader={(user: User) => (
         <CardHeader
           avatar={{
@@ -76,7 +77,12 @@ export function UserCards() {
           />
         </div>
       )}
-      renderFooter={(user: User) => <UserAudit user={user} />}
+      renderFooter={(user: User) => (
+        <div className="flex items-center justify-between w-full gap-4">
+          <UserAudit user={user} />
+          <UserNavigationButton user={user} size="lg" round={true} />
+        </div>
+      )}
     />
   );
 }

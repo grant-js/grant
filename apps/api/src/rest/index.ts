@@ -1,13 +1,13 @@
 import { Router } from 'express';
 
 import { createAccountsRoutes } from '@/rest/routes/accounts.routes';
+import { createApiKeysRoutes } from '@/rest/routes/api-keys.routes';
 import { createAuthRoutes } from '@/rest/routes/auth.routes';
 import { createGroupsRouter } from '@/rest/routes/groups.routes';
 import { createOrganizationInvitationsRoutes } from '@/rest/routes/organization-invitations.routes';
 import { createOrganizationMembersRoutes } from '@/rest/routes/organization-members.routes';
 import { createOrganizationRoutes } from '@/rest/routes/organizations.routes';
 import { createPermissionsRouter } from '@/rest/routes/permissions.routes';
-import { createApiKeysRoutes } from '@/rest/routes/api-keys.routes';
 import { createProjectsRouter } from '@/rest/routes/projects.routes';
 import { createRolesRouter } from '@/rest/routes/roles.routes';
 import { createTagsRouter } from '@/rest/routes/tags.routes';

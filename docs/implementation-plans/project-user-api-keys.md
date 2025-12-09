@@ -317,7 +317,7 @@ POST /api/projects/:projectId/users/:userId/api-keys
 **REST Endpoint:**
 
 ```
-POST /api/auth/project-user/token
+POST /api/auth/token
 Content-Type: application/json
 
 {
@@ -712,7 +712,7 @@ The initial implementation bound API keys directly to `project_id` and `user_id`
 - [ ] Security best practices
 - [ ] Example code snippets
 
-#### Phase 10: Web Integration (Frontend) ✅
+#### Phase 10: Web Integration - Hooks & Operations ✅
 
 - [x] Created React hooks for API key management
   - [x] `useApiKeys` - Generic hook for listing API keys with scope
@@ -724,29 +724,6 @@ The initial implementation bound API keys directly to `project_id` and `user_id`
   - [x] `exchange-api-key.graphql` - Mutation for exchanging credentials
   - [x] `revoke-api-key.graphql` - Mutation for revoking API keys
   - [x] `delete-api-key.graphql` - Mutation for deleting API keys
-- [ ] Create API key management components (TODO)
-  - [ ] `ApiKeyList` - Display list of API keys with pagination
-  - [ ] `ApiKeyForm` - Create/edit API key form
-  - [ ] `ApiKeyCard` - Individual API key card with actions
-  - [ ] `CreateApiKeyModal` - Modal for creating new API key (with secret display)
-  - [ ] `RevokeApiKeyConfirmDialog` - Confirmation dialog for revocation
-  - [ ] `DeleteApiKeyConfirmDialog` - Confirmation dialog for deletion
-- [ ] Add navigation and routing (TODO)
-  - [ ] Add API keys section to project settings
-  - [ ] Add API keys section to user management
-  - [ ] Create dedicated API keys page/route
-- [ ] Implement UI features (TODO)
-  - [ ] Secret visibility toggle (show/hide)
-  - [ ] Copy to clipboard functionality
-  - [ ] Expiration date display and warnings
-  - [ ] Last used timestamp display
-  - [ ] Revoked status indicators
-  - [ ] Empty state for no API keys
-  - [ ] Loading states and error handling
-- [ ] Add permissions checks (TODO)
-  - [ ] Verify user has permission to manage API keys
-  - [ ] Show/hide actions based on permissions
-  - [ ] Display appropriate error messages
 
 **Files Created:**
 
@@ -763,6 +740,147 @@ The initial implementation bound API keys directly to `project_id` and `user_id`
 **Files Removed:**
 
 - `apps/web/hooks/project-user-api-keys/` (entire directory) ✅
+
+#### Phase 11: Web Integration - User Detail View (In Progress)
+
+**Overview**: Create a comprehensive user detail view that displays user information, roles, tags, API keys, groups (through roles), and permissions (through groups). This view will replace the current dialog-based user management approach.
+
+**Phase 11.1: Scaffold User Detail Pages** ✅
+
+- [x] Create user detail page routes
+  - [x] `apps/web/app/[locale]/dashboard/accounts/[accountId]/projects/[projectId]/users/[userId]/page.tsx`
+  - [x] `apps/web/app/[locale]/dashboard/organizations/[organizationId]/projects/[projectId]/users/[userId]/page.tsx`
+- [x] Create reusable user detail feature module
+  - [x] `apps/web/components/features/user/UserDetailViewer.tsx` - Main container component
+  - [x] `apps/web/components/features/user/UserInfo.tsx` - User basic information
+  - [x] `apps/web/components/features/user/UserRoles.tsx` - User roles display (placeholder)
+  - [x] `apps/web/components/features/user/UserTags.tsx` - User tags display (placeholder)
+  - [x] `apps/web/components/features/user/UserApiKeys.tsx` - API keys display (basic implementation)
+  - [x] `apps/web/components/features/user/UserGroups.tsx` - Groups display (placeholder)
+  - [x] `apps/web/components/features/user/UserPermissions.tsx` - Permissions display (placeholder)
+  - [x] `apps/web/components/features/user/index.ts` - Module exports
+
+**Phase 11.2: Implement User Info Section** (TODO)
+
+- [ ] Enhance `UserInfo` component
+  - [ ] Display user picture/avatar
+  - [ ] Show user email (if available)
+  - [ ] Display creation and update timestamps
+  - [ ] Add edit button/link
+  - [ ] Add delete button with confirmation
+  - [ ] Show user status indicators
+
+**Phase 11.3: Implement User Roles Section** (TODO)
+
+- [ ] Create `UserRoles` component
+  - [ ] Fetch user roles for the project
+  - [ ] Display roles in a card/list format
+  - [ ] Show role details (name, description, tags)
+  - [ ] Add ability to add/remove roles
+  - [ ] Show role assignment timestamps
+  - [ ] Add role search/filter functionality
+
+**Phase 11.4: Implement User Tags Section** (TODO)
+
+- [ ] Create `UserTags` component
+  - [ ] Fetch user tags for the project
+  - [ ] Display tags with colors and icons
+  - [ ] Show primary tag indicator
+  - [ ] Add ability to add/remove tags
+  - [ ] Add ability to set primary tag
+  - [ ] Display tag assignment timestamps
+
+**Phase 11.5: Implement User API Keys Section** (TODO)
+
+- [ ] Enhance `UserApiKeys` component
+  - [x] Basic API keys list display
+  - [ ] Add API key creation functionality
+  - [ ] Add API key management actions (revoke, delete)
+  - [ ] Display API key details (name, description, expiration, last used)
+  - [ ] Add secret visibility toggle
+  - [ ] Add copy to clipboard functionality
+  - [ ] Show expiration warnings
+  - [ ] Display revoked status indicators
+  - [ ] Add empty state with create button
+  - [ ] Add loading and error states
+  - [ ] Create `CreateApiKeyDialog` component
+  - [ ] Create `RevokeApiKeyDialog` component
+  - [ ] Create `DeleteApiKeyDialog` component
+  - [ ] Create `ApiKeyCard` component for individual keys
+
+**Phase 11.6: Implement User Groups Section** (TODO)
+
+- [ ] Create `UserGroups` component
+  - [ ] Fetch groups through user roles
+  - [ ] Display groups in a card/list format
+  - [ ] Show group details (name, description, permissions count)
+  - [ ] Display which role grants each group
+  - [ ] Add group search/filter functionality
+  - [ ] Show group assignment hierarchy (User → Role → Group)
+
+**Phase 11.7: Implement User Permissions Section** (TODO)
+
+- [ ] Create `UserPermissions` component
+  - [ ] Fetch permissions through groups (User → Role → Group → Permission)
+  - [ ] Display permissions in a structured format
+  - [ ] Group permissions by resource type
+  - [ ] Show permission details (resource, action, scope)
+  - [ ] Add permission search/filter functionality
+  - [ ] Show permission hierarchy path
+  - [ ] Display effective permissions (aggregated view)
+
+**Phase 11.8: Navigation & Routing** ✅
+
+- [x] Add navigation links from user list to detail view
+  - [x] Created `UserNavigationButton` component
+  - [x] Updated `UserTable` to include navigation column
+  - [x] Updated `UserCards` to include navigation button in footer
+  - [x] Added spacing between navigation button and audit fields
+  - [x] Increased card min-width to prevent button overflow
+- [x] Add breadcrumb navigation
+  - [x] Updated `Breadcrumb` component to handle user detail page segments
+  - [x] Added user data fetching for breadcrumb display
+  - [x] Fixed breadcrumb to skip "users" segment when on user detail page
+  - [x] Fixed breadcrumb fallback to use singular "User" instead of "Users"
+  - [x] Added support for both account and organization routes
+- [x] Add translations
+  - [x] Added `user` namespace translations (English)
+  - [x] Added `user` namespace translations (German)
+  - [x] Added `common.users.user` for breadcrumb fallback
+- [ ] Add back button to return to user list (TODO)
+- [ ] Update project navigation to include user detail routes (TODO)
+
+**Phase 11.9: UI/UX Enhancements** (TODO)
+
+- [ ] Add loading skeletons for all sections
+- [ ] Add error boundaries and error states
+- [ ] Implement responsive design (mobile/tablet/desktop)
+- [ ] Add empty states for all sections
+- [ ] Add tooltips and help text
+- [ ] Implement smooth transitions and animations
+- [ ] Add confirmation dialogs for destructive actions
+
+**Phase 11.10: Permissions & Security** (TODO)
+
+- [ ] Add permission checks for viewing user details
+- [ ] Add permission checks for editing user (roles, tags)
+- [ ] Add permission checks for managing API keys
+- [ ] Show/hide actions based on user permissions
+- [ ] Display appropriate error messages for unauthorized actions
+- [ ] Add audit trail display for user changes
+
+**Files Created (Phase 11.1):**
+
+- `apps/web/app/[locale]/dashboard/accounts/[accountId]/projects/[projectId]/users/[userId]/page.tsx` ✅
+- `apps/web/app/[locale]/dashboard/organizations/[organizationId]/projects/[projectId]/users/[userId]/page.tsx` ✅
+- `apps/web/components/features/user/UserDetailViewer.tsx` ✅
+- `apps/web/components/features/user/UserInfo.tsx` ✅
+- `apps/web/components/features/user/UserRoles.tsx` ✅
+- `apps/web/components/features/user/UserTags.tsx` ✅
+- `apps/web/components/features/user/UserApiKeys.tsx` ✅
+- `apps/web/components/features/user/UserGroups.tsx` ✅
+- `apps/web/components/features/user/UserPermissions.tsx` ✅
+- `apps/web/components/features/user/index.ts` ✅
 
 ### API Key Format
 

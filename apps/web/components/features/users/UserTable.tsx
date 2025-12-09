@@ -16,6 +16,7 @@ import { useUsersStore } from '@/stores/users.store';
 import { CreateUserDialog } from './CreateUserDialog';
 import { UserActions } from './UserActions';
 import { UserAudit } from './UserAudit';
+import { UserNavigationButton } from './UserNavigationButton';
 
 export function UserTable() {
   const t = useTranslations('users');
@@ -84,6 +85,12 @@ export function UserTable() {
       width: '200px',
       render: (user: User) => <UserAudit user={user} />,
     },
+    {
+      key: 'navigation',
+      header: '',
+      width: '60px',
+      render: (user: User) => <UserNavigationButton user={user} size="sm" round={false} />,
+    },
   ];
 
   const skeletonConfig: { columns: SkeletonColumnConfig[]; rowCount?: number } = {
@@ -93,6 +100,7 @@ export function UserTable() {
       { key: 'roles', type: 'list' },
       { key: 'tags', type: 'list' },
       { key: 'audit', type: 'audit' },
+      { key: 'navigation', type: 'icon' },
     ],
     rowCount: limit,
   };

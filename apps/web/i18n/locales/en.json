@@ -91,6 +91,10 @@
       "title": "Projects",
       "project": "Project"
     },
+    "users": {
+      "title": "Users",
+      "user": "User"
+    },
     "view": {
       "card": "Card View",
       "table": "Table View"
@@ -424,6 +428,54 @@
       "updated": "Updated",
       "actions": "Actions",
       "loading": "Loading users..."
+    }
+  },
+  "user": {
+    "detail": {
+      "title": "User Details"
+    },
+    "info": {
+      "title": "User Information",
+      "userId": "User ID",
+      "created": "Created"
+    },
+    "roles": {
+      "title": "Roles",
+      "empty": "No roles assigned",
+      "loading": "Loading roles...",
+      "error": "Error loading roles"
+    },
+    "tags": {
+      "title": "Tags",
+      "empty": "No tags assigned",
+      "loading": "Loading tags...",
+      "error": "Error loading tags"
+    },
+    "apiKeys": {
+      "title": "API Keys",
+      "empty": "No API keys found",
+      "loading": "Loading API keys...",
+      "error": "Error loading API keys",
+      "active": "Active",
+      "revoked": "Revoked"
+    },
+    "groups": {
+      "title": "Groups",
+      "empty": "No groups assigned",
+      "loading": "Loading groups...",
+      "error": "Error loading groups",
+      "description": "Groups for user (through roles)"
+    },
+    "permissions": {
+      "title": "Permissions",
+      "empty": "No permissions assigned",
+      "loading": "Loading permissions...",
+      "error": "Error loading permissions",
+      "description": "Permissions for user (through groups)"
+    },
+    "loading": {
+      "title": "Loading user...",
+      "error": "Error loading user"
     }
   },
   "roles": {

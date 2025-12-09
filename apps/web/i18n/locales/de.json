@@ -91,6 +91,10 @@
       "title": "Projekte",
       "project": "Projekt"
     },
+    "users": {
+      "title": "Benutzer",
+      "user": "Benutzer"
+    },
     "view": {
       "card": "Kartenansicht",
       "table": "Tabellenansicht"
@@ -424,6 +428,54 @@
       "updated": "Aktualisiert",
       "actions": "Aktionen",
       "loading": "Benutzer werden geladen..."
+    }
+  },
+  "user": {
+    "detail": {
+      "title": "Benutzerdetails"
+    },
+    "info": {
+      "title": "Benutzerinformationen",
+      "userId": "Benutzer-ID",
+      "created": "Erstellt"
+    },
+    "roles": {
+      "title": "Rollen",
+      "empty": "Keine Rollen zugewiesen",
+      "loading": "Rollen werden geladen...",
+      "error": "Fehler beim Laden der Rollen"
+    },
+    "tags": {
+      "title": "Tags",
+      "empty": "Keine Tags zugewiesen",
+      "loading": "Tags werden geladen...",
+      "error": "Fehler beim Laden der Tags"
+    },
+    "apiKeys": {
+      "title": "API-Schlüssel",
+      "empty": "Keine API-Schlüssel gefunden",
+      "loading": "API-Schlüssel werden geladen...",
+      "error": "Fehler beim Laden der API-Schlüssel",
+      "active": "Aktiv",
+      "revoked": "Widerrufen"
+    },
+    "groups": {
+      "title": "Gruppen",
+      "empty": "Keine Gruppen zugewiesen",
+      "loading": "Gruppen werden geladen...",
+      "error": "Fehler beim Laden der Gruppen",
+      "description": "Gruppen für Benutzer (durch Rollen)"
+    },
+    "permissions": {
+      "title": "Berechtigungen",
+      "empty": "Keine Berechtigungen zugewiesen",
+      "loading": "Berechtigungen werden geladen...",
+      "error": "Fehler beim Laden der Berechtigungen",
+      "description": "Berechtigungen für Benutzer (durch Gruppen)"
+    },
+    "loading": {
+      "title": "Benutzer wird geladen...",
+      "error": "Fehler beim Laden des Benutzers"
     }
   },
   "roles": {

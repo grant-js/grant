@@ -266,11 +266,11 @@ Create a new API key for a specific scope. The API key consists of:
   });
 
   /**
-   * POST /api/auth/api-keys/token
+   * POST /api/auth/token
    */
   registry.registerPath({
     method: 'post',
-    path: '/api/auth/api-keys/token',
+    path: '/api/auth/token',
     tags: ['API Keys', 'Authentication'],
     summary: 'Exchange API key for access token',
     description: `
