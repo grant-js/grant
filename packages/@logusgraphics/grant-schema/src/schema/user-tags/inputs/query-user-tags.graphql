@@ -1,0 +1,4 @@
+input QueryUserTagsInput {
+  userId: ID
+  tagId: ID
+}

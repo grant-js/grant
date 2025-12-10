@@ -338,6 +338,16 @@ export type CreateOrganizationInput = {
   name: Scalars['String']['input'];
 };
 
+export type CreateOrganizationInvitationInput = {
+  email: Scalars['String']['input'];
+  expiresAt: Scalars['Date']['input'];
+  invitedBy: Scalars['ID']['input'];
+  organizationId: Scalars['ID']['input'];
+  roleId: Scalars['ID']['input'];
+  status?: InputMaybe<OrganizationInvitationStatus>;
+  token: Scalars['String']['input'];
+};
+
 export type CreatePermissionInput = {
   action: Scalars['String']['input'];
   description?: InputMaybe<Scalars['String']['input']>;
@@ -1353,6 +1363,99 @@ export type QueryUsersArgs = {
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
+export type QueryAccountProjectInput = {
+  projectId: Scalars['ID']['input'];
+};
+
+export type QueryAccountProjectsInput = {
+  accountId: Scalars['ID']['input'];
+};
+
+export type QueryGroupPermissionsInput = {
+  groupId: Scalars['ID']['input'];
+};
+
+export type QueryGroupTagsInput = {
+  groupId?: InputMaybe<Scalars['ID']['input']>;
+  tagId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type QueryOrganizationGroupsInput = {
+  organizationId: Scalars['ID']['input'];
+};
+
+export type QueryOrganizationPermissionsInput = {
+  organizationId: Scalars['ID']['input'];
+};
+
+export type QueryOrganizationProjectsInput = {
+  organizationId?: InputMaybe<Scalars['ID']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type QueryOrganizationRolesInput = {
+  organizationId: Scalars['ID']['input'];
+};
+
+export type QueryOrganizationTagsInput = {
+  organizationId: Scalars['ID']['input'];
+};
+
+export type QueryOrganizationUsersInput = {
+  organizationId?: InputMaybe<Scalars['ID']['input']>;
+  userId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type QueryPermissionTagsInput = {
+  permissionId?: InputMaybe<Scalars['ID']['input']>;
+  tagId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type QueryProjectGroupsInput = {
+  projectId: Scalars['ID']['input'];
+};
+
+export type QueryProjectPermissionsInput = {
+  projectId: Scalars['ID']['input'];
+};
+
+export type QueryProjectRolesInput = {
+  projectId: Scalars['ID']['input'];
+};
+
+export type QueryProjectTagsInput = {
+  projectId: Scalars['ID']['input'];
+  tagId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type QueryProjectUserApiKeysInput = {
+  projectId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+export type QueryProjectUsersInput = {
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+  userId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type QueryRoleGroupsInput = {
+  roleId: Scalars['ID']['input'];
+};
+
+export type QueryRoleTagsInput = {
+  roleId?: InputMaybe<Scalars['ID']['input']>;
+  tagId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type QueryUserRolesInput = {
+  userId: Scalars['ID']['input'];
+};
+
+export type QueryUserTagsInput = {
+  tagId?: InputMaybe<Scalars['ID']['input']>;
+  userId?: InputMaybe<Scalars['ID']['input']>;
+};
+
 export type RefreshSessionResponse = {
   __typename?: 'RefreshSessionResponse';
   accessToken: Scalars['String']['output'];
@@ -1442,6 +1545,7 @@ export type RemoveProjectTagInput = {
 };
 
 export type RemoveProjectUserApiKeyInput = {
+  apiKeyId: Scalars['ID']['input'];
   projectId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
@@ -1674,6 +1778,11 @@ export type UpdateGroupTagInput = {
 
 export type UpdateOrganizationInput = {
   name?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateOrganizationInvitationInput = {
+  acceptedAt?: InputMaybe<Scalars['Date']['input']>;
+  status?: InputMaybe<OrganizationInvitationStatus>;
 };
 
 export type UpdateOrganizationMemberInput = {

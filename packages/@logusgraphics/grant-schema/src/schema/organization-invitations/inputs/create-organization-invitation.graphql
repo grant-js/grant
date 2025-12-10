@@ -1,0 +1,9 @@
+input CreateOrganizationInvitationInput {
+  organizationId: ID!
+  email: String!
+  roleId: ID!
+  token: String!
+  expiresAt: Date!
+  invitedBy: ID!
+  status: OrganizationInvitationStatus
+}

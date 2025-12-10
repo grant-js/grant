@@ -1,5 +1,4 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { organizationPermissionsAuditLogs } from '@logusgraphics/grant-database';
+import { DbSchema, organizationPermissionsAuditLogs } from '@logusgraphics/grant-database';
 import {
   AddOrganizationPermissionInput,
   OrganizationPermission,
@@ -13,14 +12,14 @@ import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
+  DeleteParams,
+  createDynamicSingleSchema,
   validateInput,
   validateOutput,
-  createDynamicSingleSchema,
-  DeleteParams,
 } from './common';
 import {
-  organizationPermissionSchema,
   addOrganizationPermissionInputSchema,
+  organizationPermissionSchema,
   queryOrganizationPermissionsArgsSchema,
   removeOrganizationPermissionInputSchema,
 } from './organization-permissions.schemas';
@@ -129,8 +128,7 @@ export class OrganizationPermissionService extends AuditService {
 
     const result =
       await this.repositories.organizationPermissionRepository.addOrganizationPermission(
-        organizationId,
-        permissionId,
+        { organizationId, permissionId },
         transaction
       );
 
@@ -177,13 +175,11 @@ export class OrganizationPermissionService extends AuditService {
 
     const result = isHardDelete
       ? await this.repositories.organizationPermissionRepository.hardDeleteOrganizationPermission(
-          organizationId,
-          permissionId,
+          { organizationId, permissionId },
           transaction
         )
       : await this.repositories.organizationPermissionRepository.softDeleteOrganizationPermission(
-          organizationId,
-          permissionId,
+          { organizationId, permissionId },
           transaction
         );
 

@@ -1,6 +1,5 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { roleGroupsAuditLogs } from '@logusgraphics/grant-database';
-import { RoleGroup, AddRoleGroupInput, RemoveRoleGroupInput } from '@logusgraphics/grant-schema';
+import { DbSchema, roleGroupsAuditLogs } from '@logusgraphics/grant-database';
+import { AddRoleGroupInput, RemoveRoleGroupInput, RoleGroup } from '@logusgraphics/grant-schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -9,10 +8,10 @@ import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
+  DeleteParams,
+  createDynamicSingleSchema,
   validateInput,
   validateOutput,
-  createDynamicSingleSchema,
-  DeleteParams,
 } from './common';
 import {
   addRoleGroupInputSchema,
@@ -104,8 +103,7 @@ export class RoleGroupService extends AuditService {
     }
 
     const roleGroup = await this.repositories.roleGroupRepository.addRoleGroup(
-      roleId,
-      groupId,
+      { roleId, groupId },
       transaction
     );
 
@@ -145,13 +143,11 @@ export class RoleGroupService extends AuditService {
 
     const roleGroup = isHardDelete
       ? await this.repositories.roleGroupRepository.hardDeleteRoleGroup(
-          roleId,
-          groupId,
+          { roleId, groupId },
           transaction
         )
       : await this.repositories.roleGroupRepository.softDeleteRoleGroup(
-          roleId,
-          groupId,
+          { roleId, groupId },
           transaction
         );
 

@@ -1,5 +1,4 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { organizationGroupsAuditLogs } from '@logusgraphics/grant-database';
+import { DbSchema, organizationGroupsAuditLogs } from '@logusgraphics/grant-database';
 import {
   AddOrganizationGroupInput,
   OrganizationGroup,
@@ -13,17 +12,17 @@ import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
+  DeleteParams,
+  SelectedFields,
+  createDynamicSingleSchema,
   validateInput,
   validateOutput,
-  createDynamicSingleSchema,
-  SelectedFields,
-  DeleteParams,
 } from './common';
 import {
-  getOrganizationGroupsParamsSchema,
-  removeOrganizationGroupInputSchema,
-  organizationGroupSchema,
   addOrganizationGroupInputSchema,
+  getOrganizationGroupsParamsSchema,
+  organizationGroupSchema,
+  removeOrganizationGroupInputSchema,
 } from './organization-groups.schemas';
 
 export class OrganizationGroupService extends AuditService {
@@ -122,8 +121,7 @@ export class OrganizationGroupService extends AuditService {
     }
 
     const result = await this.repositories.organizationGroupRepository.addOrganizationGroup(
-      organizationId,
-      groupId,
+      { organizationId, groupId },
       transaction
     );
 
@@ -163,13 +161,11 @@ export class OrganizationGroupService extends AuditService {
 
     const result = isHardDelete
       ? await this.repositories.organizationGroupRepository.hardDeleteOrganizationGroup(
-          organizationId,
-          groupId,
+          { organizationId, groupId },
           transaction
         )
       : await this.repositories.organizationGroupRepository.softDeleteOrganizationGroup(
-          organizationId,
-          groupId,
+          { organizationId, groupId },
           transaction
         );
 

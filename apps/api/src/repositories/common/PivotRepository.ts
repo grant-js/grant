@@ -1,5 +1,5 @@
 import { DbSchema } from '@logusgraphics/grant-database';
-import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
+import { SQLWrapper, and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 
 import { NotFoundError } from '@/lib/errors';
 import { createModuleLogger } from '@/lib/logger';
@@ -17,106 +17,48 @@ export interface BasePivotEntity extends BasePivotModel {
   [key: string]: unknown;
 }
 
-export interface BasePivotQueryArgs {
-  parentId?: string;
-  relatedId?: string;
-}
-
-export interface PivotIntersectionQueryArgs {
-  parentIds: string[];
-  relatedIds: string[];
-}
-
-export interface BasePivotAddArgs {
-  parentId: string;
-  relatedId: string;
-  [key: string]: unknown;
-}
-
-export interface BasePivotRemoveArgs {
-  parentId: string;
-  relatedId: string;
-}
-
 export abstract class PivotRepository<
   TPivotModel extends BasePivotModel,
   TPivotEntity extends BasePivotEntity,
 > {
   protected readonly logger = createModuleLogger('PivotRepository');
   protected abstract table: any;
-  protected abstract parentIdField: keyof TPivotModel;
-  protected abstract relatedIdField: keyof TPivotModel;
+  protected abstract uniqueIndexFields: Array<keyof TPivotModel>;
 
   protected abstract toEntity(dbPivot: TPivotModel): TPivotEntity;
 
   constructor(protected db: DbSchema) {}
 
-  protected getUniquePivotFields(): Array<keyof TPivotModel> {
-    return [this.parentIdField, this.relatedIdField];
-  }
+  protected whereUnique(params: Record<string, unknown>): SQLWrapper | undefined {
+    const conditions: SQLWrapper[] = [];
 
-  protected whereUnique(
-    params: BasePivotAddArgs | BasePivotRemoveArgs | Record<string, unknown>
-  ): any {
-    const uniqueFields = this.getUniquePivotFields();
-    const conditions = uniqueFields.map((field) => {
-      const fieldKey = field as string;
-      const fieldValue = (params as Record<string, unknown>)[fieldKey];
-      return eq(this.table[fieldKey], fieldValue);
-    });
-    return conditions.length === 1 ? conditions[0] : and(...conditions);
-  }
-
-  private where({ parentId, relatedId }: BasePivotQueryArgs): any {
-    const conditions = [isNull(this.table.deletedAt)];
-
-    if (relatedId && parentId) {
-      const relationCondition = and(
-        eq(this.table[this.parentIdField], parentId),
-        eq(this.table[this.relatedIdField], relatedId)
-      );
-      if (relationCondition) {
-        conditions.push(relationCondition);
-      }
-    } else if (parentId) {
-      const parentCondition = eq(this.table[this.parentIdField], parentId);
-      if (parentCondition) {
-        conditions.push(parentCondition);
-      }
-    } else if (relatedId) {
-      const relatedCondition = eq(this.table[this.relatedIdField], relatedId);
-      if (relatedCondition) {
-        conditions.push(relatedCondition);
+    for (const fieldKey of this.uniqueIndexFields) {
+      const fieldValue = params[fieldKey as string];
+      if (fieldValue !== undefined) {
+        conditions.push(eq(this.table[fieldKey], fieldValue));
       }
     }
 
+    if (conditions.length === 0) {
+      return undefined;
+    }
     return conditions.length === 1 ? conditions[0] : and(...conditions);
   }
 
-  private insertValues(
-    parentIdField: keyof TPivotModel,
-    relatedIdField: keyof TPivotModel,
-    parentId: string,
-    relatedId: string,
-    rest: Record<string, unknown>
-  ): Record<string, unknown> {
-    const uniqueFields = this.getUniquePivotFields();
+  protected toInsertValues(params: Record<string, unknown>): Record<string, unknown> {
     const baseValues: Record<string, unknown> = {
-      ...rest,
+      ...params,
       createdAt: new Date(),
       updatedAt: new Date(),
       deletedAt: null,
     };
 
-    uniqueFields.forEach((field) => {
-      const fieldValue = rest[field as string];
+    this.uniqueIndexFields.forEach((field: keyof TPivotModel) => {
+      const fieldValue = params[field as string];
       if (fieldValue !== undefined) {
         baseValues[field as string] = fieldValue;
       }
     });
-
-    baseValues[parentIdField as string] = parentId;
-    baseValues[relatedIdField as string] = relatedId;
 
     return baseValues;
   }
@@ -126,15 +68,18 @@ export abstract class PivotRepository<
   }
 
   protected async query(
-    params: BasePivotQueryArgs,
+    params: Record<string, unknown>,
     transaction?: Transaction
   ): Promise<TPivotEntity[]> {
-    const dbInstance = transaction || this.db;
+    const db = transaction || this.db;
 
     try {
-      const whereClause = this.where(params);
+      const unique = this.whereUnique(params);
+      const notSoftDeleted = unique
+        ? and(unique, isNull(this.table.deletedAt))
+        : isNull(this.table.deletedAt);
 
-      const result = await dbInstance.select().from(this.table).where(whereClause);
+      const result = await db.select().from(this.table).where(notSoftDeleted);
 
       return result.map((item: TPivotModel) => this.toEntity(item));
     } catch (error) {
@@ -147,68 +92,55 @@ export abstract class PivotRepository<
   }
 
   protected async queryIntersection(
-    params: PivotIntersectionQueryArgs,
+    params: Record<string, string[]>,
     transaction?: Transaction
   ): Promise<TPivotEntity[]> {
-    const dbInstance = transaction || this.db;
-    const whereClause = and(
-      inArray(this.table[this.parentIdField], params.parentIds),
-      inArray(this.table[this.relatedIdField], params.relatedIds),
-      isNull(this.table.deletedAt)
-    );
+    const db = transaction || this.db;
+    const intersected = Object.entries(params).map(([fieldKey, values]) => {
+      return inArray(this.table[fieldKey], values);
+    });
+    const notSoftDeleted = and(...intersected, isNull(this.table.deletedAt));
 
-    const result = await dbInstance.select().from(this.table).where(whereClause);
+    const result = await db.select().from(this.table).where(notSoftDeleted);
 
     return result.map((item: TPivotModel) => this.toEntity(item));
   }
 
-  protected async add(params: BasePivotAddArgs, transaction?: Transaction): Promise<TPivotEntity> {
-    const dbInstance = transaction || this.db;
-    const { parentId, relatedId, ...rest } = params;
+  protected async add(
+    params: Record<string, unknown>,
+    transaction?: Transaction
+  ): Promise<TPivotEntity> {
+    const db = transaction || this.db;
     try {
-      const uniqueWhereClause = this.whereUnique(params);
-      const softDeletedWhereClause = and(uniqueWhereClause, isNotNull(this.table.deletedAt));
+      const unique = this.whereUnique(params);
+      const softDeleted = and(unique, isNotNull(this.table.deletedAt));
 
-      const existingSoftDeleted = await dbInstance
-        .select()
-        .from(this.table)
-        .where(softDeletedWhereClause)
-        .limit(1);
+      const existingSoftDeleted = await db.select().from(this.table).where(softDeleted).limit(1);
 
       if (existingSoftDeleted.length > 0) {
-        const result = await dbInstance
+        const result = await db
           .update(this.table)
           .set({
             deletedAt: null,
             updatedAt: new Date(),
           })
-          .where(softDeletedWhereClause)
+          .where(softDeleted)
           .returning();
 
         const reactivatedItem = this.first(result);
         return this.toEntity(reactivatedItem as TPivotModel);
       }
 
-      const activeWhereClause = and(uniqueWhereClause, isNull(this.table.deletedAt));
-      const existingPivot = await dbInstance
-        .select()
-        .from(this.table)
-        .where(activeWhereClause)
-        .limit(1);
+      const notSoftDeleted = and(unique, isNull(this.table.deletedAt));
+      const existingPivot = await db.select().from(this.table).where(notSoftDeleted).limit(1);
 
       if (existingPivot.length > 0) {
         return this.toEntity(existingPivot[0]);
       }
 
-      const insertValues = this.insertValues(
-        this.parentIdField,
-        this.relatedIdField,
-        parentId,
-        relatedId,
-        rest
-      );
+      const insertValues = this.toInsertValues(params);
 
-      const result = await dbInstance.insert(this.table).values(insertValues).returning();
+      const result = await db.insert(this.table).values(insertValues).returning();
       const insertedItem = this.first(result);
       return this.toEntity(insertedItem as TPivotModel);
     } catch (error) {
@@ -221,52 +153,35 @@ export abstract class PivotRepository<
   }
 
   protected async update(
-    parentId: string,
-    relatedId: string,
+    params: Record<string, unknown>,
     update: Partial<TPivotModel>,
     transaction?: Transaction
   ): Promise<TPivotEntity> {
-    const dbInstance = transaction || this.db;
-    const uniqueFields = this.getUniquePivotFields();
-    const whereConditions = uniqueFields.map((field) => {
-      let fieldValue: unknown = update[field];
+    const db = transaction || this.db;
+    const unique = this.whereUnique(params);
+    const notSoftDeleted = and(unique, isNull(this.table.deletedAt));
 
-      if (fieldValue === undefined) {
-        if (field === this.parentIdField) {
-          fieldValue = parentId;
-        } else if (field === this.relatedIdField) {
-          fieldValue = relatedId;
-        }
-      }
-
-      return eq(this.table[field as string], fieldValue);
-    });
-
-    const updatedItem = await dbInstance
-      .update(this.table)
-      .set(update)
-      .where(and(...whereConditions))
-      .returning();
+    const updatedItem = await db.update(this.table).set(update).where(notSoftDeleted).returning();
     return this.toEntity(updatedItem[0] as TPivotModel);
   }
 
   protected async softDelete(
-    params: BasePivotRemoveArgs,
+    params: Record<string, unknown>,
     transaction?: Transaction
   ): Promise<TPivotEntity> {
-    const dbInstance = transaction || this.db;
+    const db = transaction || this.db;
 
     try {
-      const uniqueWhereClause = this.whereUnique(params);
-      const whereClause = and(uniqueWhereClause, isNull(this.table.deletedAt));
+      const unique = this.whereUnique(params);
+      const notSoftDeleted = and(unique, isNull(this.table.deletedAt));
 
-      const result = await dbInstance
+      const result = await db
         .update(this.table)
         .set({
           deletedAt: new Date(),
           updatedAt: new Date(),
         })
-        .where(whereClause)
+        .where(notSoftDeleted)
         .returning();
 
       const deletedItem = this.first(result);
@@ -285,16 +200,15 @@ export abstract class PivotRepository<
   }
 
   protected async hardDelete(
-    params: BasePivotRemoveArgs,
+    params: Record<string, unknown>,
     transaction?: Transaction
   ): Promise<TPivotEntity> {
-    const dbInstance = transaction || this.db;
+    const db = transaction || this.db;
 
     try {
-      const uniqueWhereClause = this.whereUnique(params);
-      const whereClause = uniqueWhereClause;
+      const unique = this.whereUnique(params);
 
-      const result = await dbInstance.delete(this.table).where(whereClause).returning();
+      const result = await db.delete(this.table).where(unique?.getSQL()).returning();
 
       const deletedItem = this.first(result);
       if (!deletedItem) {

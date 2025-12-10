@@ -1,8 +1,9 @@
 import { ProjectRoleModel, projectRoles } from '@logusgraphics/grant-database';
 import {
-  ProjectRole,
-  RemoveProjectRoleInput,
   AddProjectRoleInput,
+  ProjectRole,
+  QueryProjectRolesInput,
+  RemoveProjectRoleInput,
 } from '@logusgraphics/grant-schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -10,63 +11,37 @@ import { PivotRepository } from '@/repositories/common';
 
 export class ProjectRoleRepository extends PivotRepository<ProjectRoleModel, ProjectRole> {
   protected table = projectRoles;
-  protected parentIdField: keyof ProjectRoleModel = 'projectId';
-  protected relatedIdField: keyof ProjectRoleModel = 'roleId';
+  protected uniqueIndexFields: Array<keyof ProjectRoleModel> = ['projectId', 'roleId'];
 
   protected toEntity(dbPivot: ProjectRoleModel): ProjectRole {
-    return {
-      id: dbPivot.id,
-      projectId: dbPivot.projectId,
-      roleId: dbPivot.roleId,
-      createdAt: dbPivot.createdAt,
-      updatedAt: dbPivot.updatedAt,
-      deletedAt: dbPivot.deletedAt,
-    };
+    return dbPivot;
   }
 
   public async getProjectRoles(
-    params: { projectId: string },
+    params: QueryProjectRolesInput,
     transaction?: Transaction
   ): Promise<ProjectRole[]> {
-    return this.query({ parentId: params.projectId }, transaction);
+    return this.query(params, transaction);
   }
 
   public async addProjectRole(
     params: AddProjectRoleInput,
     transaction?: Transaction
   ): Promise<ProjectRole> {
-    return this.add(
-      {
-        parentId: params.projectId,
-        relatedId: params.roleId,
-      },
-      transaction
-    );
+    return this.add(params, transaction);
   }
 
   public async softDeleteProjectRole(
     params: RemoveProjectRoleInput,
     transaction?: Transaction
   ): Promise<ProjectRole> {
-    return this.softDelete(
-      {
-        parentId: params.projectId,
-        relatedId: params.roleId,
-      },
-      transaction
-    );
+    return this.softDelete(params, transaction);
   }
 
   public async hardDeleteProjectRole(
     params: RemoveProjectRoleInput,
     transaction?: Transaction
   ): Promise<ProjectRole> {
-    return this.hardDelete(
-      {
-        parentId: params.projectId,
-        relatedId: params.roleId,
-      },
-      transaction
-    );
+    return this.hardDelete(params, transaction);
   }
 }

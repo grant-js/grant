@@ -1,4 +1,5 @@
 input RemoveProjectUserApiKeyInput {
   projectId: ID!
   userId: ID!
+  apiKeyId: ID!
 }

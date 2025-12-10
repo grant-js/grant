@@ -97,9 +97,10 @@ export class ApiKeysController extends BaseController {
     res: Response
   ) {
     const { id } = req.params;
+    const { scope } = req.body;
 
     const apiKey = await this.handlers.apiKeys.revokeApiKey({
-      input: { id },
+      input: { id, scope },
     });
 
     return this.success(res, apiKey);
@@ -113,10 +114,10 @@ export class ApiKeysController extends BaseController {
     res: Response
   ) {
     const { id } = req.params;
-    const { hardDelete } = req.body;
+    const { hardDelete, scope } = req.body;
 
     const apiKey = await this.handlers.apiKeys.deleteApiKey({
-      input: { id, hardDelete },
+      input: { id, hardDelete, scope },
     });
 
     return this.success(res, apiKey);

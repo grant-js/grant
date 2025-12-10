@@ -1,28 +1,33 @@
-import { GroupTag, groupTags } from '@logusgraphics/grant-database';
-import { AddGroupTagInput, UpdateGroupTagInput } from '@logusgraphics/grant-schema';
+import { GroupTagModel, groupTags } from '@logusgraphics/grant-database';
+import {
+  AddGroupTagInput,
+  GroupTag,
+  QueryGroupTagsInput,
+  RemoveGroupTagInput,
+  UpdateGroupTagInput,
+} from '@logusgraphics/grant-schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 
-import { PivotRepository, BasePivotRemoveArgs } from './common/PivotRepository';
+import { PivotRepository } from './common/PivotRepository';
 
-export class GroupTagRepository extends PivotRepository<GroupTag, GroupTag> {
+export class GroupTagRepository extends PivotRepository<GroupTagModel, GroupTag> {
   protected table = groupTags;
-  protected parentIdField: keyof GroupTag = 'groupId';
-  protected relatedIdField: keyof GroupTag = 'tagId';
+  protected uniqueIndexFields: Array<keyof GroupTagModel> = ['groupId', 'tagId'];
 
-  protected toEntity(dbGroupTag: GroupTag): GroupTag {
+  protected toEntity(dbGroupTag: GroupTagModel): GroupTag {
     return dbGroupTag;
   }
 
   public async getGroupTags(
-    params: { groupId?: string; tagId?: string },
+    params: QueryGroupTagsInput,
     transaction?: Transaction
   ): Promise<GroupTag[]> {
-    return this.query({ parentId: params.groupId, relatedId: params.tagId }, transaction);
+    return this.query(params, transaction);
   }
 
   public async getGroupTag(
-    params: { groupId: string; tagId: string },
+    params: QueryGroupTagsInput,
     transaction?: Transaction
   ): Promise<GroupTag> {
     const result = await this.getGroupTags(params, transaction);
@@ -34,17 +39,11 @@ export class GroupTagRepository extends PivotRepository<GroupTag, GroupTag> {
     tagIds: string[],
     transaction?: Transaction
   ): Promise<GroupTag[]> {
-    return this.queryIntersection({ parentIds: groupIds, relatedIds: tagIds }, transaction);
+    return this.queryIntersection({ groupId: groupIds, tagId: tagIds }, transaction);
   }
 
   public async addGroupTag(params: AddGroupTagInput, transaction?: Transaction): Promise<GroupTag> {
-    const { groupId, tagId, isPrimary } = params;
-
-    const groupTag = await this.add(
-      { parentId: groupId, relatedId: tagId, isPrimary },
-      transaction
-    );
-    return groupTag;
+    return this.add(params, transaction);
   }
 
   public async updateGroupTag(
@@ -52,32 +51,20 @@ export class GroupTagRepository extends PivotRepository<GroupTag, GroupTag> {
     transaction?: Transaction
   ): Promise<GroupTag> {
     const { groupId, tagId, isPrimary } = params;
-    return this.update(groupId, tagId, { isPrimary }, transaction);
+    return this.update({ groupId, tagId }, { isPrimary }, transaction);
   }
 
   public async softDeleteGroupTag(
-    params: { groupId: string; tagId: string },
+    params: RemoveGroupTagInput,
     transaction?: Transaction
-  ): Promise<GroupTag | null> {
-    const baseParams: BasePivotRemoveArgs = {
-      parentId: params.groupId,
-      relatedId: params.tagId,
-    };
-
-    const groupTag = await this.softDelete(baseParams, transaction);
-    return groupTag;
+  ): Promise<GroupTag> {
+    return this.softDelete(params, transaction);
   }
 
   public async hardDeleteGroupTag(
-    params: { groupId: string; tagId: string },
+    params: RemoveGroupTagInput,
     transaction?: Transaction
-  ): Promise<GroupTag | null> {
-    const baseParams: BasePivotRemoveArgs = {
-      parentId: params.groupId,
-      relatedId: params.tagId,
-    };
-
-    const groupTag = await this.hardDelete(baseParams, transaction);
-    return groupTag;
+  ): Promise<GroupTag> {
+    return this.hardDelete(params, transaction);
   }
 }

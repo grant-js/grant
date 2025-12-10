@@ -40,9 +40,11 @@ export const exchangeApiKeyRequestSchema = z.object({
 
 export const revokeApiKeyRequestSchema = z.object({
   id: z.uuid('Invalid API key ID'),
+  scope: scopeSchema,
 });
 
 export const deleteApiKeyRequestSchema = z.object({
   id: z.uuid('Invalid API key ID'),
+  scope: scopeSchema,
   hardDelete: z.boolean().optional(),
 });

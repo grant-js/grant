@@ -2,6 +2,7 @@ import { PermissionTagModel, permissionTags } from '@logusgraphics/grant-databas
 import {
   AddPermissionTagInput,
   PermissionTag,
+  QueryPermissionTagsInput,
   RemovePermissionTagInput,
   UpdatePermissionTagInput,
 } from '@logusgraphics/grant-schema';
@@ -11,30 +12,21 @@ import { PivotRepository } from '@/repositories/common';
 
 export class PermissionTagRepository extends PivotRepository<PermissionTagModel, PermissionTag> {
   protected table = permissionTags;
-  protected parentIdField: keyof PermissionTagModel = 'permissionId';
-  protected relatedIdField: keyof PermissionTagModel = 'tagId';
+  protected uniqueIndexFields: Array<keyof PermissionTagModel> = ['permissionId', 'tagId'];
 
   protected toEntity(dbPivot: PermissionTagModel): PermissionTag {
-    return {
-      id: dbPivot.id,
-      permissionId: dbPivot.permissionId,
-      tagId: dbPivot.tagId,
-      isPrimary: dbPivot.isPrimary,
-      createdAt: dbPivot.createdAt,
-      updatedAt: dbPivot.updatedAt,
-      deletedAt: dbPivot.deletedAt,
-    };
+    return dbPivot;
   }
 
   public async getPermissionTags(
-    params: { permissionId?: string; tagId?: string },
+    params: QueryPermissionTagsInput,
     transaction?: Transaction
   ): Promise<PermissionTag[]> {
-    return this.query({ parentId: params.permissionId, relatedId: params.tagId }, transaction);
+    return this.query(params, transaction);
   }
 
   public async getPermissionTag(
-    params: { permissionId: string; tagId: string },
+    params: QueryPermissionTagsInput,
     transaction?: Transaction
   ): Promise<PermissionTag> {
     const result = await this.getPermissionTags(params, transaction);
@@ -42,24 +34,18 @@ export class PermissionTagRepository extends PivotRepository<PermissionTagModel,
   }
 
   public async getPermissionTagIntersection(
-    params: {
-      permissionIds: string[];
-      tagIds: string[];
-    },
+    permissionIds: string[],
+    tagIds: string[],
     transaction?: Transaction
   ): Promise<PermissionTag[]> {
-    return this.queryIntersection(
-      { parentIds: params.permissionIds, relatedIds: params.tagIds },
-      transaction
-    );
+    return this.queryIntersection({ permissionId: permissionIds, tagId: tagIds }, transaction);
   }
 
   public async addPermissionTag(
     params: AddPermissionTagInput,
     transaction?: Transaction
   ): Promise<PermissionTag> {
-    const { permissionId, tagId, isPrimary } = params;
-    return this.add({ parentId: permissionId, relatedId: tagId, isPrimary }, transaction);
+    return this.add(params, transaction);
   }
 
   public async updatePermissionTag(
@@ -67,32 +53,20 @@ export class PermissionTagRepository extends PivotRepository<PermissionTagModel,
     transaction?: Transaction
   ): Promise<PermissionTag> {
     const { permissionId, tagId, isPrimary } = params;
-    return this.update(permissionId, tagId, { isPrimary }, transaction);
+    return this.update({ permissionId, tagId }, { isPrimary }, transaction);
   }
 
   public async softDeletePermissionTag(
     params: RemovePermissionTagInput,
     transaction?: Transaction
   ): Promise<PermissionTag> {
-    return this.softDelete(
-      {
-        parentId: params.permissionId,
-        relatedId: params.tagId,
-      },
-      transaction
-    );
+    return this.softDelete(params, transaction);
   }
 
   public async hardDeletePermissionTag(
     params: RemovePermissionTagInput,
     transaction?: Transaction
   ): Promise<PermissionTag> {
-    return this.hardDelete(
-      {
-        parentId: params.permissionId,
-        relatedId: params.tagId,
-      },
-      transaction
-    );
+    return this.hardDelete(params, transaction);
   }
 }

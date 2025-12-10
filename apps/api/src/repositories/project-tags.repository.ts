@@ -1,7 +1,8 @@
 import { ProjectTagModel, projectTags } from '@logusgraphics/grant-database';
 import {
-  ProjectTag,
   AddProjectTagInput,
+  ProjectTag,
+  QueryProjectTagsInput,
   RemoveProjectTagInput,
   UpdateProjectTagInput,
 } from '@logusgraphics/grant-schema';
@@ -11,30 +12,21 @@ import { PivotRepository } from '@/repositories/common';
 
 export class ProjectTagRepository extends PivotRepository<ProjectTagModel, ProjectTag> {
   protected table = projectTags;
-  protected parentIdField: keyof ProjectTagModel = 'projectId';
-  protected relatedIdField: keyof ProjectTagModel = 'tagId';
+  protected uniqueIndexFields: Array<keyof ProjectTagModel> = ['projectId', 'tagId'];
 
   protected toEntity(dbPivot: ProjectTagModel): ProjectTag {
-    return {
-      id: dbPivot.id,
-      projectId: dbPivot.projectId,
-      tagId: dbPivot.tagId,
-      isPrimary: dbPivot.isPrimary,
-      createdAt: dbPivot.createdAt,
-      updatedAt: dbPivot.updatedAt,
-      deletedAt: dbPivot.deletedAt,
-    };
+    return dbPivot;
   }
 
   public async getProjectTags(
-    params: { projectId: string; tagId?: string },
+    params: QueryProjectTagsInput,
     transaction?: Transaction
   ): Promise<ProjectTag[]> {
-    return this.query({ parentId: params.projectId, relatedId: params.tagId }, transaction);
+    return this.query(params, transaction);
   }
 
   public async getProjectTag(
-    params: { projectId: string; tagId: string },
+    params: QueryProjectTagsInput,
     transaction?: Transaction
   ): Promise<ProjectTag> {
     const result = await this.getProjectTags(params, transaction);
@@ -45,15 +37,14 @@ export class ProjectTagRepository extends PivotRepository<ProjectTagModel, Proje
     projectIds: string[],
     tagIds: string[]
   ): Promise<ProjectTag[]> {
-    return this.queryIntersection({ parentIds: projectIds, relatedIds: tagIds });
+    return this.queryIntersection({ projectId: projectIds, tagId: tagIds });
   }
 
   public async addProjectTag(
     params: AddProjectTagInput,
     transaction?: Transaction
   ): Promise<ProjectTag> {
-    const { projectId, tagId, ...rest } = params;
-    return this.add({ parentId: projectId, relatedId: tagId, ...rest }, transaction);
+    return this.add(params, transaction);
   }
 
   public async updateProjectTag(
@@ -61,32 +52,20 @@ export class ProjectTagRepository extends PivotRepository<ProjectTagModel, Proje
     transaction?: Transaction
   ): Promise<ProjectTag> {
     const { projectId, tagId, isPrimary } = params;
-    return this.update(projectId, tagId, { isPrimary }, transaction);
+    return this.update({ projectId, tagId }, { isPrimary }, transaction);
   }
 
   public async softDeleteProjectTag(
     params: RemoveProjectTagInput,
     transaction?: Transaction
   ): Promise<ProjectTag> {
-    return this.softDelete(
-      {
-        parentId: params.projectId,
-        relatedId: params.tagId,
-      },
-      transaction
-    );
+    return this.softDelete(params, transaction);
   }
 
   public async hardDeleteProjectTag(
     params: RemoveProjectTagInput,
     transaction?: Transaction
   ): Promise<ProjectTag> {
-    return this.hardDelete(
-      {
-        parentId: params.projectId,
-        relatedId: params.tagId,
-      },
-      transaction
-    );
+    return this.hardDelete(params, transaction);
   }
 }

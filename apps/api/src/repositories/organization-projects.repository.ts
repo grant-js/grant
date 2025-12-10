@@ -1,54 +1,40 @@
-import { organizationProjects, OrganizationProjectModel } from '@logusgraphics/grant-database';
-import { AddOrganizationProjectInput, OrganizationProject } from '@logusgraphics/grant-schema';
+import { OrganizationProjectModel, organizationProjects } from '@logusgraphics/grant-database';
+import {
+  AddOrganizationProjectInput,
+  OrganizationProject,
+  QueryOrganizationProjectsInput,
+  RemoveOrganizationProjectInput,
+} from '@logusgraphics/grant-schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-import {
-  PivotRepository,
-  BasePivotQueryArgs,
-  BasePivotAddArgs,
-  BasePivotRemoveArgs,
-} from '@/repositories/common';
+import { PivotRepository } from '@/repositories/common';
 
 export class OrganizationProjectRepository extends PivotRepository<
   OrganizationProjectModel,
   OrganizationProject
 > {
   protected table = organizationProjects;
-  protected parentIdField: keyof OrganizationProjectModel = 'organizationId';
-  protected relatedIdField: keyof OrganizationProjectModel = 'projectId';
+  protected uniqueIndexFields: Array<keyof OrganizationProjectModel> = [
+    'organizationId',
+    'projectId',
+  ];
 
   protected toEntity(dbOrganizationProject: OrganizationProjectModel): OrganizationProject {
-    return {
-      id: dbOrganizationProject.id,
-      organizationId: dbOrganizationProject.organizationId,
-      projectId: dbOrganizationProject.projectId,
-      createdAt: dbOrganizationProject.createdAt,
-      updatedAt: dbOrganizationProject.updatedAt,
-      deletedAt: dbOrganizationProject.deletedAt,
-    };
+    return dbOrganizationProject;
   }
 
   public async getOrganizationProjects(
-    params: {
-      organizationId: string;
-    },
+    params: QueryOrganizationProjectsInput,
     transaction?: Transaction
   ): Promise<OrganizationProject[]> {
-    const baseParams: BasePivotQueryArgs = {
-      parentId: params.organizationId,
-    };
-
-    return this.query(baseParams, transaction);
+    return this.query(params, transaction);
   }
 
   public async getOrganizationProject(
-    params: { projectId: string },
+    params: QueryOrganizationProjectsInput,
     transaction?: Transaction
   ): Promise<OrganizationProject> {
-    const baseParams: BasePivotQueryArgs = {
-      relatedId: params.projectId,
-    };
-    const result = await this.query(baseParams, transaction);
+    const result = await this.query(params, transaction);
     return this.first(result);
   }
 
@@ -56,43 +42,20 @@ export class OrganizationProjectRepository extends PivotRepository<
     params: AddOrganizationProjectInput,
     transaction?: Transaction
   ): Promise<OrganizationProject> {
-    const baseParams: BasePivotAddArgs = {
-      parentId: params.organizationId,
-      relatedId: params.projectId,
-    };
-
-    const organizationProject = await this.add(baseParams, transaction);
-
-    return organizationProject;
+    return this.add(params, transaction);
   }
 
   public async softDeleteOrganizationProject(
-    organizationId: string,
-    projectId: string,
+    params: RemoveOrganizationProjectInput,
     transaction?: Transaction
   ): Promise<OrganizationProject> {
-    const baseParams: BasePivotRemoveArgs = {
-      parentId: organizationId,
-      relatedId: projectId,
-    };
-
-    const organizationProject = await this.softDelete(baseParams, transaction);
-
-    return organizationProject;
+    return this.softDelete(params, transaction);
   }
 
   public async hardDeleteOrganizationProject(
-    organizationId: string,
-    projectId: string,
+    params: RemoveOrganizationProjectInput,
     transaction?: Transaction
   ): Promise<OrganizationProject> {
-    const baseParams: BasePivotRemoveArgs = {
-      parentId: organizationId,
-      relatedId: projectId,
-    };
-
-    const organizationProject = await this.hardDelete(baseParams, transaction);
-
-    return organizationProject;
+    return this.hardDelete(params, transaction);
   }
 }

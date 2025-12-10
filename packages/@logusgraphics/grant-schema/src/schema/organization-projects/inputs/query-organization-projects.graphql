@@ -1,0 +1,4 @@
+input QueryOrganizationProjectsInput {
+  organizationId: ID
+  projectId: ID
+}

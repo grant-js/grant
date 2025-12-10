@@ -1,57 +1,45 @@
 import { RoleTagModel, roleTags } from '@logusgraphics/grant-database';
-import { AddRoleTagInput, RoleTag, UpdateRoleTagInput } from '@logusgraphics/grant-schema';
+import {
+  AddRoleTagInput,
+  QueryRoleTagsInput,
+  RemoveRoleTagInput,
+  RoleTag,
+  UpdateRoleTagInput,
+} from '@logusgraphics/grant-schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';
 
 export class RoleTagRepository extends PivotRepository<RoleTagModel, RoleTag> {
   protected table = roleTags;
-  protected parentIdField: keyof RoleTagModel = 'roleId';
-  protected relatedIdField: keyof RoleTagModel = 'tagId';
+  protected uniqueIndexFields: Array<keyof RoleTagModel> = ['roleId', 'tagId'];
 
   protected toEntity(dbPivot: RoleTagModel): RoleTag {
-    return {
-      id: dbPivot.id,
-      roleId: dbPivot.roleId,
-      tagId: dbPivot.tagId,
-      isPrimary: dbPivot.isPrimary,
-      createdAt: dbPivot.createdAt,
-      updatedAt: dbPivot.updatedAt,
-      deletedAt: dbPivot.deletedAt,
-    };
+    return dbPivot;
   }
 
   public async getRoleTags(
-    params: { roleId?: string; tagId?: string },
+    params: QueryRoleTagsInput,
     transaction?: Transaction
   ): Promise<RoleTag[]> {
-    return this.query({ parentId: params.roleId, relatedId: params.tagId }, transaction);
+    return this.query(params, transaction);
   }
 
-  public async getRoleTag(
-    params: { roleId: string; tagId: string },
-    transaction?: Transaction
-  ): Promise<RoleTag> {
+  public async getRoleTag(params: QueryRoleTagsInput, transaction?: Transaction): Promise<RoleTag> {
     const result = await this.getRoleTags(params, transaction);
     return this.first(result);
   }
 
   public async getRoleTagIntersection(
-    params: {
-      roleIds: string[];
-      tagIds: string[];
-    },
+    roleIds: string[],
+    tagIds: string[],
     transaction?: Transaction
   ): Promise<RoleTag[]> {
-    return this.queryIntersection(
-      { parentIds: params.roleIds, relatedIds: params.tagIds },
-      transaction
-    );
+    return this.queryIntersection({ roleId: roleIds, tagId: tagIds }, transaction);
   }
 
   public async addRoleTag(params: AddRoleTagInput, transaction?: Transaction): Promise<RoleTag> {
-    const { roleId, tagId, isPrimary } = params;
-    return this.add({ parentId: roleId, relatedId: tagId, isPrimary }, transaction);
+    return this.add(params, transaction);
   }
 
   public async updateRoleTag(
@@ -59,32 +47,20 @@ export class RoleTagRepository extends PivotRepository<RoleTagModel, RoleTag> {
     transaction?: Transaction
   ): Promise<RoleTag> {
     const { roleId, tagId, isPrimary } = params;
-    return this.update(roleId, tagId, { isPrimary }, transaction);
+    return this.update({ roleId, tagId }, { isPrimary }, transaction);
   }
 
   public async softDeleteRoleTag(
-    params: { roleId: string; tagId: string },
+    params: RemoveRoleTagInput,
     transaction?: Transaction
   ): Promise<RoleTag> {
-    return this.softDelete(
-      {
-        parentId: params.roleId,
-        relatedId: params.tagId,
-      },
-      transaction
-    );
+    return this.softDelete(params, transaction);
   }
 
   public async hardDeleteRoleTag(
-    params: { roleId: string; tagId: string },
+    params: RemoveRoleTagInput,
     transaction?: Transaction
   ): Promise<RoleTag> {
-    return this.hardDelete(
-      {
-        parentId: params.roleId,
-        relatedId: params.tagId,
-      },
-      transaction
-    );
+    return this.hardDelete(params, transaction);
   }
 }

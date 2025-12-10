@@ -1,0 +1,4 @@
+input QueryProjectUsersInput {
+  projectId: ID
+  userId: ID
+}

@@ -186,10 +186,6 @@ export class ProjectUserService extends AuditService {
     return validateOutput(createDynamicSingleSchema(projectUserSchema), projectUser, context);
   }
 
-  /**
-   * Get user's project memberships with roles
-   * Returns projects the user belongs to along with their role in each project
-   */
   public async getUserProjectMemberships(
     userId: string,
     transaction?: Transaction
@@ -201,7 +197,7 @@ export class ProjectUserService extends AuditService {
       joinedAt: Date;
     }>
   > {
-    const memberships = await this.repositories.projectUserRepository.getUserProjectMemberships(
+    const memberships = await this.repositories.projectUserRepository.getProjectUserMemberships(
       userId,
       transaction
     );

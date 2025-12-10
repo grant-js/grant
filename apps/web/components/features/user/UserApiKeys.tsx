@@ -31,7 +31,7 @@ export function UserApiKeys() {
   const projectId = params.projectId as string;
   const userId = params.userId as string;
   const [page, setPage] = useState(1);
-  const [limit] = useState(2);
+  const [limit] = useState(10);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<ApiKeySortInput | undefined>({
     field: ApiKeySortableField.CreatedAt,

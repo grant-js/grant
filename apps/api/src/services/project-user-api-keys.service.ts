@@ -1,7 +1,7 @@
 import { DbSchema, projectUserApiKeyAuditLogs } from '@logusgraphics/grant-database';
 import { ProjectUserApiKey } from '@logusgraphics/grant-schema';
 
-import { ConflictError, NotFoundError } from '@/lib/errors';
+import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { AuthenticatedUser } from '@/types';
@@ -91,20 +91,7 @@ export class ProjectUserApiKeyService extends AuditService {
 
     const { projectId, userId, apiKeyId } = validatedParams;
 
-    const hasApiKey = await this.projectHasApiKey(projectId, userId, apiKeyId, transaction);
-
-    if (hasApiKey) {
-      throw new ConflictError(
-        'Project user already has this API key',
-        'errors:conflict.duplicateEntry',
-        {
-          resource: 'ProjectUserApiKey',
-          field: 'apiKeyId',
-        }
-      );
-    }
-
-    const pivot = await this.repositories.projectUserApiKeyRepository.addApiKey(
+    const pivot = await this.repositories.projectUserApiKeyRepository.addProjectUserApiKey(
       {
         apiKeyId,
         projectId,
@@ -153,11 +140,11 @@ export class ProjectUserApiKeyService extends AuditService {
     const isHardDelete = hardDelete === true;
 
     const pivot = isHardDelete
-      ? await this.repositories.projectUserApiKeyRepository.hardDetachApiKey(
+      ? await this.repositories.projectUserApiKeyRepository.hardDeleteProjectUserApiKey(
           { projectId, userId, apiKeyId },
           transaction
         )
-      : await this.repositories.projectUserApiKeyRepository.removeApiKey(
+      : await this.repositories.projectUserApiKeyRepository.softDeleteProjectUserApiKey(
           { projectId, userId, apiKeyId },
           transaction
         );

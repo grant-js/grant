@@ -6,11 +6,14 @@ import {
   users,
 } from '@logusgraphics/grant-database';
 import {
+  CreateOrganizationInvitationInput,
   GetInvitationQueryVariables,
   OrganizationInvitation,
   OrganizationInvitationPage,
   OrganizationInvitationSearchableField,
+  OrganizationInvitationStatus,
   QueryOrganizationInvitationsArgs,
+  UpdateOrganizationInvitationInput,
 } from '@logusgraphics/grant-schema';
 import { and, eq, isNull } from 'drizzle-orm';
 
@@ -18,22 +21,6 @@ import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { EntityRepository, FilterCondition, RelationsConfig } from '@/repositories/common';
 import { SelectedFields } from '@/services/common';
-
-// Internal repository types (not exposed via GraphQL)
-export interface CreateOrganizationInvitationInput {
-  organizationId: string;
-  email: string;
-  roleId: string;
-  token: string;
-  expiresAt: Date;
-  invitedBy: string;
-  status?: string;
-}
-
-export interface UpdateOrganizationInvitationInput {
-  status?: string;
-  acceptedAt?: Date;
-}
 
 export class OrganizationInvitationRepository extends EntityRepository<
   OrganizationInvitationModel,
@@ -75,7 +62,7 @@ export class OrganizationInvitationRepository extends EntityRepository<
         token: params.token,
         expiresAt: params.expiresAt,
         invitedBy: params.invitedBy,
-        status: params.status || 'pending',
+        status: params.status || OrganizationInvitationStatus.Pending,
       },
       transaction
     );

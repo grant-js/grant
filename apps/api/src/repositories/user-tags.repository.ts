@@ -1,63 +1,45 @@
-import { userTags, UserTagModel } from '@logusgraphics/grant-database';
+import { UserTagModel, userTags } from '@logusgraphics/grant-database';
 import {
   AddUserTagInput,
+  QueryUserTagsInput,
   RemoveUserTagInput,
   UpdateUserTagInput,
   UserTag,
 } from '@logusgraphics/grant-schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { PivotRepository, BasePivotRemoveArgs } from '@/repositories/common';
+import { PivotRepository } from '@/repositories/common';
 
 export class UserTagRepository extends PivotRepository<UserTagModel, UserTag> {
   protected table = userTags;
-  protected parentIdField: keyof UserTagModel = 'userId';
-  protected relatedIdField: keyof UserTagModel = 'tagId';
+  protected uniqueIndexFields: Array<keyof UserTagModel> = ['userId', 'tagId'];
 
   protected toEntity(dbUserTag: UserTagModel): UserTag {
-    return {
-      id: dbUserTag.id,
-      userId: dbUserTag.userId,
-      tagId: dbUserTag.tagId,
-      isPrimary: dbUserTag.isPrimary,
-      createdAt: dbUserTag.createdAt,
-      updatedAt: dbUserTag.updatedAt,
-      deletedAt: dbUserTag.deletedAt,
-    };
+    return dbUserTag;
   }
 
   public async getUserTags(
-    params: { userId?: string; tagId?: string },
+    params: QueryUserTagsInput,
     transaction?: Transaction
   ): Promise<UserTag[]> {
-    const { userId, tagId } = params;
-    return this.query({ parentId: userId, relatedId: tagId }, transaction);
+    return this.query(params, transaction);
   }
 
-  public async getUserTag(
-    params: { userId: string; tagId: string },
-    transaction?: Transaction
-  ): Promise<UserTag> {
+  public async getUserTag(params: QueryUserTagsInput, transaction?: Transaction): Promise<UserTag> {
     const result = await this.getUserTags(params, transaction);
     return this.first(result);
   }
 
   public async getUserTagIntersection(
-    params: {
-      userIds: string[];
-      tagIds: string[];
-    },
+    userIds: string[],
+    tagIds: string[],
     transaction?: Transaction
   ): Promise<UserTag[]> {
-    return this.queryIntersection(
-      { parentIds: params.userIds, relatedIds: params.tagIds },
-      transaction
-    );
+    return this.queryIntersection({ userId: userIds, tagId: tagIds }, transaction);
   }
 
   public async addUserTag(params: AddUserTagInput, transaction?: Transaction): Promise<UserTag> {
-    const { userId, tagId, ...rest } = params;
-    return this.add({ parentId: userId, relatedId: tagId, ...rest }, transaction);
+    return this.add(params, transaction);
   }
 
   public async updateUserTag(
@@ -65,34 +47,20 @@ export class UserTagRepository extends PivotRepository<UserTagModel, UserTag> {
     transaction?: Transaction
   ): Promise<UserTag> {
     const { userId, tagId, isPrimary } = params;
-    return this.update(userId, tagId, { isPrimary }, transaction);
+    return this.update({ userId, tagId }, { isPrimary }, transaction);
   }
 
   public async softDeleteUserTag(
     params: RemoveUserTagInput,
     transaction?: Transaction
   ): Promise<UserTag> {
-    const baseParams: BasePivotRemoveArgs = {
-      parentId: params.userId,
-      relatedId: params.tagId,
-    };
-
-    const userTag = await this.softDelete(baseParams, transaction);
-
-    return userTag;
+    return this.softDelete(params, transaction);
   }
 
   public async hardDeleteUserTag(
     params: RemoveUserTagInput,
     transaction?: Transaction
   ): Promise<UserTag> {
-    const baseParams: BasePivotRemoveArgs = {
-      parentId: params.userId,
-      relatedId: params.tagId,
-    };
-
-    const userTag = await this.hardDelete(baseParams, transaction);
-
-    return userTag;
+    return this.hardDelete(params, transaction);
   }
 }

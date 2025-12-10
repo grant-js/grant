@@ -1,0 +1,4 @@
+input QueryPermissionTagsInput {
+  permissionId: ID
+  tagId: ID
+}

@@ -1,5 +1,4 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { organizationProjectsAuditLogs } from '@logusgraphics/grant-database';
+import { DbSchema, organizationProjectsAuditLogs } from '@logusgraphics/grant-database';
 import {
   AddOrganizationProjectInput,
   OrganizationProject,
@@ -13,17 +12,17 @@ import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
+  DeleteParams,
+  createDynamicSingleSchema,
   validateInput,
   validateOutput,
-  createDynamicSingleSchema,
-  DeleteParams,
 } from './common';
 import {
-  organizationProjectSchema,
-  removeOrganizationProjectInputSchema,
-  queryOrganizationProjectsArgsSchema,
   addOrganizationProjectInputSchema,
+  organizationProjectSchema,
   queryOrganizationProjectArgsSchema,
+  queryOrganizationProjectsArgsSchema,
+  removeOrganizationProjectInputSchema,
 } from './organization-projects.schemas';
 
 export class OrganizationProjectService extends AuditService {
@@ -198,13 +197,11 @@ export class OrganizationProjectService extends AuditService {
 
     const organizationProject = isHardDelete
       ? await this.repositories.organizationProjectRepository.hardDeleteOrganizationProject(
-          organizationId,
-          projectId,
+          { organizationId, projectId },
           transaction
         )
       : await this.repositories.organizationProjectRepository.softDeleteOrganizationProject(
-          organizationId,
-          projectId,
+          { organizationId, projectId },
           transaction
         );
 

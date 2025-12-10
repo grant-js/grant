@@ -2,6 +2,7 @@ import { OrganizationRoleModel, organizationRoles } from '@logusgraphics/grant-d
 import {
   AddOrganizationRoleInput,
   OrganizationRole,
+  QueryOrganizationRolesInput,
   RemoveOrganizationRoleInput,
 } from '@logusgraphics/grant-schema';
 
@@ -13,72 +14,37 @@ export class OrganizationRoleRepository extends PivotRepository<
   OrganizationRole
 > {
   protected table = organizationRoles;
-  protected parentIdField: keyof OrganizationRoleModel = 'organizationId';
-  protected relatedIdField: keyof OrganizationRoleModel = 'roleId';
+  protected uniqueIndexFields: Array<keyof OrganizationRoleModel> = ['organizationId', 'roleId'];
 
   protected toEntity(dbPivot: OrganizationRoleModel): OrganizationRole {
-    return {
-      id: dbPivot.id,
-      organizationId: dbPivot.organizationId,
-      roleId: dbPivot.roleId,
-      createdAt: dbPivot.createdAt,
-      updatedAt: dbPivot.updatedAt,
-      deletedAt: dbPivot.deletedAt,
-    };
+    return dbPivot;
   }
 
   public async getOrganizationRoles(
-    params: {
-      organizationId: string;
-      roleId?: string;
-    },
+    params: QueryOrganizationRolesInput,
     transaction?: Transaction
   ): Promise<OrganizationRole[]> {
-    return this.query(
-      {
-        parentId: params.organizationId,
-        relatedId: params.roleId,
-      },
-      transaction
-    );
+    return this.query(params, transaction);
   }
 
   public async addOrganizationRole(
     params: AddOrganizationRoleInput,
     transaction?: Transaction
   ): Promise<OrganizationRole> {
-    return this.add(
-      {
-        parentId: params.organizationId,
-        relatedId: params.roleId,
-      },
-      transaction
-    );
+    return this.add(params, transaction);
   }
 
   public async softDeleteOrganizationRole(
     params: RemoveOrganizationRoleInput,
     transaction?: Transaction
   ): Promise<OrganizationRole> {
-    return this.softDelete(
-      {
-        parentId: params.organizationId,
-        relatedId: params.roleId,
-      },
-      transaction
-    );
+    return this.softDelete(params, transaction);
   }
 
   public async hardDeleteOrganizationRole(
     params: RemoveOrganizationRoleInput,
     transaction?: Transaction
   ): Promise<OrganizationRole> {
-    return this.hardDelete(
-      {
-        parentId: params.organizationId,
-        relatedId: params.roleId,
-      },
-      transaction
-    );
+    return this.hardDelete(params, transaction);
   }
 }

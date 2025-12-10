@@ -1,18 +1,16 @@
 import { DbSchema, organizationInvitationsAuditLogs } from '@logusgraphics/grant-database';
 import {
+  CreateOrganizationInvitationInput,
   GetInvitationQueryVariables,
   OrganizationInvitation,
   OrganizationInvitationPage,
   QueryOrganizationInvitationsArgs,
+  UpdateOrganizationInvitationInput,
 } from '@logusgraphics/grant-schema';
 
 import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import {
-  CreateOrganizationInvitationInput,
-  UpdateOrganizationInvitationInput,
-} from '@/repositories/organization-invitations.repository';
 import { AuthenticatedUser } from '@/types';
 
 import {

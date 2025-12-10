@@ -1,0 +1,4 @@
+input QueryProjectTagsInput {
+  projectId: ID!
+  tagId: ID
+}

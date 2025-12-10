@@ -1,5 +1,4 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { roleTagAuditLogs } from '@logusgraphics/grant-database';
+import { DbSchema, roleTagAuditLogs } from '@logusgraphics/grant-database';
 import {
   AddRoleTagInput,
   RemoveRoleTagInput,
@@ -14,18 +13,18 @@ import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
+  DeleteParams,
+  createDynamicSingleSchema,
   validateInput,
   validateOutput,
-  createDynamicSingleSchema,
-  DeleteParams,
 } from './common';
 import {
-  getRoleTagsParamsSchema,
-  roleTagSchema,
   addRoleTagInputSchema,
-  removeRoleTagInputSchema,
   getRoleTagIntersectionInputSchema,
+  getRoleTagsParamsSchema,
+  removeRoleTagInputSchema,
   removeRoleTagsInputSchema,
+  roleTagSchema,
   updateRoleTagInputSchema,
 } from './role-tags.schemas';
 
@@ -101,7 +100,8 @@ export class RoleTagService extends AuditService {
     const { roleIds, tagIds } = validatedParams;
 
     const roleTags = await this.repositories.roleTagRepository.getRoleTagIntersection(
-      { roleIds, tagIds },
+      roleIds,
+      tagIds,
       transaction
     );
     return validateOutput(roleTagSchema.array(), roleTags, context);

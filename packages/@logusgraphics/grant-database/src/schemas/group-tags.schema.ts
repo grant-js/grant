@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { pgTable, varchar, timestamp, uuid, index, boolean } from 'drizzle-orm/pg-core';
+import { boolean, index, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 
 import { groups } from './groups.schema';
 import { tags } from './tags.schema';
@@ -49,7 +49,7 @@ export const groupTagsAuditLogs = pgTable(
   ]
 );
 
-export type GroupTag = typeof groupTags.$inferSelect;
+export type GroupTagModel = typeof groupTags.$inferSelect;
 export type NewGroupTag = typeof groupTags.$inferInsert;
 export type GroupTagAuditLog = typeof groupTagsAuditLogs.$inferSelect;
 export type NewGroupTagAuditLog = typeof groupTagsAuditLogs.$inferInsert;

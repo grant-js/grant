@@ -1,5 +1,4 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { permissionTagAuditLogs } from '@logusgraphics/grant-database';
+import { DbSchema, permissionTagAuditLogs } from '@logusgraphics/grant-database';
 import {
   AddPermissionTagInput,
   PermissionTag,
@@ -14,17 +13,17 @@ import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
+  DeleteParams,
+  createDynamicSingleSchema,
   validateInput,
   validateOutput,
-  createDynamicSingleSchema,
-  DeleteParams,
 } from './common';
 import {
+  addPermissionTagInputSchema,
+  getPermissionTagIntersectionParamsSchema,
   getPermissionTagsParamsSchema,
   permissionTagSchema,
-  addPermissionTagInputSchema,
   removePermissionTagInputSchema,
-  getPermissionTagIntersectionParamsSchema,
   removePermissionTagsInputSchema,
   updatePermissionTagInputSchema,
 } from './permission-tags.schemas';
@@ -112,7 +111,8 @@ export class PermissionTagService extends AuditService {
     const { permissionIds, tagIds } = validatedParams;
 
     const result = await this.repositories.permissionTagRepository.getPermissionTagIntersection(
-      { permissionIds, tagIds },
+      permissionIds,
+      tagIds,
       transaction
     );
 

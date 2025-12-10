@@ -98,7 +98,8 @@ export class UserTagService extends AuditService {
     validateInput(getUserTagIntersectionInputSchema, { userIds, tagIds }, context);
 
     const result = await this.repositories.userTagRepository.getUserTagIntersection(
-      { userIds, tagIds },
+      userIds,
+      tagIds,
       transaction
     );
 

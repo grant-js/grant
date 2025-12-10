@@ -1,83 +1,47 @@
-import { roleGroups, RoleGroupModel } from '@logusgraphics/grant-database';
-import { RoleGroup } from '@logusgraphics/grant-schema';
+import { RoleGroupModel, roleGroups } from '@logusgraphics/grant-database';
+import {
+  AddRoleGroupInput,
+  QueryRoleGroupsInput,
+  RemoveRoleGroupInput,
+  RoleGroup,
+} from '@logusgraphics/grant-schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-import {
-  PivotRepository,
-  BasePivotQueryArgs,
-  BasePivotAddArgs,
-  BasePivotRemoveArgs,
-} from '@/repositories/common';
+import { PivotRepository } from '@/repositories/common';
 
 export class RoleGroupRepository extends PivotRepository<RoleGroupModel, RoleGroup> {
   protected table = roleGroups;
-  protected parentIdField: keyof RoleGroupModel = 'roleId';
-  protected relatedIdField: keyof RoleGroupModel = 'groupId';
+  protected uniqueIndexFields: Array<keyof RoleGroupModel> = ['roleId', 'groupId'];
 
   protected toEntity(dbRoleGroup: RoleGroupModel): RoleGroup {
-    return {
-      id: dbRoleGroup.id,
-      roleId: dbRoleGroup.roleId,
-      groupId: dbRoleGroup.groupId,
-      createdAt: dbRoleGroup.createdAt,
-      updatedAt: dbRoleGroup.updatedAt,
-      deletedAt: dbRoleGroup.deletedAt,
-    };
+    return dbRoleGroup;
   }
 
   public async getRoleGroups(
-    params: { roleId: string },
+    params: QueryRoleGroupsInput,
     transaction?: Transaction
   ): Promise<RoleGroup[]> {
-    const baseParams: BasePivotQueryArgs = {
-      parentId: params.roleId,
-    };
-
-    return this.query(baseParams, transaction);
+    return this.query(params, transaction);
   }
 
   public async addRoleGroup(
-    roleId: string,
-    groupId: string,
+    params: AddRoleGroupInput,
     transaction?: Transaction
   ): Promise<RoleGroup> {
-    const baseParams: BasePivotAddArgs = {
-      parentId: roleId,
-      relatedId: groupId,
-    };
-
-    const roleGroup = await this.add(baseParams, transaction);
-
-    return roleGroup;
+    return this.add(params, transaction);
   }
 
   public async softDeleteRoleGroup(
-    roleId: string,
-    groupId: string,
+    params: RemoveRoleGroupInput,
     transaction?: Transaction
   ): Promise<RoleGroup> {
-    const baseParams: BasePivotRemoveArgs = {
-      parentId: roleId,
-      relatedId: groupId,
-    };
-
-    const roleGroup = await this.softDelete(baseParams, transaction);
-
-    return roleGroup;
+    return this.softDelete(params, transaction);
   }
 
   public async hardDeleteRoleGroup(
-    roleId: string,
-    groupId: string,
+    params: RemoveRoleGroupInput,
     transaction?: Transaction
   ): Promise<RoleGroup> {
-    const baseParams: BasePivotRemoveArgs = {
-      parentId: roleId,
-      relatedId: groupId,
-    };
-
-    const roleGroup = await this.hardDelete(baseParams, transaction);
-
-    return roleGroup;
+    return this.hardDelete(params, transaction);
   }
 }

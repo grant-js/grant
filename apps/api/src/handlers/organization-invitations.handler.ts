@@ -120,7 +120,7 @@ export class OrganizationInvitationsHandler {
           token,
           expiresAt,
           invitedBy,
-          status: 'pending',
+          status: OrganizationInvitationStatus.Pending,
         },
         tx
       );
@@ -293,7 +293,7 @@ export class OrganizationInvitationsHandler {
       await this.services.organizationInvitations.updateInvitation(
         invitation.id,
         {
-          status: 'accepted',
+          status: OrganizationInvitationStatus.Accepted,
           acceptedAt: new Date(),
         },
         tx

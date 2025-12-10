@@ -1,0 +1,4 @@
+input QueryOrganizationUsersInput {
+  organizationId: ID
+  userId: ID
+}

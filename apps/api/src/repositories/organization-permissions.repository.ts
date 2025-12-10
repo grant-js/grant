@@ -2,81 +2,58 @@ import {
   OrganizationPermissionModel,
   organizationPermissions,
 } from '@logusgraphics/grant-database';
+import {
+  AddOrganizationPermissionInput,
+  OrganizationPermission,
+  QueryOrganizationPermissionsInput,
+  RemoveOrganizationPermissionInput,
+} from '@logusgraphics/grant-schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 
-import {
-  PivotRepository,
-  BasePivotQueryArgs,
-  BasePivotAddArgs,
-  BasePivotRemoveArgs,
-} from './common/PivotRepository';
+import { PivotRepository } from './common/PivotRepository';
 
 export class OrganizationPermissionRepository extends PivotRepository<
   OrganizationPermissionModel,
-  OrganizationPermissionModel
+  OrganizationPermission
 > {
   protected table = organizationPermissions;
-  protected parentIdField: keyof OrganizationPermissionModel = 'organizationId';
-  protected relatedIdField: keyof OrganizationPermissionModel = 'permissionId';
+  protected uniqueIndexFields: Array<keyof OrganizationPermissionModel> = [
+    'organizationId',
+    'permissionId',
+  ];
 
   protected toEntity(
     dbOrganizationPermission: OrganizationPermissionModel
-  ): OrganizationPermissionModel {
+  ): OrganizationPermission {
     return dbOrganizationPermission;
   }
 
   public async getOrganizationPermissions(
-    params: {
-      organizationId: string;
-    },
+    params: QueryOrganizationPermissionsInput,
     transaction?: Transaction
-  ): Promise<OrganizationPermissionModel[]> {
-    const baseParams: BasePivotQueryArgs = {
-      parentId: params.organizationId,
-    };
-    return this.query(baseParams, transaction);
+  ): Promise<OrganizationPermission[]> {
+    return this.query(params, transaction);
   }
 
   public async addOrganizationPermission(
-    organizationId: string,
-    permissionId: string,
+    params: AddOrganizationPermissionInput,
     transaction?: Transaction
-  ): Promise<OrganizationPermissionModel> {
-    const baseParams: BasePivotAddArgs = {
-      parentId: organizationId,
-      relatedId: permissionId,
-    };
-
-    const organizationPermission = await this.add(baseParams, transaction);
-    return organizationPermission;
+  ): Promise<OrganizationPermission> {
+    return this.add(params, transaction);
   }
 
   public async softDeleteOrganizationPermission(
-    organizationId: string,
-    permissionId: string,
+    params: RemoveOrganizationPermissionInput,
     transaction?: Transaction
-  ): Promise<OrganizationPermissionModel | null> {
-    const baseParams: BasePivotRemoveArgs = {
-      parentId: organizationId,
-      relatedId: permissionId,
-    };
-
-    const organizationPermission = await this.softDelete(baseParams, transaction);
-    return organizationPermission;
+  ): Promise<OrganizationPermission> {
+    return this.softDelete(params, transaction);
   }
 
   public async hardDeleteOrganizationPermission(
-    organizationId: string,
-    permissionId: string,
+    params: RemoveOrganizationPermissionInput,
     transaction?: Transaction
-  ): Promise<OrganizationPermissionModel | null> {
-    const baseParams: BasePivotRemoveArgs = {
-      parentId: organizationId,
-      relatedId: permissionId,
-    };
-
-    const organizationPermission = await this.hardDelete(baseParams, transaction);
-    return organizationPermission;
+  ): Promise<OrganizationPermission> {
+    return this.hardDelete(params, transaction);
   }
 }

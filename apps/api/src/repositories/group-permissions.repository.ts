@@ -1,26 +1,20 @@
-import { groupPermissions, GroupPermissionModel } from '@logusgraphics/grant-database';
+import { GroupPermissionModel, groupPermissions } from '@logusgraphics/grant-database';
 import {
-  GroupPermission,
   AddGroupPermissionInput,
+  GroupPermission,
+  QueryGroupPermissionsInput,
   RemoveGroupPermissionInput,
 } from '@logusgraphics/grant-schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-import {
-  PivotRepository,
-  BasePivotQueryArgs,
-  BasePivotAddArgs,
-  BasePivotRemoveArgs,
-} from '@/repositories/common';
-import { DeleteParams } from '@/services/common';
+import { PivotRepository } from '@/repositories/common';
 
 export class GroupPermissionRepository extends PivotRepository<
   GroupPermissionModel,
   GroupPermission
 > {
   protected table = groupPermissions;
-  protected parentIdField: keyof GroupPermissionModel = 'groupId';
-  protected relatedIdField: keyof GroupPermissionModel = 'permissionId';
+  protected uniqueIndexFields: Array<keyof GroupPermissionModel> = ['groupId', 'permissionId'];
 
   protected toEntity(dbGroupPermission: GroupPermissionModel): GroupPermission {
     return {
@@ -34,55 +28,30 @@ export class GroupPermissionRepository extends PivotRepository<
   }
 
   public async getGroupPermissions(
-    params: { groupId: string },
+    params: QueryGroupPermissionsInput,
     transaction?: Transaction
   ): Promise<GroupPermission[]> {
-    const baseParams: BasePivotQueryArgs = {
-      parentId: params.groupId,
-    };
-
-    return this.query(baseParams, transaction);
+    return this.query(params, transaction);
   }
 
   public async addGroupPermission(
     params: AddGroupPermissionInput,
     transaction?: Transaction
   ): Promise<GroupPermission> {
-    const baseParams: BasePivotAddArgs = {
-      parentId: params.groupId,
-      relatedId: params.permissionId,
-    };
-
-    const groupPermission = await this.add(baseParams, transaction);
-
-    return groupPermission;
+    return this.add(params, transaction);
   }
 
   public async softDeleteGroupPermission(
-    params: RemoveGroupPermissionInput & DeleteParams,
+    params: RemoveGroupPermissionInput,
     transaction?: Transaction
   ): Promise<GroupPermission> {
-    const baseParams: BasePivotRemoveArgs = {
-      parentId: params.groupId,
-      relatedId: params.permissionId,
-    };
-
-    const groupPermission = await this.softDelete(baseParams, transaction);
-
-    return groupPermission;
+    return this.softDelete(params, transaction);
   }
 
   public async hardDeleteGroupPermission(
-    params: RemoveGroupPermissionInput & DeleteParams,
+    params: RemoveGroupPermissionInput,
     transaction?: Transaction
   ): Promise<GroupPermission> {
-    const baseParams: BasePivotRemoveArgs = {
-      parentId: params.groupId,
-      relatedId: params.permissionId,
-    };
-
-    const groupPermission = await this.hardDelete(baseParams, transaction);
-
-    return groupPermission;
+    return this.hardDelete(params, transaction);
   }
 }

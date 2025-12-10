@@ -1,5 +1,4 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { groupTagsAuditLogs } from '@logusgraphics/grant-database';
+import { DbSchema, groupTagsAuditLogs } from '@logusgraphics/grant-database';
 import {
   AddGroupTagInput,
   GroupTag,
@@ -14,10 +13,10 @@ import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
+  DeleteParams,
+  createDynamicSingleSchema,
   validateInput,
   validateOutput,
-  createDynamicSingleSchema,
-  DeleteParams,
 } from './common';
 import {
   addGroupTagInputSchema,

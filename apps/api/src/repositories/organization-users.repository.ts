@@ -9,98 +9,53 @@ import {
 import {
   AddOrganizationUserInput,
   OrganizationUser,
+  QueryOrganizationUsersInput,
   RemoveOrganizationUserInput,
 } from '@logusgraphics/grant-schema';
 import { and, eq, isNull } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-import {
-  BasePivotAddArgs,
-  BasePivotQueryArgs,
-  BasePivotRemoveArgs,
-  PivotRepository,
-} from '@/repositories/common';
+import { PivotRepository } from '@/repositories/common';
 
 export class OrganizationUserRepository extends PivotRepository<
   OrganizationUserModel,
   OrganizationUser
 > {
   protected table = organizationUsers;
-  protected parentIdField: keyof OrganizationUserModel = 'organizationId';
-  protected relatedIdField: keyof OrganizationUserModel = 'userId';
+  protected uniqueIndexFields: Array<keyof OrganizationUserModel> = ['organizationId', 'userId'];
 
   protected toEntity(dbOrganizationUser: OrganizationUserModel): OrganizationUser {
-    return {
-      id: dbOrganizationUser.id,
-      organizationId: dbOrganizationUser.organizationId,
-      userId: dbOrganizationUser.userId,
-      createdAt: dbOrganizationUser.createdAt,
-      updatedAt: dbOrganizationUser.updatedAt,
-      deletedAt: dbOrganizationUser.deletedAt,
-    };
+    return dbOrganizationUser;
   }
 
   public async getOrganizationUsers(
-    params: {
-      organizationId?: string;
-      userId?: string;
-    },
+    params: QueryOrganizationUsersInput,
     transaction?: Transaction
   ): Promise<OrganizationUser[]> {
-    const baseParams: BasePivotQueryArgs = {
-      parentId: params.organizationId,
-      relatedId: params.userId,
-    };
-
-    return this.query(baseParams, transaction);
+    return this.query(params, transaction);
   }
 
   public async addOrganizationUser(
     params: AddOrganizationUserInput,
     transaction?: Transaction
   ): Promise<OrganizationUser> {
-    const baseParams: BasePivotAddArgs = {
-      parentId: params.organizationId,
-      relatedId: params.userId,
-    };
-
-    const organizationUser = await this.add(baseParams, transaction);
-
-    return organizationUser;
+    return this.add(params, transaction);
   }
 
   public async softDeleteOrganizationUser(
     params: RemoveOrganizationUserInput,
     transaction?: Transaction
   ): Promise<OrganizationUser> {
-    const baseParams: BasePivotRemoveArgs = {
-      parentId: params.organizationId,
-      relatedId: params.userId,
-    };
-
-    const organizationUser = await this.softDelete(baseParams, transaction);
-
-    return organizationUser;
+    return this.softDelete(params, transaction);
   }
 
   public async hardDeleteOrganizationUser(
     params: RemoveOrganizationUserInput,
     transaction?: Transaction
   ): Promise<OrganizationUser> {
-    const baseParams: BasePivotRemoveArgs = {
-      parentId: params.organizationId,
-      relatedId: params.userId,
-    };
-
-    const organizationUser = await this.hardDelete(baseParams, transaction);
-
-    return organizationUser;
+    return this.hardDelete(params, transaction);
   }
 
-  /**
-   * Get user's organization memberships with roles
-   * Returns organizations the user belongs to along with their role in each organization
-   */
   public async getUserOrganizationMemberships(
     userId: string,
     transaction?: Transaction
@@ -112,10 +67,9 @@ export class OrganizationUserRepository extends PivotRepository<
       joinedAt: Date;
     }>
   > {
-    const dbInstance = transaction || this.db;
+    const db = transaction || this.db;
 
-    // Get organization details and user's role in each organization
-    const membershipsData = await dbInstance
+    const membershipsData = await db
       .select({
         organizationId: organizations.id,
         organizationName: organizations.name,
@@ -142,8 +96,6 @@ export class OrganizationUserRepository extends PivotRepository<
         )
       );
 
-    // Filter to only include memberships where user has a role in the organization
-    // and group by organization (taking first role if multiple)
     const membershipMap = new Map<
       string,
       { organizationId: string; organizationName: string; role: string; joinedAt: Date }

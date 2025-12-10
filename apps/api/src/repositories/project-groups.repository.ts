@@ -1,8 +1,9 @@
 import { ProjectGroupModel, projectGroups } from '@logusgraphics/grant-database';
 import {
-  ProjectGroup,
-  RemoveProjectGroupInput,
   AddProjectGroupInput,
+  ProjectGroup,
+  QueryProjectGroupsInput,
+  RemoveProjectGroupInput,
 } from '@logusgraphics/grant-schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -10,63 +11,37 @@ import { PivotRepository } from '@/repositories/common';
 
 export class ProjectGroupRepository extends PivotRepository<ProjectGroupModel, ProjectGroup> {
   protected table = projectGroups;
-  protected parentIdField: keyof ProjectGroupModel = 'projectId';
-  protected relatedIdField: keyof ProjectGroupModel = 'groupId';
+  protected uniqueIndexFields: Array<keyof ProjectGroupModel> = ['projectId', 'groupId'];
 
   protected toEntity(dbPivot: ProjectGroupModel): ProjectGroup {
-    return {
-      id: dbPivot.id,
-      projectId: dbPivot.projectId,
-      groupId: dbPivot.groupId,
-      createdAt: dbPivot.createdAt,
-      updatedAt: dbPivot.updatedAt,
-      deletedAt: dbPivot.deletedAt,
-    };
+    return dbPivot;
   }
 
   public async getProjectGroups(
-    params: { projectId: string },
+    params: QueryProjectGroupsInput,
     transaction?: Transaction
   ): Promise<ProjectGroup[]> {
-    return this.query({ parentId: params.projectId }, transaction);
+    return this.query(params, transaction);
   }
 
   public async addProjectGroup(
     params: AddProjectGroupInput,
     transaction?: Transaction
   ): Promise<ProjectGroup> {
-    return this.add(
-      {
-        parentId: params.projectId,
-        relatedId: params.groupId,
-      },
-      transaction
-    );
+    return this.add(params, transaction);
   }
 
   public async softDeleteProjectGroup(
     params: RemoveProjectGroupInput,
     transaction?: Transaction
   ): Promise<ProjectGroup> {
-    return this.softDelete(
-      {
-        parentId: params.projectId,
-        relatedId: params.groupId,
-      },
-      transaction
-    );
+    return this.softDelete(params, transaction);
   }
 
   public async hardDeleteProjectGroup(
     params: RemoveProjectGroupInput,
     transaction?: Transaction
   ): Promise<ProjectGroup> {
-    return this.hardDelete(
-      {
-        parentId: params.projectId,
-        relatedId: params.groupId,
-      },
-      transaction
-    );
+    return this.hardDelete(params, transaction);
   }
 }

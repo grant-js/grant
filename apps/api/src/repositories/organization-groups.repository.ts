@@ -1,74 +1,51 @@
-import { OrganizationGroup, organizationGroups } from '@logusgraphics/grant-database';
+import { OrganizationGroupModel, organizationGroups } from '@logusgraphics/grant-database';
+import {
+  AddOrganizationGroupInput,
+  OrganizationGroup,
+  QueryOrganizationGroupsInput,
+  RemoveOrganizationGroupInput,
+} from '@logusgraphics/grant-schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 
-import {
-  PivotRepository,
-  BasePivotQueryArgs,
-  BasePivotAddArgs,
-  BasePivotRemoveArgs,
-} from './common/PivotRepository';
+import { PivotRepository } from './common/PivotRepository';
 
 export class OrganizationGroupRepository extends PivotRepository<
-  OrganizationGroup,
+  OrganizationGroupModel,
   OrganizationGroup
 > {
   protected table = organizationGroups;
-  protected parentIdField: keyof OrganizationGroup = 'organizationId';
-  protected relatedIdField: keyof OrganizationGroup = 'groupId';
+  protected uniqueIndexFields: Array<keyof OrganizationGroupModel> = ['organizationId', 'groupId'];
 
-  protected toEntity(dbOrganizationGroup: OrganizationGroup): OrganizationGroup {
+  protected toEntity(dbOrganizationGroup: OrganizationGroupModel): OrganizationGroup {
     return dbOrganizationGroup;
   }
 
   public async getOrganizationGroups(
-    params: {
-      organizationId: string;
-    },
+    params: QueryOrganizationGroupsInput,
     transaction?: Transaction
   ): Promise<OrganizationGroup[]> {
-    const baseParams: BasePivotQueryArgs = {
-      parentId: params.organizationId,
-    };
-    return this.query(baseParams, transaction);
+    return this.query(params, transaction);
   }
 
   public async addOrganizationGroup(
-    organizationId: string,
-    groupId: string,
+    params: AddOrganizationGroupInput,
     transaction?: Transaction
   ): Promise<OrganizationGroup> {
-    const baseParams: BasePivotAddArgs = {
-      parentId: organizationId,
-      relatedId: groupId,
-    };
-    const organizationGroup = await this.add(baseParams, transaction);
-    return organizationGroup;
+    return this.add(params, transaction);
   }
 
   public async softDeleteOrganizationGroup(
-    organizationId: string,
-    groupId: string,
+    params: RemoveOrganizationGroupInput,
     transaction?: Transaction
-  ): Promise<OrganizationGroup | null> {
-    const baseParams: BasePivotRemoveArgs = {
-      parentId: organizationId,
-      relatedId: groupId,
-    };
-    const organizationGroup = await this.softDelete(baseParams, transaction);
-    return organizationGroup;
+  ): Promise<OrganizationGroup> {
+    return this.softDelete(params, transaction);
   }
 
   public async hardDeleteOrganizationGroup(
-    organizationId: string,
-    groupId: string,
+    params: RemoveOrganizationGroupInput,
     transaction?: Transaction
-  ): Promise<OrganizationGroup | null> {
-    const baseParams: BasePivotRemoveArgs = {
-      parentId: organizationId,
-      relatedId: groupId,
-    };
-    const organizationGroup = await this.hardDelete(baseParams, transaction);
-    return organizationGroup;
+  ): Promise<OrganizationGroup> {
+    return this.hardDelete(params, transaction);
   }
 }

@@ -1,7 +1,8 @@
 import { OrganizationTagModel, organizationTags } from '@logusgraphics/grant-database';
 import {
-  OrganizationTag,
   AddOrganizationTagInput,
+  OrganizationTag,
+  QueryOrganizationTagsInput,
   RemoveOrganizationTagInput,
   UpdateOrganizationTagInput,
 } from '@logusgraphics/grant-schema';
@@ -14,34 +15,24 @@ export class OrganizationTagRepository extends PivotRepository<
   OrganizationTag
 > {
   protected table = organizationTags;
-  protected parentIdField: keyof OrganizationTagModel = 'organizationId';
-  protected relatedIdField: keyof OrganizationTagModel = 'tagId';
+  protected uniqueIndexFields: Array<keyof OrganizationTagModel> = ['organizationId', 'tagId'];
 
   protected toEntity(dbPivot: OrganizationTagModel): OrganizationTag {
-    return {
-      id: dbPivot.id,
-      organizationId: dbPivot.organizationId,
-      tagId: dbPivot.tagId,
-      isPrimary: dbPivot.isPrimary,
-      createdAt: dbPivot.createdAt,
-      updatedAt: dbPivot.updatedAt,
-      deletedAt: dbPivot.deletedAt,
-    };
+    return dbPivot;
   }
 
   public async getOrganizationTags(
-    params: { organizationId: string },
+    params: QueryOrganizationTagsInput,
     transaction?: Transaction
   ): Promise<OrganizationTag[]> {
-    return this.query({ parentId: params.organizationId }, transaction);
+    return this.query(params, transaction);
   }
 
   public async addOrganizationTag(
     params: AddOrganizationTagInput,
     transaction?: Transaction
   ): Promise<OrganizationTag> {
-    const { organizationId, tagId, isPrimary } = params;
-    return this.add({ parentId: organizationId, relatedId: tagId, isPrimary }, transaction);
+    return this.add(params, transaction);
   }
 
   public async updateOrganizationTag(
@@ -49,32 +40,20 @@ export class OrganizationTagRepository extends PivotRepository<
     transaction?: Transaction
   ): Promise<OrganizationTag> {
     const { organizationId, tagId, isPrimary } = params;
-    return this.update(organizationId, tagId, { isPrimary }, transaction);
+    return this.update({ organizationId, tagId }, { isPrimary }, transaction);
   }
 
   public async softDeleteOrganizationTag(
     params: RemoveOrganizationTagInput,
     transaction?: Transaction
   ): Promise<OrganizationTag> {
-    return this.softDelete(
-      {
-        parentId: params.organizationId,
-        relatedId: params.tagId,
-      },
-      transaction
-    );
+    return this.softDelete(params, transaction);
   }
 
   public async hardDeleteOrganizationTag(
     params: RemoveOrganizationTagInput,
     transaction?: Transaction
   ): Promise<OrganizationTag> {
-    return this.hardDelete(
-      {
-        parentId: params.organizationId,
-        relatedId: params.tagId,
-      },
-      transaction
-    );
+    return this.hardDelete(params, transaction);
   }
 }

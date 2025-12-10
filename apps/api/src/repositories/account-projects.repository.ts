@@ -1,30 +1,19 @@
-import { accountProjects, AccountProjectModel } from '@logusgraphics/grant-database';
-import { AddAccountProjectInput, RemoveAccountProjectInput } from '@logusgraphics/grant-schema';
+import { AccountProjectModel, accountProjects } from '@logusgraphics/grant-database';
+import {
+  AccountProject,
+  AddAccountProjectInput,
+  QueryAccountProjectInput,
+  QueryAccountProjectsInput,
+  RemoveAccountProjectInput,
+} from '@logusgraphics/grant-schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 
-import {
-  BasePivotAddArgs,
-  BasePivotQueryArgs,
-  BasePivotRemoveArgs,
-  PivotRepository,
-} from './common/PivotRepository';
-
-// Define the GraphQL AccountProject type interface
-interface AccountProject {
-  id: string;
-  accountId: string;
-  projectId: string;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date | null;
-  [key: string]: unknown;
-}
+import { PivotRepository } from './common/PivotRepository';
 
 export class AccountProjectRepository extends PivotRepository<AccountProjectModel, AccountProject> {
   protected table = accountProjects;
-  protected parentIdField: keyof AccountProjectModel = 'accountId';
-  protected relatedIdField: keyof AccountProjectModel = 'projectId';
+  protected uniqueIndexFields: Array<keyof AccountProjectModel> = ['accountId', 'projectId'];
 
   protected toEntity(dbPivot: AccountProjectModel): AccountProject {
     return {
@@ -38,24 +27,17 @@ export class AccountProjectRepository extends PivotRepository<AccountProjectMode
   }
 
   async getAccountProjects(
-    params: { accountId: string },
+    params: QueryAccountProjectsInput,
     transaction?: Transaction
   ): Promise<AccountProject[]> {
-    const baseParams: BasePivotQueryArgs = {
-      parentId: params.accountId,
-    };
-
-    return this.query(baseParams, transaction);
+    return this.query(params, transaction);
   }
 
   async getAccountProject(
-    params: { projectId: string },
+    params: QueryAccountProjectInput,
     transaction?: Transaction
   ): Promise<AccountProject> {
-    const baseParams: BasePivotQueryArgs = {
-      relatedId: params.projectId,
-    };
-    const result = await this.query(baseParams, transaction);
+    const result = await this.query(params, transaction);
     return this.first(result);
   }
 
@@ -63,32 +45,20 @@ export class AccountProjectRepository extends PivotRepository<AccountProjectMode
     params: AddAccountProjectInput,
     transaction?: Transaction
   ): Promise<AccountProject> {
-    const baseParams: BasePivotAddArgs = {
-      parentId: params.accountId,
-      relatedId: params.projectId,
-    };
-    return this.add(baseParams, transaction);
+    return this.add(params, transaction);
   }
 
   async softDeleteAccountProject(
     params: RemoveAccountProjectInput,
     transaction?: Transaction
   ): Promise<AccountProject> {
-    const baseParams: BasePivotRemoveArgs = {
-      parentId: params.accountId,
-      relatedId: params.projectId,
-    };
-    return this.softDelete(baseParams, transaction);
+    return this.softDelete(params, transaction);
   }
 
   async hardDeleteAccountProject(
     params: RemoveAccountProjectInput,
     transaction?: Transaction
   ): Promise<AccountProject> {
-    const baseParams: BasePivotRemoveArgs = {
-      parentId: params.accountId,
-      relatedId: params.projectId,
-    };
-    return this.hardDelete(baseParams, transaction);
+    return this.hardDelete(params, transaction);
   }
 }

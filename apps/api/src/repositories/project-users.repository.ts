@@ -9,93 +9,51 @@ import {
 import {
   AddProjectUserInput,
   ProjectUser,
+  QueryProjectUsersInput,
   RemoveProjectUserInput,
 } from '@logusgraphics/grant-schema';
 import { and, eq, isNull } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-import {
-  BasePivotAddArgs,
-  BasePivotQueryArgs,
-  BasePivotRemoveArgs,
-  PivotRepository,
-} from '@/repositories/common';
+import { PivotRepository } from '@/repositories/common';
 
 export class ProjectUserRepository extends PivotRepository<ProjectUserModel, ProjectUser> {
   protected table = projectUsers;
-  protected parentIdField: keyof ProjectUserModel = 'projectId';
-  protected relatedIdField: keyof ProjectUserModel = 'userId';
+  protected uniqueIndexFields: Array<keyof ProjectUserModel> = ['projectId', 'userId'];
 
   protected toEntity(dbProjectUser: ProjectUserModel): ProjectUser {
-    return {
-      id: dbProjectUser.id,
-      projectId: dbProjectUser.projectId,
-      userId: dbProjectUser.userId,
-      createdAt: dbProjectUser.createdAt,
-      updatedAt: dbProjectUser.updatedAt,
-      deletedAt: dbProjectUser.deletedAt,
-    };
+    return dbProjectUser;
   }
 
   public async getProjectUsers(
-    params: { projectId?: string; userId?: string },
+    params: QueryProjectUsersInput,
     transaction?: Transaction
   ): Promise<ProjectUser[]> {
-    const baseParams: BasePivotQueryArgs = {
-      parentId: params.projectId,
-      relatedId: params.userId,
-    };
-
-    return this.query(baseParams, transaction);
+    return this.query(params, transaction);
   }
 
   public async addProjectUser(
     params: AddProjectUserInput,
     transaction?: Transaction
   ): Promise<ProjectUser> {
-    const baseParams: BasePivotAddArgs = {
-      parentId: params.projectId,
-      relatedId: params.userId,
-    };
-
-    const projectUser = await this.add(baseParams, transaction);
-
-    return projectUser;
+    return this.add(params, transaction);
   }
 
   public async softDeleteProjectUser(
     params: RemoveProjectUserInput,
     transaction?: Transaction
   ): Promise<ProjectUser> {
-    const baseParams: BasePivotRemoveArgs = {
-      parentId: params.projectId,
-      relatedId: params.userId,
-    };
-
-    const projectUser = await this.softDelete(baseParams, transaction);
-
-    return projectUser;
+    return this.softDelete(params, transaction);
   }
 
   public async hardDeleteProjectUser(
     params: RemoveProjectUserInput,
     transaction?: Transaction
   ): Promise<ProjectUser> {
-    const baseParams: BasePivotRemoveArgs = {
-      parentId: params.projectId,
-      relatedId: params.userId,
-    };
-
-    const projectUser = await this.hardDelete(baseParams, transaction);
-
-    return projectUser;
+    return this.hardDelete(params, transaction);
   }
 
-  /**
-   * Get user's project memberships with roles
-   * Returns projects the user belongs to along with their role in each project
-   */
-  public async getUserProjectMemberships(
+  public async getProjectUserMemberships(
     userId: string,
     transaction?: Transaction
   ): Promise<
@@ -108,7 +66,6 @@ export class ProjectUserRepository extends PivotRepository<ProjectUserModel, Pro
   > {
     const dbInstance = transaction || this.db;
 
-    // Get project details and user's role in each project
     const membershipsData = await dbInstance
       .select({
         projectId: projects.id,
@@ -136,8 +93,6 @@ export class ProjectUserRepository extends PivotRepository<ProjectUserModel, Pro
         )
       );
 
-    // Filter to only include memberships where user has a role in the project
-    // and group by project (taking first role if multiple)
     const membershipMap = new Map<
       string,
       { projectId: string; projectName: string; role: string; joinedAt: Date }

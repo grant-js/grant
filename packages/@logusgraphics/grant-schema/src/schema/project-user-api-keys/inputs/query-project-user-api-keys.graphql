@@ -1,0 +1,4 @@
+input QueryProjectUserApiKeysInput {
+  projectId: ID!
+  userId: ID!
+}

@@ -1,0 +1,4 @@
+input QueryRoleTagsInput {
+  roleId: ID
+  tagId: ID
+}
