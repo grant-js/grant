@@ -88,7 +88,8 @@ export class PermissionHandler extends ScopeHandler {
             tx
           );
           break;
-        case Tenant.Project:
+        case Tenant.OrganizationProject:
+        case Tenant.AccountProject:
           await this.services.projectPermissions.addProjectPermission(
             { projectId: scope.id, permissionId },
             tx
@@ -176,7 +177,8 @@ export class PermissionHandler extends ScopeHandler {
             tx
           );
           break;
-        case Tenant.Project:
+        case Tenant.OrganizationProject:
+        case Tenant.AccountProject:
           await this.services.projectPermissions.removeProjectPermission(
             { projectId: scope.id, permissionId },
             tx

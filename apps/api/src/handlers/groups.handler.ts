@@ -80,7 +80,8 @@ export class GroupHandler extends ScopeHandler {
             tx
           );
           break;
-        case Tenant.Project:
+        case Tenant.OrganizationProject:
+        case Tenant.AccountProject:
           await this.services.projectGroups.addProjectGroup({ projectId: scope.id, groupId }, tx);
           break;
       }
@@ -192,7 +193,8 @@ export class GroupHandler extends ScopeHandler {
             tx
           );
           break;
-        case Tenant.Project:
+        case Tenant.OrganizationProject:
+        case Tenant.AccountProject:
           await this.services.projectGroups.removeProjectGroup(
             { projectId: scope.id, groupId },
             tx

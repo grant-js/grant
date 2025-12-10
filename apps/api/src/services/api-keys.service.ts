@@ -228,7 +228,8 @@ export class ApiKeyService extends AuditService {
         break;
       }
 
-      case Tenant.Project:
+      case Tenant.OrganizationProject:
+      case Tenant.AccountProject:
       case Tenant.Organization:
       case Tenant.Account:
         // Future implementations
@@ -251,7 +252,7 @@ export class ApiKeyService extends AuditService {
       );
     }
 
-    const tokenScope = `${Tenant.Project}:${pivot.projectId}`;
+    const tokenScope = `${scope.tenant}:${pivot.projectId}`;
     const accessToken = this.signToken(apiKey, tokenScope);
     const expiresIn = config.jwt.accessTokenExpirationMinutes * 60;
 

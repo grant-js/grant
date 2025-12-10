@@ -107,7 +107,8 @@ export class ScopeHandler {
         break;
       }
 
-      case Tenant.Project: {
+      case Tenant.OrganizationProject:
+      case Tenant.AccountProject: {
         const projectRoles = await this.services.projectRoles.getProjectRoles({
           projectId: scope.id,
         });
@@ -179,7 +180,8 @@ export class ScopeHandler {
         break;
       }
 
-      case Tenant.Project: {
+      case Tenant.OrganizationProject:
+      case Tenant.AccountProject: {
         const projectUsers = await this.services.projectUsers.getProjectUsers({
           projectId: scope.id,
         });
@@ -224,7 +226,8 @@ export class ScopeHandler {
         break;
       }
 
-      case Tenant.Project: {
+      case Tenant.OrganizationProject:
+      case Tenant.AccountProject: {
         const projectGroups = await this.services.projectGroups.getProjectGroups({
           projectId: scope.id,
         });
@@ -270,7 +273,8 @@ export class ScopeHandler {
         break;
       }
 
-      case Tenant.Project: {
+      case Tenant.OrganizationProject:
+      case Tenant.AccountProject: {
         const projectPermissions = await this.services.projectPermissions.getProjectPermissions({
           projectId: scope.id,
         });
@@ -315,7 +319,8 @@ export class ScopeHandler {
         break;
       }
 
-      case Tenant.Project: {
+      case Tenant.OrganizationProject:
+      case Tenant.AccountProject: {
         const projectTags = await this.services.projectTags.getProjectTags({
           projectId: scope.id,
         });

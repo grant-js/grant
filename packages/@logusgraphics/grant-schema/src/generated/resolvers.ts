@@ -1650,8 +1650,9 @@ export type TagSortInput = {
 
 export enum Tenant {
   Account = 'account',
+  AccountProject = 'accountProject',
   Organization = 'organization',
-  Project = 'project',
+  OrganizationProject = 'organizationProject',
   ProjectUser = 'projectUser',
 }
 

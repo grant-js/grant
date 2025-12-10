@@ -77,7 +77,8 @@ export class RoleHandler extends ScopeHandler {
             tx
           );
           break;
-        case Tenant.Project:
+        case Tenant.OrganizationProject:
+        case Tenant.AccountProject:
           await this.services.projectRoles.addProjectRole({ projectId: scope.id, roleId }, tx);
           break;
       }
@@ -180,7 +181,8 @@ export class RoleHandler extends ScopeHandler {
             tx
           );
           break;
-        case Tenant.Project:
+        case Tenant.OrganizationProject:
+        case Tenant.AccountProject:
           await this.services.projectRoles.removeProjectRole({ projectId: scope.id, roleId }, tx);
           break;
       }

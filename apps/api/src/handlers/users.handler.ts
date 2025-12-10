@@ -130,7 +130,8 @@ export class UserHandler extends ScopeHandler {
             tx
           );
           break;
-        case Tenant.Project:
+        case Tenant.OrganizationProject:
+        case Tenant.AccountProject:
           await this.services.projectUsers.addProjectUser({ projectId: scope.id, userId }, tx);
           break;
       }
@@ -235,7 +236,8 @@ export class UserHandler extends ScopeHandler {
             tx
           );
           break;
-        case Tenant.Project:
+        case Tenant.OrganizationProject:
+        case Tenant.AccountProject:
           await this.services.projectUsers.removeProjectUser({ projectId: scope.id, userId }, tx);
           await this.invalidateProjectUserRoleCache(userId);
           break;

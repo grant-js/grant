@@ -28,8 +28,9 @@ interface PaginatedResults {
 enum Tenant {
   account
   organization
-  project
   projectUser
+  accountProject
+  organizationProject
 }
 
 enum SortOrder {

@@ -1,5 +1,6 @@
 import { accountProjectsAuditLogs, DbSchema } from '@logusgraphics/grant-database';
 import {
+  AccountProject,
   AddAccountProjectInput,
   OrganizationProject,
   RemoveAccountProjectInput,
@@ -19,10 +20,10 @@ import {
 } from './account-projects.schemas';
 import {
   AuditService,
-  validateInput,
-  validateOutput,
   createDynamicSingleSchema,
   DeleteParams,
+  validateInput,
+  validateOutput,
 } from './common';
 
 export class AccountProjectService extends AuditService {
@@ -107,7 +108,7 @@ export class AccountProjectService extends AuditService {
   public async getAccountProject(
     params: { projectId: string },
     transaction?: Transaction
-  ): Promise<OrganizationProject> {
+  ): Promise<AccountProject> {
     const validationContext = 'AccountProjectService.getAccountProject';
     const validatedParams = validateInput(queryAccountProjectArgsSchema, params, validationContext);
     const { projectId } = validatedParams;

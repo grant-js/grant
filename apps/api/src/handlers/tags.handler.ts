@@ -30,10 +30,7 @@ export class TagHandler extends ScopeHandler {
 
     let tagIds = await this.getScopedTagIds(scope);
 
-    // Tags can be inherited from organization to project
-    // We don't want to mix scopes for tags
-    if (scope.tenant === Tenant.Project) {
-      // TODO: we need to determine if it's an account project or an organization project
+    if (scope.tenant === Tenant.OrganizationProject) {
       const projectOrganization = await this.services.organizationProjects.getOrganizationProject({
         projectId: scope.id,
       });
@@ -84,7 +81,8 @@ export class TagHandler extends ScopeHandler {
             tx
           );
           break;
-        case Tenant.Project:
+        case Tenant.OrganizationProject:
+        case Tenant.AccountProject:
           await this.services.projectTags.addProjectTag({ projectId: scope.id, tagId }, tx);
           break;
       }
@@ -112,7 +110,8 @@ export class TagHandler extends ScopeHandler {
             tx
           );
           break;
-        case Tenant.Project:
+        case Tenant.OrganizationProject:
+        case Tenant.AccountProject:
           await this.services.projectTags.removeProjectTag(
             { projectId: scope.id, tagId, hardDelete },
             tx

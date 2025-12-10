@@ -7,9 +7,16 @@ import { Scope, Tenant } from '@logusgraphics/grant-schema';
 export function useScopeFromParams(): Scope | null {
   const params = useParams();
 
-  if (params.projectId) {
+  if (params.projectId && params.organizationId) {
     return {
-      tenant: Tenant.Project,
+      tenant: Tenant.OrganizationProject,
+      id: params.projectId as string,
+    };
+  }
+
+  if (params.projectId && params.accountId) {
+    return {
+      tenant: Tenant.AccountProject,
       id: params.projectId as string,
     };
   }
