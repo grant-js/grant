@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { Role, RoleSortableField, SortOrder, User } from '@logusgraphics/grant-schema';
 import { Loader2, Shield } from 'lucide-react';
@@ -14,6 +14,7 @@ import { useDebounce } from '@/hooks/common/useDebounce';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useRoles } from '@/hooks/roles';
 import { useUserMutations } from '@/hooks/users';
+import { useUserStore } from '@/stores/user.store';
 
 import { UserRoleSearch } from './UserRoleSearch';
 import { UserRoleSorter } from './UserRoleSorter';
@@ -27,13 +28,22 @@ export function UserRoles({ userId, user }: UserRolesProps) {
   const t = useTranslations('user.roles');
   const scope = useScopeFromParams();
 
-  const [page, setPage] = useState(1);
-  const [limit] = useState(10);
-  const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<{ field: RoleSortableField; order: SortOrder } | undefined>({
-    field: RoleSortableField.Name,
-    order: SortOrder.Asc,
-  });
+  // Get state from store
+  const page = useUserStore((state) => state.rolesPage);
+  const limit = useUserStore((state) => state.rolesLimit);
+  const search = useUserStore((state) => state.rolesSearch);
+  const sort = useUserStore((state) => state.rolesSort);
+  const updatingRoleId = useUserStore((state) => state.updatingRoleId);
+  const optimisticCheckedRoleIds = useUserStore((state) => state.optimisticCheckedRoleIds);
+
+  // Get actions from store
+  const setPage = useUserStore((state) => state.setRolesPage);
+  const setSearch = useUserStore((state) => state.setRolesSearch);
+  const setSort = useUserStore((state) => state.setRolesSort);
+  const setUpdatingRoleId = useUserStore((state) => state.setUpdatingRoleId);
+  const setOptimisticCheckedRoleIds = useUserStore((state) => state.setOptimisticCheckedRoleIds);
+  const addOptimisticRoleId = useUserStore((state) => state.addOptimisticRoleId);
+  const removeOptimisticRoleId = useUserStore((state) => state.removeOptimisticRoleId);
 
   const { roles, loading, error, totalCount } = useRoles({
     scope: scope!,
@@ -45,14 +55,10 @@ export function UserRoles({ userId, user }: UserRolesProps) {
 
   const { updateUser } = useUserMutations();
 
-  const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
-  const [optimisticCheckedRoleIds, setOptimisticCheckedRoleIds] = useState<Set<string>>(
-    new Set(user.roles?.map((r) => r.id) || [])
-  );
-
+  // Sync store with user roles when they change
   useEffect(() => {
     setOptimisticCheckedRoleIds(new Set(user.roles?.map((r) => r.id) || []));
-  }, [user.roles]);
+  }, [user.roles, setOptimisticCheckedRoleIds]);
 
   const totalPages = Math.ceil(totalCount / limit);
 
@@ -86,27 +92,22 @@ export function UserRoles({ userId, user }: UserRolesProps) {
   const handleRoleToggle = (roleId: string, checked: boolean) => {
     const currentRoleIds = Array.from(optimisticCheckedRoleIds);
 
-    setOptimisticCheckedRoleIds((prev) => {
-      const next = new Set(prev);
-      if (checked) {
-        next.add(roleId);
-      } else {
-        next.delete(roleId);
-      }
-      return next;
-    });
+    // Update optimistic state immediately
+    if (checked) {
+      addOptimisticRoleId(roleId);
+    } else {
+      removeOptimisticRoleId(roleId);
+    }
 
     debouncedUpdateUserRoles(roleId, checked, currentRoleIds);
   };
 
   const handleSortChange = (field: RoleSortableField, order: SortOrder) => {
-    setSort({ field, order });
-    setPage(1);
+    setSort(field, order);
   };
 
   const handleSearchChange = (newSearch: string) => {
     setSearch(newSearch);
-    setPage(1);
   };
 
   const columns: ColumnConfig<Role>[] = [

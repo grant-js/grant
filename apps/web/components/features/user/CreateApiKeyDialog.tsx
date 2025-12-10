@@ -11,8 +11,6 @@ import { z } from 'zod';
 import { CreateDialog, CreateDialogField } from '@/components/common/CreateDialog';
 import { useApiKeyMutations } from '@/hooks/api-keys';
 
-import { ApiKeySecretDialog } from './ApiKeySecretDialog';
-
 export const createApiKeySchema = z.object({
   name: z.string().optional(),
   description: z.string().optional(),
@@ -35,19 +33,19 @@ export type CreateApiKeyFormValues = z.infer<typeof createApiKeySchema>;
 interface CreateApiKeyDialogProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  onApiKeyCreated?: (apiKey: { clientId: string; clientSecret: string } | null) => void;
 }
 
-export function CreateApiKeyDialog({ open, onOpenChange }: CreateApiKeyDialogProps) {
+export function CreateApiKeyDialog({
+  open,
+  onOpenChange,
+  onApiKeyCreated,
+}: CreateApiKeyDialogProps) {
   const { createApiKey } = useApiKeyMutations();
   const params = useParams();
   const projectId = params.projectId as string;
   const userId = params.userId as string;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [secretDialogOpen, setSecretDialogOpen] = useState(false);
-  const [createdApiKey, setCreatedApiKey] = useState<{
-    clientId: string;
-    clientSecret: string;
-  } | null>(null);
 
   const scope = useMemo(
     () => ({
@@ -74,12 +72,11 @@ export function CreateApiKeyDialog({ open, onOpenChange }: CreateApiKeyDialogPro
 
     const result = await createApiKey(input);
 
-    if (result?.clientId && result?.clientSecret) {
-      setCreatedApiKey({
+    if (result?.clientId && result?.clientSecret && onApiKeyCreated) {
+      onApiKeyCreated({
         clientId: result.clientId,
         clientSecret: result.clientSecret,
       });
-      setSecretDialogOpen(true);
     }
 
     return result;
@@ -128,14 +125,6 @@ export function CreateApiKeyDialog({ open, onOpenChange }: CreateApiKeyDialogPro
         translationNamespace="user.apiKeys"
         submittingText="createDialog.submitting"
       />
-      {createdApiKey && (
-        <ApiKeySecretDialog
-          open={secretDialogOpen}
-          onOpenChange={setSecretDialogOpen}
-          clientId={createdApiKey.clientId}
-          clientSecret={createdApiKey.clientSecret}
-        />
-      )}
     </>
   );
 }

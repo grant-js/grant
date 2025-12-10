@@ -1,16 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 import { useParams } from 'next/navigation';
 
-import {
-  ApiKey,
-  ApiKeySortableField,
-  ApiKeySortInput,
-  SortOrder,
-  Tenant,
-} from '@logusgraphics/grant-schema';
+import { ApiKey, ApiKeySortableField, SortOrder, Tenant } from '@logusgraphics/grant-schema';
 import { format } from 'date-fns';
 import { Key } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -19,8 +13,10 @@ import { CopyToClipboard, Pagination, Toolbar } from '@/components/common';
 import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
 import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
 import { useApiKeys } from '@/hooks/api-keys';
+import { useUserStore } from '@/stores/user.store';
 
 import { ApiKeyActions } from './ApiKeyActions';
+import { ApiKeySecretDialog } from './ApiKeySecretDialog';
 import { CreateApiKeyDialog } from './CreateApiKeyDialog';
 import { UserApiKeySearch } from './UserApiKeySearch';
 import { UserApiKeySorter } from './UserApiKeySorter';
@@ -30,13 +26,22 @@ export function UserApiKeys() {
   const params = useParams();
   const projectId = params.projectId as string;
   const userId = params.userId as string;
-  const [page, setPage] = useState(1);
-  const [limit] = useState(10);
-  const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<ApiKeySortInput | undefined>({
-    field: ApiKeySortableField.CreatedAt,
-    order: SortOrder.Desc,
-  });
+
+  // Get state from store
+  const page = useUserStore((state) => state.apiKeysPage);
+  const limit = useUserStore((state) => state.apiKeysLimit);
+  const search = useUserStore((state) => state.apiKeysSearch);
+  const sort = useUserStore((state) => state.apiKeysSort);
+  const secretDialogOpen = useUserStore((state) => state.apiKeysSecretDialogOpen);
+  const createdApiKey = useUserStore((state) => state.createdApiKey);
+
+  // Get actions from store
+  const setPage = useUserStore((state) => state.setApiKeysPage);
+  const setSearch = useUserStore((state) => state.setApiKeysSearch);
+  const setSort = useUserStore((state) => state.setApiKeysSort);
+  const setSecretDialogOpen = useUserStore((state) => state.setApiKeysSecretDialogOpen);
+  const setCreatedApiKey = useUserStore((state) => state.setCreatedApiKey);
+  const handleApiKeyCreated = useUserStore((state) => state.handleApiKeyCreated);
 
   const scope = useMemo(
     () => ({
@@ -57,13 +62,11 @@ export function UserApiKeys() {
   const totalPages = Math.ceil(totalCount / limit);
 
   const handleSortChange = (field: ApiKeySortableField, order: SortOrder) => {
-    setSort({ field, order });
-    setPage(1);
+    setSort(field, order);
   };
 
   const handleSearchChange = (newSearch: string) => {
     setSearch(newSearch);
-    setPage(1);
   };
 
   const formatDate = (date: string | Date | null | undefined): string => {
@@ -204,7 +207,7 @@ export function UserApiKeys() {
               totalCount > 0 && (
                 <UserApiKeySorter key="sorter" sort={sort} onSortChange={handleSortChange} />
               ),
-              <CreateApiKeyDialog key="create" />,
+              <CreateApiKeyDialog key="create" onApiKeyCreated={handleApiKeyCreated} />,
             ].filter(Boolean)}
           />
         </div>
@@ -216,7 +219,7 @@ export function UserApiKeys() {
             icon: <Key className="h-12 w-12" />,
             title: t('empty'),
             description: t('emptyDescription'),
-            action: <CreateApiKeyDialog />,
+            action: <CreateApiKeyDialog onApiKeyCreated={handleApiKeyCreated} />,
           }}
           actionsColumn={{
             render: (apiKey: ApiKey) => <ApiKeyActions apiKey={apiKey} scope={scope!} />,
@@ -229,6 +232,19 @@ export function UserApiKeys() {
           </div>
         )}
       </div>
+      {createdApiKey && (
+        <ApiKeySecretDialog
+          open={secretDialogOpen}
+          onOpenChange={(open) => {
+            setSecretDialogOpen(open);
+            if (!open) {
+              setCreatedApiKey(null);
+            }
+          }}
+          clientId={createdApiKey.clientId}
+          clientSecret={createdApiKey.clientSecret}
+        />
+      )}
     </>
   );
 }
