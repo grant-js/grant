@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { pgTable, uuid, varchar, timestamp, index } from 'drizzle-orm/pg-core';
+import { index, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 
 export const projects = pgTable(
   'projects',
@@ -38,11 +38,12 @@ export const projectAuditLogs = pgTable(
 export const projectsRelations = relations(projects, ({ many }) => ({
   auditLogs: many(projectAuditLogs),
   tags: many(projectTags),
+  organizationTags: many(organizationProjectTags),
   users: many(projectUsers),
   roles: many(projectRoles),
   groups: many(projectGroups),
   permissions: many(projectPermissions),
-  accounts: many(accountProjects), // Accounts that own this project
+  accounts: many(accountProjects),
 }));
 
 export const projectAuditLogsRelations = relations(projectAuditLogs, ({ one }) => ({
@@ -58,6 +59,7 @@ export type ProjectAuditLogModel = typeof projectAuditLogs.$inferSelect;
 export type NewProjectAuditLogModel = typeof projectAuditLogs.$inferInsert;
 
 import { accountProjects } from './account-projects.schema';
+import { organizationProjectTags } from './organization-project-tags.schema';
 import { projectGroups } from './project-groups.schema';
 import { projectPermissions } from './project-permissions.schema';
 import { projectRoles } from './project-roles.schema';

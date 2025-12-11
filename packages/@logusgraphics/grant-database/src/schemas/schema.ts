@@ -1,10 +1,10 @@
 import { accountProjects, accountProjectsRelations } from './account-projects.schema';
 import { accounts, accountsRelations } from './accounts.schema';
 import {
-  apiKeys,
-  apiKeysRelations,
   apiKeyAuditLogs,
   apiKeyAuditLogsRelations,
+  apiKeys,
+  apiKeysRelations,
 } from './api-keys.schema';
 import { groupPermissions, groupPermissionsRelations } from './group-permissions.schema';
 import { groupTags, groupTagsRelations } from './group-tags.schema';
@@ -18,6 +18,10 @@ import {
   organizationPermissions,
   organizationPermissionsRelations,
 } from './organization-permissions.schema';
+import {
+  organizationProjectTags,
+  organizationProjectTagsRelations,
+} from './organization-project-tags.schema';
 import {
   organizationProjects,
   organizationProjectsRelations,
@@ -33,10 +37,10 @@ import { projectPermissions, projectPermissionsRelations } from './project-permi
 import { projectRoles, projectRolesRelations } from './project-roles.schema';
 import { projectTags, projectTagsRelations } from './project-tags.schema';
 import {
-  projectUserApiKeys,
-  projectUserApiKeysRelations,
   projectUserApiKeyAuditLogs,
   projectUserApiKeyAuditLogsRelations,
+  projectUserApiKeys,
+  projectUserApiKeysRelations,
 } from './project-user-api-keys.schema';
 import { projectUsers, projectUsersRelations } from './project-users.schema';
 import { projects, projectsRelations } from './projects.schema';
@@ -67,6 +71,7 @@ export const schema = {
   organizationInvitations,
   organizationPermissions,
   organizationProjects,
+  organizationProjectTags,
   organizationRoles,
   organizationTags,
   organizationUsers,
@@ -97,6 +102,7 @@ export const schema = {
   organizationInvitationsRelations,
   organizationPermissionsRelations,
   organizationProjectsRelations,
+  organizationProjectTagsRelations,
   organizationRolesRelations,
   organizationTagsRelations,
   organizationUsersRelations,

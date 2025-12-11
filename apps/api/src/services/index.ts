@@ -18,6 +18,7 @@ import { OrganizationGroupService } from './organization-groups.service';
 import { OrganizationInvitationService } from './organization-invitations.service';
 import { OrganizationMemberService } from './organization-members.service';
 import { OrganizationPermissionService } from './organization-permissions.service';
+import { OrganizationProjectTagService } from './organization-project-tags.service';
 import { OrganizationProjectService } from './organization-projects.service';
 import { OrganizationRoleService } from './organization-roles.service';
 import { OrganizationTagService } from './organization-tags.service';
@@ -84,6 +85,7 @@ export function createServices(
     groupPermissions: new GroupPermissionService(repositories, user, db),
     organizationUsers: new OrganizationUserService(repositories, user, db),
     organizationProjects: new OrganizationProjectService(repositories, user, db),
+    organizationProjectTags: new OrganizationProjectTagService(repositories, user, db),
     roleGroups: new RoleGroupService(repositories, user, db),
     organizationPermissions: new OrganizationPermissionService(repositories, user, db),
     organizationGroups: new OrganizationGroupService(repositories, user, db),

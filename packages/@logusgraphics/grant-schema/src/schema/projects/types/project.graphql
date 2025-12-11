@@ -8,6 +8,7 @@ type Project implements Auditable {
   permissions: [Permission!]
   users: [User!]
   tags: [Tag!]
+  organizationTags: [Tag!]
   createdAt: Date!
   updatedAt: Date!
   deletedAt: Date

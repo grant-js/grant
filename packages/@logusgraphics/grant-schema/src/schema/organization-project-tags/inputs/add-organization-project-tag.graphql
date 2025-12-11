@@ -1,0 +1,6 @@
+input AddOrganizationProjectTagInput {
+  organizationId: ID!
+  projectId: ID!
+  tagId: ID!
+  isPrimary: Boolean
+}

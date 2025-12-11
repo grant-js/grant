@@ -1,12 +1,11 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { projectAuditLogs } from '@logusgraphics/grant-database';
+import { DbSchema, projectAuditLogs } from '@logusgraphics/grant-database';
 import {
-  QueryProjectsArgs,
-  MutationUpdateProjectArgs,
+  CreateProjectInput,
   MutationDeleteProjectArgs,
+  MutationUpdateProjectArgs,
   Project,
   ProjectPage,
-  CreateProjectInput,
+  QueryProjectsArgs,
 } from '@logusgraphics/grant-schema';
 
 import { NotFoundError } from '@/lib/errors';
@@ -16,19 +15,19 @@ import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
-  validateInput,
-  validateOutput,
-  createDynamicPaginatedSchema,
-  createDynamicSingleSchema,
   DeleteParams,
   SelectedFields,
+  createDynamicPaginatedSchema,
+  createDynamicSingleSchema,
+  validateInput,
+  validateOutput,
 } from './common';
 import {
-  getProjectsParamsSchema,
   createProjectParamsSchema,
-  updateProjectParamsSchema,
   deleteProjectParamsSchema,
+  getProjectsParamsSchema,
   projectSchema,
+  updateProjectParamsSchema,
 } from './projects.schemas';
 
 export class ProjectService extends AuditService {

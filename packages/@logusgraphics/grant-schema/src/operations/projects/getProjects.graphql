@@ -23,6 +23,12 @@ query GetProjects(
       description
       createdAt
       updatedAt
+      organizationTags {
+        id
+        name
+        color
+        isPrimary
+      }
       tags {
         id
         name

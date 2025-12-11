@@ -34,13 +34,29 @@ export class ProjectHandler extends ScopeHandler {
     let projectIds = await this.getScopedProjectIds(scope);
 
     if (tagIds && tagIds.length > 0) {
-      const projectTags = await this.services.projectTags.getProjectTagIntersection(
-        projectIds,
-        tagIds
-      );
-      projectIds = projectTags
-        .filter(({ projectId, tagId }) => projectIds.includes(projectId) && tagIds.includes(tagId))
-        .map(({ projectId }) => projectId);
+      switch (scope.tenant) {
+        case Tenant.Organization:
+          {
+            const organizationId = scope.id;
+            const organizationProjectTags =
+              await this.services.organizationProjectTags.getOrganizationProjectTagIntersection(
+                organizationId,
+                projectIds,
+                tagIds
+              );
+            projectIds = organizationProjectTags
+              .filter(
+                ({ projectId, tagId }) => projectIds.includes(projectId) && tagIds.includes(tagId)
+              )
+              .map(({ projectId }) => projectId);
+          }
+          break;
+        case Tenant.Account:
+        default:
+          throw new BadRequestError('Invalid scope', 'errors:validation.invalid', {
+            field: 'scope',
+          });
+      }
     }
 
     if (ids && ids.length > 0) {
@@ -63,22 +79,6 @@ export class ProjectHandler extends ScopeHandler {
       search,
       requestedFields,
     });
-
-    if (Array.isArray(requestedFields) && requestedFields.includes('tags')) {
-      const scopedTagIds = await this.getScopedTagIds(scope);
-      return {
-        ...projectsResult,
-        projects: projectsResult.projects.map((project) => {
-          if (Array.isArray(project.tags)) {
-            return {
-              ...project,
-              tags: project.tags.filter((tag) => scopedTagIds.includes(tag.id)),
-            };
-          }
-          return project;
-        }),
-      };
-    }
 
     return projectsResult;
   }
@@ -112,12 +112,20 @@ export class ProjectHandler extends ScopeHandler {
 
       if (tagIds && tagIds.length > 0) {
         await Promise.all(
-          tagIds.map((tagId) =>
-            this.services.projectTags.addProjectTag(
-              { projectId, tagId, isPrimary: tagId === primaryTagId },
-              tx
-            )
-          )
+          tagIds.map((tagId) => {
+            switch (scope.tenant) {
+              case Tenant.Organization:
+                return this.services.organizationProjectTags.addOrganizationProjectTag(
+                  { organizationId: scope.id, projectId, tagId, isPrimary: tagId === primaryTagId },
+                  tx
+                );
+              case Tenant.Account:
+              default:
+                throw new BadRequestError('Invalid scope', 'errors:validation.invalid', {
+                  field: 'scope',
+                });
+            }
+          })
         );
       }
 
@@ -130,38 +138,71 @@ export class ProjectHandler extends ScopeHandler {
   public async updateProject(params: MutationUpdateProjectArgs): Promise<Project> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { id: projectId, input } = params;
-      const { tagIds, primaryTagId } = input;
+      const { scope, tagIds, primaryTagId } = input;
       let currentTagIds: string[] = [];
+
       if (tagIds && tagIds.length > 0) {
-        const currentTags = await this.services.projectTags.getProjectTags({ projectId }, tx);
-        currentTagIds = currentTags.map((pt) => pt.tagId);
+        switch (scope.tenant) {
+          case Tenant.Organization:
+            {
+              const organizationId = scope.id;
+              const currentTags =
+                await this.services.organizationProjectTags.getOrganizationProjectTags(
+                  { organizationId, projectId },
+                  tx
+                );
+              currentTagIds = currentTags.map((pt) => pt.tagId);
+            }
+            break;
+          case Tenant.Account:
+          default:
+            throw new BadRequestError('Invalid scope', 'errors:validation.invalid', {
+              field: 'scope',
+            });
+        }
       }
+
       const updatedProject = await this.services.projects.updateProject(params, tx);
+
       if (tagIds && tagIds.length > 0) {
         const newTagIds = tagIds.filter((tagId) => !currentTagIds.includes(tagId));
         const removedTagIds = currentTagIds.filter((tagId) => !tagIds.includes(tagId));
         const updatedTagIds = tagIds.filter((tagId) => currentTagIds.includes(tagId));
-        await Promise.all(
-          updatedTagIds.map((tagId) =>
-            this.services.projectTags.updateProjectTag(
-              { projectId, tagId, isPrimary: tagId === primaryTagId },
-              tx
-            )
-          )
-        );
-        await Promise.all(
-          newTagIds.map((tagId) =>
-            this.services.projectTags.addProjectTag(
-              { projectId, tagId, isPrimary: tagId === primaryTagId },
-              tx
-            )
-          )
-        );
-        await Promise.all(
-          removedTagIds.map((tagId) =>
-            this.services.projectTags.removeProjectTag({ projectId, tagId }, tx)
-          )
-        );
+        switch (scope.tenant) {
+          case Tenant.Organization: {
+            const organizationId = scope.id;
+            await Promise.all(
+              updatedTagIds.map((tagId) =>
+                this.services.organizationProjectTags.updateOrganizationProjectTag(
+                  { organizationId, projectId, tagId, isPrimary: tagId === primaryTagId },
+                  tx
+                )
+              )
+            );
+            await Promise.all(
+              newTagIds.map((tagId) =>
+                this.services.organizationProjectTags.addOrganizationProjectTag(
+                  { organizationId, projectId, tagId, isPrimary: tagId === primaryTagId },
+                  tx
+                )
+              )
+            );
+            await Promise.all(
+              removedTagIds.map((tagId) =>
+                this.services.organizationProjectTags.removeOrganizationProjectTag(
+                  { organizationId, projectId, tagId },
+                  tx
+                )
+              )
+            );
+            break;
+          }
+          case Tenant.Account:
+          default:
+            throw new BadRequestError('Invalid scope', 'errors:validation.invalid', {
+              field: 'scope',
+            });
+        }
       }
       return updatedProject;
     });
@@ -170,16 +211,26 @@ export class ProjectHandler extends ScopeHandler {
   public async deleteProject(params: MutationDeleteProjectArgs & DeleteParams): Promise<Project> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { id: projectId, scope } = params;
-      const organizationId = scope.id;
-      const [projectTags, projectPermissions, projectGroups, projectRoles, projectUsers] =
-        await Promise.all([
-          this.services.projectTags.getProjectTags({ projectId }, tx),
-          this.services.projectPermissions.getProjectPermissions({ projectId }, tx),
-          this.services.projectGroups.getProjectGroups({ projectId }, tx),
-          this.services.projectRoles.getProjectRoles({ projectId }, tx),
-          this.services.projectUsers.getProjectUsers({ projectId }, tx),
-        ]);
+      const [
+        organizationProjectTags,
+        projectTags,
+        projectPermissions,
+        projectGroups,
+        projectRoles,
+        projectUsers,
+      ] = await Promise.all([
+        this.services.organizationProjectTags.getOrganizationProjectTags(
+          { organizationId: scope.id, projectId },
+          tx
+        ),
+        this.services.projectTags.getProjectTags({ projectId }, tx),
+        this.services.projectPermissions.getProjectPermissions({ projectId }, tx),
+        this.services.projectGroups.getProjectGroups({ projectId }, tx),
+        this.services.projectRoles.getProjectRoles({ projectId }, tx),
+        this.services.projectUsers.getProjectUsers({ projectId }, tx),
+      ]);
 
+      const organizationTagIds = organizationProjectTags.map((opt) => opt.tagId);
       const tagIds = projectTags.map((pt) => pt.tagId);
       const permissionIds = projectPermissions.map((pp) => pp.permissionId);
       const groupIds = projectGroups.map((pg) => pg.groupId);
@@ -194,7 +245,7 @@ export class ProjectHandler extends ScopeHandler {
           break;
         case Tenant.Organization:
           await this.services.organizationProjects.removeOrganizationProject(
-            { organizationId, projectId },
+            { organizationId: scope.id, projectId },
             tx
           );
           break;
@@ -204,6 +255,15 @@ export class ProjectHandler extends ScopeHandler {
           });
       }
       await Promise.all([
+        ...organizationTagIds.map((tagId) =>
+          this.services.organizationProjectTags.removeOrganizationProjectTag(
+            { organizationId: scope.id, projectId, tagId },
+            tx
+          )
+        ),
+        ...tagIds.map((tagId) =>
+          this.services.projectTags.removeProjectTag({ projectId, tagId }, tx)
+        ),
         ...tagIds.map((tagId) =>
           this.services.projectTags.removeProjectTag({ projectId, tagId }, tx)
         ),

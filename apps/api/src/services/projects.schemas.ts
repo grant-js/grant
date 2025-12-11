@@ -2,16 +2,17 @@ import { ProjectSortableField } from '@logusgraphics/grant-schema';
 import { z } from 'zod';
 
 import {
+  baseEntitySchema,
+  deleteSchema,
+  descriptionSchema,
   idSchema,
   nameSchema,
-  descriptionSchema,
-  slugSchema,
-  baseEntitySchema,
-  paginatedResponseSchema,
   nonEmptyNameSchema,
-  sortOrderSchema,
+  paginatedResponseSchema,
   queryParamsSchema,
-  deleteSchema,
+  scopeSchema,
+  slugSchema,
+  sortOrderSchema,
 } from './common/schemas';
 
 export const projectSortableFieldSchema = z.enum(
@@ -37,6 +38,7 @@ export const updateProjectParamsSchema = z.object({
   input: z.object({
     name: nonEmptyNameSchema.nullable().optional(),
     description: descriptionSchema,
+    scope: scopeSchema,
   }),
 });
 

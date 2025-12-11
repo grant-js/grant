@@ -1,31 +1,36 @@
-import { projectGroups } from '@logusgraphics/grant-database';
-import { projectPermissions } from '@logusgraphics/grant-database';
-import { projectRoles } from '@logusgraphics/grant-database';
-import { projectTags } from '@logusgraphics/grant-database';
-import { projectUsers } from '@logusgraphics/grant-database';
-import { ProjectModel, projects } from '@logusgraphics/grant-database';
 import {
-  QueryProjectsArgs,
-  MutationUpdateProjectArgs,
-  MutationDeleteProjectArgs,
-  Project,
-  ProjectPage,
+  ProjectModel,
+  projectGroups,
+  projectPermissions,
+  projectRoles,
+  projectTags,
+  projectUsers,
+  projects,
+} from '@logusgraphics/grant-database';
+import { organizationProjectTags } from '@logusgraphics/grant-database/src/schemas/organization-project-tags.schema';
+import {
   CreateProjectInput,
+  MutationDeleteProjectArgs,
+  MutationUpdateProjectArgs,
+  OrganizationProjectTag,
+  Project,
+  ProjectGroup,
+  ProjectPage,
+  ProjectPermission,
+  ProjectRole,
+  ProjectSearchableField,
   ProjectTag,
   ProjectUser,
-  ProjectRole,
-  ProjectGroup,
-  ProjectPermission,
-  ProjectSearchableField,
+  QueryProjectsArgs,
 } from '@logusgraphics/grant-schema';
 
 import { slugifySafe } from '@/lib/slugify.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import {
-  EntityRepository,
   BaseCreateArgs,
-  BaseUpdateArgs,
   BaseDeleteArgs,
+  BaseUpdateArgs,
+  EntityRepository,
   RelationsConfig,
 } from '@/repositories/common';
 import { SelectedFields } from '@/services/common';
@@ -40,6 +45,12 @@ export class ProjectRepository extends EntityRepository<ProjectModel, Project> {
       field: 'tag',
       extract: (v: ProjectTag[]) => v.map(({ tag, isPrimary }) => ({ ...tag, isPrimary })),
       table: projectTags,
+    },
+    organizationTags: {
+      field: 'tag',
+      extract: (v: OrganizationProjectTag[]) =>
+        v.map(({ tag, isPrimary }) => ({ ...tag, isPrimary })),
+      table: organizationProjectTags,
     },
     users: {
       field: 'user',

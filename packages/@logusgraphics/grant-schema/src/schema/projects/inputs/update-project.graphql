@@ -1,4 +1,5 @@
 input UpdateProjectInput {
+  scope: Scope!
   name: String
   description: String
   tagIds: [ID!]

@@ -10,6 +10,7 @@ import {
 import { PrimaryTagSelector, PrimaryTagSelectorProps } from '@/components/ui/primary-tag-selector';
 import { TagCheckboxList, TagCheckboxListProps } from '@/components/ui/tag-checkbox-list';
 import { useProjectScope } from '@/hooks/common/useProjectScope';
+import { useProjectTags } from '@/hooks/common/useProjectTags';
 import { useProjectMutations } from '@/hooks/projects';
 import { useTags } from '@/hooks/tags';
 import { useProjectsStore } from '@/stores/projects.store';
@@ -18,6 +19,7 @@ import { editProjectSchema, type EditProjectFormValues } from './types';
 
 export function EditProjectDialog() {
   const scope = useProjectScope();
+  const getProjectTags = useProjectTags();
   const { tags, loading: tagsLoading } = useTags({ scope: scope! });
   const projectToEdit = useProjectsStore((state) => state.projectToEdit);
   const setProjectToEdit = useProjectsStore((state) => state.setProjectToEdit);
@@ -63,12 +65,13 @@ export function EditProjectDialog() {
   const mapProjectToFormValues = (project: Project): EditProjectFormValues => ({
     name: project.name,
     description: project.description || '',
-    tagIds: project.tags?.map((tag: Tag) => tag.id),
-    primaryTagId: project.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
+    tagIds: getProjectTags(project)?.map((tag: Tag) => tag.id),
+    primaryTagId: getProjectTags(project)?.find((tag: Tag) => tag.isPrimary)?.id || '',
   });
 
   const handleUpdate = async (projectId: string, values: EditProjectFormValues) => {
     await updateProject(projectId, {
+      scope: scope!,
       name: values.name,
       description: values.description,
       tagIds: values.tagIds,

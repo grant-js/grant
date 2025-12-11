@@ -4,13 +4,13 @@ import { IEntityCacheAdapter } from '@/lib/cache/cache-adapter.interface';
 import { Services } from '@/services';
 
 import { AccountHandler } from './accounts.handler';
+import { ApiKeysHandler } from './api-keys.handler';
 import { GroupHandler } from './groups.handler';
 import { OAuthHandler } from './oauth.handler';
 import { OrganizationInvitationsHandler } from './organization-invitations.handler';
 import { OrganizationMembersHandler } from './organization-members.handler';
 import { OrganizationHandler } from './organizations.handler';
 import { PermissionHandler } from './permissions.handler';
-import { ApiKeysHandler } from './api-keys.handler';
 import { ProjectHandler } from './projects.handler';
 import { RoleHandler } from './roles.handler';
 import { TagHandler } from './tags.handler';

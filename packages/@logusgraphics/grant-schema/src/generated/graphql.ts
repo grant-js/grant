@@ -125,6 +125,13 @@ export type AddOrganizationProjectInput = {
   projectId: Scalars['ID']['input'];
 };
 
+export type AddOrganizationProjectTagInput = {
+  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
+  organizationId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+  tagId: Scalars['ID']['input'];
+};
+
 export type AddOrganizationRoleInput = {
   organizationId: Scalars['ID']['input'];
   roleId: Scalars['ID']['input'];
@@ -970,6 +977,21 @@ export type OrganizationProject = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
+export type OrganizationProjectTag = Auditable & {
+  __typename?: 'OrganizationProjectTag';
+  createdAt: Scalars['Date']['output'];
+  deletedAt?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['ID']['output'];
+  isPrimary: Scalars['Boolean']['output'];
+  organization?: Maybe<Organization>;
+  organizationId: Scalars['ID']['output'];
+  project?: Maybe<Project>;
+  projectId: Scalars['ID']['output'];
+  tag?: Maybe<Tag>;
+  tagId: Scalars['ID']['output'];
+  updatedAt: Scalars['Date']['output'];
+};
+
 export type OrganizationRole = Auditable & {
   __typename?: 'OrganizationRole';
   createdAt: Scalars['Date']['output'];
@@ -1092,6 +1114,7 @@ export type Project = Auditable & {
   groups?: Maybe<Array<Group>>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
+  organizationTags?: Maybe<Array<Tag>>;
   permissions?: Maybe<Array<Permission>>;
   roles?: Maybe<Array<Role>>;
   slug: Scalars['String']['output'];
@@ -1388,6 +1411,12 @@ export type QueryOrganizationPermissionsInput = {
   organizationId: Scalars['ID']['input'];
 };
 
+export type QueryOrganizationProjectTagInput = {
+  organizationId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+  tagId?: InputMaybe<Scalars['ID']['input']>;
+};
+
 export type QueryOrganizationProjectsInput = {
   organizationId?: InputMaybe<Scalars['ID']['input']>;
   projectId?: InputMaybe<Scalars['ID']['input']>;
@@ -1502,6 +1531,12 @@ export type RemoveOrganizationPermissionInput = {
 export type RemoveOrganizationProjectInput = {
   organizationId: Scalars['ID']['input'];
   projectId: Scalars['ID']['input'];
+};
+
+export type RemoveOrganizationProjectTagInput = {
+  organizationId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+  tagId: Scalars['ID']['input'];
 };
 
 export type RemoveOrganizationRoleInput = {
@@ -1789,6 +1824,13 @@ export type UpdateOrganizationMemberInput = {
   roleId: Scalars['ID']['input'];
 };
 
+export type UpdateOrganizationProjectTagInput = {
+  isPrimary: Scalars['Boolean']['input'];
+  organizationId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+  tagId: Scalars['ID']['input'];
+};
+
 export type UpdateOrganizationTagInput = {
   isPrimary: Scalars['Boolean']['input'];
   organizationId: Scalars['ID']['input'];
@@ -1813,6 +1855,7 @@ export type UpdateProjectInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   primaryTagId?: InputMaybe<Scalars['ID']['input']>;
+  scope: Scope;
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
@@ -2957,6 +3000,13 @@ export type GetProjectsQuery = {
       description?: string | null;
       createdAt: Date;
       updatedAt: Date;
+      organizationTags?: Array<{
+        __typename?: 'Tag';
+        id: string;
+        name: string;
+        color: string;
+        isPrimary?: boolean | null;
+      }> | null;
       tags?: Array<{
         __typename?: 'Tag';
         id: string;
@@ -6327,6 +6377,19 @@ export const GetProjectsDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'description' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'organizationTags' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'color' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'isPrimary' } },
+                          ],
+                        },
+                      },
                       {
                         kind: 'Field',
                         name: { kind: 'Name', value: 'tags' },

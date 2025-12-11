@@ -1,0 +1,5 @@
+input RemoveOrganizationProjectTagInput {
+  organizationId: ID!
+  projectId: ID!
+  tagId: ID!
+}

@@ -30,18 +30,6 @@ export class TagHandler extends ScopeHandler {
 
     let tagIds = await this.getScopedTagIds(scope);
 
-    if (scope.tenant === Tenant.OrganizationProject) {
-      const projectOrganization = await this.services.organizationProjects.getOrganizationProject({
-        projectId: scope.id,
-      });
-      const organizationId = projectOrganization.organizationId;
-      const organizationTags = await this.services.organizationTags.getOrganizationTags({
-        organizationId,
-      });
-      const organizationTagIds = organizationTags.map((ot) => ot.tagId);
-      tagIds = tagIds.filter((tagId) => !organizationTagIds.includes(tagId));
-    }
-
     if (ids && ids.length > 0) {
       tagIds = ids.filter((tagId) => tagIds.includes(tagId));
     }

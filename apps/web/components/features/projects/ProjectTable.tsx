@@ -12,6 +12,7 @@ import {
   type ColumnConfig,
   type SkeletonColumnConfig,
 } from '@/components/common';
+import { useProjectTags } from '@/hooks/common/useProjectTags';
 import { transformTagsToBadges } from '@/lib/tag-utils';
 import { cn } from '@/lib/utils';
 import { useProjectsStore } from '@/stores/projects.store';
@@ -23,8 +24,7 @@ import { ProjectNavigationButton } from './ProjectNavigationButton';
 
 export function ProjectTable() {
   const t = useTranslations('projects');
-
-  // Use selective subscriptions to prevent unnecessary re-renders
+  const getProjectTags = useProjectTags();
   const limit = useProjectsStore((state) => state.limit);
   const search = useProjectsStore((state) => state.search);
   const projects = useProjectsStore((state) => state.projects);
@@ -44,11 +44,11 @@ export function ProjectTable() {
           initial={project.name.charAt(0).toUpperCase()}
           size="lg"
           className={
-            project.tags?.find((tag: Tag) => tag.isPrimary)?.color
+            getProjectTags(project)?.find((tag: Tag) => tag.isPrimary)?.color
               ? cn(
                   'border-2',
                   getTagBorderClasses(
-                    project.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor
+                    getProjectTags(project)?.find((tag: Tag) => tag.isPrimary)?.color as TagColor
                   )
                 )
               : undefined
@@ -104,7 +104,11 @@ export function ProjectTable() {
       header: t('table.tags'),
       width: '150px',
       render: (project: Project) => (
-        <ScrollBadges items={transformTagsToBadges(project.tags)} height={60} showAsRound={true} />
+        <ScrollBadges
+          items={transformTagsToBadges(getProjectTags(project))}
+          height={60}
+          showAsRound={true}
+        />
       ),
     },
     {

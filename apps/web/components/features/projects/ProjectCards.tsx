@@ -5,6 +5,7 @@ import { FolderOpen, Tags } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { CardGrid, ScrollBadges } from '@/components/common';
+import { useProjectTags } from '@/hooks/common/useProjectTags';
 import { transformTagsToBadges } from '@/lib/tag-utils';
 import { useProjectsStore } from '@/stores/projects.store';
 
@@ -16,6 +17,7 @@ import { ProjectNavigationButton } from './ProjectNavigationButton';
 
 export function ProjectCards() {
   const t = useTranslations('projects');
+  const getProjectTags = useProjectTags();
 
   const limit = useProjectsStore((state) => state.limit);
   const search = useProjectsStore((state) => state.search);
@@ -39,11 +41,13 @@ export function ProjectCards() {
         component: <ProjectCardSkeleton />,
         count: limit,
       }}
-      renderHeader={(project: Project) => <ProjectHeader project={project} />}
+      renderHeader={(project: Project) => (
+        <ProjectHeader tags={getProjectTags(project)} project={project} />
+      )}
       renderBody={(project: Project) => (
         <div className="space-y-3">
           <ScrollBadges
-            items={transformTagsToBadges(project.tags)}
+            items={transformTagsToBadges(getProjectTags(project))}
             title={t('form.tags')}
             icon={<Tags className="h-3 w-3" />}
             height={60}

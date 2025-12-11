@@ -10,9 +10,10 @@ import { ProjectActions } from './ProjectActions';
 
 interface ProjectHeaderProps {
   project: Project;
+  tags: Tag[];
 }
 
-export function ProjectHeader({ project }: ProjectHeaderProps) {
+export function ProjectHeader({ tags, project }: ProjectHeaderProps) {
   const t = useTranslations('projects');
 
   return (
@@ -22,7 +23,7 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
       }}
       title={project.name}
       description={project.description || t('card.noDescription')}
-      color={project.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor}
+      color={tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor}
       actions={<ProjectActions project={project} />}
     />
   );
