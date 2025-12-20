@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 
 import { ApiKey, ApiKeySortableField, SortOrder, Tenant } from '@logusgraphics/grant-schema';
 import { format } from 'date-fns';
-import { Key } from 'lucide-react';
+import { Fingerprint } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { CopyToClipboard, Pagination, Toolbar } from '@/components/common';
@@ -27,7 +27,6 @@ export function UserApiKeys() {
   const projectId = params.projectId as string;
   const userId = params.userId as string;
 
-  // Get state from store
   const page = useUserStore((state) => state.apiKeysPage);
   const limit = useUserStore((state) => state.apiKeysLimit);
   const search = useUserStore((state) => state.apiKeysSearch);
@@ -35,7 +34,6 @@ export function UserApiKeys() {
   const secretDialogOpen = useUserStore((state) => state.apiKeysSecretDialogOpen);
   const createdApiKey = useUserStore((state) => state.createdApiKey);
 
-  // Get actions from store
   const setPage = useUserStore((state) => state.setApiKeysPage);
   const setSearch = useUserStore((state) => state.setApiKeysSearch);
   const setSort = useUserStore((state) => state.setApiKeysSort);
@@ -87,7 +85,7 @@ export function UserApiKeys() {
       width: '50px',
       render: () => (
         <div className="flex items-center justify-center">
-          <Key className="h-4 w-4 text-muted-foreground" />
+          <Fingerprint className="h-4 w-4 text-muted-foreground" />
         </div>
       ),
     },
@@ -216,7 +214,7 @@ export function UserApiKeys() {
           columns={columns}
           loading={loading}
           emptyState={{
-            icon: <Key className="h-12 w-12" />,
+            icon: <Fingerprint className="h-12 w-12" />,
             title: t('empty'),
             description: t('emptyDescription'),
             action: <CreateApiKeyDialog onApiKeyCreated={handleApiKeyCreated} />,

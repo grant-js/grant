@@ -576,16 +576,29 @@
     "groups": {
       "title": "Groups",
       "empty": "No groups assigned",
+      "emptyDescription": "This user has no groups assigned through their roles",
       "loading": "Loading groups...",
       "error": "Error loading groups",
-      "description": "Groups for user (through roles)"
+      "description": "Groups for user (through roles)",
+      "table": {
+        "name": "Name",
+        "description": "Description",
+        "inheritedFrom": "Inherited From Role"
+      },
+      "noDescription": "No description"
     },
     "permissions": {
       "title": "Permissions",
       "empty": "No permissions assigned",
+      "emptyDescription": "This user has no permissions assigned through their groups",
       "loading": "Loading permissions...",
       "error": "Error loading permissions",
-      "description": "Permissions for user (through groups)"
+      "description": "Permissions for user (through groups)",
+      "table": {
+        "name": "Name",
+        "action": "Action",
+        "inheritedFrom": "Inherited From Group"
+      }
     },
     "loading": {
       "title": "Loading user...",

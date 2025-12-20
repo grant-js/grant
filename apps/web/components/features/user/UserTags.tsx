@@ -29,7 +29,6 @@ export function UserTags({ user }: UserTagsProps) {
   const t = useTranslations('user.tags');
   const scope = useScopeFromParams();
 
-  // Get state from store
   const page = useUserStore((state) => state.tagsPage);
   const limit = useUserStore((state) => state.tagsLimit);
   const search = useUserStore((state) => state.tagsSearch);
@@ -37,7 +36,6 @@ export function UserTags({ user }: UserTagsProps) {
   const updatingTagId = useUserStore((state) => state.updatingTagId);
   const optimisticCheckedTagIds = useUserStore((state) => state.optimisticCheckedTagIds);
 
-  // Get actions from store
   const setPage = useUserStore((state) => state.setTagsPage);
   const setSearch = useUserStore((state) => state.setTagsSearch);
   const setSort = useUserStore((state) => state.setTagsSort);
@@ -59,7 +57,6 @@ export function UserTags({ user }: UserTagsProps) {
 
   const { updateUser } = useUserMutations();
 
-  // Sync store with user tags when they change
   useEffect(() => {
     setOptimisticCheckedTagIds(new Set(user.tags?.map((t) => t.id) || []));
   }, [user.tags, setOptimisticCheckedTagIds]);
@@ -96,7 +93,6 @@ export function UserTags({ user }: UserTagsProps) {
   const handleTagToggle = (tagId: string, checked: boolean) => {
     const currentTagIds = Array.from(optimisticCheckedTagIds);
 
-    // Update optimistic state immediately
     if (checked) {
       addOptimisticTagId(tagId);
     } else {
