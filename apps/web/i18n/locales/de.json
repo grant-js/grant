@@ -482,8 +482,21 @@
     "tags": {
       "title": "Tags",
       "empty": "Keine Tags zugewiesen",
+      "emptyDescription": "Diesem Benutzer sind in diesem Projekt keine Tags zugewiesen",
       "loading": "Tags werden geladen...",
-      "error": "Fehler beim Laden der Tags"
+      "error": "Fehler beim Laden der Tags",
+      "search": {
+        "placeholder": "Tags suchen..."
+      },
+      "sort": {
+        "label": "Sortieren nach",
+        "name": "Name",
+        "color": "Farbe"
+      },
+      "table": {
+        "name": "Name",
+        "color": "Farbe"
+      }
     },
     "apiKeys": {
       "title": "API-Schlüssel",

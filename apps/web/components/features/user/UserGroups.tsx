@@ -1,12 +1,13 @@
 'use client';
 
+import { User } from '@logusgraphics/grant-schema';
 import { useTranslations } from 'next-intl';
 
 interface UserGroupsProps {
-  userId: string;
+  user: User;
 }
 
-export function UserGroups({ userId }: UserGroupsProps) {
+export function UserGroups({ user: _user }: UserGroupsProps) {
   const t = useTranslations('user.groups');
   // TODO: Implement user groups display (through roles)
   return (

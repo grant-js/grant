@@ -1,4 +1,9 @@
-import { ApiKeySortableField, RoleSortableField, SortOrder } from '@logusgraphics/grant-schema';
+import {
+  ApiKeySortableField,
+  RoleSortableField,
+  SortOrder,
+  TagSortField,
+} from '@logusgraphics/grant-schema';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
@@ -19,6 +24,14 @@ interface UserState {
   updatingRoleId: string | null;
   optimisticCheckedRoleIds: Set<string>;
 
+  // Tags state
+  tagsPage: number;
+  tagsLimit: number;
+  tagsSearch: string;
+  tagsSort: { field: TagSortField; order: SortOrder };
+  updatingTagId: string | null;
+  optimisticCheckedTagIds: Set<string>;
+
   // Actions - API Keys
   setApiKeysPage: (page: number) => void;
   setApiKeysLimit: (limit: number) => void;
@@ -38,9 +51,20 @@ interface UserState {
   addOptimisticRoleId: (roleId: string) => void;
   removeOptimisticRoleId: (roleId: string) => void;
 
+  // Actions - Tags
+  setTagsPage: (page: number) => void;
+  setTagsLimit: (limit: number) => void;
+  setTagsSearch: (search: string) => void;
+  setTagsSort: (field: TagSortField, order: SortOrder) => void;
+  setUpdatingTagId: (tagId: string | null) => void;
+  setOptimisticCheckedTagIds: (tagIds: Set<string>) => void;
+  addOptimisticTagId: (tagId: string) => void;
+  removeOptimisticTagId: (tagId: string) => void;
+
   // Reset
   resetApiKeysState: () => void;
   resetRolesState: () => void;
+  resetTagsState: () => void;
   resetAll: () => void;
 }
 
@@ -51,6 +75,11 @@ const defaultApiKeysSort = {
 
 const defaultRolesSort = {
   field: RoleSortableField.Name,
+  order: SortOrder.Asc,
+};
+
+const defaultTagsSort = {
+  field: TagSortField.Name,
   order: SortOrder.Asc,
 };
 
@@ -72,6 +101,14 @@ export const useUserStore = create<UserState>()(
       rolesSort: defaultRolesSort,
       updatingRoleId: null,
       optimisticCheckedRoleIds: new Set(),
+
+      // Initial state - Tags
+      tagsPage: 1,
+      tagsLimit: 10,
+      tagsSearch: '',
+      tagsSort: defaultTagsSort,
+      updatingTagId: null,
+      optimisticCheckedTagIds: new Set(),
 
       // Actions - API Keys
       setApiKeysPage: (page) => set({ apiKeysPage: page }),
@@ -106,6 +143,26 @@ export const useUserStore = create<UserState>()(
           return { optimisticCheckedRoleIds: next };
         }),
 
+      // Actions - Tags
+      setTagsPage: (page) => set({ tagsPage: page }),
+      setTagsLimit: (limit) => set({ tagsLimit: limit, tagsPage: 1 }),
+      setTagsSearch: (search) => set({ tagsSearch: search, tagsPage: 1 }),
+      setTagsSort: (field, order) => set({ tagsSort: { field, order }, tagsPage: 1 }),
+      setUpdatingTagId: (tagId) => set({ updatingTagId: tagId }),
+      setOptimisticCheckedTagIds: (tagIds) => set({ optimisticCheckedTagIds: tagIds }),
+      addOptimisticTagId: (tagId) =>
+        set((state) => {
+          const next = new Set(state.optimisticCheckedTagIds);
+          next.add(tagId);
+          return { optimisticCheckedTagIds: next };
+        }),
+      removeOptimisticTagId: (tagId) =>
+        set((state) => {
+          const next = new Set(state.optimisticCheckedTagIds);
+          next.delete(tagId);
+          return { optimisticCheckedTagIds: next };
+        }),
+
       // Reset
       resetApiKeysState: () =>
         set({
@@ -125,6 +182,15 @@ export const useUserStore = create<UserState>()(
           updatingRoleId: null,
           optimisticCheckedRoleIds: new Set(),
         }),
+      resetTagsState: () =>
+        set({
+          tagsPage: 1,
+          tagsLimit: 10,
+          tagsSearch: '',
+          tagsSort: defaultTagsSort,
+          updatingTagId: null,
+          optimisticCheckedTagIds: new Set(),
+        }),
       resetAll: () =>
         set({
           apiKeysPage: 1,
@@ -139,6 +205,12 @@ export const useUserStore = create<UserState>()(
           rolesSort: defaultRolesSort,
           updatingRoleId: null,
           optimisticCheckedRoleIds: new Set(),
+          tagsPage: 1,
+          tagsLimit: 10,
+          tagsSearch: '',
+          tagsSort: defaultTagsSort,
+          updatingTagId: null,
+          optimisticCheckedTagIds: new Set(),
         }),
     }),
     { name: 'user-store' }

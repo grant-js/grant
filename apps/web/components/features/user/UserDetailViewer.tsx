@@ -52,12 +52,12 @@ export function UserDetailViewer() {
     <div className="space-y-6">
       <UserInfo user={user} />
       <div className="grid gap-6 md:grid-cols-2">
-        <UserRoles userId={user.id} user={user} />
-        <UserTags userId={user.id} />
+        <UserRoles user={user} />
+        <UserTags user={user} />
       </div>
       <UserApiKeys />
-      <UserGroups userId={user.id} />
-      <UserPermissions userId={user.id} />
+      <UserGroups user={user} />
+      <UserPermissions user={user} />
     </div>
   );
 }

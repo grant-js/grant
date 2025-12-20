@@ -1,12 +1,13 @@
 'use client';
 
+import { User } from '@logusgraphics/grant-schema';
 import { useTranslations } from 'next-intl';
 
 interface UserPermissionsProps {
-  userId: string;
+  user: User;
 }
 
-export function UserPermissions({ userId }: UserPermissionsProps) {
+export function UserPermissions({ user: _user }: UserPermissionsProps) {
   const t = useTranslations('user.permissions');
   // TODO: Implement user permissions display (through groups)
   return (

@@ -1,18 +1,218 @@
 'use client';
 
+import { useCallback, useEffect } from 'react';
+
+import { getTagBorderClasses, TagColor } from '@logusgraphics/grant-constants';
+import { SortOrder, Tag, TagSortField, User } from '@logusgraphics/grant-schema';
+import { Loader2, Tag as TagIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+import { Pagination, Toolbar } from '@/components/common';
+import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
+import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useDebounce } from '@/hooks/common/useDebounce';
+import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
+import { useTags } from '@/hooks/tags';
+import { useUserMutations } from '@/hooks/users';
+import { useUserStore } from '@/stores/user.store';
+
+import { UserTagSearch } from './UserTagSearch';
+import { UserTagSorter } from './UserTagSorter';
+
 interface UserTagsProps {
-  userId: string;
+  user: User;
 }
 
-export function UserTags({ userId }: UserTagsProps) {
+export function UserTags({ user }: UserTagsProps) {
   const t = useTranslations('user.tags');
-  // TODO: Implement user tags display
+  const scope = useScopeFromParams();
+
+  // Get state from store
+  const page = useUserStore((state) => state.tagsPage);
+  const limit = useUserStore((state) => state.tagsLimit);
+  const search = useUserStore((state) => state.tagsSearch);
+  const sort = useUserStore((state) => state.tagsSort);
+  const updatingTagId = useUserStore((state) => state.updatingTagId);
+  const optimisticCheckedTagIds = useUserStore((state) => state.optimisticCheckedTagIds);
+
+  // Get actions from store
+  const setPage = useUserStore((state) => state.setTagsPage);
+  const setSearch = useUserStore((state) => state.setTagsSearch);
+  const setSort = useUserStore((state) => state.setTagsSort);
+  const setUpdatingTagId = useUserStore((state) => state.setUpdatingTagId);
+  const setOptimisticCheckedTagIds = useUserStore((state) => state.setOptimisticCheckedTagIds);
+  const addOptimisticTagId = useUserStore((state) => state.addOptimisticTagId);
+  const removeOptimisticTagId = useUserStore((state) => state.removeOptimisticTagId);
+
+  const { tags, loading, error, totalCount } = useTags({
+    scope: scope!,
+    page,
+    limit,
+    search,
+    sort: {
+      field: sort.field,
+      order: sort.order,
+    },
+  });
+
+  const { updateUser } = useUserMutations();
+
+  // Sync store with user tags when they change
+  useEffect(() => {
+    setOptimisticCheckedTagIds(new Set(user.tags?.map((t) => t.id) || []));
+  }, [user.tags, setOptimisticCheckedTagIds]);
+
+  const totalPages = Math.ceil(totalCount / limit);
+
+  const isTagChecked = useCallback(
+    (tagId: string) => {
+      return optimisticCheckedTagIds.has(tagId);
+    },
+    [optimisticCheckedTagIds]
+  );
+
+  const debouncedUpdateUserTags = useDebounce(
+    async (tagId: string, shouldAdd: boolean, currentTagIds: string[]) => {
+      if (!user) return;
+
+      setUpdatingTagId(tagId);
+      try {
+        const updatedTagIds = shouldAdd
+          ? [...currentTagIds, tagId]
+          : currentTagIds.filter((id) => id !== tagId);
+
+        await updateUser(user.id, {
+          tagIds: updatedTagIds,
+        });
+      } finally {
+        setUpdatingTagId(null);
+      }
+    },
+    300
+  );
+
+  const handleTagToggle = (tagId: string, checked: boolean) => {
+    const currentTagIds = Array.from(optimisticCheckedTagIds);
+
+    // Update optimistic state immediately
+    if (checked) {
+      addOptimisticTagId(tagId);
+    } else {
+      removeOptimisticTagId(tagId);
+    }
+
+    debouncedUpdateUserTags(tagId, checked, currentTagIds);
+  };
+
+  const handleSortChange = (field: TagSortField, order: SortOrder) => {
+    setSort(field, order);
+  };
+
+  const handleSearchChange = (newSearch: string) => {
+    setSearch(newSearch);
+  };
+
+  const columns: ColumnConfig<Tag>[] = [
+    {
+      key: 'checkbox',
+      header: '',
+      width: '50px',
+      className: 'pl-4',
+      render: (tag: Tag) => (
+        <Checkbox
+          checked={isTagChecked(tag.id)}
+          onCheckedChange={(checked) => handleTagToggle(tag.id, checked === true)}
+        />
+      ),
+    },
+    {
+      key: 'name',
+      header: t('table.name'),
+      width: '240px',
+      render: (tag: Tag) => <span className="text-sm font-medium">{tag.name}</span>,
+    },
+    {
+      key: 'color',
+      header: t('table.color'),
+      width: '150px',
+      render: (tag: Tag) => (
+        <div className="flex items-center space-x-2">
+          <Badge
+            variant="outline"
+            className={`w-3 h-3 rounded-full p-0 border-2 bg-transparent ${getTagBorderClasses(tag.color as TagColor)}`}
+          />
+          <span className="text-sm text-muted-foreground capitalize">{tag.color}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'loading',
+      header: '',
+      width: '50px',
+      render: (tag: Tag) =>
+        updatingTagId === tag.id ? (
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        ) : null,
+    },
+  ];
+
+  const skeletonConfig: { columns: SkeletonColumnConfig[]; rowCount?: number } = {
+    columns: [
+      { key: 'checkbox', type: 'text' },
+      { key: 'name', type: 'text' },
+      { key: 'color', type: 'text' },
+      { key: 'loading', type: 'text' },
+    ],
+    rowCount: 5,
+  };
+
+  if (error) {
+    return (
+      <div className="rounded-lg border bg-card p-6">
+        <h3 className="text-lg font-semibold mb-4">{t('title')}</h3>
+        <p className="text-sm text-destructive">{t('error')}</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-lg border bg-card p-6">
-      <h3 className="text-lg font-semibold mb-4">{t('title')}</h3>
-      <p className="text-sm text-muted-foreground">{t('empty')}</p>
-    </div>
+    <>
+      <div className="rounded-lg border bg-card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">{t('title')}</h3>
+          <Toolbar
+            items={[
+              <UserTagSearch
+                key="search"
+                search={search}
+                onSearchChange={handleSearchChange}
+                show={totalPages > 1 || search.length > 0}
+              />,
+              totalCount > 0 && (
+                <UserTagSorter key="sorter" sort={sort} onSortChange={handleSortChange} />
+              ),
+            ].filter(Boolean)}
+          />
+        </div>
+        <DataTable
+          data={tags}
+          columns={columns}
+          loading={loading}
+          emptyState={{
+            icon: <TagIcon className="h-12 w-12" />,
+            title: t('empty'),
+            description: t('emptyDescription'),
+          }}
+          skeletonConfig={skeletonConfig}
+        />
+        {totalPages > 1 && (
+          <div className="mt-4 border-t">
+            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          </div>
+        )}
+      </div>
+    </>
   );
 }

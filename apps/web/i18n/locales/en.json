@@ -482,8 +482,21 @@
     "tags": {
       "title": "Tags",
       "empty": "No tags assigned",
+      "emptyDescription": "This user has no tags assigned in this project",
       "loading": "Loading tags...",
-      "error": "Error loading tags"
+      "error": "Error loading tags",
+      "search": {
+        "placeholder": "Search tags..."
+      },
+      "sort": {
+        "label": "Sort by",
+        "name": "Name",
+        "color": "Color"
+      },
+      "table": {
+        "name": "Name",
+        "color": "Color"
+      }
     },
     "apiKeys": {
       "title": "API Keys",

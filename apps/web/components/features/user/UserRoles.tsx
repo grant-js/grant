@@ -20,11 +20,10 @@ import { UserRoleSearch } from './UserRoleSearch';
 import { UserRoleSorter } from './UserRoleSorter';
 
 interface UserRolesProps {
-  userId: string;
   user: User;
 }
 
-export function UserRoles({ userId, user }: UserRolesProps) {
+export function UserRoles({ user }: UserRolesProps) {
   const t = useTranslations('user.roles');
   const scope = useScopeFromParams();
 
@@ -79,7 +78,7 @@ export function UserRoles({ userId, user }: UserRolesProps) {
           ? [...currentRoleIds, roleId]
           : currentRoleIds.filter((id) => id !== roleId);
 
-        await updateUser(userId, {
+        await updateUser(user.id, {
           roleIds: updatedRoleIds,
         });
       } finally {
