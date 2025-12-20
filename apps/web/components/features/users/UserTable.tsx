@@ -1,7 +1,7 @@
 'use client';
 
 import { getTagBorderClasses, TagColor } from '@logusgraphics/grant-constants';
-import { User, Tag } from '@logusgraphics/grant-schema';
+import { Tag, User } from '@logusgraphics/grant-schema';
 import { UserPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -9,9 +9,8 @@ import { ScrollBadges } from '@/components/common';
 import { Avatar } from '@/components/common/Avatar';
 import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
 import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
-import { getInitials } from '@/lib/utils';
 import { transformTagsToBadges } from '@/lib/tag-utils';
-import { cn } from '@/lib/utils';
+import { cn, getInitials } from '@/lib/utils';
 import { useUsersStore } from '@/stores/users.store';
 
 import { CreateUserDialog } from './CreateUserDialog';

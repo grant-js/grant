@@ -17,7 +17,8 @@ export type ColumnType =
   | 'list'
   | 'badge'
   | 'actions'
-  | 'audit';
+  | 'audit'
+  | 'icon';
 
 export interface ColumnConfig {
   key: string;

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useRef, useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 
@@ -40,6 +40,7 @@ function AutoScrollArea({
       <div
         ref={phantomRef}
         className="invisible absolute pointer-events-none"
+        hidden
         style={{ visibility: 'hidden', position: 'absolute' }}
       >
         {children}
@@ -109,4 +110,4 @@ function ScrollBar({
   );
 }
 
-export { ScrollArea, ScrollBar, AutoScrollArea };
+export { AutoScrollArea, ScrollArea, ScrollBar };
