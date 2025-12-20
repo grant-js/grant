@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect } from 'react';
 
-import { Role, RoleSortableField, SortOrder, User } from '@logusgraphics/grant-schema';
+import { getTagBorderClasses, TagColor } from '@logusgraphics/grant-constants';
+import { Role, RoleSortableField, SortOrder, Tag, User } from '@logusgraphics/grant-schema';
 import { Loader2, Shield } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import { Pagination, Toolbar } from '@/components/common';
+import { Avatar, Pagination, ScrollBadges, Toolbar } from '@/components/common';
 import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
 import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -14,6 +15,8 @@ import { useDebounce } from '@/hooks/common/useDebounce';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useRoles } from '@/hooks/roles';
 import { useUserMutations } from '@/hooks/users';
+import { transformTagsToBadges } from '@/lib/tag-utils';
+import { cn } from '@/lib/utils';
 import { useUserStore } from '@/stores/user.store';
 
 import { UserRoleSearch } from './UserRoleSearch';
@@ -119,6 +122,28 @@ export function UserRoles({ user }: UserRolesProps) {
       ),
     },
     {
+      key: 'icon',
+      header: '',
+      width: '50px',
+      render: (role: Role) => {
+        const primaryTag = role.tags?.find((tag: Tag) => tag.isPrimary);
+        return (
+          <div className="flex items-center justify-center">
+            <Avatar
+              initial={role.name.charAt(0)}
+              size="sm"
+              icon={<Shield className="h-3 w-3 text-muted-foreground" />}
+              className={
+                primaryTag
+                  ? cn('border-2', getTagBorderClasses(primaryTag.color as TagColor))
+                  : undefined
+              }
+            />
+          </div>
+        );
+      },
+    },
+    {
       key: 'name',
       header: t('table.name'),
       width: '240px',
@@ -135,6 +160,14 @@ export function UserRoles({ user }: UserRolesProps) {
       ),
     },
     {
+      key: 'tags',
+      header: t('table.tags'),
+      width: '150px',
+      render: (role: Role) => (
+        <ScrollBadges items={transformTagsToBadges(role.tags)} height={60} showAsRound={true} />
+      ),
+    },
+    {
       key: 'loading',
       header: '',
       width: '50px',
@@ -148,8 +181,10 @@ export function UserRoles({ user }: UserRolesProps) {
   const skeletonConfig: { columns: SkeletonColumnConfig[]; rowCount?: number } = {
     columns: [
       { key: 'checkbox', type: 'text' },
+      { key: 'icon', type: 'text' },
       { key: 'name', type: 'text' },
       { key: 'description', type: 'text' },
+      { key: 'tags', type: 'text' },
       { key: 'loading', type: 'text' },
     ],
     rowCount: 5,

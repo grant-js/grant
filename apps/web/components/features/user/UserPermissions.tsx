@@ -2,15 +2,20 @@
 
 import { useMemo } from 'react';
 
-import { Group, Permission, Role, User } from '@logusgraphics/grant-schema';
+import { getTagBorderClasses, TagColor } from '@logusgraphics/grant-constants';
+import { Group, Permission, Role, Tag, User } from '@logusgraphics/grant-schema';
 import { Key } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+import { Avatar, Pagination, ScrollBadges } from '@/components/common';
 import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
 import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useGroups } from '@/hooks/groups';
 import { useRoles } from '@/hooks/roles';
+import { transformTagsToBadges } from '@/lib/tag-utils';
+import { cn } from '@/lib/utils';
+import { useUserStore } from '@/stores/user.store';
 
 interface PermissionWithInheritance extends Permission {
   inheritedFromGroup: string;
@@ -23,6 +28,10 @@ interface UserPermissionsProps {
 export function UserPermissions({ user }: UserPermissionsProps) {
   const t = useTranslations('user.permissions');
   const scope = useScopeFromParams();
+
+  const page = useUserStore((state) => state.permissionsPage);
+  const limit = useUserStore((state) => state.permissionsLimit);
+  const setPage = useUserStore((state) => state.setPermissionsPage);
 
   const roleIds = useMemo(() => user.roles?.map((r) => r.id) || [], [user.roles]);
 
@@ -72,6 +81,14 @@ export function UserPermissions({ user }: UserPermissionsProps) {
     return Array.from(permissionMap.values());
   }, [groups]);
 
+  const paginatedPermissions = useMemo(() => {
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    return permissionsWithInheritance.slice(startIndex, endIndex);
+  }, [permissionsWithInheritance, page, limit]);
+
+  const totalPages = Math.ceil(permissionsWithInheritance.length / limit);
+
   const loading = rolesLoading || groupsLoading;
 
   const columns: ColumnConfig<PermissionWithInheritance>[] = [
@@ -80,11 +97,23 @@ export function UserPermissions({ user }: UserPermissionsProps) {
       header: '',
       width: '50px',
       className: 'pl-4',
-      render: () => (
-        <div className="flex items-center justify-center">
-          <Key className="h-4 w-4 text-muted-foreground" />
-        </div>
-      ),
+      render: (permission: PermissionWithInheritance) => {
+        const primaryTag = permission.tags?.find((tag: Tag) => tag.isPrimary);
+        return (
+          <div className="flex items-center justify-center">
+            <Avatar
+              initial={permission.name.charAt(0)}
+              size="sm"
+              icon={<Key className="h-3 w-3 text-muted-foreground" />}
+              className={
+                primaryTag
+                  ? cn('border-2', getTagBorderClasses(primaryTag.color as TagColor))
+                  : undefined
+              }
+            />
+          </div>
+        );
+      },
     },
     {
       key: 'name',
@@ -105,6 +134,18 @@ export function UserPermissions({ user }: UserPermissionsProps) {
       ),
     },
     {
+      key: 'tags',
+      header: t('table.tags'),
+      width: '150px',
+      render: (permission: PermissionWithInheritance) => (
+        <ScrollBadges
+          items={transformTagsToBadges(permission.tags)}
+          height={60}
+          showAsRound={true}
+        />
+      ),
+    },
+    {
       key: 'inheritedFrom',
       header: t('table.inheritedFrom'),
       width: '200px',
@@ -119,6 +160,7 @@ export function UserPermissions({ user }: UserPermissionsProps) {
       { key: 'icon', type: 'text' },
       { key: 'name', type: 'text' },
       { key: 'action', type: 'text' },
+      { key: 'tags', type: 'text' },
       { key: 'inheritedFrom', type: 'text' },
     ],
     rowCount: 5,
@@ -137,7 +179,7 @@ export function UserPermissions({ user }: UserPermissionsProps) {
     <div className="rounded-lg border bg-card p-6">
       <h3 className="text-lg font-semibold mb-4">{t('title')}</h3>
       <DataTable
-        data={permissionsWithInheritance}
+        data={paginatedPermissions}
         columns={columns}
         loading={loading}
         emptyState={{
@@ -147,6 +189,11 @@ export function UserPermissions({ user }: UserPermissionsProps) {
         }}
         skeletonConfig={skeletonConfig}
       />
+      {totalPages > 1 && (
+        <div className="mt-4 border-t">
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        </div>
+      )}
     </div>
   );
 }

@@ -583,6 +583,7 @@
       "table": {
         "name": "Name",
         "description": "Beschreibung",
+        "tags": "Tags",
         "inheritedFrom": "Geerbt von Rolle"
       },
       "noDescription": "Keine Beschreibung"
@@ -597,6 +598,7 @@
       "table": {
         "name": "Name",
         "action": "Aktion",
+        "tags": "Tags",
         "inheritedFrom": "Geerbt von Gruppe"
       }
     },

@@ -1,5 +1,7 @@
 'use client';
 
+import { ReactNode } from 'react';
+
 import { AvatarFallback, AvatarImage, Avatar as UIAvatar } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { addImageCacheBuster } from '@/lib/utils/image-url';
@@ -11,6 +13,7 @@ export interface AvatarProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
   fallbackClassName?: string;
+  icon?: ReactNode;
 }
 
 const sizeClasses = {
@@ -26,6 +29,7 @@ export function Avatar({
   size = 'md',
   className,
   fallbackClassName,
+  icon,
 }: AvatarProps) {
   const cachedImageUrl = addImageCacheBuster(imageUrl, cacheBuster);
 
@@ -33,7 +37,7 @@ export function Avatar({
     <UIAvatar className={cn('bg-primary/10', sizeClasses[size], className)}>
       {cachedImageUrl && <AvatarImage src={cachedImageUrl} alt={initial} />}
       <AvatarFallback className={cn('font-medium', fallbackClassName)}>
-        {initial.toUpperCase()}
+        {icon || initial.toUpperCase()}
       </AvatarFallback>
     </UIAvatar>
   );

@@ -7,7 +7,7 @@ import { SortOrder, Tag, TagSortField, User } from '@logusgraphics/grant-schema'
 import { Loader2, Tag as TagIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import { Pagination, Toolbar } from '@/components/common';
+import { Avatar, Pagination, Toolbar } from '@/components/common';
 import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
 import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,7 @@ import { useDebounce } from '@/hooks/common/useDebounce';
 import { useScopeFromParams } from '@/hooks/common/useScopeFromParams';
 import { useTags } from '@/hooks/tags';
 import { useUserMutations } from '@/hooks/users';
+import { cn } from '@/lib/utils';
 import { useUserStore } from '@/stores/user.store';
 
 import { UserTagSearch } from './UserTagSearch';
@@ -124,6 +125,21 @@ export function UserTags({ user }: UserTagsProps) {
       ),
     },
     {
+      key: 'icon',
+      header: '',
+      width: '50px',
+      render: (tag: Tag) => (
+        <div className="flex items-center justify-center">
+          <Avatar
+            initial={tag.name.charAt(0)}
+            size="sm"
+            icon={<TagIcon className="h-3 w-3 text-muted-foreground" />}
+            className={cn('border-2', getTagBorderClasses(tag.color as TagColor))}
+          />
+        </div>
+      ),
+    },
+    {
       key: 'name',
       header: t('table.name'),
       width: '240px',
@@ -157,6 +173,7 @@ export function UserTags({ user }: UserTagsProps) {
   const skeletonConfig: { columns: SkeletonColumnConfig[]; rowCount?: number } = {
     columns: [
       { key: 'checkbox', type: 'text' },
+      { key: 'icon', type: 'text' },
       { key: 'name', type: 'text' },
       { key: 'color', type: 'text' },
       { key: 'loading', type: 'text' },

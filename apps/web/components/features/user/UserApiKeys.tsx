@@ -9,7 +9,7 @@ import { format } from 'date-fns';
 import { Fingerprint } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import { CopyToClipboard, Pagination, Toolbar } from '@/components/common';
+import { Avatar, CopyToClipboard, Pagination, Toolbar } from '@/components/common';
 import { DataTable, type ColumnConfig } from '@/components/common/DataTable';
 import { type ColumnConfig as SkeletonColumnConfig } from '@/components/common/TableSkeleton';
 import { useApiKeys } from '@/hooks/api-keys';
@@ -83,9 +83,14 @@ export function UserApiKeys() {
       key: 'icon',
       header: '',
       width: '50px',
-      render: () => (
+      className: 'pl-4',
+      render: (apiKey: ApiKey) => (
         <div className="flex items-center justify-center">
-          <Fingerprint className="h-4 w-4 text-muted-foreground" />
+          <Avatar
+            initial={apiKey.name?.charAt(0) || apiKey.clientId.charAt(0)}
+            size="sm"
+            icon={<Fingerprint className="h-3 w-3 text-muted-foreground" />}
+          />
         </div>
       ),
     },

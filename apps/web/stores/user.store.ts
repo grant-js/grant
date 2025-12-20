@@ -32,6 +32,14 @@ interface UserState {
   updatingTagId: string | null;
   optimisticCheckedTagIds: Set<string>;
 
+  // Groups state
+  groupsPage: number;
+  groupsLimit: number;
+
+  // Permissions state
+  permissionsPage: number;
+  permissionsLimit: number;
+
   // Actions - API Keys
   setApiKeysPage: (page: number) => void;
   setApiKeysLimit: (limit: number) => void;
@@ -61,10 +69,20 @@ interface UserState {
   addOptimisticTagId: (tagId: string) => void;
   removeOptimisticTagId: (tagId: string) => void;
 
+  // Actions - Groups
+  setGroupsPage: (page: number) => void;
+  setGroupsLimit: (limit: number) => void;
+
+  // Actions - Permissions
+  setPermissionsPage: (page: number) => void;
+  setPermissionsLimit: (limit: number) => void;
+
   // Reset
   resetApiKeysState: () => void;
   resetRolesState: () => void;
   resetTagsState: () => void;
+  resetGroupsState: () => void;
+  resetPermissionsState: () => void;
   resetAll: () => void;
 }
 
@@ -109,6 +127,14 @@ export const useUserStore = create<UserState>()(
       tagsSort: defaultTagsSort,
       updatingTagId: null,
       optimisticCheckedTagIds: new Set(),
+
+      // Initial state - Groups
+      groupsPage: 1,
+      groupsLimit: 10,
+
+      // Initial state - Permissions
+      permissionsPage: 1,
+      permissionsLimit: 10,
 
       // Actions - API Keys
       setApiKeysPage: (page) => set({ apiKeysPage: page }),
@@ -163,6 +189,14 @@ export const useUserStore = create<UserState>()(
           return { optimisticCheckedTagIds: next };
         }),
 
+      // Actions - Groups
+      setGroupsPage: (page) => set({ groupsPage: page }),
+      setGroupsLimit: (limit) => set({ groupsLimit: limit, groupsPage: 1 }),
+
+      // Actions - Permissions
+      setPermissionsPage: (page) => set({ permissionsPage: page }),
+      setPermissionsLimit: (limit) => set({ permissionsLimit: limit, permissionsPage: 1 }),
+
       // Reset
       resetApiKeysState: () =>
         set({
@@ -191,6 +225,16 @@ export const useUserStore = create<UserState>()(
           updatingTagId: null,
           optimisticCheckedTagIds: new Set(),
         }),
+      resetGroupsState: () =>
+        set({
+          groupsPage: 1,
+          groupsLimit: 10,
+        }),
+      resetPermissionsState: () =>
+        set({
+          permissionsPage: 1,
+          permissionsLimit: 10,
+        }),
       resetAll: () =>
         set({
           apiKeysPage: 1,
@@ -211,6 +255,10 @@ export const useUserStore = create<UserState>()(
           tagsSort: defaultTagsSort,
           updatingTagId: null,
           optimisticCheckedTagIds: new Set(),
+          groupsPage: 1,
+          groupsLimit: 10,
+          permissionsPage: 1,
+          permissionsLimit: 10,
         }),
     }),
     { name: 'user-store' }
