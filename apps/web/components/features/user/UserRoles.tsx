@@ -27,7 +27,6 @@ export function UserRoles({ user }: UserRolesProps) {
   const t = useTranslations('user.roles');
   const scope = useScopeFromParams();
 
-  // Get state from store
   const page = useUserStore((state) => state.rolesPage);
   const limit = useUserStore((state) => state.rolesLimit);
   const search = useUserStore((state) => state.rolesSearch);
@@ -35,7 +34,6 @@ export function UserRoles({ user }: UserRolesProps) {
   const updatingRoleId = useUserStore((state) => state.updatingRoleId);
   const optimisticCheckedRoleIds = useUserStore((state) => state.optimisticCheckedRoleIds);
 
-  // Get actions from store
   const setPage = useUserStore((state) => state.setRolesPage);
   const setSearch = useUserStore((state) => state.setRolesSearch);
   const setSort = useUserStore((state) => state.setRolesSort);
@@ -54,7 +52,6 @@ export function UserRoles({ user }: UserRolesProps) {
 
   const { updateUser } = useUserMutations();
 
-  // Sync store with user roles when they change
   useEffect(() => {
     setOptimisticCheckedRoleIds(new Set(user.roles?.map((r) => r.id) || []));
   }, [user.roles, setOptimisticCheckedRoleIds]);
@@ -91,7 +88,6 @@ export function UserRoles({ user }: UserRolesProps) {
   const handleRoleToggle = (roleId: string, checked: boolean) => {
     const currentRoleIds = Array.from(optimisticCheckedRoleIds);
 
-    // Update optimistic state immediately
     if (checked) {
       addOptimisticRoleId(roleId);
     } else {

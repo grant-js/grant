@@ -576,16 +576,29 @@
     "groups": {
       "title": "Gruppen",
       "empty": "Keine Gruppen zugewiesen",
+      "emptyDescription": "Diesem Benutzer sind über seine Rollen keine Gruppen zugewiesen",
       "loading": "Gruppen werden geladen...",
       "error": "Fehler beim Laden der Gruppen",
-      "description": "Gruppen für Benutzer (durch Rollen)"
+      "description": "Gruppen für Benutzer (durch Rollen)",
+      "table": {
+        "name": "Name",
+        "description": "Beschreibung",
+        "inheritedFrom": "Geerbt von Rolle"
+      },
+      "noDescription": "Keine Beschreibung"
     },
     "permissions": {
       "title": "Berechtigungen",
       "empty": "Keine Berechtigungen zugewiesen",
+      "emptyDescription": "Diesem Benutzer sind über seine Gruppen keine Berechtigungen zugewiesen",
       "loading": "Berechtigungen werden geladen...",
       "error": "Fehler beim Laden der Berechtigungen",
-      "description": "Berechtigungen für Benutzer (durch Gruppen)"
+      "description": "Berechtigungen für Benutzer (durch Gruppen)",
+      "table": {
+        "name": "Name",
+        "action": "Aktion",
+        "inheritedFrom": "Geerbt von Gruppe"
+      }
     },
     "loading": {
       "title": "Benutzer wird geladen...",

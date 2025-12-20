@@ -18,7 +18,10 @@ interface UseGroupsResult {
 export function useGroups(params: QueryGroupsArgs): UseGroupsResult {
   const { scope, ids, limit, page, search, sort, tagIds } = params;
 
-  const skip = useMemo(() => !scope || !scope.id || !scope.tenant, [scope]);
+  const skip = useMemo(
+    () => !scope || !scope.id || !scope.tenant || (ids !== undefined && ids.length === 0),
+    [scope, ids]
+  );
 
   const variables = useMemo(
     () => ({

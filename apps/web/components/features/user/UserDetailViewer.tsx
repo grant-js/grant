@@ -32,7 +32,6 @@ export function UserDetailViewer() {
 
   const user = useMemo(() => users[0], [users]);
 
-  // Update store when user changes
   useEffect(() => {
     setCurrentUser(user || null);
     return () => {
@@ -55,9 +54,11 @@ export function UserDetailViewer() {
         <UserRoles user={user} />
         <UserTags user={user} />
       </div>
+      <div className="grid gap-6 md:grid-cols-2">
+        <UserGroups user={user} />
+        <UserPermissions user={user} />
+      </div>
       <UserApiKeys />
-      <UserGroups user={user} />
-      <UserPermissions user={user} />
     </div>
   );
 }

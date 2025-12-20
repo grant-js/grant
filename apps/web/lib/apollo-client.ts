@@ -227,10 +227,10 @@ export function getClient() {
         Query: {
           fields: {
             roles: {
-              keyArgs: ['scope'],
+              keyArgs: ['scope', 'ids'],
             },
             groups: {
-              keyArgs: ['scope'],
+              keyArgs: ['scope', 'ids'],
             },
             users: {
               keyArgs: ['scope'],
