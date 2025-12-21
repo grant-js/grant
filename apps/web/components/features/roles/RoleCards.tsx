@@ -5,8 +5,7 @@ import { Role, Tag } from '@logusgraphics/grant-schema';
 import { Shield, Tags } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import { CardGrid, CardHeader } from '@/components/common';
-import { ScrollBadges } from '@/components/common';
+import { CardBody, CardGrid, CardHeader, ScrollBadges } from '@/components/common';
 import { transformTagsToBadges } from '@/lib/tag-utils';
 import { useRolesStore } from '@/stores/roles.store';
 
@@ -61,21 +60,30 @@ export function RoleCards() {
         />
       )}
       renderBody={(role: Role) => (
-        <div className="space-y-3">
-          <ScrollBadges
-            items={transformGroupsToBadges(role)}
-            title={t('form.groups')}
-            icon={<Shield className="h-3 w-3" />}
-            height={80}
-          />
-          <ScrollBadges
-            items={transformTagsToBadges(role.tags)}
-            title={t('form.tags')}
-            icon={<Tags className="h-3 w-3" />}
-            height={60}
-            showAsRound={true}
-          />
-        </div>
+        <CardBody
+          items={[
+            {
+              label: {
+                icon: <Shield className="h-3 w-3" />,
+                text: t('form.groups'),
+              },
+              value: <ScrollBadges items={transformGroupsToBadges(role)} height={80} />,
+            },
+            {
+              label: {
+                icon: <Tags className="h-3 w-3" />,
+                text: t('form.tags'),
+              },
+              value: (
+                <ScrollBadges
+                  items={transformTagsToBadges(role.tags)}
+                  height={60}
+                  showAsRound={true}
+                />
+              ),
+            },
+          ]}
+        />
       )}
       renderFooter={(role: Role) => <RoleAudit role={role} />}
     />

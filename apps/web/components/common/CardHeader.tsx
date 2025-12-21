@@ -36,7 +36,7 @@ export function CardHeader({
   descriptionClassName,
 }: CardHeaderProps) {
   return (
-    <div className={cn('flex items-center justify-between space-y-0 pb-1 w-full', className)}>
+    <div className={cn('flex items-center justify-between space-y-0 pb-1 w-full gap-2', className)}>
       <div className="flex items-center gap-4 min-w-0">
         <Avatar
           initial={avatar.initial}
@@ -46,11 +46,15 @@ export function CardHeader({
           className={color ? cn('border-2', getTagBorderClasses(color)) : undefined}
         />
         <div className="min-w-0 flex-1">
-          <CardTitle className={cn('text-base font-semibold truncate', titleClassName)}>
+          <CardTitle
+            title={title}
+            className={cn('text-base font-semibold truncate', titleClassName)}
+          >
             {title}
           </CardTitle>
           {description && (
             <CardDescription
+              title={description}
               className={cn('text-sm text-muted-foreground truncate', descriptionClassName)}
             >
               {description}

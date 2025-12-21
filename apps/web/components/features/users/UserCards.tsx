@@ -5,7 +5,7 @@ import { Tag, User } from '@logusgraphics/grant-schema';
 import { Shield, Tags, UserPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import { CardGrid, CardHeader, ScrollBadges } from '@/components/common';
+import { CardBody, CardGrid, CardHeader, ScrollBadges } from '@/components/common';
 import { transformTagsToBadges } from '@/lib/tag-utils';
 import { getInitials } from '@/lib/utils';
 import { useUsersStore } from '@/stores/users.store';
@@ -49,7 +49,6 @@ export function UserCards() {
         component: <UserCardSkeleton />,
         count: limit,
       }}
-      cardClassName="min-w-[300px]"
       renderHeader={(user: User) => (
         <CardHeader
           avatar={{
@@ -64,24 +63,33 @@ export function UserCards() {
         />
       )}
       renderBody={(user: User) => (
-        <div className="space-y-3">
-          <ScrollBadges
-            items={transformRolesToBadges(user)}
-            title={t('form.roles')}
-            icon={<Shield className="h-3 w-3" />}
-            height={80}
-          />
-          <ScrollBadges
-            items={transformTagsToBadges(user.tags)}
-            title={t('form.tags')}
-            icon={<Tags className="h-3 w-3" />}
-            height={60}
-            showAsRound={true}
-          />
-        </div>
+        <CardBody
+          items={[
+            {
+              label: {
+                icon: <Shield className="h-3 w-3" />,
+                text: t('form.roles'),
+              },
+              value: <ScrollBadges items={transformRolesToBadges(user)} height={80} />,
+            },
+            {
+              label: {
+                icon: <Tags className="h-3 w-3" />,
+                text: t('form.tags'),
+              },
+              value: (
+                <ScrollBadges
+                  items={transformTagsToBadges(user.tags)}
+                  height={60}
+                  showAsRound={true}
+                />
+              ),
+            },
+          ]}
+        />
       )}
       renderFooter={(user: User) => (
-        <div className="flex items-center justify-between w-full gap-4">
+        <div className="flex items-center justify-between w-full gap-2">
           <UserAudit user={user} />
           <UserNavigationButton user={user} size="lg" round={true} />
         </div>

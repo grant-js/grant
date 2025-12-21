@@ -5,8 +5,7 @@ import { Group, Tag } from '@logusgraphics/grant-schema';
 import { Group as GroupIcon, Shield, Tags } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import { CardGrid, CardHeader } from '@/components/common';
-import { ScrollBadges } from '@/components/common';
+import { CardBody, CardGrid, CardHeader, ScrollBadges } from '@/components/common';
 import { transformTagsToBadges } from '@/lib/tag-utils';
 import { useGroupsStore } from '@/stores/groups.store';
 
@@ -61,21 +60,30 @@ export function GroupCards() {
         />
       )}
       renderBody={(group: Group) => (
-        <div className="space-y-3">
-          <ScrollBadges
-            items={transformPermissionsToBadges(group)}
-            title={t('form.permissions')}
-            icon={<Shield className="h-3 w-3" />}
-            height={80}
-          />
-          <ScrollBadges
-            items={transformTagsToBadges(group.tags)}
-            title={t('form.tags')}
-            icon={<Tags className="h-3 w-3" />}
-            height={60}
-            showAsRound={true}
-          />
-        </div>
+        <CardBody
+          items={[
+            {
+              label: {
+                icon: <Shield className="h-3 w-3" />,
+                text: t('form.permissions'),
+              },
+              value: <ScrollBadges items={transformPermissionsToBadges(group)} height={80} />,
+            },
+            {
+              label: {
+                icon: <Tags className="h-3 w-3" />,
+                text: t('form.tags'),
+              },
+              value: (
+                <ScrollBadges
+                  items={transformTagsToBadges(group.tags)}
+                  height={60}
+                  showAsRound={true}
+                />
+              ),
+            },
+          ]}
+        />
       )}
       renderFooter={(group: Group) => <GroupAudit group={group} />}
     />

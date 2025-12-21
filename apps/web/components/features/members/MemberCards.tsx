@@ -1,10 +1,10 @@
 'use client';
 
 import { OrganizationInvitationStatus } from '@logusgraphics/grant-schema';
-import { UserCheck } from 'lucide-react';
+import { Shield, UserCheck, UserCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import { CardGrid, CardHeader } from '@/components/common';
+import { CardBody, CardGrid, CardHeader } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { MemberWithInvitation } from '@/hooks/members';
 import { useMembersStore } from '@/stores/members.store';
@@ -72,24 +72,34 @@ export function MemberCards() {
           actions={<MemberActions member={member} />}
         />
       )}
-      renderBody={(member: MemberWithInvitation) => (
-        <div className="space-y-3">
-          {member.role && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">{t('table.role')}:</span>
-              <Badge variant="outline">{t(member.role?.name as string)}</Badge>
-            </div>
-          )}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">{t('table.status')}:</span>
-            {member.type === 'member' ? (
+      renderBody={(member: MemberWithInvitation) => {
+        const items = [];
+
+        if (member.role) {
+          items.push({
+            label: {
+              icon: <Shield className="h-3 w-3" />,
+              text: t('table.role'),
+            },
+            value: <Badge variant="outline">{t(member.role?.name as string)}</Badge>,
+          });
+        }
+
+        items.push({
+          label: {
+            icon: <UserCircle className="h-3 w-3" />,
+            text: t('table.status'),
+          },
+          value:
+            member.type === 'member' ? (
               <span className="text-sm text-green-600">{t('status.active')}</span>
             ) : (
               getStatusBadge(member.status)
-            )}
-          </div>
-        </div>
-      )}
+            ),
+        });
+
+        return <CardBody items={items} />;
+      }}
       renderFooter={(member: MemberWithInvitation) => <MemberAudit member={member} />}
     />
   );

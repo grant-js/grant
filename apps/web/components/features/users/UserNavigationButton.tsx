@@ -1,8 +1,9 @@
 'use client';
 
-import { User, Tenant } from '@logusgraphics/grant-schema';
-import { ChevronRight } from 'lucide-react';
 import { useParams } from 'next/navigation';
+
+import { Tenant, User } from '@logusgraphics/grant-schema';
+import { ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';

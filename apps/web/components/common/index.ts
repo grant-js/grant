@@ -3,6 +3,7 @@ export { Actions, type ActionItem } from './Actions';
 export { Audit, type AuditField, type AuditProps } from './Audit';
 export { Avatar, type AvatarProps } from './Avatar';
 export { Breadcrumb } from './Breadcrumb';
+export { CardBody, type CardBodyItem, type CardBodyProps } from './CardBody';
 export { CardGrid } from './CardGrid';
 export { CardHeader, type CardHeaderProps } from './CardHeader';
 export { CardSkeleton, type CardSkeletonProps } from './CardSkeleton';

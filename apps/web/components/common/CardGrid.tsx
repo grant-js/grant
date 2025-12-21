@@ -89,10 +89,12 @@ export function CardGrid<TEntity extends BaseEntity>({
                       {renderHeader(entity)}
                     </CardHeader>
 
-                    {renderBody && <CardContent className="pt-0">{renderBody(entity)}</CardContent>}
+                    {renderBody && (
+                      <CardContent className="pt-0 flex-1">{renderBody(entity)}</CardContent>
+                    )}
 
                     {renderFooter && (
-                      <CardFooter className="px-6">{renderFooter(entity)}</CardFooter>
+                      <CardFooter className="px-6 mt-auto">{renderFooter(entity)}</CardFooter>
                     )}
                   </Card>
                 ))

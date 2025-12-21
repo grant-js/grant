@@ -4,7 +4,7 @@ import { Project } from '@logusgraphics/grant-schema';
 import { FolderOpen, Tags } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import { CardGrid, ScrollBadges } from '@/components/common';
+import { CardBody, CardGrid, ScrollBadges } from '@/components/common';
 import { useProjectTags } from '@/hooks/common/useProjectTags';
 import { transformTagsToBadges } from '@/lib/tag-utils';
 import { useProjectsStore } from '@/stores/projects.store';
@@ -45,15 +45,23 @@ export function ProjectCards() {
         <ProjectHeader tags={getProjectTags(project)} project={project} />
       )}
       renderBody={(project: Project) => (
-        <div className="space-y-3">
-          <ScrollBadges
-            items={transformTagsToBadges(getProjectTags(project))}
-            title={t('form.tags')}
-            icon={<Tags className="h-3 w-3" />}
-            height={60}
-            showAsRound={true}
-          />
-        </div>
+        <CardBody
+          items={[
+            {
+              label: {
+                icon: <Tags className="h-3 w-3" />,
+                text: t('form.tags'),
+              },
+              value: (
+                <ScrollBadges
+                  items={transformTagsToBadges(getProjectTags(project))}
+                  height={60}
+                  showAsRound={true}
+                />
+              ),
+            },
+          ]}
+        />
       )}
       renderFooter={(project: Project) => (
         <div className="flex items-center justify-between w-full">

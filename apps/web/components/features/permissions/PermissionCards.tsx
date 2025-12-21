@@ -5,8 +5,7 @@ import { Permission, Tag } from '@logusgraphics/grant-schema';
 import { Key, Play, Tags } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import { CardGrid, CardHeader } from '@/components/common';
-import { ScrollBadges } from '@/components/common';
+import { CardBody, CardGrid, CardHeader, ScrollBadges } from '@/components/common';
 import { transformTagsToBadges } from '@/lib/tag-utils';
 import { usePermissionsStore } from '@/stores/permissions.store';
 
@@ -50,24 +49,34 @@ export function PermissionCards() {
         />
       )}
       renderBody={(permission: Permission) => (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-sm">
-            <div className="flex items-center gap-1 text-sm">
-              <Play className="h-3 w-3 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">{t('form.action')}</span>
-            </div>
-            <span className="font-mono text-xs bg-muted px-2 py-1 rounded text-muted-foreground">
-              {permission.action}
-            </span>
-          </div>
-          <ScrollBadges
-            items={transformTagsToBadges(permission.tags)}
-            title={t('form.tags')}
-            icon={<Tags className="h-3 w-3" />}
-            height={60}
-            showAsRound={true}
-          />
-        </div>
+        <CardBody
+          items={[
+            {
+              label: {
+                icon: <Play className="h-3 w-3" />,
+                text: t('form.action'),
+              },
+              value: (
+                <span className="font-mono text-xs bg-muted px-2 py-1 rounded text-muted-foreground block">
+                  {permission.action}
+                </span>
+              ),
+            },
+            {
+              label: {
+                icon: <Tags className="h-3 w-3" />,
+                text: t('form.tags'),
+              },
+              value: (
+                <ScrollBadges
+                  items={transformTagsToBadges(permission.tags)}
+                  height={60}
+                  showAsRound={true}
+                />
+              ),
+            },
+          ]}
+        />
       )}
       renderFooter={(permission: Permission) => <PermissionAudit permission={permission} />}
     />
