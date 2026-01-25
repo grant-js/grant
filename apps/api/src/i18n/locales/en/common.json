@@ -15,16 +15,16 @@
   },
   "roles": {
     "names": {
-      "owner": "Owner",
-      "admin": "Administrator",
-      "dev": "Developer",
-      "viewer": "Viewer"
+      "organizationOwner": "Organization Owner",
+      "organizationAdmin": "Organization Admin",
+      "organizationDev": "Organization Developer",
+      "organizationViewer": "Organization Viewer"
     },
     "descriptions": {
-      "owner": "Full control over the organization and all its resources",
-      "admin": "Administrative access to manage organization settings and members",
-      "dev": "Developer access to manage projects and resources",
-      "viewer": "Read-only access to organization resources"
+      "organizationOwner": "Full control over organization and all resources within it",
+      "organizationAdmin": "Administrative access to manage organization settings and members",
+      "organizationDev": "Developer access to manage projects and resources",
+      "organizationViewer": "Read-only access to view organization resources"
     }
   }
 }

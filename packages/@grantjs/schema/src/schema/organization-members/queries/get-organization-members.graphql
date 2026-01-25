@@ -1,0 +1,10 @@
+extend type Query {
+  organizationMembers(
+    scope: Scope!
+    page: Int
+    limit: Int
+    search: String
+    sort: OrganizationMemberSortInput
+    status: OrganizationInvitationStatus # Filter invitations by status
+  ): OrganizationMemberPage!
+}

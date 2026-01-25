@@ -5,7 +5,7 @@ description: Understanding the differences between open source and SaaS offering
 
 # Open Source vs SaaS
 
-Grant Platform follows a dual-track business model: open source core with enterprise SaaS offering, similar to successful companies like Supabase, Vercel, and PlanetScale.
+Grant follows a dual-track business model: open source core with enterprise SaaS offering, similar to successful companies like Supabase, Vercel, and PlanetScale.
 
 ## 🎯 Business Model
 

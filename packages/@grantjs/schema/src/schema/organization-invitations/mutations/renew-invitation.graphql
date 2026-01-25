@@ -1,0 +1,3 @@
+extend type Mutation {
+  renewInvitation(id: ID!, scope: Scope!): OrganizationInvitation!
+}

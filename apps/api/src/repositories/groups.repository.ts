@@ -1,26 +1,18 @@
-import { groupPermissions } from '@logusgraphics/grant-database';
-import { groupTags } from '@logusgraphics/grant-database';
-import { GroupModel, groups } from '@logusgraphics/grant-database';
+import { GroupModel, groupPermissions, groupTags, groups } from '@grantjs/database';
 import {
-  QueryGroupsArgs,
-  MutationUpdateGroupArgs,
-  MutationDeleteGroupArgs,
+  CreateGroupInput,
   Group,
   GroupPage,
-  GroupTag,
   GroupPermission,
-  CreateGroupInput,
   GroupSearchableField,
-} from '@logusgraphics/grant-schema';
+  GroupTag,
+  MutationDeleteGroupArgs,
+  QueryGroupsArgs,
+  UpdateGroupInput,
+} from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-import {
-  EntityRepository,
-  RelationsConfig,
-  BaseCreateArgs,
-  BaseUpdateArgs,
-  BaseDeleteArgs,
-} from '@/repositories/common';
+import { EntityRepository, RelationsConfig } from '@/repositories/common';
 import { SelectedFields } from '@/services/common';
 
 export class GroupRepository extends EntityRepository<GroupModel, Group> {
@@ -58,48 +50,28 @@ export class GroupRepository extends EntityRepository<GroupModel, Group> {
     params: Omit<CreateGroupInput, 'scope' | 'tagIds' | 'permissionIds'>,
     transaction?: Transaction
   ): Promise<Group> {
-    const baseParams: BaseCreateArgs = {
-      name: params.name,
-      description: params.description,
-    };
-
-    return this.create(baseParams, transaction);
+    return this.create(params, transaction);
   }
 
   public async updateGroup(
-    params: MutationUpdateGroupArgs,
+    id: string,
+    input: UpdateGroupInput,
     transaction?: Transaction
   ): Promise<Group> {
-    const baseParams: BaseUpdateArgs = {
-      id: params.id,
-      input: {
-        name: params.input.name,
-        description: params.input.description,
-      },
-    };
-
-    return this.update(baseParams, transaction);
+    return this.update({ id, input }, transaction);
   }
 
   public async softDeleteGroup(
     params: Omit<MutationDeleteGroupArgs, 'scope'>,
     transaction?: Transaction
   ): Promise<Group> {
-    const baseParams: BaseDeleteArgs = {
-      id: params.id,
-    };
-
-    return this.softDelete(baseParams, transaction);
+    return this.softDelete(params, transaction);
   }
 
   public async hardDeleteGroup(
     params: Omit<MutationDeleteGroupArgs, 'scope'>,
     transaction?: Transaction
   ): Promise<Group> {
-    const baseParams: BaseDeleteArgs = {
-      id: params.id,
-    };
-
-    return this.hardDelete(baseParams, transaction);
+    return this.hardDelete(params, transaction);
   }
 }

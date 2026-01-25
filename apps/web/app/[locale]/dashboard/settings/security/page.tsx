@@ -6,39 +6,39 @@ import { useRouter } from 'next/navigation';
 
 import { useLocale, useTranslations } from 'next-intl';
 
-import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
-import { ActiveSessionsList } from '@/components/settings/ActiveSessionsList';
-import { AuthenticationMethodsList } from '@/components/settings/AuthenticationMethodsList';
-import { ChangePasswordForm } from '@/components/settings/ChangePasswordForm';
-import { usePageTitle, useUserMutations } from '@/hooks';
-import { useUserAuthenticationMethods } from '@/hooks/users/useUserAuthenticationMethods';
-import { useUserSessions } from '@/hooks/users/useUserSessions';
+import {
+  SettingActiveSessionsList,
+  SettingAuthenticationMethodsList,
+  SettingPasswordChangeForm,
+} from '@/components/features/settings';
+import { DashboardLayout } from '@/components/layout';
+import { SettingsSidebar } from '@/components/navigation';
+import { usePageTitle } from '@/hooks';
+import { useMyMutations, useMyUserAuthenticationMethods, useMyUserSessions } from '@/hooks/me';
 import { getCurrentSessionId } from '@/lib/auth';
 import { useAuthStore } from '@/stores/auth.store';
+import { useMeStore } from '@/stores/me.store';
 
 export default function SecuritySettingsPage() {
   const t = useTranslations('settings.security');
   usePageTitle('settings.security');
 
-  const { getCurrentAccount, accessToken, clearAuth } = useAuthStore();
-  const currentAccount = getCurrentAccount();
-  const { changePassword, revokeUserSession } = useUserMutations();
+  const { accessToken, clearAuth } = useAuthStore();
+  const { changeMyPassword, revokeMyUserSession } = useMyMutations();
   const [showChangePassword, setShowChangePassword] = useState(false);
   const router = useRouter();
   const locale = useLocale();
-  const userId = currentAccount?.owner?.id;
 
-  const { authenticationMethods, loading: authMethodsLoading } = useUserAuthenticationMethods(
-    userId!
-  );
+  const { authenticationMethods, loading: authMethodsLoading } = useMyUserAuthenticationMethods();
+
+  const sessionsLimit = useMeStore((state) => state.sessionsLimit);
 
   const {
     sessions,
     loading: sessionsLoading,
+    totalCount,
     refetch: refetchSessions,
-  } = useUserSessions(userId!, {
-    limit: 50,
-  });
+  } = useMyUserSessions();
 
   const currentSessionId = useMemo(() => getCurrentSessionId(accessToken!), [accessToken]);
 
@@ -49,7 +49,7 @@ export default function SecuritySettingsPage() {
     newPassword: string;
     confirmPassword: string;
   }) => {
-    await changePassword({
+    await changeMyPassword({
       currentPassword: values.currentPassword,
       newPassword: values.newPassword,
       confirmPassword: values.confirmPassword,
@@ -58,7 +58,7 @@ export default function SecuritySettingsPage() {
   };
 
   const handleRevokeSession = async (sessionId: string) => {
-    await revokeUserSession(sessionId);
+    await revokeMyUserSession(sessionId);
     if (currentSessionId === sessionId) {
       clearAuth();
       router.push(`/${locale}/auth/login`);
@@ -67,37 +67,31 @@ export default function SecuritySettingsPage() {
     }
   };
 
-  if (!userId) {
-    return (
-      <DashboardPageLayout title={t('title')} variant="simple">
-        <p className="text-muted-foreground">{t('userNotFound')}</p>
-      </DashboardPageLayout>
-    );
-  }
-
   return (
-    <DashboardPageLayout title={t('title')} variant="simple">
+    <DashboardLayout title={t('title')} variant="simple" sidebar={<SettingsSidebar />}>
       <div className="space-y-6">
-        <AuthenticationMethodsList
-          userId={userId!}
+        <SettingAuthenticationMethodsList
           loading={authMethodsLoading}
           onChangePassword={emailMethod ? () => setShowChangePassword(true) : undefined}
         />
 
         {showChangePassword && (
-          <ChangePasswordForm
+          <SettingPasswordChangeForm
             onSubmit={handleChangePassword}
             onCancel={() => setShowChangePassword(false)}
           />
         )}
 
-        <ActiveSessionsList
+        <SettingActiveSessionsList
           sessions={sessions}
           loading={sessionsLoading}
           currentSessionId={currentSessionId || undefined}
           onRevokeSession={handleRevokeSession}
+          onRefresh={refetchSessions}
+          totalCount={totalCount}
+          limit={sessionsLimit}
         />
       </div>
-    </DashboardPageLayout>
+    </DashboardLayout>
   );
 }

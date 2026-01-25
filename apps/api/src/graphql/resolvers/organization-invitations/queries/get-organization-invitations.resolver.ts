@@ -1,4 +1,4 @@
-import { QueryResolvers } from '@logusgraphics/grant-schema';
+import { QueryResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
 

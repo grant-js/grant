@@ -1,43 +1,60 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { groupAuditLogs } from '@logusgraphics/grant-database';
+import { GROUP_DEFINITIONS } from '@grantjs/constants';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema, groupAuditLogs } from '@grantjs/database';
 import {
-  QueryGroupsArgs,
-  MutationUpdateGroupArgs,
-  MutationDeleteGroupArgs,
+  CreateGroupInput,
   Group,
   GroupPage,
-  CreateGroupInput,
-} from '@logusgraphics/grant-schema';
+  MutationDeleteGroupArgs,
+  QueryGroupsArgs,
+  UpdateGroupInput,
+} from '@grantjs/schema';
 
-import { NotFoundError } from '@/lib/errors';
+import { BadRequestError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
-  validateInput,
-  validateOutput,
+  DeleteParams,
+  SelectedFields,
   createDynamicPaginatedSchema,
   createDynamicSingleSchema,
-  SelectedFields,
-  DeleteParams,
+  validateInput,
+  validateOutput,
 } from './common';
 import {
-  getGroupsParamsSchema,
   createGroupParamsSchema,
-  updateGroupParamsSchema,
   deleteGroupParamsSchema,
+  getGroupsParamsSchema,
   groupSchema,
+  updateGroupParamsSchema,
 } from './groups.schemas';
 
 export class GroupService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(groupAuditLogs, 'groupId', user, db);
+  }
+
+  private getCorePlatformGroupNames(): string[] {
+    return Object.values(GROUP_DEFINITIONS).map((group) => group.name);
+  }
+
+  private validateGroupNameNotReserved(groupName: string): void {
+    const coreGroupNames = this.getCorePlatformGroupNames();
+    if (coreGroupNames.includes(groupName)) {
+      throw new BadRequestError(
+        `Group name '${groupName}' is reserved for core platform groups and cannot be used`,
+        'errors:validation.reservedGroupName',
+        {
+          groupName,
+        }
+      );
+    }
   }
 
   private async getGroup(groupId: string, transaction?: Transaction): Promise<Group> {
@@ -82,10 +99,13 @@ export class GroupService extends AuditService {
   ): Promise<Group> {
     const context = 'GroupService.createGroup';
     const validatedParams = validateInput(createGroupParamsSchema, params, context);
-    const { name, description } = validatedParams;
+    const { name, description, metadata } = validatedParams;
+
+    // Validate that the group name is not a reserved core platform group name
+    this.validateGroupNameNotReserved(name);
 
     const group = await this.repositories.groupRepository.createGroup(
-      { name, description },
+      { name, description, metadata: metadata ?? {} },
       transaction
     );
 
@@ -93,31 +113,37 @@ export class GroupService extends AuditService {
       id: group.id,
       name: group.name,
       description: group.description,
+      metadata: group.metadata,
       createdAt: group.createdAt,
       updatedAt: group.updatedAt,
     };
 
-    const metadata = {
+    const auditMetadata = {
       context,
     };
 
-    await this.logCreate(group.id, newValues, metadata, transaction);
+    await this.logCreate(group.id, newValues, auditMetadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(groupSchema), group, context);
   }
 
   public async updateGroup(
-    params: MutationUpdateGroupArgs,
+    id: string,
+    input: UpdateGroupInput,
     transaction?: Transaction
   ): Promise<Group> {
     const context = 'GroupService.updateGroup';
-    const validatedParams = validateInput(updateGroupParamsSchema, params, context);
+    validateInput(updateGroupParamsSchema, { id, input }, context);
 
-    const { id, input } = validatedParams;
+    // If the group name is being updated, validate that it's not a reserved core platform group name
+    if (input.name) {
+      this.validateGroupNameNotReserved(input.name);
+    }
 
     const oldGroup = await this.getGroup(id, transaction);
     const updatedGroup = await this.repositories.groupRepository.updateGroup(
-      { id, input },
+      id,
+      input,
       transaction
     );
 
@@ -125,6 +151,7 @@ export class GroupService extends AuditService {
       id: oldGroup.id,
       name: oldGroup.name,
       description: oldGroup.description,
+      metadata: oldGroup.metadata,
       createdAt: oldGroup.createdAt,
       updatedAt: oldGroup.updatedAt,
     };
@@ -133,15 +160,16 @@ export class GroupService extends AuditService {
       id: updatedGroup.id,
       name: updatedGroup.name,
       description: updatedGroup.description,
+      metadata: updatedGroup.metadata,
       createdAt: updatedGroup.createdAt,
       updatedAt: updatedGroup.updatedAt,
     };
 
-    const metadata = {
+    const auditMetadata = {
       context,
     };
 
-    await this.logUpdate(updatedGroup.id, oldValues, newValues, metadata, transaction);
+    await this.logUpdate(updatedGroup.id, oldValues, newValues, auditMetadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(groupSchema), updatedGroup, context);
   }
@@ -170,19 +198,19 @@ export class GroupService extends AuditService {
       updatedAt: oldGroup.updatedAt,
     };
 
-    const metadata = {
+    const auditMetadata = {
       context,
       hardDelete,
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(deletedGroup.id, oldValues, metadata, transaction);
+      await this.logHardDelete(deletedGroup.id, oldValues, auditMetadata, transaction);
     } else {
       const newValues = {
         ...oldValues,
         deletedAt: deletedGroup.deletedAt,
       };
-      await this.logSoftDelete(deletedGroup.id, oldValues, newValues, metadata, transaction);
+      await this.logSoftDelete(deletedGroup.id, oldValues, newValues, auditMetadata, transaction);
     }
 
     return validateOutput(createDynamicSingleSchema(groupSchema), deletedGroup, context);

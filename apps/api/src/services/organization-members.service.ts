@@ -1,17 +1,19 @@
-import { DbSchema } from '@logusgraphics/grant-database';
+import { canAssignRole } from '@grantjs/constants';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema } from '@grantjs/database';
 import {
   OrganizationMember,
   OrganizationMemberPage,
   QueryOrganizationMembersArgs,
   RemoveOrganizationMemberInput,
+  Tenant,
   UpdateOrganizationMemberInput,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
-import { NotFoundError } from '@/lib/errors';
+import { AuthorizationError, BadRequestError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 import { SelectedFields } from '@/services/common';
-import { AuthenticatedUser } from '@/types';
 
 import { AuditService, validateInput } from './common';
 import {
@@ -23,10 +25,95 @@ import {
 export class OrganizationMemberService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(null, '', user, db); // No audit logs for members query
+  }
+
+  /**
+   * Get the current user's ID from the auth context.
+   * Throws if not authenticated.
+   */
+  private getCurrentUserId(): string {
+    if (!this.user?.userId) {
+      throw new AuthorizationError('Authentication required', 'errors:auth.unauthorized');
+    }
+    return this.user.userId;
+  }
+
+  /**
+   * Get the role name for a user in an organization.
+   * Returns null if the user is not a member of the organization.
+   */
+  private async getUserRoleNameInOrganization(
+    organizationId: string,
+    userId: string,
+    transaction?: Transaction
+  ): Promise<string | null> {
+    const member = await this.repositories.organizationMemberRepository.getOrganizationMember(
+      { organizationId, userId },
+      transaction
+    );
+    return member?.role?.name ?? null;
+  }
+
+  /**
+   * Validate that the current user can manage the target member.
+   * Throws AuthorizationError if validation fails.
+   */
+  private async validateMemberManagementPermission(
+    organizationId: string,
+    targetUserId: string,
+    transaction?: Transaction
+  ): Promise<{ currentUserId: string; currentUserRoleName: string; targetUserRoleName: string }> {
+    const currentUserId = this.getCurrentUserId();
+
+    // Guard: Cannot modify self
+    if (currentUserId === targetUserId) {
+      throw new AuthorizationError(
+        'Cannot modify your own membership',
+        'errors:auth.cannotModifySelf'
+      );
+    }
+
+    // Get current user's role in the organization
+    const currentUserRoleName = await this.getUserRoleNameInOrganization(
+      organizationId,
+      currentUserId,
+      transaction
+    );
+
+    if (!currentUserRoleName) {
+      throw new AuthorizationError(
+        'You are not a member of this organization',
+        'errors:auth.notOrganizationMember'
+      );
+    }
+
+    // Get target user's role in the organization
+    const targetUserRoleName = await this.getUserRoleNameInOrganization(
+      organizationId,
+      targetUserId,
+      transaction
+    );
+
+    if (!targetUserRoleName) {
+      throw new AuthorizationError(
+        'Target user is not a member of this organization',
+        'errors:auth.targetNotOrganizationMember'
+      );
+    }
+
+    // Guard: Cannot manage users with same or higher privilege level
+    if (!canAssignRole(currentUserRoleName, targetUserRoleName)) {
+      throw new AuthorizationError(
+        'Cannot manage members with equal or higher privilege',
+        'errors:auth.insufficientPrivilege'
+      );
+    }
+
+    return { currentUserId, currentUserRoleName, targetUserRoleName };
   }
 
   public async getOrganizationMembers(
@@ -36,6 +123,15 @@ export class OrganizationMemberService extends AuditService {
     const context = 'OrganizationMemberService.getOrganizationMembers';
     const validatedParams = validateInput(getOrganizationMembersParamsSchema, params, context);
 
+    const { scope } = validatedParams;
+    const { tenant } = scope;
+
+    if (tenant !== Tenant.Organization) {
+      throw new BadRequestError('Invalid tenant', 'errors:badRequest.invalidTenant', {
+        tenant,
+      });
+    }
+
     const result = await this.repositories.organizationMemberRepository.getOrganizationMembers(
       validatedParams,
       transaction
@@ -44,14 +140,43 @@ export class OrganizationMemberService extends AuditService {
     return result;
   }
 
+  /**
+   * Get a single organization member by organization ID and user ID.
+   * Returns null if the user is not a member of the organization.
+   */
+  public async getOrganizationMember(
+    organizationId: string,
+    userId: string,
+    transaction?: Transaction
+  ): Promise<OrganizationMember | null> {
+    return await this.repositories.organizationMemberRepository.getOrganizationMember(
+      { organizationId, userId },
+      transaction
+    );
+  }
+
   public async updateOrganizationMember(
     userId: string,
-    organizationId: string,
     input: UpdateOrganizationMemberInput,
     transaction?: Transaction
   ): Promise<OrganizationMember> {
     const context = 'OrganizationMemberService.updateOrganizationMember';
     const validatedInput = validateInput(updateOrganizationMemberInputSchema, input, context);
+    const { scope, roleId } = validatedInput;
+    const { id: organizationId, tenant } = scope;
+
+    if (tenant !== Tenant.Organization) {
+      throw new BadRequestError('Invalid tenant', 'errors:badRequest.invalidTenant', {
+        tenant,
+      });
+    }
+
+    // Validate permission to manage this member
+    const { currentUserRoleName } = await this.validateMemberManagementPermission(
+      organizationId,
+      userId,
+      transaction
+    );
 
     // 1. Verify user is in organization
     const organizationUsers =
@@ -74,12 +199,29 @@ export class OrganizationMemberService extends AuditService {
       );
 
     // Verify the new role belongs to organization
-    const roleBelongsToOrg = allOrganizationRoles.some((or) => or.roleId === validatedInput.roleId);
-    if (!roleBelongsToOrg) {
+    const newRoleAssignment = allOrganizationRoles.find((or) => or.roleId === roleId);
+    if (!newRoleAssignment) {
       throw new NotFoundError('Role does not belong to this organization', 'errors:notFound.role', {
-        roleId: validatedInput.roleId,
+        roleId,
         organizationId,
       });
+    }
+
+    // Get the new role's name to validate assignment permission
+    const newRole = await this.repositories.roleRepository.getRoles(
+      { ids: [roleId], limit: 1 },
+      transaction
+    );
+    if (newRole.roles.length === 0) {
+      throw new NotFoundError('Role not found', 'errors:notFound.role', { roleId });
+    }
+
+    // Guard: Cannot assign a role with equal or higher privilege than own role
+    if (!canAssignRole(currentUserRoleName, newRole.roles[0].name)) {
+      throw new AuthorizationError(
+        'Cannot assign a role with equal or higher privilege than your own',
+        'errors:auth.cannotAssignHigherRole'
+      );
     }
 
     // 3. Get user's current roles
@@ -103,10 +245,7 @@ export class OrganizationMemberService extends AuditService {
 
     // 6. Add new role (addUserRole will reactivate if soft-deleted, or create if new)
     // This handles the case where we just deleted it, or if it's a completely new role
-    await this.repositories.userRoleRepository.addUserRole(
-      { userId, roleId: validatedInput.roleId },
-      transaction
-    );
+    await this.repositories.userRoleRepository.addUserRole({ userId, roleId }, transaction);
 
     // 7. Fetch updated member
     const updatedMember =
@@ -129,12 +268,23 @@ export class OrganizationMemberService extends AuditService {
   }
 
   public async removeOrganizationMember(
+    userId: string,
     input: RemoveOrganizationMemberInput,
     transaction?: Transaction
   ): Promise<OrganizationMember> {
     const context = 'OrganizationMemberService.removeOrganizationMember';
     const validatedInput = validateInput(removeOrganizationMemberInputSchema, input, context);
-    const { userId, organizationId } = validatedInput;
+    const { scope } = validatedInput;
+    const { id: organizationId, tenant } = scope;
+
+    if (tenant !== Tenant.Organization) {
+      throw new BadRequestError('Invalid tenant', 'errors:badRequest.invalidTenant', {
+        tenant,
+      });
+    }
+
+    // Validate permission to manage this member
+    await this.validateMemberManagementPermission(organizationId, userId, transaction);
 
     // 1. Fetch the member before removal (for return value)
     const memberToRemove =

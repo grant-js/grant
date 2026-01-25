@@ -1,4 +1,4 @@
-import { OrganizationInvitation, QueryResolvers } from '@logusgraphics/grant-schema';
+import { OrganizationInvitation, QueryResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
 import { getDirectFieldSelection } from '@/lib/field-selection.lib';

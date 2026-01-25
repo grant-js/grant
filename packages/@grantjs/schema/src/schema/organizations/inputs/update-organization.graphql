@@ -1,0 +1,4 @@
+input UpdateOrganizationInput {
+  scope: Scope!
+  name: String
+}

@@ -1,11 +1,11 @@
-import { AccountProjectModel, accountProjects } from '@logusgraphics/grant-database';
+import { AccountProjectModel, accountProjects } from '@grantjs/database';
 import {
   AccountProject,
   AddAccountProjectInput,
   QueryAccountProjectInput,
   QueryAccountProjectsInput,
   RemoveAccountProjectInput,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 

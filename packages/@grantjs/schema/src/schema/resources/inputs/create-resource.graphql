@@ -1,0 +1,10 @@
+input CreateResourceInput {
+  scope: Scope!
+  name: String!
+  slug: String!
+  description: String
+  actions: [String!]
+  isActive: Boolean
+  tagIds: [ID!]
+  primaryTagId: ID
+}

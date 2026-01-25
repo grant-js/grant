@@ -1,0 +1,13 @@
+mutation ResendInvitationEmail($id: ID!, $scope: Scope!) {
+  resendInvitationEmail(id: $id, scope: $scope) {
+    id
+    organizationId
+    email
+    roleId
+    status
+    expiresAt
+    invitedBy
+    invitedAt
+    createdAt
+  }
+}

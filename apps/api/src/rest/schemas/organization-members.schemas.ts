@@ -1,15 +1,20 @@
 import {
   OrganizationInvitationStatus,
   OrganizationMemberSortableField,
-} from '@logusgraphics/grant-schema';
+  Tenant,
+} from '@grantjs/schema';
 
 import { z } from '@/lib/zod-openapi.lib';
-import { createSuccessResponseSchema } from '@/rest/schemas/common.schemas';
+import { createSuccessResponseSchema, scopeSchema } from '@/rest/schemas/common.schemas';
 
 export const getOrganizationMembersQuerySchema = z.object({
-  organizationId: z.uuid('Invalid organization ID').openapi({
-    description: 'UUID of the organization to list members for',
+  scopeId: z.uuid('Invalid scope ID').openapi({
+    description: 'UUID of the scope to list members for',
     example: '123e4567-e89b-12d3-a456-426614174000',
+  }),
+  tenant: z.enum(Object.values(Tenant) as [Tenant, ...Tenant[]]).openapi({
+    description: 'Tenant of the scope to list members for',
+    example: 'organization',
   }),
   status: z
     .enum(
@@ -73,5 +78,50 @@ export const getOrganizationMembersResponseSchema = createSuccessResponseSchema(
     items: z.array(organizationMemberSchema),
     totalCount: z.number(),
     hasNextPage: z.boolean(),
+  })
+);
+
+export const updateOrganizationMemberParamsSchema = z.object({
+  userId: z.string().openapi({
+    description: 'UUID of the user to update',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  }),
+});
+
+export const updateOrganizationMemberBodySchema = z.object({
+  scope: scopeSchema.openapi({
+    description: 'Scope context for the organization membership',
+  }),
+  roleId: z.string().openapi({
+    description: 'UUID of the new role to assign to the member',
+    example: '123e4567-e89b-12d3-a456-426614174001',
+  }),
+});
+
+export const updateOrganizationMemberResponseSchema = createSuccessResponseSchema(
+  z.object({
+    id: z.string(),
+    userId: z.string(),
+    roleId: z.string(),
+    organizationId: z.string(),
+  })
+);
+
+export const removeOrganizationMemberParamsSchema = z.object({
+  userId: z.string().openapi({
+    description: 'UUID of the user to remove',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  }),
+});
+
+export const removeOrganizationMemberBodySchema = z.object({
+  scope: scopeSchema.openapi({
+    description: 'Scope context for the organization membership',
+  }),
+});
+
+export const removeOrganizationMemberResponseSchema = createSuccessResponseSchema(
+  z.object({
+    success: z.boolean(),
   })
 );

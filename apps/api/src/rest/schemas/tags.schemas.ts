@@ -1,4 +1,4 @@
-import { SortOrder, TagSortField } from '@logusgraphics/grant-schema';
+import { SortOrder, TagSortField } from '@grantjs/schema';
 
 import { z } from '@/lib/zod-openapi.lib';
 import {

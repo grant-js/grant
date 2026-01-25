@@ -1,0 +1,17 @@
+mutation CreatePermission($input: CreatePermissionInput!) {
+  createPermission(input: $input) {
+    id
+    name
+    action
+    description
+    resourceId
+    resource {
+      id
+      name
+      slug
+    }
+    condition
+    createdAt
+    updatedAt
+  }
+}

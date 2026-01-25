@@ -1,4 +1,6 @@
-import { defaultLocale, translateStatic, type SupportedLocale } from '@/i18n';
+import { isRoleI18nKey, SupportedLocale } from '@grantjs/constants';
+
+import { defaultLocale, translateStatic } from '@/i18n';
 
 import { createAlternativeLink, createButton, renderBaseEmailTemplate } from './base.mjml';
 
@@ -28,7 +30,7 @@ export function getInvitationEmailHtml(
   } = params;
   const emailLocale = (paramsLocale || locale) as SupportedLocale;
 
-  const translatedRoleName = roleName?.startsWith('roles.names.')
+  const translatedRoleName = isRoleI18nKey(roleName)
     ? translateStatic(`common:${roleName}`, emailLocale)
     : roleName;
 
@@ -92,7 +94,7 @@ export function getInvitationEmailText(
   } = params;
   const emailLocale = (paramsLocale || locale) as SupportedLocale;
 
-  const translatedRoleName = roleName?.startsWith('roles.names.')
+  const translatedRoleName = isRoleI18nKey(roleName)
     ? translateStatic(`common:${roleName}`, emailLocale)
     : roleName;
 
@@ -120,8 +122,8 @@ ${t.greeting}
 
 ${t.message}
 
-Organization: ${organizationName}
-Role: ${translatedRoleName}
+${translateStatic('email:invitation.organization', emailLocale)}: ${organizationName}
+${translateStatic('email:invitation.role', emailLocale)}: ${translatedRoleName}
 
 ${invitationUrl}
 

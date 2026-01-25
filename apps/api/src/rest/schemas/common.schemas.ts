@@ -1,17 +1,37 @@
-import { Tenant } from '@logusgraphics/grant-schema';
+import { Tenant } from '@grantjs/schema';
 
 import { z } from '@/lib/zod-openapi.lib';
 
 export const tenantSchema = z.enum(Object.values(Tenant) as [Tenant, ...Tenant[]]);
 
 export const scopeSchema = z.object({
-  id: z.uuid('Invalid scope ID'),
+  id: z.string().refine(
+    (val) => {
+      const parts = val.split(':');
+      return parts.every((part) => z.uuid().safeParse(part).success);
+    },
+    { message: 'Invalid scope ID: must be a UUID or multiple UUIDs separated by colons' }
+  ),
   tenant: tenantSchema,
 });
 
 export const paginationQuerySchema = z.object({
-  page: z.coerce.number().int().positive().default(1).optional(),
-  limit: z.coerce.number().int().min(-1).default(50).optional(),
+  page: z
+    .union([z.string(), z.number()])
+    .optional()
+    .transform((val) => {
+      if (val === undefined || val === '') return 1;
+      return typeof val === 'string' ? parseInt(val, 10) : val;
+    })
+    .pipe(z.number().int().positive()),
+  limit: z
+    .union([z.string(), z.number()])
+    .optional()
+    .transform((val) => {
+      if (val === undefined || val === '') return 50;
+      return typeof val === 'string' ? parseInt(val, 10) : val;
+    })
+    .pipe(z.number().int().min(-1)),
 });
 
 export const searchQuerySchema = z.object({

@@ -7,7 +7,7 @@ import {
   userAuthenticationMethods,
   userRoles,
   users,
-} from '@logusgraphics/grant-database';
+} from '@grantjs/database';
 import {
   MemberType,
   OrganizationInvitation,
@@ -19,8 +19,8 @@ import {
   Role,
   SortOrder,
   User,
-} from '@logusgraphics/grant-schema';
-import { and, eq, ilike, isNull, or } from 'drizzle-orm';
+} from '@grantjs/schema';
+import { and, eq, ilike, isNull, or, sql } from 'drizzle-orm';
 
 import { BadRequestError, NotFoundError } from '@/lib/errors';
 import { createModuleLogger } from '@/lib/logger';
@@ -36,7 +36,8 @@ export class OrganizationMemberRepository {
     tx?: Transaction
   ): Promise<OrganizationMemberPage> {
     const dbInstance = tx ?? this.db;
-    const { organizationId, page = 1, limit = 50, search, sort, status } = params;
+    const { scope, page = 1, limit = 50, search, sort, status } = params;
+    const { id: organizationId } = scope;
     const safePage = page ?? 1;
     const safeLimit = limit ?? 50;
 
@@ -53,16 +54,27 @@ export class OrganizationMemberRepository {
         memberWhereConditions.push(
           or(
             ilike(users.name, searchLower),
-            ilike(userAuthenticationMethods.providerId, searchLower)
+            // Search in providerId (for email auth) or providerData.email (for OAuth)
+            ilike(userAuthenticationMethods.providerId, searchLower),
+            sql`${userAuthenticationMethods.providerData}->>'email' ILIKE ${searchLower}`
           )!
         );
       }
+
+      // Build email expression that extracts email from providerId (for email auth)
+      // or from providerData.email (for OAuth providers like GitHub)
+      const emailExpression = sql<string>`
+        CASE 
+          WHEN ${userAuthenticationMethods.provider} = 'email' THEN ${userAuthenticationMethods.providerId}
+          ELSE ${userAuthenticationMethods.providerData}->>'email'
+        END
+      `.as('user_email');
 
       const membersData = await dbInstance
         .select({
           userId: users.id,
           userName: users.name,
-          userEmail: userAuthenticationMethods.providerId,
+          userEmail: emailExpression,
           roleId: roles.id,
           roleName: roles.name,
           userCreatedAt: users.createdAt,
@@ -73,7 +85,7 @@ export class OrganizationMemberRepository {
           userAuthenticationMethods,
           and(
             eq(userAuthenticationMethods.userId, users.id),
-            eq(userAuthenticationMethods.provider, 'email'),
+            eq(userAuthenticationMethods.isPrimary, true),
             isNull(userAuthenticationMethods.deletedAt)
           )
         )
@@ -368,12 +380,21 @@ export class OrganizationMemberRepository {
     const dbInstance = tx ?? this.db;
 
     try {
+      // Build email expression that extracts email from providerId (for email auth)
+      // or from providerData.email (for OAuth providers like GitHub)
+      const emailExpression = sql<string>`
+        CASE 
+          WHEN ${userAuthenticationMethods.provider} = 'email' THEN ${userAuthenticationMethods.providerId}
+          ELSE ${userAuthenticationMethods.providerData}->>'email'
+        END
+      `.as('user_email');
+
       // Fetch member (user) data
       const [memberData] = await dbInstance
         .select({
           userId: users.id,
           userName: users.name,
-          userEmail: userAuthenticationMethods.providerId,
+          userEmail: emailExpression,
           roleId: roles.id,
           roleName: roles.name,
           userCreatedAt: users.createdAt,
@@ -384,7 +405,7 @@ export class OrganizationMemberRepository {
           userAuthenticationMethods,
           and(
             eq(userAuthenticationMethods.userId, users.id),
-            eq(userAuthenticationMethods.provider, 'email'),
+            eq(userAuthenticationMethods.isPrimary, true),
             isNull(userAuthenticationMethods.deletedAt)
           )
         )

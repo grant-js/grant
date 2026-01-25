@@ -9,6 +9,7 @@ import {
   getInvitationResponseSchema,
   getOrganizationInvitationsQuerySchema,
   getOrganizationInvitationsResponseSchema,
+  invitationActionBodySchema,
   invitationParamsSchema,
   invitationTokenParamsSchema,
   inviteMemberRequestSchema,
@@ -63,6 +64,10 @@ Invite a new or existing user to join an organization with a specific role.
           'application/json': {
             schema: inviteMemberRequestSchema,
             example: {
+              scope: {
+                id: '123e4567-e89b-12d3-a456-426614174000',
+                tenant: 'organization',
+              },
               organizationId: '123e4567-e89b-12d3-a456-426614174000',
               email: 'newmember@example.com',
               roleId: '123e4567-e89b-12d3-a456-426614174001',
@@ -347,6 +352,19 @@ Use this when:
     `.trim(),
     request: {
       params: invitationParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: invitationActionBodySchema,
+            example: {
+              scope: {
+                id: '123e4567-e89b-12d3-a456-426614174000',
+                tenant: 'organization',
+              },
+            },
+          },
+        },
+      },
     },
     responses: {
       200: {
@@ -359,6 +377,89 @@ Use this when:
       },
       400: {
         description: 'Validation error or invitation is not pending/expired',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      404: {
+        description: 'Invitation not found',
+        content: {
+          'application/json': {
+            schema: notFoundErrorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * POST /api/organization-invitations/:id/renew
+   */
+  registry.registerPath({
+    method: 'post',
+    path: '/api/organization-invitations/{id}/renew',
+    tags: ['Organization Invitations'],
+    summary: 'Renew expired invitation',
+    description: `
+Renew an expired invitation with a new token and expiration date.
+
+This action:
+- Creates a new token for the invitation
+- Resets the expiration date to 7 days from now
+- Sends a new invitation email to the recipient
+- Only works for pending invitations that have expired
+
+Use this when:
+- An invitation has expired before the recipient could accept
+- You want to give the recipient more time to accept
+
+**Note:** This is different from "resending" an invitation (which just resends the existing token).
+    `.trim(),
+    request: {
+      params: invitationParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: invitationActionBodySchema,
+            example: {
+              scope: {
+                id: '123e4567-e89b-12d3-a456-426614174000',
+                tenant: 'organization',
+              },
+            },
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Successfully renewed invitation',
+        content: {
+          'application/json': {
+            schema: resendInvitationEmailResponseSchema,
+          },
+        },
+      },
+      400: {
+        description: 'Validation error or invitation is not expired',
         content: {
           'application/json': {
             schema: validationErrorResponseSchema,
@@ -415,6 +516,19 @@ Typically used when:
     `.trim(),
     request: {
       params: invitationParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: invitationActionBodySchema,
+            example: {
+              scope: {
+                id: '123e4567-e89b-12d3-a456-426614174000',
+                tenant: 'organization',
+              },
+            },
+          },
+        },
+      },
     },
     responses: {
       200: {

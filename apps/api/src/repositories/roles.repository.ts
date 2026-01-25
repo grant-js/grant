@@ -1,17 +1,17 @@
-import { groups } from '@logusgraphics/grant-database';
-import { tags } from '@logusgraphics/grant-database';
-import { RoleModel, roles } from '@logusgraphics/grant-database';
+import { groups } from '@grantjs/database';
+import { tags } from '@grantjs/database';
+import { RoleModel, roles } from '@grantjs/database';
 import {
   Role,
   QueryRolesArgs,
   RolePage,
-  MutationUpdateRoleArgs,
   MutationDeleteRoleArgs,
   RoleTag,
   RoleGroup,
   CreateRoleInput,
   RoleSearchableField,
-} from '@logusgraphics/grant-schema';
+  UpdateRoleInput,
+} from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { EntityRepository, RelationsConfig } from '@/repositories/common';
@@ -57,10 +57,11 @@ export class RoleRepository extends EntityRepository<RoleModel, Role> {
   }
 
   public async updateRole(
-    params: MutationUpdateRoleArgs,
+    id: string,
+    input: UpdateRoleInput,
     transaction?: Transaction
   ): Promise<Role> {
-    return this.update(params, transaction);
+    return this.update({ id, input }, transaction);
   }
 
   public async softDeleteRole(

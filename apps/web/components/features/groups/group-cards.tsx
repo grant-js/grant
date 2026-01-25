@@ -1,0 +1,91 @@
+'use client';
+
+import { getTagBorderClasses, TagColor } from '@grantjs/constants';
+import { Group, Tag } from '@grantjs/schema';
+import { Group as GroupIcon, Shield, Tags } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+
+import { CardBody, CardGrid, CardHeader, ScrollBadges } from '@/components/common';
+import { transformTagsToBadges } from '@/lib/tag';
+import { useGroupsStore } from '@/stores/groups.store';
+
+import { GroupActions } from './group-actions';
+import { GroupAudit } from './group-audit';
+import { GroupCardSkeleton } from './group-card-skeleton';
+import { GroupCreateDialog } from './group-create-dialog';
+
+export function GroupCards() {
+  const t = useTranslations('groups');
+
+  const limit = useGroupsStore((state) => state.limit);
+  const search = useGroupsStore((state) => state.search);
+  const groups = useGroupsStore((state) => state.groups);
+  const loading = useGroupsStore((state) => state.loading);
+
+  const transformPermissionsToBadges = (group: Group) => {
+    return (group.permissions || []).map((permission) => {
+      const primaryTag = permission.tags?.find((tag: Tag) => tag.isPrimary);
+      return {
+        id: permission.id,
+        label: permission.name,
+        className: primaryTag ? getTagBorderClasses(primaryTag.color as TagColor) : undefined,
+      };
+    });
+  };
+
+  return (
+    <CardGrid<Group>
+      entities={groups}
+      loading={loading}
+      emptyState={{
+        icon: <GroupIcon />,
+        title: search ? t('noSearchResults.title') : t('noGroups.title'),
+        description: search ? t('noSearchResults.description') : t('noGroups.description'),
+        action: search ? undefined : <GroupCreateDialog />,
+      }}
+      skeleton={{
+        component: <GroupCardSkeleton />,
+        count: limit,
+      }}
+      renderHeader={(group: Group) => (
+        <CardHeader
+          avatar={{
+            initial: group.name.charAt(0),
+            size: 'lg',
+          }}
+          title={group.name}
+          description={group.description || undefined}
+          color={group.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor}
+          actions={<GroupActions group={group} />}
+        />
+      )}
+      renderBody={(group: Group) => (
+        <CardBody
+          items={[
+            {
+              label: {
+                icon: <Shield className="h-3 w-3" />,
+                text: t('form.permissions'),
+              },
+              value: <ScrollBadges items={transformPermissionsToBadges(group)} height={80} />,
+            },
+            {
+              label: {
+                icon: <Tags className="h-3 w-3" />,
+                text: t('form.tags'),
+              },
+              value: (
+                <ScrollBadges
+                  items={transformTagsToBadges(group.tags)}
+                  height={60}
+                  showAsRound={true}
+                />
+              ),
+            },
+          ]}
+        />
+      )}
+      renderFooter={(group: Group) => <GroupAudit group={group} />}
+    />
+  );
+}

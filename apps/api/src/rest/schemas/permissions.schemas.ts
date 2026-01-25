@@ -1,4 +1,5 @@
-import { PermissionSortableField, SortOrder } from '@logusgraphics/grant-schema';
+import { permissionConditionSchema } from '@grantjs/core';
+import { PermissionSortableField, SortOrder } from '@grantjs/schema';
 
 import { z } from '@/lib/zod-openapi.lib';
 import {
@@ -87,6 +88,14 @@ export const createPermissionRequestSchema = z.object({
     description: 'Primary tag ID for the permission',
     example: '123e4567-e89b-12d3-a456-426614174001',
   }),
+  condition: permissionConditionSchema
+    .nullable()
+    .optional()
+    .openapi({
+      description:
+        'Condition expression for the permission. Can be null, empty object {}, or a valid condition expression.',
+      example: { StringEquals: { 'user.metadata.department': 'sales' } },
+    }),
 });
 
 export const createPermissionResponseSchema = createSuccessResponseSchema(permissionSchema);
@@ -115,17 +124,22 @@ export const updatePermissionRequestSchema = z.object({
     description: 'Primary tag ID for the permission',
     example: '123e4567-e89b-12d3-a456-426614174001',
   }),
+  condition: permissionConditionSchema
+    .nullable()
+    .optional()
+    .openapi({
+      description:
+        'Condition expression for the permission. Can be null, empty object {}, or a valid condition expression.',
+      example: { StringEquals: { 'user.metadata.department': 'sales' } },
+    }),
 });
 
 export const permissionParamsSchema = z.object({
-  id: z
-    .string()
-    .uuid('Invalid permission ID')
-    .openapi({
-      description: 'UUID of the permission',
-      example: '123e4567-e89b-12d3-a456-426614174007',
-      param: { in: 'path', name: 'id' },
-    }),
+  id: z.uuid('Invalid permission ID').openapi({
+    description: 'UUID of the permission',
+    example: '123e4567-e89b-12d3-a456-426614174007',
+    param: { in: 'path', name: 'id' },
+  }),
 });
 
 export const updatePermissionResponseSchema = createSuccessResponseSchema(permissionSchema);

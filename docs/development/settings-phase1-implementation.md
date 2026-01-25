@@ -286,7 +286,7 @@ apps/api/
 │       └── routes/
 │           └── accounts.routes.ts (updated)
 
-packages/@logusgraphics/grant-schema/
+packages/@grantjs/schema/
 └── src/
     ├── schema/
     │   └── accounts/

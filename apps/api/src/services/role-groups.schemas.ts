@@ -2,9 +2,14 @@ import { z } from 'zod';
 
 import { deleteSchema, idSchema } from './common/schemas';
 
-export const queryRoleGroupsArgsSchema = z.object({
-  roleId: idSchema,
-});
+export const queryRoleGroupsArgsSchema = z
+  .object({
+    roleId: idSchema.optional(),
+    groupId: idSchema.optional(),
+  })
+  .refine((data) => data.roleId || data.groupId, {
+    message: 'Either roleId or groupId must be provided',
+  });
 
 export const addRoleGroupInputSchema = z.object({
   roleId: idSchema.refine((roleId) => roleId.trim().length > 0, 'Role ID is required'),

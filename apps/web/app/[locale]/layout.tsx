@@ -7,8 +7,8 @@ import { useParams } from 'next/navigation';
 import { AbstractIntlMessages } from 'next-intl';
 
 import { FullPageLoader } from '@/components/common';
-import { Header } from '@/components/layout/Header';
-import { MessagesProvider } from '@/components/providers/MessagesProvider';
+import { Header } from '@/components/layout';
+import { MessageProvider } from '@/components/providers';
 
 interface LocaleLayoutProps {
   children: React.ReactNode;
@@ -42,11 +42,11 @@ export default function LocaleLayout({ children }: LocaleLayoutProps) {
   }
 
   return (
-    <MessagesProvider messages={messages} locale={locale}>
+    <MessageProvider messages={messages} locale={locale}>
       <div className="relative flex min-h-screen flex-col">
         <Header />
         <main className="flex-1">{children}</main>
       </div>
-    </MessagesProvider>
+    </MessageProvider>
   );
 }

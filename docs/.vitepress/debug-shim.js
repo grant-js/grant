@@ -1,30 +1,8 @@
 // ESM shim for debug module
-// This provides a minimal implementation that satisfies the debug import
+// This re-exports the original debug module with a proper default export
 
-export function formatArgs(args) {
-  return args;
-}
+import debug from 'debug';
 
-export function save(namespaces) {
-  // No-op in browser
-}
-
-export function load() {
-  // No-op in browser
-  return '';
-}
-
-export function useColors() {
-  return false;
-}
-
-export function createDebugger(namespace) {
-  // Return a no-op debug function
-  const debug = () => {};
-  debug.enabled = false;
-  debug.namespace = namespace;
-  return debug;
-}
-
-// Default export
-export default createDebugger;
+// Re-export the debug function as both default and named export
+export const createDebugger = debug;
+export default debug;

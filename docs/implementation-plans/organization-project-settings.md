@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document analyzes and specifies the settings that should be available at the **organization level** and **project level** based on the current state of the Grant Platform. This builds upon the completed account-level settings MVP and extends settings management to the multi-tenant hierarchy.
+This document analyzes and specifies the settings that should be available at the **organization level** and **project level** based on the current state of the Grant. This builds upon the completed account-level settings MVP and extends settings management to the multi-tenant hierarchy.
 
 ## Current State Analysis
 

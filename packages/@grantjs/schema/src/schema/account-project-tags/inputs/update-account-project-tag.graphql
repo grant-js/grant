@@ -1,0 +1,6 @@
+input UpdateAccountProjectTagInput {
+  accountId: ID!
+  projectId: ID!
+  tagId: ID!
+  isPrimary: Boolean!
+}

@@ -1,0 +1,4 @@
+type RevokeMyUserSessionResult {
+  success: Boolean!
+  message: String!
+}

@@ -10,6 +10,7 @@ import {
   sortOrderSchema,
   queryParamsSchema,
   deleteSchema,
+  scopeSchema,
 } from './common/schemas';
 
 export const organizationSortableFieldSchema = z.enum(['name', 'slug', 'createdAt', 'updatedAt']);
@@ -29,6 +30,7 @@ export const createOrganizationInputSchema = z.object({
 export const updateOrganizationParamsSchema = z.object({
   id: idSchema,
   input: z.object({
+    scope: scopeSchema,
     name: nonEmptyNameSchema.nullable().optional(),
   }),
 });

@@ -1,0 +1,4 @@
+type CreateMySecondaryAccountResult {
+  account: Account!
+  accounts: [Account!]!
+}

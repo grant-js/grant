@@ -1,0 +1,10 @@
+input UpdatePermissionInput {
+  scope: Scope!
+  name: String
+  description: String
+  action: String
+  resourceId: ID
+  condition: JSON
+  tagIds: [ID!]
+  primaryTagId: ID
+}

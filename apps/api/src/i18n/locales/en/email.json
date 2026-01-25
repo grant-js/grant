@@ -10,7 +10,7 @@
       "noRequest": "If you didn't create an account, you can safely ignore this email.",
       "typo": "Someone else might have typed your email address by mistake."
     },
-    "signature": "Grant Platform"
+    "signature": "Grant"
   },
   "passwordReset": {
     "subject": "Reset Your Password",
@@ -29,7 +29,9 @@
     "footer": {
       "noRequest": "If you don't recognize this invitation, you can safely ignore this email."
     },
-    "signature": "Grant Platform"
+    "signature": "Grant",
+    "organization": "Organization",
+    "role": "Role"
   },
   "common": {
     "alternativeText": "If the button doesn't work, copy and paste this link:",
@@ -37,6 +39,6 @@
       "noRequest": "If you didn't request this action, you can safely ignore this email.",
       "typo": "Someone else might have entered your email address by mistake."
     },
-    "signature": "Grant Platform Team"
+    "signature": "Grant Team"
   }
 }

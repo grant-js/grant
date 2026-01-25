@@ -1,3 +1,0 @@
-input QueryRoleGroupsInput {
-  roleId: ID!
-}

@@ -1,11 +1,11 @@
 ---
 title: Architecture Overview
-description: Understanding the system design and core components of Grant Platform
+description: Understanding the system design and core components of Grant
 ---
 
 # Architecture Overview
 
-Grant Platform follows a modern, scalable architecture designed for multi-tenancy and high performance.
+Grant follows a modern, scalable architecture designed for multi-tenancy and high performance.
 
 ## System Architecture
 
@@ -17,7 +17,7 @@ graph TB
         API_Client[API Client]
     end
 
-    subgraph "Grant Platform"
+    subgraph "Grant"
         Gateway[API Gateway]
         Auth[Authentication Service]
         RBAC[RBAC Engine]
@@ -109,7 +109,7 @@ graph LR
 
 ## Permission Flow
 
-Here's how permissions are evaluated in Grant Platform:
+Here's how permissions are evaluated in Grant:
 
 ```mermaid
 flowchart TD

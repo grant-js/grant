@@ -5,17 +5,19 @@ import { useMemo } from 'react';
 import { useApolloClient } from '@apollo/client/react';
 import { useTranslations } from 'next-intl';
 
-import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
-import { ProfileInformationForm } from '@/components/settings/ProfileInformationForm';
-import { usePageTitle, useUserMutations } from '@/hooks';
-import { evictMeCache } from '@/hooks/auth/cache';
+import { SettingProfileInformationForm } from '@/components/features/settings';
+import { DashboardLayout } from '@/components/layout';
+import { SettingsSidebar } from '@/components/navigation';
+import { evictAuthCache } from '@/hooks/auth';
+import { usePageTitle } from '@/hooks/common';
+import { useMyMutations } from '@/hooks/me';
 import { useAuthStore } from '@/stores/auth.store';
 
 export default function ProfileSettingsPage() {
   const t = useTranslations('settings.profile');
   usePageTitle('settings.profile');
 
-  const { updateUser, uploadUserPicture } = useUserMutations();
+  const { uploadMyUserPicture, updateMyUser } = useMyMutations();
   const { getCurrentAccount } = useAuthStore();
   const currentAccount = getCurrentAccount();
   const apolloClient = useApolloClient();
@@ -38,8 +40,8 @@ export default function ProfileSettingsPage() {
       return;
     }
 
-    await updateUser(userData.id, { name: values.name });
-    evictMeCache(apolloClient.cache);
+    await updateMyUser({ name: values.name });
+    evictAuthCache(apolloClient.cache);
   };
 
   const handleUploadPicture = async (file: string, filename: string, contentType: string) => {
@@ -47,28 +49,27 @@ export default function ProfileSettingsPage() {
       return;
     }
 
-    await uploadUserPicture({
-      userId: userData.id,
+    await uploadMyUserPicture({
       file,
       filename,
       contentType,
     });
-    evictMeCache(apolloClient.cache);
+    evictAuthCache(apolloClient.cache);
   };
 
   if (!userData) {
     return (
-      <DashboardPageLayout title={t('title')} variant="simple">
+      <DashboardLayout title={t('title')} variant="simple" sidebar={<SettingsSidebar />}>
         <div className="text-muted-foreground">
           <p>{t('notifications.userNotFound')}</p>
         </div>
-      </DashboardPageLayout>
+      </DashboardLayout>
     );
   }
 
   return (
-    <DashboardPageLayout title={t('title')} variant="simple">
-      <ProfileInformationForm
+    <DashboardLayout title={t('title')} variant="simple" sidebar={<SettingsSidebar />}>
+      <SettingProfileInformationForm
         defaultValues={defaultValues}
         onSubmit={handleProfileUpdate}
         onUploadPicture={handleUploadPicture}
@@ -81,6 +82,6 @@ export default function ProfileSettingsPage() {
             : undefined
         }
       />
-    </DashboardPageLayout>
+    </DashboardLayout>
   );
 }

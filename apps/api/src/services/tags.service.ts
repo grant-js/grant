@@ -1,18 +1,18 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { tagAuditLogs } from '@logusgraphics/grant-database';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema } from '@grantjs/database';
+import { tagAuditLogs } from '@grantjs/database';
 import {
   Tag,
   TagPage,
   QueryTagsArgs,
-  MutationUpdateTagArgs,
   MutationDeleteTagArgs,
   CreateTagInput,
-} from '@logusgraphics/grant-schema';
+  UpdateTagInput,
+} from '@grantjs/schema';
 
 import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
@@ -34,7 +34,7 @@ import {
 export class TagService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(tagAuditLogs, 'tagId', user, db);
@@ -105,14 +105,16 @@ export class TagService extends AuditService {
     return validateOutput(createDynamicSingleSchema(tagSchema), tag, context);
   }
 
-  public async updateTag(params: MutationUpdateTagArgs, transaction?: Transaction): Promise<Tag> {
+  public async updateTag(
+    id: string,
+    input: UpdateTagInput,
+    transaction?: Transaction
+  ): Promise<Tag> {
     const context = 'TagService.updateTag';
-    const validatedParams = validateInput(updateTagArgsSchema, params, context);
-
-    const { id, input } = validatedParams;
+    validateInput(updateTagArgsSchema, { id, input }, context);
 
     const oldTag = await this.getTag(id, transaction);
-    const updatedTag = await this.repositories.tagRepository.updateTag({ id, input }, transaction);
+    const updatedTag = await this.repositories.tagRepository.updateTag(id, input, transaction);
 
     const oldValues = {
       id: oldTag.id,

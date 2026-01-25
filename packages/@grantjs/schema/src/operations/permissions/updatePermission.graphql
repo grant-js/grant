@@ -1,0 +1,17 @@
+mutation UpdatePermission($id: ID!, $input: UpdatePermissionInput!) {
+  updatePermission(id: $id, input: $input) {
+    id
+    name
+    action
+    description
+    resourceId
+    resource {
+      id
+      name
+      slug
+    }
+    condition
+    createdAt
+    updatedAt
+  }
+}

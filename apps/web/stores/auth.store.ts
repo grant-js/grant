@@ -1,8 +1,10 @@
-import { Account, AccountType } from '@logusgraphics/grant-schema';
+import { Account, AccountType } from '@grantjs/schema';
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 
 import { getStoredTokens, removeStoredTokens, setStoredTokens } from '@/lib/auth';
+
+const STORE_NAME = 'grant-auth-store';
 
 interface AuthState {
   // Authentication state
@@ -210,7 +212,7 @@ export const useAuthStore = create<AuthState>()(
         },
       }),
       {
-        name: 'auth-store',
+        name: STORE_NAME,
         // Only persist auth-related data, not loading states
         partialize: (state) => ({
           accounts: state.accounts,
@@ -238,7 +240,7 @@ export const useAuthStore = create<AuthState>()(
       }
     ),
     {
-      name: 'auth-store',
+      name: STORE_NAME,
     }
   )
 );

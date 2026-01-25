@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from 'crypto';
 
+import { MILLISECONDS_PER_MINUTE } from '@grantjs/constants';
 import { compareSync, hashSync } from 'bcrypt';
 
 export interface Token {
@@ -19,7 +20,7 @@ export function generateRandomBytes(length: number): Buffer {
 
 export function generateSecureToken(validityMinutes: number = 60, tokenLength: number = 32): Token {
   const token = generateRandomBytes(tokenLength).toString('hex');
-  const validUntil = Date.now() + validityMinutes * 60 * 1000;
+  const validUntil = Date.now() + validityMinutes * MILLISECONDS_PER_MINUTE;
   return { token, validUntil };
 }
 

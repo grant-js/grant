@@ -1,11 +1,11 @@
 ---
 title: Observability Overview
-description: Comprehensive guide to logging, tracing, metrics, and analytics in Grant Platform
+description: Comprehensive guide to logging, tracing, metrics, and analytics in Grant
 ---
 
 # Observability Overview
 
-Grant Platform provides comprehensive observability capabilities to help you monitor, debug, and optimize your deployment. This guide covers the four pillars of observability implemented in the platform.
+Grant provides comprehensive observability capabilities to help you monitor, debug, and optimize your deployment. This guide covers the four pillars of observability implemented in the platform.
 
 ## The Four Pillars
 
@@ -58,7 +58,7 @@ graph TB
 
 ## Architecture
 
-Grant Platform's observability stack is designed to work in both self-hosted and cloud environments:
+Grant's observability stack is designed to work in both self-hosted and cloud environments:
 
 ```mermaid
 flowchart LR
@@ -352,7 +352,7 @@ req.logger.info({
 
 ## Multi-Tenancy Considerations
 
-Grant Platform is multi-tenant, so observability must support tenant isolation:
+Grant is multi-tenant, so observability must support tenant isolation:
 
 ### Tenant-Scoped Metrics
 

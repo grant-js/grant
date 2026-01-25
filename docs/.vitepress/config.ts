@@ -6,7 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export default withMermaid({
-  title: 'Grant Platform',
+  title: 'Grant',
   description: 'Open-source, multi-tenant RBAC/ACL platform with self-hosting capabilities',
 
   // Site configuration
@@ -16,12 +16,15 @@ export default withMermaid({
   // Ignore dead links during development (docs are being built incrementally)
   ignoreDeadLinks: true,
 
+  // Exclude implementation plans from build (internal documentation only)
+  srcExclude: ['**/implementation-plans/**'],
+
   // Head configuration
   head: [
     ['link', { rel: 'icon', href: '/favicon.svg' }],
     ['meta', { name: 'theme-color', content: '#2563eb' }],
     ['meta', { property: 'og:type', content: 'website' }],
-    ['meta', { property: 'og:title', content: 'Grant Platform' }],
+    ['meta', { property: 'og:title', content: 'Grant' }],
     [
       'meta',
       {
@@ -31,7 +34,7 @@ export default withMermaid({
     ],
     ['meta', { property: 'og:image', content: '/grant-logo.svg' }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
-    ['meta', { name: 'twitter:title', content: 'Grant Platform' }],
+    ['meta', { name: 'twitter:title', content: 'Grant' }],
     [
       'meta',
       {
@@ -57,7 +60,7 @@ export default withMermaid({
       { text: 'API Reference', link: '/api-reference/rest-api' },
       { text: 'Self-Hosting', link: '/self-hosting/README' },
       { text: 'SaaS', link: '/saas/README' },
-      { text: 'GitHub', link: 'https://github.com/logusgraphics/grant-platform' },
+      { text: 'GitHub', link: 'https://github.com/logusgraphics/grant' },
     ],
 
     // Sidebar
@@ -86,10 +89,7 @@ export default withMermaid({
         {
           text: 'Core Concepts',
           items: [
-            { text: 'Accounts & Organizations', link: '/core-concepts/accounts-organizations' },
-            { text: 'Projects & Scoping', link: '/core-concepts/projects-scoping' },
-            { text: 'Users & Roles', link: '/core-concepts/users-roles' },
-            { text: 'Groups & Permissions', link: '/core-concepts/groups-permissions' },
+            { text: 'Resources', link: '/core-concepts/resources' },
             {
               text: 'Organization Members & Invitations',
               link: '/core-concepts/organization-invitations',
@@ -101,22 +101,9 @@ export default withMermaid({
           text: 'Development',
           items: [
             { text: 'Development Guide', link: '/development/guide' },
-            { text: 'Project Structure', link: '/development/structure' },
-            { text: 'GraphQL API', link: '/development/graphql' },
             { text: 'REST API', link: '/development/rest-api' },
-            { text: 'Database Schema', link: '/development/database' },
             { text: 'Testing', link: '/development/testing' },
             { text: 'Security Audit', link: '/development/security-audit' },
-            { text: 'Contributing', link: '/development/contributing' },
-          ],
-        },
-        {
-          text: 'Packages',
-          items: [
-            { text: 'Core Package', link: '/packages/core' },
-            { text: 'Database Package', link: '/packages/database' },
-            { text: 'Schema Package', link: '/packages/schema' },
-            { text: 'Constants Package', link: '/packages/constants' },
           ],
         },
         {
@@ -133,28 +120,21 @@ export default withMermaid({
           items: [
             { text: 'Open Source vs SaaS', link: '/business-model/open-source-vs-saas' },
             { text: 'Feature Comparison', link: '/business-model/feature-comparison' },
-            { text: 'Pricing', link: '/business-model/pricing' },
-            { text: 'Migration Guide', link: '/business-model/migration' },
+            { text: 'License Strategy', link: '/business-model/license-strategy' },
+            { text: 'Recommendations', link: '/business-model/recommendations' },
           ],
         },
         {
-          text: 'Enterprise',
+          text: 'SaaS & Enterprise',
           items: [
-            { text: 'SaaS Features', link: '/enterprise/saas-features' },
-            { text: 'Enterprise Support', link: '/enterprise/support' },
-            { text: 'Compliance', link: '/enterprise/compliance' },
-            { text: 'Custom Integrations', link: '/enterprise/integrations' },
+            { text: 'SaaS Features', link: '/saas/README' },
+            { text: 'Migration Guide', link: '/migration/README' },
           ],
         },
         {
           text: 'API Reference',
           items: [
             { text: 'REST API', link: '/api-reference/rest-api' },
-            { text: 'GraphQL Schema', link: '/api-reference/graphql-schema' },
-            { text: 'Authentication', link: '/api-reference/authentication' },
-            { text: 'Queries', link: '/api-reference/queries' },
-            { text: 'Mutations', link: '/api-reference/mutations' },
-            { text: 'Subscriptions', link: '/api-reference/subscriptions' },
             { text: 'Error Handling', link: '/api-reference/error-handling' },
           ],
         },
@@ -167,11 +147,9 @@ export default withMermaid({
             { text: 'Email Service & Adapters', link: '/advanced-topics/email-service' },
             { text: 'Job Scheduling & Background Tasks', link: '/advanced-topics/job-scheduling' },
             { text: 'Privacy Settings', link: '/advanced-topics/privacy-settings' },
-            { text: 'Performance Optimization', link: '/advanced-topics/performance' },
             { text: 'Field Selection', link: '/advanced-topics/field-selection' },
             { text: 'Audit Logging', link: '/advanced-topics/audit-logging' },
             { text: 'Transaction Management', link: '/advanced-topics/transactions' },
-            { text: 'Custom Middleware', link: '/advanced-topics/middleware' },
           ],
         },
         {
@@ -185,22 +163,12 @@ export default withMermaid({
             { text: 'Business Analytics', link: '/advanced-topics/analytics' },
           ],
         },
-        {
-          text: 'Troubleshooting',
-          items: [
-            { text: 'Common Issues', link: '/troubleshooting/common-issues' },
-            { text: 'Performance Issues', link: '/troubleshooting/performance' },
-            { text: 'Database Issues', link: '/troubleshooting/database' },
-            { text: 'Deployment Issues', link: '/troubleshooting/deployment' },
-            { text: 'FAQ', link: '/troubleshooting/faq' },
-          ],
-        },
       ],
     },
 
     // Social links
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/logusgraphics/grant-platform' },
+      { icon: 'github', link: 'https://github.com/logusgraphics/grant' },
       { icon: 'twitter', link: 'https://twitter.com/logusgraphics' },
     ],
 
@@ -217,7 +185,7 @@ export default withMermaid({
 
     // Edit link
     editLink: {
-      pattern: 'https://github.com/logusgraphics/grant-platform/edit/main/docs/:path',
+      pattern: 'https://github.com/logusgraphics/grant/edit/main/docs/:path',
       text: 'Edit this page on GitHub',
     },
 
@@ -264,52 +232,23 @@ export default withMermaid({
 
   // Vite configuration
   vite: {
-    optimizeDeps: {
-      exclude: ['debug'], // Exclude debug - we're using a shim instead
-    },
     ssr: {
       noExternal: ['vitepress-plugin-mermaid'], // Ensure Mermaid plugin is processed by Vite
     },
-    resolve: {
-      alias: [
-        // Replace debug/src/browser.js with our ESM shim
-        {
-          find: /^debug\/src\/browser\.js$/,
-          replacement: resolve(__dirname, '.vitepress/debug-shim.js'),
-        },
-        // Also handle the full path pattern
-        {
-          find: /debug\/src\/browser/,
-          replacement: resolve(__dirname, '.vitepress/debug-shim.js'),
-        },
-      ],
-    },
     plugins: [
       {
-        name: 'fix-debug-import',
+        name: 'fix-debug-esm',
         enforce: 'pre',
-        resolveId(id) {
-          // Intercept debug/src/browser.js imports and redirect to our shim
-          if (id.includes('debug/src/browser.js') || id === 'debug/src/browser.js') {
-            // Return absolute path to our shim
-            return resolve(__dirname, '.vitepress/debug-shim.js');
+        resolveId(id, importer) {
+          // Intercept any import that resolves to debug/src/browser.js
+          if (id.includes('debug/src/browser') || id.endsWith('debug/src/browser.js')) {
+            return resolve(__dirname, 'debug-shim.js');
           }
         },
-        transform(code, id) {
-          // Transform problematic default import of debug to named import
-          if (
-            code.includes('import createDebugger from') &&
-            code.includes('debug') &&
-            !code.includes('__debug_mod') &&
-            !id.includes('debug-shim.js')
-          ) {
-            return code.replace(
-              /import\s+createDebugger\s+from\s+['"](.*debug.*)['"]/g,
-              (match, importPath) => {
-                // Transform to named import from our shim
-                return `import { createDebugger } from '/.vitepress/debug-shim.js';`;
-              }
-            );
+        load(id) {
+          // Also catch if Vite tries to load the file directly from node_modules
+          if (id.includes('node_modules') && id.includes('debug') && id.includes('browser.js')) {
+            return `export { default } from '${resolve(__dirname, 'debug-shim.js')}';`;
           }
         },
       },

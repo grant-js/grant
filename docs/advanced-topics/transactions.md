@@ -142,7 +142,7 @@ export class TransactionManager {
 ### Transaction Type Definition
 
 ```typescript
-import type { DrizzleDatabase } from '@logusgraphics/grant-database';
+import type { DrizzleDatabase } from '@grantjs/database';
 
 export type Transaction = Parameters<Parameters<DrizzleDatabase['transaction']>[0]>[0];
 ```

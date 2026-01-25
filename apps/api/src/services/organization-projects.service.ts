@@ -1,14 +1,14 @@
-import { DbSchema, organizationProjectsAuditLogs } from '@logusgraphics/grant-database';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema, organizationProjectsAuditLogs } from '@grantjs/database';
 import {
   AddOrganizationProjectInput,
   OrganizationProject,
   RemoveOrganizationProjectInput,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
@@ -28,7 +28,7 @@ import {
 export class OrganizationProjectService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(organizationProjectsAuditLogs, 'organizationProjectId', user, db);

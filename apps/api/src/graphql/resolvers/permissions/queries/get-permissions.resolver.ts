@@ -1,12 +1,12 @@
-import { PermissionModel } from '@logusgraphics/grant-database';
-import { QueryResolvers } from '@logusgraphics/grant-schema';
+import { PermissionModel } from '@grantjs/database';
+import { QueryResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
 import { getDirectFieldSelection } from '@/lib/field-selection.lib';
 
 export const getPermissionsResolver: QueryResolvers<GraphqlContext>['permissions'] = async (
   _parent,
-  { scope, page = 1, limit = 10, sort, search, ids, tagIds },
+  { scope, page, limit, sort, search, ids, tagIds },
   context,
   info
 ) => {

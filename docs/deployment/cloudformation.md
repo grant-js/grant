@@ -1,11 +1,11 @@
 ---
 title: AWS CloudFormation Deployment
-description: Deploy Grant Platform to AWS using CloudFormation templates
+description: Deploy Grant to AWS using CloudFormation templates
 ---
 
 # AWS CloudFormation Deployment
 
-Deploy Grant Platform to AWS with infrastructure as code using CloudFormation templates.
+Deploy Grant to AWS with infrastructure as code using CloudFormation templates.
 
 ## Overview
 
@@ -42,7 +42,7 @@ The CloudFormation templates provide a complete, production-ready AWS deployment
 ```bash
 # From project root
 aws cloudformation create-stack \
-  --stack-name grant-platform-prod \
+  --stack-name grant-prod \
   --template-body file://infrastructure/cloudformation/main.yaml \
   --parameters file://infrastructure/cloudformation/parameters/production.json \
   --capabilities CAPABILITY_IAM
@@ -121,7 +121,7 @@ Access outputs:
 
 ```bash
 aws cloudformation describe-stacks \
-  --stack-name grant-platform-prod \
+  --stack-name grant-prod \
   --query 'Stacks[0].Outputs'
 ```
 
@@ -134,14 +134,14 @@ Connect to an ECS task and run migrations:
 ```bash
 # Get task ARN
 TASK_ARN=$(aws ecs list-tasks \
-  --cluster grant-platform-prod \
+  --cluster grant-prod \
   --service-name api \
   --query 'taskArns[0]' \
   --output text)
 
 # Execute migrations
 aws ecs execute-command \
-  --cluster grant-platform-prod \
+  --cluster grant-prod \
   --task $TASK_ARN \
   --container api \
   --interactive \
@@ -155,7 +155,7 @@ Point your domain to the load balancer:
 ```bash
 # Get load balancer DNS
 ALB_DNS=$(aws cloudformation describe-stacks \
-  --stack-name grant-platform-prod \
+  --stack-name grant-prod \
   --query 'Stacks[0].Outputs[?OutputKey==`LoadBalancerURL`].OutputValue' \
   --output text)
 
@@ -187,7 +187,7 @@ CloudWatch alarms are automatically created for:
 Access logs:
 
 ```bash
-aws logs tail /aws/ecs/grant-platform-prod --follow
+aws logs tail /aws/ecs/grant-prod --follow
 ```
 
 ## Updating the Stack
@@ -197,14 +197,14 @@ Update your deployment:
 ```bash
 # Update with new template
 aws cloudformation update-stack \
-  --stack-name grant-platform-prod \
+  --stack-name grant-prod \
   --template-body file://infrastructure/cloudformation/main.yaml \
   --parameters file://infrastructure/cloudformation/parameters/production.json \
   --capabilities CAPABILITY_IAM
 
 # Monitor update
 aws cloudformation wait stack-update-complete \
-  --stack-name grant-platform-prod
+  --stack-name grant-prod
 ```
 
 ## Cost Estimation
@@ -251,7 +251,7 @@ Store secrets in AWS Secrets Manager:
 ```bash
 # Store JWT secret
 aws secretsmanager create-secret \
-  --name grant-platform/jwt-secret \
+  --name grant/jwt-secret \
   --secret-string "your-secure-secret"
 
 # Reference in CloudFormation
@@ -297,11 +297,11 @@ Access application logs:
 
 ```bash
 # API logs
-aws logs tail /aws/ecs/grant-platform-prod/api --follow
+aws logs tail /aws/ecs/grant-prod/api --follow
 
 # Database logs
 aws rds describe-db-log-files \
-  --db-instance-identifier grant-platform-prod-db
+  --db-instance-identifier grant-prod-db
 ```
 
 ## Troubleshooting
@@ -312,7 +312,7 @@ aws rds describe-db-log-files \
 
 ```bash
 aws cloudformation describe-stack-events \
-  --stack-name grant-platform-prod \
+  --stack-name grant-prod \
   --max-items 10
 ```
 
@@ -327,7 +327,7 @@ aws cloudformation describe-stack-events \
 **Check ECS task logs:**
 
 ```bash
-aws logs tail /aws/ecs/grant-platform-prod/api --follow
+aws logs tail /aws/ecs/grant-prod/api --follow
 ```
 
 **Common issues:**
@@ -371,7 +371,7 @@ Create manual snapshots:
 
 ```bash
 aws rds create-db-snapshot \
-  --db-instance-identifier grant-platform-prod-db \
+  --db-instance-identifier grant-prod-db \
   --db-snapshot-identifier manual-backup-$(date +%Y%m%d)
 ```
 
@@ -389,11 +389,11 @@ Delete the stack and all resources:
 ```bash
 # Delete stack
 aws cloudformation delete-stack \
-  --stack-name grant-platform-prod
+  --stack-name grant-prod
 
 # Wait for completion
 aws cloudformation wait stack-delete-complete \
-  --stack-name grant-platform-prod
+  --stack-name grant-prod
 ```
 
 ::: warning Data Loss
@@ -414,7 +414,7 @@ This will permanently delete all data including:
 ## Support
 
 - **CloudFormation Templates**: `infrastructure/cloudformation/`
-- **GitHub Issues**: [Report issues](https://github.com/logusgraphics/grant-platform/issues)
+- **GitHub Issues**: [Report issues](https://github.com/logusgraphics/grant/issues)
 - **AWS Support**: For AWS-specific issues
 
 ---

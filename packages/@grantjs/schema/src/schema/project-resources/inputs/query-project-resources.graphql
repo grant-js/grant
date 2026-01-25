@@ -1,0 +1,4 @@
+input QueryProjectResourcesInput {
+  projectId: ID
+  resourceId: ID
+}

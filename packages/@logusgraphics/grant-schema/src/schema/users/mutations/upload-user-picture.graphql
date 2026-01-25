@@ -1,8 +1,0 @@
-type UploadUserPictureResult {
-  url: String!
-  path: String!
-}
-
-extend type Mutation {
-  uploadUserPicture(input: UploadUserPictureInput!): UploadUserPictureResult!
-}

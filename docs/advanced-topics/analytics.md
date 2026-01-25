@@ -1,11 +1,11 @@
 ---
 title: Business Analytics
-description: Track user behavior and business metrics in Grant Platform
+description: Track user behavior and business metrics in Grant
 ---
 
 # Business Analytics
 
-Grant Platform includes comprehensive analytics capabilities to track user behavior, feature usage, and business metrics. This guide covers analytics implementation and best practices.
+Grant includes comprehensive analytics capabilities to track user behavior, feature usage, and business metrics. This guide covers analytics implementation and best practices.
 
 ## Overview
 
@@ -149,7 +149,7 @@ CREATE INDEX idx_analytics_events_account_event_time
 ### Drizzle Schema
 
 ```typescript
-// packages/@logusgraphics/grant-database/src/schema/analytics.schema.ts
+// packages/@grantjs/database/src/schema/analytics.schema.ts
 import { pgTable, uuid, varchar, jsonb, timestamp, inet, text, index } from 'drizzle-orm/pg-core';
 import { users } from './users.schema';
 import { accounts } from './accounts.schema';
@@ -204,8 +204,8 @@ export const analyticsEvents = pgTable(
 ```typescript
 // src/services/analytics.service.ts
 import { eq, and, gte, lte, sql } from 'drizzle-orm';
-import { DbSchema } from '@logusgraphics/grant-database';
-import { analyticsEvents } from '@logusgraphics/grant-database/schema';
+import { DbSchema } from '@grantjs/database';
+import { analyticsEvents } from '@grantjs/database/schema';
 import { config } from '@/config';
 import { logger } from '@/lib/logger';
 

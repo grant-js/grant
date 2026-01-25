@@ -1,4 +1,4 @@
-import { DbSchema } from '@logusgraphics/grant-database';
+import { DbSchema } from '@grantjs/database';
 
 export type Transaction = Parameters<Parameters<DbSchema['transaction']>[0]>[0];
 

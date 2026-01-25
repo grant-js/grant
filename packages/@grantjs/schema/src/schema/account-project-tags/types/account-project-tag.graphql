@@ -1,0 +1,13 @@
+type AccountProjectTag implements Auditable {
+  id: ID!
+  accountId: ID!
+  projectId: ID!
+  tagId: ID!
+  isPrimary: Boolean!
+  account: Account
+  project: Project
+  tag: Tag
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}

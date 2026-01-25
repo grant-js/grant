@@ -1,1 +1,1 @@
-export { getProjectsResolver as getProjects } from './get-projects.resolver';
+export { getProjects } from './get-projects.resolver';

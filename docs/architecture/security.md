@@ -5,7 +5,7 @@ description: Authentication, authorization, and session management architecture
 
 # Security & Session Management
 
-Grant Platform implements a comprehensive security model with JWT-based authentication, device-aware session management, and fine-grained access control.
+Grant implements a comprehensive security model with JWT-based authentication, device-aware session management, and fine-grained access control.
 
 ## Authentication Architecture
 
@@ -67,14 +67,20 @@ Access tokens are JWT tokens containing:
 ```typescript
 {
   sub: string; // User ID
-  aud: string; // Audience (account scope, e.g., "account:uuid")
+  aud: string; // Audience (platform API URL, e.g., "https://api.grant.com")
+  iss: string; // Issuer (platform API URL, same as audience)
   exp: number; // Expiration timestamp
   iat: number; // Issued at timestamp
-  jti: string; // JWT ID (Session ID)
+  jti: string; // JWT ID (Session ID for user sessions, API Key ID for API keys)
+  scope?: string; // Optional: Custom claim for tenant scope (e.g., "project:uuid" for API keys)
 }
 ```
 
-The `jti` (JWT ID) claim contains the session ID, allowing the system to identify and revoke specific sessions.
+**Key Points:**
+
+- **`aud` and `iss`**: Both are set to the platform API URL (`config.app.url`), identifying the platform itself as the token consumer and issuer (following RFC 7519 standard)
+- **`jti`**: Contains the session ID for user sessions, or the API key ID for API key tokens, allowing the system to identify and revoke specific sessions or keys
+- **`scope`**: Custom claim used in API key tokens to identify tenant context (e.g., `project:{project-id}`). For user sessions, scope is determined from operation context or stored in the session's `audience` field in the database
 
 ## Session Management
 
@@ -83,7 +89,7 @@ The `jti` (JWT ID) claim contains the session ID, allowing the system to identif
 Sessions are **unique per device** based on a combination of:
 
 - **User ID** - The authenticated user
-- **Audience** - The account scope (e.g., `account:uuid`)
+- **Audience** - The account/organization/project scope (e.g., `account:uuid`, `organization:uuid`, `project:uuid`) - stored in the database `audience` field, not in the JWT `aud` claim
 - **User Agent** - Browser/client identifier
 - **IP Address** - Client IP address
 
@@ -131,7 +137,7 @@ CREATE TABLE user_sessions (
   user_id UUID NOT NULL,
   user_authentication_method_id UUID NOT NULL,
   token VARCHAR(255) UNIQUE NOT NULL,  -- Refresh token
-  audience VARCHAR(255) NOT NULL,        -- Account scope
+  audience VARCHAR(255) NOT NULL,        -- Tenant scope (account/organization/project, e.g., "account:uuid")
   expires_at TIMESTAMP NOT NULL,
   last_used_at TIMESTAMP,
   user_agent VARCHAR(500),              -- Device identifier
@@ -219,9 +225,10 @@ Expired sessions are automatically filtered out when querying active sessions.
 
 ### Session Isolation
 
-- Sessions are isolated per user and account scope
+- Sessions are isolated per user and tenant scope (account/organization/project)
 - Each device/browser combination gets its own session
 - Revoking one session doesn't affect others
+- The tenant scope is stored in the session's `audience` field in the database, while the JWT `aud` claim identifies the platform API URL
 
 ### Session Tracking
 

@@ -1,0 +1,5 @@
+enum TokenType {
+  session
+  apiKey
+  system
+}

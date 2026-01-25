@@ -1,0 +1,223 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1755976996252,
+      "tag": "0000_unusual_boomerang",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1755978949384,
+      "tag": "0001_fancy_gorgon",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1756037846543,
+      "tag": "0002_nice_blonde_phantom",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1756038741073,
+      "tag": "0003_magical_gateway",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1756104960284,
+      "tag": "0004_married_maggott",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1756105003965,
+      "tag": "0005_goofy_lady_bullseye",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1756105238966,
+      "tag": "0006_parallel_mole_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1756113093944,
+      "tag": "0007_goofy_lethal_legion",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1756289941941,
+      "tag": "0008_public_harry_osborn",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1757082111613,
+      "tag": "0009_fair_bucky",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1757156391220,
+      "tag": "0010_sleepy_maddog",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1757156436728,
+      "tag": "0011_abnormal_night_thrasher",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1758397604318,
+      "tag": "0012_confused_meggan",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1759141718134,
+      "tag": "0013_elite_lester",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1759573408815,
+      "tag": "0014_fresh_tomorrow_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1759952814617,
+      "tag": "0015_fixed_hellcat",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1760873306851,
+      "tag": "0016_dazzling_purifiers",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1763746529057,
+      "tag": "0017_careful_spencer_smythe",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1764520650326,
+      "tag": "0018_fluffy_ink",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1765227966565,
+      "tag": "0019_broken_the_hood",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1765239469728,
+      "tag": "0020_closed_paper_doll",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1765268501260,
+      "tag": "0021_happy_enchantress",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1765269005010,
+      "tag": "0022_foamy_doctor_doom",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1765443972805,
+      "tag": "0023_elite_jane_foster",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1766688291886,
+      "tag": "0024_careful_violations",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1766749116224,
+      "tag": "0025_great_jack_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1766753046365,
+      "tag": "0026_reflective_harry_osborn",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1767528533927,
+      "tag": "0027_curved_mongoose",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1767906933937,
+      "tag": "0028_spotty_sunset_bain",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1768342774352,
+      "tag": "0029_busy_shard",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1768835037563,
+      "tag": "0030_ordinary_kronos",
+      "breakpoints": true
+    }
+  ]
+}

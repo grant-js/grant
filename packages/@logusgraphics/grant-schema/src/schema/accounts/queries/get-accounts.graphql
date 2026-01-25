@@ -1,3 +1,0 @@
-extend type Query {
-  accounts(page: Int, limit: Int, search: String, sort: AccountSortInput, ids: [ID!]): AccountPage!
-}

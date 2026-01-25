@@ -14,7 +14,7 @@
  * - NODE_ENV - Standard Node.js environment variable (no prefix)
  */
 
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '@logusgraphics/grant-constants';
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '@grantjs/constants';
 import * as dotenv from 'dotenv';
 
 import { BadRequestError } from '@/lib/errors';
@@ -73,7 +73,7 @@ function getEnvEnum<T extends string>(
 
 export const APP_CONFIG = {
   /** Application name */
-  name: 'Grant Platform API',
+  name: 'Grant API',
 
   /** Application version */
   version: '1.0.0',
@@ -103,7 +103,7 @@ export const APP_CONFIG = {
 
 export const DB_CONFIG = {
   /** PostgreSQL connection string */
-  url: getEnv('DB_URL', 'postgresql://grant_user:grant_password@localhost:5432/grant_platform'),
+  url: getEnv('DB_URL', 'postgresql://grant_user:grant_password@localhost:5432/grant'),
 
   /** Maximum number of connections in the pool */
   poolMax: getEnvNumber('DB_POOL_MAX', 20),
@@ -142,7 +142,7 @@ export const JWT_CONFIG = {
   algorithm: 'HS256' as const,
 
   /** JWT issuer */
-  issuer: 'grant-platform',
+  issuer: 'grant',
 } as const;
 
 // ============================================================================
@@ -297,7 +297,7 @@ export const SWAGGER_CONFIG = {
   enabled: getEnvBoolean('SWAGGER_ENABLED', true),
 
   /** Custom site title for Swagger UI */
-  siteTitle: getEnv('SWAGGER_SITE_TITLE', 'Grant Platform API Docs'),
+  siteTitle: getEnv('SWAGGER_SITE_TITLE', 'Grant API Docs'),
 
   /** Persist authorization between page refreshes */
   persistAuthorization: getEnvBoolean('SWAGGER_PERSIST_AUTHORIZATION', true),
@@ -371,7 +371,7 @@ export const EMAIL_CONFIG = {
   from: getEnv('EMAIL_FROM', 'noreply@yourdomain.com'),
 
   /** From name displayed in emails */
-  fromName: process.env.EMAIL_FROM_NAME || 'Grant Platform',
+  fromName: process.env.EMAIL_FROM_NAME || 'Grant',
 
   /** Mailgun configuration */
   mailgun: {

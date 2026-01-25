@@ -1,14 +1,17 @@
-import { MILLISECONDS_PER_MINUTE } from '@logusgraphics/grant-constants';
-import { DbSchema, apiKeyAuditLogs } from '@logusgraphics/grant-database';
+import { MILLISECONDS_PER_MINUTE } from '@grantjs/constants';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema, apiKeyAuditLogs } from '@grantjs/database';
 import {
   ApiKey,
   ApiKeyPage,
+  CreateApiKeyInput,
   CreateApiKeyResult,
   ExchangeApiKeyInput,
-  ProjectUserApiKey,
   QueryApiKeysArgs,
+  Scope,
   Tenant,
-} from '@logusgraphics/grant-schema';
+  TokenType,
+} from '@grantjs/schema';
 import jwt, { type JwtPayload } from 'jsonwebtoken';
 
 import { config } from '@/config';
@@ -22,7 +25,6 @@ import {
   validateInput,
   validateOutput,
 } from '@/services/common';
-import { AuthenticatedUser } from '@/types';
 
 import {
   apiKeySchema,
@@ -41,10 +43,16 @@ interface ExchangeTokenResult {
   expiresIn: number;
 }
 
+interface SignTokenParams {
+  apiKeyId: string;
+  scope: Scope;
+  userId: string;
+}
+
 export class ApiKeyService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(apiKeyAuditLogs, 'apiKeyId', user, db);
@@ -54,11 +62,12 @@ export class ApiKeyService extends AuditService {
     return new Date(from + config.jwt.accessTokenExpirationMinutes * MILLISECONDS_PER_MINUTE);
   }
 
-  private signToken(apiKey: ApiKey, scope: string): string {
-    const sub = apiKey.createdBy;
+  private signToken(params: SignTokenParams): string {
+    const { apiKeyId, scope, userId } = params;
+    const sub = userId;
     const aud = config.app.url;
     const iss = config.app.url;
-    const jti = apiKey.id;
+    const jti = apiKeyId;
     const iat = Math.floor(Date.now() / 1000);
     const exp = Math.floor(this.getAccessTokenExpirationDate(Date.now()).getTime() / 1000);
 
@@ -69,7 +78,8 @@ export class ApiKeyService extends AuditService {
       exp,
       iat,
       jti,
-      scope,
+      type: TokenType.ApiKey, // Token type: ApiKey (enum value: 'apiKey')
+      scope, // Required for API key tokens (fixed scope)
     };
 
     return jwt.sign(jwtPayload, config.jwt.secret);
@@ -101,11 +111,7 @@ export class ApiKeyService extends AuditService {
   }
 
   public async createApiKey(
-    params: {
-      name?: string | null;
-      description?: string | null;
-      expiresAt?: Date | null;
-    },
+    params: Omit<CreateApiKeyInput, 'scope'>,
     transaction?: Transaction
   ): Promise<CreateApiKeyResult> {
     const context = 'ApiKeyService.createApiKey';
@@ -209,11 +215,13 @@ export class ApiKeyService extends AuditService {
 
     await this.repositories.apiKeyRepository.updateLastUsedAt(apiKey.id, new Date(), transaction);
 
-    let pivot: ProjectUserApiKey | null = null;
+    let isApiKeyInScope: boolean = false;
+    let userId: string | null = null;
 
     switch (scope.tenant) {
       case Tenant.ProjectUser: {
-        const [projectId, userId] = scope.id.split(':');
+        const [projectId, projectUserId] = scope.id.split(':');
+        userId = projectUserId;
         if (!projectId || !userId) {
           throw new AuthenticationError(
             'Invalid projectUser scope: id must be in format "projectId:userId"',
@@ -224,7 +232,7 @@ export class ApiKeyService extends AuditService {
           { projectId, userId },
           transaction
         );
-        pivot = pivots.find((p) => p.apiKeyId === apiKey.id) || null;
+        isApiKeyInScope = pivots.some((p) => p.apiKeyId === apiKey.id);
         break;
       }
 
@@ -245,15 +253,18 @@ export class ApiKeyService extends AuditService {
         );
     }
 
-    if (!pivot) {
+    if (!isApiKeyInScope) {
       throw new AuthenticationError(
         'API key is not associated with the specified scope',
         'errors:auth.apiKeyNoScope'
       );
     }
 
-    const tokenScope = `${scope.tenant}:${pivot.projectId}`;
-    const accessToken = this.signToken(apiKey, tokenScope);
+    if (!userId) {
+      throw new AuthenticationError('User ID not found', 'errors:auth.userIdNotFound');
+    }
+
+    const accessToken = this.signToken({ apiKeyId: apiKey.id, scope, userId });
     const expiresIn = config.jwt.accessTokenExpirationMinutes * 60;
 
     const response: ExchangeTokenResult = {

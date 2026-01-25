@@ -1,0 +1,5 @@
+type ResourcePage implements PaginatedResults {
+  resources: [Resource!]!
+  totalCount: Int!
+  hasNextPage: Boolean!
+}

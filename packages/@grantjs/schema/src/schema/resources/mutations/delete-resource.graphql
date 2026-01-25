@@ -1,0 +1,3 @@
+extend type Mutation {
+  deleteResource(id: ID!, scope: Scope!): Resource!
+}

@@ -1,6 +1,6 @@
 # Security Audit System
 
-The Grant Platform includes a comprehensive security audit system to identify and fix vulnerabilities in dependencies across the entire monorepo.
+The Grant includes a comprehensive security audit system to identify and fix vulnerabilities in dependencies across the entire monorepo.
 
 ## Quick Start
 

@@ -2,8 +2,9 @@
 
 import { useTranslations } from 'next-intl';
 
-import { PreferencesSettings } from '@/components/settings/PreferencesSettings';
-import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
+import { SettingPreferences } from '@/components/features/settings';
+import { DashboardLayout } from '@/components/layout';
+import { SettingsSidebar } from '@/components/navigation';
 import { usePageTitle } from '@/hooks';
 
 export default function PreferencesSettingsPage() {
@@ -11,8 +12,8 @@ export default function PreferencesSettingsPage() {
   usePageTitle('settings.preferences');
 
   return (
-    <DashboardPageLayout title={t('title')} variant="simple">
-      <PreferencesSettings />
-    </DashboardPageLayout>
+    <DashboardLayout title={t('title')} variant="simple" sidebar={<SettingsSidebar />}>
+      <SettingPreferences />
+    </DashboardLayout>
   );
 }

@@ -1,0 +1,50 @@
+query GetOrganizationMembers(
+  $scope: Scope!
+  $page: Int
+  $limit: Int
+  $search: String
+  $sort: OrganizationMemberSortInput
+  $status: OrganizationInvitationStatus
+) {
+  organizationMembers(
+    scope: $scope
+    page: $page
+    limit: $limit
+    search: $search
+    sort: $sort
+    status: $status
+  ) {
+    members {
+      id
+      name
+      email
+      type
+      role {
+        id
+        name
+        description
+      }
+      status
+      user {
+        id
+        name
+      }
+      invitation {
+        id
+        email
+        status
+        expiresAt
+        invitedAt
+        createdAt
+        token
+        inviter {
+          id
+          name
+        }
+      }
+      createdAt
+    }
+    totalCount
+    hasNextPage
+  }
+}

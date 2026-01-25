@@ -1,15 +1,11 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { projectGroupAuditLogs } from '@logusgraphics/grant-database';
-import {
-  ProjectGroup,
-  RemoveProjectGroupInput,
-  AddProjectGroupInput,
-} from '@logusgraphics/grant-schema';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema } from '@grantjs/database';
+import { projectGroupAuditLogs } from '@grantjs/database';
+import { ProjectGroup, RemoveProjectGroupInput, AddProjectGroupInput } from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
@@ -28,7 +24,7 @@ import {
 export class ProjectGroupService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(projectGroupAuditLogs, 'projectGroupId', user, db);

@@ -1,16 +1,16 @@
-import { STANDARD_ROLES } from '@logusgraphics/grant-constants';
-import { DbSchema, organizationRolesAuditLogs } from '@logusgraphics/grant-database';
+import { ORGANIZATION_ROLE_DEFINITIONS } from '@grantjs/constants';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema, organizationRolesAuditLogs } from '@grantjs/database';
 import {
   AddOrganizationRoleInput,
   OrganizationRole,
   RemoveOrganizationRoleInput,
   Role,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
@@ -29,7 +29,7 @@ import {
 export class OrganizationRoleService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(organizationRolesAuditLogs, 'organizationRoleId', user, db);
@@ -208,44 +208,81 @@ export class OrganizationRoleService extends AuditService {
 
     const results = [];
 
-    for (const roleData of STANDARD_ROLES) {
-      const role = await this.repositories.roleRepository.createRole(
+    // Only seed organization-level roles, not account-level roles
+    for (const roleData of Object.values(ORGANIZATION_ROLE_DEFINITIONS)) {
+      // Check if role already exists
+      const existingRoles = await this.repositories.roleRepository.getRoles(
         {
-          name: roleData.name,
-          description: roleData.description,
+          search: roleData.name,
+          limit: 1,
         },
         transaction
       );
 
-      const organizationRole =
-        await this.repositories.organizationRoleRepository.addOrganizationRole(
+      let role = existingRoles.roles.find((r) => r.name === roleData.name);
+
+      // Only create role if it doesn't exist
+      if (!role) {
+        role = await this.repositories.roleRepository.createRole(
           {
-            organizationId,
-            roleId: role.id,
+            name: roleData.name,
+            description: roleData.description,
           },
           transaction
         );
+      }
 
-      const newValues = {
-        id: organizationRole.id,
-        organizationId: organizationRole.organizationId,
-        roleId: organizationRole.roleId,
-        createdAt: organizationRole.createdAt,
-        updatedAt: organizationRole.updatedAt,
-      };
+      // At this point, role is guaranteed to be defined
+      const finalRole = role;
 
-      const metadata = {
-        context,
-        roleName: roleData.name,
-        seeded: true,
-      };
+      // Check if organization-role relationship already exists
+      const existingOrganizationRoles =
+        await this.repositories.organizationRoleRepository.getOrganizationRoles(
+          { organizationId },
+          transaction
+        );
 
-      await this.logCreate(organizationRole.id, newValues, metadata, transaction);
+      if (!existingOrganizationRoles.some((or) => or.roleId === finalRole.id)) {
+        // Only create relationship if it doesn't exist
+        const organizationRole =
+          await this.repositories.organizationRoleRepository.addOrganizationRole(
+            {
+              organizationId,
+              roleId: finalRole.id,
+            },
+            transaction
+          );
 
-      results.push({
-        role,
-        organizationRole,
-      });
+        const newValues = {
+          id: organizationRole.id,
+          organizationId: organizationRole.organizationId,
+          roleId: organizationRole.roleId,
+          createdAt: organizationRole.createdAt,
+          updatedAt: organizationRole.updatedAt,
+        };
+
+        const metadata = {
+          context,
+          roleName: roleData.name,
+          seeded: true,
+        };
+
+        await this.logCreate(organizationRole.id, newValues, metadata, transaction);
+
+        results.push({
+          role: finalRole,
+          organizationRole,
+        });
+      } else {
+        // Use existing relationship
+        const existingOrganizationRole = existingOrganizationRoles.find(
+          (or) => or.roleId === finalRole.id
+        )!;
+        results.push({
+          role: finalRole,
+          organizationRole: existingOrganizationRole,
+        });
+      }
     }
 
     return results;

@@ -1,4 +1,4 @@
-import { DbSchema, TagModel } from '@logusgraphics/grant-database';
+import { DbSchema, TagModel } from '@grantjs/database';
 import {
   MutationCreateTagArgs,
   MutationDeleteTagArgs,
@@ -7,16 +7,16 @@ import {
   Tag,
   TagPage,
   Tenant,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 import { DeleteParams, SelectedFields } from '@/services/common';
 
-import { ScopeHandler } from './base/scope-handler';
+import { CacheHandler } from './base/cache-handler';
 
-export class TagHandler extends ScopeHandler {
+export class TagHandler extends CacheHandler {
   constructor(
     readonly cache: IEntityCacheAdapter,
     readonly services: Services,
@@ -70,9 +70,11 @@ export class TagHandler extends ScopeHandler {
           );
           break;
         case Tenant.OrganizationProject:
-        case Tenant.AccountProject:
-          await this.services.projectTags.addProjectTag({ projectId: scope.id, tagId }, tx);
+        case Tenant.AccountProject: {
+          const projectId = this.extractProjectIdFromScope(scope);
+          await this.services.projectTags.addProjectTag({ projectId, tagId }, tx);
           break;
+        }
       }
 
       this.addTagIdToScopeCache(scope, tagId);
@@ -83,7 +85,8 @@ export class TagHandler extends ScopeHandler {
 
   public async updateTag(params: MutationUpdateTagArgs): Promise<Tag> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
-      const updatedTag = await this.services.tags.updateTag(params, tx);
+      const { id: tagId, input } = params;
+      const updatedTag = await this.services.tags.updateTag(tagId, input, tx);
       return updatedTag;
     });
   }
@@ -99,12 +102,11 @@ export class TagHandler extends ScopeHandler {
           );
           break;
         case Tenant.OrganizationProject:
-        case Tenant.AccountProject:
-          await this.services.projectTags.removeProjectTag(
-            { projectId: scope.id, tagId, hardDelete },
-            tx
-          );
+        case Tenant.AccountProject: {
+          const projectId = this.extractProjectIdFromScope(scope);
+          await this.services.projectTags.removeProjectTag({ projectId, tagId, hardDelete }, tx);
           break;
+        }
       }
 
       await Promise.all([
@@ -112,6 +114,7 @@ export class TagHandler extends ScopeHandler {
         this.services.roleTags.removeRoleTags({ tagId, hardDelete }, tx),
         this.services.groupTags.removeGroupTags({ tagId, hardDelete }, tx),
         this.services.permissionTags.removePermissionTags({ tagId, hardDelete }, tx),
+        this.services.resourceTags.removeResourceTags({ tagId, hardDelete }, tx),
       ]);
 
       this.removeTagIdFromScopeCache(scope, tagId);

@@ -1,0 +1,17 @@
+type Project implements Auditable {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String
+  roles: [Role!]
+  groups: [Group!]
+  permissions: [Permission!]
+  users: [User!]
+  resources: [Resource!]
+  tags: [Tag!]
+  organizationTags: [Tag!]
+  accountTags: [Tag!]
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}

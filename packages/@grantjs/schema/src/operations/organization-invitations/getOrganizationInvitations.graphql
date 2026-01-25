@@ -1,0 +1,17 @@
+query GetOrganizationInvitations($scope: Scope!, $status: OrganizationInvitationStatus) {
+  organizationInvitations(scope: $scope, status: $status) {
+    invitations {
+      id
+      organizationId
+      email
+      roleId
+      status
+      expiresAt
+      invitedBy
+      invitedAt
+      createdAt
+    }
+    totalCount
+    hasNextPage
+  }
+}

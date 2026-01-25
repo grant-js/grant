@@ -1,4 +1,4 @@
-import { MutationResolvers } from '@logusgraphics/grant-schema';
+import { MutationResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
 import { AuthenticationError } from '@/lib/errors';
@@ -11,7 +11,7 @@ export const createOrganizationResolver: MutationResolvers<GraphqlContext>['crea
 
     const createdOrganization = await context.handlers.organizations.createOrganization(
       { input },
-      context.user.id
+      context.user.userId
     );
     return createdOrganization;
   };

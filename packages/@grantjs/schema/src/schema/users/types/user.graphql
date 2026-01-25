@@ -1,0 +1,13 @@
+type User implements Auditable {
+  id: ID!
+  name: String!
+  pictureUrl: String
+  metadata: JSON!
+  roles: [Role!]
+  tags: [Tag!]
+  authenticationMethods: [UserAuthenticationMethod!]
+  accounts: [Account!]
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}

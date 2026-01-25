@@ -1,4 +1,4 @@
-import { UserAuthenticationEmailProviderAction } from '@logusgraphics/grant-schema';
+import { UserAuthenticationEmailProviderAction } from '@grantjs/schema';
 import { Octokit } from '@octokit/rest';
 
 import { config } from '@/config';

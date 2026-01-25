@@ -1,15 +1,15 @@
 ---
 title: Docker Deployment
-description: Complete guide for setting up and managing Grant Platform infrastructure with Docker Compose
+description: Complete guide for setting up and managing Grant infrastructure with Docker Compose
 ---
 
 # Docker Deployment
 
-This guide explains how to set up and manage the Grant Platform infrastructure services using Docker Compose.
+This guide explains how to set up and manage the Grant infrastructure services using Docker Compose.
 
 ## Overview
 
-The Grant Platform uses Docker Compose to manage its infrastructure services:
+The Grant uses Docker Compose to manage its infrastructure services:
 
 - **PostgreSQL 16** - Primary database
 - **PgAdmin 4** - Database management UI
@@ -55,7 +55,7 @@ docker-compose logs -f postgres  # specific service
 cp apps/api/.env.example apps/api/.env
 
 # The default DB_URL already matches docker-compose settings
-# DB_URL=postgresql://grant_user:grant_password@localhost:5432/grant_platform
+# DB_URL=postgresql://grant_user:grant_password@localhost:5432/grant
 ```
 
 ### 5. Run API
@@ -73,7 +73,7 @@ Controls Docker Compose services:
 
 ```bash
 # Database
-POSTGRES_DB=grant_platform          # Database name
+POSTGRES_DB=grant          # Database name
 POSTGRES_USER=grant_user            # Database user
 POSTGRES_PASSWORD=grant_password    # Database password
 
@@ -91,7 +91,7 @@ Controls the API application:
 
 ```bash
 # Must match infrastructure settings
-DB_URL=postgresql://grant_user:grant_password@localhost:5432/grant_platform
+DB_URL=postgresql://grant_user:grant_password@localhost:5432/grant
 REDIS_PASSWORD=grant_redis_password
 
 # See apps/api/.env.example for all options
@@ -101,27 +101,27 @@ REDIS_PASSWORD=grant_redis_password
 
 ### PostgreSQL
 
-**Container**: `grant-platform-postgres`
+**Container**: `grant-postgres`
 
 **Port**: `5432`
 
 **Default credentials**:
 
-- Database: `grant_platform`
+- Database: `grant`
 - User: `grant_user`
 - Password: `grant_password`
 
 **Connection string**:
 
 ```
-postgresql://grant_user:grant_password@localhost:5432/grant_platform
+postgresql://grant_user:grant_password@localhost:5432/grant
 ```
 
 **Commands**:
 
 ```bash
 # Connect via psql
-docker exec -it grant-platform-postgres psql -U grant_user -d grant_platform
+docker exec -it grant-postgres psql -U grant_user -d grant
 
 # View logs
 docker-compose logs -f postgres
@@ -132,7 +132,7 @@ docker-compose restart postgres
 
 ### PgAdmin
 
-**Container**: `grant-platform-pgadmin`
+**Container**: `grant-pgadmin`
 
 **Port**: `8080`
 
@@ -146,17 +146,17 @@ docker-compose restart postgres
 **Add Server in PgAdmin**:
 
 1. Right-click "Servers" → "Register" → "Server"
-2. **General tab**: Name = "Grant Platform"
+2. **General tab**: Name = "Grant"
 3. **Connection tab**:
    - Host: `postgres` (service name)
    - Port: `5432`
-   - Database: `grant_platform`
+   - Database: `grant`
    - Username: `grant_user`
    - Password: `grant_password`
 
 ### Redis
 
-**Container**: `grant-platform-redis`
+**Container**: `grant-redis`
 
 **Port**: `6379`
 
@@ -166,17 +166,17 @@ docker-compose restart postgres
 
 ```bash
 # Connect to Redis CLI
-docker exec -it grant-platform-redis redis-cli -a grant_redis_password
+docker exec -it grant-redis redis-cli -a grant_redis_password
 
 # Test connection
 redis-cli -h localhost -p 6379 -a grant_redis_password ping
 # Response: PONG
 
 # View cache keys
-docker exec -it grant-platform-redis redis-cli -a grant_redis_password KEYS 'grant:*'
+docker exec -it grant-redis redis-cli -a grant_redis_password KEYS 'grant:*'
 
 # Monitor operations
-docker exec -it grant-platform-redis redis-cli -a grant_redis_password MONITOR
+docker exec -it grant-redis redis-cli -a grant_redis_password MONITOR
 ```
 
 ## Common Operations
@@ -237,7 +237,7 @@ docker-compose restart postgres
 docker-compose ps
 
 # View resource usage
-docker stats grant-platform-postgres grant-platform-redis
+docker stats grant-postgres grant-redis
 ```
 
 ## Data Management
@@ -246,20 +246,20 @@ docker stats grant-platform-postgres grant-platform-redis
 
 ```bash
 # Create backup
-docker exec grant-platform-postgres pg_dump -U grant_user grant_platform > backup.sql
+docker exec grant-postgres pg_dump -U grant_user grant > backup.sql
 
 # With timestamp
-docker exec grant-platform-postgres pg_dump -U grant_user grant_platform > backup-$(date +%Y%m%d-%H%M%S).sql
+docker exec grant-postgres pg_dump -U grant_user grant > backup-$(date +%Y%m%d-%H%M%S).sql
 ```
 
 ### Restore Database
 
 ```bash
 # Restore from backup
-cat backup.sql | docker exec -i grant-platform-postgres psql -U grant_user -d grant_platform
+cat backup.sql | docker exec -i grant-postgres psql -U grant_user -d grant
 
 # Or
-docker exec -i grant-platform-postgres psql -U grant_user -d grant_platform < backup.sql
+docker exec -i grant-postgres psql -U grant_user -d grant < backup.sql
 ```
 
 ### Reset Database
@@ -270,7 +270,7 @@ cd apps/api && pnpm run stop
 
 # Remove and recreate
 docker-compose down
-docker volume rm grant-platform_postgres_data
+docker volume rm grant_postgres_data
 docker-compose up -d postgres
 
 # Run migrations
@@ -281,10 +281,10 @@ cd apps/api && pnpm run db:migrate
 
 ```bash
 # Flush all cache
-docker exec -it grant-platform-redis redis-cli -a grant_redis_password FLUSHDB
+docker exec -it grant-redis redis-cli -a grant_redis_password FLUSHDB
 
 # Delete specific keys
-docker exec -it grant-platform-redis redis-cli -a grant_redis_password DEL grant:some-key
+docker exec -it grant-redis redis-cli -a grant_redis_password DEL grant:some-key
 ```
 
 ## Production Deployment
@@ -321,7 +321,7 @@ For production, use managed services instead of Docker Compose:
 
 ```bash
 # apps/api/.env (production)
-DB_URL=postgresql://user:pass@your-rds-instance.amazonaws.com:5432/grant_platform
+DB_URL=postgresql://user:pass@your-rds-instance.amazonaws.com:5432/grant
 REDIS_HOST=your-elasticache.cache.amazonaws.com
 REDIS_PORT=6379
 REDIS_PASSWORD=your-secure-password
@@ -348,7 +348,7 @@ sudo lsof -i :8080
 # PgAdmin: "8081:80"
 
 # Update API .env accordingly
-DB_URL=postgresql://grant_user:grant_password@localhost:5433/grant_platform
+DB_URL=postgresql://grant_user:grant_password@localhost:5433/grant
 REDIS_PORT=6380
 ```
 
@@ -371,7 +371,7 @@ docker-compose up -d
 
 # Check for conflicting volumes
 docker volume ls
-docker volume inspect grant-platform_postgres_data
+docker volume inspect grant_postgres_data
 ```
 
 ### Cannot Connect to Database
@@ -389,14 +389,14 @@ docker volume inspect grant-platform_postgres_data
 2. Test connection:
 
    ```bash
-   docker exec -it grant-platform-postgres psql -U grant_user -d grant_platform
+   docker exec -it grant-postgres psql -U grant_user -d grant
    ```
 
 3. Check credentials match in both `.env` files
 
 4. Verify database name matches:
    ```bash
-   docker exec -it grant-platform-postgres psql -U grant_user -l
+   docker exec -it grant-postgres psql -U grant_user -l
    ```
 
 ### Redis Connection Issues
@@ -429,10 +429,10 @@ docker volume inspect grant-platform_postgres_data
 
 ```bash
 # Verify volumes exist
-docker volume ls | grep grant-platform
+docker volume ls | grep grant
 
 # Check volume mounts
-docker inspect grant-platform-postgres | grep Mounts -A 10
+docker inspect grant-postgres | grep Mounts -A 10
 
 # Don't use `docker-compose down -v` (removes volumes)
 # Use `docker-compose down` instead
@@ -446,7 +446,7 @@ The infrastructure settings are pre-configured to work with the API defaults:
 
 **Root `.env`** → **`apps/api/.env`**:
 
-- `POSTGRES_DB=grant_platform` → `DB_URL=postgresql://...@localhost:5432/grant_platform`
+- `POSTGRES_DB=grant` → `DB_URL=postgresql://...@localhost:5432/grant`
 - `POSTGRES_USER=grant_user` → `DB_URL=postgresql://grant_user:...`
 - `POSTGRES_PASSWORD=grant_password` → `DB_URL=postgresql://...grant_password@...`
 - `REDIS_PASSWORD=grant_redis_password` → `REDIS_PASSWORD=grant_redis_password`
@@ -504,10 +504,10 @@ docker-compose down -v
 docker-compose up -d
 
 # Backup
-docker exec grant-platform-postgres pg_dump -U grant_user grant_platform > backup.sql
+docker exec grant-postgres pg_dump -U grant_user grant > backup.sql
 
 # Access
-# PostgreSQL: psql://grant_user:grant_password@localhost:5432/grant_platform
+# PostgreSQL: psql://grant_user:grant_password@localhost:5432/grant
 # PgAdmin: http://localhost:8080
 # Redis: redis-cli -h localhost -p 6379 -a grant_redis_password
 ```

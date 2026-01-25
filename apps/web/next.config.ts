@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   typedRoutes: true,
+  transpilePackages: ['@grantjs/core', '@grantjs/schema'],
   experimental: {
     serverActions: {
       allowedOrigins: ['localhost:3000'],

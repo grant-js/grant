@@ -32,7 +32,13 @@
     "tooShort": "{{field}} muss mindestens {{min}} Zeichen lang sein",
     "tooLong": "{{field}} darf {{max}} Zeichen nicht überschreiten",
     "invalidFormat": "{{field}} hat ein ungültiges Format",
-    "fieldError": "Feld \"{{field}}\": {{message}}"
+    "fieldError": "Feld \"{{field}}\": {{message}}",
+    "invalidStatus": "Ungültiger Status: {{status}}",
+    "invitationNotExpired": "Nur abgelaufene Einladungen können erneuert werden",
+    "maxAccountsReached": "Benutzer hat das maximale Kontolimit erreicht",
+    "alreadyRevoked": "API-Schlüssel wurde bereits widerrufen",
+    "reservedRoleName": "Rollenname '{{roleName}}' ist für Kernplattform-Rollen reserviert und kann nicht verwendet werden",
+    "reservedGroupName": "Gruppenname '{{groupName}}' ist für Kernplattform-Gruppen reserviert und kann nicht verwendet werden"
   },
   "notFound": {
     "resource": "{{resource}} nicht gefunden",

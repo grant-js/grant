@@ -1,0 +1,10 @@
+type ProjectResource implements Auditable {
+  id: ID!
+  projectId: ID!
+  resourceId: ID!
+  project: Project
+  resource: Resource
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}

@@ -1,0 +1,12 @@
+mutation DeleteResource($id: ID!, $scope: Scope!) {
+  deleteResource(id: $id, scope: $scope) {
+    id
+    name
+    slug
+    description
+    actions
+    isActive
+    createdAt
+    updatedAt
+  }
+}

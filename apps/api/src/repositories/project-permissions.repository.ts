@@ -1,10 +1,10 @@
-import { ProjectPermissionModel, projectPermissions } from '@logusgraphics/grant-database';
+import { ProjectPermissionModel, projectPermissions } from '@grantjs/database';
 import {
   AddProjectPermissionInput,
   ProjectPermission,
   QueryProjectPermissionsInput,
   RemoveProjectPermissionInput,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';

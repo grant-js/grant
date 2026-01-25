@@ -1,8 +1,8 @@
-import { TagSortField, SortOrder, Tag } from '@logusgraphics/grant-schema';
+import { SortOrder, Tag, TagSortField } from '@grantjs/schema';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
-import { TagView } from '@/components/features/tags/TagViewSwitcher';
+import { TagView } from '@/components/features/tags/tag-types';
 
 interface TagsState {
   // State
@@ -18,6 +18,9 @@ interface TagsState {
   tags: Tag[];
   loading: boolean;
 
+  // Refetch callback
+  refetch: (() => void) | null;
+
   // Dialog state
   tagToDelete: Tag | null;
   tagToEdit: Tag | null;
@@ -32,6 +35,7 @@ interface TagsState {
   setTotalCount: (count: number) => void;
   setTags: (tags: Tag[]) => void;
   setLoading: (loading: boolean) => void;
+  setRefetch: (refetch: (() => void) | null) => void;
   resetToDefaults: () => void;
   initializeFromUrl: (params: URLSearchParams) => void;
 
@@ -58,6 +62,9 @@ export const useTagsStore = create<TagsState>()(
     tags: [],
     loading: false,
 
+    // Refetch callback
+    refetch: null,
+
     // Dialog state
     tagToDelete: null,
     tagToEdit: null,
@@ -72,6 +79,7 @@ export const useTagsStore = create<TagsState>()(
     setTotalCount: (totalCount) => set({ totalCount }),
     setTags: (tags) => set({ tags }),
     setLoading: (loading) => set({ loading }),
+    setRefetch: (refetch) => set({ refetch }),
     resetToDefaults: () =>
       set({
         page: 1,
@@ -83,6 +91,7 @@ export const useTagsStore = create<TagsState>()(
         isInitialized: false,
         tags: [],
         loading: false,
+        refetch: null,
         tagToDelete: null,
         tagToEdit: null,
         isCreateDialogOpen: false,

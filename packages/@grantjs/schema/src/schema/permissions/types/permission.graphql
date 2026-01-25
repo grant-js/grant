@@ -1,0 +1,13 @@
+type Permission implements Auditable {
+  id: ID!
+  name: String!
+  description: String
+  action: String!
+  resourceId: ID
+  resource: Resource
+  condition: JSON
+  tags: [Tag!]
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}

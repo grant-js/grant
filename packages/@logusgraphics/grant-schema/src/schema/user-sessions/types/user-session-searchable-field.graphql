@@ -1,4 +1,0 @@
-enum UserSessionSearchableField {
-  token
-  audience
-}

@@ -1,0 +1,4 @@
+input UpdateOrganizationMemberInput {
+  scope: Scope!
+  roleId: ID!
+}

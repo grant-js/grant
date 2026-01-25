@@ -1,0 +1,4 @@
+input QueryRoleGroupsInput {
+  roleId: ID
+  groupId: ID
+}

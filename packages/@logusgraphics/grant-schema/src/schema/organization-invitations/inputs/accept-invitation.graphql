@@ -1,4 +1,0 @@
-input AcceptInvitationInput {
-  token: String!
-  userData: UserRegistrationData
-}

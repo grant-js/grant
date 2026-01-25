@@ -10,7 +10,7 @@ import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { FullPageLoader, GithubOAuthButton } from '@/components/common';
+import { FullPageLoader, GithubOAuthButton, PasswordInput } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -21,7 +21,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { PasswordInput } from '@/components/ui/password-input';
 import { useAuthMutations, usePageTitle } from '@/hooks';
 
 const loginSchema = z.object({
@@ -40,7 +39,6 @@ export default function LoginPage() {
   const [isAuthSuccess, setIsAuthSuccess] = useState(false);
   usePageTitle('auth.login');
 
-  // Preserve redirect parameter
   const redirectParam = searchParams.get('redirect');
   const emailParam = searchParams.get('email');
 
@@ -70,15 +68,12 @@ export default function LoginPage() {
         email: values.email,
         password: values.password,
       });
-      // On success, show full page loader and keep form disabled during redirect
       setIsAuthSuccess(true);
     } catch {
-      // Only re-enable form on error
       setIsSubmitting(false);
     }
   };
 
-  // Show full page loader during redirect after successful login
   if (isAuthSuccess) {
     return <FullPageLoader />;
   }

@@ -1,0 +1,3 @@
+extend type Mutation {
+  updateOrganizationMember(userId: ID!, input: UpdateOrganizationMemberInput!): OrganizationMember!
+}

@@ -1,0 +1,9 @@
+mutation DeleteOrganization($id: ID!, $scope: Scope!) {
+  deleteOrganization(id: $id, scope: $scope) {
+    id
+    name
+    slug
+    createdAt
+    updatedAt
+  }
+}

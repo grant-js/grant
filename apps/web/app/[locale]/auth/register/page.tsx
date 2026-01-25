@@ -4,15 +4,19 @@ import { useRef, useState } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
+import { AccountType } from '@grantjs/schema';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AccountType } from '@logusgraphics/grant-schema';
 import { ChevronDown, Info } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
-import { FullPageLoader, GithubOAuthButton } from '@/components/common';
-import { PasswordStrengthIndicator } from '@/components/common/PasswordStrengthIndicator';
+import {
+  FullPageLoader,
+  GithubOAuthButton,
+  PasswordInput,
+  PasswordStrengthIndicator,
+} from '@/components/common';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -29,7 +33,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { PasswordInput } from '@/components/ui/password-input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuthMutations, usePageTitle } from '@/hooks';
 import { Link } from '@/i18n/navigation';
@@ -43,14 +46,11 @@ export default function RegisterPage() {
   const buttonRef = useRef<HTMLButtonElement>(null);
   usePageTitle('auth.register');
 
-  // Preserve redirect and email parameters
   const redirectParam = searchParams.get('redirect');
   const emailParam = searchParams.get('email');
 
-  // Detect if redirect is from organization invitation page
   const isInvitationRedirect = redirectParam?.includes('/invitations/');
 
-  // Default to Organization account type if coming from invitation
   const defaultAccountType = isInvitationRedirect ? AccountType.Organization : AccountType.Personal;
 
   const { register: handleRegister } = useAuthMutations();
@@ -78,17 +78,14 @@ export default function RegisterPage() {
         password: values.password,
         accountType: values.accountType,
       });
-      // On success, show full page loader and keep form disabled during redirect
       setIsAuthSuccess(true);
     } catch {
-      // Only re-enable form on error
       setIsSubmitting(false);
     }
   };
 
   const passwordValue = form.watch('password') || '';
 
-  // Show full page loader during redirect after successful registration
   if (isAuthSuccess) {
     return <FullPageLoader />;
   }

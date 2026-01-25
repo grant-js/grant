@@ -1,0 +1,5 @@
+input AddAccountTagInput {
+  accountId: ID!
+  tagId: ID!
+  isPrimary: Boolean
+}

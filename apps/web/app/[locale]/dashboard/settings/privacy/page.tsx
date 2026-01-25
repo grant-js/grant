@@ -2,8 +2,9 @@
 
 import { useTranslations } from 'next-intl';
 
-import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
-import { PrivacySettings } from '@/components/settings/PrivacySettings';
+import { SettingPrivacy } from '@/components/features/settings';
+import { DashboardLayout } from '@/components/layout';
+import { SettingsSidebar } from '@/components/navigation';
 import { usePageTitle } from '@/hooks';
 
 export default function PrivacySettingsPage() {
@@ -11,8 +12,8 @@ export default function PrivacySettingsPage() {
   usePageTitle('settings.privacy');
 
   return (
-    <DashboardPageLayout title={t('title')} variant="simple">
-      <PrivacySettings />
-    </DashboardPageLayout>
+    <DashboardLayout title={t('title')} variant="simple" sidebar={<SettingsSidebar />}>
+      <SettingPrivacy />
+    </DashboardLayout>
   );
 }

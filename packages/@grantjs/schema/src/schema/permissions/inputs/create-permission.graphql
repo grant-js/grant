@@ -1,0 +1,10 @@
+input CreatePermissionInput {
+  name: String!
+  description: String
+  action: String!
+  resourceId: ID
+  condition: JSON
+  tagIds: [ID!]
+  scope: Scope!
+  primaryTagId: ID
+}

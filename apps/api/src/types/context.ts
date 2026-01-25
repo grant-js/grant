@@ -1,11 +1,13 @@
-import { Handlers } from '@/handlers';
-import { SupportedLocale } from '@/i18n';
+import { SupportedLocale } from '@grantjs/constants';
+import { GrantAuth } from '@grantjs/core';
 
-import { AuthenticatedUser } from './auth';
+import { Handlers } from '@/handlers';
+import { ResourceResolvers } from '@/resource-resolvers';
 
 export interface RequestContext {
-  user: AuthenticatedUser | null;
+  user: GrantAuth | null;
   handlers: Handlers;
+  resourceResolvers: ResourceResolvers;
   origin: string;
   locale: SupportedLocale;
   userAgent: string | null;

@@ -1,15 +1,10 @@
-import { DbSchema, userTagsAuditLogs } from '@logusgraphics/grant-database';
-import {
-  AddUserTagInput,
-  RemoveUserTagInput,
-  UpdateUserTagInput,
-  UserTag,
-} from '@logusgraphics/grant-schema';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema, userTagsAuditLogs } from '@grantjs/database';
+import { AddUserTagInput, RemoveUserTagInput, UpdateUserTagInput, UserTag } from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
@@ -31,7 +26,7 @@ import {
 export class UserTagService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(userTagsAuditLogs, 'userTagId', user, db);

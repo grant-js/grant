@@ -46,8 +46,6 @@ export default function ForgotPasswordPage() {
     try {
       await requestPasswordReset(values.email);
       setIsSuccess(true);
-    } catch {
-      // Error is already handled in the mutation hook
     } finally {
       setIsSubmitting(false);
     }

@@ -1,4 +1,4 @@
-import { DbSchema } from '@logusgraphics/grant-database';
+import { DbSchema } from '@grantjs/database';
 import {
   MutationCreatePermissionArgs,
   MutationDeletePermissionArgs,
@@ -8,16 +8,16 @@ import {
   QueryPermissionsArgs,
   Tag,
   Tenant,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 import { DeleteParams, SelectedFields } from '@/services/common';
 
-import { ScopeHandler } from './base/scope-handler';
+import { CacheHandler } from './base/cache-handler';
 
-export class PermissionHandler extends ScopeHandler {
+export class PermissionHandler extends CacheHandler {
   constructor(
     readonly cache: IEntityCacheAdapter,
     readonly services: Services,
@@ -73,10 +73,11 @@ export class PermissionHandler extends ScopeHandler {
   public async createPermission(params: MutationCreatePermissionArgs): Promise<Permission> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { input } = params;
-      const { name, description, action, scope, tagIds, primaryTagId } = input;
+      const { name, description, resourceId, action, condition, scope, tagIds, primaryTagId } =
+        input;
 
       const permission = await this.services.permissions.createPermission(
-        { name, description, action },
+        { name, description, resourceId, action, condition },
         tx
       );
       const { id: permissionId } = permission;
@@ -89,12 +90,14 @@ export class PermissionHandler extends ScopeHandler {
           );
           break;
         case Tenant.OrganizationProject:
-        case Tenant.AccountProject:
+        case Tenant.AccountProject: {
+          const projectId = this.extractProjectIdFromScope(scope);
           await this.services.projectPermissions.addProjectPermission(
-            { projectId: scope.id, permissionId },
+            { projectId, permissionId },
             tx
           );
           break;
+        }
       }
 
       if (tagIds && tagIds.length > 0) {
@@ -120,16 +123,20 @@ export class PermissionHandler extends ScopeHandler {
       const { tagIds, primaryTagId } = input;
       let currentTagIds: string[] = [];
 
-      if (tagIds && tagIds.length > 0) {
+      if (Array.isArray(tagIds)) {
         const currentTags = await this.services.permissionTags.getPermissionTags(
           { permissionId },
           tx
         );
         currentTagIds = currentTags.map((pt) => pt.tagId);
       }
-      const updatedPermission = await this.services.permissions.updatePermission(params, tx);
+      const updatedPermission = await this.services.permissions.updatePermission(
+        permissionId,
+        input,
+        tx
+      );
 
-      if (tagIds && tagIds.length > 0) {
+      if (Array.isArray(tagIds)) {
         const newTagIds = tagIds.filter((tagId) => !currentTagIds.includes(tagId));
         const removedTagIds = currentTagIds.filter((tagId) => !tagIds.includes(tagId));
         const updatedTagIds = tagIds.filter((tagId) => currentTagIds.includes(tagId));
@@ -170,6 +177,13 @@ export class PermissionHandler extends ScopeHandler {
         tx
       );
       const tagIds = permissionTags.map((pt) => pt.tagId);
+
+      // Get all GroupPermission relationships where this permission is assigned
+      const groupPermissionRelations = await this.services.groupPermissions.getGroupPermissions(
+        { permissionId },
+        tx
+      );
+
       switch (scope.tenant) {
         case Tenant.Organization:
           await this.services.organizationPermissions.removeOrganizationPermission(
@@ -178,19 +192,28 @@ export class PermissionHandler extends ScopeHandler {
           );
           break;
         case Tenant.OrganizationProject:
-        case Tenant.AccountProject:
+        case Tenant.AccountProject: {
+          const projectId = this.extractProjectIdFromScope(scope);
           await this.services.projectPermissions.removeProjectPermission(
-            { projectId: scope.id, permissionId },
+            { projectId, permissionId },
             tx
           );
           break;
+        }
       }
 
-      await Promise.all(
-        tagIds.map((tagId) =>
+      await Promise.all([
+        ...tagIds.map((tagId) =>
           this.services.permissionTags.removePermissionTag({ permissionId, tagId }, tx)
-        )
-      );
+        ),
+        // Remove all GroupPermission relationships
+        ...groupPermissionRelations.map((gp) =>
+          this.services.groupPermissions.removeGroupPermission(
+            { groupId: gp.groupId, permissionId: gp.permissionId },
+            tx
+          )
+        ),
+      ]);
 
       this.removePermissionIdFromScopeCache(scope, permissionId);
 

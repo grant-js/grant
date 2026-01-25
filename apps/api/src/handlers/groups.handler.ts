@@ -1,4 +1,4 @@
-import { DbSchema } from '@logusgraphics/grant-database';
+import { DbSchema } from '@grantjs/database';
 import {
   Group,
   GroupPage,
@@ -9,16 +9,16 @@ import {
   QueryGroupsArgs,
   Tag,
   Tenant,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 import { DeleteParams, SelectedFields } from '@/services/common';
 
-import { ScopeHandler } from './base/scope-handler';
+import { CacheHandler } from './base/cache-handler';
 
-export class GroupHandler extends ScopeHandler {
+export class GroupHandler extends CacheHandler {
   constructor(
     readonly cache: IEntityCacheAdapter,
     readonly services: Services,
@@ -81,9 +81,11 @@ export class GroupHandler extends ScopeHandler {
           );
           break;
         case Tenant.OrganizationProject:
-        case Tenant.AccountProject:
-          await this.services.projectGroups.addProjectGroup({ projectId: scope.id, groupId }, tx);
+        case Tenant.AccountProject: {
+          const projectId = this.extractProjectIdFromScope(scope);
+          await this.services.projectGroups.addProjectGroup({ projectId, groupId }, tx);
           break;
+        }
       }
 
       if (tagIds && tagIds.length > 0) {
@@ -117,19 +119,19 @@ export class GroupHandler extends ScopeHandler {
       const { tagIds, permissionIds, primaryTagId } = input;
       let currentTagIds: string[] = [];
       let currentPermissionIds: string[] = [];
-      if (tagIds && tagIds.length > 0) {
+      if (Array.isArray(tagIds)) {
         const currentTags = await this.services.groupTags.getGroupTags({ groupId }, tx);
         currentTagIds = currentTags.map((gt) => gt.tagId);
       }
-      if (permissionIds && permissionIds.length > 0) {
+      if (Array.isArray(permissionIds)) {
         const currentPermissions = await this.services.groupPermissions.getGroupPermissions(
           { groupId },
           tx
         );
         currentPermissionIds = currentPermissions.map((gp) => gp.permissionId);
       }
-      const updatedGroup = await this.services.groups.updateGroup(params, tx);
-      if (tagIds && tagIds.length > 0) {
+      const updatedGroup = await this.services.groups.updateGroup(groupId, input, tx);
+      if (Array.isArray(tagIds)) {
         const newTagIds = tagIds.filter((tagId) => !currentTagIds.includes(tagId));
         const removedTagIds = currentTagIds.filter((tagId) => !tagIds.includes(tagId));
         const updatedTagIds = tagIds.filter((tagId) => currentTagIds.includes(tagId));
@@ -155,7 +157,7 @@ export class GroupHandler extends ScopeHandler {
           )
         );
       }
-      if (permissionIds && permissionIds.length > 0) {
+      if (Array.isArray(permissionIds)) {
         const newPermissionIds = permissionIds.filter(
           (permissionId) => !currentPermissionIds.includes(permissionId)
         );
@@ -172,6 +174,10 @@ export class GroupHandler extends ScopeHandler {
             this.services.groupPermissions.removeGroupPermission({ groupId, permissionId }, tx)
           )
         );
+
+        if (newPermissionIds.length > 0 || removedPermissionIds.length > 0) {
+          await this.invalidatePermissionsCacheForAllScopes();
+        }
       }
       return updatedGroup;
     });
@@ -186,6 +192,10 @@ export class GroupHandler extends ScopeHandler {
       ]);
       const tagIds = groupTags.map((gt) => gt.tagId);
       const permissionIds = groupPermissions.map((gp) => gp.permissionId);
+
+      // Get all RoleGroup relationships where this group is assigned
+      const roleGroupRelations = await this.services.roleGroups.getRoleGroups({ groupId }, tx);
+
       switch (scope.tenant) {
         case Tenant.Organization:
           await this.services.organizationGroups.removeOrganizationGroup(
@@ -194,17 +204,20 @@ export class GroupHandler extends ScopeHandler {
           );
           break;
         case Tenant.OrganizationProject:
-        case Tenant.AccountProject:
-          await this.services.projectGroups.removeProjectGroup(
-            { projectId: scope.id, groupId },
-            tx
-          );
+        case Tenant.AccountProject: {
+          const projectId = this.extractProjectIdFromScope(scope);
+          await this.services.projectGroups.removeProjectGroup({ projectId, groupId }, tx);
           break;
+        }
       }
       await Promise.all([
         ...tagIds.map((tagId) => this.services.groupTags.removeGroupTag({ groupId, tagId }, tx)),
         ...permissionIds.map((permissionId) =>
           this.services.groupPermissions.removeGroupPermission({ groupId, permissionId }, tx)
+        ),
+        // Remove all RoleGroup relationships
+        ...roleGroupRelations.map((rg) =>
+          this.services.roleGroups.removeRoleGroup({ roleId: rg.roleId, groupId: rg.groupId }, tx)
         ),
       ]);
 

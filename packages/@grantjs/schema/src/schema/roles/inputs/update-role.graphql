@@ -1,0 +1,9 @@
+input UpdateRoleInput {
+  scope: Scope!
+  name: String
+  description: String
+  metadata: JSON
+  tagIds: [ID!]
+  groupIds: [ID!]
+  primaryTagId: ID
+}

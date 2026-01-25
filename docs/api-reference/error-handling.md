@@ -1,6 +1,6 @@
 # Error Handling
 
-Grant Platform provides standardized error handling across all API endpoints with proper HTTP status codes and internationalization support.
+Grant provides standardized error handling across all API endpoints with proper HTTP status codes and internationalization support.
 
 ## Error Response Format
 

@@ -1,0 +1,4 @@
+input ResourceSortInput {
+  field: ResourceSortableField!
+  order: SortOrder!
+}

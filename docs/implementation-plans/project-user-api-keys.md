@@ -2,11 +2,11 @@
 
 ## Overview
 
-This document specifies the design and implementation of an authentication flow for external project users (project_user) that enables external systems to authenticate and authorize requests without requiring users to register accounts in the platform. This system provides API key credentials similar to OAuth 2.0 service accounts, but specifically designed for external systems to proxy authentication and authorization requests to the Grant Platform.
+This document specifies the design and implementation of an authentication flow for external project users (project_user) that enables external systems to authenticate and authorize requests without requiring users to register accounts in the platform. This system provides API key credentials similar to OAuth 2.0 service accounts, but specifically designed for external systems to proxy authentication and authorization requests to the Grant.
 
 ## Problem Statement
 
-The Grant Platform currently supports two types of users:
+The Grant currently supports two types of users:
 
 1. **Platform Users** (`account_user`/`organization_user`)
    - Have `user_authentication_methods` (email/password, OAuth providers)
@@ -52,7 +52,7 @@ User → UserRole → Role → RoleGroup → Group → GroupPermission → Permi
 
 For project-scoped permissions:
 
-- JWT `aud` claim: API URL from `config.app.url` (e.g., `https://api.grant-platform.com`) - identifies the API endpoint (RFC 7519 standard)
+- JWT `aud` claim: API URL from `config.app.url` (e.g., `https://api.grant.com`) - identifies the API endpoint (RFC 7519 standard)
 - Tenant scope is determined from the operation context (e.g., `projectId` parameter) or custom claims (e.g., `scope` claim)
 - User must have a role in the project
 - Role must have groups
@@ -302,8 +302,8 @@ POST /api/projects/:projectId/users/:userId/api-keys
    - Project and user are still active
 3. Generate JWT access token with:
    - `sub`: user ID
-   - `aud`: API base URL from `config.app.url` (configured via `APP_URL` env var, e.g., `https://api.grant-platform.com`) - identifies the intended recipient API endpoint (RFC 7519 standard)
-   - `iss`: API base URL from `config.app.url` (configured via `APP_URL` env var, e.g., `https://api.grant-platform.com`) - identifies the issuer (RFC 7519 standard)
+   - `aud`: API base URL from `config.app.url` (configured via `APP_URL` env var, e.g., `https://api.grant.com`) - identifies the intended recipient API endpoint (RFC 7519 standard)
+   - `iss`: API base URL from `config.app.url` (configured via `APP_URL` env var, e.g., `https://api.grant.com`) - identifies the issuer (RFC 7519 standard)
    - `exp`: Token expiration (configurable, e.g., 1 hour)
    - `iat`: Issued at timestamp
 
@@ -568,9 +568,9 @@ The initial implementation bound API keys directly to `project_id` and `user_id`
 
 **Files to Refactor:**
 
-- `packages/@logusgraphics/grant-database/src/schemas/project-user-api-keys.schema.ts` → Split into:
-  - `packages/@logusgraphics/grant-database/src/schemas/api-keys.schema.ts` (core table)
-  - `packages/@logusgraphics/grant-database/src/schemas/project-user-api-keys.schema.ts` (pivot table)
+- `packages/@grantjs/database/src/schemas/project-user-api-keys.schema.ts` → Split into:
+  - `packages/@grantjs/database/src/schemas/api-keys.schema.ts` (core table)
+  - `packages/@grantjs/database/src/schemas/project-user-api-keys.schema.ts` (pivot table)
 
 **Migration Strategy:**
 
@@ -652,7 +652,7 @@ The initial implementation bound API keys directly to `project_id` and `user_id`
 
 - `apps/api/src/handlers/api-keys.handler.ts` ✅
 - `apps/api/src/graphql/resolvers/api-keys/` (all resolvers) ✅
-- `packages/@logusgraphics/grant-schema/src/schema/api-keys/` (all schema files) ✅
+- `packages/@grantjs/schema/src/schema/api-keys/` (all schema files) ✅
 - Removed `apps/api/src/handlers/project-user-api-keys.handler.ts` ✅
 
 #### Phase 5: REST API ✅
@@ -731,11 +731,11 @@ The initial implementation bound API keys directly to `project_id` and `user_id`
 - `apps/web/hooks/api-keys/useApiKeyMutations.ts` ✅
 - `apps/web/hooks/api-keys/cache.ts` ✅
 - `apps/web/hooks/api-keys/index.ts` ✅
-- `packages/@logusgraphics/grant-schema/src/operations/api-keys/get-api-keys.graphql` ✅
-- `packages/@logusgraphics/grant-schema/src/operations/api-keys/create-api-key.graphql` ✅
-- `packages/@logusgraphics/grant-schema/src/operations/api-keys/exchange-api-key.graphql` ✅
-- `packages/@logusgraphics/grant-schema/src/operations/api-keys/revoke-api-key.graphql` ✅
-- `packages/@logusgraphics/grant-schema/src/operations/api-keys/delete-api-key.graphql` ✅
+- `packages/@grantjs/schema/src/operations/api-keys/get-api-keys.graphql` ✅
+- `packages/@grantjs/schema/src/operations/api-keys/create-api-key.graphql` ✅
+- `packages/@grantjs/schema/src/operations/api-keys/exchange-api-key.graphql` ✅
+- `packages/@grantjs/schema/src/operations/api-keys/revoke-api-key.graphql` ✅
+- `packages/@grantjs/schema/src/operations/api-keys/delete-api-key.graphql` ✅
 
 **Files Removed:**
 
@@ -920,8 +920,8 @@ Examples:
 ```json
 {
   "sub": "user-uuid",
-  "aud": "https://api.grant-platform.com",
-  "iss": "https://api.grant-platform.com",
+  "aud": "https://api.grant.com",
+  "iss": "https://api.grant.com",
   "exp": 1234567890,
   "iat": 1234564290,
   "jti": "api-key-uuid",
@@ -932,7 +932,7 @@ Examples:
 **Claim Explanations:**
 
 - `sub` (Subject): User ID - identifies the user
-- `aud` (Audience): API URL from `config.app.url` (configured via `APP_URL` env var) - identifies the intended recipient API endpoint (e.g., `https://api.grant-platform.com`)
+- `aud` (Audience): API URL from `config.app.url` (configured via `APP_URL` env var) - identifies the intended recipient API endpoint (e.g., `https://api.grant.com`)
 - `iss` (Issuer): API URL from `config.app.url` (configured via `APP_URL` env var) - identifies who issued the token (same as audience for self-contained APIs)
 - `exp` (Expiration): Token expiration timestamp
 - `iat` (Issued At): Token issuance timestamp
@@ -991,13 +991,13 @@ async function aclMiddleware(req, res, next) {
   // 1. Extract user identifier from request (e.g., from external system's auth)
   const externalUserId = req.user.id; // From external system
 
-  // 2. Map external user to Grant Platform project user
+  // 2. Map external user to Grant project user
   const projectUserId = await mapExternalUserToProjectUser(externalUserId);
 
   // 3. Exchange API key for token (cache token)
   const token = await getOrRefreshToken(projectUserId);
 
-  // 4. Query Grant Platform for permissions
+  // 4. Query Grant for permissions
   const permissions = await grantPlatform.getPermissions({
     projectId: process.env.GRANT_PROJECT_ID,
     userId: projectUserId,
@@ -1070,4 +1070,4 @@ This implementation plan provides a comprehensive authentication system for exte
 4. **Integrates Seamlessly**: Works with existing permission evaluation system
 5. **Scales Effectively**: Designed for high-volume permission checks from external systems
 
-The system is similar to OAuth 2.0 service accounts but tailored specifically for the Grant Platform's project user model and permission system.
+The system is similar to OAuth 2.0 service accounts but tailored specifically for the Grant's project user model and permission system.

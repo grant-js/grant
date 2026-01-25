@@ -1,4 +1,7 @@
-import { UserAuthenticationMethodProvider } from '@logusgraphics/grant-schema';
+import {
+  UserAuthenticationEmailProviderAction,
+  UserAuthenticationMethodProvider,
+} from '@grantjs/schema';
 
 import { z } from '@/lib/zod-openapi.lib';
 import { accountSchema, accountTypeSchema } from '@/rest/schemas/accounts.schemas';
@@ -33,7 +36,7 @@ export const loginRequestSchema = z.object({
   }),
   providerData: z.record(z.string(), z.unknown()).openapi({
     description: 'Additional provider-specific data',
-    example: { email_verified: true },
+    example: { password: '123456' },
   }),
 });
 
@@ -178,3 +181,48 @@ export const resetPasswordResponseSchema = createSuccessResponseSchema(
   resetPasswordResultSchema,
   'Successfully reset password'
 );
+
+export const userAuthenticationEmailProviderActionSchema = z.enum(
+  Object.values(UserAuthenticationEmailProviderAction) as [
+    UserAuthenticationEmailProviderAction,
+    ...UserAuthenticationEmailProviderAction[],
+  ]
+);
+
+export const initiateGithubAuthQuerySchema = z.object({
+  redirect: z.string().url('Invalid redirect URL').optional().openapi({
+    description: 'URL to redirect to after authentication',
+    example: 'https://example.com/dashboard',
+  }),
+  accountType: accountTypeSchema.optional().openapi({
+    description: 'Type of account to create',
+    example: 'personal',
+  }),
+  action: userAuthenticationEmailProviderActionSchema.optional().openapi({
+    description: 'OAuth action to perform',
+    example: 'login',
+  }),
+  userId: z.string().uuid('Invalid user ID').optional().openapi({
+    description: 'User ID for connect action',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  }),
+});
+
+export const handleGithubCallbackQuerySchema = z.object({
+  code: z.string().optional().openapi({
+    description: 'Authorization code from GitHub',
+    example: 'abc123def456...',
+  }),
+  state: z.string().optional().openapi({
+    description: 'State token for CSRF protection',
+    example: 'state-token-123',
+  }),
+  error: z.string().optional().openapi({
+    description: 'Error code from GitHub OAuth',
+    example: 'access_denied',
+  }),
+  error_description: z.string().optional().openapi({
+    description: 'Error description from GitHub OAuth',
+    example: 'The user denied the request',
+  }),
+});

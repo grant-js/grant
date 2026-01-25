@@ -1,0 +1,33 @@
+query GetOrganizations(
+  $scope: Scope!
+  $page: Int
+  $limit: Int
+  $sort: OrganizationSortInput
+  $search: String
+  $ids: [ID!]
+) {
+  organizations(
+    scope: $scope
+    page: $page
+    limit: $limit
+    sort: $sort
+    search: $search
+    ids: $ids
+  ) {
+    organizations {
+      id
+      name
+      slug
+      createdAt
+      updatedAt
+      tags {
+        id
+        name
+        color
+        isPrimary
+      }
+    }
+    totalCount
+    hasNextPage
+  }
+}

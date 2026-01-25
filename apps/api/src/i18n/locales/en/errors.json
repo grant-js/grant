@@ -32,7 +32,13 @@
     "tooShort": "{{field}} must be at least {{min}} characters",
     "tooLong": "{{field}} must not exceed {{max}} characters",
     "invalidFormat": "{{field}} has an invalid format",
-    "fieldError": "Field \"{{field}}\": {{message}}"
+    "fieldError": "Field \"{{field}}\": {{message}}",
+    "invalidStatus": "Invalid status: {{status}}",
+    "invitationNotExpired": "Can only renew expired invitations",
+    "maxAccountsReached": "User has reached maximum account limit",
+    "alreadyRevoked": "API key is already revoked",
+    "reservedRoleName": "Role name '{{roleName}}' is reserved for core platform roles and cannot be used",
+    "reservedGroupName": "Group name '{{groupName}}' is reserved for core platform groups and cannot be used"
   },
   "notFound": {
     "resource": "{{resource}} not found",

@@ -1,0 +1,25 @@
+{
+  "name": "@grantjs/constants",
+  "version": "1.0.0",
+  "description": "Shared constants for Grant",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "type": "module",
+  "files": [
+    "src/**/*"
+  ],
+  "scripts": {
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@grantjs/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.2",
+    "eslint": "^9.37.0",
+    "typescript": "^5"
+  }
+}

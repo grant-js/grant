@@ -1,17 +1,17 @@
-import { DbSchema, userAuditLogs } from '@logusgraphics/grant-database';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema, userAuditLogs } from '@grantjs/database';
 import {
   CreateUserInput,
   MutationDeleteUserArgs,
-  MutationUpdateUserArgs,
   QueryUsersArgs,
+  UpdateUserInput,
   User,
   UserPage,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
-import { NotFoundError } from '@/lib/errors';
+import { AuthenticationError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
@@ -19,6 +19,7 @@ import {
   SelectedFields,
   createDynamicPaginatedSchema,
   createDynamicSingleSchema,
+  deleteSchema,
   validateInput,
   validateOutput,
 } from './common';
@@ -33,7 +34,7 @@ import {
 export class UserService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(userAuditLogs, 'userId', user, db);
@@ -86,6 +87,7 @@ export class UserService extends AuditService {
     const newValues = {
       id: user.id,
       name: user.name,
+      metadata: user.metadata,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
@@ -100,21 +102,24 @@ export class UserService extends AuditService {
   }
 
   public async updateUser(
-    params: MutationUpdateUserArgs,
+    id: string,
+    input: Omit<UpdateUserInput, 'scope'>,
     transaction?: Transaction
   ): Promise<User> {
     const context = 'UserService.updateUser';
-    const validatedParams = validateInput(updateUserArgsSchema, params, context);
+    const validatedParams = validateInput(updateUserArgsSchema, { id, input }, context);
 
     const oldUser = await this.getUser(validatedParams.id);
     const updatedUser = await this.repositories.userRepository.updateUser(
-      validatedParams,
+      validatedParams.id,
+      validatedParams.input,
       transaction
     );
 
     const oldValues = {
       id: oldUser.id,
       name: oldUser.name,
+      metadata: oldUser.metadata,
       createdAt: oldUser.createdAt,
       updatedAt: oldUser.updatedAt,
     };
@@ -122,6 +127,7 @@ export class UserService extends AuditService {
     const newValues = {
       id: updatedUser.id,
       name: updatedUser.name,
+      metadata: updatedUser.metadata,
       createdAt: updatedUser.createdAt,
       updatedAt: updatedUser.updatedAt,
     };
@@ -173,5 +179,19 @@ export class UserService extends AuditService {
     }
 
     return validateOutput(createDynamicSingleSchema(userSchema), deletedUser, context);
+  }
+
+  public async deleteOwnUser(params: DeleteParams, transaction?: Transaction): Promise<User> {
+    const context = 'UserService.deleteOwnUser';
+    const validatedParams = validateInput(deleteSchema, params, context);
+    const { hardDelete } = validatedParams;
+
+    const id = this.user?.userId;
+
+    if (!id) {
+      throw new AuthenticationError('Not authenticated', 'errors:auth.unauthenticated');
+    }
+
+    return this.deleteUser({ id, hardDelete }, transaction);
   }
 }

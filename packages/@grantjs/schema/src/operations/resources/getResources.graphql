@@ -1,0 +1,40 @@
+query GetResources(
+  $scope: Scope!
+  $page: Int
+  $limit: Int
+  $sort: ResourceSortInput
+  $search: String
+  $ids: [ID!]
+  $tagIds: [ID!]
+  $isActive: Boolean
+) {
+  resources(
+    scope: $scope
+    page: $page
+    limit: $limit
+    sort: $sort
+    search: $search
+    ids: $ids
+    tagIds: $tagIds
+    isActive: $isActive
+  ) {
+    resources {
+      id
+      name
+      slug
+      description
+      actions
+      isActive
+      createdAt
+      updatedAt
+      tags {
+        id
+        name
+        color
+        isPrimary
+      }
+    }
+    totalCount
+    hasNextPage
+  }
+}

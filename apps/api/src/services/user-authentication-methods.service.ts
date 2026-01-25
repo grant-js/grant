@@ -1,4 +1,5 @@
-import { DbSchema, userAuthenticationMethodsAuditLogs } from '@logusgraphics/grant-database';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema, userAuthenticationMethodsAuditLogs } from '@grantjs/database';
 import {
   CreateUserAuthenticationMethodInput,
   DeleteUserAuthenticationMethodInput,
@@ -7,7 +8,7 @@ import {
   UserAuthenticationEmailProviderAction,
   UserAuthenticationMethod,
   UserAuthenticationMethodProvider,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { config } from '@/config';
 import {
@@ -26,7 +27,6 @@ import {
 } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
@@ -60,7 +60,7 @@ export type Otp = Token;
 export class UserAuthenticationMethodService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(userAuthenticationMethodsAuditLogs, 'userAuthenticationMethodId', user, db);
@@ -271,29 +271,24 @@ export class UserAuthenticationMethodService extends AuditService {
   }
 
   public async setPrimaryAuthenticationMethod(
-    id: string,
+    userId: string,
+    methodId: string,
     transaction?: Transaction
   ): Promise<UserAuthenticationMethod> {
-    const method = await this.getUserAuthenticationMethod(id);
+    await this.getUserAuthenticationMethod(methodId, transaction);
 
-    // Get all user's authentication methods
-    const allMethods = await this.getUserAuthenticationMethods(
-      { userId: method.userId },
-      transaction
-    );
+    const allMethods = await this.getUserAuthenticationMethods({ userId }, transaction);
 
-    // Unset all other primary methods
-    const otherPrimaryMethods = allMethods.filter((m) => m.id !== id && m.isPrimary);
+    const otherPrimaryMethods = allMethods.filter((m) => m.id !== methodId && m.isPrimary);
     for (const otherMethod of otherPrimaryMethods) {
       await this.updateUserAuthenticationMethod(otherMethod.id, { isPrimary: false }, transaction);
     }
 
-    // Set this method as primary
-    return await this.updateUserAuthenticationMethod(id, { isPrimary: true }, transaction);
+    return await this.updateUserAuthenticationMethod(methodId, { isPrimary: true }, transaction);
   }
 
   public async deleteUserAuthenticationMethod(
-    params: Omit<DeleteUserAuthenticationMethodInput, 'scope'> & DeleteParams,
+    params: DeleteUserAuthenticationMethodInput & DeleteParams,
     transaction?: Transaction
   ): Promise<UserAuthenticationMethod> {
     const context = 'UserAuthenticationMethodService.deleteUserAuthenticationMethod';
@@ -430,16 +425,6 @@ export class UserAuthenticationMethodService extends AuditService {
     }
   }
 
-  private processGoogleProvider(
-    providerId: string,
-    providerData: Record<string, unknown>,
-    _context: string
-  ): ProcessedProvider {
-    // TODO: implement google provider
-    const name = (providerData.name as string) || providerId || 'User';
-    return { providerData, isVerified: false, name };
-  }
-
   private processGithubProvider(
     providerId: string,
     providerData: Record<string, unknown>,
@@ -549,8 +534,6 @@ export class UserAuthenticationMethodService extends AuditService {
     switch (provider) {
       case UserAuthenticationMethodProvider.Email:
         return this.processEmailProvider(providerId, providerData, context);
-      case UserAuthenticationMethodProvider.Google:
-        return this.processGoogleProvider(providerId, providerData, context);
       case UserAuthenticationMethodProvider.Github:
         return this.processGithubProvider(providerId, providerData, context);
       default:

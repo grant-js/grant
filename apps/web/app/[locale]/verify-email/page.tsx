@@ -8,7 +8,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { AlertTriangle, CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import { AuthPageLayout } from '@/components/layout/AuthPageLayout';
+import { AuthLayout } from '@/components/layout';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useAuthMutations, usePageTitle } from '@/hooks';
@@ -163,8 +163,8 @@ export default function VerifyEmailPage() {
   };
 
   return (
-    <AuthPageLayout title={t('verifyEmail.title')} description={t('verifyEmail.description')}>
+    <AuthLayout title={t('verifyEmail.title')} description={t('verifyEmail.description')}>
       {renderContent()}
-    </AuthPageLayout>
+    </AuthLayout>
   );
 }

@@ -1,13 +1,13 @@
-import { AccountModel, accountProjects, accounts, users } from '@logusgraphics/grant-database';
+import { AccountModel, accountProjects, accounts, users } from '@grantjs/database';
 import {
   Account,
   AccountPage,
   AccountProject,
   CreateAccountInput,
-  QueryAccountsArgs,
+  QueryAccountsInput,
   User,
-} from '@logusgraphics/grant-schema';
-import { and, isNotNull, lt } from 'drizzle-orm';
+} from '@grantjs/schema';
+import { and, eq, isNotNull, isNull, lt } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { SelectedFields } from '@/services/common';
@@ -38,7 +38,7 @@ export class AccountRepository extends EntityRepository<AccountModel, Account> {
   };
 
   public async getAccounts(
-    params: QueryAccountsArgs & SelectedFields<Account>,
+    params: QueryAccountsInput & SelectedFields<Account>,
     transaction?: Transaction
   ): Promise<AccountPage> {
     const result = await this.query(params, transaction);
@@ -49,10 +49,6 @@ export class AccountRepository extends EntityRepository<AccountModel, Account> {
     };
   }
 
-  /**
-   * Get all accounts owned by a specific user
-   * Used internally for operations that need to find all user's accounts
-   */
   public async getAccountsByOwnerId(
     ownerId: string,
     transaction?: Transaction,
@@ -61,12 +57,23 @@ export class AccountRepository extends EntityRepository<AccountModel, Account> {
     const result = await this.query(
       {
         filters: [{ field: 'ownerId', operator: 'eq', value: ownerId }],
-        limit: -1, // Get all accounts
+        limit: -1,
         requestedFields,
       },
       transaction
     );
     return result.items;
+  }
+
+  public async getActiveAccountsByOwnerId(
+    ownerId: string,
+    transaction?: Transaction
+  ): Promise<AccountModel[]> {
+    const dbInstance = transaction ?? this.db;
+    return await dbInstance
+      .select()
+      .from(this.table)
+      .where(and(eq(this.table.ownerId, ownerId), isNull(this.table.deletedAt)));
   }
 
   public async getExpiredAccounts(

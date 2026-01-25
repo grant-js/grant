@@ -1,15 +1,16 @@
 import { z } from 'zod';
 
 import {
-  idSchema,
-  nameSchema,
-  descriptionSchema,
   baseEntitySchema,
+  deleteSchema,
+  descriptionSchema,
+  idSchema,
+  metadataSchema,
+  nameSchema,
+  nonEmptyNameSchema,
   paginatedResponseSchema,
   sortableParamsSchema,
-  nonEmptyNameSchema,
   sortOrderSchema,
-  deleteSchema,
 } from './common/schemas';
 
 export const groupSortableFieldSchema = z.enum(['name', 'description', 'createdAt', 'updatedAt']);
@@ -25,6 +26,7 @@ export const getGroupsParamsSchema = sortableParamsSchema.extend({
 export const createGroupParamsSchema = z.object({
   name: nonEmptyNameSchema,
   description: descriptionSchema,
+  metadata: metadataSchema.nullable().optional(),
 });
 
 export const updateGroupParamsSchema = z.object({
@@ -32,6 +34,7 @@ export const updateGroupParamsSchema = z.object({
   input: z.object({
     name: nonEmptyNameSchema.nullable().optional(),
     description: descriptionSchema.nullable().optional(),
+    metadata: metadataSchema.nullable().optional(),
   }),
 });
 
@@ -42,6 +45,7 @@ export const deleteGroupParamsSchema = deleteSchema.extend({
 export const groupSchema = baseEntitySchema.extend({
   name: nameSchema,
   description: descriptionSchema.nullable(),
+  metadata: metadataSchema,
 });
 
 export const groupPageSchema = paginatedResponseSchema(groupSchema).transform((data) => ({

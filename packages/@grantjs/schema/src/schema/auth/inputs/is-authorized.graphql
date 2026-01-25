@@ -1,0 +1,13 @@
+input IsAuthorizedInput {
+  permission: IsAuthorizedPermissionInput!
+  context: IsAuthorizedContextInput!
+}
+
+input IsAuthorizedPermissionInput {
+  resource: String!
+  action: String!
+}
+
+input IsAuthorizedContextInput {
+  resource: JSON
+}

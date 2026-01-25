@@ -1,0 +1,10 @@
+export { createMySecondaryAccountResolver as createMySecondaryAccount } from './create-my-secondary-account.resolver';
+export { deleteMyAccountsResolver as deleteMyAccounts } from './delete-my-accounts.resolver';
+export { setMyPrimaryAuthenticationMethodResolver as setMyPrimaryAuthenticationMethod } from './set-my-primary-authentication-method.resolver';
+export { createMyUserAuthenticationMethodResolver as createMyUserAuthenticationMethod } from './create-my-user-authentication-method.resolver';
+export { deleteMyUserAuthenticationMethodResolver as deleteMyUserAuthenticationMethod } from './delete-my-user-authentication-method.resolver';
+export { changeMyPasswordResolver as changeMyPassword } from './change-my-password.resolver';
+export { revokeMyUserSessionResolver as revokeMyUserSession } from './revoke-my-user-session.resolver';
+export { uploadMyUserPictureResolver as uploadMyUserPicture } from './upload-my-user-picture.resolver';
+export { logoutMyUserResolver as logoutMyUser } from './logout-my-user.resolver';
+export { updateMyUserResolver as updateMyUser } from './update-my-user.resolver';

@@ -13,11 +13,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    "clean": "rm -rf dist",
-    "db:generate": "pnpm --filter @logusgraphics/grant-database db:generate",
-    "db:migrate": "pnpm --filter @logusgraphics/grant-database db:migrate",
-    "db:seed": "pnpm --filter @logusgraphics/grant-database db:seed",
-    "db:reset": "pnpm --filter @logusgraphics/grant-database db:reset"
+    "clean": "rm -rf dist"
   },
   "dependencies": {
     "@apollo/server": "^5.0.0",
@@ -28,9 +24,10 @@
     "@aws-sdk/s3-request-presigner": "^3.937.0",
     "@graphql-tools/load-files": "^7.0.1",
     "@graphql-tools/schema": "^10.0.25",
-    "@logusgraphics/grant-constants": "workspace:*",
-    "@logusgraphics/grant-database": "workspace:*",
-    "@logusgraphics/grant-schema": "workspace:*",
+    "@grantjs/constants": "workspace:*",
+    "@grantjs/core": "workspace:*",
+    "@grantjs/database": "workspace:*",
+    "@grantjs/schema": "workspace:*",
     "@octokit/rest": "^22.0.1",
     "@types/bcrypt": "^6.0.0",
     "@types/jsonwebtoken": "^9.0.9",

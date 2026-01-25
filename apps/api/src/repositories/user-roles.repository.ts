@@ -1,10 +1,10 @@
-import { UserRoleModel, userRoles } from '@logusgraphics/grant-database';
+import { UserRoleModel, userRoles } from '@grantjs/database';
 import {
   AddUserRoleInput,
   QueryUserRolesInput,
   RemoveUserRoleInput,
   UserRole,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';

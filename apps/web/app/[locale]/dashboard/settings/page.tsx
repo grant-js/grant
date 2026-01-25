@@ -13,7 +13,6 @@ export default function SettingsPage() {
   const locale = useLocale();
 
   useEffect(() => {
-    // Redirect to account settings by default
     router.replace(`/${locale}/dashboard/settings/account`);
   }, [locale, router]);
 

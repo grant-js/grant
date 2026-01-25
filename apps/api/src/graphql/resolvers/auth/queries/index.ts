@@ -1,1 +1,1 @@
-export { me } from './me.resolver';
+export { isAuthorizedResolver as isAuthorized } from './is-authorized.resolver';

@@ -1,0 +1,12 @@
+type Resource implements Auditable {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String
+  actions: [String!]!
+  isActive: Boolean!
+  tags: [Tag!]!
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}

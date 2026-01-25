@@ -1,6 +1,6 @@
-# Grant Platform Documentation
+# Grant Documentation
 
-This directory contains the VitePress documentation site for Grant Platform.
+This directory contains the VitePress documentation site for Grant.
 
 ## 🚀 Getting Started
 
@@ -218,4 +218,4 @@ jobs:
 
 ---
 
-**Questions?** Join our [Discord community](https://discord.gg/grant-platform) or open an issue on [GitHub](https://github.com/logusgraphics/grant-platform).
+**Questions?** Join our [Discord community](https://discord.gg/grant) or open an issue on [GitHub](https://github.com/logusgraphics/grant).

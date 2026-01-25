@@ -1,4 +1,20 @@
 {
+  "errors": {
+    "notFound": {
+      "title": "Page Not Found",
+      "description": "The page you're looking for doesn't exist or has been moved. Check the URL or navigate back to safety.",
+      "goHome": "Go to Dashboard",
+      "goBack": "Go Back"
+    },
+    "forbidden": {
+      "title": "Access Denied",
+      "description": "You don't have permission to access this resource. Please contact your administrator if you believe this is a mistake.",
+      "goHome": "Go to Dashboard",
+      "goBack": "Go Back",
+      "signIn": "Sign In",
+      "helpText": "If you think this is an error, please contact your organization administrator."
+    }
+  },
   "common": {
     "app": {
       "title": "Grant",
@@ -16,7 +32,8 @@
     },
     "account": {
       "switchAccount": "Workspaces",
-      "currentAccount": "Current Workspace"
+      "currentAccount": "Current Workspace",
+      "workspace": "Workspace"
     },
     "accountTypes": {
       "personal": "Personal",
@@ -70,7 +87,8 @@
       "create": "Create",
       "creating": "Creating...",
       "update": "Update",
-      "uploading": "Uploading..."
+      "uploading": "Uploading...",
+      "refresh": "Refresh"
     },
     "saving": "Saving...",
     "emptyElements": "No {title} to display",
@@ -82,7 +100,8 @@
       "search": "Search organizations...",
       "notFound": "No organizations found",
       "title": "Organizations",
-      "organization": "Organization"
+      "organization": "Organization",
+      "label": "Org"
     },
     "projects": {
       "select": "Select project",
@@ -107,10 +126,16 @@
       "groups": "Groups",
       "permissions": "Permissions",
       "tags": "Tags",
+      "resources": "Resources",
       "members": "Members",
+      "workspace": "Workspace",
+      "organization": "Organization",
+      "organizations": "Organizations",
       "organizationTags": "Organization Tags",
+      "accountTags": "Account Tags",
       "projectTags": "Project Tags",
       "projects": "Projects",
+      "project": "Project",
       "account": "Account",
       "settings": "Settings",
       "backToOrganization": "Back to Organization"
@@ -289,7 +314,9 @@
       "logoutError": "Failed to logout",
       "verificationWarning": "Please verify your email to access all features. Your verification link will expire in {days} days.",
       "verificationExpired": "Your email verification has expired. Please request a new verification email.",
-      "userNotVerified": "Email verification required"
+      "userNotVerified": "Email verification required",
+      "sessionExpired": "Session Expired",
+      "sessionExpiredDescription": "Your session has expired or been revoked. Redirecting to login..."
     },
     "validation": {
       "email": "Please enter a valid email address",
@@ -349,7 +376,9 @@
       "email": "Email",
       "roles": "Roles",
       "tags": "Tags",
+      "metadata": "Metadata",
       "primaryTag": "Primary Tag",
+      "metadataInfo": "Optional metadata for the user. This can be used to match in permission conditions.",
       "validation": {
         "rolesRequired": "User must have at least one role"
       },
@@ -640,6 +669,8 @@
       "description": "Description",
       "groups": "Groups",
       "tags": "Tags",
+      "metadata": "Metadata",
+      "metadataInfo": "Optional metadata for the role. This can be used to match in permission conditions.",
       "primaryTag": "Primary Tag",
       "groupsLoading": "Loading groups...",
       "noGroupsAvailable": "No groups available",
@@ -714,7 +745,173 @@
     },
     "groups": "Groups",
     "emptyElements": "There are no {title} to display",
-    "noDescription": "No description"
+    "noDescription": "No description",
+    "names": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "dev": "Developer",
+      "viewer": "Viewer",
+      "personalAccountOwner": "Personal Account Owner",
+      "organizationAccountOwner": "Organization Account Owner",
+      "organizationOwner": "Organization Owner",
+      "organizationAdmin": "Organization Admin",
+      "organizationDev": "Organization Developer",
+      "organizationViewer": "Organization Viewer"
+    },
+    "descriptions": {
+      "owner": "Full access with ownership privileges",
+      "admin": "Administrative access to manage resources",
+      "dev": "Developer access for technical operations",
+      "viewer": "Read-only access to view resources",
+      "personalAccountOwner": "Full control over personal account and all its resources",
+      "organizationAccountOwner": "Full control over organization account and all its resources",
+      "organizationOwner": "Full control over organization and all resources within it",
+      "organizationAdmin": "Administrative access to manage organization settings and members",
+      "organizationDev": "Developer access to manage projects and resources",
+      "organizationViewer": "Read-only access to view organization resources"
+    }
+  },
+  "resources": {
+    "title": "Resource Management",
+    "noResources": {
+      "title": "No resources found",
+      "description": "Get started by creating your first resource"
+    },
+    "noSearchResults": {
+      "title": "No resources found",
+      "description": "Try adjusting your search terms or create a new resource"
+    },
+    "actions": {
+      "create": "Create Resource",
+      "edit": "Edit",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "updating": "Updating...",
+      "label": "Show/Hide Actions"
+    },
+    "sort": {
+      "label": "Sort by",
+      "name": "Name",
+      "slug": "Slug",
+      "createdAt": "Created At",
+      "updatedAt": "Updated At",
+      "default": "Default"
+    },
+    "limit": "Items per page",
+    "search": {
+      "placeholder": "Search resources..."
+    },
+    "form": {
+      "name": "Name",
+      "slug": "Slug",
+      "slugPlaceholder": "Unique identifier within scope (e.g., user-profile)",
+      "description": "Description",
+      "descriptionPlaceholder": "Optional description for this resource",
+      "actions": "Actions",
+      "actionsPlaceholder": "Type an action and press Space or Tab",
+      "actionsInfo": "These actions will become the available options for the permission entity. Define the actions that can be performed on this resource (e.g., read, write, delete, update).",
+      "isActive": "Is Active",
+      "isActiveInfo": "Use this to create draft resources or temporarily disable them. Inactive resources cannot be used in permissions.",
+      "tags": "Tags",
+      "primaryTag": "Primary Tag",
+      "tagsLoading": "Loading tags...",
+      "noTagsAvailable": "No tags available"
+    },
+    "createDialog": {
+      "title": "Create New Resource",
+      "description": "Add a new resource to the system",
+      "trigger": "Create Resource",
+      "confirm": "Create Resource",
+      "submitting": "Creating..."
+    },
+    "editDialog": {
+      "title": "Edit Resource",
+      "description": "Update resource information",
+      "confirm": "Save Changes",
+      "cancel": "Cancel",
+      "updating": "Updating..."
+    },
+    "deleteDialog": {
+      "title": "Delete Resource",
+      "description": "Are you sure you want to delete {name}?",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "deleting": "Deleting..."
+    },
+    "notifications": {
+      "createSuccess": "Resource created",
+      "createError": "Failed to create resource",
+      "updateSuccess": "Resource updated",
+      "updateError": "Failed to update resource",
+      "deleteSuccess": "Resource deleted",
+      "deleteError": "Failed to delete resource",
+      "tagAddedSuccess": "Tag added to resource",
+      "tagAddedError": "Failed to add tag to resource",
+      "tagRemovedSuccess": "Tag removed from resource",
+      "tagRemovedError": "Failed to remove tag from resource"
+    },
+    "view": {
+      "card": "Card View",
+      "table": "Table View"
+    },
+    "table": {
+      "name": "Name",
+      "slug": "Slug",
+      "description": "Description",
+      "actions": "Actions",
+      "tags": "Tags",
+      "audit": "Audit",
+      "id": "ID",
+      "created": "Created",
+      "updated": "Updated",
+      "loading": "Loading resources..."
+    },
+    "toolbar": {
+      "tags": {
+        "title": "Filter by Tags",
+        "placeholder": "Select tags",
+        "selected": "{count} selected",
+        "clearAll": "Clear all",
+        "loading": "Loading tags..."
+      }
+    },
+    "noDescription": "No description",
+    "names": {
+      "user": "User",
+      "account": "Account",
+      "organization": "Organization",
+      "project": "Project",
+      "resource": "Resource",
+      "role": "Role",
+      "group": "Group",
+      "permission": "Permission",
+      "tag": "Tag",
+      "apiKey": "API Key",
+      "organizationMember": "Organization Member",
+      "organizationInvitation": "Organization Invitation",
+      "projectUser": "Project User",
+      "userSession": "User Session",
+      "userAuthenticationMethod": "User Authentication Method",
+      "authOperations": "Auth Operations"
+    },
+    "descriptions": {
+      "user": "A user account in the system",
+      "account": "A workspace account",
+      "organization": "An organization workspace",
+      "project": "A project within an organization",
+      "resource": "A resource definition",
+      "role": "A role definition",
+      "group": "A permission group",
+      "permission": "A permission definition",
+      "tag": "A tag for categorization",
+      "apiKey": "An API key for authentication",
+      "organizationMember": "A member of an organization",
+      "organizationInvitation": "An invitation to join an organization",
+      "projectUser": "A user assigned to a project",
+      "userSession": "An active user session",
+      "userAuthenticationMethod": "A method for user authentication",
+      "authOperations": "Authentication operations"
+    }
   },
   "groups": {
     "title": "Group Management",
@@ -757,6 +954,8 @@
       "permissions": "Permissions",
       "tags": "Tags",
       "primaryTag": "Primary Tag",
+      "metadata": "Metadata",
+      "metadataInfo": "Optional metadata for the group. This can be used to match in permission conditions.",
       "permissionsLoading": "Loading permissions...",
       "noPermissionsAvailable": "No permissions available",
       "tagsLoading": "Loading tags...",
@@ -839,7 +1038,175 @@
     },
     "permissions": "Permissions",
     "emptyElements": "There are no {title} to display",
-    "noDescription": "No description"
+    "noDescription": "No description",
+    "names": {
+      "accountCommon": "Account Common",
+      "userCommon": "User Common",
+      "organizationCommon": "Organization Common",
+      "projectCommon": "Project Common",
+      "accountProjectOwner": "Account Project Owner",
+      "accountProjectUserOwner": "Account Project User Owner",
+      "accountProjectResourceOwner": "Account Project Resource Owner",
+      "accountProjectRoleOwner": "Account Project Role Owner",
+      "accountProjectGroupOwner": "Account Project Group Owner",
+      "accountProjectPermissionOwner": "Account Project Permission Owner",
+      "accountProjectTagOwner": "Account Project Tag Owner",
+      "resourceCommon": "Resource Common",
+      "roleCommon": "Role Common",
+      "groupCommon": "Group Common",
+      "permissionCommon": "Permission Common",
+      "tagCommon": "Tag Common",
+      "apiKeyCommon": "API Key Common",
+      "organizationMemberCommon": "Organization Member Common",
+      "organizationInvitationCommon": "Organization Invitation Common",
+      "projectUserCommon": "Project User Common",
+      "userSessionCommon": "User Session Common",
+      "userAuthenticationMethodCommon": "User Authentication Method Common",
+      "authOperationsCommon": "Auth Operations Common",
+      "personalAccountOwner": "Personal Account Owner",
+      "organizationAccountOwner": "Organization Account Owner",
+      "accountOwner": "Account Owner",
+      "userOwner": "User Owner",
+      "userAdmin": "User Admin",
+      "userDev": "User Dev",
+      "userViewer": "User Viewer",
+      "organizationOwner": "Organization Owner",
+      "organizationAdmin": "Organization Admin",
+      "organizationDev": "Organization Dev",
+      "organizationViewer": "Organization Viewer",
+      "projectOwner": "Project Owner",
+      "projectAdmin": "Project Admin",
+      "projectDev": "Project Dev",
+      "projectViewer": "Project Viewer",
+      "resourceOwner": "Resource Owner",
+      "resourceAdmin": "Resource Admin",
+      "resourceDev": "Resource Dev",
+      "resourceViewer": "Resource Viewer",
+      "roleOwner": "Role Owner",
+      "roleAdmin": "Role Admin",
+      "roleDev": "Role Dev",
+      "roleViewer": "Role Viewer",
+      "groupOwner": "Group Owner",
+      "groupAdmin": "Group Admin",
+      "groupDev": "Group Dev",
+      "groupViewer": "Group Viewer",
+      "permissionOwner": "Permission Owner",
+      "permissionAdmin": "Permission Admin",
+      "permissionDev": "Permission Dev",
+      "permissionViewer": "Permission Viewer",
+      "tagOwner": "Tag Owner",
+      "tagAdmin": "Tag Admin",
+      "tagDev": "Tag Dev",
+      "tagViewer": "Tag Viewer",
+      "apiKeyOwner": "API Key Owner",
+      "apiKeyAdmin": "API Key Admin",
+      "apiKeyDev": "API Key Dev",
+      "apiKeyViewer": "API Key Viewer",
+      "organizationMemberOwner": "Organization Member Owner",
+      "organizationMemberAdmin": "Organization Member Admin",
+      "organizationMemberDev": "Organization Member Dev",
+      "organizationMemberViewer": "Organization Member Viewer",
+      "organizationInvitationOwner": "Organization Invitation Owner",
+      "organizationInvitationAdmin": "Organization Invitation Admin",
+      "organizationInvitationDev": "Organization Invitation Dev",
+      "organizationInvitationViewer": "Organization Invitation Viewer",
+      "projectUserOwner": "Project User Owner",
+      "projectUserAdmin": "Project User Admin",
+      "projectUserDev": "Project User Dev",
+      "projectUserViewer": "Project User Viewer",
+      "userSessionOwner": "User Session Owner",
+      "userSessionAdmin": "User Session Admin",
+      "userSessionDev": "User Session Dev",
+      "userSessionViewer": "User Session Viewer",
+      "userAuthenticationMethodOwner": "User Authentication Method Owner",
+      "userAuthenticationMethodAdmin": "User Authentication Method Admin",
+      "userAuthenticationMethodDev": "User Authentication Method Dev",
+      "userAuthenticationMethodViewer": "User Authentication Method Viewer"
+    },
+    "descriptions": {
+      "accountCommon": "Common permissions for account access",
+      "userCommon": "Common permissions for user access",
+      "organizationCommon": "Common permissions for organization access",
+      "projectCommon": "Common permissions for project access",
+      "accountProjectOwner": "Owner permissions for account-level project management",
+      "accountProjectUserOwner": "Owner permissions for account-level project user management",
+      "accountProjectResourceOwner": "Owner permissions for account-level project resource management",
+      "accountProjectRoleOwner": "Owner permissions for account-level project role management",
+      "accountProjectGroupOwner": "Owner permissions for account-level project group management",
+      "accountProjectPermissionOwner": "Owner permissions for account-level project permission management",
+      "accountProjectTagOwner": "Owner permissions for account-level project tag management",
+      "resourceCommon": "Common permissions for resource access",
+      "roleCommon": "Common permissions for role access",
+      "groupCommon": "Common permissions for group access",
+      "permissionCommon": "Common permissions for permission access",
+      "tagCommon": "Common permissions for tag access",
+      "apiKeyCommon": "Common permissions for API key access",
+      "organizationMemberCommon": "Common permissions for organization member access",
+      "organizationInvitationCommon": "Common permissions for organization invitation access",
+      "projectUserCommon": "Common permissions for project user access",
+      "userSessionCommon": "Common permissions for user session access",
+      "userAuthenticationMethodCommon": "Common permissions for user authentication method access",
+      "authOperationsCommon": "Common permissions for authentication operations",
+      "personalAccountOwner": "Full control over personal account and all resources",
+      "organizationAccountOwner": "Full control over organization account and all resources",
+      "accountOwner": "Owner permissions for account management",
+      "userOwner": "Owner permissions for user management",
+      "userAdmin": "Admin permissions for user management",
+      "userDev": "Developer permissions for user management",
+      "userViewer": "Viewer permissions for user access",
+      "organizationOwner": "Owner permissions for organization management",
+      "organizationAdmin": "Admin permissions for organization management",
+      "organizationDev": "Developer permissions for organization access",
+      "organizationViewer": "Viewer permissions for organization access",
+      "projectOwner": "Owner permissions for project management",
+      "projectAdmin": "Admin permissions for project management",
+      "projectDev": "Developer permissions for project management",
+      "projectViewer": "Viewer permissions for project access",
+      "resourceOwner": "Owner permissions for resource management",
+      "resourceAdmin": "Admin permissions for resource management",
+      "resourceDev": "Developer permissions for resource management",
+      "resourceViewer": "Viewer permissions for resource access",
+      "roleOwner": "Owner permissions for role management",
+      "roleAdmin": "Admin permissions for role management",
+      "roleDev": "Developer permissions for role management",
+      "roleViewer": "Viewer permissions for role access",
+      "groupOwner": "Owner permissions for group management",
+      "groupAdmin": "Admin permissions for group management",
+      "groupDev": "Developer permissions for group management",
+      "groupViewer": "Viewer permissions for group access",
+      "permissionOwner": "Owner permissions for permission management",
+      "permissionAdmin": "Admin permissions for permission management",
+      "permissionDev": "Developer permissions for permission management",
+      "permissionViewer": "Viewer permissions for permission access",
+      "tagOwner": "Owner permissions for tag management",
+      "tagAdmin": "Admin permissions for tag management",
+      "tagDev": "Developer permissions for tag management",
+      "tagViewer": "Viewer permissions for tag access",
+      "apiKeyOwner": "Owner permissions for API key management",
+      "apiKeyAdmin": "Admin permissions for API key management",
+      "apiKeyDev": "Developer permissions for API key management",
+      "apiKeyViewer": "Viewer permissions for API key access",
+      "organizationMemberOwner": "Owner permissions for organization member management",
+      "organizationMemberAdmin": "Admin permissions for organization member management",
+      "organizationMemberDev": "Developer permissions for organization member access",
+      "organizationMemberViewer": "Viewer permissions for organization member access",
+      "organizationInvitationOwner": "Owner permissions for organization invitation management",
+      "organizationInvitationAdmin": "Admin permissions for organization invitation management",
+      "organizationInvitationDev": "Developer permissions for organization invitation access",
+      "organizationInvitationViewer": "Viewer permissions for organization invitation access",
+      "projectUserOwner": "Owner permissions for project user access",
+      "projectUserAdmin": "Admin permissions for project user access",
+      "projectUserDev": "Developer permissions for project user access",
+      "projectUserViewer": "Viewer permissions for project user access",
+      "userSessionOwner": "Owner permissions for user session access",
+      "userSessionAdmin": "Admin permissions for user session access",
+      "userSessionDev": "Developer permissions for user session access",
+      "userSessionViewer": "Viewer permissions for user session access",
+      "userAuthenticationMethodOwner": "Owner permissions for user authentication method access",
+      "userAuthenticationMethodAdmin": "Admin permissions for user authentication method access",
+      "userAuthenticationMethodDev": "Developer permissions for user authentication method access",
+      "userAuthenticationMethodViewer": "Viewer permissions for user authentication method access"
+    }
   },
   "permissions": {
     "title": "Permission Management",
@@ -873,7 +1240,14 @@
       "name": "Name",
       "description": "Description",
       "action": "Action",
+      "resource": "Resource",
+      "noResourceConnected": "No resource connected",
+      "selectAction": "Select an action",
+      "selectPlaceholder": "Select an option",
+      "noOptionsAvailable": "No options available",
       "tags": "Tags",
+      "condition": "Condition",
+      "conditionInfo": "Optional condition for the permission. This can be used to match user, role or group metadata.",
       "primaryTag": "Primary Tag",
       "tagsLoading": "Loading tags...",
       "noTagsAvailable": "No tags available",
@@ -922,6 +1296,7 @@
     "table": {
       "id": "ID",
       "name": "Name",
+      "resource": "Resource",
       "action": "Action",
       "description": "Description",
       "tags": "Tags",
@@ -938,6 +1313,224 @@
         "selected": "{count} selected",
         "clearAll": "Clear all",
         "loading": "Loading tags..."
+      }
+    },
+    "names": {
+      "account": {
+        "read": "Read Account",
+        "query": "Query Account",
+        "delete": "Delete Account",
+        "createComplementary": "Create Complementary Account"
+      },
+      "user": {
+        "create": "Create User",
+        "read": "Read User",
+        "update": "Update User",
+        "delete": "Delete User",
+        "query": "Query User",
+        "uploadPicture": "Upload Picture User",
+        "exportData": "Export Data User"
+      },
+      "organization": {
+        "create": "Create Organization",
+        "read": "Read Organization",
+        "update": "Update Organization",
+        "delete": "Delete Organization",
+        "query": "Query Organization"
+      },
+      "project": {
+        "create": "Create Project",
+        "update": "Update Project",
+        "delete": "Delete Project",
+        "query": "Query Project"
+      },
+      "resource": {
+        "create": "Create Resource",
+        "update": "Update Resource",
+        "delete": "Delete Resource",
+        "query": "Query Resource"
+      },
+      "role": {
+        "create": "Create Role",
+        "update": "Update Role",
+        "delete": "Delete Role",
+        "query": "Query Role"
+      },
+      "group": {
+        "create": "Create Group",
+        "update": "Update Group",
+        "delete": "Delete Group",
+        "query": "Query Group"
+      },
+      "permission": {
+        "create": "Create Permission",
+        "update": "Update Permission",
+        "delete": "Delete Permission",
+        "query": "Query Permission"
+      },
+      "tag": {
+        "create": "Create Tag",
+        "update": "Update Tag",
+        "delete": "Delete Tag",
+        "query": "Query Tag"
+      },
+      "apiKey": {
+        "create": "Create API Key",
+        "delete": "Delete API Key",
+        "query": "Query API Key",
+        "revoke": "Revoke API Key",
+        "exchange": "Exchange API Key"
+      },
+      "organizationMember": {
+        "read": "Read Organization Member",
+        "update": "Update Organization Member",
+        "remove": "Remove Organization Member",
+        "query": "Query Organization Member"
+      },
+      "organizationInvitation": {
+        "create": "Create Organization Invitation",
+        "read": "Read Organization Invitation",
+        "query": "Query Organization Invitation",
+        "accept": "Accept Organization Invitation",
+        "revoke": "Revoke Organization Invitation",
+        "resendEmail": "Resend Email Organization Invitation",
+        "renew": "Renew Organization Invitation"
+      },
+      "projectUser": {
+        "read": "Read Project User",
+        "query": "Query Project User"
+      },
+      "userSession": {
+        "read": "Read User Session",
+        "query": "Query User Session",
+        "revoke": "Revoke User Session"
+      },
+      "userAuthenticationMethod": {
+        "create": "Create User Authentication Method",
+        "read": "Read User Authentication Method",
+        "query": "Query User Authentication Method",
+        "delete": "Delete User Authentication Method",
+        "setPrimary": "Set Primary User Authentication Method",
+        "changePassword": "Change Password User Authentication Method"
+      },
+      "authOperations": {
+        "login": "Login Auth Operations",
+        "register": "Register Auth Operations",
+        "refreshSession": "Refresh Session Auth Operations",
+        "verifyEmail": "Verify Email Auth Operations",
+        "resendVerification": "Resend Verification Auth Operations",
+        "requestPasswordReset": "Request Password Reset Auth Operations",
+        "resetPassword": "Reset Password Auth Operations",
+        "me": "Me Auth Operations"
+      }
+    },
+    "descriptions": {
+      "account": {
+        "read": "Permission to read account information",
+        "query": "Permission to query accounts",
+        "delete": "Permission to delete an account",
+        "createComplementary": "Permission to create a complementary account"
+      },
+      "user": {
+        "create": "Permission to create a user",
+        "read": "Permission to read user information",
+        "update": "Permission to update a user",
+        "delete": "Permission to delete a user",
+        "query": "Permission to query users",
+        "uploadPicture": "Permission to upload a user picture",
+        "exportData": "Permission to export user data"
+      },
+      "organization": {
+        "create": "Permission to create an organization",
+        "read": "Permission to read organization information",
+        "update": "Permission to update an organization",
+        "delete": "Permission to delete an organization",
+        "query": "Permission to query organizations"
+      },
+      "project": {
+        "create": "Permission to create a project",
+        "update": "Permission to update a project",
+        "delete": "Permission to delete a project",
+        "query": "Permission to query projects"
+      },
+      "resource": {
+        "create": "Permission to create a resource",
+        "update": "Permission to update a resource",
+        "delete": "Permission to delete a resource",
+        "query": "Permission to query resources"
+      },
+      "role": {
+        "create": "Permission to create a role",
+        "update": "Permission to update a role",
+        "delete": "Permission to delete a role",
+        "query": "Permission to query roles"
+      },
+      "group": {
+        "create": "Permission to create a group",
+        "update": "Permission to update a group",
+        "delete": "Permission to delete a group",
+        "query": "Permission to query groups"
+      },
+      "permission": {
+        "create": "Permission to create a permission",
+        "update": "Permission to update a permission",
+        "delete": "Permission to delete a permission",
+        "query": "Permission to query permissions"
+      },
+      "tag": {
+        "create": "Permission to create a tag",
+        "update": "Permission to update a tag",
+        "delete": "Permission to delete a tag",
+        "query": "Permission to query tags"
+      },
+      "apiKey": {
+        "create": "Permission to create an API key",
+        "delete": "Permission to delete an API key",
+        "query": "Permission to query API keys",
+        "revoke": "Permission to revoke an API key",
+        "exchange": "Permission to exchange an API key"
+      },
+      "organizationMember": {
+        "read": "Permission to read organization member information",
+        "update": "Permission to update an organization member",
+        "remove": "Permission to remove an organization member",
+        "query": "Permission to query organization members"
+      },
+      "organizationInvitation": {
+        "create": "Permission to create an organization invitation",
+        "read": "Permission to read organization invitation information",
+        "query": "Permission to query organization invitations",
+        "accept": "Permission to accept an organization invitation",
+        "revoke": "Permission to revoke an organization invitation",
+        "resendEmail": "Permission to resend an organization invitation email",
+        "renew": "Permission to renew an organization invitation"
+      },
+      "projectUser": {
+        "read": "Permission to read project user information",
+        "query": "Permission to query project users"
+      },
+      "userSession": {
+        "read": "Permission to read user session information",
+        "query": "Permission to query user sessions",
+        "revoke": "Permission to revoke a user session"
+      },
+      "userAuthenticationMethod": {
+        "create": "Permission to create a user authentication method",
+        "read": "Permission to read user authentication method information",
+        "query": "Permission to query user authentication methods",
+        "delete": "Permission to delete a user authentication method",
+        "setPrimary": "Permission to set a primary user authentication method",
+        "changePassword": "Permission to change password for a user authentication method"
+      },
+      "authOperations": {
+        "login": "Permission to perform login operation",
+        "register": "Permission to perform registration operation",
+        "refreshSession": "Permission to refresh a session",
+        "verifyEmail": "Permission to verify an email address",
+        "resendVerification": "Permission to resend email verification",
+        "requestPasswordReset": "Permission to request a password reset",
+        "resetPassword": "Permission to reset a password",
+        "me": "Permission to access own user information"
       }
     }
   },
@@ -1404,20 +1997,6 @@
     "title": "Members",
     "description": "Manage organization members and invitations",
     "inviteButton": "Invite Member",
-    "roles": {
-      "names": {
-        "owner": "Owner",
-        "admin": "Administrator",
-        "dev": "Developer",
-        "viewer": "Viewer"
-      },
-      "descriptions": {
-        "owner": "Full control over the organization and all its resources",
-        "admin": "Administrative access to manage organization settings and members",
-        "dev": "Developer access to manage projects and resources",
-        "viewer": "Read-only access to organization resources"
-      }
-    },
     "empty": {
       "title": "No members yet",
       "description": "Invite members to join your organization"
@@ -1451,6 +2030,7 @@
       "revoke": "Revoke",
       "resend": "Resend",
       "resendEmail": "Resend Email",
+      "renew": "Renew Invitation",
       "updateRole": "Update Role",
       "remove": "Remove",
       "copyLink": "Copy Invitation Link",
@@ -1501,7 +2081,9 @@
       "resendInvitationSuccess": "Invitation resent successfully",
       "resendInvitationError": "Failed to resend invitation",
       "resendEmailSuccess": "Invitation email sent successfully",
-      "resendEmailError": "Failed to resend invitation email"
+      "resendEmailError": "Failed to resend invitation email",
+      "renewInvitationSuccess": "Invitation renewed successfully",
+      "renewInvitationError": "Failed to renew invitation"
     },
     "updateRoleDialog": {
       "title": "Update Member Role",
@@ -1662,6 +2244,8 @@
       "notifications": {
         "updateSuccess": "Profile updated successfully",
         "updateError": "Failed to update profile",
+        "uploadPictureSuccess": "Profile picture uploaded successfully",
+        "uploadPictureError": "Failed to upload profile picture",
         "userNotFound": "User not found"
       }
     },
@@ -1730,7 +2314,16 @@
         "revokeCurrentSessionTitle": "Revoke Current Session?",
         "revokeCurrentSessionDescription": "Are you sure you want to revoke your current session? You will be logged out immediately and redirected to the login page. You will need to log in again to continue.",
         "cancel": "Cancel",
-        "expiredSessionsCount": "{count} expired session(s) are hidden"
+        "expiredSessionsCount": "{count} expired session(s) are hidden",
+        "search": {
+          "placeholder": "Search sessions..."
+        }
+      },
+      "notifications": {
+        "changePasswordSuccess": "Password changed successfully",
+        "changePasswordError": "Failed to change password",
+        "revokeSessionSuccess": "Session revoked successfully",
+        "revokeSessionError": "Failed to revoke session"
       }
     },
     "preferences": {
@@ -1822,6 +2415,10 @@
         "error": "Failed to delete account",
         "userIdMismatch": "The entered user ID does not match your user ID. Please try again."
       }
+    },
+    "notifications": {
+      "logoutSuccess": "You have been logged out",
+      "logoutError": "Failed to logout"
     }
   },
   "invitations": {

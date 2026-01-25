@@ -1,8 +1,8 @@
-# Grant Platform - CloudFormation Setup
+# Grant - CloudFormation Setup
 
 ## Overview
 
-This directory contains CloudFormation templates for deploying Grant Platform on AWS.
+This directory contains CloudFormation templates for deploying Grant on AWS.
 
 ## Templates
 
@@ -16,7 +16,7 @@ This directory contains CloudFormation templates for deploying Grant Platform on
 
 ```bash
 aws cloudformation create-stack \
-  --stack-name grant-platform-dev \
+  --stack-name grant-dev \
   --template-body file://main.yaml \
   --parameters file://parameters/dev.json \
   --capabilities CAPABILITY_IAM
@@ -26,7 +26,7 @@ aws cloudformation create-stack \
 
 ```bash
 aws cloudformation create-stack \
-  --stack-name grant-platform-prod \
+  --stack-name grant-prod \
   --template-body file://main.yaml \
   --parameters file://parameters/prod.json \
   --capabilities CAPABILITY_IAM

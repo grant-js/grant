@@ -1,4 +1,6 @@
-import { DbSchema, organizationInvitationsAuditLogs } from '@logusgraphics/grant-database';
+import { canAssignRole } from '@grantjs/constants';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema, organizationInvitationsAuditLogs } from '@grantjs/database';
 import {
   CreateOrganizationInvitationInput,
   GetInvitationQueryVariables,
@@ -6,12 +8,11 @@ import {
   OrganizationInvitationPage,
   QueryOrganizationInvitationsArgs,
   UpdateOrganizationInvitationInput,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
-import { NotFoundError } from '@/lib/errors';
+import { AuthorizationError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
@@ -34,10 +35,81 @@ import {
 export class OrganizationInvitationService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(organizationInvitationsAuditLogs, 'organizationInvitationId', user, db);
+  }
+
+  /**
+   * Get the current user's ID from the auth context.
+   * Throws if not authenticated.
+   */
+  private getCurrentUserId(): string {
+    if (!this.user?.userId) {
+      throw new AuthorizationError('Authentication required', 'errors:auth.unauthorized');
+    }
+    return this.user.userId;
+  }
+
+  /**
+   * Get the role name for a user in an organization.
+   * Returns null if the user is not a member of the organization.
+   */
+  private async getUserRoleNameInOrganization(
+    organizationId: string,
+    userId: string,
+    transaction?: Transaction
+  ): Promise<string | null> {
+    const member = await this.repositories.organizationMemberRepository.getOrganizationMember(
+      { organizationId, userId },
+      transaction
+    );
+    return member?.role?.name ?? null;
+  }
+
+  /**
+   * Validate that the current user can invite with the specified role.
+   * Throws AuthorizationError if validation fails.
+   */
+  public async validateInvitationRolePermission(
+    organizationId: string,
+    roleId: string,
+    transaction?: Transaction
+  ): Promise<void> {
+    const currentUserId = this.getCurrentUserId();
+
+    // Get current user's role in the organization
+    const currentUserRoleName = await this.getUserRoleNameInOrganization(
+      organizationId,
+      currentUserId,
+      transaction
+    );
+
+    if (!currentUserRoleName) {
+      throw new AuthorizationError(
+        'You are not a member of this organization',
+        'errors:auth.notOrganizationMember'
+      );
+    }
+
+    // Get the role being assigned
+    const targetRole = await this.repositories.roleRepository.getRoles(
+      { ids: [roleId], limit: 1 },
+      transaction
+    );
+
+    if (targetRole.roles.length === 0) {
+      throw new NotFoundError('Role not found', 'errors:notFound.role', { roleId });
+    }
+
+    // Guard: Cannot invite with a role of equal or higher privilege than own role
+    if (!canAssignRole(currentUserRoleName, targetRole.roles[0].name)) {
+      throw new AuthorizationError(
+        'Cannot invite members with equal or higher privilege than your own role',
+        'errors:auth.cannotAssignHigherRole'
+      );
+    }
   }
 
   public async createInvitation(
@@ -60,6 +132,7 @@ export class OrganizationInvitationService extends AuditService {
       status: invitation.status,
       expiresAt: invitation.expiresAt,
       invitedBy: invitation.invitedBy,
+      invitedAt: invitation.invitedAt,
       createdAt: invitation.createdAt,
       updatedAt: invitation.updatedAt,
     };

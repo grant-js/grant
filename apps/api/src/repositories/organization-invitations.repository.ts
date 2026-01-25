@@ -4,7 +4,7 @@ import {
   organizations,
   roles,
   users,
-} from '@logusgraphics/grant-database';
+} from '@grantjs/database';
 import {
   CreateOrganizationInvitationInput,
   GetInvitationQueryVariables,
@@ -14,7 +14,7 @@ import {
   OrganizationInvitationStatus,
   QueryOrganizationInvitationsArgs,
   UpdateOrganizationInvitationInput,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 import { and, eq, isNull } from 'drizzle-orm';
 
 import { NotFoundError } from '@/lib/errors';
@@ -62,6 +62,7 @@ export class OrganizationInvitationRepository extends EntityRepository<
         token: params.token,
         expiresAt: params.expiresAt,
         invitedBy: params.invitedBy,
+        invitedAt: params.invitedAt || new Date(),
         status: params.status || OrganizationInvitationStatus.Pending,
       },
       transaction
@@ -110,7 +111,7 @@ export class OrganizationInvitationRepository extends EntityRepository<
       {
         field: 'organizationId',
         operator: 'eq',
-        value: params.organizationId,
+        value: params.scope.id,
       },
     ];
 
@@ -192,6 +193,18 @@ export class OrganizationInvitationRepository extends EntityRepository<
 
     if (input.acceptedAt !== undefined) {
       updateData.acceptedAt = input.acceptedAt;
+    }
+
+    if (input.token !== undefined) {
+      updateData.token = input.token;
+    }
+
+    if (input.expiresAt !== undefined) {
+      updateData.expiresAt = input.expiresAt;
+    }
+
+    if (input.invitedAt !== undefined) {
+      updateData.invitedAt = input.invitedAt;
     }
 
     const [updated] = await dbInstance

@@ -1,0 +1,12 @@
+extend type Query {
+  resources(
+    scope: Scope!
+    page: Int
+    limit: Int
+    search: String
+    sort: ResourceSortInput
+    ids: [ID!]
+    tagIds: [ID!]
+    isActive: Boolean
+  ): ResourcePage!
+}

@@ -1,4 +1,4 @@
-import { MutationResolvers } from '@logusgraphics/grant-schema';
+import { MutationResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
 export const deleteUserResolver: MutationResolvers<GraphqlContext>['deleteUser'] = async (

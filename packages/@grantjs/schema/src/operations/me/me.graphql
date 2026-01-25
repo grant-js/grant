@@ -1,0 +1,22 @@
+query Me {
+  me {
+    accounts {
+      id
+      type
+      ownerId
+      createdAt
+      updatedAt
+      owner {
+        id
+        name
+        pictureUrl
+        metadata
+        createdAt
+        updatedAt
+      }
+    }
+    requiresEmailVerification
+    verificationExpiry
+    email
+  }
+}

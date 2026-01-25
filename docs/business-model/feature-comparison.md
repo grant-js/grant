@@ -101,13 +101,13 @@ description: Detailed comparison between open source and SaaS enterprise feature
 ### Open Source
 
 ```bash
-npm install @logusgraphics/grant-core
+npm install @grantjs/core
 ```
 
 ### SaaS Enterprise
 
 ```bash
-npm install @logusgraphics/grant-enterprise
+npm install @grantjs/enterprise
 # Requires authentication and subscription
 ```
 

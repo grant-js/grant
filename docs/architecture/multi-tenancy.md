@@ -5,8 +5,6 @@ description: Account-based multi-tenancy with organization and project isolation
 
 # Multi-Tenancy Platform Specification
 
-## Overview
-
 This document outlines the multi-tenancy architecture for the Identity Management Platform, designed to manage users, roles, groups, and permissions for external systems and integrations.
 
 ## Core Concepts
@@ -19,60 +17,63 @@ The platform serves as an **identity management service** that manages user iden
 
 #### 1. **Account** (Person's Identity)
 
-- Represents a **person** who can access multiple organizations
-- Has **system roles** for platform management (billing, admin, viewer, etc.)
-- Can belong to multiple organizations with different roles
+- Represents a **person** who can access projects
+- Has an **owner** (User) and a **type** (personal or organization)
+- Can access multiple projects via the `AccountProject` pivot table
 - **Top-level entity** in the platform
 
-#### 2. **Organization**
+#### 2. **User**
 
-- Groups related projects and integration environments
-- Contains multiple projects
-- Has system users (accounts) with different management roles
-- **Billing and management container**
+- Represents a person in the system
+- Can belong to multiple organizations via `OrganizationUser` pivot
+- Can belong to multiple projects via `ProjectUser` pivot
+- Can own multiple accounts
+- Has roles assigned via `UserRole` pivot
 
-#### 3. **Project** (Integration Environment)
+#### 3. **Organization**
 
-- **Isolated environment** for managing external system identities
-- Contains external users, roles, groups, and permissions
-- Each project manages identity data for a specific external system
+- Groups related projects and users
+- Contains projects via `OrganizationProject` pivot
+- Contains users via `OrganizationUser` pivot
+- Has roles, groups, and permissions scoped to the organization
+- **Management container** for related projects
+
+#### 4. **Project** (Integration Environment)
+
+- **Isolated environment** for managing identities
+- Contains users, roles, groups, and permissions scoped to the project
+- Relates to organizations via `OrganizationProject` pivot (not direct field)
+- Each project manages identity data independently
 - **No cross-project inheritance** - each project is independent
 
-#### 4. **System Roles** (Platform Management)
+#### 5. **Roles, Groups, and Permissions**
 
-- **Account-level roles**: Billing Admin, Platform Admin, Viewer
-- **Organization-level roles**: Org Owner, Org Admin, Member Manager
-- Control access to platform features (billing, settings, user management)
-- **NOT** roles for external systems
-
-#### 5. **External Entities** (Managed for External Systems)
-
-- **External Users**: Users managed for external systems
-- **External Roles**: Roles defined for external systems
-- **External Groups**: Groups defined for external systems
-- **External Permissions**: Permissions defined for external systems
+- **Roles**: Scoped to either organizations (via `OrganizationRole`) or projects (via `ProjectRole`)
+- **Groups**: Scoped to organizations or projects, contain permissions via `GroupPermission`
+- **Permissions**: Define actions that can be performed, linked to resources
+- These entities are not "external" or "system" - they're simply scoped to a specific context (organization or project)
 
 ## Architecture Diagram
 
 ```
-Account (Person's Identity)
-├── System Roles (Platform Management)
-│   ├── Billing Admin
-│   ├── Platform Admin
-│   └── Viewer
-├── Organizations (Accessible to this account)
-│   ├── Organization A
-│   │   ├── System Role: "Org Owner"
-│   │   └── Projects (Integration Environments)
-│   │       ├── Project Alpha
-│   │       │   ├── External Users (managed for external system)
-│   │       │   ├── External Roles (managed for external system)
-│   │       │   ├── External Groups (managed for external system)
-│   │       │   └── External Permissions (managed for external system)
-│   │       └── Project Beta
-│   └── Organization B
-│       ├── System Role: "Org Admin"
-│       └── Projects
+User (Person)
+├── Accounts (owned by user)
+│   └── Account (type: personal/organization)
+│       └── Projects (via AccountProject)
+├── Organizations (via OrganizationUser)
+│   └── Organization
+│       ├── Projects (via OrganizationProject)
+│       ├── Roles (via OrganizationRole)
+│       ├── Groups (via OrganizationGroup)
+│       ├── Permissions (via OrganizationPermission)
+│       └── Users (via OrganizationUser)
+└── Projects (via ProjectUser)
+    └── Project
+        ├── Users (via ProjectUser)
+        ├── Roles (via ProjectRole)
+        ├── Groups (via ProjectGroup)
+        ├── Permissions (via ProjectPermission)
+        └── Resources
 ```
 
 ## Entity Relationships
@@ -80,63 +81,162 @@ Account (Person's Identity)
 ### Core Relationships
 
 ```
-Account ←→ Organization (via AccountOrganization pivot)
+User ←→ Account (Account.ownerId → User.id)
 Account ←→ Project (via AccountProject pivot)
-Organization ←→ Project (direct relationship)
-Project ←→ ExternalUser (via ExternalUserProject pivot)
-ExternalUser ←→ ExternalRole (via ExternalUserRole pivot)
-ExternalRole ←→ ExternalGroup (via ExternalRoleGroup pivot)
-ExternalGroup ←→ ExternalPermission (via ExternalGroupPermission pivot)
+Organization ←→ Project (via OrganizationProject pivot)
+Organization ←→ User (via OrganizationUser pivot)
+Project ←→ User (via ProjectUser pivot)
+Project ←→ Role (via ProjectRole pivot)
+Project ←→ Group (via ProjectGroup pivot)
+Project ←→ Permission (via ProjectPermission pivot)
+Organization ←→ Role (via OrganizationRole pivot)
+Organization ←→ Group (via OrganizationGroup pivot)
+Organization ←→ Permission (via OrganizationPermission pivot)
+User ←→ Role (via UserRole pivot)
+Role ←→ Group (via RoleGroup pivot)
+Group ←→ Permission (via GroupPermission pivot)
 ```
 
 ### Pivot Tables
 
-#### AccountOrganization
-
-```graphql
-type AccountOrganization implements Auditable {
-  id: ID!
-  accountId: ID!
-  organizationId: ID!
-  systemRoleId: ID! # Account's role in this organization
-  account: Account!
-  organization: Organization!
-  systemRole: SystemRole!
-  createdAt: String!
-  updatedAt: String!
-}
-```
-
 #### AccountProject
+
+Links accounts to projects they can access.
 
 ```graphql
 type AccountProject implements Auditable {
   id: ID!
   accountId: ID!
   projectId: ID!
-  organizationId: ID! # For validation and queries
-  projectRoleId: ID? # Optional project-specific role
   account: Account!
   project: Project!
-  organization: Organization!
-  projectRole: ProjectRole?
-  createdAt: String!
-  updatedAt: String!
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
 }
 ```
 
-#### ExternalUserRole
+#### OrganizationProject
+
+Links organizations to their projects.
 
 ```graphql
-type ExternalUserRole implements Auditable {
+type OrganizationProject implements Auditable {
   id: ID!
-  externalUserId: ID!
-  externalRoleId: ID!
+  organizationId: ID!
   projectId: ID!
-  externalUser: ExternalUser!
-  externalRole: ExternalRole!
-  createdAt: String!
-  updatedAt: String!
+  organization: Organization!
+  project: Project!
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}
+```
+
+#### OrganizationUser
+
+Links users to organizations they belong to.
+
+```graphql
+type OrganizationUser implements Auditable {
+  id: ID!
+  organizationId: ID!
+  userId: ID!
+  organization: Organization!
+  user: User!
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}
+```
+
+#### ProjectUser
+
+Links users to projects they are part of.
+
+```graphql
+type ProjectUser implements Auditable {
+  id: ID!
+  projectId: ID!
+  userId: ID!
+  project: Project!
+  user: User!
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}
+```
+
+#### ProjectRole, OrganizationRole
+
+Roles are scoped to either projects or organizations via pivot tables:
+
+```graphql
+type ProjectRole implements Auditable {
+  id: ID!
+  projectId: ID!
+  roleId: ID!
+  project: Project!
+  role: Role!
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}
+
+type OrganizationRole implements Auditable {
+  id: ID!
+  organizationId: ID!
+  roleId: ID!
+  organization: Organization!
+  role: Role!
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}
+```
+
+#### UserRole
+
+Links users to roles (roles can be scoped to projects or organizations).
+
+```graphql
+type UserRole implements Auditable {
+  id: ID!
+  userId: ID!
+  roleId: ID!
+  user: User!
+  role: Role!
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}
+```
+
+#### RoleGroup, GroupPermission
+
+Groups and permissions are linked via pivot tables:
+
+```graphql
+type RoleGroup implements Auditable {
+  id: ID!
+  roleId: ID!
+  groupId: ID!
+  role: Role!
+  group: Group!
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}
+
+type GroupPermission implements Auditable {
+  id: ID!
+  groupId: ID!
+  permissionId: ID!
+  group: Group!
+  permission: Permission!
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
 }
 ```
 
@@ -144,40 +244,65 @@ type ExternalUserRole implements Auditable {
 
 ### Account Schema
 
+Accounts represent a person's identity on the platform. Each account has an owner (User) and a type (personal or organization).
+
 ```graphql
 type Account implements Auditable {
   id: ID!
-  email: String!
-  name: String!
-  # System roles across the platform
-  systemRoles: [SystemRole!]
-  # Organizations this account can access
-  organizations: [Organization!] # via AccountOrganization
-  # Projects this account can access
+  type: AccountType! # 'personal' | 'organization'
+  ownerId: ID!
+  owner: User!
   projects: [Project!] # via AccountProject
-  createdAt: String!
-  updatedAt: String!
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}
+```
+
+### User Schema
+
+Users represent people in the system. They can belong to multiple organizations and projects, and can own accounts.
+
+```graphql
+type User implements Auditable {
+  id: ID!
+  name: String!
+  pictureUrl: String
+  metadata: JSON
+  roles: [Role!] # via UserRole
+  tags: [Tag!]
+  authenticationMethods: [UserAuthenticationMethod!]
+  accounts: [Account!] # Accounts owned by this user
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
 }
 ```
 
 ### Organization Schema
+
+Organizations group related projects and users. They contain roles, groups, permissions, and users scoped to the organization.
 
 ```graphql
 type Organization implements Auditable {
   id: ID!
   name: String!
   slug: String!
-  description: String
-  # Accounts that can access this organization
-  accounts: [Account!] # via AccountOrganization
-  # Projects (integration environments)
-  projects: [Project!]
-  createdAt: String!
-  updatedAt: String!
+  projects: [Project!] # via OrganizationProject
+  roles: [Role!] # via OrganizationRole
+  groups: [Group!] # via OrganizationGroup
+  permissions: [Permission!] # via OrganizationPermission
+  users: [User!] # via OrganizationUser
+  tags: [Tag!]
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
 }
 ```
 
 ### Project Schema
+
+Projects are isolated environments for managing identities. They contain users, roles, groups, permissions, and resources scoped to the project.
 
 ```graphql
 type Project implements Auditable {
@@ -185,129 +310,202 @@ type Project implements Auditable {
   name: String!
   slug: String!
   description: String
-  organizationId: ID!
-  organization: Organization!
-  # Accounts that can access this project
-  accounts: [Account!] # via AccountProject
-  # External system data (managed for external system)
-  externalUsers: [ExternalUser!]
-  externalRoles: [ExternalRole!]
-  externalGroups: [ExternalGroup!]
-  externalPermissions: [ExternalPermission!]
-  createdAt: String!
-  updatedAt: String!
+  roles: [Role!] # via ProjectRole
+  groups: [Group!] # via ProjectGroup
+  permissions: [Permission!] # via ProjectPermission
+  users: [User!] # via ProjectUser
+  resources: [Resource!]
+  tags: [Tag!]
+  organizationTags: [Tag!]
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
 }
 ```
 
-### External User Schema
+**Note:** Projects relate to organizations via the `OrganizationProject` pivot table, not through a direct `organizationId` field. The relationship is accessed through the organization's `projects` field or project's organization via the pivot.
+
+### Role Schema
+
+Roles are scoped to either organizations or projects via pivot tables. They are not "external" or "system" roles - they're simply roles that exist in a specific context.
 
 ```graphql
-type ExternalUser implements Auditable {
+type Role implements Auditable {
   id: ID!
   name: String!
-  email: String!
-  projectId: ID!
-  project: Project!
-  # External system roles (managed for external system)
-  roles: [ExternalRole!]
-  groups: [ExternalGroup!]
-  createdAt: String!
-  updatedAt: String!
+  description: String
+  metadata: JSON
+  groups: [Group!] # via RoleGroup
+  tags: [Tag!]
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
 }
 ```
 
-### System Role Schema
+### Group Schema
+
+Groups are scoped to organizations or projects and contain permissions.
 
 ```graphql
-type SystemRole implements Auditable {
+type Group implements Auditable {
   id: ID!
-  name: String! # billing, admin, viewer, etc.
+  name: String!
   description: String
-  permissions: [SystemPermission!]
-  createdAt: String!
-  updatedAt: String!
+  metadata: JSON
+  permissions: [Permission!] # via GroupPermission
+  tags: [Tag!]
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}
+```
+
+### Permission Schema
+
+Permissions define what actions can be performed. They are linked to resources and can be scoped to organizations or projects.
+
+```graphql
+type Permission implements Auditable {
+  id: ID!
+  name: String!
+  description: String
+  action: String!
+  resourceId: ID
+  resource: Resource
+  condition: JSON
+  tags: [Tag!]
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
 }
 ```
 
 ## URL Structure
 
+All routes are prefixed with `/[locale]/dashboard/` where `[locale]` is the language code (e.g., `en`, `pt`).
+
 ### Account Management
 
 ```
-/[locale]/account/dashboard
-/[locale]/account/billing
-/[locale]/account/settings
+/[locale]/dashboard/account
+/[locale]/dashboard/accounts/[accountId]
+/[locale]/dashboard/accounts/[accountId]/projects
+/[locale]/dashboard/settings
+/[locale]/dashboard/settings/account
+/[locale]/dashboard/settings/profile
+/[locale]/dashboard/settings/preferences
+/[locale]/dashboard/settings/privacy
+/[locale]/dashboard/settings/security
 ```
 
 ### Organization Management
 
 ```
-/[locale]/organizations/[organization-slug]/dashboard
-/[locale]/organizations/[organization-slug]/projects
-/[locale]/organizations/[organization-slug]/members
-/[locale]/organizations/[organization-slug]/settings
+/[locale]/dashboard/organizations
+/[locale]/dashboard/organizations/[organizationId]
+/[locale]/dashboard/organizations/[organizationId]/projects
+/[locale]/dashboard/organizations/[organizationId]/members
+/[locale]/dashboard/organizations/[organizationId]/roles
+/[locale]/dashboard/organizations/[organizationId]/groups
+/[locale]/dashboard/organizations/[organizationId]/permissions
+/[locale]/dashboard/organizations/[organizationId]/tags
 ```
 
-### Project Management (Integration Environments)
+**Note:** The organization detail page (`/[locale]/dashboard/organizations/[organizationId]`) automatically redirects to the projects list.
+
+### Project Management (Organization Projects)
 
 ```
-/[locale]/organizations/[organization-slug]/projects/[project-slug]/dashboard
-/[locale]/organizations/[organization-slug]/projects/[project-slug]/external-users
-/[locale]/organizations/[organization-slug]/projects/[project-slug]/external-roles
-/[locale]/organizations/[organization-slug]/projects/[project-slug]/external-groups
-/[locale]/organizations/[organization-slug]/projects/[project-slug]/external-permissions
-/[locale]/organizations/[organization-slug]/projects/[project-slug]/settings
+/[locale]/dashboard/organizations/[organizationId]/projects/[projectId]
+/[locale]/dashboard/organizations/[organizationId]/projects/[projectId]/users
+/[locale]/dashboard/organizations/[organizationId]/projects/[projectId]/users/[userId]
+/[locale]/dashboard/organizations/[organizationId]/projects/[projectId]/roles
+/[locale]/dashboard/organizations/[organizationId]/projects/[projectId]/groups
+/[locale]/dashboard/organizations/[organizationId]/projects/[projectId]/permissions
+/[locale]/dashboard/organizations/[organizationId]/projects/[projectId]/resources
+/[locale]/dashboard/organizations/[organizationId]/projects/[projectId]/tags
 ```
+
+**Note:** The project detail page (`/[locale]/dashboard/organizations/[organizationId]/projects/[projectId]`) automatically redirects to the users list.
+
+### Project Management (Personal Account Projects)
+
+Personal accounts can also have projects accessed via:
+
+```
+/[locale]/dashboard/accounts/[accountId]/projects
+/[locale]/dashboard/accounts/[accountId]/projects/[projectId]
+/[locale]/dashboard/accounts/[accountId]/projects/[projectId]/users
+/[locale]/dashboard/accounts/[accountId]/projects/[projectId]/users/[userId]
+/[locale]/dashboard/accounts/[accountId]/projects/[projectId]/roles
+/[locale]/dashboard/accounts/[accountId]/projects/[projectId]/groups
+/[locale]/dashboard/accounts/[accountId]/projects/[projectId]/permissions
+/[locale]/dashboard/accounts/[accountId]/projects/[projectId]/resources
+/[locale]/dashboard/accounts/[accountId]/projects/[projectId]/tags
+```
+
+**Note:** The project detail page for personal accounts also redirects to the users list.
+
+### Route Parameters
+
+- **`[locale]`**: Language code (e.g., `en`, `pt`)
+- **`[organizationId]`**: Organization UUID (not slug)
+- **`[projectId]`**: Project UUID (not slug)
+- **`[accountId]`**: Account UUID (not slug)
+- **`[userId]`**: User UUID (not slug)
 
 ## Use Case Examples
 
-### Example 1: Multi-Organization Account
+### Example 1: Multi-Organization User
 
 ```
-Account: "alice@identitycorp.com"
-├── System Roles: Billing Admin, Platform Viewer
-├── Organization: "Acme Corp"
-│   ├── System Role: "Org Owner"
-│   └── Projects:
-│       ├── "Acme CRM Integration"
-│       │   ├── External Users (for Acme's CRM)
-│       │   │   ├── john.doe@acme.com (CRM Admin)
-│       │   │   └── jane.smith@acme.com (CRM User)
-│       │   └── External Roles (CRM roles)
-│       │       ├── CRM Admin
-│       │       └── CRM User
-│       └── "Acme ERP Integration"
-│           ├── External Users (for Acme's ERP)
-│           └── External Roles (ERP roles)
-└── Organization: "Beta Corp"
-    ├── System Role: "Org Admin"
-    └── Projects:
-        └── "Beta CRM Integration"
-            ├── External Users (for Beta's CRM)
-            └── External Roles (CRM roles)
+User: "Alice Johnson"
+├── Accounts:
+│   └── Account (type: personal, owner: Alice)
+│       └── Projects: ["Acme CRM Integration", "Beta Analytics"]
+├── Organizations:
+│   ├── Organization: "Acme Corp"
+│   │   ├── Projects (via OrganizationProject):
+│   │   │   ├── "Acme CRM Integration"
+│   │   │   │   ├── Users (via ProjectUser): [Alice, John, Jane]
+│   │   │   │   ├── Roles (via ProjectRole): [CRM Admin, CRM User]
+│   │   │   │   └── Groups (via ProjectGroup): [Sales, Support]
+│   │   │   └── "Acme ERP Integration"
+│   │   ├── Roles (via OrganizationRole): [Org Admin, Org Member]
+│   │   └── Users (via OrganizationUser): [Alice, Bob, Carol]
+│   └── Organization: "Beta Corp"
+│       ├── Projects: ["Beta CRM Integration"]
+│       └── Users: [Alice, David]
+└── Projects (direct access via ProjectUser):
+    └── "Acme CRM Integration"
+        └── Roles (via UserRole): [CRM Admin]
 ```
 
 ### Example 2: Project Isolation
 
 ```
 Organization: "TechCorp"
-├── Project: "Production CRM"
-│   ├── External Users: 50 (production team)
-│   ├── External Roles: Admin, Developer, Support, Viewer
-│   └── External Groups: Sales, Support, Development
-└── Project: "Staging CRM"
-    ├── External Users: 10 (dev team only)
-    ├── External Roles: Admin, Developer
-    └── External Groups: Development
+├── Projects (via OrganizationProject):
+│   ├── Project: "Production CRM"
+│   │   ├── Users (via ProjectUser): 50 users
+│   │   ├── Roles (via ProjectRole): Admin, Developer, Support, Viewer
+│   │   ├── Groups (via ProjectGroup): Sales, Support, Development
+│   │   └── Permissions (via ProjectPermission): [read, write, delete]
+│   └── Project: "Staging CRM"
+│       ├── Users (via ProjectUser): 10 users
+│       ├── Roles (via ProjectRole): Admin, Developer
+│       └── Groups (via ProjectGroup): Development
+└── Users (via OrganizationUser): [Team members]
 ```
 
 ## Security Model
 
 ### Access Control Levels
 
-1. **Account Level**: System roles for platform management
-2. **Organization Level**: System roles for organization management
-3. **Project Level**: External roles for external system management
+1. **Account Level**: Accounts can access projects via `AccountProject` pivot
+2. **Organization Level**: Users belong to organizations via `OrganizationUser`, roles/groups/permissions scoped to organizations
+3. **Project Level**: Users belong to projects via `ProjectUser`, roles/groups/permissions scoped to projects
 
 ### Security Principles
 
@@ -318,53 +516,28 @@ Organization: "TechCorp"
 
 ### Validation Rules
 
-1. **Account-Organization**: Account must have explicit organization access
-2. **Account-Project**: Account must have explicit project access (even if org access exists)
-3. **External User-Project**: External users are scoped to specific projects
-4. **Role Inheritance**: No automatic role inheritance across projects
-
-## Implementation Strategy
-
-### Phase 1: Core Entities
-
-1. Create Account entity and system roles
-2. Create Organization entity
-3. Create Project entity
-4. Implement AccountOrganization and AccountProject pivots
-
-### Phase 2: External System Management
-
-1. Create ExternalUser, ExternalRole, ExternalGroup, ExternalPermission entities
-2. Implement all external system pivot tables
-3. Create project-scoped queries and mutations
-
-### Phase 3: UI and Navigation
-
-1. Update navigation to reflect new hierarchy
-2. Create account, organization, and project management interfaces
-3. Implement role-based access control in UI
-
-### Phase 4: Integration Features
-
-1. Add API endpoints for external system integration
-2. Implement authentication and authorization flows
-3. Add audit logging and monitoring
+1. **Account-Project**: Accounts access projects via `AccountProject` pivot table
+2. **Organization-Project**: Projects relate to organizations via `OrganizationProject` pivot (not direct field)
+3. **User-Project**: Users belong to projects via `ProjectUser` pivot table
+4. **User-Organization**: Users belong to organizations via `OrganizationUser` pivot table
+5. **Role Scoping**: Roles are scoped to either organizations (via `OrganizationRole`) or projects (via `ProjectRole`), not both
+6. **No Inheritance**: No automatic role or permission inheritance across projects or organizations
 
 ## Benefits
 
 ### For Platform Users
 
-- **Centralized Management**: Manage multiple organizations from one account
+- **Centralized Management**: Manage multiple organizations and projects from one account
 - **Flexible Access**: Different roles per organization and project
-- **Clear Separation**: Platform management vs. external system management
+- **Clear Separation**: Organization-level vs. project-level entity scoping
 - **Scalable**: Support for multiple organizations and projects
 
-### For External Systems
+### For Identity Management
 
 - **Isolated Environments**: Each project is completely independent
-- **Custom Roles**: Define roles specific to each external system
-- **Secure Access**: Explicit access control with audit trails
-- **API Integration**: Standardized APIs for external system integration
+- **Flexible Roles**: Define roles scoped to organizations or projects
+- **Secure Access**: Explicit access control via pivot tables with audit trails
+- **API Integration**: Standardized APIs for integration with external systems
 
 ## Technical Considerations
 
@@ -396,10 +569,10 @@ Organization: "TechCorp"
 
 ### From Current System
 
-1. **Add Account entity**: Create account for existing users
+1. **Add Account entity**: Create accounts for existing users
 2. **Add Organization entity**: Create default organization
 3. **Add Project entity**: Create default project
-4. **Migrate existing data**: Move current users/roles to external entities
+4. **Migrate existing data**: Move current users/roles to project-scoped entities via pivot tables
 5. **Update UI**: Implement new navigation and interfaces
 
 ### Data Migration Strategy
@@ -412,15 +585,16 @@ Organization: "TechCorp"
 
 ## Conclusion
 
-This multi-tenancy architecture provides a robust, scalable foundation for identity management across multiple organizations and integration environments. The clear separation between platform management and external system management ensures security and flexibility while maintaining simplicity for end users.
+This multi-tenancy architecture provides a robust, scalable foundation for identity management across multiple organizations and projects. The clear separation between organization-level and project-level entities ensures security and flexibility while maintaining simplicity for end users.
 
 The architecture supports:
 
-- **Person-centric accounts** with flexible access across organizations
-- **Isolated project environments** for secure external system management
-- **Explicit access control** with comprehensive audit trails
+- **User-centric design** with users owning accounts and belonging to organizations/projects
+- **Isolated project environments** for secure identity management
+- **Flexible scoping** with roles, groups, and permissions scoped to organizations or projects
+- **Explicit access control** via pivot tables with comprehensive audit trails
 - **Scalable design** for growth and expansion
-- **Clear separation of concerns** between platform and external system management
+- **Clear separation** between organization-level and project-level entities
 
 ---
 

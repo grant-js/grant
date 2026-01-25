@@ -3,7 +3,7 @@ import {
   userAuthenticationMethods,
   userSessions,
   users,
-} from '@logusgraphics/grant-database';
+} from '@grantjs/database';
 import {
   CreateUserSessionInput,
   DeleteUserSessionInput,
@@ -16,7 +16,7 @@ import {
   UserSessionPage,
   UserSessionSearchableField,
   UserSessionSortableField,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { SelectedFields } from '@/services/common';

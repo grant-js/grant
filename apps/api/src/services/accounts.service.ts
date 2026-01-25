@@ -1,24 +1,22 @@
-import { accountAuditLogs, accounts, DbSchema } from '@logusgraphics/grant-database';
+import { GrantAuth } from '@grantjs/core';
+import { accountAuditLogs, DbSchema } from '@grantjs/database';
 import {
   Account,
   AccountPage,
-  AccountType,
   CreateAccountInput,
-  QueryAccountsArgs,
+  QueryAccountsInput,
   User,
-} from '@logusgraphics/grant-schema';
-import { and, eq, isNull } from 'drizzle-orm';
+} from '@grantjs/schema';
 
 import { BadRequestError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import {
   accountSchema,
   createAccountInputSchema,
   deleteAccountParamsSchema,
-  getAccountsParamsSchema,
+  queryAccountsInputSchema,
 } from './accounts.schemas';
 import {
   AuditService,
@@ -32,7 +30,7 @@ import {
 export class AccountService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     readonly db: DbSchema
   ) {
     super(accountAuditLogs, 'accountId', user, db);
@@ -55,11 +53,13 @@ export class AccountService extends AuditService {
   }
 
   public async getAccounts(
-    params: QueryAccountsArgs & SelectedFields<Account>,
+    params: QueryAccountsInput & SelectedFields<Account>,
     transaction?: Transaction
   ): Promise<AccountPage> {
     const context = 'AccountService.getAccounts';
-    validateInput(getAccountsParamsSchema, params, context);
+
+    validateInput(queryAccountsInputSchema, params, context);
+
     const result = await this.repositories.accountRepository.getAccounts(params, transaction);
 
     const transformedResult = {
@@ -75,6 +75,17 @@ export class AccountService extends AuditService {
     );
 
     return result;
+  }
+
+  public async getOwnerAccounts(transaction?: Transaction): Promise<Account[]> {
+    const ownerId = this.user?.userId;
+    if (!ownerId) {
+      throw new BadRequestError(
+        'User must be authenticated to get accounts by owner ID',
+        'errors:auth.unauthorized'
+      );
+    }
+    return await this.getAccountsByOwnerId(ownerId, transaction);
   }
 
   public async getAccountsByOwnerId(
@@ -107,7 +118,6 @@ export class AccountService extends AuditService {
       transaction
     );
 
-    // Fetch the account with owner relationship loaded to satisfy GraphQL schema requirements
     const accountsResult = await this.repositories.accountRepository.getAccounts(
       {
         ids: [createdAccount.id],
@@ -139,86 +149,17 @@ export class AccountService extends AuditService {
 
     await this.logCreate(account.id, newValues, metadata, transaction);
 
-    // Validate the account schema (which doesn't include relations like owner)
-    // Then preserve the owner relation that was loaded
     const validatedAccount = validateOutput(
       createDynamicSingleSchema(accountSchema),
       account,
       context
     );
 
-    // Preserve the owner relation after validation (validation strips it because it's not in the schema)
     if (account.owner) {
       (validatedAccount as Account & { owner: User }).owner = account.owner;
     }
 
     return validatedAccount;
-  }
-
-  public async createComplementaryAccount(
-    transaction?: Transaction
-  ): Promise<{ account: Account; accounts: Account[] }> {
-    if (!this.user) {
-      throw new BadRequestError(
-        'User must be authenticated to create complementary account',
-        'errors:auth.unauthorized'
-      );
-    }
-
-    const userId = this.user.id;
-
-    // Query user's existing accounts directly from database
-    const dbInstance = transaction ?? this.db;
-
-    const existingAccounts = await dbInstance
-      .select()
-      .from(accounts)
-      .where(and(eq(accounts.ownerId, userId), isNull(accounts.deletedAt)));
-
-    // Validate: Max 2 accounts per user
-    if (existingAccounts.length >= 2) {
-      throw new BadRequestError(
-        'User has reached maximum account limit (2 accounts)',
-        'errors:validation.maxAccountsReached'
-      );
-    }
-
-    // Determine complementary account type
-    const hasPersonal = existingAccounts.some((acc) => acc.type === AccountType.Personal);
-    const hasOrganization = existingAccounts.some((acc) => acc.type === AccountType.Organization);
-
-    let complementaryType: AccountType;
-    if (hasPersonal && !hasOrganization) {
-      complementaryType = AccountType.Organization;
-    } else if (hasOrganization && !hasPersonal) {
-      complementaryType = AccountType.Personal;
-    } else {
-      throw new BadRequestError(
-        'User already has both account types',
-        'errors:validation.complementaryAccountExists'
-      );
-    }
-
-    // Create the complementary account
-    const newAccount = await this.createAccount(
-      {
-        type: complementaryType,
-        ownerId: userId,
-      },
-      transaction
-    );
-
-    // Fetch all accounts for the user after creation using repository to properly load owner relationship
-    const allUserAccounts = await this.repositories.accountRepository.getAccountsByOwnerId(
-      userId,
-      transaction,
-      ['owner']
-    );
-
-    return {
-      account: newAccount,
-      accounts: allUserAccounts,
-    };
   }
 
   public async deleteAccount(

@@ -1,8 +1,8 @@
-import { Project, ProjectSortableField, SortOrder } from '@logusgraphics/grant-schema';
+import { Project, ProjectSortableField, SortOrder } from '@grantjs/schema';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
-import { ProjectView } from '@/components/features/projects/ProjectViewSwitcher';
+import { ProjectView } from '@/components/features/projects/project-types';
 
 interface ProjectsState {
   // State
@@ -18,6 +18,9 @@ interface ProjectsState {
   // Data state
   projects: Project[];
   loading: boolean;
+
+  // Refetch callback
+  refetch: (() => void) | null;
 
   // Dialog state
   projectToDelete: { id: string; name: string } | null;
@@ -37,6 +40,7 @@ interface ProjectsState {
   setTotalCount: (count: number) => void;
   setProjects: (projects: Project[]) => void;
   setLoading: (loading: boolean) => void;
+  setRefetch: (refetch: (() => void) | null) => void;
   resetToDefaults: () => void;
   initializeFromUrl: (params: URLSearchParams) => void;
 
@@ -66,6 +70,9 @@ export const useProjectsStore = create<ProjectsState>()(
       projects: [],
       loading: false,
 
+      // Refetch callback
+      refetch: null,
+
       // Dialog state
       projectToDelete: null,
       projectToEdit: null,
@@ -84,6 +91,7 @@ export const useProjectsStore = create<ProjectsState>()(
       setTotalCount: (totalCount) => set({ totalCount }),
       setProjects: (projects) => set({ projects }),
       setLoading: (loading) => set({ loading }),
+      setRefetch: (refetch) => set({ refetch }),
       resetToDefaults: () =>
         set({
           page: 1,
@@ -96,6 +104,7 @@ export const useProjectsStore = create<ProjectsState>()(
           isInitialized: false,
           projects: [],
           loading: false,
+          refetch: null,
           projectToDelete: null,
           projectToEdit: null,
           isCreateDialogOpen: false,
@@ -132,7 +141,7 @@ export const useProjectsStore = create<ProjectsState>()(
       setCurrentProject: (project) => set({ currentProject: project }),
     }),
     {
-      name: 'projects-store',
+      name: 'grant-projects-store',
     }
   )
 );

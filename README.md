@@ -1,4 +1,4 @@
-# Grant Platform
+# Grant
 
 An open-source, multi-tenant RBAC/ACL platform with self-hosting capabilities via AWS CloudFormation.
 
@@ -24,7 +24,7 @@ An open-source, multi-tenant RBAC/ACL platform with self-hosting capabilities vi
 
 ### Published Packages (npm)
 
-- **`@logusgraphics/grant-core`** - Core RBAC/ACL system
+- **`@grantjs/core`** - Core RBAC/ACL system
 
 ### Self-Hosting Components
 
@@ -41,7 +41,7 @@ An open-source, multi-tenant RBAC/ACL platform with self-hosting capabilities vi
 
    ```bash
    aws cloudformation create-stack \
-     --stack-name grant-platform \
+     --stack-name grant \
      --template-body file://infrastructure/cloudformation/main.yaml \
      --parameters file://infrastructure/cloudformation/parameters/dev.json \
      --capabilities CAPABILITY_IAM
@@ -56,8 +56,8 @@ An open-source, multi-tenant RBAC/ACL platform with self-hosting capabilities vi
 
 ```bash
 # Clone repository
-git clone https://github.com/logusgraphics/grant-platform.git
-cd grant-platform
+git clone https://github.com/logusgraphics/grant.git
+cd grant
 
 # Install dependencies
 pnpm install
@@ -108,7 +108,7 @@ pnpm --filter grant-web dev
 pnpm --filter grant-api dev
 
 # Core package
-pnpm --filter @logusgraphics/grant-core dev
+pnpm --filter @grantjs/core dev
 ```
 
 ## 🌐 Deployment Options

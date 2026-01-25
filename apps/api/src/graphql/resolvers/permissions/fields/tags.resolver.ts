@@ -1,4 +1,4 @@
-import { PermissionResolvers } from '@logusgraphics/grant-schema';
+import { PermissionResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
 

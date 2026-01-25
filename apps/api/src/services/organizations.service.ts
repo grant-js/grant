@@ -1,4 +1,5 @@
-import { DbSchema, organizationAuditLogs } from '@logusgraphics/grant-database';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema, organizationAuditLogs } from '@grantjs/database';
 import {
   CreateOrganizationInput,
   MutationDeleteOrganizationArgs,
@@ -6,12 +7,12 @@ import {
   Organization,
   OrganizationPage,
   QueryOrganizationsArgs,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
-import { NotFoundError } from '@/lib/errors';
+import { BadRequestError, NotFoundError } from '@/lib/errors';
+import { createModuleLogger } from '@/lib/logger';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
@@ -31,9 +32,10 @@ import {
 } from './organizations.schemas';
 
 export class OrganizationService extends AuditService {
+  public logger = createModuleLogger('OrganizationService');
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(organizationAuditLogs, 'organizationId', user, db);
@@ -59,13 +61,36 @@ export class OrganizationService extends AuditService {
   }
 
   public async getOrganizations(
-    params: QueryOrganizationsArgs & SelectedFields<Organization>,
+    params: Omit<QueryOrganizationsArgs, 'scope'> & SelectedFields<Organization>,
     transaction?: Transaction
   ): Promise<OrganizationPage> {
     const context = 'OrganizationService.getOrganizations';
     validateInput(getOrganizationsParamsSchema, params, context);
+
+    const userId = this.user?.userId;
+
+    if (!userId) {
+      throw new BadRequestError('User not found', 'errors:notFound.user');
+    }
+
+    const userOrganizations =
+      await this.repositories.organizationUserRepository.getUserOrganizationMemberships(
+        userId,
+        transaction
+      );
+
+    if (userOrganizations.length === 0) {
+      return {
+        organizations: [],
+        totalCount: 0,
+        hasNextPage: false,
+      };
+    }
+
+    const organizationIds = userOrganizations.map((organization) => organization.organizationId);
+
     const result = await this.repositories.organizationRepository.getOrganizations(
-      params,
+      { ...params, ids: organizationIds },
       transaction
     );
 
@@ -85,7 +110,7 @@ export class OrganizationService extends AuditService {
   }
 
   public async createOrganization(
-    params: CreateOrganizationInput,
+    params: Omit<CreateOrganizationInput, 'scope'>,
     transaction?: Transaction
   ): Promise<Organization> {
     const context = 'OrganizationService.createOrganization';
@@ -123,7 +148,7 @@ export class OrganizationService extends AuditService {
 
     const { id, input } = validatedParams;
 
-    const oldOrganization = await this.getOrganization(id);
+    const oldOrganization = await this.getOrganization(id, transaction);
     const updatedOrganization = await this.repositories.organizationRepository.updateOrganization(
       { id, input },
       transaction
@@ -159,7 +184,7 @@ export class OrganizationService extends AuditService {
   }
 
   public async deleteOrganization(
-    params: MutationDeleteOrganizationArgs & DeleteParams,
+    params: Omit<MutationDeleteOrganizationArgs, 'scope'> & DeleteParams,
     transaction?: Transaction
   ): Promise<Organization> {
     const context = 'OrganizationService.deleteOrganization';

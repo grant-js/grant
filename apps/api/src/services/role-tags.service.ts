@@ -1,15 +1,10 @@
-import { DbSchema, roleTagAuditLogs } from '@logusgraphics/grant-database';
-import {
-  AddRoleTagInput,
-  RemoveRoleTagInput,
-  RoleTag,
-  UpdateRoleTagInput,
-} from '@logusgraphics/grant-schema';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema, roleTagAuditLogs } from '@grantjs/database';
+import { AddRoleTagInput, RemoveRoleTagInput, RoleTag, UpdateRoleTagInput } from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
@@ -31,7 +26,7 @@ import {
 export class RoleTagService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(roleTagAuditLogs, 'roleTagId', user, db);

@@ -1,10 +1,7 @@
 import { config } from '@/config';
+import { BadRequestError } from '@/lib/errors';
 import { IFileStorageService, StorageFactory, UploadOptions, UploadResult } from '@/lib/storage';
 
-/**
- * File Storage Service
- * Provides a centralized file storage service instance for the application
- */
 export class FileStorageService {
   private storageAdapter: IFileStorageService;
 
@@ -31,45 +28,103 @@ export class FileStorageService {
     });
   }
 
-  /**
-   * Get the storage adapter instance
-   */
   public getAdapter(): IFileStorageService {
     return this.storageAdapter;
   }
 
-  /**
-   * Upload a file to storage
-   */
   public async upload(file: Buffer, path: string, options?: UploadOptions): Promise<UploadResult> {
     return this.storageAdapter.upload(file, path, options);
   }
 
-  /**
-   * Delete a file from storage
-   */
   public async delete(path: string): Promise<void> {
     return this.storageAdapter.delete(path);
   }
 
-  /**
-   * Get public URL for a file
-   */
   public async getUrl(path: string): Promise<string> {
     return this.storageAdapter.getUrl(path);
   }
 
-  /**
-   * Check if a file exists
-   */
   public async exists(path: string): Promise<boolean> {
     return this.storageAdapter.exists(path);
   }
 
-  /**
-   * Copy a file to a new location
-   */
   public async copy(sourcePath: string, destinationPath: string): Promise<void> {
     return this.storageAdapter.copy(sourcePath, destinationPath);
+  }
+
+  public validateFileType(contentType: string): void {
+    if (
+      !config.storage.upload.allowedTypes.includes(
+        contentType as (typeof config.storage.upload.allowedTypes)[number]
+      )
+    ) {
+      throw new BadRequestError(
+        `Invalid file type. Allowed types: ${config.storage.upload.allowedTypes.join(', ')}`,
+        'errors:validation.invalid',
+        { field: 'contentType' }
+      );
+    }
+  }
+
+  public validateFileExtension(filename: string): void {
+    const fileExtension = filename.split('.').pop()?.toLowerCase();
+    if (
+      !fileExtension ||
+      !config.storage.upload.allowedExtensions.includes(
+        fileExtension as (typeof config.storage.upload.allowedExtensions)[number]
+      )
+    ) {
+      throw new BadRequestError(
+        `Invalid file extension. Allowed extensions: ${config.storage.upload.allowedExtensions.join(', ')}`,
+        'errors:validation.invalid',
+        { field: 'filename' }
+      );
+    }
+  }
+
+  public decodeBase64File(file: string): Buffer {
+    try {
+      const base64Data = file.replace(/^data:.*,/, '');
+      return Buffer.from(base64Data, 'base64');
+    } catch {
+      throw new BadRequestError('Invalid base64 file data', 'errors:validation.invalid', {
+        field: 'file',
+      });
+    }
+  }
+
+  public validateFileSize(fileBuffer: Buffer): void {
+    if (fileBuffer.length > config.storage.upload.maxFileSize) {
+      throw new BadRequestError(
+        `File size exceeds maximum of ${config.storage.upload.maxFileSize / 1024 / 1024}MB`,
+        'errors:validation.invalid',
+        { field: 'file' }
+      );
+    }
+  }
+
+  public sanitizeExtensionAndGeneratePath(
+    filename: string,
+    basePath: string,
+    defaultExt: string = 'jpg'
+  ): string {
+    const ext = filename.split('.').pop()?.toLowerCase() || defaultExt;
+    const sanitizedExt = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? ext : defaultExt;
+    return `${basePath}.${sanitizedExt}`;
+  }
+
+  public validateAndDecodeUpload(params: {
+    file: string;
+    contentType: string;
+    filename: string;
+  }): Buffer {
+    const { file, contentType, filename } = params;
+
+    this.validateFileType(contentType);
+    this.validateFileExtension(filename);
+    const fileBuffer = this.decodeBase64File(file);
+    this.validateFileSize(fileBuffer);
+
+    return fileBuffer;
   }
 }

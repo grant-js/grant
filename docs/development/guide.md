@@ -5,7 +5,7 @@ description: Project structure, development practices, and collaboration guideli
 
 # Development Guide
 
-This guide covers the development practices, project structure, and collaboration guidelines for Grant Platform.
+This guide covers the development practices, project structure, and collaboration guidelines for Grant.
 
 ## Project Structure
 
@@ -16,7 +16,7 @@ This guide covers the development practices, project structure, and collaboratio
 │   └── web/              # Next.js web app
 │       └── tests/        # Web app tests (future)
 ├── packages/             # Shared packages
-│   └── @logusgraphics/   # Scoped packages
+│   └── @grantjs/   # Scoped packages
 ├── docs/                 # Documentation
 └── public/              # Static assets
 ```

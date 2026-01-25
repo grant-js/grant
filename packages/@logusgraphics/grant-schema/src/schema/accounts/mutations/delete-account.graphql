@@ -1,3 +1,0 @@
-extend type Mutation {
-  deleteAccount(input: DeleteAccountInput!): User!
-}

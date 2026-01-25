@@ -288,6 +288,7 @@ that can be used to make authenticated requests to the platform.
 - Include the token in the \`Authorization\` header: \`Bearer <token>\`
 - Token expires after the configured time (default: 15 minutes)
 - Use the token to make authenticated API requests
+- You can test authenticated endpoints by clicking the "Authorize" button in Swagger UI and entering your token
 
 ### Security
 - Client secret is validated using secure hashing

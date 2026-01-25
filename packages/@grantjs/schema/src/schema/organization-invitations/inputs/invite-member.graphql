@@ -1,0 +1,5 @@
+input InviteMemberInput {
+  scope: Scope!
+  email: String!
+  roleId: ID!
+}

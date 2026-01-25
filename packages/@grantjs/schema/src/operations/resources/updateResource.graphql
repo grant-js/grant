@@ -1,0 +1,12 @@
+mutation UpdateResource($id: ID!, $input: UpdateResourceInput!) {
+  updateResource(id: $id, input: $input) {
+    id
+    name
+    slug
+    description
+    actions
+    isActive
+    createdAt
+    updatedAt
+  }
+}

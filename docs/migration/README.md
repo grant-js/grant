@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide helps you migrate from the open source Grant Platform to the hosted SaaS version, enabling access to enterprise features and premium support.
+This guide helps you migrate from the open source Grant to the hosted SaaS version, enabling access to enterprise features and premium support.
 
 ## 🎯 Why Migrate?
 
@@ -85,7 +85,7 @@ npm run import:data -- --source ./migration-data/ --target saas
 
 ```bash
 # Download migration tool
-npm install -g @logusgraphics/grant-migration
+npm install -g @grantjs/migration
 
 # Run migration
 grant-migration migrate \

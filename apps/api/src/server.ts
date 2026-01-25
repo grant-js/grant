@@ -5,7 +5,7 @@ import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHt
 import { ApolloServerPluginInlineTrace } from '@apollo/server/plugin/inlineTrace';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 import { expressMiddleware } from '@as-integrations/express5';
-import { closeDatabase, initializeDatabase } from '@logusgraphics/grant-database';
+import { closeDatabase, initializeDBConnection } from '@grantjs/database';
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
@@ -16,11 +16,10 @@ import { schema } from '@/graphql/resolvers';
 import { GraphqlContext } from '@/graphql/types';
 import { i18nMiddleware, initializeI18n } from '@/i18n';
 import { createAppContext } from '@/lib/app-context';
-import { CacheFactory } from '@/lib/cache/cache.factory';
+import { CacheFactory } from '@/lib/cache';
 import { formatGraphQLError } from '@/lib/errors';
 import { initializeJobs, shutdownJobs } from '@/lib/jobs/initialize';
 import { logger } from '@/lib/logger';
-import { authMiddleware } from '@/middleware/auth.middleware';
 import { contextMiddleware } from '@/middleware/context.middleware';
 import { errorHandler } from '@/middleware/error.middleware';
 import { requestLoggingMiddleware } from '@/middleware/request-logging.middleware';
@@ -39,7 +38,7 @@ async function startServer() {
     locales: config.i18n.supportedLocales,
   });
 
-  const db = initializeDatabase({
+  const db = initializeDBConnection({
     connectionString: config.db.url,
     max: config.db.poolMax,
     idleTimeout: config.db.idleTimeout,
@@ -84,7 +83,6 @@ async function startServer() {
     app.use('/storage', storageMiddleware());
   }
 
-  app.use(authMiddleware);
   app.use(contextMiddleware(db, cache));
   app.use(requestLoggingMiddleware);
 

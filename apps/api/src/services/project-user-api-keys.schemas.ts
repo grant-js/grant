@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { clientIdSchema, clientSecretSchema } from './api-keys.schemas';
 import {
   baseEntitySchema,
   deleteSchema,
@@ -7,7 +8,6 @@ import {
   idSchema,
   nameSchema,
 } from './common/schemas';
-import { clientIdSchema, clientSecretSchema } from './api-keys.schemas';
 
 const dateSchema = z.date().nullable().optional();
 

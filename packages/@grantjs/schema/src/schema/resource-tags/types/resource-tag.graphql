@@ -1,0 +1,11 @@
+type ResourceTag implements Auditable {
+  id: ID!
+  resourceId: ID!
+  tagId: ID!
+  isPrimary: Boolean!
+  resource(scope: Scope!): Resource
+  tag(scope: Scope!): Tag
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}

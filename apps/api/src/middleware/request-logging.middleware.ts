@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 
 import { logger } from '@/lib/logger';
-import { AuthenticatedRequest } from '@/types';
+import { ContextRequest } from '@/types';
 
 import type { Logger } from 'pino';
 
@@ -16,14 +16,14 @@ export function requestLoggingMiddleware(req: Request, res: Response, next: Next
 
   const requestId = (req.headers['x-request-id'] as string) || uuidv4();
 
-  const authReq = req as AuthenticatedRequest;
+  const contextReq = req as ContextRequest;
 
   const logContext: Record<string, unknown> = {
     requestId,
   };
 
-  if (authReq.user) {
-    logContext.user = authReq.user;
+  if (contextReq.user) {
+    logContext.user = contextReq.user;
   }
 
   const requestLogger = logger.child(logContext);

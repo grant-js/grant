@@ -1,4 +1,4 @@
-import { ApiKeySortableField, SortOrder, Tenant } from '@logusgraphics/grant-schema';
+import { ApiKeySortableField, SortOrder, Tenant } from '@grantjs/schema';
 
 import { z } from '@/lib/zod-openapi.lib';
 import { listQuerySchema, scopeSchema } from '@/rest/schemas/common.schemas';

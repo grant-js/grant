@@ -1,0 +1,4 @@
+input QueryResourceTagsInput {
+  resourceId: ID
+  tagId: ID
+}

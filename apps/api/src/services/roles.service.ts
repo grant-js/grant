@@ -1,43 +1,60 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { roleAuditLogs } from '@logusgraphics/grant-database';
+import { ROLES } from '@grantjs/constants';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema, roleAuditLogs } from '@grantjs/database';
 import {
-  QueryRolesArgs,
-  MutationUpdateRoleArgs,
+  CreateRoleInput,
   MutationDeleteRoleArgs,
+  QueryRolesArgs,
   Role,
   RolePage,
-  CreateRoleInput,
-} from '@logusgraphics/grant-schema';
+  UpdateRoleInput,
+} from '@grantjs/schema';
 
-import { NotFoundError } from '@/lib/errors';
+import { BadRequestError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
-  validateInput,
-  validateOutput,
+  DeleteParams,
+  SelectedFields,
   createDynamicPaginatedSchema,
   createDynamicSingleSchema,
-  SelectedFields,
-  DeleteParams,
+  validateInput,
+  validateOutput,
 } from './common';
 import {
+  createRoleInputSchema,
+  deleteRoleArgsSchema,
   getRolesParamsSchema,
   roleSchema,
-  createRoleInputSchema,
   updateRoleArgsSchema,
-  deleteRoleArgsSchema,
 } from './roles.schemas';
 
 export class RoleService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(roleAuditLogs, 'roleId', user, db);
+  }
+
+  private getCorePlatformRoleNames(): string[] {
+    return Object.values(ROLES).map((role) => role.name);
+  }
+
+  private validateRoleNameNotReserved(roleName: string): void {
+    const coreRoleNames = this.getCorePlatformRoleNames();
+    if (coreRoleNames.includes(roleName)) {
+      throw new BadRequestError(
+        `Role name '${roleName}' is reserved for core platform roles and cannot be used`,
+        'errors:validation.reservedRoleName',
+        {
+          roleName,
+        }
+      );
+    }
   }
 
   private async getRole(roleId: string): Promise<Role> {
@@ -81,12 +98,17 @@ export class RoleService extends AuditService {
   ): Promise<Role> {
     const context = 'RoleService.createRole';
     const validatedParams = validateInput(createRoleInputSchema, params, context);
+
+    // Validate that the role name is not a reserved core platform role name
+    this.validateRoleNameNotReserved(validatedParams.name);
+
     const role = await this.repositories.roleRepository.createRole(validatedParams, transaction);
 
     const newValues = {
       id: role.id,
       name: role.name,
       description: role.description,
+      metadata: role.metadata,
       createdAt: role.createdAt,
       updatedAt: role.updatedAt,
     };
@@ -101,22 +123,26 @@ export class RoleService extends AuditService {
   }
 
   public async updateRole(
-    params: MutationUpdateRoleArgs,
+    id: string,
+    input: UpdateRoleInput,
     transaction?: Transaction
   ): Promise<Role> {
     const context = 'RoleService.updateRole';
-    const validatedParams = validateInput(updateRoleArgsSchema, params, context);
+    validateInput(updateRoleArgsSchema, { id, input }, context);
 
-    const oldRole = await this.getRole(validatedParams.id);
-    const updatedRole = await this.repositories.roleRepository.updateRole(
-      validatedParams,
-      transaction
-    );
+    // If the role name is being updated, validate that it's not a reserved core platform role name
+    if (input.name) {
+      this.validateRoleNameNotReserved(input.name);
+    }
+
+    const oldRole = await this.getRole(id);
+    const updatedRole = await this.repositories.roleRepository.updateRole(id, input, transaction);
 
     const oldValues = {
       id: oldRole.id,
       name: oldRole.name,
       description: oldRole.description,
+      metadata: oldRole.metadata,
       createdAt: oldRole.createdAt,
       updatedAt: oldRole.updatedAt,
     };
@@ -125,6 +151,7 @@ export class RoleService extends AuditService {
       id: updatedRole.id,
       name: updatedRole.name,
       description: updatedRole.description,
+      metadata: updatedRole.metadata,
       createdAt: updatedRole.createdAt,
       updatedAt: updatedRole.updatedAt,
     };

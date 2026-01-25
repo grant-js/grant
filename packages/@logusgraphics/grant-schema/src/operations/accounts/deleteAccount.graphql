@@ -1,9 +1,0 @@
-mutation DeleteAccount($input: DeleteAccountInput!) {
-  deleteAccount(input: $input) {
-    id
-    name
-    createdAt
-    updatedAt
-    deletedAt
-  }
-}

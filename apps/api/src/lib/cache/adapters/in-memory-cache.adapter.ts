@@ -1,29 +1,51 @@
-import { CacheKey } from '@/handlers/base/scope-handler';
-import { ICacheAdapter } from '@/lib/cache/cache-adapter.interface';
+import { CacheKey, ICacheAdapter } from '@/lib/cache';
 
-/**
- * In-memory cache adapter using native JavaScript Map
- * Fast and simple, but not suitable for distributed/multi-instance deployments
- * Best for development and single-instance production deployments
- */
+interface CacheEntry<T> {
+  value: T;
+  expiresAt?: number;
+}
+
 export class InMemoryCacheAdapter implements ICacheAdapter {
-  private cache: Map<CacheKey, Set<string>>;
+  private cache: Map<CacheKey, CacheEntry<unknown>>;
 
   constructor() {
     this.cache = new Map();
   }
 
-  async get(key: CacheKey): Promise<Set<string> | null> {
-    const value = this.cache.get(key);
-    return value ?? null;
+  async get<T = Set<string>>(key: CacheKey): Promise<T | null> {
+    const entry = this.cache.get(key);
+    if (!entry) {
+      return null;
+    }
+
+    if (entry.expiresAt && Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return entry.value as T;
   }
 
-  async set(key: CacheKey, value: Set<string>): Promise<void> {
-    this.cache.set(key, value);
+  async set<T = Set<string>>(key: CacheKey, value: T, ttlSeconds?: number): Promise<void> {
+    const entry: CacheEntry<T> = {
+      value,
+      expiresAt: ttlSeconds ? Date.now() + ttlSeconds * 1000 : undefined,
+    };
+    this.cache.set(key, entry);
   }
 
   async has(key: CacheKey): Promise<boolean> {
-    return this.cache.has(key);
+    const entry = this.cache.get(key);
+    if (!entry) {
+      return false;
+    }
+
+    if (entry.expiresAt && Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return false;
+    }
+
+    return true;
   }
 
   async delete(key: CacheKey): Promise<void> {
@@ -35,17 +57,15 @@ export class InMemoryCacheAdapter implements ICacheAdapter {
   }
 
   async keys(pattern?: string): Promise<CacheKey[]> {
-    const allKeys = Array.from(this.cache.keys());
+    const allKeys = Array.from(this.cache.keys()) as CacheKey[];
     if (!pattern) {
       return allKeys;
     }
-    // Simple pattern matching with wildcards
     const regex = new RegExp(pattern.replace('*', '.*'));
     return allKeys.filter((key) => regex.test(key));
   }
 
   async disconnect(): Promise<void> {
-    // No connection to close for in-memory cache
     this.cache.clear();
   }
 }

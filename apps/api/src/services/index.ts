@@ -1,18 +1,22 @@
-import { DbSchema } from '@logusgraphics/grant-database';
+import { Grant, GrantAuth } from '@grantjs/core';
+import { DbSchema } from '@grantjs/database';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
+import { AccountProjectTagService } from './account-project-tags.service';
 import { AccountProjectService } from './account-projects.service';
+import { AccountRoleService } from './account-roles.service';
 import { AccountService } from './accounts.service';
 import { ApiKeyService } from './api-keys.service';
+import { AuthService } from './auth.service';
 import { EmailService } from './email.service';
 import { FileStorageService } from './file-storage.service';
 import { GitHubOAuthService } from './github-oauth.service';
 import { GroupPermissionService } from './group-permissions.service';
 import { GroupTagService } from './group-tags.service';
 import { GroupService } from './groups.service';
+import { MeService } from './me.service';
 import { OAuthStateService } from './oauth-state.service';
 import { OrganizationGroupService } from './organization-groups.service';
 import { OrganizationInvitationService } from './organization-invitations.service';
@@ -28,11 +32,14 @@ import { PermissionTagService } from './permission-tags.service';
 import { PermissionService } from './permissions.service';
 import { ProjectGroupService } from './project-groups.service';
 import { ProjectPermissionService } from './project-permissions.service';
+import { ProjectResourceService } from './project-resources.service';
 import { ProjectRoleService } from './project-roles.service';
 import { ProjectTagService } from './project-tags.service';
 import { ProjectUserApiKeyService } from './project-user-api-keys.service';
 import { ProjectUserService } from './project-users.service';
 import { ProjectService } from './projects.service';
+import { ResourceTagService } from './resource-tags.service';
+import { ResourceService } from './resources.service';
 import { RoleGroupService } from './role-groups.service';
 import { RoleTagService } from './role-tags.service';
 import { RoleService } from './roles.service';
@@ -47,13 +54,18 @@ export type Services = ReturnType<typeof createServices>;
 
 export function createServices(
   repositories: Repositories,
-  user: AuthenticatedUser | null,
+  user: GrantAuth | null,
   db: DbSchema,
-  cache: IEntityCacheAdapter
+  cache: IEntityCacheAdapter,
+  grant: Grant
 ) {
   return {
+    me: new MeService(repositories, grant),
     accounts: new AccountService(repositories, user, db),
     accountProjects: new AccountProjectService(repositories, user, db),
+    accountProjectTags: new AccountProjectTagService(repositories, user, db),
+    accountRoles: new AccountRoleService(repositories, user, db),
+    auth: new AuthService(grant),
     email: new EmailService(),
     fileStorage: new FileStorageService(),
     githubOAuth: new GitHubOAuthService(),
@@ -67,10 +79,13 @@ export function createServices(
     tags: new TagService(repositories, user, db),
     groups: new GroupService(repositories, user, db),
     permissions: new PermissionService(repositories, user, db),
+    resources: new ResourceService(repositories, user, db),
+    resourceTags: new ResourceTagService(repositories, user, db),
     projects: new ProjectService(repositories, user, db),
     projectGroups: new ProjectGroupService(repositories, user, db),
     projectRoles: new ProjectRoleService(repositories, user, db),
     projectPermissions: new ProjectPermissionService(repositories, user, db),
+    projectResources: new ProjectResourceService(repositories, user, db),
     projectTags: new ProjectTagService(repositories, user, db),
     apiKeys: new ApiKeyService(repositories, user, db),
     projectUserApiKeys: new ProjectUserApiKeyService(repositories, user, db),

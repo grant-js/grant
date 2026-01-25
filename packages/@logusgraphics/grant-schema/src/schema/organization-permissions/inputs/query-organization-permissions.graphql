@@ -1,3 +1,0 @@
-input QueryOrganizationPermissionsInput {
-  organizationId: ID!
-}

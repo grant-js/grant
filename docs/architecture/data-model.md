@@ -1,11 +1,11 @@
 ---
 title: Data Model
-description: Comprehensive overview of the Grant Platform database schema and entity relationships
+description: Comprehensive overview of the Grant database schema and entity relationships
 ---
 
 # Data Model
 
-The Grant Platform uses a sophisticated multi-tenant data model built on PostgreSQL with Drizzle ORM. This document provides a comprehensive overview of the database schema, entity relationships, and design patterns.
+The Grant uses a sophisticated multi-tenant data model built on PostgreSQL with Drizzle ORM. This document provides a comprehensive overview of the database schema, entity relationships, and design patterns.
 
 ## Core Entities
 
@@ -17,18 +17,19 @@ The platform is built around several core entities that work together to provide
 - **Accounts** - Person-centric identities that can own multiple organizations
 - **Organizations** - Business entities that contain projects and users
 - **Projects** - Isolated environments for managing external system identities
+- **Resources** - Domain entities defined by external systems (invoices, orders, policies, etc.)
 - **Roles** - Named collections of permissions
 - **Groups** - Collections of permissions that can be assigned to roles
-- **Permissions** - Specific actions that can be performed
+- **Permissions** - Specific actions that can be performed on resources
 - **Tags** - Flexible labeling system for categorization
 
 ## Entity Relationship Diagram
 
-The Grant Platform uses a complex multi-tenant data model. To make the relationships clearer, we'll break this into focused diagrams:
+The Grant uses a complex multi-tenant data model. To make the relationships clearer, we'll break this into focused diagrams:
 
 ### Core Entity Relationships
 
-The Grant Platform supports two types of accounts with different relationship patterns:
+The Grant supports two types of accounts with different relationship patterns:
 
 #### Personal Account Relationships
 
@@ -99,6 +100,8 @@ erDiagram
     Groups ||--o{ RoleGroups : "belongs to"
     Groups ||--o{ GroupPermissions : "has"
     Permissions ||--o{ GroupPermissions : "belongs to"
+    Resources ||--o{ Permissions : "defines"
+    Projects ||--o{ Resources : "contains"
 ```
 
 ### Tagging System Relationships
@@ -149,6 +152,19 @@ graph TB
         P3 --> U3[External Users: Analytics Team]
     end
 
+    style A1 stroke:#2e7d32,stroke-width:3px
+    style O1 stroke:#1565c0,stroke-width:3px
+    style O2 stroke:#1565c0,stroke-width:3px
+    style P1 stroke:#7b1fa2,stroke-width:3px
+    style P2 stroke:#7b1fa2,stroke-width:3px
+    style P3 stroke:#7b1fa2,stroke-width:3px
+    style U1 stroke:#01579b,stroke-width:3px
+    style U2 stroke:#01579b,stroke-width:3px
+    style U3 stroke:#01579b,stroke-width:3px
+```
+
+```mermaid
+graph TB
     subgraph "Account: Bob Smith"
         B1[Account: bob@company.com]
         B1 --> O3[Organization: Gamma LLC]
@@ -157,15 +173,10 @@ graph TB
         P4 --> U4[External Users: E-commerce Team]
     end
 
-    style A1 fill:#e1f5fe
-    style B1 fill:#e1f5fe
-    style O1 fill:#f3e5f5
-    style O2 fill:#f3e5f5
-    style O3 fill:#f3e5f5
-    style P1 fill:#e8f5e8
-    style P2 fill:#e8f5e8
-    style P3 fill:#e8f5e8
-    style P4 fill:#e8f5e8
+    style B1 stroke:#2e7d32,stroke-width:3px
+    style O3 stroke:#1565c0,stroke-width:3px
+    style P4 stroke:#7b1fa2,stroke-width:3px
+    style U4 stroke:#01579b,stroke-width:3px
 ```
 
 ## RBAC Permission Model
@@ -175,21 +186,25 @@ The platform uses a flexible Role-Based Access Control (RBAC) system with differ
 ### Permission Flow
 
 ```
-User → Role → Group → Permission
+User → Role → Group → Permission → Resource
 ```
+
+Resources define the domain entities that permissions control access to. Each permission is linked to a resource and specifies which action can be performed on that resource type.
 
 ### Personal Account Permission Evaluation
 
-For personal accounts, the JWT `aud` claim contains `account:{account-id}`, and permissions are evaluated within that account scope:
+For personal accounts, the JWT `aud` and `iss` claims are set to the platform API URL (`config.app.url`), identifying the platform itself as the token consumer and issuer. Scope is identified through a custom `scope` claim in the JWT, which contains the tenant context (e.g., `account:{account-id}`). Permissions are evaluated within that account scope:
 
 ```mermaid
 flowchart TD
     Start([User Request]) --> Auth{Authenticated?}
     Auth -->|No| Deny[Access Denied]
-    Auth -->|Yes| ExtractAud[Extract JWT aud claim]
-    ExtractAud --> CheckAudType{aud = account:*?}
-    CheckAudType -->|No| Deny
-    CheckAudType -->|Yes| ExtractAccountId[Extract Account ID from aud]
+    Auth -->|Yes| ValidateAud{Validate JWT aud = platform URL?}
+    ValidateAud -->|No| Deny
+    ValidateAud -->|Yes| ExtractScope[Extract JWT scope claim]
+    ExtractScope --> CheckScopeType{scope = account:*?}
+    CheckScopeType -->|No| Deny
+    CheckScopeType -->|Yes| ExtractAccountId[Extract Account ID from scope]
     ExtractAccountId --> CheckAccountRole{Has Role in Account?}
     CheckAccountRole -->|No| Deny
     CheckAccountRole -->|Yes| CheckAccountGroup{Role has Groups?}
@@ -201,8 +216,9 @@ flowchart TD
     style Start stroke:#2563eb,stroke-width:3px
     style Allow stroke:#10b981,stroke-width:3px
     style Deny stroke:#ef4444,stroke-width:3px
-    style ExtractAud stroke:#7b1fa2,stroke-width:2px
-    style CheckAudType stroke:#7b1fa2,stroke-width:2px
+    style ValidateAud stroke:#7b1fa2,stroke-width:2px
+    style ExtractScope stroke:#7b1fa2,stroke-width:2px
+    style CheckScopeType stroke:#7b1fa2,stroke-width:2px
     style ExtractAccountId stroke:#7b1fa2,stroke-width:2px
     style CheckAccountRole stroke:#7b1fa2,stroke-width:2px
     style CheckAccountGroup stroke:#7b1fa2,stroke-width:2px
@@ -211,16 +227,18 @@ flowchart TD
 
 ### Organization Account Permission Evaluation
 
-For organization accounts, the JWT `aud` claim contains `organization:{org-id}`, and permissions are evaluated within that organization scope:
+For organization accounts, the JWT `aud` and `iss` claims are set to the platform API URL (`config.app.url`), identifying the platform itself as the token consumer and issuer. Scope is identified through a custom `scope` claim in the JWT, which contains the tenant context (e.g., `organization:{org-id}`). Permissions are evaluated within that organization scope:
 
 ```mermaid
 flowchart TD
     Start([User Request]) --> Auth{Authenticated?}
     Auth -->|No| Deny[Access Denied]
-    Auth -->|Yes| ExtractAud[Extract JWT aud claim]
-    ExtractAud --> CheckAudType{aud = organization:*?}
-    CheckAudType -->|No| Deny
-    CheckAudType -->|Yes| ExtractOrgId[Extract Organization ID from aud]
+    Auth -->|Yes| ValidateAud{Validate JWT aud = platform URL?}
+    ValidateAud -->|No| Deny
+    ValidateAud -->|Yes| ExtractScope[Extract JWT scope claim]
+    ExtractScope --> CheckScopeType{scope = organization:*?}
+    CheckScopeType -->|No| Deny
+    CheckScopeType -->|Yes| ExtractOrgId[Extract Organization ID from scope]
     ExtractOrgId --> CheckOrgRole{Has Role in Organization?}
     CheckOrgRole -->|No| Deny
     CheckOrgRole -->|Yes| CheckOrgGroup{Role has Groups?}
@@ -232,8 +250,9 @@ flowchart TD
     style Start stroke:#2563eb,stroke-width:3px
     style Allow stroke:#10b981,stroke-width:3px
     style Deny stroke:#ef4444,stroke-width:3px
-    style ExtractAud stroke:#ef6c00,stroke-width:2px
-    style CheckAudType stroke:#ef6c00,stroke-width:2px
+    style ValidateAud stroke:#ef6c00,stroke-width:2px
+    style ExtractScope stroke:#ef6c00,stroke-width:2px
+    style CheckScopeType stroke:#ef6c00,stroke-width:2px
     style ExtractOrgId stroke:#ef6c00,stroke-width:2px
     style CheckOrgRole stroke:#ef6c00,stroke-width:2px
     style CheckOrgGroup stroke:#ef6c00,stroke-width:2px
@@ -242,16 +261,18 @@ flowchart TD
 
 ### Project-Scoped Permission Evaluation
 
-For project-specific operations, the JWT `aud` claim can be scoped to `project:{project-id}` for maximum granularity:
+For project-specific operations, the JWT `aud` and `iss` claims are set to the platform API URL (`config.app.url`), identifying the platform itself as the token consumer and issuer. Scope is identified through a custom `scope` claim in the JWT, which contains the tenant context (e.g., `project:{project-id}`). This approach guarantees isolation since API keys are created per user, per project:
 
 ```mermaid
 flowchart TD
     Start([User Request]) --> Auth{Authenticated?}
     Auth -->|No| Deny[Access Denied]
-    Auth -->|Yes| ExtractAud[Extract JWT aud claim]
-    ExtractAud --> CheckAudType{aud = project:*?}
-    CheckAudType -->|No| Deny
-    CheckAudType -->|Yes| ExtractProjectId[Extract Project ID from aud]
+    Auth -->|Yes| ValidateAud{Validate JWT aud = platform URL?}
+    ValidateAud -->|No| Deny
+    ValidateAud -->|Yes| ExtractScope[Extract JWT scope claim]
+    ExtractScope --> CheckScopeType{scope = project:*?}
+    CheckScopeType -->|No| Deny
+    CheckScopeType -->|Yes| ExtractProjectId[Extract Project ID from scope]
     ExtractProjectId --> CheckProjectRole{Has Role in Project?}
     CheckProjectRole -->|No| Deny
     CheckProjectRole -->|Yes| CheckProjectGroup{Role has Groups?}
@@ -263,8 +284,9 @@ flowchart TD
     style Start stroke:#2563eb,stroke-width:3px
     style Allow stroke:#10b981,stroke-width:3px
     style Deny stroke:#ef4444,stroke-width:3px
-    style ExtractAud stroke:#c2185b,stroke-width:2px
-    style CheckAudType stroke:#c2185b,stroke-width:2px
+    style ValidateAud stroke:#c2185b,stroke-width:2px
+    style ExtractScope stroke:#c2185b,stroke-width:2px
+    style CheckScopeType stroke:#c2185b,stroke-width:2px
     style ExtractProjectId stroke:#c2185b,stroke-width:2px
     style CheckProjectRole stroke:#c2185b,stroke-width:2px
     style CheckProjectGroup stroke:#c2185b,stroke-width:2px

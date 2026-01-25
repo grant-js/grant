@@ -5,7 +5,7 @@ description: Flexible job scheduling system using the Adapter Pattern with suppo
 
 # Job Scheduling & Background Tasks
 
-Grant Platform features a flexible, adapter-based job scheduling system that supports multiple scheduling providers (node-cron, BullMQ) through a unified interface. This document explains the architecture, implementation, and usage of the job scheduling system.
+Grant features a flexible, adapter-based job scheduling system that supports multiple scheduling providers (node-cron, BullMQ) through a unified interface. This document explains the architecture, implementation, and usage of the job scheduling system.
 
 ## Overview
 

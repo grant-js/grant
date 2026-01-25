@@ -1,0 +1,25 @@
+// Fastify plugin and preHandler hook
+export { grantPlugin, grant } from './plugin';
+export type { GrantOptions, AuthorizedFastifyRequest, GrantPluginOptions } from './plugin';
+
+// Re-export core types for convenience
+export type {
+  GrantServerConfig,
+  AuthorizationResult,
+  PermissionCheckOptions,
+  Scope,
+  ResourceResolver,
+  ScopeResolver,
+} from '../types';
+
+// Re-export error classes
+export {
+  GrantServerError,
+  AuthenticationError,
+  AuthorizationError,
+  BadRequestError,
+  NotFoundError,
+} from '../errors';
+
+// Re-export GrantClient
+export { GrantClient } from '../grant-client';

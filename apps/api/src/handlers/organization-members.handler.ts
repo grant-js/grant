@@ -1,59 +1,58 @@
-import { DbSchema } from '@logusgraphics/grant-database';
+import { DbSchema } from '@grantjs/database';
 import {
   MutationRemoveOrganizationMemberArgs,
   MutationUpdateOrganizationMemberArgs,
   OrganizationMember,
   OrganizationMemberPage,
   QueryOrganizationMembersArgs,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
-import { createModuleLogger } from '@/lib/logger';
+import { IEntityCacheAdapter } from '@/lib/cache';
 import { TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 
-export class OrganizationMembersHandler {
-  private readonly logger = createModuleLogger('OrganizationMembersHandler');
+import { CacheHandler } from './base/cache-handler';
 
+export class OrganizationMembersHandler extends CacheHandler {
   constructor(
+    readonly cache: IEntityCacheAdapter,
     readonly services: Services,
     readonly db: DbSchema
-  ) {}
+  ) {
+    super(cache, services);
+  }
 
-  /**
-   * Get organization members (unified users and invitations)
-   */
   public async getOrganizationMembers(
     params: QueryOrganizationMembersArgs
   ): Promise<OrganizationMemberPage> {
     return await this.services.organizationMembers.getOrganizationMembers(params);
   }
 
-  /**
-   * Update an organization member's role
-   */
   public async updateOrganizationMember(
     params: MutationUpdateOrganizationMemberArgs
   ): Promise<OrganizationMember> {
-    return await TransactionManager.withTransaction(this.db, async (tx) => {
-      const { userId, organizationId, input } = params;
-      return await this.services.organizationMembers.updateOrganizationMember(
-        userId,
-        organizationId,
-        input,
-        tx
-      );
+    const { userId, input } = params;
+
+    const result = await TransactionManager.withTransaction(this.db, async (tx) => {
+      return await this.services.organizationMembers.updateOrganizationMember(userId, input, tx);
     });
+
+    await this.invalidateAuthorizationCacheForUser(userId);
+
+    return result;
   }
 
-  /**
-   * Remove an organization member
-   */
   public async removeOrganizationMember(
     params: MutationRemoveOrganizationMemberArgs
   ): Promise<OrganizationMember> {
-    return await TransactionManager.withTransaction(this.db, async (tx) => {
-      const { input } = params;
-      return await this.services.organizationMembers.removeOrganizationMember(input, tx);
+    const { userId, input } = params;
+
+    const result = await TransactionManager.withTransaction(this.db, async (tx) => {
+      return await this.services.organizationMembers.removeOrganizationMember(userId, input, tx);
     });
+
+    await this.invalidateAuthorizationCacheForUser(userId);
+
+    return result;
   }
 }

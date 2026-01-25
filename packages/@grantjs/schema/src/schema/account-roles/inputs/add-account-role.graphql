@@ -1,0 +1,4 @@
+input AddAccountRoleInput {
+  accountId: ID!
+  roleId: ID!
+}

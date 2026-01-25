@@ -1,4 +1,4 @@
-import { DbSchema } from '@logusgraphics/grant-database';
+import { DbSchema } from '@grantjs/database';
 import {
   Group,
   MutationCreateRoleArgs,
@@ -9,16 +9,16 @@ import {
   RolePage,
   Tag,
   Tenant,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 import { DeleteParams, SelectedFields } from '@/services/common';
 
-import { ScopeHandler } from './base/scope-handler';
+import { CacheHandler } from './base/cache-handler';
 
-export class RoleHandler extends ScopeHandler {
+export class RoleHandler extends CacheHandler {
   constructor(
     readonly cache: IEntityCacheAdapter,
     readonly services: Services,
@@ -78,9 +78,11 @@ export class RoleHandler extends ScopeHandler {
           );
           break;
         case Tenant.OrganizationProject:
-        case Tenant.AccountProject:
-          await this.services.projectRoles.addProjectRole({ projectId: scope.id, roleId }, tx);
+        case Tenant.AccountProject: {
+          const projectId = this.extractProjectIdFromScope(scope);
+          await this.services.projectRoles.addProjectRole({ projectId, roleId }, tx);
           break;
+        }
       }
 
       if (groupIds && groupIds.length > 0) {
@@ -116,12 +118,12 @@ export class RoleHandler extends ScopeHandler {
         const currentTags = await this.services.roleTags.getRoleTags({ roleId }, tx);
         currentTagIds = currentTags.map((pt) => pt.tagId);
       }
-      if (groupIds && groupIds.length > 0) {
-        const currentGroups = await this.services.roleGroups.getRoleGroups({ roleId });
+      if (Array.isArray(groupIds)) {
+        const currentGroups = await this.services.roleGroups.getRoleGroups({ roleId }, tx);
         currentGroupIds = currentGroups.map((rg) => rg.groupId);
       }
-      const updatedRole = await this.services.roles.updateRole(params, tx);
-      if (tagIds && tagIds.length > 0) {
+      const updatedRole = await this.services.roles.updateRole(roleId, input, tx);
+      if (Array.isArray(tagIds)) {
         const newTagIds = tagIds.filter((tagId) => !currentTagIds.includes(tagId));
         const removedTagIds = currentTagIds.filter((tagId) => !tagIds.includes(tagId));
         const updatedTagIds = tagIds.filter((tagId) => currentTagIds.includes(tagId));
@@ -145,7 +147,7 @@ export class RoleHandler extends ScopeHandler {
           )
         );
       }
-      if (groupIds && groupIds.length > 0) {
+      if (Array.isArray(groupIds)) {
         const newGroupIds = groupIds.filter((groupId) => !currentGroupIds.includes(groupId));
         const removedGroupIds = currentGroupIds.filter((groupId) => !groupIds.includes(groupId));
         await Promise.all(
@@ -158,6 +160,12 @@ export class RoleHandler extends ScopeHandler {
             this.services.roleGroups.removeRoleGroup({ roleId, groupId }, tx)
           )
         );
+
+        // Invalidate permissions cache when role-group relationships change
+        // as this affects the permission cascade
+        if (newGroupIds.length > 0 || removedGroupIds.length > 0) {
+          await this.invalidatePermissionsCacheForAllScopes();
+        }
       }
       return updatedRole;
     });
@@ -174,6 +182,17 @@ export class RoleHandler extends ScopeHandler {
 
       const tagIds = roleTags.map((rt) => rt.tagId);
       const groupIds = roleGroups.map((rg) => rg.groupId);
+
+      // Get all users in the scope to remove their UserRole relationships
+      const userIds = await this.getScopedUserIds(scope);
+
+      // Get all UserRole relationships for this role, then filter by users in scope
+      const allUserRoleRelations = await this.services.userRoles.getUserRoles({ roleId }, tx);
+      const userRoleRelations =
+        userIds.length > 0
+          ? allUserRoleRelations.filter((ur) => userIds.includes(ur.userId))
+          : allUserRoleRelations;
+
       switch (scope.tenant) {
         case Tenant.Organization:
           await this.services.organizationRoles.removeOrganizationRole(
@@ -182,15 +201,21 @@ export class RoleHandler extends ScopeHandler {
           );
           break;
         case Tenant.OrganizationProject:
-        case Tenant.AccountProject:
-          await this.services.projectRoles.removeProjectRole({ projectId: scope.id, roleId }, tx);
+        case Tenant.AccountProject: {
+          const projectId = this.extractProjectIdFromScope(scope);
+          await this.services.projectRoles.removeProjectRole({ projectId, roleId }, tx);
           break;
+        }
       }
 
       await Promise.all([
         ...tagIds.map((tagId) => this.services.roleTags.removeRoleTag({ roleId, tagId }, tx)),
         ...groupIds.map((groupId) =>
           this.services.roleGroups.removeRoleGroup({ roleId, groupId }, tx)
+        ),
+        // Remove UserRole relationships for users in this scope
+        ...userRoleRelations.map((ur) =>
+          this.services.userRoles.removeUserRole({ userId: ur.userId, roleId: ur.roleId }, tx)
         ),
       ]);
 

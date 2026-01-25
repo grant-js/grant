@@ -1,0 +1,7 @@
+input UpdateOrganizationInvitationInput {
+  status: OrganizationInvitationStatus
+  acceptedAt: Date
+  token: String
+  expiresAt: Date
+  invitedAt: Date
+}

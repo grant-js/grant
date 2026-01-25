@@ -1,0 +1,3 @@
+extend type Mutation {
+  deleteOrganization(id: ID!, scope: Scope!): Organization!
+}

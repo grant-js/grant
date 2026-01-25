@@ -1,6 +1,0 @@
-mutation RevokeUserSession($id: ID!) {
-  revokeUserSession(id: $id) {
-    success
-    message
-  }
-}

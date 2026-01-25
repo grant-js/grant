@@ -1,4 +1,6 @@
-import { CacheKey } from '@/handlers/base/scope-handler';
+import { MILLISECONDS_PER_MINUTE } from '@grantjs/constants';
+
+import { CacheKey } from '@/lib/cache';
 import { ICacheAdapter } from '@/lib/cache';
 import { createModuleLogger } from '@/lib/logger';
 import { validateInput } from '@/services/common';
@@ -17,12 +19,9 @@ export class OAuthStateService {
 
   constructor(cache: ICacheAdapter) {
     this.cache = cache;
-    this.cleanupInterval = setInterval(
-      () => {
-        this.cleanupExpiredStates();
-      },
-      5 * 60 * 1000
-    );
+    this.cleanupInterval = setInterval(() => {
+      this.cleanupExpiredStates();
+    }, 5 * MILLISECONDS_PER_MINUTE);
   }
 
   async storeState(state: OAuthState, ttlSeconds: number = 600): Promise<void> {

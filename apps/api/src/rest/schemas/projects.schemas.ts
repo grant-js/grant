@@ -1,4 +1,4 @@
-import { ProjectSortableField, SortOrder } from '@logusgraphics/grant-schema';
+import { ProjectSortableField, SortOrder } from '@grantjs/schema';
 
 import { z } from '@/lib/zod-openapi.lib';
 import {
@@ -87,6 +87,7 @@ export const createProjectRequestSchema = z.object({
 export const createProjectResponseSchema = createSuccessResponseSchema(projectSchema);
 
 export const updateProjectRequestSchema = z.object({
+  scope: scopeSchema,
   name: z.string().min(1, 'Name is required').max(255, 'Name too long').optional().openapi({
     description: 'Updated name of the project',
     example: 'Mobile App v2',

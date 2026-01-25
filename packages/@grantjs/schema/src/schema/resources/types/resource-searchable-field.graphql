@@ -1,0 +1,5 @@
+enum ResourceSearchableField {
+  name
+  slug
+  description
+}

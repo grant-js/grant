@@ -1,11 +1,11 @@
 ---
 title: Metrics & Monitoring
-description: Comprehensive guide to Prometheus metrics and monitoring in Grant Platform
+description: Comprehensive guide to Prometheus metrics and monitoring in Grant
 ---
 
 # Metrics & Monitoring
 
-Grant Platform uses [Prometheus](https://prometheus.io/) for metrics collection and monitoring. This guide covers metrics setup, custom metrics, and monitoring best practices.
+Grant uses [Prometheus](https://prometheus.io/) for metrics collection and monitoring. This guide covers metrics setup, custom metrics, and monitoring best practices.
 
 ## What are Metrics?
 

@@ -1,0 +1,9 @@
+mutation UpdateMyUser($input: UpdateMyUserInput!) {
+  updateMyUser(input: $input) {
+    id
+    name
+    metadata
+    createdAt
+    updatedAt
+  }
+}

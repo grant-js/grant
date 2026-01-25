@@ -1,15 +1,16 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { groupPermissionsAuditLogs } from '@logusgraphics/grant-database';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema } from '@grantjs/database';
+import { groupPermissionsAuditLogs } from '@grantjs/database';
 import {
   AddGroupPermissionInput,
   GroupPermission,
+  QueryGroupPermissionsInput,
   RemoveGroupPermissionInput,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
-import { ConflictError, NotFoundError, ValidationError } from '@/lib/errors';
+import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
@@ -28,7 +29,7 @@ import {
 export class GroupPermissionService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(groupPermissionsAuditLogs, 'groupPermissionId', user, db);
@@ -73,22 +74,22 @@ export class GroupPermissionService extends AuditService {
   }
 
   public async getGroupPermissions(
-    params: { groupId: string },
+    params: QueryGroupPermissionsInput,
     transaction?: Transaction
   ): Promise<GroupPermission[]> {
     const context = 'GroupPermissionService.getGroupPermissions';
     const validatedParams = validateInput(getGroupPermissionsParamsSchema, params, context);
-    const { groupId } = validatedParams;
+    const { groupId, permissionId } = validatedParams;
 
-    if (!groupId) {
-      throw new ValidationError('Group ID is required', [], 'errors:validation.required', {
-        field: 'groupId',
-      });
+    if (groupId) {
+      await this.groupExists(groupId, transaction);
     }
-    await this.groupExists(groupId, transaction);
+    if (permissionId) {
+      await this.permissionExists(permissionId, transaction);
+    }
 
     const result = await this.repositories.groupPermissionRepository.getGroupPermissions(
-      { groupId },
+      validatedParams,
       transaction
     );
 

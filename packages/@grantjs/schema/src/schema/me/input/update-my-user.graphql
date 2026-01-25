@@ -1,0 +1,4 @@
+input UpdateMyUserInput {
+  name: String
+  metadata: JSON
+}

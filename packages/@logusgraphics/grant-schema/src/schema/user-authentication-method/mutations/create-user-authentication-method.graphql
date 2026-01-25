@@ -1,5 +1,0 @@
-extend type Mutation {
-  createUserAuthenticationMethod(
-    input: CreateUserAuthenticationMethodInput!
-  ): UserAuthenticationMethod!
-}

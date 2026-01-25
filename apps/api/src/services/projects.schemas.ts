@@ -1,4 +1,4 @@
-import { ProjectSortableField } from '@logusgraphics/grant-schema';
+import { ProjectSortableField } from '@grantjs/schema';
 import { z } from 'zod';
 
 import {

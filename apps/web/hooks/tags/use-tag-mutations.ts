@@ -1,0 +1,91 @@
+import { ApolloCache } from '@apollo/client';
+import { useMutation } from '@apollo/client/react';
+import {
+  CreateTagInput,
+  MutationDeleteTagArgs,
+  MutationUpdateTagArgs,
+  Tag,
+  TagPage,
+} from '@grantjs/schema';
+import { CreateTagDocument, UpdateTagDocument, DeleteTagDocument } from '@grantjs/schema';
+import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
+
+import { evictTagsCache } from './cache';
+
+export function useTagMutations() {
+  const t = useTranslations('tags');
+
+  const update = (cache: ApolloCache) => {
+    evictTagsCache(cache);
+  };
+
+  const [createTag] = useMutation<{ createTag: TagPage }>(CreateTagDocument, {
+    update,
+  });
+
+  const [updateTag] = useMutation<{ updateTag: Tag }>(UpdateTagDocument, {
+    update,
+  });
+
+  const [deleteTag] = useMutation<{ deleteTag: Tag }>(DeleteTagDocument, {
+    update,
+  });
+
+  const handleCreateTag = async (input: CreateTagInput) => {
+    try {
+      const result = await createTag({
+        variables: { input },
+      });
+
+      toast.success(t('notifications.createSuccess'));
+      return result.data?.createTag;
+    } catch (error) {
+      console.error('Error creating tag:', error);
+      toast.error(t('notifications.createError'), {
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+      });
+      throw error;
+    }
+  };
+
+  const handleUpdateTag = async (variables: MutationUpdateTagArgs) => {
+    try {
+      const result = await updateTag({
+        variables,
+      });
+
+      toast.success(t('notifications.updateSuccess'));
+      return result.data?.updateTag;
+    } catch (error) {
+      console.error('Error updating tag:', error);
+      toast.error(t('notifications.updateError'), {
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+      });
+      throw error;
+    }
+  };
+
+  const handleDeleteTag = async (variables: MutationDeleteTagArgs, _name: string) => {
+    try {
+      const result = await deleteTag({
+        variables,
+      });
+
+      toast.success(t('notifications.deleteSuccess'));
+      return result.data?.deleteTag;
+    } catch (error) {
+      console.error('Error deleting tag:', error);
+      toast.error(t('notifications.deleteError'), {
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+      });
+      throw error;
+    }
+  };
+
+  return {
+    handleCreateTag,
+    handleUpdateTag,
+    handleDeleteTag,
+  };
+}

@@ -1,0 +1,6 @@
+enum ResourceSortableField {
+  name
+  slug
+  createdAt
+  updatedAt
+}

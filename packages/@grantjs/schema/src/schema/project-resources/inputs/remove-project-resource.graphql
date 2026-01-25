@@ -1,0 +1,4 @@
+input RemoveProjectResourceInput {
+  projectId: ID!
+  resourceId: ID!
+}

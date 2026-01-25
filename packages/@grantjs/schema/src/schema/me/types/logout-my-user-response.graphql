@@ -1,0 +1,3 @@
+type LogoutMyUserResponse {
+  message: String!
+}

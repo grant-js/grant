@@ -1,10 +1,10 @@
-import { DbSchema } from '@logusgraphics/grant-database';
+import { DbSchema } from '@grantjs/database';
 import {
   UserAuthenticationEmailProviderAction,
   UserAuthenticationMethodProvider,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
-import { ScopeHandler } from '@/handlers/base/scope-handler';
+import { CacheHandler } from '@/handlers/base/cache-handler';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { AuthenticationError, ConfigurationError } from '@/lib/errors';
 import { createModuleLogger } from '@/lib/logger';
@@ -35,8 +35,8 @@ export interface HandleGithubCallbackResult {
   action?: UserAuthenticationEmailProviderAction; // Action type
 }
 
-export class OAuthHandler extends ScopeHandler {
-  private readonly logger = createModuleLogger('OAuthHandler');
+export class OAuthHandler extends CacheHandler {
+  protected readonly logger = createModuleLogger('OAuthHandler');
 
   constructor(
     readonly cache: IEntityCacheAdapter,

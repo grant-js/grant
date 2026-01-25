@@ -1,8 +1,8 @@
-import { RoleSortableField, Role, SortOrder } from '@logusgraphics/grant-schema';
+import { Role, RoleSortableField, SortOrder } from '@grantjs/schema';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
-import { RoleView } from '@/components/features/roles/RoleViewSwitcher';
+import { RoleView } from '@/components/features/roles/role-types';
 
 interface RolesState {
   // State
@@ -19,6 +19,9 @@ interface RolesState {
   roles: Role[];
   loading: boolean;
 
+  // Refetch callback
+  refetch: (() => void) | null;
+
   // Dialog state
   roleToDelete: Role | null;
   roleToEdit: Role | null;
@@ -34,6 +37,7 @@ interface RolesState {
   setTotalCount: (count: number) => void;
   setRoles: (roles: Role[]) => void;
   setLoading: (loading: boolean) => void;
+  setRefetch: (refetch: (() => void) | null) => void;
   resetToDefaults: () => void;
   initializeFromUrl: (params: URLSearchParams) => void;
 
@@ -62,6 +66,9 @@ export const useRolesStore = create<RolesState>()(
       roles: [],
       loading: false,
 
+      // Refetch callback
+      refetch: null,
+
       // Dialog state
       roleToDelete: null,
       roleToEdit: null,
@@ -77,6 +84,7 @@ export const useRolesStore = create<RolesState>()(
       setTotalCount: (totalCount) => set({ totalCount }),
       setRoles: (roles) => set({ roles }),
       setLoading: (loading) => set({ loading }),
+      setRefetch: (refetch) => set({ refetch }),
       resetToDefaults: () =>
         set({
           page: 1,
@@ -89,6 +97,7 @@ export const useRolesStore = create<RolesState>()(
           isInitialized: false,
           roles: [],
           loading: false,
+          refetch: null,
           roleToDelete: null,
           roleToEdit: null,
           isCreateDialogOpen: false,
@@ -125,6 +134,6 @@ export const useRolesStore = create<RolesState>()(
       setRoleToEdit: (role) => set({ roleToEdit: role }),
       setCreateDialogOpen: (open) => set({ isCreateDialogOpen: open }),
     }),
-    { name: 'roles-store' }
+    { name: 'grant-roles-store' }
   )
 );

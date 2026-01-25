@@ -35,7 +35,7 @@ export interface TypedRequestConfig<Body = unknown, Params = unknown, Query = un
  * TypedRequest<{
  *   body: typeof updateSchema;
  *   params: typeof idSchema;
- *   user: AuthenticatedUser
+ *   user: GrantAuth
  * }>
  *
  * @example
@@ -51,12 +51,13 @@ export interface TypedRequestConfig<Body = unknown, Params = unknown, Query = un
  *   body: typeof createSchema;
  *   params: typeof idSchema;
  *   query: typeof searchSchema;
- *   user: AuthenticatedUser;
+ *   user: GrantAuth;
  *   audience: string;
  * }>
  */
-export interface TypedRequest<Config extends TypedRequestConfig = TypedRequestConfig>
-  extends Request {
+export interface TypedRequest<
+  Config extends TypedRequestConfig = TypedRequestConfig,
+> extends Request {
   body: Config['body'] extends z.ZodTypeAny ? z.infer<Config['body']> : Config['body'];
   params: Config['params'] extends z.ZodTypeAny
     ? z.infer<Config['params']> & Record<string, string>

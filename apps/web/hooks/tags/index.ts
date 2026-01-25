@@ -1,4 +1,3 @@
-// Export all tags-related hooks, queries, and mutations
-export * from './useTags';
-export * from './useTagMutations';
 export * from './cache';
+export * from './use-tag-mutations';
+export * from './use-tags';

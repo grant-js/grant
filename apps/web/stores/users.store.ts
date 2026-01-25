@@ -1,8 +1,8 @@
-import { SortOrder, User, UserSortableField } from '@logusgraphics/grant-schema';
+import { SortOrder, User, UserSortableField } from '@grantjs/schema';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
-import { UserView } from '@/components/features/users/UserViewSwitcher';
+import { UserView } from '@/components/features/users/user-types';
 
 interface UsersState {
   // State
@@ -18,6 +18,9 @@ interface UsersState {
   // Data state
   users: User[];
   loading: boolean;
+
+  // Refetch callback
+  refetch: (() => void) | null;
 
   // Dialog state
   userToDelete: User | null;
@@ -37,6 +40,7 @@ interface UsersState {
   setTotalCount: (count: number) => void;
   setUsers: (users: User[]) => void;
   setLoading: (loading: boolean) => void;
+  setRefetch: (refetch: (() => void) | null) => void;
   resetToDefaults: () => void;
   initializeFromUrl: (params: URLSearchParams) => void;
 
@@ -66,6 +70,9 @@ export const useUsersStore = create<UsersState>()(
       users: [],
       loading: false,
 
+      // Refetch callback
+      refetch: null,
+
       // Dialog state
       userToDelete: null,
       userToEdit: null,
@@ -84,6 +91,7 @@ export const useUsersStore = create<UsersState>()(
       setTotalCount: (totalCount) => set({ totalCount }),
       setUsers: (users) => set({ users }),
       setLoading: (loading) => set({ loading }),
+      setRefetch: (refetch) => set({ refetch }),
       resetToDefaults: () =>
         set({
           page: 1,
@@ -96,6 +104,7 @@ export const useUsersStore = create<UsersState>()(
           isInitialized: false,
           users: [],
           loading: false,
+          refetch: null,
           userToDelete: null,
           userToEdit: null,
           isCreateDialogOpen: false,
@@ -134,6 +143,6 @@ export const useUsersStore = create<UsersState>()(
       setCreateDialogOpen: (open) => set({ isCreateDialogOpen: open }),
       setCurrentUser: (user) => set({ currentUser: user }),
     }),
-    { name: 'users-store' }
+    { name: 'grant-users-store' }
   )
 );

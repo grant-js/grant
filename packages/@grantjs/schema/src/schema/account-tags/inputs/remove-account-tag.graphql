@@ -1,0 +1,4 @@
+input RemoveAccountTagInput {
+  accountId: ID!
+  tagId: ID!
+}

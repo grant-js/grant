@@ -1,8 +1,0 @@
-mutation RevokeInvitation($id: ID!) {
-  revokeInvitation(id: $id) {
-    id
-    email
-    status
-    deletedAt
-  }
-}

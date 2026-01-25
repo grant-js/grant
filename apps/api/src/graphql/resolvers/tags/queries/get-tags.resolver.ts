@@ -1,5 +1,5 @@
-import { TagModel } from '@logusgraphics/grant-database';
-import { QueryResolvers } from '@logusgraphics/grant-schema';
+import { TagModel } from '@grantjs/database';
+import { QueryResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
 import { getDirectFieldSelection } from '@/lib/field-selection.lib';

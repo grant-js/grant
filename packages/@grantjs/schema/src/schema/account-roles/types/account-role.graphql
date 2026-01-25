@@ -1,0 +1,10 @@
+type AccountRole implements Auditable {
+  id: ID!
+  accountId: ID!
+  roleId: ID!
+  account: Account
+  role: Role
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}

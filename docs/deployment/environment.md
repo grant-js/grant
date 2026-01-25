@@ -1,15 +1,15 @@
 ---
 title: Environment Setup
-description: Setting up different environments for Grant Platform deployment
+description: Setting up different environments for Grant deployment
 ---
 
 # Environment Setup
 
-This guide covers setting up different environments (development, staging, production) for Grant Platform.
+This guide covers setting up different environments (development, staging, production) for Grant.
 
 ## Environment Overview
 
-Grant Platform supports multiple deployment environments:
+Grant supports multiple deployment environments:
 
 - **Development** - Local development with hot reload
 - **Staging** - Pre-production testing environment
@@ -25,7 +25,7 @@ Optimized for local development with debugging enabled.
 
 ```bash
 # .env (root)
-POSTGRES_DB=grant_platform
+POSTGRES_DB=grant
 POSTGRES_USER=grant_user
 POSTGRES_PASSWORD=grant_password
 REDIS_PASSWORD=grant_redis_password
@@ -39,7 +39,7 @@ NODE_ENV=development
 APP_PORT=4000
 
 # Database
-DB_URL=postgresql://grant_user:grant_password@localhost:5432/grant_platform
+DB_URL=postgresql://grant_user:grant_password@localhost:5432/grant
 DB_LOG_QUERIES=true
 
 # JWT (development-only secrets)
@@ -88,7 +88,7 @@ NODE_ENV=staging
 APP_PORT=4000
 
 # Database (managed RDS)
-DB_URL=postgresql://user:pass@staging-db.amazonaws.com:5432/grant_platform
+DB_URL=postgresql://user:pass@staging-db.amazonaws.com:5432/grant
 DB_LOG_QUERIES=false
 
 # JWT (staging-specific secret)
@@ -125,7 +125,7 @@ NODE_ENV=production
 APP_PORT=4000
 
 # Database (managed RDS with read replicas)
-DB_URL=postgresql://user:pass@prod-db.amazonaws.com:5432/grant_platform
+DB_URL=postgresql://user:pass@prod-db.amazonaws.com:5432/grant
 DB_POOL_MAX=20
 DB_POOL_MIN=5
 DB_LOG_QUERIES=false
@@ -160,7 +160,7 @@ SECURITY_RATE_LIMIT_WINDOW_MINUTES=15
 ### Directory Structure
 
 ```
-grant-platform/
+grant/
 ├── .env.example                 # Infrastructure template
 ├── .env.development            # Development overrides
 ├── .env.staging                # Staging overrides

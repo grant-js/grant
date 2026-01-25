@@ -1,8 +1,8 @@
-import { Organization, OrganizationSortableField, SortOrder } from '@logusgraphics/grant-schema';
+import { Organization, OrganizationSortableField, SortOrder } from '@grantjs/schema';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
-import { OrganizationView } from '@/components/features/organizations/OrganizationViewSwitcher';
+import { OrganizationView } from '@/components/features/organizations/organization-types';
 
 interface OrganizationsState {
   // State
@@ -18,6 +18,9 @@ interface OrganizationsState {
   // Data state
   organizations: Organization[];
   loading: boolean;
+
+  // Refetch callback
+  refetch: (() => void) | null;
 
   // Dialog state
   organizationToDelete: { id: string; name: string } | null;
@@ -37,6 +40,7 @@ interface OrganizationsState {
   setTotalCount: (count: number) => void;
   setOrganizations: (organizations: Organization[]) => void;
   setLoading: (loading: boolean) => void;
+  setRefetch: (refetch: (() => void) | null) => void;
   resetToDefaults: () => void;
   initializeFromUrl: (params: URLSearchParams) => void;
 
@@ -66,6 +70,9 @@ export const useOrganizationsStore = create<OrganizationsState>()(
       organizations: [],
       loading: false,
 
+      // Refetch callback
+      refetch: null,
+
       // Dialog state
       organizationToDelete: null,
       organizationToEdit: null,
@@ -84,6 +91,7 @@ export const useOrganizationsStore = create<OrganizationsState>()(
       setTotalCount: (totalCount) => set({ totalCount }),
       setOrganizations: (organizations) => set({ organizations }),
       setLoading: (loading) => set({ loading }),
+      setRefetch: (refetch) => set({ refetch }),
       resetToDefaults: () =>
         set({
           page: 1,
@@ -96,6 +104,7 @@ export const useOrganizationsStore = create<OrganizationsState>()(
           isInitialized: false,
           organizations: [],
           loading: false,
+          refetch: null,
           organizationToDelete: null,
           organizationToEdit: null,
           isCreateDialogOpen: false,
@@ -132,7 +141,7 @@ export const useOrganizationsStore = create<OrganizationsState>()(
       setCurrentOrganization: (organization) => set({ currentOrganization: organization }),
     }),
     {
-      name: 'organizations-store',
+      name: 'grant-organizations-store',
     }
   )
 );

@@ -1,4 +1,4 @@
-import { ApiKeySortableField } from '@logusgraphics/grant-schema';
+import { ApiKeySortableField } from '@grantjs/schema';
 import { z } from 'zod';
 
 import {

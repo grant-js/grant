@@ -1,9 +1,9 @@
+import { SupportedLocale } from '@grantjs/constants';
 import { Request } from 'express';
 
-import { config } from '@/config';
 import { ApiError } from '@/lib/errors';
 
-import { defaultLocale, getFixedT, type SupportedLocale } from './config';
+import { defaultLocale, getFixedT } from './config';
 
 export function translateError(req: Request, error: ApiError): string {
   if (error.translationKey && req.i18n) {
@@ -28,8 +28,4 @@ export function translateStatic(
 ): string {
   const fixedT = getFixedT(locale);
   return fixedT(key, params);
-}
-
-export function isSupportedLocale(locale: string): locale is SupportedLocale {
-  return config.i18n.supportedLocales.includes(locale as SupportedLocale);
 }

@@ -1,11 +1,11 @@
 ---
 title: Distributed Tracing
-description: End-to-end request tracing with OpenTelemetry in Grant Platform
+description: End-to-end request tracing with OpenTelemetry in Grant
 ---
 
 # Distributed Tracing
 
-Grant Platform uses [OpenTelemetry](https://opentelemetry.io/) for distributed tracing, providing visibility into request flows across services, databases, and external APIs.
+Grant uses [OpenTelemetry](https://opentelemetry.io/) for distributed tracing, providing visibility into request flows across services, databases, and external APIs.
 
 ## What is Distributed Tracing?
 

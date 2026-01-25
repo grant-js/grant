@@ -1,66 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import { useEffect, useRef, useState } from 'react';
 
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 
 import { cn } from '@/lib/utils';
-
-interface AutoScrollAreaProps extends React.ComponentProps<typeof ScrollAreaPrimitive.Root> {
-  children: React.ReactNode;
-  maxHeight?: string | number;
-  className?: string;
-  fallbackClassName?: string; // Class applied when no scroll is needed
-}
-
-function AutoScrollArea({
-  children,
-  maxHeight = '200px',
-  className,
-  fallbackClassName,
-  ...props
-}: AutoScrollAreaProps) {
-  const phantomRef = useRef<HTMLDivElement>(null);
-  const [needsScroll, setNeedsScroll] = useState(false);
-
-  // Measure the natural height of the content
-  useEffect(() => {
-    if (phantomRef.current) {
-      const naturalHeight = phantomRef.current.clientHeight;
-      const maxHeightPx =
-        typeof maxHeight === 'string' ? parseInt(maxHeight.replace('px', '')) : maxHeight;
-      setNeedsScroll(naturalHeight > maxHeightPx);
-    }
-  }, [children, maxHeight]);
-
-  return (
-    <>
-      {/* Phantom element to measure natural height */}
-      <div
-        ref={phantomRef}
-        className="invisible absolute pointer-events-none"
-        hidden
-        style={{ visibility: 'hidden', position: 'absolute' }}
-      >
-        {children}
-      </div>
-
-      {/* Actual content */}
-      {needsScroll ? (
-        <ScrollArea
-          className={className}
-          style={{ height: typeof maxHeight === 'string' ? maxHeight : `${maxHeight}px` }}
-          {...props}
-        >
-          {children}
-        </ScrollArea>
-      ) : (
-        <div className={cn(fallbackClassName)}>{children}</div>
-      )}
-    </>
-  );
-}
 
 function ScrollArea({
   className,
@@ -110,4 +54,4 @@ function ScrollBar({
   );
 }
 
-export { AutoScrollArea, ScrollArea, ScrollBar };
+export { ScrollArea, ScrollBar };

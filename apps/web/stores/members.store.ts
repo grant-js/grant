@@ -1,8 +1,8 @@
-import { OrganizationMemberSortableField, SortOrder } from '@logusgraphics/grant-schema';
+import { OrganizationMemberSortableField, SortOrder } from '@grantjs/schema';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
-import { MemberView } from '@/components/features/members/MemberViewSwitcher';
+import { MemberView } from '@/components/features/members/member-types';
 import { MemberWithInvitation } from '@/hooks/members';
 
 interface MembersState {
@@ -19,6 +19,9 @@ interface MembersState {
   members: MemberWithInvitation[];
   loading: boolean;
 
+  // Refetch callback
+  refetch: (() => void) | null;
+
   // Dialog state
   isInviteDialogOpen: boolean;
 
@@ -31,6 +34,7 @@ interface MembersState {
   setTotalCount: (count: number) => void;
   setMembers: (members: MemberWithInvitation[]) => void;
   setLoading: (loading: boolean) => void;
+  setRefetch: (refetch: (() => void) | null) => void;
   resetToDefaults: () => void;
   initializeFromUrl: (params: URLSearchParams) => void;
 
@@ -59,6 +63,9 @@ export const useMembersStore = create<MembersState>()(
       members: [],
       loading: false,
 
+      // Refetch callback
+      refetch: null,
+
       // Dialog state
       isInviteDialogOpen: false,
 
@@ -71,6 +78,7 @@ export const useMembersStore = create<MembersState>()(
       setTotalCount: (totalCount) => set({ totalCount }),
       setMembers: (members) => set({ members }),
       setLoading: (loading) => set({ loading }),
+      setRefetch: (refetch) => set({ refetch }),
       resetToDefaults: () =>
         set({
           page: 1,
@@ -82,6 +90,7 @@ export const useMembersStore = create<MembersState>()(
           isInitialized: false,
           members: [],
           loading: false,
+          refetch: null,
           isInviteDialogOpen: false,
         }),
       initializeFromUrl: (params) => {
@@ -112,6 +121,6 @@ export const useMembersStore = create<MembersState>()(
       // Dialog actions
       setInviteDialogOpen: (open) => set({ isInviteDialogOpen: open }),
     }),
-    { name: 'members-store' }
+    { name: 'grant-members-store' }
   )
 );

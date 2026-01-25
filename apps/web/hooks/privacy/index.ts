@@ -1,1 +1,1 @@
-export { usePrivacySettings } from './usePrivacySettings';
+export * from './use-privacy-settings';

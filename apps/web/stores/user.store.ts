@@ -1,9 +1,4 @@
-import {
-  ApiKeySortableField,
-  RoleSortableField,
-  SortOrder,
-  TagSortField,
-} from '@logusgraphics/grant-schema';
+import { ApiKeySortableField, RoleSortableField, SortOrder, TagSortField } from '@grantjs/schema';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
@@ -15,6 +10,8 @@ interface UserState {
   apiKeysSort: { field: ApiKeySortableField; order: SortOrder };
   apiKeysSecretDialogOpen: boolean;
   createdApiKey: { clientId: string; clientSecret: string } | null;
+  apiKeysLoading: boolean;
+  apiKeysRefetch: (() => void) | null;
 
   // Roles state
   rolesPage: number;
@@ -23,6 +20,8 @@ interface UserState {
   rolesSort: { field: RoleSortableField; order: SortOrder };
   updatingRoleId: string | null;
   optimisticCheckedRoleIds: Set<string>;
+  rolesLoading: boolean;
+  rolesRefetch: (() => void) | null;
 
   // Tags state
   tagsPage: number;
@@ -31,14 +30,20 @@ interface UserState {
   tagsSort: { field: TagSortField; order: SortOrder };
   updatingTagId: string | null;
   optimisticCheckedTagIds: Set<string>;
+  tagsLoading: boolean;
+  tagsRefetch: (() => void) | null;
 
   // Groups state
   groupsPage: number;
   groupsLimit: number;
+  groupsLoading: boolean;
+  groupsRefetch: (() => void) | null;
 
   // Permissions state
   permissionsPage: number;
   permissionsLimit: number;
+  permissionsLoading: boolean;
+  permissionsRefetch: (() => void) | null;
 
   // Actions - API Keys
   setApiKeysPage: (page: number) => void;
@@ -48,6 +53,8 @@ interface UserState {
   setApiKeysSecretDialogOpen: (open: boolean) => void;
   setCreatedApiKey: (apiKey: { clientId: string; clientSecret: string } | null) => void;
   handleApiKeyCreated: (apiKey: { clientId: string; clientSecret: string } | null) => void;
+  setApiKeysLoading: (loading: boolean) => void;
+  setApiKeysRefetch: (refetch: (() => void) | null) => void;
 
   // Actions - Roles
   setRolesPage: (page: number) => void;
@@ -58,6 +65,8 @@ interface UserState {
   setOptimisticCheckedRoleIds: (roleIds: Set<string>) => void;
   addOptimisticRoleId: (roleId: string) => void;
   removeOptimisticRoleId: (roleId: string) => void;
+  setRolesLoading: (loading: boolean) => void;
+  setRolesRefetch: (refetch: (() => void) | null) => void;
 
   // Actions - Tags
   setTagsPage: (page: number) => void;
@@ -68,14 +77,20 @@ interface UserState {
   setOptimisticCheckedTagIds: (tagIds: Set<string>) => void;
   addOptimisticTagId: (tagId: string) => void;
   removeOptimisticTagId: (tagId: string) => void;
+  setTagsLoading: (loading: boolean) => void;
+  setTagsRefetch: (refetch: (() => void) | null) => void;
 
   // Actions - Groups
   setGroupsPage: (page: number) => void;
   setGroupsLimit: (limit: number) => void;
+  setGroupsLoading: (loading: boolean) => void;
+  setGroupsRefetch: (refetch: (() => void) | null) => void;
 
   // Actions - Permissions
   setPermissionsPage: (page: number) => void;
   setPermissionsLimit: (limit: number) => void;
+  setPermissionsLoading: (loading: boolean) => void;
+  setPermissionsRefetch: (refetch: (() => void) | null) => void;
 
   // Reset
   resetApiKeysState: () => void;
@@ -111,6 +126,8 @@ export const useUserStore = create<UserState>()(
       apiKeysSort: defaultApiKeysSort,
       apiKeysSecretDialogOpen: false,
       createdApiKey: null,
+      apiKeysLoading: false,
+      apiKeysRefetch: null,
 
       // Initial state - Roles
       rolesPage: 1,
@@ -119,6 +136,8 @@ export const useUserStore = create<UserState>()(
       rolesSort: defaultRolesSort,
       updatingRoleId: null,
       optimisticCheckedRoleIds: new Set(),
+      rolesLoading: false,
+      rolesRefetch: null,
 
       // Initial state - Tags
       tagsPage: 1,
@@ -127,14 +146,20 @@ export const useUserStore = create<UserState>()(
       tagsSort: defaultTagsSort,
       updatingTagId: null,
       optimisticCheckedTagIds: new Set(),
+      tagsLoading: false,
+      tagsRefetch: null,
 
       // Initial state - Groups
       groupsPage: 1,
       groupsLimit: 10,
+      groupsLoading: false,
+      groupsRefetch: null,
 
       // Initial state - Permissions
       permissionsPage: 1,
       permissionsLimit: 10,
+      permissionsLoading: false,
+      permissionsRefetch: null,
 
       // Actions - API Keys
       setApiKeysPage: (page) => set({ apiKeysPage: page }),
@@ -148,6 +173,8 @@ export const useUserStore = create<UserState>()(
           set({ createdApiKey: apiKey, apiKeysSecretDialogOpen: true });
         }
       },
+      setApiKeysLoading: (loading) => set({ apiKeysLoading: loading }),
+      setApiKeysRefetch: (refetch) => set({ apiKeysRefetch: refetch }),
 
       // Actions - Roles
       setRolesPage: (page) => set({ rolesPage: page }),
@@ -168,6 +195,8 @@ export const useUserStore = create<UserState>()(
           next.delete(roleId);
           return { optimisticCheckedRoleIds: next };
         }),
+      setRolesLoading: (loading) => set({ rolesLoading: loading }),
+      setRolesRefetch: (refetch) => set({ rolesRefetch: refetch }),
 
       // Actions - Tags
       setTagsPage: (page) => set({ tagsPage: page }),
@@ -188,14 +217,20 @@ export const useUserStore = create<UserState>()(
           next.delete(tagId);
           return { optimisticCheckedTagIds: next };
         }),
+      setTagsLoading: (loading) => set({ tagsLoading: loading }),
+      setTagsRefetch: (refetch) => set({ tagsRefetch: refetch }),
 
       // Actions - Groups
       setGroupsPage: (page) => set({ groupsPage: page }),
       setGroupsLimit: (limit) => set({ groupsLimit: limit, groupsPage: 1 }),
+      setGroupsLoading: (loading) => set({ groupsLoading: loading }),
+      setGroupsRefetch: (refetch) => set({ groupsRefetch: refetch }),
 
       // Actions - Permissions
       setPermissionsPage: (page) => set({ permissionsPage: page }),
       setPermissionsLimit: (limit) => set({ permissionsLimit: limit, permissionsPage: 1 }),
+      setPermissionsLoading: (loading) => set({ permissionsLoading: loading }),
+      setPermissionsRefetch: (refetch) => set({ permissionsRefetch: refetch }),
 
       // Reset
       resetApiKeysState: () =>
@@ -206,6 +241,8 @@ export const useUserStore = create<UserState>()(
           apiKeysSort: defaultApiKeysSort,
           apiKeysSecretDialogOpen: false,
           createdApiKey: null,
+          apiKeysLoading: false,
+          apiKeysRefetch: null,
         }),
       resetRolesState: () =>
         set({
@@ -215,6 +252,8 @@ export const useUserStore = create<UserState>()(
           rolesSort: defaultRolesSort,
           updatingRoleId: null,
           optimisticCheckedRoleIds: new Set(),
+          rolesLoading: false,
+          rolesRefetch: null,
         }),
       resetTagsState: () =>
         set({
@@ -224,16 +263,22 @@ export const useUserStore = create<UserState>()(
           tagsSort: defaultTagsSort,
           updatingTagId: null,
           optimisticCheckedTagIds: new Set(),
+          tagsLoading: false,
+          tagsRefetch: null,
         }),
       resetGroupsState: () =>
         set({
           groupsPage: 1,
           groupsLimit: 10,
+          groupsLoading: false,
+          groupsRefetch: null,
         }),
       resetPermissionsState: () =>
         set({
           permissionsPage: 1,
           permissionsLimit: 10,
+          permissionsLoading: false,
+          permissionsRefetch: null,
         }),
       resetAll: () =>
         set({
@@ -243,24 +288,34 @@ export const useUserStore = create<UserState>()(
           apiKeysSort: defaultApiKeysSort,
           apiKeysSecretDialogOpen: false,
           createdApiKey: null,
+          apiKeysLoading: false,
+          apiKeysRefetch: null,
           rolesPage: 1,
           rolesLimit: 10,
           rolesSearch: '',
           rolesSort: defaultRolesSort,
           updatingRoleId: null,
           optimisticCheckedRoleIds: new Set(),
+          rolesLoading: false,
+          rolesRefetch: null,
           tagsPage: 1,
           tagsLimit: 10,
           tagsSearch: '',
           tagsSort: defaultTagsSort,
           updatingTagId: null,
           optimisticCheckedTagIds: new Set(),
+          tagsLoading: false,
+          tagsRefetch: null,
           groupsPage: 1,
           groupsLimit: 10,
+          groupsLoading: false,
+          groupsRefetch: null,
           permissionsPage: 1,
           permissionsLimit: 10,
+          permissionsLoading: false,
+          permissionsRefetch: null,
         }),
     }),
-    { name: 'user-store' }
+    { name: 'grant-user-store' }
   )
 );

@@ -55,7 +55,7 @@ CREATE INDEX idx_user_data_backups_expires_at ON user_data_backups(expires_at);
 CREATE INDEX idx_user_data_backups_deleted_at ON user_data_backups(deleted_at);
 ```
 
-**Schema File**: `packages/@logusgraphics/grant-database/src/schemas/user-data-backups.schema.ts`
+**Schema File**: `packages/@grantjs/database/src/schemas/user-data-backups.schema.ts`
 
 ### 2. Backup Service
 
@@ -343,7 +343,7 @@ BACKUP_S3_PREFIX=user-backups/
 BACKUP_S3_REGION=us-east-1
 
 # File System Storage (if BACKUP_STORAGE_PROVIDER=filesystem)
-BACKUP_FILESYSTEM_PATH=/var/backups/grant-platform
+BACKUP_FILESYSTEM_PATH=/var/backups/grant
 ```
 
 ## Alternative: Simplified Approach

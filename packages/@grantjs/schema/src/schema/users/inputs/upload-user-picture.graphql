@@ -1,0 +1,7 @@
+input UploadUserPictureInput {
+  scope: Scope!
+  userId: ID!
+  file: String!
+  filename: String!
+  contentType: String!
+}

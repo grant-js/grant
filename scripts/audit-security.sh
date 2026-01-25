@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Security Audit Script for Grant Platform
+# Security Audit Script for Grant
 # This script checks for security vulnerabilities across all packages in the monorepo
 
 set -e
@@ -17,7 +17,7 @@ REPORT_DIR="audit-reports"
 mkdir -p "$REPORT_DIR"
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}  Grant Platform Security Audit${NC}"
+echo -e "${BLUE}  Grant Security Audit${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
@@ -111,7 +111,7 @@ REPORT_FILE="$REPORT_DIR/audit-$(date +%Y%m%d-%H%M%S).txt"
 
 {
     echo "==================================="
-    echo "Grant Platform Security Audit Report"
+    echo "Grant Security Audit Report"
     echo "Generated: $(date)"
     echo "==================================="
     echo ""

@@ -40,7 +40,7 @@ export class MailjetEmailAdapter implements IEmailService {
   constructor(private readonly config: MailjetConfig) {
     this.client = Mailjet.apiConnect(config.apiKey, config.secretKey);
     this.from = config.from;
-    this.fromName = config.fromName || 'Grant Platform';
+    this.fromName = config.fromName || 'Grant';
   }
 
   async sendInvitation(params: SendInvitationParams): Promise<void> {

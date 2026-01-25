@@ -14,7 +14,7 @@ const config: Config = {
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
     // Scan grant-constants package for Tailwind classes (absolute path to avoid filesystem errors)
-    path.join(__dirname, '../../packages/@logusgraphics/grant-constants/src/**/*.{ts,tsx}'),
+    path.join(__dirname, '../../packages/@grantjs/constants/src/**/*.{ts,tsx}'),
   ],
   theme: {
     container: {
@@ -72,6 +72,16 @@ const config: Config = {
           DEFAULT: 'var(--card)',
           foreground: 'var(--card-foreground)',
         },
+        sidebar: {
+          DEFAULT: 'var(--sidebar-background)',
+          foreground: 'var(--sidebar-foreground)',
+          primary: 'var(--sidebar-primary)',
+          'primary-foreground': 'var(--sidebar-primary-foreground)',
+          accent: 'var(--sidebar-accent)',
+          'accent-foreground': 'var(--sidebar-accent-foreground)',
+          border: 'var(--sidebar-border)',
+          ring: 'var(--sidebar-ring)',
+        },
       },
       borderRadius: tokens.borderRadius,
       spacing: tokens.spacing,
@@ -80,12 +90,20 @@ const config: Config = {
       lineHeight: tokens.typography.lineHeights,
       keyframes: {
         'accordion-down': {
-          from: { height: '0' },
-          to: { height: 'var(--radix-accordion-content-height)' },
+          from: {
+            height: '0',
+          },
+          to: {
+            height: 'var(--radix-accordion-content-height)',
+          },
         },
         'accordion-up': {
-          from: { height: 'var(--radix-accordion-content-height)' },
-          to: { height: '0' },
+          from: {
+            height: 'var(--radix-accordion-content-height)',
+          },
+          to: {
+            height: '0',
+          },
         },
         gradient: {
           '0%, 100%': {
@@ -98,8 +116,12 @@ const config: Config = {
           },
         },
         spin: {
-          from: { transform: 'rotate(0deg)' },
-          to: { transform: 'rotate(360deg)' },
+          from: {
+            transform: 'rotate(0deg)',
+          },
+          to: {
+            transform: 'rotate(360deg)',
+          },
         },
       },
       animation: {

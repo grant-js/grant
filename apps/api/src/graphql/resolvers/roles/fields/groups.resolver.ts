@@ -1,4 +1,4 @@
-import { RoleResolvers } from '@logusgraphics/grant-schema';
+import { RoleResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
 

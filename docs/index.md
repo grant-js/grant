@@ -2,7 +2,7 @@
 layout: home
 
 hero:
-  name: 'Modern RBAC'
+  name: 'Modern'
   text: 'Authorization Platform'
   tagline: 'Open-source, self-hosting, ready to deploy'
   actions:
@@ -14,7 +14,7 @@ hero:
       link: /getting-started/quick-start
     - theme: alt
       text: View on GitHub
-      link: https://github.com/logusgraphics/grant-platform
+      link: https://github.com/logusgraphics/grant
 
 features:
   - icon: 🔐
@@ -45,23 +45,22 @@ features:
 
 # Documentation
 
-Welcome to the Grant documentation! This site provides comprehensive guides, API references, and tutorials for the Grant Platform - an open-source, multi-tenant RBAC/ACL platform.
+Welcome to the Grant documentation! This site provides comprehensive guides, API references, and tutorials for the Grant - an open-source, multi-tenant RBAC/ACL platform.
 
-## 🚀 Quick Start
+## Quick Start
 
-Get up and running with Grant Platform in minutes:
+Get up and running with Grant in minutes:
 
 - **[Self-Hosting Setup](/deployment/self-hosting)** - Deploy on your own infrastructure
-- **[SaaS Trial](/enterprise/saas-features)** - Try our hosted solution
+- **[SaaS Trial](/saas/README)** - Try our hosted solution
 - **[Local Development](/development/guide)** - Set up your development environment
 
-## 📚 What You'll Find Here
+## What You'll Find Here
 
 <div class="what-youll-find">
 
 <div class="audience-card">
 <div class="audience-header">
-<span class="audience-icon">👨‍💻</span>
 <h3>For Developers</h3>
 </div>
 <ul class="feature-list">
@@ -73,7 +72,6 @@ Get up and running with Grant Platform in minutes:
 
 <div class="audience-card">
 <div class="audience-header">
-<span class="audience-icon">⚙️</span>
 <h3>For DevOps</h3>
 </div>
 <ul class="feature-list">
@@ -85,7 +83,6 @@ Get up and running with Grant Platform in minutes:
 
 <div class="audience-card">
 <div class="audience-header">
-<span class="audience-icon">🏗️</span>
 <h3>For Architects</h3>
 </div>
 <ul class="feature-list">
@@ -97,7 +94,6 @@ Get up and running with Grant Platform in minutes:
 
 <div class="audience-card">
 <div class="audience-header">
-<span class="audience-icon">💼</span>
 <h3>For Businesses</h3>
 </div>
 <ul class="feature-list">
@@ -109,7 +105,7 @@ Get up and running with Grant Platform in minutes:
 
 </div>
 
-## 🎯 Popular Topics
+## Popular Topics
 
 - **[RBAC/ACL System](/architecture/rbac-acl)** - Understanding the permission model
 - **[Multi-Tenancy](/architecture/multi-tenancy)** - Account and organization isolation
@@ -117,23 +113,23 @@ Get up and running with Grant Platform in minutes:
 - **[API Reference](/api-reference/)** - Complete API documentation
 - **[Contributing](/development/contributing)** - How to contribute to the project
 
-## 🤝 Community & Support
+## Community & Support
 
-- **GitHub** - [Source code and issues](https://github.com/logusgraphics/grant-platform)
-- **Discord** - [Community discussions](https://discord.gg/grant-platform)
+- **GitHub** - [Source code and issues](https://github.com/logusgraphics/grant)
+- **Discord** - [Community discussions](https://discord.gg/grant)
 - **Email** - [Support and inquiries](mailto:support@grant.logus.graphics)
 
-## 📖 Documentation Structure
+## Documentation Structure
 
 Our documentation is organized to help you find what you need quickly:
 
 - **Getting Started** - Installation and basic setup
 - **Architecture** - System design and core concepts
-- **Development** - Building with Grant Platform
+- **Development** - Building with Grant
 - **Deployment** - Production deployment guides
 - **API Reference** - Complete API documentation
-- **Enterprise** - SaaS features and enterprise support
+- **SaaS & Enterprise** - SaaS features and migration guides
 
 ---
 
-**Ready to get started?** Check out our [Quick Start Guide](/getting-started/quick-start) or explore the [Architecture Overview](/architecture/overview) to understand how Grant Platform works.
+**Ready to get started?** Check out our [Quick Start Guide](/getting-started/quick-start) or explore the [Architecture Overview](/architecture/overview) to understand how Grant works.

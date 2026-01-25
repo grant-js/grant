@@ -1,14 +1,17 @@
 import {
   ProjectModel,
+  accountProjectTags,
   projectGroups,
   projectPermissions,
+  projectResources,
   projectRoles,
   projectTags,
   projectUsers,
   projects,
-} from '@logusgraphics/grant-database';
-import { organizationProjectTags } from '@logusgraphics/grant-database/src/schemas/organization-project-tags.schema';
+} from '@grantjs/database';
+import { organizationProjectTags } from '@grantjs/database/src/schemas/organization-project-tags.schema';
 import {
+  AccountProjectTag,
   CreateProjectInput,
   MutationDeleteProjectArgs,
   MutationUpdateProjectArgs,
@@ -17,12 +20,13 @@ import {
   ProjectGroup,
   ProjectPage,
   ProjectPermission,
+  ProjectResource,
   ProjectRole,
   ProjectSearchableField,
   ProjectTag,
   ProjectUser,
   QueryProjectsArgs,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { slugifySafe } from '@/lib/slugify.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -52,6 +56,11 @@ export class ProjectRepository extends EntityRepository<ProjectModel, Project> {
         v.map(({ tag, isPrimary }) => ({ ...tag, isPrimary })),
       table: organizationProjectTags,
     },
+    accountTags: {
+      field: 'tag',
+      extract: (v: AccountProjectTag[]) => v.map(({ tag, isPrimary }) => ({ ...tag, isPrimary })),
+      table: accountProjectTags,
+    },
     users: {
       field: 'user',
       extract: (v: ProjectUser[]) => v.map(({ user }) => user),
@@ -71,6 +80,11 @@ export class ProjectRepository extends EntityRepository<ProjectModel, Project> {
       field: 'permission',
       extract: (v: ProjectPermission[]) => v.map(({ permission }) => permission),
       table: projectPermissions,
+    },
+    resources: {
+      field: 'resource',
+      extract: (v: ProjectResource[]) => v.map(({ resource }) => resource),
+      table: projectResources,
     },
   };
 

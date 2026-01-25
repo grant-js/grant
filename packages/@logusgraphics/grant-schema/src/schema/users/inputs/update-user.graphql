@@ -1,7 +1,0 @@
-input UpdateUserInput {
-  name: String
-  pictureUrl: String
-  tagIds: [ID!]
-  roleIds: [ID!]
-  primaryTagId: ID
-}

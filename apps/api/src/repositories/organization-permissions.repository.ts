@@ -1,13 +1,10 @@
-import {
-  OrganizationPermissionModel,
-  organizationPermissions,
-} from '@logusgraphics/grant-database';
+import { OrganizationPermissionModel, organizationPermissions } from '@grantjs/database';
 import {
   AddOrganizationPermissionInput,
   OrganizationPermission,
   QueryOrganizationPermissionsInput,
   RemoveOrganizationPermissionInput,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 

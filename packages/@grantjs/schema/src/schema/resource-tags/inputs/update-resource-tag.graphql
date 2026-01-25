@@ -1,0 +1,5 @@
+input UpdateResourceTagInput {
+  resourceId: ID!
+  tagId: ID!
+  isPrimary: Boolean!
+}

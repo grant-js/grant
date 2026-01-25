@@ -5,18 +5,17 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
-import { OrganizationInvitationStatus } from '@logusgraphics/grant-schema';
+import { AccountType, OrganizationInvitationStatus, Tenant } from '@grantjs/schema';
 import { AlertTriangle, CheckCircle2, Loader2, Mail, MailCheck, XCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { InfoPanel } from '@/components/common';
-import { AuthPageLayout } from '@/components/layout/AuthPageLayout';
+import { AuthLayout } from '@/components/layout';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { usePageTitle } from '@/hooks';
-import { useInvitation } from '@/hooks/members/useInvitation';
-import { useMemberMutations } from '@/hooks/members/useMemberMutations';
+import { useMyMutations, usePageTitle } from '@/hooks';
+import { useInvitation, useMemberMutations } from '@/hooks/members';
 import { useAuthStore } from '@/stores/auth.store';
 
 type InvitationStatus =
@@ -32,6 +31,7 @@ type InvitationStatus =
 
 export default function InvitationPage() {
   const t = useTranslations('invitations');
+  const tRoot = useTranslations();
   const params = useParams();
   const router = useRouter();
   const locale = params.locale as string;
@@ -49,53 +49,44 @@ export default function InvitationPage() {
   });
 
   const { acceptInvitation } = useMemberMutations();
-  const { isAuthenticated, updateAccounts } = useAuthStore();
+  const { isAuthenticated, updateAccounts, setCurrentAccount, currentAccountId, accounts } =
+    useAuthStore();
+  const { createMySecondaryAccount } = useMyMutations();
 
   usePageTitle('invitations');
 
-  // Derive status from query state and user auth state
   const status = useMemo<InvitationStatus>(() => {
-    // Use action status if set (for accepting, success, error states)
     if (actionStatus) {
       return actionStatus;
     }
 
-    // Loading state
     if (invitationLoading) {
       return 'loading';
     }
 
-    // Error or no invitation
     if (invitationError || !invitation) {
       return 'invalid-token';
     }
 
-    // Check if invitation is expired
     if (new Date(invitation.expiresAt) < new Date()) {
       return 'expired';
     }
 
-    // Check if invitation is already accepted
     if (invitation.status === OrganizationInvitationStatus.Accepted) {
       return 'already-accepted';
     }
 
-    // Check if invitation is revoked
     if (invitation.status === OrganizationInvitationStatus.Revoked) {
       return 'invalid-token';
     }
 
-    // User not logged in
     if (!isAuthenticated()) {
       return 'requires-login';
     }
 
-    // User is authenticated - ready to accept
-    // Backend will automatically create Organization account if user doesn't have one
     return 'ready';
   }, [actionStatus, invitationLoading, invitationError, invitation, isAuthenticated]);
 
-  // Handle redirect on success
   useEffect(() => {
     if (status === 'success' && invitation?.organizationId) {
       const timer = setTimeout(() => {
@@ -114,15 +105,31 @@ export default function InvitationPage() {
     setActionStatus('accepting');
 
     try {
-      const result = await acceptInvitation({ token });
+      const scope = {
+        id: currentAccountId!,
+        tenant: Tenant.Account,
+      };
+
+      const hasOrganizationAccount = accounts.some(
+        (account) => account.type === AccountType.Organization
+      );
+
+      if (!hasOrganizationAccount) {
+        const result = await createMySecondaryAccount();
+        const accountId = result?.account.id;
+        if (accountId) {
+          scope.id = accountId;
+          setCurrentAccount(accountId);
+        }
+      }
+
+      const result = await acceptInvitation({ token, scope });
 
       if (result?.requiresRegistration) {
-        // User needs to register first
         setActionStatus('requires-login');
         return;
       }
 
-      // Update accounts and switch to the Organization account
       if (result?.accounts && result.accounts.length > 0) {
         updateAccounts(result.accounts);
       }
@@ -226,7 +233,7 @@ export default function InvitationPage() {
                       label: t('details.role'),
                       value: (
                         <span className="font-semibold text-foreground">
-                          {invitation.role?.name}
+                          {tRoot(invitation.role?.name)}
                         </span>
                       ),
                     },
@@ -293,11 +300,11 @@ export default function InvitationPage() {
                       value: (
                         <div className="flex flex-col items-end gap-1">
                           <Badge variant="outline" className="text-sm">
-                            {invitation.role?.name}
+                            {tRoot(invitation.role?.name)}
                           </Badge>
                           {invitation.role?.description && (
                             <span className="text-xs text-muted-foreground">
-                              {invitation.role.description}
+                              {tRoot(invitation.role.description)}
                             </span>
                           )}
                         </div>
@@ -398,8 +405,8 @@ export default function InvitationPage() {
   };
 
   return (
-    <AuthPageLayout title={t('title')} description={t('description')}>
+    <AuthLayout title={t('title')} description={t('description')}>
       {renderContent()}
-    </AuthPageLayout>
+    </AuthLayout>
   );
 }

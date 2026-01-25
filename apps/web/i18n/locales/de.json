@@ -1,4 +1,20 @@
 {
+  "errors": {
+    "notFound": {
+      "title": "Seite nicht gefunden",
+      "description": "Die gesuchte Seite existiert nicht oder wurde verschoben. Überprüfen Sie die URL oder navigieren Sie zurück.",
+      "goHome": "Zum Dashboard",
+      "goBack": "Zurück"
+    },
+    "forbidden": {
+      "title": "Zugriff verweigert",
+      "description": "Sie haben keine Berechtigung, auf diese Ressource zuzugreifen. Bitte kontaktieren Sie Ihren Administrator, wenn Sie glauben, dass dies ein Fehler ist.",
+      "goHome": "Zum Dashboard",
+      "goBack": "Zurück",
+      "signIn": "Anmelden",
+      "helpText": "Wenn Sie glauben, dass dies ein Fehler ist, kontaktieren Sie bitte Ihren Organisationsadministrator."
+    }
+  },
   "common": {
     "app": {
       "title": "Grant",
@@ -16,7 +32,8 @@
     },
     "account": {
       "switchAccount": "Arbeitsbereiche",
-      "currentAccount": "Aktueller Arbeitsbereich"
+      "currentAccount": "Aktueller Arbeitsbereich",
+      "workspace": "Arbeitsbereich"
     },
     "accountTypes": {
       "personal": "Persönlich",
@@ -70,7 +87,8 @@
       "create": "Erstellen",
       "creating": "Wird erstellt...",
       "update": "Aktualisieren",
-      "uploading": "Wird hochgeladen..."
+      "uploading": "Wird hochgeladen...",
+      "refresh": "Aktualisieren"
     },
     "saving": "Wird gespeichert...",
     "emptyElements": "Keine {title} zum Anzeigen",
@@ -82,7 +100,8 @@
       "search": "Organisationen suchen...",
       "notFound": "Keine Organisationen gefunden",
       "title": "Organisationen",
-      "organization": "Organisation"
+      "organization": "Organisation",
+      "label": "Org"
     },
     "projects": {
       "select": "Projekt auswählen",
@@ -107,10 +126,16 @@
       "groups": "Gruppen",
       "permissions": "Berechtigungen",
       "tags": "Tags",
+      "resources": "Ressourcen",
       "members": "Mitglieder",
+      "workspace": "Arbeitsbereich",
+      "organization": "Organisation",
+      "organizations": "Organisationen",
       "organizationTags": "Organisations-Tags",
+      "accountTags": "Account-Tags",
       "projectTags": "Projekt-Tags",
       "projects": "Projekte",
+      "project": "Projekt",
       "account": "Account",
       "settings": "Einstellungen",
       "backToOrganization": "Zurück zur Organisation"
@@ -289,7 +314,9 @@
       "logoutError": "Abmeldung fehlgeschlagen",
       "verificationWarning": "Bitte verifizieren Sie Ihre E-Mail, um auf alle Funktionen zugreifen zu können. Ihr Verifizierungslink läuft in {days} Tagen ab.",
       "verificationExpired": "Ihre E-Mail-Verifizierung ist abgelaufen. Bitte fordern Sie eine neue Verifizierungs-E-Mail an.",
-      "userNotVerified": "E-Mail-Verifizierung erforderlich"
+      "userNotVerified": "E-Mail-Verifizierung erforderlich",
+      "sessionExpired": "Sitzung abgelaufen",
+      "sessionExpiredDescription": "Ihre Sitzung ist abgelaufen oder wurde widerrufen. Weiterleitung zur Anmeldung..."
     },
     "validation": {
       "email": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
@@ -349,7 +376,9 @@
       "email": "E-Mail",
       "roles": "Rollen",
       "tags": "Tags",
+      "metadata": "Metadaten",
       "primaryTag": "Haupt-Tag",
+      "metadataInfo": "Optionale Metadaten für den Benutzer. Dies kann verwendet werden, um in Berechtigungsbedingungen zu übereinstimmen.",
       "validation": {
         "rolesRequired": "Benutzer muss mindestens eine Rolle haben"
       },
@@ -640,6 +669,8 @@
       "description": "Beschreibung",
       "groups": "Gruppen",
       "tags": "Tags",
+      "metadata": "Metadaten",
+      "metadataInfo": "Optionale Metadaten für die Rolle. Dies kann verwendet werden, um in Berechtigungsbedingungen zu übereinstimmen.",
       "primaryTag": "Haupt-Tag",
       "groupsLoading": "Gruppen werden geladen...",
       "noGroupsAvailable": "Keine Gruppen verfügbar",
@@ -714,7 +745,173 @@
     },
     "groups": "Gruppen",
     "emptyElements": "Es gibt keine {title} zum Anzeigen",
-    "noDescription": "Keine Beschreibung"
+    "noDescription": "Keine Beschreibung",
+    "names": {
+      "owner": "Eigentümer",
+      "admin": "Administrator",
+      "dev": "Entwickler",
+      "viewer": "Betrachter",
+      "personalAccountOwner": "Persönlicher Konto-Eigentümer",
+      "organizationAccountOwner": "Organisations-Konto-Eigentümer",
+      "organizationOwner": "Organisations-Eigentümer",
+      "organizationAdmin": "Organisations-Administrator",
+      "organizationDev": "Organisations-Entwickler",
+      "organizationViewer": "Organisations-Betrachter"
+    },
+    "descriptions": {
+      "owner": "Vollzugriff mit Eigentumsrechten",
+      "admin": "Administrativer Zugriff zur Verwaltung von Ressourcen",
+      "dev": "Entwicklerzugriff für technische Operationen",
+      "viewer": "Nur-Lese-Zugriff zum Anzeigen von Ressourcen",
+      "personalAccountOwner": "Vollständige Kontrolle über das persönliche Konto und alle seine Ressourcen",
+      "organizationAccountOwner": "Vollständige Kontrolle über das Organisationskonto und alle seine Ressourcen",
+      "organizationOwner": "Vollständige Kontrolle über die Organisation und alle Ressourcen darin",
+      "organizationAdmin": "Administrativer Zugriff zur Verwaltung von Organisationseinstellungen und Mitgliedern",
+      "organizationDev": "Entwicklerzugriff zur Verwaltung von Projekten und Ressourcen",
+      "organizationViewer": "Nur-Lese-Zugriff zum Anzeigen von Organisationsressourcen"
+    }
+  },
+  "resources": {
+    "title": "Ressourcenverwaltung",
+    "noResources": {
+      "title": "Keine Ressourcen gefunden",
+      "description": "Erstellen Sie Ihre erste Ressource"
+    },
+    "noSearchResults": {
+      "title": "Keine Ressourcen gefunden",
+      "description": "Versuchen Sie, Ihre Suchbegriffe anzupassen oder erstellen Sie eine neue Ressource"
+    },
+    "actions": {
+      "create": "Ressource erstellen",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert...",
+      "label": "Aktionen anzeigen/ausblenden"
+    },
+    "sort": {
+      "label": "Sortieren nach",
+      "name": "Name",
+      "slug": "Slug",
+      "createdAt": "Erstellt am",
+      "updatedAt": "Aktualisiert am",
+      "default": "Standard"
+    },
+    "limit": "Einträge pro Seite",
+    "search": {
+      "placeholder": "Ressourcen suchen..."
+    },
+    "form": {
+      "name": "Name",
+      "slug": "Slug",
+      "slugPlaceholder": "Eindeutiger Identifikator im Gültigkeitsbereich (z.B. benutzer-profil)",
+      "description": "Beschreibung",
+      "descriptionPlaceholder": "Optionale Beschreibung für diese Ressource",
+      "actions": "Aktionen",
+      "actionsPlaceholder": "Aktion eingeben und Leertaste oder Tab drücken",
+      "actionsInfo": "Diese Aktionen werden zu den verfügbaren Optionen für die Berechtigungsentität. Definieren Sie die Aktionen, die für diese Ressource ausgeführt werden können (z.B. lesen, schreiben, löschen, aktualisieren).",
+      "isActive": "Ist aktiv",
+      "isActiveInfo": "Verwenden Sie dies, um Entwurfsressourcen zu erstellen oder sie vorübergehend zu deaktivieren. Inaktive Ressourcen können nicht in Berechtigungen verwendet werden.",
+      "tags": "Tags",
+      "primaryTag": "Haupt-Tag",
+      "tagsLoading": "Tags werden geladen...",
+      "noTagsAvailable": "Keine Tags verfügbar"
+    },
+    "createDialog": {
+      "title": "Neue Ressource erstellen",
+      "description": "Fügen Sie eine neue Ressource zum System hinzu",
+      "trigger": "Ressource erstellen",
+      "confirm": "Ressource erstellen",
+      "submitting": "Wird erstellt..."
+    },
+    "editDialog": {
+      "title": "Ressource bearbeiten",
+      "description": "Aktualisieren Sie die Ressourceninformationen",
+      "confirm": "Änderungen speichern",
+      "cancel": "Abbrechen",
+      "updating": "Wird aktualisiert..."
+    },
+    "deleteDialog": {
+      "title": "Ressource löschen",
+      "description": "Sind Sie sicher, dass Sie {name} löschen möchten?",
+      "cancel": "Abbrechen",
+      "confirm": "Löschen",
+      "deleting": "Wird gelöscht..."
+    },
+    "notifications": {
+      "createSuccess": "Ressource erstellt",
+      "createError": "Ressource konnte nicht erstellt werden",
+      "updateSuccess": "Ressource aktualisiert",
+      "updateError": "Ressource konnte nicht aktualisiert werden",
+      "deleteSuccess": "Ressource gelöscht",
+      "deleteError": "Ressource konnte nicht gelöscht werden",
+      "tagAddedSuccess": "Tag zur Ressource hinzugefügt",
+      "tagAddedError": "Tag konnte nicht zur Ressource hinzugefügt werden",
+      "tagRemovedSuccess": "Tag von der Ressource entfernt",
+      "tagRemovedError": "Tag konnte nicht von der Ressource entfernt werden"
+    },
+    "view": {
+      "card": "Kartenansicht",
+      "table": "Tabellenansicht"
+    },
+    "table": {
+      "name": "Name",
+      "slug": "Slug",
+      "description": "Beschreibung",
+      "actions": "Aktionen",
+      "tags": "Tags",
+      "audit": "Audit",
+      "id": "ID",
+      "created": "Erstellt",
+      "updated": "Aktualisiert",
+      "loading": "Ressourcen werden geladen..."
+    },
+    "toolbar": {
+      "tags": {
+        "title": "Nach Tags filtern",
+        "placeholder": "Tags auswählen",
+        "selected": "{count} ausgewählt",
+        "clearAll": "Alle löschen",
+        "loading": "Tags werden geladen..."
+      }
+    },
+    "noDescription": "Keine Beschreibung",
+    "names": {
+      "user": "Benutzer",
+      "account": "Konto",
+      "organization": "Organisation",
+      "project": "Projekt",
+      "resource": "Ressource",
+      "role": "Rolle",
+      "group": "Gruppe",
+      "permission": "Berechtigung",
+      "tag": "Tag",
+      "apiKey": "API-Schlüssel",
+      "organizationMember": "Organisationsmitglied",
+      "organizationInvitation": "Organisationseinladung",
+      "projectUser": "Projektbenutzer",
+      "userSession": "Benutzersitzung",
+      "userAuthenticationMethod": "Benutzerauthentifizierungsmethode",
+      "authOperations": "Authentifizierungsoperationen"
+    },
+    "descriptions": {
+      "user": "Ein Benutzerkonto im System",
+      "account": "Ein Arbeitsbereichskonto",
+      "organization": "Ein Organisationsarbeitsbereich",
+      "project": "Ein Projekt innerhalb einer Organisation",
+      "resource": "Eine Ressourcendefinition",
+      "role": "Eine Rollendefinition",
+      "group": "Eine Berechtigungsgruppe",
+      "permission": "Eine Berechtigungsdefinition",
+      "tag": "Ein Tag zur Kategorisierung",
+      "apiKey": "Ein API-Schlüssel zur Authentifizierung",
+      "organizationMember": "Ein Mitglied einer Organisation",
+      "organizationInvitation": "Eine Einladung, einer Organisation beizutreten",
+      "projectUser": "Ein Benutzer, der einem Projekt zugewiesen ist",
+      "userSession": "Eine aktive Benutzersitzung",
+      "userAuthenticationMethod": "Eine Methode zur Benutzerauthentifizierung",
+      "authOperations": "Authentifizierungsoperationen"
+    }
   },
   "groups": {
     "title": "Gruppenverwaltung",
@@ -756,6 +953,8 @@
       "descriptionPlaceholder": "Gruppenbeschreibung eingeben",
       "permissions": "Berechtigungen",
       "tags": "Tags",
+      "metadata": "Metadaten",
+      "metadataInfo": "Optionale Metadaten für die Gruppe. Dies kann verwendet werden, um in Berechtigungsbedingungen zu übereinstimmen.",
       "primaryTag": "Haupt-Tag",
       "permissionsLoading": "Berechtigungen werden geladen...",
       "noPermissionsAvailable": "Keine Berechtigungen verfügbar",
@@ -839,7 +1038,175 @@
     },
     "permissions": "Berechtigungen",
     "emptyElements": "Es gibt keine {title} zum Anzeigen",
-    "noDescription": "Keine Beschreibung"
+    "noDescription": "Keine Beschreibung",
+    "names": {
+      "accountCommon": "Konto Allgemein",
+      "userCommon": "Benutzer Allgemein",
+      "organizationCommon": "Organisation Allgemein",
+      "projectCommon": "Projekt Allgemein",
+      "accountProjectOwner": "Konto Projekt Eigentümer",
+      "accountProjectUserOwner": "Konto Projekt Benutzer Eigentümer",
+      "accountProjectResourceOwner": "Konto Projekt Ressource Eigentümer",
+      "accountProjectRoleOwner": "Konto Projekt Rolle Eigentümer",
+      "accountProjectGroupOwner": "Konto Projekt Gruppe Eigentümer",
+      "accountProjectPermissionOwner": "Konto Projekt Berechtigung Eigentümer",
+      "accountProjectTagOwner": "Konto Projekt Tag Eigentümer",
+      "resourceCommon": "Ressource Allgemein",
+      "roleCommon": "Rolle Allgemein",
+      "groupCommon": "Gruppe Allgemein",
+      "permissionCommon": "Berechtigung Allgemein",
+      "tagCommon": "Tag Allgemein",
+      "apiKeyCommon": "API-Schlüssel Allgemein",
+      "organizationMemberCommon": "Organisationsmitglied Allgemein",
+      "organizationInvitationCommon": "Organisationseinladung Allgemein",
+      "projectUserCommon": "Projektbenutzer Allgemein",
+      "userSessionCommon": "Benutzersitzung Allgemein",
+      "userAuthenticationMethodCommon": "Benutzerauthentifizierungsmethode Allgemein",
+      "authOperationsCommon": "Authentifizierungsoperationen Allgemein",
+      "personalAccountOwner": "Persönlicher Konto-Eigentümer",
+      "organizationAccountOwner": "Organisations-Konto-Eigentümer",
+      "accountOwner": "Konto Eigentümer",
+      "userOwner": "Benutzer Eigentümer",
+      "userAdmin": "Benutzer Administrator",
+      "userDev": "Benutzer Entwickler",
+      "userViewer": "Benutzer Betrachter",
+      "organizationOwner": "Organisation Eigentümer",
+      "organizationAdmin": "Organisation Administrator",
+      "organizationDev": "Organisation Entwickler",
+      "organizationViewer": "Organisation Betrachter",
+      "projectOwner": "Projekt Eigentümer",
+      "projectAdmin": "Projekt Administrator",
+      "projectDev": "Projekt Entwickler",
+      "projectViewer": "Projekt Betrachter",
+      "resourceOwner": "Ressource Eigentümer",
+      "resourceAdmin": "Ressource Administrator",
+      "resourceDev": "Ressource Entwickler",
+      "resourceViewer": "Ressource Betrachter",
+      "roleOwner": "Rolle Eigentümer",
+      "roleAdmin": "Rolle Administrator",
+      "roleDev": "Rolle Entwickler",
+      "roleViewer": "Rolle Betrachter",
+      "groupOwner": "Gruppe Eigentümer",
+      "groupAdmin": "Gruppe Administrator",
+      "groupDev": "Gruppe Entwickler",
+      "groupViewer": "Gruppe Betrachter",
+      "permissionOwner": "Berechtigung Eigentümer",
+      "permissionAdmin": "Berechtigung Administrator",
+      "permissionDev": "Berechtigung Entwickler",
+      "permissionViewer": "Berechtigung Betrachter",
+      "tagOwner": "Tag Eigentümer",
+      "tagAdmin": "Tag Administrator",
+      "tagDev": "Tag Entwickler",
+      "tagViewer": "Tag Betrachter",
+      "apiKeyOwner": "API-Schlüssel Eigentümer",
+      "apiKeyAdmin": "API-Schlüssel Administrator",
+      "apiKeyDev": "API-Schlüssel Entwickler",
+      "apiKeyViewer": "API-Schlüssel Betrachter",
+      "organizationMemberOwner": "Organisationsmitglied Eigentümer",
+      "organizationMemberAdmin": "Organisationsmitglied Administrator",
+      "organizationMemberDev": "Organisationsmitglied Entwickler",
+      "organizationMemberViewer": "Organisationsmitglied Betrachter",
+      "organizationInvitationOwner": "Organisationseinladung Eigentümer",
+      "organizationInvitationAdmin": "Organisationseinladung Administrator",
+      "organizationInvitationDev": "Organisationseinladung Entwickler",
+      "organizationInvitationViewer": "Organisationseinladung Betrachter",
+      "projectUserOwner": "Projektbenutzer Eigentümer",
+      "projectUserAdmin": "Projektbenutzer Administrator",
+      "projectUserDev": "Projektbenutzer Entwickler",
+      "projectUserViewer": "Projektbenutzer Betrachter",
+      "userSessionOwner": "Benutzersitzung Eigentümer",
+      "userSessionAdmin": "Benutzersitzung Administrator",
+      "userSessionDev": "Benutzersitzung Entwickler",
+      "userSessionViewer": "Benutzersitzung Betrachter",
+      "userAuthenticationMethodOwner": "Benutzerauthentifizierungsmethode Eigentümer",
+      "userAuthenticationMethodAdmin": "Benutzerauthentifizierungsmethode Administrator",
+      "userAuthenticationMethodDev": "Benutzerauthentifizierungsmethode Entwickler",
+      "userAuthenticationMethodViewer": "Benutzerauthentifizierungsmethode Betrachter"
+    },
+    "descriptions": {
+      "accountCommon": "Allgemeine Berechtigungen für Kontozugriff",
+      "userCommon": "Allgemeine Berechtigungen für Benutzerzugriff",
+      "organizationCommon": "Allgemeine Berechtigungen für Organisationszugriff",
+      "projectCommon": "Allgemeine Berechtigungen für Projektzugriff",
+      "accountProjectOwner": "Eigentümerberechtigungen für Kontoebene Projektverwaltung",
+      "accountProjectUserOwner": "Eigentümerberechtigungen für Kontoebene Projekt-Benutzerverwaltung",
+      "accountProjectResourceOwner": "Eigentümerberechtigungen für Kontoebene Projekt-Ressourcenverwaltung",
+      "accountProjectRoleOwner": "Eigentümerberechtigungen für Kontoebene Projekt-Rollenverwaltung",
+      "accountProjectGroupOwner": "Eigentümerberechtigungen für Kontoebene Projekt-Gruppenverwaltung",
+      "accountProjectPermissionOwner": "Eigentümerberechtigungen für Kontoebene Projekt-Berechtigungsverwaltung",
+      "accountProjectTagOwner": "Eigentümerberechtigungen für Kontoebene Projekt-Tagverwaltung",
+      "resourceCommon": "Allgemeine Berechtigungen für Ressourcenzugriff",
+      "roleCommon": "Allgemeine Berechtigungen für Rollenzugriff",
+      "groupCommon": "Allgemeine Berechtigungen für Gruppenzugriff",
+      "permissionCommon": "Allgemeine Berechtigungen für Berechtigungszugriff",
+      "tagCommon": "Allgemeine Berechtigungen für Tagzugriff",
+      "apiKeyCommon": "Allgemeine Berechtigungen für API-Schlüsselzugriff",
+      "organizationMemberCommon": "Allgemeine Berechtigungen für Organisationsmitgliedzugriff",
+      "organizationInvitationCommon": "Allgemeine Berechtigungen für Organisationseinladungszugriff",
+      "projectUserCommon": "Allgemeine Berechtigungen für Projektbenutzerzugriff",
+      "userSessionCommon": "Allgemeine Berechtigungen für Benutzersitzungszugriff",
+      "userAuthenticationMethodCommon": "Allgemeine Berechtigungen für Benutzerauthentifizierungsmethodenzugriff",
+      "authOperationsCommon": "Allgemeine Berechtigungen für Authentifizierungsoperationen",
+      "personalAccountOwner": "Vollständige Kontrolle über das persönliche Konto und alle Ressourcen",
+      "organizationAccountOwner": "Vollständige Kontrolle über das Organisationskonto und alle Ressourcen",
+      "accountOwner": "Eigentümerberechtigungen für Kontoverwaltung",
+      "userOwner": "Eigentümerberechtigungen für Benutzerverwaltung",
+      "userAdmin": "Administratorberechtigungen für Benutzerverwaltung",
+      "userDev": "Entwicklerberechtigungen für Benutzerverwaltung",
+      "userViewer": "Betrachterberechtigungen für Benutzerzugriff",
+      "organizationOwner": "Eigentümerberechtigungen für Organisationsverwaltung",
+      "organizationAdmin": "Administratorberechtigungen für Organisationsverwaltung",
+      "organizationDev": "Entwicklerberechtigungen für Organisationszugriff",
+      "organizationViewer": "Betrachterberechtigungen für Organisationszugriff",
+      "projectOwner": "Eigentümerberechtigungen für Projektverwaltung",
+      "projectAdmin": "Administratorberechtigungen für Projektverwaltung",
+      "projectDev": "Entwicklerberechtigungen für Projektverwaltung",
+      "projectViewer": "Betrachterberechtigungen für Projektzugriff",
+      "resourceOwner": "Eigentümerberechtigungen für Ressourcenverwaltung",
+      "resourceAdmin": "Administratorberechtigungen für Ressourcenverwaltung",
+      "resourceDev": "Entwicklerberechtigungen für Ressourcenverwaltung",
+      "resourceViewer": "Betrachterberechtigungen für Ressourcenzugriff",
+      "roleOwner": "Eigentümerberechtigungen für Rollenverwaltung",
+      "roleAdmin": "Administratorberechtigungen für Rollenverwaltung",
+      "roleDev": "Entwicklerberechtigungen für Rollenverwaltung",
+      "roleViewer": "Betrachterberechtigungen für Rollenzugriff",
+      "groupOwner": "Eigentümerberechtigungen für Gruppenverwaltung",
+      "groupAdmin": "Administratorberechtigungen für Gruppenverwaltung",
+      "groupDev": "Entwicklerberechtigungen für Gruppenverwaltung",
+      "groupViewer": "Betrachterberechtigungen für Gruppenzugriff",
+      "permissionOwner": "Eigentümerberechtigungen für Berechtigungsverwaltung",
+      "permissionAdmin": "Administratorberechtigungen für Berechtigungsverwaltung",
+      "permissionDev": "Entwicklerberechtigungen für Berechtigungsverwaltung",
+      "permissionViewer": "Betrachterberechtigungen für Berechtigungszugriff",
+      "tagOwner": "Eigentümerberechtigungen für Tagverwaltung",
+      "tagAdmin": "Administratorberechtigungen für Tagverwaltung",
+      "tagDev": "Entwicklerberechtigungen für Tagverwaltung",
+      "tagViewer": "Betrachterberechtigungen für Tagzugriff",
+      "apiKeyOwner": "Eigentümerberechtigungen für API-Schlüsselverwaltung",
+      "apiKeyAdmin": "Administratorberechtigungen für API-Schlüsselverwaltung",
+      "apiKeyDev": "Entwicklerberechtigungen für API-Schlüsselverwaltung",
+      "apiKeyViewer": "Betrachterberechtigungen für API-Schlüsselzugriff",
+      "organizationMemberOwner": "Eigentümerberechtigungen für Organisationsmitgliedverwaltung",
+      "organizationMemberAdmin": "Administratorberechtigungen für Organisationsmitgliedverwaltung",
+      "organizationMemberDev": "Entwicklerberechtigungen für Organisationsmitgliedzugriff",
+      "organizationMemberViewer": "Betrachterberechtigungen für Organisationsmitgliedzugriff",
+      "organizationInvitationOwner": "Eigentümerberechtigungen für Organisationseinladungsverwaltung",
+      "organizationInvitationAdmin": "Administratorberechtigungen für Organisationseinladungsverwaltung",
+      "organizationInvitationDev": "Entwicklerberechtigungen für Organisationseinladungszugriff",
+      "organizationInvitationViewer": "Betrachterberechtigungen für Organisationseinladungszugriff",
+      "projectUserOwner": "Eigentümerberechtigungen für Projektbenutzerzugriff",
+      "projectUserAdmin": "Administratorberechtigungen für Projektbenutzerzugriff",
+      "projectUserDev": "Entwicklerberechtigungen für Projektbenutzerzugriff",
+      "projectUserViewer": "Betrachterberechtigungen für Projektbenutzerzugriff",
+      "userSessionOwner": "Eigentümerberechtigungen für Benutzersitzungszugriff",
+      "userSessionAdmin": "Administratorberechtigungen für Benutzersitzungszugriff",
+      "userSessionDev": "Entwicklerberechtigungen für Benutzersitzungszugriff",
+      "userSessionViewer": "Betrachterberechtigungen für Benutzersitzungszugriff",
+      "userAuthenticationMethodOwner": "Eigentümerberechtigungen für Benutzerauthentifizierungsmethodenzugriff",
+      "userAuthenticationMethodAdmin": "Administratorberechtigungen für Benutzerauthentifizierungsmethodenzugriff",
+      "userAuthenticationMethodDev": "Entwicklerberechtigungen für Benutzerauthentifizierungsmethodenzugriff",
+      "userAuthenticationMethodViewer": "Betrachterberechtigungen für Benutzerauthentifizierungsmethodenzugriff"
+    }
   },
   "permissions": {
     "title": "Berechtigungsverwaltung",
@@ -873,7 +1240,14 @@
       "name": "Name",
       "description": "Beschreibung",
       "action": "Aktion",
+      "resource": "Ressource",
+      "noResourceConnected": "Keine Ressource verbunden",
+      "selectAction": "Aktion auswählen",
+      "selectPlaceholder": "Option auswählen",
+      "noOptionsAvailable": "Keine Optionen verfügbar",
       "tags": "Tags",
+      "condition": "Bedingung",
+      "conditionInfo": "Optional benutzerdefinierte Bedingung für die Berechtigung. Dies kann verwendet werden, um Metadaten von Benutzern, Rollen oder Gruppen zu übereinstimmen.",
       "primaryTag": "Haupt-Tag",
       "tagsLoading": "Tags werden geladen...",
       "noTagsAvailable": "Keine Tags verfügbar",
@@ -922,6 +1296,7 @@
     "table": {
       "id": "ID",
       "name": "Name",
+      "resource": "Ressource",
       "action": "Aktion",
       "description": "Beschreibung",
       "tags": "Tags",
@@ -938,6 +1313,224 @@
         "selected": "{count} ausgewählt",
         "clearAll": "Alle löschen",
         "loading": "Tags werden geladen..."
+      }
+    },
+    "names": {
+      "account": {
+        "read": "Konto lesen",
+        "query": "Konto abfragen",
+        "delete": "Konto löschen",
+        "createComplementary": "Ergänzendes Konto erstellen"
+      },
+      "user": {
+        "create": "Benutzer erstellen",
+        "read": "Benutzer lesen",
+        "update": "Benutzer aktualisieren",
+        "delete": "Benutzer löschen",
+        "query": "Benutzer abfragen",
+        "uploadPicture": "Benutzerbild hochladen",
+        "exportData": "Benutzerdaten exportieren"
+      },
+      "organization": {
+        "create": "Organisation erstellen",
+        "read": "Organisation lesen",
+        "update": "Organisation aktualisieren",
+        "delete": "Organisation löschen",
+        "query": "Organisation abfragen"
+      },
+      "project": {
+        "create": "Projekt erstellen",
+        "update": "Projekt aktualisieren",
+        "delete": "Projekt löschen",
+        "query": "Projekt abfragen"
+      },
+      "resource": {
+        "create": "Ressource erstellen",
+        "update": "Ressource aktualisieren",
+        "delete": "Ressource löschen",
+        "query": "Ressource abfragen"
+      },
+      "role": {
+        "create": "Rolle erstellen",
+        "update": "Rolle aktualisieren",
+        "delete": "Rolle löschen",
+        "query": "Rolle abfragen"
+      },
+      "group": {
+        "create": "Gruppe erstellen",
+        "update": "Gruppe aktualisieren",
+        "delete": "Gruppe löschen",
+        "query": "Gruppe abfragen"
+      },
+      "permission": {
+        "create": "Berechtigung erstellen",
+        "update": "Berechtigung aktualisieren",
+        "delete": "Berechtigung löschen",
+        "query": "Berechtigung abfragen"
+      },
+      "tag": {
+        "create": "Tag erstellen",
+        "update": "Tag aktualisieren",
+        "delete": "Tag löschen",
+        "query": "Tag abfragen"
+      },
+      "apiKey": {
+        "create": "API-Schlüssel erstellen",
+        "delete": "API-Schlüssel löschen",
+        "query": "API-Schlüssel abfragen",
+        "revoke": "API-Schlüssel widerrufen",
+        "exchange": "API-Schlüssel austauschen"
+      },
+      "organizationMember": {
+        "read": "Organisationsmitglied lesen",
+        "update": "Organisationsmitglied aktualisieren",
+        "remove": "Organisationsmitglied entfernen",
+        "query": "Organisationsmitglied abfragen"
+      },
+      "organizationInvitation": {
+        "create": "Organisationseinladung erstellen",
+        "read": "Organisationseinladung lesen",
+        "query": "Organisationseinladung abfragen",
+        "accept": "Organisationseinladung annehmen",
+        "revoke": "Organisationseinladung widerrufen",
+        "resendEmail": "Organisationseinladungs-E-Mail erneut senden",
+        "renew": "Organisationseinladung erneuern"
+      },
+      "projectUser": {
+        "read": "Projektbenutzer lesen",
+        "query": "Projektbenutzer abfragen"
+      },
+      "userSession": {
+        "read": "Benutzersitzung lesen",
+        "query": "Benutzersitzung abfragen",
+        "revoke": "Benutzersitzung widerrufen"
+      },
+      "userAuthenticationMethod": {
+        "create": "Benutzerauthentifizierungsmethode erstellen",
+        "read": "Benutzerauthentifizierungsmethode lesen",
+        "query": "Benutzerauthentifizierungsmethode abfragen",
+        "delete": "Benutzerauthentifizierungsmethode löschen",
+        "setPrimary": "Primäre Benutzerauthentifizierungsmethode festlegen",
+        "changePassword": "Passwort für Benutzerauthentifizierungsmethode ändern"
+      },
+      "authOperations": {
+        "login": "Anmeldeoperation durchführen",
+        "register": "Registrierungsoperation durchführen",
+        "refreshSession": "Sitzung aktualisieren",
+        "verifyEmail": "E-Mail-Adresse verifizieren",
+        "resendVerification": "E-Mail-Verifizierung erneut senden",
+        "requestPasswordReset": "Passwort-Zurücksetzung anfordern",
+        "resetPassword": "Passwort zurücksetzen",
+        "me": "Eigene Benutzerinformationen abrufen"
+      }
+    },
+    "descriptions": {
+      "account": {
+        "read": "Berechtigung zum Lesen von Kontoinformationen",
+        "query": "Berechtigung zum Abfragen von Konten",
+        "delete": "Berechtigung zum Löschen eines Kontos",
+        "createComplementary": "Berechtigung zum Erstellen eines ergänzenden Kontos"
+      },
+      "user": {
+        "create": "Berechtigung zum Erstellen eines Benutzers",
+        "read": "Berechtigung zum Lesen von Benutzerinformationen",
+        "update": "Berechtigung zum Aktualisieren eines Benutzers",
+        "delete": "Berechtigung zum Löschen eines Benutzers",
+        "query": "Berechtigung zum Abfragen von Benutzern",
+        "uploadPicture": "Berechtigung zum Hochladen eines Benutzerbildes",
+        "exportData": "Berechtigung zum Exportieren von Benutzerdaten"
+      },
+      "organization": {
+        "create": "Berechtigung zum Erstellen einer Organisation",
+        "read": "Berechtigung zum Lesen von Organisationsinformationen",
+        "update": "Berechtigung zum Aktualisieren einer Organisation",
+        "delete": "Berechtigung zum Löschen einer Organisation",
+        "query": "Berechtigung zum Abfragen von Organisationen"
+      },
+      "project": {
+        "create": "Berechtigung zum Erstellen eines Projekts",
+        "update": "Berechtigung zum Aktualisieren eines Projekts",
+        "delete": "Berechtigung zum Löschen eines Projekts",
+        "query": "Berechtigung zum Abfragen von Projekten"
+      },
+      "resource": {
+        "create": "Berechtigung zum Erstellen einer Ressource",
+        "update": "Berechtigung zum Aktualisieren einer Ressource",
+        "delete": "Berechtigung zum Löschen einer Ressource",
+        "query": "Berechtigung zum Abfragen von Ressourcen"
+      },
+      "role": {
+        "create": "Berechtigung zum Erstellen einer Rolle",
+        "update": "Berechtigung zum Aktualisieren einer Rolle",
+        "delete": "Berechtigung zum Löschen einer Rolle",
+        "query": "Berechtigung zum Abfragen von Rollen"
+      },
+      "group": {
+        "create": "Berechtigung zum Erstellen einer Gruppe",
+        "update": "Berechtigung zum Aktualisieren einer Gruppe",
+        "delete": "Berechtigung zum Löschen einer Gruppe",
+        "query": "Berechtigung zum Abfragen von Gruppen"
+      },
+      "permission": {
+        "create": "Berechtigung zum Erstellen einer Berechtigung",
+        "update": "Berechtigung zum Aktualisieren einer Berechtigung",
+        "delete": "Berechtigung zum Löschen einer Berechtigung",
+        "query": "Berechtigung zum Abfragen von Berechtigungen"
+      },
+      "tag": {
+        "create": "Berechtigung zum Erstellen eines Tags",
+        "update": "Berechtigung zum Aktualisieren eines Tags",
+        "delete": "Berechtigung zum Löschen eines Tags",
+        "query": "Berechtigung zum Abfragen von Tags"
+      },
+      "apiKey": {
+        "create": "Berechtigung zum Erstellen eines API-Schlüssels",
+        "delete": "Berechtigung zum Löschen eines API-Schlüssels",
+        "query": "Berechtigung zum Abfragen von API-Schlüsseln",
+        "revoke": "Berechtigung zum Widerrufen eines API-Schlüssels",
+        "exchange": "Berechtigung zum Austauschen eines API-Schlüssels"
+      },
+      "organizationMember": {
+        "read": "Berechtigung zum Lesen von Organisationsmitgliedinformationen",
+        "update": "Berechtigung zum Aktualisieren eines Organisationsmitglieds",
+        "remove": "Berechtigung zum Entfernen eines Organisationsmitglieds",
+        "query": "Berechtigung zum Abfragen von Organisationsmitgliedern"
+      },
+      "organizationInvitation": {
+        "create": "Berechtigung zum Erstellen einer Organisationseinladung",
+        "read": "Berechtigung zum Lesen von Organisationseinladungsinformationen",
+        "query": "Berechtigung zum Abfragen von Organisationseinladungen",
+        "accept": "Berechtigung zum Annehmen einer Organisationseinladung",
+        "revoke": "Berechtigung zum Widerrufen einer Organisationseinladung",
+        "resendEmail": "Berechtigung zum erneuten Senden einer Organisationseinladungs-E-Mail",
+        "renew": "Berechtigung zum Erneuern einer Organisationseinladung"
+      },
+      "projectUser": {
+        "read": "Berechtigung zum Lesen von Projektbenutzerinformationen",
+        "query": "Berechtigung zum Abfragen von Projektbenutzern"
+      },
+      "userSession": {
+        "read": "Berechtigung zum Lesen von Benutzersitzungsinformationen",
+        "query": "Berechtigung zum Abfragen von Benutzersitzungen",
+        "revoke": "Berechtigung zum Widerrufen einer Benutzersitzung"
+      },
+      "userAuthenticationMethod": {
+        "create": "Berechtigung zum Erstellen einer Benutzerauthentifizierungsmethode",
+        "read": "Berechtigung zum Lesen von Benutzerauthentifizierungsmethodeninformationen",
+        "query": "Berechtigung zum Abfragen von Benutzerauthentifizierungsmethoden",
+        "delete": "Berechtigung zum Löschen einer Benutzerauthentifizierungsmethode",
+        "setPrimary": "Berechtigung zum Festlegen einer primären Benutzerauthentifizierungsmethode",
+        "changePassword": "Berechtigung zum Ändern des Passworts für eine Benutzerauthentifizierungsmethode"
+      },
+      "authOperations": {
+        "login": "Berechtigung zum Durchführen einer Anmeldeoperation",
+        "register": "Berechtigung zum Durchführen einer Registrierungsoperation",
+        "refreshSession": "Berechtigung zum Aktualisieren einer Sitzung",
+        "verifyEmail": "Berechtigung zum Verifizieren einer E-Mail-Adresse",
+        "resendVerification": "Berechtigung zum erneuten Senden einer E-Mail-Verifizierung",
+        "requestPasswordReset": "Berechtigung zum Anfordern einer Passwort-Zurücksetzung",
+        "resetPassword": "Berechtigung zum Zurücksetzen eines Passworts",
+        "me": "Berechtigung zum Abrufen eigener Benutzerinformationen"
       }
     }
   },
@@ -1404,20 +1997,6 @@
     "title": "Mitglieder",
     "description": "Organisationsmitglieder und Einladungen verwalten",
     "inviteButton": "Mitglied einladen",
-    "roles": {
-      "names": {
-        "owner": "Eigentümer",
-        "admin": "Administrator",
-        "dev": "Entwickler",
-        "viewer": "Betrachter"
-      },
-      "descriptions": {
-        "owner": "Vollständige Kontrolle über die Organisation und alle ihre Ressourcen",
-        "admin": "Administrativer Zugriff zur Verwaltung von Organisationseinstellungen und Mitgliedern",
-        "dev": "Entwicklerzugriff zur Verwaltung von Projekten und Ressourcen",
-        "viewer": "Nur-Lese-Zugriff auf Organisationsressourcen"
-      }
-    },
     "empty": {
       "title": "Noch keine Mitglieder",
       "description": "Laden Sie Mitglieder ein, Ihrer Organisation beizutreten"
@@ -1451,6 +2030,7 @@
       "revoke": "Widerrufen",
       "resend": "Erneut senden",
       "resendEmail": "E-Mail erneut senden",
+      "renew": "Einladung erneuern",
       "updateRole": "Rolle aktualisieren",
       "remove": "Entfernen",
       "copyLink": "Einladungslink kopieren",
@@ -1501,7 +2081,9 @@
       "resendInvitationSuccess": "Einladung erfolgreich erneut gesendet",
       "resendInvitationError": "Einladung konnte nicht erneut gesendet werden",
       "resendEmailSuccess": "Einladungs-E-Mail erfolgreich gesendet",
-      "resendEmailError": "Einladungs-E-Mail konnte nicht gesendet werden"
+      "resendEmailError": "Einladungs-E-Mail konnte nicht gesendet werden",
+      "renewInvitationSuccess": "Einladung erfolgreich erneuert",
+      "renewInvitationError": "Einladung konnte nicht erneuert werden"
     },
     "updateRoleDialog": {
       "title": "Mitgliedsrolle aktualisieren",
@@ -1662,6 +2244,8 @@
       "notifications": {
         "updateSuccess": "Profil erfolgreich aktualisiert",
         "updateError": "Profil konnte nicht aktualisiert werden",
+        "uploadPictureSuccess": "Profilbild erfolgreich hochgeladen",
+        "uploadPictureError": "Profilbild konnte nicht hochgeladen werden",
         "userNotFound": "Benutzer nicht gefunden"
       }
     },
@@ -1729,7 +2313,16 @@
         "revokeCurrentSessionTitle": "Aktuelle Sitzung widerrufen?",
         "revokeCurrentSessionDescription": "Sind Sie sicher, dass Sie Ihre aktuelle Sitzung widerrufen möchten? Sie werden sofort abgemeldet und zur Anmeldeseite weitergeleitet. Sie müssen sich erneut anmelden, um fortzufahren.",
         "cancel": "Abbrechen",
-        "expiredSessionsCount": "{count} abgelaufene Sitzung(en) sind ausgeblendet"
+        "expiredSessionsCount": "{count} abgelaufene Sitzung(en) sind ausgeblendet",
+        "search": {
+          "placeholder": "Sitzungen suchen..."
+        }
+      },
+      "notifications": {
+        "changePasswordSuccess": "Passwort erfolgreich geändert",
+        "changePasswordError": "Passwort konnte nicht geändert werden",
+        "revokeSessionSuccess": "Sitzung erfolgreich widerrufen",
+        "revokeSessionError": "Sitzung konnte nicht widerrufen werden"
       }
     },
     "preferences": {
@@ -1821,6 +2414,10 @@
         "error": "Kontolöschung fehlgeschlagen",
         "userIdMismatch": "Die eingegebene Benutzer-ID stimmt nicht mit Ihrer Benutzer-ID überein. Bitte versuchen Sie es erneut."
       }
+    },
+    "notifications": {
+      "logoutSuccess": "Sie wurden abgemeldet",
+      "logoutError": "Abmeldung fehlgeschlagen"
     }
   },
   "invitations": {

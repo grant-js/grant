@@ -1,4 +1,4 @@
-import { GroupSortableField, SortOrder } from '@logusgraphics/grant-schema';
+import { GroupSortableField, SortOrder } from '@grantjs/schema';
 
 import { z } from '@/lib/zod-openapi.lib';
 import {
@@ -30,7 +30,7 @@ export const getGroupsQuerySchema = listQuerySchema.omit({ relations: true }).ex
   sortField: z
     .enum(Object.values(GroupSortableField) as [GroupSortableField, ...GroupSortableField[]])
     .optional(),
-  sortOrder: z.nativeEnum(SortOrder).optional(),
+  sortOrder: z.enum(Object.values(SortOrder) as [SortOrder, ...SortOrder[]]).optional(),
   tagIds: z
     .union([z.string(), z.array(z.string())])
     .transform((val) => {

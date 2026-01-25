@@ -1,8 +1,0 @@
-input CreateGroupInput {
-  name: String!
-  description: String
-  tagIds: [ID!]
-  permissionIds: [ID!]
-  scope: Scope!
-  primaryTagId: ID
-}

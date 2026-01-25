@@ -1,11 +1,11 @@
-import { ProjectTagModel, projectTags } from '@logusgraphics/grant-database';
+import { ProjectTagModel, projectTags } from '@grantjs/database';
 import {
   AddProjectTagInput,
   ProjectTag,
   QueryProjectTagsInput,
   RemoveProjectTagInput,
   UpdateProjectTagInput,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';

@@ -1,17 +1,17 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { organizationProjectTagAuditLogs } from '@logusgraphics/grant-database/src/schemas/organization-project-tags.schema';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema } from '@grantjs/database';
+import { organizationProjectTagAuditLogs } from '@grantjs/database/src/schemas/organization-project-tags.schema';
 import {
   AddOrganizationProjectTagInput,
   OrganizationProjectTag,
   QueryOrganizationProjectTagInput,
   RemoveOrganizationProjectTagInput,
   UpdateOrganizationProjectTagInput,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
@@ -32,7 +32,7 @@ import {
 export class OrganizationProjectTagService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    readonly user: AuthenticatedUser | null,
+    readonly user: GrantAuth | null,
     readonly db: DbSchema
   ) {
     super(organizationProjectTagAuditLogs, 'organizationProjectTagId', user, db);

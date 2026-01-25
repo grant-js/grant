@@ -2,12 +2,15 @@
 
 import { useTranslations } from 'next-intl';
 
-import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
-import { DeleteGroupDialog } from '@/components/features/groups/DeleteGroupDialog';
-import { EditGroupDialog } from '@/components/features/groups/EditGroupDialog';
-import { GroupPagination } from '@/components/features/groups/GroupPagination';
-import { GroupToolbar } from '@/components/features/groups/GroupToolbar';
-import { GroupViewer } from '@/components/features/groups/GroupViewer';
+import {
+  GroupDeleteDialog,
+  GroupEditDialog,
+  GroupPagination,
+  GroupToolbar,
+  GroupViewer,
+} from '@/components/features/groups';
+import { DashboardLayout } from '@/components/layout';
+import { ProjectSidebar } from '@/components/navigation';
 import { usePageTitle } from '@/hooks';
 
 export default function ProjectGroupsPage() {
@@ -15,12 +18,17 @@ export default function ProjectGroupsPage() {
   usePageTitle('groups');
 
   return (
-    <DashboardPageLayout title={t('title')} actions={<GroupToolbar />} footer={<GroupPagination />}>
+    <DashboardLayout
+      title={t('title')}
+      sidebar={<ProjectSidebar />}
+      actions={<GroupToolbar />}
+      footer={<GroupPagination />}
+    >
       <>
         <GroupViewer />
-        <DeleteGroupDialog />
-        <EditGroupDialog />
+        <GroupDeleteDialog />
+        <GroupEditDialog />
       </>
-    </DashboardPageLayout>
+    </DashboardLayout>
   );
 }

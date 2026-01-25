@@ -1,4 +1,3 @@
-// Export all project-related hooks, queries, mutations, and cache utilities
-export { useProjects } from './useProjects';
-export { useProjectMutations } from './useProjectMutations';
 export * from './cache';
+export * from './use-project-mutations';
+export * from './use-projects';

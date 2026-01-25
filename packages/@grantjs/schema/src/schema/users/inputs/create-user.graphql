@@ -1,0 +1,9 @@
+input CreateUserInput {
+  name: String!
+  pictureUrl: String
+  metadata: JSON
+  tagIds: [ID!]
+  roleIds: [ID!]
+  scope: Scope!
+  primaryTagId: ID
+}

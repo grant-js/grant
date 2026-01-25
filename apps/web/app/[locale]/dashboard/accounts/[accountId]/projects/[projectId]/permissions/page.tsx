@@ -2,12 +2,15 @@
 
 import { useTranslations } from 'next-intl';
 
-import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
-import { DeletePermissionDialog } from '@/components/features/permissions/DeletePermissionDialog';
-import { EditPermissionDialog } from '@/components/features/permissions/EditPermissionDialog';
-import { PermissionPagination } from '@/components/features/permissions/PermissionPagination';
-import { PermissionToolbar } from '@/components/features/permissions/PermissionToolbar';
-import { PermissionViewer } from '@/components/features/permissions/PermissionViewer';
+import {
+  PermissionDeleteDialog,
+  PermissionEditDialog,
+  PermissionPagination,
+  PermissionToolbar,
+  PermissionViewer,
+} from '@/components/features/permissions';
+import { DashboardLayout } from '@/components/layout';
+import { PersonalProjectSidebar } from '@/components/navigation';
 import { usePageTitle } from '@/hooks';
 
 export default function PersonalProjectPermissionsPage() {
@@ -15,16 +18,17 @@ export default function PersonalProjectPermissionsPage() {
   usePageTitle('permissions');
 
   return (
-    <DashboardPageLayout
+    <DashboardLayout
       title={t('title')}
+      sidebar={<PersonalProjectSidebar />}
       actions={<PermissionToolbar />}
       footer={<PermissionPagination />}
     >
       <>
         <PermissionViewer />
-        <DeletePermissionDialog />
-        <EditPermissionDialog />
+        <PermissionDeleteDialog />
+        <PermissionEditDialog />
       </>
-    </DashboardPageLayout>
+    </DashboardLayout>
   );
 }

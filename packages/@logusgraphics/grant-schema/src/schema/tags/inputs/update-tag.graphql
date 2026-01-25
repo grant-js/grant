@@ -1,4 +1,0 @@
-input UpdateTagInput {
-  name: String
-  color: String
-}

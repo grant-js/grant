@@ -1,4 +1,4 @@
-import { DbSchema } from '@logusgraphics/grant-database';
+import { DbSchema } from '@grantjs/database';
 import {
   MutationCreateUserArgs,
   MutationDeleteUserArgs,
@@ -8,69 +8,21 @@ import {
   Scope,
   Tag,
   Tenant,
+  UploadUserPictureInput,
   User,
-  UserAuthenticationMethod,
-  UserAuthenticationMethodProvider,
   UserPage,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
-import { SupportedLocale } from '@/i18n';
 import { IEntityCacheAdapter } from '@/lib/cache';
-import { NotFoundError } from '@/lib/errors';
 import { createModuleLogger } from '@/lib/logger';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 import { DeleteParams, SelectedFields } from '@/services/common';
-import { Otp } from '@/services/user-authentication-methods.service';
 
-import { CacheKey, ScopeHandler } from './base/scope-handler';
+import { CacheHandler } from './base/cache-handler';
 
-export interface UserDataExport {
-  user: {
-    id: string;
-    name: string;
-    email: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-  };
-  accounts: Array<{
-    id: string;
-    type: string;
-    createdAt: Date;
-    updatedAt: Date;
-  }>;
-  authenticationMethods: Array<{
-    provider: string;
-    providerId: string;
-    isVerified: boolean;
-    isPrimary: boolean;
-    lastUsedAt: Date | null;
-    createdAt: Date;
-  }>;
-  sessions: Array<{
-    userAgent: string | null;
-    ipAddress: string | null;
-    lastUsedAt: Date | null;
-    expiresAt: Date;
-    createdAt: Date;
-  }>;
-  organizationMemberships: Array<{
-    organizationId: string;
-    organizationName: string;
-    role: string;
-    joinedAt: Date;
-  }>;
-  projectMemberships: Array<{
-    projectId: string;
-    projectName: string;
-    role: string;
-    joinedAt: Date;
-  }>;
-  exportedAt: Date;
-}
-
-export class UserHandler extends ScopeHandler {
-  private readonly logger = createModuleLogger('UserHandler');
+export class UserHandler extends CacheHandler {
+  protected readonly logger = createModuleLogger('UserHandler');
 
   constructor(
     readonly cache: IEntityCacheAdapter,
@@ -131,9 +83,11 @@ export class UserHandler extends ScopeHandler {
           );
           break;
         case Tenant.OrganizationProject:
-        case Tenant.AccountProject:
-          await this.services.projectUsers.addProjectUser({ projectId: scope.id, userId }, tx);
+        case Tenant.AccountProject: {
+          const projectId = this.extractProjectIdFromScope(scope);
+          await this.services.projectUsers.addProjectUser({ projectId, userId }, tx);
           break;
+        }
       }
 
       if (roleIds && roleIds.length > 0) {
@@ -165,16 +119,16 @@ export class UserHandler extends ScopeHandler {
       const { roleIds, tagIds, primaryTagId } = input;
       let currentTagIds: string[] = [];
       let currentRoleIds: string[] = [];
-      if (tagIds && tagIds.length > 0) {
+      if (Array.isArray(tagIds)) {
         const currentTags = await this.services.userTags.getUserTags({ userId }, tx);
         currentTagIds = currentTags.map((pt) => pt.tagId);
       }
-      if (roleIds && roleIds.length > 0) {
+      if (Array.isArray(roleIds)) {
         const currentRoles = await this.services.userRoles.getUserRoles({ userId }, tx);
         currentRoleIds = currentRoles.map((ur) => ur.roleId);
       }
-      const updatedUser = await this.services.users.updateUser(params, tx);
-      if (tagIds && tagIds.length > 0) {
+      const updatedUser = await this.services.users.updateUser(userId, input, tx);
+      if (Array.isArray(tagIds)) {
         const newTagIds = tagIds.filter((tagId) => !currentTagIds.includes(tagId));
         const removedTagIds = currentTagIds.filter((tagId) => !tagIds.includes(tagId));
         const updatedTagIds = tagIds.filter((tagId) => currentTagIds.includes(tagId));
@@ -198,7 +152,7 @@ export class UserHandler extends ScopeHandler {
           )
         );
       }
-      if (roleIds && roleIds.length > 0) {
+      if (Array.isArray(roleIds)) {
         const newRoleIds = roleIds.filter((roleId) => !currentRoleIds.includes(roleId));
         const removedRoleIds = currentRoleIds.filter((roleId) => !roleIds.includes(roleId));
         await Promise.all(
@@ -237,10 +191,12 @@ export class UserHandler extends ScopeHandler {
           );
           break;
         case Tenant.OrganizationProject:
-        case Tenant.AccountProject:
-          await this.services.projectUsers.removeProjectUser({ projectId: scope.id, userId }, tx);
+        case Tenant.AccountProject: {
+          const projectId = this.extractProjectIdFromScope(scope);
+          await this.services.projectUsers.removeProjectUser({ projectId, userId }, tx);
           await this.invalidateProjectUserRoleCache(userId);
           break;
+        }
       }
 
       await Promise.all([
@@ -264,8 +220,7 @@ export class UserHandler extends ScopeHandler {
           tenant: Tenant.ProjectUser,
           id: `${projectId}:${userId}`,
         };
-        const cacheKey: CacheKey = `${scope.tenant}:${scope.id}`;
-        await this.cache.roles.delete(cacheKey);
+        await this.invalidateRolesCacheForScope(scope);
       })
     );
   }
@@ -290,300 +245,34 @@ export class UserHandler extends ScopeHandler {
     return [];
   }
 
-  public async uploadUserPicture(params: {
-    userId: string;
-    file: Buffer;
-    contentType: string;
-    filename: string;
-  }): Promise<{ url: string; path: string }> {
+  public async uploadUserPicture(
+    params: UploadUserPictureInput
+  ): Promise<{ url: string; path: string }> {
+    const { userId, file, contentType, filename } = params;
+
+    const fileBuffer = this.services.fileStorage.validateAndDecodeUpload({
+      file,
+      contentType,
+      filename,
+    });
+
+    const storagePath = this.services.fileStorage.sanitizeExtensionAndGeneratePath(
+      filename,
+      `users/${userId}/picture`
+    );
+
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
-      const { userId, file, contentType, filename } = params;
-
-      const ext = filename.split('.').pop()?.toLowerCase() || 'jpg';
-      const sanitizedExt = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? ext : 'jpg';
-      const storagePath = `users/${userId}/picture.${sanitizedExt}`;
-
-      const result = await this.services.fileStorage.upload(file, storagePath, {
+      const result = await this.services.fileStorage.upload(fileBuffer, storagePath, {
         contentType,
         public: true,
       });
 
-      await this.services.users.updateUser(
-        {
-          id: userId,
-          input: { pictureUrl: result.url },
-        },
-        tx
-      );
+      await this.services.users.updateUser(userId, { pictureUrl: result.url }, tx);
 
       return {
         url: result.url,
         path: result.path,
       };
     });
-  }
-
-  public async changePassword(
-    userId: string,
-    currentPassword: string,
-    newPassword: string
-  ): Promise<void> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
-      await this.services.userAuthenticationMethods.changePassword(
-        userId,
-        currentPassword,
-        newPassword,
-        tx
-      );
-    });
-  }
-
-  public async getUserAuthenticationMethods(params: {
-    userId: string;
-    provider?: UserAuthenticationMethodProvider;
-  }) {
-    return await this.services.userAuthenticationMethods.getUserAuthenticationMethods({
-      userId: params.userId,
-      provider: params.provider,
-      requestedFields: [
-        'id',
-        'userId',
-        'provider',
-        'providerId',
-        'isVerified',
-        'isPrimary',
-        'lastUsedAt',
-        'createdAt',
-        'updatedAt',
-      ],
-    });
-  }
-
-  public async deleteUserAuthenticationMethod(
-    userId: string,
-    methodId: string
-  ): Promise<UserAuthenticationMethod> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
-      // Verify the method belongs to the user
-      const method = await this.services.userAuthenticationMethods.getUserAuthenticationMethod(
-        methodId,
-        tx
-      );
-
-      if (method.userId !== userId) {
-        throw new NotFoundError(
-          'Authentication method not found or does not belong to user',
-          'errors:auth.methodNotFound'
-        );
-      }
-
-      return await this.services.userAuthenticationMethods.deleteUserAuthenticationMethod(
-        { id: methodId },
-        tx
-      );
-    });
-  }
-
-  public async setPrimaryAuthenticationMethod(
-    userId: string,
-    methodId: string
-  ): Promise<UserAuthenticationMethod> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
-      const method = await this.services.userAuthenticationMethods.getUserAuthenticationMethod(
-        methodId,
-        tx
-      );
-
-      if (method.userId !== userId) {
-        throw new NotFoundError(
-          'Authentication method not found or does not belong to user',
-          'errors:auth.methodNotFound'
-        );
-      }
-
-      return await this.services.userAuthenticationMethods.setPrimaryAuthenticationMethod(
-        methodId,
-        tx
-      );
-    });
-  }
-
-  public async createUserAuthenticationMethod(
-    userId: string,
-    input: {
-      provider: UserAuthenticationMethodProvider;
-      providerId: string;
-      providerData: Record<string, unknown>;
-      isVerified?: boolean;
-      isPrimary?: boolean;
-    },
-    locale?: SupportedLocale
-  ): Promise<UserAuthenticationMethod> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
-      const { providerData: processedProviderData, isVerified } =
-        await this.services.userAuthenticationMethods.processProvider(
-          input.provider,
-          input.providerId,
-          input.providerData
-        );
-
-      const userAuthenticationMethod =
-        await this.services.userAuthenticationMethods.createUserAuthenticationMethod(
-          {
-            userId,
-            provider: input.provider,
-            providerId: input.providerId,
-            providerData: processedProviderData,
-            isVerified: input.isVerified ?? isVerified,
-            isPrimary: input.isPrimary,
-          },
-          tx
-        );
-
-      if (input.provider === UserAuthenticationMethodProvider.Email) {
-        const { token, validUntil } = processedProviderData.otp as Otp;
-        if (token && validUntil > Date.now()) {
-          try {
-            await this.services.email.sendOtp({
-              to: input.providerId,
-              token,
-              validUntil,
-              locale: locale || 'en',
-            });
-          } catch (error) {
-            this.logger.error({
-              msg: 'Error sending OTP email for new authentication method',
-              err: error,
-              userId,
-              providerId: input.providerId,
-            });
-          }
-        }
-      }
-
-      return userAuthenticationMethod;
-    });
-  }
-
-  public async getUserSessions(params: {
-    userId: string;
-    audience?: string;
-    page?: number;
-    limit?: number;
-  }) {
-    return await this.services.userSessions.getUserSessions({
-      userId: params.userId,
-      audience: params.audience,
-      page: params.page,
-      limit: params.limit,
-      requestedFields: [
-        'id',
-        'userId',
-        'userAuthenticationMethodId',
-        'token',
-        'audience',
-        'expiresAt',
-        'lastUsedAt',
-        'userAgent',
-        'ipAddress',
-        'createdAt',
-        'updatedAt',
-      ],
-    });
-  }
-
-  public async revokeUserSession(sessionId: string) {
-    return await this.services.userSessions.revokeSession(sessionId);
-  }
-
-  public async exportUserData(userId: string): Promise<UserDataExport> {
-    const userPage = await this.services.users.getUsers({
-      ids: [userId],
-      limit: 1,
-      requestedFields: ['id', 'name', 'createdAt', 'updatedAt'],
-    });
-
-    if (!userPage.users || userPage.users.length === 0) {
-      throw new NotFoundError('User not found', 'errors:notFound.user', { userId });
-    }
-
-    const user = userPage.users[0];
-
-    const authMethods = await this.services.userAuthenticationMethods.getUserAuthenticationMethods({
-      userId,
-      requestedFields: [
-        'provider',
-        'providerId',
-        'isVerified',
-        'isPrimary',
-        'lastUsedAt',
-        'createdAt',
-      ],
-    });
-
-    const emailAuthMethod = authMethods.find((m) => m.provider === 'email');
-    const userEmail = emailAuthMethod?.providerId || null;
-
-    const accounts = await this.services.accounts.getAccountsByOwnerId(userId);
-
-    const authenticationMethodsData = authMethods.map((method) => ({
-      provider: method.provider,
-      providerId: method.providerId,
-      isVerified: method.isVerified || false,
-      isPrimary: method.isPrimary || false,
-      lastUsedAt: method.lastUsedAt ? new Date(method.lastUsedAt) : null,
-      createdAt: new Date(method.createdAt),
-    }));
-
-    const sessionsPage = await this.services.userSessions.getUserSessions({
-      userId,
-      limit: -1,
-      requestedFields: ['userAgent', 'ipAddress', 'lastUsedAt', 'expiresAt', 'createdAt'],
-    });
-
-    const sessionsData = (sessionsPage.userSessions || []).map((session) => ({
-      userAgent: session.userAgent || null,
-      ipAddress: session.ipAddress || null,
-      lastUsedAt: session.lastUsedAt ? new Date(session.lastUsedAt) : null,
-      expiresAt: new Date(session.expiresAt),
-      createdAt: new Date(session.createdAt),
-    }));
-
-    const organizationMembershipsRaw =
-      await this.services.organizationUsers.getUserOrganizationMemberships(userId);
-
-    const projectMembershipsRaw =
-      await this.services.projectUsers.getUserProjectMemberships(userId);
-
-    return {
-      user: {
-        id: user.id,
-        name: user.name,
-        email: userEmail,
-        createdAt: new Date(user.createdAt),
-        updatedAt: new Date(user.updatedAt),
-      },
-      accounts: accounts.map((account) => ({
-        id: account.id,
-        type: account.type,
-        createdAt: new Date(account.createdAt),
-        updatedAt: new Date(account.updatedAt),
-      })),
-      authenticationMethods: authenticationMethodsData,
-      sessions: sessionsData,
-      organizationMemberships: organizationMembershipsRaw.map((m) => ({
-        organizationId: m.organizationId,
-        organizationName: m.organizationName,
-        role: m.role,
-        joinedAt: m.joinedAt,
-      })),
-      projectMemberships: projectMembershipsRaw.map((m) => ({
-        projectId: m.projectId,
-        projectName: m.projectName,
-        role: m.role,
-        joinedAt: m.joinedAt,
-      })),
-      exportedAt: new Date(),
-    };
   }
 }

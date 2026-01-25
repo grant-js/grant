@@ -1,11 +1,11 @@
-import { GroupTagModel, groupTags } from '@logusgraphics/grant-database';
+import { GroupTagModel, groupTags } from '@grantjs/database';
 import {
   AddGroupTagInput,
   GroupTag,
   QueryGroupTagsInput,
   RemoveGroupTagInput,
   UpdateGroupTagInput,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 

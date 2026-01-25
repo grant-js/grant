@@ -1,22 +1,22 @@
 ---
 title: Configuration
-description: Comprehensive configuration guide for Grant Platform
+description: Comprehensive configuration guide for Grant
 ---
 
 # Configuration
 
-This guide covers the standardized configuration system for Grant Platform, including environment variables, naming conventions, and best practices.
+This guide covers the standardized configuration system for Grant, including environment variables, naming conventions, and best practices.
 
 ## Overview
 
-Grant Platform uses a **centralized, type-safe configuration system** that provides:
+Grant uses a **centralized, type-safe configuration system** that provides:
 
-- ✅ Single source of truth for all configuration
-- ✅ Type safety with full TypeScript support
-- ✅ Runtime validation with helpful error messages
-- ✅ Clear naming conventions with prefixes
-- ✅ Comprehensive defaults for easy development
-- ✅ Environment-specific configurations
+- Single source of truth for all configuration
+- Type safety with full TypeScript support
+- Runtime validation with helpful error messages
+- Clear naming conventions with prefixes
+- Comprehensive defaults for easy development
+- Environment-specific configurations
 
 ## Quick Start
 
@@ -38,7 +38,7 @@ At minimum, you need to set:
 
 ```bash
 # Database connection (required)
-DB_URL="postgresql://grant_user:grant_password@localhost:5432/grant_platform"
+DB_URL="postgresql://grant_user:grant_password@localhost:5432/grant"
 
 # JWT secret (MUST change in production)
 JWT_SECRET="your-super-secret-key-change-in-production"
@@ -111,7 +111,7 @@ PostgreSQL database settings:
 ```bash
 # Database connection string (required)
 # Format: postgresql://username:password@host:port/database
-DB_URL="postgresql://grant_user:grant_password@localhost:5432/grant_platform"
+DB_URL="postgresql://grant_user:grant_password@localhost:5432/grant"
 
 # Connection pool settings
 DB_POOL_MAX=20
@@ -345,7 +345,7 @@ Optimized for local development with debugging enabled:
 ```bash
 NODE_ENV=development
 APP_PORT=4000
-DB_URL=postgresql://grant_user:grant_password@localhost:5432/grant_platform
+DB_URL=postgresql://grant_user:grant_password@localhost:5432/grant
 JWT_SECRET=dev-secret-key
 CACHE_STRATEGY=memory
 DB_LOG_QUERIES=true
@@ -361,7 +361,7 @@ Hardened for production with security features enabled:
 ```bash
 NODE_ENV=production
 APP_PORT=4000
-DB_URL=postgresql://prod_user:secure_password@db.example.com:5432/grant_platform
+DB_URL=postgresql://prod_user:secure_password@db.example.com:5432/grant
 JWT_SECRET=your-production-secret-min-32-chars
 CACHE_STRATEGY=redis
 REDIS_HOST=redis.example.com
@@ -384,7 +384,7 @@ Isolated configuration for testing:
 ```bash
 NODE_ENV=test
 APP_PORT=4001
-DB_URL=postgresql://test_user:test_pass@localhost:5432/grant_platform_test
+DB_URL=postgresql://test_user:test_pass@localhost:5432/grant_test
 JWT_SECRET=test-secret-key
 CACHE_STRATEGY=memory
 ```
@@ -574,7 +574,7 @@ Need help with configuration?
 1. **Check the examples**: Review `apps/api/.env.example` for all options
 2. **Review the config file**: See `apps/api/src/config/env.config.ts` for implementation details
 3. **This documentation**: All configuration is documented on this page
-4. **Open an issue**: [GitHub Issues](https://github.com/logusgraphics/grant-platform/issues)
+4. **Open an issue**: [GitHub Issues](https://github.com/logusgraphics/grant/issues)
 
 ---
 

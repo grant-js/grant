@@ -1,0 +1,5 @@
+input UpdateAccountTagInput {
+  accountId: ID!
+  tagId: ID!
+  isPrimary: Boolean!
+}

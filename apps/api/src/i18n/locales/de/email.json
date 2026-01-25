@@ -10,7 +10,7 @@
       "noRequest": "Wenn Sie kein Konto erstellt haben, können Sie diese E-Mail ignorieren.",
       "typo": "Möglicherweise hat jemand versehentlich Ihre E-Mail-Adresse eingegeben."
     },
-    "signature": "Grant Platform"
+    "signature": "Grant"
   },
   "passwordReset": {
     "subject": "Passwort zurücksetzen",
@@ -29,7 +29,9 @@
     "footer": {
       "noRequest": "Wenn Sie diese Einladung nicht kennen, können Sie diese E-Mail ignorieren."
     },
-    "signature": "Grant Platform"
+    "signature": "Grant",
+    "organization": "Organisation",
+    "role": "Rolle"
   },
   "common": {
     "alternativeText": "Wenn die Schaltfläche nicht funktioniert, kopieren Sie diesen Link und fügen Sie ihn ein:",
@@ -37,6 +39,6 @@
       "noRequest": "Wenn Sie diese Aktion nicht angefordert haben, können Sie diese E-Mail ignorieren.",
       "typo": "Möglicherweise hat jemand versehentlich Ihre E-Mail-Adresse eingegeben."
     },
-    "signature": "Grant Platform Team"
+    "signature": "Grant Team"
   }
 }

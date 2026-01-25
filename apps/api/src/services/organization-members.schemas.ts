@@ -1,10 +1,7 @@
-import {
-  OrganizationInvitationStatus,
-  OrganizationMemberSortableField,
-} from '@logusgraphics/grant-schema';
+import { OrganizationInvitationStatus, OrganizationMemberSortableField } from '@grantjs/schema';
 import { z } from 'zod';
 
-import { idSchema, queryParamsSchema, sortOrderSchema } from './common/schemas';
+import { idSchema, queryParamsSchema, scopeSchema, sortOrderSchema } from './common/schemas';
 
 export const organizationMemberSortableFieldSchema = z.enum(
   Object.values(OrganizationMemberSortableField) as [
@@ -19,7 +16,7 @@ export const organizationMemberSortInputSchema = z.object({
 });
 
 export const getOrganizationMembersParamsSchema = queryParamsSchema.extend({
-  organizationId: idSchema,
+  scope: scopeSchema,
   status: z
     .enum(
       Object.values(OrganizationInvitationStatus) as [
@@ -50,10 +47,10 @@ export const organizationMemberPageSchema = z.object({
 });
 
 export const updateOrganizationMemberInputSchema = z.object({
+  scope: scopeSchema,
   roleId: idSchema,
 });
 
 export const removeOrganizationMemberInputSchema = z.object({
-  organizationId: idSchema,
-  userId: idSchema,
+  scope: scopeSchema,
 });

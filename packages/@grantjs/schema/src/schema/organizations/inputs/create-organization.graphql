@@ -1,0 +1,4 @@
+input CreateOrganizationInput {
+  scope: Scope!
+  name: String!
+}

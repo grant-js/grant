@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Grant Platform - Multi-tenant RBAC/ACL system'
+Description: 'Grant - Multi-tenant RBAC/ACL system'
 
 Parameters:
   Environment:
@@ -43,13 +43,13 @@ Resources:
       EnableDnsSupport: true
       Tags:
         - Key: Name
-          Value: !Sub '${Environment}-grant-platform-vpc'
+          Value: !Sub '${Environment}-grant-vpc'
 
   # ECS Cluster
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
-      ClusterName: !Sub '${Environment}-grant-platform'
+      ClusterName: !Sub '${Environment}-grant'
       CapacityProviders:
         - FARGATE
         - FARGATE_SPOT
@@ -61,7 +61,7 @@ Resources:
   Database:
     Type: AWS::RDS::DBInstance
     Properties:
-      DBInstanceIdentifier: !Sub '${Environment}-grant-platform-db'
+      DBInstanceIdentifier: !Sub '${Environment}-grant-db'
       DBInstanceClass: !Ref DatabaseInstanceClass
       Engine: postgres
       EngineVersion: '15.4'
@@ -80,7 +80,7 @@ Resources:
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name: !Sub '${Environment}-grant-platform-alb'
+      Name: !Sub '${Environment}-grant-alb'
       Scheme: internet-facing
       Type: application
       Subnets:
@@ -94,16 +94,16 @@ Outputs:
     Description: 'Web application URL'
     Value: !Sub 'https://${ApplicationLoadBalancer.DNSName}'
     Export:
-      Name: !Sub '${Environment}-grant-platform-web-url'
+      Name: !Sub '${Environment}-grant-web-url'
 
   ApiURL:
     Description: 'API endpoint URL'
     Value: !Sub 'https://${ApplicationLoadBalancer.DNSName}/api'
     Export:
-      Name: !Sub '${Environment}-grant-platform-api-url'
+      Name: !Sub '${Environment}-grant-api-url'
 
   DatabaseEndpoint:
     Description: 'Database endpoint'
     Value: !GetAtt Database.Endpoint.Address
     Export:
-      Name: !Sub '${Environment}-grant-platform-db-endpoint'
+      Name: !Sub '${Environment}-grant-db-endpoint'

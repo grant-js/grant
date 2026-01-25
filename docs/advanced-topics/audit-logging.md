@@ -5,11 +5,11 @@ description: Comprehensive audit trail management and standardization
 
 # Audit Logging
 
-This document outlines the standardization of audit log schemas across all repositories in the Grant Platform project. All repositories now follow a consistent pattern for audit logging, ensuring data consistency, performance, and maintainability.
+This document outlines the standardization of audit log schemas across all repositories in the Grant project. All repositories now follow a consistent pattern for audit logging, ensuring data consistency, performance, and maintainability.
 
 ## Overview
 
-This document outlines the standardization of audit log schemas across all repositories in the grant-platform project. All repositories now follow a consistent pattern for audit logging, ensuring data consistency, performance, and maintainability.
+This document outlines the standardization of audit log schemas across all repositories in the grant project. All repositories now follow a consistent pattern for audit logging, ensuring data consistency, performance, and maintainability.
 
 ## Standardized Audit Log Schema
 

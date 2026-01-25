@@ -1,15 +1,24 @@
-import { UserModel, accounts, roles, tags, users } from '@logusgraphics/grant-database';
 import {
+  UserModel,
+  accounts,
+  roles,
+  tags,
+  userAuthenticationMethods,
+  users,
+} from '@grantjs/database';
+import {
+  Account,
   CreateUserInput,
   MutationDeleteUserArgs,
-  MutationUpdateUserArgs,
   QueryUsersArgs,
+  UpdateUserInput,
   User,
+  UserAuthenticationMethod,
   UserPage,
   UserRole,
   UserSearchableField,
   UserTag,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { EntityRepository, RelationsConfig } from '@/repositories/common';
@@ -35,7 +44,12 @@ export class UserRepository extends EntityRepository<UserModel, User> {
     accounts: {
       field: 'owner',
       table: accounts,
-      extract: (v) => v,
+      extract: (v: Account) => v,
+    },
+    authenticationMethods: {
+      field: 'user',
+      table: userAuthenticationMethods,
+      extract: (v: Array<UserAuthenticationMethod>) => v,
     },
   };
 
@@ -60,10 +74,17 @@ export class UserRepository extends EntityRepository<UserModel, User> {
   }
 
   public async updateUser(
-    params: MutationUpdateUserArgs,
+    id: string,
+    input: Omit<UpdateUserInput, 'scope'>,
     transaction?: Transaction
   ): Promise<User> {
-    return this.update(params, transaction);
+    return this.update(
+      {
+        id,
+        input,
+      },
+      transaction
+    );
   }
 
   public async softDeleteUser(

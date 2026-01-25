@@ -1,4 +1,4 @@
-import { UserAuthenticationEmailProviderAction } from '@logusgraphics/grant-schema';
+import { UserAuthenticationEmailProviderAction } from '@grantjs/schema';
 import { z } from 'zod';
 
 export const githubAuthorizationCodeSchema = z

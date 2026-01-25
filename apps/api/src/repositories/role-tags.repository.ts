@@ -1,11 +1,11 @@
-import { RoleTagModel, roleTags } from '@logusgraphics/grant-database';
+import { RoleTagModel, roleTags } from '@grantjs/database';
 import {
   AddRoleTagInput,
   QueryRoleTagsInput,
   RemoveRoleTagInput,
   RoleTag,
   UpdateRoleTagInput,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';

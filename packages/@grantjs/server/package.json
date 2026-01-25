@@ -1,0 +1,96 @@
+{
+  "name": "@grantjs/server",
+  "version": "1.0.0",
+  "description": "Server SDK for Grant authorization - Middleware and guards for Express, Fastify, NestJS, and Next.js",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./express": {
+      "types": "./dist/express/index.d.ts",
+      "import": "./dist/express.mjs",
+      "require": "./dist/express.cjs"
+    },
+    "./fastify": {
+      "types": "./dist/fastify/index.d.ts",
+      "import": "./dist/fastify.mjs",
+      "require": "./dist/fastify.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "keywords": [
+    "grant",
+    "authorization",
+    "permissions",
+    "rbac",
+    "role-based-access-control",
+    "acl",
+    "access-control-list",
+    "express",
+    "fastify",
+    "nestjs",
+    "nextjs",
+    "middleware",
+    "access-control",
+    "typescript",
+    "multi-tenant",
+    "sdk",
+    "server"
+  ],
+  "author": {
+    "name": "Alejandro Heredia",
+    "email": "ale@logus.graphics",
+    "url": "https://logus.graphics"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/logusgraphics/grant.git",
+    "directory": "packages/@grantjs/server"
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "vite build",
+    "build:watch": "vite build --watch",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "pnpm run build && pnpm test:run"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dependencies": {
+    "@grantjs/schema": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^24.7.2",
+    "@vitest/coverage-v8": "^3.2.4",
+    "eslint": "^9.37.0",
+    "express": "^5.1.0",
+    "fastify": "^5.0.0",
+    "typescript": "^5",
+    "vite": "^6.0.0",
+    "vite-plugin-dts": "^4.3.0",
+    "vitest": "^3.2.4"
+  },
+  "peerDependencies": {
+    "express": "^4 || ^5",
+    "fastify": "^4 || ^5"
+  }
+}

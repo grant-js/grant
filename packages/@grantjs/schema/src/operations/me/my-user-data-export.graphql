@@ -1,0 +1,45 @@
+query MyUserDataExport {
+  myUserDataExport {
+    user {
+      id
+      name
+      email
+      createdAt
+      updatedAt
+    }
+    accounts {
+      id
+      type
+      createdAt
+      updatedAt
+    }
+    authenticationMethods {
+      provider
+      providerId
+      isVerified
+      isPrimary
+      lastUsedAt
+      createdAt
+    }
+    sessions {
+      userAgent
+      ipAddress
+      lastUsedAt
+      expiresAt
+      createdAt
+    }
+    organizationMemberships {
+      organizationId
+      organizationName
+      role
+      joinedAt
+    }
+    projectMemberships {
+      projectId
+      projectName
+      role
+      joinedAt
+    }
+    exportedAt
+  }
+}

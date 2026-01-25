@@ -1,7 +1,10 @@
-import { Router } from 'express';
+import { ResourceAction, ResourceSlug } from '@grantjs/constants';
+import { Organization, OrganizationSortInput } from '@grantjs/schema';
+import { Response, Router } from 'express';
 
+import { authorizeRestRoute } from '@/lib/authorization';
+import { AuthenticationError } from '@/lib/errors';
 import { validate } from '@/middleware/validation.middleware';
-import { OrganizationsController } from '@/rest/controllers/organizations.controller';
 import {
   createOrganizationRequestSchema,
   deleteOrganizationQuerySchema,
@@ -10,83 +13,122 @@ import {
   updateOrganizationRequestSchema,
 } from '@/rest/schemas/organizations.schemas';
 import { TypedRequest } from '@/rest/types';
+import { queryListCommons } from '@/rest/utils/list-query';
+import { sendSuccessResponse } from '@/rest/utils/response';
 import { RequestContext } from '@/types';
 
 export function createOrganizationRoutes(context: RequestContext) {
   const router = Router();
-  const organizationsController = new OrganizationsController(context);
 
-  /**
-   * GET /api/organizations
-   * List organizations with optional filtering and relations
-   */
-  router.get('/', validate({ query: getOrganizationsQuerySchema }), (req, res) =>
-    organizationsController.getOrganizations(
-      req as TypedRequest<{ query: typeof getOrganizationsQuerySchema }>,
-      res
-    )
-  );
-
-  /**
-   * GET /api/organizations/:id
-   * Get a single organization by ID with optional relations
-   */
   router.get(
-    '/:id',
-    validate({ params: organizationParamsSchema, query: getOrganizationsQuerySchema }),
-    (req, res) =>
-      organizationsController.getOrganization(
-        req as TypedRequest<{
-          params: typeof organizationParamsSchema;
-          query: typeof getOrganizationsQuerySchema;
-        }>,
-        res
-      )
+    '/',
+    validate({ query: getOrganizationsQuerySchema }),
+    authorizeRestRoute({
+      resource: ResourceSlug.Organization,
+      action: ResourceAction.Query,
+    }),
+    async (req: TypedRequest<{ query: typeof getOrganizationsQuerySchema }>, res: Response) => {
+      const { page, limit, search, ids, relations, sortField, sortOrder } = req.query;
+
+      const { requestedFields, sort } = queryListCommons<Organization, OrganizationSortInput>({
+        relations,
+        sortField,
+        sortOrder,
+      });
+
+      const result = await context.handlers.organizations.getOrganizations({
+        page,
+        limit,
+        search,
+        ids,
+        sort,
+        requestedFields,
+      });
+
+      sendSuccessResponse(res, {
+        items: result.organizations,
+        totalCount: result.totalCount,
+        hasNextPage: result.hasNextPage,
+      });
+    }
   );
 
-  /**
-   * POST /api/organizations
-   * Create a new organization
-   */
-  router.post('/', validate({ body: createOrganizationRequestSchema }), (req, res) =>
-    organizationsController.createOrganization(
-      req as TypedRequest<{ body: typeof createOrganizationRequestSchema }>,
-      res
-    )
+  router.post(
+    '/',
+    validate({ body: createOrganizationRequestSchema }),
+    authorizeRestRoute({
+      resource: ResourceSlug.Organization,
+      action: ResourceAction.Create,
+    }),
+    async (req: TypedRequest<{ body: typeof createOrganizationRequestSchema }>, res: Response) => {
+      const { name, scope } = req.body;
+      const userId = context.user?.userId;
+
+      if (!userId) {
+        throw new AuthenticationError('Authentication required', 'errors:auth.unauthorized');
+      }
+
+      const organization = await context.handlers.organizations.createOrganization(
+        {
+          input: { name, scope },
+        },
+        userId
+      );
+
+      sendSuccessResponse(res, organization, 201);
+    }
   );
 
-  /**
-   * PATCH /api/organizations/:id
-   * Update an existing organization
-   */
   router.patch(
     '/:id',
     validate({ params: organizationParamsSchema, body: updateOrganizationRequestSchema }),
-    (req, res) =>
-      organizationsController.updateOrganization(
-        req as TypedRequest<{
-          params: typeof organizationParamsSchema;
-          body: typeof updateOrganizationRequestSchema;
-        }>,
-        res
-      )
+    authorizeRestRoute({
+      resource: ResourceSlug.Organization,
+      action: ResourceAction.Update,
+    }),
+    async (
+      req: TypedRequest<{
+        params: typeof organizationParamsSchema;
+        body: typeof updateOrganizationRequestSchema;
+      }>,
+      res: Response
+    ) => {
+      const { id } = req.params;
+      const { name, scope } = req.body;
+
+      const organization = await context.handlers.organizations.updateOrganization({
+        id,
+        input: { name, scope },
+      });
+
+      sendSuccessResponse(res, organization);
+    }
   );
 
-  /**
-   * DELETE /api/organizations/:id
-   * Delete an organization (soft or hard delete)
-   */
   router.delete(
     '/:id',
     validate({ params: organizationParamsSchema, query: deleteOrganizationQuerySchema }),
-    (req, res) =>
-      organizationsController.deleteOrganization(
-        req as TypedRequest<{
-          params: typeof organizationParamsSchema;
-          query: typeof deleteOrganizationQuerySchema;
-        }>,
-        res
-      )
+    authorizeRestRoute({
+      resource: ResourceSlug.Organization,
+      action: ResourceAction.Delete,
+    }),
+    async (
+      req: TypedRequest<{
+        params: typeof organizationParamsSchema;
+        query: typeof deleteOrganizationQuerySchema;
+      }>,
+      res: Response
+    ) => {
+      const { id } = req.params;
+      const { hardDelete } = req.query;
+
+      const organization = await context.handlers.organizations.deleteOrganization({
+        id,
+        hardDelete: hardDelete ?? false,
+      });
+
+      sendSuccessResponse(res, organization);
+    }
   );
 
   return router;

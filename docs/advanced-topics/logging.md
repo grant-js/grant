@@ -1,11 +1,11 @@
 ---
 title: Structured Logging
-description: Comprehensive guide to structured logging with Pino in Grant Platform
+description: Comprehensive guide to structured logging with Pino in Grant
 ---
 
 # Structured Logging
 
-Grant Platform uses [Pino](https://getpino.io/) for fast, structured JSON logging. This guide covers logging best practices, configuration, and usage patterns.
+Grant uses [Pino](https://getpino.io/) for fast, structured JSON logging. This guide covers logging best practices, configuration, and usage patterns.
 
 ## Why Pino?
 
@@ -607,7 +607,7 @@ pm2 flush grant-api
 
 ```bash
 # Install AWS CLI
-aws logs tail /aws/ecs/grant-platform/api --follow
+aws logs tail /aws/ecs/grant/api --follow
 ```
 
 ### Loki Integration

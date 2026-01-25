@@ -1,8 +1,8 @@
-# Grant Platform - Docker Configuration
+# Grant - Docker Configuration
 
 ## Overview
 
-This directory contains Docker configurations for containerizing Grant Platform components.
+This directory contains Docker configurations for containerizing Grant components.
 
 ## Images
 
@@ -43,8 +43,8 @@ Images are automatically built and pushed to ECR during CloudFormation deploymen
 
 ### ECR Repositories
 
-- `grant-platform-web` - Frontend container
-- `grant-platform-api` - Backend container
+- `grant-web` - Frontend container
+- `grant-api` - Backend container
 
 ## Environment Variables
 

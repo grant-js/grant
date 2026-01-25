@@ -1,6 +1,6 @@
 ---
 title: Testing
-description: Testing setup and best practices for Grant Platform
+description: Testing setup and best practices for Grant
 ---
 
 # Testing Setup

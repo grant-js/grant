@@ -1,10 +1,10 @@
+import { GrantAuth } from '@grantjs/core';
 import { Request } from 'express';
 
-import { AuthenticatedUser } from './auth';
 import { RequestContext } from './context';
 
 export interface AuthenticatedRequest extends Request {
-  user?: AuthenticatedUser | null;
+  user?: GrantAuth | null;
   audience?: string;
 }
 

@@ -1,11 +1,11 @@
-import { OrganizationTagModel, organizationTags } from '@logusgraphics/grant-database';
+import { OrganizationTagModel, organizationTags } from '@grantjs/database';
 import {
   AddOrganizationTagInput,
   OrganizationTag,
   QueryOrganizationTagsInput,
   RemoveOrganizationTagInput,
   UpdateOrganizationTagInput,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';

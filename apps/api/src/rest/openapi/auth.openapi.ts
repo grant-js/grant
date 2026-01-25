@@ -1,10 +1,11 @@
 import { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 
 import { z } from '@/lib/zod-openapi.lib';
-import { accountSchema } from '@/rest/schemas/accounts.schemas';
 import {
   authenticationErrorResponseSchema,
   errorResponseSchema,
+  isAuthorizedRequestSchema,
+  isAuthorizedResponseSchema,
   loginRequestSchema,
   loginResultSchema,
   logoutRequestSchema,
@@ -23,7 +24,6 @@ import {
   verifyEmailRequestSchema,
   verifyEmailResponseSchema,
 } from '@/rest/schemas';
-
 /**
  * Register authentication endpoints in the OpenAPI registry
  */
@@ -47,7 +47,7 @@ export function registerAuthEndpoints(registry: OpenAPIRegistry) {
             example: {
               provider: 'email',
               providerId: 'user@example.com',
-              providerData: { email_verified: true },
+              providerData: { password: 'password123' },
             },
           },
         },
@@ -458,81 +458,6 @@ export function registerAuthEndpoints(registry: OpenAPIRegistry) {
   });
 
   /**
-   * GET /api/auth/me
-   * Get current authenticated user information
-   */
-  registry.registerPath({
-    method: 'get',
-    path: '/api/auth/me',
-    tags: ['Authentication'],
-    summary: 'Get current user',
-    description: `
-Get information about the currently authenticated user.
-
-This endpoint requires authentication via Authorization header (Bearer token) or authentication cookie.
-
-### Response
-Returns user account information including:
-- \`accounts\`: Array of user's accounts
-- \`email\`: User's email address (from authentication methods)
-- \`requiresEmailVerification\`: Whether email verification is required
-- \`verificationExpiry\`: Date when email verification expires (if applicable)
-    `.trim(),
-    responses: {
-      200: {
-        description: 'Successfully retrieved user information',
-        content: {
-          'application/json': {
-            schema: z.object({
-              success: z.literal(true),
-              data: z.object({
-                accounts: z.array(accountSchema),
-                email: z.string().nullable(),
-                requiresEmailVerification: z.boolean(),
-                verificationExpiry: z.string().datetime().nullable(),
-              }),
-            }),
-            example: {
-              success: true,
-              data: {
-                accounts: [
-                  {
-                    id: 'acc_123',
-                    type: 'personal',
-                    ownerId: 'usr_456',
-                    createdAt: '2025-10-11T00:00:00Z',
-                    updatedAt: '2025-10-11T00:00:00Z',
-                    deletedAt: null,
-                  },
-                ],
-                email: 'user@example.com',
-                requiresEmailVerification: false,
-                verificationExpiry: null,
-              },
-            },
-          },
-        },
-      },
-      401: {
-        description: 'Authentication required',
-        content: {
-          'application/json': {
-            schema: authenticationErrorResponseSchema,
-          },
-        },
-      },
-      500: {
-        description: 'Internal server error',
-        content: {
-          'application/json': {
-            schema: errorResponseSchema,
-          },
-        },
-      },
-    },
-  });
-
-  /**
    * GET /api/auth/github
    * Initiate GitHub OAuth flow
    */
@@ -681,6 +606,78 @@ and either logs in an existing user or creates a new account.
       },
       401: {
         description: 'OAuth flow failed or user denied authorization',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * POST /api/auth/is-authorized
+   * Check if user is authorized to perform an action
+   */
+  registry.registerPath({
+    method: 'post',
+    path: '/api/auth/is-authorized',
+    tags: ['Authentication'],
+    summary: 'Check if user is authorized',
+    description: `
+Check if a user is authorized to perform an action on a resource within a scope.
+
+This endpoint evaluates permissions following the cascade:
+User → Role → Group → Permission → Resource
+
+### Authorization Flow
+1. Gets user roles in the specified scope
+2. Gets groups for those roles
+3. Gets permissions for those groups
+4. Matches permissions against the resource and action
+5. Evaluates any conditions associated with matched permissions
+
+### Execution Context
+You can provide additional context to help with condition evaluation:
+- \`resource\`: Resource-specific data
+    `.trim(),
+    security: [{ bearerAuth: [] }],
+    request: {
+      body: {
+        content: {
+          'application/json': {
+            schema: isAuthorizedRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Authorization check completed',
+        content: {
+          'application/json': {
+            schema: isAuthorizedResponseSchema,
+          },
+        },
+      },
+      400: {
+        description: 'Invalid request parameters',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized - Authentication required',
         content: {
           'application/json': {
             schema: authenticationErrorResponseSchema,

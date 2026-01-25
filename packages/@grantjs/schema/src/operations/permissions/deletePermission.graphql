@@ -1,0 +1,12 @@
+mutation DeletePermission($id: ID!, $scope: Scope!) {
+  deletePermission(id: $id, scope: $scope) {
+    id
+    name
+    action
+    description
+    resourceId
+    condition
+    createdAt
+    updatedAt
+  }
+}

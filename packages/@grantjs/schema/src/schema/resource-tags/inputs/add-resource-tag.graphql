@@ -1,0 +1,5 @@
+input AddResourceTagInput {
+  resourceId: ID!
+  tagId: ID!
+  isPrimary: Boolean
+}

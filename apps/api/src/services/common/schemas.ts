@@ -1,13 +1,28 @@
-import { TAG_COLORS, TagColor } from '@logusgraphics/grant-constants';
-import { SortOrder, Tenant } from '@logusgraphics/grant-schema';
+import { TAG_COLORS, TagColor } from '@grantjs/constants';
+import { SortOrder, Tenant } from '@grantjs/schema';
 import { z } from 'zod';
 
 export const idSchema = z.string().min(1, 'ID is required');
 export const emailSchema = z.string().email('Invalid email format').min(1, 'Email is required');
 export const nameSchema = z.string().min(1, 'Name is required').max(255, 'Name too long');
 export const descriptionSchema = z.string().max(1000, 'Description too long').nullable().optional();
-export const limitSchema = z.number().int().min(-1).max(100, 'Limit must be between -1 and 100');
-export const pageSchema = z.number().int().min(1, 'Page must be at least 1').nullable().optional();
+export const limitSchema = z
+  .union([z.string(), z.number(), z.null()])
+  .optional()
+  .transform((val) => {
+    if (val === undefined || val === null || val === '') return undefined;
+    return typeof val === 'string' ? parseInt(val, 10) : val;
+  })
+  .pipe(z.number().int().min(-1).max(100, 'Limit must be between -1 and 100').optional());
+
+export const pageSchema = z
+  .union([z.string(), z.number(), z.null()])
+  .optional()
+  .transform((val) => {
+    if (val === undefined || val === null || val === '') return undefined;
+    return typeof val === 'string' ? parseInt(val, 10) : val;
+  })
+  .pipe(z.number().int().min(1, 'Page must be at least 1').optional());
 export const searchSchema = z
   .string()
   .nullable()
@@ -130,3 +145,7 @@ export const nonEmptyActionSchema = actionSchema.refine(
   nonEmptyStringRefinement,
   nonEmptyStringMessage
 );
+
+export const jsonSchema = z.record(z.string(), z.unknown());
+
+export const metadataSchema = jsonSchema;

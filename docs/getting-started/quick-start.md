@@ -1,12 +1,12 @@
 # Quick Start
 
-Get Grant Platform up and running in minutes! This guide covers the fastest ways to start using Grant Platform.
+Get Grant up and running in minutes! This guide covers the fastest ways to start using Grant.
 
-## 🚀 Choose Your Path
+## Choose Your Path
 
 ### Option 1: Self-Hosting (Recommended)
 
-Deploy Grant Platform on your own infrastructure with full control and customization.
+Deploy Grant on your own infrastructure with full control and customization.
 
 ### Option 2: SaaS Trial
 
@@ -28,12 +28,12 @@ Set up a local development environment for contributing or testing.
 
 ```bash
 # Clone the repository
-git clone https://github.com/logusgraphics/grant-platform.git
-cd grant-platform
+git clone https://github.com/logusgraphics/grant.git
+cd grant
 
 # Launch the CloudFormation stack
 aws cloudformation create-stack \
-  --stack-name grant-platform \
+  --stack-name grant \
   --template-body file://infrastructure/cloudformation/main.yaml \
   --parameters file://infrastructure/cloudformation/parameters/dev.json \
   --capabilities CAPABILITY_IAM
@@ -52,7 +52,7 @@ The CloudFormation template will prompt you for:
 
 Once the stack is deployed, you'll receive:
 
-- **Web App URL** - Your Grant Platform frontend
+- **Web App URL** - Your Grant frontend
 - **API URL** - GraphQL API endpoint
 - **Admin credentials** - Initial admin account
 
@@ -114,8 +114,8 @@ query GetUsers {
 ### 1. Clone and Install
 
 ```bash
-git clone https://github.com/logusgraphics/grant-platform.git
-cd grant-platform
+git clone https://github.com/logusgraphics/grant.git
+cd grant
 pnpm install
 ```
 
@@ -125,12 +125,12 @@ pnpm install
 # Start PostgreSQL with Docker
 docker run --name grant-postgres \
   -e POSTGRES_PASSWORD=password \
-  -e POSTGRES_DB=grant_platform \
+  -e POSTGRES_DB=grant \
   -p 5432:5432 \
   -d postgres:14
 
 # Set environment variables
-export DATABASE_URL="postgresql://postgres:password@localhost:5432/grant_platform"
+export DATABASE_URL="postgresql://postgres:password@localhost:5432/grant"
 
 # Run migrations
 pnpm db:migrate
@@ -205,4 +205,4 @@ pnpm dev:web    # Web app on :3000
 
 ---
 
-**Ready to dive deeper?** Check out the [Architecture Overview](/architecture/overview) to understand how Grant Platform works under the hood.
+**Ready to dive deeper?** Check out the [Architecture Overview](/architecture/overview) to understand how Grant works under the hood.

@@ -1,0 +1,61 @@
+{
+  "name": "@grantjs/core",
+  "version": "1.0.0",
+  "description": "Core RBAC/ACL system for the Grant",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "rbac",
+    "acl",
+    "permissions",
+    "multi-tenant",
+    "nodejs",
+    "typescript",
+    "grant"
+  ],
+  "author": {
+    "name": "Alejandro Heredia",
+    "email": "ale@logus.graphics",
+    "url": "https://logus.graphics"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/logusgraphics/grant.git",
+    "directory": "packages/@grantjs/core"
+  },
+  "license": "MIT",
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@grantjs/schema": "workspace:*",
+    "jsonwebtoken": "^9.0.2",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^24.7.2",
+    "eslint": "^9.37.0",
+    "typescript": "^5",
+    "vitest": "^3.2.4"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

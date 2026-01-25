@@ -1,5 +1,5 @@
-import { AUTH_ACCESS_TOKEN_KEY, AUTH_REFRESH_TOKEN_KEY } from '@logusgraphics/grant-constants';
-import { AccountType } from '@logusgraphics/grant-schema';
+import { AUTH_ACCESS_TOKEN_KEY, AUTH_REFRESH_TOKEN_KEY } from '@grantjs/constants';
+import { AccountType } from '@grantjs/schema';
 import Cookies from 'js-cookie';
 import { jwtDecode } from 'jwt-decode';
 

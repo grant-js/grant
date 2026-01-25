@@ -1,15 +1,15 @@
 ---
 title: Self-Hosting Guide
-description: Complete guide for self-hosting Grant Platform on your own infrastructure
+description: Complete guide for self-hosting Grant on your own infrastructure
 ---
 
 # Self-Hosting Guide
 
-Grant Platform is designed to be self-hosted, giving you complete control over your data and infrastructure.
+Grant is designed to be self-hosted, giving you complete control over your data and infrastructure.
 
 ## Overview
 
-Grant Platform can be self-hosted using:
+Grant can be self-hosted using:
 
 - **Docker Compose** - For local development and small deployments
 - **AWS** - Using CloudFormation templates for production deployments
@@ -26,8 +26,8 @@ Perfect for local development, testing, and small deployments.
 1. **Clone the repository**:
 
    ```bash
-   git clone https://github.com/logusgraphics/grant-platform.git
-   cd grant-platform
+   git clone https://github.com/logusgraphics/grant.git
+   cd grant
    ```
 
 2. **Configure infrastructure**:
@@ -104,8 +104,8 @@ Deploy to any cloud provider or your own servers.
 
    ```bash
    # Clone repository
-   git clone https://github.com/logusgraphics/grant-platform.git
-   cd grant-platform/apps/api
+   git clone https://github.com/logusgraphics/grant.git
+   cd grant/apps/api
 
    # Install dependencies
    pnpm install
@@ -176,7 +176,7 @@ NODE_ENV=production
 APP_PORT=4000
 
 # Database
-DB_URL=postgresql://user:pass@host:5432/grant_platform
+DB_URL=postgresql://user:pass@host:5432/grant
 
 # Security
 JWT_SECRET=your-secure-secret-min-32-chars
@@ -188,9 +188,9 @@ SECURITY_FRONTEND_URL=https://yourdomain.com
 1. **Create database**:
 
    ```sql
-   CREATE DATABASE grant_platform;
+   CREATE DATABASE grant;
    CREATE USER grant_user WITH ENCRYPTED PASSWORD 'secure_password';
-   GRANT ALL PRIVILEGES ON DATABASE grant_platform TO grant_user;
+   GRANT ALL PRIVILEGES ON DATABASE grant TO grant_user;
    ```
 
 2. **Run migrations**:
@@ -202,7 +202,7 @@ SECURITY_FRONTEND_URL=https://yourdomain.com
 
 3. **Verify**:
    ```bash
-   psql postgresql://grant_user:password@localhost:5432/grant_platform
+   psql postgresql://grant_user:password@localhost:5432/grant
    ```
 
 ## Security Considerations
@@ -257,7 +257,7 @@ LOG_LEVEL=info  # error, warn, info, debug
 
 ```bash
 # Daily backup script
-pg_dump postgresql://user:pass@host:5432/grant_platform > backup-$(date +%Y%m%d).sql
+pg_dump postgresql://user:pass@host:5432/grant > backup-$(date +%Y%m%d).sql
 ```
 
 **Automated backups with cron:**
@@ -288,7 +288,7 @@ See the **[Troubleshooting](/troubleshooting/deployment)** guide for common depl
 ### Support
 
 - **Documentation**: Browse these docs
-- **GitHub Issues**: [Report bugs](https://github.com/logusgraphics/grant-platform/issues)
+- **GitHub Issues**: [Report bugs](https://github.com/logusgraphics/grant/issues)
 - **Community**: Join our Discord server
 
 ## Related Documentation

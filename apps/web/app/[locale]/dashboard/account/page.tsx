@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 
-import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
+import { DashboardLayout } from '@/components/layout';
 import { usePageTitle } from '@/hooks';
 
 export default function AccountPage() {
@@ -10,8 +10,8 @@ export default function AccountPage() {
   usePageTitle('account');
 
   return (
-    <DashboardPageLayout title={t('title')} variant="simple">
+    <DashboardLayout title={t('title')} variant="simple">
       <p className="text-muted-foreground">{t('description')}</p>
-    </DashboardPageLayout>
+    </DashboardLayout>
   );
 }

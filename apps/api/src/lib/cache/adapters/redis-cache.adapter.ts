@@ -1,7 +1,6 @@
 import Redis from 'ioredis';
 
-import { CacheKey } from '@/handlers/base/scope-handler';
-import { ICacheAdapter } from '@/lib/cache/cache-adapter.interface';
+import { CacheKey, ICacheAdapter } from '@/lib/cache';
 import { createModuleLogger } from '@/lib/logger';
 
 /**
@@ -46,7 +45,7 @@ export class RedisCacheAdapter implements ICacheAdapter {
     return `${this.prefix}${key}`;
   }
 
-  async get(key: CacheKey): Promise<Set<string> | null> {
+  async get<T = Set<string>>(key: CacheKey): Promise<T | null> {
     const fullKey = this.getFullKey(key);
     const value = await this.client.get(fullKey);
 
@@ -55,8 +54,13 @@ export class RedisCacheAdapter implements ICacheAdapter {
     }
 
     try {
-      const parsed = JSON.parse(value) as string[];
-      return new Set(parsed);
+      const parsed = JSON.parse(value);
+
+      if (Array.isArray(parsed) && parsed.every((item) => typeof item === 'string')) {
+        return new Set(parsed) as T;
+      }
+
+      return parsed as T;
     } catch (error) {
       this.logger.error({
         msg: 'Failed to parse cache value',
@@ -67,12 +71,18 @@ export class RedisCacheAdapter implements ICacheAdapter {
     }
   }
 
-  async set(key: CacheKey, value: Set<string>): Promise<void> {
+  async set<T = Set<string>>(key: CacheKey, value: T, ttlSeconds?: number): Promise<void> {
     const fullKey = this.getFullKey(key);
-    const serialized = JSON.stringify(Array.from(value));
 
-    // Set with 24 hour expiration by default
-    await this.client.setex(fullKey, 86400, serialized);
+    let serialized: string;
+    if (value instanceof Set) {
+      serialized = JSON.stringify(Array.from(value));
+    } else {
+      serialized = JSON.stringify(value);
+    }
+
+    const ttl = ttlSeconds !== undefined ? ttlSeconds : 86400; // Default 24 hours
+    await this.client.setex(fullKey, ttl, serialized);
   }
 
   async has(key: CacheKey): Promise<boolean> {
@@ -99,7 +109,6 @@ export class RedisCacheAdapter implements ICacheAdapter {
     const searchPattern = pattern ? `${this.prefix}${pattern}` : `${this.prefix}*`;
     const keys = await this.client.keys(searchPattern);
 
-    // Remove prefix from keys
     return keys.map((key: string) => key.replace(this.prefix, '') as CacheKey);
   }
 

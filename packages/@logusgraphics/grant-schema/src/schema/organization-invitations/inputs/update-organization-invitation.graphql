@@ -1,4 +1,0 @@
-input UpdateOrganizationInvitationInput {
-  status: OrganizationInvitationStatus
-  acceptedAt: Date
-}

@@ -1,10 +1,10 @@
-import { GroupPermissionModel, groupPermissions } from '@logusgraphics/grant-database';
+import { GroupPermissionModel, groupPermissions } from '@grantjs/database';
 import {
   AddGroupPermissionInput,
   GroupPermission,
   QueryGroupPermissionsInput,
   RemoveGroupPermissionInput,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';

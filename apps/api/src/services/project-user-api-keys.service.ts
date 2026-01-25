@@ -1,10 +1,10 @@
-import { DbSchema, projectUserApiKeyAuditLogs } from '@logusgraphics/grant-database';
-import { ProjectUserApiKey } from '@logusgraphics/grant-schema';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema, projectUserApiKeyAuditLogs } from '@grantjs/database';
+import { ProjectUserApiKey } from '@grantjs/schema';
 
 import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import { AuditService, DeleteParams, validateInput } from './common';
 import {
@@ -15,7 +15,7 @@ import {
 export class ProjectUserApiKeyService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(projectUserApiKeyAuditLogs, 'projectUserApiKeyId', user, db);

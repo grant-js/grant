@@ -1,4 +1,4 @@
-import { SortOrder } from '@logusgraphics/grant-schema';
+import { SortOrder, UserAuthenticationMethodProvider, UserSortableField } from '@grantjs/schema';
 
 import { z } from '@/lib/zod-openapi.lib';
 import {
@@ -28,7 +28,9 @@ export const userRelationsEnum = z.enum(['roles', 'tags', 'accounts', 'authentic
 export const getUsersQuerySchema = listQuerySchema.omit({ relations: true }).extend({
   scopeId: z.uuid('Invalid scope ID'),
   tenant: tenantSchema,
-  sortField: z.enum(['name', 'createdAt', 'updatedAt']).optional(),
+  sortField: z
+    .enum(Object.values(UserSortableField) as [UserSortableField, ...UserSortableField[]])
+    .optional(),
   sortOrder: z.nativeEnum(SortOrder).optional(),
   tagIds: z
     .union([z.string(), z.array(z.string())])
@@ -89,6 +91,7 @@ export const createUserResponseSchema = createSuccessResponseSchema(
 );
 
 export const updateUserRequestSchema = z.object({
+  scope: scopeSchema,
   name: z.string().min(1, 'Name is required').max(255, 'Name too long').optional().openapi({
     description: "Updated user's full name",
     example: 'Jane Doe',
@@ -114,14 +117,11 @@ export const updateUserRequestSchema = z.object({
 });
 
 export const userParamsSchema = z.object({
-  id: z
-    .string()
-    .uuid('Invalid user ID')
-    .openapi({
-      description: 'UUID of the user',
-      example: '123e4567-e89b-12d3-a456-426614174003',
-      param: { in: 'path', name: 'id' },
-    }),
+  id: z.uuid('Invalid user ID').openapi({
+    description: 'UUID of the user',
+    example: '123e4567-e89b-12d3-a456-426614174003',
+    param: { in: 'path', name: 'id' },
+  }),
 });
 
 export const updateUserResponseSchema = createSuccessResponseSchema(
@@ -173,10 +173,18 @@ export const uploadUserPictureResponseSchema = createSuccessResponseSchema(
 );
 
 export const getUserAuthenticationMethodsQuerySchema = z.object({
-  provider: z.enum(['email', 'google', 'github']).optional().openapi({
-    description: 'Filter by authentication provider',
-    example: 'email',
-  }),
+  provider: z
+    .enum(
+      Object.values(UserAuthenticationMethodProvider) as [
+        UserAuthenticationMethodProvider,
+        ...UserAuthenticationMethodProvider[],
+      ]
+    )
+    .optional()
+    .openapi({
+      description: 'Filter by authentication provider',
+      example: 'email',
+    }),
 });
 
 export const userAuthenticationMethodSchema = z.object({

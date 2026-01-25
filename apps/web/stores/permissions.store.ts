@@ -1,8 +1,8 @@
-import { PermissionSortableField, Permission, SortOrder } from '@logusgraphics/grant-schema';
+import { Permission, PermissionSortableField, SortOrder } from '@grantjs/schema';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
-import { PermissionView } from '@/components/features/permissions/PermissionViewSwitcher';
+import { PermissionView } from '@/components/features/permissions/permission-types';
 
 interface PermissionsState {
   // State
@@ -19,6 +19,9 @@ interface PermissionsState {
   permissions: Permission[];
   loading: boolean;
 
+  // Refetch callback
+  refetch: (() => void) | null;
+
   // Dialog state
   permissionToDelete: Permission | null;
   permissionToEdit: Permission | null;
@@ -34,6 +37,7 @@ interface PermissionsState {
   setTotalCount: (count: number) => void;
   setPermissions: (permissions: Permission[]) => void;
   setLoading: (loading: boolean) => void;
+  setRefetch: (refetch: (() => void) | null) => void;
   resetToDefaults: () => void;
   initializeFromUrl: (params: URLSearchParams) => void;
 
@@ -62,6 +66,9 @@ export const usePermissionsStore = create<PermissionsState>()(
       permissions: [],
       loading: false,
 
+      // Refetch callback
+      refetch: null,
+
       // Dialog state
       permissionToDelete: null,
       permissionToEdit: null,
@@ -77,6 +84,7 @@ export const usePermissionsStore = create<PermissionsState>()(
       setTotalCount: (totalCount) => set({ totalCount }),
       setPermissions: (permissions) => set({ permissions }),
       setLoading: (loading) => set({ loading }),
+      setRefetch: (refetch) => set({ refetch }),
       resetToDefaults: () =>
         set({
           page: 1,
@@ -89,6 +97,7 @@ export const usePermissionsStore = create<PermissionsState>()(
           isInitialized: false,
           permissions: [],
           loading: false,
+          refetch: null,
           permissionToDelete: null,
           permissionToEdit: null,
           isCreateDialogOpen: false,
@@ -125,6 +134,6 @@ export const usePermissionsStore = create<PermissionsState>()(
       setPermissionToEdit: (permission) => set({ permissionToEdit: permission }),
       setCreateDialogOpen: (open) => set({ isCreateDialogOpen: open }),
     }),
-    { name: 'permissions-store' }
+    { name: 'grant-permissions-store' }
   )
 );

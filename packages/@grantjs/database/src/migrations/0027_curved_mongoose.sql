@@ -1,0 +1,1 @@
+ALTER TABLE "organization_invitations" ADD COLUMN "invited_at" timestamp DEFAULT now() NOT NULL;

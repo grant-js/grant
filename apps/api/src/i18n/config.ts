@@ -1,6 +1,7 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { SupportedLocale } from '@grantjs/constants';
 import i18next from 'i18next';
 import Backend from 'i18next-fs-backend';
 import * as middleware from 'i18next-http-middleware';
@@ -9,9 +10,6 @@ import { config } from '@/config';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-export const supportedLocales = config.i18n.supportedLocales;
-export type SupportedLocale = (typeof supportedLocales)[number];
 
 export const defaultLocale = config.i18n.defaultLocale;
 
@@ -23,7 +21,7 @@ export async function initializeI18n() {
     .use(Backend)
     .use(middleware.LanguageDetector)
     .init({
-      fallbackLng: config.i18n.defaultLocale,
+      fallbackLng: defaultLocale,
       supportedLngs: config.i18n.supportedLocales,
       preload: config.i18n.supportedLocales,
       ns: namespaces,

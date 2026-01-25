@@ -5,13 +5,13 @@ import {
   projects,
   roles,
   userRoles,
-} from '@logusgraphics/grant-database';
+} from '@grantjs/database';
 import {
   AddProjectUserInput,
   ProjectUser,
   QueryProjectUsersInput,
   RemoveProjectUserInput,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 import { and, eq, isNull } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';

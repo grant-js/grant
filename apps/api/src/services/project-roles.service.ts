@@ -1,15 +1,11 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { projectRoleAuditLogs } from '@logusgraphics/grant-database';
-import {
-  ProjectRole,
-  RemoveProjectRoleInput,
-  AddProjectRoleInput,
-} from '@logusgraphics/grant-schema';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema } from '@grantjs/database';
+import { projectRoleAuditLogs } from '@grantjs/database';
+import { ProjectRole, RemoveProjectRoleInput, AddProjectRoleInput } from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
@@ -28,7 +24,7 @@ import {
 export class ProjectRoleService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(projectRoleAuditLogs, 'projectRoleId', user, db);

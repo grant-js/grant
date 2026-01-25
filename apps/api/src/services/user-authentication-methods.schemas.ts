@@ -1,7 +1,7 @@
 import {
   UserAuthenticationEmailProviderAction,
   UserAuthenticationMethodProvider,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 import { z } from 'zod';
 
 import {

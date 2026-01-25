@@ -1,9 +1,0 @@
-extend type Query {
-  organizations(
-    page: Int
-    limit: Int
-    search: String
-    sort: OrganizationSortInput
-    ids: [ID!]
-  ): OrganizationPage!
-}

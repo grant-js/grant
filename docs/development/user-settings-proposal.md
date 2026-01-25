@@ -373,7 +373,7 @@ This document evaluates the current Account model and proposes a comprehensive u
 
 **Schema Updates Completed:**
 
-- ✅ Added `slug: String` to `UpdateAccountInput` in `packages/@logusgraphics/grant-schema/src/schema/accounts/inputs/update-account.graphql`
+- ✅ Added `slug: String` to `UpdateAccountInput` in `packages/@grantjs/schema/src/schema/accounts/inputs/update-account.graphql`
 - ✅ Created `CreateComplementaryAccountInput` input type
 - ✅ Created `CreateComplementaryAccountResult` return type
 - ✅ Added `createComplementaryAccount` mutation
@@ -551,10 +551,10 @@ This document evaluates the current Account model and proposes a comprehensive u
 - `apps/web/components/settings/AccountDetailsCard.tsx` - Merged account details card (replaces AccountInformationForm + AccountTypeCard)
 - `apps/web/components/settings/CreateComplementaryAccountDialog.tsx` - Dialog for creating complementary accounts
 - `apps/web/hooks/accounts/useCreateComplementaryAccount.ts` - Hook for complementary account creation
-- `packages/@logusgraphics/grant-schema/src/schema/accounts/inputs/create-complementary-account.graphql` - GraphQL input schema
-- `packages/@logusgraphics/grant-schema/src/schema/accounts/types/create-complementary-account-result.graphql` - GraphQL result type
-- `packages/@logusgraphics/grant-schema/src/schema/accounts/mutations/create-complementary-account.graphql` - GraphQL mutation
-- `packages/@logusgraphics/grant-schema/src/operations/accounts/createComplementaryAccount.graphql` - Frontend operation
+- `packages/@grantjs/schema/src/schema/accounts/inputs/create-complementary-account.graphql` - GraphQL input schema
+- `packages/@grantjs/schema/src/schema/accounts/types/create-complementary-account-result.graphql` - GraphQL result type
+- `packages/@grantjs/schema/src/schema/accounts/mutations/create-complementary-account.graphql` - GraphQL mutation
+- `packages/@grantjs/schema/src/operations/accounts/createComplementaryAccount.graphql` - Frontend operation
 - `apps/api/src/graphql/resolvers/accounts/mutations/create-complementary-account.resolver.ts` - GraphQL resolver
 - `apps/api/src/rest/schemas/accounts.schemas.ts` - REST API schemas (updated)
 - `apps/api/src/rest/controllers/accounts.controller.ts` - REST controller (updated)
@@ -576,4 +576,4 @@ This document evaluates the current Account model and proposes a comprehensive u
 - `apps/api/src/services/accounts.service.ts` - Added createComplementaryAccount method
 - `apps/api/src/handlers/accounts.handler.ts` - Added createComplementaryAccount handler
 - `apps/api/src/graphql/resolvers/mutations.ts` - Registered createComplementaryAccount resolver
-- `packages/@logusgraphics/grant-schema/src/schema/accounts/inputs/update-account.graphql` - Added slug field
+- `packages/@grantjs/schema/src/schema/accounts/inputs/update-account.graphql` - Added slug field

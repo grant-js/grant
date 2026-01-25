@@ -1,12 +1,12 @@
 # Cache System Setup Guide
 
-This guide provides step-by-step instructions for setting up the Grant Platform cache system in different environments.
+This guide provides step-by-step instructions for setting up the Grant cache system in different environments.
 
 ## Prerequisites
 
 - Node.js 18+ installed
 - Docker and Docker Compose (for Redis)
-- Grant Platform repository cloned
+- Grant repository cloned
 
 ## Installation
 
@@ -84,7 +84,7 @@ The Redis service is already configured in `docker-compose.yml`:
 ```yaml
 redis:
   image: redis:7-alpine
-  container_name: grant-platform-redis
+  container_name: grant-redis
   command: redis-server --requirepass grant_redis_password
   ports:
     - '6379:6379'
@@ -114,13 +114,13 @@ When the server starts, look for the cache strategy log:
 
 ```bash
 # Connect to Redis CLI
-docker exec -it grant-platform-redis redis-cli -a grant_redis_password
+docker exec -it grant-redis redis-cli -a grant_redis_password
 
 # Test connection
 127.0.0.1:6379> ping
 PONG
 
-# List all Grant Platform cache keys
+# List all Grant cache keys
 127.0.0.1:6379> keys grant:*
 
 # Exit
@@ -131,7 +131,7 @@ PONG
 
 ```bash
 # Watch Redis operations in real-time
-docker exec -it grant-platform-redis redis-cli -a grant_redis_password monitor
+docker exec -it grant-redis redis-cli -a grant_redis_password monitor
 ```
 
 ## Environment Variables
@@ -213,7 +213,7 @@ docker ps | grep redis
 docker-compose up redis -d
 
 # Check logs
-docker logs grant-platform-redis
+docker logs grant-redis
 ```
 
 ### Issue: Authentication Failed
@@ -332,7 +332,7 @@ Add monitoring to track:
 
 ```bash
 # Get Redis stats
-docker exec -it grant-platform-redis redis-cli -a grant_redis_password INFO stats
+docker exec -it grant-redis redis-cli -a grant_redis_password INFO stats
 ```
 
 ## Next Steps
@@ -358,10 +358,10 @@ pnpm run dev
 CACHE_STRATEGY=redis pnpm run dev
 
 # Check Redis
-docker exec -it grant-platform-redis redis-cli -a grant_redis_password ping
+docker exec -it grant-redis redis-cli -a grant_redis_password ping
 
 # Monitor Redis
-docker exec -it grant-platform-redis redis-cli -a grant_redis_password monitor
+docker exec -it grant-redis redis-cli -a grant_redis_password monitor
 
 # Stop Redis
 docker-compose stop redis

@@ -1,10 +1,10 @@
-import { OrganizationGroupModel, organizationGroups } from '@logusgraphics/grant-database';
+import { OrganizationGroupModel, organizationGroups } from '@grantjs/database';
 import {
   AddOrganizationGroupInput,
   OrganizationGroup,
   QueryOrganizationGroupsInput,
   RemoveOrganizationGroupInput,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 

@@ -1,0 +1,9 @@
+mutation DeleteMyAccounts($input: DeleteMyAccountsInput!) {
+  deleteMyAccounts(input: $input) {
+    id
+    name
+    createdAt
+    updatedAt
+    deletedAt
+  }
+}

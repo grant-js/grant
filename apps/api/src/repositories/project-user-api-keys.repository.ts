@@ -1,10 +1,10 @@
-import { ProjectUserApiKeyModel, projectUserApiKeys } from '@logusgraphics/grant-database';
+import { ProjectUserApiKeyModel, projectUserApiKeys } from '@grantjs/database';
 import {
   AddProjectUserApiKeyInput,
   ProjectUserApiKey,
   QueryProjectUserApiKeysInput,
   RemoveProjectUserApiKeyInput,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 

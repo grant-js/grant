@@ -7,7 +7,7 @@ import {
   organizationTags,
   organizationUsers,
   organizations,
-} from '@logusgraphics/grant-database';
+} from '@grantjs/database';
 import {
   CreateOrganizationInput,
   MutationDeleteOrganizationArgs,
@@ -22,7 +22,7 @@ import {
   OrganizationTag,
   OrganizationUser,
   QueryOrganizationsArgs,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { slugifySafe } from '@/lib/slugify.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -80,7 +80,7 @@ export class OrganizationRepository extends EntityRepository<OrganizationModel, 
   }
 
   public async getOrganizations(
-    params: QueryOrganizationsArgs & SelectedFields<Organization>,
+    params: Omit<QueryOrganizationsArgs, 'scope'> & SelectedFields<Organization>,
     transaction?: Transaction
   ): Promise<OrganizationPage> {
     const result = await this.query(params, transaction);
@@ -92,7 +92,7 @@ export class OrganizationRepository extends EntityRepository<OrganizationModel, 
   }
 
   public async createOrganization(
-    params: CreateOrganizationInput,
+    params: Omit<CreateOrganizationInput, 'scope'>,
     transaction?: Transaction
   ): Promise<Organization> {
     const baseParams: BaseCreateArgs = {
@@ -119,7 +119,7 @@ export class OrganizationRepository extends EntityRepository<OrganizationModel, 
   }
 
   public async softDeleteOrganization(
-    params: MutationDeleteOrganizationArgs,
+    params: Omit<MutationDeleteOrganizationArgs, 'scope'>,
     transaction?: Transaction
   ): Promise<Organization> {
     const baseParams: BaseDeleteArgs = {
@@ -130,7 +130,7 @@ export class OrganizationRepository extends EntityRepository<OrganizationModel, 
   }
 
   public async hardDeleteOrganization(
-    params: MutationDeleteOrganizationArgs,
+    params: Omit<MutationDeleteOrganizationArgs, 'scope'>,
     transaction?: Transaction
   ): Promise<Organization> {
     const baseParams: BaseDeleteArgs = {

@@ -1,4 +1,4 @@
-import { ApiKey, QueryResolvers } from '@logusgraphics/grant-schema';
+import { ApiKey, QueryResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
 import { getDirectFieldSelection } from '@/lib/field-selection.lib';

@@ -1,0 +1,4 @@
+input RemoveAccountRoleInput {
+  accountId: ID!
+  roleId: ID!
+}

@@ -1,4 +1,4 @@
-import { DbSchema } from '@logusgraphics/grant-database';
+import { DbSchema } from '@grantjs/database';
 import { SQLWrapper, and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 
 import { NotFoundError } from '@/lib/errors';

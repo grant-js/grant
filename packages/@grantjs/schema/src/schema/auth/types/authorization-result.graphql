@@ -1,0 +1,7 @@
+type AuthorizationResult {
+  authorized: Boolean!
+  reason: AuthorizationReason
+  matchedPermission: Permission
+  matchedCondition: JSON
+  evaluatedContext: JSON
+}

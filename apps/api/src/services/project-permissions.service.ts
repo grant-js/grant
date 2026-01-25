@@ -1,15 +1,16 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { projectPermissionsAuditLogs } from '@logusgraphics/grant-database';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema } from '@grantjs/database';
+import { projectPermissionsAuditLogs } from '@grantjs/database';
 import {
   ProjectPermission,
   RemoveProjectPermissionInput,
   AddProjectPermissionInput,
-} from '@logusgraphics/grant-schema';
+  QueryProjectPermissionsInput,
+} from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
@@ -28,7 +29,7 @@ import {
 export class ProjectPermissionService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(projectPermissionsAuditLogs, 'projectPermissionId', user, db);
@@ -73,16 +74,18 @@ export class ProjectPermissionService extends AuditService {
   }
 
   public async getProjectPermissions(
-    params: { projectId: string },
+    params: QueryProjectPermissionsInput,
     transaction?: Transaction
   ): Promise<ProjectPermission[]> {
     const context = 'ProjectPermissionService.getProjectPermissions';
-    const validatedParams = validateInput(getProjectPermissionsParamsSchema, params, context);
 
-    await this.projectExists(validatedParams.projectId, transaction);
+    if (params.projectId) {
+      const validatedParams = validateInput(getProjectPermissionsParamsSchema, params, context);
+      await this.projectExists(validatedParams.projectId, transaction);
+    }
 
     const result = await this.repositories.projectPermissionRepository.getProjectPermissions(
-      validatedParams,
+      params,
       transaction
     );
     return validateOutput(

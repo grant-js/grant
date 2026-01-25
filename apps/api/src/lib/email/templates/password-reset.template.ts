@@ -1,5 +1,7 @@
+import { SupportedLocale } from '@grantjs/constants';
+
 import { config } from '@/config';
-import { defaultLocale, translateStatic, type SupportedLocale } from '@/i18n';
+import { defaultLocale, translateStatic } from '@/i18n';
 
 import { createAlternativeLink, createButton, renderBaseEmailTemplate } from './base.mjml';
 

@@ -5,7 +5,7 @@ description: User data export and account deletion with configurable retention p
 
 # Privacy Settings
 
-Grant Platform provides comprehensive privacy settings to help users manage their data and comply with GDPR requirements. This includes data export capabilities and account deletion with configurable retention periods.
+Grant provides comprehensive privacy settings to help users manage their data and comply with GDPR requirements. This includes data export capabilities and account deletion with configurable retention periods.
 
 ## Overview
 
@@ -150,8 +150,8 @@ Instead of password verification (which doesn't work for OAuth users), the platf
 **GraphQL Mutation:**
 
 ```graphql
-mutation DeleteAccount($input: DeleteAccountInput!) {
-  deleteAccount(input: $input) {
+mutation DeleteAccounts($input: DeleteAccountsInput!) {
+  deleteAccounts(input: $input) {
     id
     name
     deletedAt
@@ -162,7 +162,7 @@ mutation DeleteAccount($input: DeleteAccountInput!) {
 **Input:**
 
 ```graphql
-input DeleteAccountInput {
+input DeleteAccountsInput {
   userId: ID!
   hardDelete: Boolean
 }

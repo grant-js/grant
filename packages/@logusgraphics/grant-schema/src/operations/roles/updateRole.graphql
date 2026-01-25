@@ -1,9 +1,0 @@
-mutation UpdateRole($id: ID!, $input: UpdateRoleInput!) {
-  updateRole(id: $id, input: $input) {
-    id
-    name
-    description
-    createdAt
-    updatedAt
-  }
-}

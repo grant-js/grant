@@ -1,3 +1,3 @@
 export * from './cache';
-export { useUserMutations } from './useUserMutations';
-export { useUsers } from './useUsers';
+export * from './use-user-mutations';
+export * from './use-users';

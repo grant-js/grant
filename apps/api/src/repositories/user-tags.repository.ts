@@ -1,11 +1,11 @@
-import { UserTagModel, userTags } from '@logusgraphics/grant-database';
+import { UserTagModel, userTags } from '@grantjs/database';
 import {
   AddUserTagInput,
   QueryUserTagsInput,
   RemoveUserTagInput,
   UpdateUserTagInput,
   UserTag,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';

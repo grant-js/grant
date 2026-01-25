@@ -1,0 +1,18 @@
+type OrganizationInvitation implements Auditable {
+  id: ID!
+  organizationId: ID!
+  organization: Organization!
+  email: String!
+  roleId: ID!
+  role: Role!
+  status: OrganizationInvitationStatus!
+  expiresAt: Date!
+  token: String!
+  invitedBy: ID!
+  inviter: User!
+  invitedAt: Date!
+  acceptedAt: Date
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}

@@ -1,14 +1,15 @@
-import { DbSchema, organizationPermissionsAuditLogs } from '@logusgraphics/grant-database';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema, organizationPermissionsAuditLogs } from '@grantjs/database';
 import {
   AddOrganizationPermissionInput,
   OrganizationPermission,
+  QueryOrganizationPermissionsInput,
   RemoveOrganizationPermissionInput,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
@@ -27,7 +28,7 @@ import {
 export class OrganizationPermissionService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(organizationPermissionsAuditLogs, 'organizationPermissionId', user, db);
@@ -75,21 +76,27 @@ export class OrganizationPermissionService extends AuditService {
   }
 
   public async getOrganizationPermissions(
-    params: {
-      organizationId: string;
-    },
+    params: QueryOrganizationPermissionsInput,
     transaction?: Transaction
   ): Promise<OrganizationPermission[]> {
     const context = 'OrganizationPermissionService.getOrganizationPermissions';
-    const validatedParams = validateInput(queryOrganizationPermissionsArgsSchema, params, context);
 
-    const { organizationId } = validatedParams;
+    if (params.organizationId) {
+      const validatedParams = validateInput(
+        queryOrganizationPermissionsArgsSchema,
+        params,
+        context
+      );
+      await this.organizationExists(validatedParams.organizationId, transaction);
+    }
 
-    await this.organizationExists(organizationId, transaction);
-
+    // Query by permissionId or organizationId (permissionId is part of unique index)
+    const queryParams = params.permissionId
+      ? { permissionId: params.permissionId }
+      : (params as QueryOrganizationPermissionsInput);
     const result =
       await this.repositories.organizationPermissionRepository.getOrganizationPermissions(
-        { organizationId },
+        queryParams,
         transaction
       );
 

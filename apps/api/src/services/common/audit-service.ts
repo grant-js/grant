@@ -1,9 +1,9 @@
-import { DbSchema } from '@logusgraphics/grant-database';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema } from '@grantjs/database';
 
 import { config } from '@/config';
 import { createModuleLogger } from '@/lib/logger';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { AuthenticatedUser } from '@/types';
 
 export interface AuditLogParams {
   entityId: string;
@@ -19,12 +19,12 @@ export abstract class AuditService {
   constructor(
     protected readonly auditLogsTable: any,
     protected readonly entityIdField: string,
-    protected readonly user: AuthenticatedUser | null = null,
+    protected readonly user: GrantAuth | null = null,
     protected readonly db: DbSchema
   ) {}
 
   protected getPerformedBy(): string {
-    return this.user !== null ? this.user.id : config.system.systemUserId;
+    return this.user !== null ? this.user.userId : config.system.systemUserId;
   }
 
   protected async logAction(params: AuditLogParams, transaction?: Transaction): Promise<void> {

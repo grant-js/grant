@@ -1,12 +1,14 @@
-import { MILLISECONDS_PER_DAY, MILLISECONDS_PER_MINUTE } from '@logusgraphics/grant-constants';
-import { DbSchema, userSessionAuditLogs } from '@logusgraphics/grant-database';
+import { MILLISECONDS_PER_DAY, MILLISECONDS_PER_MINUTE } from '@grantjs/constants';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema, userSessionAuditLogs } from '@grantjs/database';
 import {
   CreateUserSessionInput,
   GetUserSessionsInput,
+  TokenType,
   UpdateUserSessionInput,
   UserSession,
   UserSessionPage,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 import jwt from 'jsonwebtoken';
 
 import { config } from '@/config';
@@ -14,7 +16,6 @@ import { AuthenticationError, NotFoundError } from '@/lib/errors';
 import { generateRandomBytes } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import { AuditService, SelectedFields, validateInput, validateOutput } from './common';
 import {
@@ -36,7 +37,7 @@ interface CreateSessionResult {
 export class UserSessionService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(userSessionAuditLogs, 'userSessionId', user, db);
@@ -89,7 +90,7 @@ export class UserSessionService extends AuditService {
     return session;
   }
 
-  private async getUserSession(
+  public async getUserSession(
     userSessionId: string,
     transaction?: Transaction
   ): Promise<UserSession> {
@@ -115,7 +116,7 @@ export class UserSessionService extends AuditService {
     return this.repositories.userSessionRepository.getUserSessions(params, transaction);
   }
 
-  public signSession(session: UserSession): CreateSessionResult {
+  public async signSession(session: UserSession): Promise<CreateSessionResult> {
     const context = 'UserSessionService.signSession';
     const validatedSession = validateInput(userSessionSchema, session, context);
     const { userId } = validatedSession;
@@ -126,7 +127,18 @@ export class UserSessionService extends AuditService {
     const iat = Math.floor(Date.now() / 1000);
     const exp = Math.floor(this.getAccessTokenExpirationDate(Date.now()).getTime() / 1000);
 
-    const jwtPayload: JwtPayload = { sub, aud, iss, exp, iat, jti };
+    // Note: Scope is not included in user session tokens - it will be passed per request
+    // This allows users to switch between accounts/organizations/projects dynamically
+    const jwtPayload: JwtPayload = {
+      sub,
+      aud,
+      iss,
+      exp,
+      iat,
+      jti,
+      type: TokenType.Session, // Token type: Session (enum value: 'session')
+      // No scope - will be passed per request
+    };
 
     const accessToken = jwt.sign(jwtPayload, config.jwt.secret);
     const refreshToken = session.token;

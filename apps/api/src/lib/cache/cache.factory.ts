@@ -21,6 +21,7 @@ const entityTypes = [
   'users',
   'groups',
   'permissions',
+  'resources',
   'tags',
   'projects',
   'apiKeys',

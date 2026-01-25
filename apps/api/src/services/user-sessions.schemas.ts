@@ -1,4 +1,4 @@
-import { Tenant } from '@logusgraphics/grant-schema';
+import { Tenant } from '@grantjs/schema';
 import { z } from 'zod';
 
 import {

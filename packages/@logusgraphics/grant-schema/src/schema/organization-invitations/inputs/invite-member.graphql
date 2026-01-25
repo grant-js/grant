@@ -1,5 +1,0 @@
-input InviteMemberInput {
-  organizationId: ID!
-  email: String!
-  roleId: ID!
-}

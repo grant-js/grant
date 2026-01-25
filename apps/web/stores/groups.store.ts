@@ -1,8 +1,8 @@
-import { GroupSortableField, Group, SortOrder } from '@logusgraphics/grant-schema';
+import { Group, GroupSortableField, SortOrder } from '@grantjs/schema';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
-import { GroupView } from '@/components/features/groups/GroupViewSwitcher';
+import { GroupView } from '@/components/features/groups/group-types';
 
 interface GroupsState {
   // State
@@ -19,6 +19,9 @@ interface GroupsState {
   groups: Group[];
   loading: boolean;
 
+  // Refetch callback
+  refetch: (() => void) | null;
+
   // Dialog state
   groupToDelete: Group | null;
   groupToEdit: Group | null;
@@ -34,6 +37,7 @@ interface GroupsState {
   setTotalCount: (count: number) => void;
   setGroups: (groups: Group[]) => void;
   setLoading: (loading: boolean) => void;
+  setRefetch: (refetch: (() => void) | null) => void;
   resetToDefaults: () => void;
   initializeFromUrl: (params: URLSearchParams) => void;
 
@@ -62,6 +66,9 @@ export const useGroupsStore = create<GroupsState>()(
       groups: [],
       loading: false,
 
+      // Refetch callback
+      refetch: null,
+
       // Dialog state
       groupToDelete: null,
       groupToEdit: null,
@@ -77,6 +84,7 @@ export const useGroupsStore = create<GroupsState>()(
       setTotalCount: (totalCount) => set({ totalCount }),
       setGroups: (groups) => set({ groups }),
       setLoading: (loading) => set({ loading }),
+      setRefetch: (refetch) => set({ refetch }),
       resetToDefaults: () =>
         set({
           page: 1,
@@ -89,6 +97,7 @@ export const useGroupsStore = create<GroupsState>()(
           isInitialized: false,
           groups: [],
           loading: false,
+          refetch: null,
           groupToDelete: null,
           groupToEdit: null,
           isCreateDialogOpen: false,
@@ -125,6 +134,6 @@ export const useGroupsStore = create<GroupsState>()(
       setGroupToEdit: (group) => set({ groupToEdit: group }),
       setCreateDialogOpen: (open) => set({ isCreateDialogOpen: open }),
     }),
-    { name: 'groups-store' }
+    { name: 'grant-groups-store' }
   )
 );

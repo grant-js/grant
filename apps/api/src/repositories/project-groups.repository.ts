@@ -1,10 +1,10 @@
-import { ProjectGroupModel, projectGroups } from '@logusgraphics/grant-database';
+import { ProjectGroupModel, projectGroups } from '@grantjs/database';
 import {
   AddProjectGroupInput,
   ProjectGroup,
   QueryProjectGroupsInput,
   RemoveProjectGroupInput,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';

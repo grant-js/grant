@@ -1,8 +1,4 @@
-import {
-  UserAuthenticationMethodModel,
-  userAuthenticationMethods,
-  users,
-} from '@logusgraphics/grant-database';
+import { UserAuthenticationMethodModel, userAuthenticationMethods, users } from '@grantjs/database';
 import {
   CreateUserAuthenticationMethodInput,
   DeleteUserAuthenticationMethodInput,
@@ -11,7 +7,7 @@ import {
   User,
   UserAuthenticationMethod,
   UserAuthenticationMethodProvider,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { BadRequestError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';

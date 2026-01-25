@@ -1,7 +1,7 @@
 {
-  "name": "grant-platform-docs",
+  "name": "grant-docs",
   "version": "1.0.0",
-  "description": "Grant Platform Documentation Site",
+  "description": "Grant Documentation Site",
   "type": "module",
   "scripts": {
     "dev": "vitepress dev .",
@@ -13,6 +13,7 @@
   },
   "devDependencies": {
     "@braintree/sanitize-url": "^7.1.1",
+    "debug": "^4.4.0",
     "@mermaid-js/mermaid-mindmap": "9.3.0",
     "@types/node": "^24.7.2",
     "cytoscape": "^3.33.1",
@@ -26,7 +27,7 @@
   "keywords": [
     "documentation",
     "vitepress",
-    "grant-platform",
+    "grant",
     "rbac",
     "acl",
     "multi-tenant"

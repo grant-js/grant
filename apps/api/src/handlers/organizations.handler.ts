@@ -1,5 +1,5 @@
-import { StandardRoleName } from '@logusgraphics/grant-constants';
-import { DbSchema } from '@logusgraphics/grant-database';
+import { ORGANIZATION_ROLE_DEFINITIONS, RoleKey } from '@grantjs/constants';
+import { DbSchema } from '@grantjs/database';
 import {
   MutationCreateOrganizationArgs,
   MutationDeleteOrganizationArgs,
@@ -7,16 +7,16 @@ import {
   Organization,
   OrganizationPage,
   QueryOrganizationsArgs,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 import { DeleteParams, SelectedFields } from '@/services/common';
 
-import { ScopeHandler } from './base/scope-handler';
+import { CacheHandler } from './base/cache-handler';
 
-export class OrganizationHandler extends ScopeHandler {
+export class OrganizationHandler extends CacheHandler {
   constructor(
     readonly cache: IEntityCacheAdapter,
     readonly services: Services,
@@ -26,7 +26,7 @@ export class OrganizationHandler extends ScopeHandler {
   }
 
   public async getOrganizations(
-    params: QueryOrganizationsArgs & SelectedFields<Organization>
+    params: Omit<QueryOrganizationsArgs, 'scope'> & SelectedFields<Organization>
   ): Promise<OrganizationPage> {
     const { page, limit, sort, search, ids, requestedFields } = params;
 
@@ -62,9 +62,16 @@ export class OrganizationHandler extends ScopeHandler {
         tx
       );
 
-      const ownerRole = seededRoles.find((r) => r.role.name === StandardRoleName.Owner);
+      const ownerRole = seededRoles.find(
+        (r) => r.role.name === ORGANIZATION_ROLE_DEFINITIONS[RoleKey.OrganizationOwner].name
+      );
       if (ownerRole) {
-        await this.services.userRoles.addUserRole({ userId, roleId: ownerRole.role.id }, tx);
+        const userRoles = await this.services.userRoles.getUserRoles({ userId }, tx);
+        const hasOwnerRole = userRoles.some((ur) => ur.roleId === ownerRole.role.id);
+
+        if (!hasOwnerRole) {
+          await this.services.userRoles.addUserRole({ userId, roleId: ownerRole.role.id }, tx);
+        }
       }
 
       return organization;
@@ -79,7 +86,7 @@ export class OrganizationHandler extends ScopeHandler {
   }
 
   public async deleteOrganization(
-    params: MutationDeleteOrganizationArgs & DeleteParams
+    params: Omit<MutationDeleteOrganizationArgs, 'scope'> & DeleteParams
   ): Promise<Organization> {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { id: organizationId } = params;

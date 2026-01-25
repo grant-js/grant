@@ -12,14 +12,10 @@ import { permissionResolver as Permission } from './permissions/fields';
 import { roleResolver as Role } from './roles/fields';
 import { userResolver as User } from './users/fields';
 
-// Load schema from the grant-schema package
-const typeDefs = loadFilesSync(
-  join(process.cwd(), '../../packages/@logusgraphics/grant-schema/src/schema'),
-  {
-    extensions: ['graphql'],
-    ignoreIndex: true,
-  }
-);
+const typeDefs = loadFilesSync(join(process.cwd(), '../../packages/@grantjs/schema/src/schema'), {
+  extensions: ['graphql'],
+  ignoreIndex: true,
+});
 
 export const schema = makeExecutableSchema({
   typeDefs,

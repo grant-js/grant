@@ -1,4 +1,4 @@
-import { MutationRefreshSessionArgs, MutationResolvers } from '@logusgraphics/grant-schema';
+import { MutationRefreshSessionArgs, MutationResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
 
@@ -7,5 +7,5 @@ export const refreshSession: MutationResolvers<GraphqlContext>['refreshSession']
   args: MutationRefreshSessionArgs,
   context: GraphqlContext
 ) => {
-  return context.handlers.accounts.refreshSession(args, context.userAgent, context.ipAddress);
+  return context.handlers.auth.refreshSession(args, context.userAgent, context.ipAddress);
 };

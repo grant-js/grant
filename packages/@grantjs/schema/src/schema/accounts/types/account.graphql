@@ -1,0 +1,11 @@
+type Account implements Auditable {
+  id: ID!
+  type: AccountType!
+  ownerId: ID!
+  owner: User!
+  projects: [Project!]
+  tags: [Tag!]
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}

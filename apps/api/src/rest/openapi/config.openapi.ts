@@ -14,14 +14,16 @@ import {
   validationErrorResponseSchema,
 } from '@/rest/schemas';
 
-import { registerAccountsOpenApi } from './accounts.openapi';
+import { registerApiKeysOpenApi } from './api-keys.openapi';
 import { registerAuthEndpoints } from './auth.openapi';
 import { registerGroupsOpenApi } from './groups.openapi';
+import { registerMeEndpoints } from './me.openapi';
 import { registerOrganizationInvitationsOpenApi } from './organization-invitations.openapi';
+import { registerOrganizationMembersOpenApi } from './organization-members.openapi';
 import { registerOrganizationsOpenApi } from './organizations.openapi';
 import { registerPermissionsOpenApi } from './permissions.openapi';
-import { registerApiKeysOpenApi } from './api-keys.openapi';
 import { registerProjectsOpenApi } from './projects.openapi';
+import { registerResourcesOpenApi } from './resources.openapi';
 import { registerRolesOpenApi } from './roles.openapi';
 import { registerTagsOpenApi } from './tags.openapi';
 import { registerUserEndpoints } from './users.openapi';
@@ -56,15 +58,17 @@ function registerCommonSchemas() {
  */
 function registerAllEndpoints() {
   registerAuthEndpoints(registry);
-  registerAccountsOpenApi(registry);
+  registerMeEndpoints(registry);
+  registerApiKeysOpenApi(registry);
   registerUserEndpoints(registry);
   registerOrganizationsOpenApi(registry);
   registerOrganizationInvitationsOpenApi(registry);
+  registerOrganizationMembersOpenApi(registry);
   registerProjectsOpenApi(registry);
-  registerApiKeysOpenApi(registry);
   registerRolesOpenApi(registry);
   registerGroupsOpenApi(registry);
   registerPermissionsOpenApi(registry);
+  registerResourcesOpenApi(registry);
   registerTagsOpenApi(registry);
 }
 
@@ -85,16 +89,15 @@ export function generateOpenApiDocument() {
 
   const generator = new OpenApiGeneratorV3(registry.definitions);
 
-  return generator.generateDocument({
+  const document = generator.generateDocument({
     openapi: '3.0.0',
     info: {
       version: '1.0.0',
-      title: 'Grant Platform REST API',
-      description:
-        'REST API for the Grant Platform - An open-source identity and access management system',
+      title: 'Grant REST API',
+      description: 'REST API for the Grant - An open-source identity and access management system',
       contact: {
-        name: 'Grant Platform',
-        url: 'https://github.com/logusgraphics/grant-platform',
+        name: 'Grant',
+        url: 'https://github.com/logusgraphics/grant',
       },
       license: {
         name: 'MIT',
@@ -117,8 +120,8 @@ export function generateOpenApiDocument() {
         description: 'User authentication and session management endpoints',
       },
       {
-        name: 'Accounts',
-        description: 'Account management endpoints (personal and organization accounts)',
+        name: 'Me',
+        description: 'Self user management endpoints (profile, account, sessions, authentication)',
       },
       {
         name: 'Users',
@@ -131,6 +134,10 @@ export function generateOpenApiDocument() {
       {
         name: 'Organization Invitations',
         description: 'Organization member invitation and onboarding endpoints',
+      },
+      {
+        name: 'Organization Members',
+        description: 'Organization member management endpoints',
       },
       {
         name: 'Projects',
@@ -153,13 +160,33 @@ export function generateOpenApiDocument() {
         description: 'Permission management endpoints',
       },
       {
+        name: 'Resources',
+        description: 'Resource management endpoints for fine-grained access control',
+      },
+      {
         name: 'Tags',
         description: 'Tag management endpoints',
       },
     ],
     externalDocs: {
       description: 'Find more info on GitHub',
-      url: 'https://github.com/logusgraphics/grant-platform',
+      url: 'https://github.com/logusgraphics/grant',
     },
   });
+
+  return {
+    ...document,
+    security: [{ bearerAuth: [] }],
+    components: {
+      ...(document.components || {}),
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'JWT access token obtained from authentication endpoints',
+        },
+      },
+    },
+  };
 }

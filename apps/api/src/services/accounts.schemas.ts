@@ -1,4 +1,4 @@
-import { AccountSortableField, AccountType } from '@logusgraphics/grant-schema';
+import { AccountSortableField, AccountType } from '@grantjs/schema';
 import { z } from 'zod';
 
 import {
@@ -46,3 +46,7 @@ export const accountPageSchema = paginatedResponseSchema(accountSchema).transfor
   totalCount: data.totalCount,
   hasNextPage: data.hasNextPage,
 }));
+
+export const queryAccountsInputSchema = queryParamsSchema.extend({
+  sort: accountSortInputSchema.nullable().optional(),
+});

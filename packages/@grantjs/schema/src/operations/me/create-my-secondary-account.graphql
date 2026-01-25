@@ -1,0 +1,30 @@
+mutation CreateMySecondaryAccount {
+  createMySecondaryAccount {
+    account {
+      id
+      type
+      ownerId
+      owner {
+        id
+        name
+        pictureUrl
+        updatedAt
+      }
+      createdAt
+      updatedAt
+    }
+    accounts {
+      id
+      type
+      ownerId
+      owner {
+        id
+        name
+        pictureUrl
+        updatedAt
+      }
+      createdAt
+      updatedAt
+    }
+  }
+}

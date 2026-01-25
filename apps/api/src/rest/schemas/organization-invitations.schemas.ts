@@ -1,10 +1,11 @@
 import {
   OrganizationInvitationSortableField,
   OrganizationInvitationStatus,
-} from '@logusgraphics/grant-schema';
+  Tenant,
+} from '@grantjs/schema';
 
 import { z } from '@/lib/zod-openapi.lib';
-import { createSuccessResponseSchema } from '@/rest/schemas/common.schemas';
+import { createSuccessResponseSchema, scopeSchema } from '@/rest/schemas/common.schemas';
 
 export const organizationInvitationSchema = z.object({
   id: z.string(),
@@ -32,14 +33,11 @@ export const organizationInvitationWithRelationsSchema = organizationInvitationS
 });
 
 export const invitationParamsSchema = z.object({
-  id: z
-    .string()
-    .uuid('Invalid invitation ID')
-    .openapi({
-      description: 'UUID of the invitation to revoke',
-      example: '123e4567-e89b-12d3-a456-426614174002',
-      param: { in: 'path', name: 'id' },
-    }),
+  id: z.uuid('Invalid invitation ID').openapi({
+    description: 'UUID of the invitation to revoke',
+    example: '123e4567-e89b-12d3-a456-426614174002',
+    param: { in: 'path', name: 'id' },
+  }),
 });
 
 export const invitationTokenParamsSchema = z.object({
@@ -54,9 +52,8 @@ export const invitationTokenParamsSchema = z.object({
 });
 
 export const inviteMemberRequestSchema = z.object({
-  organizationId: z.uuid('Invalid organization ID').openapi({
-    description: 'UUID of the organization to invite the member to',
-    example: '123e4567-e89b-12d3-a456-426614174000',
+  scope: scopeSchema.openapi({
+    description: 'Scope context for authorization',
   }),
   email: z.string().email('Invalid email address').openapi({
     description: 'Email address of the user to invite',
@@ -71,6 +68,14 @@ export const inviteMemberRequestSchema = z.object({
 export const inviteMemberResponseSchema = createSuccessResponseSchema(organizationInvitationSchema);
 
 export const getOrganizationInvitationsQuerySchema = z.object({
+  scopeId: z.uuid('Invalid scope ID').openapi({
+    description: 'UUID of the scope for authorization',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  }),
+  tenant: z.enum(Object.values(Tenant) as [Tenant, ...Tenant[]]).openapi({
+    description: 'Tenant type for the scope',
+    example: 'organization',
+  }),
   organizationId: z.uuid('Invalid organization ID').openapi({
     description: 'UUID of the organization to list invitations for',
     example: '123e4567-e89b-12d3-a456-426614174000',
@@ -136,6 +141,9 @@ export const getOrganizationInvitationsResponseSchema = createSuccessResponseSch
 );
 
 export const acceptInvitationRequestSchema = z.object({
+  scope: scopeSchema.openapi({
+    description: 'Scope context for authorization',
+  }),
   token: z.string().min(1, 'Token is required').openapi({
     description: 'Unique invitation token received via email',
     example: 'inv_a1b2c3d4e5f6g7h8i9j0',
@@ -198,4 +206,10 @@ export const getInvitationByTokenQuerySchema = z.object({
         'Comma-separated list of relations to include. Available: organization, role, inviter',
       example: 'organization,role,inviter',
     }),
+});
+
+export const invitationActionBodySchema = z.object({
+  scope: scopeSchema.openapi({
+    description: 'Scope context for authorization',
+  }),
 });

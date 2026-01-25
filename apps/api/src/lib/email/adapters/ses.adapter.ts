@@ -1,8 +1,4 @@
-import {
-  SESClient,
-  SendEmailCommand,
-  SendEmailCommandInput,
-} from '@aws-sdk/client-ses';
+import { SESClient, SendEmailCommand, SendEmailCommandInput } from '@aws-sdk/client-ses';
 
 import { ApiError } from '@/lib/errors';
 import { createModuleLogger } from '@/lib/logger';

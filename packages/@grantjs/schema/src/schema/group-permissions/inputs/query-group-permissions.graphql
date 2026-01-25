@@ -1,0 +1,4 @@
+input QueryGroupPermissionsInput {
+  groupId: ID
+  permissionId: ID
+}

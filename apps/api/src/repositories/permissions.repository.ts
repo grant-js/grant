@@ -1,23 +1,19 @@
-import { tags } from '@logusgraphics/grant-database';
-import { PermissionModel, permissions } from '@logusgraphics/grant-database';
+import { PermissionModel, permissions, resources, tags } from '@grantjs/database';
 import {
-  QueryPermissionsArgs,
-  MutationUpdatePermissionArgs,
+  CreatePermissionInput,
   MutationDeletePermissionArgs,
+  MutationUpdatePermissionArgs,
   Permission,
   PermissionPage,
-  PermissionTag,
-  CreatePermissionInput,
   PermissionSearchableField,
-} from '@logusgraphics/grant-schema';
+  PermissionTag,
+  QueryPermissionsArgs,
+  Resource,
+} from '@grantjs/schema';
+import { and, eq, isNull } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-import {
-  EntityRepository,
-  BaseUpdateArgs,
-  BaseDeleteArgs,
-  RelationsConfig,
-} from '@/repositories/common';
+import { EntityRepository, RelationsConfig } from '@/repositories/common';
 import { SelectedFields } from '@/services/common';
 
 export class PermissionRepository extends EntityRepository<PermissionModel, Permission> {
@@ -31,6 +27,11 @@ export class PermissionRepository extends EntityRepository<PermissionModel, Perm
       table: tags,
       extract: (v: Array<PermissionTag>) =>
         v.map(({ tag, isPrimary }: PermissionTag) => ({ ...tag, isPrimary })),
+    },
+    resource: {
+      field: 'resource',
+      table: resources,
+      extract: (v: Resource) => v,
     },
   };
 
@@ -58,37 +59,43 @@ export class PermissionRepository extends EntityRepository<PermissionModel, Perm
     params: MutationUpdatePermissionArgs,
     transaction?: Transaction
   ): Promise<Permission> {
-    const baseParams: BaseUpdateArgs = {
-      id: params.id,
-      input: {
-        name: params.input.name,
-        description: params.input.description,
-        action: params.input.action,
-      },
-    };
-
-    return this.update(baseParams, transaction);
+    return this.update(params, transaction);
   }
 
   public async softDeletePermission(
     params: Omit<MutationDeletePermissionArgs, 'scope'>,
     transaction?: Transaction
   ): Promise<Permission> {
-    const baseParams: BaseDeleteArgs = {
-      id: params.id,
-    };
-
-    return this.softDelete(baseParams, transaction);
+    return this.softDelete(params, transaction);
   }
 
   public async hardDeletePermission(
     params: Omit<MutationDeletePermissionArgs, 'scope'>,
     transaction?: Transaction
   ): Promise<Permission> {
-    const baseParams: BaseDeleteArgs = {
-      id: params.id,
-    };
+    return this.hardDelete(params, transaction);
+  }
 
-    return this.hardDelete(baseParams, transaction);
+  public async getPermissionsByResourceId(
+    resourceId: string,
+    transaction?: Transaction
+  ): Promise<Permission[]> {
+    const db = transaction || this.db;
+    const result = await db
+      .select()
+      .from(permissions)
+      .where(and(eq(permissions.resourceId, resourceId), isNull(permissions.deletedAt)));
+
+    return result.map((p) => ({
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      action: p.action,
+      resourceId: p.resourceId,
+      condition: p.condition,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+      deletedAt: p.deletedAt,
+    })) as Permission[];
   }
 }

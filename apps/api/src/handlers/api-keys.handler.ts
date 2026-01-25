@@ -1,4 +1,4 @@
-import { DbSchema } from '@logusgraphics/grant-database';
+import { DbSchema } from '@grantjs/database';
 import {
   ApiKey,
   ApiKeyPage,
@@ -10,7 +10,7 @@ import {
   MutationRevokeApiKeyArgs,
   QueryApiKeysArgs,
   Tenant,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
@@ -18,9 +18,9 @@ import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 import { SelectedFields } from '@/services/common';
 
-import { ScopeHandler } from './base/scope-handler';
+import { CacheHandler } from './base/cache-handler';
 
-export class ApiKeysHandler extends ScopeHandler {
+export class ApiKeysHandler extends CacheHandler {
   constructor(
     readonly cache: IEntityCacheAdapter,
     readonly services: Services,
@@ -64,16 +64,10 @@ export class ApiKeysHandler extends ScopeHandler {
       const { scope, name, description, expiresAt } = input;
 
       switch (scope.tenant) {
+        case Tenant.OrganizationProjectUser:
+        case Tenant.AccountProjectUser:
         case Tenant.ProjectUser: {
-          const [projectId, userId] = scope.id.split(':');
-          if (!projectId || !userId) {
-            throw new BadRequestError(
-              'Invalid projectUser scope: id must be in format "projectId:userId"',
-              'errors:validation.invalid',
-              { field: 'scope.id' }
-            );
-          }
-
+          const { projectId, userId } = this.extractProjectUserFromScope(scope);
           const apiKey = await this.services.apiKeys.createApiKey(
             {
               name,

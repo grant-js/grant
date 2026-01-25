@@ -2,12 +2,15 @@
 
 import { useTranslations } from 'next-intl';
 
-import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
-import { DeleteProjectDialog } from '@/components/features/projects/DeleteProjectDialog';
-import { EditProjectDialog } from '@/components/features/projects/EditProjectDialog';
-import { ProjectPagination } from '@/components/features/projects/ProjectPagination';
-import { ProjectToolbar } from '@/components/features/projects/ProjectToolbar';
-import { ProjectViewer } from '@/components/features/projects/ProjectViewer';
+import {
+  ProjectDeleteDialog,
+  ProjectEditDialog,
+  ProjectPagination,
+  ProjectToolbar,
+  ProjectViewer,
+} from '@/components/features/projects';
+import { DashboardLayout } from '@/components/layout';
+import { PersonalWorkspaceSidebar } from '@/components/navigation';
 import { usePageTitle } from '@/hooks';
 
 export default function PersonalWorkspaceProjectsPage() {
@@ -15,16 +18,17 @@ export default function PersonalWorkspaceProjectsPage() {
   usePageTitle('projects');
 
   return (
-    <DashboardPageLayout
+    <DashboardLayout
       title={t('title')}
+      sidebar={<PersonalWorkspaceSidebar />}
       actions={<ProjectToolbar />}
       footer={<ProjectPagination />}
     >
       <>
         <ProjectViewer />
-        <DeleteProjectDialog />
-        <EditProjectDialog />
+        <ProjectDeleteDialog />
+        <ProjectEditDialog />
       </>
-    </DashboardPageLayout>
+    </DashboardLayout>
   );
 }

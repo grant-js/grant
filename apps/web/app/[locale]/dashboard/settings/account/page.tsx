@@ -2,11 +2,12 @@
 
 import { useMemo } from 'react';
 
-import { AccountType } from '@logusgraphics/grant-schema';
+import { AccountType } from '@grantjs/schema';
 import { useTranslations } from 'next-intl';
 
-import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
-import { AccountDetailsCard } from '@/components/settings/AccountDetailsCard';
+import { SettingAccountDetailsCard } from '@/components/features/settings';
+import { DashboardLayout } from '@/components/layout';
+import { SettingsSidebar } from '@/components/navigation';
 import { usePageTitle } from '@/hooks';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -31,21 +32,21 @@ export default function AccountSettingsPage() {
 
   if (!currentAccount) {
     return (
-      <DashboardPageLayout title={t('title')} variant="simple">
+      <DashboardLayout title={t('title')} variant="simple" sidebar={<SettingsSidebar />}>
         <div className="text-center text-muted-foreground">Loading account data...</div>
-      </DashboardPageLayout>
+      </DashboardLayout>
     );
   }
 
   return (
-    <DashboardPageLayout title={t('title')} variant="simple">
+    <DashboardLayout title={t('title')} variant="simple" sidebar={<SettingsSidebar />}>
       <div className="space-y-6">
-        <AccountDetailsCard
+        <SettingAccountDetailsCard
           accountType={accountType}
           hasComplementaryAccount={hasComplementaryAccount}
           accountCount={accounts.length}
         />
       </div>
-    </DashboardPageLayout>
+    </DashboardLayout>
   );
 }

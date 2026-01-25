@@ -1,7 +1,8 @@
+import { SupportedLocale } from '@grantjs/constants';
 import mjml from 'mjml';
 
 import { config } from '@/config';
-import { translateStatic, type SupportedLocale } from '@/i18n';
+import { translateStatic } from '@/i18n';
 
 export interface EmailTemplateParams {
   locale: SupportedLocale;
@@ -21,7 +22,7 @@ export function renderBaseEmailTemplate(props: BaseEmailTemplateProps): string {
     locale,
     primaryColor = '#2563eb',
     logoUrl,
-    companyName = 'Grant Platform',
+    companyName = 'Grant',
     subject,
     children,
     footerWarning,

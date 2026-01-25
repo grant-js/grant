@@ -1,5 +1,5 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { Auditable, Searchable, SortOrder } from '@logusgraphics/grant-schema';
+import { DbSchema } from '@grantjs/database';
+import { Auditable, Searchable, SortOrder } from '@grantjs/schema';
 import {
   SQL,
   and,
@@ -20,7 +20,7 @@ import { NotFoundError } from '@/lib/errors';
 import { createModuleLogger } from '@/lib/logger';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
-import type { Schema } from '@logusgraphics/grant-database';
+import type { Schema } from '@grantjs/database';
 
 interface BaseEntity extends Auditable {
   [key: string]: unknown;
@@ -253,10 +253,6 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
     }
   }
 
-  private first<T>(result: T | T[]): T {
-    return Array.isArray(result) ? result[0] : result;
-  }
-
   private withRelations(
     requestedFields?: Array<keyof TEntity> | null
   ): Record<keyof TEntity, any> | undefined {
@@ -303,6 +299,10 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
     });
 
     return mappedRow;
+  }
+
+  protected first<T>(result: T | T[]): T {
+    return Array.isArray(result) ? result[0] : result;
   }
 
   protected async query(

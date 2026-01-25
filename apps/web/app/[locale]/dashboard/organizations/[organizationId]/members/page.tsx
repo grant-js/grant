@@ -4,8 +4,9 @@ import { useParams } from 'next/navigation';
 
 import { useTranslations } from 'next-intl';
 
-import { DashboardPageLayout } from '@/components/common/dashboard/DashboardPageLayout';
 import { MemberPagination, MemberToolbar, MemberViewer } from '@/components/features/members';
+import { DashboardLayout } from '@/components/layout';
+import { OrganizationSidebar } from '@/components/navigation';
 import { usePageTitle } from '@/hooks';
 
 export default function OrganizationMembersPage() {
@@ -15,12 +16,13 @@ export default function OrganizationMembersPage() {
   usePageTitle('members');
 
   return (
-    <DashboardPageLayout
+    <DashboardLayout
       title={t('title')}
-      actions={<MemberToolbar organizationId={organizationId} />}
+      sidebar={<OrganizationSidebar />}
+      actions={<MemberToolbar />}
       footer={<MemberPagination />}
     >
       <MemberViewer organizationId={organizationId} />
-    </DashboardPageLayout>
+    </DashboardLayout>
   );
 }

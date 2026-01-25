@@ -1,0 +1,13 @@
+mutation RenewInvitation($id: ID!, $scope: Scope!) {
+  renewInvitation(id: $id, scope: $scope) {
+    id
+    organizationId
+    email
+    roleId
+    status
+    expiresAt
+    invitedBy
+    invitedAt
+    createdAt
+  }
+}

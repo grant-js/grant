@@ -1,7 +1,0 @@
-input UpdatePermissionInput {
-  name: String
-  description: String
-  action: String
-  tagIds: [ID!]
-  primaryTagId: ID
-}

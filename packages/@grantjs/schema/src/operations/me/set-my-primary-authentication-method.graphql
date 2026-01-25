@@ -1,0 +1,13 @@
+mutation SetMyPrimaryAuthenticationMethod($id: ID!) {
+  setMyPrimaryAuthenticationMethod(id: $id) {
+    id
+    userId
+    provider
+    providerId
+    isVerified
+    isPrimary
+    lastUsedAt
+    createdAt
+    updatedAt
+  }
+}

@@ -1,7 +1,12 @@
-import { OrganizationSortableField, SortOrder } from '@logusgraphics/grant-schema';
+import { OrganizationSortableField, SortOrder } from '@grantjs/schema';
 
 import { z } from '@/lib/zod-openapi.lib';
-import { createSuccessResponseSchema, listQuerySchema } from '@/rest/schemas/common.schemas';
+import {
+  createSuccessResponseSchema,
+  listQuerySchema,
+  scopeSchema,
+  tenantSchema,
+} from '@/rest/schemas/common.schemas';
 
 export const organizationSchema = z.object({
   id: z.string(),
@@ -31,6 +36,8 @@ export const organizationRelationsEnum = z.enum([
 ]);
 
 export const getOrganizationsQuerySchema = listQuerySchema.omit({ relations: true }).extend({
+  scopeId: z.uuid('Invalid scope ID'),
+  tenant: tenantSchema,
   sortField: z
     .enum(
       Object.values(OrganizationSortableField) as [
@@ -39,7 +46,7 @@ export const getOrganizationsQuerySchema = listQuerySchema.omit({ relations: tru
       ]
     )
     .optional(),
-  sortOrder: z.nativeEnum(SortOrder).optional(),
+  sortOrder: z.enum(Object.values(SortOrder) as [SortOrder, ...SortOrder[]]).optional(),
   relations: z
     .array(organizationRelationsEnum)
     .optional()
@@ -58,6 +65,7 @@ export const getOrganizationsResponseSchema = createSuccessResponseSchema(
 );
 
 export const createOrganizationRequestSchema = z.object({
+  scope: scopeSchema,
   name: z.string().min(1, 'Name is required').max(255, 'Name too long').openapi({
     description: 'Name of the organization',
     example: 'Acme Corporation',
@@ -67,6 +75,7 @@ export const createOrganizationRequestSchema = z.object({
 export const createOrganizationResponseSchema = createSuccessResponseSchema(organizationSchema);
 
 export const updateOrganizationRequestSchema = z.object({
+  scope: scopeSchema,
   name: z.string().min(1, 'Name is required').max(255, 'Name too long').optional().openapi({
     description: 'Updated name of the organization',
     example: 'Acme Corp',

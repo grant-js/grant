@@ -1,3 +1,0 @@
-extend type Query {
-  userAuthenticationMethods(input: GetUserAuthenticationMethodsInput!): [UserAuthenticationMethod!]!
-}

@@ -1,8 +1,8 @@
-# Grant Platform SaaS - Enterprise Features
+# Grant SaaS - Enterprise Features
 
 ## Overview
 
-Grant Platform SaaS is the enterprise-grade, hosted version of Grant Platform with advanced features, premium support, and managed infrastructure.
+Grant SaaS is the enterprise-grade, hosted version of Grant with advanced features, premium support, and managed infrastructure.
 
 ## 🚀 Enterprise Features
 

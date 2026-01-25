@@ -1,8 +1,8 @@
-# Grant Platform - Self-Hosting Guide
+# Grant - Self-Hosting Guide
 
 ## Overview
 
-Grant Platform is an open-source, multi-tenant RBAC/ACL system that can be self-hosted using AWS CloudFormation templates. This guide walks you through deploying your own instance.
+Grant is an open-source, multi-tenant RBAC/ACL system that can be self-hosted using AWS CloudFormation templates. This guide walks you through deploying your own instance.
 
 ## Architecture
 
@@ -29,7 +29,7 @@ The platform consists of:
 
    ```bash
    aws cloudformation create-stack \
-     --stack-name grant-platform \
+     --stack-name grant \
      --template-body file://infrastructure/cloudformation/main.yaml \
      --parameters file://infrastructure/cloudformation/parameters/dev.json \
      --capabilities CAPABILITY_IAM
@@ -70,8 +70,8 @@ The CloudFormation template will automatically configure:
 
 ```bash
 # Clone the repository
-git clone https://github.com/logusgraphics/grant-platform.git
-cd grant-platform
+git clone https://github.com/logusgraphics/grant.git
+cd grant
 
 # Install dependencies
 pnpm install
@@ -83,8 +83,8 @@ pnpm dev
 ## Support
 
 - **Documentation**: [docs.grant.logus.graphics](https://docs.grant.logus.graphics)
-- **Issues**: [GitHub Issues](https://github.com/logusgraphics/grant-platform/issues)
-- **Community**: [Discord](https://discord.gg/grant-platform)
+- **Issues**: [GitHub Issues](https://github.com/logusgraphics/grant/issues)
+- **Community**: [Discord](https://discord.gg/grant)
 
 ## License
 

@@ -1,0 +1,11 @@
+type Role implements Auditable {
+  id: ID!
+  name: String!
+  description: String
+  metadata: JSON!
+  groups: [Group!]
+  tags: [Tag!]
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}

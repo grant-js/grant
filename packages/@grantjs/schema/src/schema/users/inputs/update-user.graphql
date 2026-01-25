@@ -1,0 +1,9 @@
+input UpdateUserInput {
+  scope: Scope!
+  name: String
+  pictureUrl: String
+  metadata: JSON
+  tagIds: [ID!]
+  roleIds: [ID!]
+  primaryTagId: ID
+}

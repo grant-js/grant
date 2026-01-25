@@ -1,0 +1,10 @@
+extend type Query {
+  organizations(
+    scope: Scope!
+    page: Int
+    limit: Int
+    search: String
+    sort: OrganizationSortInput
+    ids: [ID!]
+  ): OrganizationPage!
+}

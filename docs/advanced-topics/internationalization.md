@@ -1,6 +1,6 @@
 # Internationalization (i18n) & Localization (l10n)
 
-Grant Platform provides comprehensive internationalization (i18n) and localization (l10n) support across both the API and web application, enabling you to serve users in multiple languages.
+Grant provides comprehensive internationalization (i18n) and localization (l10n) support across both the API and web application, enabling you to serve users in multiple languages.
 
 ## Overview
 
@@ -745,7 +745,7 @@ diff <(jq -r 'paths | join(".")' i18n/locales/en.json | sort) \
 
 ## 🎯 Summary
 
-Grant Platform's i18n/l10n implementation provides:
+Grant's i18n/l10n implementation provides:
 
 ✅ **Seamless Integration** - API and web app work together automatically  
 ✅ **Type Safety** - TypeScript ensures correct usage  
@@ -787,4 +787,4 @@ Want to add a new language or improve translations?
 
 ---
 
-**Questions?** Check the [FAQ](/troubleshooting/faq) or [file an issue](https://github.com/logusgraphics/grant-platform/issues).
+**Questions?** Check the [FAQ](/troubleshooting/faq) or [file an issue](https://github.com/logusgraphics/grant/issues).

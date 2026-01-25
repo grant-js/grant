@@ -1,5 +1,0 @@
-extend type Mutation {
-  deleteUserAuthenticationMethod(
-    input: DeleteUserAuthenticationMethodInput!
-  ): UserAuthenticationMethod!
-}

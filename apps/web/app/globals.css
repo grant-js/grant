@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* vanilla-jsoneditor themes */
+@import 'vanilla-jsoneditor/themes/jse-theme-dark.css';
+
 @layer base {
   :root {
     /* Design tokens */
@@ -62,6 +65,14 @@
     --input: oklch(0.922 0 0);
     --ring: oklch(0.566 0.232 264);
     --radius: 0.625rem;
+    --sidebar-background: oklch(0.98 0 0);
+    --sidebar-foreground: oklch(0.261 0.01 240);
+    --sidebar-primary: oklch(0.1 0.01 240);
+    --sidebar-primary-foreground: oklch(0.98 0 0);
+    --sidebar-accent: oklch(0.88 0.01 240);
+    --sidebar-accent-foreground: oklch(0.1 0.01 240);
+    --sidebar-border: oklch(0.91 0.02 220);
+    --sidebar-ring: oklch(0.598 0.18 217.2);
   }
 
   .dark {
@@ -90,6 +101,14 @@
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
     --ring: oklch(0.556 0 0);
+    --sidebar-background: oklch(0.22 0 0);
+    --sidebar-foreground: oklch(0.959 0.01 240);
+    --sidebar-primary: oklch(0.48 0.15 224.3);
+    --sidebar-primary-foreground: oklch(1 0 0);
+    --sidebar-accent: oklch(0.3 0 0);
+    --sidebar-accent-foreground: oklch(0.959 0 0);
+    --sidebar-border: oklch(0.25 0 0);
+    --sidebar-ring: oklch(0.598 0.18 217.2);
   }
 }
 

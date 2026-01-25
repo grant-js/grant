@@ -1,15 +1,15 @@
-import { DbSchema, groupTagsAuditLogs } from '@logusgraphics/grant-database';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema, groupTagsAuditLogs } from '@grantjs/database';
 import {
   AddGroupTagInput,
   GroupTag,
   RemoveGroupTagInput,
   UpdateGroupTagInput,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { BadRequestError, ConflictError, NotFoundError, ValidationError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
@@ -31,7 +31,7 @@ import {
 export class GroupTagService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(groupTagsAuditLogs, 'groupTagId', user, db);

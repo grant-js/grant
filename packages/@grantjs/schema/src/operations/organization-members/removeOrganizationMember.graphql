@@ -1,0 +1,24 @@
+mutation RemoveOrganizationMember($userId: ID!, $input: RemoveOrganizationMemberInput!) {
+  removeOrganizationMember(userId: $userId, input: $input) {
+    id
+    name
+    email
+    type
+    role {
+      id
+      name
+      description
+    }
+    status
+    user {
+      id
+      name
+    }
+    invitation {
+      id
+      email
+      status
+    }
+    createdAt
+  }
+}

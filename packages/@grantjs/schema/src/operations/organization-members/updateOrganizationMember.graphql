@@ -1,0 +1,24 @@
+mutation UpdateOrganizationMember($userId: ID!, $input: UpdateOrganizationMemberInput!) {
+  updateOrganizationMember(userId: $userId, input: $input) {
+    id
+    name
+    email
+    type
+    role {
+      id
+      name
+      description
+    }
+    status
+    user {
+      id
+      name
+    }
+    invitation {
+      id
+      email
+      status
+    }
+    createdAt
+  }
+}

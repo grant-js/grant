@@ -1,7 +1,0 @@
-input UpdateGroupInput {
-  name: String
-  description: String
-  tagIds: [ID!]
-  permissionIds: [ID!]
-  primaryTagId: ID
-}

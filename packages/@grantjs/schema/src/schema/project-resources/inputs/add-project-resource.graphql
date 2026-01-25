@@ -1,0 +1,4 @@
+input AddProjectResourceInput {
+  projectId: ID!
+  resourceId: ID!
+}

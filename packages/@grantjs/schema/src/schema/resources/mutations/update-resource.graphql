@@ -1,0 +1,3 @@
+extend type Mutation {
+  updateResource(id: ID!, input: UpdateResourceInput!): Resource!
+}

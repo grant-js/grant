@@ -1,10 +1,15 @@
-import { DbSchema, roleGroupsAuditLogs } from '@logusgraphics/grant-database';
-import { AddRoleGroupInput, RemoveRoleGroupInput, RoleGroup } from '@logusgraphics/grant-schema';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema, roleGroupsAuditLogs } from '@grantjs/database';
+import {
+  AddRoleGroupInput,
+  QueryRoleGroupsInput,
+  RemoveRoleGroupInput,
+  RoleGroup,
+} from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
@@ -23,7 +28,7 @@ import {
 export class RoleGroupService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(roleGroupsAuditLogs, 'roleGroupId', user, db);
@@ -67,18 +72,23 @@ export class RoleGroupService extends AuditService {
   }
 
   public async getRoleGroups(
-    params: { roleId: string },
+    params: QueryRoleGroupsInput,
     transaction?: Transaction
   ): Promise<RoleGroup[]> {
     const context = 'RoleGroupService.getRoleGroups';
     const validatedParams = validateInput(queryRoleGroupsArgsSchema, params, context);
 
-    const { roleId } = validatedParams;
+    const { roleId, groupId } = validatedParams;
 
-    await this.roleExists(roleId, transaction);
+    if (roleId) {
+      await this.roleExists(roleId, transaction);
+    }
+    if (groupId) {
+      await this.groupExists(groupId, transaction);
+    }
 
     const result = await this.repositories.roleGroupRepository.getRoleGroups(
-      { roleId },
+      validatedParams,
       transaction
     );
     return validateOutput(createDynamicSingleSchema(roleGroupSchema).array(), result, context);

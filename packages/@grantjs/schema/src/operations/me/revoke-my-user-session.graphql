@@ -1,0 +1,6 @@
+mutation RevokeMyUserSession($id: ID!) {
+  revokeMyUserSession(id: $id) {
+    success
+    message
+  }
+}

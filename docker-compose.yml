@@ -1,9 +1,9 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: grant-platform-postgres
+    container_name: grant-postgres
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-grant_platform_db}
+      POSTGRES_DB: ${POSTGRES_DB:-grant_db}
       POSTGRES_USER: ${POSTGRES_USER:-grant_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-grant_password}
       POSTGRES_INITDB_ARGS: '--encoding=UTF-8 --lc-collate=C --lc-ctype=C'
@@ -12,21 +12,17 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test:
-        [
-          'CMD-SHELL',
-          'pg_isready -U ${POSTGRES_USER:-grant_user} -d ${POSTGRES_DB:-grant_platform_db}',
-        ]
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-grant_user} -d ${POSTGRES_DB:-grant_db}']
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
     networks:
-      - grant-platform-network
+      - grant-network
 
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: grant-platform-pgadmin
+    container_name: grant-pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@grant.dev}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-grant_password}
@@ -39,11 +35,11 @@ services:
       - postgres
     restart: unless-stopped
     networks:
-      - grant-platform-network
+      - grant-network
 
   redis:
     image: redis:7-alpine
-    container_name: grant-platform-redis
+    container_name: grant-redis
     command: redis-server --requirepass ${REDIS_PASSWORD:-grant_redis_password}
     ports:
       - '6379:6379'
@@ -56,11 +52,11 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - grant-platform-network
+      - grant-network
 
   redisinsight:
     image: redis/redisinsight:latest
-    container_name: grant-platform-redisinsight
+    container_name: grant-redisinsight
     ports:
       - '5540:5540'
     volumes:
@@ -69,7 +65,7 @@ services:
       - redis
     restart: unless-stopped
     networks:
-      - grant-platform-network
+      - grant-network
 
 volumes:
   postgres_data:
@@ -78,5 +74,5 @@ volumes:
   redisinsight_data:
 
 networks:
-  grant-platform-network:
+  grant-network:
     driver: bridge

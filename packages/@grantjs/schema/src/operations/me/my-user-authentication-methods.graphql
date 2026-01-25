@@ -1,0 +1,13 @@
+query MyUserAuthenticationMethods {
+  myUserAuthenticationMethods {
+    id
+    userId
+    provider
+    providerId
+    isVerified
+    isPrimary
+    lastUsedAt
+    createdAt
+    updatedAt
+  }
+}

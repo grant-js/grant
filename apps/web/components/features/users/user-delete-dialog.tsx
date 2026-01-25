@@ -1,0 +1,57 @@
+'use client';
+
+import { useGrant } from '@grantjs/client/react';
+import { ResourceAction, ResourceSlug } from '@grantjs/constants';
+
+import { DeleteDialog } from '@/components/common';
+import { useScopeFromParams } from '@/hooks/common';
+import { useUserMutations } from '@/hooks/users';
+import { useUsersStore } from '@/stores/users.store';
+
+export function UserDeleteDialog() {
+  const scope = useScopeFromParams();
+  const { deleteUser } = useUserMutations();
+  const userToDelete = useUsersStore((state) => state.userToDelete);
+  const setUserToDelete = useUsersStore((state) => state.setUserToDelete);
+
+  const canDelete = useGrant(ResourceSlug.User, ResourceAction.Delete, {
+    scope: scope!,
+  });
+
+  if (!scope || !canDelete) {
+    return null;
+  }
+
+  const handleDelete = async (id: string, name: string) => {
+    await deleteUser({ id, scope: scope! }, name);
+  };
+
+  const handleSuccess = async () => {
+    if (!userToDelete) {
+      return;
+    }
+    setUserToDelete(null);
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setUserToDelete(null);
+    }
+  };
+
+  return (
+    <DeleteDialog
+      open={!!userToDelete}
+      onOpenChange={handleOpenChange}
+      entityToDelete={userToDelete}
+      title="deleteDialog.title"
+      description="deleteDialog.description"
+      cancelText="deleteDialog.cancel"
+      confirmText="deleteDialog.confirm"
+      deletingText="deleteDialog.deleting"
+      onDelete={handleDelete}
+      onSuccess={handleSuccess}
+      translationNamespace="users"
+    />
+  );
+}

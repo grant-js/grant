@@ -1,6 +1,6 @@
 # REST API
 
-The Grant Platform provides a comprehensive REST API alongside the GraphQL API, giving you flexibility in how you interact with the platform. The REST API follows RESTful conventions and uses JSON for request and response payloads.
+The Grant provides a comprehensive REST API alongside the GraphQL API, giving you flexibility in how you interact with the platform. The REST API follows RESTful conventions and uses JSON for request and response payloads.
 
 ## Interactive Documentation
 
@@ -404,7 +404,7 @@ POST /api/tags
 
 ## Multi-Tenancy & Scoping
 
-The Grant Platform implements hierarchical multi-tenancy with three levels:
+The Grant implements hierarchical multi-tenancy with three levels:
 
 1. **Account** - Top-level tenant (personal or organization)
 2. **Organization** - Mid-level tenant (within an account)

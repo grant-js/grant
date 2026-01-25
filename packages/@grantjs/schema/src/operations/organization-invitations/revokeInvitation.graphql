@@ -1,0 +1,8 @@
+mutation RevokeInvitation($id: ID!, $scope: Scope!) {
+  revokeInvitation(id: $id, scope: $scope) {
+    id
+    email
+    status
+    deletedAt
+  }
+}

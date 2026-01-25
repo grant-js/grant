@@ -1,4 +1,4 @@
-import { MutationResolvers, MutationVerifyEmailArgs } from '@logusgraphics/grant-schema';
+import { MutationResolvers, MutationVerifyEmailArgs } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
 
@@ -7,5 +7,5 @@ export const verifyEmail: MutationResolvers<GraphqlContext>['verifyEmail'] = asy
   args: MutationVerifyEmailArgs,
   context: GraphqlContext
 ) => {
-  return context.handlers.accounts.verifyEmail(args.input.token, context.locale);
+  return context.handlers.auth.verifyEmail(args.input.token, context.locale);
 };

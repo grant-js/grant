@@ -1,4 +1,4 @@
-import { MutationResetPasswordArgs, MutationResolvers } from '@logusgraphics/grant-schema';
+import { MutationResetPasswordArgs, MutationResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
 
@@ -7,7 +7,7 @@ export const resetPassword: MutationResolvers<GraphqlContext>['resetPassword'] =
   args: MutationResetPasswordArgs,
   context: GraphqlContext
 ) => {
-  return context.handlers.accounts.resetPassword(
+  return context.handlers.auth.resetPassword(
     args.input.token,
     args.input.newPassword,
     context.locale

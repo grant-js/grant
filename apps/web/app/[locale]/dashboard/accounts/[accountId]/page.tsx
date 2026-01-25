@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 
 import { useParams } from 'next/navigation';
 
-import { AccountType } from '@logusgraphics/grant-schema';
+import { AccountType } from '@grantjs/schema';
 import { useLocale } from 'next-intl';
 
 import { FullPageLoader } from '@/components/common';

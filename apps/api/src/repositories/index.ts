@@ -1,6 +1,8 @@
-import { DbSchema } from '@logusgraphics/grant-database';
+import { DbSchema } from '@grantjs/database';
 
+import { AccountProjectTagRepository } from './account-project-tags.repository';
 import { AccountProjectRepository } from './account-projects.repository';
+import { AccountRoleRepository } from './account-roles.repository';
 import { AccountRepository } from './accounts.repository';
 import { ApiKeyRepository } from './api-keys.repository';
 import { GroupPermissionRepository } from './group-permissions.repository';
@@ -20,11 +22,14 @@ import { PermissionTagRepository } from './permission-tags.repository';
 import { PermissionRepository } from './permissions.repository';
 import { ProjectGroupRepository } from './project-groups.repository';
 import { ProjectPermissionRepository } from './project-permissions.repository';
+import { ProjectResourceRepository } from './project-resources.repository';
 import { ProjectRoleRepository } from './project-roles.repository';
 import { ProjectTagRepository } from './project-tags.repository';
 import { ProjectUserApiKeyRepository } from './project-user-api-keys.repository';
 import { ProjectUserRepository } from './project-users.repository';
 import { ProjectRepository } from './projects.repository';
+import { ResourceTagRepository } from './resource-tags.repository';
+import { ResourceRepository } from './resources.repository';
 import { RoleGroupRepository } from './role-groups.repository';
 import { RoleTagRepository } from './role-tags.repository';
 import { RoleRepository } from './roles.repository';
@@ -40,6 +45,8 @@ export type Repositories = ReturnType<typeof createRepositories>;
 export function createRepositories(db: DbSchema) {
   return {
     accountProjectRepository: new AccountProjectRepository(db),
+    accountProjectTagRepository: new AccountProjectTagRepository(db),
+    accountRoleRepository: new AccountRoleRepository(db),
     accountRepository: new AccountRepository(db),
     apiKeyRepository: new ApiKeyRepository(db),
     groupPermissionRepository: new GroupPermissionRepository(db),
@@ -59,11 +66,14 @@ export function createRepositories(db: DbSchema) {
     permissionRepository: new PermissionRepository(db),
     projectGroupRepository: new ProjectGroupRepository(db),
     projectPermissionRepository: new ProjectPermissionRepository(db),
+    projectResourceRepository: new ProjectResourceRepository(db),
     projectRoleRepository: new ProjectRoleRepository(db),
     projectTagRepository: new ProjectTagRepository(db),
     projectUserApiKeyRepository: new ProjectUserApiKeyRepository(db),
     projectUserRepository: new ProjectUserRepository(db),
     projectRepository: new ProjectRepository(db),
+    resourceRepository: new ResourceRepository(db),
+    resourceTagRepository: new ResourceTagRepository(db),
     roleGroupRepository: new RoleGroupRepository(db),
     roleTagRepository: new RoleTagRepository(db),
     roleRepository: new RoleRepository(db),

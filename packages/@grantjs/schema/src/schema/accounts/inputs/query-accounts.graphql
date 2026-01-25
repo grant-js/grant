@@ -1,0 +1,7 @@
+input QueryAccountsInput {
+  page: Int
+  limit: Int
+  search: String
+  sort: AccountSortInput
+  ids: [ID!]
+}

@@ -1,7 +1,7 @@
-import { AccountType, SortOrder } from '@logusgraphics/grant-schema';
+import { AccountType } from '@grantjs/schema';
 
 import { z } from '@/lib/zod-openapi.lib';
-import { createSuccessResponseSchema, listQuerySchema } from '@/rest/schemas/common.schemas';
+import { createSuccessResponseSchema } from '@/rest/schemas/common.schemas';
 
 export const accountTypeSchema = z.enum(
   Object.values(AccountType) as [AccountType, ...AccountType[]]
@@ -16,33 +16,9 @@ export const accountSchema = z.object({
   deletedAt: z.string().nullable(),
 });
 
-export const accountWithRelationsSchema = accountSchema.extend({
-  projects: z.array(z.unknown()).optional(),
-  owner: z.unknown().optional(),
+export const deleteAccountBodySchema = z.object({
+  hardDelete: z.boolean().optional().default(false),
 });
-
-export const accountRelationsEnum = z.enum(['projects', 'owner']);
-
-export const getAccountsQuerySchema = listQuerySchema.omit({ relations: true }).extend({
-  sortField: z.enum(['type', 'createdAt', 'updatedAt']).optional(),
-  sortOrder: z.nativeEnum(SortOrder).optional(),
-  relations: z
-    .array(accountRelationsEnum)
-    .optional()
-    .openapi({
-      description: 'Related entities to include in the response',
-      example: ['projects', 'owner'],
-    }),
-});
-
-export const getAccountsResponseSchema = createSuccessResponseSchema(
-  z.object({
-    items: z.array(accountWithRelationsSchema),
-    totalCount: z.number(),
-    hasNextPage: z.boolean(),
-  }),
-  'Paginated list of accounts'
-);
 
 export const createAccountRequestSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
@@ -55,10 +31,6 @@ export const createAccountResponseSchema = createSuccessResponseSchema(
   accountSchema,
   'Successfully created account'
 );
-
-export const accountParamsSchema = z.object({
-  id: z.uuid('Invalid account ID'),
-});
 
 export const deleteAccountQuerySchema = z.object({
   hardDelete: z
@@ -76,8 +48,6 @@ export const deleteAccountResponseSchema = createSuccessResponseSchema(
   accountSchema,
   'Successfully deleted account'
 );
-
-export const createComplementaryAccountRequestSchema = z.object({});
 
 export const createComplementaryAccountResponseSchema = createSuccessResponseSchema(
   z.object({

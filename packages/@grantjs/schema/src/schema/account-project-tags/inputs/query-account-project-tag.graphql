@@ -1,0 +1,5 @@
+input QueryAccountProjectTagInput {
+  accountId: ID!
+  projectId: ID!
+  tagId: ID
+}

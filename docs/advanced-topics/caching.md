@@ -1,6 +1,6 @@
 # Caching System
 
-Grant Platform features a flexible, strategy-based caching system that supports both **in-memory** and **Redis** backends, enabling seamless scaling from single-instance development to distributed production deployments.
+Grant features a flexible, strategy-based caching system that supports both **in-memory** and **Redis** backends, enabling seamless scaling from single-instance development to distributed production deployments.
 
 ## Overview
 
@@ -197,7 +197,7 @@ Add the Redis service to your `docker-compose.yml`:
 services:
   redis:
     image: redis:7-alpine
-    container_name: grant-platform-redis
+    container_name: grant-redis
     command: redis-server --requirepass grant_redis_password
     ports:
       - '6379:6379'
@@ -210,13 +210,13 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - grant-platform-network
+      - grant-network
 
 volumes:
   redis_data:
 
 networks:
-  grant-platform-network:
+  grant-network:
     driver: bridge
 ```
 
@@ -230,10 +230,10 @@ docker-compose up redis -d
 docker ps | grep redis
 
 # Check Redis logs
-docker logs grant-platform-redis
+docker logs grant-redis
 
 # Connect to Redis CLI
-docker exec -it grant-platform-redis redis-cli -a grant_redis_password
+docker exec -it grant-redis redis-cli -a grant_redis_password
 ```
 
 ## Usage Examples
@@ -293,7 +293,7 @@ The cache system is designed to be extensible. You can add new cache adapters fo
 
 ```typescript
 // adapters/memcached-cache.adapter.ts
-import { ICacheAdapter } from '@/lib/cache/cache-adapter.interface';
+import { ICacheAdapter } from '@/lib/cache';
 
 export class MemcachedAdapter implements ICacheAdapter {
   private client: MemcachedClient;
@@ -395,10 +395,10 @@ docker ps | grep redis
 docker-compose up redis -d
 
 # Check Redis logs
-docker logs grant-platform-redis
+docker logs grant-redis
 
 # Verify Redis connection
-docker exec -it grant-platform-redis redis-cli -a grant_redis_password ping
+docker exec -it grant-redis redis-cli -a grant_redis_password ping
 # Should return: PONG
 ```
 

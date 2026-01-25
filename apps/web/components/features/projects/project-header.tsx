@@ -1,0 +1,30 @@
+'use client';
+
+import { TagColor } from '@grantjs/constants';
+import { Project, Tag } from '@grantjs/schema';
+import { useTranslations } from 'next-intl';
+
+import { CardHeader } from '@/components/common';
+
+import { ProjectActions } from './project-actions';
+
+interface ProjectHeaderProps {
+  project: Project;
+  tags: Tag[];
+}
+
+export function ProjectHeader({ tags, project }: ProjectHeaderProps) {
+  const t = useTranslations('projects');
+
+  return (
+    <CardHeader
+      avatar={{
+        initial: project.name.charAt(0).toUpperCase(),
+      }}
+      title={project.name}
+      description={project.description || t('card.noDescription')}
+      color={tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor}
+      actions={<ProjectActions project={project} />}
+    />
+  );
+}

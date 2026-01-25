@@ -1,0 +1,6 @@
+input MyUserSessionsInput {
+  page: Int
+  limit: Int
+  search: String
+  audience: String
+}

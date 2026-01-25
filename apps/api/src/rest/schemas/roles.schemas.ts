@@ -1,4 +1,4 @@
-import { RoleSortableField, SortOrder } from '@logusgraphics/grant-schema';
+import { RoleSortableField, SortOrder } from '@grantjs/schema';
 
 import { z } from '@/lib/zod-openapi.lib';
 import {

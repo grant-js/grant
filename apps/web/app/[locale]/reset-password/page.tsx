@@ -11,8 +11,8 @@ import { useTranslations } from 'next-intl';
 import { useForm, useWatch } from 'react-hook-form';
 import * as z from 'zod';
 
-import { PasswordStrengthIndicator } from '@/components/common/PasswordStrengthIndicator';
-import { AuthPageLayout } from '@/components/layout/AuthPageLayout';
+import { PasswordInput, PasswordStrengthIndicator } from '@/components/common';
+import { AuthLayout } from '@/components/layout';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,7 +23,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { PasswordInput } from '@/components/ui/password-input';
 import { useAuthMutations, usePageTitle } from '@/hooks';
 import { passwordPolicySchema } from '@/lib/validation/password-policy';
 
@@ -195,8 +194,8 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <AuthPageLayout title={t('resetPassword.title')} description={t('resetPassword.description')}>
+    <AuthLayout title={t('resetPassword.title')} description={t('resetPassword.description')}>
       {renderContent()}
-    </AuthPageLayout>
+    </AuthLayout>
   );
 }

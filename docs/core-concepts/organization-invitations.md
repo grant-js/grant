@@ -5,7 +5,7 @@ description: Email-based invitation system and comprehensive member management f
 
 # Organization Members & Invitations
 
-Grant Platform provides a robust email-based invitation system for adding members to organizations, along with comprehensive member management capabilities. This document explains how the invitation flow works, member management actions, the role of organization roles, and best practices for member management.
+Grant provides a robust email-based invitation system for adding members to organizations, along with comprehensive member management capabilities. This document explains how the invitation flow works, member management actions, the role of organization roles, and best practices for member management.
 
 ## Overview
 

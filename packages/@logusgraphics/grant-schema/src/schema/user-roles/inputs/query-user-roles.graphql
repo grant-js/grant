@@ -1,3 +1,0 @@
-input QueryUserRolesInput {
-  userId: ID!
-}

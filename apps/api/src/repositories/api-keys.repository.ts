@@ -1,11 +1,12 @@
-import { ApiKeyModel, apiKeys, users } from '@logusgraphics/grant-database';
+import { ApiKeyModel, apiKeys, users } from '@grantjs/database';
 import {
   ApiKey,
   ApiKeyPage,
   ApiKeySearchableField,
+  CreateApiKeyInput,
   QueryApiKeysArgs,
   User,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 import { eq } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -145,12 +146,9 @@ export class ApiKeyRepository extends EntityRepository<ApiKeyModel, ApiKey> {
   }
 
   public async createApiKey(
-    params: {
+    params: Omit<CreateApiKeyInput, 'scope'> & {
       clientId: string;
       clientSecretHash: string;
-      name?: string | null;
-      description?: string | null;
-      expiresAt?: Date | null;
       createdBy: string;
     },
     transaction?: Transaction

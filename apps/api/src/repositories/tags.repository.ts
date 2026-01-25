@@ -1,13 +1,13 @@
-import { TagModel, tags } from '@logusgraphics/grant-database';
+import { TagModel, tags } from '@grantjs/database';
 import {
   QueryTagsArgs,
   MutationDeleteTagArgs,
   Tag,
   TagPage,
   CreateTagInput,
-  MutationUpdateTagArgs,
   TagSearchableField,
-} from '@logusgraphics/grant-schema';
+  UpdateTagInput,
+} from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import {
@@ -52,15 +52,13 @@ export class TagRepository extends EntityRepository<TagModel, Tag> {
   }
 
   public async updateTag(
-    params: Omit<MutationUpdateTagArgs, 'scope'>,
+    id: string,
+    input: UpdateTagInput,
     transaction?: Transaction
   ): Promise<Tag> {
     const baseParams: BaseUpdateArgs = {
-      id: params.id,
-      input: {
-        name: params.input.name,
-        color: params.input.color,
-      },
+      id,
+      input,
     };
 
     return this.update(baseParams, transaction);

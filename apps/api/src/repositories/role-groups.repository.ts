@@ -1,10 +1,10 @@
-import { RoleGroupModel, roleGroups } from '@logusgraphics/grant-database';
+import { RoleGroupModel, roleGroups } from '@grantjs/database';
 import {
   AddRoleGroupInput,
   QueryRoleGroupsInput,
   RemoveRoleGroupInput,
   RoleGroup,
-} from '@logusgraphics/grant-schema';
+} from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';

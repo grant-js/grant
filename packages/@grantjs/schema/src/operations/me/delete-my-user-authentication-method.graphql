@@ -1,0 +1,13 @@
+mutation DeleteMyUserAuthenticationMethod($id: ID!) {
+  deleteMyUserAuthenticationMethod(id: $id) {
+    id
+    userId
+    provider
+    providerId
+    isVerified
+    isPrimary
+    lastUsedAt
+    createdAt
+    updatedAt
+  }
+}

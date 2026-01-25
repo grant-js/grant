@@ -5,7 +5,7 @@ description: Flexible email delivery system using the Adapter Pattern
 
 # Email Service & Adapters
 
-Grant Platform features a flexible, adapter-based email delivery system that supports multiple email providers (Mailgun, Mailjet, SMTP, Console) through a unified interface. This document explains the architecture, implementation, and usage of the email system.
+Grant features a flexible, adapter-based email delivery system that supports multiple email providers (Mailgun, Mailjet, SMTP, Console) through a unified interface. This document explains the architecture, implementation, and usage of the email system.
 
 ## Overview
 
@@ -424,7 +424,7 @@ export class MailjetAdapter implements IEmailAdapter {
           {
             From: {
               Email: this.config.from,
-              Name: this.config.fromName || 'Grant Platform',
+              Name: this.config.fromName || 'Grant',
             },
             To: Array.isArray(message.to)
               ? message.to.map((email) => ({ Email: email }))
@@ -451,7 +451,7 @@ EMAIL_STRATEGY=mailjet
 MAILJET_API_KEY=your-api-key
 MAILJET_API_SECRET=your-api-secret
 EMAIL_FROM=noreply@yourdomain.com
-EMAIL_FROM_NAME=Grant Platform
+EMAIL_FROM_NAME=Grant
 ```
 
 **Use Cases:**
@@ -489,7 +489,7 @@ EMAIL_STRATEGY=console
 
 # Default sender
 EMAIL_FROM=noreply@yourdomain.com
-EMAIL_FROM_NAME=Grant Platform
+EMAIL_FROM_NAME=Grant
 
 # ============================================================================
 # SMTP CONFIGURATION (when EMAIL_STRATEGY=smtp)

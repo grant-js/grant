@@ -1,0 +1,6 @@
+enum UserSessionSearchableField {
+  token
+  audience
+  userAgent
+  ipAddress
+}

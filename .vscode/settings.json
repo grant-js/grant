@@ -10,9 +10,10 @@
   "editor.defaultFormatter": "esbenp.prettier-vscode",
 
   // Enable ESLint auto-fix on save
+  // Note: We let ESLint handle import ordering via import/order rule
+  // TypeScript organizeImports is disabled to avoid conflicts
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit",
-    "source.organizeImports": "explicit"
+    "source.fixAll.eslint": "explicit"
   },
 
   // File-specific settings
@@ -50,10 +51,11 @@
   "eslint.workingDirectories": [
     "apps/api",
     "apps/web",
-    "packages/@logusgraphics/grant-core",
-    "packages/@logusgraphics/grant-database",
-    "packages/@logusgraphics/grant-schema",
-    "packages/@logusgraphics/grant-constants"
+    "packages/@grantjs/core",
+    "packages/@grantjs/client",
+    "packages/@grantjs/database",
+    "packages/@grantjs/schema",
+    "packages/@grantjs/constants"
   ],
 
   // Prettier settings
@@ -61,7 +63,8 @@
   "prettier.useEditorConfig": false,
 
   // TypeScript settings
-  "typescript.preferences.organizeImportsOnSave": true,
+  // organizeImportsOnSave disabled - ESLint import/order handles import organization
+  "typescript.preferences.organizeImportsOnSave": false,
   "typescript.suggest.autoImports": true,
 
   // File associations

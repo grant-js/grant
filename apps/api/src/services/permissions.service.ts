@@ -1,18 +1,18 @@
-import { DbSchema } from '@logusgraphics/grant-database';
-import { permissionAuditLogs } from '@logusgraphics/grant-database';
+import { GrantAuth } from '@grantjs/core';
+import { DbSchema } from '@grantjs/database';
+import { permissionAuditLogs } from '@grantjs/database';
 import {
   QueryPermissionsArgs,
-  MutationUpdatePermissionArgs,
   MutationDeletePermissionArgs,
   Permission,
   PermissionPage,
   CreatePermissionInput,
-} from '@logusgraphics/grant-schema';
+  UpdatePermissionInput,
+} from '@grantjs/schema';
 
 import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
-import { AuthenticatedUser } from '@/types';
 
 import {
   AuditService,
@@ -34,7 +34,7 @@ import {
 export class PermissionService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: AuthenticatedUser | null,
+    user: GrantAuth | null,
     db: DbSchema
   ) {
     super(permissionAuditLogs, 'permissionId', user, db);
@@ -79,6 +79,16 @@ export class PermissionService extends AuditService {
     return result;
   }
 
+  public async getPermissionsByResourceId(
+    resourceId: string,
+    transaction?: Transaction
+  ): Promise<Permission[]> {
+    return await this.repositories.permissionRepository.getPermissionsByResourceId(
+      resourceId,
+      transaction
+    );
+  }
+
   public async createPermission(
     params: Omit<CreatePermissionInput, 'scope' | 'tagIds'>,
     transaction?: Transaction
@@ -109,13 +119,12 @@ export class PermissionService extends AuditService {
   }
 
   public async updatePermission(
-    params: MutationUpdatePermissionArgs,
+    id: string,
+    input: UpdatePermissionInput,
     transaction?: Transaction
   ): Promise<Permission> {
     const context = 'PermissionService.updatePermission';
-    const validatedParams = validateInput(updatePermissionParamsSchema, params, context);
-
-    const { id, input } = validatedParams;
+    validateInput(updatePermissionParamsSchema, { id, input }, context);
 
     const oldPermission = await this.getPermission(id, transaction);
     const updatedPermission = await this.repositories.permissionRepository.updatePermission(

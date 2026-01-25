@@ -1,15 +1,15 @@
 ---
 title: Installation
-description: Installation guide for Grant Platform
+description: Installation guide for Grant
 ---
 
 # Installation
 
-This guide covers different installation methods for Grant Platform, from local development to production deployment.
+This guide covers different installation methods for Grant, from local development to production deployment.
 
 ## Prerequisites
 
-Before installing Grant Platform, ensure you have:
+Before installing Grant, ensure you have:
 
 - **Node.js** 18+ and **pnpm**
 - **PostgreSQL** 14+ (or Docker for containerized setup)
@@ -22,8 +22,8 @@ Before installing Grant Platform, ensure you have:
 #### Clone the Repository
 
 ```bash
-git clone https://github.com/logusgraphics/grant-platform.git
-cd grant-platform
+git clone https://github.com/logusgraphics/grant.git
+cd grant
 ```
 
 #### Install Dependencies
@@ -38,12 +38,12 @@ pnpm install
 # Start PostgreSQL with Docker
 docker run --name grant-postgres \
   -e POSTGRES_PASSWORD=password \
-  -e POSTGRES_DB=grant_platform \
+  -e POSTGRES_DB=grant \
   -p 5432:5432 \
   -d postgres:14
 
 # Set environment variables
-export DATABASE_URL="postgresql://postgres:password@localhost:5432/grant_platform"
+export DATABASE_URL="postgresql://postgres:password@localhost:5432/grant"
 
 # Run migrations
 pnpm db:migrate
@@ -69,8 +69,8 @@ pnpm dev:web    # Web app on :3000
 
 ```bash
 # Clone the repository
-git clone https://github.com/logusgraphics/grant-platform.git
-cd grant-platform
+git clone https://github.com/logusgraphics/grant.git
+cd grant
 
 # Start all services
 docker-compose up -d
@@ -88,7 +88,7 @@ docker-compose exec api pnpm db:seed
 # Start PostgreSQL
 docker run --name grant-postgres \
   -e POSTGRES_PASSWORD=password \
-  -e POSTGRES_DB=grant_platform \
+  -e POSTGRES_DB=grant \
   -p 5432:5432 \
   -d postgres:14
 
@@ -96,7 +96,7 @@ docker run --name grant-postgres \
 docker build -t grant-api -f apps/api/Dockerfile .
 docker run --name grant-api \
   --link grant-postgres:postgres \
-  -e DATABASE_URL="postgresql://postgres:password@postgres:5432/grant_platform" \
+  -e DATABASE_URL="postgresql://postgres:password@postgres:5432/grant" \
   -p 4000:4000 \
   -d grant-api
 
@@ -121,7 +121,7 @@ docker run --name grant-web \
 ```bash
 # Launch the CloudFormation stack
 aws cloudformation create-stack \
-  --stack-name grant-platform \
+  --stack-name grant \
   --template-body file://infrastructure/cloudformation/main.yaml \
   --parameters file://infrastructure/cloudformation/parameters/prod.json \
   --capabilities CAPABILITY_IAM
@@ -141,19 +141,19 @@ The CloudFormation template requires:
 #### Install Core Package
 
 ```bash
-npm install @logusgraphics/grant-core
+npm install @grantjs/core
 ```
 
 #### Install Database Package
 
 ```bash
-npm install @logusgraphics/grant-database
+npm install @grantjs/database
 ```
 
 #### Install Schema Package
 
 ```bash
-npm install @logusgraphics/grant-schema
+npm install @grantjs/schema
 ```
 
 ## Environment Configuration
@@ -162,7 +162,7 @@ npm install @logusgraphics/grant-schema
 
 ```bash
 # Database
-DATABASE_URL="postgresql://username:password@localhost:5432/grant_platform"
+DATABASE_URL="postgresql://username:password@localhost:5432/grant"
 
 # API Configuration
 API_PORT=4000
@@ -191,7 +191,7 @@ Create environment files for different environments:
 #### `.env.local` (Local Development)
 
 ```bash
-DATABASE_URL="postgresql://postgres:password@localhost:5432/grant_platform"
+DATABASE_URL="postgresql://postgres:password@localhost:5432/grant"
 JWT_SECRET="local-development-secret"
 NODE_ENV="development"
 ```
@@ -199,7 +199,7 @@ NODE_ENV="development"
 #### `.env.production` (Production)
 
 ```bash
-DATABASE_URL="postgresql://user:password@prod-db:5432/grant_platform"
+DATABASE_URL="postgresql://user:password@prod-db:5432/grant"
 JWT_SECRET="production-secret-key"
 NODE_ENV="production"
 REDIS_URL="redis://prod-redis:6379"
@@ -313,7 +313,7 @@ DEBUG="grant:*"
 
 After successful installation:
 
-1. **[Configuration Guide](/configuration)** - Configure your Grant Platform instance
+1. **[Configuration Guide](/configuration)** - Configure your Grant instance
 2. **[Quick Start Guide](/quick-start)** - Get up and running quickly
 3. **[Development Guide](/development/guide)** - Learn about development practices
 4. **[API Reference](/api/)** - Explore the GraphQL API
@@ -322,10 +322,10 @@ After successful installation:
 
 If you encounter issues during installation:
 
-- **GitHub Issues** - [Report bugs and issues](https://github.com/logusgraphics/grant-platform/issues)
-- **Discord Community** - [Get help from the community](https://discord.gg/grant-platform)
+- **GitHub Issues** - [Report bugs and issues](https://github.com/logusgraphics/grant/issues)
+- **Discord Community** - [Get help from the community](https://discord.gg/grant)
 - **Email Support** - [support@grant.logus.graphics](mailto:support@grant.logus.graphics)
 
 ---
 
-**Next:** Learn about [Configuration](/configuration) to customize your Grant Platform installation.
+**Next:** Learn about [Configuration](/configuration) to customize your Grant installation.

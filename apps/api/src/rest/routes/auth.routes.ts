@@ -1,12 +1,15 @@
-import { Router } from 'express';
+import { UserAuthenticationEmailProviderAction } from '@grantjs/schema';
+import { Response, Router } from 'express';
 
-import { validate, validateBody } from '@/middleware/validation.middleware';
-import { ApiKeysController } from '@/rest/controllers/api-keys.controller';
-import { AuthController } from '@/rest/controllers/auth.controller';
-import { OAuthController } from '@/rest/controllers/oauth.controller';
+import { config } from '@/config';
+import { authenticateRestRoute } from '@/lib/authorization';
+import { createModuleLogger } from '@/lib/logger';
+import { validate, validateBody, validateQuery } from '@/middleware/validation.middleware';
 import {
+  handleGithubCallbackQuerySchema,
+  initiateGithubAuthQuerySchema,
+  isAuthorizedRequestSchema,
   loginRequestSchema,
-  logoutRequestSchema,
   refreshSessionRequestSchema,
   registerRequestSchema,
   requestPasswordResetRequestSchema,
@@ -16,83 +19,252 @@ import {
 } from '@/rest/schemas';
 import { exchangeApiKeyRequestSchema } from '@/rest/schemas/api-keys.schemas';
 import { TypedRequest } from '@/rest/types';
+import {
+  buildAuthRedirectUrl,
+  determineErrorCode,
+  handleGithubCallbackAuth,
+  handleGithubCallbackConnect,
+  handleGithubConnectFlow,
+  handleGithubOAuthError,
+  setAuthCookies,
+  validateRedirectUrl,
+} from '@/rest/utils/auth';
+import { sendSuccessResponse } from '@/rest/utils/response';
 import { RequestContext } from '@/types';
+
+const logger = createModuleLogger('AuthRoutes');
 
 export function createAuthRoutes(context: RequestContext) {
   const router = Router();
-  const authController = new AuthController(context);
-  const oauthController = new OAuthController(context);
-  const apiKeysController = new ApiKeysController(context);
 
-  router.post('/login', validateBody(loginRequestSchema), (req, res) =>
-    authController.login(req as TypedRequest<{ body: typeof loginRequestSchema }>, res)
+  router.post(
+    '/login',
+    validateBody(loginRequestSchema),
+    async (req: TypedRequest<{ body: typeof loginRequestSchema }>, res: Response) => {
+      const { provider, providerId, providerData } = req.body;
+
+      const result = await context.handlers.auth.login(
+        {
+          input: {
+            provider,
+            providerId,
+            providerData: { ...providerData, action: UserAuthenticationEmailProviderAction.Login },
+          },
+        },
+        context.userAgent,
+        context.ipAddress
+      );
+
+      sendSuccessResponse(res, result);
+    }
   );
 
-  router.post('/register', validateBody(registerRequestSchema), (req, res) =>
-    authController.register(req as TypedRequest<{ body: typeof registerRequestSchema }>, res)
+  router.post(
+    '/register',
+    validateBody(registerRequestSchema),
+    async (req: TypedRequest<{ body: typeof registerRequestSchema }>, res: Response) => {
+      const { type, provider, providerId, providerData } = req.body;
+
+      const result = await context.handlers.auth.register(
+        {
+          type,
+          provider,
+          providerId,
+          providerData,
+        },
+        context.locale,
+        context.userAgent,
+        context.ipAddress
+      );
+
+      sendSuccessResponse(res, result, 201);
+    }
   );
 
-  router.post('/refresh', validateBody(refreshSessionRequestSchema), (req, res) =>
-    authController.refreshSession(
-      req as TypedRequest<{ body: typeof refreshSessionRequestSchema }>,
-      res
-    )
+  router.post(
+    '/refresh',
+    validateBody(refreshSessionRequestSchema),
+    async (req: TypedRequest<{ body: typeof refreshSessionRequestSchema }>, res: Response) => {
+      const { accessToken, refreshToken } = req.body;
+
+      const result = await context.handlers.auth.refreshSession(
+        {
+          accessToken,
+          refreshToken,
+        },
+        context.userAgent,
+        context.ipAddress
+      );
+
+      sendSuccessResponse(res, result);
+    }
   );
 
-  router.post('/logout', validateBody(logoutRequestSchema), (req, res) =>
-    authController.logout(req as TypedRequest<{ body: typeof logoutRequestSchema }>, res)
+  router.post(
+    '/verify-email',
+    validateBody(verifyEmailRequestSchema),
+    async (req: TypedRequest<{ body: typeof verifyEmailRequestSchema }>, res: Response) => {
+      const { token } = req.body;
+
+      const result = await context.handlers.auth.verifyEmail(token, context.locale);
+
+      sendSuccessResponse(res, result);
+    }
   );
 
-  router.post('/verify-email', validateBody(verifyEmailRequestSchema), (req, res) =>
-    authController.verifyEmail(req as TypedRequest<{ body: typeof verifyEmailRequestSchema }>, res)
-  );
+  router.post(
+    '/resend-verification',
+    validateBody(resendVerificationRequestSchema),
+    async (req: TypedRequest<{ body: typeof resendVerificationRequestSchema }>, res: Response) => {
+      const { email } = req.body;
 
-  router.post('/resend-verification', validateBody(resendVerificationRequestSchema), (req, res) =>
-    authController.resendVerification(
-      req as TypedRequest<{ body: typeof resendVerificationRequestSchema }>,
-      res
-    )
+      const result = await context.handlers.auth.resendVerificationEmail(email, context.locale);
+
+      sendSuccessResponse(res, result);
+    }
   );
 
   router.post(
     '/request-password-reset',
     validateBody(requestPasswordResetRequestSchema),
-    (req, res) =>
-      authController.requestPasswordReset(
-        req as TypedRequest<{ body: typeof requestPasswordResetRequestSchema }>,
-        res
-      )
+    async (
+      req: TypedRequest<{ body: typeof requestPasswordResetRequestSchema }>,
+      res: Response
+    ) => {
+      const { email } = req.body;
+
+      const result = await context.handlers.auth.requestPasswordReset(email, context.locale);
+
+      sendSuccessResponse(res, result);
+    }
   );
 
-  router.post('/reset-password', validateBody(resetPasswordRequestSchema), (req, res) =>
-    authController.resetPassword(
-      req as TypedRequest<{ body: typeof resetPasswordRequestSchema }>,
-      res
-    )
+  router.post(
+    '/reset-password',
+    validateBody(resetPasswordRequestSchema),
+    async (req: TypedRequest<{ body: typeof resetPasswordRequestSchema }>, res: Response) => {
+      const { token, newPassword } = req.body;
+
+      const result = await context.handlers.auth.resetPassword(token, newPassword, context.locale);
+
+      sendSuccessResponse(res, result);
+    }
   );
 
-  router.get('/github', (req, res) =>
-    oauthController.initiateGithubAuth(req as TypedRequest<{ query: { redirect?: string } }>, res)
+  router.get(
+    '/github',
+    validateQuery(initiateGithubAuthQuerySchema),
+    async (req: TypedRequest<{ query: typeof initiateGithubAuthQuerySchema }>, res: Response) => {
+      const { redirect, accountType, action } = req.query;
+
+      // For connect flow, require authenticated user
+      if (action === UserAuthenticationEmailProviderAction.Connect) {
+        if (!context.user) {
+          const frontendUrl = config.security.frontendUrl;
+          const locale = context.locale || 'en';
+          res.redirect(`${frontendUrl}/${locale}/auth/login?error=authenticationRequired`);
+          return;
+        }
+
+        const authorizationUrl = await handleGithubConnectFlow(
+          context,
+          redirect,
+          context.user.userId
+        );
+        res.redirect(authorizationUrl);
+        return;
+      }
+
+      // Validate redirect URL if provided
+      if (redirect && !validateRedirectUrl(redirect)) {
+        logger.warn({
+          msg: 'OAuth initiate - invalid redirect URL',
+          redirectUrl: redirect,
+          expectedOrigin: new URL(config.security.frontendUrl).origin,
+        });
+        const result = await context.handlers.oauth.initiateGithubAuth({});
+        res.redirect(result.authorizationUrl);
+        return;
+      }
+
+      const result = await context.handlers.oauth.initiateGithubAuth({
+        redirectUrl: redirect,
+        accountType,
+        action: action || UserAuthenticationEmailProviderAction.Login,
+      });
+
+      res.redirect(result.authorizationUrl);
+    }
   );
 
-  router.get('/github/callback', (req, res) =>
-    oauthController.handleGithubCallback(
-      req as TypedRequest<{
-        query: { code?: string; state?: string; error?: string; error_description?: string };
-      }>,
-      res
-    )
+  router.get(
+    '/github/callback',
+    validateQuery(handleGithubCallbackQuerySchema),
+    async (req: TypedRequest<{ query: typeof handleGithubCallbackQuerySchema }>, res: Response) => {
+      const { error, error_description, code, state } = req.query;
+      const locale = context.locale || 'en';
+
+      // Handle OAuth errors from GitHub
+      if (error) {
+        handleGithubOAuthError(res, error, error_description, locale);
+        return;
+      }
+
+      try {
+        const oauthResult = await context.handlers.oauth.handleGithubCallback(code, state);
+
+        // Handle connect flow (linking GitHub to existing authenticated user)
+        const handledConnect = await handleGithubCallbackConnect(context, res, oauthResult);
+        if (handledConnect) {
+          return;
+        }
+
+        // Handle authentication flow (login/register)
+        const loginResult = await handleGithubCallbackAuth(context, oauthResult);
+        setAuthCookies(res, loginResult.accessToken, loginResult.refreshToken);
+
+        const finalRedirectUrl = buildAuthRedirectUrl(oauthResult, locale);
+        res.redirect(finalRedirectUrl);
+      } catch (error) {
+        logger.error({
+          msg: 'Error handling GitHub OAuth callback',
+          err: error,
+        });
+
+        const frontendUrl = config.security.frontendUrl;
+        const errorCode = determineErrorCode(error);
+        res.redirect(`${frontendUrl}/${locale}/auth/login?error=${errorCode}`);
+      }
+    }
   );
 
-  router.get('/me', (req, res) => authController.me(req as TypedRequest, res));
+  router.post(
+    '/token',
+    validate({ body: exchangeApiKeyRequestSchema }),
+    async (req: TypedRequest<{ body: typeof exchangeApiKeyRequestSchema }>, res: Response) => {
+      const { clientId, clientSecret, scope } = req.body;
 
-  router.post('/token', validate({ body: exchangeApiKeyRequestSchema }), (req, res) =>
-    apiKeysController.exchangeApiKey(
-      req as TypedRequest<{
-        body: typeof exchangeApiKeyRequestSchema;
-      }>,
-      res
-    )
+      const result = await context.handlers.apiKeys.exchangeApiKey({
+        input: {
+          clientId,
+          clientSecret,
+          scope,
+        },
+      });
+
+      sendSuccessResponse(res, result);
+    }
+  );
+
+  router.post(
+    '/is-authorized',
+    authenticateRestRoute,
+    validate({ body: isAuthorizedRequestSchema }),
+    async (req: TypedRequest<{ body: typeof isAuthorizedRequestSchema }>, res: Response) => {
+      const { scope, ...input } = req.body;
+      const result = await context.handlers.auth.isAuthorized(input, scope);
+      sendSuccessResponse(res, result);
+    }
   );
 
   return router;

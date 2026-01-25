@@ -1,0 +1,4 @@
+input QueryUserRolesInput {
+  userId: ID
+  roleId: ID
+}

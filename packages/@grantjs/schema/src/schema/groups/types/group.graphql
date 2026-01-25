@@ -1,0 +1,11 @@
+type Group implements Auditable {
+  id: ID!
+  name: String!
+  description: String
+  metadata: JSON!
+  permissions: [Permission!]
+  tags: [Tag!]
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}
