@@ -1,0 +1,14 @@
+type OrganizationProjectApiKey implements Auditable {
+  id: ID!
+  organizationId: ID!
+  projectId: ID!
+  apiKeyId: ID!
+  organizationRoleId: ID!
+  organization: Organization
+  project: Project
+  apiKey: ApiKey
+  role: Role
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}

@@ -6,6 +6,7 @@ interface UserState {
   // API Keys state
   apiKeysPage: number;
   apiKeysLimit: number;
+  apiKeysTotalCount: number;
   apiKeysSearch: string;
   apiKeysSort: { field: ApiKeySortableField; order: SortOrder };
   apiKeysSecretDialogOpen: boolean;
@@ -55,6 +56,7 @@ interface UserState {
   handleApiKeyCreated: (apiKey: { clientId: string; clientSecret: string } | null) => void;
   setApiKeysLoading: (loading: boolean) => void;
   setApiKeysRefetch: (refetch: (() => void) | null) => void;
+  setApiKeysTotalCount: (totalCount: number) => void;
 
   // Actions - Roles
   setRolesPage: (page: number) => void;
@@ -122,6 +124,7 @@ export const useUserStore = create<UserState>()(
       // Initial state - API Keys
       apiKeysPage: 1,
       apiKeysLimit: 10,
+      apiKeysTotalCount: 0,
       apiKeysSearch: '',
       apiKeysSort: defaultApiKeysSort,
       apiKeysSecretDialogOpen: false,
@@ -175,6 +178,7 @@ export const useUserStore = create<UserState>()(
       },
       setApiKeysLoading: (loading) => set({ apiKeysLoading: loading }),
       setApiKeysRefetch: (refetch) => set({ apiKeysRefetch: refetch }),
+      setApiKeysTotalCount: (totalCount) => set({ apiKeysTotalCount: totalCount }),
 
       // Actions - Roles
       setRolesPage: (page) => set({ rolesPage: page }),
@@ -237,6 +241,7 @@ export const useUserStore = create<UserState>()(
         set({
           apiKeysPage: 1,
           apiKeysLimit: 10,
+          apiKeysTotalCount: 0,
           apiKeysSearch: '',
           apiKeysSort: defaultApiKeysSort,
           apiKeysSecretDialogOpen: false,
@@ -284,6 +289,7 @@ export const useUserStore = create<UserState>()(
         set({
           apiKeysPage: 1,
           apiKeysLimit: 10,
+          apiKeysTotalCount: 0,
           apiKeysSearch: '',
           apiKeysSort: defaultApiKeysSort,
           apiKeysSecretDialogOpen: false,

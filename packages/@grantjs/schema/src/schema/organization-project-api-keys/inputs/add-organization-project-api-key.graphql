@@ -1,0 +1,6 @@
+input AddOrganizationProjectApiKeyInput {
+  organizationId: ID!
+  projectId: ID!
+  apiKeyId: ID!
+  organizationRoleId: ID!
+}

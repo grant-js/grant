@@ -77,6 +77,22 @@ export type AccountProject = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
+export type AccountProjectApiKey = Auditable & {
+  __typename?: 'AccountProjectApiKey';
+  account?: Maybe<Account>;
+  accountId: Scalars['ID']['output'];
+  accountRoleId: Scalars['ID']['output'];
+  apiKey?: Maybe<ApiKey>;
+  apiKeyId: Scalars['ID']['output'];
+  createdAt: Scalars['Date']['output'];
+  deletedAt?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['ID']['output'];
+  project?: Maybe<Project>;
+  projectId: Scalars['ID']['output'];
+  role?: Maybe<Role>;
+  updatedAt: Scalars['Date']['output'];
+};
+
 export type AccountProjectTag = Auditable & {
   __typename?: 'AccountProjectTag';
   account?: Maybe<Account>;
@@ -137,6 +153,13 @@ export enum AccountType {
   Personal = 'personal',
 }
 
+export type AddAccountProjectApiKeyInput = {
+  accountId: Scalars['ID']['input'];
+  accountRoleId: Scalars['ID']['input'];
+  apiKeyId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+};
+
 export type AddAccountProjectInput = {
   accountId: Scalars['ID']['input'];
   projectId: Scalars['ID']['input'];
@@ -179,6 +202,13 @@ export type AddOrganizationGroupInput = {
 export type AddOrganizationPermissionInput = {
   organizationId: Scalars['ID']['input'];
   permissionId: Scalars['ID']['input'];
+};
+
+export type AddOrganizationProjectApiKeyInput = {
+  apiKeyId: Scalars['ID']['input'];
+  organizationId: Scalars['ID']['input'];
+  organizationRoleId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
 };
 
 export type AddOrganizationProjectInput = {
@@ -296,6 +326,8 @@ export type ApiKey = Auditable & {
   revokedAt?: Maybe<Scalars['Date']['output']>;
   revokedBy?: Maybe<Scalars['ID']['output']>;
   revokedByUser?: Maybe<User>;
+  /** Role bound to this API key (project-level keys only). Null for user-scoped keys. */
+  role?: Maybe<Role>;
   updatedAt: Scalars['Date']['output'];
 };
 
@@ -399,6 +431,8 @@ export type CreateApiKeyInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   expiresAt?: InputMaybe<Scalars['Date']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
+  /** Required when scope.tenant is accountProject or organizationProject: the parent-tenant role the key impersonates. */
+  roleId?: InputMaybe<Scalars['ID']['input']>;
   scope: Scope;
 };
 
@@ -1151,6 +1185,22 @@ export type OrganizationProject = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
+export type OrganizationProjectApiKey = Auditable & {
+  __typename?: 'OrganizationProjectApiKey';
+  apiKey?: Maybe<ApiKey>;
+  apiKeyId: Scalars['ID']['output'];
+  createdAt: Scalars['Date']['output'];
+  deletedAt?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['ID']['output'];
+  organization?: Maybe<Organization>;
+  organizationId: Scalars['ID']['output'];
+  organizationRoleId: Scalars['ID']['output'];
+  project?: Maybe<Project>;
+  projectId: Scalars['ID']['output'];
+  role?: Maybe<Role>;
+  updatedAt: Scalars['Date']['output'];
+};
+
 export type OrganizationProjectTag = Auditable & {
   __typename?: 'OrganizationProjectTag';
   createdAt: Scalars['Date']['output'];
@@ -1582,6 +1632,12 @@ export type QueryUsersArgs = {
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
+export type QueryAccountProjectApiKeysInput = {
+  accountId?: InputMaybe<Scalars['ID']['input']>;
+  apiKeyId?: InputMaybe<Scalars['ID']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+};
+
 export type QueryAccountProjectInput = {
   projectId: Scalars['ID']['input'];
 };
@@ -1629,6 +1685,12 @@ export type QueryOrganizationGroupsInput = {
 export type QueryOrganizationPermissionsInput = {
   organizationId?: InputMaybe<Scalars['ID']['input']>;
   permissionId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type QueryOrganizationProjectApiKeysInput = {
+  apiKeyId?: InputMaybe<Scalars['ID']['input']>;
+  organizationId?: InputMaybe<Scalars['ID']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type QueryOrganizationProjectTagInput = {
@@ -1731,6 +1793,12 @@ export type RegisterInput = {
   type: AccountType;
 };
 
+export type RemoveAccountProjectApiKeyInput = {
+  accountId: Scalars['ID']['input'];
+  apiKeyId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+};
+
 export type RemoveAccountProjectInput = {
   accountId: Scalars['ID']['input'];
   projectId: Scalars['ID']['input'];
@@ -1774,6 +1842,12 @@ export type RemoveOrganizationMemberInput = {
 export type RemoveOrganizationPermissionInput = {
   organizationId: Scalars['ID']['input'];
   permissionId: Scalars['ID']['input'];
+};
+
+export type RemoveOrganizationProjectApiKeyInput = {
+  apiKeyId: Scalars['ID']['input'];
+  organizationId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
 };
 
 export type RemoveOrganizationProjectInput = {
@@ -2604,6 +2678,7 @@ export type ResolversInterfaceTypes<_RefType extends Record<string, unknown>> = 
   Auditable:
     | Account
     | AccountProject
+    | AccountProjectApiKey
     | AccountProjectTag
     | AccountRole
     | AccountTag
@@ -2616,6 +2691,7 @@ export type ResolversInterfaceTypes<_RefType extends Record<string, unknown>> = 
     | OrganizationInvitation
     | OrganizationPermission
     | OrganizationProject
+    | OrganizationProjectApiKey
     | OrganizationProjectTag
     | OrganizationRole
     | OrganizationTag
@@ -2665,6 +2741,7 @@ export type ResolversTypes = ResolversObject<{
   AccountExportData: ResolverTypeWrapper<AccountExportData>;
   AccountPage: ResolverTypeWrapper<AccountPage>;
   AccountProject: ResolverTypeWrapper<AccountProject>;
+  AccountProjectApiKey: ResolverTypeWrapper<AccountProjectApiKey>;
   AccountProjectTag: ResolverTypeWrapper<AccountProjectTag>;
   AccountRole: ResolverTypeWrapper<AccountRole>;
   AccountSearchableField: AccountSearchableField;
@@ -2672,6 +2749,7 @@ export type ResolversTypes = ResolversObject<{
   AccountSortableField: AccountSortableField;
   AccountTag: ResolverTypeWrapper<AccountTag>;
   AccountType: AccountType;
+  AddAccountProjectApiKeyInput: AddAccountProjectApiKeyInput;
   AddAccountProjectInput: AddAccountProjectInput;
   AddAccountProjectTagInput: AddAccountProjectTagInput;
   AddAccountRoleInput: AddAccountRoleInput;
@@ -2680,6 +2758,7 @@ export type ResolversTypes = ResolversObject<{
   AddGroupTagInput: AddGroupTagInput;
   AddOrganizationGroupInput: AddOrganizationGroupInput;
   AddOrganizationPermissionInput: AddOrganizationPermissionInput;
+  AddOrganizationProjectApiKeyInput: AddOrganizationProjectApiKeyInput;
   AddOrganizationProjectInput: AddOrganizationProjectInput;
   AddOrganizationProjectTagInput: AddOrganizationProjectTagInput;
   AddOrganizationRoleInput: AddOrganizationRoleInput;
@@ -2775,6 +2854,7 @@ export type ResolversTypes = ResolversObject<{
   OrganizationPage: ResolverTypeWrapper<OrganizationPage>;
   OrganizationPermission: ResolverTypeWrapper<OrganizationPermission>;
   OrganizationProject: ResolverTypeWrapper<OrganizationProject>;
+  OrganizationProjectApiKey: ResolverTypeWrapper<OrganizationProjectApiKey>;
   OrganizationProjectTag: ResolverTypeWrapper<OrganizationProjectTag>;
   OrganizationRole: ResolverTypeWrapper<OrganizationRole>;
   OrganizationSearchableField: OrganizationSearchableField;
@@ -2805,6 +2885,7 @@ export type ResolversTypes = ResolversObject<{
   ProjectUser: ResolverTypeWrapper<ProjectUser>;
   ProjectUserApiKey: ResolverTypeWrapper<ProjectUserApiKey>;
   Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
+  QueryAccountProjectApiKeysInput: QueryAccountProjectApiKeysInput;
   QueryAccountProjectInput: QueryAccountProjectInput;
   QueryAccountProjectTagInput: QueryAccountProjectTagInput;
   QueryAccountProjectsInput: QueryAccountProjectsInput;
@@ -2815,6 +2896,7 @@ export type ResolversTypes = ResolversObject<{
   QueryGroupTagsInput: QueryGroupTagsInput;
   QueryOrganizationGroupsInput: QueryOrganizationGroupsInput;
   QueryOrganizationPermissionsInput: QueryOrganizationPermissionsInput;
+  QueryOrganizationProjectApiKeysInput: QueryOrganizationProjectApiKeysInput;
   QueryOrganizationProjectTagInput: QueryOrganizationProjectTagInput;
   QueryOrganizationProjectsInput: QueryOrganizationProjectsInput;
   QueryOrganizationRolesInput: QueryOrganizationRolesInput;
@@ -2835,6 +2917,7 @@ export type ResolversTypes = ResolversObject<{
   QueryUserTagsInput: QueryUserTagsInput;
   RefreshSessionResponse: ResolverTypeWrapper<RefreshSessionResponse>;
   RegisterInput: RegisterInput;
+  RemoveAccountProjectApiKeyInput: RemoveAccountProjectApiKeyInput;
   RemoveAccountProjectInput: RemoveAccountProjectInput;
   RemoveAccountProjectTagInput: RemoveAccountProjectTagInput;
   RemoveAccountRoleInput: RemoveAccountRoleInput;
@@ -2844,6 +2927,7 @@ export type ResolversTypes = ResolversObject<{
   RemoveOrganizationGroupInput: RemoveOrganizationGroupInput;
   RemoveOrganizationMemberInput: RemoveOrganizationMemberInput;
   RemoveOrganizationPermissionInput: RemoveOrganizationPermissionInput;
+  RemoveOrganizationProjectApiKeyInput: RemoveOrganizationProjectApiKeyInput;
   RemoveOrganizationProjectInput: RemoveOrganizationProjectInput;
   RemoveOrganizationProjectTagInput: RemoveOrganizationProjectTagInput;
   RemoveOrganizationRoleInput: RemoveOrganizationRoleInput;
@@ -2952,10 +3036,12 @@ export type ResolversParentTypes = ResolversObject<{
   AccountExportData: AccountExportData;
   AccountPage: AccountPage;
   AccountProject: AccountProject;
+  AccountProjectApiKey: AccountProjectApiKey;
   AccountProjectTag: AccountProjectTag;
   AccountRole: AccountRole;
   AccountSortInput: AccountSortInput;
   AccountTag: AccountTag;
+  AddAccountProjectApiKeyInput: AddAccountProjectApiKeyInput;
   AddAccountProjectInput: AddAccountProjectInput;
   AddAccountProjectTagInput: AddAccountProjectTagInput;
   AddAccountRoleInput: AddAccountRoleInput;
@@ -2964,6 +3050,7 @@ export type ResolversParentTypes = ResolversObject<{
   AddGroupTagInput: AddGroupTagInput;
   AddOrganizationGroupInput: AddOrganizationGroupInput;
   AddOrganizationPermissionInput: AddOrganizationPermissionInput;
+  AddOrganizationProjectApiKeyInput: AddOrganizationProjectApiKeyInput;
   AddOrganizationProjectInput: AddOrganizationProjectInput;
   AddOrganizationProjectTagInput: AddOrganizationProjectTagInput;
   AddOrganizationRoleInput: AddOrganizationRoleInput;
@@ -3048,6 +3135,7 @@ export type ResolversParentTypes = ResolversObject<{
   OrganizationPage: OrganizationPage;
   OrganizationPermission: OrganizationPermission;
   OrganizationProject: OrganizationProject;
+  OrganizationProjectApiKey: OrganizationProjectApiKey;
   OrganizationProjectTag: OrganizationProjectTag;
   OrganizationRole: OrganizationRole;
   OrganizationSortInput: OrganizationSortInput;
@@ -3070,6 +3158,7 @@ export type ResolversParentTypes = ResolversObject<{
   ProjectUser: ProjectUser;
   ProjectUserApiKey: ProjectUserApiKey;
   Query: Record<PropertyKey, never>;
+  QueryAccountProjectApiKeysInput: QueryAccountProjectApiKeysInput;
   QueryAccountProjectInput: QueryAccountProjectInput;
   QueryAccountProjectTagInput: QueryAccountProjectTagInput;
   QueryAccountProjectsInput: QueryAccountProjectsInput;
@@ -3080,6 +3169,7 @@ export type ResolversParentTypes = ResolversObject<{
   QueryGroupTagsInput: QueryGroupTagsInput;
   QueryOrganizationGroupsInput: QueryOrganizationGroupsInput;
   QueryOrganizationPermissionsInput: QueryOrganizationPermissionsInput;
+  QueryOrganizationProjectApiKeysInput: QueryOrganizationProjectApiKeysInput;
   QueryOrganizationProjectTagInput: QueryOrganizationProjectTagInput;
   QueryOrganizationProjectsInput: QueryOrganizationProjectsInput;
   QueryOrganizationRolesInput: QueryOrganizationRolesInput;
@@ -3100,6 +3190,7 @@ export type ResolversParentTypes = ResolversObject<{
   QueryUserTagsInput: QueryUserTagsInput;
   RefreshSessionResponse: RefreshSessionResponse;
   RegisterInput: RegisterInput;
+  RemoveAccountProjectApiKeyInput: RemoveAccountProjectApiKeyInput;
   RemoveAccountProjectInput: RemoveAccountProjectInput;
   RemoveAccountProjectTagInput: RemoveAccountProjectTagInput;
   RemoveAccountRoleInput: RemoveAccountRoleInput;
@@ -3109,6 +3200,7 @@ export type ResolversParentTypes = ResolversObject<{
   RemoveOrganizationGroupInput: RemoveOrganizationGroupInput;
   RemoveOrganizationMemberInput: RemoveOrganizationMemberInput;
   RemoveOrganizationPermissionInput: RemoveOrganizationPermissionInput;
+  RemoveOrganizationProjectApiKeyInput: RemoveOrganizationProjectApiKeyInput;
   RemoveOrganizationProjectInput: RemoveOrganizationProjectInput;
   RemoveOrganizationProjectTagInput: RemoveOrganizationProjectTagInput;
   RemoveOrganizationRoleInput: RemoveOrganizationRoleInput;
@@ -3259,6 +3351,26 @@ export type AccountProjectResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type AccountProjectApiKeyResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['AccountProjectApiKey'] =
+    ResolversParentTypes['AccountProjectApiKey'],
+> = ResolversObject<{
+  account?: Resolver<Maybe<ResolversTypes['Account']>, ParentType, ContextType>;
+  accountId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  accountRoleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  apiKey?: Resolver<Maybe<ResolversTypes['ApiKey']>, ParentType, ContextType>;
+  apiKeyId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  project?: Resolver<Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
+  projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  role?: Resolver<Maybe<ResolversTypes['Role']>, ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type AccountProjectTagResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['AccountProjectTag'] =
@@ -3327,6 +3439,7 @@ export type ApiKeyResolvers<
   revokedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   revokedBy?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
   revokedByUser?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
+  role?: Resolver<Maybe<ResolversTypes['Role']>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -3348,6 +3461,7 @@ export type AuditableResolvers<
   __resolveType: TypeResolveFn<
     | 'Account'
     | 'AccountProject'
+    | 'AccountProjectApiKey'
     | 'AccountProjectTag'
     | 'AccountRole'
     | 'AccountTag'
@@ -3360,6 +3474,7 @@ export type AuditableResolvers<
     | 'OrganizationInvitation'
     | 'OrganizationPermission'
     | 'OrganizationProject'
+    | 'OrganizationProjectApiKey'
     | 'OrganizationProjectTag'
     | 'OrganizationRole'
     | 'OrganizationTag'
@@ -4056,6 +4171,26 @@ export type OrganizationProjectResolvers<
   organizationId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   project?: Resolver<Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type OrganizationProjectApiKeyResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['OrganizationProjectApiKey'] =
+    ResolversParentTypes['OrganizationProjectApiKey'],
+> = ResolversObject<{
+  apiKey?: Resolver<Maybe<ResolversTypes['ApiKey']>, ParentType, ContextType>;
+  apiKeyId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  organization?: Resolver<Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
+  organizationId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  organizationRoleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  project?: Resolver<Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
+  projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  role?: Resolver<Maybe<ResolversTypes['Role']>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -4905,6 +5040,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   AccountExportData?: AccountExportDataResolvers<ContextType>;
   AccountPage?: AccountPageResolvers<ContextType>;
   AccountProject?: AccountProjectResolvers<ContextType>;
+  AccountProjectApiKey?: AccountProjectApiKeyResolvers<ContextType>;
   AccountProjectTag?: AccountProjectTagResolvers<ContextType>;
   AccountRole?: AccountRoleResolvers<ContextType>;
   AccountTag?: AccountTagResolvers<ContextType>;
@@ -4939,6 +5075,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   OrganizationPage?: OrganizationPageResolvers<ContextType>;
   OrganizationPermission?: OrganizationPermissionResolvers<ContextType>;
   OrganizationProject?: OrganizationProjectResolvers<ContextType>;
+  OrganizationProjectApiKey?: OrganizationProjectApiKeyResolvers<ContextType>;
   OrganizationProjectTag?: OrganizationProjectTagResolvers<ContextType>;
   OrganizationRole?: OrganizationRoleResolvers<ContextType>;
   OrganizationTag?: OrganizationTagResolvers<ContextType>;

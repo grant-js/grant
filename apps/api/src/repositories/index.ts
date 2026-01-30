@@ -1,5 +1,6 @@
 import { DbSchema } from '@grantjs/database';
 
+import { AccountProjectApiKeyRepository } from './account-project-api-keys.repository';
 import { AccountProjectTagRepository } from './account-project-tags.repository';
 import { AccountProjectRepository } from './account-projects.repository';
 import { AccountRoleRepository } from './account-roles.repository';
@@ -12,6 +13,7 @@ import { OrganizationGroupRepository } from './organization-groups.repository';
 import { OrganizationInvitationRepository } from './organization-invitations.repository';
 import { OrganizationMemberRepository } from './organization-members.repository';
 import { OrganizationPermissionRepository } from './organization-permissions.repository';
+import { OrganizationProjectApiKeyRepository } from './organization-project-api-keys.repository';
 import { OrganizationProjectTagRepository } from './organization-project-tags.repository';
 import { OrganizationProjectRepository } from './organization-projects.repository';
 import { OrganizationRoleRepository } from './organization-roles.repository';
@@ -44,6 +46,7 @@ export type Repositories = ReturnType<typeof createRepositories>;
 
 export function createRepositories(db: DbSchema) {
   return {
+    accountProjectApiKeyRepository: new AccountProjectApiKeyRepository(db),
     accountProjectRepository: new AccountProjectRepository(db),
     accountProjectTagRepository: new AccountProjectTagRepository(db),
     accountRoleRepository: new AccountRoleRepository(db),
@@ -55,6 +58,7 @@ export function createRepositories(db: DbSchema) {
     organizationGroupRepository: new OrganizationGroupRepository(db),
     organizationInvitationRepository: new OrganizationInvitationRepository(db),
     organizationMemberRepository: new OrganizationMemberRepository(db),
+    organizationProjectApiKeyRepository: new OrganizationProjectApiKeyRepository(db),
     organizationPermissionRepository: new OrganizationPermissionRepository(db),
     organizationProjectRepository: new OrganizationProjectRepository(db),
     organizationProjectTagRepository: new OrganizationProjectTagRepository(db),

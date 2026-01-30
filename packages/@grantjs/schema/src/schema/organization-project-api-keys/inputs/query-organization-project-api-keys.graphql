@@ -1,0 +1,5 @@
+input QueryOrganizationProjectApiKeysInput {
+  organizationId: ID
+  projectId: ID
+  apiKeyId: ID
+}

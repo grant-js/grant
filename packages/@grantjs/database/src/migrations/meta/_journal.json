@@ -218,6 +218,20 @@
       "when": 1768835037563,
       "tag": "0030_ordinary_kronos",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1769000000000,
+      "tag": "0031_project_api_keys",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1769100000000,
+      "tag": "0032_project_api_keys_refine",
+      "breakpoints": true
     }
   ]
 }

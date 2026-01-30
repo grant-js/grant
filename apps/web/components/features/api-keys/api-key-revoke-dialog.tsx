@@ -19,19 +19,14 @@ import {
 import { useApiKeyMutations } from '@/hooks/api-keys';
 import { useRequiresEmailVerificationForMutation } from '@/hooks/auth';
 
-interface UserApiKeyRevokeDialogProps {
+export interface ApiKeyRevokeDialogProps {
   apiKey: ApiKey;
   scope: Scope;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function UserApiKeyRevokeDialog({
-  apiKey,
-  scope,
-  open,
-  onOpenChange,
-}: UserApiKeyRevokeDialogProps) {
+export function ApiKeyRevokeDialog({ apiKey, scope, open, onOpenChange }: ApiKeyRevokeDialogProps) {
   const t = useTranslations('user.apiKeys.revokeDialog');
   const { revokeApiKey } = useApiKeyMutations();
 

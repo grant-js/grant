@@ -1,3 +1,9 @@
+import {
+  accountProjectApiKeyAuditLogs,
+  accountProjectApiKeyAuditLogsRelations,
+  accountProjectApiKeys,
+  accountProjectApiKeysRelations,
+} from './account-project-api-keys.schema';
 import { accountProjectTags, accountProjectTagsRelations } from './account-project-tags.schema';
 import { accountProjects, accountProjectsRelations } from './account-projects.schema';
 import {
@@ -26,6 +32,12 @@ import {
   organizationPermissions,
   organizationPermissionsRelations,
 } from './organization-permissions.schema';
+import {
+  organizationProjectApiKeyAuditLogs,
+  organizationProjectApiKeyAuditLogsRelations,
+  organizationProjectApiKeys,
+  organizationProjectApiKeysRelations,
+} from './organization-project-api-keys.schema';
 import {
   organizationProjectTags,
   organizationProjectTagsRelations,
@@ -81,6 +93,8 @@ import { users, usersRelations } from './users.schema';
 // New authentication entities
 
 export const schema = {
+  accountProjectApiKeyAuditLogs,
+  accountProjectApiKeys,
   accountProjects,
   accountProjectTags,
   accountRoles,
@@ -95,6 +109,8 @@ export const schema = {
   organizationGroups,
   organizationInvitations,
   organizationPermissions,
+  organizationProjectApiKeyAuditLogs,
+  organizationProjectApiKeys,
   organizationProjects,
   organizationProjectTags,
   organizationRoles,
@@ -126,6 +142,8 @@ export const schema = {
   users,
   userAuthenticationMethods,
   userSessions,
+  accountProjectApiKeyAuditLogsRelations,
+  accountProjectApiKeysRelations,
   accountProjectTagsRelations,
   accountRolesRelations,
   accountRoleAuditLogsRelations,
@@ -136,6 +154,8 @@ export const schema = {
   organizationGroupsRelations,
   organizationInvitationsRelations,
   organizationPermissionsRelations,
+  organizationProjectApiKeyAuditLogsRelations,
+  organizationProjectApiKeysRelations,
   organizationProjectsRelations,
   organizationProjectTagsRelations,
   organizationRolesRelations,

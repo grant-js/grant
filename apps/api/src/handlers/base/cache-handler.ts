@@ -86,6 +86,51 @@ export class CacheHandler {
     return { projectId, userId };
   }
 
+  protected extractAccountProjectFromScope(scope: Scope): { accountId: string; projectId: string } {
+    if (scope.tenant !== Tenant.AccountProject) {
+      throw new BadRequestError(
+        `Cannot extract accountProject from tenant type: ${scope.tenant}`,
+        'errors:validation.invalid',
+        { field: 'scope.tenant' }
+      );
+    }
+    const parts = scope.id.split(':');
+    const accountId = parts[0];
+    const projectId = parts[1];
+    if (!accountId || !projectId) {
+      throw new BadRequestError(
+        'Invalid scope: id must be in format "accountId:projectId"',
+        'errors:validation.invalid',
+        { field: 'scope.id' }
+      );
+    }
+    return { accountId, projectId };
+  }
+
+  protected extractOrganizationProjectFromScope(scope: Scope): {
+    organizationId: string;
+    projectId: string;
+  } {
+    if (scope.tenant !== Tenant.OrganizationProject) {
+      throw new BadRequestError(
+        `Cannot extract organizationProject from tenant type: ${scope.tenant}`,
+        'errors:validation.invalid',
+        { field: 'scope.tenant' }
+      );
+    }
+    const parts = scope.id.split(':');
+    const organizationId = parts[0];
+    const projectId = parts[1];
+    if (!organizationId || !projectId) {
+      throw new BadRequestError(
+        'Invalid scope: id must be in format "organizationId:projectId"',
+        'errors:validation.invalid',
+        { field: 'scope.id' }
+      );
+    }
+    return { organizationId, projectId };
+  }
+
   private createCacheKey(scope: Scope): CacheKey {
     return `${scope.tenant}:${scope.id}`;
   }
@@ -474,6 +519,28 @@ export class CacheHandler {
           userId,
         });
         apiKeyIds = projectUserApiKeys.map((pivot) => pivot.apiKeyId);
+        break;
+      }
+
+      case Tenant.AccountProject: {
+        const { accountId, projectId } = this.extractAccountProjectFromScope(scope);
+        const accountProjectApiKeys =
+          await this.services.accountProjectApiKeys.getAccountProjectApiKeys({
+            accountId,
+            projectId,
+          });
+        apiKeyIds = accountProjectApiKeys.map((pivot) => pivot.apiKeyId);
+        break;
+      }
+
+      case Tenant.OrganizationProject: {
+        const { organizationId, projectId } = this.extractOrganizationProjectFromScope(scope);
+        const organizationProjectApiKeys =
+          await this.services.organizationProjectApiKeys.getOrganizationProjectApiKeys({
+            organizationId,
+            projectId,
+          });
+        apiKeyIds = organizationProjectApiKeys.map((pivot) => pivot.apiKeyId);
         break;
       }
 

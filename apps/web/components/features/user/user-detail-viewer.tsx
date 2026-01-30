@@ -6,11 +6,11 @@ import { useParams } from 'next/navigation';
 
 import { useTranslations } from 'next-intl';
 
+import { ApiKeys } from '@/components/features/api-keys';
 import { useScopeFromParams } from '@/hooks/common';
 import { useUsers } from '@/hooks/users';
 import { useUsersStore } from '@/stores/users.store';
 
-import { UserApiKeys } from './user-api-keys';
 import { UserGroups } from './user-groups';
 import { UserInfo } from './user-info';
 import { UserPermissions } from './user-permissions';
@@ -58,7 +58,7 @@ export function UserDetailViewer() {
         <UserGroups user={user} />
         <UserPermissions user={user} />
       </div>
-      <UserApiKeys />
+      <ApiKeys />
     </div>
   );
 }

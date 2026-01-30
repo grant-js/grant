@@ -171,7 +171,7 @@ export interface GrantService {
 
   getUserGroups(userId: string, scope: Scope): Promise<ExecutionContextGroup[]>;
 
-  getUser(userId: string): Promise<ExecutionContextUser>;
+  getUser(userId: string, scope?: Scope): Promise<ExecutionContextUser>;
 }
 
 export interface GrantConfig {

@@ -6,19 +6,19 @@ import { useTranslations } from 'next-intl';
 import { CopyToClipboard } from '@/components/common';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-interface UserApiKeySecretDialogProps {
+export interface ApiKeySecretDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   clientId: string;
   clientSecret: string;
 }
 
-export function UserApiKeySecretDialog({
+export function ApiKeySecretDialog({
   open,
   onOpenChange,
   clientId,
   clientSecret,
-}: UserApiKeySecretDialogProps) {
+}: ApiKeySecretDialogProps) {
   const t = useTranslations('user.apiKeys.secretDialog');
 
   const handleInteractionOutside = (event: Event) => {

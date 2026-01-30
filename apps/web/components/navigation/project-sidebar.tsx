@@ -4,7 +4,17 @@ import { ComponentProps } from 'react';
 
 import { useParams } from 'next/navigation';
 
-import { Building2, FolderOpen, Group, Key, Package, Shield, Tag, Users } from 'lucide-react';
+import {
+  Building2,
+  Fingerprint,
+  FolderOpen,
+  Group,
+  Key,
+  Package,
+  Shield,
+  Tag,
+  Users,
+} from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { WorkspaceSwitcher } from '@/components/common';
@@ -58,6 +68,11 @@ export function ProjectSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
           title: t('users'),
           url: `/dashboard/organizations/${organizationId}/projects/${projectId}/users`,
           icon: Users,
+        },
+        {
+          title: t('apiKeys'),
+          url: `/dashboard/organizations/${organizationId}/projects/${projectId}/api-keys`,
+          icon: Fingerprint,
         },
         {
           title: t('roles'),

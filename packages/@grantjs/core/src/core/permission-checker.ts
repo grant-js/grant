@@ -156,7 +156,7 @@ export class PermissionChecker {
       return this.permissionGrantedResult(permissions[0]);
     }
 
-    const user = await this.authorizationService.getUser(userId);
+    const user = await this.authorizationService.getUser(userId, scope);
     const roles = await this.authorizationService.getUserRoles(userId, scope);
     const groups = await this.authorizationService.getUserGroups(userId, scope);
 

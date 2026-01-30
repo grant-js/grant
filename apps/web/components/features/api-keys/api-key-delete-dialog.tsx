@@ -19,19 +19,14 @@ import {
 import { useApiKeyMutations } from '@/hooks/api-keys';
 import { useRequiresEmailVerificationForMutation } from '@/hooks/auth';
 
-interface UserApiKeyDeleteDialogProps {
+export interface ApiKeyDeleteDialogProps {
   apiKey: ApiKey;
   scope: Scope;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function UserApiKeyDeleteDialog({
-  apiKey,
-  scope,
-  open,
-  onOpenChange,
-}: UserApiKeyDeleteDialogProps) {
+export function ApiKeyDeleteDialog({ apiKey, scope, open, onOpenChange }: ApiKeyDeleteDialogProps) {
   const t = useTranslations('user.apiKeys.deleteDialog');
   const { deleteApiKey } = useApiKeyMutations();
 

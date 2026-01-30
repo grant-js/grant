@@ -121,6 +121,7 @@
   },
   "dashboard": {
     "navigation": {
+      "apiKeys": "API Keys",
       "users": "Users",
       "roles": "Roles",
       "groups": "Groups",
@@ -622,6 +623,7 @@
         "name": "Name",
         "clientId": "Client ID",
         "description": "Description",
+        "role": "Role",
         "status": "Status",
         "expiresAt": "Expires At",
         "lastUsedAt": "Last Used",
@@ -638,11 +640,13 @@
         "description": "Description",
         "descriptionPlaceholder": "Enter API key description",
         "expiresAt": "Expiration Date",
-        "expiresAtPlaceholder": "YYYY-MM-DD (optional)"
+        "expiresAtPlaceholder": "YYYY-MM-DD (optional)",
+        "roleId": "Role",
+        "roleIdPlaceholder": "Select role (required for project API keys)"
       },
       "createDialog": {
         "title": "Create New API Key",
-        "description": "Create a new API key for this user",
+        "description": "Create a new API key for this scope (user or project)",
         "trigger": "Create API Key",
         "confirm": "Create",
         "cancel": "Cancel",

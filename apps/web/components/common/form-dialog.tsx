@@ -44,6 +44,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 
 export interface FormDialogProps<TFormValues extends Record<string, any>> {
   open?: boolean;
@@ -307,18 +308,44 @@ export function FormDialog<TFormValues extends Record<string, any>>({
                   onValueChange={(value) => formField.onChange(value)}
                   disabled={isSubmitting}
                 >
-                  <SelectTrigger className={hasError ? 'border-red-500' : ''}>
-                    <SelectValue
-                      placeholder={
-                        field.placeholder ? t(field.placeholder) : t('form.selectPlaceholder')
-                      }
-                    />
+                  <SelectTrigger className={cn(hasError ? 'border-red-500' : '')}>
+                    {field.options?.some((o) => o.description) ? (
+                      <span className="min-w-0 flex-1 truncate text-left">
+                        {formField.value ? (
+                          (field.options.find((o) => o.value === formField.value)?.label ??
+                          formField.value)
+                        ) : (
+                          <span className="text-muted-foreground">
+                            {field.placeholder ? t(field.placeholder) : t('form.selectPlaceholder')}
+                          </span>
+                        )}
+                      </span>
+                    ) : (
+                      <SelectValue
+                        placeholder={
+                          field.placeholder ? t(field.placeholder) : t('form.selectPlaceholder')
+                        }
+                      />
+                    )}
                   </SelectTrigger>
                   <SelectContent>
                     {field.options && field.options.length > 0
                       ? field.options.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
+                          <SelectItem
+                            key={option.value}
+                            value={option.value}
+                            disabled={option.disabled}
+                          >
+                            {option.description ? (
+                              <div className="flex flex-col">
+                                <span>{option.label}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {option.description}
+                                </span>
+                              </div>
+                            ) : (
+                              option.label
+                            )}
                           </SelectItem>
                         ))
                       : field.dependsOn && field.getOptions
@@ -391,7 +418,7 @@ export function FormDialog<TFormValues extends Record<string, any>>({
             onSubmit={form.handleSubmit(handleSubmit as any)}
             className="flex min-h-0 flex-1 flex-col"
           >
-            <div className="flex-1 space-y-4 overflow-y-auto pr-1 border-t pt-4">
+            <div className="flex-1 space-y-4 overflow-y-auto pr-1 border-t py-4">
               {fields.map(renderField)}
 
               {relationships?.map((relationship) => (
