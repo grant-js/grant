@@ -1,4 +1,5 @@
 import { exchangeApiKey, refreshSession } from '../api/client.js';
+
 import type { GrantConfig } from '../types/config.js';
 
 export interface ResolveAccessTokenOptions {

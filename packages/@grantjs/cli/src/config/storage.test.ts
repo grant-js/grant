@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync, writeFileSync, readFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 import {
   DEFAULT_PROFILE_NAME,
-  getConfigDir,
   getConfigPath,
   getProfileConfig,
   listProfileNames,
@@ -13,6 +13,7 @@ import {
   resolveProfileName,
   saveConfigFile,
 } from './storage.js';
+
 import type { GrantConfigFile } from '../types/config.js';
 
 describe('resolveProfileName', () => {

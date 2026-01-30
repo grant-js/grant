@@ -108,10 +108,13 @@ Get up and running with Grant in minutes:
 ## Popular Topics
 
 - **[RBAC/ACL System](/architecture/rbac-acl)** - Understanding the permission model
+- **[API Keys](/core-concepts/api-keys)** - User-scoped and project-level API keys, scopes, exchange
+- **[Server SDK](/development/server-sdk)** - Protect routes with @grantjs/server (Express, Fastify)
+- **[Client SDK](/development/client-sdk)** - Permission-based UI with @grantjs/client (React hooks, GrantGate)
+- **[Grant CLI](/development/cli)** - Setup, authentication, and typings generation
 - **[Multi-Tenancy](/architecture/multi-tenancy)** - Account and organization isolation
 - **[Self-Hosting](/deployment/self-hosting)** - Deploy on your infrastructure
 - **[API Reference](/api-reference/)** - Complete API documentation
-- **[Contributing](/development/contributing)** - How to contribute to the project
 
 ## Community & Support
 

@@ -32,12 +32,18 @@ All commands that use config accept **`-p, --profile <name>`** to target a profi
 Interactive flow:
 
 1. **Grant API base URL** – Default: `http://localhost:4000` (or existing value).
-2. **Authentication method** – Session (browser) or API key. Session is not yet implemented; use API key.
+2. **Authentication method** – **Session** (browser login) or **API key**.
 3. **Profile name** – Name for this config (e.g. `default`, `staging`). Override with `--profile <name>` to skip the prompt.
-4. **API key** – Client ID (UUID), client secret (min 32 chars), scope tenant (`accountProject` / `organizationProject`), scope ID (e.g. `accountId:projectId` or `organizationId:projectId`).
-5. **Default output for generate-types** – Optional path (e.g. `./src/grant-types.ts`). Leave empty for `./grant-types.ts`.
+4. **Session flow** – Sign in with **Email** (email + password) or **GitHub** (browser OAuth). Then choose account → organization (if applicable) → project.
+5. **API key flow** – Client ID (UUID), client secret (min 32 chars), scope tenant (`accountProject` / `organizationProject`), scope ID (e.g. `accountId:projectId` or `organizationId:projectId`).
+6. **Default output for generate-types** – Optional path (e.g. `./src/grant-types.ts`). Leave empty for `./grant-types.ts`.
 
 Config is saved to the platform config dir (e.g. `~/.config/grant/config.json` on Linux/macOS). The first profile created becomes the default; change it with `grant config set default-profile <name>`.
+
+### Session authentication
+
+- **Email** – You are prompted for email and password; the CLI calls the Grant API login endpoint and stores the returned access and refresh tokens.
+- **GitHub** – The CLI starts a temporary local HTTP server and opens your browser to the Grant API’s GitHub OAuth URL with a `redirect` to `http://localhost:<port>`. After you sign in with GitHub, the API redirects back to that URL with a one-time code. The CLI exchanges the code for access and refresh tokens via `POST /api/auth/cli-callback`. No tokens are sent in the URL; the code is single-use and short-lived (e.g. 60 seconds). The API only accepts `localhost` (or `127.0.0.1`) as the redirect for this flow.
 
 **Examples:**
 
@@ -130,6 +136,10 @@ node packages/@grantjs/cli/dist/index.mjs version
 
 **Interactive TUI:** Run `grant start` (and any prompts) in a real terminal so the process has a TTY. Running via IDE "Run" or in CI often has no stdin and prompts will not work.
 
+**Documentation:** [Grant CLI](https://github.com/logusgraphics/grant/blob/main/docs/development/cli.md) in the official docs.
+
+**Publishing:** See [RELEASE.md](./RELEASE.md) for versioning and npm publish (Changesets).
+
 **Tests:**
 
 ```bash
@@ -138,7 +148,3 @@ pnpm --filter @grantjs/cli test:watch
 ```
 
 ---
-
-## Implementation plan
-
-See [Grant CLI/TUI Implementation Plan](../../../docs/implementation-plans/grant-cli-tui.md).

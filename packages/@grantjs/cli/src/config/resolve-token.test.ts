@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+
 import { resolveAccessToken } from './resolve-token.js';
+
 import type { GrantConfig } from '../types/config.js';
 
 vi.mock('../api/client.js', () => ({
@@ -56,7 +58,8 @@ describe('resolveAccessToken', () => {
     const onTokensRefreshed = vi.fn();
     const token = await resolveAccessToken(config, { onTokensRefreshed });
     expect(token).toBe('new-access');
-    expect(onTokensRefreshed).toHaveBeenCalledOnceWith({
+    expect(onTokensRefreshed).toHaveBeenCalledTimes(1);
+    expect(onTokensRefreshed).toHaveBeenCalledWith({
       accessToken: 'new-access',
       refreshToken: 'new-refresh',
     });

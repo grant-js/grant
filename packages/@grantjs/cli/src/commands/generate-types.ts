@@ -1,10 +1,12 @@
-import type { Command } from 'commander';
 import { writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 import { fetchPermissions, fetchResources } from '../api/client.js';
 import { loadProfile, resolveAccessToken, saveConfigFile } from '../config/index.js';
+
 import { generateTypesContent } from './generate-types-impl.js';
+
+import type { Command } from 'commander';
 
 const DEFAULT_OUTPUT = './grant-types.ts';
 

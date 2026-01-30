@@ -41,6 +41,11 @@ All authentication endpoints are public and do not require an `Authorization` he
 - `POST /api/auth/register` - Create a new account
 - `POST /api/auth/refresh` - Refresh access and refresh tokens
 - `POST /api/auth/logout` - Logout and invalidate session
+- `GET /api/auth/github` - Initiate GitHub OAuth (query: `redirect`, `accountType`, `action`). Redirect URL may be frontend or `http://localhost:<port>` for CLI.
+- `GET /api/auth/github/callback` - GitHub OAuth callback (handled by browser redirect).
+- `POST /api/auth/cli-callback` - Exchange one-time code for session tokens (used by CLI after GitHub OAuth redirect to localhost). Body: `{ "code": "..." }`. Returns `{ accessToken, refreshToken, accounts }`.
+
+**CLI OAuth flow:** When the redirect URL is `http://localhost` or `http://127.0.0.1`, the callback does not set cookies; it redirects to the given URL with a one-time `code` query parameter. The CLI exchanges that code via `POST /api/auth/cli-callback` to obtain tokens and accounts. The code is single-use and short-lived (e.g. 60 seconds).
 
 ## Response Format
 

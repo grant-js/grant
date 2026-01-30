@@ -251,6 +251,64 @@ export async function refreshSession(
 }
 
 /**
+ * Exchange one-time CLI OAuth code for session. POST {baseUrl}/api/auth/cli-callback
+ * Used after browser redirect from GitHub OAuth when redirect_uri was localhost.
+ */
+export async function exchangeCliCallback(baseUrl: string, code: string): Promise<LoginResult> {
+  const url = new URL('/api/auth/cli-callback', baseUrl).href;
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+  } catch (err) {
+    throw new Error(detailFetchError(url, err));
+  }
+
+  if (!res.ok) {
+    const text = await res.text();
+    logFailedRequest('CLI callback exchange', url, res.status, text);
+    let message = `Code exchange failed (${res.status})`;
+    try {
+      const data = JSON.parse(text) as ApiErrorBody;
+      if (data?.error?.message) message = data.error.message;
+    } catch {
+      if (text) message = text.slice(0, 200);
+    }
+    throw new Error(message);
+  }
+
+  const json = (await res.json()) as {
+    data?: {
+      accessToken?: string;
+      refreshToken?: string;
+      accounts?: Array<LoginAccount>;
+    };
+  };
+  const data = json.data;
+  if (
+    !data?.accessToken ||
+    !data?.refreshToken ||
+    !Array.isArray(data.accounts) ||
+    data.accounts.length === 0
+  ) {
+    throw new Error(
+      'Invalid CLI callback response: missing accessToken, refreshToken, or accounts'
+    );
+  }
+  const primary = data.accounts.find((a) => a.type === 'personal') ?? data.accounts[0];
+  return {
+    account: primary,
+    accounts: data.accounts,
+    accessToken: data.accessToken,
+    refreshToken: data.refreshToken,
+  };
+}
+
+/**
  * Fetch organizations (paginated). Requires Bearer token. GET /api/organizations?scopeId=&tenant=
  * Scope is the account context (user's personal account id, tenant 'account').
  */

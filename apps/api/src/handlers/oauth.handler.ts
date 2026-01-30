@@ -1,3 +1,5 @@
+import crypto from 'node:crypto';
+
 import { DbSchema } from '@grantjs/database';
 import {
   UserAuthenticationEmailProviderAction,
@@ -5,12 +7,19 @@ import {
 } from '@grantjs/schema';
 
 import { CacheHandler } from '@/handlers/base/cache-handler';
-import { IEntityCacheAdapter } from '@/lib/cache';
+import { CacheKey, IEntityCacheAdapter } from '@/lib/cache';
 import { AuthenticationError, ConfigurationError } from '@/lib/errors';
 import { createModuleLogger } from '@/lib/logger';
 import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 import { GitHubUserInfo } from '@/services/github-oauth.service';
+
+/** Payload stored for CLI OAuth callback and returned from POST /api/auth/cli-callback */
+export interface CliCallbackPayload {
+  accessToken: string;
+  refreshToken: string;
+  accounts: Array<{ id: string; type: string; ownerId?: string | null; [key: string]: unknown }>;
+}
 
 export interface InitiateGithubAuthParams {
   redirectUrl?: string;
@@ -150,5 +159,30 @@ export class OAuthHandler extends CacheHandler {
         action,
       };
     });
+  }
+
+  private static readonly CLI_CALLBACK_KEY_PREFIX = 'oauth:cli-callback:' as CacheKey;
+  private static readonly CLI_CALLBACK_TTL_SECONDS = 60;
+
+  async storeCliCallbackPayload(payload: CliCallbackPayload): Promise<string> {
+    const code = crypto.randomBytes(16).toString('hex');
+    const key = `${OAuthHandler.CLI_CALLBACK_KEY_PREFIX}${code}` as CacheKey;
+    await this.cache.oauth.set(key, payload, OAuthHandler.CLI_CALLBACK_TTL_SECONDS);
+    this.logger.debug({ msg: 'Stored CLI callback payload', codePrefix: code.slice(0, 8) });
+    return code;
+  }
+
+  async consumeCliCallbackCode(code: string): Promise<CliCallbackPayload | null> {
+    if (!code?.trim()) return null;
+    const key = `${OAuthHandler.CLI_CALLBACK_KEY_PREFIX}${code.trim()}` as CacheKey;
+    const payload = await this.cache.oauth.get<CliCallbackPayload>(key);
+    await this.cache.oauth.delete(key);
+    if (!payload) return null;
+    this.logger.debug({ msg: 'Consumed CLI callback code', codePrefix: code.slice(0, 8) });
+    return payload;
+  }
+
+  async getStoredState(stateToken: string): Promise<{ redirectUrl?: string } | null> {
+    return this.services.oauthState.getState(stateToken);
   }
 }

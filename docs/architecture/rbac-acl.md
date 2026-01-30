@@ -658,7 +658,7 @@ User → [Role1, Role2, ...] → [Group1, Group2, ...] → [Permission1, Permiss
 
 ## Implementation Status
 
-✅ **All permission guards have been implemented** across the Grant web application. All UI components that interact with protected GraphQL operations now use the `useHasPermission` hook from `@grantjs/client` to conditionally render based on user permissions.
+✅ **All permission guards have been implemented** across the Grant web application. All UI components that interact with protected GraphQL operations now use the `useGrant` hook from `@grantjs/client` to conditionally render based on user permissions.
 
 **Key Implementation Details**:
 

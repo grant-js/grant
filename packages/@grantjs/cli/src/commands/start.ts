@@ -1,12 +1,17 @@
-import type { Command } from 'commander';
+import { exec } from 'node:child_process';
+import { createServer } from 'node:http';
+import { platform } from 'node:os';
+
 import inquirer from 'inquirer';
 
 import {
   exchangeApiKey,
+  exchangeCliCallback,
   fetchOrganizations,
   fetchProjects,
   loginWithEmail,
   type LoginAccount,
+  type LoginResult,
   type OrganizationItem,
   type ProjectItem,
 } from '../api/client.js';
@@ -16,7 +21,9 @@ import {
   loadConfigFile,
   saveConfigFile,
 } from '../config/index.js';
+
 import type { GrantConfig, GrantScope } from '../types/config.js';
+import type { Command } from 'commander';
 
 const AUTH_SESSION = 'session';
 const AUTH_API_KEY = 'api-key';
@@ -46,6 +53,77 @@ function isValidScopeId(s: string): boolean {
   if (parts.length !== 1 && parts.length !== 2) return false;
   const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   return parts.every((p) => uuidRe.test(p.trim()));
+}
+
+/** Open URL in default browser (cross-platform). Do not encode the URL; it is already valid. */
+function openBrowser(url: string): void {
+  const cmd =
+    platform() === 'win32'
+      ? `start "" "${url}"`
+      : platform() === 'darwin'
+        ? `open "${url}"`
+        : `xdg-open "${url}"`;
+  exec(cmd, (err) => {
+    if (err) console.error('[Grant CLI] Could not open browser:', err.message);
+  });
+}
+
+/**
+ * Run local callback server and open GitHub OAuth; returns one-time code or throws on error.
+ * Resolves when browser is redirected back with ?code= or ?error=.
+ */
+function runGithubOAuthCallback(apiUrl: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const server = createServer((req, res) => {
+      const rawUrl = req.url ?? '/';
+      const url = new URL(rawUrl, `http://localhost`);
+      const code = url.searchParams.get('code');
+      const error = url.searchParams.get('error');
+      const errorDescription = url.searchParams.get('error_description') ?? '';
+
+      const html = (title: string, body: string) =>
+        `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title></head><body style="font-family:sans-serif;max-width:480px;margin:2rem auto;padding:0 1rem;"><h2>${title}</h2><p>${body}</p><p>You can close this tab and return to the terminal.</p></body></html>`;
+
+      if (code) {
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(html('Grant CLI – Signed in', 'Successfully signed in with GitHub.'));
+        server.close();
+        resolve(code);
+        return;
+      }
+      if (error) {
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(
+          html(
+            'Grant CLI – Sign-in failed',
+            `Error: ${error}${errorDescription ? `. ${errorDescription}` : ''}`
+          )
+        );
+        server.close();
+        reject(new Error(errorDescription || error));
+        return;
+      }
+      res.writeHead(404, { 'Content-Type': 'text/html' });
+      res.end(html('Grant CLI', 'Not found. Expecting ?code= or ?error= from OAuth redirect.'));
+    });
+
+    server.listen(0, '127.0.0.1', () => {
+      const addr = server.address();
+      if (!addr || typeof addr === 'string') {
+        server.close();
+        reject(new Error('Could not bind callback server'));
+        return;
+      }
+      const port = addr.port;
+      const redirectUri = `http://localhost:${port}`;
+      const initiateUrl = `${apiUrl.replace(/\/+$/, '')}/api/auth/github?redirect=${encodeURIComponent(redirectUri)}`;
+      openBrowser(initiateUrl);
+    });
+
+    server.on('error', (err) => {
+      reject(err);
+    });
+  });
 }
 
 export function createStartCommand(program: Command): void {
@@ -122,45 +200,57 @@ export function createStartCommand(program: Command): void {
           },
         ])) as { signInMethod: string };
 
+        let loginResult: LoginResult;
         if (signInMethod === 'github') {
-          console.log(
-            '\nGitHub sign-in from the CLI is not yet implemented. Use Email or create an API key in the Grant web app.'
-          );
-          process.exit(0);
-        }
-
-        const sessionQuestions = [
-          {
-            type: 'input' as const,
-            name: 'email',
-            message: 'Email',
-            validate: (input: string) => {
-              if (!input?.trim()) return 'Email is required';
-              return true;
+          console.log('\nOpening browser for GitHub sign-in…');
+          let code: string;
+          try {
+            code = await runGithubOAuthCallback(apiUrl);
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            console.error('\nGitHub sign-in failed:', msg);
+            process.exit(1);
+          }
+          try {
+            loginResult = await exchangeCliCallback(apiUrl, code);
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            console.error('\n' + msg);
+            process.exit(1);
+          }
+        } else {
+          const sessionQuestions = [
+            {
+              type: 'input' as const,
+              name: 'email',
+              message: 'Email',
+              validate: (input: string) => {
+                if (!input?.trim()) return 'Email is required';
+                return true;
+              },
             },
-          },
-          {
-            type: 'password' as const,
-            name: 'password',
-            message: 'Password',
-            mask: '*',
-            validate: (input: string) => {
-              if (!input?.trim()) return 'Password is required';
-              return true;
+            {
+              type: 'password' as const,
+              name: 'password',
+              message: 'Password',
+              mask: '*',
+              validate: (input: string) => {
+                if (!input?.trim()) return 'Password is required';
+                return true;
+              },
             },
-          },
-        ];
-        const { email, password } = (await inquirer.prompt(
-          sessionQuestions as Parameters<typeof inquirer.prompt>[0]
-        )) as { email: string; password: string };
+          ];
+          const { email, password } = (await inquirer.prompt(
+            sessionQuestions as Parameters<typeof inquirer.prompt>[0]
+          )) as { email: string; password: string };
 
-        let loginResult;
-        try {
-          loginResult = await loginWithEmail(apiUrl, email.trim(), password);
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          console.error('\n' + msg);
-          process.exit(1);
+          try {
+            loginResult = await loginWithEmail(apiUrl, email.trim(), password);
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            console.error('\n' + msg);
+            process.exit(1);
+          }
         }
 
         const { accounts, accessToken, refreshToken } = loginResult;

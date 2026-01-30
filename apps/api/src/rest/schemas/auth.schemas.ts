@@ -226,3 +226,16 @@ export const handleGithubCallbackQuerySchema = z.object({
     example: 'The user denied the request',
   }),
 });
+
+export const cliCallbackRequestSchema = z.object({
+  code: z.string().min(1, 'Code is required').openapi({
+    description: 'One-time code from CLI OAuth redirect',
+    example: 'a1b2c3d4e5f6...',
+  }),
+});
+
+export const cliCallbackResultSchema = z.object({
+  accessToken: z.string(),
+  refreshToken: z.string(),
+  accounts: z.array(accountSchema),
+});

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { exchangeApiKey, fetchResources, fetchPermissions } from './client.js';
+
+import { exchangeApiKey, exchangeCliCallback, fetchResources, fetchPermissions } from './client.js';
 
 describe('exchangeApiKey', () => {
   beforeEach(() => {
@@ -11,7 +12,14 @@ describe('exchangeApiKey', () => {
           return Promise.resolve(new Response('Not Found', { status: 404 }));
         }
         const body = init?.body ? JSON.parse(init.body as string) : {};
-        if (body.clientId !== 'id' || body.clientSecret !== 'secret') {
+        const validPairs = [
+          { clientId: 'id', clientSecret: 'secret' },
+          { clientId: 'cid', clientSecret: 'secret32charsminimumrequired!!' },
+        ];
+        const valid = validPairs.some(
+          (p) => body.clientId === p.clientId && body.clientSecret === p.clientSecret
+        );
+        if (!valid) {
           return Promise.resolve(
             new Response(
               JSON.stringify({ success: false, error: { message: 'Invalid credentials' } }),
@@ -92,6 +100,99 @@ describe('exchangeApiKey', () => {
         scope: { id: 'a:b', tenant: 'accountProject' },
       })
     ).rejects.toThrow('missing accessToken');
+  });
+});
+
+describe('exchangeCliCallback', () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string, init?: RequestInit) => {
+        const u = new URL(url);
+        if (u.pathname !== '/api/auth/cli-callback') {
+          return Promise.resolve(new Response('Not Found', { status: 404 }));
+        }
+        const body = init?.body ? JSON.parse(init.body as string) : {};
+        if (body.code !== 'valid-code-123') {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                success: false,
+                error: {
+                  code: 'invalid_or_expired_code',
+                  message: 'Invalid or expired one-time code',
+                },
+              }),
+              { status: 400, headers: { 'Content-Type': 'application/json' } }
+            )
+          );
+        }
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              success: true,
+              data: {
+                accessToken: 'at-123',
+                refreshToken: 'rt-456',
+                accounts: [
+                  { id: 'acc-1', type: 'personal', ownerId: 'user-1' },
+                  { id: 'acc-2', type: 'organization', ownerId: null },
+                ],
+              },
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          )
+        );
+      })
+    );
+  });
+
+  it('returns login result on valid code', async () => {
+    const result = await exchangeCliCallback('http://localhost:4000', 'valid-code-123');
+    expect(result.accessToken).toBe('at-123');
+    expect(result.refreshToken).toBe('rt-456');
+    expect(result.accounts).toHaveLength(2);
+    expect(result.account.id).toBe('acc-1');
+    expect(result.account.type).toBe('personal');
+  });
+
+  it('calls POST /api/auth/cli-callback with code', async () => {
+    const fetchMock = vi.mocked(globalThis.fetch);
+    await exchangeCliCallback('https://api.example.com', 'valid-code-123');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.example.com/api/auth/cli-callback',
+      expect.objectContaining({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: 'valid-code-123' }),
+      })
+    );
+  });
+
+  it('throws on 400 with error message from body', async () => {
+    await expect(exchangeCliCallback('http://localhost:4000', 'bad-code')).rejects.toThrow(
+      /Invalid or expired one-time code/
+    );
+  });
+
+  it('throws when response has no accounts', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              success: true,
+              data: { accessToken: 'at', refreshToken: 'rt', accounts: [] },
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          )
+        )
+      )
+    );
+    await expect(exchangeCliCallback('http://localhost:4000', 'valid-code-123')).rejects.toThrow(
+      /missing accessToken, refreshToken, or accounts/
+    );
   });
 });
 
