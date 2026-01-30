@@ -4,7 +4,7 @@ import { ComponentProps } from 'react';
 
 import { useParams } from 'next/navigation';
 
-import { FolderOpen, Group, Key, Package, Shield, Tag, Users } from 'lucide-react';
+import { Fingerprint, FolderOpen, Group, Key, Package, Shield, Tag, Users } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { WorkspaceSwitcher } from '@/components/common';
@@ -37,6 +37,11 @@ export function PersonalProjectSidebar({ ...props }: ComponentProps<typeof Sideb
           title: t('users'),
           url: `/dashboard/accounts/${accountId}/projects/${projectId}/users`,
           icon: Users,
+        },
+        {
+          title: t('apiKeys'),
+          url: `/dashboard/accounts/${accountId}/projects/${projectId}/api-keys`,
+          icon: Fingerprint,
         },
         {
           title: t('roles'),

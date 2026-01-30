@@ -1,4 +1,5 @@
 // Consolidated database schema exports
+export * from './account-project-api-keys.schema';
 export * from './account-projects.schema';
 export * from './account-project-tags.schema';
 export * from './account-roles.schema';
@@ -11,6 +12,7 @@ export * from './groups.schema';
 export * from './organization-groups.schema';
 export * from './organization-invitations.schema';
 export * from './organization-permissions.schema';
+export * from './organization-project-api-keys.schema';
 export * from './organization-projects.schema';
 export * from './organization-roles.schema';
 export * from './organization-tags.schema';

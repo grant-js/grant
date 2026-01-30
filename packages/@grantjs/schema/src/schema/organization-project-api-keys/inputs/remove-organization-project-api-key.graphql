@@ -1,0 +1,5 @@
+input RemoveOrganizationProjectApiKeyInput {
+  organizationId: ID!
+  projectId: ID!
+  apiKeyId: ID!
+}

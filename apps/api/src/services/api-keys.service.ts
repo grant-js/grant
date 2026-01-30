@@ -236,11 +236,48 @@ export class ApiKeyService extends AuditService {
         break;
       }
 
-      case Tenant.OrganizationProject:
-      case Tenant.AccountProject:
+      case Tenant.AccountProject: {
+        const [accountId, projectId] = scope.id.split(':');
+        if (!accountId || !projectId) {
+          throw new AuthenticationError(
+            'Invalid accountProject scope: id must be in format "accountId:projectId"',
+            'errors:auth.invalidScope'
+          );
+        }
+        const accountPivot =
+          await this.repositories.accountProjectApiKeyRepository.getByApiKeyAndAccountAndProject(
+            apiKey.id,
+            accountId,
+            projectId,
+            transaction
+          );
+        isApiKeyInScope = accountPivot !== null;
+        userId = apiKey.id; // Sentinel for project-level keys (auditing)
+        break;
+      }
+
+      case Tenant.OrganizationProject: {
+        const [organizationId, projectId] = scope.id.split(':');
+        if (!organizationId || !projectId) {
+          throw new AuthenticationError(
+            'Invalid organizationProject scope: id must be in format "organizationId:projectId"',
+            'errors:auth.invalidScope'
+          );
+        }
+        const orgPivot =
+          await this.repositories.organizationProjectApiKeyRepository.getByApiKeyAndOrganizationAndProject(
+            apiKey.id,
+            organizationId,
+            projectId,
+            transaction
+          );
+        isApiKeyInScope = orgPivot !== null;
+        userId = apiKey.id; // Sentinel for project-level keys (auditing)
+        break;
+      }
+
       case Tenant.Organization:
       case Tenant.Account:
-        // Future implementations
         throw new AuthenticationError(
           `API key exchange for ${scope.tenant} scope is not yet implemented`,
           'errors:auth.scopeNotSupported'

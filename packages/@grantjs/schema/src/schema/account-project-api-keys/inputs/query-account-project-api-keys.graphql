@@ -1,0 +1,5 @@
+input QueryAccountProjectApiKeysInput {
+  accountId: ID
+  projectId: ID
+  apiKeyId: ID
+}

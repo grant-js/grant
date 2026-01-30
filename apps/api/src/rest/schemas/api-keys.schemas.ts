@@ -30,6 +30,7 @@ export const createApiKeyRequestSchema = z.object({
   description: z.string().max(1000).optional(),
   expiresAt: z.date().optional(),
   scope: scopeSchema,
+  roleId: z.uuid('Invalid role ID').optional(),
 });
 
 export const exchangeApiKeyRequestSchema = z.object({

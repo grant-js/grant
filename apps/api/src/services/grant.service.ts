@@ -60,7 +60,7 @@ export class GrantService implements IGrantService {
     return this.grantRepository.getUserGroups(userId, scope);
   }
 
-  async getUser(userId: string): Promise<ExecutionContextUser> {
-    return this.grantRepository.getUser(userId);
+  async getUser(userId: string, scope?: Scope): Promise<ExecutionContextUser> {
+    return this.grantRepository.getUser(userId, scope);
   }
 }

@@ -121,6 +121,7 @@
   },
   "dashboard": {
     "navigation": {
+      "apiKeys": "API-Schlüssel",
       "users": "Benutzer",
       "roles": "Rollen",
       "groups": "Gruppen",
@@ -622,6 +623,7 @@
         "name": "Name",
         "clientId": "Client-ID",
         "description": "Beschreibung",
+        "role": "Rolle",
         "status": "Status",
         "expiresAt": "Läuft ab am",
         "lastUsedAt": "Zuletzt verwendet",
@@ -638,11 +640,13 @@
         "description": "Beschreibung",
         "descriptionPlaceholder": "API-Schlüssel-Beschreibung eingeben",
         "expiresAt": "Ablaufdatum",
-        "expiresAtPlaceholder": "JJJJ-MM-TT (optional)"
+        "expiresAtPlaceholder": "JJJJ-MM-TT (optional)",
+        "roleId": "Rolle",
+        "roleIdPlaceholder": "Rolle wählen (für Projekt-API-Schlüssel erforderlich)"
       },
       "createDialog": {
         "title": "Neuen API-Schlüssel erstellen",
-        "description": "Erstellen Sie einen neuen API-Schlüssel für diesen Benutzer",
+        "description": "Erstellen Sie einen neuen API-Schlüssel für diesen Bereich (Benutzer oder Projekt)",
         "trigger": "API-Schlüssel erstellen",
         "confirm": "Erstellen",
         "cancel": "Abbrechen",

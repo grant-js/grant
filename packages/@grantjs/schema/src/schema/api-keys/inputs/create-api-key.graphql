@@ -3,4 +3,8 @@ input CreateApiKeyInput {
   description: String
   expiresAt: Date
   scope: Scope!
+  """
+  Required when scope.tenant is accountProject or organizationProject: the parent-tenant role the key impersonates.
+  """
+  roleId: ID
 }

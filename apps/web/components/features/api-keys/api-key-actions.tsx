@@ -1,35 +1,60 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
-import { ApiKey, Scope } from '@grantjs/schema';
+import { canAssignRole } from '@grantjs/constants';
+import { ApiKey, Scope, Tenant } from '@grantjs/schema';
 import { Ban, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Actions, type ActionItem } from '@/components/common';
 import { useRequiresEmailVerificationForMutation } from '@/hooks/auth';
+import { useMembers } from '@/hooks/members';
+import { useAuthStore } from '@/stores/auth.store';
 
-import { UserApiKeyDeleteDialog } from './user-api-key-delete-dialog';
-import { UserApiKeyRevokeDialog } from './user-api-key-revoke-dialog';
+import { ApiKeyDeleteDialog } from './api-key-delete-dialog';
+import { ApiKeyRevokeDialog } from './api-key-revoke-dialog';
 
-interface UserApiKeyActionsProps {
+export interface ApiKeyActionsProps {
   apiKey: ApiKey;
   scope: Scope;
 }
 
-export function UserApiKeyActions({ apiKey, scope }: UserApiKeyActionsProps) {
+export function ApiKeyActions({ apiKey, scope }: ApiKeyActionsProps) {
   const t = useTranslations('user.apiKeys.actions');
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  // Check permissions using the Grant client
   const canRevoke = useGrant(ResourceSlug.ApiKey, ResourceAction.Revoke, { scope });
   const canDelete = useGrant(ResourceSlug.ApiKey, ResourceAction.Delete, { scope });
   const requiresEmailVerification = useRequiresEmailVerificationForMutation(scope);
 
-  // If user has no permissions or email verification is required, don't render the actions menu
+  const organizationId =
+    scope.tenant === Tenant.OrganizationProject ? (scope.id.split(':')[0] ?? '') : '';
+  const { members } = useMembers({
+    organizationId,
+    page: 1,
+    limit: 50,
+  });
+  const { getCurrentAccount } = useAuthStore();
+  const currentAccount = getCurrentAccount();
+  const ownerId = currentAccount?.ownerId;
+
+  const currentUserRoleName = useMemo(() => {
+    if (!ownerId || !members.length) return null;
+    const currentMember = members.find((m) => m.type === 'member' && m.user?.id === ownerId);
+    return currentMember?.role?.name ?? null;
+  }, [ownerId, members]);
+
+  const canManageApiKey = useMemo(() => {
+    if (scope.tenant !== Tenant.OrganizationProject) return true;
+    if (!currentUserRoleName) return false;
+    if (!apiKey.role?.name) return true;
+    return canAssignRole(currentUserRoleName, apiKey.role.name);
+  }, [scope.tenant, currentUserRoleName, apiKey.role]);
+
   if ((!canRevoke && !canDelete) || requiresEmailVerification) {
     return null;
   }
@@ -43,10 +68,9 @@ export function UserApiKeyActions({ apiKey, scope }: UserApiKeyActionsProps) {
     setDeleteDialogOpen(true);
   };
 
-  // Build actions array based on permissions
   const actions: ActionItem<ApiKey>[] = [];
 
-  if (!apiKey.isRevoked && canRevoke) {
+  if (!apiKey.isRevoked && canRevoke && canManageApiKey) {
     actions.push({
       key: 'revoke',
       label: t('revoke'),
@@ -56,7 +80,7 @@ export function UserApiKeyActions({ apiKey, scope }: UserApiKeyActionsProps) {
     });
   }
 
-  if (canDelete) {
+  if (canDelete && canManageApiKey) {
     actions.push({
       key: 'delete',
       label: t('delete'),
@@ -69,16 +93,16 @@ export function UserApiKeyActions({ apiKey, scope }: UserApiKeyActionsProps) {
   return (
     <>
       <Actions entity={apiKey} actions={actions} />
-      {!apiKey.isRevoked && canRevoke && (
-        <UserApiKeyRevokeDialog
+      {!apiKey.isRevoked && canRevoke && canManageApiKey && (
+        <ApiKeyRevokeDialog
           apiKey={apiKey}
           scope={scope}
           open={revokeDialogOpen}
           onOpenChange={setRevokeDialogOpen}
         />
       )}
-      {canDelete && (
-        <UserApiKeyDeleteDialog
+      {canDelete && canManageApiKey && (
+        <ApiKeyDeleteDialog
           apiKey={apiKey}
           scope={scope}
           open={deleteDialogOpen}

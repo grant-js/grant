@@ -37,6 +37,10 @@ export type DialogFieldType =
 export interface DialogFieldOption {
   value: string;
   label: string;
+  /** Optional description shown below the label (e.g. for role selector) */
+  description?: string;
+  /** When true, option is not selectable (e.g. role hierarchy) */
+  disabled?: boolean;
 }
 
 export interface DialogRelationship<T = unknown> {

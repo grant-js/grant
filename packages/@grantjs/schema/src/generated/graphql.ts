@@ -76,6 +76,22 @@ export type AccountProject = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
+export type AccountProjectApiKey = Auditable & {
+  __typename?: 'AccountProjectApiKey';
+  account?: Maybe<Account>;
+  accountId: Scalars['ID']['output'];
+  accountRoleId: Scalars['ID']['output'];
+  apiKey?: Maybe<ApiKey>;
+  apiKeyId: Scalars['ID']['output'];
+  createdAt: Scalars['Date']['output'];
+  deletedAt?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['ID']['output'];
+  project?: Maybe<Project>;
+  projectId: Scalars['ID']['output'];
+  role?: Maybe<Role>;
+  updatedAt: Scalars['Date']['output'];
+};
+
 export type AccountProjectTag = Auditable & {
   __typename?: 'AccountProjectTag';
   account?: Maybe<Account>;
@@ -136,6 +152,13 @@ export enum AccountType {
   Personal = 'personal',
 }
 
+export type AddAccountProjectApiKeyInput = {
+  accountId: Scalars['ID']['input'];
+  accountRoleId: Scalars['ID']['input'];
+  apiKeyId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+};
+
 export type AddAccountProjectInput = {
   accountId: Scalars['ID']['input'];
   projectId: Scalars['ID']['input'];
@@ -178,6 +201,13 @@ export type AddOrganizationGroupInput = {
 export type AddOrganizationPermissionInput = {
   organizationId: Scalars['ID']['input'];
   permissionId: Scalars['ID']['input'];
+};
+
+export type AddOrganizationProjectApiKeyInput = {
+  apiKeyId: Scalars['ID']['input'];
+  organizationId: Scalars['ID']['input'];
+  organizationRoleId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
 };
 
 export type AddOrganizationProjectInput = {
@@ -295,6 +325,8 @@ export type ApiKey = Auditable & {
   revokedAt?: Maybe<Scalars['Date']['output']>;
   revokedBy?: Maybe<Scalars['ID']['output']>;
   revokedByUser?: Maybe<User>;
+  /** Role bound to this API key (project-level keys only). Null for user-scoped keys. */
+  role?: Maybe<Role>;
   updatedAt: Scalars['Date']['output'];
 };
 
@@ -398,6 +430,8 @@ export type CreateApiKeyInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   expiresAt?: InputMaybe<Scalars['Date']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
+  /** Required when scope.tenant is accountProject or organizationProject: the parent-tenant role the key impersonates. */
+  roleId?: InputMaybe<Scalars['ID']['input']>;
   scope: Scope;
 };
 
@@ -1150,6 +1184,22 @@ export type OrganizationProject = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
+export type OrganizationProjectApiKey = Auditable & {
+  __typename?: 'OrganizationProjectApiKey';
+  apiKey?: Maybe<ApiKey>;
+  apiKeyId: Scalars['ID']['output'];
+  createdAt: Scalars['Date']['output'];
+  deletedAt?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['ID']['output'];
+  organization?: Maybe<Organization>;
+  organizationId: Scalars['ID']['output'];
+  organizationRoleId: Scalars['ID']['output'];
+  project?: Maybe<Project>;
+  projectId: Scalars['ID']['output'];
+  role?: Maybe<Role>;
+  updatedAt: Scalars['Date']['output'];
+};
+
 export type OrganizationProjectTag = Auditable & {
   __typename?: 'OrganizationProjectTag';
   createdAt: Scalars['Date']['output'];
@@ -1581,6 +1631,12 @@ export type QueryUsersArgs = {
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
+export type QueryAccountProjectApiKeysInput = {
+  accountId?: InputMaybe<Scalars['ID']['input']>;
+  apiKeyId?: InputMaybe<Scalars['ID']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+};
+
 export type QueryAccountProjectInput = {
   projectId: Scalars['ID']['input'];
 };
@@ -1628,6 +1684,12 @@ export type QueryOrganizationGroupsInput = {
 export type QueryOrganizationPermissionsInput = {
   organizationId?: InputMaybe<Scalars['ID']['input']>;
   permissionId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type QueryOrganizationProjectApiKeysInput = {
+  apiKeyId?: InputMaybe<Scalars['ID']['input']>;
+  organizationId?: InputMaybe<Scalars['ID']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type QueryOrganizationProjectTagInput = {
@@ -1730,6 +1792,12 @@ export type RegisterInput = {
   type: AccountType;
 };
 
+export type RemoveAccountProjectApiKeyInput = {
+  accountId: Scalars['ID']['input'];
+  apiKeyId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+};
+
 export type RemoveAccountProjectInput = {
   accountId: Scalars['ID']['input'];
   projectId: Scalars['ID']['input'];
@@ -1773,6 +1841,12 @@ export type RemoveOrganizationMemberInput = {
 export type RemoveOrganizationPermissionInput = {
   organizationId: Scalars['ID']['input'];
   permissionId: Scalars['ID']['input'];
+};
+
+export type RemoveOrganizationProjectApiKeyInput = {
+  apiKeyId: Scalars['ID']['input'];
+  organizationId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
 };
 
 export type RemoveOrganizationProjectInput = {
@@ -2581,6 +2655,7 @@ export type GetApiKeysQuery = {
       createdAt: Date;
       updatedAt: Date;
       deletedAt?: Date | null;
+      role?: { __typename?: 'Role'; id: string; name: string } | null;
       createdByUser?: {
         __typename?: 'User';
         id: string;
@@ -4291,6 +4366,17 @@ export const GetApiKeysDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'deletedAt' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'role' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                          ],
+                        },
+                      },
                       {
                         kind: 'Field',
                         name: { kind: 'Name', value: 'createdByUser' },

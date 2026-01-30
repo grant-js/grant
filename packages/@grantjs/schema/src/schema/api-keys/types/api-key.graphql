@@ -14,4 +14,8 @@ type ApiKey implements Auditable {
   deletedAt: Date
   createdByUser: User
   revokedByUser: User
+  """
+  Role bound to this API key (project-level keys only). Null for user-scoped keys.
+  """
+  role: Role
 }

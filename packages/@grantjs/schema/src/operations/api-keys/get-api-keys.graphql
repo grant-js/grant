@@ -21,6 +21,10 @@ query GetApiKeys(
       createdAt
       updatedAt
       deletedAt
+      role {
+        id
+        name
+      }
       createdByUser {
         id
         name

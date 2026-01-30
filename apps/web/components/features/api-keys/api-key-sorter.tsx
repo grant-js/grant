@@ -1,14 +1,16 @@
+'use client';
+
 import { ApiKeySortableField, ApiKeySortInput, SortOrder } from '@grantjs/schema';
 import { useTranslations } from 'next-intl';
 
 import { Sorter, type SortInput } from '@/components/common';
 
-interface UserApiKeySorterProps {
+export interface ApiKeySorterProps {
   sort?: ApiKeySortInput;
   onSortChange: (field: ApiKeySortableField, order: SortOrder) => void;
 }
 
-export function UserApiKeySorter({ sort, onSortChange }: UserApiKeySorterProps) {
+export function ApiKeySorter({ sort, onSortChange }: ApiKeySorterProps) {
   const t = useTranslations('user.apiKeys');
 
   const convertSort = (gqlSort?: ApiKeySortInput): SortInput<ApiKeySortableField> | undefined => {
@@ -20,22 +22,10 @@ export function UserApiKeySorter({ sort, onSortChange }: UserApiKeySorterProps) 
   };
 
   const fields = [
-    {
-      value: ApiKeySortableField.Name,
-      label: t('sort.name'),
-    },
-    {
-      value: ApiKeySortableField.CreatedAt,
-      label: t('sort.createdAt'),
-    },
-    {
-      value: ApiKeySortableField.ExpiresAt,
-      label: t('sort.expiresAt'),
-    },
-    {
-      value: ApiKeySortableField.LastUsedAt,
-      label: t('sort.lastUsedAt'),
-    },
+    { value: ApiKeySortableField.Name, label: t('sort.name') },
+    { value: ApiKeySortableField.CreatedAt, label: t('sort.createdAt') },
+    { value: ApiKeySortableField.ExpiresAt, label: t('sort.expiresAt') },
+    { value: ApiKeySortableField.LastUsedAt, label: t('sort.lastUsedAt') },
   ];
 
   return (

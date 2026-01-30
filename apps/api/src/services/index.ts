@@ -4,6 +4,7 @@ import { DbSchema } from '@grantjs/database';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { Repositories } from '@/repositories';
 
+import { AccountProjectApiKeyService } from './account-project-api-keys.service';
 import { AccountProjectTagService } from './account-project-tags.service';
 import { AccountProjectService } from './account-projects.service';
 import { AccountRoleService } from './account-roles.service';
@@ -22,6 +23,7 @@ import { OrganizationGroupService } from './organization-groups.service';
 import { OrganizationInvitationService } from './organization-invitations.service';
 import { OrganizationMemberService } from './organization-members.service';
 import { OrganizationPermissionService } from './organization-permissions.service';
+import { OrganizationProjectApiKeyService } from './organization-project-api-keys.service';
 import { OrganizationProjectTagService } from './organization-project-tags.service';
 import { OrganizationProjectService } from './organization-projects.service';
 import { OrganizationRoleService } from './organization-roles.service';
@@ -62,6 +64,7 @@ export function createServices(
   return {
     me: new MeService(repositories, grant),
     accounts: new AccountService(repositories, user, db),
+    accountProjectApiKeys: new AccountProjectApiKeyService(repositories, user, db),
     accountProjects: new AccountProjectService(repositories, user, db),
     accountProjectTags: new AccountProjectTagService(repositories, user, db),
     accountRoles: new AccountRoleService(repositories, user, db),
@@ -103,6 +106,7 @@ export function createServices(
     organizationProjectTags: new OrganizationProjectTagService(repositories, user, db),
     roleGroups: new RoleGroupService(repositories, user, db),
     organizationPermissions: new OrganizationPermissionService(repositories, user, db),
+    organizationProjectApiKeys: new OrganizationProjectApiKeyService(repositories, user, db),
     organizationGroups: new OrganizationGroupService(repositories, user, db),
     groupTags: new GroupTagService(repositories, user, db),
   };

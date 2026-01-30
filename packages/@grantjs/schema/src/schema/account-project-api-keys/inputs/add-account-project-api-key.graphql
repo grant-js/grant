@@ -1,0 +1,6 @@
+input AddAccountProjectApiKeyInput {
+  accountId: ID!
+  projectId: ID!
+  apiKeyId: ID!
+  accountRoleId: ID!
+}

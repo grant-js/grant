@@ -1,11 +1,13 @@
 import { ExecutionContextGroup, ExecutionContextRole, ExecutionContextUser } from '@grantjs/core';
 import {
+  accountProjectApiKeys,
   accountProjects,
   accountRoles,
   accounts,
   DbSchema,
   groupPermissions,
   groups,
+  organizationProjectApiKeys,
   organizationProjects,
   organizationRoles,
   organizations,
@@ -27,7 +29,22 @@ import { Transaction } from '@/lib/transaction-manager.lib';
 export class GrantRepository {
   constructor(private db: DbSchema) {}
 
-  public async getUser(userId: string, transaction?: Transaction): Promise<ExecutionContextUser> {
+  public async getUser(
+    userId: string,
+    scope?: Scope,
+    transaction?: Transaction
+  ): Promise<ExecutionContextUser> {
+    // Project API key tokens use sub = apiKeyId (sentinel); return synthetic user for authorization
+    if (
+      scope &&
+      (scope.tenant === Tenant.AccountProject || scope.tenant === Tenant.OrganizationProject)
+    ) {
+      return {
+        id: userId,
+        metadata: {},
+      };
+    }
+
     const db = transaction || this.db;
     const user = await db.query.users.findFirst({
       where: and(eq(users.id, userId), isNull(users.deletedAt)),
@@ -234,7 +251,29 @@ export class GrantRepository {
         if (!accountId || !projectId) {
           return [];
         }
-
+        // Project API key path: userId is apiKeyId; return assigned role if found
+        if (scope.tenant === Tenant.AccountProject) {
+          try {
+            const projectKeyRow = await db.query.accountProjectApiKeys.findFirst({
+              where: and(
+                eq(accountProjectApiKeys.apiKeyId, userId),
+                eq(accountProjectApiKeys.accountId, accountId),
+                eq(accountProjectApiKeys.projectId, projectId),
+                isNull(accountProjectApiKeys.deletedAt)
+              ),
+              columns: { accountRoleId: true },
+            });
+            if (projectKeyRow) {
+              return [projectKeyRow.accountRoleId];
+            }
+          } catch (err) {
+            console.error(
+              '[GrantRepository.getUserRoleIdsInScope] AccountProject API key lookup failed:',
+              err instanceof Error ? err.message : err
+            );
+          }
+        }
+        // User path: session user or fallback when no project key — resolve user's roles in this account/project
         const accountRolesResult = await db
           .select({ roleId: roles.id })
           .from(userRoles)
@@ -251,7 +290,7 @@ export class GrantRepository {
             accounts,
             and(
               eq(accounts.id, accountId),
-              eq(accounts.ownerId, userId), // Only return roles if user owns the account
+              eq(accounts.ownerId, userId),
               isNull(accounts.deletedAt)
             )
           )
@@ -259,7 +298,7 @@ export class GrantRepository {
             accountProjects,
             and(
               eq(accountProjects.accountId, accountId),
-              eq(accountProjects.projectId, projectId), // Only return roles if the project is in the account
+              eq(accountProjects.projectId, projectId),
               isNull(accountProjects.deletedAt)
             )
           )
@@ -271,7 +310,6 @@ export class GrantRepository {
               isNull(accountProjects.deletedAt)
             )
           );
-
         return accountRolesResult.map((r: { roleId: string }) => r.roleId);
       }
 
@@ -281,7 +319,29 @@ export class GrantRepository {
         if (!organizationId || !projectId) {
           return [];
         }
-
+        // Project API key path: userId is apiKeyId; return assigned role if found
+        if (scope.tenant === Tenant.OrganizationProject) {
+          try {
+            const projectKeyRow = await db.query.organizationProjectApiKeys.findFirst({
+              where: and(
+                eq(organizationProjectApiKeys.apiKeyId, userId),
+                eq(organizationProjectApiKeys.organizationId, organizationId),
+                eq(organizationProjectApiKeys.projectId, projectId),
+                isNull(organizationProjectApiKeys.deletedAt)
+              ),
+              columns: { organizationRoleId: true },
+            });
+            if (projectKeyRow) {
+              return [projectKeyRow.organizationRoleId];
+            }
+          } catch (err) {
+            console.error(
+              '[GrantRepository.getUserRoleIdsInScope] OrganizationProject API key lookup failed:',
+              err instanceof Error ? err.message : err
+            );
+          }
+        }
+        // User path: session user or fallback when no project key — resolve user's roles in this org/project
         const projectRolesResult = await db
           .select({ roleId: roles.id })
           .from(userRoles)
@@ -302,7 +362,7 @@ export class GrantRepository {
             organizationUsers,
             and(
               eq(organizationUsers.organizationId, organizationId),
-              eq(organizationUsers.userId, userId), // Only return roles if user is a member
+              eq(organizationUsers.userId, userId),
               isNull(organizationUsers.deletedAt)
             )
           )
@@ -322,7 +382,6 @@ export class GrantRepository {
               isNull(organizationProjects.deletedAt)
             )
           );
-
         return projectRolesResult.map((r: { roleId: string }) => r.roleId);
       }
 

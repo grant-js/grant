@@ -178,8 +178,12 @@ Create a new API key for a specific scope. The API key consists of:
 - Set an expiration date for additional security
 
 ### Scope
-- \`scope.id\`: The ID of the scope (e.g., project ID, organization ID, or "projectId:userId" for projectUser)
-- \`scope.tenant\`: The tenant type (\`account\`, \`organization\`, \`project\`, \`projectUser\`)
+- \`scope.id\`: The ID of the scope (e.g., "projectId:userId" for projectUser, "accountId:projectId" for accountProject, "organizationId:projectId" for organizationProject)
+- \`scope.tenant\`: The tenant type (\`account\`, \`organization\`, \`project\`, \`projectUser\`, \`accountProject\`, \`organizationProject\`)
+
+### Project-level API keys (accountProject / organizationProject)
+- \`roleId\` is **required** when \`scope.tenant\` is \`accountProject\` or \`organizationProject\`.
+- The role must belong to the parent tenant (account or organization) and defines the permissions the key has for that project only.
 
 ### Expiration
 - \`expiresAt\`: Optional expiration date (ISO 8601 format)
@@ -189,20 +193,49 @@ Create a new API key for a specific scope. The API key consists of:
 ### Use Cases
 - Generate credentials for external systems
 - Enable service-to-service authentication
-- Allow external systems to proxy authentication requests
+- Project-level keys for CLI/TUI/MCP (accountProject, organizationProject)
     `.trim(),
     request: {
       body: {
         content: {
           'application/json': {
             schema: createApiKeyRequestSchema,
-            example: {
-              name: 'Production API Key',
-              description: 'API key for production environment',
-              expiresAt: '2025-12-31T23:59:59Z',
-              scope: {
-                id: '550e8400-e29b-41d4-a716-446655440001:550e8400-e29b-41d4-a716-446655440002',
-                tenant: 'projectUser',
+            examples: {
+              projectUser: {
+                summary: 'Project user API key',
+                value: {
+                  name: 'Production API Key',
+                  description: 'API key for production environment',
+                  expiresAt: '2025-12-31T23:59:59Z',
+                  scope: {
+                    id: '550e8400-e29b-41d4-a716-446655440001:550e8400-e29b-41d4-a716-446655440002',
+                    tenant: 'projectUser',
+                  },
+                },
+              },
+              accountProject: {
+                summary: 'Account project API key (e.g. CLI)',
+                value: {
+                  name: 'CLI key',
+                  description: 'Key for local typings generation',
+                  scope: {
+                    id: '550e8400-e29b-41d4-a716-446655440001:550e8400-e29b-41d4-a716-446655440002',
+                    tenant: 'accountProject',
+                  },
+                  roleId: '550e8400-e29b-41d4-a716-446655440010',
+                },
+              },
+              organizationProject: {
+                summary: 'Organization project API key (e.g. CLI)',
+                value: {
+                  name: 'CI key',
+                  description: 'Key for CI typings generation',
+                  scope: {
+                    id: '550e8400-e29b-41d4-a716-446655440020:550e8400-e29b-41d4-a716-446655440002',
+                    tenant: 'organizationProject',
+                  },
+                  roleId: '550e8400-e29b-41d4-a716-446655440011',
+                },
               },
             },
           },

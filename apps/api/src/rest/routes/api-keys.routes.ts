@@ -58,7 +58,7 @@ export function createApiKeysRoutes(context: RequestContext) {
       action: ResourceAction.Create,
     }),
     async (req: TypedRequest<{ body: typeof createApiKeyRequestSchema }>, res: Response) => {
-      const { name, description, expiresAt, scope } = req.body;
+      const { name, description, expiresAt, scope, roleId } = req.body;
 
       const result = await context.handlers.apiKeys.createApiKey({
         input: {
@@ -66,6 +66,7 @@ export function createApiKeysRoutes(context: RequestContext) {
           description,
           expiresAt: expiresAt ? new Date(expiresAt) : undefined,
           scope,
+          roleId,
         },
       });
 
