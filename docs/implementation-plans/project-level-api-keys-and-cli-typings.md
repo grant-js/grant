@@ -246,6 +246,7 @@ Scope.id for API key creation and exchange:
 ## Dependencies and References
 
 - [ACL Engine](acl-engine.md): Phase 1–3 (core, server SDK, client SDK) and Phase 4 (CLI) context; project-level keys unblock CLI typings and MCP.
+- [Grant CLI/TUI](grant-cli-tui.md): Implementation plan for the `grant` CLI (`grant start`, `grant generate-types`); setup flow, session vs API-key auth, and project-scoped typings generation.
 - [Project User API Keys](project-user-api-keys.md): Same API key lifecycle (create, exchange, revoke), JWT shape, and pivot pattern; project-level keys extend scope to AccountProject/OrganizationProject.
 - **Existing code**: `apps/api/src/handlers/api-keys.handler.ts`, `apps/api/src/services/api-keys.service.ts`, `apps/api/src/handlers/base/cache-handler.ts`, `packages/@grantjs/database` schemas for api_keys and project_user_api_keys.
 

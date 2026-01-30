@@ -113,7 +113,7 @@ const GROUPS: Record<GroupKey, GroupTemplate> = {
   [GroupKey.OrganizationCommon]: {
     resource: ResourceSlug.Organization,
     permissions: [ResourceAction.Read, ResourceAction.Query],
-    assignedRoles: [RoleKey.OrganizationAccountOwner],
+    assignedRoles: [RoleKey.PersonalAccountOwner, RoleKey.OrganizationAccountOwner],
   },
   [GroupKey.ProjectCommon]: {
     resource: ResourceSlug.Project,

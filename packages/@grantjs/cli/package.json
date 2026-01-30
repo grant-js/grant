@@ -1,0 +1,67 @@
+{
+  "name": "@grantjs/cli",
+  "version": "1.0.0",
+  "description": "Grant CLI - Setup, authentication, and typings generation for @grantjs/server",
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "grant": "./dist/index.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "keywords": [
+    "grant",
+    "cli",
+    "authorization",
+    "setup",
+    "typings",
+    "api-key"
+  ],
+  "author": {
+    "name": "Alejandro Heredia",
+    "email": "ale@logus.graphics",
+    "url": "https://logus.graphics"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/logusgraphics/grant.git",
+    "directory": "packages/@grantjs/cli"
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "vite build",
+    "build:watch": "vite build --watch",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "inquirer": "^13.2.2"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^9.0.7",
+    "@types/node": "^24.7.2",
+    "eslint": "^9.37.0",
+    "typescript": "^5",
+    "vite": "^6.0.0",
+    "vite-plugin-dts": "^4.3.0",
+    "vitest": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

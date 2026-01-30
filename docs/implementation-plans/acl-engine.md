@@ -2170,9 +2170,11 @@ export const initCommand = new Command('init')
 
 ### Phase 4: CLI Tool ⏳ PENDING
 
-**Goal**: Create CLI tool (`@grantjs/cli`) for authentication and project setup
+**Goal**: Create CLI tool (`grant` / `@grantjs/cli`) for authentication and project setup
 
 **Status**: Not started - Package does not exist yet
+
+**Detailed plan**: See [Grant CLI/TUI Implementation Plan](grant-cli-tui.md) for MVP scope: `grant start` (setup flow, session vs API-key, account/project selection, project API key creation) and `grant generate-types` (project-scoped ResourceSlug and ResourceAction generation for `@grantjs/server`).
 
 **Architecture**: This will be a **CLI tool** that makes HTTP requests to Grant API endpoints. It does NOT use grant-core directly (grant-core is internal to grant-api).
 

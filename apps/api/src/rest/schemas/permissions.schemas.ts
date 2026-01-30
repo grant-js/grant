@@ -5,6 +5,7 @@ import { z } from '@/lib/zod-openapi.lib';
 import {
   createSuccessResponseSchema,
   listQuerySchema,
+  scopeIdSchema,
   scopeSchema,
   tenantSchema,
 } from '@/rest/schemas/common.schemas';
@@ -26,7 +27,7 @@ export const permissionWithRelationsSchema = permissionSchema.extend({
 export const permissionRelationsEnum = z.enum(['tags']);
 
 export const getPermissionsQuerySchema = listQuerySchema.omit({ relations: true }).extend({
-  scopeId: z.uuid('Invalid scope ID'),
+  scopeId: scopeIdSchema,
   tenant: tenantSchema,
   sortField: z
     .enum(
@@ -145,7 +146,7 @@ export const permissionParamsSchema = z.object({
 export const updatePermissionResponseSchema = createSuccessResponseSchema(permissionSchema);
 
 export const deletePermissionQuerySchema = z.object({
-  scopeId: z.uuid('Invalid scope ID'),
+  scopeId: scopeIdSchema,
   tenant: tenantSchema,
   hardDelete: z
     .string()

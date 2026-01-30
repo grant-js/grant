@@ -4,6 +4,7 @@ import { z } from '@/lib/zod-openapi.lib';
 import {
   createSuccessResponseSchema,
   listQuerySchema,
+  scopeIdSchema,
   scopeSchema,
   tenantSchema,
 } from '@/rest/schemas/common.schemas';
@@ -23,7 +24,7 @@ export const resourceSchema = z.object({
 export const resourceWithRelationsSchema = resourceSchema;
 
 export const getResourcesQuerySchema = listQuerySchema.omit({ relations: true }).extend({
-  scopeId: z.uuid('Invalid scope ID'),
+  scopeId: scopeIdSchema,
   tenant: tenantSchema,
   sortField: z
     .enum(
@@ -129,7 +130,7 @@ export const resourceParamsSchema = z.object({
 export const updateResourceResponseSchema = createSuccessResponseSchema(resourceSchema);
 
 export const deleteResourceQuerySchema = z.object({
-  scopeId: z.uuid('Invalid scope ID'),
+  scopeId: scopeIdSchema,
   tenant: tenantSchema,
   hardDelete: z
     .string()

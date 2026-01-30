@@ -4,14 +4,17 @@ import { z } from '@/lib/zod-openapi.lib';
 
 export const tenantSchema = z.enum(Object.values(Tenant) as [Tenant, ...Tenant[]]);
 
+/** Scope ID: single UUID or multiple UUIDs separated by colons (e.g. organizationId:projectId). */
+export const scopeIdSchema = z.string().refine(
+  (val) => {
+    const parts = val.split(':');
+    return parts.every((part) => z.uuid().safeParse(part).success);
+  },
+  { message: 'Invalid scope ID: must be a UUID or multiple UUIDs separated by colons' }
+);
+
 export const scopeSchema = z.object({
-  id: z.string().refine(
-    (val) => {
-      const parts = val.split(':');
-      return parts.every((part) => z.uuid().safeParse(part).success);
-    },
-    { message: 'Invalid scope ID: must be a UUID or multiple UUIDs separated by colons' }
-  ),
+  id: scopeIdSchema,
   tenant: tenantSchema,
 });
 
