@@ -35,7 +35,7 @@ console.log('✅ GrantClient instantiated successfully');
 if npm list react 2>/dev/null | grep -q react; then
   echo "🔍 Testing React imports..."
   node -e "
-  const { GrantProvider, useHasPermission } = require('@grantjs/client/react');
+  const { GrantProvider, useGrant } = require('@grantjs/client/react');
   console.log('✅ React exports imported successfully');
   "
 else

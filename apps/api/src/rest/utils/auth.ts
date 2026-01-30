@@ -43,13 +43,27 @@ export function setAuthCookies(res: Response, accessToken: string, refreshToken:
 }
 
 /**
- * Validates that a redirect URL is from the same origin as the frontend
+ * Validates that a redirect URL is from the same origin as the frontend,
+ * or is a localhost URL (for CLI OAuth callback).
  */
 export function validateRedirectUrl(redirectUrl: string): boolean {
   try {
     const url = new URL(redirectUrl);
     const frontendUrl = new URL(config.security.frontendUrl);
-    return url.origin === frontendUrl.origin;
+    if (url.origin === frontendUrl.origin) return true;
+    if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/** Returns true if the redirect URL is a localhost URL (CLI flow). */
+export function isLocalhostRedirectUrl(redirectUrl: string | undefined): boolean {
+  if (!redirectUrl) return false;
+  try {
+    const url = new URL(redirectUrl);
+    return url.hostname === 'localhost' || url.hostname === '127.0.0.1';
   } catch {
     return false;
   }
@@ -164,18 +178,25 @@ export async function handleGithubCallbackConnect(
   }
 }
 
+/** Result of GitHub OAuth auth flow (login/register/link); includes accounts for CLI callback. */
+export interface GithubCallbackAuthResult {
+  accessToken: string;
+  refreshToken: string;
+  accounts: Array<{ id: string; type: string; ownerId?: string | null; [key: string]: unknown }>;
+}
+
 /**
  * Handles GitHub OAuth callback for authentication flow (login/register)
  */
 export async function handleGithubCallbackAuth(
   context: RequestContext,
   oauthResult: HandleGithubCallbackResult
-): Promise<{ accessToken: string; refreshToken: string }> {
+): Promise<GithubCallbackAuthResult> {
   const providerData = buildGithubProviderData(oauthResult.githubUser, oauthResult.accessToken);
 
   if (oauthResult.existingAuthMethod) {
     // User has existing GitHub auth method - login
-    return await context.handlers.auth.login(
+    const result = await context.handlers.auth.login(
       {
         input: {
           provider: UserAuthenticationMethodProvider.Github,
@@ -186,11 +207,16 @@ export async function handleGithubCallbackAuth(
       context.userAgent,
       context.ipAddress
     );
+    return {
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      accounts: result.accounts ?? [],
+    };
   }
 
   if (oauthResult.existingUserByEmail) {
     // User exists by email - link GitHub and login
-    return await context.handlers.auth.linkGithubAuthToExistingUser(
+    const result = await context.handlers.auth.linkGithubAuthToExistingUser(
       {
         userId: oauthResult.existingUserByEmail.userId,
         providerId: oauthResult.providerId,
@@ -203,6 +229,11 @@ export async function handleGithubCallbackAuth(
       context.userAgent,
       context.ipAddress
     );
+    return {
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      accounts: result.accounts ?? [],
+    };
   }
 
   // New user - register
@@ -211,7 +242,7 @@ export async function handleGithubCallbackAuth(
       ? AccountType.Organization
       : AccountType.Personal;
 
-  return await context.handlers.auth.register(
+  const result = await context.handlers.auth.register(
     {
       type: accountType,
       provider: UserAuthenticationMethodProvider.Github,
@@ -222,6 +253,11 @@ export async function handleGithubCallbackAuth(
     context.userAgent,
     context.ipAddress
   );
+  return {
+    accessToken: result.accessToken,
+    refreshToken: result.refreshToken,
+    accounts: [result.account],
+  };
 }
 
 /**

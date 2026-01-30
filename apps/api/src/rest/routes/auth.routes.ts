@@ -6,6 +6,7 @@ import { authenticateRestRoute } from '@/lib/authorization';
 import { createModuleLogger } from '@/lib/logger';
 import { validate, validateBody, validateQuery } from '@/middleware/validation.middleware';
 import {
+  cliCallbackRequestSchema,
   handleGithubCallbackQuerySchema,
   initiateGithubAuthQuerySchema,
   isAuthorizedRequestSchema,
@@ -26,6 +27,7 @@ import {
   handleGithubCallbackConnect,
   handleGithubConnectFlow,
   handleGithubOAuthError,
+  isLocalhostRedirectUrl,
   setAuthCookies,
   validateRedirectUrl,
 } from '@/rest/utils/auth';
@@ -206,8 +208,28 @@ export function createAuthRoutes(context: RequestContext) {
 
       // Handle OAuth errors from GitHub
       if (error) {
+        // CLI flow: redirect to localhost with error if state points to localhost
+        if (state && typeof state === 'string') {
+          const storedState = await context.handlers.oauth.getStoredState(state);
+          if (storedState?.redirectUrl && isLocalhostRedirectUrl(storedState.redirectUrl)) {
+            const url = new URL(storedState.redirectUrl);
+            url.searchParams.set('error', 'oauthError');
+            if (error_description) url.searchParams.set('error_description', error_description);
+            res.redirect(url.toString());
+            return;
+          }
+        }
         handleGithubOAuthError(res, error, error_description, locale);
         return;
+      }
+
+      // Capture CLI redirect URL before handleGithubCallback consumes state (for error redirect in catch)
+      let cliRedirectUrl: string | null = null;
+      if (state && typeof state === 'string') {
+        const storedState = await context.handlers.oauth.getStoredState(state);
+        if (storedState?.redirectUrl && isLocalhostRedirectUrl(storedState.redirectUrl)) {
+          cliRedirectUrl = storedState.redirectUrl;
+        }
       }
 
       try {
@@ -221,20 +243,58 @@ export function createAuthRoutes(context: RequestContext) {
 
         // Handle authentication flow (login/register)
         const loginResult = await handleGithubCallbackAuth(context, oauthResult);
-        setAuthCookies(res, loginResult.accessToken, loginResult.refreshToken);
 
+        // CLI flow: redirect to localhost with one-time code; no cookies
+        if (oauthResult.redirectUrl && isLocalhostRedirectUrl(oauthResult.redirectUrl)) {
+          const oneTimeCode = await context.handlers.oauth.storeCliCallbackPayload({
+            accessToken: loginResult.accessToken,
+            refreshToken: loginResult.refreshToken,
+            accounts: loginResult.accounts,
+          });
+          const url = new URL(oauthResult.redirectUrl);
+          url.searchParams.set('code', oneTimeCode);
+          res.redirect(url.toString());
+          return;
+        }
+
+        setAuthCookies(res, loginResult.accessToken, loginResult.refreshToken);
         const finalRedirectUrl = buildAuthRedirectUrl(oauthResult, locale);
         res.redirect(finalRedirectUrl);
-      } catch (error) {
+      } catch (err) {
         logger.error({
           msg: 'Error handling GitHub OAuth callback',
-          err: error,
+          err,
         });
 
+        if (cliRedirectUrl) {
+          const errorCode = determineErrorCode(err);
+          const url = new URL(cliRedirectUrl);
+          url.searchParams.set('error', errorCode);
+          res.redirect(url.toString());
+          return;
+        }
+
         const frontendUrl = config.security.frontendUrl;
-        const errorCode = determineErrorCode(error);
+        const errorCode = determineErrorCode(err);
         res.redirect(`${frontendUrl}/${locale}/auth/login?error=${errorCode}`);
       }
+    }
+  );
+
+  router.post(
+    '/cli-callback',
+    validateBody(cliCallbackRequestSchema),
+    async (req: TypedRequest<{ body: typeof cliCallbackRequestSchema }>, res: Response) => {
+      const { code } = req.body;
+      const payload = await context.handlers.oauth.consumeCliCallbackCode(code);
+      if (!payload) {
+        res.status(400).json({
+          success: false,
+          error: { code: 'invalid_or_expired_code', message: 'Invalid or expired one-time code' },
+        });
+        return;
+      }
+      sendSuccessResponse(res, payload);
     }
   );
 

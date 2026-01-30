@@ -2,6 +2,8 @@
 
 Browser SDK for Grant authorization platform. Provides a lightweight client for permission checks with React hooks and components for conditional UI rendering.
 
+**Documentation:** [Client SDK](https://github.com/logusgraphics/grant/blob/main/docs/development/client-sdk.md) in the official docs.
+
 ## Features
 
 - **REST-based API** - Uses native `fetch`, no GraphQL client required
@@ -97,14 +99,14 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 }
 ```
 
-### 3. Use Hooks with Scopes
+### 3. Use useGrant with Scopes
 
 For multi-tenant apps, pass the scope to check permissions in a specific context:
 
 ```tsx
 'use client';
 
-import { useHasPermission } from '@grantjs/client/react';
+import { useGrant } from '@grantjs/client/react';
 import { Tenant } from '@grantjs/schema';
 
 interface OrganizationActionsProps {
@@ -116,8 +118,8 @@ export function OrganizationActions({ organization }: OrganizationActionsProps) 
   const scope = { tenant: Tenant.Organization, id: organization.id };
 
   // Check permissions - these call POST /api/auth/is-authorized
-  const canUpdate = useHasPermission('Organization', 'Update', { scope });
-  const canDelete = useHasPermission('Organization', 'Delete', { scope });
+  const canUpdate = useGrant('Organization', 'Update', { scope });
+  const canDelete = useGrant('Organization', 'Delete', { scope });
 
   // Hide component entirely if user has no permissions
   if (!canUpdate && !canDelete) {
@@ -285,15 +287,16 @@ The Grant platform supports multi-tenant authorization with dynamic scope switch
 - **API key tokens**: Use their embedded scope (cannot be overridden)
 
 ```tsx
+import { useGrant } from '@grantjs/client/react';
 import { Tenant } from '@grantjs/schema';
 
 // User is viewing Organization A
 const scopeA = { tenant: Tenant.Organization, id: 'org-a-id' };
-const canEditA = useHasPermission('Project', 'Update', { scope: scopeA });
+const canEditA = useGrant('Project', 'Update', { scope: scopeA });
 
 // User switches to Organization B
 const scopeB = { tenant: Tenant.Organization, id: 'org-b-id' };
-const canEditB = useHasPermission('Project', 'Update', { scope: scopeB });
+const canEditB = useGrant('Project', 'Update', { scope: scopeB });
 ```
 
 Available tenant types (from `@grantjs/schema`):
@@ -362,7 +365,7 @@ The hooks automatically handle scope object reference changes. You don't need to
 ```tsx
 // This is fine - hooks compare by value, not reference
 const scope = { tenant: Tenant.Organization, id: organization.id };
-const canEdit = useHasPermission('Resource', 'Action', { scope });
+const canEdit = useGrant('Resource', 'Action', { scope });
 ```
 
 ## TypeScript

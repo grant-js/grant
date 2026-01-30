@@ -2,6 +2,8 @@
 
 Server SDK for Grant authorization platform. Provides middleware and guards for Express, Fastify, NestJS, and Next.js applications.
 
+**Documentation:** [Server SDK](https://github.com/logusgraphics/grant/blob/main/docs/development/server-sdk.md) in the official docs.
+
 ## Features
 
 - **REST-based API** - Uses native `fetch`, no GraphQL client required
@@ -12,16 +14,6 @@ Server SDK for Grant authorization platform. Provides middleware and guards for 
 - **Resource resolvers** - Optional resource resolution for condition evaluation
 - **TypeScript** - Full type safety with types from `@grantjs/schema`
 - **Generic** - Works with any permission model (uses plain strings for resource/action)
-
-## Features
-
-- **REST-based API** - Uses native `fetch`, no GraphQL client required
-- **Automatic token refresh** - Handles 401 errors with token refresh and retry
-- **Framework integrations** - Express, Fastify, NestJS, Next.js middleware
-- **Token extraction** - Supports Authorization header and cookies
-- **Scope extraction** - Flexible scope resolution from headers, query params, or body
-- **Resource resolvers** - Optional resource resolution for condition evaluation
-- **TypeScript** - Full type safety with types from `@grantjs/schema`
 
 ## Installation
 

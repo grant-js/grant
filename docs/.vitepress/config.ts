@@ -90,6 +90,7 @@ export default withMermaid({
           text: 'Core Concepts',
           items: [
             { text: 'Resources', link: '/core-concepts/resources' },
+            { text: 'API Keys', link: '/core-concepts/api-keys' },
             {
               text: 'Organization Members & Invitations',
               link: '/core-concepts/organization-invitations',
@@ -101,6 +102,9 @@ export default withMermaid({
           text: 'Development',
           items: [
             { text: 'Development Guide', link: '/development/guide' },
+            { text: 'Server SDK', link: '/development/server-sdk' },
+            { text: 'Client SDK', link: '/development/client-sdk' },
+            { text: 'Grant CLI', link: '/development/cli' },
             { text: 'REST API', link: '/development/rest-api' },
             { text: 'Testing', link: '/development/testing' },
             { text: 'Security Audit', link: '/development/security-audit' },
