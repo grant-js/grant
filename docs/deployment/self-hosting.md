@@ -138,9 +138,13 @@ Deploy to any cloud provider or your own servers.
            proxy_set_header Connection 'upgrade';
            proxy_set_header Host $host;
            proxy_cache_bypass $http_upgrade;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Real-IP $remote_addr;
        }
    }
    ```
+
+   **Trusted proxy:** The API uses `X-Forwarded-For` and `X-Real-IP` for rate limiting and session tracking. Always run the API behind a trusted reverse proxy and set these headers so limits and logs reflect the real client IP. See [Security – Rate limiting](../architecture/security.md#rate-limiting).
 
 ## Infrastructure Requirements
 

@@ -248,7 +248,9 @@ Rate limiting protects against abuse, brute force, and noisy neighbors by cappin
 - **Skip paths** – `/health` is never rate limited so load balancers and health checks keep working.
 - **Storage** – Uses the same cache as the rest of the app (in-memory or Redis via `cache.rateLimit`). With Redis, limits are shared across API instances; with memory, each instance has its own window.
 
-**Client identification:** Same logic as session tracking: `X-Forwarded-For` (first IP), then `X-Real-IP`, then `req.ip` / socket. Ensure the API runs only behind trusted proxies so these headers are safe.
+**Client identification:** Same logic as session tracking: `X-Forwarded-For` (first IP), then `X-Real-IP`, then `req.ip` / socket.
+
+**Trusted proxy and rate limiting:** The client IP used for rate-limit keys comes from the above order. When the API runs **behind a trusted reverse proxy or load balancer** (e.g. Nginx, Caddy, cloud LB), the proxy sets `X-Forwarded-For` or `X-Real-IP` to the real client IP, so rate limits apply per end-user. When the API is **not behind a trusted proxy** (e.g. direct exposure or an untrusted proxy), only `req.ip` or the socket address is used—so limits are keyed by the connecting host, not the original client. **Deploy the API only behind trusted proxies** so forwarded headers reflect real clients; otherwise rate limiting may be ineffective or keyed incorrectly. See [Self-hosting](../deployment/self-hosting.md) for reverse-proxy setup.
 
 **Response when limit exceeded:** `429 Too Many Requests` with `Retry-After` (seconds until window reset) and body:
 
