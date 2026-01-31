@@ -26,6 +26,7 @@ const entityTypes = [
   'projects',
   'apiKeys',
   'oauth',
+  'rateLimit',
 ] as const;
 
 /**

@@ -22,6 +22,7 @@ import { initializeJobs, shutdownJobs } from '@/lib/jobs/initialize';
 import { logger } from '@/lib/logger';
 import { contextMiddleware } from '@/middleware/context.middleware';
 import { errorHandler } from '@/middleware/error.middleware';
+import { rateLimitMiddleware } from '@/middleware/rate-limit.middleware';
 import { requestLoggingMiddleware } from '@/middleware/request-logging.middleware';
 import { storageMiddleware } from '@/middleware/storage.middleware';
 import { createRestRouter } from '@/rest';
@@ -78,6 +79,7 @@ async function startServer() {
   app.use(helmet(config.helmet));
   app.use(express.json({ limit: '10mb' }));
   app.use(i18nMiddleware);
+  app.use(rateLimitMiddleware(cache.rateLimit));
 
   if (config.storage.provider === 'local') {
     app.use('/storage', storageMiddleware());

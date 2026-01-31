@@ -266,6 +266,12 @@ export const SECURITY_CONFIG = {
   /** Rate limit: time window in minutes */
   rateLimitWindowMinutes: getEnvNumber('SECURITY_RATE_LIMIT_WINDOW_MINUTES', 15),
 
+  /** Rate limit (auth endpoints): maximum requests per window (login, refresh, cli-callback, token) */
+  rateLimitAuthMax: getEnvNumber('SECURITY_RATE_LIMIT_AUTH_MAX', 20),
+
+  /** Rate limit (auth endpoints): time window in minutes */
+  rateLimitAuthWindowMinutes: getEnvNumber('SECURITY_RATE_LIMIT_AUTH_WINDOW_MINUTES', 15),
+
   /** API Key for external service authentication (optional) */
   apiKey: process.env.SECURITY_API_KEY || undefined,
 } as const;

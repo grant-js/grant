@@ -237,6 +237,39 @@ Expired sessions are automatically filtered out when querying active sessions.
 - **Last Used** - Timestamp of last activity
 - **Expiration** - Automatic expiration of inactive sessions
 
+### Rate Limiting
+
+Rate limiting protects against abuse, brute force, and noisy neighbors by capping requests per client.
+
+**Implementation:**
+
+- **Global limit** – Applies to all requests (REST and GraphQL) when enabled. Key: client IP. Limit and window are configurable (e.g. 100 requests per 15 minutes per IP).
+- **Auth endpoint limit** – Stricter limit for sensitive auth routes: `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/cli-callback`, `POST /api/auth/token`. Single bucket per IP across these endpoints (e.g. 20 requests per 15 minutes per IP).
+- **Skip paths** – `/health` is never rate limited so load balancers and health checks keep working.
+- **Storage** – Uses the same cache as the rest of the app (in-memory or Redis via `cache.rateLimit`). With Redis, limits are shared across API instances; with memory, each instance has its own window.
+
+**Client identification:** Same logic as session tracking: `X-Forwarded-For` (first IP), then `X-Real-IP`, then `req.ip` / socket. Ensure the API runs only behind trusted proxies so these headers are safe.
+
+**Response when limit exceeded:** `429 Too Many Requests` with `Retry-After` (seconds until window reset) and body:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "rate_limit_exceeded",
+    "message": "Too many requests. Please try again later."
+  }
+}
+```
+
+**Configuration:** See [Configuration](../getting-started/configuration.md) and [Environment](../deployment/environment.md). Relevant variables:
+
+- `SECURITY_ENABLE_RATE_LIMIT` – Enable global rate limiting (default: true in production).
+- `SECURITY_RATE_LIMIT_MAX`, `SECURITY_RATE_LIMIT_WINDOW_MINUTES` – Global limit and window.
+- `SECURITY_RATE_LIMIT_AUTH_MAX`, `SECURITY_RATE_LIMIT_AUTH_WINDOW_MINUTES` – Auth endpoint limit and window.
+
+**Roadmap:** Per-tenant rate limiting (noisy neighbor) and isolation testing are planned; see [Multi-Tenant Security Roadmap](../implementation-plans/multi-tenant-security-roadmap.md).
+
 ### CSRF Protection
 
 **Current Status:** Partially Protected
