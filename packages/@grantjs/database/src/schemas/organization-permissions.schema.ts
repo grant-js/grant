@@ -41,12 +41,15 @@ export const organizationPermissionsAuditLogs = pgTable(
     metadata: varchar('metadata', { length: 1000 }),
     performedBy: uuid('performed_by').notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
+    scopeTenant: varchar('scope_tenant', { length: 50 }),
+    scopeId: varchar('scope_id', { length: 255 }),
   },
   (t) => [
     index('organization_permissions_audit_logs_organization_permission_id_idx').on(
       t.organizationPermissionId
     ),
     index('organization_permissions_audit_logs_action_idx').on(t.action),
+    index('organization_permissions_audit_logs_scope_tenant_idx').on(t.scopeTenant),
   ]
 );
 

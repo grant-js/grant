@@ -52,8 +52,8 @@ interface SignTokenParams {
 export class ApiKeyService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: GrantAuth | null,
-    db: DbSchema
+    readonly user: GrantAuth | null,
+    readonly db: DbSchema
   ) {
     super(apiKeyAuditLogs, 'apiKeyId', user, db);
   }

@@ -42,10 +42,13 @@ export const groupTagsAuditLogs = pgTable(
     metadata: varchar('metadata', { length: 1000 }),
     performedBy: uuid('performed_by').notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
+    scopeTenant: varchar('scope_tenant', { length: 50 }),
+    scopeId: varchar('scope_id', { length: 255 }),
   },
   (t) => [
     index('group_tags_audit_logs_group_tag_id_idx').on(t.groupTagId),
     index('group_tags_audit_logs_action_idx').on(t.action),
+    index('group_tags_audit_logs_scope_tenant_idx').on(t.scopeTenant),
   ]
 );
 

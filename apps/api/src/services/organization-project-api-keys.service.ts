@@ -1,25 +1,27 @@
 import { canAssignRole } from '@grantjs/constants';
 import { GrantAuth } from '@grantjs/core';
-import { DbSchema } from '@grantjs/database';
+import { DbSchema, organizationProjectApiKeyAuditLogs } from '@grantjs/database';
 import { ApiKey, OrganizationProjectApiKey, Role } from '@grantjs/schema';
 
 import { AuthorizationError, BadRequestError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 
-import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
+import { AuditService, createDynamicSingleSchema, validateInput, validateOutput } from './common';
 import {
   addOrganizationProjectApiKeyParamsSchema,
   getOrganizationProjectApiKeysParamsSchema,
   organizationProjectApiKeySchema,
 } from './organization-project-api-keys.schemas';
 
-export class OrganizationProjectApiKeyService {
+export class OrganizationProjectApiKeyService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    private readonly user: GrantAuth | null,
-    private readonly db: DbSchema
-  ) {}
+    readonly user: GrantAuth | null,
+    readonly db: DbSchema
+  ) {
+    super(organizationProjectApiKeyAuditLogs, 'organizationProjectApiKeyId', user, db);
+  }
 
   private getCurrentUserId(): string {
     if (!this.user?.userId) {

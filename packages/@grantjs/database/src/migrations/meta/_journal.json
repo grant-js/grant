@@ -232,6 +232,13 @@
       "when": 1769100000000,
       "tag": "0032_project_api_keys_refine",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1769863678886,
+      "tag": "0034_mighty_mentor",
+      "breakpoints": true
     }
   ]
 }

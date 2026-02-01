@@ -4,7 +4,6 @@ import { Request, Response, NextFunction } from 'express';
 import { ContextRequest } from '@/types';
 
 import { isAuthenticatedRest } from './auth-guard';
-import { extractScopeFromRequest } from './scope-extractor';
 
 export interface EmailVerificationRestGuardOptions {
   allowPersonalContext?: boolean;
@@ -27,7 +26,7 @@ export function requireEmailVerificationRest(options: EmailVerificationRestGuard
     }
 
     if (allowPersonalContext) {
-      const scope = extractScopeFromRequest(req);
+      const scope = user!.scope ?? null;
       if (scope && (await handlers.auth.isPersonalScope(scope))) {
         return next();
       }

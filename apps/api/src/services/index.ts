@@ -8,6 +8,7 @@ import { AccountProjectApiKeyService } from './account-project-api-keys.service'
 import { AccountProjectTagService } from './account-project-tags.service';
 import { AccountProjectService } from './account-projects.service';
 import { AccountRoleService } from './account-roles.service';
+import { AccountTagsService } from './account-tags.service';
 import { AccountService } from './accounts.service';
 import { ApiKeyService } from './api-keys.service';
 import { AuthService } from './auth.service';
@@ -68,6 +69,7 @@ export function createServices(
     accountProjects: new AccountProjectService(repositories, user, db),
     accountProjectTags: new AccountProjectTagService(repositories, user, db),
     accountRoles: new AccountRoleService(repositories, user, db),
+    accountTags: new AccountTagsService(repositories, user, db),
     auth: new AuthService(grant),
     email: new EmailService(),
     fileStorage: new FileStorageService(),

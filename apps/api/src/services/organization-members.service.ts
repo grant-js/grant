@@ -25,16 +25,12 @@ import {
 export class OrganizationMemberService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: GrantAuth | null,
-    db: DbSchema
+    readonly user: GrantAuth | null,
+    readonly db: DbSchema
   ) {
-    super(null, '', user, db); // No audit logs for members query
+    super(null, '', user, db);
   }
 
-  /**
-   * Get the current user's ID from the auth context.
-   * Throws if not authenticated.
-   */
   private getCurrentUserId(): string {
     if (!this.user?.userId) {
       throw new AuthorizationError('Authentication required', 'errors:auth.unauthorized');
@@ -42,10 +38,6 @@ export class OrganizationMemberService extends AuditService {
     return this.user.userId;
   }
 
-  /**
-   * Get the role name for a user in an organization.
-   * Returns null if the user is not a member of the organization.
-   */
   private async getUserRoleNameInOrganization(
     organizationId: string,
     userId: string,
@@ -58,10 +50,6 @@ export class OrganizationMemberService extends AuditService {
     return member?.role?.name ?? null;
   }
 
-  /**
-   * Validate that the current user can manage the target member.
-   * Throws AuthorizationError if validation fails.
-   */
   private async validateMemberManagementPermission(
     organizationId: string,
     targetUserId: string,
@@ -69,7 +57,6 @@ export class OrganizationMemberService extends AuditService {
   ): Promise<{ currentUserId: string; currentUserRoleName: string; targetUserRoleName: string }> {
     const currentUserId = this.getCurrentUserId();
 
-    // Guard: Cannot modify self
     if (currentUserId === targetUserId) {
       throw new AuthorizationError(
         'Cannot modify your own membership',
@@ -77,7 +64,6 @@ export class OrganizationMemberService extends AuditService {
       );
     }
 
-    // Get current user's role in the organization
     const currentUserRoleName = await this.getUserRoleNameInOrganization(
       organizationId,
       currentUserId,
@@ -91,7 +77,6 @@ export class OrganizationMemberService extends AuditService {
       );
     }
 
-    // Get target user's role in the organization
     const targetUserRoleName = await this.getUserRoleNameInOrganization(
       organizationId,
       targetUserId,
@@ -105,7 +90,6 @@ export class OrganizationMemberService extends AuditService {
       );
     }
 
-    // Guard: Cannot manage users with same or higher privilege level
     if (!canAssignRole(currentUserRoleName, targetUserRoleName)) {
       throw new AuthorizationError(
         'Cannot manage members with equal or higher privilege',
@@ -140,10 +124,6 @@ export class OrganizationMemberService extends AuditService {
     return result;
   }
 
-  /**
-   * Get a single organization member by organization ID and user ID.
-   * Returns null if the user is not a member of the organization.
-   */
   public async getOrganizationMember(
     organizationId: string,
     userId: string,
@@ -171,14 +151,12 @@ export class OrganizationMemberService extends AuditService {
       });
     }
 
-    // Validate permission to manage this member
     const { currentUserRoleName } = await this.validateMemberManagementPermission(
       organizationId,
       userId,
       transaction
     );
 
-    // 1. Verify user is in organization
     const organizationUsers =
       await this.repositories.organizationUserRepository.getOrganizationUsers(
         { organizationId, userId },
@@ -191,14 +169,12 @@ export class OrganizationMemberService extends AuditService {
       });
     }
 
-    // 2. Get ALL organization roles (needed to identify which user roles belong to this org)
     const allOrganizationRoles =
       await this.repositories.organizationRoleRepository.getOrganizationRoles(
         { organizationId },
         transaction
       );
 
-    // Verify the new role belongs to organization
     const newRoleAssignment = allOrganizationRoles.find((or) => or.roleId === roleId);
     if (!newRoleAssignment) {
       throw new NotFoundError('Role does not belong to this organization', 'errors:notFound.role', {
@@ -207,7 +183,6 @@ export class OrganizationMemberService extends AuditService {
       });
     }
 
-    // Get the new role's name to validate assignment permission
     const newRole = await this.repositories.roleRepository.getRoles(
       { ids: [roleId], limit: 1 },
       transaction
@@ -216,7 +191,6 @@ export class OrganizationMemberService extends AuditService {
       throw new NotFoundError('Role not found', 'errors:notFound.role', { roleId });
     }
 
-    // Guard: Cannot assign a role with equal or higher privilege than own role
     if (!canAssignRole(currentUserRoleName, newRole.roles[0].name)) {
       throw new AuthorizationError(
         'Cannot assign a role with equal or higher privilege than your own',
@@ -224,18 +198,14 @@ export class OrganizationMemberService extends AuditService {
       );
     }
 
-    // 3. Get user's current roles
     const userRoles = await this.repositories.userRoleRepository.getUserRoles(
       { userId },
       transaction
     );
 
-    // 4. Find organization-scoped roles (user roles that match organization roles)
     const orgRoleIds = new Set(allOrganizationRoles.map((or) => or.roleId));
     const orgScopedUserRoles = userRoles.filter((ur) => orgRoleIds.has(ur.roleId));
 
-    // 5. Remove ALL old organization-scoped roles first
-    // This ensures we don't have duplicates if the user somehow has multiple org roles
     for (const userRole of orgScopedUserRoles) {
       await this.repositories.userRoleRepository.softDeleteUserRole(
         { userId, roleId: userRole.roleId },
@@ -243,11 +213,8 @@ export class OrganizationMemberService extends AuditService {
       );
     }
 
-    // 6. Add new role (addUserRole will reactivate if soft-deleted, or create if new)
-    // This handles the case where we just deleted it, or if it's a completely new role
     await this.repositories.userRoleRepository.addUserRole({ userId, roleId }, transaction);
 
-    // 7. Fetch updated member
     const updatedMember =
       await this.repositories.organizationMemberRepository.getOrganizationMember(
         {
@@ -283,10 +250,8 @@ export class OrganizationMemberService extends AuditService {
       });
     }
 
-    // Validate permission to manage this member
     await this.validateMemberManagementPermission(organizationId, userId, transaction);
 
-    // 1. Fetch the member before removal (for return value)
     const memberToRemove =
       await this.repositories.organizationMemberRepository.getOrganizationMember(
         {
@@ -303,7 +268,6 @@ export class OrganizationMemberService extends AuditService {
       });
     }
 
-    // 2. Get organization roles to identify which user roles to remove
     const organizationRoles =
       await this.repositories.organizationRoleRepository.getOrganizationRoles(
         { organizationId },
@@ -311,13 +275,11 @@ export class OrganizationMemberService extends AuditService {
       );
     const orgRoleIds = new Set(organizationRoles.map((or) => or.roleId));
 
-    // 3. Get user's roles
     const userRoles = await this.repositories.userRoleRepository.getUserRoles(
       { userId },
       transaction
     );
 
-    // 4. Remove all organization-scoped user roles
     const orgScopedUserRoles = userRoles.filter((ur) => orgRoleIds.has(ur.roleId));
     for (const userRole of orgScopedUserRoles) {
       await this.repositories.userRoleRepository.softDeleteUserRole(
@@ -326,7 +288,6 @@ export class OrganizationMemberService extends AuditService {
       );
     }
 
-    // 5. Remove organization-user relationship
     await this.repositories.organizationUserRepository.softDeleteOrganizationUser(
       { organizationId, userId },
       transaction

@@ -1,5 +1,5 @@
 import { Grant, GrantAuth } from '@grantjs/core';
-import { AuthorizationResult, IsAuthorizedInput, Scope } from '@grantjs/schema';
+import { AuthorizationResult, IsAuthorizedInput } from '@grantjs/schema';
 
 import { createModuleLogger } from '@/lib/logger';
 
@@ -13,8 +13,7 @@ export class AuthService {
 
   public async isAuthorized(
     input: IsAuthorizedInput,
-    userId: string,
-    scopeOverride?: Scope
+    userId: string
   ): Promise<AuthorizationResult> {
     const context = 'AuthService.isAuthorized';
     const validatedInput = validateInput(isAuthorizedInputSchema, input, context);
@@ -24,7 +23,6 @@ export class AuthService {
     this.logger.debug(
       {
         userId,
-        scopeOverride,
         permission: {
           resource: permission.resource,
           action: permission.action,
@@ -35,14 +33,11 @@ export class AuthService {
     );
 
     const startTime = Date.now();
-    // grant.isAuthorized handles scope: if scopeOverride is undefined, uses token scope
-    // For session tokens, scopeOverride is used; for API keys, scopeOverride is ignored
-    const result = await this.grant.isAuthorized(permission, authContext || {}, scopeOverride);
+    const result = await this.grant.isAuthorized(permission, authContext || {});
     const duration = Date.now() - startTime;
 
     const logData = {
       userId,
-      scopeOverride,
       permission: {
         resource: permission.resource,
         action: permission.action,

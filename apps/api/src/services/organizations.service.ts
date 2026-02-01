@@ -35,8 +35,8 @@ export class OrganizationService extends AuditService {
   public logger = createModuleLogger('OrganizationService');
   constructor(
     private readonly repositories: Repositories,
-    user: GrantAuth | null,
-    db: DbSchema
+    readonly user: GrantAuth | null,
+    readonly db: DbSchema
   ) {
     super(organizationAuditLogs, 'organizationId', user, db);
   }

@@ -37,5 +37,23 @@ export function extractScopeFromRequest(req: Request): Scope | null {
     return req.body.scope as Scope;
   }
 
+  // GraphQL: scope may be in body.variables.scope or body.variables.input.scope
+  const variables = req.body?.variables;
+  if (variables && typeof variables === 'object') {
+    const varsScope = (variables as { scope?: Scope; input?: { scope?: Scope } }).scope;
+    if (varsScope && typeof varsScope === 'object' && 'tenant' in varsScope && 'id' in varsScope) {
+      return varsScope as Scope;
+    }
+    const inputScope = (variables as { input?: { scope?: Scope } }).input?.scope;
+    if (
+      inputScope &&
+      typeof inputScope === 'object' &&
+      'tenant' in inputScope &&
+      'id' in inputScope
+    ) {
+      return inputScope as Scope;
+    }
+  }
+
   return null;
 }

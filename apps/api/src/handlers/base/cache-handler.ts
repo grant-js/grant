@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 
-import { AuthorizationResult, Scope, Tenant } from '@grantjs/schema';
+import { AccountTag, AuthorizationResult, Scope, Tenant } from '@grantjs/schema';
 
 import { CacheKey, ICacheAdapter, IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
@@ -462,9 +462,10 @@ export class CacheHandler {
     let tagIds: string[];
     switch (scope.tenant) {
       case Tenant.Account: {
-        // Personal accounts don't have account-level tags
-        // Tags exist only at the project level for personal accounts
-        tagIds = [];
+        const accountTags = await this.services.accountTags.getAccountTags({
+          accountId: scope.id,
+        });
+        tagIds = accountTags.map((at: AccountTag) => at.tagId);
         break;
       }
 

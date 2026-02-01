@@ -66,10 +66,13 @@ export const apiKeyAuditLogs = pgTable(
       .references(() => users.id)
       .notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
+    scopeTenant: varchar('scope_tenant', { length: 50 }),
+    scopeId: varchar('scope_id', { length: 255 }),
   },
   (t) => [
     index('api_key_audit_logs_api_key_id_idx').on(t.apiKeyId),
     index('api_key_audit_logs_action_idx').on(t.action),
+    index('api_key_audit_logs_scope_tenant_idx').on(t.scopeTenant),
   ]
 );
 

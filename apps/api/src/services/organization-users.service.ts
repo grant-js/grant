@@ -27,8 +27,8 @@ import {
 export class OrganizationUserService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: GrantAuth | null,
-    db: DbSchema
+    readonly user: GrantAuth | null,
+    readonly db: DbSchema
   ) {
     super(organizationUsersAuditLogs, 'organizationUserId', user, db);
   }
@@ -208,10 +208,6 @@ export class OrganizationUserService extends AuditService {
     );
   }
 
-  /**
-   * Get user's organization memberships with roles
-   * Returns organizations the user belongs to along with their role in each organization
-   */
   public async getUserOrganizationMemberships(
     userId: string,
     transaction?: Transaction

@@ -1,9 +1,8 @@
 'use client';
 
-import { ApiKeySortableField, SortOrder } from '@grantjs/schema';
-
 import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
+import { ApiKeySortableField, SortOrder } from '@grantjs/schema';
 
 import { RefreshButton, Toolbar } from '@/components/common';
 import { useScopeFromParams } from '@/hooks/common';

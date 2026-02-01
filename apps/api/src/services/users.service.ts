@@ -35,8 +35,8 @@ import {
 export class UserService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: GrantAuth | null,
-    db: DbSchema
+    readonly user: GrantAuth | null,
+    readonly db: DbSchema
   ) {
     super(userAuditLogs, 'userId', user, db);
   }
@@ -211,7 +211,7 @@ export class UserService extends AuditService {
 
     const user = usersResult.users[0];
     if (!user) {
-      return true; // Default to verified if user not found
+      return true;
     }
 
     const allAuthMethods = Array.isArray(user.authenticationMethods)
@@ -222,7 +222,6 @@ export class UserService extends AuditService {
       (method) => method.provider === UserAuthenticationMethodProvider.Email
     );
 
-    // OAuth users (GitHub, etc.) are always considered verified
     if (!emailAuthMethod) {
       return true;
     }

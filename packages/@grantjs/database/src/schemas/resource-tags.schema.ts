@@ -59,10 +59,13 @@ export const resourceTagAuditLogs = pgTable(
     metadata: varchar('metadata', { length: 1000 }),
     performedBy: uuid('performed_by').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
+    scopeTenant: varchar('scope_tenant', { length: 50 }),
+    scopeId: varchar('scope_id', { length: 255 }),
   },
   (t) => [
     index('resource_tag_audit_logs_resource_tag_id_idx').on(t.resourceTagId),
     index('resource_tag_audit_logs_action_idx').on(t.action),
+    index('resource_tag_audit_logs_scope_tenant_idx').on(t.scopeTenant),
   ]
 );
 

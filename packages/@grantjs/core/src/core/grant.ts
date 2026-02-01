@@ -40,7 +40,7 @@ export class Grant {
     return authorizationHeader.substring(7);
   }
 
-  private getAuth(token: string | null): GrantAuth | null {
+  private getAuth(token: string | null, requestScope?: Scope | null): GrantAuth | null {
     if (!token) {
       return null;
     }
@@ -51,7 +51,17 @@ export class Grant {
       throw new TokenValidationError('Token validation failed');
     }
 
-    const { sub: userId, scope, type, exp: expiresAt, jti: tokenId, isVerified } = claims;
+    const {
+      sub: userId,
+      scope: tokenScope,
+      type,
+      exp: expiresAt,
+      jti: tokenId,
+      isVerified: isVerifiedClaim,
+    } = claims;
+
+    const isVerified = type === TokenType.ApiKey ? true : isVerifiedClaim;
+    const scope = requestScope && type === TokenType.Session ? requestScope : tokenScope;
 
     return {
       userId,
@@ -59,14 +69,13 @@ export class Grant {
       type,
       expiresAt,
       tokenId,
-      // API keys are always considered verified; session tokens use the claim
-      isVerified: type === TokenType.ApiKey ? true : isVerified,
+      isVerified,
     };
   }
 
-  public authenticate(authorizationHeader: string | null) {
+  public authenticate(authorizationHeader: string | null, requestScope?: Scope | null) {
     const bearerToken = this.getBearerToken(authorizationHeader);
-    this.auth = this.getAuth(bearerToken);
+    this.auth = this.getAuth(bearerToken, requestScope);
   }
 
   public isAuthenticated(): boolean {
@@ -75,31 +84,13 @@ export class Grant {
 
   public async isAuthorized(
     permission: IsAuthorizedPermissionInput,
-    context: IsAuthorizedContextInput,
-    scopeOverride?: Scope // Optional scope override (only allowed for session tokens)
+    context: IsAuthorizedContextInput
   ): Promise<AuthorizationResult> {
     if (!this.isAuthenticated()) {
       return { authorized: false, reason: AuthorizationReason.NotAuthenticated };
     }
 
-    const { userId, scope: tokenScope, type: tokenType } = this.auth!;
-
-    // Determine which scope to use
-    let scope: Scope | undefined;
-
-    if (scopeOverride) {
-      // Only allow scope override for session tokens
-      if (tokenType !== TokenType.Session) {
-        // API key tokens have fixed scope - override not allowed
-        scope = tokenScope;
-      } else {
-        // Session tokens can use scope override (dynamic scope)
-        scope = scopeOverride;
-      }
-    } else {
-      // No override provided - use token scope
-      scope = tokenScope;
-    }
+    const { userId, scope } = this.auth!;
 
     if (!scope) {
       return { authorized: false, reason: AuthorizationReason.InvalidScope };

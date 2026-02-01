@@ -5,6 +5,7 @@ import { NextFunction, Request, Response } from 'express';
 import { config } from '@/config';
 import { createHandlers } from '@/handlers';
 import { getLocale } from '@/i18n';
+import { extractScopeFromRequest } from '@/lib/authorization/scope-extractor';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { getAuthorizationToken, getClientIp, getContextHeaders } from '@/lib/headers.lib';
 import { createRepositories } from '@/repositories';
@@ -15,7 +16,7 @@ import { GrantService } from '@/services/grant.service';
 import { ContextRequest } from '@/types';
 
 export function contextMiddleware(db: DbSchema, cache: IEntityCacheAdapter) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, _res: Response, next: NextFunction) => {
     const headers = req.headers;
     const { origin, userAgent } = getContextHeaders(headers);
     const locale = getLocale(req);
@@ -28,9 +29,10 @@ export function contextMiddleware(db: DbSchema, cache: IEntityCacheAdapter) {
     const grant = new Grant({ jwtSecret: config.jwt.secret, grantService });
 
     const authToken = getAuthorizationToken(req);
+    const requestScope = extractScopeFromRequest(req);
 
     try {
-      grant.authenticate(authToken);
+      grant.authenticate(authToken, requestScope);
     } catch {
       grant.auth = null;
     }

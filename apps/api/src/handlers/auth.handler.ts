@@ -449,19 +449,7 @@ export class AuthHandler extends CacheHandler {
     });
   }
 
-  /**
-   * Check if the current user is authorized for a permission.
-   *
-   * @param input - The authorization input containing permission and context
-   * @param scopeOverride - Optional scope override (only effective for session tokens)
-   *
-   * For session tokens: scopeOverride allows dynamic scope switching (e.g., user switches organization)
-   * For API key tokens: scopeOverride is ignored, token scope is always used
-   */
-  public async isAuthorized(
-    input: IsAuthorizedInput,
-    scopeOverride?: Scope
-  ): Promise<AuthorizationResult> {
+  public async isAuthorized(input: IsAuthorizedInput): Promise<AuthorizationResult> {
     const { permission, context } = input;
 
     const auth = this.services.auth.getAuth();
@@ -473,28 +461,23 @@ export class AuthHandler extends CacheHandler {
       };
     }
 
-    const { userId, scope: tokenScope, expiresAt } = auth;
+    const { userId, scope, expiresAt } = auth;
 
-    // Use scopeOverride if provided, otherwise fall back to token scope
-    // Note: grant.isAuthorized() will enforce that only session tokens can use override
-    const effectiveScope = scopeOverride ?? tokenScope;
-
-    if (!effectiveScope) {
+    if (!scope) {
       return {
         authorized: false,
         reason: AuthorizationReason.InvalidScope as AuthorizationReason,
       };
     }
 
-    const cacheKey = this.getAuthorizationCacheKey(userId, effectiveScope, permission, context);
+    const cacheKey = this.getAuthorizationCacheKey(userId, scope, permission, context);
     const cachedResult = await this.getAuthorizationResult<AuthorizationResult>(cacheKey);
 
     if (cachedResult) {
       return cachedResult;
     }
 
-    // Pass scopeOverride to grant.isAuthorized() which will check token type
-    const result = await this.services.auth.isAuthorized(input, userId, scopeOverride);
+    const result = await this.services.auth.isAuthorized(input, userId);
 
     if (result.authorized || result.reason !== AuthorizationReason.NotAuthenticated) {
       const currentTimeSeconds = Math.floor(Date.now() / 1000);

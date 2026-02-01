@@ -50,11 +50,14 @@ export const resourceAuditLogs = pgTable(
       .references(() => users.id)
       .notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
+    scopeTenant: varchar('scope_tenant', { length: 50 }),
+    scopeId: varchar('scope_id', { length: 255 }),
   },
   (t) => [
     index('resource_audit_logs_resource_id_idx').on(t.resourceId),
     index('resource_audit_logs_action_idx').on(t.action),
     index('resource_audit_logs_performed_by_idx').on(t.performedBy),
+    index('resource_audit_logs_scope_tenant_idx').on(t.scopeTenant),
   ]
 );
 

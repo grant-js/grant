@@ -28,8 +28,8 @@ import {
 export class OrganizationPermissionService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: GrantAuth | null,
-    db: DbSchema
+    readonly user: GrantAuth | null,
+    readonly db: DbSchema
   ) {
     super(organizationPermissionsAuditLogs, 'organizationPermissionId', user, db);
   }
@@ -90,7 +90,6 @@ export class OrganizationPermissionService extends AuditService {
       await this.organizationExists(validatedParams.organizationId, transaction);
     }
 
-    // Query by permissionId or organizationId (permissionId is part of unique index)
     const queryParams = params.permissionId
       ? { permissionId: params.permissionId }
       : (params as QueryOrganizationPermissionsInput);

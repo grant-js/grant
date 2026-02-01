@@ -5,6 +5,8 @@ import { config } from '@/config';
 import { createModuleLogger } from '@/lib/logger';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
+import type { Scope } from '@grantjs/schema';
+
 export interface AuditLogParams {
   entityId: string;
   action: string;
@@ -27,8 +29,21 @@ export abstract class AuditService {
     return this.user !== null ? this.user.userId : config.system.systemUserId;
   }
 
+  protected getScope(): Scope | null {
+    return this.user?.scope ?? null;
+  }
+
   protected async logAction(params: AuditLogParams, transaction?: Transaction): Promise<void> {
     const dbInstance = transaction || this.db;
+    const scope = this.getScope();
+    this.logger.debug(
+      {
+        scope,
+        entityId: params.entityId,
+        action: params.action,
+      },
+      'AuditService.logAction: resolved scope for audit log'
+    );
     try {
       const insertData: any = {
         [this.entityIdField]: params.entityId,
@@ -38,7 +53,16 @@ export abstract class AuditService {
         metadata: params.metadata ? JSON.stringify(params.metadata) : null,
         performedBy: this.getPerformedBy(),
         createdAt: new Date(),
+        ...(scope && {
+          scopeTenant: String(scope.tenant),
+          scopeId: scope.id,
+        }),
       };
+
+      this.logger.debug(
+        { scopeTenant: insertData.scopeTenant ?? null, scopeId: insertData.scopeId ?? null },
+        'AuditService.logAction: insert payload scope fields'
+      );
 
       await dbInstance.insert(this.auditLogsTable).values(insertData);
     } catch (error) {

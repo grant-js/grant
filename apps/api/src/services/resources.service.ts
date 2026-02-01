@@ -34,8 +34,8 @@ import {
 export class ResourceService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: GrantAuth | null,
-    db: DbSchema
+    readonly user: GrantAuth | null,
+    readonly db: DbSchema
   ) {
     super(resourceAuditLogs, 'resourceId', user, db);
   }

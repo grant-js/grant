@@ -31,8 +31,8 @@ import {
 export class GroupTagService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: GrantAuth | null,
-    db: DbSchema
+    readonly user: GrantAuth | null,
+    readonly db: DbSchema
   ) {
     super(groupTagsAuditLogs, 'groupTagId', user, db);
   }

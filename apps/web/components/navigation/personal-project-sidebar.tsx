@@ -28,6 +28,11 @@ export function PersonalProjectSidebar({ ...props }: ComponentProps<typeof Sideb
           url: `/dashboard/accounts/${accountId}/projects`,
           icon: FolderOpen,
         },
+        {
+          title: t('accountTags'),
+          url: `/dashboard/accounts/${accountId}/tags`,
+          icon: Tag,
+        },
       ],
     },
     {

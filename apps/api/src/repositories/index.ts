@@ -4,6 +4,7 @@ import { AccountProjectApiKeyRepository } from './account-project-api-keys.repos
 import { AccountProjectTagRepository } from './account-project-tags.repository';
 import { AccountProjectRepository } from './account-projects.repository';
 import { AccountRoleRepository } from './account-roles.repository';
+import { AccountTagsRepository } from './account-tags.repository';
 import { AccountRepository } from './accounts.repository';
 import { ApiKeyRepository } from './api-keys.repository';
 import { GroupPermissionRepository } from './group-permissions.repository';
@@ -51,6 +52,7 @@ export function createRepositories(db: DbSchema) {
     accountProjectTagRepository: new AccountProjectTagRepository(db),
     accountRoleRepository: new AccountRoleRepository(db),
     accountRepository: new AccountRepository(db),
+    accountTagsRepository: new AccountTagsRepository(db),
     apiKeyRepository: new ApiKeyRepository(db),
     groupPermissionRepository: new GroupPermissionRepository(db),
     groupTagRepository: new GroupTagRepository(db),

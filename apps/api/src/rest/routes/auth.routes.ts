@@ -321,8 +321,7 @@ export function createAuthRoutes(context: RequestContext) {
     authenticateRestRoute,
     validate({ body: isAuthorizedRequestSchema }),
     async (req: TypedRequest<{ body: typeof isAuthorizedRequestSchema }>, res: Response) => {
-      const { scope, ...input } = req.body;
-      const result = await context.handlers.auth.isAuthorized(input, scope);
+      const result = await context.handlers.auth.isAuthorized(req.body);
       sendSuccessResponse(res, result);
     }
   );

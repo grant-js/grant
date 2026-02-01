@@ -1,10 +1,5 @@
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
-import {
-  IsAuthorizedContextInput,
-  IsAuthorizedPermissionInput,
-  Resolver,
-  Scope,
-} from '@grantjs/schema';
+import { IsAuthorizedContextInput, IsAuthorizedPermissionInput, Resolver } from '@grantjs/schema';
 import { GraphQLResolveInfo } from 'graphql';
 
 import { GraphqlContext } from '@/graphql/types';
@@ -60,10 +55,10 @@ export function authorizeGraphQLResolver<
       throw new AuthenticationError('Unauthorized', 'errors.auth.unauthorized');
     }
 
-    const argsWithScope = args as { scope?: Scope; input?: { scope?: Scope } };
-    const requestScope = argsWithScope.scope || argsWithScope.input?.scope;
+    const gqlContext = context as GraphqlContext;
+    const scope = gqlContext.user?.scope ?? null;
 
-    if (!requestScope) {
+    if (!scope) {
       throw new BadRequestError('Scope is required', 'errors.validation.scope_required');
     }
 
@@ -72,16 +67,14 @@ export function authorizeGraphQLResolver<
     if (options.resourceResolver) {
       const resolver =
         typeof options.resourceResolver === 'string'
-          ? ((context as GraphqlContext).resourceResolvers[
-              options.resourceResolver
-            ] as unknown as ResourceResolver)
+          ? (gqlContext.resourceResolvers[options.resourceResolver] as unknown as ResourceResolver)
           : options.resourceResolver;
 
       if (resolver) {
         resolvedResource = await resolver({
           resourceSlug: options.resource,
-          scope: requestScope,
-          context: context as GraphqlContext,
+          scope,
+          context: gqlContext,
           request: args,
         });
 
@@ -100,13 +93,10 @@ export function authorizeGraphQLResolver<
       action: options.action,
     };
 
-    const result = await (context as GraphqlContext).handlers.auth.isAuthorized(
-      {
-        permission,
-        context: authContext,
-      },
-      requestScope
-    );
+    const result = await gqlContext.handlers.auth.isAuthorized({
+      permission,
+      context: authContext,
+    });
 
     if (!result.authorized) {
       throw new AuthorizationError('Forbidden', 'errors.auth.forbidden', undefined, {

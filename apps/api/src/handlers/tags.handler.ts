@@ -63,6 +63,9 @@ export class TagHandler extends CacheHandler {
       const { id: tagId } = tag;
 
       switch (scope.tenant) {
+        case Tenant.Account:
+          await this.services.accountTags.addAccountTag({ accountId: scope.id, tagId }, tx);
+          break;
         case Tenant.Organization:
           await this.services.organizationTags.addOrganizationTag(
             { organizationId: scope.id, tagId },
@@ -95,6 +98,12 @@ export class TagHandler extends CacheHandler {
     return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
       const { id: tagId, scope, hardDelete } = params;
       switch (scope.tenant) {
+        case Tenant.Account:
+          await this.services.accountTags.removeAccountTag(
+            { accountId: scope.id, tagId, hardDelete },
+            tx
+          );
+          break;
         case Tenant.Organization:
           await this.services.organizationTags.removeOrganizationTag(
             { organizationId: scope.id, tagId, hardDelete },

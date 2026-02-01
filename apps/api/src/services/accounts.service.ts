@@ -30,7 +30,7 @@ import {
 export class AccountService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: GrantAuth | null,
+    readonly user: GrantAuth | null,
     readonly db: DbSchema
   ) {
     super(accountAuditLogs, 'accountId', user, db);

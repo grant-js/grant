@@ -60,8 +60,8 @@ export type Otp = Token;
 export class UserAuthenticationMethodService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: GrantAuth | null,
-    db: DbSchema
+    readonly user: GrantAuth | null,
+    readonly db: DbSchema
   ) {
     super(userAuthenticationMethodsAuditLogs, 'userAuthenticationMethodId', user, db);
   }
@@ -143,7 +143,6 @@ export class UserAuthenticationMethodService extends AuditService {
 
     validateInput(createUserAuthenticationMethodInputSchema, params, context);
 
-    // Check if THIS USER already has this provider type (prevent duplicate providers per user)
     const existingMethods = await this.getUserAuthenticationMethods(
       { userId: params.userId },
       transaction
@@ -158,8 +157,6 @@ export class UserAuthenticationMethodService extends AuditService {
       );
     }
 
-    // Check if provider+providerId combination exists for another user (cross-user conflict)
-    // This validates global uniqueness and provides a better error message
     const existingAuthMethod = await this.findByProviderAndProviderId(
       params.provider,
       params.providerId,
@@ -174,7 +171,6 @@ export class UserAuthenticationMethodService extends AuditService {
       );
     }
 
-    // Determine if this should be primary (set as primary if no primary exists)
     const hasPrimaryMethod = existingMethods.some((m) => m.isPrimary);
     const isPrimary = !hasPrimaryMethod;
 
@@ -182,7 +178,7 @@ export class UserAuthenticationMethodService extends AuditService {
       await this.repositories.userAuthenticationMethodRepository.createUserAuthenticationMethod(
         {
           ...params,
-          isPrimary, // Explicitly set isPrimary
+          isPrimary,
         },
         transaction
       );
@@ -301,7 +297,6 @@ export class UserAuthenticationMethodService extends AuditService {
 
     const oldUserAuthenticationMethod = await this.getUserAuthenticationMethod(id);
 
-    // Prevent deletion of primary authentication method
     if (oldUserAuthenticationMethod.isPrimary) {
       throw new BadRequestError(
         'Cannot delete primary authentication method',
@@ -309,7 +304,6 @@ export class UserAuthenticationMethodService extends AuditService {
       );
     }
 
-    // Prevent deletion of last authentication method
     const allMethods = await this.getUserAuthenticationMethods(
       { userId: oldUserAuthenticationMethod.userId },
       transaction
@@ -383,13 +377,10 @@ export class UserAuthenticationMethodService extends AuditService {
     providerData: Record<string, unknown>,
     context: string
   ): ProcessedProvider {
-    // Validate email format
     validateInput(emailSchema, email, context);
 
-    // Extract name from email (left side before @)
     const emailName = email.split('@')[0] || 'User';
 
-    // Validate provider data structure
     const validatedProviderData = validateInput(emailProviderDataSchema, providerData, context);
 
     switch (validatedProviderData.action) {
@@ -403,7 +394,6 @@ export class UserAuthenticationMethodService extends AuditService {
         };
       case UserAuthenticationEmailProviderAction.Register:
       case UserAuthenticationEmailProviderAction.Connect: {
-        // Validate password meets policy requirements
         const validatedPassword = validateInput(
           passwordPolicySchema,
           validatedProviderData.password,
@@ -430,10 +420,8 @@ export class UserAuthenticationMethodService extends AuditService {
     providerData: Record<string, unknown>,
     context: string
   ): ProcessedProvider {
-    // Validate provider data structure
     const validatedProviderData = validateInput(githubProviderDataSchema, providerData, context);
 
-    // Validate providerId matches githubId
     const githubIdStr = validatedProviderData.githubId.toString();
     if (providerId !== githubIdStr) {
       throw new ValidationError(
@@ -443,21 +431,18 @@ export class UserAuthenticationMethodService extends AuditService {
       );
     }
 
-    // Extract name from GitHub provider data
     const name = validatedProviderData.name || providerId || 'User';
 
-    // Store GitHub-specific data
-    // GitHub accounts are considered verified (no email verification needed)
     return {
       providerData: {
-        accessToken: validatedProviderData.accessToken, // Store for future GitHub API calls
+        accessToken: validatedProviderData.accessToken,
         githubId: validatedProviderData.githubId,
-        email: validatedProviderData.email || null, // Email may be null if private
-        name: validatedProviderData.name || null, // Display name
-        avatarUrl: validatedProviderData.avatarUrl || null, // Profile picture URL
-        verifiedAt: new Date().toISOString(), // GitHub accounts are pre-verified
+        email: validatedProviderData.email || null,
+        name: validatedProviderData.name || null,
+        avatarUrl: validatedProviderData.avatarUrl || null,
+        verifiedAt: new Date().toISOString(),
       },
-      isVerified: true, // GitHub accounts are pre-verified
+      isVerified: true,
       name,
     };
   }

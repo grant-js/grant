@@ -34,8 +34,8 @@ import {
 export class RoleService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: GrantAuth | null,
-    db: DbSchema
+    readonly user: GrantAuth | null,
+    readonly db: DbSchema
   ) {
     super(roleAuditLogs, 'roleId', user, db);
   }
@@ -99,7 +99,6 @@ export class RoleService extends AuditService {
     const context = 'RoleService.createRole';
     const validatedParams = validateInput(createRoleInputSchema, params, context);
 
-    // Validate that the role name is not a reserved core platform role name
     this.validateRoleNameNotReserved(validatedParams.name);
 
     const role = await this.repositories.roleRepository.createRole(validatedParams, transaction);
@@ -130,7 +129,6 @@ export class RoleService extends AuditService {
     const context = 'RoleService.updateRole';
     validateInput(updateRoleArgsSchema, { id, input }, context);
 
-    // If the role name is being updated, validate that it's not a reserved core platform role name
     if (input.name) {
       this.validateRoleNameNotReserved(input.name);
     }

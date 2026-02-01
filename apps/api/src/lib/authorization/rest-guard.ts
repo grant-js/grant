@@ -6,7 +6,6 @@ import { ResourceResolversMap } from '@/resource-resolvers';
 import { ContextRequest } from '@/types';
 
 import { isAuthenticatedRest } from './auth-guard';
-import { extractScopeFromRequest } from './scope-extractor';
 import { ResourceResolver } from './types';
 
 export interface RestGuardOptions {
@@ -27,9 +26,10 @@ export function authorizeRestRoute(options: RestGuardOptions) {
       });
     }
 
-    const requestScope = extractScopeFromRequest(req);
+    const { context } = contextReq;
+    const scope = context.user?.scope ?? null;
 
-    if (!requestScope) {
+    if (!scope) {
       return res.status(400).json({
         error: 'Scope required',
         code: 'SCOPE_REQUIRED',
@@ -44,16 +44,14 @@ export function authorizeRestRoute(options: RestGuardOptions) {
     if (options.resourceResolver) {
       const resolver =
         typeof options.resourceResolver === 'string'
-          ? (contextReq.context.resourceResolvers[
-              options.resourceResolver
-            ] as unknown as ResourceResolver)
+          ? (context.resourceResolvers[options.resourceResolver] as unknown as ResourceResolver)
           : options.resourceResolver;
 
       if (resolver) {
         resolvedResource = await resolver({
           resourceSlug: options.resource,
-          scope: requestScope,
-          context: contextReq.context,
+          scope,
+          context,
           request: req,
         });
 
@@ -75,13 +73,10 @@ export function authorizeRestRoute(options: RestGuardOptions) {
       action: options.action,
     };
 
-    const result = await contextReq.context.handlers.auth.isAuthorized(
-      {
-        permission,
-        context: authContext,
-      },
-      requestScope
-    );
+    const result = await context.handlers.auth.isAuthorized({
+      permission,
+      context: authContext,
+    });
 
     if (!result.authorized) {
       return res.status(403).json({

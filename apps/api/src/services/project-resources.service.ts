@@ -28,8 +28,8 @@ import {
 export class ProjectResourceService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    user: GrantAuth | null,
-    db: DbSchema
+    readonly user: GrantAuth | null,
+    readonly db: DbSchema
   ) {
     super(projectResourceAuditLogs, 'projectResourceId', user, db);
   }

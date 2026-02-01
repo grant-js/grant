@@ -29,13 +29,19 @@ export const entityAuditLogs = pgTable(
     metadata: varchar('metadata', { length: 1000 }),
     performedBy: uuid('performed_by').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
+    scopeTenant: varchar('scope_tenant', { length: 50 }),
+    scopeId: varchar('scope_id', { length: 255 }),
   },
   (t) => [
     index('entity_audit_logs_entity_id_idx').on(t.entityId),
     index('entity_audit_logs_action_idx').on(t.action),
+    index('entity_audit_logs_scope_tenant_idx').on(t.scopeTenant),
   ]
 );
 ```
+
+- **scopeTenant** – Tenant type (e.g. `account`, `organization`, `organizationProject`, `accountProject`). Populated from authenticated request scope only, never from user input.
+- **scopeId** – Scope identifier (e.g. organization ID, or composite `organizationId:projectId`). Enables filtering audit logs by tenant for compliance and forensics.
 
 ## Key Standardization Changes
 
@@ -171,6 +177,38 @@ await tx.insert(roleAuditLogs).values({
 ```
 
 ## Querying Audit Logs
+
+### Querying by Tenant (Scope)
+
+For multi-tenant deployments, every audit log table includes optional `scope_tenant` and `scope_id` columns. Use them to filter logs by organization or project for compliance and forensics. Scope is always taken from the authenticated context when writing; never from client input.
+
+```typescript
+// Get all audit logs for a given tenant (e.g. one organization)
+const orgLogs = await db
+  .select()
+  .from(projectAuditLogs)
+  .where(
+    and(
+      eq(projectAuditLogs.scopeTenant, 'organization'),
+      eq(projectAuditLogs.scopeId, organizationId)
+    )
+  )
+  .orderBy(desc(projectAuditLogs.createdAt));
+
+// Get audit logs for a specific project scope (organizationProject)
+const projectLogs = await db
+  .select()
+  .from(projectAuditLogs)
+  .where(
+    and(
+      eq(projectAuditLogs.scopeTenant, 'organizationProject'),
+      eq(projectAuditLogs.scopeId, `${organizationId}:${projectId}`)
+    )
+  )
+  .orderBy(desc(projectAuditLogs.createdAt));
+```
+
+Indexes on `scope_tenant` (and optionally composite `scope_tenant`, `scope_id`) support efficient tenant-scoped queries. Older rows may have `scope_tenant` and `scope_id` as `null` before tenant-aware audit logging was enabled.
 
 ### Basic Queries
 

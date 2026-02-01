@@ -1,5 +1,5 @@
 import { GrantAuth } from '@grantjs/core';
-import { DbSchema } from '@grantjs/database';
+import { DbSchema, accountProjectApiKeyAuditLogs } from '@grantjs/database';
 import { AccountProjectApiKey } from '@grantjs/schema';
 
 import { BadRequestError, NotFoundError } from '@/lib/errors';
@@ -11,14 +11,16 @@ import {
   addAccountProjectApiKeyParamsSchema,
   getAccountProjectApiKeysParamsSchema,
 } from './account-project-api-keys.schemas';
-import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
+import { AuditService, createDynamicSingleSchema, validateInput, validateOutput } from './common';
 
-export class AccountProjectApiKeyService {
+export class AccountProjectApiKeyService extends AuditService {
   constructor(
     private readonly repositories: Repositories,
-    private readonly user: GrantAuth | null,
-    private readonly db: DbSchema
-  ) {}
+    readonly user: GrantAuth | null,
+    readonly db: DbSchema
+  ) {
+    super(accountProjectApiKeyAuditLogs, 'accountProjectApiKeyId', user, db);
+  }
 
   private async ensureAccountProjectExists(
     accountId: string,
