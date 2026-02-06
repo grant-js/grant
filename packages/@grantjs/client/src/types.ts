@@ -99,6 +99,10 @@ export interface PermissionQueryOptions {
   scope?: Scope;
   /** Whether to use cached results (default: true) */
   useCache?: boolean;
+  /** Resource to check permissions for */
+  context?: {
+    resource?: Record<string, unknown> | null;
+  };
 }
 
 /**

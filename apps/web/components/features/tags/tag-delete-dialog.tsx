@@ -17,6 +17,9 @@ export function TagDeleteDialog() {
 
   const canDelete = useGrant(ResourceSlug.Tag, ResourceAction.Delete, {
     scope: scope!,
+    context: tagToDelete
+      ? { resource: { id: tagToDelete.id, scope: { tags: [tagToDelete.id] } } }
+      : undefined,
   });
   const requiresEmailVerification = useRequiresEmailVerificationForMutation(scope);
 

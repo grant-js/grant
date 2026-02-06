@@ -292,14 +292,18 @@ export const Mutation = {
   updateTag: requireEmailVerificationGraphQL(
     ALLOW_PERSONAL,
     authorizeGraphQLResolver(
-      { resource: ResourceSlug.Tag, action: ResourceAction.Update },
+      {
+        resource: ResourceSlug.Tag,
+        action: ResourceAction.Update,
+        resourceResolver: 'tag',
+      },
       tagMutations.updateTag!
     )
   ),
   deleteTag: requireEmailVerificationGraphQL(
     ALLOW_PERSONAL,
     authorizeGraphQLResolver(
-      { resource: ResourceSlug.Tag, action: ResourceAction.Delete },
+      { resource: ResourceSlug.Tag, action: ResourceAction.Delete, resourceResolver: 'tag' },
       tagMutations.deleteTag!
     )
   ),

@@ -17,6 +17,9 @@ export function ProjectDeleteDialog() {
 
   const canDelete = useGrant(ResourceSlug.Project, ResourceAction.Delete, {
     scope: scope!,
+    context: projectToDelete
+      ? { resource: { id: projectToDelete.id, scope: { projects: [projectToDelete.id] } } }
+      : undefined,
   });
   const requiresEmailVerification = useRequiresEmailVerificationForMutation(scope);
 

@@ -32,9 +32,11 @@ export function TagActions({ tag }: TagActionsProps) {
   // Check permissions using the Grant client (always call hooks, pass undefined scope if not available)
   const canUpdate = useGrant(ResourceSlug.Tag, ResourceAction.Update, {
     scope: scope!,
+    context: { resource: { id: tag.id, scope: { tags: [tag.id] } } },
   });
   const canDelete = useGrant(ResourceSlug.Tag, ResourceAction.Delete, {
     scope: scope!,
+    context: { resource: { id: tag.id, scope: { tags: [tag.id] } } },
   });
   const requiresEmailVerification = useRequiresEmailVerificationForMutation(scope);
 

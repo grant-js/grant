@@ -71,7 +71,9 @@ export class GrantClient {
     action: string,
     options?: PermissionQueryOptions
   ): Promise<AuthorizationResult> {
-    const cacheKey = this.getCacheKey('auth', resource, action, options?.scope);
+    const contextResourceKey =
+      options?.context?.resource != null ? JSON.stringify(options.context.resource) : undefined;
+    const cacheKey = this.getCacheKey('auth', resource, action, options?.scope, contextResourceKey);
 
     // Check cache first (unless explicitly disabled)
     if (options?.useCache !== false) {
@@ -94,7 +96,7 @@ export class GrantClient {
             action,
           },
           context: {
-            resource: hasValidScope ? { id: scope.id } : null,
+            resource: options?.context?.resource ?? null,
           },
           // Pass scope for dynamic scope override (only works with session tokens)
           ...(hasValidScope && { scope }),

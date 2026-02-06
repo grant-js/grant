@@ -32,6 +32,9 @@ export function ProjectEditDialog() {
 
   const canUpdate = useGrant(ResourceSlug.Project, ResourceAction.Update, {
     scope: scope!,
+    context: projectToEdit
+      ? { resource: { id: projectToEdit.id, scope: { projects: [projectToEdit.id] } } }
+      : undefined,
   });
   const requiresEmailVerification = useRequiresEmailVerificationForMutation(scope);
 

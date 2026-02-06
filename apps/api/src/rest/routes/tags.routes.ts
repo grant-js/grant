@@ -12,7 +12,7 @@ import { authorizeRestRoute, requireEmailVerificationRest } from '@/lib/authoriz
 import { validate } from '@/middleware/validation.middleware';
 import {
   createTagRequestSchema,
-  deleteTagQuerySchema,
+  deleteTagBodySchema,
   getTagsQuerySchema,
   tagParamsSchema,
   updateTagRequestSchema,
@@ -78,30 +78,25 @@ export function createTagsRouter(context: RequestContext): Router {
     validate({
       params: tagParamsSchema,
       body: updateTagRequestSchema,
-      query: deleteTagQuerySchema,
     }),
     requireEmailVerificationRest({ allowPersonalContext: true }),
     authorizeRestRoute({
       resource: ResourceSlug.Tag,
       action: ResourceAction.Update,
+      resourceResolver: 'tag',
     }),
     async (
       req: TypedRequest<{
         params: typeof tagParamsSchema;
         body: typeof updateTagRequestSchema;
-        query: typeof deleteTagQuerySchema;
       }>,
       res
     ) => {
       const { id } = req.params;
-      const { scopeId, tenant } = req.query;
 
       const variables: UpdateTagMutationVariables = {
         id,
-        input: {
-          ...req.body,
-          scope: { id: scopeId, tenant },
-        },
+        input: req.body,
       };
 
       const tag: Tag = await context.handlers.tags.updateTag(variables);
@@ -112,25 +107,25 @@ export function createTagsRouter(context: RequestContext): Router {
 
   router.delete(
     '/:id',
-    validate({ params: tagParamsSchema, query: deleteTagQuerySchema }),
+    validate({ params: tagParamsSchema, body: deleteTagBodySchema }),
     requireEmailVerificationRest({ allowPersonalContext: true }),
     authorizeRestRoute({
       resource: ResourceSlug.Tag,
       action: ResourceAction.Delete,
+      resourceResolver: 'tag',
     }),
     async (
       req: TypedRequest<{
         params: typeof tagParamsSchema;
-        query: typeof deleteTagQuerySchema;
+        body: typeof deleteTagBodySchema;
       }>,
       res: Response
     ) => {
       const { id } = req.params;
-      const { scopeId, tenant } = req.query;
 
       const variables: DeleteTagMutationVariables = {
         id,
-        scope: { id: scopeId, tenant },
+        scope: req.body.scope,
       };
 
       const tag: Tag = await context.handlers.tags.deleteTag(variables);

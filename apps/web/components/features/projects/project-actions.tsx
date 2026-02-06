@@ -26,9 +26,11 @@ export function ProjectActions({ project }: ProjectActionsProps) {
   // Check permissions using the Grant client (always call hooks, pass undefined scope if not available)
   const canUpdate = useGrant(ResourceSlug.Project, ResourceAction.Update, {
     scope: scope!,
+    context: { resource: { id: project.id, scope: { projects: [project.id] } } },
   });
   const canDelete = useGrant(ResourceSlug.Project, ResourceAction.Delete, {
     scope: scope!,
+    context: { resource: { id: project.id, scope: { projects: [project.id] } } },
   });
   const requiresEmailVerification = useRequiresEmailVerificationForMutation(scope);
 

@@ -31,6 +31,9 @@ export function TagEditDialog() {
 
   const canUpdate = useGrant(ResourceSlug.Tag, ResourceAction.Update, {
     scope: scope!,
+    context: tagToEdit
+      ? { resource: { id: tagToEdit.id, scope: { tags: [tagToEdit.id] } } }
+      : undefined,
   });
   const requiresEmailVerification = useRequiresEmailVerificationForMutation(scope);
 

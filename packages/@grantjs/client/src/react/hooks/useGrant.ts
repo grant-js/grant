@@ -18,6 +18,10 @@ export interface UseGrantOptions {
   useCache?: boolean;
   /** Whether to return loading state (default: false) */
   returnLoading?: boolean;
+  /** Context to check permissions for */
+  context?: {
+    resource?: Record<string, unknown> | null;
+  };
 }
 
 /**
@@ -76,7 +80,7 @@ export function useGrant(
   action: string,
   options: UseGrantOptions = {}
 ): boolean | UseGrantResult {
-  const { scope, enabled = true, useCache = true, returnLoading = false } = options;
+  const { scope, enabled = true, useCache = true, returnLoading = false, context } = options;
   const client = useGrantClient();
 
   // Track if scope was explicitly provided (even if null/undefined)
@@ -105,8 +109,18 @@ export function useGrant(
   const scopeRef = useRef(scope);
   scopeRef.current = scope;
 
+  // Store context in a ref so the callback always sends the latest context
+  const contextRef = useRef(context);
+  contextRef.current = context;
+
   // Serialize scope to get a stable string for dependency comparison
   const scopeKey = serializeScope(scope);
+
+  // Serialize context so we re-create the callback when context meaningfully changes
+  const contextKey = useMemo(
+    () => (context?.resource != null ? JSON.stringify(context.resource) : ''),
+    [context?.resource]
+  );
 
   const fetchPermission = useCallback(async () => {
     if (!isEffectivelyEnabled) {
@@ -117,11 +131,12 @@ export function useGrant(
     setIsLoading(true);
 
     try {
-      // Use scopeRef.current to get the latest scope value
+      // Use scopeRef.current and contextRef.current to get the latest values
       // Convert null to undefined for the client (which expects Scope | undefined)
       const result = await client.isAuthorized(resource, action, {
         scope: scopeRef.current ?? undefined,
         useCache,
+        context: contextRef.current,
       });
       if (isMounted.current) {
         setData(result);
@@ -136,10 +151,9 @@ export function useGrant(
         setIsLoading(false);
       }
     }
-    // Use scopeKey instead of scope for stable dependency comparison
-    // isEffectivelyEnabled is included to re-run when scope becomes valid
+    // contextKey ensures we re-run when context (e.g. resource) changes so the request gets the latest context
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, resource, action, scopeKey, isEffectivelyEnabled, useCache]);
+  }, [client, resource, action, scopeKey, isEffectivelyEnabled, useCache, contextKey]);
 
   useEffect(() => {
     isMounted.current = true;

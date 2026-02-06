@@ -4,7 +4,7 @@ import {
   authenticationErrorResponseSchema,
   createTagRequestSchema,
   createTagResponseSchema,
-  deleteTagQuerySchema,
+  deleteTagBodySchema,
   deleteTagResponseSchema,
   errorResponseSchema,
   getTagsQuerySchema,
@@ -264,7 +264,20 @@ You must provide the scope context:
     `.trim(),
     request: {
       params: tagParamsSchema,
-      query: deleteTagQuerySchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: deleteTagBodySchema,
+            example: {
+              scope: {
+                id: '123e4567-e89b-12d3-a456-426614174008',
+                tenant: 'account',
+              },
+              hardDelete: false,
+            },
+          },
+        },
+      },
     },
     responses: {
       200: {

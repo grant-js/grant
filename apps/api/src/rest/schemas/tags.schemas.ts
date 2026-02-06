@@ -1,3 +1,4 @@
+import { TAG_COLORS, TagColor } from '@grantjs/constants';
 import { SortOrder, TagSortField } from '@grantjs/schema';
 
 import { z } from '@/lib/zod-openapi.lib';
@@ -39,11 +40,12 @@ export const createTagRequestSchema = z.object({
     example: 'Frontend',
   }),
   color: z
-    .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/, 'Color must be a valid hex color')
+    .enum(TAG_COLORS as [TagColor, ...TagColor[]], {
+      message: 'Color must be one of the allowed tag colors',
+    })
     .openapi({
-      description: 'Hex color code for the tag',
-      example: '#3B82F6',
+      description: 'Tag color (named color from the allowed palette)',
+      example: 'blue',
     }),
   scope: scopeSchema,
 });
@@ -51,17 +53,19 @@ export const createTagRequestSchema = z.object({
 export const createTagResponseSchema = createSuccessResponseSchema(tagSchema);
 
 export const updateTagRequestSchema = z.object({
+  scope: scopeSchema,
   name: z.string().min(1, 'Name is required').max(255, 'Name too long').optional().openapi({
     description: 'Updated name of the tag',
     example: 'Backend',
   }),
   color: z
-    .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/, 'Color must be a valid hex color')
+    .enum(TAG_COLORS as [TagColor, ...TagColor[]], {
+      message: 'Color must be one of the allowed tag colors',
+    })
     .optional()
     .openapi({
-      description: 'Updated hex color code for the tag',
-      example: '#10B981',
+      description: 'Updated tag color (named color from the allowed palette)',
+      example: 'emerald',
     }),
 });
 
@@ -77,6 +81,11 @@ export const tagParamsSchema = z.object({
 });
 
 export const updateTagResponseSchema = createSuccessResponseSchema(tagSchema);
+
+export const deleteTagBodySchema = z.object({
+  scope: scopeSchema,
+  hardDelete: z.boolean().optional().default(false),
+});
 
 export const deleteTagQuerySchema = z.object({
   scopeId: z.uuid('Invalid scope ID'),

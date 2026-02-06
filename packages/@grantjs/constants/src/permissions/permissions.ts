@@ -94,12 +94,38 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
     {
       action: ResourceAction.Update,
       resource: ResourceSlug.Project,
-      condition: null,
+      condition: {
+        [ComparisonOperator.In]: {
+          'resource.id': '{{resource.scope.projects}}',
+        },
+      },
     },
     {
       action: ResourceAction.Delete,
       resource: ResourceSlug.Project,
-      condition: null,
+      condition: {
+        [ComparisonOperator.In]: {
+          'resource.id': '{{resource.scope.projects}}',
+        },
+      },
+    },
+    {
+      action: ResourceAction.Update,
+      resource: ResourceSlug.Tag,
+      condition: {
+        [ComparisonOperator.In]: {
+          'resource.id': '{{resource.scope.tags}}',
+        },
+      },
+    },
+    {
+      action: ResourceAction.Delete,
+      resource: ResourceSlug.Tag,
+      condition: {
+        [ComparisonOperator.In]: {
+          'resource.id': '{{resource.scope.tags}}',
+        },
+      },
     },
   ],
 
