@@ -539,6 +539,16 @@ Organization: "TechCorp"
 - **Secure Access**: Explicit access control via pivot tables with audit trails
 - **API Integration**: Standardized APIs for integration with external systems
 
+## Background jobs and tenant context
+
+Async jobs that act on tenant-scoped data must receive and validate tenant/scope so that context is never lost and cross-tenant actions are prevented. **Use cases:** recurring platform-wide work (e.g. data retention) → scheduled jobs, no scope; one-off work triggered by a user (e.g. export, report) → enqueue from the request handler with `scope` from auth. Grant follows a single pattern for this:
+
+- **Job payload:** Execution context may include optional `scope` (`{ tenant, id }`) and `payload`. For tenant-scoped jobs, scope is required and must come from the authenticated context when the job is enqueued.
+- **Validation:** Tenant-scoped jobs must call `validateTenantJobContext(context, true)` at the start of execution; jobs missing or invalid scope are rejected.
+- **Enqueue from handlers:** When enqueueing jobs from REST/GraphQL handlers, always pass `scope` from the authenticated request context (e.g. `req.context.scope`), never from client input. Scope is the tenant (type + id).
+
+See [Job Scheduling & Background Tasks](/advanced-topics/job-scheduling#6-background-jobs-and-tenant-context) for types, examples, and the enqueue API.
+
 ## Technical Considerations
 
 ### Database Design

@@ -10,6 +10,8 @@ import {
   ScheduledJob,
 } from '../job-adapter.interface';
 
+import type { Scope } from '@grantjs/schema';
+
 interface BullMQConfig {
   host: string;
   port: number;
@@ -94,10 +96,17 @@ export class BullMQJobAdapter implements IJobAdapter {
             return;
           }
 
+          const data = jobData.data as {
+            jobId?: string;
+            scope?: Scope;
+            payload?: unknown;
+          };
           const context: JobExecutionContext = {
             jobId,
             scheduledAt: new Date(jobData.timestamp),
             startedAt: new Date(),
+            ...(data.scope && { scope: data.scope }),
+            ...(data.payload !== undefined && { payload: data.payload }),
           };
 
           const result = await handler(context);
@@ -182,6 +191,23 @@ export class BullMQJobAdapter implements IJobAdapter {
     };
 
     return await handler(context);
+  }
+
+  async enqueue(jobId: string, data?: { scope?: Scope; payload?: unknown }): Promise<void> {
+    const handler = this.handlers.get(jobId);
+    if (!handler) {
+      throw new Error(`Job ${jobId} not found`);
+    }
+    await this.queue.add(
+      jobId,
+      {
+        jobId,
+        scope: data?.scope,
+        payload: data?.payload,
+      },
+      { jobId: `grant-enqueue-${jobId}-${Date.now()}` }
+    );
+    this.logger.debug({ jobId, hasScope: Boolean(data?.scope) }, 'Job enqueued');
   }
 
   async shutdown(): Promise<void> {

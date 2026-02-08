@@ -10,6 +10,16 @@ const logger = createModuleLogger('JobInitializer');
 
 let jobAdapter: IJobAdapter | null = null;
 
+/**
+ * Returns the current job adapter when jobs are enabled. Use this to enqueue
+ * one-off jobs from request handlers; always pass scope/tenant from authenticated
+ * context (e.g. req.context.scope), never from client input.
+ * Returns null when jobs are disabled.
+ */
+export function getJobAdapter(): IJobAdapter | null {
+  return jobAdapter;
+}
+
 export async function initializeJobs(appContext: AppContext): Promise<void> {
   if (!config.jobs.enabled) {
     logger.info('Job scheduling is disabled');

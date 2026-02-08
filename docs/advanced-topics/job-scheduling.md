@@ -637,6 +637,52 @@ const mockAdapter: IJobAdapter = {
 };
 ```
 
+### 6. Background jobs and tenant context
+
+For multi-tenant security, jobs that act on tenant-scoped data must receive and validate tenant/scope and never rely on global or implicit context. See [Multi-Tenancy](/architecture/multi-tenancy#background-jobs-and-tenant-context) for the full pattern.
+
+**Use cases**
+
+| Use case                                 | How to run                             | Tenant context                               | Example                                       |
+| ---------------------------------------- | -------------------------------------- | -------------------------------------------- | --------------------------------------------- |
+| **Recurring, platform-wide work**        | **Schedule** (cron)                    | Not needed                                   | Data retention cleanup, system maintenance    |
+| **One-off work triggered by a user**     | **Enqueue** from request handler       | Required: pass `scope` from auth             | Project export, org report, send notification |
+| **Manual/admin trigger (no user scope)** | **Trigger** (or enqueue without scope) | Depends on job; global jobs don’t need scope | Admin cleanup, one-off migration              |
+
+- **Scheduled jobs** run on a timer with no request context; they are usually global (e.g. data retention). They don’t receive `scope` or `payload` from the adapter.
+- **Enqueued jobs** run once, triggered by your code (e.g. after a REST/GraphQL request). For work that touches a single tenant, always pass `scope` from the authenticated request and validate it in the job.
+
+**Contract:**
+
+- **Job payload:** Use the `TenantJobPayload` type from `@/lib/jobs` and `Scope` from `@grantjs/schema`. For any job that operates on tenant-scoped data, include `scope` in the execution context (scope is tenant type + id).
+- **Validation:** In the job’s `execute()` method, call `validateTenantJobContext(context, true)` at the start when the job is tenant-scoped. This rejects jobs missing or invalid scope.
+- **Enqueue from request handlers:** When enqueueing one-off jobs from REST/GraphQL handlers, always pass `scope` from the **authenticated request context** (e.g. `req.context.scope`), never from client-only input. Use `getJobAdapter()` from `@/lib/jobs` and call `adapter.enqueue?.(jobId, { scope, payload })`.
+- **Scheduled vs enqueued:** Recurring scheduled jobs (e.g. data retention) may be global and not require tenant context. Enqueued one-off jobs that touch tenant data must include scope and validate it in the processor.
+
+**Example (tenant-scoped job):**
+
+```typescript
+import { validateTenantJobContext } from '@/lib/jobs';
+
+async execute(context: JobExecutionContext): Promise<JobResult> {
+  validateTenantJobContext(context, true); // throws if scope missing
+  const { scope, payload } = context;
+  // ... use scope and payload for tenant-scoped work
+}
+```
+
+**Example (enqueue from handler):**
+
+```typescript
+const adapter = getJobAdapter();
+if (adapter?.enqueue) {
+  await adapter.enqueue('my-tenant-job', {
+    scope: req.context.scope, // from auth only; scope is tenant (type + id)
+    payload: { resourceId },
+  });
+}
+```
+
 ## Provider Selection Guide
 
 | Scenario        | Recommended Provider | Reason                                  |

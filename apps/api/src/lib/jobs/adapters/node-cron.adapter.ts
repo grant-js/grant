@@ -3,6 +3,7 @@ import cron from 'node-cron';
 import { createModuleLogger } from '@/lib/logger';
 
 import {
+  EnqueueJobData,
   IJobAdapter,
   JobExecutionContext,
   JobHandler,
@@ -90,6 +91,21 @@ export class NodeCronJobAdapter implements IJobAdapter {
       startedAt: new Date(),
     };
 
+    return await handler(context);
+  }
+
+  async enqueue(jobId: string, data?: EnqueueJobData): Promise<JobResult> {
+    const handler = this.handlers.get(jobId);
+    if (!handler) {
+      throw new Error(`Job ${jobId} not found`);
+    }
+    const context: JobExecutionContext = {
+      jobId,
+      scheduledAt: new Date(),
+      startedAt: new Date(),
+      ...(data?.scope && { scope: data.scope }),
+      ...(data?.payload !== undefined && { payload: data.payload }),
+    };
     return await handler(context);
   }
 
