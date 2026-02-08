@@ -10,6 +10,9 @@ type MockSecurity = {
   rateLimitWindowMinutes: number;
   rateLimitAuthMax: number;
   rateLimitAuthWindowMinutes: number;
+  rateLimitPerTenantEnabled: boolean;
+  rateLimitPerTenantMax: number;
+  rateLimitPerTenantWindowMinutes: number;
 };
 
 const { mockSecurity } = vi.hoisted(() => {
@@ -19,10 +22,16 @@ const { mockSecurity } = vi.hoisted(() => {
     rateLimitWindowMinutes: 15,
     rateLimitAuthMax: 2,
     rateLimitAuthWindowMinutes: 15,
+    rateLimitPerTenantEnabled: false,
+    rateLimitPerTenantMax: 200,
+    rateLimitPerTenantWindowMinutes: 15,
   };
   return { mockSecurity: security };
 });
 
+// Per-tenant rate limit is config-based. We test it by mutating mockSecurity; the middleware
+// reads config.security (this same object), so toggling rateLimitPerTenantEnabled / rateLimitPerTenantMax
+// in tests drives whether and how per-tenant limiting is applied.
 vi.mock('@/config', () => ({
   config: { security: mockSecurity },
 }));
@@ -31,13 +40,15 @@ vi.mock('@/lib/headers.lib', () => ({
   getClientIp: vi.fn(() => '192.168.1.1'),
 }));
 
-function createMockReq(overrides: Partial<Request> = {}): Request {
+function createMockReq(
+  overrides: Partial<Request> = {}
+): Request & { context?: { user?: { scope?: { tenant: string; id: string } } } } {
   return {
     method: 'GET',
     path: '/api/some-route',
     headers: {},
     ...overrides,
-  } as Request;
+  } as Request & { context?: { user?: { scope?: { tenant: string; id: string } } } };
 }
 
 function createMockRes(): Response {
@@ -152,6 +163,107 @@ describe('rateLimitMiddleware', () => {
       await middleware(reqLogin, res, next);
       expect(next).toHaveBeenCalledTimes(2);
       expect(res.status).toHaveBeenCalledWith(429);
+    });
+  });
+
+  describe('per-tenant limit (config: mockSecurity.rateLimitPerTenant*)', () => {
+    beforeEach(() => {
+      mockSecurity.rateLimitPerTenantEnabled = true;
+      mockSecurity.rateLimitPerTenantMax = 3;
+      mockSecurity.rateLimitPerTenantWindowMinutes = 15;
+      mockSecurity.rateLimitMax = 100; // high so global does not trigger first
+    });
+
+    it('when rateLimitPerTenantEnabled is false, does not apply per-tenant limit even with scope present', async () => {
+      mockSecurity.rateLimitPerTenantEnabled = false;
+      mockSecurity.rateLimitPerTenantMax = 1; // if per-tenant were applied we would get 429 on 2nd request
+      mockSecurity.rateLimitMax = 100;
+      const req = createMockReq({
+        path: '/api/other',
+        context: {
+          user: {
+            scope: { tenant: 'organization', id: 'org-123' },
+          } as unknown as import('@grantjs/core').GrantAuth,
+        },
+      });
+      const res = createMockRes();
+
+      await middleware(req, res, next);
+      await middleware(req, res, next);
+      expect(next).toHaveBeenCalledTimes(2);
+      expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it('returns 429 when per-tenant limit exceeded and scope is present', async () => {
+      const req = createMockReq({
+        path: '/api/other',
+        context: {
+          user: {
+            scope: { tenant: 'organization', id: 'org-123' },
+          } as unknown as import('@grantjs/core').GrantAuth,
+        },
+      });
+      const res = createMockRes();
+
+      for (let i = 0; i < 3; i++) {
+        await middleware(req, res, next);
+        expect(next).toHaveBeenCalledTimes(i + 1);
+      }
+
+      await middleware(req, res, next);
+      expect(next).toHaveBeenCalledTimes(3);
+      expect(res.status).toHaveBeenCalledWith(429);
+      expect(res.setHeader).toHaveBeenCalledWith('Retry-After', expect.any(String));
+    });
+
+    it('does not apply per-tenant limit when scope is missing', async () => {
+      mockSecurity.rateLimitPerTenantEnabled = true;
+      mockSecurity.rateLimitPerTenantMax = 1;
+      const req = createMockReq({ path: '/api/other' }); // no context.user.scope
+      const res = createMockRes();
+
+      await middleware(req, res, next);
+      await middleware(req, res, next);
+      expect(next).toHaveBeenCalledTimes(2);
+      expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it('isolates per-tenant buckets by scope', async () => {
+      mockSecurity.rateLimitPerTenantMax = 2;
+      const reqA = createMockReq({
+        path: '/api/other',
+        context: {
+          user: {
+            scope: { tenant: 'organization', id: 'org-a' },
+          } as unknown as import('@grantjs/core').GrantAuth,
+        },
+      });
+      const reqB = createMockReq({
+        path: '/api/other',
+        context: {
+          user: {
+            scope: { tenant: 'organization', id: 'org-b' },
+          } as unknown as import('@grantjs/core').GrantAuth,
+        },
+      });
+      const res = createMockRes();
+
+      await middleware(reqA, res, next);
+      await middleware(reqA, res, next);
+      expect(next).toHaveBeenCalledTimes(2);
+
+      await middleware(reqA, res, next);
+      expect(next).toHaveBeenCalledTimes(2);
+      expect(res.status).toHaveBeenCalledWith(429);
+
+      next.mockClear();
+      (res.status as ReturnType<typeof vi.fn>).mockClear();
+      (res.setHeader as ReturnType<typeof vi.fn>).mockClear();
+
+      await middleware(reqB, res, next);
+      await middleware(reqB, res, next);
+      expect(next).toHaveBeenCalledTimes(2);
+      expect(res.status).not.toHaveBeenCalled();
     });
   });
 });

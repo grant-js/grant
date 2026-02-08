@@ -79,13 +79,12 @@ async function startServer() {
   app.use(helmet(config.helmet));
   app.use(express.json({ limit: '10mb' }));
   app.use(i18nMiddleware);
-  app.use(rateLimitMiddleware(cache.rateLimit));
-
   if (config.storage.provider === 'local') {
     app.use('/storage', storageMiddleware());
   }
 
   app.use(contextMiddleware(db, cache));
+  app.use(rateLimitMiddleware(cache.rateLimit));
   app.use(requestLoggingMiddleware);
 
   const openApiDocument = generateOpenApiDocument();

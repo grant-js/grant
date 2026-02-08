@@ -245,6 +245,7 @@ Rate limiting protects against abuse, brute force, and noisy neighbors by cappin
 
 - **Global limit** – Applies to all requests (REST and GraphQL) when enabled. Key: client IP. Limit and window are configurable (e.g. 100 requests per 15 minutes per IP).
 - **Auth endpoint limit** – Stricter limit for sensitive auth routes: `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/cli-callback`, `POST /api/auth/token`. Single bucket per IP across these endpoints (e.g. 20 requests per 15 minutes per IP).
+- **Per-tenant limit (optional)** – When enabled, authenticated requests that include a scope (e.g. organization or project) are also limited per tenant (`scope.tenant` + `scope.id`). This prevents one tenant from consuming the global quota and affecting others (noisy neighbor protection). If the request has no scope (e.g. unauthenticated), only the global and auth limits apply. Disabled by default; enable via `SECURITY_RATE_LIMIT_PER_TENANT_ENABLED`.
 - **Skip paths** – `/health` is never rate limited so load balancers and health checks keep working.
 - **Storage** – Uses the same cache as the rest of the app (in-memory or Redis via `cache.rateLimit`). With Redis, limits are shared across API instances; with memory, each instance has its own window.
 
@@ -269,8 +270,10 @@ Rate limiting protects against abuse, brute force, and noisy neighbors by cappin
 - `SECURITY_ENABLE_RATE_LIMIT` – Enable global rate limiting (default: true in production).
 - `SECURITY_RATE_LIMIT_MAX`, `SECURITY_RATE_LIMIT_WINDOW_MINUTES` – Global limit and window.
 - `SECURITY_RATE_LIMIT_AUTH_MAX`, `SECURITY_RATE_LIMIT_AUTH_WINDOW_MINUTES` – Auth endpoint limit and window.
+- `SECURITY_RATE_LIMIT_PER_TENANT_ENABLED` – Enable per-tenant rate limiting (default: false). When true, authenticated requests with scope are limited per tenant in addition to the global limit.
+- `SECURITY_RATE_LIMIT_PER_TENANT_MAX`, `SECURITY_RATE_LIMIT_PER_TENANT_WINDOW_MINUTES` – Per-tenant limit and window (e.g. 200 requests per 15 minutes per tenant).
 
-**Roadmap:** Per-tenant rate limiting (noisy neighbor) and isolation testing are planned; see [Multi-Tenant Security Roadmap](../implementation-plans/multi-tenant-security-roadmap.md).
+**Roadmap:** Isolation testing and other security phases are documented in [Multi-Tenant Security Roadmap](../implementation-plans/multi-tenant-security-roadmap.md).
 
 ### CSRF Protection
 
