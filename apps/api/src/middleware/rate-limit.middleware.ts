@@ -3,11 +3,10 @@ import { NextFunction, Request, Response } from 'express';
 import { config } from '@/config';
 import { ICacheAdapter } from '@/lib/cache';
 import { getClientIp } from '@/lib/headers.lib';
+import { ContextRequest } from '@/types';
 
-/** Paths that must not be rate limited (e.g. health for load balancers) */
 const SKIP_PATHS = new Set(['/health']);
 
-/** Sensitive auth endpoints with stricter limits (method + path) */
 const AUTH_RATE_LIMIT_PATHS = new Set([
   'POST /api/auth/login',
   'POST /api/auth/refresh',
@@ -31,16 +30,28 @@ function sendTooManyRequests(res: Response, retryAfterSeconds: number): void {
   });
 }
 
-/**
- * Global and auth-specific rate limit middleware.
- * Uses the shared cache (memory or Redis) so limits are consistent across instances when Redis is used.
- * - Skips /health (and similar) so load balancers keep working.
- * - For POST /api/auth/login, refresh, cli-callback, token: applies stricter auth limit per IP.
- * - For all other requests (when rate limit enabled): applies global limit per IP.
- * Keys by IP (uses X-Forwarded-For / X-Real-IP when present, else req.ip / socket).
- *
- * @param store - Cache adapter for rate limit state (e.g. cache.rateLimit from CacheFactory). Use same cache strategy as the rest of the app so multi-instance deployments share limits via Redis.
- */
+async function checkLimit(
+  store: ICacheAdapter,
+  key: string,
+  windowMs: number,
+  max: number,
+  now: number
+): Promise<{ allowed: boolean; retryAfterSeconds: number }> {
+  const windowSeconds = Math.ceil(windowMs / 1000);
+  const existing = await store.get<WindowState>(key);
+  const state: WindowState =
+    existing && existing.resetAt > now
+      ? { count: existing.count + 1, resetAt: existing.resetAt }
+      : { count: 1, resetAt: now + windowMs };
+
+  await store.set(key, state, windowSeconds);
+
+  if (state.count > max) {
+    return { allowed: false, retryAfterSeconds: (state.resetAt - now) / 1000 };
+  }
+  return { allowed: true, retryAfterSeconds: 0 };
+}
+
 export function rateLimitMiddleware(store: ICacheAdapter) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     if (config.security.enableRateLimit === false) {
@@ -57,45 +68,57 @@ export function rateLimitMiddleware(store: ICacheAdapter) {
     const ip = getClientIp(req) ?? 'unknown';
     const methodPath = `${req.method} ${path}`;
     const isAuthSensitive = AUTH_RATE_LIMIT_PATHS.has(methodPath);
-    const authKey = `auth:${ip}`;
-    const globalKey = `global:${ip}`;
     const now = Date.now();
 
     try {
-      // Stricter limit for auth endpoints (single bucket per IP across login/refresh/cli-callback/token)
       if (isAuthSensitive) {
         const authWindowMs = config.security.rateLimitAuthWindowMinutes * 60 * 1000;
-        const authWindowSeconds = Math.ceil(authWindowMs / 1000);
-        const existingAuth = await store.get<WindowState>(authKey);
-        const authState: WindowState =
-          existingAuth && existingAuth.resetAt > now
-            ? { count: existingAuth.count + 1, resetAt: existingAuth.resetAt }
-            : { count: 1, resetAt: now + authWindowMs };
-
-        await store.set(authKey, authState, authWindowSeconds);
-
-        if (authState.count > config.security.rateLimitAuthMax) {
-          const retryAfterSeconds = (authState.resetAt - now) / 1000;
+        const authKey = `auth:${ip}`;
+        const { allowed, retryAfterSeconds } = await checkLimit(
+          store,
+          authKey,
+          authWindowMs,
+          config.security.rateLimitAuthMax,
+          now
+        );
+        if (!allowed) {
           sendTooManyRequests(res, retryAfterSeconds);
           return;
         }
       }
 
-      // Global limit
       const globalWindowMs = config.security.rateLimitWindowMinutes * 60 * 1000;
-      const globalWindowSeconds = Math.ceil(globalWindowMs / 1000);
-      const existingGlobal = await store.get<WindowState>(globalKey);
-      const globalState: WindowState =
-        existingGlobal && existingGlobal.resetAt > now
-          ? { count: existingGlobal.count + 1, resetAt: existingGlobal.resetAt }
-          : { count: 1, resetAt: now + globalWindowMs };
-
-      await store.set(globalKey, globalState, globalWindowSeconds);
-
-      if (globalState.count > config.security.rateLimitMax) {
-        const retryAfterSeconds = (globalState.resetAt - now) / 1000;
-        sendTooManyRequests(res, retryAfterSeconds);
+      const globalKey = `global:${ip}`;
+      const { allowed: globalAllowed, retryAfterSeconds: globalRetry } = await checkLimit(
+        store,
+        globalKey,
+        globalWindowMs,
+        config.security.rateLimitMax,
+        now
+      );
+      if (!globalAllowed) {
+        sendTooManyRequests(res, globalRetry);
         return;
+      }
+
+      if (config.security.rateLimitPerTenantEnabled) {
+        const contextReq = req as ContextRequest;
+        const scope = contextReq.context?.user?.scope ?? null;
+        if (scope && typeof scope.tenant === 'string' && typeof scope.id === 'string') {
+          const tenantKey = `tenant:${scope.tenant}:${scope.id}`;
+          const tenantWindowMs = config.security.rateLimitPerTenantWindowMinutes * 60 * 1000;
+          const { allowed: tenantAllowed, retryAfterSeconds: tenantRetry } = await checkLimit(
+            store,
+            tenantKey,
+            tenantWindowMs,
+            config.security.rateLimitPerTenantMax,
+            now
+          );
+          if (!tenantAllowed) {
+            sendTooManyRequests(res, tenantRetry);
+            return;
+          }
+        }
       }
 
       next();

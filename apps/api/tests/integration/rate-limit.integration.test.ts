@@ -5,6 +5,9 @@
  * Industry practice: test rate limits at the HTTP layer, assert 429 + Retry-After,
  * use test-specific low limits and clear store between tests to avoid cross-test pollution.
  *
+ * Per-tenant rate limit is config-based: we set mockSecurity.rateLimitPerTenantEnabled and
+ * related fields; the middleware reads config.security (this same object), so tests drive behavior.
+ *
  * Benchmarks: optional timing and req/s reporting for "under limit" vs "at limit" runs.
  * For load testing (autocannon, k6), see docs/development/testing.md.
  */
@@ -22,6 +25,9 @@ type MockSecurity = {
   rateLimitWindowMinutes: number;
   rateLimitAuthMax: number;
   rateLimitAuthWindowMinutes: number;
+  rateLimitPerTenantEnabled: boolean;
+  rateLimitPerTenantMax: number;
+  rateLimitPerTenantWindowMinutes: number;
 };
 
 const { mockSecurity } = vi.hoisted(() => {
@@ -31,6 +37,9 @@ const { mockSecurity } = vi.hoisted(() => {
     rateLimitWindowMinutes: 15,
     rateLimitAuthMax: 2,
     rateLimitAuthWindowMinutes: 15,
+    rateLimitPerTenantEnabled: false,
+    rateLimitPerTenantMax: 200,
+    rateLimitPerTenantWindowMinutes: 15,
   };
   return { mockSecurity: security };
 });
@@ -43,9 +52,23 @@ vi.mock('@/lib/headers.lib', () => ({
   getClientIp: vi.fn(() => '127.0.0.1'),
 }));
 
-function createTestApp(store: InMemoryCacheAdapter): express.Express {
+/** Minimal context middleware: attaches context.user.scope so rate limit can apply per-tenant when enabled. */
+function contextWithScopeMiddleware(scope: { tenant: string; id: string }) {
+  return (req: express.Request, _res: express.Response, next: express.NextFunction) => {
+    Object.assign(req, { context: { user: { scope } } });
+    next();
+  };
+}
+
+function createTestApp(
+  store: InMemoryCacheAdapter,
+  options: { withScopeContext?: { tenant: string; id: string } } = {}
+): express.Express {
   const app = express();
   app.use(express.json());
+  if (options.withScopeContext) {
+    app.use(contextWithScopeMiddleware(options.withScopeContext));
+  }
   app.use(rateLimitMiddleware(store));
 
   app.get('/health', (_req, res) => {
@@ -125,6 +148,39 @@ describe('rate limit integration', () => {
 
       const res = await request(app).post('/api/auth/login').send({});
       expect(res.status).toBe(429);
+    });
+
+    it('when rateLimitPerTenantEnabled is false, does not per-tenant limit even with scope', async () => {
+      mockSecurity.rateLimitPerTenantEnabled = false;
+      mockSecurity.rateLimitPerTenantMax = 1;
+      mockSecurity.rateLimitMax = 10;
+      const appWithScope = createTestApp(store, {
+        withScopeContext: { tenant: 'organization', id: 'org-test-123' },
+      });
+
+      for (let i = 0; i < 4; i++) {
+        const res = await request(appWithScope).get('/api/other');
+        expect(res.status).toBe(200);
+      }
+    });
+
+    it('returns 429 when per-tenant limit exceeded (authenticated with scope)', async () => {
+      mockSecurity.rateLimitPerTenantEnabled = true;
+      mockSecurity.rateLimitPerTenantMax = 3;
+      mockSecurity.rateLimitMax = 100;
+      const appWithScope = createTestApp(store, {
+        withScopeContext: { tenant: 'organization', id: 'org-test-123' },
+      });
+
+      for (let i = 0; i < 3; i++) {
+        const res = await request(appWithScope).get('/api/other');
+        expect(res.status).toBe(200);
+      }
+
+      const res = await request(appWithScope).get('/api/other');
+      expect(res.status).toBe(429);
+      expect(res.headers['retry-after']).toBeDefined();
+      expect(res.body.error?.code).toBe('rate_limit_exceeded');
     });
   });
 

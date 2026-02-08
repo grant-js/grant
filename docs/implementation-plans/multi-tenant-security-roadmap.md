@@ -150,6 +150,8 @@ The article defines:
 
 **Goal:** Evaluate and, if adopted, introduce database-level RLS as defense in depth so that a missing `WHERE scope/tenant_id` in application code cannot return other tenants’ rows.
 
+**Evaluation:** A detailed implementation evaluation (schema mapping, connection/session strategy, effort) is in [Phase 4 RLS Evaluation](./phase-4-rls-evaluation.md).
+
 **Deliverables:**
 
 1. **Evaluation**

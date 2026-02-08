@@ -272,6 +272,18 @@ export const SECURITY_CONFIG = {
   /** Rate limit (auth endpoints): time window in minutes */
   rateLimitAuthWindowMinutes: getEnvNumber('SECURITY_RATE_LIMIT_AUTH_WINDOW_MINUTES', 15),
 
+  /** Enable per-tenant rate limiting (noisy neighbor protection). When enabled, authenticated requests with scope are also limited by tenant. */
+  rateLimitPerTenantEnabled: getEnvBoolean('SECURITY_RATE_LIMIT_PER_TENANT_ENABLED', false),
+
+  /** Per-tenant rate limit: maximum requests per window per tenant (scope.tenant + scope.id) */
+  rateLimitPerTenantMax: getEnvNumber('SECURITY_RATE_LIMIT_PER_TENANT_MAX', 200),
+
+  /** Per-tenant rate limit: time window in minutes */
+  rateLimitPerTenantWindowMinutes: getEnvNumber(
+    'SECURITY_RATE_LIMIT_PER_TENANT_WINDOW_MINUTES',
+    15
+  ),
+
   /** API Key for external service authentication (optional) */
   apiKey: process.env.SECURITY_API_KEY || undefined,
 } as const;
