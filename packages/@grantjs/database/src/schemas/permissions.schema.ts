@@ -36,9 +36,7 @@ export const permissionAuditLogs = pgTable(
   'permission_audit_logs',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    permissionId: uuid('permission_id')
-      .references(() => permissions.id)
-      .notNull(),
+    permissionId: uuid('permission_id').references(() => permissions.id, { onDelete: 'set null' }),
     action: varchar('action', { length: 50 }).notNull(),
     oldValues: varchar('old_values', { length: 1000 }),
     newValues: varchar('new_values', { length: 1000 }),

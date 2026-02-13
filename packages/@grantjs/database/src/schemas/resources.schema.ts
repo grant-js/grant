@@ -39,16 +39,12 @@ export const resourceAuditLogs = pgTable(
   'resource_audit_logs',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    resourceId: uuid('resource_id')
-      .references(() => resources.id)
-      .notNull(),
+    resourceId: uuid('resource_id').references(() => resources.id, { onDelete: 'set null' }),
     action: varchar('action', { length: 50 }).notNull(),
     oldValues: varchar('old_values', { length: 1000 }),
     newValues: varchar('new_values', { length: 1000 }),
     metadata: varchar('metadata', { length: 1000 }),
-    performedBy: uuid('performed_by')
-      .references(() => users.id)
-      .notNull(),
+    performedBy: uuid('performed_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     scopeTenant: varchar('scope_tenant', { length: 50 }),
     scopeId: varchar('scope_id', { length: 255 }),

@@ -153,10 +153,6 @@ export class UserService extends AuditService {
     const oldUser = await this.getUser(id);
     const isHardDelete = hardDelete === true;
 
-    const deletedUser = isHardDelete
-      ? await this.repositories.userRepository.hardDeleteUser(validatedParams, transaction)
-      : await this.repositories.userRepository.softDeleteUser(validatedParams, transaction);
-
     const oldValues = {
       id: oldUser.id,
       name: oldUser.name,
@@ -169,9 +165,19 @@ export class UserService extends AuditService {
       hardDelete,
     };
 
+    // For hard deletes, write the audit log BEFORE the entity is removed so the
+    // FK (user_audit_logs.user_id → users.id) is still valid.  The subsequent
+    // DELETE will trigger ON DELETE SET NULL on the audit row, but the old data
+    // is preserved in the oldValues JSON column.
     if (isHardDelete) {
-      await this.logHardDelete(deletedUser.id, oldValues, metadata, transaction);
-    } else {
+      await this.logHardDelete(oldUser.id, oldValues, metadata, transaction);
+    }
+
+    const deletedUser = isHardDelete
+      ? await this.repositories.userRepository.hardDeleteUser(validatedParams, transaction)
+      : await this.repositories.userRepository.softDeleteUser(validatedParams, transaction);
+
+    if (!isHardDelete) {
       const newValues = {
         ...oldValues,
         deletedAt: deletedUser.deletedAt,

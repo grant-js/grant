@@ -281,6 +281,20 @@
       "when": 1770885607740,
       "tag": "0039_lowly_midnight",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1770991840348,
+      "tag": "0040_lonely_vengeance",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1770992675312,
+      "tag": "0041_sharp_ser_duncan",
+      "breakpoints": true
     }
   ]
 }

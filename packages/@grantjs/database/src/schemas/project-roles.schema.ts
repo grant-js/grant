@@ -40,9 +40,9 @@ export const projectRoleAuditLogs = pgTable(
   'project_role_audit_logs',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    projectRoleId: uuid('project_role_id')
-      .references(() => projectRoles.id)
-      .notNull(),
+    projectRoleId: uuid('project_role_id').references(() => projectRoles.id, {
+      onDelete: 'set null',
+    }),
     action: varchar('action', { length: 50 }).notNull(),
     oldValues: varchar('old_values', { length: 1000 }),
     newValues: varchar('new_values', { length: 1000 }),

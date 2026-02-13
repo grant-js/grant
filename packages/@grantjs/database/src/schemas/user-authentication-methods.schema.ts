@@ -56,9 +56,10 @@ export const userAuthenticationMethodsAuditLogs = pgTable(
   'user_authentication_method_audit_logs',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    userAuthenticationMethodId: uuid('user_authentication_method_id')
-      .references(() => userAuthenticationMethods.id)
-      .notNull(),
+    userAuthenticationMethodId: uuid('user_authentication_method_id').references(
+      () => userAuthenticationMethods.id,
+      { onDelete: 'set null' }
+    ),
     action: varchar('action', { length: 50 }).notNull(),
     oldValues: varchar('old_values', { length: 1000 }),
     newValues: varchar('new_values', { length: 1000 }),

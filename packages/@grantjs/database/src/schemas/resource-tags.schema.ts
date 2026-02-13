@@ -50,9 +50,9 @@ export const resourceTagAuditLogs = pgTable(
   'resource_tag_audit_logs',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    resourceTagId: uuid('resource_tag_id')
-      .references(() => resourceTags.id)
-      .notNull(),
+    resourceTagId: uuid('resource_tag_id').references(() => resourceTags.id, {
+      onDelete: 'set null',
+    }),
     action: varchar('action', { length: 50 }).notNull(),
     oldValues: varchar('old_values', { length: 1000 }),
     newValues: varchar('new_values', { length: 1000 }),

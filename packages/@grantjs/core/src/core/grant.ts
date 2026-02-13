@@ -46,7 +46,15 @@ export class Grant {
       return null;
     }
     const claims = await this.tokenManager.verifyToken(token);
-    return this.claimsToAuth(claims, requestScope);
+    const auth = this.claimsToAuth(claims, requestScope);
+
+    // Verify user still exists and is not soft-deleted.
+    // Skip for API key tokens — they have their own lifecycle.
+    if (auth.type === TokenType.Session) {
+      await this.grantService.getUser(auth.userId);
+    }
+
+    return auth;
   }
 
   private claimsToAuth(claims: TokenClaims, requestScope?: Scope | null): GrantAuth {

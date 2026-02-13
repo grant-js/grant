@@ -7,7 +7,7 @@ import {
   UserRole,
 } from '@grantjs/schema';
 
-import { ConflictError, NotFoundError } from '@/lib/errors';
+import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Repositories } from '@/repositories';
 
@@ -100,11 +100,15 @@ export class UserRoleService extends AuditService {
 
     const hasRole = await this.userHasRole(userId, roleId, transaction);
 
+    // Idempotent: if the user already has this global role assignment, return it.
+    // Role scoping to organizations is handled at query time via organization_roles joins,
+    // so a single global user_roles entry is valid for multiple org memberships.
     if (hasRole) {
-      throw new ConflictError('User already has this role', 'errors:conflict.duplicateEntry', {
-        resource: 'UserRole',
-        field: 'roleId',
-      });
+      const existingRoles = await this.repositories.userRoleRepository.getUserRoles(
+        { userId, roleId },
+        transaction
+      );
+      return validateOutput(createDynamicSingleSchema(userRoleSchema), existingRoles[0], context);
     }
 
     const userRole = await this.repositories.userRoleRepository.addUserRole(

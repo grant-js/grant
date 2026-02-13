@@ -19,9 +19,7 @@ export const projectAuditLogs = pgTable(
   'project_audit_logs',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    projectId: uuid('project_id')
-      .references(() => projects.id)
-      .notNull(),
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
     action: varchar('action', { length: 50 }).notNull(),
     oldValues: varchar('old_values', { length: 1000 }),
     newValues: varchar('new_values', { length: 1000 }),

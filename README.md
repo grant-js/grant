@@ -2,6 +2,18 @@
 
 An open-source, multi-tenant RBAC/ACL platform with self-hosting capabilities via AWS CloudFormation.
 
+## Compliance
+
+<!-- compliance-badges:start -->
+
+![SOC 2 Type II](badges/soc2.svg)
+![GDPR](badges/gdpr.svg)
+![HIPAA](badges/hipaa.svg)
+![ISO 27001](badges/iso27001.svg)
+![E2E Tests](badges/e2e-total.svg)
+
+<!-- compliance-badges:end -->
+
 ## 🚀 Features
 
 - **Multi-tenant RBAC/ACL** - Organization and project-level access control
@@ -14,9 +26,9 @@ An open-source, multi-tenant RBAC/ACL platform with self-hosting capabilities vi
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Web App       │    │   API Server     │    │   Database      │
-│   (Next.js)     │◄──►│   (Apollo)      │◄──►│   (PostgreSQL)  │
-│   Container     │    │   Container      │    │   (RDS)         │
+│    Web App      │    │   API Server    │    │    Database     │
+│   (Next.js)     │◄──►│    (Apollo)     │◄──►│  (PostgreSQL)   │
+│   Container     │    │    Container    │    │     (RDS)       │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 

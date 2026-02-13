@@ -1,0 +1,129 @@
+# =============================================================================
+# Grant Platform – E2E Test Environment
+# =============================================================================
+# Runs the real API image (same Dockerfile as deployment) plus Postgres and Redis.
+# Tests run on the host (Vitest + supertest) and hit the API over HTTP.
+#
+# Usage:
+#   docker compose -f docker-compose.e2e.yml up -d --build
+#   pnpm test:e2e
+#   docker compose -f docker-compose.e2e.yml down -v
+# =============================================================================
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: grant-e2e-postgres
+    environment:
+      POSTGRES_DB: grant_e2e
+      POSTGRES_USER: grant_user
+      POSTGRES_PASSWORD: grant_password
+      POSTGRES_INITDB_ARGS: '--encoding=UTF-8 --lc-collate=C --lc-ctype=C'
+    ports:
+      - '5433:5432'
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U grant_user -d grant_e2e']
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    networks:
+      - e2e-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: grant-e2e-redis
+    command: redis-server --requirepass grant_redis_password
+    ports:
+      - '6380:6379'
+    tmpfs:
+      - /data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', 'grant_redis_password', 'ping']
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    networks:
+      - e2e-network
+
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/api.Dockerfile
+    container_name: grant-e2e-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: test
+      APP_PORT: 4000
+      APP_URL: http://localhost:4000
+
+      # Database – connects to postgres service inside the Docker network
+      DB_URL: postgresql://grant_user:grant_password@postgres:5432/grant_e2e
+      DB_POOL_MAX: 5
+      DB_LOG_QUERIES: 'false'
+
+      # Redis – connects to redis service inside the Docker network
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: grant_redis_password
+
+      # Cache
+      CACHE_STRATEGY: redis
+
+      # JWT – fixed secret for E2E
+      JWT_SECRET: e2e-test-jwt-secret-do-not-use-in-production
+      JWT_ACCESS_TOKEN_EXPIRATION_MINUTES: 60
+      JWT_REFRESH_TOKEN_EXPIRATION_DAYS: 30
+
+      # Auth
+      AUTH_VERIFICATION_EXPIRATION_HOURS: 24
+      AUTH_OTP_VALIDITY_MINUTES: 30
+
+      # Email – console adapter (logs to stdout, no real emails)
+      EMAIL_PROVIDER: console
+      EMAIL_FROM_ADDRESS: noreply@e2e.grant.dev
+      EMAIL_FROM_NAME: Grant E2E
+
+      # Rate limiting – disabled for E2E to avoid 429s
+      SECURITY_ENABLE_RATE_LIMIT: 'false'
+
+      # CORS – allow test runner
+      SECURITY_CORS_ORIGIN: '*'
+
+      # Frontend URL (used for email links, etc.)
+      SECURITY_FRONTEND_URL: http://localhost:3000
+
+      # Swagger – disabled in E2E
+      SWAGGER_ENABLED: 'false'
+
+      # Apollo
+      APOLLO_INTROSPECTION: 'true'
+      APOLLO_CSRF_PREVENTION: 'false'
+
+      # Storage
+      STORAGE_PROVIDER: local
+
+      # Logging
+      LOG_LEVEL: info
+
+      # Job scheduling – disabled for E2E
+      JOB_PROVIDER: none
+    ports:
+      - '4000:4000'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:4000/health || exit 1']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks:
+      - e2e-network
+
+networks:
+  e2e-network:
+    driver: bridge

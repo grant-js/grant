@@ -28,9 +28,7 @@ export const groupAuditLogs = pgTable(
   'group_audit_logs',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    groupId: uuid('group_id')
-      .references(() => groups.id)
-      .notNull(),
+    groupId: uuid('group_id').references(() => groups.id, { onDelete: 'set null' }),
     action: varchar('action', { length: 50 }).notNull(),
     oldValues: varchar('old_values', { length: 1000 }),
     newValues: varchar('new_values', { length: 1000 }),

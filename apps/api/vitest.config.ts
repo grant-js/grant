@@ -7,7 +7,7 @@ export default defineConfig({
     globals: true,
     environment: 'node', // Node environment for API testing
     include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
-    exclude: ['node_modules', 'dist', '.next', '.vercel'],
+    exclude: ['node_modules', 'dist', '.next', '.vercel', 'tests/e2e/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

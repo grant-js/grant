@@ -174,10 +174,6 @@ export class AccountService extends AuditService {
     const oldAccount = await this.getAccount(id, transaction);
     const isHardDelete = hardDelete === true;
 
-    const deletedAccount = isHardDelete
-      ? await this.repositories.accountRepository.hardDeleteAccount(id, transaction)
-      : await this.repositories.accountRepository.softDeleteAccount(id, transaction);
-
     const oldValues = {
       id: oldAccount.id,
       type: oldAccount.type,
@@ -191,9 +187,19 @@ export class AccountService extends AuditService {
       hardDelete,
     };
 
+    // For hard deletes, write the audit log BEFORE the entity is removed so the
+    // FK (account_audit_logs.account_id → accounts.id) is still valid.  The
+    // subsequent DELETE will trigger ON DELETE SET NULL on the audit row, but the
+    // old data is preserved in the oldValues JSON column.
     if (isHardDelete) {
-      await this.logHardDelete(deletedAccount.id, oldValues, metadata, transaction);
-    } else {
+      await this.logHardDelete(oldAccount.id, oldValues, metadata, transaction);
+    }
+
+    const deletedAccount = isHardDelete
+      ? await this.repositories.accountRepository.hardDeleteAccount(id, transaction)
+      : await this.repositories.accountRepository.softDeleteAccount(id, transaction);
+
+    if (!isHardDelete) {
       const newValues = {
         ...oldValues,
         deletedAt: deletedAccount.deletedAt,

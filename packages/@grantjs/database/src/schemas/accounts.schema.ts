@@ -10,7 +10,7 @@ export const accounts = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     type: varchar('type', { length: 20 }).default('personal').notNull(), // 'personal' | 'organization'
     ownerId: uuid('owner_id')
-      .references(() => users.id)
+      .references(() => users.id, { onDelete: 'cascade' })
       .notNull(), // The user who owns this account
     deletedAt: timestamp('deleted_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -35,9 +35,7 @@ export const accountAuditLogs = pgTable(
   'account_audit_logs',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    accountId: uuid('account_id')
-      .references(() => accounts.id)
-      .notNull(),
+    accountId: uuid('account_id').references(() => accounts.id, { onDelete: 'set null' }),
     action: varchar('action', { length: 50 }).notNull(),
     oldValues: varchar('old_values', { length: 1000 }),
     newValues: varchar('new_values', { length: 1000 }),
