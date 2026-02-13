@@ -1,0 +1,53 @@
+---
+description: Maps platform topics to documentation files for deeper context. Read the referenced doc before implementing in that area.
+alwaysApply: true
+---
+
+# Documentation reference
+
+When working on a topic below, read the linked doc for detailed patterns, conventions, and rationale.
+
+## Architecture and domain model
+
+| Topic | Doc |
+|-------|-----|
+| Multi-tenancy, tenant scoping, entity ownership | `docs/architecture/multi-tenancy.md` |
+| RBAC/ACL, permissions, roles, groups | `docs/architecture/rbac-acl.md` |
+| Authentication, JWT, sessions, JWKS, CSRF | `docs/architecture/security.md` |
+| Database schema, entity relationships, ER diagrams | `docs/architecture/data-model.md` |
+| System overview, tech stack, design principles | `docs/architecture/overview.md` |
+| File/image storage adapter pattern | `docs/architecture/file-storage.md` |
+
+## Core concepts (domain-specific knowledge)
+
+| Topic | Doc |
+|-------|-----|
+| Resources and resource-permission modeling | `docs/core-concepts/resources.md` |
+| API keys, scopes, token exchange | `docs/core-concepts/api-keys.md` |
+| Tags, generic tagging, automatic query routing | `docs/core-concepts/tags-relationships.md` |
+| Organization invitations, member management | `docs/core-concepts/organization-invitations.md` |
+
+## Implementation patterns
+
+| Topic | Doc |
+|-------|-----|
+| Caching strategy (memory/Redis), adapter pattern | `docs/advanced-topics/caching.md`, `docs/advanced-topics/caching-setup.md` |
+| Database transactions, TransactionManager | `docs/advanced-topics/transactions.md` |
+| Audit logging, compliance trail | `docs/advanced-topics/audit-logging.md` |
+| GraphQL field selection optimization | `docs/advanced-topics/field-selection.md` |
+| Internationalization (i18n/l10n) | `docs/advanced-topics/internationalization.md` |
+| Structured logging (Pino, correlation IDs) | `docs/advanced-topics/logging.md` |
+| Email service, adapter pattern | `docs/advanced-topics/email-service.md` |
+| Background jobs, tenant context | `docs/advanced-topics/job-scheduling.md` |
+| GDPR, data export/deletion | `docs/advanced-topics/privacy-settings.md` |
+
+## Development and API
+
+| Topic | Doc |
+|-------|-----|
+| Project structure, GraphQL/UI patterns | `docs/development/guide.md` |
+| Adding REST endpoints with OpenAPI | `docs/development/rest-api.md` |
+| Testing (Vitest, unit/integration) | `docs/development/testing.md` |
+| Error handling, HTTP codes, localization | `docs/api-reference/error-handling.md` |
+| REST API conventions, Swagger UI | `docs/api-reference/rest-api.md` |
+| Environment variables, configuration | `docs/getting-started/configuration.md` |

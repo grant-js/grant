@@ -1,0 +1,48 @@
+---
+description: Web app – hooks, feature modules, UI, i18n, stores, styles (apps/web)
+globs: apps/web/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Web (apps/web)
+
+Query/mutation hooks use operation documents and types from `@grantjs/schema`; define or extend hooks in `apps/web/hooks` and use them in feature modules.
+
+## Feature modules (`apps/web/components/features`)
+
+Follow existing patterns for:
+
+- **Toolbars**: refresh, search, sort, limit, view switcher, action button.
+- **Viewers**: card and table views.
+- **Pagination**.
+- **Dialogs**: create, edit, confirm.
+- **Skeletons** for loading states.
+
+Some modules differ but stay consistent (e.g. `components/features/settings`, `components/features/user`).
+
+## Component layout
+
+- **UI primitives**: add via shadcn/ui CLI; they go to `apps/web/components/ui`.
+- **Common**: components that compose UI primitives → `apps/web/components/common`.
+- **Layout**: layout composition → `apps/web/components/layout`.
+- **Navigation**: nav components → `apps/web/components/navigation`.
+
+## Data and state
+
+- **Stores**: per-module state in `apps/web/stores`; keep stores isolated.
+- **Lib and utilities**: `apps/web/lib`.
+
+## Localization and styling
+
+- All user-facing text via **next-intl**; translations in `apps/web/i18n`. API responses may be already localized or use translation keys.
+- **Tokens**: palette and Tailwind tokens in `apps/web/styles/tokens.ts` and `packages/@grantjs/constants/src/colors.ts`.
+
+## General
+
+- Functional components and hooks; prefer server components where appropriate and keep client boundaries explicit.
+
+## Deep-dive docs
+
+- **Internationalization**: `docs/advanced-topics/internationalization.md` — i18n/l10n setup, translation patterns, locale support.
+- **Client SDK**: `docs/development/client-sdk.md` — `@grantjs/client` React hooks, `useGrant`, `<GrantGate>`.
+- **UI and GraphQL patterns**: `docs/development/guide.md` — project structure, component and hook conventions.

@@ -1,0 +1,14 @@
+---
+description: Core coding standards and development workflow for Grant Platform
+alwaysApply: true
+---
+
+# Project standards
+
+- **Workflow**: When adding or changing features, follow the order in AGENTS.md: env → database → schema → api → web. Do not skip steps (e.g. new API without schema/types).
+- **API contracts**: REST and OpenAPI must stay in sync. Schema and types from `@grantjs/schema` codegen are canonical; use them across layers instead of redefining.
+- Prefer existing patterns: search for similar handlers, services, or components before adding new ones.
+- Use project aliases (`@/`, `@grantjs/*`); avoid deep relative paths.
+- Errors: use shared error types from `@/lib/errors` (or package equivalents); log and rethrow with cause where appropriate.
+- Do not commit unless the user explicitly asks; validate changes before suggesting.
+- **Domain context**: before implementing in areas involving tenancy, permissions, or auth, read the relevant doc (see `docs-reference.mdc` or `docs/architecture/`).

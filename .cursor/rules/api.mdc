@@ -1,0 +1,49 @@
+---
+description: API app – GraphQL resolvers, REST routes, handlers, services, repositories (apps/api)
+globs: apps/api/**/*.ts
+alwaysApply: false
+---
+
+# API (apps/api)
+
+REST and GraphQL both use types from `@grantjs/schema`. REST uses OpenAPI and must stay in sync; validate REST inputs with zod schemas in `apps/api/src/rest/schemas`.
+
+## Entry points
+
+- **GraphQL**: resolvers in `apps/api/src/graphql/resolvers` — map queries/mutations to handlers using generated types.
+- **REST**: routes in `apps/api/src/rest/routes` — map operations to handlers; use `@grantjs/schema` types and zod schemas for input validation.
+
+Both layers call **handlers** only; handlers never expose repositories to the transport.
+
+## Handlers (`apps/api/src/handlers`)
+
+- Extend base class `CacheHandler`; set cache on queries by scope (tenant); invalidate cache on mutations.
+- Orchestrate **services** from request context; start transactions (e.g. via `TransactionManager`) when operations must be atomic.
+- **Never access repositories directly.** Handler input args must align with API contracts from `@grantjs/schema` (e.g. `params: QueryGroupsArgs & SelectedFields<Group>`).
+
+## Services (`apps/api/src/services`)
+
+- Define business logic; orchestrate **repositories** only. Never query the database directly.
+- Extend `AuditService` and log mutations for compliance.
+- Validate input and output with zod schemas. Service input args align with schema types (e.g. `params: Omit<QueryGroupsArgs, 'scope'> & SelectedFields<Group>`).
+- Access only **domain-related repositories** (e.g. RoleService → RoleRepository, RoleTagRepository, RoleGroupRepository).
+
+## Repositories (`apps/api/src/repositories`)
+
+- Resolve data from sources (mainly DB). Two base types: **Entity** (`EntityRepository`) and **Pivot** (`PivotRepository`) in `apps/api/src/repositories/common/`.
+- Use only **domain-related schemas** from `@grantjs/database` (e.g. OrganizationRepository → organizationGroups, organizationPermissions, organizations, etc.).
+
+## Auth and context
+
+- Use existing middleware and `@/lib/authorization` / context helpers; do not bypass scoping.
+
+## Deep-dive docs
+
+Before implementing in these areas, read the referenced doc for detailed patterns:
+
+- **Caching**: `docs/advanced-topics/caching.md` — strategy-based caching, adapter pattern, scope-based invalidation.
+- **Transactions**: `docs/advanced-topics/transactions.md` — TransactionManager usage, rollback behavior.
+- **Audit logging**: `docs/advanced-topics/audit-logging.md` — AuditService contract, what to log, compliance.
+- **Field selection**: `docs/advanced-topics/field-selection.md` — GraphQL field selection optimization.
+- **REST endpoints**: `docs/development/rest-api.md` — adding routes, OpenAPI integration, Swagger.
+- **Error handling**: `docs/api-reference/error-handling.md` — error types, HTTP codes, localized messages.

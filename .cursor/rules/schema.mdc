@@ -1,0 +1,13 @@
+---
+description: Schema package – GraphQL schema, operations, codegen types (packages/@grantjs/schema)
+globs: packages/@grantjs/schema/**/*
+alwaysApply: false
+---
+
+# Schema (packages/@grantjs/schema)
+
+- **Model domain entities, enums, queries, and mutations** here. This package is the single source of API contracts and generated TypeScript types.
+- **Operation documents** for consumers (e.g. web app hooks) are defined here.
+- **Generate schema and types** after changes: `pnpm --filter @grantjs/schema generate`.
+
+Generated types are used in REST routes, GraphQL resolvers, handlers, services, and repositories. Do not redefine these types elsewhere; extend or use partials (e.g. `QueryGroupsArgs & SelectedFields<Group>`) as needed.

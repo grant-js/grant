@@ -1,0 +1,19 @@
+---
+description: Database package – Drizzle schemas, migrations, seed (packages/@grantjs/database)
+globs: packages/@grantjs/database/**/*.ts
+alwaysApply: false
+---
+
+# Database (packages/@grantjs/database)
+
+- Define **Drizzle schemas and relationships** here; repositories in `apps/api` use these schemas.
+- **Generate migrations** programmatically: `pnpm --filter @grantjs/database db:generate`. If nothing changed, no file is created or modified.
+- **Run migrations** after changes: `pnpm --filter @grantjs/database db:migrate`.
+- **Seed** (standard roles, groups, permissions, system user, signing-key): `pnpm --filter @grantjs/database db:seed`.
+
+Do not add app-specific logic; keep this package as the single source of schema and migrations for the platform.
+
+## Deep-dive docs
+
+- **Data model**: `docs/architecture/data-model.md` — entity relationships, ER diagrams, schema conventions.
+- **Multi-tenancy**: `docs/architecture/multi-tenancy.md` — tenant scoping, entity ownership, URL structure.
