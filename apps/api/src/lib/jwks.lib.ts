@@ -62,18 +62,21 @@ export interface PublicKeyForJwks {
 
 /**
  * Build the issuer (iss) URL for JWT/OIDC discovery.
- * - scope null or system: returns API base URL (session tokens; JWKS at base + /.well-known/jwks.json).
- * - scope organizationProject/accountProject: returns scope-scoped JWKS URL for project-signed tokens.
+ * The issuer is the authority identifier — verifiers derive the JWKS endpoint
+ * by appending /.well-known/jwks.json to this URL (standard OIDC convention).
+ *
+ * - scope null or system: returns API base URL.
+ * - scope organizationProject/accountProject: returns scope-scoped issuer URL.
  */
 export function buildJwksIssuerUrl(scope: Scope | null): string {
   const base = config.app.url.replace(/\/$/, '');
   if (!scope || scope.tenant === Tenant.System) return base;
   const parts = scope.id.split(':');
   if (scope.tenant === Tenant.OrganizationProject && parts.length >= 2) {
-    return `${base}/org/${parts[0]}/prj/${parts[1]}/.well-known/jwks.json`;
+    return `${base}/org/${parts[0]}/prj/${parts[1]}`;
   }
   if (scope.tenant === Tenant.AccountProject && parts.length >= 2) {
-    return `${base}/acc/${parts[0]}/prj/${parts[1]}/.well-known/jwks.json`;
+    return `${base}/acc/${parts[0]}/prj/${parts[1]}`;
   }
   return base;
 }
