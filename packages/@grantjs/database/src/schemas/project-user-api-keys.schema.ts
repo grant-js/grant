@@ -1,5 +1,13 @@
 import { relations, sql } from 'drizzle-orm';
-import { index, pgTable, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
+import {
+  index,
+  pgPolicy,
+  pgTable,
+  timestamp,
+  uniqueIndex,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 
 import { apiKeys } from './api-keys.schema';
 import { projects } from './projects.schema';
@@ -30,6 +38,17 @@ export const projectUserApiKeys = pgTable(
     index('project_user_api_keys_project_id_idx').on(table.projectId),
     index('project_user_api_keys_user_id_idx').on(table.userId),
     index('project_user_api_keys_deleted_at_idx').on(table.deletedAt),
+    pgPolicy('tenant_isolation_policy', {
+      as: 'restrictive',
+      for: 'select',
+      using: sql`NULLIF(current_setting('app.current_project_id', true), '') IS NULL OR project_id = NULLIF(current_setting('app.current_project_id', true), '')::uuid`,
+    }),
+    pgPolicy('tenant_rls_allow', {
+      as: 'permissive',
+      for: 'all',
+      using: sql`true`,
+      withCheck: sql`true`,
+    }),
   ]
 );
 

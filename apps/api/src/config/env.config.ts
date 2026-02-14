@@ -304,6 +304,12 @@ export const SECURITY_CONFIG = {
     15
   ),
 
+  /** Enable database Row-Level Security enforcement for scoped requests */
+  enableRls: getEnvBoolean('SECURITY_ENABLE_RLS', true),
+
+  /** RLS restricted role name (must match the role created in DB migration) */
+  rlsRestrictedRole: getEnv('SECURITY_RLS_ROLE', 'grant_app_restricted'),
+
   /** API Key for external service authentication (optional) */
   apiKey: process.env.SECURITY_API_KEY || undefined,
 } as const;

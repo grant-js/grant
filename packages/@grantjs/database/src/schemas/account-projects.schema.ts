@@ -1,5 +1,13 @@
 import { relations, sql } from 'drizzle-orm';
-import { pgTable, uuid, varchar, timestamp, uniqueIndex, index } from 'drizzle-orm/pg-core';
+import {
+  pgPolicy,
+  pgTable,
+  uuid,
+  varchar,
+  timestamp,
+  uniqueIndex,
+  index,
+} from 'drizzle-orm/pg-core';
 
 import { accounts } from './accounts.schema';
 import { projects } from './projects.schema';
@@ -23,6 +31,22 @@ export const accountProjects = pgTable(
       .on(table.accountId, table.projectId)
       .where(sql`${table.deletedAt} IS NULL`),
     index('account_projects_deleted_at_idx').on(table.deletedAt),
+    pgPolicy('tenant_isolation_policy', {
+      as: 'restrictive',
+      for: 'select',
+      using: sql`
+        NULLIF(current_setting('app.current_account_id', true), '') IS NULL
+        OR (account_id = NULLIF(current_setting('app.current_account_id', true), '')::uuid
+            AND (NULLIF(current_setting('app.current_project_id', true), '') IS NULL
+                 OR project_id = NULLIF(current_setting('app.current_project_id', true), '')::uuid))
+      `,
+    }),
+    pgPolicy('tenant_rls_allow', {
+      as: 'permissive',
+      for: 'all',
+      using: sql`true`,
+      withCheck: sql`true`,
+    }),
   ]
 );
 

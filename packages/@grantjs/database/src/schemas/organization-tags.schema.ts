@@ -1,6 +1,7 @@
 import { relations, sql } from 'drizzle-orm';
 import {
   pgTable,
+  pgPolicy,
   uuid,
   timestamp,
   uniqueIndex,
@@ -32,6 +33,17 @@ export const organizationTags = pgTable(
       .on(table.organizationId, table.tagId)
       .where(sql`${table.deletedAt} IS NULL`),
     uniqueIndex('organization_tags_deleted_at_idx').on(table.deletedAt),
+    pgPolicy('tenant_isolation_policy', {
+      as: 'restrictive',
+      for: 'select',
+      using: sql`NULLIF(current_setting('app.current_organization_id', true), '') IS NULL OR organization_id = NULLIF(current_setting('app.current_organization_id', true), '')::uuid`,
+    }),
+    pgPolicy('tenant_rls_allow', {
+      as: 'permissive',
+      for: 'all',
+      using: sql`true`,
+      withCheck: sql`true`,
+    }),
   ]
 );
 

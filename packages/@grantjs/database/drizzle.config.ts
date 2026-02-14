@@ -12,6 +12,9 @@ export default {
     // Support both DATABASE_URL (legacy) and DB_URL (new standard)
     url: `${process.env.DB_URL || process.env.DATABASE_URL}`,
   },
+  entities: {
+    roles: true,
+  },
   verbose: true,
   strict: true,
 } satisfies Config;

@@ -593,6 +593,19 @@ See [Job Scheduling & Background Tasks](/advanced-topics/job-scheduling#6-backgr
 4. **Update application code**
 5. **Deploy with rollback plan**
 
+## Database-Level Isolation (Row-Level Security)
+
+In addition to application-level scope enforcement, the platform uses PostgreSQL Row-Level Security (RLS) on all 21 tenant-scoped pivot tables as defense in depth. Pivot tables are the tenant boundary — they link shared/core entities (users, roles, groups, permissions, resources, tags) to specific organizations, projects, or accounts.
+
+**Key design decisions:**
+
+- **Pivot-only RLS:** Core tables do not have RLS. A core row (e.g. a `user` or `role`) is only visible through a pivot join. If the pivot is filtered by RLS, the core row is invisible by construction.
+- **Session variables:** Each scoped request sets `app.current_organization_id`, `app.current_project_id`, and/or `app.current_account_id` inside a transaction-scoped `SET LOCAL`. Policies compare the pivot's tenant column against the corresponding session variable.
+- **Role switching:** Scoped requests `SET LOCAL ROLE grant_app_restricted` (a non-login role without `BYPASSRLS`). The table owner (`grant_user`) bypasses RLS, so system operations and background jobs are unaffected.
+- **Mixed-scope policies:** Tables with both `organization_id` and `project_id` (e.g. `organization_projects`) filter by org always and by project only when the session variable is set — allowing org-scoped requests to see all projects within the org.
+
+See [Phase 4 RLS Evaluation](../implementation-plans/phase-4-rls-evaluation.md) for the full implementation details and [Security - Row-Level Security](./security.md#row-level-security-rls) for configuration.
+
 ## Conclusion
 
 This multi-tenancy architecture provides a robust, scalable foundation for identity management across multiple organizations and projects. The clear separation between organization-level and project-level entities ensures security and flexibility while maintaining simplicity for end users.

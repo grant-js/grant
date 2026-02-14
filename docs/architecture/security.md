@@ -846,6 +846,30 @@ Potential improvements to authentication and session management:
 5. **Automatic Revocation** - Revoke sessions based on suspicious activity
 6. **Session Notifications** - Email alerts for new device logins and OAuth connections
 
+## Row-Level Security (RLS)
+
+Grant enforces database-level tenant isolation on all 21 pivot tables (the tables that link core entities to organizations, projects, and accounts) via PostgreSQL Row-Level Security.
+
+### How it works
+
+- **Application-level scope** is the primary enforcement — every authenticated request carries a `Scope` (tenant + id) derived from the auth token, and repositories filter by tenant columns. RLS is **defense in depth**: even if a query misses a `WHERE` clause, the database rejects cross-tenant rows.
+- **Restricted role:** A non-login Postgres role `grant_app_restricted` (no `BYPASSRLS`) is used for scoped requests. The table owner (`grant_user`) bypasses RLS by default.
+- **Per-request transaction:** For authenticated requests with scope, the context middleware starts a Drizzle transaction, runs `SET LOCAL ROLE grant_app_restricted` and `set_config('app.current_organization_id', ..., true)` (plus project/account as applicable), then creates repositories and services using the transaction. The transaction commits when the response finishes.
+- **System bypass:** Background jobs, seeds, and migrations use `grant_user` directly and bypass RLS — they never switch role. Future tenant-scoped jobs can use the same transaction + set_config pattern.
+
+### Configuration
+
+| Variable              | Default                | Description                                  |
+| --------------------- | ---------------------- | -------------------------------------------- |
+| `SECURITY_ENABLE_RLS` | `true`                 | Enable/disable RLS enforcement (kill switch) |
+| `SECURITY_RLS_ROLE`   | `grant_app_restricted` | Restricted role name (must match migration)  |
+
+### Policy coverage
+
+RLS policies apply to pivot tables only (organization_users, project_resources, account_projects, etc.). Core/shared tables (users, roles, groups, permissions, resources, tags) do not have RLS — they are accessible only through tenant-scoped pivots, so filtering at the pivot level protects the entire data graph.
+
+See [Phase 4 RLS Evaluation](../implementation-plans/phase-4-rls-evaluation.md) for the full implementation details.
+
 ## Related Documentation
 
 - [Multi-Tenancy Architecture](./multi-tenancy.md) - Account-based isolation

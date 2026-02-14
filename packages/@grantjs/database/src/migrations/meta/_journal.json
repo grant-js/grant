@@ -295,6 +295,48 @@
       "when": 1770992675312,
       "tag": "0041_sharp_ser_duncan",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1771113600000,
+      "tag": "0042_rls_restricted_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1771096622641,
+      "tag": "0043_hard_goliath",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1771097475101,
+      "tag": "0044_great_layla_miller",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1771097860542,
+      "tag": "0045_fair_hobgoblin",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1771098093126,
+      "tag": "0046_flippant_sue_storm",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1771098768122,
+      "tag": "0047_hesitant_joystick",
+      "breakpoints": true
     }
   ]
 }

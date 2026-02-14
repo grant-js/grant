@@ -1,40 +1,9 @@
 import { NotFoundError } from '@grantjs/core';
 import { accounts, type DbSchema, organizations, projects } from '@grantjs/database';
-import { Tenant, type Scope } from '@grantjs/schema';
+import type { Scope } from '@grantjs/schema';
 import { and, eq, isNull } from 'drizzle-orm';
 
-/**
- * Extracts entity IDs from a scope for tenant-active validation.
- * Returns the organization, project, and account IDs to check based on scope.tenant.
- */
-function extractTenantIds(scope: Scope): {
-  organizationId?: string;
-  projectId?: string;
-  accountId?: string;
-} {
-  const parts = scope.id.split(':');
-
-  switch (scope.tenant) {
-    case Tenant.System:
-      return {};
-    case Tenant.Organization:
-      return { organizationId: parts[0] };
-    case Tenant.Account:
-      return { accountId: parts[0] };
-    case Tenant.OrganizationProject:
-      return { organizationId: parts[0], projectId: parts[1] };
-    case Tenant.AccountProject:
-      return { accountId: parts[0], projectId: parts[1] };
-    case Tenant.ProjectUser:
-      return { projectId: parts[0] };
-    case Tenant.AccountProjectUser:
-      return { accountId: parts[0], projectId: parts[1] };
-    case Tenant.OrganizationProjectUser:
-      return { organizationId: parts[0], projectId: parts[1] };
-    default:
-      return {};
-  }
-}
+import { scopeToRlsContext } from '@/lib/rls';
 
 /**
  * Validates that the tenant entities referenced by scope exist and are not soft-deleted.
@@ -48,7 +17,7 @@ function extractTenantIds(scope: Scope): {
  * @throws Error if any tenant entity does not exist or is soft-deleted
  */
 export async function assertTenantActive(scope: Scope, db: DbSchema): Promise<void> {
-  const { organizationId, projectId, accountId } = extractTenantIds(scope);
+  const { organizationId, projectId, accountId } = scopeToRlsContext(scope);
 
   // System scope (and unknown tenants) have no entity to validate.
   if (!organizationId && !projectId && !accountId) {

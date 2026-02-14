@@ -1,5 +1,13 @@
 import { relations, sql } from 'drizzle-orm';
-import { pgTable, uuid, timestamp, uniqueIndex, varchar, index } from 'drizzle-orm/pg-core';
+import {
+  pgPolicy,
+  pgTable,
+  uuid,
+  timestamp,
+  uniqueIndex,
+  varchar,
+  index,
+} from 'drizzle-orm/pg-core';
 
 import { accounts } from './accounts.schema';
 import { roles } from './roles.schema';
@@ -23,6 +31,17 @@ export const accountRoles = pgTable(
     uniqueIndex('account_roles_account_id_role_id_unique')
       .on(table.accountId, table.roleId)
       .where(sql`${table.deletedAt} IS NULL`),
+    pgPolicy('tenant_isolation_policy', {
+      as: 'restrictive',
+      for: 'select',
+      using: sql`NULLIF(current_setting('app.current_account_id', true), '') IS NULL OR account_id = NULLIF(current_setting('app.current_account_id', true), '')::uuid`,
+    }),
+    pgPolicy('tenant_rls_allow', {
+      as: 'permissive',
+      for: 'all',
+      using: sql`true`,
+      withCheck: sql`true`,
+    }),
   ]
 );
 
