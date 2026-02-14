@@ -9,7 +9,12 @@ import {
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';
 
-export class UserRoleRepository extends PivotRepository<UserRoleModel, UserRole> {
+import type { IUserRoleRepository } from '@grantjs/core';
+
+export class UserRoleRepository
+  extends PivotRepository<UserRoleModel, UserRole>
+  implements IUserRoleRepository
+{
   protected table = userRoles;
   protected uniqueIndexFields: Array<keyof UserRoleModel> = ['userId', 'roleId'];
 

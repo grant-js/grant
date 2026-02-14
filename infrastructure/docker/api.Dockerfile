@@ -30,6 +30,12 @@ COPY packages/@grantjs/database/package.json packages/@grantjs/database/package.
 COPY packages/@grantjs/schema/package.json packages/@grantjs/schema/package.json
 COPY packages/@grantjs/core/package.json packages/@grantjs/core/package.json
 COPY packages/@grantjs/constants/package.json packages/@grantjs/constants/package.json
+COPY packages/@grantjs/logger/package.json packages/@grantjs/logger/package.json
+COPY packages/@grantjs/errors/package.json packages/@grantjs/errors/package.json
+COPY packages/@grantjs/cache/package.json packages/@grantjs/cache/package.json
+COPY packages/@grantjs/storage/package.json packages/@grantjs/storage/package.json
+COPY packages/@grantjs/email/package.json packages/@grantjs/email/package.json
+COPY packages/@grantjs/jobs/package.json packages/@grantjs/jobs/package.json
 COPY packages/@grantjs/client/package.json packages/@grantjs/client/package.json
 COPY packages/@grantjs/server/package.json packages/@grantjs/server/package.json
 COPY packages/@grantjs/cli/package.json packages/@grantjs/cli/package.json
@@ -54,6 +60,12 @@ COPY --from=deps /app/packages/@grantjs/database/node_modules ./packages/@grantj
 COPY --from=deps /app/packages/@grantjs/core/node_modules ./packages/@grantjs/core/node_modules
 COPY --from=deps /app/packages/@grantjs/constants/node_modules ./packages/@grantjs/constants/node_modules
 COPY --from=deps /app/packages/@grantjs/schema/node_modules ./packages/@grantjs/schema/node_modules
+COPY --from=deps /app/packages/@grantjs/logger/node_modules ./packages/@grantjs/logger/node_modules
+COPY --from=deps /app/packages/@grantjs/errors/node_modules ./packages/@grantjs/errors/node_modules
+COPY --from=deps /app/packages/@grantjs/cache/node_modules ./packages/@grantjs/cache/node_modules
+COPY --from=deps /app/packages/@grantjs/storage/node_modules ./packages/@grantjs/storage/node_modules
+COPY --from=deps /app/packages/@grantjs/email/node_modules ./packages/@grantjs/email/node_modules
+COPY --from=deps /app/packages/@grantjs/jobs/node_modules ./packages/@grantjs/jobs/node_modules
 
 # -- Workspace root (pnpm needs these for workspace resolution) --
 COPY package.json pnpm-workspace.yaml tsconfig.json ./
@@ -74,6 +86,36 @@ COPY packages/@grantjs/core/src packages/@grantjs/core/src
 # -- @grantjs/schema (source-only; .graphql files + generated TS types) --
 COPY packages/@grantjs/schema/package.json packages/@grantjs/schema/package.json
 COPY packages/@grantjs/schema/src packages/@grantjs/schema/src
+
+# -- @grantjs/logger (Pino adapter for ILogger port) --
+COPY packages/@grantjs/logger/package.json packages/@grantjs/logger/package.json
+COPY packages/@grantjs/logger/tsconfig.json packages/@grantjs/logger/tsconfig.json
+COPY packages/@grantjs/logger/src packages/@grantjs/logger/src
+
+# -- @grantjs/errors (HttpException hierarchy + domain-to-HTTP mapper) --
+COPY packages/@grantjs/errors/package.json packages/@grantjs/errors/package.json
+COPY packages/@grantjs/errors/tsconfig.json packages/@grantjs/errors/tsconfig.json
+COPY packages/@grantjs/errors/src packages/@grantjs/errors/src
+
+# -- @grantjs/cache (cache adapter: memory / Redis) --
+COPY packages/@grantjs/cache/package.json packages/@grantjs/cache/package.json
+COPY packages/@grantjs/cache/tsconfig.json packages/@grantjs/cache/tsconfig.json
+COPY packages/@grantjs/cache/src packages/@grantjs/cache/src
+
+# -- @grantjs/storage (storage adapter: local / S3) --
+COPY packages/@grantjs/storage/package.json packages/@grantjs/storage/package.json
+COPY packages/@grantjs/storage/tsconfig.json packages/@grantjs/storage/tsconfig.json
+COPY packages/@grantjs/storage/src packages/@grantjs/storage/src
+
+# -- @grantjs/email (email adapter: SMTP / SES) --
+COPY packages/@grantjs/email/package.json packages/@grantjs/email/package.json
+COPY packages/@grantjs/email/tsconfig.json packages/@grantjs/email/tsconfig.json
+COPY packages/@grantjs/email/src packages/@grantjs/email/src
+
+# -- @grantjs/jobs (background job scheduler) --
+COPY packages/@grantjs/jobs/package.json packages/@grantjs/jobs/package.json
+COPY packages/@grantjs/jobs/tsconfig.json packages/@grantjs/jobs/tsconfig.json
+COPY packages/@grantjs/jobs/src packages/@grantjs/jobs/src
 
 # -- API app (source + tsconfig for path alias resolution) --
 COPY apps/api/package.json apps/api/package.json

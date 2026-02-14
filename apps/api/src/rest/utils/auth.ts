@@ -7,10 +7,10 @@ import { Response } from 'express';
 
 import { config } from '@/config';
 import { HandleGithubCallbackResult } from '@/handlers/oauth.handler';
-import { createModuleLogger } from '@/lib/logger';
+import { createLogger } from '@/lib/logger';
 import { RequestContext } from '@/types';
 
-const logger = createModuleLogger('AuthUtils');
+const logger = createLogger('AuthUtils');
 
 /**
  * Builds the OAuth callback redirect URL with tokens in the fragment.

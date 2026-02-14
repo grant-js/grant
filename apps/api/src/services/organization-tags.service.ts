@@ -1,6 +1,3 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema } from '@grantjs/database';
-import { organizationTagAuditLogs } from '@grantjs/database';
 import {
   OrganizationTag,
   AddOrganizationTagInput,
@@ -9,15 +6,9 @@ import {
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
-import {
-  AuditService,
-  validateInput,
-  validateOutput,
-  createDynamicSingleSchema,
-  DeleteParams,
-} from './common';
+import { validateInput, validateOutput, createDynamicSingleSchema } from './common';
 import {
   getOrganizationTagsParamsSchema,
   organizationTagSchema,
@@ -25,20 +16,27 @@ import {
   removeOrganizationTagInputSchema,
 } from './organization-tags.schemas';
 
-export class OrganizationTagService extends AuditService {
+import type {
+  IAuditLogger,
+  IOrganizationRepository,
+  IOrganizationTagRepository,
+  IOrganizationTagService,
+  ITagRepository,
+} from '@grantjs/core';
+
+export class OrganizationTagService implements IOrganizationTagService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(organizationTagAuditLogs, 'organizationTagId', user, db);
-  }
+    private readonly organizationRepository: IOrganizationRepository,
+    private readonly tagRepository: ITagRepository,
+    private readonly organizationTagRepository: IOrganizationTagRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async organizationExists(
     organizationId: string,
     transaction?: Transaction
   ): Promise<void> {
-    const organizations = await this.repositories.organizationRepository.getOrganizations(
+    const organizations = await this.organizationRepository.getOrganizations(
       {
         ids: [organizationId],
         limit: 1,
@@ -47,12 +45,12 @@ export class OrganizationTagService extends AuditService {
     );
 
     if (organizations.organizations.length === 0) {
-      throw new NotFoundError('Organization not found', 'errors:notFound.organization');
+      throw new NotFoundError('Organization');
     }
   }
 
   private async tagExists(tagId: string, transaction?: Transaction): Promise<void> {
-    const tags = await this.repositories.tagRepository.getTags(
+    const tags = await this.tagRepository.getTags(
       {
         ids: [tagId],
         limit: 1,
@@ -61,7 +59,7 @@ export class OrganizationTagService extends AuditService {
     );
 
     if (tags.tags.length === 0) {
-      throw new NotFoundError('Tag not found', 'errors:notFound.tag');
+      throw new NotFoundError('Tag');
     }
   }
 
@@ -72,13 +70,12 @@ export class OrganizationTagService extends AuditService {
   ): Promise<boolean> {
     await this.organizationExists(organizationId, transaction);
     await this.tagExists(tagId, transaction);
-    const existingOrganizationTags =
-      await this.repositories.organizationTagRepository.getOrganizationTags(
-        {
-          organizationId,
-        },
-        transaction
-      );
+    const existingOrganizationTags = await this.organizationTagRepository.getOrganizationTags(
+      {
+        organizationId,
+      },
+      transaction
+    );
 
     return existingOrganizationTags.some((ot) => ot.tagId === tagId);
   }
@@ -92,7 +89,7 @@ export class OrganizationTagService extends AuditService {
 
     await this.organizationExists(validatedParams.organizationId, transaction);
 
-    const result = await this.repositories.organizationTagRepository.getOrganizationTags(
+    const result = await this.organizationTagRepository.getOrganizationTags(
       validatedParams,
       transaction
     );
@@ -114,14 +111,10 @@ export class OrganizationTagService extends AuditService {
     const hasTag = await this.organizationHasTag(organizationId, tagId, transaction);
 
     if (hasTag) {
-      throw new ConflictError(
-        'Organization already has this tag',
-        'errors:conflict.duplicateEntry',
-        { resource: 'OrganizationTag', field: 'tagId' }
-      );
+      throw new ConflictError('Organization already has this tag', 'OrganizationTag', 'tagId');
     }
 
-    const organizationTag = await this.repositories.organizationTagRepository.addOrganizationTag(
+    const organizationTag = await this.organizationTagRepository.addOrganizationTag(
       { organizationId, tagId },
       transaction
     );
@@ -138,7 +131,7 @@ export class OrganizationTagService extends AuditService {
       context,
     };
 
-    await this.logCreate(organizationTag.id, newValues, metadata, transaction);
+    await this.audit.logCreate(organizationTag.id, newValues, metadata, transaction);
 
     return validateOutput(
       createDynamicSingleSchema(organizationTagSchema),
@@ -159,17 +152,17 @@ export class OrganizationTagService extends AuditService {
     const hasTag = await this.organizationHasTag(organizationId, tagId, transaction);
 
     if (!hasTag) {
-      throw new NotFoundError('Organization does not have this tag', 'errors:notFound.tag');
+      throw new NotFoundError('Tag');
     }
 
     const isHardDelete = hardDelete === true;
 
     const organizationTag = isHardDelete
-      ? await this.repositories.organizationTagRepository.hardDeleteOrganizationTag(
+      ? await this.organizationTagRepository.hardDeleteOrganizationTag(
           { organizationId, tagId },
           transaction
         )
-      : await this.repositories.organizationTagRepository.softDeleteOrganizationTag(
+      : await this.organizationTagRepository.softDeleteOrganizationTag(
           { organizationId, tagId },
           transaction
         );
@@ -188,13 +181,19 @@ export class OrganizationTagService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(organizationTag.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(organizationTag.id, oldValues, metadata, transaction);
     } else {
       const newValues = {
         ...oldValues,
         deletedAt: organizationTag.deletedAt,
       };
-      await this.logSoftDelete(organizationTag.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(
+        organizationTag.id,
+        oldValues,
+        newValues,
+        metadata,
+        transaction
+      );
     }
 
     return validateOutput(

@@ -1,18 +1,10 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, userTagsAuditLogs } from '@grantjs/database';
 import { AddUserTagInput, RemoveUserTagInput, UpdateUserTagInput, UserTag } from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
-import {
-  AuditService,
-  DeleteParams,
-  createDynamicSingleSchema,
-  validateInput,
-  validateOutput,
-} from './common';
+import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 import {
   addUserTagInputSchema,
   getUserTagIntersectionInputSchema,
@@ -23,34 +15,35 @@ import {
   userTagSchema,
 } from './user-tags.schemas';
 
-export class UserTagService extends AuditService {
+import type {
+  IAuditLogger,
+  ITagRepository,
+  IUserRepository,
+  IUserTagRepository,
+  IUserTagService,
+} from '@grantjs/core';
+
+export class UserTagService implements IUserTagService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(userTagsAuditLogs, 'userTagId', user, db);
-  }
+    private readonly userRepository: IUserRepository,
+    private readonly tagRepository: ITagRepository,
+    private readonly userTagRepository: IUserTagRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async userExists(userId: string, transaction?: Transaction): Promise<void> {
-    const users = await this.repositories.userRepository.getUsers(
-      { ids: [userId], limit: 1 },
-      transaction
-    );
+    const users = await this.userRepository.getUsers({ ids: [userId], limit: 1 }, transaction);
 
     if (users.users.length === 0) {
-      throw new NotFoundError('User not found', 'errors:notFound.user');
+      throw new NotFoundError('User');
     }
   }
 
   private async tagExists(tagId: string, transaction?: Transaction): Promise<void> {
-    const tags = await this.repositories.tagRepository.getTags(
-      { ids: [tagId], limit: 1 },
-      transaction
-    );
+    const tags = await this.tagRepository.getTags({ ids: [tagId], limit: 1 }, transaction);
 
     if (tags.tags.length === 0) {
-      throw new NotFoundError('Tag not found', 'errors:notFound.tag');
+      throw new NotFoundError('Tag');
     }
   }
   private async userHasTag(
@@ -60,10 +53,7 @@ export class UserTagService extends AuditService {
   ): Promise<boolean> {
     await this.userExists(userId, transaction);
     await this.tagExists(tagId, transaction);
-    const existingUserTags = await this.repositories.userTagRepository.getUserTags(
-      { userId },
-      transaction
-    );
+    const existingUserTags = await this.userTagRepository.getUserTags({ userId }, transaction);
 
     return existingUserTags.some((ut) => ut.tagId === tagId);
   }
@@ -77,7 +67,7 @@ export class UserTagService extends AuditService {
 
     await this.userExists(validatedParams.userId, transaction);
 
-    const result = await this.repositories.userTagRepository.getUserTags(
+    const result = await this.userTagRepository.getUserTags(
       { userId: validatedParams.userId },
       transaction
     );
@@ -92,7 +82,7 @@ export class UserTagService extends AuditService {
     const context = 'UserTagService.getUserTagIntersection';
     validateInput(getUserTagIntersectionInputSchema, { userIds, tagIds }, context);
 
-    const result = await this.repositories.userTagRepository.getUserTagIntersection(
+    const result = await this.userTagRepository.getUserTagIntersection(
       userIds,
       tagIds,
       transaction
@@ -109,16 +99,10 @@ export class UserTagService extends AuditService {
     const hasTag = await this.userHasTag(userId, tagId, transaction);
 
     if (hasTag) {
-      throw new ConflictError('User already has this tag', 'errors:conflict.duplicateEntry', {
-        resource: 'UserTag',
-        field: 'tagId',
-      });
+      throw new ConflictError('User already has this tag', 'UserTag', 'tagId');
     }
 
-    const userTag = await this.repositories.userTagRepository.addUserTag(
-      validatedParams,
-      transaction
-    );
+    const userTag = await this.userTagRepository.addUserTag(validatedParams, transaction);
 
     const newValues = {
       id: userTag.id,
@@ -132,7 +116,7 @@ export class UserTagService extends AuditService {
       context,
     };
 
-    await this.logCreate(userTag.id, newValues, metadata, transaction);
+    await this.audit.logCreate(userTag.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(userTagSchema), userTag, context);
   }
@@ -145,12 +129,9 @@ export class UserTagService extends AuditService {
     const validatedParams = validateInput(updateUserTagInputSchema, params, context);
     const { userId, tagId, isPrimary } = validatedParams;
 
-    const userTag = await this.repositories.userTagRepository.getUserTag(
-      { userId, tagId },
-      transaction
-    );
+    const userTag = await this.userTagRepository.getUserTag({ userId, tagId }, transaction);
 
-    const updatedUserTag = await this.repositories.userTagRepository.updateUserTag(
+    const updatedUserTag = await this.userTagRepository.updateUserTag(
       { userId, tagId, isPrimary },
       transaction
     );
@@ -159,7 +140,7 @@ export class UserTagService extends AuditService {
       context,
     };
 
-    await this.logUpdate(updatedUserTag.id, userTag, updatedUserTag, metadata, transaction);
+    await this.audit.logUpdate(updatedUserTag.id, userTag, updatedUserTag, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(userTagSchema), updatedUserTag, context);
   }
@@ -175,14 +156,14 @@ export class UserTagService extends AuditService {
     const hasTag = await this.userHasTag(userId, tagId, transaction);
 
     if (!hasTag) {
-      throw new NotFoundError('User does not have this tag', 'errors:notFound.tag');
+      throw new NotFoundError('Tag');
     }
 
     const isHardDelete = params.hardDelete === true;
 
     const userTag = isHardDelete
-      ? await this.repositories.userTagRepository.hardDeleteUserTag(validatedParams, transaction)
-      : await this.repositories.userTagRepository.softDeleteUserTag(validatedParams, transaction);
+      ? await this.userTagRepository.hardDeleteUserTag(validatedParams, transaction)
+      : await this.userTagRepository.softDeleteUserTag(validatedParams, transaction);
 
     const oldValues = {
       id: userTag.id,
@@ -203,9 +184,9 @@ export class UserTagService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(userTag.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(userTag.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(userTag.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(userTag.id, oldValues, newValues, metadata, transaction);
     }
 
     return validateOutput(createDynamicSingleSchema(userTagSchema), userTag, context);
@@ -219,15 +200,15 @@ export class UserTagService extends AuditService {
     const validatedParams = validateInput(removeUsersTagsInputSchema, params, context);
     const { tagId, hardDelete } = validatedParams;
 
-    const userTags = await this.repositories.userTagRepository.getUserTags({ tagId }, transaction);
+    const userTags = await this.userTagRepository.getUserTags({ tagId }, transaction);
 
     const isHardDelete = hardDelete === true;
 
     const deletedUserTags = await Promise.all(
       userTags.map((userTag) =>
         isHardDelete
-          ? this.repositories.userTagRepository.hardDeleteUserTag(userTag, transaction)
-          : this.repositories.userTagRepository.softDeleteUserTag(userTag, transaction)
+          ? this.userTagRepository.hardDeleteUserTag(userTag, transaction)
+          : this.userTagRepository.softDeleteUserTag(userTag, transaction)
       )
     );
 

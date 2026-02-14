@@ -1,5 +1,3 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, projectResourceAuditLogs } from '@grantjs/database';
 import {
   AddProjectResourceInput,
   ProjectResource,
@@ -9,15 +7,9 @@ import {
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
-import {
-  AuditService,
-  DeleteParams,
-  createDynamicSingleSchema,
-  validateInput,
-  validateOutput,
-} from './common';
+import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 import {
   addProjectResourceInputSchema,
   getProjectResourcesParamsSchema,
@@ -25,34 +17,41 @@ import {
   removeProjectResourceInputSchema,
 } from './project-resources.schemas';
 
-export class ProjectResourceService extends AuditService {
+import type {
+  IAuditLogger,
+  IProjectRepository,
+  IProjectResourceRepository,
+  IProjectResourceService,
+  IResourceRepository,
+} from '@grantjs/core';
+
+export class ProjectResourceService implements IProjectResourceService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(projectResourceAuditLogs, 'projectResourceId', user, db);
-  }
+    private readonly projectRepository: IProjectRepository,
+    private readonly resourceRepository: IResourceRepository,
+    private readonly projectResourceRepository: IProjectResourceRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
-    const projects = await this.repositories.projectRepository.getProjects(
+    const projects = await this.projectRepository.getProjects(
       { ids: [projectId], limit: 1 },
       transaction
     );
 
     if (projects.projects.length === 0) {
-      throw new NotFoundError('Project not found', 'errors:notFound.project');
+      throw new NotFoundError('Project');
     }
   }
 
   private async resourceExists(resourceId: string, transaction?: Transaction): Promise<void> {
-    const resources = await this.repositories.resourceRepository.getResources(
+    const resources = await this.resourceRepository.getResources(
       { ids: [resourceId], limit: 1 },
       transaction
     );
 
     if (resources.resources.length === 0) {
-      throw new NotFoundError('Resource not found', 'errors:notFound.resource');
+      throw new NotFoundError('Resource');
     }
   }
 
@@ -63,11 +62,10 @@ export class ProjectResourceService extends AuditService {
   ): Promise<boolean> {
     await this.projectExists(projectId, transaction);
     await this.resourceExists(resourceId, transaction);
-    const existingProjectResources =
-      await this.repositories.projectResourceRepository.getProjectResources(
-        { projectId },
-        transaction
-      );
+    const existingProjectResources = await this.projectResourceRepository.getProjectResources(
+      { projectId },
+      transaction
+    );
 
     return existingProjectResources.some((pr) => pr.resourceId === resourceId);
   }
@@ -81,7 +79,7 @@ export class ProjectResourceService extends AuditService {
 
     await this.projectExists(validatedParams.projectId, transaction);
 
-    const result = await this.repositories.projectResourceRepository.getProjectResources(
+    const result = await this.projectResourceRepository.getProjectResources(
       validatedParams,
       transaction
     );
@@ -96,7 +94,7 @@ export class ProjectResourceService extends AuditService {
     resourceId: string,
     transaction?: Transaction
   ): Promise<ProjectResource[]> {
-    const result = await this.repositories.projectResourceRepository.getProjectResources(
+    const result = await this.projectResourceRepository.getProjectResources(
       { resourceId },
       transaction
     );
@@ -118,14 +116,10 @@ export class ProjectResourceService extends AuditService {
     const hasResource = await this.projectHasResource(projectId, resourceId, transaction);
 
     if (hasResource) {
-      throw new ConflictError(
-        'Project already has this resource',
-        'errors:conflict.duplicateEntry',
-        { resource: 'ProjectResource', field: 'resourceId' }
-      );
+      throw new ConflictError('Project already has this resource', 'ProjectResource', 'resourceId');
     }
 
-    const projectResource = await this.repositories.projectResourceRepository.addProjectResource(
+    const projectResource = await this.projectResourceRepository.addProjectResource(
       { projectId, resourceId },
       transaction
     );
@@ -142,7 +136,7 @@ export class ProjectResourceService extends AuditService {
       context,
     };
 
-    await this.logCreate(projectResource.id, newValues, metadata, transaction);
+    await this.audit.logCreate(projectResource.id, newValues, metadata, transaction);
 
     return validateOutput(
       createDynamicSingleSchema(projectResourceSchema),
@@ -163,17 +157,17 @@ export class ProjectResourceService extends AuditService {
     const hasResource = await this.projectHasResource(projectId, resourceId, transaction);
 
     if (!hasResource) {
-      throw new NotFoundError('Project does not have this resource', 'errors:notFound.resource');
+      throw new NotFoundError('Resource');
     }
 
     const isHardDelete = hardDelete === true;
 
     const projectResource = isHardDelete
-      ? await this.repositories.projectResourceRepository.hardDeleteProjectResource(
+      ? await this.projectResourceRepository.hardDeleteProjectResource(
           { projectId, resourceId },
           transaction
         )
-      : await this.repositories.projectResourceRepository.softDeleteProjectResource(
+      : await this.projectResourceRepository.softDeleteProjectResource(
           { projectId, resourceId },
           transaction
         );
@@ -197,9 +191,15 @@ export class ProjectResourceService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(projectResource.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(projectResource.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(projectResource.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(
+        projectResource.id,
+        oldValues,
+        newValues,
+        metadata,
+        transaction
+      );
     }
 
     return validateOutput(

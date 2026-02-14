@@ -16,10 +16,7 @@ export const refreshSession: MutationResolvers<GraphqlContext>['refreshSession']
   const refreshTokenFromCookie = getRefreshTokenFromCookie(context.req);
   if (!refreshTokenFromCookie) {
     clearRefreshTokenCookie(context.res);
-    throw new AuthenticationError(
-      'Invalid or expired refresh token',
-      'errors:auth.invalidRefreshToken'
-    );
+    throw new AuthenticationError('Invalid or expired refresh token');
   }
   try {
     const result = await context.handlers.auth.refreshSession(
@@ -32,9 +29,6 @@ export const refreshSession: MutationResolvers<GraphqlContext>['refreshSession']
   } catch (err) {
     clearRefreshTokenCookie(context.res);
     if (err instanceof AuthenticationError) throw err;
-    throw new AuthenticationError(
-      'Invalid or expired refresh token',
-      'errors:auth.invalidRefreshToken'
-    );
+    throw new AuthenticationError('Invalid or expired refresh token');
   }
 };

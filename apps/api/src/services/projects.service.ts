@@ -1,5 +1,3 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, projectAuditLogs } from '@grantjs/database';
 import {
   CreateProjectInput,
   MutationDeleteProjectArgs,
@@ -11,12 +9,9 @@ import {
 
 import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams, SelectedFields } from '@/types';
 
 import {
-  AuditService,
-  DeleteParams,
-  SelectedFields,
   createDynamicPaginatedSchema,
   createDynamicSingleSchema,
   validateInput,
@@ -30,23 +25,22 @@ import {
   updateProjectParamsSchema,
 } from './projects.schemas';
 
-export class ProjectService extends AuditService {
+import type { IAuditLogger, IProjectRepository, IProjectService } from '@grantjs/core';
+
+export class ProjectService implements IProjectService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(projectAuditLogs, 'projectId', user, db);
-  }
+    private readonly projectRepository: IProjectRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async getProject(projectId: string): Promise<Project> {
-    const project = await this.repositories.projectRepository.getProjects({
+    const project = await this.projectRepository.getProjects({
       ids: [projectId],
       limit: 1,
     });
 
     if (project.projects.length === 0) {
-      throw new NotFoundError('Project not found', 'errors:notFound.project');
+      throw new NotFoundError('Project');
     }
 
     return project.projects[0];
@@ -57,7 +51,7 @@ export class ProjectService extends AuditService {
   ): Promise<ProjectPage> {
     const validationContext = 'ProjectService.getProjects';
     validateInput(getProjectsParamsSchema, params, validationContext);
-    const result = await this.repositories.projectRepository.getProjects(params);
+    const result = await this.projectRepository.getProjects(params);
 
     const transformedResult = {
       items: result.projects,
@@ -82,10 +76,7 @@ export class ProjectService extends AuditService {
     const validatedParams = validateInput(createProjectParamsSchema, params, context);
     const { name, description } = validatedParams;
 
-    const project = await this.repositories.projectRepository.createProject(
-      { name, description },
-      transaction
-    );
+    const project = await this.projectRepository.createProject({ name, description }, transaction);
 
     const newValues = {
       id: project.id,
@@ -100,7 +91,7 @@ export class ProjectService extends AuditService {
       context,
     };
 
-    await this.logCreate(project.id, newValues, metadata, transaction);
+    await this.audit.logCreate(project.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(projectSchema), project, context);
   }
@@ -113,10 +104,7 @@ export class ProjectService extends AuditService {
     const validatedParams = validateInput(updateProjectParamsSchema, params, context);
 
     const oldProject = await this.getProject(validatedParams.id);
-    const updatedProject = await this.repositories.projectRepository.updateProject(
-      validatedParams,
-      transaction
-    );
+    const updatedProject = await this.projectRepository.updateProject(validatedParams, transaction);
 
     const oldValues = {
       id: oldProject.id,
@@ -140,7 +128,7 @@ export class ProjectService extends AuditService {
       context,
     };
 
-    await this.logUpdate(updatedProject.id, oldValues, newValues, metadata, transaction);
+    await this.audit.logUpdate(updatedProject.id, oldValues, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(projectSchema), updatedProject, context);
   }
@@ -157,8 +145,8 @@ export class ProjectService extends AuditService {
     const isHardDelete = hardDelete === true;
 
     const deletedProject = isHardDelete
-      ? await this.repositories.projectRepository.hardDeleteProject(validatedParams, transaction)
-      : await this.repositories.projectRepository.softDeleteProject(validatedParams, transaction);
+      ? await this.projectRepository.hardDeleteProject(validatedParams, transaction)
+      : await this.projectRepository.softDeleteProject(validatedParams, transaction);
 
     const oldValues = {
       id: oldProject.id,
@@ -180,9 +168,15 @@ export class ProjectService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(deletedProject.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(deletedProject.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(deletedProject.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(
+        deletedProject.id,
+        oldValues,
+        newValues,
+        metadata,
+        transaction
+      );
     }
 
     return validateOutput(createDynamicSingleSchema(projectSchema), deletedProject, context);

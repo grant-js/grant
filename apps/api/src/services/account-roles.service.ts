@@ -1,6 +1,4 @@
 import { ROLES, RoleKey } from '@grantjs/constants';
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, accountRoleAuditLogs } from '@grantjs/database';
 import {
   AddAccountRoleInput,
   AccountRole,
@@ -11,7 +9,7 @@ import {
 
 import { BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
 import {
   addAccountRoleInputSchema,
@@ -19,42 +17,40 @@ import {
   accountRoleSchema,
   removeAccountRoleInputSchema,
 } from './account-roles.schemas';
-import {
-  AuditService,
-  DeleteParams,
-  createDynamicSingleSchema,
-  validateInput,
-  validateOutput,
-} from './common';
+import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 
-export class AccountRoleService extends AuditService {
+import type {
+  IAuditLogger,
+  IAccountRepository,
+  IRoleRepository,
+  IAccountRoleRepository,
+  IAccountRoleService,
+} from '@grantjs/core';
+
+export class AccountRoleService implements IAccountRoleService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(accountRoleAuditLogs, 'accountRoleId', user, db);
-  }
+    private readonly accountRepository: IAccountRepository,
+    private readonly roleRepository: IRoleRepository,
+    private readonly accountRoleRepository: IAccountRoleRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async accountExists(accountId: string, transaction?: Transaction): Promise<void> {
-    const accounts = await this.repositories.accountRepository.getAccounts(
+    const accounts = await this.accountRepository.getAccounts(
       { ids: [accountId], limit: 1 },
       transaction
     );
 
     if (accounts.accounts.length === 0) {
-      throw new NotFoundError('Account not found', 'errors:notFound.account');
+      throw new NotFoundError('Account');
     }
   }
 
   private async roleExists(roleId: string, transaction?: Transaction): Promise<void> {
-    const roles = await this.repositories.roleRepository.getRoles(
-      { ids: [roleId], limit: 1 },
-      transaction
-    );
+    const roles = await this.roleRepository.getRoles({ ids: [roleId], limit: 1 }, transaction);
 
     if (roles.roles.length === 0) {
-      throw new NotFoundError('Role not found', 'errors:notFound.role');
+      throw new NotFoundError('Role');
     }
   }
 
@@ -65,7 +61,7 @@ export class AccountRoleService extends AuditService {
   ): Promise<boolean> {
     await this.accountExists(accountId, transaction);
     await this.roleExists(roleId, transaction);
-    const existingAccountRoles = await this.repositories.accountRoleRepository.getAccountRoles(
+    const existingAccountRoles = await this.accountRoleRepository.getAccountRoles(
       { accountId },
       transaction
     );
@@ -85,10 +81,7 @@ export class AccountRoleService extends AuditService {
 
     await this.accountExists(accountId, transaction);
 
-    const result = await this.repositories.accountRoleRepository.getAccountRoles(
-      params,
-      transaction
-    );
+    const result = await this.accountRoleRepository.getAccountRoles(params, transaction);
     return validateOutput(createDynamicSingleSchema(accountRoleSchema).array(), result, context);
   }
 
@@ -103,13 +96,10 @@ export class AccountRoleService extends AuditService {
     const hasRole = await this.accountHasRole(accountId, roleId, transaction);
 
     if (hasRole) {
-      throw new ConflictError('Account already has this role', 'errors:conflict.duplicateEntry', {
-        resource: 'AccountRole',
-        field: 'roleId',
-      });
+      throw new ConflictError('Account already has this role', 'AccountRole', 'roleId');
     }
 
-    const accountRole = await this.repositories.accountRoleRepository.addAccountRole(
+    const accountRole = await this.accountRoleRepository.addAccountRole(
       { accountId, roleId },
       transaction
     );
@@ -126,7 +116,7 @@ export class AccountRoleService extends AuditService {
       context,
     };
 
-    await this.logCreate(accountRole.id, newValues, metadata, transaction);
+    await this.audit.logCreate(accountRole.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(accountRoleSchema), accountRole, context);
   }
@@ -142,20 +132,14 @@ export class AccountRoleService extends AuditService {
     const hasRole = await this.accountHasRole(accountId, roleId, transaction);
 
     if (!hasRole) {
-      throw new NotFoundError('Account does not have this role', 'errors:notFound.role');
+      throw new NotFoundError('Role');
     }
 
     const isHardDelete = hardDelete === true;
 
     const accountRole = isHardDelete
-      ? await this.repositories.accountRoleRepository.hardDeleteAccountRole(
-          { accountId, roleId },
-          transaction
-        )
-      : await this.repositories.accountRoleRepository.softDeleteAccountRole(
-          { accountId, roleId },
-          transaction
-        );
+      ? await this.accountRoleRepository.hardDeleteAccountRole({ accountId, roleId }, transaction)
+      : await this.accountRoleRepository.softDeleteAccountRole({ accountId, roleId }, transaction);
 
     const oldValues = {
       id: accountRole.id,
@@ -176,9 +160,9 @@ export class AccountRoleService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(accountRole.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(accountRole.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(accountRole.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(accountRole.id, oldValues, newValues, metadata, transaction);
     }
 
     return validateOutput(createDynamicSingleSchema(accountRoleSchema), accountRole, context);
@@ -191,13 +175,13 @@ export class AccountRoleService extends AuditService {
     const context = 'AccountRoleService.seedAccountRoles';
 
     // Get account to determine type
-    const accounts = await this.repositories.accountRepository.getAccounts(
+    const accounts = await this.accountRepository.getAccounts(
       { ids: [accountId], limit: 1 },
       transaction
     );
 
     if (accounts.accounts.length === 0) {
-      throw new NotFoundError('Account not found', 'errors:notFound.account');
+      throw new NotFoundError('Account');
     }
 
     const account = accounts.accounts[0];
@@ -211,23 +195,19 @@ export class AccountRoleService extends AuditService {
       roleKey = RoleKey.OrganizationAccountOwner;
     } else {
       throw new BadRequestError(
-        `Invalid account type: ${accountType}. Expected 'personal' or 'organization'`,
-        'errors:validation.invalidAccountType'
+        `Invalid account type: ${accountType}. Expected 'personal' or 'organization'`
       );
     }
 
     const ownerRoleDefinition = ROLES[roleKey as keyof typeof ROLES];
 
     if (!ownerRoleDefinition) {
-      throw new NotFoundError(
-        `Role definition not found for account type: ${accountType}`,
-        'errors:notFound.role'
-      );
+      throw new NotFoundError('Role');
     }
 
     const results = [];
 
-    const existingRoles = await this.repositories.roleRepository.getRoles(
+    const existingRoles = await this.roleRepository.getRoles(
       {
         search: ownerRoleDefinition.name,
         limit: 1,
@@ -238,7 +218,7 @@ export class AccountRoleService extends AuditService {
     let ownerRole = existingRoles.roles.find((r) => r.name === ownerRoleDefinition.name);
 
     if (!ownerRole) {
-      ownerRole = await this.repositories.roleRepository.createRole(
+      ownerRole = await this.roleRepository.createRole(
         {
           name: ownerRoleDefinition.name,
           description: ownerRoleDefinition.description,
@@ -247,13 +227,13 @@ export class AccountRoleService extends AuditService {
       );
     }
 
-    const existingAccountRoles = await this.repositories.accountRoleRepository.getAccountRoles(
+    const existingAccountRoles = await this.accountRoleRepository.getAccountRoles(
       { accountId },
       transaction
     );
 
     if (!existingAccountRoles.some((ar) => ar.roleId === ownerRole!.id)) {
-      const accountRole = await this.repositories.accountRoleRepository.addAccountRole(
+      const accountRole = await this.accountRoleRepository.addAccountRole(
         {
           accountId,
           roleId: ownerRole.id,
@@ -275,7 +255,7 @@ export class AccountRoleService extends AuditService {
         seeded: true,
       };
 
-      await this.logCreate(accountRole.id, newValues, metadata, transaction);
+      await this.audit.logCreate(accountRole.id, newValues, metadata, transaction);
 
       results.push({
         role: ownerRole,

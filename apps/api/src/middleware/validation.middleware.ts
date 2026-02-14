@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { ZodError, z } from 'zod';
 
-import { createModuleLogger } from '@/lib/logger';
+import { createLogger } from '@/lib/logger';
 
 /**
  * Validation target - where to extract data from the request
@@ -52,7 +52,7 @@ function formatZodError(error: ZodError) {
  * // Validate query parameters
  * router.get('/users', validate({ query: getUsersQuerySchema }), handler);
  */
-const logger = createModuleLogger('ValidationMiddleware');
+const logger = createLogger('ValidationMiddleware');
 
 export function validate(schemas: ValidationSchemas) {
   return async (req: Request, res: Response, next: NextFunction) => {

@@ -1,32 +1,31 @@
-import { DbSchema } from '@grantjs/database';
 import { Scope, SigningKey, Tenant } from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
-import { TransactionManager } from '@/lib/transaction-manager.lib';
-import { Services } from '@/services';
+import type { Transaction } from '@/lib/transaction-manager.lib';
 
-import { CacheHandler } from './base/cache-handler';
+import { CacheHandler, type ScopeServices } from './base/cache-handler';
+
+import type { ISigningKeyService, ITransactionalConnection } from '@grantjs/core';
 
 const ALLOWED_TENANTS: readonly string[] = [Tenant.AccountProject, Tenant.OrganizationProject];
 
 function assertProjectScope(scope: Scope): void {
   if (!ALLOWED_TENANTS.includes(scope.tenant)) {
     throw new BadRequestError(
-      `Signing keys are only available for project scopes (accountProject, organizationProject), got: ${scope.tenant}`,
-      'errors:validation.invalid',
-      { field: 'scope.tenant' }
+      `Signing keys are only available for project scopes (accountProject, organizationProject), got: ${scope.tenant}`
     );
   }
 }
 
 export class SigningKeysHandler extends CacheHandler {
   constructor(
-    protected override readonly cache: IEntityCacheAdapter,
-    protected override readonly services: Services,
-    private readonly db: DbSchema
+    private readonly signingKeys: ISigningKeyService,
+    cache: IEntityCacheAdapter,
+    scopeServices: ScopeServices,
+    private readonly db: ITransactionalConnection<Transaction>
   ) {
-    super(cache, services);
+    super(cache, scopeServices);
   }
 
   async getSigningKeys(scope: Scope, options?: { limit?: number }): Promise<SigningKey[]> {
@@ -39,15 +38,15 @@ export class SigningKeysHandler extends CacheHandler {
       return cached;
     }
 
-    const result = await this.services.signingKeys.listByScope(scope, { limit });
+    const result = await this.signingKeys.listByScope(scope, { limit });
     await this.cache.signingKeys.set(cacheKey, result);
     return result;
   }
 
   async rotateSigningKey(scope: Scope): Promise<SigningKey> {
     assertProjectScope(scope);
-    const newKey = await TransactionManager.withTransaction(this.db, (tx) =>
-      this.services.signingKeys.rotateForScope(scope, tx)
+    const newKey = await this.db.withTransaction((tx) =>
+      this.signingKeys.rotateForScope(scope, tx)
     );
     await this.invalidateSigningKeysCacheForScope(scope);
     return newKey;

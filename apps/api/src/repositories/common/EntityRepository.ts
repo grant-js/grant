@@ -17,7 +17,7 @@ import {
 } from 'drizzle-orm';
 
 import { NotFoundError } from '@/lib/errors';
-import { createModuleLogger } from '@/lib/logger';
+import { createLogger } from '@/lib/logger';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 import type { Schema } from '@grantjs/database';
@@ -83,7 +83,7 @@ export interface BaseDeleteArgs {
 
 export type RelationsConfig<TEntity> = Partial<Record<keyof TEntity, RelationConfig>>;
 export abstract class EntityRepository<TModel extends Auditable, TEntity extends BaseEntity> {
-  protected readonly logger = createModuleLogger('EntityRepository');
+  protected readonly logger = createLogger('EntityRepository');
   protected abstract table: any;
   protected abstract schemaName: keyof Schema;
   protected abstract searchFields: Array<keyof TModel>;
@@ -450,7 +450,7 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
 
       const deletedItem = this.first(result);
       if (!deletedItem) {
-        throw new NotFoundError('Entity not found', 'errors:notFound.resource');
+        throw new NotFoundError('Entity');
       }
       return deletedItem as TEntity;
     } catch (error) {

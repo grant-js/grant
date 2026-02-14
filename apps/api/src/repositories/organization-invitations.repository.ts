@@ -20,12 +20,14 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { EntityRepository, FilterCondition, RelationsConfig } from '@/repositories/common';
-import { SelectedFields } from '@/services/common';
+import { SelectedFields } from '@/types';
 
-export class OrganizationInvitationRepository extends EntityRepository<
-  OrganizationInvitationModel,
-  OrganizationInvitation
-> {
+import type { IOrganizationInvitationRepository } from '@grantjs/core';
+
+export class OrganizationInvitationRepository
+  extends EntityRepository<OrganizationInvitationModel, OrganizationInvitation>
+  implements IOrganizationInvitationRepository
+{
   protected table = organizationInvitations;
   protected schemaName = 'organizationInvitations' as const;
   protected searchFields: Array<keyof OrganizationInvitationModel> = Object.values(
@@ -214,9 +216,7 @@ export class OrganizationInvitationRepository extends EntityRepository<
       .returning();
 
     if (!updated) {
-      throw new NotFoundError(`Invitation with id ${id} not found`, 'errors:notFound.invitation', {
-        id,
-      });
+      throw new NotFoundError('Invitation', id);
     }
 
     return updated as unknown as OrganizationInvitation;

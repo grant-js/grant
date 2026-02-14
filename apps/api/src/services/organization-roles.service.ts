@@ -1,6 +1,4 @@
 import { ORGANIZATION_ROLE_DEFINITIONS } from '@grantjs/constants';
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, organizationRolesAuditLogs } from '@grantjs/database';
 import {
   AddOrganizationRoleInput,
   OrganizationRole,
@@ -10,15 +8,9 @@ import {
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
-import {
-  AuditService,
-  DeleteParams,
-  createDynamicSingleSchema,
-  validateInput,
-  validateOutput,
-} from './common';
+import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 import {
   addOrganizationRoleInputSchema,
   getOrganizationRolesParamsSchema,
@@ -26,37 +18,41 @@ import {
   removeOrganizationRoleInputSchema,
 } from './organization-roles.schemas';
 
-export class OrganizationRoleService extends AuditService {
+import type {
+  IAuditLogger,
+  IOrganizationRepository,
+  IOrganizationRoleRepository,
+  IOrganizationRoleService,
+  IRoleRepository,
+} from '@grantjs/core';
+
+export class OrganizationRoleService implements IOrganizationRoleService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(organizationRolesAuditLogs, 'organizationRoleId', user, db);
-  }
+    private readonly organizationRepository: IOrganizationRepository,
+    private readonly roleRepository: IRoleRepository,
+    private readonly organizationRoleRepository: IOrganizationRoleRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async organizationExists(
     organizationId: string,
     transaction?: Transaction
   ): Promise<void> {
-    const organizations = await this.repositories.organizationRepository.getOrganizations(
+    const organizations = await this.organizationRepository.getOrganizations(
       { ids: [organizationId], limit: 1 },
       transaction
     );
 
     if (organizations.organizations.length === 0) {
-      throw new NotFoundError('Organization not found', 'errors:notFound.organization');
+      throw new NotFoundError('Organization');
     }
   }
 
   private async roleExists(roleId: string, transaction?: Transaction): Promise<void> {
-    const roles = await this.repositories.roleRepository.getRoles(
-      { ids: [roleId], limit: 1 },
-      transaction
-    );
+    const roles = await this.roleRepository.getRoles({ ids: [roleId], limit: 1 }, transaction);
 
     if (roles.roles.length === 0) {
-      throw new NotFoundError('Role not found', 'errors:notFound.role');
+      throw new NotFoundError('Role');
     }
   }
 
@@ -67,11 +63,10 @@ export class OrganizationRoleService extends AuditService {
   ): Promise<boolean> {
     await this.organizationExists(organizationId, transaction);
     await this.roleExists(roleId, transaction);
-    const existingOrganizationRoles =
-      await this.repositories.organizationRoleRepository.getOrganizationRoles(
-        { organizationId },
-        transaction
-      );
+    const existingOrganizationRoles = await this.organizationRoleRepository.getOrganizationRoles(
+      { organizationId },
+      transaction
+    );
 
     return existingOrganizationRoles.some((or) => or.roleId === roleId);
   }
@@ -88,10 +83,7 @@ export class OrganizationRoleService extends AuditService {
 
     await this.organizationExists(organizationId, transaction);
 
-    const result = await this.repositories.organizationRoleRepository.getOrganizationRoles(
-      params,
-      transaction
-    );
+    const result = await this.organizationRoleRepository.getOrganizationRoles(params, transaction);
     return validateOutput(
       createDynamicSingleSchema(organizationRoleSchema).array(),
       result,
@@ -110,14 +102,10 @@ export class OrganizationRoleService extends AuditService {
     const hasRole = await this.organizationHasRole(organizationId, roleId, transaction);
 
     if (hasRole) {
-      throw new ConflictError(
-        'Organization already has this role',
-        'errors:conflict.duplicateEntry',
-        { resource: 'OrganizationRole', field: 'roleId' }
-      );
+      throw new ConflictError('Organization already has this role', 'OrganizationRole', 'roleId');
     }
 
-    const organizationRole = await this.repositories.organizationRoleRepository.addOrganizationRole(
+    const organizationRole = await this.organizationRoleRepository.addOrganizationRole(
       { organizationId, roleId },
       transaction
     );
@@ -134,7 +122,7 @@ export class OrganizationRoleService extends AuditService {
       context,
     };
 
-    await this.logCreate(organizationRole.id, newValues, metadata, transaction);
+    await this.audit.logCreate(organizationRole.id, newValues, metadata, transaction);
 
     return validateOutput(
       createDynamicSingleSchema(organizationRoleSchema),
@@ -154,17 +142,17 @@ export class OrganizationRoleService extends AuditService {
     const hasRole = await this.organizationHasRole(organizationId, roleId, transaction);
 
     if (!hasRole) {
-      throw new NotFoundError('Organization does not have this role', 'errors:notFound.role');
+      throw new NotFoundError('Role');
     }
 
     const isHardDelete = hardDelete === true;
 
     const organizationRole = isHardDelete
-      ? await this.repositories.organizationRoleRepository.hardDeleteOrganizationRole(
+      ? await this.organizationRoleRepository.hardDeleteOrganizationRole(
           { organizationId, roleId },
           transaction
         )
-      : await this.repositories.organizationRoleRepository.softDeleteOrganizationRole(
+      : await this.organizationRoleRepository.softDeleteOrganizationRole(
           { organizationId, roleId },
           transaction
         );
@@ -188,9 +176,15 @@ export class OrganizationRoleService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(organizationRole.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(organizationRole.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(organizationRole.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(
+        organizationRole.id,
+        oldValues,
+        newValues,
+        metadata,
+        transaction
+      );
     }
 
     return validateOutput(
@@ -211,7 +205,7 @@ export class OrganizationRoleService extends AuditService {
     // Only seed organization-level roles, not account-level roles
     for (const roleData of Object.values(ORGANIZATION_ROLE_DEFINITIONS)) {
       // Check if role already exists
-      const existingRoles = await this.repositories.roleRepository.getRoles(
+      const existingRoles = await this.roleRepository.getRoles(
         {
           search: roleData.name,
           limit: 1,
@@ -223,7 +217,7 @@ export class OrganizationRoleService extends AuditService {
 
       // Only create role if it doesn't exist
       if (!role) {
-        role = await this.repositories.roleRepository.createRole(
+        role = await this.roleRepository.createRole(
           {
             name: roleData.name,
             description: roleData.description,
@@ -236,22 +230,20 @@ export class OrganizationRoleService extends AuditService {
       const finalRole = role;
 
       // Check if organization-role relationship already exists
-      const existingOrganizationRoles =
-        await this.repositories.organizationRoleRepository.getOrganizationRoles(
-          { organizationId },
-          transaction
-        );
+      const existingOrganizationRoles = await this.organizationRoleRepository.getOrganizationRoles(
+        { organizationId },
+        transaction
+      );
 
       if (!existingOrganizationRoles.some((or) => or.roleId === finalRole.id)) {
         // Only create relationship if it doesn't exist
-        const organizationRole =
-          await this.repositories.organizationRoleRepository.addOrganizationRole(
-            {
-              organizationId,
-              roleId: finalRole.id,
-            },
-            transaction
-          );
+        const organizationRole = await this.organizationRoleRepository.addOrganizationRole(
+          {
+            organizationId,
+            roleId: finalRole.id,
+          },
+          transaction
+        );
 
         const newValues = {
           id: organizationRole.id,
@@ -267,7 +259,7 @@ export class OrganizationRoleService extends AuditService {
           seeded: true,
         };
 
-        await this.logCreate(organizationRole.id, newValues, metadata, transaction);
+        await this.audit.logCreate(organizationRole.id, newValues, metadata, transaction);
 
         results.push({
           role: finalRole,

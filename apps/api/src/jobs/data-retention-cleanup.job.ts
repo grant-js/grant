@@ -1,7 +1,7 @@
 import { config } from '@/config';
 import { JobResult, ScheduledJob } from '@/lib/jobs';
 import { Job } from '@/lib/jobs/base/job';
-import { TransactionManager } from '@/lib/transaction-manager.lib';
+import { DrizzleTransactionalConnection } from '@/lib/transaction-manager.lib';
 
 export default class DataRetentionCleanupJob extends Job {
   readonly config: ScheduledJob = {
@@ -11,7 +11,8 @@ export default class DataRetentionCleanupJob extends Job {
   };
 
   async execute(): Promise<JobResult> {
-    const result = await TransactionManager.withTransaction(this.appContext.db, async (tx) => {
+    const txConn = new DrizzleTransactionalConnection(this.appContext.db);
+    const result = await txConn.withTransaction(async (tx) => {
       const accountRetentionDays = config.privacy.accountDeletionRetentionDays;
       const accountRetentionDate = new Date();
       accountRetentionDate.setDate(accountRetentionDate.getDate() - accountRetentionDays);

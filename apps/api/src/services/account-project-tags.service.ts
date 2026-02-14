@@ -1,6 +1,3 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema } from '@grantjs/database';
-import { accountProjectTagAuditLogs } from '@grantjs/database';
 import {
   AccountProjectTag,
   AddAccountProjectTagInput,
@@ -11,7 +8,7 @@ import {
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
 import {
   accountProjectTagSchema,
@@ -21,25 +18,28 @@ import {
   removeAccountProjectTagInputSchema,
   updateAccountProjectTagInputSchema,
 } from './account-project-tags.schema';
-import {
-  AuditService,
-  DeleteParams,
-  createDynamicSingleSchema,
-  validateInput,
-  validateOutput,
-} from './common';
+import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 
-export class AccountProjectTagService extends AuditService {
+import type {
+  IAuditLogger,
+  IAccountRepository,
+  IProjectRepository,
+  ITagRepository,
+  IAccountProjectTagRepository,
+  IAccountProjectTagService,
+} from '@grantjs/core';
+
+export class AccountProjectTagService implements IAccountProjectTagService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(accountProjectTagAuditLogs, 'accountProjectTagId', user, db);
-  }
+    private readonly accountRepository: IAccountRepository,
+    private readonly projectRepository: IProjectRepository,
+    private readonly tagRepository: ITagRepository,
+    private readonly accountProjectTagRepository: IAccountProjectTagRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async accountExists(accountId: string, transaction?: Transaction): Promise<void> {
-    const accounts = await this.repositories.accountRepository.getAccounts(
+    const accounts = await this.accountRepository.getAccounts(
       {
         ids: [accountId],
         limit: 1,
@@ -48,12 +48,12 @@ export class AccountProjectTagService extends AuditService {
     );
 
     if (accounts.accounts.length === 0) {
-      throw new NotFoundError('Account not found', 'errors:notFound.account');
+      throw new NotFoundError('Account');
     }
   }
 
   private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
-    const projects = await this.repositories.projectRepository.getProjects(
+    const projects = await this.projectRepository.getProjects(
       {
         ids: [projectId],
         limit: 1,
@@ -62,12 +62,12 @@ export class AccountProjectTagService extends AuditService {
     );
 
     if (projects.projects.length === 0) {
-      throw new NotFoundError('Project not found', 'errors:notFound.project');
+      throw new NotFoundError('Project');
     }
   }
 
   private async tagExists(tagId: string, transaction?: Transaction): Promise<void> {
-    const tags = await this.repositories.tagRepository.getTags(
+    const tags = await this.tagRepository.getTags(
       {
         ids: [tagId],
         limit: 1,
@@ -76,7 +76,7 @@ export class AccountProjectTagService extends AuditService {
     );
 
     if (tags.tags.length === 0) {
-      throw new NotFoundError('Tag not found', 'errors:notFound.tag');
+      throw new NotFoundError('Tag');
     }
   }
 
@@ -89,11 +89,10 @@ export class AccountProjectTagService extends AuditService {
     await this.accountExists(accountId, transaction);
     await this.projectExists(projectId, transaction);
     await this.tagExists(tagId, transaction);
-    const existingAccountProjectTags =
-      await this.repositories.accountProjectTagRepository.getAccountProjectTags(
-        { accountId, projectId },
-        transaction
-      );
+    const existingAccountProjectTags = await this.accountProjectTagRepository.getAccountProjectTags(
+      { accountId, projectId },
+      transaction
+    );
 
     return existingAccountProjectTags.some((apt) => apt.tagId === tagId);
   }
@@ -108,7 +107,7 @@ export class AccountProjectTagService extends AuditService {
     await this.accountExists(validatedParams.accountId);
     await this.projectExists(validatedParams.projectId);
 
-    const result = await this.repositories.accountProjectTagRepository.getAccountProjectTags(
+    const result = await this.accountProjectTagRepository.getAccountProjectTags(
       validatedParams,
       transaction
     );
@@ -131,12 +130,11 @@ export class AccountProjectTagService extends AuditService {
       context
     );
 
-    const result =
-      await this.repositories.accountProjectTagRepository.getAccountProjectTagIntersection(
-        accountId,
-        projectIds,
-        tagIds
-      );
+    const result = await this.accountProjectTagRepository.getAccountProjectTagIntersection(
+      accountId,
+      projectIds,
+      tagIds
+    );
     return validateOutput(
       createDynamicSingleSchema(accountProjectTagSchema).array(),
       result,
@@ -155,17 +153,13 @@ export class AccountProjectTagService extends AuditService {
     const hasTag = await this.projectHasAccountTag(accountId, projectId, tagId, transaction);
 
     if (hasTag) {
-      throw new ConflictError('Project already has this tag', 'errors:conflict.duplicateEntry', {
-        resource: 'ProjectTag',
-        field: 'tagId',
-      });
+      throw new ConflictError('Project already has this tag', 'ProjectTag', 'tagId');
     }
 
-    const accountProjectTag =
-      await this.repositories.accountProjectTagRepository.addAccountProjectTag(
-        { accountId, projectId, tagId, isPrimary },
-        transaction
-      );
+    const accountProjectTag = await this.accountProjectTagRepository.addAccountProjectTag(
+      { accountId, projectId, tagId, isPrimary },
+      transaction
+    );
 
     const newValues = {
       id: accountProjectTag.id,
@@ -181,7 +175,7 @@ export class AccountProjectTagService extends AuditService {
       context,
     };
 
-    await this.logCreate(accountProjectTag.id, newValues, metadata, transaction);
+    await this.audit.logCreate(accountProjectTag.id, newValues, metadata, transaction);
 
     return validateOutput(
       createDynamicSingleSchema(accountProjectTagSchema),
@@ -198,17 +192,15 @@ export class AccountProjectTagService extends AuditService {
     const validatedParams = validateInput(updateAccountProjectTagInputSchema, params, context);
     const { accountId, projectId, tagId, isPrimary } = validatedParams;
 
-    const accountProjectTag =
-      await this.repositories.accountProjectTagRepository.getAccountProjectTag(
-        { accountId, projectId, tagId },
-        transaction
-      );
+    const accountProjectTag = await this.accountProjectTagRepository.getAccountProjectTag(
+      { accountId, projectId, tagId },
+      transaction
+    );
 
-    const updatedAccountProjectTag =
-      await this.repositories.accountProjectTagRepository.updateAccountProjectTag(
-        { accountId, projectId, tagId, isPrimary },
-        transaction
-      );
+    const updatedAccountProjectTag = await this.accountProjectTagRepository.updateAccountProjectTag(
+      { accountId, projectId, tagId, isPrimary },
+      transaction
+    );
 
     const oldValues = {
       id: accountProjectTag.id,
@@ -234,7 +226,13 @@ export class AccountProjectTagService extends AuditService {
       context,
     };
 
-    await this.logUpdate(updatedAccountProjectTag.id, oldValues, newValues, metadata, transaction);
+    await this.audit.logUpdate(
+      updatedAccountProjectTag.id,
+      oldValues,
+      newValues,
+      metadata,
+      transaction
+    );
 
     return validateOutput(
       createDynamicSingleSchema(accountProjectTagSchema),
@@ -255,17 +253,17 @@ export class AccountProjectTagService extends AuditService {
     const hasTag = await this.projectHasAccountTag(accountId, projectId, tagId, transaction);
 
     if (!hasTag) {
-      throw new NotFoundError('Account project does not have this tag', 'errors:notFound.tag');
+      throw new NotFoundError('Tag');
     }
 
     const isHardDelete = hardDelete === true;
 
     const accountProjectTag = isHardDelete
-      ? await this.repositories.accountProjectTagRepository.hardDeleteAccountProjectTag(
+      ? await this.accountProjectTagRepository.hardDeleteAccountProjectTag(
           { accountId, projectId, tagId },
           transaction
         )
-      : await this.repositories.accountProjectTagRepository.softDeleteAccountProjectTag(
+      : await this.accountProjectTagRepository.softDeleteAccountProjectTag(
           { accountId, projectId, tagId },
           transaction
         );
@@ -290,9 +288,15 @@ export class AccountProjectTagService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(accountProjectTag.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(accountProjectTag.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(accountProjectTag.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(
+        accountProjectTag.id,
+        oldValues,
+        newValues,
+        metadata,
+        transaction
+      );
     }
 
     return validateOutput(

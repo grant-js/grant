@@ -10,10 +10,12 @@ import { Transaction } from '@/lib/transaction-manager.lib';
 
 import { PivotRepository } from './common/PivotRepository';
 
-export class OrganizationPermissionRepository extends PivotRepository<
-  OrganizationPermissionModel,
-  OrganizationPermission
-> {
+import type { IOrganizationPermissionRepository } from '@grantjs/core';
+
+export class OrganizationPermissionRepository
+  extends PivotRepository<OrganizationPermissionModel, OrganizationPermission>
+  implements IOrganizationPermissionRepository
+{
   protected table = organizationPermissions;
   protected uniqueIndexFields: Array<keyof OrganizationPermissionModel> = [
     'organizationId',

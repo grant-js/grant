@@ -10,10 +10,12 @@ import { Transaction } from '@/lib/transaction-manager.lib';
 
 import { PivotRepository } from './common/PivotRepository';
 
-export class ProjectUserApiKeyRepository extends PivotRepository<
-  ProjectUserApiKeyModel,
-  ProjectUserApiKey
-> {
+import type { IProjectUserApiKeyRepository } from '@grantjs/core';
+
+export class ProjectUserApiKeyRepository
+  extends PivotRepository<ProjectUserApiKeyModel, ProjectUserApiKey>
+  implements IProjectUserApiKeyRepository
+{
   protected table = projectUserApiKeys;
   protected uniqueIndexFields: Array<keyof ProjectUserApiKeyModel> = [
     'projectId',

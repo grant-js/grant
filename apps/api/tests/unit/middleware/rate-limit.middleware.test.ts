@@ -1,7 +1,7 @@
+import { InMemoryCacheAdapter } from '@grantjs/cache/memory';
 import { Request, Response } from 'express';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { InMemoryCacheAdapter } from '@/lib/cache/adapters/in-memory-cache.adapter';
 import { rateLimitMiddleware } from '@/middleware/rate-limit.middleware';
 
 type MockSecurity = {

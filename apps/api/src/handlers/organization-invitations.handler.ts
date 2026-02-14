@@ -1,5 +1,4 @@
 import { MILLISECONDS_PER_DAY } from '@grantjs/constants';
-import { DbSchema } from '@grantjs/database';
 import {
   AcceptInvitationInput,
   AcceptInvitationResult,
@@ -20,18 +19,42 @@ import {
 import { config } from '@/config';
 import { defaultLocale } from '@/i18n';
 import { AuthenticationError, BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
-import { createModuleLogger } from '@/lib/logger';
+import { createLogger } from '@/lib/logger';
 import { generateSecureTokenMs } from '@/lib/token.lib';
-import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
-import { Services } from '@/services';
-import { SelectedFields } from '@/services/common';
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { SelectedFields } from '@/types';
+
+import type {
+  IAccountService,
+  IAuthService,
+  IEmailService,
+  IOrganizationInvitationService,
+  IOrganizationRoleService,
+  IOrganizationService,
+  IOrganizationUserService,
+  IRoleService,
+  ITransactionalConnection,
+  IUserAuthenticationMethodService,
+  IUserRoleService,
+  IUserService,
+} from '@grantjs/core';
 
 export class OrganizationInvitationsHandler {
-  private readonly logger = createModuleLogger('OrganizationInvitationsHandler');
+  private readonly logger = createLogger('OrganizationInvitationsHandler');
 
   constructor(
-    readonly services: Services,
-    readonly db: DbSchema
+    private readonly organizationInvitations: IOrganizationInvitationService,
+    private readonly userAuthenticationMethods: IUserAuthenticationMethodService,
+    private readonly organizationRoles: IOrganizationRoleService,
+    private readonly organizations: IOrganizationService,
+    private readonly users: IUserService,
+    private readonly roles: IRoleService,
+    private readonly email: IEmailService,
+    private readonly accounts: IAccountService,
+    private readonly organizationUsers: IOrganizationUserService,
+    private readonly userRoles: IUserRoleService,
+    private readonly auth: IAuthService,
+    private readonly db: ITransactionalConnection<Transaction>
   ) {}
 
   /**
@@ -41,16 +64,16 @@ export class OrganizationInvitationsHandler {
     params: InviteMemberInput,
     locale?: string
   ): Promise<OrganizationInvitation> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { scope, email, roleId } = params;
       const { id: organizationId, tenant } = scope;
 
       if (tenant !== Tenant.Organization) {
-        throw new BadRequestError('Invalid scope', 'errors:validation.invalidScope');
+        throw new BadRequestError('Invalid scope');
       }
 
       // Validate role hierarchy permission (uses current user from service context)
-      await this.services.organizationInvitations.validateInvitationRolePermission(
+      await this.organizationInvitations.validateInvitationRolePermission(
         organizationId,
         roleId,
         tx
@@ -58,7 +81,7 @@ export class OrganizationInvitationsHandler {
 
       // 1. Check if user authentication method exists for this email
       const existingAuthMethod =
-        await this.services.userAuthenticationMethods.getUserAuthenticationMethodByProvider(
+        await this.userAuthenticationMethods.getUserAuthenticationMethodByProvider(
           UserAuthenticationMethodProvider.Email,
           email,
           undefined,
@@ -67,7 +90,7 @@ export class OrganizationInvitationsHandler {
 
       // 2. If user exists, check if already in organization
       if (existingAuthMethod) {
-        const isInOrg = await this.services.organizationInvitations.isUserInOrganization(
+        const isInOrg = await this.organizationInvitations.isUserInOrganization(
           organizationId,
           existingAuthMethod.userId,
           tx
@@ -76,56 +99,52 @@ export class OrganizationInvitationsHandler {
         if (isInOrg) {
           throw new ConflictError(
             'User already part of the organization',
-            'errors:conflict.duplicateEntry',
-            { resource: 'OrganizationUser', field: 'userId' }
+            'OrganizationUser',
+            'userId'
           );
         }
       }
 
       // 3. Check for existing pending invitation
-      const existingInvitation = await this.services.organizationInvitations.checkPendingInvitation(
+      const existingInvitation = await this.organizationInvitations.checkPendingInvitation(
         email,
         organizationId,
         tx
       );
 
       if (existingInvitation) {
-        throw new ConflictError(
-          'Invitation already sent to this email',
-          'errors:conflict.duplicateEntry',
-          { resource: 'Invitation', field: 'email' }
-        );
+        throw new ConflictError('Invitation already sent to this email', 'Invitation', 'email');
       }
 
       // 4. Verify role exists and belongs to organization
-      const organizationRoles = await this.services.organizationRoles.getOrganizationRoles(
+      const organizationRoles = await this.organizationRoles.getOrganizationRoles(
         { organizationId },
         tx
       );
       const roleExists = organizationRoles.some((or) => or.roleId === roleId);
       if (!roleExists) {
-        throw new NotFoundError('Role not found in organization', 'errors:notFound.role');
+        throw new NotFoundError('Role');
       }
 
       // 5. Get organization and inviter details for email
       const organization = (
-        await this.services.organizations.getOrganizations(
+        await this.organizations.getOrganizations(
           { ids: [organizationId], limit: 1, requestedFields: [] },
           tx
         )
       ).organizations[0];
 
-      const invitedBy = this.services.auth.getAuth()?.userId;
+      const invitedBy = this.auth.getAuth()?.userId;
 
       if (!invitedBy) {
-        throw new AuthenticationError('Authentication required', 'errors:auth.unauthorized');
+        throw new AuthenticationError('Authentication required');
       }
 
       const inviter = (
-        await this.services.users.getUsers({ ids: [invitedBy], limit: 1, requestedFields: [] }, tx)
+        await this.users.getUsers({ ids: [invitedBy], limit: 1, requestedFields: [] }, tx)
       ).users[0];
 
-      const roles = await this.services.roles.getRoles({ ids: [roleId], limit: 1 });
+      const roles = await this.roles.getRoles({ ids: [roleId], limit: 1 });
       const role = roles.roles[0];
 
       // 6. Create invitation (invitedAt will be set after email is successfully sent)
@@ -133,7 +152,7 @@ export class OrganizationInvitationsHandler {
       const expiresAt = new Date(validUntil);
 
       // Create invitation without invitedAt initially (schema default will set it, but we'll update after email)
-      const invitation = await this.services.organizationInvitations.createInvitation(
+      const invitation = await this.organizationInvitations.createInvitation(
         {
           organizationId,
           email,
@@ -152,7 +171,7 @@ export class OrganizationInvitationsHandler {
       const invitationUrl = `${config.security.frontendUrl}/${localePrefix}/invitations/${token}`;
 
       try {
-        await this.services.email.sendInvitation({
+        await this.email.sendInvitation({
           to: email,
           organizationName: organization.name,
           inviterName: inviter.name,
@@ -161,7 +180,7 @@ export class OrganizationInvitationsHandler {
           locale,
         });
         // Email sent successfully, update invitedAt to reflect when it was actually sent
-        const updatedInvitation = await this.services.organizationInvitations.updateInvitation(
+        const updatedInvitation = await this.organizationInvitations.updateInvitation(
           invitation.id,
           {
             invitedAt: new Date(),
@@ -185,26 +204,23 @@ export class OrganizationInvitationsHandler {
    * Accept an organization invitation
    */
   public async acceptInvitation(params: AcceptInvitationInput): Promise<AcceptInvitationResult> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { token, userData } = params;
 
       // 1. Get invitation
-      const invitation = await this.services.organizationInvitations.getInvitationByToken(
-        { token },
-        tx
-      );
+      const invitation = await this.organizationInvitations.getInvitationByToken({ token }, tx);
 
       if (!invitation || invitation.status !== OrganizationInvitationStatus.Pending) {
-        throw new BadRequestError('Invalid or expired invitation', 'errors:auth.invalidToken');
+        throw new BadRequestError('Invalid or expired invitation');
       }
 
       if (new Date() > invitation.expiresAt) {
-        throw new BadRequestError('Invitation has expired', 'errors:auth.invalidToken');
+        throw new BadRequestError('Invitation has expired');
       }
 
       // 2. Check if user authentication method exists
       let userAuthMethod =
-        await this.services.userAuthenticationMethods.getUserAuthenticationMethodByProvider(
+        await this.userAuthenticationMethods.getUserAuthenticationMethodByProvider(
           UserAuthenticationMethodProvider.Email,
           invitation.email,
           undefined,
@@ -230,10 +246,10 @@ export class OrganizationInvitationsHandler {
         isNewUser = true;
 
         // Create user
-        user = await this.services.users.createUser({ name: userData.name }, tx);
+        user = await this.users.createUser({ name: userData.name }, tx);
 
         // Create authentication method
-        const { providerData } = await this.services.userAuthenticationMethods.processProvider(
+        const { providerData } = await this.userAuthenticationMethods.processProvider(
           UserAuthenticationMethodProvider.Email,
           invitation.email,
           {
@@ -242,20 +258,19 @@ export class OrganizationInvitationsHandler {
           }
         );
 
-        userAuthMethod =
-          await this.services.userAuthenticationMethods.createUserAuthenticationMethod(
-            {
-              userId: user.id,
-              provider: UserAuthenticationMethodProvider.Email,
-              providerId: invitation.email,
-              providerData,
-              isVerified: true, // Auto-verify invited users
-            },
-            tx
-          );
+        userAuthMethod = await this.userAuthenticationMethods.createUserAuthenticationMethod(
+          {
+            userId: user.id,
+            provider: UserAuthenticationMethodProvider.Email,
+            providerId: invitation.email,
+            providerData,
+            isVerified: true, // Auto-verify invited users
+          },
+          tx
+        );
 
         // Create account
-        await this.services.accounts.createAccount(
+        await this.accounts.createAccount(
           {
             type: AccountType.Organization,
             ownerId: user.id,
@@ -264,7 +279,7 @@ export class OrganizationInvitationsHandler {
         );
       } else {
         // Get existing user with accounts
-        const usersResult = await this.services.users.getUsers(
+        const usersResult = await this.users.getUsers(
           {
             ids: [userAuthMethod!.userId],
             limit: 1,
@@ -285,14 +300,11 @@ export class OrganizationInvitationsHandler {
           // A user can only have 1 Personal account (enforced by unique email registration in createAccount)
           const accountCount = user.accounts?.length || 0;
           if (accountCount >= 2) {
-            throw new BadRequestError(
-              'User has reached maximum account limit',
-              'errors:validation.maxAccountsReached'
-            );
+            throw new BadRequestError('User has reached maximum account limit');
           }
 
           // Create Organization account for existing user
-          await this.services.accounts.createAccount(
+          await this.accounts.createAccount(
             {
               type: AccountType.Organization,
               ownerId: user.id,
@@ -303,7 +315,7 @@ export class OrganizationInvitationsHandler {
       }
 
       // 5. Add user to organization
-      await this.services.organizationUsers.addOrganizationUser(
+      await this.organizationUsers.addOrganizationUser(
         {
           organizationId: invitation.organizationId,
           userId: user!.id,
@@ -312,7 +324,7 @@ export class OrganizationInvitationsHandler {
       );
 
       // 6. Assign role
-      await this.services.userRoles.addUserRole(
+      await this.userRoles.addUserRole(
         {
           userId: user!.id,
           roleId: invitation.roleId,
@@ -321,7 +333,7 @@ export class OrganizationInvitationsHandler {
       );
 
       // 7. Update invitation status
-      await this.services.organizationInvitations.updateInvitation(
+      await this.organizationInvitations.updateInvitation(
         invitation.id,
         {
           status: OrganizationInvitationStatus.Accepted,
@@ -331,7 +343,7 @@ export class OrganizationInvitationsHandler {
       );
 
       // 8. Fetch all user accounts (after potential account creation)
-      const updatedUsersResult = await this.services.users.getUsers(
+      const updatedUsersResult = await this.users.getUsers(
         {
           ids: [user!.id],
           limit: 1,
@@ -358,7 +370,7 @@ export class OrganizationInvitationsHandler {
   public async getInvitation(
     params: GetInvitationQueryVariables & SelectedFields<OrganizationInvitation>
   ): Promise<OrganizationInvitation | null> {
-    const invitation = await this.services.organizationInvitations.getInvitationByToken(params);
+    const invitation = await this.organizationInvitations.getInvitationByToken(params);
     return invitation as OrganizationInvitation | null;
   }
 
@@ -368,15 +380,15 @@ export class OrganizationInvitationsHandler {
   public async getOrganizationInvitations(
     params: QueryOrganizationInvitationsArgs
   ): Promise<OrganizationInvitationPage> {
-    return await this.services.organizationInvitations.getInvitationsByOrganization(params);
+    return await this.organizationInvitations.getInvitationsByOrganization(params);
   }
 
   /**
    * Revoke an invitation
    */
   public async revokeInvitation(id: string): Promise<OrganizationInvitation> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
-      const invitation = await this.services.organizationInvitations.revokeInvitation(id, tx);
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const invitation = await this.organizationInvitations.revokeInvitation(id, tx);
       return invitation as OrganizationInvitation;
     });
   }
@@ -385,51 +397,47 @@ export class OrganizationInvitationsHandler {
    * Resend invitation email for a pending invitation
    */
   public async resendInvitationEmail(id: string, locale?: string): Promise<OrganizationInvitation> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       // 1. Get invitation by ID
-      const invitation = await this.services.organizationInvitations.getInvitationById(id, tx);
+      const invitation = await this.organizationInvitations.getInvitationById(id, tx);
 
       if (!invitation) {
-        throw new NotFoundError('Invitation not found', 'errors:notFound.invitation');
+        throw new NotFoundError('Invitation');
       }
 
       // 2. Verify invitation is pending
       if (invitation.status !== OrganizationInvitationStatus.Pending) {
-        throw new BadRequestError(
-          'Can only resend email for pending invitations',
-          'errors:validation.invalidStatus',
-          { status: invitation.status }
-        );
+        throw new BadRequestError('Can only resend email for pending invitations');
       }
 
       // 3. Verify invitation hasn't expired
       if (new Date() > invitation.expiresAt) {
-        throw new BadRequestError('Invitation has expired', 'errors:auth.invalidToken');
+        throw new BadRequestError('Invitation has expired');
       }
 
       // 4. Get organization and inviter details for email
       const organization = (
-        await this.services.organizations.getOrganizations(
+        await this.organizations.getOrganizations(
           { ids: [invitation.organizationId], limit: 1, requestedFields: [] },
           tx
         )
       ).organizations[0];
 
       const inviter = (
-        await this.services.users.getUsers(
+        await this.users.getUsers(
           { ids: [invitation.invitedBy], limit: 1, requestedFields: [] },
           tx
         )
       ).users[0];
 
-      const roles = await this.services.roles.getRoles({ ids: [invitation.roleId], limit: 1 });
+      const roles = await this.roles.getRoles({ ids: [invitation.roleId], limit: 1 });
       const role = roles.roles[0];
 
       // 5. Resend invitation email (async, fire-and-forget)
       const localePrefix = locale || defaultLocale;
       const invitationUrl = `${config.security.frontendUrl}/${localePrefix}/invitations/${invitation.token}`;
 
-      this.services.email
+      this.email
         .sendInvitation({
           to: invitation.email,
           organizationName: organization.name,
@@ -454,12 +462,12 @@ export class OrganizationInvitationsHandler {
    * Renew an expired invitation
    */
   public async renewInvitation(id: string, locale?: string): Promise<OrganizationInvitation> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       // 1. Get invitation by ID
-      const invitation = await this.services.organizationInvitations.getInvitationById(id, tx);
+      const invitation = await this.organizationInvitations.getInvitationById(id, tx);
 
       if (!invitation) {
-        throw new NotFoundError('Invitation not found', 'errors:notFound.invitation');
+        throw new NotFoundError('Invitation');
       }
 
       // 2. Verify invitation is expired and pending
@@ -467,18 +475,11 @@ export class OrganizationInvitationsHandler {
       const isPending = invitation.status === OrganizationInvitationStatus.Pending;
 
       if (!isPending) {
-        throw new BadRequestError(
-          'Can only renew pending invitations',
-          'errors:validation.invalidStatus',
-          { status: invitation.status }
-        );
+        throw new BadRequestError('Can only renew pending invitations');
       }
 
       if (!isExpired) {
-        throw new BadRequestError(
-          'Can only renew expired invitations',
-          'errors:validation.invitationNotExpired'
-        );
+        throw new BadRequestError('Can only renew expired invitations');
       }
 
       // 3. Generate new token and expiration date
@@ -487,24 +488,24 @@ export class OrganizationInvitationsHandler {
 
       // 4. Get organization and inviter details for email (before updating)
       const organization = (
-        await this.services.organizations.getOrganizations(
+        await this.organizations.getOrganizations(
           { ids: [invitation.organizationId], limit: 1, requestedFields: [] },
           tx
         )
       ).organizations[0];
 
       const inviter = (
-        await this.services.users.getUsers(
+        await this.users.getUsers(
           { ids: [invitation.invitedBy], limit: 1, requestedFields: [] },
           tx
         )
       ).users[0];
 
-      const roles = await this.services.roles.getRoles({ ids: [invitation.roleId], limit: 1 });
+      const roles = await this.roles.getRoles({ ids: [invitation.roleId], limit: 1 });
       const role = roles.roles[0];
 
       // 5. Update invitation with new token and expiration (without invitedAt initially)
-      const updatedInvitation = await this.services.organizationInvitations.updateInvitation(
+      const updatedInvitation = await this.organizationInvitations.updateInvitation(
         id,
         {
           token,
@@ -519,7 +520,7 @@ export class OrganizationInvitationsHandler {
       const invitationUrl = `${config.security.frontendUrl}/${localePrefix}/invitations/${token}`;
 
       try {
-        await this.services.email.sendInvitation({
+        await this.email.sendInvitation({
           to: invitation.email,
           organizationName: organization.name,
           inviterName: inviter.name,
@@ -528,7 +529,7 @@ export class OrganizationInvitationsHandler {
           locale,
         });
         // Email sent successfully, now update invitedAt
-        const finalInvitation = await this.services.organizationInvitations.updateInvitation(
+        const finalInvitation = await this.organizationInvitations.updateInvitation(
           id,
           {
             invitedAt: new Date(),

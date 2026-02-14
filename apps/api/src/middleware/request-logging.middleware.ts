@@ -4,11 +4,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@/lib/logger';
 import { ContextRequest } from '@/types';
 
-import type { Logger } from 'pino';
+import type { ILogger } from '@grantjs/core';
 
 export interface RequestWithLogger extends Request {
   requestId: string;
-  logger: Logger;
+  logger: ILogger;
 }
 
 export function requestLoggingMiddleware(req: Request, res: Response, next: NextFunction): void {
@@ -46,15 +46,21 @@ export function requestLoggingMiddleware(req: Request, res: Response, next: Next
   res.on('finish', () => {
     const duration = Date.now() - startTime;
 
-    const level = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
-
-    requestLogger[level]({
+    const logData = {
       msg: 'Request completed',
       method: req.method,
       path: req.path,
       statusCode: res.statusCode,
       duration,
-    });
+    };
+
+    if (res.statusCode >= 500) {
+      requestLogger.error(logData);
+    } else if (res.statusCode >= 400) {
+      requestLogger.warn(logData);
+    } else {
+      requestLogger.info(logData);
+    }
   });
 
   res.on('close', () => {
@@ -70,7 +76,7 @@ export function requestLoggingMiddleware(req: Request, res: Response, next: Next
   next();
 }
 
-export function getRequestLogger(req: Request): Logger {
+export function getRequestLogger(req: Request): ILogger {
   return (req as RequestWithLogger).logger || logger;
 }
 

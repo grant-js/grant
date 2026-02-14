@@ -1,18 +1,10 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, projectUserAuditLogs } from '@grantjs/database';
 import { AddProjectUserInput, ProjectUser, RemoveProjectUserInput } from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
-import {
-  AuditService,
-  DeleteParams,
-  createDynamicSingleSchema,
-  validateInput,
-  validateOutput,
-} from './common';
+import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 import {
   addProjectUserParamsSchema,
   getProjectUsersParamsSchema,
@@ -20,34 +12,38 @@ import {
   removeProjectUserParamsSchema,
 } from './project-users.schemas';
 
-export class ProjectUserService extends AuditService {
+import type {
+  IAuditLogger,
+  IProjectRepository,
+  IProjectUserRepository,
+  IProjectUserService,
+  IUserRepository,
+} from '@grantjs/core';
+
+export class ProjectUserService implements IProjectUserService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(projectUserAuditLogs, 'projectUserId', user, db);
-  }
+    private readonly projectRepository: IProjectRepository,
+    private readonly userRepository: IUserRepository,
+    private readonly projectUserRepository: IProjectUserRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
-    const projects = await this.repositories.projectRepository.getProjects(
+    const projects = await this.projectRepository.getProjects(
       { ids: [projectId], limit: 1 },
       transaction
     );
 
     if (projects.projects.length === 0) {
-      throw new NotFoundError('Project not found', 'errors:notFound.project');
+      throw new NotFoundError('Project');
     }
   }
 
   private async userExists(userId: string, transaction?: Transaction): Promise<void> {
-    const users = await this.repositories.userRepository.getUsers(
-      { ids: [userId], limit: 1 },
-      transaction
-    );
+    const users = await this.userRepository.getUsers({ ids: [userId], limit: 1 }, transaction);
 
     if (users.users.length === 0) {
-      throw new NotFoundError('User not found', 'errors:notFound.user');
+      throw new NotFoundError('User');
     }
   }
 
@@ -58,7 +54,7 @@ export class ProjectUserService extends AuditService {
   ): Promise<boolean> {
     await this.projectExists(projectId, transaction);
     await this.userExists(userId, transaction);
-    const existingProjectUsers = await this.repositories.projectUserRepository.getProjectUsers(
+    const existingProjectUsers = await this.projectUserRepository.getProjectUsers(
       {
         projectId,
       },
@@ -79,10 +75,7 @@ export class ProjectUserService extends AuditService {
       await this.projectExists(validatedParams.projectId, transaction);
     }
 
-    const result = await this.repositories.projectUserRepository.getProjectUsers(
-      validatedParams,
-      transaction
-    );
+    const result = await this.projectUserRepository.getProjectUsers(validatedParams, transaction);
     return validateOutput(createDynamicSingleSchema(projectUserSchema).array(), result, context);
   }
 
@@ -97,13 +90,10 @@ export class ProjectUserService extends AuditService {
     const hasUser = await this.projectHasUser(projectId, userId, transaction);
 
     if (hasUser) {
-      throw new ConflictError('Project already has this user', 'errors:conflict.duplicateEntry', {
-        resource: 'ProjectUser',
-        field: 'userId',
-      });
+      throw new ConflictError('Project already has this user', 'ProjectUser', 'userId');
     }
 
-    const projectUser = await this.repositories.projectUserRepository.addProjectUser(
+    const projectUser = await this.projectUserRepository.addProjectUser(
       {
         projectId,
         userId,
@@ -123,7 +113,7 @@ export class ProjectUserService extends AuditService {
       context,
     };
 
-    await this.logCreate(projectUser.id, newValues, metadata, transaction);
+    await this.audit.logCreate(projectUser.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(projectUserSchema), projectUser, context);
   }
@@ -140,20 +130,14 @@ export class ProjectUserService extends AuditService {
     const hasUser = await this.projectHasUser(projectId, userId, transaction);
 
     if (!hasUser) {
-      throw new NotFoundError('Project does not have this user', 'errors:notFound.user');
+      throw new NotFoundError('User');
     }
 
     const isHardDelete = hardDelete === true;
 
     const projectUser = isHardDelete
-      ? await this.repositories.projectUserRepository.hardDeleteProjectUser(
-          { projectId, userId },
-          transaction
-        )
-      : await this.repositories.projectUserRepository.softDeleteProjectUser(
-          { projectId, userId },
-          transaction
-        );
+      ? await this.projectUserRepository.hardDeleteProjectUser({ projectId, userId }, transaction)
+      : await this.projectUserRepository.softDeleteProjectUser({ projectId, userId }, transaction);
 
     const oldValues = {
       id: projectUser.id,
@@ -174,9 +158,9 @@ export class ProjectUserService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(projectUser.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(projectUser.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(projectUser.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(projectUser.id, oldValues, newValues, metadata, transaction);
     }
 
     return validateOutput(createDynamicSingleSchema(projectUserSchema), projectUser, context);
@@ -193,7 +177,7 @@ export class ProjectUserService extends AuditService {
       joinedAt: Date;
     }>
   > {
-    const memberships = await this.repositories.projectUserRepository.getProjectUserMemberships(
+    const memberships = await this.projectUserRepository.getProjectUserMemberships(
       userId,
       transaction
     );

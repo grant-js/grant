@@ -13,6 +13,15 @@ alwaysApply: false
 
 Do not add app-specific logic; keep this package as the single source of schema and migrations for the platform.
 
+## Logging
+
+- The connection module accepts an optional `ILogger` via `DatabaseConfig.logger`. When provided, connection lifecycle events use structured logging; when omitted, logging is silently skipped.
+- CLI seed/reset scripts use `console.*` directly — this is intentional for CLI output.
+
+## Dependencies
+
+- Depends on `@grantjs/core` (for `ILogger` port) and `@grantjs/constants`. Does **not** depend on `@grantjs/logger` — the concrete logger is injected by the consumer.
+
 ## Deep-dive docs
 
 - **Data model**: `docs/architecture/data-model.md` — entity relationships, ER diagrams, schema conventions.

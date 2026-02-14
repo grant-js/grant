@@ -1,3 +1,4 @@
+import { NotFoundError } from '@grantjs/core';
 import { accounts, type DbSchema, organizations, projects } from '@grantjs/database';
 import { Tenant, type Scope } from '@grantjs/schema';
 import { and, eq, isNull } from 'drizzle-orm';
@@ -65,9 +66,7 @@ export async function assertTenantActive(scope: Scope, db: DbSchema): Promise<vo
         .limit(1)
         .then((rows) => {
           if (rows.length === 0) {
-            throw new Error(
-              `Tenant organization ${organizationId} not found or soft-deleted; job rejected.`
-            );
+            throw new NotFoundError('Organization', organizationId);
           }
         })
     );
@@ -82,7 +81,7 @@ export async function assertTenantActive(scope: Scope, db: DbSchema): Promise<vo
         .limit(1)
         .then((rows) => {
           if (rows.length === 0) {
-            throw new Error(`Tenant project ${projectId} not found or soft-deleted; job rejected.`);
+            throw new NotFoundError('Project', projectId);
           }
         })
     );
@@ -97,7 +96,7 @@ export async function assertTenantActive(scope: Scope, db: DbSchema): Promise<vo
         .limit(1)
         .then((rows) => {
           if (rows.length === 0) {
-            throw new Error(`Tenant account ${accountId} not found or soft-deleted; job rejected.`);
+            throw new NotFoundError('Account', accountId);
           }
         })
     );

@@ -15,9 +15,11 @@ import {
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { EntityRepository, RelationsConfig } from '@/repositories/common';
-import { SelectedFields } from '@/services/common';
+import { SelectedFields } from '@/types';
 
-export class RoleRepository extends EntityRepository<RoleModel, Role> {
+import type { IRoleRepository } from '@grantjs/core';
+
+export class RoleRepository extends EntityRepository<RoleModel, Role> implements IRoleRepository {
   protected table = roles;
   protected schemaName = 'roles' as const;
   protected searchFields: Array<keyof RoleModel> = Object.values(RoleSearchableField);

@@ -1,19 +1,25 @@
 import crypto from 'node:crypto';
 
-import { DbSchema } from '@grantjs/database';
 import {
   UserAuthenticationEmailProviderAction,
   UserAuthenticationMethodProvider,
 } from '@grantjs/schema';
 
+import { config } from '@/config';
 import { OAUTH_CLI_CALLBACK_KEY_PREFIX } from '@/constants/cache.constants';
-import { CacheHandler } from '@/handlers/base/cache-handler';
+import { CacheHandler, type ScopeServices } from '@/handlers/base/cache-handler';
 import { CacheKey, IEntityCacheAdapter } from '@/lib/cache';
 import { AuthenticationError, ConfigurationError } from '@/lib/errors';
-import { createModuleLogger } from '@/lib/logger';
-import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
-import { Services } from '@/services';
-import { GitHubUserInfo } from '@/services/github-oauth.service';
+import { createLogger } from '@/lib/logger';
+import { Transaction } from '@/lib/transaction-manager.lib';
+
+import type {
+  GitHubUserInfo,
+  IGitHubOAuthService,
+  IOAuthStateService,
+  ITransactionalConnection,
+  IUserAuthenticationMethodService,
+} from '@grantjs/core';
 
 /** Payload stored for CLI OAuth callback and returned from POST /api/auth/cli-callback */
 export interface CliCallbackPayload {
@@ -46,39 +52,36 @@ export interface HandleGithubCallbackResult {
 }
 
 export class OAuthHandler extends CacheHandler {
-  protected readonly logger = createModuleLogger('OAuthHandler');
+  protected readonly logger = createLogger('OAuthHandler');
 
   constructor(
-    readonly cache: IEntityCacheAdapter,
-    readonly services: Services,
-    readonly db: DbSchema
+    private readonly githubOAuth: IGitHubOAuthService,
+    private readonly oauthState: IOAuthStateService,
+    private readonly userAuthenticationMethods: IUserAuthenticationMethodService,
+    cache: IEntityCacheAdapter,
+    scopeServices: ScopeServices,
+    private readonly db: ITransactionalConnection<Transaction>
   ) {
-    super(cache, services);
+    super(cache, scopeServices);
   }
 
   public async initiateGithubAuth(
     params: InitiateGithubAuthParams
   ): Promise<InitiateGithubAuthResult> {
-    if (!this.services.githubOAuth.isConfigured()) {
-      throw new ConfigurationError(
-        'GitHub OAuth is not configured',
-        'errors:auth.githubNotConfigured'
-      );
+    if (!this.githubOAuth.isConfigured()) {
+      throw new ConfigurationError('GitHub OAuth is not configured');
     }
 
-    const state = this.services.githubOAuth.generateState({
+    const state = this.githubOAuth.generateState({
       redirectUrl: params.redirectUrl,
       accountType: params.accountType,
       userId: params.userId,
       action: params.action,
     });
 
-    await this.services.oauthState.storeState(state);
+    await this.oauthState.storeState(state);
 
-    const authorizationUrl = this.services.githubOAuth.getAuthorizationUrl(
-      state.state,
-      params.redirectUrl
-    );
+    const authorizationUrl = this.githubOAuth.getAuthorizationUrl(state.state, params.redirectUrl);
 
     return {
       authorizationUrl,
@@ -89,37 +92,31 @@ export class OAuthHandler extends CacheHandler {
     code: string | undefined,
     stateToken: string | undefined
   ): Promise<HandleGithubCallbackResult> {
-    if (!this.services.githubOAuth.isConfigured()) {
-      throw new ConfigurationError(
-        'GitHub OAuth is not configured',
-        'errors:auth.githubNotConfigured'
-      );
+    if (!this.githubOAuth.isConfigured()) {
+      throw new ConfigurationError('GitHub OAuth is not configured');
     }
 
-    const isValidState = await this.services.oauthState.validateState(stateToken as string);
+    const isValidState = await this.oauthState.validateState(stateToken as string);
     if (!isValidState) {
-      throw new AuthenticationError(
-        'Invalid or expired state parameter',
-        'errors:auth.invalidState'
-      );
+      throw new AuthenticationError('Invalid or expired state parameter');
     }
 
-    const storedState = await this.services.oauthState.getState(stateToken as string);
+    const storedState = await this.oauthState.getState(stateToken as string);
     if (!storedState) {
-      throw new AuthenticationError('State not found', 'errors:auth.stateNotFound');
+      throw new AuthenticationError('State not found');
     }
 
-    await this.services.oauthState.deleteState(stateToken as string);
+    await this.oauthState.deleteState(stateToken as string);
 
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
-      const accessToken = await this.services.githubOAuth.exchangeCodeForToken(code as string);
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const accessToken = await this.githubOAuth.exchangeCodeForToken(code as string);
 
-      const githubUser = await this.services.githubOAuth.getUserInfo(accessToken);
+      const githubUser = await this.githubOAuth.getUserInfo(accessToken);
 
       const providerId = githubUser.id.toString();
 
       const existingAuthMethod =
-        await this.services.userAuthenticationMethods.getUserAuthenticationMethodByProvider(
+        await this.userAuthenticationMethods.getUserAuthenticationMethodByProvider(
           UserAuthenticationMethodProvider.Github,
           providerId,
           undefined,
@@ -130,7 +127,7 @@ export class OAuthHandler extends CacheHandler {
 
       if (!existingAuthMethod && githubUser.email) {
         const existingEmailAuthMethod =
-          await this.services.userAuthenticationMethods.getUserAuthenticationMethodByEmail(
+          await this.userAuthenticationMethods.getUserAuthenticationMethodByEmail(
             githubUser.email,
             tx
           );
@@ -162,7 +159,7 @@ export class OAuthHandler extends CacheHandler {
     });
   }
 
-  private static readonly CALLBACK_TTL_SECONDS = 60;
+  private static readonly CALLBACK_TTL_SECONDS = config.githubOAuth.cliCallbackTtlSeconds;
 
   async storeCliCallbackPayload(payload: CliCallbackPayload): Promise<string> {
     const code = crypto.randomBytes(16).toString('hex');
@@ -183,6 +180,6 @@ export class OAuthHandler extends CacheHandler {
   }
 
   async getStoredState(stateToken: string): Promise<{ redirectUrl?: string } | null> {
-    return this.services.oauthState.getState(stateToken);
+    return this.oauthState.getState(stateToken);
   }
 }

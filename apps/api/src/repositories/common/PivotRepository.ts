@@ -2,7 +2,7 @@ import { DbSchema } from '@grantjs/database';
 import { SQLWrapper, and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 
 import { NotFoundError } from '@/lib/errors';
-import { createModuleLogger } from '@/lib/logger';
+import { createLogger } from '@/lib/logger';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 export interface BasePivotModel {
@@ -21,7 +21,7 @@ export abstract class PivotRepository<
   TPivotModel extends BasePivotModel,
   TPivotEntity extends BasePivotEntity,
 > {
-  protected readonly logger = createModuleLogger('PivotRepository');
+  protected readonly logger = createLogger('PivotRepository');
   protected abstract table: any;
   protected abstract uniqueIndexFields: Array<keyof TPivotModel>;
 
@@ -186,7 +186,7 @@ export abstract class PivotRepository<
 
       const deletedItem = this.first(result);
       if (!deletedItem) {
-        throw new NotFoundError('Relationship not found', 'errors:notFound.resource');
+        throw new NotFoundError('Relationship');
       }
 
       return this.toEntity(deletedItem as TPivotModel);
@@ -212,7 +212,7 @@ export abstract class PivotRepository<
 
       const deletedItem = this.first(result);
       if (!deletedItem) {
-        throw new NotFoundError('Relationship not found', 'errors:notFound.resource');
+        throw new NotFoundError('Relationship');
       }
 
       return this.toEntity(deletedItem as TPivotModel);

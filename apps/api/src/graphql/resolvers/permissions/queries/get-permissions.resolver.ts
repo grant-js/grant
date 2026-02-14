@@ -1,5 +1,4 @@
-import { PermissionModel } from '@grantjs/database';
-import { QueryResolvers } from '@grantjs/schema';
+import { QueryResolvers, Permission } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
 import { getDirectFieldSelection } from '@/lib/field-selection.lib';
@@ -10,7 +9,7 @@ export const getPermissionsResolver: QueryResolvers<GraphqlContext>['permissions
   context,
   info
 ) => {
-  const requestedFields = getDirectFieldSelection<keyof PermissionModel>(info, ['permissions']);
+  const requestedFields = getDirectFieldSelection<keyof Permission>(info, ['permissions']);
 
   const permissions = await context.handlers.permissions.getPermissions({
     scope,

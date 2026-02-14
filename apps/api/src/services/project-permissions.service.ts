@@ -1,6 +1,3 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema } from '@grantjs/database';
-import { projectPermissionsAuditLogs } from '@grantjs/database';
 import {
   ProjectPermission,
   RemoveProjectPermissionInput,
@@ -10,15 +7,9 @@ import {
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
-import {
-  AuditService,
-  validateInput,
-  validateOutput,
-  createDynamicSingleSchema,
-  DeleteParams,
-} from './common';
+import { validateInput, validateOutput, createDynamicSingleSchema } from './common';
 import {
   getProjectPermissionsParamsSchema,
   projectPermissionSchema,
@@ -26,34 +17,41 @@ import {
   removeProjectPermissionInputSchema,
 } from './project-permissions.schemas';
 
-export class ProjectPermissionService extends AuditService {
+import type {
+  IAuditLogger,
+  IPermissionRepository,
+  IProjectPermissionRepository,
+  IProjectPermissionService,
+  IProjectRepository,
+} from '@grantjs/core';
+
+export class ProjectPermissionService implements IProjectPermissionService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(projectPermissionsAuditLogs, 'projectPermissionId', user, db);
-  }
+    private readonly projectRepository: IProjectRepository,
+    private readonly permissionRepository: IPermissionRepository,
+    private readonly projectPermissionRepository: IProjectPermissionRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
-    const projects = await this.repositories.projectRepository.getProjects(
+    const projects = await this.projectRepository.getProjects(
       { ids: [projectId], limit: 1 },
       transaction
     );
 
     if (projects.projects.length === 0) {
-      throw new NotFoundError('Project not found', 'errors:notFound.project');
+      throw new NotFoundError('Project');
     }
   }
 
   private async permissionExists(permissionId: string, transaction?: Transaction): Promise<void> {
-    const permissions = await this.repositories.permissionRepository.getPermissions(
+    const permissions = await this.permissionRepository.getPermissions(
       { ids: [permissionId], limit: 1 },
       transaction
     );
 
     if (permissions.permissions.length === 0) {
-      throw new NotFoundError('Permission not found', 'errors:notFound.permission');
+      throw new NotFoundError('Permission');
     }
   }
 
@@ -64,11 +62,10 @@ export class ProjectPermissionService extends AuditService {
   ): Promise<boolean> {
     await this.projectExists(projectId, transaction);
     await this.permissionExists(permissionId, transaction);
-    const existingProjectPermissions =
-      await this.repositories.projectPermissionRepository.getProjectPermissions(
-        { projectId },
-        transaction
-      );
+    const existingProjectPermissions = await this.projectPermissionRepository.getProjectPermissions(
+      { projectId },
+      transaction
+    );
 
     return existingProjectPermissions.some((pp) => pp.permissionId === permissionId);
   }
@@ -84,7 +81,7 @@ export class ProjectPermissionService extends AuditService {
       await this.projectExists(validatedParams.projectId, transaction);
     }
 
-    const result = await this.repositories.projectPermissionRepository.getProjectPermissions(
+    const result = await this.projectPermissionRepository.getProjectPermissions(
       params,
       transaction
     );
@@ -108,16 +105,15 @@ export class ProjectPermissionService extends AuditService {
     if (hasPermission) {
       throw new ConflictError(
         'Project already has this permission',
-        'errors:conflict.duplicateEntry',
-        { resource: 'ProjectPermission', field: 'permissionId' }
+        'ProjectPermission',
+        'permissionId'
       );
     }
 
-    const projectPermission =
-      await this.repositories.projectPermissionRepository.addProjectPermission(
-        { projectId, permissionId },
-        transaction
-      );
+    const projectPermission = await this.projectPermissionRepository.addProjectPermission(
+      { projectId, permissionId },
+      transaction
+    );
 
     const newValues = {
       id: projectPermission.id,
@@ -131,7 +127,7 @@ export class ProjectPermissionService extends AuditService {
       context,
     };
 
-    await this.logCreate(projectPermission.id, newValues, metadata, transaction);
+    await this.audit.logCreate(projectPermission.id, newValues, metadata, transaction);
 
     return validateOutput(
       createDynamicSingleSchema(projectPermissionSchema),
@@ -152,20 +148,17 @@ export class ProjectPermissionService extends AuditService {
     const hasPermission = await this.projectHasPermission(projectId, permissionId, transaction);
 
     if (!hasPermission) {
-      throw new NotFoundError(
-        'Project does not have this permission',
-        'errors:notFound.permission'
-      );
+      throw new NotFoundError('Permission');
     }
 
     const isHardDelete = hardDelete === true;
 
     const projectPermission = isHardDelete
-      ? await this.repositories.projectPermissionRepository.hardDeleteProjectPermission(
+      ? await this.projectPermissionRepository.hardDeleteProjectPermission(
           { projectId, permissionId },
           transaction
         )
-      : await this.repositories.projectPermissionRepository.softDeleteProjectPermission(
+      : await this.projectPermissionRepository.softDeleteProjectPermission(
           { projectId, permissionId },
           transaction
         );
@@ -189,9 +182,15 @@ export class ProjectPermissionService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(projectPermission.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(projectPermission.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(projectPermission.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(
+        projectPermission.id,
+        oldValues,
+        newValues,
+        metadata,
+        transaction
+      );
     }
 
     return validateOutput(

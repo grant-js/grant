@@ -1,5 +1,10 @@
 import { MILLISECONDS_PER_DAY } from '@grantjs/constants';
-import { Grant } from '@grantjs/core';
+import {
+  Grant,
+  type IAccountRepository,
+  type IUserRepository,
+  type IMeService,
+} from '@grantjs/core';
 import {
   Account,
   AccountType,
@@ -10,11 +15,11 @@ import {
 import { config } from '@/config';
 import { AuthenticationError, BadRequestError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
 
-export class MeService {
+export class MeService implements IMeService {
   constructor(
-    private readonly repositories: Repositories,
+    private readonly userRepository: IUserRepository,
+    private readonly accountRepository: IAccountRepository,
     private readonly grant: Grant
   ) {}
 
@@ -29,7 +34,7 @@ export class MeService {
   private getAuthenticatedUserId(): string {
     const userId = this.grant.auth!.userId;
     if (!userId) {
-      throw new AuthenticationError('Not authenticated', 'errors:auth.notAuthenticated');
+      throw new AuthenticationError('Not authenticated');
     }
     return userId;
   }
@@ -37,7 +42,7 @@ export class MeService {
   public async getMe(transaction?: Transaction): Promise<MeResponse> {
     const userId = this.getAuthenticatedUserId();
 
-    const usersResult = await this.repositories.userRepository.getUsers(
+    const usersResult = await this.userRepository.getUsers(
       {
         ids: [userId],
         limit: 1,
@@ -49,7 +54,7 @@ export class MeService {
     const user = usersResult.users[0];
 
     if (!user) {
-      throw new AuthenticationError('User not found', 'errors:auth.userNotFound');
+      throw new AuthenticationError('User not found');
     }
 
     const allAuthMethods = Array.isArray(user.authenticationMethods)
@@ -108,16 +113,13 @@ export class MeService {
   ): Promise<{ account: Account; accounts: Account[] }> {
     const userId = this.getAuthenticatedUserId();
 
-    const existingAccounts = await this.repositories.accountRepository.getActiveAccountsByOwnerId(
+    const existingAccounts = await this.accountRepository.getActiveAccountsByOwnerId(
       userId,
       transaction
     );
 
     if (existingAccounts.length >= 2) {
-      throw new BadRequestError(
-        'User has reached maximum account limit (2 accounts)',
-        'errors:validation.maxAccountsReached'
-      );
+      throw new BadRequestError('User has reached maximum account limit (2 accounts)');
     }
 
     const hasPersonal = existingAccounts.some((acc) => acc.type === AccountType.Personal);
@@ -129,13 +131,10 @@ export class MeService {
     } else if (hasOrganization && !hasPersonal) {
       complementaryType = AccountType.Personal;
     } else {
-      throw new BadRequestError(
-        'User already has both account types',
-        'errors:validation.complementaryAccountExists'
-      );
+      throw new BadRequestError('User already has both account types');
     }
 
-    const createdAccount = await this.repositories.accountRepository.createAccount(
+    const createdAccount = await this.accountRepository.createAccount(
       {
         type: complementaryType,
         ownerId: userId,
@@ -143,7 +142,7 @@ export class MeService {
       transaction
     );
 
-    const accountsResult = await this.repositories.accountRepository.getAccounts(
+    const accountsResult = await this.accountRepository.getAccounts(
       {
         ids: [createdAccount.id],
         limit: 1,
@@ -155,14 +154,12 @@ export class MeService {
     const newAccount = accountsResult.accounts[0];
 
     if (!newAccount) {
-      throw new NotFoundError('Account not found after creation', 'errors:notFound.account');
+      throw new NotFoundError('Account');
     }
 
-    const allUserAccounts = await this.repositories.accountRepository.getAccountsByOwnerId(
-      userId,
-      transaction,
-      ['owner']
-    );
+    const allUserAccounts = await this.accountRepository.getAccountsByOwnerId(userId, transaction, [
+      'owner',
+    ]);
 
     return {
       account: newAccount,

@@ -2,7 +2,7 @@ import { MILLISECONDS_PER_MINUTE } from '@grantjs/constants';
 
 import { OAUTH_STATE_KEY_PREFIX } from '@/constants/cache.constants';
 import { CacheKey, ICacheAdapter } from '@/lib/cache';
-import { createModuleLogger } from '@/lib/logger';
+import { createLogger } from '@/lib/logger';
 import { validateInput } from '@/services/common';
 
 import { oauthStateSchema, oauthStateTokenSchema } from './github-oauth.schemas';
@@ -12,8 +12,10 @@ interface StoredState extends OAuthState {
   expiresAt: number;
 }
 
-export class OAuthStateService {
-  private readonly logger = createModuleLogger('OAuthStateService');
+import type { IOAuthStateService } from '@grantjs/core';
+
+export class OAuthStateService implements IOAuthStateService {
+  private readonly logger = createLogger('OAuthStateService');
   private readonly cache: ICacheAdapter;
   private readonly cleanupInterval: NodeJS.Timeout;
 

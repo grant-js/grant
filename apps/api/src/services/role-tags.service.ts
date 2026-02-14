@@ -1,18 +1,10 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, roleTagAuditLogs } from '@grantjs/database';
 import { AddRoleTagInput, RemoveRoleTagInput, RoleTag, UpdateRoleTagInput } from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
-import {
-  AuditService,
-  DeleteParams,
-  createDynamicSingleSchema,
-  validateInput,
-  validateOutput,
-} from './common';
+import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 import {
   addRoleTagInputSchema,
   getRoleTagIntersectionInputSchema,
@@ -23,34 +15,35 @@ import {
   updateRoleTagInputSchema,
 } from './role-tags.schemas';
 
-export class RoleTagService extends AuditService {
+import type {
+  IAuditLogger,
+  IRoleRepository,
+  IRoleTagRepository,
+  IRoleTagService,
+  ITagRepository,
+} from '@grantjs/core';
+
+export class RoleTagService implements IRoleTagService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(roleTagAuditLogs, 'roleTagId', user, db);
-  }
+    private readonly roleRepository: IRoleRepository,
+    private readonly tagRepository: ITagRepository,
+    private readonly roleTagRepository: IRoleTagRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async roleExists(roleId: string, transaction?: Transaction): Promise<void> {
-    const roles = await this.repositories.roleRepository.getRoles(
-      { ids: [roleId], limit: 1 },
-      transaction
-    );
+    const roles = await this.roleRepository.getRoles({ ids: [roleId], limit: 1 }, transaction);
 
     if (roles.roles.length === 0) {
-      throw new NotFoundError('Role not found', 'errors:notFound.role');
+      throw new NotFoundError('Role');
     }
   }
 
   private async tagExists(tagId: string, transaction?: Transaction): Promise<void> {
-    const tags = await this.repositories.tagRepository.getTags(
-      { ids: [tagId], limit: 1 },
-      transaction
-    );
+    const tags = await this.tagRepository.getTags({ ids: [tagId], limit: 1 }, transaction);
 
     if (tags.tags.length === 0) {
-      throw new NotFoundError('Tag not found', 'errors:notFound.tag');
+      throw new NotFoundError('Tag');
     }
   }
 
@@ -61,10 +54,7 @@ export class RoleTagService extends AuditService {
   ): Promise<boolean> {
     await this.roleExists(roleId, transaction);
     await this.tagExists(tagId, transaction);
-    const existingRoleTags = await this.repositories.roleTagRepository.getRoleTags(
-      { roleId },
-      transaction
-    );
+    const existingRoleTags = await this.roleTagRepository.getRoleTags({ roleId }, transaction);
 
     return existingRoleTags.some((rt) => rt.tagId === tagId);
   }
@@ -79,7 +69,7 @@ export class RoleTagService extends AuditService {
 
     await this.roleExists(roleId, transaction);
 
-    const result = await this.repositories.roleTagRepository.getRoleTags(params, transaction);
+    const result = await this.roleTagRepository.getRoleTags(params, transaction);
     return validateOutput(createDynamicSingleSchema(roleTagSchema).array(), result, context);
   }
 
@@ -94,7 +84,7 @@ export class RoleTagService extends AuditService {
     const validatedParams = validateInput(getRoleTagIntersectionInputSchema, params, context);
     const { roleIds, tagIds } = validatedParams;
 
-    const roleTags = await this.repositories.roleTagRepository.getRoleTagIntersection(
+    const roleTags = await this.roleTagRepository.getRoleTagIntersection(
       roleIds,
       tagIds,
       transaction
@@ -110,13 +100,10 @@ export class RoleTagService extends AuditService {
     const hasTag = await this.roleHasTag(roleId, tagId, transaction);
 
     if (hasTag) {
-      throw new ConflictError('Role already has this tag', 'errors:conflict.duplicateEntry', {
-        resource: 'RoleTag',
-        field: 'tagId',
-      });
+      throw new ConflictError('Role already has this tag', 'RoleTag', 'tagId');
     }
 
-    const roleTag = await this.repositories.roleTagRepository.addRoleTag(
+    const roleTag = await this.roleTagRepository.addRoleTag(
       { roleId, tagId, isPrimary },
       transaction
     );
@@ -133,7 +120,7 @@ export class RoleTagService extends AuditService {
       context,
     };
 
-    await this.logCreate(roleTag.id, newValues, metadata, transaction);
+    await this.audit.logCreate(roleTag.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(roleTagSchema), roleTag, context);
   }
@@ -146,12 +133,9 @@ export class RoleTagService extends AuditService {
     const validatedParams = validateInput(updateRoleTagInputSchema, params, context);
     const { roleId, tagId, isPrimary } = validatedParams;
 
-    const roleTag = await this.repositories.roleTagRepository.getRoleTag(
-      { roleId, tagId },
-      transaction
-    );
+    const roleTag = await this.roleTagRepository.getRoleTag({ roleId, tagId }, transaction);
 
-    const updatedRoleTag = await this.repositories.roleTagRepository.updateRoleTag(
+    const updatedRoleTag = await this.roleTagRepository.updateRoleTag(
       { roleId, tagId, isPrimary },
       transaction
     );
@@ -160,7 +144,7 @@ export class RoleTagService extends AuditService {
       context,
     };
 
-    await this.logUpdate(updatedRoleTag.id, roleTag, updatedRoleTag, metadata, transaction);
+    await this.audit.logUpdate(updatedRoleTag.id, roleTag, updatedRoleTag, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(roleTagSchema), updatedRoleTag, context);
   }
@@ -176,14 +160,14 @@ export class RoleTagService extends AuditService {
     const hasTag = await this.roleHasTag(roleId, tagId, transaction);
 
     if (!hasTag) {
-      throw new NotFoundError('Role does not have this tag', 'errors:notFound.tag');
+      throw new NotFoundError('Tag');
     }
 
     const isHardDelete = hardDelete === true;
 
     const roleTag = isHardDelete
-      ? await this.repositories.roleTagRepository.hardDeleteRoleTag(validatedParams, transaction)
-      : await this.repositories.roleTagRepository.softDeleteRoleTag(validatedParams, transaction);
+      ? await this.roleTagRepository.hardDeleteRoleTag(validatedParams, transaction)
+      : await this.roleTagRepository.softDeleteRoleTag(validatedParams, transaction);
 
     const oldValues = {
       id: roleTag.id,
@@ -204,9 +188,9 @@ export class RoleTagService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(roleTag.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(roleTag.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(roleTag.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(roleTag.id, oldValues, newValues, metadata, transaction);
     }
 
     return validateOutput(createDynamicSingleSchema(roleTagSchema), roleTag, context);
@@ -220,15 +204,15 @@ export class RoleTagService extends AuditService {
     const validatedParams = validateInput(removeRoleTagsInputSchema, params, context);
     const { tagId, hardDelete } = validatedParams;
 
-    const roleTags = await this.repositories.roleTagRepository.getRoleTags({ tagId }, transaction);
+    const roleTags = await this.roleTagRepository.getRoleTags({ tagId }, transaction);
 
     const isHardDelete = hardDelete === true;
 
     const deletedRoleTags = await Promise.all(
       roleTags.map((roleTag) =>
         isHardDelete
-          ? this.repositories.roleTagRepository.hardDeleteRoleTag(roleTag, transaction)
-          : this.repositories.roleTagRepository.softDeleteRoleTag(roleTag, transaction)
+          ? this.roleTagRepository.hardDeleteRoleTag(roleTag, transaction)
+          : this.roleTagRepository.softDeleteRoleTag(roleTag, transaction)
       )
     );
 

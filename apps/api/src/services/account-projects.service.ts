@@ -1,5 +1,3 @@
-import { GrantAuth } from '@grantjs/core';
-import { accountProjectsAuditLogs, DbSchema } from '@grantjs/database';
 import {
   AccountProject,
   AddAccountProjectInput,
@@ -9,7 +7,7 @@ import {
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
 import {
   accountProjectSchema,
@@ -18,25 +16,26 @@ import {
   queryAccountProjectsArgsSchema,
   removeAccountProjectInputSchema,
 } from './account-projects.schemas';
-import {
-  AuditService,
-  createDynamicSingleSchema,
-  DeleteParams,
-  validateInput,
-  validateOutput,
-} from './common';
+import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 
-export class AccountProjectService extends AuditService {
+import type {
+  IAuditLogger,
+  IAccountRepository,
+  IProjectRepository,
+  IAccountProjectRepository,
+  IAccountProjectService,
+} from '@grantjs/core';
+
+export class AccountProjectService implements IAccountProjectService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(accountProjectsAuditLogs, 'accountProjectId', user, db);
-  }
+    private readonly accountRepository: IAccountRepository,
+    private readonly projectRepository: IProjectRepository,
+    private readonly accountProjectRepository: IAccountProjectRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async accountExists(accountId: string, transaction?: Transaction): Promise<void> {
-    const accounts = await this.repositories.accountRepository.getAccounts(
+    const accounts = await this.accountRepository.getAccounts(
       {
         ids: [accountId],
         limit: 1,
@@ -45,12 +44,12 @@ export class AccountProjectService extends AuditService {
     );
 
     if (accounts.accounts.length === 0) {
-      throw new NotFoundError('Account not found', 'errors:notFound.account');
+      throw new NotFoundError('Account');
     }
   }
 
   private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
-    const projects = await this.repositories.projectRepository.getProjects(
+    const projects = await this.projectRepository.getProjects(
       {
         ids: [projectId],
         limit: 1,
@@ -59,7 +58,7 @@ export class AccountProjectService extends AuditService {
     );
 
     if (projects.projects.length === 0) {
-      throw new NotFoundError('Project not found', 'errors:notFound.project');
+      throw new NotFoundError('Project');
     }
   }
 
@@ -70,11 +69,10 @@ export class AccountProjectService extends AuditService {
   ): Promise<boolean> {
     await this.accountExists(accountId, transaction);
     await this.projectExists(projectId, transaction);
-    const existingAccountProjects =
-      await this.repositories.accountProjectRepository.getAccountProjects(
-        { accountId },
-        transaction
-      );
+    const existingAccountProjects = await this.accountProjectRepository.getAccountProjects(
+      { accountId },
+      transaction
+    );
     return existingAccountProjects.some((ap) => ap.projectId === projectId);
   }
 
@@ -93,7 +91,7 @@ export class AccountProjectService extends AuditService {
 
     await this.accountExists(accountId, transaction);
 
-    const result = await this.repositories.accountProjectRepository.getAccountProjects(
+    const result = await this.accountProjectRepository.getAccountProjects(
       { accountId },
       transaction
     );
@@ -115,7 +113,7 @@ export class AccountProjectService extends AuditService {
 
     await this.projectExists(projectId, transaction);
 
-    const result = await this.repositories.accountProjectRepository.getAccountProject(
+    const result = await this.accountProjectRepository.getAccountProject(
       { projectId },
       transaction
     );
@@ -138,14 +136,10 @@ export class AccountProjectService extends AuditService {
     const hasProject = await this.accountHasProject(accountId, projectId, transaction);
 
     if (hasProject) {
-      throw new ConflictError(
-        'Account already has this project',
-        'errors:conflict.duplicateEntry',
-        { resource: 'AccountProject', field: 'projectId' }
-      );
+      throw new ConflictError('Account already has this project', 'AccountProject', 'projectId');
     }
 
-    const accountProject = await this.repositories.accountProjectRepository.addAccountProject(
+    const accountProject = await this.accountProjectRepository.addAccountProject(
       { accountId, projectId },
       transaction
     );
@@ -162,7 +156,7 @@ export class AccountProjectService extends AuditService {
       context,
     };
 
-    await this.logCreate(accountProject.id, newValues, metadata, transaction);
+    await this.audit.logCreate(accountProject.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(accountProjectSchema), accountProject, context);
   }
@@ -179,17 +173,17 @@ export class AccountProjectService extends AuditService {
     const hasProject = await this.accountHasProject(accountId, projectId);
 
     if (!hasProject) {
-      throw new NotFoundError('Account does not have this project', 'errors:notFound.project');
+      throw new NotFoundError('Project');
     }
 
     const isHardDelete = hardDelete === true;
 
     const accountProject = isHardDelete
-      ? await this.repositories.accountProjectRepository.hardDeleteAccountProject(
+      ? await this.accountProjectRepository.hardDeleteAccountProject(
           { accountId, projectId },
           transaction
         )
-      : await this.repositories.accountProjectRepository.softDeleteAccountProject(
+      : await this.accountProjectRepository.softDeleteAccountProject(
           { accountId, projectId },
           transaction
         );
@@ -213,9 +207,15 @@ export class AccountProjectService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(accountProject.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(accountProject.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(accountProject.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(
+        accountProject.id,
+        oldValues,
+        newValues,
+        metadata,
+        transaction
+      );
     }
 
     return validateOutput(createDynamicSingleSchema(accountProjectSchema), accountProject, context);

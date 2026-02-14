@@ -1,5 +1,3 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, organizationGroupsAuditLogs } from '@grantjs/database';
 import {
   AddOrganizationGroupInput,
   OrganizationGroup,
@@ -8,16 +6,9 @@ import {
 
 import { BadRequestError, ConflictError, NotFoundError, ValidationError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams, SelectedFields } from '@/types';
 
-import {
-  AuditService,
-  DeleteParams,
-  SelectedFields,
-  createDynamicSingleSchema,
-  validateInput,
-  validateOutput,
-} from './common';
+import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 import {
   addOrganizationGroupInputSchema,
   getOrganizationGroupsParamsSchema,
@@ -25,37 +16,41 @@ import {
   removeOrganizationGroupInputSchema,
 } from './organization-groups.schemas';
 
-export class OrganizationGroupService extends AuditService {
+import type {
+  IAuditLogger,
+  IGroupRepository,
+  IOrganizationGroupRepository,
+  IOrganizationGroupService,
+  IOrganizationRepository,
+} from '@grantjs/core';
+
+export class OrganizationGroupService implements IOrganizationGroupService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(organizationGroupsAuditLogs, 'organizationGroupId', user, db);
-  }
+    private readonly organizationRepository: IOrganizationRepository,
+    private readonly groupRepository: IGroupRepository,
+    private readonly organizationGroupRepository: IOrganizationGroupRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async organizationExists(
     organizationId: string,
     transaction?: Transaction
   ): Promise<void> {
-    const organizations = await this.repositories.organizationRepository.getOrganizations(
+    const organizations = await this.organizationRepository.getOrganizations(
       { ids: [organizationId], limit: 1 },
       transaction
     );
 
     if (organizations.organizations.length === 0) {
-      throw new NotFoundError('Organization not found', 'errors:notFound.organization');
+      throw new NotFoundError('Organization');
     }
   }
 
   private async groupExists(groupId: string, transaction?: Transaction): Promise<void> {
-    const groups = await this.repositories.groupRepository.getGroups(
-      { ids: [groupId], limit: 1 },
-      transaction
-    );
+    const groups = await this.groupRepository.getGroups({ ids: [groupId], limit: 1 }, transaction);
 
     if (groups.groups.length === 0) {
-      throw new NotFoundError('Group not found', 'errors:notFound.group');
+      throw new NotFoundError('Group');
     }
   }
 
@@ -66,11 +61,10 @@ export class OrganizationGroupService extends AuditService {
   ): Promise<boolean> {
     await this.organizationExists(organizationId, transaction);
     await this.groupExists(groupId, transaction);
-    const existingOrganizationGroups =
-      await this.repositories.organizationGroupRepository.getOrganizationGroups(
-        { organizationId },
-        transaction
-      );
+    const existingOrganizationGroups = await this.organizationGroupRepository.getOrganizationGroups(
+      { organizationId },
+      transaction
+    );
 
     return existingOrganizationGroups.some((og) => og.groupId === groupId);
   }
@@ -85,13 +79,11 @@ export class OrganizationGroupService extends AuditService {
     const { organizationId } = validatedParams;
 
     if (!organizationId) {
-      throw new ValidationError('Organization ID is required', [], 'errors:validation.required', {
-        field: 'organizationId',
-      });
+      throw new ValidationError('Organization ID is required');
     }
     await this.organizationExists(organizationId, transaction);
 
-    const result = await this.repositories.organizationGroupRepository.getOrganizationGroups(
+    const result = await this.organizationGroupRepository.getOrganizationGroups(
       { organizationId },
       transaction
     );
@@ -115,12 +107,12 @@ export class OrganizationGroupService extends AuditService {
     if (hasGroup) {
       throw new ConflictError(
         'Organization already has this group',
-        'errors:conflict.duplicateEntry',
-        { resource: 'OrganizationGroup', field: 'groupId' }
+        'OrganizationGroup',
+        'groupId'
       );
     }
 
-    const result = await this.repositories.organizationGroupRepository.addOrganizationGroup(
+    const result = await this.organizationGroupRepository.addOrganizationGroup(
       { organizationId, groupId },
       transaction
     );
@@ -137,7 +129,7 @@ export class OrganizationGroupService extends AuditService {
       context,
     };
 
-    await this.logCreate(result.id, newValues, metadata, transaction);
+    await this.audit.logCreate(result.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(organizationGroupSchema), result, context);
   }
@@ -154,23 +146,23 @@ export class OrganizationGroupService extends AuditService {
     const hasGroup = await this.organizationHasGroup(organizationId, groupId, transaction);
 
     if (!hasGroup) {
-      throw new NotFoundError('Organization does not have this group', 'errors:notFound.group');
+      throw new NotFoundError('Group');
     }
 
     const isHardDelete = hardDelete === true;
 
     const result = isHardDelete
-      ? await this.repositories.organizationGroupRepository.hardDeleteOrganizationGroup(
+      ? await this.organizationGroupRepository.hardDeleteOrganizationGroup(
           { organizationId, groupId },
           transaction
         )
-      : await this.repositories.organizationGroupRepository.softDeleteOrganizationGroup(
+      : await this.organizationGroupRepository.softDeleteOrganizationGroup(
           { organizationId, groupId },
           transaction
         );
 
     if (!result) {
-      throw new BadRequestError('Failed to remove organization group', 'errors:common.badRequest');
+      throw new BadRequestError('Failed to remove organization group');
     }
 
     const oldValues = {
@@ -192,9 +184,9 @@ export class OrganizationGroupService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(result.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(result.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(result.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(result.id, oldValues, newValues, metadata, transaction);
     }
 
     return validateOutput(createDynamicSingleSchema(organizationGroupSchema), result, context);

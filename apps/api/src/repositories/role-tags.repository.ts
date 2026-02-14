@@ -10,7 +10,12 @@ import {
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';
 
-export class RoleTagRepository extends PivotRepository<RoleTagModel, RoleTag> {
+import type { IRoleTagRepository } from '@grantjs/core';
+
+export class RoleTagRepository
+  extends PivotRepository<RoleTagModel, RoleTag>
+  implements IRoleTagRepository
+{
   protected table = roleTags;
   protected uniqueIndexFields: Array<keyof RoleTagModel> = ['roleId', 'tagId'];
 

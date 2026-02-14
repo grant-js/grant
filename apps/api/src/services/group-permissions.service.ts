@@ -1,6 +1,3 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema } from '@grantjs/database';
-import { groupPermissionsAuditLogs } from '@grantjs/database';
 import {
   AddGroupPermissionInput,
   GroupPermission,
@@ -10,15 +7,9 @@ import {
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
-import {
-  AuditService,
-  validateInput,
-  validateOutput,
-  createDynamicSingleSchema,
-  DeleteParams,
-} from './common';
+import { validateInput, validateOutput, createDynamicSingleSchema } from './common';
 import {
   getGroupPermissionsParamsSchema,
   addGroupPermissionParamsSchema,
@@ -26,34 +17,38 @@ import {
   groupPermissionSchema,
 } from './group-permissions.schemas';
 
-export class GroupPermissionService extends AuditService {
+import type {
+  IAuditLogger,
+  IGroupPermissionRepository,
+  IGroupPermissionService,
+  IGroupRepository,
+  IPermissionRepository,
+} from '@grantjs/core';
+
+export class GroupPermissionService implements IGroupPermissionService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(groupPermissionsAuditLogs, 'groupPermissionId', user, db);
-  }
+    private readonly groupRepository: IGroupRepository,
+    private readonly permissionRepository: IPermissionRepository,
+    private readonly groupPermissionRepository: IGroupPermissionRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async groupExists(groupId: string, transaction?: Transaction): Promise<void> {
-    const groups = await this.repositories.groupRepository.getGroups(
-      { ids: [groupId], limit: 1 },
-      transaction
-    );
+    const groups = await this.groupRepository.getGroups({ ids: [groupId], limit: 1 }, transaction);
 
     if (groups.groups.length === 0) {
-      throw new NotFoundError('Group not found', 'errors:notFound.group');
+      throw new NotFoundError('Group');
     }
   }
 
   private async permissionExists(permissionId: string, transaction?: Transaction): Promise<void> {
-    const permissions = await this.repositories.permissionRepository.getPermissions(
+    const permissions = await this.permissionRepository.getPermissions(
       { ids: [permissionId], limit: 1 },
       transaction
     );
 
     if (permissions.permissions.length === 0) {
-      throw new NotFoundError('Permission not found', 'errors:notFound.permission');
+      throw new NotFoundError('Permission');
     }
   }
 
@@ -64,11 +59,10 @@ export class GroupPermissionService extends AuditService {
   ): Promise<boolean> {
     await this.groupExists(groupId, transaction);
     await this.permissionExists(permissionId, transaction);
-    const existingGroupPermissions =
-      await this.repositories.groupPermissionRepository.getGroupPermissions(
-        { groupId },
-        transaction
-      );
+    const existingGroupPermissions = await this.groupPermissionRepository.getGroupPermissions(
+      { groupId },
+      transaction
+    );
 
     return existingGroupPermissions.some((gp) => gp.permissionId === permissionId);
   }
@@ -88,7 +82,7 @@ export class GroupPermissionService extends AuditService {
       await this.permissionExists(permissionId, transaction);
     }
 
-    const result = await this.repositories.groupPermissionRepository.getGroupPermissions(
+    const result = await this.groupPermissionRepository.getGroupPermissions(
       validatedParams,
       transaction
     );
@@ -113,12 +107,12 @@ export class GroupPermissionService extends AuditService {
     if (hasPermission) {
       throw new ConflictError(
         'Group already has this permission',
-        'errors:conflict.duplicateEntry',
-        { resource: 'GroupPermission', field: 'permissionId' }
+        'GroupPermission',
+        'permissionId'
       );
     }
 
-    const groupPermission = await this.repositories.groupPermissionRepository.addGroupPermission(
+    const groupPermission = await this.groupPermissionRepository.addGroupPermission(
       { groupId, permissionId },
       transaction
     );
@@ -135,7 +129,7 @@ export class GroupPermissionService extends AuditService {
       context,
     };
 
-    await this.logCreate(groupPermission.id, newValues, metadata, transaction);
+    await this.audit.logCreate(groupPermission.id, newValues, metadata, transaction);
 
     return validateOutput(
       createDynamicSingleSchema(groupPermissionSchema),
@@ -155,17 +149,14 @@ export class GroupPermissionService extends AuditService {
     const hasPermission = await this.groupHasPermission(groupId, permissionId, transaction);
 
     if (!hasPermission) {
-      throw new NotFoundError('Group does not have this permission', 'errors:notFound.permission');
+      throw new NotFoundError('Permission');
     }
 
     const isHardDelete = hardDelete === true;
 
     const groupPermission = isHardDelete
-      ? await this.repositories.groupPermissionRepository.hardDeleteGroupPermission(
-          validatedParams,
-          transaction
-        )
-      : await this.repositories.groupPermissionRepository.softDeleteGroupPermission(
+      ? await this.groupPermissionRepository.hardDeleteGroupPermission(validatedParams, transaction)
+      : await this.groupPermissionRepository.softDeleteGroupPermission(
           validatedParams,
           transaction
         );
@@ -189,9 +180,15 @@ export class GroupPermissionService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(groupPermission.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(groupPermission.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(groupPermission.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(
+        groupPermission.id,
+        oldValues,
+        newValues,
+        metadata,
+        transaction
+      );
     }
 
     return validateOutput(

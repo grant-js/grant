@@ -31,7 +31,7 @@ export function requireEmailVerificationGraphQL<
     const ctx = context as GraphqlContext;
 
     if (!isAuthenticatedGraphQL(ctx)) {
-      throw new AuthenticationError('Unauthorized', 'errors.auth.unauthorized');
+      throw new AuthenticationError('Unauthorized');
     }
 
     const { user, handlers } = ctx;
@@ -48,14 +48,7 @@ export function requireEmailVerificationGraphQL<
       }
     }
 
-    throw new AuthorizationError(
-      'Email verification required',
-      'errors.auth.emailVerificationRequired',
-      undefined,
-      {
-        code: 'EMAIL_VERIFICATION_REQUIRED',
-      }
-    );
+    throw new AuthorizationError('Email verification required', 'EMAIL_VERIFICATION_REQUIRED');
   };
 
   return (

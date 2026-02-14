@@ -1,5 +1,3 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, resourceTagAuditLogs } from '@grantjs/database';
 import {
   AddResourceTagInput,
   RemoveResourceTagInput,
@@ -9,15 +7,9 @@ import {
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
-import {
-  AuditService,
-  DeleteParams,
-  createDynamicSingleSchema,
-  validateInput,
-  validateOutput,
-} from './common';
+import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 import {
   addResourceTagInputSchema,
   getResourceTagIntersectionInputSchema,
@@ -28,34 +20,38 @@ import {
   updateResourceTagInputSchema,
 } from './resource-tags.schemas';
 
-export class ResourceTagService extends AuditService {
+import type {
+  IAuditLogger,
+  IResourceRepository,
+  IResourceTagRepository,
+  IResourceTagService,
+  ITagRepository,
+} from '@grantjs/core';
+
+export class ResourceTagService implements IResourceTagService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(resourceTagAuditLogs, 'resourceTagId', user, db);
-  }
+    private readonly resourceRepository: IResourceRepository,
+    private readonly tagRepository: ITagRepository,
+    private readonly resourceTagRepository: IResourceTagRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async resourceExists(resourceId: string, transaction?: Transaction): Promise<void> {
-    const resources = await this.repositories.resourceRepository.getResources(
+    const resources = await this.resourceRepository.getResources(
       { ids: [resourceId], limit: 1 },
       transaction
     );
 
     if (resources.resources.length === 0) {
-      throw new NotFoundError('Resource not found', 'errors:notFound.resource');
+      throw new NotFoundError('Resource');
     }
   }
 
   private async tagExists(tagId: string, transaction?: Transaction): Promise<void> {
-    const tags = await this.repositories.tagRepository.getTags(
-      { ids: [tagId], limit: 1 },
-      transaction
-    );
+    const tags = await this.tagRepository.getTags({ ids: [tagId], limit: 1 }, transaction);
 
     if (tags.tags.length === 0) {
-      throw new NotFoundError('Tag not found', 'errors:notFound.tag');
+      throw new NotFoundError('Tag');
     }
   }
 
@@ -66,7 +62,7 @@ export class ResourceTagService extends AuditService {
   ): Promise<boolean> {
     await this.resourceExists(resourceId, transaction);
     await this.tagExists(tagId, transaction);
-    const existingResourceTags = await this.repositories.resourceTagRepository.getResourceTags(
+    const existingResourceTags = await this.resourceTagRepository.getResourceTags(
       { resourceId },
       transaction
     );
@@ -84,10 +80,7 @@ export class ResourceTagService extends AuditService {
 
     await this.resourceExists(resourceId, transaction);
 
-    const result = await this.repositories.resourceTagRepository.getResourceTags(
-      params,
-      transaction
-    );
+    const result = await this.resourceTagRepository.getResourceTags(params, transaction);
     return validateOutput(createDynamicSingleSchema(resourceTagSchema).array(), result, context);
   }
 
@@ -102,7 +95,7 @@ export class ResourceTagService extends AuditService {
     const validatedParams = validateInput(getResourceTagIntersectionInputSchema, params, context);
     const { resourceIds, tagIds } = validatedParams;
 
-    const resourceTags = await this.repositories.resourceTagRepository.getResourceTagIntersection(
+    const resourceTags = await this.resourceTagRepository.getResourceTagIntersection(
       resourceIds,
       tagIds,
       transaction
@@ -121,13 +114,10 @@ export class ResourceTagService extends AuditService {
     const hasTag = await this.resourceHasTag(resourceId, tagId, transaction);
 
     if (hasTag) {
-      throw new ConflictError('Resource already has this tag', 'errors:conflict.duplicateEntry', {
-        resource: 'ResourceTag',
-        field: 'tagId',
-      });
+      throw new ConflictError('Resource already has this tag', 'ResourceTag', 'tagId');
     }
 
-    const resourceTag = await this.repositories.resourceTagRepository.addResourceTag(
+    const resourceTag = await this.resourceTagRepository.addResourceTag(
       { resourceId, tagId, isPrimary },
       transaction
     );
@@ -144,7 +134,7 @@ export class ResourceTagService extends AuditService {
       context,
     };
 
-    await this.logCreate(resourceTag.id, newValues, metadata, transaction);
+    await this.audit.logCreate(resourceTag.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(resourceTagSchema), resourceTag, context);
   }
@@ -157,12 +147,12 @@ export class ResourceTagService extends AuditService {
     const validatedParams = validateInput(updateResourceTagInputSchema, params, context);
     const { resourceId, tagId, isPrimary } = validatedParams;
 
-    const resourceTag = await this.repositories.resourceTagRepository.getResourceTag(
+    const resourceTag = await this.resourceTagRepository.getResourceTag(
       { resourceId, tagId },
       transaction
     );
 
-    const updatedResourceTag = await this.repositories.resourceTagRepository.updateResourceTag(
+    const updatedResourceTag = await this.resourceTagRepository.updateResourceTag(
       { resourceId, tagId, isPrimary },
       transaction
     );
@@ -171,7 +161,7 @@ export class ResourceTagService extends AuditService {
       context,
     };
 
-    await this.logUpdate(
+    await this.audit.logUpdate(
       updatedResourceTag.id,
       resourceTag,
       updatedResourceTag,
@@ -197,20 +187,14 @@ export class ResourceTagService extends AuditService {
     const hasTag = await this.resourceHasTag(resourceId, tagId, transaction);
 
     if (!hasTag) {
-      throw new NotFoundError('Resource does not have this tag', 'errors:notFound.tag');
+      throw new NotFoundError('Tag');
     }
 
     const isHardDelete = hardDelete === true;
 
     const resourceTag = isHardDelete
-      ? await this.repositories.resourceTagRepository.hardDeleteResourceTag(
-          validatedParams,
-          transaction
-        )
-      : await this.repositories.resourceTagRepository.softDeleteResourceTag(
-          validatedParams,
-          transaction
-        );
+      ? await this.resourceTagRepository.hardDeleteResourceTag(validatedParams, transaction)
+      : await this.resourceTagRepository.softDeleteResourceTag(validatedParams, transaction);
 
     const oldValues = {
       id: resourceTag.id,
@@ -231,9 +215,9 @@ export class ResourceTagService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(resourceTag.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(resourceTag.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(resourceTag.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(resourceTag.id, oldValues, newValues, metadata, transaction);
     }
 
     return validateOutput(createDynamicSingleSchema(resourceTagSchema), resourceTag, context);
@@ -247,18 +231,15 @@ export class ResourceTagService extends AuditService {
     const validatedParams = validateInput(removeResourceTagsInputSchema, params, context);
     const { tagId, hardDelete } = validatedParams;
 
-    const resourceTags = await this.repositories.resourceTagRepository.getResourceTags(
-      { tagId },
-      transaction
-    );
+    const resourceTags = await this.resourceTagRepository.getResourceTags({ tagId }, transaction);
 
     const isHardDelete = hardDelete === true;
 
     const deletedResourceTags = await Promise.all(
       resourceTags.map((resourceTag) =>
         isHardDelete
-          ? this.repositories.resourceTagRepository.hardDeleteResourceTag(resourceTag, transaction)
-          : this.repositories.resourceTagRepository.softDeleteResourceTag(resourceTag, transaction)
+          ? this.resourceTagRepository.hardDeleteResourceTag(resourceTag, transaction)
+          : this.resourceTagRepository.softDeleteResourceTag(resourceTag, transaction)
       )
     );
 

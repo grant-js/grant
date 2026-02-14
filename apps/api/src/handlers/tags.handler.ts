@@ -1,4 +1,3 @@
-import { DbSchema, TagModel } from '@grantjs/database';
 import {
   MutationCreateTagArgs,
   MutationDeleteTagArgs,
@@ -10,22 +9,43 @@ import {
 } from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
-import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
-import { Services } from '@/services';
-import { DeleteParams, SelectedFields } from '@/services/common';
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { DeleteParams, SelectedFields } from '@/types';
 
-import { CacheHandler } from './base/cache-handler';
+import { CacheHandler, type ScopeServices } from './base/cache-handler';
+
+import type {
+  IAccountTagService,
+  IGroupTagService,
+  IOrganizationTagService,
+  IPermissionTagService,
+  IProjectTagService,
+  IResourceTagService,
+  IRoleTagService,
+  ITagService,
+  ITransactionalConnection,
+  IUserTagService,
+} from '@grantjs/core';
 
 export class TagHandler extends CacheHandler {
   constructor(
-    readonly cache: IEntityCacheAdapter,
-    readonly services: Services,
-    readonly db: DbSchema
+    private readonly tags: ITagService,
+    private readonly accountTags: IAccountTagService,
+    private readonly organizationTags: IOrganizationTagService,
+    private readonly projectTags: IProjectTagService,
+    private readonly userTags: IUserTagService,
+    private readonly roleTags: IRoleTagService,
+    private readonly groupTags: IGroupTagService,
+    private readonly permissionTags: IPermissionTagService,
+    private readonly resourceTags: IResourceTagService,
+    cache: IEntityCacheAdapter,
+    scopeServices: ScopeServices,
+    private readonly db: ITransactionalConnection<Transaction>
   ) {
-    super(cache, services);
+    super(cache, scopeServices);
   }
 
-  public async getTags(params: QueryTagsArgs & SelectedFields<TagModel>): Promise<TagPage> {
+  public async getTags(params: QueryTagsArgs & SelectedFields<Tag>): Promise<TagPage> {
     const { scope, page, limit, sort, search, ids, requestedFields } = params;
 
     let tagIds = await this.getScopedTagIds(scope);
@@ -42,7 +62,7 @@ export class TagHandler extends CacheHandler {
       };
     }
 
-    const tagsResult = await this.services.tags.getTags({
+    const tagsResult = await this.tags.getTags({
       ids: tagIds,
       page,
       limit,
@@ -55,27 +75,24 @@ export class TagHandler extends CacheHandler {
   }
 
   public async createTag(params: MutationCreateTagArgs): Promise<Tag> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { input } = params;
       const { name, color, scope } = input;
 
-      const tag = await this.services.tags.createTag({ name, color }, tx);
+      const tag = await this.tags.createTag({ name, color }, tx);
       const { id: tagId } = tag;
 
       switch (scope.tenant) {
         case Tenant.Account:
-          await this.services.accountTags.addAccountTag({ accountId: scope.id, tagId }, tx);
+          await this.accountTags.addAccountTag({ accountId: scope.id, tagId }, tx);
           break;
         case Tenant.Organization:
-          await this.services.organizationTags.addOrganizationTag(
-            { organizationId: scope.id, tagId },
-            tx
-          );
+          await this.organizationTags.addOrganizationTag({ organizationId: scope.id, tagId }, tx);
           break;
         case Tenant.OrganizationProject:
         case Tenant.AccountProject: {
           const projectId = this.extractProjectIdFromScope(scope);
-          await this.services.projectTags.addProjectTag({ projectId, tagId }, tx);
+          await this.projectTags.addProjectTag({ projectId, tagId }, tx);
           break;
         }
       }
@@ -87,25 +104,22 @@ export class TagHandler extends CacheHandler {
   }
 
   public async updateTag(params: MutationUpdateTagArgs): Promise<Tag> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { id: tagId, input } = params;
-      const updatedTag = await this.services.tags.updateTag(tagId, input, tx);
+      const updatedTag = await this.tags.updateTag(tagId, input, tx);
       return updatedTag;
     });
   }
 
   public async deleteTag(params: MutationDeleteTagArgs & DeleteParams): Promise<Tag> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { id: tagId, scope, hardDelete } = params;
       switch (scope.tenant) {
         case Tenant.Account:
-          await this.services.accountTags.removeAccountTag(
-            { accountId: scope.id, tagId, hardDelete },
-            tx
-          );
+          await this.accountTags.removeAccountTag({ accountId: scope.id, tagId, hardDelete }, tx);
           break;
         case Tenant.Organization:
-          await this.services.organizationTags.removeOrganizationTag(
+          await this.organizationTags.removeOrganizationTag(
             { organizationId: scope.id, tagId, hardDelete },
             tx
           );
@@ -113,22 +127,22 @@ export class TagHandler extends CacheHandler {
         case Tenant.OrganizationProject:
         case Tenant.AccountProject: {
           const projectId = this.extractProjectIdFromScope(scope);
-          await this.services.projectTags.removeProjectTag({ projectId, tagId, hardDelete }, tx);
+          await this.projectTags.removeProjectTag({ projectId, tagId, hardDelete }, tx);
           break;
         }
       }
 
       await Promise.all([
-        this.services.userTags.removeUserTags({ tagId, hardDelete }, tx),
-        this.services.roleTags.removeRoleTags({ tagId, hardDelete }, tx),
-        this.services.groupTags.removeGroupTags({ tagId, hardDelete }, tx),
-        this.services.permissionTags.removePermissionTags({ tagId, hardDelete }, tx),
-        this.services.resourceTags.removeResourceTags({ tagId, hardDelete }, tx),
+        this.userTags.removeUserTags({ tagId, hardDelete }, tx),
+        this.roleTags.removeRoleTags({ tagId, hardDelete }, tx),
+        this.groupTags.removeGroupTags({ tagId, hardDelete }, tx),
+        this.permissionTags.removePermissionTags({ tagId, hardDelete }, tx),
+        this.resourceTags.removeResourceTags({ tagId, hardDelete }, tx),
       ]);
 
       this.removeTagIdFromScopeCache(scope, tagId);
 
-      return await this.services.tags.deleteTag(params, tx);
+      return await this.tags.deleteTag(params, tx);
     });
   }
 }

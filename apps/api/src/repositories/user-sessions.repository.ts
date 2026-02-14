@@ -19,7 +19,7 @@ import {
 } from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { SelectedFields } from '@/services/common';
+import { SelectedFields } from '@/types';
 
 import {
   BaseUpdateArgs,
@@ -28,7 +28,12 @@ import {
   RelationsConfig,
 } from './common/EntityRepository';
 
-export class UserSessionRepository extends EntityRepository<UserSessionModel, UserSession> {
+import type { IUserSessionRepository } from '@grantjs/core';
+
+export class UserSessionRepository
+  extends EntityRepository<UserSessionModel, UserSession>
+  implements IUserSessionRepository
+{
   protected table = userSessions;
   protected schemaName = 'userSessions' as const;
   protected searchFields: Array<keyof UserSessionModel> = Object.values(UserSessionSearchableField);

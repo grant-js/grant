@@ -17,9 +17,11 @@ import {
   BaseDeleteArgs,
   RelationsConfig,
 } from '@/repositories/common';
-import { SelectedFields } from '@/services/common';
+import { SelectedFields } from '@/types';
 
-export class TagRepository extends EntityRepository<TagModel, Tag> {
+import type { ITagRepository } from '@grantjs/core';
+
+export class TagRepository extends EntityRepository<TagModel, Tag> implements ITagRepository {
   protected table = tags;
   protected schemaName = 'tags' as const;
   protected searchFields: Array<keyof TagModel> = Object.values(TagSearchableField);

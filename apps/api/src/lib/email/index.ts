@@ -1,8 +1,21 @@
-export * from './adapters/console.adapter';
-export * from './adapters/mailgun.adapter';
-export * from './adapters/mailjet.adapter';
-export * from './adapters/ses.adapter';
-export * from './adapters/smtp.adapter';
-export * from './email.factory';
-export * from './email.interface';
+// Re-export from @grantjs/email — canonical adapter implementations live there
+export {
+  ConsoleEmailAdapter,
+  EmailFactory,
+  MailgunEmailAdapter,
+  MailjetEmailAdapter,
+  SesEmailAdapter,
+  SmtpEmailAdapter,
+  type EmailTemplates,
+} from '@grantjs/email';
+
+// Re-export types from @grantjs/core
+export type {
+  IEmailService,
+  SendInvitationParams,
+  SendOtpParams,
+  SendPasswordResetParams,
+} from '@grantjs/core';
+
+// Templates stay in the API
 export * from './templates';

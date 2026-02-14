@@ -1,31 +1,40 @@
 import { canAssignRole } from '@grantjs/constants';
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, organizationProjectApiKeyAuditLogs } from '@grantjs/database';
+import {
+  GrantAuth,
+  type IAuditLogger,
+  type IOrganizationMemberRepository,
+  type IOrganizationProjectApiKeyRepository,
+  type IOrganizationProjectApiKeyService,
+  type IOrganizationProjectRepository,
+  type IOrganizationRoleRepository,
+  type IRoleRepository,
+} from '@grantjs/core';
 import { ApiKey, OrganizationProjectApiKey, Role } from '@grantjs/schema';
 
 import { AuthorizationError, BadRequestError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
 
-import { AuditService, createDynamicSingleSchema, validateInput, validateOutput } from './common';
+import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 import {
   addOrganizationProjectApiKeyParamsSchema,
   getOrganizationProjectApiKeysParamsSchema,
   organizationProjectApiKeySchema,
 } from './organization-project-api-keys.schemas';
 
-export class OrganizationProjectApiKeyService extends AuditService {
+export class OrganizationProjectApiKeyService implements IOrganizationProjectApiKeyService {
   constructor(
-    private readonly repositories: Repositories,
+    private readonly organizationMemberRepository: IOrganizationMemberRepository,
+    private readonly organizationProjectRepository: IOrganizationProjectRepository,
+    private readonly organizationRoleRepository: IOrganizationRoleRepository,
+    private readonly organizationProjectApiKeyRepository: IOrganizationProjectApiKeyRepository,
+    private readonly roleRepository: IRoleRepository,
     readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(organizationProjectApiKeyAuditLogs, 'organizationProjectApiKeyId', user, db);
-  }
+    private readonly audit: IAuditLogger
+  ) {}
 
   private getCurrentUserId(): string {
     if (!this.user?.userId) {
-      throw new AuthorizationError('Authentication required', 'errors:auth.unauthorized');
+      throw new AuthorizationError('Authentication required');
     }
     return this.user.userId;
   }
@@ -35,7 +44,7 @@ export class OrganizationProjectApiKeyService extends AuditService {
     userId: string,
     transaction?: Transaction
   ): Promise<string | null> {
-    const member = await this.repositories.organizationMemberRepository.getOrganizationMember(
+    const member = await this.organizationMemberRepository.getOrganizationMember(
       { organizationId, userId },
       transaction
     );
@@ -47,17 +56,13 @@ export class OrganizationProjectApiKeyService extends AuditService {
     projectId: string,
     transaction?: Transaction
   ): Promise<void> {
-    const organizationProjects =
-      await this.repositories.organizationProjectRepository.getOrganizationProjects(
-        { organizationId },
-        transaction
-      );
+    const organizationProjects = await this.organizationProjectRepository.getOrganizationProjects(
+      { organizationId },
+      transaction
+    );
     const organizationProject = organizationProjects.find((op) => op.projectId === projectId);
     if (!organizationProject) {
-      throw new NotFoundError(
-        'Organization project not found for scope',
-        'errors:notFound.organizationProject'
-      );
+      throw new NotFoundError('OrganizationProject');
     }
   }
 
@@ -66,17 +71,12 @@ export class OrganizationProjectApiKeyService extends AuditService {
     roleId: string,
     transaction?: Transaction
   ): Promise<void> {
-    const organizationRoles =
-      await this.repositories.organizationRoleRepository.getOrganizationRoles(
-        { organizationId },
-        transaction
-      );
+    const organizationRoles = await this.organizationRoleRepository.getOrganizationRoles(
+      { organizationId },
+      transaction
+    );
     if (!organizationRoles.some((or) => or.roleId === roleId)) {
-      throw new BadRequestError(
-        'Role is not assigned to this organization',
-        'errors:validation.invalid',
-        { field: 'roleId' }
-      );
+      throw new BadRequestError('Role is not assigned to this organization');
     }
   }
 
@@ -86,11 +86,10 @@ export class OrganizationProjectApiKeyService extends AuditService {
   ): Promise<OrganizationProjectApiKey[]> {
     const context = 'OrganizationProjectApiKeyService.getOrganizationProjectApiKeys';
     const validated = validateInput(getOrganizationProjectApiKeysParamsSchema, params, context);
-    const result =
-      await this.repositories.organizationProjectApiKeyRepository.getOrganizationProjectApiKeys(
-        validated,
-        transaction
-      );
+    const result = await this.organizationProjectApiKeyRepository.getOrganizationProjectApiKeys(
+      validated,
+      transaction
+    );
     return validateOutput(
       createDynamicSingleSchema(organizationProjectApiKeySchema).array(),
       result,
@@ -112,25 +111,18 @@ export class OrganizationProjectApiKeyService extends AuditService {
     );
 
     if (!currentUserRoleName) {
-      throw new AuthorizationError(
-        'You are not a member of this organization',
-        'errors:auth.notOrganizationMember'
-      );
+      throw new AuthorizationError('You are not a member of this organization');
     }
 
-    const targetRole = await this.repositories.roleRepository.getRoles(
-      { ids: [roleId], limit: 1 },
-      transaction
-    );
+    const targetRole = await this.roleRepository.getRoles({ ids: [roleId], limit: 1 }, transaction);
 
     if (targetRole.roles.length === 0) {
-      throw new NotFoundError('Role not found', 'errors:notFound.role', { roleId });
+      throw new NotFoundError('Role', roleId);
     }
 
     if (!canAssignRole(currentUserRoleName, targetRole.roles[0].name)) {
       throw new AuthorizationError(
-        'Cannot create API keys with equal or higher privilege than your own role',
-        'errors:auth.cannotAssignHigherRole'
+        'Cannot create API keys with equal or higher privilege than your own role'
       );
     }
   }
@@ -149,9 +141,7 @@ export class OrganizationProjectApiKeyService extends AuditService {
     );
 
     if (!pivot) {
-      throw new NotFoundError('Organization project API key not found', 'errors:notFound.apiKey', {
-        apiKeyId,
-      });
+      throw new NotFoundError('ApiKey', apiKeyId);
     }
 
     const currentUserId = this.getCurrentUserId();
@@ -162,27 +152,21 @@ export class OrganizationProjectApiKeyService extends AuditService {
     );
 
     if (!currentUserRoleName) {
-      throw new AuthorizationError(
-        'You are not a member of this organization',
-        'errors:auth.notOrganizationMember'
-      );
+      throw new AuthorizationError('You are not a member of this organization');
     }
 
-    const keyRole = await this.repositories.roleRepository.getRoles(
+    const keyRole = await this.roleRepository.getRoles(
       { ids: [pivot.organizationRoleId], limit: 1 },
       transaction
     );
 
     if (keyRole.roles.length === 0) {
-      throw new NotFoundError('Role not found', 'errors:notFound.role', {
-        roleId: pivot.organizationRoleId,
-      });
+      throw new NotFoundError('Role', pivot.organizationRoleId);
     }
 
     if (!canAssignRole(currentUserRoleName, keyRole.roles[0].name)) {
       throw new AuthorizationError(
-        'Cannot manage API keys with equal or higher privilege than your own role',
-        'errors:auth.insufficientPrivilege'
+        'Cannot manage API keys with equal or higher privilege than your own role'
       );
     }
   }
@@ -224,11 +208,20 @@ export class OrganizationProjectApiKeyService extends AuditService {
     await this.ensureOrganizationProjectExists(organizationId, projectId, transaction);
     await this.ensureOrganizationHasRole(organizationId, organizationRoleId, transaction);
 
-    const pivot =
-      await this.repositories.organizationProjectApiKeyRepository.addOrganizationProjectApiKey(
-        validated,
-        transaction
-      );
+    const pivot = await this.organizationProjectApiKeyRepository.addOrganizationProjectApiKey(
+      validated,
+      transaction
+    );
+
+    const newValues = {
+      organizationId,
+      projectId,
+      apiKeyId: validated.apiKeyId,
+      organizationRoleId,
+    };
+    const metadata = { context };
+    await this.audit.logCreate(pivot.id, newValues, metadata, transaction);
+
     return validateOutput(
       createDynamicSingleSchema(organizationProjectApiKeySchema),
       pivot,
@@ -244,7 +237,7 @@ export class OrganizationProjectApiKeyService extends AuditService {
   ): Promise<OrganizationProjectApiKey | null> {
     const context = 'OrganizationProjectApiKeyService.getByApiKeyAndOrganizationAndProject';
     const result =
-      await this.repositories.organizationProjectApiKeyRepository.getByApiKeyAndOrganizationAndProject(
+      await this.organizationProjectApiKeyRepository.getByApiKeyAndOrganizationAndProject(
         apiKeyId,
         organizationId,
         projectId,

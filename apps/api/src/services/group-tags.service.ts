@@ -1,5 +1,3 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, groupTagsAuditLogs } from '@grantjs/database';
 import {
   AddGroupTagInput,
   GroupTag,
@@ -9,15 +7,9 @@ import {
 
 import { BadRequestError, ConflictError, NotFoundError, ValidationError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
-import {
-  AuditService,
-  DeleteParams,
-  createDynamicSingleSchema,
-  validateInput,
-  validateOutput,
-} from './common';
+import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 import {
   addGroupTagInputSchema,
   getGroupTagIntersectionInputSchema,
@@ -28,34 +20,35 @@ import {
   updateGroupTagInputSchema,
 } from './group-tags.schemas';
 
-export class GroupTagService extends AuditService {
+import type {
+  IAuditLogger,
+  IGroupRepository,
+  IGroupTagRepository,
+  IGroupTagService,
+  ITagRepository,
+} from '@grantjs/core';
+
+export class GroupTagService implements IGroupTagService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(groupTagsAuditLogs, 'groupTagId', user, db);
-  }
+    private readonly groupRepository: IGroupRepository,
+    private readonly tagRepository: ITagRepository,
+    private readonly groupTagRepository: IGroupTagRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async groupExists(groupId: string, transaction?: Transaction): Promise<void> {
-    const groups = await this.repositories.groupRepository.getGroups(
-      { ids: [groupId], limit: 1 },
-      transaction
-    );
+    const groups = await this.groupRepository.getGroups({ ids: [groupId], limit: 1 }, transaction);
 
     if (groups.groups.length === 0) {
-      throw new NotFoundError('Group not found', 'errors:notFound.group');
+      throw new NotFoundError('Group');
     }
   }
 
   private async tagExists(tagId: string, transaction?: Transaction): Promise<void> {
-    const tags = await this.repositories.tagRepository.getTags(
-      { ids: [tagId], limit: 1 },
-      transaction
-    );
+    const tags = await this.tagRepository.getTags({ ids: [tagId], limit: 1 }, transaction);
 
     if (tags.tags.length === 0) {
-      throw new NotFoundError('Tag not found', 'errors:notFound.tag');
+      throw new NotFoundError('Tag');
     }
   }
 
@@ -66,10 +59,7 @@ export class GroupTagService extends AuditService {
   ): Promise<boolean> {
     await this.groupExists(groupId, transaction);
     await this.tagExists(tagId, transaction);
-    const existingGroupTags = await this.repositories.groupTagRepository.getGroupTags(
-      { groupId },
-      transaction
-    );
+    const existingGroupTags = await this.groupTagRepository.getGroupTags({ groupId }, transaction);
 
     return existingGroupTags.some((gt) => gt.tagId === tagId);
   }
@@ -83,16 +73,11 @@ export class GroupTagService extends AuditService {
     const { groupId } = validatedParams;
 
     if (!groupId) {
-      throw new ValidationError('Group ID is required', [], 'errors:validation.required', {
-        field: 'groupId',
-      });
+      throw new ValidationError('Group ID is required');
     }
     await this.groupExists(groupId, transaction);
 
-    const result = await this.repositories.groupTagRepository.getGroupTags(
-      { groupId },
-      transaction
-    );
+    const result = await this.groupTagRepository.getGroupTags({ groupId }, transaction);
     return validateOutput(createDynamicSingleSchema(groupTagSchema).array(), result, context);
   }
 
@@ -107,7 +92,7 @@ export class GroupTagService extends AuditService {
     const validatedParams = validateInput(getGroupTagIntersectionInputSchema, params, context);
     const { groupIds, tagIds } = validatedParams;
 
-    const result = await this.repositories.groupTagRepository.getGroupTagIntersection(
+    const result = await this.groupTagRepository.getGroupTagIntersection(
       groupIds,
       tagIds,
       transaction
@@ -123,13 +108,10 @@ export class GroupTagService extends AuditService {
     const hasTag = await this.groupHasTag(groupId, tagId, transaction);
 
     if (hasTag) {
-      throw new ConflictError('Group already has this tag', 'errors:conflict.duplicateEntry', {
-        resource: 'GroupTag',
-        field: 'tagId',
-      });
+      throw new ConflictError('Group already has this tag', 'GroupTag', 'tagId');
     }
 
-    const result = await this.repositories.groupTagRepository.addGroupTag(
+    const result = await this.groupTagRepository.addGroupTag(
       { groupId, tagId, isPrimary },
       transaction
     );
@@ -146,7 +128,7 @@ export class GroupTagService extends AuditService {
       context,
     };
 
-    await this.logCreate(result.id, newValues, metadata, transaction);
+    await this.audit.logCreate(result.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(groupTagSchema), result, context);
   }
@@ -159,12 +141,9 @@ export class GroupTagService extends AuditService {
     const validatedParams = validateInput(updateGroupTagInputSchema, params, context);
     const { groupId, tagId, isPrimary } = validatedParams;
 
-    const groupTag = await this.repositories.groupTagRepository.getGroupTag(
-      { groupId, tagId },
-      transaction
-    );
+    const groupTag = await this.groupTagRepository.getGroupTag({ groupId, tagId }, transaction);
 
-    const updatedGroupTag = await this.repositories.groupTagRepository.updateGroupTag(
+    const updatedGroupTag = await this.groupTagRepository.updateGroupTag(
       { groupId, tagId, isPrimary },
       transaction
     );
@@ -173,7 +152,13 @@ export class GroupTagService extends AuditService {
       context,
     };
 
-    await this.logUpdate(updatedGroupTag.id, groupTag, updatedGroupTag, metadata, transaction);
+    await this.audit.logUpdate(
+      updatedGroupTag.id,
+      groupTag,
+      updatedGroupTag,
+      metadata,
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(groupTagSchema), updatedGroupTag, context);
   }
@@ -189,23 +174,17 @@ export class GroupTagService extends AuditService {
     const hasTag = await this.groupHasTag(groupId, tagId, transaction);
 
     if (!hasTag) {
-      throw new NotFoundError('Group does not have this tag', 'errors:notFound.tag');
+      throw new NotFoundError('Tag');
     }
 
     const isHardDelete = hardDelete === true;
 
     const result = isHardDelete
-      ? await this.repositories.groupTagRepository.hardDeleteGroupTag(
-          { groupId, tagId },
-          transaction
-        )
-      : await this.repositories.groupTagRepository.softDeleteGroupTag(
-          { groupId, tagId },
-          transaction
-        );
+      ? await this.groupTagRepository.hardDeleteGroupTag({ groupId, tagId }, transaction)
+      : await this.groupTagRepository.softDeleteGroupTag({ groupId, tagId }, transaction);
 
     if (!result) {
-      throw new BadRequestError('Failed to remove group tag', 'errors:common.badRequest');
+      throw new BadRequestError('Failed to remove group tag');
     }
 
     const oldValues = {
@@ -227,9 +206,9 @@ export class GroupTagService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(result.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(result.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(result.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(result.id, oldValues, newValues, metadata, transaction);
     }
 
     return validateOutput(createDynamicSingleSchema(groupTagSchema), result, context);
@@ -243,18 +222,15 @@ export class GroupTagService extends AuditService {
     const validatedParams = validateInput(removeGroupTagsInputSchema, params, context);
     const { tagId, hardDelete } = validatedParams;
 
-    const groupTags = await this.repositories.groupTagRepository.getGroupTags(
-      { tagId },
-      transaction
-    );
+    const groupTags = await this.groupTagRepository.getGroupTags({ tagId }, transaction);
 
     const isHardDelete = hardDelete === true;
 
     const deletedGroupTags = await Promise.all(
       groupTags.map((groupTag) =>
         isHardDelete
-          ? this.repositories.groupTagRepository.hardDeleteGroupTag(groupTag, transaction)
-          : this.repositories.groupTagRepository.softDeleteGroupTag(groupTag, transaction)
+          ? this.groupTagRepository.hardDeleteGroupTag(groupTag, transaction)
+          : this.groupTagRepository.softDeleteGroupTag(groupTag, transaction)
       )
     );
 

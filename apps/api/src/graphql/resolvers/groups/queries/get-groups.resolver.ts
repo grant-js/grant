@@ -1,5 +1,4 @@
-import { GroupModel } from '@grantjs/database';
-import { QueryResolvers } from '@grantjs/schema';
+import { Group, QueryResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
 import { getDirectFieldSelection } from '@/lib/field-selection.lib';
@@ -10,7 +9,7 @@ export const getGroupsResolver: QueryResolvers<GraphqlContext>['groups'] = async
   context,
   info
 ) => {
-  const requestedFields = getDirectFieldSelection<keyof GroupModel>(info, ['groups']);
+  const requestedFields = getDirectFieldSelection<keyof Group>(info, ['groups']);
 
   const groups = await context.handlers.groups.getGroups({
     scope,

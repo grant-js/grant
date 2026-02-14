@@ -1,45 +1,47 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, projectUserApiKeyAuditLogs } from '@grantjs/database';
 import { ProjectUserApiKey } from '@grantjs/schema';
 
 import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
-import { AuditService, DeleteParams, validateInput } from './common';
+import { validateInput } from './common';
 import {
   addProjectUserApiKeyParamsSchema,
   removeProjectUserApiKeyParamsSchema,
 } from './project-user-api-keys.schemas';
 
-export class ProjectUserApiKeyService extends AuditService {
+import type {
+  IAuditLogger,
+  IProjectRepository,
+  IProjectUserApiKeyRepository,
+  IProjectUserApiKeyService,
+  IUserRepository,
+} from '@grantjs/core';
+
+export class ProjectUserApiKeyService implements IProjectUserApiKeyService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(projectUserApiKeyAuditLogs, 'projectUserApiKeyId', user, db);
-  }
+    private readonly projectRepository: IProjectRepository,
+    private readonly userRepository: IUserRepository,
+    private readonly projectUserApiKeyRepository: IProjectUserApiKeyRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
-    const projects = await this.repositories.projectRepository.getProjects(
+    const projects = await this.projectRepository.getProjects(
       { ids: [projectId], limit: 1 },
       transaction
     );
 
     if (projects.projects.length === 0) {
-      throw new NotFoundError('Project not found', 'errors:notFound.project');
+      throw new NotFoundError('Project');
     }
   }
 
   private async userExists(userId: string, transaction?: Transaction): Promise<void> {
-    const users = await this.repositories.userRepository.getUsers(
-      { ids: [userId], limit: 1 },
-      transaction
-    );
+    const users = await this.userRepository.getUsers({ ids: [userId], limit: 1 }, transaction);
 
     if (users.users.length === 0) {
-      throw new NotFoundError('User not found', 'errors:notFound.user');
+      throw new NotFoundError('User');
     }
   }
 
@@ -51,14 +53,13 @@ export class ProjectUserApiKeyService extends AuditService {
   ): Promise<boolean> {
     await this.projectExists(projectId, transaction);
     await this.userExists(userId, transaction);
-    const existingPivots =
-      await this.repositories.projectUserApiKeyRepository.getProjectUserApiKeys(
-        {
-          projectId,
-          userId,
-        },
-        transaction
-      );
+    const existingPivots = await this.projectUserApiKeyRepository.getProjectUserApiKeys(
+      {
+        projectId,
+        userId,
+      },
+      transaction
+    );
 
     return existingPivots.some((pivot) => pivot.apiKeyId === apiKeyId);
   }
@@ -70,7 +71,7 @@ export class ProjectUserApiKeyService extends AuditService {
     await this.projectExists(params.projectId, transaction);
     await this.userExists(params.userId, transaction);
 
-    const result = await this.repositories.projectUserApiKeyRepository.getProjectUserApiKeys(
+    const result = await this.projectUserApiKeyRepository.getProjectUserApiKeys(
       { projectId: params.projectId, userId: params.userId },
       transaction
     );
@@ -91,7 +92,7 @@ export class ProjectUserApiKeyService extends AuditService {
 
     const { projectId, userId, apiKeyId } = validatedParams;
 
-    const pivot = await this.repositories.projectUserApiKeyRepository.addProjectUserApiKey(
+    const pivot = await this.projectUserApiKeyRepository.addProjectUserApiKey(
       {
         apiKeyId,
         projectId,
@@ -113,7 +114,7 @@ export class ProjectUserApiKeyService extends AuditService {
       context,
     };
 
-    await this.logCreate(pivot.id, newValues, metadata, transaction);
+    await this.audit.logCreate(pivot.id, newValues, metadata, transaction);
 
     return pivot;
   }
@@ -134,17 +135,17 @@ export class ProjectUserApiKeyService extends AuditService {
     const hasApiKey = await this.projectHasApiKey(projectId, userId, apiKeyId, transaction);
 
     if (!hasApiKey) {
-      throw new NotFoundError('Project user does not have this API key', 'errors:notFound.apiKey');
+      throw new NotFoundError('ApiKey');
     }
 
     const isHardDelete = hardDelete === true;
 
     const pivot = isHardDelete
-      ? await this.repositories.projectUserApiKeyRepository.hardDeleteProjectUserApiKey(
+      ? await this.projectUserApiKeyRepository.hardDeleteProjectUserApiKey(
           { projectId, userId, apiKeyId },
           transaction
         )
-      : await this.repositories.projectUserApiKeyRepository.softDeleteProjectUserApiKey(
+      : await this.projectUserApiKeyRepository.softDeleteProjectUserApiKey(
           { projectId, userId, apiKeyId },
           transaction
         );
@@ -169,9 +170,9 @@ export class ProjectUserApiKeyService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(pivot.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(pivot.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(pivot.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(pivot.id, oldValues, newValues, metadata, transaction);
     }
 
     return pivot;

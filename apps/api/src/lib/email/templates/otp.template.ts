@@ -3,9 +3,9 @@ import { SupportedLocale } from '@grantjs/constants';
 import { config } from '@/config';
 import { defaultLocale, translateStatic } from '@/i18n';
 
-import { SendOtpParams } from '../email.interface';
-
 import { createAlternativeLink, createButton, renderBaseEmailTemplate } from './base.mjml';
+
+import type { SendOtpParams } from '@grantjs/core';
 
 export function getOtpEmailSubject(params: SendOtpParams): string {
   const emailLocale = (params.locale || defaultLocale) as SupportedLocale;

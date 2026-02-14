@@ -1,8 +1,7 @@
-import { AuthorizationReason } from '../../../schema/src';
+import { AuthorizationReason } from '@grantjs/schema';
 
 import { ConditionEvaluator } from './condition-evaluator';
 
-import type { Permission } from '../../../schema/src';
 import type {
   AuthorizationResult,
   GrantService,
@@ -15,6 +14,7 @@ import type {
   PermissionConditionEvaluationResult,
   RoleGroupCombination,
 } from '../types';
+import type { Permission } from '@grantjs/schema';
 
 export class PermissionChecker {
   constructor(

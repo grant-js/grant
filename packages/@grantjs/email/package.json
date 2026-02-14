@@ -1,0 +1,79 @@
+{
+  "name": "@grantjs/email",
+  "version": "1.0.0",
+  "description": "Email adapters for Grant (console, mailgun, mailjet, SES, SMTP)",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./console": {
+      "types": "./src/console/index.ts",
+      "default": "./src/console/index.ts"
+    },
+    "./mailgun": {
+      "types": "./src/mailgun/index.ts",
+      "default": "./src/mailgun/index.ts"
+    },
+    "./mailjet": {
+      "types": "./src/mailjet/index.ts",
+      "default": "./src/mailjet/index.ts"
+    },
+    "./ses": {
+      "types": "./src/ses/index.ts",
+      "default": "./src/ses/index.ts"
+    },
+    "./smtp": {
+      "types": "./src/smtp/index.ts",
+      "default": "./src/smtp/index.ts"
+    }
+  },
+  "files": [
+    "src/**/*"
+  ],
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@grantjs/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "mailgun.js": "^10",
+    "form-data": "^4",
+    "node-mailjet": "^6",
+    "@aws-sdk/client-ses": "^3",
+    "nodemailer": "^6",
+    "typescript": "^5"
+  },
+  "peerDependenciesMeta": {
+    "mailgun.js": {
+      "optional": true
+    },
+    "form-data": {
+      "optional": true
+    },
+    "node-mailjet": {
+      "optional": true
+    },
+    "@aws-sdk/client-ses": {
+      "optional": true
+    },
+    "nodemailer": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "mailgun.js": "^10.2.3",
+    "form-data": "^4.0.2",
+    "node-mailjet": "^6.0.6",
+    "@aws-sdk/client-ses": "^3.797.0",
+    "nodemailer": "^6.10.1",
+    "@types/nodemailer": "^6.4.17",
+    "@types/node": "^24.7.2",
+    "typescript": "^5"
+  },
+  "license": "MIT"
+}

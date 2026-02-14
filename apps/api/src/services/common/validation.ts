@@ -27,20 +27,6 @@ import { ValidationError as ApiValidationError } from '@/lib/errors';
  * }"
  */
 
-/**
- * @deprecated Use ApiValidationError from @/lib/errors instead
- * This is kept for backward compatibility only
- */
-export class ValidationError extends Error {
-  constructor(
-    message: string,
-    public readonly errors: z.ZodError['issues'] = []
-  ) {
-    super(message);
-    this.name = 'ValidationError';
-  }
-}
-
 function formatValidationError(error: z.ZodIssue): string {
   const path = error.path.length > 0 ? error.path.join('.') : 'root';
   const field = path === 'root' ? 'data' : path;
@@ -97,7 +83,7 @@ export function validateInput<T>(schema: z.ZodSchema<T>, data: unknown, context:
 
     throw new ApiValidationError(
       `Input validation failed in ${context}:\n${errorMessages}\n\nData provided: ${getDataSummary(data)}\n\nSample data:\n${getSampleData(data)}`,
-      result.error.issues
+      result.error.issues.map((err) => formatValidationError(err))
     );
   }
 
@@ -114,7 +100,7 @@ export function validateOutput<T>(schema: z.ZodSchema<T>, data: unknown, context
 
     throw new ApiValidationError(
       `Output validation failed in ${context}:\n${errorMessages}\n\nData provided: ${getDataSummary(data)}\n\nSample data:\n${getSampleData(data)}`,
-      result.error.issues
+      result.error.issues.map((err) => formatValidationError(err))
     );
   }
 

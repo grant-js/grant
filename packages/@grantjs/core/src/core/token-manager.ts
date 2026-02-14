@@ -1,5 +1,4 @@
 import { type Scope, TokenType } from '@grantjs/schema';
-import jwt from 'jsonwebtoken';
 
 import {
   NoSessionSigningKeyError,
@@ -8,6 +7,7 @@ import {
   TokenValidationError,
 } from '../errors/grant-exception';
 
+import type { ITokenProvider } from '../ports/token.port';
 import type { ApiKeyTokenPayload, GrantService, SessionSigningKey, TokenClaims } from '../types';
 
 export interface VerifyOptions {
@@ -23,15 +23,21 @@ export interface SignApiKeyTokenOptions {
 /**
  * Single entry point for JWT operations: parse (kid, verify, validate), sign (session, API key),
  * and verifyToken (resolve key by kid, verify, validate). Resolves keys via GrantService.
+ *
+ * Delegates raw JWT codec operations (decode / verify / sign) to an injected ITokenProvider,
+ * keeping the core free of any concrete JWT library dependency.
  */
 export class TokenManager {
-  constructor(private readonly grantService: GrantService) {}
+  constructor(
+    private readonly grantService: GrantService,
+    private readonly tokenProvider: ITokenProvider
+  ) {}
 
   /**
    * Decode token header and return the key id (kid). Returns null if token is invalid or has no kid.
    */
   getKidFromToken(token: string): string | null {
-    const decoded = jwt.decode(token, { complete: true }) as { header?: { kid?: string } } | null;
+    const decoded = this.tokenProvider.decode(token);
     return decoded?.header?.kid ?? null;
   }
 
@@ -39,16 +45,14 @@ export class TokenManager {
    * Verify token with the given public key PEM (RS256). Returns claims or throws.
    */
   verify(token: string, publicKeyPem: string, options?: VerifyOptions): TokenClaims {
-    const verifyOptions: jwt.VerifyOptions = {
-      algorithms: ['RS256'],
-      ...(options?.ignoreExpiration !== undefined && {
-        ignoreExpiration: options.ignoreExpiration,
-      }),
-    };
-
-    let payload: jwt.JwtPayload;
+    let payload: Record<string, unknown>;
     try {
-      payload = jwt.verify(token, publicKeyPem, verifyOptions) as jwt.JwtPayload;
+      payload = this.tokenProvider.verify(token, publicKeyPem, {
+        algorithms: ['RS256'],
+        ...(options?.ignoreExpiration !== undefined && {
+          ignoreExpiration: options.ignoreExpiration,
+        }),
+      });
     } catch (error) {
       const err = error as Error & { name?: string; expiredAt?: Date };
       if (err.name === 'TokenExpiredError') {
@@ -123,7 +127,7 @@ export class TokenManager {
     return this.signWithKey(jwtPayload, key);
   }
 
-  private payloadToClaims(decoded: jwt.JwtPayload): TokenClaims {
+  private payloadToClaims(decoded: Record<string, unknown>): TokenClaims {
     return {
       sub: decoded.sub as string,
       aud: decoded.aud as string,
@@ -138,7 +142,7 @@ export class TokenManager {
   }
 
   private signWithKey(payload: Record<string, unknown>, key: SessionSigningKey): string {
-    return jwt.sign(payload, key.privateKeyPem, {
+    return this.tokenProvider.sign(payload, key.privateKeyPem, {
       algorithm: 'RS256',
       keyid: key.kid,
     });

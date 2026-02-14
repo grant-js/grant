@@ -10,6 +10,7 @@ import { ConditionEvaluator } from './condition-evaluator';
 import { PermissionChecker } from './permission-checker';
 import { TokenManager } from './token-manager';
 
+import type { ITokenProvider } from '../ports/token.port';
 import type {
   ApiKeyTokenPayload,
   AuthorizationResult,
@@ -25,10 +26,13 @@ export class Grant {
 
   public auth: GrantAuth | null = null;
 
-  constructor(private readonly grantService: GrantService) {
+  constructor(
+    private readonly grantService: GrantService,
+    tokenProvider: ITokenProvider
+  ) {
     this.conditionEvaluator = new ConditionEvaluator();
     this.permissionChecker = new PermissionChecker(this.conditionEvaluator, grantService);
-    this.tokenManager = new TokenManager(grantService);
+    this.tokenManager = new TokenManager(grantService, tokenProvider);
   }
 
   private getBearerToken(authorizationHeader: string | null): string | null {

@@ -1,0 +1,53 @@
+{
+  "name": "@grantjs/jobs",
+  "version": "1.0.0",
+  "description": "Job scheduling adapters for Grant (node-cron, BullMQ)",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./node-cron": {
+      "types": "./src/node-cron/index.ts",
+      "default": "./src/node-cron/index.ts"
+    },
+    "./bullmq": {
+      "types": "./src/bullmq/index.ts",
+      "default": "./src/bullmq/index.ts"
+    }
+  },
+  "files": [
+    "src/**/*"
+  ],
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@grantjs/core": "workspace:*",
+    "@grantjs/schema": "workspace:*"
+  },
+  "peerDependencies": {
+    "node-cron": "^3",
+    "bullmq": "^5",
+    "typescript": "^5"
+  },
+  "peerDependenciesMeta": {
+    "node-cron": {
+      "optional": true
+    },
+    "bullmq": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "node-cron": "^3.0.3",
+    "bullmq": "^5.52.2",
+    "@types/node-cron": "^3.0.11",
+    "@types/node": "^24.7.2",
+    "typescript": "^5"
+  },
+  "license": "MIT"
+}

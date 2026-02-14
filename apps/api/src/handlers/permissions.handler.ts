@@ -1,4 +1,3 @@
-import { DbSchema } from '@grantjs/database';
 import {
   MutationCreatePermissionArgs,
   MutationDeletePermissionArgs,
@@ -11,19 +10,32 @@ import {
 } from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
-import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
-import { Services } from '@/services';
-import { DeleteParams, SelectedFields } from '@/services/common';
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { DeleteParams, SelectedFields } from '@/types';
 
-import { CacheHandler } from './base/cache-handler';
+import { CacheHandler, type ScopeServices } from './base/cache-handler';
+
+import type {
+  IGroupPermissionService,
+  IOrganizationPermissionService,
+  IPermissionService,
+  IPermissionTagService,
+  IProjectPermissionService,
+  ITransactionalConnection,
+} from '@grantjs/core';
 
 export class PermissionHandler extends CacheHandler {
   constructor(
-    readonly cache: IEntityCacheAdapter,
-    readonly services: Services,
-    readonly db: DbSchema
+    private readonly permissionTags: IPermissionTagService,
+    private readonly permissions: IPermissionService,
+    private readonly organizationPermissions: IOrganizationPermissionService,
+    private readonly projectPermissions: IProjectPermissionService,
+    private readonly groupPermissions: IGroupPermissionService,
+    cache: IEntityCacheAdapter,
+    scopeServices: ScopeServices,
+    private readonly db: ITransactionalConnection<Transaction>
   ) {
-    super(cache, services);
+    super(cache, scopeServices);
   }
 
   public async getPermissions(
@@ -34,7 +46,7 @@ export class PermissionHandler extends CacheHandler {
     let permissionIds = await this.getScopedPermissionIds(scope);
 
     if (tagIds && tagIds.length > 0) {
-      const permissionTags = await this.services.permissionTags.getPermissionTagIntersection({
+      const permissionTags = await this.permissionTags.getPermissionTagIntersection({
         permissionIds,
         tagIds,
       });
@@ -58,7 +70,7 @@ export class PermissionHandler extends CacheHandler {
       };
     }
 
-    const permissionsResult = await this.services.permissions.getPermissions({
+    const permissionsResult = await this.permissions.getPermissions({
       ids: permissionIds,
       page,
       limit,
@@ -71,12 +83,12 @@ export class PermissionHandler extends CacheHandler {
   }
 
   public async createPermission(params: MutationCreatePermissionArgs): Promise<Permission> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { input } = params;
       const { name, description, resourceId, action, condition, scope, tagIds, primaryTagId } =
         input;
 
-      const permission = await this.services.permissions.createPermission(
+      const permission = await this.permissions.createPermission(
         { name, description, resourceId, action, condition },
         tx
       );
@@ -84,7 +96,7 @@ export class PermissionHandler extends CacheHandler {
 
       switch (scope.tenant) {
         case Tenant.Organization:
-          await this.services.organizationPermissions.addOrganizationPermission(
+          await this.organizationPermissions.addOrganizationPermission(
             { organizationId: scope.id, permissionId },
             tx
           );
@@ -92,10 +104,7 @@ export class PermissionHandler extends CacheHandler {
         case Tenant.OrganizationProject:
         case Tenant.AccountProject: {
           const projectId = this.extractProjectIdFromScope(scope);
-          await this.services.projectPermissions.addProjectPermission(
-            { projectId, permissionId },
-            tx
-          );
+          await this.projectPermissions.addProjectPermission({ projectId, permissionId }, tx);
           break;
         }
       }
@@ -103,7 +112,7 @@ export class PermissionHandler extends CacheHandler {
       if (tagIds && tagIds.length > 0) {
         await Promise.all(
           tagIds.map((tagId) =>
-            this.services.permissionTags.addPermissionTag(
+            this.permissionTags.addPermissionTag(
               { permissionId, tagId, isPrimary: tagId === primaryTagId },
               tx
             )
@@ -118,23 +127,16 @@ export class PermissionHandler extends CacheHandler {
   }
 
   public async updatePermission(params: MutationUpdatePermissionArgs): Promise<Permission> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { id: permissionId, input } = params;
       const { tagIds, primaryTagId } = input;
       let currentTagIds: string[] = [];
 
       if (Array.isArray(tagIds)) {
-        const currentTags = await this.services.permissionTags.getPermissionTags(
-          { permissionId },
-          tx
-        );
+        const currentTags = await this.permissionTags.getPermissionTags({ permissionId }, tx);
         currentTagIds = currentTags.map((pt) => pt.tagId);
       }
-      const updatedPermission = await this.services.permissions.updatePermission(
-        permissionId,
-        input,
-        tx
-      );
+      const updatedPermission = await this.permissions.updatePermission(permissionId, input, tx);
 
       if (Array.isArray(tagIds)) {
         const newTagIds = tagIds.filter((tagId) => !currentTagIds.includes(tagId));
@@ -142,7 +144,7 @@ export class PermissionHandler extends CacheHandler {
         const updatedTagIds = tagIds.filter((tagId) => currentTagIds.includes(tagId));
         await Promise.all(
           newTagIds.map((tagId) =>
-            this.services.permissionTags.addPermissionTag(
+            this.permissionTags.addPermissionTag(
               { permissionId, tagId, isPrimary: tagId === primaryTagId },
               tx
             )
@@ -150,12 +152,12 @@ export class PermissionHandler extends CacheHandler {
         );
         await Promise.all(
           removedTagIds.map((tagId) =>
-            this.services.permissionTags.removePermissionTag({ permissionId, tagId }, tx)
+            this.permissionTags.removePermissionTag({ permissionId, tagId }, tx)
           )
         );
         await Promise.all(
           updatedTagIds.map((tagId) =>
-            this.services.permissionTags.updatePermissionTag(
+            this.permissionTags.updatePermissionTag(
               { permissionId, tagId, isPrimary: tagId === primaryTagId },
               tx
             )
@@ -170,23 +172,20 @@ export class PermissionHandler extends CacheHandler {
   public async deletePermission(
     params: MutationDeletePermissionArgs & DeleteParams
   ): Promise<Permission> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { id: permissionId, scope } = params;
-      const permissionTags = await this.services.permissionTags.getPermissionTags(
-        { permissionId },
-        tx
-      );
+      const permissionTags = await this.permissionTags.getPermissionTags({ permissionId }, tx);
       const tagIds = permissionTags.map((pt) => pt.tagId);
 
       // Get all GroupPermission relationships where this permission is assigned
-      const groupPermissionRelations = await this.services.groupPermissions.getGroupPermissions(
+      const groupPermissionRelations = await this.groupPermissions.getGroupPermissions(
         { permissionId },
         tx
       );
 
       switch (scope.tenant) {
         case Tenant.Organization:
-          await this.services.organizationPermissions.removeOrganizationPermission(
+          await this.organizationPermissions.removeOrganizationPermission(
             { organizationId: scope.id, permissionId },
             tx
           );
@@ -194,21 +193,18 @@ export class PermissionHandler extends CacheHandler {
         case Tenant.OrganizationProject:
         case Tenant.AccountProject: {
           const projectId = this.extractProjectIdFromScope(scope);
-          await this.services.projectPermissions.removeProjectPermission(
-            { projectId, permissionId },
-            tx
-          );
+          await this.projectPermissions.removeProjectPermission({ projectId, permissionId }, tx);
           break;
         }
       }
 
       await Promise.all([
         ...tagIds.map((tagId) =>
-          this.services.permissionTags.removePermissionTag({ permissionId, tagId }, tx)
+          this.permissionTags.removePermissionTag({ permissionId, tagId }, tx)
         ),
         // Remove all GroupPermission relationships
         ...groupPermissionRelations.map((gp) =>
-          this.services.groupPermissions.removeGroupPermission(
+          this.groupPermissions.removeGroupPermission(
             { groupId: gp.groupId, permissionId: gp.permissionId },
             tx
           )
@@ -217,7 +213,7 @@ export class PermissionHandler extends CacheHandler {
 
       this.removePermissionIdFromScopeCache(scope, permissionId);
 
-      return await this.services.permissions.deletePermission(params, tx);
+      return await this.permissions.deletePermission(params, tx);
     });
   }
 
@@ -225,7 +221,7 @@ export class PermissionHandler extends CacheHandler {
     params: { permissionId: string } & SelectedFields<Permission>
   ): Promise<Array<Tag>> {
     const { permissionId, requestedFields } = params;
-    const permissionsPage = await this.services.permissions.getPermissions({
+    const permissionsPage = await this.permissions.getPermissions({
       ids: [permissionId],
       requestedFields,
     });

@@ -1,28 +1,27 @@
 import {
+  AuthenticationError,
   GrantException,
   TokenExpiredError,
   TokenInvalidError,
   TokenValidationError,
 } from '@grantjs/core';
 
-import { AuthenticationError } from './error-classes';
-
+/**
+ * Maps Grant core exceptions to domain-appropriate error types.
+ * Token errors are mapped to AuthenticationError.
+ * Returns the original error if it's not a GrantException.
+ */
 export function mapGrantExceptionToApiError(error: unknown): Error {
   if (error instanceof TokenExpiredError) {
-    return new AuthenticationError('Token has expired', 'errors.auth.token_expired', undefined, {
-      expiredAt: error.expiredAt?.toISOString(),
-    });
+    return new AuthenticationError('Token has expired');
   }
 
   if (error instanceof TokenInvalidError || error instanceof TokenValidationError) {
-    return new AuthenticationError(error.message || 'Invalid token', 'errors.auth.token_invalid');
+    return new AuthenticationError(error.message || 'Invalid token');
   }
 
   if (error instanceof GrantException) {
-    return new AuthenticationError(
-      error.message || 'Authentication failed',
-      'errors.auth.authentication_failed'
-    );
+    return new AuthenticationError(error.message || 'Authentication failed');
   }
 
   return error as Error;

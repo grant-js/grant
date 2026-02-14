@@ -1,77 +1,58 @@
-import pino from 'pino';
+import {
+  PinoLoggerFactory,
+  configureLogger,
+  createContextLogger,
+  createLogger,
+  getLogger,
+  getRawPinoLogger,
+} from '@grantjs/logger';
 
 import { config } from '@/config';
 
-export const logger = pino({
-  level: config.logging.level,
-  transport:
-    config.app.isDevelopment && config.logging.prettyPrint
-      ? {
-          target: 'pino-pretty',
-          options: {
-            colorize: true,
-            translateTime: 'HH:MM:ss.l',
-            ignore: 'pid,hostname',
-            singleLine: false,
-            messageFormat: '{msg}',
-            errorLikeObjectKeys: ['err', 'error'],
-          },
-        }
-      : undefined,
+import type { ILogger } from '@grantjs/core';
 
+// Configure the shared logger with API-specific settings at import time
+configureLogger({
+  level: config.logging.level,
+  prettyPrint: config.app.isDevelopment && config.logging.prettyPrint,
   base: {
     env: config.app.nodeEnv,
     service: 'grant-api',
     version: config.app.version,
   },
-
-  formatters: {
-    level: (label) => ({ level: label }),
-    bindings: (bindings) => ({
-      pid: bindings.pid,
-      host: bindings.hostname,
-    }),
-  },
-
-  serializers: {
-    req: pino.stdSerializers.req,
-    res: pino.stdSerializers.res,
-    err: pino.stdSerializers.err,
-  },
-
-  redact: {
-    paths: [
-      'req.headers.authorization',
-      'req.headers.cookie',
-      'req.headers["x-api-key"]',
-      '*.password',
-      '*.token',
-      '*.accessToken',
-      '*.refreshToken',
-      '*.secret',
-      '*.apiKey',
-      '*.creditCard',
-      '*.ssn',
-      'password',
-      'token',
-      'accessToken',
-      'refreshToken',
-      'secret',
-      'apiKey',
-    ],
-    remove: true,
-  },
-
-  timestamp: pino.stdTimeFunctions.isoTime,
+  redactPaths: [
+    'req.headers.authorization',
+    'req.headers.cookie',
+    'req.headers["x-api-key"]',
+    '*.password',
+    '*.token',
+    '*.accessToken',
+    '*.refreshToken',
+    '*.secret',
+    '*.apiKey',
+    '*.creditCard',
+    '*.ssn',
+    'password',
+    'token',
+    'accessToken',
+    'refreshToken',
+    'secret',
+    'apiKey',
+  ],
 });
 
-export function createContextLogger(context: Record<string, unknown>): pino.Logger {
-  return logger.child(context);
-}
+/** Root logger instance for the API */
+export const logger = getLogger();
 
-export function createModuleLogger(moduleName: string): pino.Logger {
-  return logger.child({ module: moduleName });
-}
+/**
+ * Raw pino logger for API middleware that requires the concrete type
+ * (e.g. pino-http, request logging middleware).
+ */
+export const rawPinoLogger = getRawPinoLogger();
 
-export type Logger = pino.Logger;
-export type LoggerOptions = pino.LoggerOptions;
+/** Shared logger factory instance for injecting into adapter packages */
+export const loggerFactory = new PinoLoggerFactory();
+
+// Re-export shared utilities
+export { createContextLogger, createLogger };
+export type { ILogger as Logger };

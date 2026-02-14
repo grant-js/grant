@@ -95,7 +95,7 @@ export function createOrganizationInvitationsRoutes(context: RequestContext) {
       });
 
       if (!invitation) {
-        throw new NotFoundError('Invitation not found or has expired', 'errors:auth.invalidToken');
+        throw new NotFoundError('Invitation');
       }
 
       sendSuccessResponse(res, invitation);

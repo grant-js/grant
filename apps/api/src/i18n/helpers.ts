@@ -1,13 +1,16 @@
 import { SupportedLocale } from '@grantjs/constants';
-import { Request } from 'express';
 
-import { ApiError } from '@/lib/errors';
+import { HttpException } from '@/lib/errors';
+import { Request } from 'express';
 
 import { defaultLocale, getFixedT } from './config';
 
-export function translateError(req: Request, error: ApiError): string {
+export function translateError(req: Request, error: HttpException): string {
   if (error.translationKey && req.i18n) {
-    const translated = req.i18n.t(error.translationKey, error.translationParams || {});
+    const translated = req.i18n.t(
+      error.translationKey,
+      (error.translationParams as Record<string, string>) || {}
+    );
     return String(translated);
   }
   return error.message;

@@ -1,42 +1,47 @@
 import { GrantAuth } from '@grantjs/core';
-import { DbSchema, accountProjectApiKeyAuditLogs } from '@grantjs/database';
 import { AccountProjectApiKey } from '@grantjs/schema';
 
 import { BadRequestError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
 
 import {
   accountProjectApiKeySchema,
   addAccountProjectApiKeyParamsSchema,
   getAccountProjectApiKeysParamsSchema,
 } from './account-project-api-keys.schemas';
-import { AuditService, createDynamicSingleSchema, validateInput, validateOutput } from './common';
+import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 
-export class AccountProjectApiKeyService extends AuditService {
+import type {
+  IAuditLogger,
+  IAccountProjectRepository,
+  IAccountRoleRepository,
+  IAccountProjectApiKeyRepository,
+  IUserRoleRepository,
+  IAccountProjectApiKeyService,
+} from '@grantjs/core';
+
+export class AccountProjectApiKeyService implements IAccountProjectApiKeyService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(accountProjectApiKeyAuditLogs, 'accountProjectApiKeyId', user, db);
-  }
+    private readonly accountProjectRepository: IAccountProjectRepository,
+    private readonly accountRoleRepository: IAccountRoleRepository,
+    private readonly accountProjectApiKeyRepository: IAccountProjectApiKeyRepository,
+    private readonly userRoleRepository: IUserRoleRepository,
+    private readonly user: GrantAuth | null,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async ensureAccountProjectExists(
     accountId: string,
     projectId: string,
     transaction?: Transaction
   ): Promise<void> {
-    const accountProjects = await this.repositories.accountProjectRepository.getAccountProjects(
+    const accountProjects = await this.accountProjectRepository.getAccountProjects(
       { accountId },
       transaction
     );
     const accountProject = accountProjects.find((ap) => ap.projectId === projectId);
     if (!accountProject) {
-      throw new NotFoundError(
-        'Account project not found for scope',
-        'errors:notFound.accountProject'
-      );
+      throw new NotFoundError('AccountProject');
     }
   }
 
@@ -45,16 +50,12 @@ export class AccountProjectApiKeyService extends AuditService {
     roleId: string,
     transaction?: Transaction
   ): Promise<void> {
-    const accountRoles = await this.repositories.accountRoleRepository.getAccountRoles(
+    const accountRoles = await this.accountRoleRepository.getAccountRoles(
       { accountId },
       transaction
     );
     if (!accountRoles.some((ar) => ar.roleId === roleId)) {
-      throw new BadRequestError(
-        'Role is not assigned to this account',
-        'errors:validation.invalid',
-        { field: 'roleId' }
-      );
+      throw new BadRequestError('Role is not assigned to this account');
     }
   }
 
@@ -64,7 +65,7 @@ export class AccountProjectApiKeyService extends AuditService {
   ): Promise<AccountProjectApiKey[]> {
     const context = 'AccountProjectApiKeyService.getAccountProjectApiKeys';
     const validated = validateInput(getAccountProjectApiKeysParamsSchema, params, context);
-    const result = await this.repositories.accountProjectApiKeyRepository.getAccountProjectApiKeys(
+    const result = await this.accountProjectApiKeyRepository.getAccountProjectApiKeys(
       validated,
       transaction
     );
@@ -86,10 +87,15 @@ export class AccountProjectApiKeyService extends AuditService {
     await this.ensureAccountProjectExists(accountId, projectId, transaction);
     await this.ensureAccountHasRole(accountId, accountRoleId, transaction);
 
-    const pivot = await this.repositories.accountProjectApiKeyRepository.addAccountProjectApiKey(
+    const pivot = await this.accountProjectApiKeyRepository.addAccountProjectApiKey(
       validated,
       transaction
     );
+
+    const newValues = { accountId, projectId, apiKeyId: validated.apiKeyId, accountRoleId };
+    const metadata = { context };
+    await this.audit.logCreate(pivot.id, newValues, metadata, transaction);
+
     return validateOutput(createDynamicSingleSchema(accountProjectApiKeySchema), pivot, context);
   }
 
@@ -100,13 +106,12 @@ export class AccountProjectApiKeyService extends AuditService {
     transaction?: Transaction
   ): Promise<AccountProjectApiKey | null> {
     const context = 'AccountProjectApiKeyService.getByApiKeyAndAccountAndProject';
-    const result =
-      await this.repositories.accountProjectApiKeyRepository.getByApiKeyAndAccountAndProject(
-        apiKeyId,
-        accountId,
-        projectId,
-        transaction
-      );
+    const result = await this.accountProjectApiKeyRepository.getByApiKeyAndAccountAndProject(
+      apiKeyId,
+      accountId,
+      projectId,
+      transaction
+    );
     if (result === null) {
       return null;
     }
@@ -119,23 +124,17 @@ export class AccountProjectApiKeyService extends AuditService {
   ): Promise<string> {
     if (!this.user?.userId) {
       throw new BadRequestError(
-        'roleId is required when creating an API key for accountProject scope',
-        'errors:validation.invalid',
-        { field: 'roleId' }
+        'roleId is required when creating an API key for accountProject scope'
       );
     }
     const [accountRoles, userRoles] = await Promise.all([
-      this.repositories.accountRoleRepository.getAccountRoles({ accountId }, transaction),
-      this.repositories.userRoleRepository.getUserRoles({ userId: this.user.userId }, transaction),
+      this.accountRoleRepository.getAccountRoles({ accountId }, transaction),
+      this.userRoleRepository.getUserRoles({ userId: this.user.userId }, transaction),
     ]);
     const accountRoleIds = new Set(accountRoles.map((r) => r.roleId));
     const userRoleId = userRoles.find((ur) => accountRoleIds.has(ur.roleId))?.roleId;
     if (!userRoleId) {
-      throw new BadRequestError(
-        'No account role found for the current user in this account',
-        'errors:validation.invalid',
-        { field: 'roleId' }
-      );
+      throw new BadRequestError('No account role found for the current user in this account');
     }
     return userRoleId;
   }

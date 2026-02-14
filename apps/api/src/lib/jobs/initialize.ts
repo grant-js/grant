@@ -1,12 +1,13 @@
+import { JobFactory } from '@grantjs/jobs';
+
 import { config } from '@/config';
 import { createJobs } from '@/jobs';
-import { createModuleLogger } from '@/lib/logger';
+import { createLogger, loggerFactory } from '@/lib/logger';
 import { AppContext } from '@/types';
 
-import { IJobAdapter } from './job-adapter.interface';
-import { JobFactory } from './job.factory';
+import type { IJobAdapter } from '@grantjs/core';
 
-const logger = createModuleLogger('JobInitializer');
+const logger = createLogger('JobInitializer');
 
 let jobAdapter: IJobAdapter | null = null;
 
@@ -26,11 +27,14 @@ export async function initializeJobs(appContext: AppContext): Promise<void> {
     return;
   }
 
-  jobAdapter = JobFactory.createJobAdapter({
-    provider: config.jobs.provider,
-    redis: config.jobs.redis,
-    bullmqJobOptions: config.jobs.bullmq,
-  });
+  jobAdapter = JobFactory.createJobAdapter(
+    {
+      provider: config.jobs.provider,
+      redis: config.jobs.redis,
+      bullmqJobOptions: config.jobs.bullmq,
+    },
+    loggerFactory
+  );
 
   const jobs = createJobs(appContext);
 
@@ -43,6 +47,9 @@ export async function initializeJobs(appContext: AppContext): Promise<void> {
   const skippedJobs: string[] = [];
 
   for (const job of jobs) {
+    // Inject a scoped logger for each job (config.id is available after construction)
+    job.setLogger(loggerFactory.createLogger(job.config.id));
+
     try {
       if (!job.config.enabled) {
         logger.debug({ jobId: job.config.id }, 'Job is disabled, skipping');

@@ -1,6 +1,5 @@
-import { DbSchema } from '@grantjs/database';
-
 import { IEntityCacheAdapter } from '@/lib/cache';
+import type { Transaction } from '@/lib/transaction-manager.lib';
 import { Services } from '@/services';
 
 import { ApiKeysHandler } from './api-keys.handler';
@@ -19,24 +18,182 @@ import { SigningKeysHandler } from './signing-keys.handler';
 import { TagHandler } from './tags.handler';
 import { UserHandler } from './users.handler';
 
+import type { ITransactionalConnection } from '@grantjs/core';
+
 export type Handlers = ReturnType<typeof createHandlers>;
 
-export function createHandlers(cache: IEntityCacheAdapter, services: Services, db: DbSchema) {
+export function createHandlers(
+  cache: IEntityCacheAdapter,
+  services: Services,
+  db: ITransactionalConnection<Transaction>
+) {
   return {
-    me: new MeHandler(cache, services, db),
-    apiKeys: new ApiKeysHandler(cache, services, db),
-    signingKeys: new SigningKeysHandler(cache, services, db),
-    auth: new AuthHandler(cache, services, db),
-    groups: new GroupHandler(cache, services, db),
-    oauth: new OAuthHandler(cache, services, db),
-    organizationInvitations: new OrganizationInvitationsHandler(services, db),
-    organizationMembers: new OrganizationMembersHandler(cache, services, db),
-    organizations: new OrganizationHandler(cache, services, db),
-    permissions: new PermissionHandler(cache, services, db),
-    projects: new ProjectHandler(cache, services, db),
-    resources: new ResourceHandler(cache, services, db),
-    roles: new RoleHandler(cache, services, db),
-    tags: new TagHandler(cache, services, db),
-    users: new UserHandler(cache, services, db),
+    me: new MeHandler(
+      services.me,
+      services.accountRoles,
+      services.userRoles,
+      services.accounts,
+      services.users,
+      services.userAuthenticationMethods,
+      services.userSessions,
+      services.fileStorage,
+      services.email,
+      services.organizationUsers,
+      services.projectUsers,
+      services.auth,
+      cache,
+      services,
+      db
+    ),
+    apiKeys: new ApiKeysHandler(
+      services.apiKeys,
+      services.accountProjectApiKeys,
+      services.organizationProjectApiKeys,
+      services.projectUserApiKeys,
+      services.roles,
+      cache,
+      services,
+      db
+    ),
+    signingKeys: new SigningKeysHandler(services.signingKeys, cache, services, db),
+    auth: new AuthHandler(
+      services.userAuthenticationMethods,
+      services.users,
+      services.accounts,
+      services.accountRoles,
+      services.userRoles,
+      services.userSessions,
+      services.email,
+      services.auth,
+      cache,
+      services,
+      db
+    ),
+    groups: new GroupHandler(
+      services.groupTags,
+      services.groups,
+      services.organizationGroups,
+      services.projectGroups,
+      services.groupPermissions,
+      services.roleGroups,
+      cache,
+      services,
+      db
+    ),
+    oauth: new OAuthHandler(
+      services.githubOAuth,
+      services.oauthState,
+      services.userAuthenticationMethods,
+      cache,
+      services,
+      db
+    ),
+    organizationInvitations: new OrganizationInvitationsHandler(
+      services.organizationInvitations,
+      services.userAuthenticationMethods,
+      services.organizationRoles,
+      services.organizations,
+      services.users,
+      services.roles,
+      services.email,
+      services.accounts,
+      services.organizationUsers,
+      services.userRoles,
+      services.auth,
+      db
+    ),
+    organizationMembers: new OrganizationMembersHandler(
+      services.organizationMembers,
+      cache,
+      services,
+      db
+    ),
+    organizations: new OrganizationHandler(
+      services.organizations,
+      services.organizationRoles,
+      services.organizationUsers,
+      services.userRoles,
+      services.organizationProjects,
+      services.organizationGroups,
+      services.organizationPermissions,
+      services.organizationTags,
+      cache,
+      services,
+      db
+    ),
+    permissions: new PermissionHandler(
+      services.permissionTags,
+      services.permissions,
+      services.organizationPermissions,
+      services.projectPermissions,
+      services.groupPermissions,
+      cache,
+      services,
+      db
+    ),
+    projects: new ProjectHandler(
+      services.organizationProjectTags,
+      services.accountProjectTags,
+      services.projects,
+      services.accountProjects,
+      services.organizationProjects,
+      services.projectTags,
+      services.projectPermissions,
+      services.projectGroups,
+      services.projectRoles,
+      services.projectUsers,
+      cache,
+      services,
+      db
+    ),
+    resources: new ResourceHandler(
+      services.resourceTags,
+      services.resources,
+      services.projectResources,
+      services.permissions,
+      services.permissionTags,
+      services.groupPermissions,
+      services.organizationPermissions,
+      services.projectPermissions,
+      cache,
+      services,
+      db
+    ),
+    roles: new RoleHandler(
+      services.roleTags,
+      services.roles,
+      services.organizationRoles,
+      services.projectRoles,
+      services.roleGroups,
+      services.userRoles,
+      cache,
+      services,
+      db
+    ),
+    tags: new TagHandler(
+      services.tags,
+      services.accountTags,
+      services.organizationTags,
+      services.projectTags,
+      services.userTags,
+      services.roleTags,
+      services.groupTags,
+      services.permissionTags,
+      services.resourceTags,
+      cache,
+      services,
+      db
+    ),
+    users: new UserHandler(
+      services.userTags,
+      services.users,
+      services.organizationUsers,
+      services.projectUsers,
+      services.userRoles,
+      services.fileStorage,
+      cache,
+      services,
+      db
+    ),
   };
 }

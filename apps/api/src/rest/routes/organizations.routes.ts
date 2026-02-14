@@ -66,7 +66,7 @@ export function createOrganizationRoutes(context: RequestContext) {
       const userId = context.user?.userId;
 
       if (!userId) {
-        throw new AuthenticationError('Authentication required', 'errors:auth.unauthorized');
+        throw new AuthenticationError('Authentication required');
       }
 
       const organization = await context.handlers.organizations.createOrganization(

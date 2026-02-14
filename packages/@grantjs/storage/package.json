@@ -1,0 +1,51 @@
+{
+  "name": "@grantjs/storage",
+  "version": "1.0.0",
+  "description": "File storage adapters for Grant (local, S3)",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./local": {
+      "types": "./src/local/index.ts",
+      "default": "./src/local/index.ts"
+    },
+    "./s3": {
+      "types": "./src/s3/index.ts",
+      "default": "./src/s3/index.ts"
+    }
+  },
+  "files": [
+    "src/**/*"
+  ],
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@grantjs/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "@aws-sdk/client-s3": "^3",
+    "@aws-sdk/s3-request-presigner": "^3",
+    "typescript": "^5"
+  },
+  "peerDependenciesMeta": {
+    "@aws-sdk/client-s3": {
+      "optional": true
+    },
+    "@aws-sdk/s3-request-presigner": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@aws-sdk/client-s3": "^3.797.0",
+    "@aws-sdk/s3-request-presigner": "^3.797.0",
+    "@types/node": "^24.7.2",
+    "typescript": "^5"
+  },
+  "license": "MIT"
+}

@@ -1,19 +1,10 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema } from '@grantjs/database';
-import { projectGroupAuditLogs } from '@grantjs/database';
 import { ProjectGroup, RemoveProjectGroupInput, AddProjectGroupInput } from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
-import {
-  AuditService,
-  validateInput,
-  validateOutput,
-  createDynamicSingleSchema,
-  DeleteParams,
-} from './common';
+import { validateInput, validateOutput, createDynamicSingleSchema } from './common';
 import {
   getProjectGroupsParamsSchema,
   projectGroupSchema,
@@ -21,34 +12,38 @@ import {
   removeProjectGroupInputSchema,
 } from './project-groups.schemas';
 
-export class ProjectGroupService extends AuditService {
+import type {
+  IAuditLogger,
+  IGroupRepository,
+  IProjectGroupRepository,
+  IProjectGroupService,
+  IProjectRepository,
+} from '@grantjs/core';
+
+export class ProjectGroupService implements IProjectGroupService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(projectGroupAuditLogs, 'projectGroupId', user, db);
-  }
+    private readonly projectRepository: IProjectRepository,
+    private readonly groupRepository: IGroupRepository,
+    private readonly projectGroupRepository: IProjectGroupRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
-    const projects = await this.repositories.projectRepository.getProjects(
+    const projects = await this.projectRepository.getProjects(
       { ids: [projectId], limit: 1 },
       transaction
     );
 
     if (projects.projects.length === 0) {
-      throw new NotFoundError('Project not found', 'errors:notFound.project');
+      throw new NotFoundError('Project');
     }
   }
 
   private async groupExists(groupId: string, transaction?: Transaction): Promise<void> {
-    const groups = await this.repositories.groupRepository.getGroups(
-      { ids: [groupId], limit: 1 },
-      transaction
-    );
+    const groups = await this.groupRepository.getGroups({ ids: [groupId], limit: 1 }, transaction);
 
     if (groups.groups.length === 0) {
-      throw new NotFoundError('Group not found', 'errors:notFound.group');
+      throw new NotFoundError('Group');
     }
   }
 
@@ -59,7 +54,7 @@ export class ProjectGroupService extends AuditService {
   ): Promise<boolean> {
     await this.projectExists(projectId, transaction);
     await this.groupExists(groupId, transaction);
-    const existingProjectGroups = await this.repositories.projectGroupRepository.getProjectGroups(
+    const existingProjectGroups = await this.projectGroupRepository.getProjectGroups(
       { projectId },
       transaction
     );
@@ -76,10 +71,7 @@ export class ProjectGroupService extends AuditService {
 
     await this.projectExists(validatedParams.projectId, transaction);
 
-    const result = await this.repositories.projectGroupRepository.getProjectGroups(
-      validatedParams,
-      transaction
-    );
+    const result = await this.projectGroupRepository.getProjectGroups(validatedParams, transaction);
     return validateOutput(createDynamicSingleSchema(projectGroupSchema).array(), result, context);
   }
 
@@ -95,13 +87,10 @@ export class ProjectGroupService extends AuditService {
     const hasGroup = await this.projectHasGroup(projectId, groupId, transaction);
 
     if (hasGroup) {
-      throw new ConflictError('Project already has this group', 'errors:conflict.duplicateEntry', {
-        resource: 'ProjectGroup',
-        field: 'groupId',
-      });
+      throw new ConflictError('Project already has this group', 'ProjectGroup', 'groupId');
     }
 
-    const projectGroup = await this.repositories.projectGroupRepository.addProjectGroup(
+    const projectGroup = await this.projectGroupRepository.addProjectGroup(
       { projectId, groupId },
       transaction
     );
@@ -118,7 +107,7 @@ export class ProjectGroupService extends AuditService {
       context,
     };
 
-    await this.logCreate(projectGroup.id, newValues, metadata, transaction);
+    await this.audit.logCreate(projectGroup.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(projectGroupSchema), projectGroup, context);
   }
@@ -135,17 +124,17 @@ export class ProjectGroupService extends AuditService {
     const hasGroup = await this.projectHasGroup(projectId, groupId, transaction);
 
     if (!hasGroup) {
-      throw new NotFoundError('Project does not have this group', 'errors:notFound.group');
+      throw new NotFoundError('Group');
     }
 
     const isHardDelete = hardDelete === true;
 
     const projectGroup = isHardDelete
-      ? await this.repositories.projectGroupRepository.hardDeleteProjectGroup(
+      ? await this.projectGroupRepository.hardDeleteProjectGroup(
           { projectId, groupId },
           transaction
         )
-      : await this.repositories.projectGroupRepository.softDeleteProjectGroup(
+      : await this.projectGroupRepository.softDeleteProjectGroup(
           { projectId, groupId },
           transaction
         );
@@ -169,9 +158,9 @@ export class ProjectGroupService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(projectGroup.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(projectGroup.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(projectGroup.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(projectGroup.id, oldValues, newValues, metadata, transaction);
     }
 
     return validateOutput(createDynamicSingleSchema(projectGroupSchema), projectGroup, context);

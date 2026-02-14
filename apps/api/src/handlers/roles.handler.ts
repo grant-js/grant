@@ -1,4 +1,3 @@
-import { DbSchema } from '@grantjs/database';
 import {
   Group,
   MutationCreateRoleArgs,
@@ -12,19 +11,34 @@ import {
 } from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
-import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
-import { Services } from '@/services';
-import { DeleteParams, SelectedFields } from '@/services/common';
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { DeleteParams, SelectedFields } from '@/types';
 
-import { CacheHandler } from './base/cache-handler';
+import { CacheHandler, type ScopeServices } from './base/cache-handler';
+
+import type {
+  IOrganizationRoleService,
+  IProjectRoleService,
+  IRoleGroupService,
+  IRoleService,
+  IRoleTagService,
+  ITransactionalConnection,
+  IUserRoleService,
+} from '@grantjs/core';
 
 export class RoleHandler extends CacheHandler {
   constructor(
-    readonly cache: IEntityCacheAdapter,
-    readonly services: Services,
-    readonly db: DbSchema
+    private readonly roleTags: IRoleTagService,
+    private readonly roles: IRoleService,
+    private readonly organizationRoles: IOrganizationRoleService,
+    private readonly projectRoles: IProjectRoleService,
+    private readonly roleGroups: IRoleGroupService,
+    private readonly userRoles: IUserRoleService,
+    cache: IEntityCacheAdapter,
+    scopeServices: ScopeServices,
+    private readonly db: ITransactionalConnection<Transaction>
   ) {
-    super(cache, services);
+    super(cache, scopeServices);
   }
 
   public async getRoles(params: QueryRolesArgs & SelectedFields<Role>): Promise<RolePage> {
@@ -33,7 +47,7 @@ export class RoleHandler extends CacheHandler {
     let roleIds = await this.getScopedRoleIds(scope);
 
     if (tagIds && tagIds.length > 0) {
-      const roleTags = await this.services.roleTags.getRoleTagIntersection({ roleIds, tagIds });
+      const roleTags = await this.roleTags.getRoleTagIntersection({ roleIds, tagIds });
       roleIds = roleTags
         .filter(({ roleId, tagId }) => roleIds.includes(roleId) && tagIds.includes(tagId))
         .map(({ roleId }) => roleId);
@@ -51,7 +65,7 @@ export class RoleHandler extends CacheHandler {
       };
     }
 
-    const rolesResult = await this.services.roles.getRoles({
+    const rolesResult = await this.roles.getRoles({
       ids: roleIds,
       page,
       limit,
@@ -64,15 +78,15 @@ export class RoleHandler extends CacheHandler {
   }
 
   public async createRole(params: MutationCreateRoleArgs): Promise<Role> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { input } = params;
       const { name, description, scope, tagIds, groupIds, primaryTagId } = input;
 
-      const role = await this.services.roles.createRole({ name, description }, tx);
+      const role = await this.roles.createRole({ name, description }, tx);
       const { id: roleId } = role;
       switch (scope.tenant) {
         case Tenant.Organization:
-          await this.services.organizationRoles.addOrganizationRole(
+          await this.organizationRoles.addOrganizationRole(
             { organizationId: scope.id, roleId },
             tx
           );
@@ -80,24 +94,21 @@ export class RoleHandler extends CacheHandler {
         case Tenant.OrganizationProject:
         case Tenant.AccountProject: {
           const projectId = this.extractProjectIdFromScope(scope);
-          await this.services.projectRoles.addProjectRole({ projectId, roleId }, tx);
+          await this.projectRoles.addProjectRole({ projectId, roleId }, tx);
           break;
         }
       }
 
       if (groupIds && groupIds.length > 0) {
         await Promise.all(
-          groupIds.map((groupId) => this.services.roleGroups.addRoleGroup({ roleId, groupId }, tx))
+          groupIds.map((groupId) => this.roleGroups.addRoleGroup({ roleId, groupId }, tx))
         );
       }
 
       if (tagIds && tagIds.length > 0) {
         await Promise.all(
           tagIds.map((tagId) =>
-            this.services.roleTags.addRoleTag(
-              { roleId, tagId, isPrimary: tagId === primaryTagId },
-              tx
-            )
+            this.roleTags.addRoleTag({ roleId, tagId, isPrimary: tagId === primaryTagId }, tx)
           )
         );
       }
@@ -109,41 +120,35 @@ export class RoleHandler extends CacheHandler {
   }
 
   public async updateRole(params: MutationUpdateRoleArgs): Promise<Role> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { id: roleId, input } = params;
       const { tagIds, groupIds, primaryTagId } = input;
       let currentTagIds: string[] = [];
       let currentGroupIds: string[] = [];
       if (tagIds && tagIds.length > 0) {
-        const currentTags = await this.services.roleTags.getRoleTags({ roleId }, tx);
+        const currentTags = await this.roleTags.getRoleTags({ roleId }, tx);
         currentTagIds = currentTags.map((pt) => pt.tagId);
       }
       if (Array.isArray(groupIds)) {
-        const currentGroups = await this.services.roleGroups.getRoleGroups({ roleId }, tx);
+        const currentGroups = await this.roleGroups.getRoleGroups({ roleId }, tx);
         currentGroupIds = currentGroups.map((rg) => rg.groupId);
       }
-      const updatedRole = await this.services.roles.updateRole(roleId, input, tx);
+      const updatedRole = await this.roles.updateRole(roleId, input, tx);
       if (Array.isArray(tagIds)) {
         const newTagIds = tagIds.filter((tagId) => !currentTagIds.includes(tagId));
         const removedTagIds = currentTagIds.filter((tagId) => !tagIds.includes(tagId));
         const updatedTagIds = tagIds.filter((tagId) => currentTagIds.includes(tagId));
         await Promise.all(
           newTagIds.map((tagId) =>
-            this.services.roleTags.addRoleTag(
-              { roleId, tagId, isPrimary: tagId === primaryTagId },
-              tx
-            )
+            this.roleTags.addRoleTag({ roleId, tagId, isPrimary: tagId === primaryTagId }, tx)
           )
         );
         await Promise.all(
-          removedTagIds.map((tagId) => this.services.roleTags.removeRoleTag({ roleId, tagId }, tx))
+          removedTagIds.map((tagId) => this.roleTags.removeRoleTag({ roleId, tagId }, tx))
         );
         await Promise.all(
           updatedTagIds.map((tagId) =>
-            this.services.roleTags.updateRoleTag(
-              { roleId, tagId, isPrimary: tagId === primaryTagId },
-              tx
-            )
+            this.roleTags.updateRoleTag({ roleId, tagId, isPrimary: tagId === primaryTagId }, tx)
           )
         );
       }
@@ -151,14 +156,10 @@ export class RoleHandler extends CacheHandler {
         const newGroupIds = groupIds.filter((groupId) => !currentGroupIds.includes(groupId));
         const removedGroupIds = currentGroupIds.filter((groupId) => !groupIds.includes(groupId));
         await Promise.all(
-          newGroupIds.map((groupId) =>
-            this.services.roleGroups.addRoleGroup({ roleId, groupId }, tx)
-          )
+          newGroupIds.map((groupId) => this.roleGroups.addRoleGroup({ roleId, groupId }, tx))
         );
         await Promise.all(
-          removedGroupIds.map((groupId) =>
-            this.services.roleGroups.removeRoleGroup({ roleId, groupId }, tx)
-          )
+          removedGroupIds.map((groupId) => this.roleGroups.removeRoleGroup({ roleId, groupId }, tx))
         );
 
         // Invalidate permissions cache when role-group relationships change
@@ -172,12 +173,12 @@ export class RoleHandler extends CacheHandler {
   }
 
   public async deleteRole(params: MutationDeleteRoleArgs & DeleteParams): Promise<Role> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const roleId = params.id;
       const scope = params.scope;
       const [roleTags, roleGroups] = await Promise.all([
-        this.services.roleTags.getRoleTags({ roleId }, tx),
-        this.services.roleGroups.getRoleGroups({ roleId }, tx),
+        this.roleTags.getRoleTags({ roleId }, tx),
+        this.roleGroups.getRoleGroups({ roleId }, tx),
       ]);
 
       const tagIds = roleTags.map((rt) => rt.tagId);
@@ -187,7 +188,7 @@ export class RoleHandler extends CacheHandler {
       const userIds = await this.getScopedUserIds(scope);
 
       // Get all UserRole relationships for this role, then filter by users in scope
-      const allUserRoleRelations = await this.services.userRoles.getUserRoles({ roleId }, tx);
+      const allUserRoleRelations = await this.userRoles.getUserRoles({ roleId }, tx);
       const userRoleRelations =
         userIds.length > 0
           ? allUserRoleRelations.filter((ur) => userIds.includes(ur.userId))
@@ -195,7 +196,7 @@ export class RoleHandler extends CacheHandler {
 
       switch (scope.tenant) {
         case Tenant.Organization:
-          await this.services.organizationRoles.removeOrganizationRole(
+          await this.organizationRoles.removeOrganizationRole(
             { organizationId: scope.id, roleId },
             tx
           );
@@ -203,25 +204,23 @@ export class RoleHandler extends CacheHandler {
         case Tenant.OrganizationProject:
         case Tenant.AccountProject: {
           const projectId = this.extractProjectIdFromScope(scope);
-          await this.services.projectRoles.removeProjectRole({ projectId, roleId }, tx);
+          await this.projectRoles.removeProjectRole({ projectId, roleId }, tx);
           break;
         }
       }
 
       await Promise.all([
-        ...tagIds.map((tagId) => this.services.roleTags.removeRoleTag({ roleId, tagId }, tx)),
-        ...groupIds.map((groupId) =>
-          this.services.roleGroups.removeRoleGroup({ roleId, groupId }, tx)
-        ),
+        ...tagIds.map((tagId) => this.roleTags.removeRoleTag({ roleId, tagId }, tx)),
+        ...groupIds.map((groupId) => this.roleGroups.removeRoleGroup({ roleId, groupId }, tx)),
         // Remove UserRole relationships for users in this scope
         ...userRoleRelations.map((ur) =>
-          this.services.userRoles.removeUserRole({ userId: ur.userId, roleId: ur.roleId }, tx)
+          this.userRoles.removeUserRole({ userId: ur.userId, roleId: ur.roleId }, tx)
         ),
       ]);
 
       this.removeRoleIdFromScopeCache(scope, roleId);
 
-      return await this.services.roles.deleteRole(params, tx);
+      return await this.roles.deleteRole(params, tx);
     });
   }
 
@@ -229,7 +228,7 @@ export class RoleHandler extends CacheHandler {
     params: { roleId: string } & SelectedFields<Role>
   ): Promise<Array<Group>> {
     const { roleId, requestedFields } = params;
-    const rolesPage = await this.services.roles.getRoles({ ids: [roleId], requestedFields });
+    const rolesPage = await this.roles.getRoles({ ids: [roleId], requestedFields });
     if (Array.isArray(rolesPage.roles) && rolesPage.roles.length > 0) {
       return rolesPage.roles[0].groups || [];
     }
@@ -238,7 +237,7 @@ export class RoleHandler extends CacheHandler {
 
   public async getRoleTags(params: { roleId: string } & SelectedFields<Role>): Promise<Array<Tag>> {
     const { roleId, requestedFields } = params;
-    const rolesPage = await this.services.roles.getRoles({ ids: [roleId], requestedFields });
+    const rolesPage = await this.roles.getRoles({ ids: [roleId], requestedFields });
     if (Array.isArray(rolesPage.roles) && rolesPage.roles.length > 0) {
       return rolesPage.roles[0].tags || [];
     }

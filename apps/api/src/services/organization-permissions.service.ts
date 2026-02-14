@@ -1,5 +1,3 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, organizationPermissionsAuditLogs } from '@grantjs/database';
 import {
   AddOrganizationPermissionInput,
   OrganizationPermission,
@@ -9,15 +7,9 @@ import {
 
 import { BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
-import {
-  AuditService,
-  DeleteParams,
-  createDynamicSingleSchema,
-  validateInput,
-  validateOutput,
-} from './common';
+import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 import {
   addOrganizationPermissionInputSchema,
   organizationPermissionSchema,
@@ -25,37 +17,44 @@ import {
   removeOrganizationPermissionInputSchema,
 } from './organization-permissions.schemas';
 
-export class OrganizationPermissionService extends AuditService {
+import type {
+  IAuditLogger,
+  IOrganizationPermissionRepository,
+  IOrganizationPermissionService,
+  IOrganizationRepository,
+  IPermissionRepository,
+} from '@grantjs/core';
+
+export class OrganizationPermissionService implements IOrganizationPermissionService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(organizationPermissionsAuditLogs, 'organizationPermissionId', user, db);
-  }
+    private readonly organizationRepository: IOrganizationRepository,
+    private readonly permissionRepository: IPermissionRepository,
+    private readonly organizationPermissionRepository: IOrganizationPermissionRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async organizationExists(
     organizationId: string,
     transaction?: Transaction
   ): Promise<void> {
-    const organizations = await this.repositories.organizationRepository.getOrganizations(
+    const organizations = await this.organizationRepository.getOrganizations(
       { ids: [organizationId], limit: 1 },
       transaction
     );
 
     if (organizations.organizations.length === 0) {
-      throw new NotFoundError('Organization not found', 'errors:notFound.organization');
+      throw new NotFoundError('Organization');
     }
   }
 
   private async permissionExists(permissionId: string, transaction?: Transaction): Promise<void> {
-    const permissions = await this.repositories.permissionRepository.getPermissions(
+    const permissions = await this.permissionRepository.getPermissions(
       { ids: [permissionId], limit: 1 },
       transaction
     );
 
     if (permissions.permissions.length === 0) {
-      throw new NotFoundError('Permission not found', 'errors:notFound.permission');
+      throw new NotFoundError('Permission');
     }
   }
 
@@ -67,7 +66,7 @@ export class OrganizationPermissionService extends AuditService {
     await this.organizationExists(organizationId, transaction);
     await this.permissionExists(permissionId, transaction);
     const existingOrganizationPermissions =
-      await this.repositories.organizationPermissionRepository.getOrganizationPermissions(
+      await this.organizationPermissionRepository.getOrganizationPermissions(
         { organizationId },
         transaction
       );
@@ -93,11 +92,10 @@ export class OrganizationPermissionService extends AuditService {
     const queryParams = params.permissionId
       ? { permissionId: params.permissionId }
       : (params as QueryOrganizationPermissionsInput);
-    const result =
-      await this.repositories.organizationPermissionRepository.getOrganizationPermissions(
-        queryParams,
-        transaction
-      );
+    const result = await this.organizationPermissionRepository.getOrganizationPermissions(
+      queryParams,
+      transaction
+    );
 
     return validateOutput(
       createDynamicSingleSchema(organizationPermissionSchema).array(),
@@ -127,16 +125,15 @@ export class OrganizationPermissionService extends AuditService {
     if (hasPermission) {
       throw new ConflictError(
         'Organization already has this permission',
-        'errors:conflict.duplicateEntry',
-        { resource: 'OrganizationPermission', field: 'permissionId' }
+        'OrganizationPermission',
+        'permissionId'
       );
     }
 
-    const result =
-      await this.repositories.organizationPermissionRepository.addOrganizationPermission(
-        { organizationId, permissionId },
-        transaction
-      );
+    const result = await this.organizationPermissionRepository.addOrganizationPermission(
+      { organizationId, permissionId },
+      transaction
+    );
 
     const newValues = {
       id: result.id,
@@ -150,7 +147,7 @@ export class OrganizationPermissionService extends AuditService {
       context,
     };
 
-    await this.logCreate(result.id, newValues, metadata, transaction);
+    await this.audit.logCreate(result.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(organizationPermissionSchema), result, context);
   }
@@ -171,29 +168,23 @@ export class OrganizationPermissionService extends AuditService {
     );
 
     if (!hasPermission) {
-      throw new NotFoundError(
-        'Organization does not have this permission',
-        'errors:notFound.permission'
-      );
+      throw new NotFoundError('Permission');
     }
 
     const isHardDelete = hardDelete === true;
 
     const result = isHardDelete
-      ? await this.repositories.organizationPermissionRepository.hardDeleteOrganizationPermission(
+      ? await this.organizationPermissionRepository.hardDeleteOrganizationPermission(
           { organizationId, permissionId },
           transaction
         )
-      : await this.repositories.organizationPermissionRepository.softDeleteOrganizationPermission(
+      : await this.organizationPermissionRepository.softDeleteOrganizationPermission(
           { organizationId, permissionId },
           transaction
         );
 
     if (!result) {
-      throw new BadRequestError(
-        'Failed to remove organization permission',
-        'errors:common.badRequest'
-      );
+      throw new BadRequestError('Failed to remove organization permission');
     }
 
     const oldValues = {
@@ -215,9 +206,9 @@ export class OrganizationPermissionService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(result.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(result.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(result.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(result.id, oldValues, newValues, metadata, transaction);
     }
 
     return validateOutput(createDynamicSingleSchema(organizationPermissionSchema), result, context);

@@ -13,6 +13,12 @@ import { TokenClaims } from '../types';
 
 import { TokenManager } from './token-manager';
 
+import type {
+  ITokenProvider,
+  TokenDecodeResult,
+  TokenSignOptions,
+  TokenVerifyOptions,
+} from '../ports/token.port';
 import type { GrantService } from '../types';
 
 const TEST_KID = 'test-kid';
@@ -21,6 +27,32 @@ const { publicKey: publicKeyPem, privateKey: privateKeyPem } = crypto.generateKe
   publicKeyEncoding: { type: 'spki', format: 'pem' },
   privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
 });
+
+/** Real jwt-backed ITokenProvider for tests */
+const jwtTokenProvider: ITokenProvider = {
+  decode(token: string): TokenDecodeResult | null {
+    const decoded = jwt.decode(token, { complete: true });
+    if (!decoded || typeof decoded === 'string') return null;
+    return {
+      header: decoded.header as TokenDecodeResult['header'],
+      payload: decoded.payload as Record<string, unknown>,
+    };
+  },
+  verify(token: string, publicKey: string, options?: TokenVerifyOptions): Record<string, unknown> {
+    return jwt.verify(token, publicKey, {
+      ...(options?.algorithms && { algorithms: options.algorithms as jwt.Algorithm[] }),
+      ...(options?.ignoreExpiration !== undefined && {
+        ignoreExpiration: options.ignoreExpiration,
+      }),
+    }) as Record<string, unknown>;
+  },
+  sign(payload: Record<string, unknown>, privateKey: string, options?: TokenSignOptions): string {
+    return jwt.sign(payload, privateKey, {
+      ...(options?.algorithm && { algorithm: options.algorithm as jwt.Algorithm }),
+      ...(options?.keyid && { keyid: options.keyid }),
+    });
+  },
+};
 
 function createRs256Token(payload: Record<string, unknown>, kid: string = TEST_KID): string {
   return jwt.sign(payload, privateKeyPem, { algorithm: 'RS256', keyid: kid });
@@ -49,7 +81,7 @@ function createMockGrantService(overrides?: Partial<GrantService>): GrantService
 describe('TokenManager', () => {
   describe('getKidFromToken', () => {
     it('should return kid from token header', () => {
-      const manager = new TokenManager(createMockGrantService());
+      const manager = new TokenManager(createMockGrantService(), jwtTokenProvider);
       const token = createRs256Token(
         { sub: 'u', aud: 'a', iss: 'i', exp: 1, iat: 1, jti: 'j', type: TokenType.Session },
         'my-kid'
@@ -58,7 +90,7 @@ describe('TokenManager', () => {
     });
 
     it('should return null when token has no kid', () => {
-      const manager = new TokenManager(createMockGrantService());
+      const manager = new TokenManager(createMockGrantService(), jwtTokenProvider);
       const payload = {
         sub: 'user-123',
         aud: 'https://api.example.com',
@@ -73,14 +105,14 @@ describe('TokenManager', () => {
     });
 
     it('should return null for invalid token', () => {
-      const manager = new TokenManager(createMockGrantService());
+      const manager = new TokenManager(createMockGrantService(), jwtTokenProvider);
       expect(manager.getKidFromToken('not.a.jwt')).toBeNull();
     });
   });
 
   describe('verify', () => {
     it('should verify valid RS256 token when given public key', () => {
-      const manager = new TokenManager(createMockGrantService());
+      const manager = new TokenManager(createMockGrantService(), jwtTokenProvider);
       const payload = {
         sub: 'user-123',
         aud: 'https://api.example.com',
@@ -101,7 +133,7 @@ describe('TokenManager', () => {
     });
 
     it('should parse token with scope and isVerified', () => {
-      const manager = new TokenManager(createMockGrantService());
+      const manager = new TokenManager(createMockGrantService(), jwtTokenProvider);
       const scope = { tenant: Tenant.System, id: 'sys-1' };
       const payload = {
         sub: 'user-123',
@@ -123,7 +155,7 @@ describe('TokenManager', () => {
     });
 
     it('should throw when token is expired', () => {
-      const manager = new TokenManager(createMockGrantService());
+      const manager = new TokenManager(createMockGrantService(), jwtTokenProvider);
       const payload = {
         sub: 'user-123',
         aud: 'https://api.example.com',
@@ -139,7 +171,7 @@ describe('TokenManager', () => {
     });
 
     it('should accept expired token when ignoreExpiration is true', () => {
-      const manager = new TokenManager(createMockGrantService());
+      const manager = new TokenManager(createMockGrantService(), jwtTokenProvider);
       const payload = {
         sub: 'user-123',
         aud: 'https://api.example.com',
@@ -157,7 +189,7 @@ describe('TokenManager', () => {
     });
 
     it('should throw for invalid token', () => {
-      const manager = new TokenManager(createMockGrantService());
+      const manager = new TokenManager(createMockGrantService(), jwtTokenProvider);
       expect(() => manager.verify('invalid.token.here', publicKeyPem)).toThrow(TokenInvalidError);
     });
   });
@@ -165,7 +197,7 @@ describe('TokenManager', () => {
   describe('verifyToken', () => {
     it('should resolve key by kid, verify and validate', async () => {
       const mockService = createMockGrantService();
-      const manager = new TokenManager(mockService);
+      const manager = new TokenManager(mockService, jwtTokenProvider);
       const payload = {
         sub: 'user-123',
         aud: 'https://api.example.com',
@@ -184,7 +216,7 @@ describe('TokenManager', () => {
     });
 
     it('should throw when kid is missing', async () => {
-      const manager = new TokenManager(createMockGrantService());
+      const manager = new TokenManager(createMockGrantService(), jwtTokenProvider);
       const payload = {
         sub: 'user-123',
         aud: 'https://api.example.com',
@@ -203,7 +235,7 @@ describe('TokenManager', () => {
       const mockService = createMockGrantService({
         getVerificationKey: vi.fn().mockResolvedValue(null),
       });
-      const manager = new TokenManager(mockService);
+      const manager = new TokenManager(mockService, jwtTokenProvider);
       const token = createRs256Token({
         sub: 'u',
         aud: 'a',
@@ -218,7 +250,7 @@ describe('TokenManager', () => {
     });
 
     it('should accept expired token when ignoreExpiration is true', async () => {
-      const manager = new TokenManager(createMockGrantService());
+      const manager = new TokenManager(createMockGrantService(), jwtTokenProvider);
       const payload = {
         sub: 'user-123',
         aud: 'https://api.example.com',
@@ -238,7 +270,7 @@ describe('TokenManager', () => {
 
   describe('validate', () => {
     it('should accept valid session claims', () => {
-      const manager = new TokenManager(createMockGrantService());
+      const manager = new TokenManager(createMockGrantService(), jwtTokenProvider);
       const claims: TokenClaims = {
         sub: 'user-123',
         aud: 'https://api.example.com',
@@ -252,7 +284,7 @@ describe('TokenManager', () => {
     });
 
     it('should reject claims missing required fields', () => {
-      const manager = new TokenManager(createMockGrantService());
+      const manager = new TokenManager(createMockGrantService(), jwtTokenProvider);
       expect(
         manager.validate({
           sub: 'user-123',
@@ -276,7 +308,7 @@ describe('TokenManager', () => {
     });
 
     it('should reject expired claims', () => {
-      const manager = new TokenManager(createMockGrantService());
+      const manager = new TokenManager(createMockGrantService(), jwtTokenProvider);
       const claims: TokenClaims = {
         sub: 'user-123',
         aud: 'https://api.example.com',
@@ -290,7 +322,7 @@ describe('TokenManager', () => {
     });
 
     it('should reject API key token without scope', () => {
-      const manager = new TokenManager(createMockGrantService());
+      const manager = new TokenManager(createMockGrantService(), jwtTokenProvider);
       const claims: TokenClaims = {
         sub: 'user-123',
         aud: 'https://api.example.com',
@@ -307,7 +339,7 @@ describe('TokenManager', () => {
   describe('signSessionToken', () => {
     it('should sign with session key from GrantService', async () => {
       const mockService = createMockGrantService();
-      const manager = new TokenManager(mockService);
+      const manager = new TokenManager(mockService, jwtTokenProvider);
       const payload = {
         sub: 'user-1',
         aud: 'https://api.example.com',
@@ -328,7 +360,8 @@ describe('TokenManager', () => {
 
     it('should throw when no session signing key', async () => {
       const manager = new TokenManager(
-        createMockGrantService({ getSessionSigningKey: vi.fn().mockResolvedValue(null) })
+        createMockGrantService({ getSessionSigningKey: vi.fn().mockResolvedValue(null) }),
+        jwtTokenProvider
       );
 
       await expect(manager.signSessionToken({ sub: 'u', jti: 'j' })).rejects.toThrow(
@@ -340,7 +373,7 @@ describe('TokenManager', () => {
   describe('signApiKeyToken', () => {
     it('should sign with scope key from GrantService', async () => {
       const mockService = createMockGrantService();
-      const manager = new TokenManager(mockService);
+      const manager = new TokenManager(mockService, jwtTokenProvider);
       const scope = { tenant: Tenant.Organization, id: 'org-1' };
       const payload = {
         sub: 'user-1',
@@ -362,7 +395,8 @@ describe('TokenManager', () => {
 
     it('should throw when getSigningKeyForScope is not implemented', async () => {
       const manager = new TokenManager(
-        createMockGrantService({ getSigningKeyForScope: undefined })
+        createMockGrantService({ getSigningKeyForScope: undefined }),
+        jwtTokenProvider
       );
 
       await expect(
@@ -380,7 +414,8 @@ describe('TokenManager', () => {
 
     it('should throw when no key returned for scope', async () => {
       const manager = new TokenManager(
-        createMockGrantService({ getSigningKeyForScope: vi.fn().mockResolvedValue(null) })
+        createMockGrantService({ getSigningKeyForScope: vi.fn().mockResolvedValue(null) }),
+        jwtTokenProvider
       );
 
       await expect(

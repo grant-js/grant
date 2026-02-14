@@ -27,15 +27,29 @@ Both layers call **handlers** only; handlers never expose repositories to the tr
 - Extend `AuditService` and log mutations for compliance.
 - Validate input and output with zod schemas. Service input args align with schema types (e.g. `params: Omit<QueryGroupsArgs, 'scope'> & SelectedFields<Group>`).
 - Access only **domain-related repositories** (e.g. RoleService → RoleRepository, RoleTagRepository, RoleGroupRepository).
+- Service-specific validation helpers (`validateInput`, `validateOutput`, dynamic schemas) live in `services/common/` — import via `./common` within the services layer.
 
 ## Repositories (`apps/api/src/repositories`)
 
 - Resolve data from sources (mainly DB). Two base types: **Entity** (`EntityRepository`) and **Pivot** (`PivotRepository`) in `apps/api/src/repositories/common/`.
 - Use only **domain-related schemas** from `@grantjs/database` (e.g. OrganizationRepository → organizationGroups, organizationPermissions, organizations, etc.).
 
+## Import discipline
+
+These rules prevent cross-layer coupling. See AGENTS.md for the full table.
+
+- **Logger**: `import { createLogger } from '@/lib/logger'` — never import `@grantjs/logger` directly.
+- **Errors**: `import { NotFoundError, HttpException, ... } from '@/lib/errors'` — never import `@grantjs/errors` directly.
+- **Shared types**: `import { DeleteParams, SelectedFields, Otp } from '@/types'` — never import these from `@/services/common`.
+- **REST schemas**: `jsonSchema` for the REST layer lives in `@/rest/schemas/common.schemas` (not `@/services/common`).
+- **Configuration**: all magic numbers and external URLs belong in `@/config/env.config.ts`; services and handlers reference config values, not hard-coded literals.
+- **No `console.*`**: use the structured logger (`createLogger`) for all runtime logging.
+- **No raw `throw new Error(...)`**: use domain-specific errors (`NotFoundError`, `ValidationError`, `ConfigurationError`, etc.).
+
 ## Auth and context
 
 - Use existing middleware and `@/lib/authorization` / context helpers; do not bypass scoping.
+- `context.middleware.ts` and `lib/app-context.lib.ts` are the **composition roots** that wire handlers, services, and repositories. This is the only place cross-layer imports are permitted.
 
 ## Deep-dive docs
 

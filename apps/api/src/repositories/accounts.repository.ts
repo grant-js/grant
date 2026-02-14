@@ -10,7 +10,7 @@ import {
 import { and, eq, isNotNull, isNull, lt } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { SelectedFields } from '@/services/common';
+import { SelectedFields } from '@/types';
 
 import {
   BaseCreateArgs,
@@ -19,7 +19,12 @@ import {
   RelationsConfig,
 } from './common/EntityRepository';
 
-export class AccountRepository extends EntityRepository<AccountModel, Account> {
+import type { IAccountRepository } from '@grantjs/core';
+
+export class AccountRepository
+  extends EntityRepository<AccountModel, Account>
+  implements IAccountRepository
+{
   protected table = accounts;
   protected schemaName = 'accounts' as const;
   protected searchFields: Array<keyof AccountModel> = [];

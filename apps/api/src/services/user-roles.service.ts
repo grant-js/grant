@@ -1,5 +1,3 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, userRolesAuditLogs } from '@grantjs/database';
 import {
   AddUserRoleInput,
   QueryUserRolesInput,
@@ -9,15 +7,9 @@ import {
 
 import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
-import {
-  AuditService,
-  DeleteParams,
-  createDynamicSingleSchema,
-  validateInput,
-  validateOutput,
-} from './common';
+import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 import {
   addUserRoleInputSchema,
   queryUserRolesArgsSchema,
@@ -25,34 +17,35 @@ import {
   userRoleSchema,
 } from './user-roles.schemas';
 
-export class UserRoleService extends AuditService {
+import type {
+  IAuditLogger,
+  IRoleRepository,
+  IUserRepository,
+  IUserRoleRepository,
+  IUserRoleService,
+} from '@grantjs/core';
+
+export class UserRoleService implements IUserRoleService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(userRolesAuditLogs, 'userRoleId', user, db);
-  }
+    private readonly userRepository: IUserRepository,
+    private readonly roleRepository: IRoleRepository,
+    private readonly userRoleRepository: IUserRoleRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async userExists(userId: string, transaction?: Transaction): Promise<void> {
-    const users = await this.repositories.userRepository.getUsers(
-      { ids: [userId], limit: 1 },
-      transaction
-    );
+    const users = await this.userRepository.getUsers({ ids: [userId], limit: 1 }, transaction);
 
     if (users.users.length === 0) {
-      throw new NotFoundError('User not found', 'errors:notFound.user');
+      throw new NotFoundError('User');
     }
   }
 
   private async roleExists(roleId: string, transaction?: Transaction): Promise<void> {
-    const roles = await this.repositories.roleRepository.getRoles(
-      { ids: [roleId], limit: 1 },
-      transaction
-    );
+    const roles = await this.roleRepository.getRoles({ ids: [roleId], limit: 1 }, transaction);
 
     if (roles.roles.length === 0) {
-      throw new NotFoundError('Role not found', 'errors:notFound.role');
+      throw new NotFoundError('Role');
     }
   }
 
@@ -63,10 +56,7 @@ export class UserRoleService extends AuditService {
   ): Promise<boolean> {
     await this.userExists(userId, transaction);
     await this.roleExists(roleId, transaction);
-    const existingUserRoles = await this.repositories.userRoleRepository.getUserRoles(
-      { userId },
-      transaction
-    );
+    const existingUserRoles = await this.userRoleRepository.getUserRoles({ userId }, transaction);
 
     return existingUserRoles.some((ur) => ur.roleId === roleId);
   }
@@ -86,10 +76,7 @@ export class UserRoleService extends AuditService {
       await this.roleExists(roleId, transaction);
     }
 
-    const result = await this.repositories.userRoleRepository.getUserRoles(
-      validatedParams,
-      transaction
-    );
+    const result = await this.userRoleRepository.getUserRoles(validatedParams, transaction);
     return validateOutput(createDynamicSingleSchema(userRoleSchema).array(), result, context);
   }
 
@@ -104,17 +91,14 @@ export class UserRoleService extends AuditService {
     // Role scoping to organizations is handled at query time via organization_roles joins,
     // so a single global user_roles entry is valid for multiple org memberships.
     if (hasRole) {
-      const existingRoles = await this.repositories.userRoleRepository.getUserRoles(
+      const existingRoles = await this.userRoleRepository.getUserRoles(
         { userId, roleId },
         transaction
       );
       return validateOutput(createDynamicSingleSchema(userRoleSchema), existingRoles[0], context);
     }
 
-    const userRole = await this.repositories.userRoleRepository.addUserRole(
-      validatedParams,
-      transaction
-    );
+    const userRole = await this.userRoleRepository.addUserRole(validatedParams, transaction);
 
     const newValues = {
       id: userRole.id,
@@ -128,7 +112,7 @@ export class UserRoleService extends AuditService {
       context,
     };
 
-    await this.logCreate(userRole.id, newValues, metadata, transaction);
+    await this.audit.logCreate(userRole.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(userRoleSchema), userRole, context);
   }
@@ -144,14 +128,14 @@ export class UserRoleService extends AuditService {
     const hasRole = await this.userHasRole(userId, roleId, transaction);
 
     if (!hasRole) {
-      throw new NotFoundError('User does not have this role', 'errors:notFound.role');
+      throw new NotFoundError('UserRole');
     }
 
     const isHardDelete = hardDelete === true;
 
     const userRole = isHardDelete
-      ? await this.repositories.userRoleRepository.hardDeleteUserRole(validatedParams, transaction)
-      : await this.repositories.userRoleRepository.softDeleteUserRole(validatedParams, transaction);
+      ? await this.userRoleRepository.hardDeleteUserRole(validatedParams, transaction)
+      : await this.userRoleRepository.softDeleteUserRole(validatedParams, transaction);
 
     const oldValues = {
       id: userRole.id,
@@ -172,9 +156,9 @@ export class UserRoleService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(userRole.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(userRole.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(userRole.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(userRole.id, oldValues, newValues, metadata, transaction);
     }
 
     return validateOutput(createDynamicSingleSchema(userRoleSchema), userRole, context);

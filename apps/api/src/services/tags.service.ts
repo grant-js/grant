@@ -1,6 +1,3 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema } from '@grantjs/database';
-import { tagAuditLogs } from '@grantjs/database';
 import {
   Tag,
   TagPage,
@@ -12,16 +9,13 @@ import {
 
 import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams, SelectedFields } from '@/types';
 
 import {
-  AuditService,
   validateInput,
   validateOutput,
   createDynamicPaginatedSchema,
   createDynamicSingleSchema,
-  SelectedFields,
-  DeleteParams,
 } from './common';
 import {
   createTagInputSchema,
@@ -31,23 +25,19 @@ import {
   updateTagArgsSchema,
 } from './tags.schemas';
 
-export class TagService extends AuditService {
+import type { IAuditLogger, ITagRepository, ITagService } from '@grantjs/core';
+
+export class TagService implements ITagService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(tagAuditLogs, 'tagId', user, db);
-  }
+    private readonly tagRepository: ITagRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async getTag(tagId: string, transaction?: Transaction): Promise<Tag> {
-    const existingTags = await this.repositories.tagRepository.getTags(
-      { ids: [tagId], limit: 1 },
-      transaction
-    );
+    const existingTags = await this.tagRepository.getTags({ ids: [tagId], limit: 1 }, transaction);
 
     if (existingTags.tags.length === 0) {
-      throw new NotFoundError('Tag not found', 'errors:notFound.tag');
+      throw new NotFoundError('Tag');
     }
 
     return existingTags.tags[0];
@@ -60,7 +50,7 @@ export class TagService extends AuditService {
     const context = 'TagService.getTags';
     validateInput(queryTagsArgsSchema, params, context);
 
-    const result = await this.repositories.tagRepository.getTags(params, transaction);
+    const result = await this.tagRepository.getTags(params, transaction);
 
     const transformedResult = {
       items: result.tags,
@@ -86,7 +76,7 @@ export class TagService extends AuditService {
 
     const { name, color } = validatedParams;
 
-    const tag = await this.repositories.tagRepository.createTag({ name, color }, transaction);
+    const tag = await this.tagRepository.createTag({ name, color }, transaction);
 
     const newValues = {
       id: tag.id,
@@ -100,7 +90,7 @@ export class TagService extends AuditService {
       context,
     };
 
-    await this.logCreate(tag.id, newValues, metadata, transaction);
+    await this.audit.logCreate(tag.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(tagSchema), tag, context);
   }
@@ -114,7 +104,7 @@ export class TagService extends AuditService {
     validateInput(updateTagArgsSchema, { id, input }, context);
 
     const oldTag = await this.getTag(id, transaction);
-    const updatedTag = await this.repositories.tagRepository.updateTag(id, input, transaction);
+    const updatedTag = await this.tagRepository.updateTag(id, input, transaction);
 
     const oldValues = {
       id: oldTag.id,
@@ -136,7 +126,7 @@ export class TagService extends AuditService {
       context,
     };
 
-    await this.logUpdate(updatedTag.id, oldValues, newValues, metadata, transaction);
+    await this.audit.logUpdate(updatedTag.id, oldValues, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(tagSchema), updatedTag, context);
   }
@@ -154,8 +144,8 @@ export class TagService extends AuditService {
     const isHardDelete = hardDelete === true;
 
     const deletedTag = isHardDelete
-      ? await this.repositories.tagRepository.hardDeleteTag({ id }, transaction)
-      : await this.repositories.tagRepository.softDeleteTag({ id }, transaction);
+      ? await this.tagRepository.hardDeleteTag({ id }, transaction)
+      : await this.tagRepository.softDeleteTag({ id }, transaction);
 
     const oldValues = {
       id: oldTag.id,
@@ -171,13 +161,13 @@ export class TagService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(deletedTag.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(deletedTag.id, oldValues, metadata, transaction);
     } else {
       const newValues = {
         ...oldValues,
         deletedAt: deletedTag.deletedAt,
       };
-      await this.logSoftDelete(deletedTag.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(deletedTag.id, oldValues, newValues, metadata, transaction);
     }
 
     return validateOutput(createDynamicSingleSchema(tagSchema), deletedTag, context);

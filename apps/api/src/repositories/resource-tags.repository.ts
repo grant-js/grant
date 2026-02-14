@@ -10,7 +10,12 @@ import {
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';
 
-export class ResourceTagRepository extends PivotRepository<ResourceTagModel, ResourceTag> {
+import type { IResourceTagRepository } from '@grantjs/core';
+
+export class ResourceTagRepository
+  extends PivotRepository<ResourceTagModel, ResourceTag>
+  implements IResourceTagRepository
+{
   protected table = resourceTags;
   protected uniqueIndexFields: Array<keyof ResourceTagModel> = ['resourceId', 'tagId'];
 

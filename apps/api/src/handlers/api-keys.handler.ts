@@ -1,4 +1,3 @@
-import { DbSchema } from '@grantjs/database';
 import {
   ApiKey,
   ApiKeyPage,
@@ -15,19 +14,32 @@ import {
 
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
-import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
-import { Services } from '@/services';
-import { SelectedFields } from '@/services/common';
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { SelectedFields } from '@/types';
 
-import { CacheHandler } from './base/cache-handler';
+import { CacheHandler, type ScopeServices } from './base/cache-handler';
+
+import type {
+  IAccountProjectApiKeyService,
+  IApiKeyService,
+  IOrganizationProjectApiKeyService,
+  IProjectUserApiKeyService,
+  IRoleService,
+  ITransactionalConnection,
+} from '@grantjs/core';
 
 export class ApiKeysHandler extends CacheHandler {
   constructor(
-    readonly cache: IEntityCacheAdapter,
-    readonly services: Services,
-    readonly db: DbSchema
+    private readonly apiKeys: IApiKeyService,
+    private readonly accountProjectApiKeys: IAccountProjectApiKeyService,
+    private readonly organizationProjectApiKeys: IOrganizationProjectApiKeyService,
+    private readonly projectUserApiKeys: IProjectUserApiKeyService,
+    private readonly roles: IRoleService,
+    cache: IEntityCacheAdapter,
+    scopeServices: ScopeServices,
+    private readonly db: ITransactionalConnection<Transaction>
   ) {
-    super(cache, services);
+    super(cache, scopeServices);
   }
 
   public async getApiKeys(params: QueryApiKeysArgs & SelectedFields<ApiKey>): Promise<ApiKeyPage> {
@@ -47,7 +59,7 @@ export class ApiKeysHandler extends CacheHandler {
       };
     }
 
-    const apiKeysResult = await this.services.apiKeys.getApiKeys({
+    const apiKeysResult = await this.apiKeys.getApiKeys({
       ids: apiKeyIds,
       page,
       limit,
@@ -79,7 +91,7 @@ export class ApiKeysHandler extends CacheHandler {
 
     if (scope.tenant === Tenant.AccountProject) {
       const { accountId, projectId } = this.extractAccountProjectFromScope(scope);
-      const rows = await this.services.accountProjectApiKeys.getAccountProjectApiKeys({
+      const rows = await this.accountProjectApiKeys.getAccountProjectApiKeys({
         accountId,
         projectId,
       });
@@ -88,7 +100,7 @@ export class ApiKeysHandler extends CacheHandler {
         .map((r) => ({ apiKeyId: r.apiKeyId, roleId: r.accountRoleId }));
     } else {
       const { organizationId, projectId } = this.extractOrganizationProjectFromScope(scope);
-      const rows = await this.services.organizationProjectApiKeys.getOrganizationProjectApiKeys({
+      const rows = await this.organizationProjectApiKeys.getOrganizationProjectApiKeys({
         organizationId,
         projectId,
       });
@@ -102,7 +114,7 @@ export class ApiKeysHandler extends CacheHandler {
       return apiKeys.map((k) => ({ ...k, role: null }));
     }
 
-    const rolesResult = await this.services.roles.getRoles({
+    const rolesResult = await this.roles.getRoles({
       ids: roleIds,
       limit: roleIds.length,
     });
@@ -116,7 +128,7 @@ export class ApiKeysHandler extends CacheHandler {
   }
 
   public async createApiKey(params: MutationCreateApiKeyArgs): Promise<CreateApiKeyResult> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { input } = params;
       const { scope, name, description, expiresAt } = input;
       let { roleId } = input;
@@ -126,7 +138,7 @@ export class ApiKeysHandler extends CacheHandler {
         case Tenant.AccountProjectUser:
         case Tenant.ProjectUser: {
           const { projectId, userId } = this.extractProjectUserFromScope(scope);
-          const apiKey = await this.services.apiKeys.createApiKey(
+          const apiKey = await this.apiKeys.createApiKey(
             {
               name,
               description,
@@ -135,7 +147,7 @@ export class ApiKeysHandler extends CacheHandler {
             tx
           );
 
-          await this.services.projectUserApiKeys.addProjectUserApiKey(
+          await this.projectUserApiKeys.addProjectUserApiKey(
             {
               projectId,
               userId,
@@ -151,12 +163,12 @@ export class ApiKeysHandler extends CacheHandler {
         case Tenant.AccountProject: {
           const { accountId, projectId } = this.extractAccountProjectFromScope(scope);
           if (!roleId) {
-            roleId = await this.services.accountProjectApiKeys.resolveAccountRoleIdForCurrentUser(
+            roleId = await this.accountProjectApiKeys.resolveAccountRoleIdForCurrentUser(
               accountId,
               tx
             );
           }
-          const apiKey = await this.services.apiKeys.createApiKey(
+          const apiKey = await this.apiKeys.createApiKey(
             {
               name: name ?? undefined,
               description: description ?? undefined,
@@ -164,7 +176,7 @@ export class ApiKeysHandler extends CacheHandler {
             },
             tx
           );
-          await this.services.accountProjectApiKeys.addAccountProjectApiKey(
+          await this.accountProjectApiKeys.addAccountProjectApiKey(
             {
               accountId,
               projectId,
@@ -180,18 +192,16 @@ export class ApiKeysHandler extends CacheHandler {
         case Tenant.OrganizationProject: {
           if (!roleId) {
             throw new BadRequestError(
-              'roleId is required when creating an API key for organizationProject scope',
-              'errors:validation.invalid',
-              { field: 'roleId' }
+              'roleId is required when creating an API key for organizationProject scope'
             );
           }
           const { organizationId, projectId } = this.extractOrganizationProjectFromScope(scope);
-          await this.services.organizationProjectApiKeys.validateOrganizationProjectApiKeyRolePermission(
+          await this.organizationProjectApiKeys.validateOrganizationProjectApiKeyRolePermission(
             organizationId,
             roleId,
             tx
           );
-          const apiKey = await this.services.apiKeys.createApiKey(
+          const apiKey = await this.apiKeys.createApiKey(
             {
               name: name ?? undefined,
               description: description ?? undefined,
@@ -199,7 +209,7 @@ export class ApiKeysHandler extends CacheHandler {
             },
             tx
           );
-          await this.services.organizationProjectApiKeys.addOrganizationProjectApiKey(
+          await this.organizationProjectApiKeys.addOrganizationProjectApiKey(
             {
               organizationId,
               projectId,
@@ -213,54 +223,50 @@ export class ApiKeysHandler extends CacheHandler {
         }
 
         default:
-          throw new BadRequestError(
-            `Unsupported tenant type: ${scope.tenant}`,
-            'errors:validation.invalid',
-            { field: 'tenant' }
-          );
+          throw new BadRequestError(`Unsupported tenant type: ${scope.tenant}`);
       }
     });
   }
 
   public async exchangeApiKey(params: MutationExchangeApiKeyArgs): Promise<ExchangeApiKeyResult> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { input } = params;
-      return await this.services.apiKeys.exchangeApiKeyForToken(input, tx);
+      return await this.apiKeys.exchangeApiKeyForToken(input, tx);
     });
   }
 
   public async revokeApiKey(params: MutationRevokeApiKeyArgs): Promise<ApiKey> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { input } = params;
       const { scope, id } = input;
       if (scope.tenant === Tenant.OrganizationProject) {
         const { organizationId, projectId } = this.extractOrganizationProjectFromScope(scope);
-        await this.services.organizationProjectApiKeys.validateCanManageOrganizationProjectApiKey(
+        await this.organizationProjectApiKeys.validateCanManageOrganizationProjectApiKey(
           organizationId,
           projectId,
           id,
           tx
         );
       }
-      const apiKey = await this.services.apiKeys.revokeApiKey(input, tx);
+      const apiKey = await this.apiKeys.revokeApiKey(input, tx);
       return apiKey;
     });
   }
 
   public async deleteApiKey(params: MutationDeleteApiKeyArgs): Promise<ApiKey> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { input } = params;
       const { scope, id } = input;
       if (scope.tenant === Tenant.OrganizationProject) {
         const { organizationId, projectId } = this.extractOrganizationProjectFromScope(scope);
-        await this.services.organizationProjectApiKeys.validateCanManageOrganizationProjectApiKey(
+        await this.organizationProjectApiKeys.validateCanManageOrganizationProjectApiKey(
           organizationId,
           projectId,
           id,
           tx
         );
       }
-      const apiKey = await this.services.apiKeys.deleteApiKey(
+      const apiKey = await this.apiKeys.deleteApiKey(
         {
           id,
           hardDelete: input.hardDelete ?? undefined,

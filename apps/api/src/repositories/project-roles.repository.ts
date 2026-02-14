@@ -9,7 +9,12 @@ import {
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';
 
-export class ProjectRoleRepository extends PivotRepository<ProjectRoleModel, ProjectRole> {
+import type { IProjectRoleRepository } from '@grantjs/core';
+
+export class ProjectRoleRepository
+  extends PivotRepository<ProjectRoleModel, ProjectRole>
+  implements IProjectRoleRepository
+{
   protected table = projectRoles;
   protected uniqueIndexFields: Array<keyof ProjectRoleModel> = ['projectId', 'roleId'];
 

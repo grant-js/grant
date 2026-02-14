@@ -1,4 +1,3 @@
-import { DbSchema } from '@grantjs/database';
 import {
   MutationCreateResourceArgs,
   MutationDeleteResourceArgs,
@@ -12,19 +11,38 @@ import {
 
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError, NotFoundError } from '@/lib/errors';
-import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
-import { Services } from '@/services';
-import { DeleteParams, SelectedFields } from '@/services/common';
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { DeleteParams, SelectedFields } from '@/types';
 
-import { CacheHandler } from './base/cache-handler';
+import { CacheHandler, type ScopeServices } from './base/cache-handler';
+
+import type {
+  IGroupPermissionService,
+  IOrganizationPermissionService,
+  IPermissionService,
+  IPermissionTagService,
+  IProjectPermissionService,
+  IProjectResourceService,
+  IResourceService,
+  IResourceTagService,
+  ITransactionalConnection,
+} from '@grantjs/core';
 
 export class ResourceHandler extends CacheHandler {
   constructor(
-    readonly cache: IEntityCacheAdapter,
-    readonly services: Services,
-    readonly db: DbSchema
+    private readonly resourceTags: IResourceTagService,
+    private readonly resources: IResourceService,
+    private readonly projectResources: IProjectResourceService,
+    private readonly permissions: IPermissionService,
+    private readonly permissionTags: IPermissionTagService,
+    private readonly groupPermissions: IGroupPermissionService,
+    private readonly organizationPermissions: IOrganizationPermissionService,
+    private readonly projectPermissions: IProjectPermissionService,
+    cache: IEntityCacheAdapter,
+    scopeServices: ScopeServices,
+    private readonly db: ITransactionalConnection<Transaction>
   ) {
-    super(cache, services);
+    super(cache, scopeServices);
   }
 
   public async getResources(
@@ -35,7 +53,7 @@ export class ResourceHandler extends CacheHandler {
     let resourceIds = await this.getScopedResourceIds(scope);
 
     if (tagIds && tagIds.length > 0) {
-      const resourceTags = await this.services.resourceTags.getResourceTagIntersection({
+      const resourceTags = await this.resourceTags.getResourceTagIntersection({
         resourceIds,
         tagIds,
       });
@@ -58,7 +76,7 @@ export class ResourceHandler extends CacheHandler {
       };
     }
 
-    const resourcesResult = await this.services.resources.getResources({
+    const resourcesResult = await this.resources.getResources({
       ids: resourceIds,
       page,
       limit,
@@ -77,7 +95,7 @@ export class ResourceHandler extends CacheHandler {
     excludeResourceId?: string,
     transaction?: Transaction
   ): Promise<void> {
-    await this.services.resources.validateSlugUniqueness(
+    await this.resources.validateSlugUniqueness(
       slug,
       scopeResourceIds,
       excludeResourceId,
@@ -86,7 +104,7 @@ export class ResourceHandler extends CacheHandler {
   }
 
   public async createResource(params: MutationCreateResourceArgs): Promise<Resource> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { input } = params;
       const { name, slug, description, actions, isActive, scope, tagIds, primaryTagId } = input;
 
@@ -94,7 +112,7 @@ export class ResourceHandler extends CacheHandler {
 
       await this.validateSlugUniqueness(slug, scopeResourceIds, undefined, tx);
 
-      const resource = await this.services.resources.createResource(
+      const resource = await this.resources.createResource(
         {
           name,
           slug,
@@ -111,26 +129,19 @@ export class ResourceHandler extends CacheHandler {
         case Tenant.OrganizationProject:
         case Tenant.AccountProject: {
           const projectId = this.extractProjectIdFromScope(scope);
-          await this.services.projectResources.addProjectResource({ projectId, resourceId }, tx);
+          await this.projectResources.addProjectResource({ projectId, resourceId }, tx);
           break;
         }
         case Tenant.Organization:
         case Tenant.Account:
         default:
-          throw new BadRequestError(
-            'Resources are only supported at project level',
-            'errors:validation.invalid',
-            {
-              field: 'scope.tenant',
-              value: scope.tenant,
-            }
-          );
+          throw new BadRequestError('Resources are only supported at project level');
       }
 
       if (tagIds && tagIds.length > 0) {
         await Promise.all(
           tagIds.map((tagId) =>
-            this.services.resourceTags.addResourceTag(
+            this.resourceTags.addResourceTag(
               { resourceId, tagId, isPrimary: tagId === primaryTagId },
               tx
             )
@@ -145,22 +156,22 @@ export class ResourceHandler extends CacheHandler {
   }
 
   public async updateResource(params: MutationUpdateResourceArgs): Promise<Resource> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { id: resourceId, input } = params;
       const { scope, slug, tagIds, primaryTagId } = input;
       let currentTagIds: string[] = [];
       if (Array.isArray(tagIds)) {
-        const currentTags = await this.services.resourceTags.getResourceTags({ resourceId }, tx);
+        const currentTags = await this.resourceTags.getResourceTags({ resourceId }, tx);
         currentTagIds = currentTags.map((pt) => pt.tagId);
       }
 
-      const existingResource = await this.services.resources.getResources({
+      const existingResource = await this.resources.getResources({
         ids: [resourceId],
         limit: 1,
       });
 
       if (existingResource.resources.length === 0) {
-        throw new NotFoundError('Resource not found', 'errors:notFound.resource');
+        throw new NotFoundError('Resource');
       }
 
       const currentSlug = existingResource.resources[0].slug;
@@ -175,19 +186,12 @@ export class ResourceHandler extends CacheHandler {
           case Tenant.Organization:
           case Tenant.Account:
           default:
-            throw new BadRequestError(
-              'Resources are only supported at project level',
-              'errors:validation.invalid',
-              {
-                field: 'scope.tenant',
-                value: scope.tenant,
-              }
-            );
+            throw new BadRequestError('Resources are only supported at project level');
         }
         await this.validateSlugUniqueness(slug, scopeResourceIds, resourceId, tx);
       }
 
-      const updatedResource = await this.services.resources.updateResource(
+      const updatedResource = await this.resources.updateResource(
         {
           id: resourceId,
           input: {
@@ -209,7 +213,7 @@ export class ResourceHandler extends CacheHandler {
         const updatedTagIds = tagIds.filter((tagId) => currentTagIds.includes(tagId));
         await Promise.all(
           newTagIds.map((tagId) =>
-            this.services.resourceTags.addResourceTag(
+            this.resourceTags.addResourceTag(
               { resourceId, tagId, isPrimary: tagId === primaryTagId },
               tx
             )
@@ -217,12 +221,12 @@ export class ResourceHandler extends CacheHandler {
         );
         await Promise.all(
           removedTagIds.map((tagId) =>
-            this.services.resourceTags.removeResourceTag({ resourceId, tagId }, tx)
+            this.resourceTags.removeResourceTag({ resourceId, tagId }, tx)
           )
         );
         await Promise.all(
           updatedTagIds.map((tagId) =>
-            this.services.resourceTags.updateResourceTag(
+            this.resourceTags.updateResourceTag(
               { resourceId, tagId, isPrimary: tagId === primaryTagId },
               tx
             )
@@ -236,13 +240,13 @@ export class ResourceHandler extends CacheHandler {
   public async deleteResource(
     params: MutationDeleteResourceArgs & DeleteParams
   ): Promise<Resource> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { id: resourceId, scope, hardDelete } = params;
 
       const [resourceTags, allProjectResources, resourcePermissions] = await Promise.all([
-        this.services.resourceTags.getResourceTags({ resourceId }, tx),
-        this.services.projectResources.getProjectResourcesByResourceId(resourceId, tx),
-        this.services.permissions.getPermissionsByResourceId(resourceId, tx),
+        this.resourceTags.getResourceTags({ resourceId }, tx),
+        this.projectResources.getProjectResourcesByResourceId(resourceId, tx),
+        this.permissions.getPermissionsByResourceId(resourceId, tx),
       ]);
 
       const tagIds = resourceTags.map((rt) => rt.tagId);
@@ -252,56 +256,51 @@ export class ResourceHandler extends CacheHandler {
 
         const [permissionTags, groupPermissions, organizationPermissions, projectPermissions] =
           await Promise.all([
-            this.services.permissionTags.getPermissionTags({ permissionId }, tx),
-            this.services.groupPermissions.getGroupPermissions({ permissionId }, tx),
-            this.services.organizationPermissions.getOrganizationPermissions({ permissionId }, tx),
-            this.services.projectPermissions.getProjectPermissions({ permissionId }, tx),
+            this.permissionTags.getPermissionTags({ permissionId }, tx),
+            this.groupPermissions.getGroupPermissions({ permissionId }, tx),
+            this.organizationPermissions.getOrganizationPermissions({ permissionId }, tx),
+            this.projectPermissions.getProjectPermissions({ permissionId }, tx),
           ]);
 
         await Promise.all([
           ...permissionTags.map((pt) =>
-            this.services.permissionTags.removePermissionTag({ permissionId, tagId: pt.tagId }, tx)
+            this.permissionTags.removePermissionTag({ permissionId, tagId: pt.tagId }, tx)
           ),
           ...groupPermissions.map((gp) =>
-            this.services.groupPermissions.removeGroupPermission(
+            this.groupPermissions.removeGroupPermission(
               { groupId: gp.groupId, permissionId: gp.permissionId },
               tx
             )
           ),
           ...organizationPermissions.map((op) =>
-            this.services.organizationPermissions.removeOrganizationPermission(
+            this.organizationPermissions.removeOrganizationPermission(
               { organizationId: op.organizationId, permissionId: op.permissionId },
               tx
             )
           ),
           ...projectPermissions.map((pp) =>
-            this.services.projectPermissions.removeProjectPermission(
+            this.projectPermissions.removeProjectPermission(
               { projectId: pp.projectId, permissionId: pp.permissionId },
               tx
             )
           ),
         ]);
 
-        await this.services.permissions.deletePermission(
+        await this.permissions.deletePermission(
           { id: permissionId, hardDelete: hardDelete === true },
           tx
         );
       }
       await Promise.all([
         ...allProjectResources.map((pr) =>
-          this.services.projectResources.removeProjectResource(
-            { projectId: pr.projectId, resourceId },
-            tx
-          )
+          this.projectResources.removeProjectResource({ projectId: pr.projectId, resourceId }, tx)
         ),
-        ...tagIds.map((tagId) =>
-          this.services.resourceTags.removeResourceTag({ resourceId, tagId }, tx)
-        ),
+        ...tagIds.map((tagId) => this.resourceTags.removeResourceTag({ resourceId, tagId }, tx)),
       ]);
 
       await this.removeResourceIdFromScopeCache(scope, resourceId);
 
-      return await this.services.resources.deleteResource(params, tx);
+      return await this.resources.deleteResource(params, tx);
     });
   }
 
@@ -309,7 +308,7 @@ export class ResourceHandler extends CacheHandler {
     params: { resourceId: string } & SelectedFields<Resource>
   ): Promise<Array<Tag>> {
     const { resourceId, requestedFields } = params;
-    const resourcesPage = await this.services.resources.getResources({
+    const resourcesPage = await this.resources.getResources({
       ids: [resourceId],
       requestedFields,
     });

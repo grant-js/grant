@@ -1,4 +1,3 @@
-import { DbSchema } from '@grantjs/database';
 import {
   MutationCreateUserArgs,
   MutationDeleteUserArgs,
@@ -14,22 +13,37 @@ import {
 } from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
-import { createModuleLogger } from '@/lib/logger';
-import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
-import { Services } from '@/services';
-import { DeleteParams, SelectedFields } from '@/services/common';
+import { createLogger } from '@/lib/logger';
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { DeleteParams, SelectedFields } from '@/types';
 
-import { CacheHandler } from './base/cache-handler';
+import { CacheHandler, type ScopeServices } from './base/cache-handler';
+
+import type {
+  IFileStorageServicePort,
+  IOrganizationUserService,
+  IProjectUserService,
+  ITransactionalConnection,
+  IUserRoleService,
+  IUserService,
+  IUserTagService,
+} from '@grantjs/core';
 
 export class UserHandler extends CacheHandler {
-  protected readonly logger = createModuleLogger('UserHandler');
+  protected readonly logger = createLogger('UserHandler');
 
   constructor(
-    readonly cache: IEntityCacheAdapter,
-    readonly services: Services,
-    readonly db: DbSchema
+    private readonly userTags: IUserTagService,
+    private readonly users: IUserService,
+    private readonly organizationUsers: IOrganizationUserService,
+    private readonly projectUsers: IProjectUserService,
+    private readonly userRoles: IUserRoleService,
+    private readonly fileStorage: IFileStorageServicePort,
+    cache: IEntityCacheAdapter,
+    scopeServices: ScopeServices,
+    private readonly db: ITransactionalConnection<Transaction>
   ) {
-    super(cache, services);
+    super(cache, scopeServices);
   }
 
   public async getUsers(params: QueryUsersArgs & SelectedFields<User>): Promise<UserPage> {
@@ -38,7 +52,7 @@ export class UserHandler extends CacheHandler {
     let userIds = await this.getScopedUserIds(scope);
 
     if (tagIds && tagIds.length > 0) {
-      const userTags = await this.services.userTags.getUserTagIntersection(userIds, tagIds);
+      const userTags = await this.userTags.getUserTagIntersection(userIds, tagIds);
       userIds = userTags
         .filter(({ userId, tagId }) => userIds.includes(userId) && tagIds.includes(tagId))
         .map(({ userId }) => userId);
@@ -56,7 +70,7 @@ export class UserHandler extends CacheHandler {
       };
     }
 
-    const usersResult = await this.services.users.getUsers({
+    const usersResult = await this.users.getUsers({
       ids: userIds,
       page,
       limit,
@@ -69,15 +83,15 @@ export class UserHandler extends CacheHandler {
   }
 
   public async createUser(params: MutationCreateUserArgs): Promise<User> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { input } = params;
       const { name, scope, tagIds, roleIds, primaryTagId } = input;
 
-      const user = await this.services.users.createUser({ name }, tx);
+      const user = await this.users.createUser({ name }, tx);
       const { id: userId } = user;
       switch (scope.tenant) {
         case Tenant.Organization:
-          await this.services.organizationUsers.addOrganizationUser(
+          await this.organizationUsers.addOrganizationUser(
             { organizationId: scope.id, userId },
             tx
           );
@@ -85,24 +99,21 @@ export class UserHandler extends CacheHandler {
         case Tenant.OrganizationProject:
         case Tenant.AccountProject: {
           const projectId = this.extractProjectIdFromScope(scope);
-          await this.services.projectUsers.addProjectUser({ projectId, userId }, tx);
+          await this.projectUsers.addProjectUser({ projectId, userId }, tx);
           break;
         }
       }
 
       if (roleIds && roleIds.length > 0) {
         await Promise.all(
-          roleIds.map((roleId) => this.services.userRoles.addUserRole({ userId, roleId }, tx))
+          roleIds.map((roleId) => this.userRoles.addUserRole({ userId, roleId }, tx))
         );
       }
 
       if (tagIds && tagIds.length > 0) {
         await Promise.all(
           tagIds.map((tagId) =>
-            this.services.userTags.addUserTag(
-              { userId, tagId, isPrimary: tagId === primaryTagId },
-              tx
-            )
+            this.userTags.addUserTag({ userId, tagId, isPrimary: tagId === primaryTagId }, tx)
           )
         );
       }
@@ -114,41 +125,35 @@ export class UserHandler extends CacheHandler {
   }
 
   public async updateUser(params: MutationUpdateUserArgs): Promise<User> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { id: userId, input } = params;
       const { roleIds, tagIds, primaryTagId } = input;
       let currentTagIds: string[] = [];
       let currentRoleIds: string[] = [];
       if (Array.isArray(tagIds)) {
-        const currentTags = await this.services.userTags.getUserTags({ userId }, tx);
+        const currentTags = await this.userTags.getUserTags({ userId }, tx);
         currentTagIds = currentTags.map((pt) => pt.tagId);
       }
       if (Array.isArray(roleIds)) {
-        const currentRoles = await this.services.userRoles.getUserRoles({ userId }, tx);
+        const currentRoles = await this.userRoles.getUserRoles({ userId }, tx);
         currentRoleIds = currentRoles.map((ur) => ur.roleId);
       }
-      const updatedUser = await this.services.users.updateUser(userId, input, tx);
+      const updatedUser = await this.users.updateUser(userId, input, tx);
       if (Array.isArray(tagIds)) {
         const newTagIds = tagIds.filter((tagId) => !currentTagIds.includes(tagId));
         const removedTagIds = currentTagIds.filter((tagId) => !tagIds.includes(tagId));
         const updatedTagIds = tagIds.filter((tagId) => currentTagIds.includes(tagId));
         await Promise.all(
           newTagIds.map((tagId) =>
-            this.services.userTags.addUserTag(
-              { userId, tagId, isPrimary: tagId === primaryTagId },
-              tx
-            )
+            this.userTags.addUserTag({ userId, tagId, isPrimary: tagId === primaryTagId }, tx)
           )
         );
         await Promise.all(
-          removedTagIds.map((tagId) => this.services.userTags.removeUserTag({ userId, tagId }, tx))
+          removedTagIds.map((tagId) => this.userTags.removeUserTag({ userId, tagId }, tx))
         );
         await Promise.all(
           updatedTagIds.map((tagId) =>
-            this.services.userTags.updateUserTag(
-              { userId, tagId, isPrimary: tagId === primaryTagId },
-              tx
-            )
+            this.userTags.updateUserTag({ userId, tagId, isPrimary: tagId === primaryTagId }, tx)
           )
         );
       }
@@ -156,12 +161,10 @@ export class UserHandler extends CacheHandler {
         const newRoleIds = roleIds.filter((roleId) => !currentRoleIds.includes(roleId));
         const removedRoleIds = currentRoleIds.filter((roleId) => !roleIds.includes(roleId));
         await Promise.all(
-          newRoleIds.map((roleId) => this.services.userRoles.addUserRole({ userId, roleId }, tx))
+          newRoleIds.map((roleId) => this.userRoles.addUserRole({ userId, roleId }, tx))
         );
         await Promise.all(
-          removedRoleIds.map((roleId) =>
-            this.services.userRoles.removeUserRole({ userId, roleId }, tx)
-          )
+          removedRoleIds.map((roleId) => this.userRoles.removeUserRole({ userId, roleId }, tx))
         );
 
         if (newRoleIds.length > 0 || removedRoleIds.length > 0) {
@@ -173,19 +176,19 @@ export class UserHandler extends CacheHandler {
   }
 
   public async deleteUser(params: MutationDeleteUserArgs & DeleteParams): Promise<User> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const userId = params.id;
       const scope = params.scope;
       const [userTags, userRoles] = await Promise.all([
-        this.services.userTags.getUserTags({ userId }, tx),
-        this.services.userRoles.getUserRoles({ userId }, tx),
+        this.userTags.getUserTags({ userId }, tx),
+        this.userRoles.getUserRoles({ userId }, tx),
       ]);
 
       const tagIds = userTags.map((ut) => ut.tagId);
       const roleIds = userRoles.map((ur) => ur.roleId);
       switch (scope.tenant) {
         case Tenant.Organization:
-          await this.services.organizationUsers.removeOrganizationUser(
+          await this.organizationUsers.removeOrganizationUser(
             { organizationId: scope.id, userId },
             tx
           );
@@ -193,25 +196,25 @@ export class UserHandler extends CacheHandler {
         case Tenant.OrganizationProject:
         case Tenant.AccountProject: {
           const projectId = this.extractProjectIdFromScope(scope);
-          await this.services.projectUsers.removeProjectUser({ projectId, userId }, tx);
+          await this.projectUsers.removeProjectUser({ projectId, userId }, tx);
           await this.invalidateProjectUserRoleCache(userId);
           break;
         }
       }
 
       await Promise.all([
-        ...tagIds.map((tagId) => this.services.userTags.removeUserTag({ userId, tagId }, tx)),
-        ...roleIds.map((roleId) => this.services.userRoles.removeUserRole({ userId, roleId }, tx)),
+        ...tagIds.map((tagId) => this.userTags.removeUserTag({ userId, tagId }, tx)),
+        ...roleIds.map((roleId) => this.userRoles.removeUserRole({ userId, roleId }, tx)),
       ]);
 
       await this.removeUserIdFromScopeCache(scope, userId);
 
-      return await this.services.users.deleteUser(params, tx);
+      return await this.users.deleteUser(params, tx);
     });
   }
 
   private async invalidateProjectUserRoleCache(userId: string): Promise<void> {
-    const projectUsers = await this.services.projectUsers.getProjectUsers({ userId });
+    const projectUsers = await this.projectUsers.getProjectUsers({ userId });
     const projectIds = projectUsers.map((pu) => pu.projectId);
 
     await Promise.all(
@@ -227,7 +230,7 @@ export class UserHandler extends CacheHandler {
 
   public async getUserTags(params: { userId: string } & SelectedFields<User>): Promise<Array<Tag>> {
     const { userId, requestedFields } = params;
-    const usersPage = await this.services.users.getUsers({ ids: [userId], requestedFields });
+    const usersPage = await this.users.getUsers({ ids: [userId], requestedFields });
     if (Array.isArray(usersPage.users) && usersPage.users.length > 0) {
       return usersPage.users[0].tags || [];
     }
@@ -238,7 +241,7 @@ export class UserHandler extends CacheHandler {
     params: { userId: string } & SelectedFields<User>
   ): Promise<Array<Role>> {
     const { userId, requestedFields } = params;
-    const usersPage = await this.services.users.getUsers({ ids: [userId], requestedFields });
+    const usersPage = await this.users.getUsers({ ids: [userId], requestedFields });
     if (Array.isArray(usersPage.users) && usersPage.users.length > 0) {
       return usersPage.users[0].roles || [];
     }
@@ -250,24 +253,24 @@ export class UserHandler extends CacheHandler {
   ): Promise<{ url: string; path: string }> {
     const { userId, file, contentType, filename } = params;
 
-    const fileBuffer = this.services.fileStorage.validateAndDecodeUpload({
+    const fileBuffer = this.fileStorage.validateAndDecodeUpload({
       file,
       contentType,
       filename,
     });
 
-    const storagePath = this.services.fileStorage.sanitizeExtensionAndGeneratePath(
+    const storagePath = this.fileStorage.sanitizeExtensionAndGeneratePath(
       filename,
       `users/${userId}/picture`
     );
 
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
-      const result = await this.services.fileStorage.upload(fileBuffer, storagePath, {
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const result = await this.fileStorage.upload(fileBuffer, storagePath, {
         contentType,
         public: true,
       });
 
-      await this.services.users.updateUser(userId, { pictureUrl: result.url }, tx);
+      await this.users.updateUser(userId, { pictureUrl: result.url }, tx);
 
       return {
         url: result.url,

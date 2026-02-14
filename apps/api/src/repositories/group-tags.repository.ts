@@ -11,7 +11,12 @@ import { Transaction } from '@/lib/transaction-manager.lib';
 
 import { PivotRepository } from './common/PivotRepository';
 
-export class GroupTagRepository extends PivotRepository<GroupTagModel, GroupTag> {
+import type { IGroupTagRepository } from '@grantjs/core';
+
+export class GroupTagRepository
+  extends PivotRepository<GroupTagModel, GroupTag>
+  implements IGroupTagRepository
+{
   protected table = groupTags;
   protected uniqueIndexFields: Array<keyof GroupTagModel> = ['groupId', 'tagId'];
 

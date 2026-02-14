@@ -13,9 +13,14 @@ import {
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { EntityRepository, FilterCondition, RelationsConfig } from '@/repositories/common';
-import { SelectedFields } from '@/services/common';
+import { SelectedFields } from '@/types';
 
-export class ResourceRepository extends EntityRepository<ResourceModel, Resource> {
+import type { IResourceRepository } from '@grantjs/core';
+
+export class ResourceRepository
+  extends EntityRepository<ResourceModel, Resource>
+  implements IResourceRepository
+{
   protected table = resources;
   protected schemaName = 'resources' as const;
   protected searchFields: Array<keyof ResourceModel> = Object.values(ResourceSearchableField);

@@ -4,7 +4,7 @@ import { defaultLocale, translateStatic } from '@/i18n';
 
 import { createAlternativeLink, createButton, renderBaseEmailTemplate } from './base.mjml';
 
-import type { SendInvitationParams } from '../email.interface';
+import type { SendInvitationParams } from '@grantjs/core';
 
 export function getInvitationEmailSubject(
   params: SendInvitationParams,

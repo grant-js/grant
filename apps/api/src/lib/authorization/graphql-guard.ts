@@ -52,14 +52,14 @@ export function authorizeGraphQLResolver<
     info: GraphQLResolveInfo
   ): Promise<TResult> => {
     if (!isAuthenticatedGraphQL(context as GraphqlContext)) {
-      throw new AuthenticationError('Unauthorized', 'errors.auth.unauthorized');
+      throw new AuthenticationError('Unauthorized');
     }
 
     const gqlContext = context as GraphqlContext;
     const scope = gqlContext.user?.scope ?? null;
 
     if (!scope) {
-      throw new BadRequestError('Scope is required', 'errors.validation.scope_required');
+      throw new BadRequestError('Scope is required');
     }
 
     let resolvedResource: Record<string, unknown> | null = null;
@@ -79,7 +79,7 @@ export function authorizeGraphQLResolver<
         });
 
         if (!resolvedResource) {
-          throw new NotFoundError('Resource not found', 'errors:notFound.resource');
+          throw new NotFoundError('Resource');
         }
       }
     }
@@ -99,9 +99,7 @@ export function authorizeGraphQLResolver<
     });
 
     if (!result.authorized) {
-      throw new AuthorizationError('Forbidden', 'errors.auth.forbidden', undefined, {
-        reason: result.reason,
-      });
+      throw new AuthorizationError('Forbidden', result.reason ?? undefined);
     }
 
     return await resolverFn(parent, args, context, info);

@@ -1,6 +1,10 @@
 import { MILLISECONDS_PER_DAY, MILLISECONDS_PER_MINUTE } from '@grantjs/constants';
-import { Grant, GrantAuth } from '@grantjs/core';
-import { DbSchema, userSessionAuditLogs } from '@grantjs/database';
+import {
+  Grant,
+  type IAuditLogger,
+  type IUserSessionRepository,
+  type IUserSessionService,
+} from '@grantjs/core';
 import {
   CreateUserSessionInput,
   GetUserSessionsInput,
@@ -14,9 +18,9 @@ import { config } from '@/config';
 import { NotFoundError } from '@/lib/errors';
 import { generateRandomBytes } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { SelectedFields } from '@/types';
 
-import { AuditService, SelectedFields, validateInput, validateOutput } from './common';
+import { validateInput, validateOutput } from './common';
 import {
   createSessionSchema,
   sessionResultSchema,
@@ -29,15 +33,12 @@ interface CreateSessionResult {
   accessToken: string;
 }
 
-export class UserSessionService extends AuditService {
+export class UserSessionService implements IUserSessionService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema,
+    private readonly userSessionRepository: IUserSessionRepository,
+    private readonly audit: IAuditLogger,
     private readonly grant: Grant
-  ) {
-    super(userSessionAuditLogs, 'userSessionId', user, db);
-  }
+  ) {}
 
   private generateRefreshToken(): string {
     return generateRandomBytes(32).toString('base64url');
@@ -55,7 +56,7 @@ export class UserSessionService extends AuditService {
     userSessionId: string,
     transaction?: Transaction
   ): Promise<UserSession> {
-    const existingUserSessions = await this.repositories.userSessionRepository.getUserSessions(
+    const existingUserSessions = await this.userSessionRepository.getUserSessions(
       {
         ids: [userSessionId],
         limit: 1,
@@ -64,7 +65,7 @@ export class UserSessionService extends AuditService {
     );
 
     if (existingUserSessions.userSessions.length === 0) {
-      throw new NotFoundError('User session not found', 'errors:auth.sessionNotFound');
+      throw new NotFoundError('UserSession');
     }
 
     return existingUserSessions.userSessions[0];
@@ -74,7 +75,7 @@ export class UserSessionService extends AuditService {
     params: GetUserSessionsInput & SelectedFields<UserSession>,
     transaction?: Transaction
   ): Promise<UserSessionPage> {
-    return this.repositories.userSessionRepository.getUserSessions(params, transaction);
+    return this.userSessionRepository.getUserSessions(params, transaction);
   }
 
   public async signSession(
@@ -123,7 +124,7 @@ export class UserSessionService extends AuditService {
 
     const audience = config.app.url;
 
-    const session = await this.repositories.userSessionRepository.createUserSession(
+    const session = await this.userSessionRepository.createUserSession(
       {
         userId,
         userAuthenticationMethodId,
@@ -151,7 +152,7 @@ export class UserSessionService extends AuditService {
     ipAddress?: string | null,
     isVerified?: boolean
   ): Promise<CreateSessionResult | null> {
-    const session = await this.repositories.userSessionRepository.getSessionByRefreshToken(
+    const session = await this.userSessionRepository.getSessionByRefreshToken(
       refreshToken,
       transaction
     );
@@ -165,7 +166,7 @@ export class UserSessionService extends AuditService {
     const finalUserAgent = userAgent ?? session.userAgent ?? null;
     const finalIpAddress = ipAddress ?? session.ipAddress ?? null;
 
-    const refreshedSession = await this.repositories.userSessionRepository.refreshUserSession(
+    const refreshedSession = await this.userSessionRepository.refreshUserSession(
       session.id,
       newRefreshToken,
       this.getRefreshTokenExpirationDate(now),
@@ -179,7 +180,7 @@ export class UserSessionService extends AuditService {
   }
 
   public async revokeSession(id: string, transaction?: Transaction): Promise<UserSession> {
-    const revokedSession = await this.repositories.userSessionRepository.softDeleteUserSession(
+    const revokedSession = await this.userSessionRepository.softDeleteUserSession(
       { id },
       transaction
     );
@@ -194,7 +195,7 @@ export class UserSessionService extends AuditService {
     refreshToken: string,
     transaction?: Transaction
   ): Promise<boolean> {
-    const session = await this.repositories.userSessionRepository.getSessionByRefreshToken(
+    const session = await this.userSessionRepository.getSessionByRefreshToken(
       refreshToken,
       transaction
     );
@@ -228,7 +229,7 @@ export class UserSessionService extends AuditService {
 
     const currentSession = await this.getUserSession(id, transaction);
 
-    const updatedSession = await this.repositories.userSessionRepository.updateUserSession(
+    const updatedSession = await this.userSessionRepository.updateUserSession(
       { id, lastUsedAt, userAgent, ipAddress },
       transaction
     );
@@ -245,7 +246,7 @@ export class UserSessionService extends AuditService {
       context,
     };
 
-    await this.logUpdate(updatedSession.id, oldValues, newValues, metadata, transaction);
+    await this.audit.logUpdate(updatedSession.id, oldValues, newValues, metadata, transaction);
 
     return validateOutput(userSessionSchema, updatedSession, context);
   }

@@ -1,7 +1,14 @@
-import { GrantService as IGrantService, type SessionSigningKey } from '@grantjs/core';
-import { ExecutionContextGroup, ExecutionContextRole, ExecutionContextUser } from '@grantjs/core';
+import {
+  GrantService as IGrantService,
+  type IGrantRepository,
+  type SessionSigningKey,
+  type ExecutionContextGroup,
+  type ExecutionContextRole,
+  type ExecutionContextUser,
+} from '@grantjs/core';
 import { Permission, Scope } from '@grantjs/schema';
 
+import { config } from '@/config';
 import {
   SYSTEM_SIGNING_KEY_CACHE_KEY,
   VERIFICATION_KEY_CACHE_PREFIX,
@@ -9,7 +16,6 @@ import {
 import { SYSTEM_SCOPE } from '@/constants/system.constants';
 import type { IEntityCacheAdapter } from '@/lib/cache';
 import type { Transaction } from '@/lib/transaction-manager.lib';
-import { GrantRepository } from '@/repositories/grant.repository';
 
 import type { SigningKeyService } from './signing-keys.service';
 
@@ -20,14 +26,14 @@ export interface GrantServiceSessionKeyOptions {
 export class GrantService implements IGrantService {
   constructor(
     private readonly cache: IEntityCacheAdapter,
-    private readonly grantRepository: GrantRepository,
+    private readonly grantRepository: IGrantRepository,
     private readonly signingKeyService: SigningKeyService,
     private readonly sessionKeyOptions?: GrantServiceSessionKeyOptions
   ) {}
 
   /** TTL for both session signing key and verification-key caches (from config). */
   private getKeyCacheTtlSeconds(): number {
-    return this.sessionKeyOptions?.cacheTtlSeconds ?? 300;
+    return this.sessionKeyOptions?.cacheTtlSeconds ?? config.jwt.systemSigningKeyCacheTtlSeconds;
   }
 
   async getSessionSigningKey(): Promise<SessionSigningKey | null> {

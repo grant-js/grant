@@ -1,31 +1,37 @@
 import { config } from '@/config';
 import { BadRequestError } from '@/lib/errors';
-import { IFileStorageService, StorageFactory, UploadOptions, UploadResult } from '@/lib/storage';
+import { loggerFactory } from '@/lib/logger';
+import { StorageFactory, UploadOptions, UploadResult } from '@/lib/storage';
 
-export class FileStorageService {
+import type { IFileStorageService, IFileStorageServicePort } from '@grantjs/core';
+
+export class FileStorageService implements IFileStorageServicePort {
   private storageAdapter: IFileStorageService;
 
   constructor() {
-    this.storageAdapter = StorageFactory.createStorageService({
-      provider: config.storage.provider,
-      local:
-        config.storage.provider === 'local'
-          ? {
-              basePath: config.storage.local.basePath,
-            }
-          : undefined,
-      s3:
-        config.storage.provider === 's3'
-          ? {
-              bucket: config.storage.s3.bucket,
-              region: config.storage.s3.region,
-              accessKeyId: config.storage.s3.accessKeyId,
-              secretAccessKey: config.storage.s3.secretAccessKey,
-              endpoint: config.storage.s3.endpoint,
-              publicUrl: config.storage.s3.publicUrl,
-            }
-          : undefined,
-    });
+    this.storageAdapter = StorageFactory.createStorageService(
+      {
+        provider: config.storage.provider,
+        local:
+          config.storage.provider === 'local'
+            ? {
+                basePath: config.storage.local.basePath,
+              }
+            : undefined,
+        s3:
+          config.storage.provider === 's3'
+            ? {
+                bucket: config.storage.s3.bucket,
+                region: config.storage.s3.region,
+                accessKeyId: config.storage.s3.accessKeyId,
+                secretAccessKey: config.storage.s3.secretAccessKey,
+                endpoint: config.storage.s3.endpoint,
+                publicUrl: config.storage.s3.publicUrl,
+              }
+            : undefined,
+      },
+      loggerFactory
+    );
   }
 
   public getAdapter(): IFileStorageService {
@@ -59,9 +65,7 @@ export class FileStorageService {
       )
     ) {
       throw new BadRequestError(
-        `Invalid file type. Allowed types: ${config.storage.upload.allowedTypes.join(', ')}`,
-        'errors:validation.invalid',
-        { field: 'contentType' }
+        `Invalid file type. Allowed types: ${config.storage.upload.allowedTypes.join(', ')}`
       );
     }
   }
@@ -75,9 +79,7 @@ export class FileStorageService {
       )
     ) {
       throw new BadRequestError(
-        `Invalid file extension. Allowed extensions: ${config.storage.upload.allowedExtensions.join(', ')}`,
-        'errors:validation.invalid',
-        { field: 'filename' }
+        `Invalid file extension. Allowed extensions: ${config.storage.upload.allowedExtensions.join(', ')}`
       );
     }
   }
@@ -87,18 +89,14 @@ export class FileStorageService {
       const base64Data = file.replace(/^data:.*,/, '');
       return Buffer.from(base64Data, 'base64');
     } catch {
-      throw new BadRequestError('Invalid base64 file data', 'errors:validation.invalid', {
-        field: 'file',
-      });
+      throw new BadRequestError('Invalid base64 file data');
     }
   }
 
   public validateFileSize(fileBuffer: Buffer): void {
     if (fileBuffer.length > config.storage.upload.maxFileSize) {
       throw new BadRequestError(
-        `File size exceeds maximum of ${config.storage.upload.maxFileSize / 1024 / 1024}MB`,
-        'errors:validation.invalid',
-        { field: 'file' }
+        `File size exceeds maximum of ${config.storage.upload.maxFileSize / 1024 / 1024}MB`
       );
     }
   }

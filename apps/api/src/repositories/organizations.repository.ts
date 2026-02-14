@@ -33,9 +33,14 @@ import {
   EntityRepository,
   RelationsConfig,
 } from '@/repositories/common';
-import { SelectedFields } from '@/services/common';
+import { SelectedFields } from '@/types';
 
-export class OrganizationRepository extends EntityRepository<OrganizationModel, Organization> {
+import type { IOrganizationRepository } from '@grantjs/core';
+
+export class OrganizationRepository
+  extends EntityRepository<OrganizationModel, Organization>
+  implements IOrganizationRepository
+{
   protected table = organizations;
   protected schemaName = 'organizations' as const;
   protected searchFields: Array<keyof OrganizationModel> = Object.values(

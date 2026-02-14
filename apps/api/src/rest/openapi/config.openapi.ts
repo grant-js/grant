@@ -1,5 +1,6 @@
 import { OpenAPIRegistry, OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi';
 
+import { config } from '@/config';
 import {
   authTokensSchema,
   authenticationErrorResponseSchema,
@@ -104,13 +105,12 @@ export function generateOpenApiDocument() {
     },
     servers: [
       {
-        url: 'http://localhost:4000',
-        description: 'Local development server',
+        url: config.app.url,
+        description: config.app.isProduction ? 'Production server' : 'Local development server',
       },
-      {
-        url: 'https://api.grant.center',
-        description: 'Production server',
-      },
+      ...(!config.app.isProduction
+        ? [{ url: config.swagger.productionUrl, description: 'Production server' }]
+        : []),
     ],
     tags: [
       {

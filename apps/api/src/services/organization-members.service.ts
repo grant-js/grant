@@ -1,6 +1,14 @@
 import { canAssignRole } from '@grantjs/constants';
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema } from '@grantjs/database';
+import {
+  GrantAuth,
+  type IAuditLogger,
+  type IOrganizationMemberRepository,
+  type IOrganizationMemberService,
+  type IOrganizationRoleRepository,
+  type IOrganizationUserRepository,
+  type IRoleRepository,
+  type IUserRoleRepository,
+} from '@grantjs/core';
 import {
   OrganizationMember,
   OrganizationMemberPage,
@@ -12,28 +20,29 @@ import {
 
 import { AuthorizationError, BadRequestError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
-import { SelectedFields } from '@/services/common';
+import { SelectedFields } from '@/types';
 
-import { AuditService, validateInput } from './common';
+import { validateInput } from './common';
 import {
   getOrganizationMembersParamsSchema,
   removeOrganizationMemberInputSchema,
   updateOrganizationMemberInputSchema,
 } from './organization-members.schemas';
 
-export class OrganizationMemberService extends AuditService {
+export class OrganizationMemberService implements IOrganizationMemberService {
   constructor(
-    private readonly repositories: Repositories,
+    private readonly organizationMemberRepository: IOrganizationMemberRepository,
+    private readonly organizationUserRepository: IOrganizationUserRepository,
+    private readonly organizationRoleRepository: IOrganizationRoleRepository,
+    private readonly roleRepository: IRoleRepository,
+    private readonly userRoleRepository: IUserRoleRepository,
     readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(null, '', user, db);
-  }
+    private readonly audit: IAuditLogger
+  ) {}
 
   private getCurrentUserId(): string {
     if (!this.user?.userId) {
-      throw new AuthorizationError('Authentication required', 'errors:auth.unauthorized');
+      throw new AuthorizationError('Authentication required');
     }
     return this.user.userId;
   }
@@ -43,7 +52,7 @@ export class OrganizationMemberService extends AuditService {
     userId: string,
     transaction?: Transaction
   ): Promise<string | null> {
-    const member = await this.repositories.organizationMemberRepository.getOrganizationMember(
+    const member = await this.organizationMemberRepository.getOrganizationMember(
       { organizationId, userId },
       transaction
     );
@@ -58,10 +67,7 @@ export class OrganizationMemberService extends AuditService {
     const currentUserId = this.getCurrentUserId();
 
     if (currentUserId === targetUserId) {
-      throw new AuthorizationError(
-        'Cannot modify your own membership',
-        'errors:auth.cannotModifySelf'
-      );
+      throw new AuthorizationError('Cannot modify your own membership');
     }
 
     const currentUserRoleName = await this.getUserRoleNameInOrganization(
@@ -71,10 +77,7 @@ export class OrganizationMemberService extends AuditService {
     );
 
     if (!currentUserRoleName) {
-      throw new AuthorizationError(
-        'You are not a member of this organization',
-        'errors:auth.notOrganizationMember'
-      );
+      throw new AuthorizationError('You are not a member of this organization');
     }
 
     const targetUserRoleName = await this.getUserRoleNameInOrganization(
@@ -84,17 +87,11 @@ export class OrganizationMemberService extends AuditService {
     );
 
     if (!targetUserRoleName) {
-      throw new AuthorizationError(
-        'Target user is not a member of this organization',
-        'errors:auth.targetNotOrganizationMember'
-      );
+      throw new AuthorizationError('Target user is not a member of this organization');
     }
 
     if (!canAssignRole(currentUserRoleName, targetUserRoleName)) {
-      throw new AuthorizationError(
-        'Cannot manage members with equal or higher privilege',
-        'errors:auth.insufficientPrivilege'
-      );
+      throw new AuthorizationError('Cannot manage members with equal or higher privilege');
     }
 
     return { currentUserId, currentUserRoleName, targetUserRoleName };
@@ -111,12 +108,10 @@ export class OrganizationMemberService extends AuditService {
     const { tenant } = scope;
 
     if (tenant !== Tenant.Organization) {
-      throw new BadRequestError('Invalid tenant', 'errors:badRequest.invalidTenant', {
-        tenant,
-      });
+      throw new BadRequestError('Invalid tenant');
     }
 
-    const result = await this.repositories.organizationMemberRepository.getOrganizationMembers(
+    const result = await this.organizationMemberRepository.getOrganizationMembers(
       validatedParams,
       transaction
     );
@@ -129,7 +124,7 @@ export class OrganizationMemberService extends AuditService {
     userId: string,
     transaction?: Transaction
   ): Promise<OrganizationMember | null> {
-    return await this.repositories.organizationMemberRepository.getOrganizationMember(
+    return await this.organizationMemberRepository.getOrganizationMember(
       { organizationId, userId },
       transaction
     );
@@ -146,9 +141,7 @@ export class OrganizationMemberService extends AuditService {
     const { id: organizationId, tenant } = scope;
 
     if (tenant !== Tenant.Organization) {
-      throw new BadRequestError('Invalid tenant', 'errors:badRequest.invalidTenant', {
-        tenant,
-      });
+      throw new BadRequestError('Invalid tenant');
     }
 
     const { currentUserRoleName } = await this.validateMemberManagementPermission(
@@ -157,79 +150,68 @@ export class OrganizationMemberService extends AuditService {
       transaction
     );
 
-    const organizationUsers =
-      await this.repositories.organizationUserRepository.getOrganizationUsers(
-        { organizationId, userId },
-        transaction
-      );
+    const organizationUsers = await this.organizationUserRepository.getOrganizationUsers(
+      { organizationId, userId },
+      transaction
+    );
     if (organizationUsers.length === 0) {
-      throw new NotFoundError('User is not a member of this organization', 'errors:notFound.user', {
-        userId,
-        organizationId,
-      });
+      throw new NotFoundError('User', userId);
     }
 
-    const allOrganizationRoles =
-      await this.repositories.organizationRoleRepository.getOrganizationRoles(
-        { organizationId },
-        transaction
-      );
+    const allOrganizationRoles = await this.organizationRoleRepository.getOrganizationRoles(
+      { organizationId },
+      transaction
+    );
 
     const newRoleAssignment = allOrganizationRoles.find((or) => or.roleId === roleId);
     if (!newRoleAssignment) {
-      throw new NotFoundError('Role does not belong to this organization', 'errors:notFound.role', {
-        roleId,
-        organizationId,
-      });
+      throw new NotFoundError('Role', roleId);
     }
 
-    const newRole = await this.repositories.roleRepository.getRoles(
-      { ids: [roleId], limit: 1 },
-      transaction
-    );
+    const newRole = await this.roleRepository.getRoles({ ids: [roleId], limit: 1 }, transaction);
     if (newRole.roles.length === 0) {
-      throw new NotFoundError('Role not found', 'errors:notFound.role', { roleId });
+      throw new NotFoundError('Role', roleId);
     }
 
     if (!canAssignRole(currentUserRoleName, newRole.roles[0].name)) {
       throw new AuthorizationError(
-        'Cannot assign a role with equal or higher privilege than your own',
-        'errors:auth.cannotAssignHigherRole'
+        'Cannot assign a role with equal or higher privilege than your own'
       );
     }
 
-    const userRoles = await this.repositories.userRoleRepository.getUserRoles(
-      { userId },
-      transaction
-    );
+    const userRoles = await this.userRoleRepository.getUserRoles({ userId }, transaction);
 
     const orgRoleIds = new Set(allOrganizationRoles.map((or) => or.roleId));
     const orgScopedUserRoles = userRoles.filter((ur) => orgRoleIds.has(ur.roleId));
 
     for (const userRole of orgScopedUserRoles) {
-      await this.repositories.userRoleRepository.softDeleteUserRole(
+      await this.userRoleRepository.softDeleteUserRole(
         { userId, roleId: userRole.roleId },
         transaction
       );
     }
 
-    await this.repositories.userRoleRepository.addUserRole({ userId, roleId }, transaction);
+    await this.userRoleRepository.addUserRole({ userId, roleId }, transaction);
 
-    const updatedMember =
-      await this.repositories.organizationMemberRepository.getOrganizationMember(
-        {
-          organizationId,
-          userId,
-        },
-        transaction
-      );
+    const updatedMember = await this.organizationMemberRepository.getOrganizationMember(
+      {
+        organizationId,
+        userId,
+      },
+      transaction
+    );
 
     if (!updatedMember) {
-      throw new NotFoundError('Updated member not found', 'errors:notFound.user', {
-        userId,
-        organizationId,
-      });
+      throw new NotFoundError('User', userId);
     }
+
+    await this.audit.logUpdate(
+      organizationId,
+      { userId, previousRoleIds: orgScopedUserRoles.map((ur) => ur.roleId) },
+      { userId, roleId },
+      { context: 'OrganizationMemberService.updateOrganizationMember' },
+      transaction
+    );
 
     return updatedMember;
   }
@@ -245,51 +227,49 @@ export class OrganizationMemberService extends AuditService {
     const { id: organizationId, tenant } = scope;
 
     if (tenant !== Tenant.Organization) {
-      throw new BadRequestError('Invalid tenant', 'errors:badRequest.invalidTenant', {
-        tenant,
-      });
+      throw new BadRequestError('Invalid tenant');
     }
 
     await this.validateMemberManagementPermission(organizationId, userId, transaction);
 
-    const memberToRemove =
-      await this.repositories.organizationMemberRepository.getOrganizationMember(
-        {
-          organizationId,
-          userId,
-        },
-        transaction
-      );
-
-    if (!memberToRemove) {
-      throw new NotFoundError('User is not a member of this organization', 'errors:notFound.user', {
-        userId,
+    const memberToRemove = await this.organizationMemberRepository.getOrganizationMember(
+      {
         organizationId,
-      });
-    }
-
-    const organizationRoles =
-      await this.repositories.organizationRoleRepository.getOrganizationRoles(
-        { organizationId },
-        transaction
-      );
-    const orgRoleIds = new Set(organizationRoles.map((or) => or.roleId));
-
-    const userRoles = await this.repositories.userRoleRepository.getUserRoles(
-      { userId },
+        userId,
+      },
       transaction
     );
 
+    if (!memberToRemove) {
+      throw new NotFoundError('User', userId);
+    }
+
+    const organizationRoles = await this.organizationRoleRepository.getOrganizationRoles(
+      { organizationId },
+      transaction
+    );
+    const orgRoleIds = new Set(organizationRoles.map((or) => or.roleId));
+
+    const userRoles = await this.userRoleRepository.getUserRoles({ userId }, transaction);
+
     const orgScopedUserRoles = userRoles.filter((ur) => orgRoleIds.has(ur.roleId));
     for (const userRole of orgScopedUserRoles) {
-      await this.repositories.userRoleRepository.softDeleteUserRole(
+      await this.userRoleRepository.softDeleteUserRole(
         { userId, roleId: userRole.roleId },
         transaction
       );
     }
 
-    await this.repositories.organizationUserRepository.softDeleteOrganizationUser(
+    await this.organizationUserRepository.softDeleteOrganizationUser(
       { organizationId, userId },
+      transaction
+    );
+
+    await this.audit.logSoftDelete(
+      organizationId,
+      { userId, roleIds: orgScopedUserRoles.map((ur) => ur.roleId) },
+      { userId, removed: true },
+      { context: 'OrganizationMemberService.removeOrganizationMember' },
       transaction
     );
 

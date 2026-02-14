@@ -5,12 +5,59 @@ import { AccountTag, AuthorizationResult, Scope, Tenant } from '@grantjs/schema'
 import { AUTH_RESULT_CACHE_KEY_PREFIX } from '@/constants/cache.constants';
 import { CacheKey, ICacheAdapter, IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
-import { Services } from '@/services';
 
-export class CacheHandler {
+import type {
+  IAccountProjectApiKeyService,
+  IAccountProjectService,
+  IAccountTagService,
+  IOrganizationGroupService,
+  IOrganizationPermissionService,
+  IOrganizationProjectApiKeyService,
+  IOrganizationProjectService,
+  IOrganizationRoleService,
+  IOrganizationTagService,
+  IOrganizationUserService,
+  IProjectGroupService,
+  IProjectPermissionService,
+  IProjectResourceService,
+  IProjectRoleService,
+  IProjectTagService,
+  IProjectUserApiKeyService,
+  IProjectUserService,
+  IScopedIdProvider,
+  IUserRoleService,
+} from '@grantjs/core';
+
+/**
+ * Narrow subset of Services used by CacheHandler for scope-resolution.
+ * Defined using port interfaces from @grantjs/core instead of the concrete
+ * Services bag, fully decoupling the handler base class from implementations.
+ */
+export interface ScopeServices {
+  accountProjects: IAccountProjectService;
+  organizationProjects: IOrganizationProjectService;
+  organizationRoles: IOrganizationRoleService;
+  projectRoles: IProjectRoleService;
+  userRoles: IUserRoleService;
+  organizationUsers: IOrganizationUserService;
+  projectUsers: IProjectUserService;
+  organizationGroups: IOrganizationGroupService;
+  projectGroups: IProjectGroupService;
+  organizationPermissions: IOrganizationPermissionService;
+  projectPermissions: IProjectPermissionService;
+  projectResources: IProjectResourceService;
+  accountTags: IAccountTagService;
+  organizationTags: IOrganizationTagService;
+  projectTags: IProjectTagService;
+  projectUserApiKeys: IProjectUserApiKeyService;
+  accountProjectApiKeys: IAccountProjectApiKeyService;
+  organizationProjectApiKeys: IOrganizationProjectApiKeyService;
+}
+
+export class CacheHandler implements IScopedIdProvider {
   constructor(
     protected cache: IEntityCacheAdapter,
-    protected readonly services: Services
+    protected readonly scopeServices: ScopeServices
   ) {}
 
   /**
@@ -29,11 +76,7 @@ export class CacheHandler {
     ];
 
     if (!validTenants.includes(scope.tenant)) {
-      throw new BadRequestError(
-        `Cannot extract projectId from tenant type: ${scope.tenant}`,
-        'errors:validation.invalid',
-        { field: 'scope.tenant' }
-      );
+      throw new BadRequestError(`Cannot extract projectId from tenant type: ${scope.tenant}`);
     }
 
     const parts = scope.id.split(':');
@@ -43,9 +86,7 @@ export class CacheHandler {
 
     if (!projectId) {
       throw new BadRequestError(
-        'Invalid scope: id must be in format "accountId:projectId" or "accountId:projectId:userId"',
-        'errors:validation.invalid',
-        { field: 'scope.id' }
+        'Invalid scope: id must be in format "accountId:projectId" or "accountId:projectId:userId"'
       );
     }
 
@@ -70,18 +111,12 @@ export class CacheHandler {
         break;
       default:
         throw new BadRequestError(
-          `Cannot extract projectId and userId from tenant type: ${scope.tenant}`,
-          'errors:validation.invalid',
-          { field: 'scope.tenant' }
+          `Cannot extract projectId and userId from tenant type: ${scope.tenant}`
         );
     }
 
     if (!projectId || !userId) {
-      throw new BadRequestError(
-        'Invalid scope: id must contain both projectId and userId',
-        'errors:validation.invalid',
-        { field: 'scope.id' }
-      );
+      throw new BadRequestError('Invalid scope: id must contain both projectId and userId');
     }
 
     return { projectId, userId };
@@ -89,21 +124,13 @@ export class CacheHandler {
 
   protected extractAccountProjectFromScope(scope: Scope): { accountId: string; projectId: string } {
     if (scope.tenant !== Tenant.AccountProject) {
-      throw new BadRequestError(
-        `Cannot extract accountProject from tenant type: ${scope.tenant}`,
-        'errors:validation.invalid',
-        { field: 'scope.tenant' }
-      );
+      throw new BadRequestError(`Cannot extract accountProject from tenant type: ${scope.tenant}`);
     }
     const parts = scope.id.split(':');
     const accountId = parts[0];
     const projectId = parts[1];
     if (!accountId || !projectId) {
-      throw new BadRequestError(
-        'Invalid scope: id must be in format "accountId:projectId"',
-        'errors:validation.invalid',
-        { field: 'scope.id' }
-      );
+      throw new BadRequestError('Invalid scope: id must be in format "accountId:projectId"');
     }
     return { accountId, projectId };
   }
@@ -114,20 +141,14 @@ export class CacheHandler {
   } {
     if (scope.tenant !== Tenant.OrganizationProject) {
       throw new BadRequestError(
-        `Cannot extract organizationProject from tenant type: ${scope.tenant}`,
-        'errors:validation.invalid',
-        { field: 'scope.tenant' }
+        `Cannot extract organizationProject from tenant type: ${scope.tenant}`
       );
     }
     const parts = scope.id.split(':');
     const organizationId = parts[0];
     const projectId = parts[1];
     if (!organizationId || !projectId) {
-      throw new BadRequestError(
-        'Invalid scope: id must be in format "organizationId:projectId"',
-        'errors:validation.invalid',
-        { field: 'scope.id' }
-      );
+      throw new BadRequestError('Invalid scope: id must be in format "organizationId:projectId"');
     }
     return { organizationId, projectId };
   }
@@ -177,7 +198,7 @@ export class CacheHandler {
     let projectIds: string[];
     switch (scope.tenant) {
       case Tenant.Account: {
-        const accountProjects = await this.services.accountProjects.getAccountProjects({
+        const accountProjects = await this.scopeServices.accountProjects.getAccountProjects({
           accountId: scope.id,
         });
         projectIds = accountProjects.map((ap) => ap.projectId);
@@ -185,18 +206,14 @@ export class CacheHandler {
       }
       case Tenant.Organization: {
         const organizationProjects =
-          await this.services.organizationProjects.getOrganizationProjects({
+          await this.scopeServices.organizationProjects.getOrganizationProjects({
             organizationId: scope.id,
           });
         projectIds = organizationProjects.map((op) => op.projectId);
         break;
       }
       default:
-        throw new BadRequestError(
-          `Unsupported tenant type: ${scope.tenant}`,
-          'errors:validation.invalid',
-          { field: 'tenant' }
-        );
+        throw new BadRequestError(`Unsupported tenant type: ${scope.tenant}`);
     }
     await this.cache.projects.set(cacheKey, new Set(projectIds));
     return projectIds;
@@ -220,7 +237,7 @@ export class CacheHandler {
       }
 
       case Tenant.Organization: {
-        const organizationRoles = await this.services.organizationRoles.getOrganizationRoles({
+        const organizationRoles = await this.scopeServices.organizationRoles.getOrganizationRoles({
           organizationId: scope.id,
         });
         roleIds = organizationRoles.map((or) => or.roleId);
@@ -232,7 +249,7 @@ export class CacheHandler {
       case Tenant.OrganizationProjectUser:
       case Tenant.AccountProjectUser: {
         const projectId = this.extractProjectIdFromScope(scope);
-        const projectRoles = await this.services.projectRoles.getProjectRoles({
+        const projectRoles = await this.scopeServices.projectRoles.getProjectRoles({
           projectId,
         });
         roleIds = projectRoles.map((pr) => pr.roleId);
@@ -244,8 +261,8 @@ export class CacheHandler {
 
         // Get user roles and project roles, then find intersection
         const [userRoles, projectRoles] = await Promise.all([
-          this.services.userRoles.getUserRoles({ userId }),
-          this.services.projectRoles.getProjectRoles({ projectId }),
+          this.scopeServices.userRoles.getUserRoles({ userId }),
+          this.scopeServices.projectRoles.getProjectRoles({ projectId }),
         ]);
 
         const userRoleIds = new Set(userRoles.map((ur) => ur.roleId));
@@ -259,11 +276,7 @@ export class CacheHandler {
       }
 
       default:
-        throw new BadRequestError(
-          `Unsupported tenant type: ${scope.tenant}`,
-          'errors:validation.invalid',
-          { field: 'tenant' }
-        );
+        throw new BadRequestError(`Unsupported tenant type: ${scope.tenant}`);
     }
 
     await this.cache.roles.set(cacheKey, new Set(roleIds));
@@ -288,7 +301,7 @@ export class CacheHandler {
       }
 
       case Tenant.Organization: {
-        const organizationUsers = await this.services.organizationUsers.getOrganizationUsers({
+        const organizationUsers = await this.scopeServices.organizationUsers.getOrganizationUsers({
           organizationId: scope.id,
         });
         userIds = organizationUsers.map((ou) => ou.userId);
@@ -300,7 +313,7 @@ export class CacheHandler {
       case Tenant.OrganizationProjectUser:
       case Tenant.AccountProjectUser: {
         const projectId = this.extractProjectIdFromScope(scope);
-        const projectUsers = await this.services.projectUsers.getProjectUsers({
+        const projectUsers = await this.scopeServices.projectUsers.getProjectUsers({
           projectId,
         });
         userIds = projectUsers.map((pu) => pu.userId);
@@ -308,11 +321,7 @@ export class CacheHandler {
       }
 
       default:
-        throw new BadRequestError(
-          `Unsupported tenant type: ${scope.tenant}`,
-          'errors:validation.invalid',
-          { field: 'tenant' }
-        );
+        throw new BadRequestError(`Unsupported tenant type: ${scope.tenant}`);
     }
 
     await this.cache.users.set(cacheKey, new Set(userIds));
@@ -337,9 +346,10 @@ export class CacheHandler {
       }
 
       case Tenant.Organization: {
-        const organizationGroups = await this.services.organizationGroups.getOrganizationGroups({
-          organizationId: scope.id,
-        });
+        const organizationGroups =
+          await this.scopeServices.organizationGroups.getOrganizationGroups({
+            organizationId: scope.id,
+          });
         groupIds = organizationGroups.map((og) => og.groupId);
         break;
       }
@@ -349,7 +359,7 @@ export class CacheHandler {
       case Tenant.OrganizationProjectUser:
       case Tenant.AccountProjectUser: {
         const projectId = this.extractProjectIdFromScope(scope);
-        const projectGroups = await this.services.projectGroups.getProjectGroups({
+        const projectGroups = await this.scopeServices.projectGroups.getProjectGroups({
           projectId,
         });
         groupIds = projectGroups.map((pg) => pg.groupId);
@@ -357,11 +367,7 @@ export class CacheHandler {
       }
 
       default:
-        throw new BadRequestError(
-          `Unsupported tenant type: ${scope.tenant}`,
-          'errors:validation.invalid',
-          { field: 'tenant' }
-        );
+        throw new BadRequestError(`Unsupported tenant type: ${scope.tenant}`);
     }
 
     await this.cache.groups.set(cacheKey, new Set(groupIds));
@@ -387,7 +393,7 @@ export class CacheHandler {
 
       case Tenant.Organization: {
         const organizationPermissions =
-          await this.services.organizationPermissions.getOrganizationPermissions({
+          await this.scopeServices.organizationPermissions.getOrganizationPermissions({
             organizationId: scope.id,
           });
         permissionIds = organizationPermissions.map((op) => op.permissionId);
@@ -399,19 +405,16 @@ export class CacheHandler {
       case Tenant.OrganizationProjectUser:
       case Tenant.AccountProjectUser: {
         const projectId = this.extractProjectIdFromScope(scope);
-        const projectPermissions = await this.services.projectPermissions.getProjectPermissions({
-          projectId,
-        });
+        const projectPermissions =
+          await this.scopeServices.projectPermissions.getProjectPermissions({
+            projectId,
+          });
         permissionIds = projectPermissions.map((pp) => pp.permissionId);
         break;
       }
 
       default:
-        throw new BadRequestError(
-          `Unsupported tenant type: ${scope.tenant}`,
-          'errors:validation.invalid',
-          { field: 'tenant' }
-        );
+        throw new BadRequestError(`Unsupported tenant type: ${scope.tenant}`);
     }
 
     await this.cache.permissions.set(cacheKey, new Set(permissionIds));
@@ -433,7 +436,7 @@ export class CacheHandler {
       case Tenant.OrganizationProjectUser:
       case Tenant.AccountProjectUser: {
         const projectId = this.extractProjectIdFromScope(scope);
-        const projectResources = await this.services.projectResources.getProjectResources({
+        const projectResources = await this.scopeServices.projectResources.getProjectResources({
           projectId,
         });
         resourceIds = projectResources.map((pr) => pr.resourceId);
@@ -442,9 +445,7 @@ export class CacheHandler {
 
       default:
         throw new BadRequestError(
-          `Unsupported tenant type: ${scope.tenant}. Resources are only supported at the project level.`,
-          'errors:validation.invalid',
-          { field: 'tenant' }
+          `Unsupported tenant type: ${scope.tenant}. Resources are only supported at the project level.`
         );
     }
 
@@ -463,7 +464,7 @@ export class CacheHandler {
     let tagIds: string[];
     switch (scope.tenant) {
       case Tenant.Account: {
-        const accountTags = await this.services.accountTags.getAccountTags({
+        const accountTags = await this.scopeServices.accountTags.getAccountTags({
           accountId: scope.id,
         });
         tagIds = accountTags.map((at: AccountTag) => at.tagId);
@@ -471,7 +472,7 @@ export class CacheHandler {
       }
 
       case Tenant.Organization: {
-        const organizationTags = await this.services.organizationTags.getOrganizationTags({
+        const organizationTags = await this.scopeServices.organizationTags.getOrganizationTags({
           organizationId: scope.id,
         });
         tagIds = organizationTags.map((ot) => ot.tagId);
@@ -483,7 +484,7 @@ export class CacheHandler {
       case Tenant.OrganizationProjectUser:
       case Tenant.AccountProjectUser: {
         const projectId = this.extractProjectIdFromScope(scope);
-        const projectTags = await this.services.projectTags.getProjectTags({
+        const projectTags = await this.scopeServices.projectTags.getProjectTags({
           projectId,
         });
         tagIds = projectTags.map((pt) => pt.tagId);
@@ -491,11 +492,7 @@ export class CacheHandler {
       }
 
       default:
-        throw new BadRequestError(
-          `Unsupported tenant type: ${scope.tenant}`,
-          'errors:validation.invalid',
-          { field: 'tenant' }
-        );
+        throw new BadRequestError(`Unsupported tenant type: ${scope.tenant}`);
     }
 
     await this.cache.tags.set(cacheKey, new Set(tagIds));
@@ -516,10 +513,11 @@ export class CacheHandler {
       case Tenant.AccountProjectUser:
       case Tenant.OrganizationProjectUser: {
         const { projectId, userId } = this.extractProjectUserFromScope(scope);
-        const projectUserApiKeys = await this.services.projectUserApiKeys.getProjectUserApiKeys({
-          projectId,
-          userId,
-        });
+        const projectUserApiKeys =
+          await this.scopeServices.projectUserApiKeys.getProjectUserApiKeys({
+            projectId,
+            userId,
+          });
         apiKeyIds = projectUserApiKeys.map((pivot) => pivot.apiKeyId);
         break;
       }
@@ -527,7 +525,7 @@ export class CacheHandler {
       case Tenant.AccountProject: {
         const { accountId, projectId } = this.extractAccountProjectFromScope(scope);
         const accountProjectApiKeys =
-          await this.services.accountProjectApiKeys.getAccountProjectApiKeys({
+          await this.scopeServices.accountProjectApiKeys.getAccountProjectApiKeys({
             accountId,
             projectId,
           });
@@ -538,7 +536,7 @@ export class CacheHandler {
       case Tenant.OrganizationProject: {
         const { organizationId, projectId } = this.extractOrganizationProjectFromScope(scope);
         const organizationProjectApiKeys =
-          await this.services.organizationProjectApiKeys.getOrganizationProjectApiKeys({
+          await this.scopeServices.organizationProjectApiKeys.getOrganizationProjectApiKeys({
             organizationId,
             projectId,
           });
@@ -547,11 +545,7 @@ export class CacheHandler {
       }
 
       default:
-        throw new BadRequestError(
-          `Unsupported tenant type: ${scope.tenant}`,
-          'errors:validation.invalid',
-          { field: 'tenant' }
-        );
+        throw new BadRequestError(`Unsupported tenant type: ${scope.tenant}`);
     }
 
     if (this.cache.apiKeys) {

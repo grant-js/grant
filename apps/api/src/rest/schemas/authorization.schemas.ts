@@ -1,8 +1,11 @@
 import { AuthorizationReason } from '@grantjs/schema';
 
 import { z } from '@/lib/zod-openapi.lib';
-import { createSuccessResponseSchema, scopeSchema } from '@/rest/schemas/common.schemas';
-import { jsonSchema } from '@/services/common';
+import {
+  createSuccessResponseSchema,
+  jsonSchema,
+  scopeSchema,
+} from '@/rest/schemas/common.schemas';
 
 export const authorizationReasonEnum = z.enum(
   Object.values(AuthorizationReason) as [AuthorizationReason, ...AuthorizationReason[]]

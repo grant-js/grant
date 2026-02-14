@@ -3,7 +3,7 @@ import { Octokit } from '@octokit/rest';
 
 import { config } from '@/config';
 import { AuthenticationError, ConfigurationError } from '@/lib/errors';
-import { createModuleLogger } from '@/lib/logger';
+import { createLogger } from '@/lib/logger';
 import { generateSecureToken } from '@/lib/token.lib';
 import { validateInput } from '@/services/common';
 
@@ -42,8 +42,10 @@ export interface OAuthState {
   createdAt: number;
 }
 
-export class GitHubOAuthService {
-  private readonly logger = createModuleLogger('GitHubOAuthService');
+import type { IGitHubOAuthService } from '@grantjs/core';
+
+export class GitHubOAuthService implements IGitHubOAuthService {
+  private readonly logger = createLogger('GitHubOAuthService');
   private readonly octokit: Octokit | null = null;
 
   constructor() {
@@ -63,10 +65,7 @@ export class GitHubOAuthService {
       : undefined;
 
     if (!config.githubOAuth.clientId) {
-      throw new ConfigurationError(
-        'GitHub OAuth is not configured',
-        'errors:auth.githubNotConfigured'
-      );
+      throw new ConfigurationError('GitHub OAuth is not configured');
     }
 
     const params = new URLSearchParams({
@@ -86,10 +85,7 @@ export class GitHubOAuthService {
     const validatedCode = validateInput(githubAuthorizationCodeSchema, code, context);
 
     if (!config.githubOAuth.clientId || !config.githubOAuth.clientSecret) {
-      throw new ConfigurationError(
-        'GitHub OAuth is not configured',
-        'errors:auth.githubNotConfigured'
-      );
+      throw new ConfigurationError('GitHub OAuth is not configured');
     }
 
     const redirectUri = config.githubOAuth.callbackUrl;
@@ -123,10 +119,7 @@ export class GitHubOAuthService {
         const message = isGitHubUnavailable
           ? 'GitHub is temporarily unavailable. Please try again in a moment.'
           : 'Failed to exchange authorization code for token';
-        const translationKey = isGitHubUnavailable
-          ? 'errors:auth.githubUnavailable'
-          : 'errors:auth.githubTokenExchangeFailed';
-        throw new AuthenticationError(message, translationKey);
+        throw new AuthenticationError(message);
       }
 
       const data = (await response.json()) as { access_token?: string; error?: string };
@@ -136,17 +129,11 @@ export class GitHubOAuthService {
           msg: 'GitHub OAuth error',
           error: data.error,
         });
-        throw new AuthenticationError(
-          `GitHub OAuth error: ${data.error}`,
-          'errors:auth.githubOAuthError'
-        );
+        throw new AuthenticationError(`GitHub OAuth error: ${data.error}`);
       }
 
       if (!data.access_token) {
-        throw new AuthenticationError(
-          'No access token received from GitHub',
-          'errors:auth.githubNoToken'
-        );
+        throw new AuthenticationError('No access token received from GitHub');
       }
 
       const validatedToken = validateInput(githubAccessTokenSchema, data.access_token, context);
@@ -161,10 +148,7 @@ export class GitHubOAuthService {
         err: error,
       });
 
-      throw new AuthenticationError(
-        'Failed to exchange authorization code',
-        'errors:auth.githubTokenExchangeFailed'
-      );
+      throw new AuthenticationError('Failed to exchange authorization code');
     }
   }
 
@@ -174,10 +158,7 @@ export class GitHubOAuthService {
     const validatedAccessToken = validateInput(githubAccessTokenSchema, accessToken, context);
 
     if (!this.octokit) {
-      throw new ConfigurationError(
-        'GitHub OAuth is not configured',
-        'errors:auth.githubNotConfigured'
-      );
+      throw new ConfigurationError('GitHub OAuth is not configured');
     }
 
     try {
@@ -202,7 +183,7 @@ export class GitHubOAuthService {
       const avatarUrl =
         typeof user.avatar_url === 'string' && user.avatar_url.startsWith('http')
           ? user.avatar_url
-          : 'https://github.com/identicons/placeholder';
+          : config.githubOAuth.defaultAvatarUrl;
 
       const userInfo = {
         id: user.id,
@@ -224,14 +205,10 @@ export class GitHubOAuthService {
         cause: causeMessage,
       });
 
-      const authError = new AuthenticationError(
+      throw new AuthenticationError(
         'Failed to fetch user information from GitHub',
-        'errors:auth.githubUserInfoFailed'
+        error instanceof Error ? error : undefined
       );
-      if (error instanceof Error) {
-        (authError as Error & { cause?: Error }).cause = error;
-      }
-      throw authError;
     }
   }
 

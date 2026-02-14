@@ -9,12 +9,17 @@ import {
   type RelationsConfig,
 } from '@/repositories/common';
 
+import type { ISigningKeyRepository } from '@grantjs/core';
+
 export interface SigningKeyPublic {
   kid: string;
   publicKeyPem: string;
 }
 
-export class SigningKeyRepository extends EntityRepository<SigningKeyModel, SigningKey> {
+export class SigningKeyRepository
+  extends EntityRepository<SigningKeyModel, SigningKey>
+  implements ISigningKeyRepository
+{
   protected table = signingKeys;
   protected schemaName = 'signingKeys' as const;
   protected searchFields: Array<keyof SigningKeyModel> = ['kid'];

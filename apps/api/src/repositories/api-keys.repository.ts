@@ -10,7 +10,7 @@ import {
 import { eq } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { SelectedFields } from '@/services/common';
+import { SelectedFields } from '@/types';
 
 import {
   BaseUpdateArgs,
@@ -19,7 +19,12 @@ import {
   RelationsConfig,
 } from './common/EntityRepository';
 
-export class ApiKeyRepository extends EntityRepository<ApiKeyModel, ApiKey> {
+import type { IApiKeyRepository } from '@grantjs/core';
+
+export class ApiKeyRepository
+  extends EntityRepository<ApiKeyModel, ApiKey>
+  implements IApiKeyRepository
+{
   protected table = apiKeys;
   protected schemaName = 'apiKeys' as const;
   protected searchFields: Array<keyof ApiKeyModel> = Object.values(ApiKeySearchableField);

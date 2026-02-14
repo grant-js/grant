@@ -17,10 +17,12 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';
 
-export class OrganizationUserRepository extends PivotRepository<
-  OrganizationUserModel,
-  OrganizationUser
-> {
+import type { IOrganizationUserRepository } from '@grantjs/core';
+
+export class OrganizationUserRepository
+  extends PivotRepository<OrganizationUserModel, OrganizationUser>
+  implements IOrganizationUserRepository
+{
   protected table = organizationUsers;
   protected uniqueIndexFields: Array<keyof OrganizationUserModel> = ['organizationId', 'userId'];
 

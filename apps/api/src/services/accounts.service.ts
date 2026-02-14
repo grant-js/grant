@@ -1,5 +1,4 @@
 import { GrantAuth } from '@grantjs/core';
-import { accountAuditLogs, DbSchema } from '@grantjs/database';
 import {
   Account,
   AccountPage,
@@ -10,7 +9,7 @@ import {
 
 import { BadRequestError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { SelectedFields } from '@/types';
 
 import {
   accountSchema,
@@ -19,25 +18,23 @@ import {
   queryAccountsInputSchema,
 } from './accounts.schemas';
 import {
-  AuditService,
   createDynamicPaginatedSchema,
   createDynamicSingleSchema,
-  SelectedFields,
   validateInput,
   validateOutput,
 } from './common';
 
-export class AccountService extends AuditService {
+import type { IAuditLogger, IAccountRepository, IAccountService } from '@grantjs/core';
+
+export class AccountService implements IAccountService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(accountAuditLogs, 'accountId', user, db);
-  }
+    private readonly accountRepository: IAccountRepository,
+    private readonly user: GrantAuth | null,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async getAccount(accountId: string, transaction?: Transaction): Promise<Account> {
-    const existingAccounts = await this.repositories.accountRepository.getAccounts(
+    const existingAccounts = await this.accountRepository.getAccounts(
       {
         ids: [accountId],
         limit: 1,
@@ -46,7 +43,7 @@ export class AccountService extends AuditService {
     );
 
     if (existingAccounts.accounts.length === 0) {
-      throw new NotFoundError('Account not found', 'errors:notFound.account');
+      throw new NotFoundError('Account');
     }
 
     return existingAccounts.accounts[0];
@@ -60,7 +57,7 @@ export class AccountService extends AuditService {
 
     validateInput(queryAccountsInputSchema, params, context);
 
-    const result = await this.repositories.accountRepository.getAccounts(params, transaction);
+    const result = await this.accountRepository.getAccounts(params, transaction);
 
     const transformedResult = {
       items: result.accounts,
@@ -80,10 +77,7 @@ export class AccountService extends AuditService {
   public async getOwnerAccounts(transaction?: Transaction): Promise<Account[]> {
     const ownerId = this.user?.userId;
     if (!ownerId) {
-      throw new BadRequestError(
-        'User must be authenticated to get accounts by owner ID',
-        'errors:auth.unauthorized'
-      );
+      throw new BadRequestError('User must be authenticated to get accounts by owner ID');
     }
     return await this.getAccountsByOwnerId(ownerId, transaction);
   }
@@ -92,14 +86,14 @@ export class AccountService extends AuditService {
     ownerId: string,
     transaction?: Transaction
   ): Promise<Account[]> {
-    return await this.repositories.accountRepository.getAccountsByOwnerId(ownerId, transaction);
+    return await this.accountRepository.getAccountsByOwnerId(ownerId, transaction);
   }
 
   public async getExpiredAccounts(
     retentionDate: Date,
     transaction?: Transaction
   ): Promise<Array<{ id: string; ownerId: string }>> {
-    return await this.repositories.accountRepository.getExpiredAccounts(retentionDate, transaction);
+    return await this.accountRepository.getExpiredAccounts(retentionDate, transaction);
   }
 
   public async createAccount(
@@ -110,7 +104,7 @@ export class AccountService extends AuditService {
     const validatedParams = validateInput(createAccountInputSchema, params, context);
     const { type, ownerId } = validatedParams;
 
-    const createdAccount = await this.repositories.accountRepository.createAccount(
+    const createdAccount = await this.accountRepository.createAccount(
       {
         type,
         ownerId,
@@ -118,7 +112,7 @@ export class AccountService extends AuditService {
       transaction
     );
 
-    const accountsResult = await this.repositories.accountRepository.getAccounts(
+    const accountsResult = await this.accountRepository.getAccounts(
       {
         ids: [createdAccount.id],
         limit: 1,
@@ -129,11 +123,11 @@ export class AccountService extends AuditService {
 
     const account = accountsResult.accounts[0];
     if (!account) {
-      throw new NotFoundError('Account not found after creation', 'errors:notFound.account');
+      throw new NotFoundError('Account');
     }
 
     if (!account.owner) {
-      throw new NotFoundError('Owner not loaded for account', 'errors:notFound.user');
+      throw new NotFoundError('User');
     }
 
     const newValues = {
@@ -147,7 +141,7 @@ export class AccountService extends AuditService {
       context,
     };
 
-    await this.logCreate(account.id, newValues, metadata, transaction);
+    await this.audit.logCreate(account.id, newValues, metadata, transaction);
 
     const validatedAccount = validateOutput(
       createDynamicSingleSchema(accountSchema),
@@ -192,19 +186,25 @@ export class AccountService extends AuditService {
     // subsequent DELETE will trigger ON DELETE SET NULL on the audit row, but the
     // old data is preserved in the oldValues JSON column.
     if (isHardDelete) {
-      await this.logHardDelete(oldAccount.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(oldAccount.id, oldValues, metadata, transaction);
     }
 
     const deletedAccount = isHardDelete
-      ? await this.repositories.accountRepository.hardDeleteAccount(id, transaction)
-      : await this.repositories.accountRepository.softDeleteAccount(id, transaction);
+      ? await this.accountRepository.hardDeleteAccount(id, transaction)
+      : await this.accountRepository.softDeleteAccount(id, transaction);
 
     if (!isHardDelete) {
       const newValues = {
         ...oldValues,
         deletedAt: deletedAccount.deletedAt,
       };
-      await this.logSoftDelete(deletedAccount.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(
+        deletedAccount.id,
+        oldValues,
+        newValues,
+        metadata,
+        transaction
+      );
     }
 
     return validateOutput(createDynamicSingleSchema(accountSchema), deletedAccount, context);

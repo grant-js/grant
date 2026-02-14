@@ -37,9 +37,14 @@ import {
   EntityRepository,
   RelationsConfig,
 } from '@/repositories/common';
-import { SelectedFields } from '@/services/common';
+import { SelectedFields } from '@/types';
 
-export class ProjectRepository extends EntityRepository<ProjectModel, Project> {
+import type { IProjectRepository } from '@grantjs/core';
+
+export class ProjectRepository
+  extends EntityRepository<ProjectModel, Project>
+  implements IProjectRepository
+{
   protected table = projects;
   protected schemaName = 'projects' as const;
   protected searchFields: Array<keyof ProjectModel> = Object.values(ProjectSearchableField);

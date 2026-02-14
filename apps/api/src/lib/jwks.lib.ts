@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 
+import { ValidationError } from '@grantjs/core';
 import { Scope, Tenant } from '@grantjs/schema';
 
 import { config } from '@/config';
@@ -37,7 +38,7 @@ export function publicKeyPemToJwk(
   };
 
   if (raw.kty !== 'RSA' || !raw.n || !raw.e) {
-    throw new Error('Key is not a valid RSA public key');
+    throw new ValidationError('Key is not a valid RSA public key');
   }
 
   return {

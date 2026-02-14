@@ -1,6 +1,3 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema } from '@grantjs/database';
-import { projectTagAuditLogs } from '@grantjs/database';
 import {
   ProjectTag,
   AddProjectTagInput,
@@ -10,15 +7,9 @@ import {
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
-import {
-  AuditService,
-  validateInput,
-  validateOutput,
-  createDynamicSingleSchema,
-  DeleteParams,
-} from './common';
+import { validateInput, validateOutput, createDynamicSingleSchema } from './common';
 import {
   getProjectTagsParamsSchema,
   projectTagSchema,
@@ -28,17 +19,24 @@ import {
   updateProjectTagInputSchema,
 } from './project-tags.schemas';
 
-export class ProjectTagService extends AuditService {
+import type {
+  IAuditLogger,
+  IProjectRepository,
+  IProjectTagRepository,
+  IProjectTagService,
+  ITagRepository,
+} from '@grantjs/core';
+
+export class ProjectTagService implements IProjectTagService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(projectTagAuditLogs, 'projectTagId', user, db);
-  }
+    private readonly projectRepository: IProjectRepository,
+    private readonly tagRepository: ITagRepository,
+    private readonly projectTagRepository: IProjectTagRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
-    const projects = await this.repositories.projectRepository.getProjects(
+    const projects = await this.projectRepository.getProjects(
       {
         ids: [projectId],
         limit: 1,
@@ -47,12 +45,12 @@ export class ProjectTagService extends AuditService {
     );
 
     if (projects.projects.length === 0) {
-      throw new NotFoundError('Project not found', 'errors:notFound.project');
+      throw new NotFoundError('Project');
     }
   }
 
   private async tagExists(tagId: string, transaction?: Transaction): Promise<void> {
-    const tags = await this.repositories.tagRepository.getTags(
+    const tags = await this.tagRepository.getTags(
       {
         ids: [tagId],
         limit: 1,
@@ -61,7 +59,7 @@ export class ProjectTagService extends AuditService {
     );
 
     if (tags.tags.length === 0) {
-      throw new NotFoundError('Tag not found', 'errors:notFound.tag');
+      throw new NotFoundError('Tag');
     }
   }
 
@@ -72,7 +70,7 @@ export class ProjectTagService extends AuditService {
   ): Promise<boolean> {
     await this.projectExists(projectId, transaction);
     await this.tagExists(tagId, transaction);
-    const existingProjectTags = await this.repositories.projectTagRepository.getProjectTags(
+    const existingProjectTags = await this.projectTagRepository.getProjectTags(
       { projectId },
       transaction
     );
@@ -89,10 +87,7 @@ export class ProjectTagService extends AuditService {
 
     await this.projectExists(validatedParams.projectId);
 
-    const result = await this.repositories.projectTagRepository.getProjectTags(
-      validatedParams,
-      transaction
-    );
+    const result = await this.projectTagRepository.getProjectTags(validatedParams, transaction);
     return validateOutput(createDynamicSingleSchema(projectTagSchema).array(), result, context);
   }
 
@@ -103,10 +98,7 @@ export class ProjectTagService extends AuditService {
     const context = 'ProjectTagService.getProjectTagIntersection';
     validateInput(getProjectTagsIntersectionSchema, { projectIds, tagIds }, context);
 
-    const result = await this.repositories.projectTagRepository.getProjectTagIntersection(
-      projectIds,
-      tagIds
-    );
+    const result = await this.projectTagRepository.getProjectTagIntersection(projectIds, tagIds);
     return validateOutput(createDynamicSingleSchema(projectTagSchema).array(), result, context);
   }
 
@@ -121,13 +113,10 @@ export class ProjectTagService extends AuditService {
     const hasTag = await this.projectHasTag(projectId, tagId, transaction);
 
     if (hasTag) {
-      throw new ConflictError('Project already has this tag', 'errors:conflict.duplicateEntry', {
-        resource: 'ProjectTag',
-        field: 'tagId',
-      });
+      throw new ConflictError('Project already has this tag', 'ProjectTag', 'tagId');
     }
 
-    const projectTag = await this.repositories.projectTagRepository.addProjectTag(
+    const projectTag = await this.projectTagRepository.addProjectTag(
       { projectId, tagId, isPrimary },
       transaction
     );
@@ -144,7 +133,7 @@ export class ProjectTagService extends AuditService {
       context,
     };
 
-    await this.logCreate(projectTag.id, newValues, metadata, transaction);
+    await this.audit.logCreate(projectTag.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(projectTagSchema), projectTag, context);
   }
@@ -157,12 +146,12 @@ export class ProjectTagService extends AuditService {
     const validatedParams = validateInput(updateProjectTagInputSchema, params, context);
     const { projectId, tagId, isPrimary } = validatedParams;
 
-    const projectTag = await this.repositories.projectTagRepository.getProjectTag(
+    const projectTag = await this.projectTagRepository.getProjectTag(
       { projectId, tagId },
       transaction
     );
 
-    const updatedProjectTag = await this.repositories.projectTagRepository.updateProjectTag(
+    const updatedProjectTag = await this.projectTagRepository.updateProjectTag(
       { projectId, tagId, isPrimary },
       transaction
     );
@@ -189,7 +178,7 @@ export class ProjectTagService extends AuditService {
       context,
     };
 
-    await this.logUpdate(updatedProjectTag.id, oldValues, newValues, metadata, transaction);
+    await this.audit.logUpdate(updatedProjectTag.id, oldValues, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(projectTagSchema), updatedProjectTag, context);
   }
@@ -206,20 +195,14 @@ export class ProjectTagService extends AuditService {
     const hasTag = await this.projectHasTag(projectId, tagId, transaction);
 
     if (!hasTag) {
-      throw new NotFoundError('Project does not have this tag', 'errors:notFound.tag');
+      throw new NotFoundError('Tag');
     }
 
     const isHardDelete = hardDelete === true;
 
     const projectTag = isHardDelete
-      ? await this.repositories.projectTagRepository.hardDeleteProjectTag(
-          { projectId, tagId },
-          transaction
-        )
-      : await this.repositories.projectTagRepository.softDeleteProjectTag(
-          { projectId, tagId },
-          transaction
-        );
+      ? await this.projectTagRepository.hardDeleteProjectTag({ projectId, tagId }, transaction)
+      : await this.projectTagRepository.softDeleteProjectTag({ projectId, tagId }, transaction);
 
     const oldValues = {
       id: projectTag.id,
@@ -240,9 +223,9 @@ export class ProjectTagService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(projectTag.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(projectTag.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(projectTag.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(projectTag.id, oldValues, newValues, metadata, transaction);
     }
 
     return validateOutput(createDynamicSingleSchema(projectTagSchema), projectTag, context);

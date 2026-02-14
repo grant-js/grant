@@ -13,7 +13,7 @@ export function isAuthenticatedRest(req: Request): boolean {
 
 export function authenticateRestRoute(req: Request, res: Response, next: NextFunction) {
   if (!isAuthenticatedRest(req)) {
-    throw new AuthenticationError('Unauthorized', 'errors.auth.unauthorized');
+    throw new AuthenticationError('Unauthorized');
   }
   next();
 }
@@ -53,7 +53,7 @@ export function authenticateGraphQLResolver<
     info: GraphQLResolveInfo
   ): Promise<TResult> => {
     if (!isAuthenticatedGraphQL(context as GraphqlContext)) {
-      throw new AuthenticationError('Unauthorized', 'errors.auth.unauthorized');
+      throw new AuthenticationError('Unauthorized');
     }
 
     return await resolverFn(parent, args, context, info);

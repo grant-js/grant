@@ -17,7 +17,12 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';
 
-export class ProjectUserRepository extends PivotRepository<ProjectUserModel, ProjectUser> {
+import type { IProjectUserRepository } from '@grantjs/core';
+
+export class ProjectUserRepository
+  extends PivotRepository<ProjectUserModel, ProjectUser>
+  implements IProjectUserRepository
+{
   protected table = projectUsers;
   protected uniqueIndexFields: Array<keyof ProjectUserModel> = ['projectId', 'userId'];
 

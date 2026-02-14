@@ -1,19 +1,10 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema } from '@grantjs/database';
-import { projectRoleAuditLogs } from '@grantjs/database';
 import { ProjectRole, RemoveProjectRoleInput, AddProjectRoleInput } from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
-import {
-  AuditService,
-  validateInput,
-  validateOutput,
-  createDynamicSingleSchema,
-  DeleteParams,
-} from './common';
+import { validateInput, validateOutput, createDynamicSingleSchema } from './common';
 import {
   getProjectRolesParamsSchema,
   projectRoleSchema,
@@ -21,34 +12,38 @@ import {
   removeProjectRoleInputSchema,
 } from './project-roles.schemas';
 
-export class ProjectRoleService extends AuditService {
+import type {
+  IAuditLogger,
+  IProjectRepository,
+  IProjectRoleRepository,
+  IProjectRoleService,
+  IRoleRepository,
+} from '@grantjs/core';
+
+export class ProjectRoleService implements IProjectRoleService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(projectRoleAuditLogs, 'projectRoleId', user, db);
-  }
+    private readonly projectRepository: IProjectRepository,
+    private readonly roleRepository: IRoleRepository,
+    private readonly projectRoleRepository: IProjectRoleRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
-    const projects = await this.repositories.projectRepository.getProjects(
+    const projects = await this.projectRepository.getProjects(
       { ids: [projectId], limit: 1 },
       transaction
     );
 
     if (projects.projects.length === 0) {
-      throw new NotFoundError('Project not found', 'errors:notFound.project');
+      throw new NotFoundError('Project');
     }
   }
 
   private async roleExists(roleId: string, transaction?: Transaction): Promise<void> {
-    const roles = await this.repositories.roleRepository.getRoles(
-      { ids: [roleId], limit: 1 },
-      transaction
-    );
+    const roles = await this.roleRepository.getRoles({ ids: [roleId], limit: 1 }, transaction);
 
     if (roles.roles.length === 0) {
-      throw new NotFoundError('Role not found', 'errors:notFound.role');
+      throw new NotFoundError('Role');
     }
   }
 
@@ -59,7 +54,7 @@ export class ProjectRoleService extends AuditService {
   ): Promise<boolean> {
     await this.projectExists(projectId, transaction);
     await this.roleExists(roleId, transaction);
-    const existingProjectRoles = await this.repositories.projectRoleRepository.getProjectRoles(
+    const existingProjectRoles = await this.projectRoleRepository.getProjectRoles(
       { projectId },
       transaction
     );
@@ -76,10 +71,7 @@ export class ProjectRoleService extends AuditService {
 
     await this.projectExists(validatedParams.projectId, transaction);
 
-    const result = await this.repositories.projectRoleRepository.getProjectRoles(
-      validatedParams,
-      transaction
-    );
+    const result = await this.projectRoleRepository.getProjectRoles(validatedParams, transaction);
     return validateOutput(createDynamicSingleSchema(projectRoleSchema).array(), result, context);
   }
 
@@ -94,13 +86,10 @@ export class ProjectRoleService extends AuditService {
     const hasRole = await this.projectHasRole(projectId, roleId, transaction);
 
     if (hasRole) {
-      throw new ConflictError('Project already has this role', 'errors:conflict.duplicateEntry', {
-        resource: 'ProjectRole',
-        field: 'roleId',
-      });
+      throw new ConflictError('Project already has this role', 'ProjectRole', 'roleId');
     }
 
-    const projectRole = await this.repositories.projectRoleRepository.addProjectRole(
+    const projectRole = await this.projectRoleRepository.addProjectRole(
       { projectId, roleId },
       transaction
     );
@@ -117,7 +106,7 @@ export class ProjectRoleService extends AuditService {
       context,
     };
 
-    await this.logCreate(projectRole.id, newValues, metadata, transaction);
+    await this.audit.logCreate(projectRole.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(projectRoleSchema), projectRole, context);
   }
@@ -134,20 +123,14 @@ export class ProjectRoleService extends AuditService {
     const hasRole = await this.projectHasRole(projectId, roleId, transaction);
 
     if (!hasRole) {
-      throw new NotFoundError('Project does not have this role', 'errors:notFound.role');
+      throw new NotFoundError('Role');
     }
 
     const isHardDelete = hardDelete === true;
 
     const projectRole = isHardDelete
-      ? await this.repositories.projectRoleRepository.hardDeleteProjectRole(
-          { projectId, roleId },
-          transaction
-        )
-      : await this.repositories.projectRoleRepository.softDeleteProjectRole(
-          { projectId, roleId },
-          transaction
-        );
+      ? await this.projectRoleRepository.hardDeleteProjectRole({ projectId, roleId }, transaction)
+      : await this.projectRoleRepository.softDeleteProjectRole({ projectId, roleId }, transaction);
 
     const oldValues = {
       id: projectRole.id,
@@ -168,9 +151,9 @@ export class ProjectRoleService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(projectRole.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(projectRole.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(projectRole.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(projectRole.id, oldValues, newValues, metadata, transaction);
     }
 
     return validateOutput(createDynamicSingleSchema(projectRoleSchema), projectRole, context);

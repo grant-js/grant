@@ -1,5 +1,3 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, organizationUsersAuditLogs } from '@grantjs/database';
 import {
   AddOrganizationUserInput,
   OrganizationUser,
@@ -8,15 +6,9 @@ import {
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
-import {
-  AuditService,
-  DeleteParams,
-  createDynamicSingleSchema,
-  validateInput,
-  validateOutput,
-} from './common';
+import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 import {
   addOrganizationUserParamsSchema,
   getOrganizationUsersParamsSchema,
@@ -24,20 +16,27 @@ import {
   removeOrganizationUserParamsSchema,
 } from './organization-users.schemas';
 
-export class OrganizationUserService extends AuditService {
+import type {
+  IAuditLogger,
+  IOrganizationRepository,
+  IOrganizationUserRepository,
+  IOrganizationUserService,
+  IUserRepository,
+} from '@grantjs/core';
+
+export class OrganizationUserService implements IOrganizationUserService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(organizationUsersAuditLogs, 'organizationUserId', user, db);
-  }
+    private readonly organizationRepository: IOrganizationRepository,
+    private readonly userRepository: IUserRepository,
+    private readonly organizationUserRepository: IOrganizationUserRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async organizationExists(
     organizationId: string,
     transaction?: Transaction
   ): Promise<void> {
-    const organizations = await this.repositories.organizationRepository.getOrganizations(
+    const organizations = await this.organizationRepository.getOrganizations(
       {
         ids: [organizationId],
         limit: 1,
@@ -46,12 +45,12 @@ export class OrganizationUserService extends AuditService {
     );
 
     if (organizations.organizations.length === 0) {
-      throw new NotFoundError('Organization not found', 'errors:notFound.organization');
+      throw new NotFoundError('Organization');
     }
   }
 
   private async userExists(userId: string, transaction?: Transaction): Promise<void> {
-    const users = await this.repositories.userRepository.getUsers(
+    const users = await this.userRepository.getUsers(
       {
         ids: [userId],
         limit: 1,
@@ -60,7 +59,7 @@ export class OrganizationUserService extends AuditService {
     );
 
     if (users.users.length === 0) {
-      throw new NotFoundError('User not found', 'errors:notFound.user');
+      throw new NotFoundError('User');
     }
   }
 
@@ -71,13 +70,12 @@ export class OrganizationUserService extends AuditService {
   ): Promise<boolean> {
     await this.organizationExists(organizationId, transaction);
     await this.userExists(userId, transaction);
-    const existingOrganizationUsers =
-      await this.repositories.organizationUserRepository.getOrganizationUsers(
-        {
-          organizationId,
-        },
-        transaction
-      );
+    const existingOrganizationUsers = await this.organizationUserRepository.getOrganizationUsers(
+      {
+        organizationId,
+      },
+      transaction
+    );
 
     return existingOrganizationUsers.some((ou) => ou.userId === userId);
   }
@@ -94,7 +92,7 @@ export class OrganizationUserService extends AuditService {
 
     await this.organizationExists(organizationId, transaction);
 
-    const result = await this.repositories.organizationUserRepository.getOrganizationUsers(
+    const result = await this.organizationUserRepository.getOrganizationUsers(
       {
         organizationId,
       },
@@ -118,14 +116,10 @@ export class OrganizationUserService extends AuditService {
     const hasUser = await this.organizationHasUser(organizationId, userId, transaction);
 
     if (hasUser) {
-      throw new ConflictError(
-        'Organization already has this user',
-        'errors:conflict.duplicateEntry',
-        { resource: 'OrganizationUser', field: 'userId' }
-      );
+      throw new ConflictError('Organization already has this user', 'OrganizationUser', 'userId');
     }
 
-    const organizationUser = await this.repositories.organizationUserRepository.addOrganizationUser(
+    const organizationUser = await this.organizationUserRepository.addOrganizationUser(
       { organizationId, userId },
       transaction
     );
@@ -142,7 +136,7 @@ export class OrganizationUserService extends AuditService {
       context,
     };
 
-    await this.logCreate(organizationUser.id, newValues, metadata, transaction);
+    await this.audit.logCreate(organizationUser.id, newValues, metadata, transaction);
 
     return validateOutput(
       createDynamicSingleSchema(organizationUserSchema),
@@ -162,17 +156,17 @@ export class OrganizationUserService extends AuditService {
     const hasUser = await this.organizationHasUser(organizationId, userId, transaction);
 
     if (!hasUser) {
-      throw new NotFoundError('Organization does not have this user', 'errors:notFound.user');
+      throw new NotFoundError('User');
     }
 
     const isHardDelete = hardDelete === true;
 
     const organizationUser = isHardDelete
-      ? await this.repositories.organizationUserRepository.hardDeleteOrganizationUser(
+      ? await this.organizationUserRepository.hardDeleteOrganizationUser(
           validatedParams,
           transaction
         )
-      : await this.repositories.organizationUserRepository.softDeleteOrganizationUser(
+      : await this.organizationUserRepository.softDeleteOrganizationUser(
           validatedParams,
           transaction
         );
@@ -196,9 +190,15 @@ export class OrganizationUserService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(organizationUser.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(organizationUser.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(organizationUser.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(
+        organizationUser.id,
+        oldValues,
+        newValues,
+        metadata,
+        transaction
+      );
     }
 
     return validateOutput(
@@ -219,11 +219,10 @@ export class OrganizationUserService extends AuditService {
       joinedAt: Date;
     }>
   > {
-    const memberships =
-      await this.repositories.organizationUserRepository.getUserOrganizationMemberships(
-        userId,
-        transaction
-      );
+    const memberships = await this.organizationUserRepository.getUserOrganizationMemberships(
+      userId,
+      transaction
+    );
 
     return memberships.map((m) => ({
       organizationId: m.organizationId,

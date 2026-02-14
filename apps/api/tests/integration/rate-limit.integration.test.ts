@@ -12,11 +12,11 @@
  * For load testing (autocannon, k6), see docs/development/testing.md.
  */
 
+import { InMemoryCacheAdapter } from '@grantjs/cache/memory';
 import express from 'express';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { InMemoryCacheAdapter } from '@/lib/cache/adapters/in-memory-cache.adapter';
 import { rateLimitMiddleware } from '@/middleware/rate-limit.middleware';
 
 type MockSecurity = {

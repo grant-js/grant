@@ -1,5 +1,4 @@
-import { RoleModel } from '@grantjs/database';
-import { QueryResolvers } from '@grantjs/schema';
+import { QueryResolvers, Role } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
 import { getDirectFieldSelection } from '@/lib/field-selection.lib';
@@ -10,7 +9,7 @@ export const getRolesResolver: QueryResolvers<GraphqlContext>['roles'] = async (
   context,
   info
 ) => {
-  const requestedFields = getDirectFieldSelection<keyof RoleModel>(info, ['roles']);
+  const requestedFields = getDirectFieldSelection<keyof Role>(info, ['roles']);
 
   const roles = await context.handlers.roles.getRoles({
     scope,

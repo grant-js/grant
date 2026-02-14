@@ -5,7 +5,7 @@ import { config } from '@/config';
 import { authenticateRestRoute } from '@/lib/authorization';
 import { AuthenticationError } from '@/lib/errors';
 import { getRefreshTokenFromCookie } from '@/lib/headers.lib';
-import { createModuleLogger } from '@/lib/logger';
+import { createLogger } from '@/lib/logger';
 import { validate, validateBody, validateQuery } from '@/middleware/validation.middleware';
 import {
   cliCallbackRequestSchema,
@@ -35,7 +35,7 @@ import { clearRefreshTokenCookie, setRefreshTokenCookie } from '@/rest/utils/ref
 import { sendSuccessResponse } from '@/rest/utils/response';
 import { RequestContext } from '@/types';
 
-const logger = createModuleLogger('AuthRoutes');
+const logger = createLogger('AuthRoutes');
 
 export function createAuthRoutes(context: RequestContext) {
   const router = Router();
@@ -89,10 +89,7 @@ export function createAuthRoutes(context: RequestContext) {
   router.post('/refresh', async (req: TypedRequest<Record<string, never>>, res: Response) => {
     const refreshTokenFromCookie = getRefreshTokenFromCookie(req);
     if (!refreshTokenFromCookie) {
-      throw new AuthenticationError(
-        'Invalid or expired refresh token',
-        'errors:auth.invalidRefreshToken'
-      );
+      throw new AuthenticationError('Invalid or expired refresh token');
     }
     try {
       const result = await context.handlers.auth.refreshSession(
@@ -105,10 +102,7 @@ export function createAuthRoutes(context: RequestContext) {
     } catch (err) {
       clearRefreshTokenCookie(res);
       if (err instanceof AuthenticationError) throw err;
-      throw new AuthenticationError(
-        'Invalid or expired refresh token',
-        'errors:auth.invalidRefreshToken'
-      );
+      throw new AuthenticationError('Invalid or expired refresh token');
     }
   });
 

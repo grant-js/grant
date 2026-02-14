@@ -89,7 +89,7 @@ export function createUserRoutes(context: RequestContext) {
       });
 
       if (result.users.length === 0) {
-        throw new NotFoundError('User not found', 'errors:notFound.user');
+        throw new NotFoundError('User');
       }
 
       sendSuccessResponse(res, result.users[0]);

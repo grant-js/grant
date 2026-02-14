@@ -1,4 +1,3 @@
-import { DbSchema } from '@grantjs/database';
 import {
   MutationCreateProjectArgs,
   MutationDeleteProjectArgs,
@@ -11,19 +10,42 @@ import {
 
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
-import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
-import { Services } from '@/services';
-import { DeleteParams, SelectedFields } from '@/services/common';
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { DeleteParams, SelectedFields } from '@/types';
 
-import { CacheHandler } from './base/cache-handler';
+import { CacheHandler, type ScopeServices } from './base/cache-handler';
+
+import type {
+  IAccountProjectService,
+  IAccountProjectTagService,
+  IOrganizationProjectService,
+  IOrganizationProjectTagService,
+  IProjectGroupService,
+  IProjectPermissionService,
+  IProjectRoleService,
+  IProjectService,
+  IProjectTagService,
+  IProjectUserService,
+  ITransactionalConnection,
+} from '@grantjs/core';
 
 export class ProjectHandler extends CacheHandler {
   constructor(
-    readonly cache: IEntityCacheAdapter,
-    readonly services: Services,
-    readonly db: DbSchema
+    private readonly organizationProjectTags: IOrganizationProjectTagService,
+    private readonly accountProjectTags: IAccountProjectTagService,
+    private readonly projects: IProjectService,
+    private readonly accountProjects: IAccountProjectService,
+    private readonly organizationProjects: IOrganizationProjectService,
+    private readonly projectTags: IProjectTagService,
+    private readonly projectPermissions: IProjectPermissionService,
+    private readonly projectGroups: IProjectGroupService,
+    private readonly projectRoles: IProjectRoleService,
+    private readonly projectUsers: IProjectUserService,
+    cache: IEntityCacheAdapter,
+    scopeServices: ScopeServices,
+    private readonly db: ITransactionalConnection<Transaction>
   ) {
-    super(cache, services);
+    super(cache, scopeServices);
   }
 
   public async getProjects(
@@ -39,7 +61,7 @@ export class ProjectHandler extends CacheHandler {
           {
             const organizationId = scope.id;
             const organizationProjectTags =
-              await this.services.organizationProjectTags.getOrganizationProjectTagIntersection(
+              await this.organizationProjectTags.getOrganizationProjectTagIntersection(
                 organizationId,
                 projectIds,
                 tagIds
@@ -55,7 +77,7 @@ export class ProjectHandler extends CacheHandler {
           {
             const accountId = scope.id;
             const accountProjectTags =
-              await this.services.accountProjectTags.getAccountProjectTagIntersection(
+              await this.accountProjectTags.getAccountProjectTagIntersection(
                 accountId,
                 projectIds,
                 tagIds
@@ -68,9 +90,7 @@ export class ProjectHandler extends CacheHandler {
           }
           break;
         default:
-          throw new BadRequestError('Invalid scope', 'errors:validation.invalid', {
-            field: 'scope',
-          });
+          throw new BadRequestError('Invalid scope');
       }
     }
 
@@ -86,7 +106,7 @@ export class ProjectHandler extends CacheHandler {
       };
     }
 
-    const projectsResult = await this.services.projects.getProjects({
+    const projectsResult = await this.projects.getProjects({
       ids: projectIds,
       page,
       limit,
@@ -99,30 +119,25 @@ export class ProjectHandler extends CacheHandler {
   }
 
   public async createProject(params: MutationCreateProjectArgs): Promise<Project> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { input } = params;
       const { name, description, scope, tagIds, primaryTagId } = input;
 
-      const project = await this.services.projects.createProject({ name, description }, tx);
+      const project = await this.projects.createProject({ name, description }, tx);
       const { id: projectId } = project;
 
       switch (scope.tenant) {
         case Tenant.Account:
-          await this.services.accountProjects.addAccountProject(
-            { accountId: scope.id, projectId },
-            tx
-          );
+          await this.accountProjects.addAccountProject({ accountId: scope.id, projectId }, tx);
           break;
         case Tenant.Organization:
-          await this.services.organizationProjects.addOrganizationProject(
+          await this.organizationProjects.addOrganizationProject(
             { organizationId: scope.id, projectId },
             tx
           );
           break;
         default:
-          throw new BadRequestError('Invalid scope', 'errors:validation.invalid', {
-            field: 'scope',
-          });
+          throw new BadRequestError('Invalid scope');
       }
 
       if (tagIds && tagIds.length > 0) {
@@ -130,19 +145,17 @@ export class ProjectHandler extends CacheHandler {
           tagIds.map((tagId) => {
             switch (scope.tenant) {
               case Tenant.Organization:
-                return this.services.organizationProjectTags.addOrganizationProjectTag(
+                return this.organizationProjectTags.addOrganizationProjectTag(
                   { organizationId: scope.id, projectId, tagId, isPrimary: tagId === primaryTagId },
                   tx
                 );
               case Tenant.Account:
-                return this.services.accountProjectTags.addAccountProjectTag(
+                return this.accountProjectTags.addAccountProjectTag(
                   { accountId: scope.id, projectId, tagId, isPrimary: tagId === primaryTagId },
                   tx
                 );
               default:
-                throw new BadRequestError('Invalid scope', 'errors:validation.invalid', {
-                  field: 'scope',
-                });
+                throw new BadRequestError('Invalid scope');
             }
           })
         );
@@ -155,7 +168,7 @@ export class ProjectHandler extends CacheHandler {
   }
 
   public async updateProject(params: MutationUpdateProjectArgs): Promise<Project> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { id: projectId, input } = params;
       const { scope, tagIds, primaryTagId } = input;
       let currentTagIds: string[] = [];
@@ -165,18 +178,17 @@ export class ProjectHandler extends CacheHandler {
           case Tenant.Organization:
             {
               const organizationId = scope.id;
-              const currentTags =
-                await this.services.organizationProjectTags.getOrganizationProjectTags(
-                  { organizationId, projectId },
-                  tx
-                );
+              const currentTags = await this.organizationProjectTags.getOrganizationProjectTags(
+                { organizationId, projectId },
+                tx
+              );
               currentTagIds = currentTags.map((pt) => pt.tagId);
             }
             break;
           case Tenant.Account:
             {
               const accountId = scope.id;
-              const currentTags = await this.services.accountProjectTags.getAccountProjectTags(
+              const currentTags = await this.accountProjectTags.getAccountProjectTags(
                 { accountId, projectId },
                 tx
               );
@@ -184,13 +196,11 @@ export class ProjectHandler extends CacheHandler {
             }
             break;
           default:
-            throw new BadRequestError('Invalid scope', 'errors:validation.invalid', {
-              field: 'scope',
-            });
+            throw new BadRequestError('Invalid scope');
         }
       }
 
-      const updatedProject = await this.services.projects.updateProject(params, tx);
+      const updatedProject = await this.projects.updateProject(params, tx);
 
       if (Array.isArray(tagIds)) {
         const newTagIds = tagIds.filter((tagId) => !currentTagIds.includes(tagId));
@@ -201,7 +211,7 @@ export class ProjectHandler extends CacheHandler {
             const organizationId = scope.id;
             await Promise.all(
               updatedTagIds.map((tagId) =>
-                this.services.organizationProjectTags.updateOrganizationProjectTag(
+                this.organizationProjectTags.updateOrganizationProjectTag(
                   { organizationId, projectId, tagId, isPrimary: tagId === primaryTagId },
                   tx
                 )
@@ -209,7 +219,7 @@ export class ProjectHandler extends CacheHandler {
             );
             await Promise.all(
               newTagIds.map((tagId) =>
-                this.services.organizationProjectTags.addOrganizationProjectTag(
+                this.organizationProjectTags.addOrganizationProjectTag(
                   { organizationId, projectId, tagId, isPrimary: tagId === primaryTagId },
                   tx
                 )
@@ -217,7 +227,7 @@ export class ProjectHandler extends CacheHandler {
             );
             await Promise.all(
               removedTagIds.map((tagId) =>
-                this.services.organizationProjectTags.removeOrganizationProjectTag(
+                this.organizationProjectTags.removeOrganizationProjectTag(
                   { organizationId, projectId, tagId },
                   tx
                 )
@@ -229,7 +239,7 @@ export class ProjectHandler extends CacheHandler {
             const accountId = scope.id;
             await Promise.all(
               updatedTagIds.map((tagId) =>
-                this.services.accountProjectTags.updateAccountProjectTag(
+                this.accountProjectTags.updateAccountProjectTag(
                   { accountId, projectId, tagId, isPrimary: tagId === primaryTagId },
                   tx
                 )
@@ -237,7 +247,7 @@ export class ProjectHandler extends CacheHandler {
             );
             await Promise.all(
               newTagIds.map((tagId) =>
-                this.services.accountProjectTags.addAccountProjectTag(
+                this.accountProjectTags.addAccountProjectTag(
                   { accountId, projectId, tagId, isPrimary: tagId === primaryTagId },
                   tx
                 )
@@ -245,18 +255,13 @@ export class ProjectHandler extends CacheHandler {
             );
             await Promise.all(
               removedTagIds.map((tagId) =>
-                this.services.accountProjectTags.removeAccountProjectTag(
-                  { accountId, projectId, tagId },
-                  tx
-                )
+                this.accountProjectTags.removeAccountProjectTag({ accountId, projectId, tagId }, tx)
               )
             );
             break;
           }
           default:
-            throw new BadRequestError('Invalid scope', 'errors:validation.invalid', {
-              field: 'scope',
-            });
+            throw new BadRequestError('Invalid scope');
         }
       }
       return updatedProject;
@@ -264,17 +269,17 @@ export class ProjectHandler extends CacheHandler {
   }
 
   public async deleteProject(params: MutationDeleteProjectArgs & DeleteParams): Promise<Project> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { id: projectId, scope } = params;
 
       // Query common project data (not tenant-specific)
       const [projectTags, projectPermissions, projectGroups, projectRoles, projectUsers] =
         await Promise.all([
-          this.services.projectTags.getProjectTags({ projectId }, tx),
-          this.services.projectPermissions.getProjectPermissions({ projectId }, tx),
-          this.services.projectGroups.getProjectGroups({ projectId }, tx),
-          this.services.projectRoles.getProjectRoles({ projectId }, tx),
-          this.services.projectUsers.getProjectUsers({ projectId }, tx),
+          this.projectTags.getProjectTags({ projectId }, tx),
+          this.projectPermissions.getProjectPermissions({ projectId }, tx),
+          this.projectGroups.getProjectGroups({ projectId }, tx),
+          this.projectRoles.getProjectRoles({ projectId }, tx),
+          this.projectUsers.getProjectUsers({ projectId }, tx),
         ]);
 
       const tagIds = projectTags.map((pt) => pt.tagId);
@@ -287,20 +292,17 @@ export class ProjectHandler extends CacheHandler {
         case Tenant.Account: {
           const accountId = scope.id;
 
-          const accountProjectTags = await this.services.accountProjectTags.getAccountProjectTags(
+          const accountProjectTags = await this.accountProjectTags.getAccountProjectTags(
             { accountId, projectId },
             tx
           );
           const accountTagIds = accountProjectTags.map((apt) => apt.tagId);
 
-          await this.services.accountProjects.removeAccountProject({ accountId, projectId }, tx);
+          await this.accountProjects.removeAccountProject({ accountId, projectId }, tx);
 
           await Promise.all(
             accountTagIds.map((tagId) =>
-              this.services.accountProjectTags.removeAccountProjectTag(
-                { accountId, projectId, tagId },
-                tx
-              )
+              this.accountProjectTags.removeAccountProjectTag({ accountId, projectId, tagId }, tx)
             )
           );
           break;
@@ -309,20 +311,20 @@ export class ProjectHandler extends CacheHandler {
           const organizationId = scope.id;
 
           const organizationProjectTags =
-            await this.services.organizationProjectTags.getOrganizationProjectTags(
+            await this.organizationProjectTags.getOrganizationProjectTags(
               { organizationId, projectId },
               tx
             );
           const organizationTagIds = organizationProjectTags.map((opt) => opt.tagId);
 
-          await this.services.organizationProjects.removeOrganizationProject(
+          await this.organizationProjects.removeOrganizationProject(
             { organizationId, projectId },
             tx
           );
 
           await Promise.all(
             organizationTagIds.map((tagId) =>
-              this.services.organizationProjectTags.removeOrganizationProjectTag(
+              this.organizationProjectTags.removeOrganizationProjectTag(
                 { organizationId, projectId, tagId },
                 tx
               )
@@ -331,32 +333,24 @@ export class ProjectHandler extends CacheHandler {
           break;
         }
         default:
-          throw new BadRequestError('Invalid scope', 'errors:validation.invalid', {
-            field: 'scope',
-          });
+          throw new BadRequestError('Invalid scope');
       }
 
       await Promise.all([
-        ...tagIds.map((tagId) =>
-          this.services.projectTags.removeProjectTag({ projectId, tagId }, tx)
-        ),
+        ...tagIds.map((tagId) => this.projectTags.removeProjectTag({ projectId, tagId }, tx)),
         ...permissionIds.map((permissionId) =>
-          this.services.projectPermissions.removeProjectPermission({ projectId, permissionId }, tx)
+          this.projectPermissions.removeProjectPermission({ projectId, permissionId }, tx)
         ),
         ...groupIds.map((groupId) =>
-          this.services.projectGroups.removeProjectGroup({ projectId, groupId }, tx)
+          this.projectGroups.removeProjectGroup({ projectId, groupId }, tx)
         ),
-        ...roleIds.map((roleId) =>
-          this.services.projectRoles.removeProjectRole({ projectId, roleId }, tx)
-        ),
-        ...userIds.map((userId) =>
-          this.services.projectUsers.removeProjectUser({ projectId, userId }, tx)
-        ),
+        ...roleIds.map((roleId) => this.projectRoles.removeProjectRole({ projectId, roleId }, tx)),
+        ...userIds.map((userId) => this.projectUsers.removeProjectUser({ projectId, userId }, tx)),
       ]);
 
       this.removeProjectIdFromScopeCache(scope, projectId);
 
-      return await this.services.projects.deleteProject(params, tx);
+      return await this.projects.deleteProject(params, tx);
     });
   }
 }

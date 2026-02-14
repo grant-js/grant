@@ -1,4 +1,9 @@
-import { ExecutionContextGroup, ExecutionContextRole, ExecutionContextUser } from '@grantjs/core';
+import {
+  ExecutionContextGroup,
+  ExecutionContextRole,
+  ExecutionContextUser,
+  type IGrantRepository,
+} from '@grantjs/core';
 import {
   accountProjectApiKeys,
   accountProjects,
@@ -24,9 +29,12 @@ import { Permission, Scope, Tenant } from '@grantjs/schema';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 import { NotFoundError } from '@/lib/errors';
+import { createLogger } from '@/lib/logger';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
-export class GrantRepository {
+export class GrantRepository implements IGrantRepository {
+  private readonly logger = createLogger('GrantRepository');
+
   constructor(private db: DbSchema) {}
 
   public async getUser(
@@ -267,9 +275,9 @@ export class GrantRepository {
               return [projectKeyRow.accountRoleId];
             }
           } catch (err) {
-            console.error(
-              '[GrantRepository.getUserRoleIdsInScope] AccountProject API key lookup failed:',
-              err instanceof Error ? err.message : err
+            this.logger.error(
+              { err, scope: 'AccountProject' },
+              'API key lookup failed in getUserRoleIdsInScope'
             );
           }
         }
@@ -335,9 +343,9 @@ export class GrantRepository {
               return [projectKeyRow.organizationRoleId];
             }
           } catch (err) {
-            console.error(
-              '[GrantRepository.getUserRoleIdsInScope] OrganizationProject API key lookup failed:',
-              err instanceof Error ? err.message : err
+            this.logger.error(
+              { err, scope: 'OrganizationProject' },
+              'API key lookup failed in getUserRoleIdsInScope'
             );
           }
         }

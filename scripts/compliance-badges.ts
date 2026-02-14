@@ -90,7 +90,12 @@ const FRAMEWORKS: FrameworkDef[] = [
     label: 'ISO 27001',
     slug: 'iso27001',
     // ISO 27001 controls are tested by negative-rbac and multi-tenant scenarios
-    prefixes: ['negative: cross-tenant', 'negative: scope manipulation', 'negative: privilege escalation', 'multi-tenant'],
+    prefixes: [
+      'negative: cross-tenant',
+      'negative: scope manipulation',
+      'negative: privilege escalation',
+      'multi-tenant',
+    ],
   },
 ];
 
@@ -179,7 +184,9 @@ function main(): void {
   writeFileSync(resolve(BADGES_DIR, 'e2e-total.svg'), totalSvg);
   badgeLines.push('![E2E Tests](badges/e2e-total.svg)');
 
-  console.log(`  ${''}  ${'E2E Total'.padEnd(16)} ${totalPassed}/${totalTests} passing  (${totalPct}%)\n`);
+  console.log(
+    `  ${''}  ${'E2E Total'.padEnd(16)} ${totalPassed}/${totalTests} passing  (${totalPct}%)\n`
+  );
 
   // Update README.md
   if (!existsSync(README_PATH)) {

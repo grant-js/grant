@@ -1,9 +1,9 @@
 import { DbSchema } from '@grantjs/database';
+import { validateTenantJobContext } from '@grantjs/jobs';
 import { Tenant } from '@grantjs/schema';
 import { describe, expect, it, vi } from 'vitest';
 
 import { assertTenantActive } from '@/lib/jobs/tenant-job.validation';
-import { validateTenantJobContext } from '@/lib/jobs/tenant-job.types';
 
 // ---------------------------------------------------------------------------
 // Helpers: mock a Drizzle-like query builder chain
@@ -94,7 +94,7 @@ describe('assertTenantActive', () => {
       const { db } = createMockDb([]);
       await expect(
         assertTenantActive({ tenant: Tenant.Organization, id: 'org-gone' }, db)
-      ).rejects.toThrow('Tenant organization org-gone not found or soft-deleted');
+      ).rejects.toThrow("Organization 'org-gone' not found");
     });
   });
 
@@ -110,7 +110,7 @@ describe('assertTenantActive', () => {
       const { db } = createMockDb([]);
       await expect(
         assertTenantActive({ tenant: Tenant.Account, id: 'acc-gone' }, db)
-      ).rejects.toThrow('Tenant account acc-gone not found or soft-deleted');
+      ).rejects.toThrow("Account 'acc-gone' not found");
     });
   });
 
@@ -126,7 +126,7 @@ describe('assertTenantActive', () => {
       const { db } = createMockDb([]);
       await expect(
         assertTenantActive({ tenant: Tenant.OrganizationProject, id: 'org-1:proj-1' }, db)
-      ).rejects.toThrow('not found or soft-deleted');
+      ).rejects.toThrow('not found');
     });
   });
 
@@ -142,7 +142,7 @@ describe('assertTenantActive', () => {
       const { db } = createMockDb([]);
       await expect(
         assertTenantActive({ tenant: Tenant.AccountProject, id: 'acc-1:proj-1' }, db)
-      ).rejects.toThrow('not found or soft-deleted');
+      ).rejects.toThrow('not found');
     });
   });
 
@@ -158,7 +158,7 @@ describe('assertTenantActive', () => {
       const { db } = createMockDb([]);
       await expect(
         assertTenantActive({ tenant: Tenant.ProjectUser, id: 'proj-gone:user-1' }, db)
-      ).rejects.toThrow('Tenant project proj-gone not found or soft-deleted');
+      ).rejects.toThrow("Project 'proj-gone' not found");
     });
   });
 
@@ -174,7 +174,7 @@ describe('assertTenantActive', () => {
       const { db } = createMockDb([]);
       await expect(
         assertTenantActive({ tenant: Tenant.AccountProjectUser, id: 'acc-1:proj-1:user-1' }, db)
-      ).rejects.toThrow('not found or soft-deleted');
+      ).rejects.toThrow('not found');
     });
   });
 
@@ -196,7 +196,7 @@ describe('assertTenantActive', () => {
           { tenant: Tenant.OrganizationProjectUser, id: 'org-1:proj-1:user-1' },
           db
         )
-      ).rejects.toThrow('not found or soft-deleted');
+      ).rejects.toThrow('not found');
     });
   });
 });

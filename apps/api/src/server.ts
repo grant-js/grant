@@ -19,7 +19,7 @@ import { createAppContext } from '@/lib/app-context.lib';
 import { CacheFactory } from '@/lib/cache';
 import { formatGraphQLError } from '@/lib/errors';
 import { initializeJobs, shutdownJobs } from '@/lib/jobs/initialize';
-import { logger } from '@/lib/logger';
+import { logger, loggerFactory } from '@/lib/logger';
 import { contextMiddleware } from '@/middleware/context.middleware';
 import { errorHandler } from '@/middleware/error.middleware';
 import { rateLimitMiddleware } from '@/middleware/rate-limit.middleware';
@@ -45,6 +45,7 @@ async function startServer() {
     max: config.db.poolMax,
     idleTimeout: config.db.idleTimeout,
     connectTimeout: config.db.connectionTimeout,
+    logger: loggerFactory.createLogger('DatabaseConnection'),
   });
 
   const app = express();
@@ -64,17 +65,20 @@ async function startServer() {
 
   await apolloServer.start();
 
-  const cache = CacheFactory.createEntityCache({
-    strategy: config.cache.strategy,
-    redis:
-      config.cache.strategy === 'redis'
-        ? {
-            host: config.redis.host,
-            port: config.redis.port,
-            password: config.redis.password,
-          }
-        : undefined,
-  });
+  const cache = CacheFactory.createEntityCache(
+    {
+      strategy: config.cache.strategy,
+      redis:
+        config.cache.strategy === 'redis'
+          ? {
+              host: config.redis.host,
+              port: config.redis.port,
+              password: config.redis.password,
+            }
+          : undefined,
+    },
+    loggerFactory
+  );
 
   app.use(cors<cors.CorsRequest>(config.cors));
   app.use(helmet(config.helmet));

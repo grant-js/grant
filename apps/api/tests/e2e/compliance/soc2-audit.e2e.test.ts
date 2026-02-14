@@ -10,7 +10,6 @@
  */
 import { afterAll, describe, expect, it } from 'vitest';
 
-import { expectAuditLogComplete } from '../helpers/assertions';
 import { closeDbHelper, query } from '../helpers/db-tokens';
 import { TestUser } from '../helpers/test-user';
 

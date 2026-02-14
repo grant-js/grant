@@ -14,9 +14,14 @@ import { and, eq, isNull } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { EntityRepository, RelationsConfig } from '@/repositories/common';
-import { SelectedFields } from '@/services/common';
+import { SelectedFields } from '@/types';
 
-export class PermissionRepository extends EntityRepository<PermissionModel, Permission> {
+import type { IPermissionRepository } from '@grantjs/core';
+
+export class PermissionRepository
+  extends EntityRepository<PermissionModel, Permission>
+  implements IPermissionRepository
+{
   protected table = permissions;
   protected schemaName = 'permissions' as const;
   protected searchFields: Array<keyof PermissionModel> = Object.values(PermissionSearchableField);

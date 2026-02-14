@@ -45,13 +45,13 @@
   },
   "dependencies": {
     "@grantjs/schema": "workspace:*",
-    "jsonwebtoken": "^9.0.2",
     "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^24.7.2",
     "eslint": "^9.37.0",
+    "jsonwebtoken": "^9.0.2",
     "typescript": "^5",
     "vitest": "^3.2.4"
   },

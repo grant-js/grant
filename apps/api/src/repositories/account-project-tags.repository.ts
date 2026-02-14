@@ -13,10 +13,12 @@ import {
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';
 
-export class AccountProjectTagRepository extends PivotRepository<
-  AccountProjectTagModel,
-  AccountProjectTag
-> {
+import type { IAccountProjectTagRepository } from '@grantjs/core';
+
+export class AccountProjectTagRepository
+  extends PivotRepository<AccountProjectTagModel, AccountProjectTag>
+  implements IAccountProjectTagRepository
+{
   protected table = accountProjectTags;
   protected uniqueIndexFields: Array<keyof AccountProjectTagModel> = [
     'accountId',

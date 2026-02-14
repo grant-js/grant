@@ -1,6 +1,5 @@
 import { MILLISECONDS_PER_MINUTE } from '@grantjs/constants';
 import { Grant, GrantAuth, NoSessionSigningKeyError } from '@grantjs/core';
-import { DbSchema, apiKeyAuditLogs } from '@grantjs/database';
 import {
   ApiKey,
   ApiKeyPage,
@@ -17,13 +16,8 @@ import { AuthenticationError, BadRequestError, NotFoundError } from '@/lib/error
 import { buildJwksIssuerUrl } from '@/lib/jwks.lib';
 import { generateRandomBytes, generateUUID, hashSecret, verifySecret } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
-import {
-  SelectedFields,
-  createDynamicPaginatedSchema,
-  validateInput,
-  validateOutput,
-} from '@/services/common';
+import { createDynamicPaginatedSchema, validateInput, validateOutput } from '@/services/common';
+import { SelectedFields } from '@/types';
 
 import {
   apiKeySchema,
@@ -35,7 +29,17 @@ import {
   queryApiKeysArgsSchema,
   revokeApiKeyParamsSchema,
 } from './api-keys.schemas';
-import { AuditService } from './common';
+
+import type {
+  IAuditLogger,
+  IAccountProjectApiKeyRepository,
+  IAccountProjectRepository,
+  IApiKeyRepository,
+  IApiKeyService,
+  IOrganizationProjectApiKeyRepository,
+  IOrganizationProjectRepository,
+  IProjectUserApiKeyRepository,
+} from '@grantjs/core';
 
 interface ExchangeTokenResult {
   accessToken: string;
@@ -48,14 +52,21 @@ interface SignTokenParams {
   userId: string;
 }
 
-export class ApiKeyService extends AuditService {
+export class ApiKeyService implements IApiKeyService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema,
+    private readonly accountProjectRepository: IAccountProjectRepository,
+    private readonly organizationProjectRepository: IOrganizationProjectRepository,
+    private readonly projectUserApiKeyRepository: IProjectUserApiKeyRepository,
+    private readonly accountProjectApiKeyRepository: IAccountProjectApiKeyRepository,
+    private readonly organizationProjectApiKeyRepository: IOrganizationProjectApiKeyRepository,
+    private readonly apiKeyRepository: IApiKeyRepository,
+    private readonly user: GrantAuth | null,
+    private readonly audit: IAuditLogger,
     private readonly grant: Grant
-  ) {
-    super(apiKeyAuditLogs, 'apiKeyId', user, db);
+  ) {}
+
+  private getPerformedBy(): string {
+    return this.user !== null ? this.user.userId : config.system.systemUserId;
   }
 
   private getAccessTokenExpirationDate(from: number = Date.now()): Date {
@@ -88,7 +99,7 @@ export class ApiKeyService extends AuditService {
         const parts = scope.id.split(':');
         const projectId = parts[0];
         if (!projectId) return null;
-        const accountProject = await this.repositories.accountProjectRepository.getFirstByProjectId(
+        const accountProject = await this.accountProjectRepository.getFirstByProjectId(
           projectId,
           transaction
         );
@@ -98,11 +109,10 @@ export class ApiKeyService extends AuditService {
             id: `${accountProject.accountId}:${accountProject.projectId}`,
           };
         }
-        const orgProject =
-          await this.repositories.organizationProjectRepository.getFirstByProjectId(
-            projectId,
-            transaction
-          );
+        const orgProject = await this.organizationProjectRepository.getFirstByProjectId(
+          projectId,
+          transaction
+        );
         if (orgProject) {
           return {
             tenant: Tenant.OrganizationProject,
@@ -143,19 +153,19 @@ export class ApiKeyService extends AuditService {
 
   private validateApiKeyActive(apiKey: ApiKey | null): void {
     if (!apiKey) {
-      throw new AuthenticationError('Invalid credentials', 'errors:auth.invalidCredentials');
+      throw new AuthenticationError('Invalid credentials');
     }
 
     if (apiKey.isRevoked) {
-      throw new AuthenticationError('API key has been revoked', 'errors:auth.apiKeyRevoked');
+      throw new AuthenticationError('API key has been revoked');
     }
 
     if (apiKey.deletedAt) {
-      throw new AuthenticationError('API key has been deleted', 'errors:auth.apiKeyDeleted');
+      throw new AuthenticationError('API key has been deleted');
     }
 
     if (apiKey.expiresAt && new Date(apiKey.expiresAt) < new Date()) {
-      throw new AuthenticationError('API key has expired', 'errors:auth.apiKeyExpired');
+      throw new AuthenticationError('API key has expired');
     }
   }
 
@@ -177,7 +187,7 @@ export class ApiKeyService extends AuditService {
     const clientSecretHash = hashSecret(clientSecret);
     const createdBy = this.getPerformedBy();
 
-    const apiKey = await this.repositories.apiKeyRepository.createApiKey(
+    const apiKey = await this.apiKeyRepository.createApiKey(
       {
         clientId,
         clientSecretHash,
@@ -198,7 +208,7 @@ export class ApiKeyService extends AuditService {
       createdAt: apiKey.createdAt,
     };
 
-    await this.logCreate(apiKey.id, newValues, { action: 'CREATE_API_KEY' }, transaction);
+    await this.audit.logCreate(apiKey.id, newValues, { action: 'CREATE_API_KEY' }, transaction);
 
     const response: CreateApiKeyResult = {
       id: apiKey.id,
@@ -219,7 +229,7 @@ export class ApiKeyService extends AuditService {
   ): Promise<ApiKeyPage> {
     const context = 'ApiKeyService.getApiKeys';
     validateInput(queryApiKeysArgsSchema, params, context);
-    const result = await this.repositories.apiKeyRepository.getApiKeys(params, transaction);
+    const result = await this.apiKeyRepository.getApiKeys(params, transaction);
 
     const transformedResult = {
       items: result.apiKeys,
@@ -245,31 +255,28 @@ export class ApiKeyService extends AuditService {
 
     const { clientId, clientSecret, scope } = validatedParams;
 
-    const apiKey = await this.repositories.apiKeyRepository.findActiveByClientId(
-      clientId,
-      transaction
-    );
+    const apiKey = await this.apiKeyRepository.findActiveByClientId(clientId, transaction);
 
     this.validateApiKeyActive(apiKey);
 
     if (!apiKey) {
-      throw new AuthenticationError('Invalid credentials', 'errors:auth.invalidCredentials');
+      throw new AuthenticationError('Invalid credentials');
     }
 
-    const clientSecretHash = await this.repositories.apiKeyRepository.getClientSecretHash(
+    const clientSecretHash = await this.apiKeyRepository.getClientSecretHash(
       apiKey.id,
       transaction
     );
 
     if (!clientSecretHash) {
-      throw new AuthenticationError('Invalid credentials', 'errors:auth.invalidCredentials');
+      throw new AuthenticationError('Invalid credentials');
     }
 
     if (!verifySecret(clientSecret, clientSecretHash)) {
-      throw new AuthenticationError('Invalid credentials', 'errors:auth.invalidCredentials');
+      throw new AuthenticationError('Invalid credentials');
     }
 
-    await this.repositories.apiKeyRepository.updateLastUsedAt(apiKey.id, new Date(), transaction);
+    await this.apiKeyRepository.updateLastUsedAt(apiKey.id, new Date(), transaction);
 
     let isApiKeyInScope: boolean = false;
     let userId: string | null = null;
@@ -280,11 +287,10 @@ export class ApiKeyService extends AuditService {
         userId = projectUserId;
         if (!projectId || !userId) {
           throw new AuthenticationError(
-            'Invalid projectUser scope: id must be in format "projectId:userId"',
-            'errors:auth.invalidScope'
+            'Invalid projectUser scope: id must be in format "projectId:userId"'
           );
         }
-        const pivots = await this.repositories.projectUserApiKeyRepository.getProjectUserApiKeys(
+        const pivots = await this.projectUserApiKeyRepository.getProjectUserApiKeys(
           { projectId, userId },
           transaction
         );
@@ -296,12 +302,11 @@ export class ApiKeyService extends AuditService {
         const [accountId, projectId] = scope.id.split(':');
         if (!accountId || !projectId) {
           throw new AuthenticationError(
-            'Invalid accountProject scope: id must be in format "accountId:projectId"',
-            'errors:auth.invalidScope'
+            'Invalid accountProject scope: id must be in format "accountId:projectId"'
           );
         }
         const accountPivot =
-          await this.repositories.accountProjectApiKeyRepository.getByApiKeyAndAccountAndProject(
+          await this.accountProjectApiKeyRepository.getByApiKeyAndAccountAndProject(
             apiKey.id,
             accountId,
             projectId,
@@ -316,12 +321,11 @@ export class ApiKeyService extends AuditService {
         const [organizationId, projectId] = scope.id.split(':');
         if (!organizationId || !projectId) {
           throw new AuthenticationError(
-            'Invalid organizationProject scope: id must be in format "organizationId:projectId"',
-            'errors:auth.invalidScope'
+            'Invalid organizationProject scope: id must be in format "organizationId:projectId"'
           );
         }
         const orgPivot =
-          await this.repositories.organizationProjectApiKeyRepository.getByApiKeyAndOrganizationAndProject(
+          await this.organizationProjectApiKeyRepository.getByApiKeyAndOrganizationAndProject(
             apiKey.id,
             organizationId,
             projectId,
@@ -335,26 +339,19 @@ export class ApiKeyService extends AuditService {
       case Tenant.Organization:
       case Tenant.Account:
         throw new AuthenticationError(
-          `API key exchange for ${scope.tenant} scope is not yet implemented`,
-          'errors:auth.scopeNotSupported'
+          `API key exchange for ${scope.tenant} scope is not yet implemented`
         );
 
       default:
-        throw new AuthenticationError(
-          `Unsupported tenant type: ${scope.tenant}`,
-          'errors:auth.invalidScope'
-        );
+        throw new AuthenticationError(`Unsupported tenant type: ${scope.tenant}`);
     }
 
     if (!isApiKeyInScope) {
-      throw new AuthenticationError(
-        'API key is not associated with the specified scope',
-        'errors:auth.apiKeyNoScope'
-      );
+      throw new AuthenticationError('API key is not associated with the specified scope');
     }
 
     if (!userId) {
-      throw new AuthenticationError('User ID not found', 'errors:auth.userIdNotFound');
+      throw new AuthenticationError('User ID not found');
     }
 
     const accessToken = await this.signToken({ apiKeyId: apiKey.id, scope, userId }, transaction);
@@ -374,14 +371,14 @@ export class ApiKeyService extends AuditService {
 
     const { id } = validatedParams;
 
-    const apiKey = await this.repositories.apiKeyRepository.getApiKey(id, transaction);
+    const apiKey = await this.apiKeyRepository.getApiKey(id, transaction);
 
     if (!apiKey) {
-      throw new NotFoundError('API key not found', 'errors:notFound.apiKey');
+      throw new NotFoundError('ApiKey');
     }
 
     if (apiKey.isRevoked) {
-      throw new BadRequestError('API key is already revoked', 'errors:validation.alreadyRevoked');
+      throw new BadRequestError('API key is already revoked');
     }
 
     const revokedBy = this.getPerformedBy();
@@ -393,11 +390,7 @@ export class ApiKeyService extends AuditService {
       revokedBy: apiKey.revokedBy,
     };
 
-    const revokedKey = await this.repositories.apiKeyRepository.revokeApiKey(
-      id,
-      revokedBy,
-      transaction
-    );
+    const revokedKey = await this.apiKeyRepository.revokeApiKey(id, revokedBy, transaction);
 
     const newValues = {
       id: revokedKey.id,
@@ -406,7 +399,7 @@ export class ApiKeyService extends AuditService {
       revokedBy: revokedKey.revokedBy,
     };
 
-    await this.logUpdate(id, oldValues, newValues, { action: 'REVOKE_API_KEY' }, transaction);
+    await this.audit.logUpdate(id, oldValues, newValues, { action: 'REVOKE_API_KEY' }, transaction);
 
     return revokedKey;
   }
@@ -420,10 +413,10 @@ export class ApiKeyService extends AuditService {
 
     const { id, hardDelete } = validatedParams;
 
-    const apiKey = await this.repositories.apiKeyRepository.getApiKey(id, transaction);
+    const apiKey = await this.apiKeyRepository.getApiKey(id, transaction);
 
     if (!apiKey) {
-      throw new NotFoundError('API key not found', 'errors:notFound.apiKey');
+      throw new NotFoundError('ApiKey');
     }
 
     const oldValues = {
@@ -435,11 +428,11 @@ export class ApiKeyService extends AuditService {
 
     let deletedKey: ApiKey;
     if (hardDelete) {
-      deletedKey = await this.repositories.apiKeyRepository.hardDeleteApiKey(id, transaction);
-      await this.logHardDelete(id, oldValues, { action: 'HARD_DELETE_API_KEY' }, transaction);
+      deletedKey = await this.apiKeyRepository.hardDeleteApiKey(id, transaction);
+      await this.audit.logHardDelete(id, oldValues, { action: 'HARD_DELETE_API_KEY' }, transaction);
     } else {
-      deletedKey = await this.repositories.apiKeyRepository.softDeleteApiKey(id, transaction);
-      await this.logSoftDelete(
+      deletedKey = await this.apiKeyRepository.softDeleteApiKey(id, transaction);
+      await this.audit.logSoftDelete(
         id,
         oldValues,
         { deletedAt: deletedKey.deletedAt },

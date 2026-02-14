@@ -1,7 +1,9 @@
+import { GrantException } from '@grantjs/core';
+
+import { HttpException, mapDomainToHttp } from '@/lib/errors';
 import { NextFunction, Request, Response } from 'express';
 
 import { translateError } from '@/i18n';
-import { ApiError } from '@/lib/errors';
 import { getRequestLogger } from '@/middleware/request-logging.middleware';
 
 export function errorHandler(error: Error, req: Request, res: Response, _next: NextFunction): void {
@@ -13,13 +15,22 @@ export function errorHandler(error: Error, req: Request, res: Response, _next: N
     method: req.method,
   });
 
-  if (error instanceof ApiError) {
-    const localizedMessage = translateError(req, error);
+  // Map domain errors to HTTP errors
+  let httpError: HttpException | undefined;
 
-    res.status(error.statusCode).json({
+  if (error instanceof GrantException) {
+    httpError = mapDomainToHttp(error);
+  } else if (error instanceof HttpException) {
+    httpError = error;
+  }
+
+  if (httpError) {
+    const localizedMessage = translateError(req, httpError);
+
+    res.status(httpError.statusCode).json({
       error: localizedMessage,
-      code: error.code,
-      ...(error.extensions && { extensions: error.extensions }),
+      code: httpError.code,
+      ...(httpError.extensions && { extensions: httpError.extensions }),
       ...(process.env.NODE_ENV === 'development' && { stack: error.stack }),
     });
     return;

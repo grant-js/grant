@@ -281,7 +281,6 @@ export class TestUser {
       slug: res.body.data?.slug ?? '',
       // @ts-expect-error -- attach status for assertion in tests
       _status: res.status,
-      // @ts-expect-error -- attach full body for debugging
       _body: res.body,
     };
   }

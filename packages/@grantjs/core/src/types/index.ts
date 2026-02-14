@@ -1,5 +1,3 @@
-import { JwtPayload } from 'jsonwebtoken';
-
 import type {
   AuthorizationReason,
   Group,
@@ -10,12 +8,13 @@ import type {
   Scope,
   TokenType,
   User,
-} from '../../../schema/src';
+} from '@grantjs/schema';
 
 /**
- * Token Claims extracted from JWT
+ * Token Claims extracted from JWT.
+ * Standalone interface — no dependency on jsonwebtoken types.
  */
-export interface TokenClaims extends JwtPayload {
+export interface TokenClaims {
   sub: string; // User ID
   aud: string; // API URL (RFC 7519)
   iss: string; // Issuer URL
@@ -25,6 +24,7 @@ export interface TokenClaims extends JwtPayload {
   type: TokenType; // Token type: TokenType.Session or TokenType.ApiKey
   scope?: Scope; // Optional: Required for API key tokens, optional for user session tokens
   isVerified?: boolean; // Optional: Email verification status (session tokens only)
+  [key: string]: unknown; // Allow additional JWT claims
 }
 
 /**

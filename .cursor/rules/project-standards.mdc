@@ -8,7 +8,11 @@ alwaysApply: true
 - **Workflow**: When adding or changing features, follow the order in AGENTS.md: env → database → schema → api → web. Do not skip steps (e.g. new API without schema/types).
 - **API contracts**: REST and OpenAPI must stay in sync. Schema and types from `@grantjs/schema` codegen are canonical; use them across layers instead of redefining.
 - Prefer existing patterns: search for similar handlers, services, or components before adding new ones.
-- Use project aliases (`@/`, `@grantjs/*`); avoid deep relative paths.
-- Errors: use shared error types from `@/lib/errors` (or package equivalents); log and rethrow with cause where appropriate.
+- Use project aliases (`@/`, `@grantjs/*`); avoid deep relative paths. Never use `../../../` to cross package boundaries.
+- **Errors**: use domain-specific exceptions from `@grantjs/core` (e.g. `NotFoundError`, `ValidationError`, `ConfigurationError`). In `apps/api`, import them from `@/lib/errors`. Never use raw `throw new Error(...)`.
+- **Logging**: use the structured logger (`createLogger` from `@/lib/logger`). Never use `console.log/warn/error` in runtime code.
+- **Dependency inversion**: adapter packages (`cache`, `storage`, `email`, `jobs`) accept `ILogger`/`ILoggerFactory` via constructor injection — they never import `@grantjs/logger` directly. See the architecture section in AGENTS.md.
+- **Import boundaries**: within `apps/api`, always import logger from `@/lib/logger`, errors from `@/lib/errors`, and shared types (`DeleteParams`, `SelectedFields`, `Otp`) from `@/types`. See the import discipline table in AGENTS.md.
+- **Configuration**: all magic numbers, external URLs, and tunable defaults belong in `apps/api/src/config/env.config.ts` with env-overridable values.
 - Do not commit unless the user explicitly asks; validate changes before suggesting.
 - **Domain context**: before implementing in areas involving tenancy, permissions, or auth, read the relevant doc (see `docs-reference.mdc` or `docs/architecture/`).

@@ -1,5 +1,3 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, roleGroupsAuditLogs } from '@grantjs/database';
 import {
   AddRoleGroupInput,
   QueryRoleGroupsInput,
@@ -9,15 +7,9 @@ import {
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
-import {
-  AuditService,
-  DeleteParams,
-  createDynamicSingleSchema,
-  validateInput,
-  validateOutput,
-} from './common';
+import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 import {
   addRoleGroupInputSchema,
   queryRoleGroupsArgsSchema,
@@ -25,34 +17,35 @@ import {
   roleGroupSchema,
 } from './role-groups.schemas';
 
-export class RoleGroupService extends AuditService {
+import type {
+  IAuditLogger,
+  IGroupRepository,
+  IRoleGroupRepository,
+  IRoleGroupService,
+  IRoleRepository,
+} from '@grantjs/core';
+
+export class RoleGroupService implements IRoleGroupService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(roleGroupsAuditLogs, 'roleGroupId', user, db);
-  }
+    private readonly roleRepository: IRoleRepository,
+    private readonly groupRepository: IGroupRepository,
+    private readonly roleGroupRepository: IRoleGroupRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async roleExists(roleId: string, transaction?: Transaction): Promise<void> {
-    const roles = await this.repositories.roleRepository.getRoles(
-      { ids: [roleId], limit: 1 },
-      transaction
-    );
+    const roles = await this.roleRepository.getRoles({ ids: [roleId], limit: 1 }, transaction);
 
     if (roles.roles.length === 0) {
-      throw new NotFoundError('Role not found', 'errors:notFound.role');
+      throw new NotFoundError('Role');
     }
   }
 
   private async groupExists(groupId: string, transaction?: Transaction): Promise<void> {
-    const groups = await this.repositories.groupRepository.getGroups(
-      { ids: [groupId], limit: 1 },
-      transaction
-    );
+    const groups = await this.groupRepository.getGroups({ ids: [groupId], limit: 1 }, transaction);
 
     if (groups.groups.length === 0) {
-      throw new NotFoundError('Group not found', 'errors:notFound.group');
+      throw new NotFoundError('Group');
     }
   }
 
@@ -63,7 +56,7 @@ export class RoleGroupService extends AuditService {
   ): Promise<boolean> {
     await this.roleExists(roleId, transaction);
     await this.groupExists(groupId, transaction);
-    const existingRoleGroups = await this.repositories.roleGroupRepository.getRoleGroups(
+    const existingRoleGroups = await this.roleGroupRepository.getRoleGroups(
       { roleId },
       transaction
     );
@@ -87,10 +80,7 @@ export class RoleGroupService extends AuditService {
       await this.groupExists(groupId, transaction);
     }
 
-    const result = await this.repositories.roleGroupRepository.getRoleGroups(
-      validatedParams,
-      transaction
-    );
+    const result = await this.roleGroupRepository.getRoleGroups(validatedParams, transaction);
     return validateOutput(createDynamicSingleSchema(roleGroupSchema).array(), result, context);
   }
 
@@ -106,16 +96,10 @@ export class RoleGroupService extends AuditService {
     const hasGroup = await this.roleHasGroup(roleId, groupId, transaction);
 
     if (hasGroup) {
-      throw new ConflictError('Role already has this group', 'errors:conflict.duplicateEntry', {
-        resource: 'RoleGroup',
-        field: 'groupId',
-      });
+      throw new ConflictError('Role already has this group', 'RoleGroup', 'groupId');
     }
 
-    const roleGroup = await this.repositories.roleGroupRepository.addRoleGroup(
-      { roleId, groupId },
-      transaction
-    );
+    const roleGroup = await this.roleGroupRepository.addRoleGroup({ roleId, groupId }, transaction);
 
     const newValues = {
       id: roleGroup.id,
@@ -129,7 +113,7 @@ export class RoleGroupService extends AuditService {
       context,
     };
 
-    await this.logCreate(roleGroup.id, newValues, metadata, transaction);
+    await this.audit.logCreate(roleGroup.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(roleGroupSchema), roleGroup, context);
   }
@@ -146,20 +130,14 @@ export class RoleGroupService extends AuditService {
     const hasGroup = await this.roleHasGroup(roleId, groupId, transaction);
 
     if (!hasGroup) {
-      throw new NotFoundError('Role does not have this group', 'errors:notFound.group');
+      throw new NotFoundError('Group');
     }
 
     const isHardDelete = hardDelete === true;
 
     const roleGroup = isHardDelete
-      ? await this.repositories.roleGroupRepository.hardDeleteRoleGroup(
-          { roleId, groupId },
-          transaction
-        )
-      : await this.repositories.roleGroupRepository.softDeleteRoleGroup(
-          { roleId, groupId },
-          transaction
-        );
+      ? await this.roleGroupRepository.hardDeleteRoleGroup({ roleId, groupId }, transaction)
+      : await this.roleGroupRepository.softDeleteRoleGroup({ roleId, groupId }, transaction);
 
     const oldValues = {
       id: roleGroup.id,
@@ -180,9 +158,9 @@ export class RoleGroupService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(roleGroup.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(roleGroup.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(roleGroup.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(roleGroup.id, oldValues, newValues, metadata, transaction);
     }
 
     return validateOutput(createDynamicSingleSchema(roleGroupSchema), roleGroup, context);

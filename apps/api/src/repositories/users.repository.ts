@@ -22,9 +22,11 @@ import {
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { EntityRepository, RelationsConfig } from '@/repositories/common';
-import { SelectedFields } from '@/services/common';
+import { SelectedFields } from '@/types';
 
-export class UserRepository extends EntityRepository<UserModel, User> {
+import type { IUserRepository } from '@grantjs/core';
+
+export class UserRepository extends EntityRepository<UserModel, User> implements IUserRepository {
   protected table = users;
   protected schemaName = 'users' as const;
   protected searchFields: Array<keyof UserModel> = Object.values(UserSearchableField);

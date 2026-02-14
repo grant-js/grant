@@ -1,6 +1,13 @@
 import { canAssignRole } from '@grantjs/constants';
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, organizationInvitationsAuditLogs } from '@grantjs/database';
+import {
+  GrantAuth,
+  type IAuditLogger,
+  type IOrganizationInvitationRepository,
+  type IOrganizationInvitationService,
+  type IOrganizationMemberRepository,
+  type IOrganizationUserRepository,
+  type IRoleRepository,
+} from '@grantjs/core';
 import {
   CreateOrganizationInvitationInput,
   GetInvitationQueryVariables,
@@ -12,11 +19,9 @@ import {
 
 import { AuthorizationError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { SelectedFields } from '@/types';
 
 import {
-  AuditService,
-  SelectedFields,
   createDynamicPaginatedSchema,
   createDynamicSingleSchema,
   validateInput,
@@ -32,14 +37,15 @@ import {
   updateInvitationParamsSchema,
 } from './organization-invitations.schemas';
 
-export class OrganizationInvitationService extends AuditService {
+export class OrganizationInvitationService implements IOrganizationInvitationService {
   constructor(
-    private readonly repositories: Repositories,
+    private readonly organizationMemberRepository: IOrganizationMemberRepository,
+    private readonly roleRepository: IRoleRepository,
+    private readonly organizationInvitationRepository: IOrganizationInvitationRepository,
+    private readonly organizationUserRepository: IOrganizationUserRepository,
     readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(organizationInvitationsAuditLogs, 'organizationInvitationId', user, db);
-  }
+    private readonly audit: IAuditLogger
+  ) {}
 
   /**
    * Get the current user's ID from the auth context.
@@ -47,7 +53,7 @@ export class OrganizationInvitationService extends AuditService {
    */
   private getCurrentUserId(): string {
     if (!this.user?.userId) {
-      throw new AuthorizationError('Authentication required', 'errors:auth.unauthorized');
+      throw new AuthorizationError('Authentication required');
     }
     return this.user.userId;
   }
@@ -61,7 +67,7 @@ export class OrganizationInvitationService extends AuditService {
     userId: string,
     transaction?: Transaction
   ): Promise<string | null> {
-    const member = await this.repositories.organizationMemberRepository.getOrganizationMember(
+    const member = await this.organizationMemberRepository.getOrganizationMember(
       { organizationId, userId },
       transaction
     );
@@ -87,27 +93,20 @@ export class OrganizationInvitationService extends AuditService {
     );
 
     if (!currentUserRoleName) {
-      throw new AuthorizationError(
-        'You are not a member of this organization',
-        'errors:auth.notOrganizationMember'
-      );
+      throw new AuthorizationError('You are not a member of this organization');
     }
 
     // Get the role being assigned
-    const targetRole = await this.repositories.roleRepository.getRoles(
-      { ids: [roleId], limit: 1 },
-      transaction
-    );
+    const targetRole = await this.roleRepository.getRoles({ ids: [roleId], limit: 1 }, transaction);
 
     if (targetRole.roles.length === 0) {
-      throw new NotFoundError('Role not found', 'errors:notFound.role', { roleId });
+      throw new NotFoundError('Role', roleId);
     }
 
     // Guard: Cannot invite with a role of equal or higher privilege than own role
     if (!canAssignRole(currentUserRoleName, targetRole.roles[0].name)) {
       throw new AuthorizationError(
-        'Cannot invite members with equal or higher privilege than your own role',
-        'errors:auth.cannotAssignHigherRole'
+        'Cannot invite members with equal or higher privilege than your own role'
       );
     }
   }
@@ -119,7 +118,7 @@ export class OrganizationInvitationService extends AuditService {
     const context = 'OrganizationInvitationService.createInvitation';
     const validatedParams = validateInput(createInvitationParamsSchema, params, context);
 
-    const invitation = await this.repositories.organizationInvitationRepository.createInvitation(
+    const invitation = await this.organizationInvitationRepository.createInvitation(
       validatedParams,
       transaction
     );
@@ -141,7 +140,7 @@ export class OrganizationInvitationService extends AuditService {
       context,
     };
 
-    await this.logCreate(invitation.id, newValues, metadata, transaction);
+    await this.audit.logCreate(invitation.id, newValues, metadata, transaction);
 
     return validateOutput(
       createDynamicSingleSchema(organizationInvitationSchema),
@@ -157,11 +156,10 @@ export class OrganizationInvitationService extends AuditService {
     const context = 'OrganizationInvitationService.getInvitationByToken';
     validateInput(getInvitationByTokenParamsSchema, params, context);
 
-    const invitation =
-      await this.repositories.organizationInvitationRepository.getInvitationByToken(
-        params,
-        transaction
-      );
+    const invitation = await this.organizationInvitationRepository.getInvitationByToken(
+      params,
+      transaction
+    );
 
     if (!invitation) {
       return null;
@@ -178,7 +176,7 @@ export class OrganizationInvitationService extends AuditService {
     id: string,
     transaction?: Transaction
   ): Promise<OrganizationInvitation | null> {
-    const invitation = await this.repositories.organizationInvitationRepository.getInvitationById(
+    const invitation = await this.organizationInvitationRepository.getInvitationById(
       id,
       transaction
     );
@@ -201,11 +199,10 @@ export class OrganizationInvitationService extends AuditService {
       context
     );
 
-    const result =
-      await this.repositories.organizationInvitationRepository.getOrganizationInvitations(
-        validatedParams,
-        transaction
-      );
+    const result = await this.organizationInvitationRepository.getOrganizationInvitations(
+      validatedParams,
+      transaction
+    );
 
     const transformedResult = {
       items: result.invitations,
@@ -234,12 +231,11 @@ export class OrganizationInvitationService extends AuditService {
       context
     );
 
-    const invitation =
-      await this.repositories.organizationInvitationRepository.checkPendingInvitation(
-        validatedParams.email,
-        validatedParams.organizationId,
-        transaction
-      );
+    const invitation = await this.organizationInvitationRepository.checkPendingInvitation(
+      validatedParams.email,
+      validatedParams.organizationId,
+      transaction
+    );
 
     if (!invitation) {
       return null;
@@ -263,21 +259,16 @@ export class OrganizationInvitationService extends AuditService {
     const { id: invitationId, ...updateData } = validatedParams;
 
     // Get old values for audit
-    const oldInvitation =
-      await this.repositories.organizationInvitationRepository.getInvitationById(
-        invitationId,
-        transaction
-      );
+    const oldInvitation = await this.organizationInvitationRepository.getInvitationById(
+      invitationId,
+      transaction
+    );
 
     if (!oldInvitation) {
-      throw new NotFoundError(
-        `Invitation with id ${invitationId} not found`,
-        'errors:notFound.invitation',
-        { id: invitationId }
-      );
+      throw new NotFoundError('Invitation', invitationId);
     }
 
-    const invitation = await this.repositories.organizationInvitationRepository.updateInvitation(
+    const invitation = await this.organizationInvitationRepository.updateInvitation(
       invitationId,
       updateData,
       transaction
@@ -301,7 +292,7 @@ export class OrganizationInvitationService extends AuditService {
       context,
     };
 
-    await this.logUpdate(invitation.id, oldValues, newValues, metadata, transaction);
+    await this.audit.logUpdate(invitation.id, oldValues, newValues, metadata, transaction);
 
     return validateOutput(
       createDynamicSingleSchema(organizationInvitationSchema),
@@ -317,11 +308,10 @@ export class OrganizationInvitationService extends AuditService {
     const context = 'OrganizationInvitationService.revokeInvitation';
     const validatedParams = validateInput(revokeInvitationParamsSchema, { id }, context);
 
-    const invitation =
-      await this.repositories.organizationInvitationRepository.softDeleteInvitation(
-        validatedParams.id,
-        transaction
-      );
+    const invitation = await this.organizationInvitationRepository.softDeleteInvitation(
+      validatedParams.id,
+      transaction
+    );
 
     const oldValues = {
       id: invitation.id,
@@ -342,7 +332,7 @@ export class OrganizationInvitationService extends AuditService {
       context,
     };
 
-    await this.logSoftDelete(invitation.id, oldValues, newValues, metadata, transaction);
+    await this.audit.logSoftDelete(invitation.id, oldValues, newValues, metadata, transaction);
 
     return validateOutput(
       createDynamicSingleSchema(organizationInvitationSchema),
@@ -356,13 +346,12 @@ export class OrganizationInvitationService extends AuditService {
     userId: string,
     transaction?: Transaction
   ): Promise<boolean> {
-    const organizationUsers =
-      await this.repositories.organizationUserRepository.getOrganizationUsers(
-        {
-          organizationId,
-        },
-        transaction
-      );
+    const organizationUsers = await this.organizationUserRepository.getOrganizationUsers(
+      {
+        organizationId,
+      },
+      transaction
+    );
 
     return organizationUsers.some((ou) => ou.userId === userId);
   }

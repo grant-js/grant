@@ -1,4 +1,3 @@
-import { DbSchema } from '@grantjs/database';
 import {
   MutationRemoveOrganizationMemberArgs,
   MutationUpdateOrganizationMemberArgs,
@@ -8,24 +7,26 @@ import {
 } from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
-import { TransactionManager } from '@/lib/transaction-manager.lib';
-import { Services } from '@/services';
+import type { Transaction } from '@/lib/transaction-manager.lib';
 
-import { CacheHandler } from './base/cache-handler';
+import { CacheHandler, type ScopeServices } from './base/cache-handler';
+
+import type { IOrganizationMemberService, ITransactionalConnection } from '@grantjs/core';
 
 export class OrganizationMembersHandler extends CacheHandler {
   constructor(
-    readonly cache: IEntityCacheAdapter,
-    readonly services: Services,
-    readonly db: DbSchema
+    private readonly organizationMembers: IOrganizationMemberService,
+    cache: IEntityCacheAdapter,
+    scopeServices: ScopeServices,
+    private readonly db: ITransactionalConnection<Transaction>
   ) {
-    super(cache, services);
+    super(cache, scopeServices);
   }
 
   public async getOrganizationMembers(
     params: QueryOrganizationMembersArgs
   ): Promise<OrganizationMemberPage> {
-    return await this.services.organizationMembers.getOrganizationMembers(params);
+    return await this.organizationMembers.getOrganizationMembers(params);
   }
 
   public async updateOrganizationMember(
@@ -33,8 +34,8 @@ export class OrganizationMembersHandler extends CacheHandler {
   ): Promise<OrganizationMember> {
     const { userId, input } = params;
 
-    const result = await TransactionManager.withTransaction(this.db, async (tx) => {
-      return await this.services.organizationMembers.updateOrganizationMember(userId, input, tx);
+    const result = await this.db.withTransaction(async (tx) => {
+      return await this.organizationMembers.updateOrganizationMember(userId, input, tx);
     });
 
     await this.invalidateAuthorizationCacheForUser(userId);
@@ -47,8 +48,8 @@ export class OrganizationMembersHandler extends CacheHandler {
   ): Promise<OrganizationMember> {
     const { userId, input } = params;
 
-    const result = await TransactionManager.withTransaction(this.db, async (tx) => {
-      return await this.services.organizationMembers.removeOrganizationMember(userId, input, tx);
+    const result = await this.db.withTransaction(async (tx) => {
+      return await this.organizationMembers.removeOrganizationMember(userId, input, tx);
     });
 
     await this.invalidateAuthorizationCacheForUser(userId);

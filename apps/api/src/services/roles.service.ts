@@ -1,6 +1,4 @@
 import { ROLES } from '@grantjs/constants';
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, roleAuditLogs } from '@grantjs/database';
 import {
   CreateRoleInput,
   MutationDeleteRoleArgs,
@@ -12,12 +10,9 @@ import {
 
 import { BadRequestError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams, SelectedFields } from '@/types';
 
 import {
-  AuditService,
-  DeleteParams,
-  SelectedFields,
   createDynamicPaginatedSchema,
   createDynamicSingleSchema,
   validateInput,
@@ -31,14 +26,13 @@ import {
   updateRoleArgsSchema,
 } from './roles.schemas';
 
-export class RoleService extends AuditService {
+import type { IAuditLogger, IRoleRepository, IRoleService } from '@grantjs/core';
+
+export class RoleService implements IRoleService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(roleAuditLogs, 'roleId', user, db);
-  }
+    private readonly roleRepository: IRoleRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private getCorePlatformRoleNames(): string[] {
     return Object.values(ROLES).map((role) => role.name);
@@ -48,23 +42,19 @@ export class RoleService extends AuditService {
     const coreRoleNames = this.getCorePlatformRoleNames();
     if (coreRoleNames.includes(roleName)) {
       throw new BadRequestError(
-        `Role name '${roleName}' is reserved for core platform roles and cannot be used`,
-        'errors:validation.reservedRoleName',
-        {
-          roleName,
-        }
+        `Role name '${roleName}' is reserved for core platform roles and cannot be used`
       );
     }
   }
 
   private async getRole(roleId: string): Promise<Role> {
-    const existingRoles = await this.repositories.roleRepository.getRoles({
+    const existingRoles = await this.roleRepository.getRoles({
       ids: [roleId],
       limit: 1,
     });
 
     if (existingRoles.roles.length === 0) {
-      throw new NotFoundError('Role not found', 'errors:notFound.role');
+      throw new NotFoundError('Role');
     }
 
     return existingRoles.roles[0];
@@ -75,7 +65,7 @@ export class RoleService extends AuditService {
   ): Promise<RolePage> {
     const context = 'RoleService.getRoles';
     validateInput(getRolesParamsSchema, params, context);
-    const result = await this.repositories.roleRepository.getRoles(params);
+    const result = await this.roleRepository.getRoles(params);
 
     const transformedResult = {
       items: result.roles,
@@ -101,7 +91,7 @@ export class RoleService extends AuditService {
 
     this.validateRoleNameNotReserved(validatedParams.name);
 
-    const role = await this.repositories.roleRepository.createRole(validatedParams, transaction);
+    const role = await this.roleRepository.createRole(validatedParams, transaction);
 
     const newValues = {
       id: role.id,
@@ -116,7 +106,7 @@ export class RoleService extends AuditService {
       context,
     };
 
-    await this.logCreate(role.id, newValues, metadata, transaction);
+    await this.audit.logCreate(role.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(roleSchema), role, context);
   }
@@ -134,7 +124,7 @@ export class RoleService extends AuditService {
     }
 
     const oldRole = await this.getRole(id);
-    const updatedRole = await this.repositories.roleRepository.updateRole(id, input, transaction);
+    const updatedRole = await this.roleRepository.updateRole(id, input, transaction);
 
     const oldValues = {
       id: oldRole.id,
@@ -158,7 +148,7 @@ export class RoleService extends AuditService {
       context,
     };
 
-    await this.logUpdate(updatedRole.id, oldValues, newValues, metadata, transaction);
+    await this.audit.logUpdate(updatedRole.id, oldValues, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(roleSchema), updatedRole, context);
   }
@@ -175,8 +165,8 @@ export class RoleService extends AuditService {
     const isHardDelete = hardDelete === true;
 
     const deletedRole = isHardDelete
-      ? await this.repositories.roleRepository.hardDeleteRole({ id }, transaction)
-      : await this.repositories.roleRepository.softDeleteRole({ id }, transaction);
+      ? await this.roleRepository.hardDeleteRole({ id }, transaction)
+      : await this.roleRepository.softDeleteRole({ id }, transaction);
 
     const oldValues = {
       id: oldRole.id,
@@ -192,14 +182,14 @@ export class RoleService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(deletedRole.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(deletedRole.id, oldValues, metadata, transaction);
     } else {
       const newValues = {
         ...oldValues,
         deletedAt: deletedRole.deletedAt,
       };
 
-      await this.logSoftDelete(deletedRole.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(deletedRole.id, oldValues, newValues, metadata, transaction);
     }
 
     return validateOutput(createDynamicSingleSchema(roleSchema), deletedRole, context);

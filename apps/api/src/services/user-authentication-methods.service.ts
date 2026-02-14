@@ -1,5 +1,3 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, userAuthenticationMethodsAuditLogs } from '@grantjs/database';
 import {
   CreateUserAuthenticationMethodInput,
   DeleteUserAuthenticationMethodInput,
@@ -23,20 +21,12 @@ import {
   hashSecret,
   isTokenValid,
   verifySecret,
-  type Token,
 } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams, SelectedFields } from '@/types';
+import type { Otp } from '@/types';
 
-import {
-  AuditService,
-  DeleteParams,
-  SelectedFields,
-  createDynamicSingleSchema,
-  emailSchema,
-  validateInput,
-  validateOutput,
-} from './common';
+import { createDynamicSingleSchema, emailSchema, validateInput, validateOutput } from './common';
 import {
   createUserAuthenticationMethodInputSchema,
   deleteUserAuthenticationMethodArgsSchema,
@@ -49,35 +39,38 @@ import {
   userAuthenticationMethodSchema,
 } from './user-authentication-methods.schemas';
 
+import type {
+  IAuditLogger,
+  IUserAuthenticationMethodRepository,
+  IUserAuthenticationMethodService,
+  IUserSessionRepository,
+} from '@grantjs/core';
+
 interface ProcessedProvider {
   providerData: Record<string, unknown>;
   isVerified: boolean;
   name: string;
 }
 
-export type Otp = Token;
 
-export class UserAuthenticationMethodService extends AuditService {
+export class UserAuthenticationMethodService implements IUserAuthenticationMethodService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(userAuthenticationMethodsAuditLogs, 'userAuthenticationMethodId', user, db);
-  }
+    private readonly userAuthenticationMethodRepository: IUserAuthenticationMethodRepository,
+    private readonly userSessionRepository: IUserSessionRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   public async getUserAuthenticationMethod(
     id: string,
     transaction?: Transaction
   ): Promise<UserAuthenticationMethod> {
-    const method =
-      await this.repositories.userAuthenticationMethodRepository.getUserAuthenticationMethod(
-        id,
-        transaction
-      );
+    const method = await this.userAuthenticationMethodRepository.getUserAuthenticationMethod(
+      id,
+      transaction
+    );
 
     if (!method) {
-      throw new NotFoundError('User authentication method not found', 'errors:auth.methodNotFound');
+      throw new NotFoundError('UserAuthenticationMethod');
     }
 
     return method;
@@ -89,13 +82,12 @@ export class UserAuthenticationMethodService extends AuditService {
     requestedFields?: string[],
     transaction?: Transaction
   ): Promise<UserAuthenticationMethod | null> {
-    const method =
-      await this.repositories.userAuthenticationMethodRepository.findByProviderAndProviderId(
-        provider,
-        providerId,
-        undefined,
-        transaction
-      );
+    const method = await this.userAuthenticationMethodRepository.findByProviderAndProviderId(
+      provider,
+      providerId,
+      undefined,
+      transaction
+    );
 
     if (method) {
       return method;
@@ -108,10 +100,7 @@ export class UserAuthenticationMethodService extends AuditService {
     email: string,
     transaction?: Transaction
   ): Promise<UserAuthenticationMethod | null> {
-    const method = await this.repositories.userAuthenticationMethodRepository.findByEmail(
-      email,
-      transaction
-    );
+    const method = await this.userAuthenticationMethodRepository.findByEmail(email, transaction);
 
     return method || null;
   }
@@ -122,11 +111,10 @@ export class UserAuthenticationMethodService extends AuditService {
   ): Promise<UserAuthenticationMethod[]> {
     const context = 'UserAuthenticationMethodService.getUserAuthenticationMethods';
     validateInput(queryUserAuthenticationMethodsArgsSchema, params, context);
-    const result =
-      await this.repositories.userAuthenticationMethodRepository.getUserAuthenticationMethods(
-        params,
-        transaction
-      );
+    const result = await this.userAuthenticationMethodRepository.getUserAuthenticationMethods(
+      params,
+      transaction
+    );
 
     return result.map((method: UserAuthenticationMethod) => {
       return validateOutput(userAuthenticationMethodSchema, method, context);
@@ -150,11 +138,7 @@ export class UserAuthenticationMethodService extends AuditService {
 
     const hasProvider = existingMethods.some((m) => m.provider === params.provider);
     if (hasProvider) {
-      throw new BadRequestError(
-        `User already has a ${params.provider} authentication method`,
-        'errors:auth.duplicateProvider',
-        { provider: params.provider }
-      );
+      throw new BadRequestError(`User already has a ${params.provider} authentication method`);
     }
 
     const existingAuthMethod = await this.findByProviderAndProviderId(
@@ -164,18 +148,14 @@ export class UserAuthenticationMethodService extends AuditService {
     );
 
     if (existingAuthMethod && existingAuthMethod.userId !== params.userId) {
-      throw new ConflictError(
-        'This authentication method is already connected to another account',
-        'errors:auth.providerAlreadyConnected',
-        { provider: params.provider, providerId: params.providerId }
-      );
+      throw new ConflictError('This authentication method is already connected to another account');
     }
 
     const hasPrimaryMethod = existingMethods.some((m) => m.isPrimary);
     const isPrimary = !hasPrimaryMethod;
 
     const userAuthenticationMethod =
-      await this.repositories.userAuthenticationMethodRepository.createUserAuthenticationMethod(
+      await this.userAuthenticationMethodRepository.createUserAuthenticationMethod(
         {
           ...params,
           isPrimary,
@@ -198,7 +178,7 @@ export class UserAuthenticationMethodService extends AuditService {
       context,
     };
 
-    await this.logCreate(userAuthenticationMethod.id, newValues, metadata, transaction);
+    await this.audit.logCreate(userAuthenticationMethod.id, newValues, metadata, transaction);
 
     return validateOutput(
       createDynamicSingleSchema(userAuthenticationMethodSchema),
@@ -219,7 +199,7 @@ export class UserAuthenticationMethodService extends AuditService {
     const oldUserAuthenticationMethod = await this.getUserAuthenticationMethod(id);
 
     const updatedUserAuthenticationMethod =
-      await this.repositories.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
+      await this.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
         id,
         input,
         transaction
@@ -251,7 +231,7 @@ export class UserAuthenticationMethodService extends AuditService {
       context,
     };
 
-    await this.logUpdate(
+    await this.audit.logUpdate(
       updatedUserAuthenticationMethod.id,
       oldValues,
       newValues,
@@ -298,10 +278,7 @@ export class UserAuthenticationMethodService extends AuditService {
     const oldUserAuthenticationMethod = await this.getUserAuthenticationMethod(id);
 
     if (oldUserAuthenticationMethod.isPrimary) {
-      throw new BadRequestError(
-        'Cannot delete primary authentication method',
-        'errors:auth.cannotDeletePrimary'
-      );
+      throw new BadRequestError('Cannot delete primary authentication method');
     }
 
     const allMethods = await this.getUserAuthenticationMethods(
@@ -310,20 +287,17 @@ export class UserAuthenticationMethodService extends AuditService {
     );
 
     if (allMethods.length === 1) {
-      throw new BadRequestError(
-        'Cannot delete last authentication method',
-        'errors:auth.cannotDeleteLastMethod'
-      );
+      throw new BadRequestError('Cannot delete last authentication method');
     }
 
     const isHardDelete = hardDelete === true;
 
     const deletedUserAuthenticationMethod = isHardDelete
-      ? await this.repositories.userAuthenticationMethodRepository.hardDeleteUserAuthenticationMethod(
+      ? await this.userAuthenticationMethodRepository.hardDeleteUserAuthenticationMethod(
           validatedParams,
           transaction
         )
-      : await this.repositories.userAuthenticationMethodRepository.softDeleteUserAuthenticationMethod(
+      : await this.userAuthenticationMethodRepository.softDeleteUserAuthenticationMethod(
           validatedParams,
           transaction
         );
@@ -345,7 +319,7 @@ export class UserAuthenticationMethodService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(
+      await this.audit.logHardDelete(
         deletedUserAuthenticationMethod.id,
         oldValues,
         metadata,
@@ -356,7 +330,7 @@ export class UserAuthenticationMethodService extends AuditService {
         ...oldValues,
         deletedAt: deletedUserAuthenticationMethod.deletedAt,
       };
-      await this.logSoftDelete(
+      await this.audit.logSoftDelete(
         deletedUserAuthenticationMethod.id,
         oldValues,
         newValues,
@@ -411,7 +385,7 @@ export class UserAuthenticationMethodService extends AuditService {
         };
       }
       default:
-        throw new BadRequestError('Invalid action', 'errors:auth.invalidAction');
+        throw new BadRequestError('Invalid action');
     }
   }
 
@@ -424,11 +398,7 @@ export class UserAuthenticationMethodService extends AuditService {
 
     const githubIdStr = validatedProviderData.githubId.toString();
     if (providerId !== githubIdStr) {
-      throw new ValidationError(
-        'Provider ID must match GitHub user ID',
-        [],
-        'errors:auth.providerIdMismatch'
-      );
+      throw new ValidationError('Provider ID must match GitHub user ID');
     }
 
     const name = validatedProviderData.name || providerId || 'User';
@@ -460,13 +430,12 @@ export class UserAuthenticationMethodService extends AuditService {
       context
     );
 
-    const result =
-      await this.repositories.userAuthenticationMethodRepository.findByProviderAndProviderId(
-        provider,
-        providerId,
-        undefined,
-        transaction
-      );
+    const result = await this.userAuthenticationMethodRepository.findByProviderAndProviderId(
+      provider,
+      providerId,
+      undefined,
+      transaction
+    );
 
     if (result) {
       return validateOutput(
@@ -492,9 +461,7 @@ export class UserAuthenticationMethodService extends AuditService {
 
     if (existingMethod) {
       throw new ConflictError(
-        `Duplicate authentication method: A user with provider '${provider}' and identifier '${providerId}' already exists. Each provider-identifier combination must be unique.`,
-        'errors:conflict.duplicateAuthMethod',
-        { provider, providerId }
+        `Duplicate authentication method: A user with provider '${provider}' and identifier '${providerId}' already exists. Each provider-identifier combination must be unique.`
       );
     }
   }
@@ -508,12 +475,7 @@ export class UserAuthenticationMethodService extends AuditService {
     validateInput(parseProviderDataSchema, { providerId, provider, providerData }, context);
 
     if (!providerData || typeof providerData !== 'object') {
-      throw new ValidationError(
-        'Invalid provider data: must be a valid JSON object',
-        [],
-        'errors:validation.invalid',
-        { field: 'providerData' }
-      );
+      throw new ValidationError('Invalid provider data: must be a valid JSON object');
     }
 
     switch (provider) {
@@ -522,9 +484,7 @@ export class UserAuthenticationMethodService extends AuditService {
       case UserAuthenticationMethodProvider.Github:
         return this.processGithubProvider(providerId, providerData, context);
       default:
-        throw new BadRequestError('Invalid provider', 'errors:validation.invalid', {
-          field: 'provider',
-        });
+        throw new BadRequestError('Invalid provider');
     }
   }
 
@@ -542,13 +502,13 @@ export class UserAuthenticationMethodService extends AuditService {
   ): Promise<UserAuthenticationMethod> {
     const context = 'UserAuthenticationMethodService.verifyEmail';
 
-    const targetMethod = await this.repositories.userAuthenticationMethodRepository.findByToken(
+    const targetMethod = await this.userAuthenticationMethodRepository.findByToken(
       token,
       transaction
     );
 
     if (!targetMethod) {
-      throw new NotFoundError('Invalid or expired verification token', 'errors:auth.invalidToken');
+      throw new NotFoundError('UserAuthenticationMethod');
     }
 
     if (targetMethod.isVerified) {
@@ -563,18 +523,18 @@ export class UserAuthenticationMethodService extends AuditService {
     const otp = providerData.otp as Otp | undefined;
 
     if (!otp) {
-      throw new BadRequestError('Invalid verification token', 'errors:auth.invalidToken');
+      throw new BadRequestError('Invalid verification token');
     }
 
     if (!isTokenValid(otp)) {
-      throw new BadRequestError('Verification token has expired', 'errors:auth.tokenExpired');
+      throw new BadRequestError('Verification token has expired');
     }
 
     const updatedProviderData = { ...providerData };
     delete updatedProviderData.otp;
 
     const updatedMethod =
-      await this.repositories.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
+      await this.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
         targetMethod.id,
         {
           isVerified: true,
@@ -605,18 +565,18 @@ export class UserAuthenticationMethodService extends AuditService {
     );
 
     if (!method) {
-      throw new NotFoundError('Authentication method not found', 'errors:auth.methodNotFound');
+      throw new NotFoundError('UserAuthenticationMethod');
     }
 
     if (method.isVerified) {
-      throw new BadRequestError('Email is already verified', 'errors:auth.alreadyVerified');
+      throw new BadRequestError('Email is already verified');
     }
 
     const otp = this.generateOtp();
     const providerData = (method.providerData as Record<string, unknown>) || {};
     providerData.otp = otp;
 
-    await this.repositories.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
+    await this.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
       method.id,
       {
         providerData,
@@ -648,7 +608,7 @@ export class UserAuthenticationMethodService extends AuditService {
     const providerData = (method.providerData as Record<string, unknown>) || {};
     providerData.passwordResetOtp = otp;
 
-    await this.repositories.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
+    await this.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
       method.id,
       {
         providerData,
@@ -666,14 +626,13 @@ export class UserAuthenticationMethodService extends AuditService {
   ): Promise<string | null> {
     validateInput(passwordPolicySchema, newPassword, 'password');
 
-    const methods =
-      await this.repositories.userAuthenticationMethodRepository.getUserAuthenticationMethods(
-        {
-          provider: UserAuthenticationMethodProvider.Email,
-          requestedFields: ['id', 'userId', 'providerData'],
-        },
-        transaction
-      );
+    const methods = await this.userAuthenticationMethodRepository.getUserAuthenticationMethods(
+      {
+        provider: UserAuthenticationMethodProvider.Email,
+        requestedFields: ['id', 'userId', 'providerData'],
+      },
+      transaction
+    );
 
     let targetMethod: UserAuthenticationMethod | null = null;
     let targetUserId: string | null = null;
@@ -700,7 +659,7 @@ export class UserAuthenticationMethodService extends AuditService {
 
     delete providerData.passwordResetOtp;
 
-    await this.repositories.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
+    await this.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
       targetMethod.id,
       {
         providerData,
@@ -712,7 +671,7 @@ export class UserAuthenticationMethodService extends AuditService {
   }
 
   public async invalidateAllUserSessions(userId: string, transaction?: Transaction): Promise<void> {
-    const sessions = await this.repositories.userSessionRepository.getUserSessions(
+    const sessions = await this.userSessionRepository.getUserSessions(
       {
         userId,
         requestedFields: ['id'],
@@ -721,10 +680,7 @@ export class UserAuthenticationMethodService extends AuditService {
     );
 
     for (const session of sessions.userSessions) {
-      await this.repositories.userSessionRepository.softDeleteUserSession(
-        { id: session.id },
-        transaction
-      );
+      await this.userSessionRepository.softDeleteUserSession({ id: session.id }, transaction);
     }
   }
 
@@ -738,21 +694,17 @@ export class UserAuthenticationMethodService extends AuditService {
 
     validateInput(passwordPolicySchema, newPassword, context);
 
-    const methods =
-      await this.repositories.userAuthenticationMethodRepository.getUserAuthenticationMethods(
-        {
-          userId,
-          provider: UserAuthenticationMethodProvider.Email,
-          requestedFields: ['id', 'userId', 'providerData'],
-        },
-        transaction
-      );
+    const methods = await this.userAuthenticationMethodRepository.getUserAuthenticationMethods(
+      {
+        userId,
+        provider: UserAuthenticationMethodProvider.Email,
+        requestedFields: ['id', 'userId', 'providerData'],
+      },
+      transaction
+    );
 
     if (methods.length === 0) {
-      throw new NotFoundError(
-        'Email authentication method not found',
-        'errors:auth.methodNotFound'
-      );
+      throw new NotFoundError('UserAuthenticationMethod');
     }
 
     const emailMethod = methods[0];
@@ -760,17 +712,17 @@ export class UserAuthenticationMethodService extends AuditService {
     const hashedPassword = providerData.hashedPassword as string | undefined;
 
     if (!hashedPassword) {
-      throw new BadRequestError('Password not set for this account', 'errors:auth.passwordNotSet');
+      throw new BadRequestError('Password not set for this account');
     }
 
     if (!verifySecret(currentPassword, hashedPassword)) {
-      throw new AuthenticationError('Current password is incorrect', 'errors:auth.invalidPassword');
+      throw new AuthenticationError('Current password is incorrect');
     }
 
     const newHashedPassword = hashSecret(newPassword);
     providerData.hashedPassword = newHashedPassword;
 
-    await this.repositories.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
+    await this.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
       emailMethod.id,
       {
         providerData,

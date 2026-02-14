@@ -1,5 +1,3 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, resourceAuditLogs } from '@grantjs/database';
 import {
   CreateResourceInput,
   MutationDeleteResourceArgs,
@@ -12,12 +10,9 @@ import {
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams, SelectedFields } from '@/types';
 
 import {
-  AuditService,
-  DeleteParams,
-  SelectedFields,
   createDynamicPaginatedSchema,
   createDynamicSingleSchema,
   validateInput,
@@ -31,23 +26,22 @@ import {
   updateResourceParamsSchema,
 } from './resources.schemas';
 
-export class ResourceService extends AuditService {
+import type { IAuditLogger, IResourceRepository, IResourceService } from '@grantjs/core';
+
+export class ResourceService implements IResourceService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(resourceAuditLogs, 'resourceId', user, db);
-  }
+    private readonly resourceRepository: IResourceRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async getResource(resourceId: string, transaction?: Transaction): Promise<Resource> {
-    const existingResources = await this.repositories.resourceRepository.getResources(
+    const existingResources = await this.resourceRepository.getResources(
       { ids: [resourceId], limit: 1 },
       transaction
     );
 
     if (existingResources.resources.length === 0) {
-      throw new NotFoundError('Resource not found', 'errors:notFound.resource');
+      throw new NotFoundError('Resource');
     }
 
     return existingResources.resources[0];
@@ -59,7 +53,7 @@ export class ResourceService extends AuditService {
     const context = 'ResourceService.getResources';
     validateInput(getResourcesParamsSchema, params, context);
 
-    const result = await this.repositories.resourceRepository.getResources(params);
+    const result = await this.resourceRepository.getResources(params);
 
     const transformedResult = {
       items: result.resources,
@@ -83,10 +77,7 @@ export class ResourceService extends AuditService {
     const context = 'ResourceService.createResource';
     const validatedParams = validateInput(createResourceParamsSchema, params, context);
 
-    const resource = await this.repositories.resourceRepository.createResource(
-      validatedParams,
-      transaction
-    );
+    const resource = await this.resourceRepository.createResource(validatedParams, transaction);
 
     const newValues = {
       id: resource.id,
@@ -103,7 +94,7 @@ export class ResourceService extends AuditService {
       context,
     };
 
-    await this.logCreate(resource.id, newValues, metadata, transaction);
+    await this.audit.logCreate(resource.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(resourceSchema), resource, context);
   }
@@ -118,7 +109,7 @@ export class ResourceService extends AuditService {
     const { id, input } = validatedParams;
 
     const oldResource = await this.getResource(id, transaction);
-    const updatedResource = await this.repositories.resourceRepository.updateResource(
+    const updatedResource = await this.resourceRepository.updateResource(
       { id, input },
       transaction
     );
@@ -149,7 +140,7 @@ export class ResourceService extends AuditService {
       context,
     };
 
-    await this.logUpdate(updatedResource.id, oldValues, newValues, metadata, transaction);
+    await this.audit.logUpdate(updatedResource.id, oldValues, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(resourceSchema), updatedResource, context);
   }
@@ -168,7 +159,7 @@ export class ResourceService extends AuditService {
       return;
     }
 
-    const existingResource = await this.repositories.resourceRepository.findResourceBySlug(
+    const existingResource = await this.resourceRepository.findResourceBySlug(
       slug,
       resourceIdsToCheck,
       transaction
@@ -177,12 +168,8 @@ export class ResourceService extends AuditService {
     if (existingResource) {
       throw new ConflictError(
         `Resource with slug '${slug}' already exists in this scope`,
-        'errors:conflict.duplicateEntry',
-        {
-          resource: 'Resource',
-          field: 'slug',
-          value: slug,
-        }
+        'Resource',
+        'slug'
       );
     }
   }
@@ -200,8 +187,8 @@ export class ResourceService extends AuditService {
     const isHardDelete = hardDelete === true;
 
     const deletedResource = isHardDelete
-      ? await this.repositories.resourceRepository.hardDeleteResource(validatedParams, transaction)
-      : await this.repositories.resourceRepository.softDeleteResource(validatedParams, transaction);
+      ? await this.resourceRepository.hardDeleteResource(validatedParams, transaction)
+      : await this.resourceRepository.softDeleteResource(validatedParams, transaction);
 
     const oldValues = {
       id: oldResource.id,
@@ -220,14 +207,20 @@ export class ResourceService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(deletedResource.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(deletedResource.id, oldValues, metadata, transaction);
     } else {
       const newValues = {
         ...oldValues,
         deletedAt: deletedResource.deletedAt,
       };
 
-      await this.logSoftDelete(deletedResource.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(
+        deletedResource.id,
+        oldValues,
+        newValues,
+        metadata,
+        transaction
+      );
     }
 
     return validateOutput(createDynamicSingleSchema(resourceSchema), deletedResource, context);

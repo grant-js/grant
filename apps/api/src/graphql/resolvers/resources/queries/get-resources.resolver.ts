@@ -1,5 +1,4 @@
-import { ResourceModel } from '@grantjs/database';
-import { QueryResolvers } from '@grantjs/schema';
+import { QueryResolvers, Resource } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
 import { getDirectFieldSelection } from '@/lib/field-selection.lib';
@@ -10,7 +9,7 @@ export const getResourcesResolver: QueryResolvers<GraphqlContext>['resources'] =
   context,
   info
 ) => {
-  const requestedFields = getDirectFieldSelection<keyof ResourceModel>(info, ['resources']);
+  const requestedFields = getDirectFieldSelection<keyof Resource>(info, ['resources']);
 
   const resources = await context.handlers.resources.getResources({
     scope,

@@ -5,8 +5,9 @@
  * - Validates that E2E_API_BASE_URL is set
  * - Waits for the API health endpoint to respond 200
  */
-import { config } from 'dotenv';
 import { resolve } from 'path';
+
+import { config } from 'dotenv';
 
 // Load .env.e2e from the monorepo root (two levels up from apps/api)
 config({ path: resolve(__dirname, '../../../../.env.e2e') });

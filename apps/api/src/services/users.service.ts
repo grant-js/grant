@@ -1,5 +1,9 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, userAuditLogs } from '@grantjs/database';
+import {
+  GrantAuth,
+  type IAuditLogger,
+  type IUserRepository,
+  type IUserService,
+} from '@grantjs/core';
 import {
   CreateUserInput,
   MutationDeleteUserArgs,
@@ -12,12 +16,9 @@ import {
 
 import { AuthenticationError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams, SelectedFields } from '@/types';
 
 import {
-  AuditService,
-  DeleteParams,
-  SelectedFields,
   createDynamicPaginatedSchema,
   createDynamicSingleSchema,
   deleteSchema,
@@ -32,23 +33,21 @@ import {
   userSchema,
 } from './users.schemas';
 
-export class UserService extends AuditService {
+export class UserService implements IUserService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(userAuditLogs, 'userId', user, db);
-  }
+    private readonly userRepository: IUserRepository,
+    private readonly user: GrantAuth | null,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async getUser(userId: string): Promise<User> {
-    const existingUsers = await this.repositories.userRepository.getUsers({
+    const existingUsers = await this.userRepository.getUsers({
       ids: [userId],
       limit: 1,
     });
 
     if (existingUsers.users.length === 0) {
-      throw new NotFoundError('User not found', 'errors:notFound.user');
+      throw new NotFoundError('User');
     }
 
     return existingUsers.users[0];
@@ -60,7 +59,7 @@ export class UserService extends AuditService {
   ): Promise<UserPage> {
     const context = 'UserService.getUsers';
     validateInput(queryUsersArgsSchema, params, context);
-    const result = await this.repositories.userRepository.getUsers(params, transaction);
+    const result = await this.userRepository.getUsers(params, transaction);
 
     const transformedResult = {
       items: result.users,
@@ -83,7 +82,7 @@ export class UserService extends AuditService {
   ): Promise<User> {
     const context = 'UserService.createUser';
     validateInput(createUserInputSchema, params, context);
-    const user = await this.repositories.userRepository.createUser(params, transaction);
+    const user = await this.userRepository.createUser(params, transaction);
 
     const newValues = {
       id: user.id,
@@ -97,7 +96,7 @@ export class UserService extends AuditService {
       context,
     };
 
-    await this.logCreate(user.id, newValues, metadata, transaction);
+    await this.audit.logCreate(user.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(userSchema), user, context);
   }
@@ -111,7 +110,7 @@ export class UserService extends AuditService {
     const validatedParams = validateInput(updateUserArgsSchema, { id, input }, context);
 
     const oldUser = await this.getUser(validatedParams.id);
-    const updatedUser = await this.repositories.userRepository.updateUser(
+    const updatedUser = await this.userRepository.updateUser(
       validatedParams.id,
       validatedParams.input,
       transaction
@@ -137,7 +136,7 @@ export class UserService extends AuditService {
       context,
     };
 
-    await this.logUpdate(updatedUser.id, oldValues, newValues, metadata, transaction);
+    await this.audit.logUpdate(updatedUser.id, oldValues, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(userSchema), updatedUser, context);
   }
@@ -170,19 +169,19 @@ export class UserService extends AuditService {
     // DELETE will trigger ON DELETE SET NULL on the audit row, but the old data
     // is preserved in the oldValues JSON column.
     if (isHardDelete) {
-      await this.logHardDelete(oldUser.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(oldUser.id, oldValues, metadata, transaction);
     }
 
     const deletedUser = isHardDelete
-      ? await this.repositories.userRepository.hardDeleteUser(validatedParams, transaction)
-      : await this.repositories.userRepository.softDeleteUser(validatedParams, transaction);
+      ? await this.userRepository.hardDeleteUser(validatedParams, transaction)
+      : await this.userRepository.softDeleteUser(validatedParams, transaction);
 
     if (!isHardDelete) {
       const newValues = {
         ...oldValues,
         deletedAt: deletedUser.deletedAt,
       };
-      await this.logSoftDelete(deletedUser.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(deletedUser.id, oldValues, newValues, metadata, transaction);
     }
 
     return validateOutput(createDynamicSingleSchema(userSchema), deletedUser, context);
@@ -196,7 +195,7 @@ export class UserService extends AuditService {
     const id = this.user?.userId;
 
     if (!id) {
-      throw new AuthenticationError('Not authenticated', 'errors:auth.unauthenticated');
+      throw new AuthenticationError('Not authenticated');
     }
 
     return this.deleteUser({ id, hardDelete }, transaction);
@@ -206,7 +205,7 @@ export class UserService extends AuditService {
     userId: string,
     transaction?: Transaction
   ): Promise<boolean> {
-    const usersResult = await this.repositories.userRepository.getUsers(
+    const usersResult = await this.userRepository.getUsers(
       {
         ids: [userId],
         limit: 1,

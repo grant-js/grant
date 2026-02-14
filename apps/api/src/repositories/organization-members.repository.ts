@@ -23,11 +23,13 @@ import {
 import { and, eq, ilike, isNull, or, sql } from 'drizzle-orm';
 
 import { BadRequestError, NotFoundError } from '@/lib/errors';
-import { createModuleLogger } from '@/lib/logger';
+import { createLogger } from '@/lib/logger';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
-export class OrganizationMemberRepository {
-  private readonly logger = createModuleLogger('OrganizationMemberRepository');
+import type { IOrganizationMemberRepository } from '@grantjs/core';
+
+export class OrganizationMemberRepository implements IOrganizationMemberRepository {
+  private readonly logger = createLogger('OrganizationMemberRepository');
 
   constructor(private db: DbSchema) {}
 
@@ -266,12 +268,7 @@ export class OrganizationMemberRepository {
               .limit(1);
 
             if (!userRole?.role) {
-              throw new BadRequestError(
-                `User ${member.userId} does not have a role assigned`,
-                'errors:validation.required',
-                { field: 'role', userId: member.userId },
-                { userId: member.userId }
-              );
+              throw new BadRequestError(`User ${member.userId} does not have a role assigned`);
             }
 
             return {
@@ -301,12 +298,7 @@ export class OrganizationMemberRepository {
               .limit(1);
 
             if (!invitationWithInviter) {
-              throw new NotFoundError(
-                `Invitation not found: ${member.invitationId}`,
-                'errors:notFound.invitation',
-                { invitationId: member.invitationId },
-                { invitationId: member.invitationId }
-              );
+              throw new NotFoundError('Invitation', member.invitationId);
             }
 
             const [roleData] = await dbInstance
@@ -316,12 +308,7 @@ export class OrganizationMemberRepository {
               .limit(1);
 
             if (!roleData) {
-              throw new NotFoundError(
-                `Role not found for invitation ${member.invitationId}`,
-                'errors:notFound.role',
-                { invitationId: member.invitationId, roleId: member.roleId },
-                { invitationId: member.invitationId, roleId: member.roleId }
-              );
+              throw new NotFoundError('Role', member.roleId ?? undefined);
             }
 
             // Construct invitation with inviter relation
@@ -345,10 +332,7 @@ export class OrganizationMemberRepository {
 
           // Fallback (shouldn't happen)
           throw new BadRequestError(
-            `Invalid member type or missing required data for member ${member.id}`,
-            'errors:validation.invalid',
-            { memberId: member.id, memberType: member.type },
-            { memberId: member.id, memberType: member.type }
+            `Invalid member type or missing required data for member ${member.id}`
           );
         })
       );
@@ -442,12 +426,7 @@ export class OrganizationMemberRepository {
         .limit(1);
 
       if (!userRole?.role) {
-        throw new BadRequestError(
-          `User ${memberData.userId} does not have a role assigned`,
-          'errors:validation.required',
-          { field: 'role', userId: memberData.userId },
-          { userId: memberData.userId }
-        );
+        throw new BadRequestError(`User ${memberData.userId} does not have a role assigned`);
       }
 
       return {

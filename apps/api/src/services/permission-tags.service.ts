@@ -1,5 +1,3 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, permissionTagAuditLogs } from '@grantjs/database';
 import {
   AddPermissionTagInput,
   PermissionTag,
@@ -9,15 +7,9 @@ import {
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
-import {
-  AuditService,
-  DeleteParams,
-  createDynamicSingleSchema,
-  validateInput,
-  validateOutput,
-} from './common';
+import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 import {
   addPermissionTagInputSchema,
   getPermissionTagIntersectionParamsSchema,
@@ -28,34 +20,38 @@ import {
   updatePermissionTagInputSchema,
 } from './permission-tags.schemas';
 
-export class PermissionTagService extends AuditService {
+import type {
+  IAuditLogger,
+  IPermissionRepository,
+  IPermissionTagRepository,
+  IPermissionTagService,
+  ITagRepository,
+} from '@grantjs/core';
+
+export class PermissionTagService implements IPermissionTagService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(permissionTagAuditLogs, 'permissionTagId', user, db);
-  }
+    private readonly permissionRepository: IPermissionRepository,
+    private readonly tagRepository: ITagRepository,
+    private readonly permissionTagRepository: IPermissionTagRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async permissionExists(permissionId: string, transaction?: Transaction): Promise<void> {
-    const permissions = await this.repositories.permissionRepository.getPermissions(
+    const permissions = await this.permissionRepository.getPermissions(
       { ids: [permissionId], limit: 1 },
       transaction
     );
 
     if (permissions.permissions.length === 0) {
-      throw new NotFoundError('Permission not found', 'errors:notFound.permission');
+      throw new NotFoundError('Permission');
     }
   }
 
   private async tagExists(tagId: string, transaction?: Transaction): Promise<void> {
-    const tags = await this.repositories.tagRepository.getTags(
-      { ids: [tagId], limit: 1 },
-      transaction
-    );
+    const tags = await this.tagRepository.getTags({ ids: [tagId], limit: 1 }, transaction);
 
     if (tags.tags.length === 0) {
-      throw new NotFoundError('Tag not found', 'errors:notFound.tag');
+      throw new NotFoundError('Tag');
     }
   }
 
@@ -66,11 +62,10 @@ export class PermissionTagService extends AuditService {
   ): Promise<boolean> {
     await this.permissionExists(permissionId, transaction);
     await this.tagExists(tagId, transaction);
-    const existingPermissionTags =
-      await this.repositories.permissionTagRepository.getPermissionTags(
-        { permissionId },
-        transaction
-      );
+    const existingPermissionTags = await this.permissionTagRepository.getPermissionTags(
+      { permissionId },
+      transaction
+    );
 
     return existingPermissionTags.some((pt) => pt.tagId === tagId);
   }
@@ -86,7 +81,7 @@ export class PermissionTagService extends AuditService {
 
     await this.permissionExists(permissionId, transaction);
 
-    const result = await this.repositories.permissionTagRepository.getPermissionTags(
+    const result = await this.permissionTagRepository.getPermissionTags(
       { permissionId },
       transaction
     );
@@ -110,7 +105,7 @@ export class PermissionTagService extends AuditService {
 
     const { permissionIds, tagIds } = validatedParams;
 
-    const result = await this.repositories.permissionTagRepository.getPermissionTagIntersection(
+    const result = await this.permissionTagRepository.getPermissionTagIntersection(
       permissionIds,
       tagIds,
       transaction
@@ -131,13 +126,10 @@ export class PermissionTagService extends AuditService {
     const hasTag = await this.permissionHasTag(permissionId, tagId, transaction);
 
     if (hasTag) {
-      throw new ConflictError('Permission already has this tag', 'errors:conflict.duplicateEntry', {
-        resource: 'PermissionTag',
-        field: 'tagId',
-      });
+      throw new ConflictError('Permission already has this tag', 'PermissionTag', 'tagId');
     }
 
-    const permissionTag = await this.repositories.permissionTagRepository.addPermissionTag(
+    const permissionTag = await this.permissionTagRepository.addPermissionTag(
       { permissionId, tagId, isPrimary },
       transaction
     );
@@ -154,7 +146,7 @@ export class PermissionTagService extends AuditService {
       context,
     };
 
-    await this.logCreate(permissionTag.id, newValues, metadata, transaction);
+    await this.audit.logCreate(permissionTag.id, newValues, metadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(permissionTagSchema), permissionTag, context);
   }
@@ -167,22 +159,21 @@ export class PermissionTagService extends AuditService {
     const validatedParams = validateInput(updatePermissionTagInputSchema, params, context);
     const { permissionId, tagId, isPrimary } = validatedParams;
 
-    const permissionTag = await this.repositories.permissionTagRepository.getPermissionTag(
+    const permissionTag = await this.permissionTagRepository.getPermissionTag(
       { permissionId, tagId },
       transaction
     );
 
-    const updatedPermissionTag =
-      await this.repositories.permissionTagRepository.updatePermissionTag(
-        { permissionId, tagId, isPrimary },
-        transaction
-      );
+    const updatedPermissionTag = await this.permissionTagRepository.updatePermissionTag(
+      { permissionId, tagId, isPrimary },
+      transaction
+    );
 
     const metadata = {
       context,
     };
 
-    await this.logUpdate(
+    await this.audit.logUpdate(
       updatedPermissionTag.id,
       permissionTag,
       updatedPermissionTag,
@@ -209,20 +200,14 @@ export class PermissionTagService extends AuditService {
     const hasTag = await this.permissionHasTag(permissionId, tagId, transaction);
 
     if (!hasTag) {
-      throw new NotFoundError('Permission does not have this tag', 'errors:notFound.tag');
+      throw new NotFoundError('Tag');
     }
 
     const isHardDelete = hardDelete === true;
 
     const permissionTag = isHardDelete
-      ? await this.repositories.permissionTagRepository.hardDeletePermissionTag(
-          validatedParams,
-          transaction
-        )
-      : await this.repositories.permissionTagRepository.softDeletePermissionTag(
-          validatedParams,
-          transaction
-        );
+      ? await this.permissionTagRepository.hardDeletePermissionTag(validatedParams, transaction)
+      : await this.permissionTagRepository.softDeletePermissionTag(validatedParams, transaction);
 
     const oldValues = {
       id: permissionTag.id,
@@ -243,9 +228,9 @@ export class PermissionTagService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(permissionTag.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(permissionTag.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(permissionTag.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(permissionTag.id, oldValues, newValues, metadata, transaction);
     }
 
     return validateOutput(createDynamicSingleSchema(permissionTagSchema), permissionTag, context);
@@ -259,7 +244,7 @@ export class PermissionTagService extends AuditService {
     const validatedParams = validateInput(removePermissionTagsInputSchema, params, context);
     const { tagId, hardDelete } = validatedParams;
 
-    const permissionTags = await this.repositories.permissionTagRepository.getPermissionTags(
+    const permissionTags = await this.permissionTagRepository.getPermissionTags(
       { tagId },
       transaction
     );
@@ -269,14 +254,8 @@ export class PermissionTagService extends AuditService {
     const deletedPermissionTags = await Promise.all(
       permissionTags.map((permissionTag) =>
         isHardDelete
-          ? this.repositories.permissionTagRepository.hardDeletePermissionTag(
-              permissionTag,
-              transaction
-            )
-          : this.repositories.permissionTagRepository.softDeletePermissionTag(
-              permissionTag,
-              transaction
-            )
+          ? this.permissionTagRepository.hardDeletePermissionTag(permissionTag, transaction)
+          : this.permissionTagRepository.softDeletePermissionTag(permissionTag, transaction)
       )
     );
 

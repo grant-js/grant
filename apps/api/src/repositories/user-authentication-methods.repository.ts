@@ -11,7 +11,7 @@ import {
 
 import { BadRequestError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { SelectedFields } from '@/services/common';
+import { SelectedFields } from '@/types';
 
 import {
   BaseUpdateArgs,
@@ -20,10 +20,12 @@ import {
   RelationsConfig,
 } from './common/EntityRepository';
 
-export class UserAuthenticationMethodRepository extends EntityRepository<
-  UserAuthenticationMethodModel,
-  UserAuthenticationMethod
-> {
+import type { IUserAuthenticationMethodRepository } from '@grantjs/core';
+
+export class UserAuthenticationMethodRepository
+  extends EntityRepository<UserAuthenticationMethodModel, UserAuthenticationMethod>
+  implements IUserAuthenticationMethodRepository
+{
   protected table = userAuthenticationMethods;
   protected schemaName = 'userAuthenticationMethods' as const;
   protected searchFields: Array<keyof UserAuthenticationMethodModel> = ['provider', 'providerId'];

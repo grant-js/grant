@@ -1,5 +1,3 @@
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, organizationProjectsAuditLogs } from '@grantjs/database';
 import {
   AddOrganizationProjectInput,
   OrganizationProject,
@@ -8,15 +6,9 @@ import {
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams } from '@/types';
 
-import {
-  AuditService,
-  DeleteParams,
-  createDynamicSingleSchema,
-  validateInput,
-  validateOutput,
-} from './common';
+import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 import {
   addOrganizationProjectInputSchema,
   organizationProjectSchema,
@@ -25,20 +17,27 @@ import {
   removeOrganizationProjectInputSchema,
 } from './organization-projects.schemas';
 
-export class OrganizationProjectService extends AuditService {
+import type {
+  IAuditLogger,
+  IOrganizationProjectRepository,
+  IOrganizationProjectService,
+  IOrganizationRepository,
+  IProjectRepository,
+} from '@grantjs/core';
+
+export class OrganizationProjectService implements IOrganizationProjectService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(organizationProjectsAuditLogs, 'organizationProjectId', user, db);
-  }
+    private readonly organizationRepository: IOrganizationRepository,
+    private readonly projectRepository: IProjectRepository,
+    private readonly organizationProjectRepository: IOrganizationProjectRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private async organizationExists(
     organizationId: string,
     transaction?: Transaction
   ): Promise<void> {
-    const organizations = await this.repositories.organizationRepository.getOrganizations(
+    const organizations = await this.organizationRepository.getOrganizations(
       {
         ids: [organizationId],
         limit: 1,
@@ -47,12 +46,12 @@ export class OrganizationProjectService extends AuditService {
     );
 
     if (organizations.organizations.length === 0) {
-      throw new NotFoundError('Organization not found', 'errors:notFound.organization');
+      throw new NotFoundError('Organization');
     }
   }
 
   private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
-    const projects = await this.repositories.projectRepository.getProjects(
+    const projects = await this.projectRepository.getProjects(
       {
         ids: [projectId],
         limit: 1,
@@ -61,7 +60,7 @@ export class OrganizationProjectService extends AuditService {
     );
 
     if (projects.projects.length === 0) {
-      throw new NotFoundError('Project not found', 'errors:notFound.project');
+      throw new NotFoundError('Project');
     }
   }
 
@@ -73,7 +72,7 @@ export class OrganizationProjectService extends AuditService {
     await this.organizationExists(organizationId, transaction);
     await this.projectExists(projectId, transaction);
     const existingOrganizationProjects =
-      await this.repositories.organizationProjectRepository.getOrganizationProjects(
+      await this.organizationProjectRepository.getOrganizationProjects(
         { organizationId },
         transaction
       );
@@ -95,7 +94,7 @@ export class OrganizationProjectService extends AuditService {
 
     await this.organizationExists(organizationId, transaction);
 
-    const result = await this.repositories.organizationProjectRepository.getOrganizationProjects(
+    const result = await this.organizationProjectRepository.getOrganizationProjects(
       { organizationId },
       transaction
     );
@@ -121,7 +120,7 @@ export class OrganizationProjectService extends AuditService {
 
     await this.projectExists(projectId, transaction);
 
-    const result = await this.repositories.organizationProjectRepository.getOrganizationProject(
+    const result = await this.organizationProjectRepository.getOrganizationProject(
       { projectId },
       transaction
     );
@@ -146,16 +145,15 @@ export class OrganizationProjectService extends AuditService {
     if (hasProject) {
       throw new ConflictError(
         'Organization already has this project',
-        'errors:conflict.duplicateEntry',
-        { resource: 'OrganizationProject', field: 'projectId' }
+        'OrganizationProject',
+        'projectId'
       );
     }
 
-    const organizationProject =
-      await this.repositories.organizationProjectRepository.addOrganizationProject(
-        { organizationId, projectId },
-        transaction
-      );
+    const organizationProject = await this.organizationProjectRepository.addOrganizationProject(
+      { organizationId, projectId },
+      transaction
+    );
 
     const newValues = {
       id: organizationProject.id,
@@ -169,7 +167,7 @@ export class OrganizationProjectService extends AuditService {
       context,
     };
 
-    await this.logCreate(organizationProject.id, newValues, metadata, transaction);
+    await this.audit.logCreate(organizationProject.id, newValues, metadata, transaction);
 
     return validateOutput(
       createDynamicSingleSchema(organizationProjectSchema),
@@ -190,17 +188,17 @@ export class OrganizationProjectService extends AuditService {
     const hasProject = await this.organizationHasProject(organizationId, projectId);
 
     if (!hasProject) {
-      throw new NotFoundError('Organization does not have this project', 'errors:notFound.project');
+      throw new NotFoundError('Project');
     }
 
     const isHardDelete = hardDelete === true;
 
     const organizationProject = isHardDelete
-      ? await this.repositories.organizationProjectRepository.hardDeleteOrganizationProject(
+      ? await this.organizationProjectRepository.hardDeleteOrganizationProject(
           { organizationId, projectId },
           transaction
         )
-      : await this.repositories.organizationProjectRepository.softDeleteOrganizationProject(
+      : await this.organizationProjectRepository.softDeleteOrganizationProject(
           { organizationId, projectId },
           transaction
         );
@@ -224,9 +222,15 @@ export class OrganizationProjectService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(organizationProject.id, oldValues, metadata, transaction);
+      await this.audit.logHardDelete(organizationProject.id, oldValues, metadata, transaction);
     } else {
-      await this.logSoftDelete(organizationProject.id, oldValues, newValues, metadata, transaction);
+      await this.audit.logSoftDelete(
+        organizationProject.id,
+        oldValues,
+        newValues,
+        metadata,
+        transaction
+      );
     }
 
     return validateOutput(

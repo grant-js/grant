@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@grantjs/constants": "workspace:*",
+    "@grantjs/core": "workspace:*",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.44.4",
     "drizzle-seed": "^0.3.1",

@@ -1,5 +1,4 @@
-import { TagModel } from '@grantjs/database';
-import { QueryResolvers } from '@grantjs/schema';
+import { QueryResolvers, Tag } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
 import { getDirectFieldSelection } from '@/lib/field-selection.lib';
@@ -10,7 +9,7 @@ export const getTagsResolver: QueryResolvers<GraphqlContext>['tags'] = async (
   context,
   info
 ) => {
-  const requestedFields = getDirectFieldSelection<keyof TagModel>(info, ['tags']);
+  const requestedFields = getDirectFieldSelection<keyof Tag>(info, ['tags']);
 
   const tags = await context.handlers.tags.getTags({
     scope,

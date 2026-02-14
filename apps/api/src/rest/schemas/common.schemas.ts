@@ -113,3 +113,6 @@ export const notFoundErrorResponseSchema = z.object({
   error: z.string(),
   code: z.literal('NOT_FOUND'),
 });
+
+/** Generic JSON object (string keys, unknown values). */
+export const jsonSchema = z.record(z.string(), z.unknown());

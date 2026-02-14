@@ -10,10 +10,12 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';
 
-export class OrganizationProjectRepository extends PivotRepository<
-  OrganizationProjectModel,
-  OrganizationProject
-> {
+import type { IOrganizationProjectRepository } from '@grantjs/core';
+
+export class OrganizationProjectRepository
+  extends PivotRepository<OrganizationProjectModel, OrganizationProject>
+  implements IOrganizationProjectRepository
+{
   protected table = organizationProjects;
   protected uniqueIndexFields: Array<keyof OrganizationProjectModel> = [
     'organizationId',

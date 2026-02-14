@@ -1,4 +1,4 @@
-import { ComparisonOperator, type ConditionExpression } from '../../../core/src';
+import { ComparisonOperator, type ConditionExpression } from '@grantjs/core';
 
 import { ResourceAction, ResourceSlug, type ResourceSlug as ResourceSlugType } from './resources';
 

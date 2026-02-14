@@ -1,6 +1,5 @@
 import { SupportedLocale } from '@grantjs/constants';
 import { GrantAuth } from '@grantjs/core';
-import { DbSchema } from '@grantjs/database';
 import {
   Account,
   CreateMyUserAuthenticationMethodInput,
@@ -19,48 +18,72 @@ import {
 
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { AuthenticationError, NotFoundError } from '@/lib/errors';
-import { createModuleLogger } from '@/lib/logger';
-import { Transaction, TransactionManager } from '@/lib/transaction-manager.lib';
-import { Services } from '@/services';
-import { Otp } from '@/services/user-authentication-methods.service';
+import { createLogger } from '@/lib/logger';
+import { Transaction } from '@/lib/transaction-manager.lib';
+import { Otp } from '@/types';
 
-import { CacheHandler } from './base/cache-handler';
+import { CacheHandler, type ScopeServices } from './base/cache-handler';
+
+import type {
+  IAccountRoleService,
+  IAccountService,
+  IAuthService,
+  IEmailService,
+  IFileStorageServicePort,
+  IMeService,
+  IOrganizationUserService,
+  IProjectUserService,
+  ITransactionalConnection,
+  IUserAuthenticationMethodService,
+  IUserRoleService,
+  IUserService,
+  IUserSessionService,
+} from '@grantjs/core';
 
 export class MeHandler extends CacheHandler {
-  protected readonly logger = createModuleLogger('MeHandler');
+  protected readonly logger = createLogger('MeHandler');
 
   constructor(
-    readonly cache: IEntityCacheAdapter,
-    readonly services: Services,
-    readonly db: DbSchema
+    private readonly me: IMeService,
+    private readonly accountRoles: IAccountRoleService,
+    private readonly userRoles: IUserRoleService,
+    private readonly accounts: IAccountService,
+    private readonly users: IUserService,
+    private readonly userAuthenticationMethods: IUserAuthenticationMethodService,
+    private readonly userSessions: IUserSessionService,
+    private readonly fileStorage: IFileStorageServicePort,
+    private readonly email: IEmailService,
+    private readonly organizationUsers: IOrganizationUserService,
+    private readonly projectUsers: IProjectUserService,
+    private readonly auth: IAuthService,
+    cache: IEntityCacheAdapter,
+    scopeServices: ScopeServices,
+    private readonly db: ITransactionalConnection<Transaction>
   ) {
-    super(cache, services);
+    super(cache, scopeServices);
   }
 
   public async getMe(): Promise<MeResponse> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
-      return await this.services.me.getMe(tx);
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      return await this.me.getMe(tx);
     });
   }
 
   public async createMySecondaryAccount(): Promise<{ account: Account; accounts: Account[] }> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
-      const result = await this.services.me.createMySecondaryAccount(tx);
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const result = await this.me.createMySecondaryAccount(tx);
 
-      const seededRoles = await this.services.accountRoles.seedAccountRoles(result.account.id, tx);
+      const seededRoles = await this.accountRoles.seedAccountRoles(result.account.id, tx);
 
       const userId = result.account.ownerId;
 
       // Assign the seeded account owner role to the user (if they don't already have it)
       const accountOwnerRole = seededRoles[0]; // Only one role is seeded per account
       if (accountOwnerRole) {
-        const userRoles = await this.services.userRoles.getUserRoles({ userId }, tx);
+        const userRoles = await this.userRoles.getUserRoles({ userId }, tx);
         const hasAccountOwnerRole = userRoles.some((ur) => ur.roleId === accountOwnerRole.role.id);
         if (!hasAccountOwnerRole) {
-          await this.services.userRoles.addUserRole(
-            { userId, roleId: accountOwnerRole.role.id },
-            tx
-          );
+          await this.userRoles.addUserRole({ userId, roleId: accountOwnerRole.role.id }, tx);
         }
       }
 
@@ -69,14 +92,14 @@ export class MeHandler extends CacheHandler {
   }
 
   public async deleteMyAccounts(params: DeleteMyAccountsInput): Promise<User> {
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const hardDelete = params.hardDelete ?? false;
 
-      const userAccounts = await this.services.accounts.getOwnerAccounts(tx);
+      const userAccounts = await this.accounts.getOwnerAccounts(tx);
 
       await Promise.all(
         userAccounts.map((account: Account) =>
-          this.services.accounts.deleteAccount(
+          this.accounts.deleteAccount(
             {
               id: account.id,
               hardDelete: hardDelete ?? false,
@@ -86,19 +109,16 @@ export class MeHandler extends CacheHandler {
         )
       );
 
-      const deletedUser = await this.services.users.deleteOwnUser(
-        { hardDelete: hardDelete ?? false },
-        tx
-      );
+      const deletedUser = await this.users.deleteOwnUser({ hardDelete: hardDelete ?? false }, tx);
 
       return deletedUser;
     });
   }
 
   private getGrantAuth(): GrantAuth {
-    const auth = this.services.auth.getAuth();
+    const auth = this.auth.getAuth();
     if (!auth) {
-      throw new AuthenticationError('Not authenticated', 'errors:auth.notAuthenticated');
+      throw new AuthenticationError('Not authenticated');
     }
     return auth;
   }
@@ -110,7 +130,7 @@ export class MeHandler extends CacheHandler {
 
   public async updateMyUser(input: UpdateMyUserInput): Promise<User> {
     const userId = this.getAuthenticatedUserId();
-    return await this.services.users.updateUser(userId, input);
+    return await this.users.updateUser(userId, input);
   }
 
   public async uploadMyUserPicture(
@@ -119,24 +139,24 @@ export class MeHandler extends CacheHandler {
     const userId = this.getAuthenticatedUserId();
     const { file, contentType, filename } = params;
 
-    const fileBuffer = this.services.fileStorage.validateAndDecodeUpload({
+    const fileBuffer = this.fileStorage.validateAndDecodeUpload({
       file,
       contentType,
       filename,
     });
 
-    const storagePath = this.services.fileStorage.sanitizeExtensionAndGeneratePath(
+    const storagePath = this.fileStorage.sanitizeExtensionAndGeneratePath(
       filename,
       `users/${userId}/picture`
     );
 
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
-      const result = await this.services.fileStorage.upload(fileBuffer, storagePath, {
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const result = await this.fileStorage.upload(fileBuffer, storagePath, {
         contentType,
         public: true,
       });
 
-      await this.services.users.updateUser(userId, { pictureUrl: result.url }, tx);
+      await this.users.updateUser(userId, { pictureUrl: result.url }, tx);
 
       return {
         url: result.url,
@@ -150,8 +170,8 @@ export class MeHandler extends CacheHandler {
     newPassword: string;
   }): Promise<void> {
     const userId = this.getAuthenticatedUserId();
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
-      await this.services.userAuthenticationMethods.changePassword(
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      await this.userAuthenticationMethods.changePassword(
         userId,
         params.currentPassword,
         params.newPassword,
@@ -162,7 +182,7 @@ export class MeHandler extends CacheHandler {
 
   public async myUserAuthenticationMethods(): Promise<UserAuthenticationMethod[]> {
     const userId = this.getAuthenticatedUserId();
-    return await this.services.userAuthenticationMethods.getUserAuthenticationMethods({
+    return await this.userAuthenticationMethods.getUserAuthenticationMethods({
       userId,
       requestedFields: [
         'id',
@@ -180,7 +200,7 @@ export class MeHandler extends CacheHandler {
 
   public async myUserSessions(params: MyUserSessionsInput) {
     const userId = this.getAuthenticatedUserId();
-    return await this.services.userSessions.getUserSessions({
+    return await this.userSessions.getUserSessions({
       userId,
       page: params.page,
       search: params.search,
@@ -209,7 +229,7 @@ export class MeHandler extends CacheHandler {
   public async revokeMyUserSession(sessionId: string): Promise<void> {
     const userId = this.getAuthenticatedUserId();
 
-    const sessions = await this.services.userSessions.getUserSessions({
+    const sessions = await this.userSessions.getUserSessions({
       userId,
       ids: [sessionId],
       limit: 1,
@@ -217,33 +237,33 @@ export class MeHandler extends CacheHandler {
     });
 
     if (!sessions.userSessions || sessions.userSessions.length === 0) {
-      throw new NotFoundError('Session not found', 'errors:common.notFound');
+      throw new NotFoundError('Session');
     }
 
     const session = sessions.userSessions[0];
 
     if (session.userId !== userId) {
-      throw new NotFoundError('You can only revoke your own sessions', 'errors:auth.unauthorized');
+      throw new NotFoundError('Session');
     }
 
-    await this.services.userSessions.revokeSession(sessionId);
+    await this.userSessions.revokeSession(sessionId);
   }
 
   public async myUserDataExport(): Promise<{ data: UserDataExport; filename: string }> {
     const userId = this.getAuthenticatedUserId();
-    const userPage = await this.services.users.getUsers({
+    const userPage = await this.users.getUsers({
       ids: [userId],
       limit: 1,
       requestedFields: ['id', 'name', 'createdAt', 'updatedAt'],
     });
 
     if (!userPage.users || userPage.users.length === 0) {
-      throw new NotFoundError('User not found', 'errors:notFound.user', { userId });
+      throw new NotFoundError('User', userId);
     }
 
     const user = userPage.users[0];
 
-    const authMethods = await this.services.userAuthenticationMethods.getUserAuthenticationMethods({
+    const authMethods = await this.userAuthenticationMethods.getUserAuthenticationMethods({
       userId,
       requestedFields: [
         'provider',
@@ -258,7 +278,7 @@ export class MeHandler extends CacheHandler {
     const emailAuthMethod = authMethods.find((m) => m.provider === 'email');
     const userEmail = emailAuthMethod?.providerId || null;
 
-    const accounts = await this.services.accounts.getAccountsByOwnerId(userId);
+    const accounts = await this.accounts.getAccountsByOwnerId(userId);
 
     const authenticationMethodsData = authMethods.map((method) => ({
       provider: method.provider,
@@ -269,7 +289,7 @@ export class MeHandler extends CacheHandler {
       createdAt: new Date(method.createdAt),
     }));
 
-    const sessionsPage = await this.services.userSessions.getUserSessions({
+    const sessionsPage = await this.userSessions.getUserSessions({
       userId,
       limit: -1,
       requestedFields: ['userAgent', 'ipAddress', 'lastUsedAt', 'expiresAt', 'createdAt'],
@@ -284,10 +304,9 @@ export class MeHandler extends CacheHandler {
     }));
 
     const organizationMembershipsRaw =
-      await this.services.organizationUsers.getUserOrganizationMemberships(userId);
+      await this.organizationUsers.getUserOrganizationMemberships(userId);
 
-    const projectMembershipsRaw =
-      await this.services.projectUsers.getUserProjectMemberships(userId);
+    const projectMembershipsRaw = await this.projectUsers.getUserProjectMemberships(userId);
 
     const exportData: UserDataExport = {
       user: {
@@ -331,16 +350,16 @@ export class MeHandler extends CacheHandler {
     locale?: SupportedLocale
   ): Promise<UserAuthenticationMethod> {
     const userId = this.getAuthenticatedUserId();
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const { providerData: processedProviderData, isVerified } =
-        await this.services.userAuthenticationMethods.processProvider(
+        await this.userAuthenticationMethods.processProvider(
           input.provider,
           input.providerId,
           input.providerData
         );
 
       const userAuthenticationMethod =
-        await this.services.userAuthenticationMethods.createUserAuthenticationMethod(
+        await this.userAuthenticationMethods.createUserAuthenticationMethod(
           {
             userId,
             provider: input.provider,
@@ -356,7 +375,7 @@ export class MeHandler extends CacheHandler {
         const { token, validUntil } = processedProviderData.otp as Otp;
         if (token && validUntil > Date.now()) {
           try {
-            await this.services.email.sendOtp({
+            await this.email.sendOtp({
               to: input.providerId,
               token,
               validUntil,
@@ -381,32 +400,28 @@ export class MeHandler extends CacheHandler {
     methodId: string
   ): Promise<UserAuthenticationMethod> {
     const userId = this.getAuthenticatedUserId();
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) =>
-      this.services.userAuthenticationMethods.setPrimaryAuthenticationMethod(userId, methodId, tx)
+    return await this.db.withTransaction(async (tx: Transaction) =>
+      this.userAuthenticationMethods.setPrimaryAuthenticationMethod(userId, methodId, tx)
     );
   }
 
   public async deleteMyUserAuthenticationMethod(id: string): Promise<UserAuthenticationMethod> {
     const userId = this.getAuthenticatedUserId();
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
+    return await this.db.withTransaction(async (tx: Transaction) => {
       const userAuthenticationMethod =
-        await this.services.userAuthenticationMethods.getUserAuthenticationMethod(id);
+        await this.userAuthenticationMethods.getUserAuthenticationMethod(id);
       if (userAuthenticationMethod.userId !== userId) {
-        throw new NotFoundError(
-          'User authentication method not found',
-          'errors:notFound.userAuthenticationMethod',
-          { id }
-        );
+        throw new NotFoundError('UserAuthenticationMethod', id);
       }
-      return this.services.userAuthenticationMethods.deleteUserAuthenticationMethod({ id }, tx);
+      return this.userAuthenticationMethods.deleteUserAuthenticationMethod({ id }, tx);
     });
   }
 
   public async logout(): Promise<void> {
     const auth = this.getGrantAuth();
-    return await TransactionManager.withTransaction(this.db, async (tx: Transaction) => {
-      const session = await this.services.userSessions.getUserSession(auth.tokenId);
-      await this.services.userSessions.revokeSession(session.id, tx);
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const session = await this.userSessions.getUserSession(auth.tokenId);
+      await this.userSessions.revokeSession(session.id, tx);
     });
   }
 }

@@ -1,66 +1,59 @@
 /**
  * GraphQL error formatter
  *
- * Converts generic API errors to GraphQL-compatible format
- * while preserving all error metadata and context.
+ * Converts domain GrantException instances to GraphQL-compatible format
+ * by mapping through the HTTP error layer for status codes and i18n keys.
  */
 
+import { GrantException } from '@grantjs/core';
+import { HttpException, mapDomainToHttp } from '@grantjs/errors';
 import { GraphQLError, GraphQLFormattedError } from 'graphql';
 
-import { ApiError } from './error-classes';
+function formatFromHttpException(
+  formattedError: GraphQLFormattedError,
+  httpError: HttpException
+): GraphQLFormattedError {
+  return {
+    ...formattedError,
+    message: httpError.message,
+    extensions: {
+      ...formattedError.extensions,
+      code: httpError.code,
+      translationKey: httpError.translationKey,
+      translationParams: httpError.translationParams,
+      http: {
+        status: httpError.statusCode,
+      },
+      ...httpError.extensions,
+    },
+  };
+}
 
 /**
- * Formats errors for GraphQL responses
- * Converts our generic ApiError instances to GraphQL errors
- * while preserving error codes and extensions
+ * Formats errors for GraphQL responses.
  *
- * The formatted error includes:
- * - extensions.code: Error code (e.g., 'UNAUTHENTICATED', 'BAD_USER_INPUT')
- * - extensions.translationKey: i18n key for client-side translation
- * - extensions.translationParams: Parameters for translation interpolation
- * - extensions.http.status: HTTP status code for REST compatibility
- * - extensions.*: Any additional error metadata
+ * Catches domain GrantException instances, maps them through mapDomainToHttp()
+ * to produce HTTP-aware metadata, and returns a GraphQL-formatted error.
  */
 export function formatGraphQLError(
   formattedError: GraphQLFormattedError,
   error: unknown
 ): GraphQLFormattedError {
-  // If the original error is our ApiError, extract its metadata
-  if (error instanceof GraphQLError && error.originalError instanceof ApiError) {
-    const apiError = error.originalError;
-
-    return {
-      ...formattedError,
-      message: apiError.message,
-      extensions: {
-        ...formattedError.extensions,
-        code: apiError.code,
-        translationKey: apiError.translationKey,
-        translationParams: apiError.translationParams,
-        http: {
-          status: apiError.statusCode,
-        },
-        ...apiError.extensions,
-      },
-    };
+  // Domain error wrapped in GraphQLError
+  if (error instanceof GraphQLError && error.originalError instanceof GrantException) {
+    const httpError = mapDomainToHttp(error.originalError);
+    return formatFromHttpException(formattedError, httpError);
   }
 
-  // If it's a direct ApiError (shouldn't happen in GraphQL, but handle it)
-  if (error instanceof ApiError) {
-    return {
-      ...formattedError,
-      message: error.message,
-      extensions: {
-        ...formattedError.extensions,
-        code: error.code,
-        translationKey: error.translationKey,
-        translationParams: error.translationParams,
-        http: {
-          status: error.statusCode,
-        },
-        ...error.extensions,
-      },
-    };
+  // Direct domain error (shouldn't happen in GraphQL, but handle it)
+  if (error instanceof GrantException) {
+    const httpError = mapDomainToHttp(error);
+    return formatFromHttpException(formattedError, httpError);
+  }
+
+  // Already an HttpException (e.g. from middleware)
+  if (error instanceof GraphQLError && error.originalError instanceof HttpException) {
+    return formatFromHttpException(formattedError, error.originalError);
   }
 
   // For all other errors, return as-is

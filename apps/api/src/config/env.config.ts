@@ -17,7 +17,7 @@
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '@grantjs/constants';
 import * as dotenv from 'dotenv';
 
-import { BadRequestError } from '@/lib/errors';
+import { ConfigurationError } from '@/lib/errors';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -28,7 +28,7 @@ dotenv.config();
 function getEnv(key: string, defaultValue?: string): string {
   const value = process.env[key];
   if (value === undefined && defaultValue === undefined) {
-    throw new BadRequestError(`Missing required environment variable: ${key}`);
+    throw new ConfigurationError(`Missing required environment variable: ${key}`);
   }
   return value ?? defaultValue!;
 }
@@ -38,11 +38,7 @@ function getEnvNumber(key: string, defaultValue: number): number {
   if (value === undefined) return defaultValue;
   const parsed = Number(value);
   if (isNaN(parsed)) {
-    throw new BadRequestError(
-      `Environment variable ${key} must be a valid number`,
-      'errors:validation.invalid',
-      { field: key }
-    );
+    throw new ConfigurationError(`Environment variable ${key} must be a valid number`);
   }
   return parsed;
 }
@@ -60,7 +56,7 @@ function getEnvEnum<T extends string>(
 ): T {
   const value = (process.env[key] as T) ?? defaultValue;
   if (!allowedValues.includes(value)) {
-    throw new BadRequestError(
+    throw new ConfigurationError(
       `Environment variable ${key} must be one of [${allowedValues.join(', ')}], got: ${value}`
     );
   }
@@ -167,6 +163,21 @@ export const AUTH_CONFIG = {
 } as const;
 
 // ============================================================================
+// Token Generation Configuration
+// ============================================================================
+
+export const TOKEN_CONFIG = {
+  /** Default validity period in minutes for secure tokens (e.g. OTP, verification) */
+  defaultValidityMinutes: getEnvNumber('TOKEN_DEFAULT_VALIDITY_MINUTES', 60),
+
+  /** Default token length in bytes (hex-encoded output will be 2x this value) */
+  defaultTokenLength: getEnvNumber('TOKEN_DEFAULT_LENGTH', 32),
+
+  /** Number of bcrypt hashing rounds for secrets (higher = slower but more secure) */
+  bcryptRounds: getEnvNumber('TOKEN_BCRYPT_ROUNDS', 10),
+} as const;
+
+// ============================================================================
 // GitHub OAuth Configuration
 // ============================================================================
 
@@ -181,19 +192,28 @@ export const GITHUB_OAUTH_CONFIG = {
   callbackUrl: getEnv('GITHUB_CALLBACK_URL', 'http://localhost:4000/api/auth/github/callback'),
 
   /** GitHub OAuth authorization URL */
-  authorizationUrl: 'https://github.com/login/oauth/authorize',
+  authorizationUrl: getEnv('GITHUB_AUTHORIZATION_URL', 'https://github.com/login/oauth/authorize'),
 
   /** GitHub OAuth token URL */
-  tokenUrl: 'https://github.com/login/oauth/access_token',
+  tokenUrl: getEnv('GITHUB_TOKEN_URL', 'https://github.com/login/oauth/access_token'),
 
   /** GitHub API base URL */
-  apiUrl: 'https://api.github.com',
+  apiUrl: getEnv('GITHUB_API_URL', 'https://api.github.com'),
 
   /** OAuth scopes to request */
   scopes: ['user:email', 'read:user'],
 
   /** State token validity in minutes (for CSRF protection) */
   stateValidityMinutes: getEnvNumber('GITHUB_OAUTH_STATE_VALIDITY_MINUTES', 10),
+
+  /** Default avatar URL used when a GitHub user has no avatar */
+  defaultAvatarUrl: getEnv(
+    'GITHUB_DEFAULT_AVATAR_URL',
+    'https://github.com/identicons/placeholder'
+  ),
+
+  /** TTL in seconds for CLI OAuth callback payloads stored in cache */
+  cliCallbackTtlSeconds: getEnvNumber('OAUTH_CLI_CALLBACK_TTL_SECONDS', 60),
 } as const;
 
 // ============================================================================
@@ -356,6 +376,9 @@ export const SWAGGER_CONFIG = {
 
   /** Show common extensions */
   showCommonExtensions: getEnvBoolean('SWAGGER_SHOW_COMMON_EXTENSIONS', true),
+
+  /** Production server URL shown in OpenAPI document (only visible in dev mode) */
+  productionUrl: getEnv('OPENAPI_PRODUCTION_URL', 'https://api.grant.center'),
 } as const;
 
 // ============================================================================
@@ -675,7 +698,7 @@ export function validateConfig(): void {
   }
 
   if (errors.length > 0) {
-    throw new BadRequestError(
+    throw new ConfigurationError(
       `Configuration validation failed:\n${errors.map((e) => `  - ${e}`).join('\n')}`
     );
   }
@@ -706,17 +729,20 @@ export async function printConfigSummary(): Promise<void> {
 // Middleware Configuration (Computed from other configs)
 // ============================================================================
 
+/** Development CORS origins (comma-separated, env-overridable) */
+const DEV_CORS_ORIGINS = getEnv(
+  'CORS_DEV_ORIGINS',
+  'http://localhost:3000,http://localhost:3001,https://studio.apollographql.com,https://apollo-studio-embed.vercel.app'
+)
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 /** CORS configuration for Express middleware */
 const CORS_CONFIG = {
   origin: APP_CONFIG.isProduction
     ? SECURITY_CONFIG.frontendUrl
-    : [
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'https://studio.apollographql.com',
-        'https://apollo-studio-embed.vercel.app',
-        ...SECURITY_CONFIG.additionalOrigins,
-      ],
+    : [...DEV_CORS_ORIGINS, ...SECURITY_CONFIG.additionalOrigins],
   credentials: true,
 } as const;
 
@@ -758,6 +784,7 @@ export const config = {
   db: DB_CONFIG,
   jwt: JWT_CONFIG,
   auth: AUTH_CONFIG,
+  token: TOKEN_CONFIG,
   githubOAuth: GITHUB_OAUTH_CONFIG,
   cache: CACHE_CONFIG,
   redis: REDIS_CONFIG,

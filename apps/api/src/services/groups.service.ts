@@ -1,6 +1,4 @@
 import { GROUP_DEFINITIONS } from '@grantjs/constants';
-import { GrantAuth } from '@grantjs/core';
-import { DbSchema, groupAuditLogs } from '@grantjs/database';
 import {
   CreateGroupInput,
   Group,
@@ -12,12 +10,9 @@ import {
 
 import { BadRequestError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { Repositories } from '@/repositories';
+import { DeleteParams, SelectedFields } from '@/types';
 
 import {
-  AuditService,
-  DeleteParams,
-  SelectedFields,
   createDynamicPaginatedSchema,
   createDynamicSingleSchema,
   validateInput,
@@ -31,14 +26,13 @@ import {
   updateGroupParamsSchema,
 } from './groups.schemas';
 
-export class GroupService extends AuditService {
+import type { IAuditLogger, IGroupRepository, IGroupService } from '@grantjs/core';
+
+export class GroupService implements IGroupService {
   constructor(
-    private readonly repositories: Repositories,
-    readonly user: GrantAuth | null,
-    readonly db: DbSchema
-  ) {
-    super(groupAuditLogs, 'groupId', user, db);
-  }
+    private readonly groupRepository: IGroupRepository,
+    private readonly audit: IAuditLogger
+  ) {}
 
   private getCorePlatformGroupNames(): string[] {
     return Object.values(GROUP_DEFINITIONS).map((group) => group.name);
@@ -48,23 +42,19 @@ export class GroupService extends AuditService {
     const coreGroupNames = this.getCorePlatformGroupNames();
     if (coreGroupNames.includes(groupName)) {
       throw new BadRequestError(
-        `Group name '${groupName}' is reserved for core platform groups and cannot be used`,
-        'errors:validation.reservedGroupName',
-        {
-          groupName,
-        }
+        `Group name '${groupName}' is reserved for core platform groups and cannot be used`
       );
     }
   }
 
   private async getGroup(groupId: string, transaction?: Transaction): Promise<Group> {
-    const existingGroups = await this.repositories.groupRepository.getGroups(
+    const existingGroups = await this.groupRepository.getGroups(
       { ids: [groupId], limit: 1 },
       transaction
     );
 
     if (existingGroups.groups.length === 0) {
-      throw new NotFoundError('Group not found', 'errors:notFound.group');
+      throw new NotFoundError('Group');
     }
 
     return existingGroups.groups[0];
@@ -76,7 +66,7 @@ export class GroupService extends AuditService {
   ): Promise<GroupPage> {
     const context = 'GroupService.getGroups';
     validateInput(getGroupsParamsSchema, params, context);
-    const result = await this.repositories.groupRepository.getGroups(params, transaction);
+    const result = await this.groupRepository.getGroups(params, transaction);
 
     const transformedResult = {
       items: result.groups,
@@ -104,7 +94,7 @@ export class GroupService extends AuditService {
     // Validate that the group name is not a reserved core platform group name
     this.validateGroupNameNotReserved(name);
 
-    const group = await this.repositories.groupRepository.createGroup(
+    const group = await this.groupRepository.createGroup(
       { name, description, metadata: metadata ?? {} },
       transaction
     );
@@ -122,7 +112,7 @@ export class GroupService extends AuditService {
       context,
     };
 
-    await this.logCreate(group.id, newValues, auditMetadata, transaction);
+    await this.audit.logCreate(group.id, newValues, auditMetadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(groupSchema), group, context);
   }
@@ -141,11 +131,7 @@ export class GroupService extends AuditService {
     }
 
     const oldGroup = await this.getGroup(id, transaction);
-    const updatedGroup = await this.repositories.groupRepository.updateGroup(
-      id,
-      input,
-      transaction
-    );
+    const updatedGroup = await this.groupRepository.updateGroup(id, input, transaction);
 
     const oldValues = {
       id: oldGroup.id,
@@ -169,7 +155,7 @@ export class GroupService extends AuditService {
       context,
     };
 
-    await this.logUpdate(updatedGroup.id, oldValues, newValues, auditMetadata, transaction);
+    await this.audit.logUpdate(updatedGroup.id, oldValues, newValues, auditMetadata, transaction);
 
     return validateOutput(createDynamicSingleSchema(groupSchema), updatedGroup, context);
   }
@@ -187,8 +173,8 @@ export class GroupService extends AuditService {
     const isHardDelete = hardDelete === true;
 
     const deletedGroup = isHardDelete
-      ? await this.repositories.groupRepository.hardDeleteGroup(validatedParams, transaction)
-      : await this.repositories.groupRepository.softDeleteGroup(validatedParams, transaction);
+      ? await this.groupRepository.hardDeleteGroup(validatedParams, transaction)
+      : await this.groupRepository.softDeleteGroup(validatedParams, transaction);
 
     const oldValues = {
       id: oldGroup.id,
@@ -204,13 +190,19 @@ export class GroupService extends AuditService {
     };
 
     if (isHardDelete) {
-      await this.logHardDelete(deletedGroup.id, oldValues, auditMetadata, transaction);
+      await this.audit.logHardDelete(deletedGroup.id, oldValues, auditMetadata, transaction);
     } else {
       const newValues = {
         ...oldValues,
         deletedAt: deletedGroup.deletedAt,
       };
-      await this.logSoftDelete(deletedGroup.id, oldValues, newValues, auditMetadata, transaction);
+      await this.audit.logSoftDelete(
+        deletedGroup.id,
+        oldValues,
+        newValues,
+        auditMetadata,
+        transaction
+      );
     }
 
     return validateOutput(createDynamicSingleSchema(groupSchema), deletedGroup, context);
