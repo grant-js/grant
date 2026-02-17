@@ -36,6 +36,7 @@ interface RegisterInput {
 
 export function useAuthMutations() {
   const t = useTranslations('auth');
+  const tErrors = useTranslations('errors');
   const { setAuthData } = useAuthStore();
   const authStore = useAuthStore();
 
@@ -100,12 +101,12 @@ export function useAuthMutations() {
       };
       const translationKey = apolloError.errors?.[0]?.extensions?.translationKey;
 
-      if (translationKey === 'errors:auth.userNotVerified') {
-        toast.error(t('notifications.userNotVerified'), {
+      if (translationKey === 'errors.auth.userNotVerified') {
+        toast.error(translationKey ? t(translationKey) : t('login.error'), {
           description: t('notifications.verificationExpired'),
           duration: 10000,
           action: {
-            label: 'Resend Email',
+            label: t('resendEmail'),
             onClick: async () => {
               try {
                 await resendVerificationMutation({
@@ -125,7 +126,7 @@ export function useAuthMutations() {
                   description:
                     resendError instanceof Error
                       ? resendError.message
-                      : 'An unknown error occurred',
+                      : tErrors('common.unknownError'),
                 });
               }
             },
@@ -133,7 +134,7 @@ export function useAuthMutations() {
         });
       } else {
         toast.error(t('login.error'), {
-          description: error instanceof Error ? error.message : 'An unknown error occurred',
+          description: error instanceof Error ? error.message : tErrors('common.unknownError'),
         });
       }
       throw error;
@@ -185,11 +186,11 @@ export function useAuthMutations() {
 
       if (error instanceof Error && error.message.includes('Input validation failed')) {
         toast.error(t('register.error'), {
-          description: 'Please check the form for validation errors',
+          description: t('validationErrors'),
         });
       } else {
         toast.error(t('register.error'), {
-          description: error instanceof Error ? error.message : 'An unknown error occurred',
+          description: error instanceof Error ? error.message : tErrors('common.unknownError'),
         });
       }
 
@@ -248,13 +249,13 @@ export function useAuthMutations() {
       const graphQLError = apolloError.errors?.[0];
       const translationKey = graphQLError?.extensions?.translationKey;
 
-      if (translationKey === 'errors:auth.tokenExpired') {
-        toast.error(t('verifyEmail.expiredToken'), {
-          description: t('verifyEmail.expiredTokenDescription'),
+      if (translationKey) {
+        toast.error(t(translationKey), {
+          description: error instanceof Error ? error.message : undefined,
         });
       } else {
         toast.error(t('verifyEmail.error'), {
-          description: error instanceof Error ? error.message : 'An unknown error occurred',
+          description: error instanceof Error ? error.message : tErrors('common.unknownError'),
         });
       }
 
@@ -284,7 +285,7 @@ export function useAuthMutations() {
     } catch (error) {
       console.error('Error resending verification:', error);
       toast.error(t('resendVerification.error'), {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        description: error instanceof Error ? error.message : tErrors('common.unknownError'),
       });
       throw error;
     }
@@ -312,7 +313,7 @@ export function useAuthMutations() {
     } catch (error) {
       console.error('Error requesting password reset:', error);
       toast.error(t('forgotPassword.error'), {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        description: error instanceof Error ? error.message : tErrors('common.unknownError'),
       });
       throw error;
     }

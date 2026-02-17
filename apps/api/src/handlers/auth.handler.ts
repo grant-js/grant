@@ -1,4 +1,4 @@
-import { SupportedLocale } from '@grantjs/constants';
+import { SupportedLocale } from '@grantjs/i18n';
 import {
   AccountType,
   AuthorizationReason,
@@ -339,7 +339,7 @@ export class AuthHandler extends CacheHandler {
       await this.userAuthenticationMethods.verifyEmail(token, tx);
       return {
         success: true,
-        message: translateStatic('common:success.emailVerified', locale),
+        message: translateStatic('common.success.emailVerified', locale),
         messageKey: 'common:success.emailVerified',
       };
     });
@@ -368,7 +368,7 @@ export class AuthHandler extends CacheHandler {
 
       return {
         success: true,
-        message: translateStatic('common:success.verificationEmailSent', locale),
+        message: translateStatic('common.success.verificationEmailSent', locale),
         messageKey: 'common:success.verificationEmailSent',
       };
     });
@@ -385,7 +385,7 @@ export class AuthHandler extends CacheHandler {
       if (!otp) {
         return {
           success: true,
-          message: translateStatic('common:success.passwordResetEmailSent', locale),
+          message: translateStatic('common.success.passwordResetEmailSent', locale),
           messageKey: 'common:success.passwordResetEmailSent',
         };
       }
@@ -407,7 +407,7 @@ export class AuthHandler extends CacheHandler {
 
       return {
         success: true,
-        message: translateStatic('common:success.passwordResetEmailSent', locale),
+        message: translateStatic('common.success.passwordResetEmailSent', locale),
         messageKey: 'common:success.passwordResetEmailSent',
       };
     });
@@ -442,7 +442,7 @@ export class AuthHandler extends CacheHandler {
 
       return {
         success: true,
-        message: translateStatic('common:success.passwordReset', locale),
+        message: translateStatic('common.success.passwordReset', locale),
         messageKey: 'common:success.passwordReset',
       };
     });

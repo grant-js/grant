@@ -75,7 +75,20 @@ describe('Health', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 2. Register
+// 2. Error response i18n (translationKey on 4xx)
+// ---------------------------------------------------------------------------
+describe('Error response i18n', () => {
+  it('unauthenticated GET /api/me → 401 with translationKey', async () => {
+    const res = await apiClient().get('/api/me');
+    expect(res.status).toBe(401);
+    expect(res.body).toHaveProperty('translationKey');
+    expect(res.body.translationKey).toMatch(/^errors\.auth\./);
+    expect(res.body).toHaveProperty('error');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 3. Register
 // ---------------------------------------------------------------------------
 describe('Register', () => {
   it('POST /api/auth/register → 201 with tokens and account', async () => {

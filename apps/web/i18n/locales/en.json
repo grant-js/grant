@@ -1,5 +1,8 @@
 {
   "errors": {
+    "common": {
+      "unknownError": "An unknown error occurred"
+    },
     "notFound": {
       "title": "Page Not Found",
       "description": "The page you're looking for doesn't exist or has been moved. Check the URL or navigate back to safety.",
@@ -14,6 +17,10 @@
       "signIn": "Sign In",
       "helpText": "If you think this is an error, please contact your organization administrator."
     }
+  },
+  "session": {
+    "expiredTitle": "Session Expired",
+    "expiredDescription": "Your session has expired or been revoked. Redirecting to login..."
   },
   "common": {
     "app": {
@@ -93,6 +100,8 @@
     "saving": "Saving...",
     "emptyElements": "No {title} to display",
     "loading": "Loading...",
+    "noItemsAvailable": "No items available",
+    "noTagsAvailable": "No tags available",
     "redirecting": "Redirecting...",
     "error": "Error",
     "organizations": {
@@ -210,6 +219,8 @@
         }
       }
     },
+    "resendEmail": "Resend Email",
+    "validationErrors": "Please check the form for validation errors",
     "login": {
       "title": "Sign In",
       "description": "Sign in to manage access for your projects",
@@ -2446,7 +2457,10 @@
         "export": "Export My Data",
         "exporting": "Preparing Export...",
         "success": "Data exported successfully",
-        "error": "Failed to export data"
+        "error": "Failed to export data",
+        "loginRequired": "You must be logged in to export your data",
+        "downloadSuccess": "Your data has been downloaded successfully",
+        "exportErrorDescription": "Failed to export your data"
       },
       "dataRetention": {
         "title": "Data Retention",
@@ -2489,7 +2503,10 @@
         },
         "success": "Account deleted successfully",
         "error": "Failed to delete account",
-        "userIdMismatch": "The entered user ID does not match your user ID. Please try again."
+        "userIdMismatch": "The entered user ID does not match your user ID. Please try again.",
+        "loginRequired": "You must be logged in to delete your account",
+        "deleteSuccessDescription": "Your account has been deleted successfully",
+        "deleteErrorDescription": "Failed to delete your account"
       }
     },
     "notifications": {

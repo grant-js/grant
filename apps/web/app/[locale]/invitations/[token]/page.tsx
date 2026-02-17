@@ -125,7 +125,7 @@ export default function InvitationPage() {
       setActionStatus('success');
     } catch (error) {
       setActionStatus('error');
-      setErrorMessage(error instanceof Error ? error.message : 'An unknown error occurred');
+      setErrorMessage(error instanceof Error ? error.message : tRoot('errors.common.unknownError'));
     }
   };
 

@@ -21,7 +21,10 @@ export const deleteAccountBodySchema = z.object({
 });
 
 export const createAccountRequestSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
+  name: z
+    .string()
+    .min(1, 'errors.validation.nameRequired')
+    .max(255, 'errors.validation.nameTooLong'),
   username: z.string().optional(),
   type: accountTypeSchema,
   ownerId: z.string().optional(),
@@ -40,7 +43,7 @@ export const deleteAccountQuerySchema = z.object({
 });
 
 export const deleteAccountRequestSchema = z.object({
-  userId: z.uuid('Invalid user ID'),
+  userId: z.uuid('errors.validation.invalidUserId'),
   hardDelete: z.boolean().optional().default(false),
 });
 

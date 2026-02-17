@@ -24,9 +24,12 @@ export const providerDataSchema = z.record(z.string(), z.unknown());
 export const createUserAuthenticationMethodInputSchema = z.object({
   userId: idSchema,
   provider: userAuthenticationMethodProviderSchema,
-  providerId: z.string().min(1, 'Provider ID is required').max(255, 'Provider ID too long'),
+  providerId: z
+    .string()
+    .min(1, 'errors.validation.providerIdRequired')
+    .max(255, 'errors.validation.providerIdTooLong'),
   providerData: providerDataSchema.nullable().optional(),
-  password: z.string().min(1, 'Password is required').nullable().optional(),
+  password: z.string().min(1, 'errors.validation.passwordRequired').nullable().optional(),
   isVerified: z.boolean().nullable().optional(),
   isPrimary: z.boolean().nullable().optional(),
 });
@@ -34,7 +37,7 @@ export const createUserAuthenticationMethodInputSchema = z.object({
 export const updateUserAuthenticationMethodInputSchema = z.object({
   providerId: z.string().nullable().optional(),
   providerData: providerDataSchema.nullable().optional(),
-  password: z.string().min(1, 'Password is required').nullable().optional(),
+  password: z.string().min(1, 'errors.validation.passwordRequired').nullable().optional(),
   isVerified: z.boolean().nullable().optional(),
   isPrimary: z.boolean().nullable().optional(),
 });
@@ -78,7 +81,7 @@ export const validateTokenSchema = z.object({
 });
 
 export const sendOtpSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.string().email('errors.validation.invalidEmail'),
   token: z.string(),
 });
 
@@ -140,7 +143,7 @@ export const passwordPolicyConfig = {
 // Enhanced password schema with comprehensive validation
 export const passwordPolicySchema = z
   .string()
-  .min(1, 'Password is required')
+  .min(1, 'errors.validation.passwordRequired')
   .min(
     passwordPolicyConfig.minLength,
     `Password must be at least ${passwordPolicyConfig.minLength} characters`
@@ -151,15 +154,15 @@ export const passwordPolicySchema = z
   )
   .refine(
     (password) => !passwordPolicyConfig.requireUppercase || /[A-Z]/.test(password),
-    'Password must contain at least one uppercase letter'
+    'errors.validation.passwordUppercase'
   )
   .refine(
     (password) => !passwordPolicyConfig.requireLowercase || /[a-z]/.test(password),
-    'Password must contain at least one lowercase letter'
+    'errors.validation.passwordLowercase'
   )
   .refine(
     (password) => !passwordPolicyConfig.requireNumbers || /\d/.test(password),
-    'Password must contain at least one number'
+    'errors.validation.passwordNumber'
   )
   .refine((password) => {
     if (!passwordPolicyConfig.requireSpecialChars) return true;
@@ -168,20 +171,20 @@ export const passwordPolicySchema = z
   }, `Password must contain at least ${passwordPolicyConfig.minSpecialChars} special character(s)`)
   .refine((password) => {
     return !passwordPolicyConfig.forbiddenPatterns.some((pattern) => pattern.test(password));
-  }, 'Password contains forbidden patterns (e.g., too many repeated characters or common weak passwords)')
+  }, 'errors.validation.passwordForbiddenPatterns')
   .refine((password) => {
     const lowerPassword = password.toLowerCase();
     return !passwordPolicyConfig.forbiddenSequences.some((seq) => lowerPassword.includes(seq));
-  }, 'Password must not contain sequential characters (e.g., abc, 123)');
+  }, 'errors.validation.passwordSequential');
 
 // Password confirmation schema for forms
 export const passwordConfirmationSchema = z
   .object({
     password: passwordPolicySchema,
-    confirmPassword: z.string().min(1, 'Password confirmation is required'),
+    confirmPassword: z.string().min(1, 'errors.validation.confirmPasswordRequired'),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwords do not match',
+    message: 'errors.validation.passwordMismatch',
     path: ['confirmPassword'],
   });
 
@@ -226,34 +229,34 @@ export const passwordStrengthSchema = z.string().transform((password) => {
 // Password reset schema with additional validation
 export const passwordResetSchema = z
   .object({
-    token: z.string().min(1, 'Reset token is required'),
+    token: z.string().min(1, 'errors.validation.tokenRequired'),
     newPassword: passwordPolicySchema,
-    confirmPassword: z.string().min(1, 'Password confirmation is required'),
+    confirmPassword: z.string().min(1, 'errors.validation.confirmPasswordRequired'),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
-    message: 'Passwords do not match',
+    message: 'errors.validation.passwordMismatch',
     path: ['confirmPassword'],
   });
 
 // Password change schema (requires current password)
 export const passwordChangeSchema = z
   .object({
-    currentPassword: z.string().min(1, 'Current password is required'),
+    currentPassword: z.string().min(1, 'errors.validation.currentPasswordRequired'),
     newPassword: passwordPolicySchema,
-    confirmPassword: z.string().min(1, 'Password confirmation is required'),
+    confirmPassword: z.string().min(1, 'errors.validation.confirmPasswordRequired'),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
-    message: 'Passwords do not match',
+    message: 'errors.validation.passwordMismatch',
     path: ['confirmPassword'],
   })
   .refine((data) => data.currentPassword !== data.newPassword, {
-    message: 'New password must be different from current password',
+    message: 'errors.validation.newPasswordDifferent',
     path: ['newPassword'],
   });
 
 // Email provider data schema
 export const emailProviderDataSchema = z.object({
-  password: z.string().min(1, 'Password is required'),
+  password: z.string().min(1, 'errors.validation.passwordRequired'),
   action: z.enum(
     Object.values(UserAuthenticationEmailProviderAction) as [
       UserAuthenticationEmailProviderAction,
@@ -264,7 +267,7 @@ export const emailProviderDataSchema = z.object({
 
 // GitHub provider data schema
 export const githubProviderDataSchema = z.object({
-  accessToken: z.string().min(1, 'GitHub access token is required'),
+  accessToken: z.string().min(1, 'errors.validation.githubAccessTokenRequired'),
   githubId: z.union([z.number(), z.string()]).transform((val) => {
     // Normalize to number
     return typeof val === 'number' ? val : parseInt(val, 10);

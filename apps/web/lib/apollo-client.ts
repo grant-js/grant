@@ -3,7 +3,7 @@
 import { ApolloClient, ApolloLink, HttpLink, InMemoryCache, Observable } from '@apollo/client';
 import { SetContextLink } from '@apollo/client/link/context';
 import { ErrorLink } from '@apollo/client/link/error';
-import { DEFAULT_LOCALE, isSupportedLocale } from '@grantjs/constants';
+import { DEFAULT_LOCALE, isSupportedLocale } from '@grantjs/i18n';
 import { LogoutMyUserDocument } from '@grantjs/schema';
 import { GraphQLError } from 'graphql';
 import { toast } from 'sonner';
@@ -45,6 +45,15 @@ const SKIP_ERROR_REDIRECT_OPERATIONS = [
 
 /** Prevents multiple concurrent clear-session flows from 401s. */
 let clearingSession = false;
+
+/** Optional getter for localized session-expired toast messages (set by ApolloProvider). */
+let getSessionExpiredMessages: (() => { title: string; description: string }) | null = null;
+
+export function setSessionExpiredMessages(
+  getter: (() => { title: string; description: string }) | null
+): void {
+  getSessionExpiredMessages = getter;
+}
 
 function getGraphQLUrl(): string {
   return `${getApiBaseUrl()}/graphql`;
@@ -189,7 +198,7 @@ function isInvalidSessionError(error: unknown): boolean {
   const hasInvalidSession = graphQLErrors.some((err) => {
     const extensions = err.extensions as { translationKey?: string; code?: string } | undefined;
     return (
-      extensions?.translationKey === 'errors:auth.invalidSession' ||
+      extensions?.translationKey === 'errors.auth.invalidSession' ||
       extensions?.code === 'UNAUTHENTICATED'
     );
   });
@@ -207,7 +216,7 @@ function isInvalidSessionError(error: unknown): boolean {
         const extensions =
           (err.extensions as { translationKey?: string; code?: string } | undefined) || {};
         if (
-          extensions.translationKey === 'errors:auth.invalidSession' ||
+          extensions.translationKey === 'errors.auth.invalidSession' ||
           extensions.code === 'UNAUTHENTICATED'
         ) {
           return true;
@@ -244,8 +253,12 @@ async function clearSessionAndAuth(showToast = false) {
     await logoutSession();
     useAuthStore.getState().clearAuth();
     if (showToast) {
-      toast.error('Session Expired', {
+      const messages = getSessionExpiredMessages?.() ?? {
+        title: 'Session Expired',
         description: 'Your session has expired or been revoked. Redirecting to login...',
+      };
+      toast.error(messages.title, {
+        description: messages.description,
         duration: 2000,
       });
     }
@@ -386,7 +399,14 @@ const httpLink = new HttpLink({
   credentials: 'include',
 });
 
-export function getClient() {
+export interface ApolloClientOptions {
+  getSessionExpiredMessages?: () => { title: string; description: string };
+}
+
+export function getClient(options?: ApolloClientOptions) {
+  if (options?.getSessionExpiredMessages) {
+    setSessionExpiredMessages(options.getSessionExpiredMessages);
+  }
   return new ApolloClient({
     cache: new InMemoryCache({
       typePolicies: {

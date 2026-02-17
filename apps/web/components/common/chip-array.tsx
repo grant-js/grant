@@ -5,7 +5,7 @@ import { KeyboardEvent, useCallback, useState } from 'react';
 import { Control } from 'react-hook-form';
 
 import { Chip } from '@/components/common';
-import { FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { FormField, FormItem, FormLabel, TranslatedFormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
@@ -114,7 +114,9 @@ export function ChipArray({
               </div>
 
               {error && (
-                <FormMessage className="text-destructive text-sm mt-1">{error}</FormMessage>
+                <TranslatedFormMessage className="text-destructive text-sm mt-1">
+                  {error}
+                </TranslatedFormMessage>
               )}
             </div>
           </FormItem>

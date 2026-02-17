@@ -20,7 +20,7 @@ export const tagSchema = z.object({
 });
 
 export const getTagsQuerySchema = listQuerySchema.extend({
-  scopeId: z.uuid('Invalid scope ID'),
+  scopeId: z.uuid('errors.validation.invalidScopeId'),
   tenant: tenantSchema,
   sortField: z.enum(Object.values(TagSortField) as [TagSortField, ...TagSortField[]]).optional(),
   sortOrder: z.nativeEnum(SortOrder).optional(),
@@ -35,13 +35,17 @@ export const getTagsResponseSchema = createSuccessResponseSchema(
 );
 
 export const createTagRequestSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255, 'Name too long').openapi({
-    description: 'Name of the tag',
-    example: 'Frontend',
-  }),
+  name: z
+    .string()
+    .min(1, 'errors.validation.nameRequired')
+    .max(255, 'errors.validation.nameTooLong')
+    .openapi({
+      description: 'Name of the tag',
+      example: 'Frontend',
+    }),
   color: z
     .enum(TAG_COLORS as [TagColor, ...TagColor[]], {
-      message: 'Color must be one of the allowed tag colors',
+      message: 'errors.validation.colorInvalid',
     })
     .openapi({
       description: 'Tag color (named color from the allowed palette)',
@@ -54,13 +58,18 @@ export const createTagResponseSchema = createSuccessResponseSchema(tagSchema);
 
 export const updateTagRequestSchema = z.object({
   scope: scopeSchema,
-  name: z.string().min(1, 'Name is required').max(255, 'Name too long').optional().openapi({
-    description: 'Updated name of the tag',
-    example: 'Backend',
-  }),
+  name: z
+    .string()
+    .min(1, 'errors.validation.nameRequired')
+    .max(255, 'errors.validation.nameTooLong')
+    .optional()
+    .openapi({
+      description: 'Updated name of the tag',
+      example: 'Backend',
+    }),
   color: z
     .enum(TAG_COLORS as [TagColor, ...TagColor[]], {
-      message: 'Color must be one of the allowed tag colors',
+      message: 'errors.validation.colorInvalid',
     })
     .optional()
     .openapi({
@@ -72,7 +81,7 @@ export const updateTagRequestSchema = z.object({
 export const tagParamsSchema = z.object({
   id: z
     .string()
-    .uuid('Invalid tag ID')
+    .uuid('errors.validation.invalidTagId')
     .openapi({
       description: 'UUID of the tag',
       example: '123e4567-e89b-12d3-a456-426614174008',
@@ -88,7 +97,7 @@ export const deleteTagBodySchema = z.object({
 });
 
 export const deleteTagQuerySchema = z.object({
-  scopeId: z.uuid('Invalid scope ID'),
+  scopeId: z.uuid('errors.validation.invalidScopeId'),
   tenant: tenantSchema,
   hardDelete: z
     .string()

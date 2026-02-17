@@ -20,7 +20,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
+  TranslatedFormMessage,
 } from '@/components/ui/form';
 import { useAuthMutations, usePageTitle } from '@/hooks';
 import { Link } from '@/i18n/navigation';
@@ -44,7 +44,7 @@ export default function ResetPasswordPage() {
       confirmPassword: z.string(),
     })
     .refine((data) => data.password === data.confirmPassword, {
-      message: t('validation.passwordMatch'),
+      message: 'errors.validation.passwordMismatch',
       path: ['confirmPassword'],
     });
 
@@ -149,7 +149,7 @@ export default function ResetPasswordPage() {
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <TranslatedFormMessage />
                     <PasswordStrengthIndicator password={passwordValue} />
                   </FormItem>
                 )}
@@ -167,7 +167,7 @@ export default function ResetPasswordPage() {
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <TranslatedFormMessage />
                   </FormItem>
                 )}
               />

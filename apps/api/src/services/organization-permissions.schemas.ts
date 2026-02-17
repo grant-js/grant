@@ -9,22 +9,22 @@ export const queryOrganizationPermissionsArgsSchema = z.object({
 export const addOrganizationPermissionInputSchema = z.object({
   organizationId: idSchema.refine(
     (organizationId) => organizationId.trim().length > 0,
-    'Organization ID is required'
+    'errors.validation.organizationIdRequired'
   ),
   permissionId: idSchema.refine(
     (permissionId) => permissionId.trim().length > 0,
-    'Permission ID is required'
+    'errors.validation.permissionIdRequired'
   ),
 });
 
 export const removeOrganizationPermissionInputSchema = deleteSchema.extend({
   organizationId: idSchema.refine(
     (organizationId) => organizationId.trim().length > 0,
-    'Organization ID is required'
+    'errors.validation.organizationIdRequired'
   ),
   permissionId: idSchema.refine(
     (permissionId) => permissionId.trim().length > 0,
-    'Permission ID is required'
+    'errors.validation.permissionIdRequired'
   ),
 });
 

@@ -40,6 +40,11 @@ vi.mock('@/lib/headers.lib', () => ({
   getClientIp: vi.fn(() => '192.168.1.1'),
 }));
 
+vi.mock('@/i18n', () => ({
+  t: (_req: unknown, key: string) =>
+    key === 'errors.common.tooManyRequests' ? 'Too many requests. Please try again later.' : key,
+}));
+
 type RequestWithContext = Request & {
   context?: { user?: { scope?: { tenant: string; id: string } } };
 };
@@ -123,6 +128,7 @@ describe('rateLimitMiddleware', () => {
           error: expect.objectContaining({
             code: 'rate_limit_exceeded',
             message: 'Too many requests. Please try again later.',
+            translationKey: 'errors.common.tooManyRequests',
           }),
         })
       );

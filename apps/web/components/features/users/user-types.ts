@@ -2,7 +2,7 @@ import { User } from '@grantjs/schema';
 import { z } from 'zod';
 
 export const createUserSchema = z.object({
-  name: z.string().min(3, 'Name must be at least 3 characters'),
+  name: z.string().min(3, 'errors.validation.nameMin3'),
   roleIds: z.array(z.string()).optional(),
   tagIds: z.array(z.string()).optional(),
   primaryTagId: z.string().optional(),
@@ -10,7 +10,7 @@ export const createUserSchema = z.object({
 });
 
 export const editUserSchema = z.object({
-  name: z.string().min(3, 'Name must be at least 3 characters'),
+  name: z.string().min(3, 'errors.validation.nameMin3'),
   roleIds: z.array(z.string()).optional(),
   tagIds: z.array(z.string()).optional(),
   primaryTagId: z.string().optional(),

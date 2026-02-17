@@ -11,9 +11,10 @@ Grant provides comprehensive internationalization (i18n) and localization (l10n)
 
 **Architecture:**
 
-- **API**: `i18next` with HTTP middleware for server-side translations
-- **Web**: `next-intl` for Next.js client and server components
-- **Auto-sync**: Web app automatically sends user's locale to API
+- **Shared package**: `@grantjs/i18n` is the single source of translation data (errors, common, email) and locale constants (`SUPPORTED_LOCALES`, `DEFAULT_LOCALE`, `SupportedLocale`, `isSupportedLocale`). Both API and web consume from this package.
+- **API**: `i18next` with a single namespace and merged messages from `@grantjs/i18n`; HTTP middleware for server-side translations; keys use **dot** only (e.g. `errors.auth.tokenExpired`).
+- **Web**: `next-intl` loads shared messages from `@grantjs/i18n` and merges with web-only locale files; uses the same dot keys; resolves API `translationKey` with `t(translationKey)`.
+- **Auto-sync**: Web app sends user's locale to API via `Accept-Language`; API and GraphQL/REST responses include `translationKey` so clients can resolve messages from the shared source.
 
 ---
 
@@ -45,30 +46,40 @@ Response sent with localized messages
 User (German browser) → /de/organizations
   → Apollo adds: Accept-Language: de
   → API endpoint called
-  → Handler throws: NotFoundError('Organization not found', 'errors:notFound.organization')
-  → Middleware translates: "Organisation nicht gefunden"
-  → Client receives German error message
+  → Handler throws: NotFoundError('Organization not found')
+  → Mapper sets translationKey: 'errors.notFound.organization'
+  → Middleware translates and responds with error + translationKey
+  → Client receives German message and can resolve by translationKey from @grantjs/i18n
 ```
 
 ---
 
 ## 🔧 API Internationalization
 
-### Architecture
+### Shared package: @grantjs/i18n
+
+Translation data and locale constants live in `packages/@grantjs/i18n/`:
+
+- **Locale constants**: `SUPPORTED_LOCALES`, `DEFAULT_LOCALE`, `SupportedLocale`, `isSupportedLocale()` — import from `@grantjs/i18n`.
+- **Translation data**: `locales/{lng}/errors.json`, `common.json`, `email.json`; merged per locale as `locales/en.json`, `locales/de.json` for consumers that need a single object.
+- **Key convention**: Use **dot** only (e.g. `errors.auth.tokenExpired`, `common.success.emailVerified`, `email.verification.subject`). No colon; API and web use the same key format.
+- **Exports**: `getLocalesPath()`, `getMergedMessages(locale)` for API; web can import `@grantjs/i18n/locales/en.json` (and `de.json`) for client-side loading.
+
+### translationKey contract
+
+API responses use a **translation key** so clients can show messages in the user's locale from the shared source:
+
+- **GraphQL**: Error `extensions` include `translationKey` (and optionally `translationParams`). Example: `errors.auth.tokenExpired`, `errors.notFound.organization`.
+- **REST**: Error JSON body includes `error` (localized message), `code`, `translationKey`, and optionally `translationParams` and `extensions`.
+- **Client**: Use the key as-is with your t function: `t(translationKey)`. Keys are dot-separated (e.g. `errors.auth.tokenExpired`). No conversion needed.
+
+### API i18n layout
 
 ```
 apps/api/src/i18n/
-├── locales/
-│   ├── en/
-│   │   ├── common.json      # Common UI strings
-│   │   └── errors.json      # Error messages
-│   └── de/
-│       ├── common.json
-│       └── errors.json
-├── config.ts                # i18next initialization
-├── helpers.ts               # Translation utilities
-├── index.ts                 # Public exports
-└── README.md                # Developer guide
+├── config.ts    # i18next init with merged messages from @grantjs/i18n
+├── helpers.ts   # translateError, translateStatic, getLocale
+└── index.ts     # Public exports
 ```
 
 ### Configuration

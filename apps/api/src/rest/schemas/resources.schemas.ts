@@ -51,15 +51,19 @@ export const getResourcesResponseSchema = createSuccessResponseSchema(
 );
 
 export const createResourceRequestSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255, 'Name too long').openapi({
-    description: 'Name of the resource',
-    example: 'User Documents',
-  }),
+  name: z
+    .string()
+    .min(1, 'errors.validation.nameRequired')
+    .max(255, 'errors.validation.nameTooLong')
+    .openapi({
+      description: 'Name of the resource',
+      example: 'User Documents',
+    }),
   slug: z
     .string()
-    .min(1, 'Slug is required')
-    .max(255, 'Slug too long')
-    .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens')
+    .min(1, 'errors.validation.slugRequired')
+    .max(255, 'errors.validation.slugTooLong')
+    .regex(/^[a-z0-9-]+$/, 'errors.validation.slugInvalidFormat')
     .openapi({
       description: 'URL-friendly identifier for the resource',
       example: 'user-documents',
@@ -85,15 +89,20 @@ export const createResourceRequestSchema = z.object({
 export const createResourceResponseSchema = createSuccessResponseSchema(resourceSchema);
 
 export const updateResourceRequestSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255, 'Name too long').optional().openapi({
-    description: 'Updated name of the resource',
-    example: 'User Documents and Files',
-  }),
+  name: z
+    .string()
+    .min(1, 'errors.validation.nameRequired')
+    .max(255, 'errors.validation.nameTooLong')
+    .optional()
+    .openapi({
+      description: 'Updated name of the resource',
+      example: 'User Documents and Files',
+    }),
   slug: z
     .string()
-    .min(1, 'Slug is required')
-    .max(255, 'Slug too long')
-    .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens')
+    .min(1, 'errors.validation.slugRequired')
+    .max(255, 'errors.validation.slugTooLong')
+    .regex(/^[a-z0-9-]+$/, 'errors.validation.slugInvalidFormat')
     .optional()
     .openapi({
       description: 'Updated URL-friendly identifier for the resource',
@@ -119,7 +128,7 @@ export const updateResourceRequestSchema = z.object({
 export const resourceParamsSchema = z.object({
   id: z
     .string()
-    .uuid('Invalid resource ID')
+    .uuid('errors.validation.invalidResourceId')
     .openapi({
       description: 'UUID of the resource',
       example: '123e4567-e89b-12d3-a456-426614174001',

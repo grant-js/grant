@@ -2,13 +2,13 @@ import { Tag } from '@grantjs/schema';
 import { z } from 'zod';
 
 export const createTagSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  color: z.string().min(1, 'Color is required'),
+  name: z.string().min(2, 'errors.validation.nameMin2'),
+  color: z.string().min(1, 'errors.validation.colorRequired'),
 });
 
 export const editTagSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  color: z.string().min(1, 'Color is required'),
+  name: z.string().min(2, 'errors.validation.nameMin2'),
+  color: z.string().min(1, 'errors.validation.colorRequired'),
 });
 
 export type TagCreateFormValues = z.infer<typeof createTagSchema>;

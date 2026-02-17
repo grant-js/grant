@@ -7,6 +7,7 @@ import { evictSigningKeysCache } from './cache';
 
 export function useSigningKeyMutations() {
   const t = useTranslations('signingKeys');
+  const tErrors = useTranslations('errors');
 
   const [rotateSigningKeyMutation] = useMutation<RotateSigningKeyMutation>(
     RotateSigningKeyDocument,
@@ -27,7 +28,7 @@ export function useSigningKeyMutations() {
     } catch (error) {
       console.error('Error rotating signing key:', error);
       toast.error(t('notifications.rotateError'), {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        description: error instanceof Error ? error.message : tErrors('common.unknownError'),
       });
       throw error;
     }

@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 
 import { config } from '@/config';
+import { t } from '@/i18n';
 import { ICacheAdapter } from '@/lib/cache';
 import { getClientIp } from '@/lib/headers.lib';
 import { ContextRequest } from '@/types';
@@ -19,13 +20,14 @@ interface WindowState {
   resetAt: number;
 }
 
-function sendTooManyRequests(res: Response, retryAfterSeconds: number): void {
+function sendTooManyRequests(req: Request, res: Response, retryAfterSeconds: number): void {
   res.setHeader('Retry-After', String(Math.ceil(retryAfterSeconds)));
   res.status(429).json({
     success: false,
     error: {
       code: 'rate_limit_exceeded',
-      message: 'Too many requests. Please try again later.',
+      message: t(req, 'errors.common.tooManyRequests'),
+      translationKey: 'errors.common.tooManyRequests',
     },
   });
 }
@@ -82,7 +84,7 @@ export function rateLimitMiddleware(store: ICacheAdapter) {
           now
         );
         if (!allowed) {
-          sendTooManyRequests(res, retryAfterSeconds);
+          sendTooManyRequests(req, res, retryAfterSeconds);
           return;
         }
       }
@@ -97,7 +99,7 @@ export function rateLimitMiddleware(store: ICacheAdapter) {
         now
       );
       if (!globalAllowed) {
-        sendTooManyRequests(res, globalRetry);
+        sendTooManyRequests(req, res, globalRetry);
         return;
       }
 
@@ -115,7 +117,7 @@ export function rateLimitMiddleware(store: ICacheAdapter) {
             now
           );
           if (!tenantAllowed) {
-            sendTooManyRequests(res, tenantRetry);
+            sendTooManyRequests(req, res, tenantRetry);
             return;
           }
         }

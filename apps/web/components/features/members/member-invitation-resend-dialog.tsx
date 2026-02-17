@@ -32,7 +32,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
+  TranslatedFormMessage,
 } from '@/components/ui/form';
 import { useEmailVerified } from '@/hooks/auth';
 import { useScopeFromParams } from '@/hooks/common';
@@ -40,7 +40,7 @@ import { MemberWithInvitation, useMemberMutations } from '@/hooks/members';
 import { useRoles } from '@/hooks/roles';
 
 const resendInvitationSchema = z.object({
-  roleId: z.string().min(1, 'Please select a role'),
+  roleId: z.string().min(1, 'errors.validation.roleRequired'),
 });
 
 type ResendInvitationFormValues = z.infer<typeof resendInvitationSchema>;
@@ -181,7 +181,7 @@ export function MemberInvitationResendDialog({
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <FormMessage />
+                  <TranslatedFormMessage />
                 </FormItem>
               )}
             />

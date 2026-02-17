@@ -16,7 +16,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
+  TranslatedFormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useAuthMutations, usePageTitle } from '@/hooks';
@@ -31,7 +31,7 @@ export default function ForgotPasswordPage() {
   const [isSuccess, setIsSuccess] = useState(false);
 
   const formSchema = z.object({
-    email: z.string().email(t('validation.email')),
+    email: z.string().email('errors.validation.invalidEmail'),
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -98,7 +98,7 @@ export default function ForgotPasswordPage() {
               <FormControl>
                 <Input type="email" placeholder={t('form.email.placeholder')} {...field} />
               </FormControl>
-              <FormMessage />
+              <TranslatedFormMessage />
             </FormItem>
           )}
         />

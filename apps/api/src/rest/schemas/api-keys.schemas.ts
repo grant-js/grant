@@ -4,11 +4,11 @@ import { z } from '@/lib/zod-openapi.lib';
 import { listQuerySchema, scopeSchema } from '@/rest/schemas/common.schemas';
 
 export const apiKeyIdParamsSchema = z.object({
-  id: z.uuid('Invalid API key ID'),
+  id: z.uuid('errors.validation.invalidApiKeyId'),
 });
 
 export const getApiKeysQuerySchema = listQuerySchema.omit({ relations: true }).extend({
-  scopeId: z.string().min(1, 'Scope ID is required'),
+  scopeId: z.string().min(1, 'errors.validation.scopeIdRequired'),
   tenant: z.enum(Object.values(Tenant) as [Tenant, ...Tenant[]]),
   sortField: z
     .enum(Object.values(ApiKeySortableField) as [ApiKeySortableField, ...ApiKeySortableField[]])
@@ -30,22 +30,22 @@ export const createApiKeyRequestSchema = z.object({
   description: z.string().max(1000).optional(),
   expiresAt: z.date().optional(),
   scope: scopeSchema,
-  roleId: z.uuid('Invalid role ID').optional(),
+  roleId: z.uuid('errors.validation.invalidRoleId').optional(),
 });
 
 export const exchangeApiKeyRequestSchema = z.object({
-  clientId: z.uuid('Invalid client ID'),
-  clientSecret: z.string().min(32, 'Client secret must be at least 32 characters'),
+  clientId: z.uuid('errors.validation.invalidClientId'),
+  clientSecret: z.string().min(32, 'errors.validation.clientSecretMin32'),
   scope: scopeSchema,
 });
 
 export const revokeApiKeyRequestSchema = z.object({
-  id: z.uuid('Invalid API key ID'),
+  id: z.uuid('errors.validation.invalidApiKeyId'),
   scope: scopeSchema,
 });
 
 export const deleteApiKeyRequestSchema = z.object({
-  id: z.uuid('Invalid API key ID'),
+  id: z.uuid('errors.validation.invalidApiKeyId'),
   scope: scopeSchema,
   hardDelete: z.boolean().optional(),
 });

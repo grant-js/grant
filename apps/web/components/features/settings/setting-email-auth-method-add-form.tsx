@@ -15,7 +15,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
+  TranslatedFormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 
@@ -82,7 +82,7 @@ export function SettingEmailAuthMethodAddForm({
                     disabled={isSubmitting}
                   />
                 </FormControl>
-                <FormMessage />
+                <TranslatedFormMessage />
               </FormItem>
             )}
           />
@@ -96,7 +96,7 @@ export function SettingEmailAuthMethodAddForm({
                 <FormControl>
                   <PasswordInput {...field} autoComplete="new-password" disabled={isSubmitting} />
                 </FormControl>
-                <FormMessage />
+                <TranslatedFormMessage />
                 <PasswordStrengthIndicator password={passwordValue} />
               </FormItem>
             )}
@@ -111,7 +111,7 @@ export function SettingEmailAuthMethodAddForm({
                 <FormControl>
                   <PasswordInput {...field} autoComplete="new-password" disabled={isSubmitting} />
                 </FormControl>
-                <FormMessage />
+                <TranslatedFormMessage />
               </FormItem>
             )}
           />

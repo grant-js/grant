@@ -3,26 +3,26 @@ import { z } from 'zod';
 
 export const githubAuthorizationCodeSchema = z
   .string()
-  .min(1, 'Authorization code is required')
-  .max(500, 'Authorization code is too long');
+  .min(1, 'errors.validation.codeRequired')
+  .max(500, 'errors.validation.codeTooLong');
 
 export const oauthStateTokenSchema = z
   .string()
-  .min(1, 'State parameter is required')
-  .max(500, 'State parameter is too long');
+  .min(1, 'errors.validation.stateRequired')
+  .max(500, 'errors.validation.stateTooLong');
 
 export const redirectUrlSchema = z
   .url('Redirect URL must be a valid URL')
-  .max(2000, 'Redirect URL is too long')
+  .max(2000, 'errors.validation.redirectUrlTooLong')
   .optional();
 
-export const githubAccessTokenSchema = z.string().min(1, 'Access token is required');
+export const githubAccessTokenSchema = z.string().min(1, 'errors.validation.accessTokenRequired');
 
 export const githubUserIdSchema = z.number().int().positive('GitHub user ID must be positive');
 
 export const githubUserInfoSchema = z.object({
   id: githubUserIdSchema,
-  login: z.string().min(1, 'GitHub login is required'),
+  login: z.string().min(1, 'errors.validation.githubLoginRequired'),
   email: z.string().email().nullable(),
   name: z.string().nullable(),
   avatar_url: z.string().url(),
@@ -54,8 +54,8 @@ export const initiateGithubAuthInputSchema = z.object({
 export const handleGithubCallbackInputSchema = z.object({
   code: githubAuthorizationCodeSchema,
   stateToken: oauthStateTokenSchema,
-  origin: z.string().min(1, 'Origin is required').url('Origin must be a valid URL'),
-  locale: z.string().min(1, 'Locale is required'),
+  origin: z.string().min(1, 'errors.validation.originRequired').url('errors.validation.invalidUrl'),
+  locale: z.string().min(1, 'errors.validation.localeRequired'),
   userAgent: z.string().nullable().optional(),
   ipAddress: z.string().nullable().optional(),
 });

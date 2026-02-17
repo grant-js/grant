@@ -2,9 +2,10 @@ import { useCallback } from 'react';
 
 import { getTagBorderClasses, TagColor } from '@grantjs/constants';
 import { Tag } from '@grantjs/schema';
+import { useTranslations } from 'next-intl';
 import { Control } from 'react-hook-form';
 
-import { FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { FormField, FormItem, FormLabel, TranslatedFormMessage } from '@/components/ui/form';
 import { cn } from '@/lib/utils';
 
 export interface TagCheckboxListProps {
@@ -28,12 +29,15 @@ export function TagCheckboxList({
   items,
   multiple = true,
   loading = false,
-  loadingText = 'Loading...',
-  emptyText = 'No tags available',
+  loadingText,
+  emptyText,
   error,
   maxHeight = '200px',
   disabled = false,
 }: TagCheckboxListProps) {
+  const t = useTranslations('common');
+  const resolvedLoadingText = loadingText ?? t('loading');
+  const resolvedEmptyText = emptyText ?? t('noTagsAvailable');
   const renderItems = useCallback(
     (field: any) => (
       <div className="flex flex-wrap gap-2 pr-4">
@@ -90,16 +94,20 @@ export function TagCheckboxList({
           <FormLabel className="mb-2">{label}</FormLabel>
           <div className="space-y-2">
             {loading ? (
-              <div className="text-sm text-muted-foreground">{loadingText}</div>
+              <div className="text-sm text-muted-foreground">{resolvedLoadingText}</div>
             ) : items.length === 0 ? (
-              <div className="text-sm text-muted-foreground">{emptyText}</div>
+              <div className="text-sm text-muted-foreground">{resolvedEmptyText}</div>
             ) : (
               <div className={cn('flex flex-wrap gap-2 overflow-y-auto', `max-h-[${maxHeight}]`)}>
                 {renderItems(field)}
               </div>
             )}
           </div>
-          {error && <FormMessage className="text-destructive text-sm mt-1">{error}</FormMessage>}
+          {error && (
+            <TranslatedFormMessage className="text-destructive text-sm mt-1">
+              {error}
+            </TranslatedFormMessage>
+          )}
         </FormItem>
       )}
     />

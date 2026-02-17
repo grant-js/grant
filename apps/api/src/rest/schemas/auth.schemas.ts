@@ -30,7 +30,7 @@ export const loginRequestSchema = z.object({
     description: 'Authentication provider type',
     example: 'email',
   }),
-  providerId: z.string().min(1, 'Provider ID is required').openapi({
+  providerId: z.string().min(1, 'errors.validation.providerIdRequired').openapi({
     description: 'Unique identifier for the provider (email address, OAuth ID, etc.)',
     example: 'user@example.com',
   }),
@@ -48,10 +48,14 @@ export const loginResponseSchema = createSuccessResponseSchema(
 export const registerResultSchema = loginResultSchema;
 
 export const registerRequestSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255, 'Name too long').openapi({
-    description: "User's full name",
-    example: 'John Doe',
-  }),
+  name: z
+    .string()
+    .min(1, 'errors.validation.nameRequired')
+    .max(255, 'errors.validation.nameTooLong')
+    .openapi({
+      description: "User's full name",
+      example: 'John Doe',
+    }),
   username: z.string().optional().openapi({
     description: 'Unique username (optional, auto-generated if not provided)',
     example: 'johndoe',
@@ -64,7 +68,7 @@ export const registerRequestSchema = z.object({
     description: 'Authentication provider type',
     example: 'email',
   }),
-  providerId: z.string().min(1, 'Provider ID is required').openapi({
+  providerId: z.string().min(1, 'errors.validation.providerIdRequired').openapi({
     description: 'Unique identifier for the provider (email address, OAuth ID, etc.)',
     example: 'user@example.com',
   }),
@@ -98,7 +102,7 @@ export const logoutResponseSchema = createSuccessResponseSchema(
 );
 
 export const verifyEmailRequestSchema = z.object({
-  token: z.string().min(1, 'Token is required').openapi({
+  token: z.string().min(1, 'errors.validation.tokenRequired').openapi({
     description: 'Email verification token',
     example: 'abc123def456...',
   }),
@@ -115,7 +119,7 @@ export const verifyEmailResponseSchema = createSuccessResponseSchema(
 );
 
 export const resendVerificationRequestSchema = z.object({
-  email: z.string().email('Invalid email address').openapi({
+  email: z.string().email('errors.validation.invalidEmail').openapi({
     description: 'Email address to resend verification to',
     example: 'user@example.com',
   }),
@@ -132,7 +136,7 @@ export const resendVerificationResponseSchema = createSuccessResponseSchema(
 );
 
 export const requestPasswordResetRequestSchema = z.object({
-  email: z.string().email('Invalid email address').openapi({
+  email: z.string().email('errors.validation.invalidEmail').openapi({
     description: 'Email address to send password reset link to',
     example: 'user@example.com',
   }),
@@ -150,11 +154,11 @@ export const requestPasswordResetResponseSchema = createSuccessResponseSchema(
 );
 
 export const resetPasswordRequestSchema = z.object({
-  token: z.string().min(1, 'Token is required').openapi({
+  token: z.string().min(1, 'errors.validation.tokenRequired').openapi({
     description: 'Password reset token from email',
     example: 'abc123def456...',
   }),
-  newPassword: z.string().min(8, 'Password must be at least 8 characters').openapi({
+  newPassword: z.string().min(8, 'errors.validation.passwordMin8').openapi({
     description: 'New password for the account',
     example: 'NewSecurePassword123!',
   }),
@@ -179,7 +183,7 @@ export const userAuthenticationEmailProviderActionSchema = z.enum(
 );
 
 export const initiateGithubAuthQuerySchema = z.object({
-  redirect: z.string().url('Invalid redirect URL').optional().openapi({
+  redirect: z.string().url('errors.validation.invalidRedirectUrl').optional().openapi({
     description: 'URL to redirect to after authentication',
     example: 'https://example.com/dashboard',
   }),
@@ -191,7 +195,7 @@ export const initiateGithubAuthQuerySchema = z.object({
     description: 'OAuth action to perform',
     example: 'login',
   }),
-  userId: z.string().uuid('Invalid user ID').optional().openapi({
+  userId: z.string().uuid('errors.validation.invalidUserId').optional().openapi({
     description: 'User ID for connect action',
     example: '123e4567-e89b-12d3-a456-426614174000',
   }),
@@ -217,7 +221,7 @@ export const handleGithubCallbackQuerySchema = z.object({
 });
 
 export const cliCallbackRequestSchema = z.object({
-  code: z.string().min(1, 'Code is required').openapi({
+  code: z.string().min(1, 'errors.validation.codeRequired').openapi({
     description: 'One-time code from CLI OAuth redirect',
     example: 'a1b2c3d4e5f6...',
   }),

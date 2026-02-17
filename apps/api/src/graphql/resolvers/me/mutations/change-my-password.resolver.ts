@@ -1,6 +1,7 @@
 import { MutationResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
+import { t } from '@/i18n';
 
 export const changeMyPasswordResolver: MutationResolvers<GraphqlContext>['changeMyPassword'] =
   async (_parent, { input }, context) => {
@@ -11,6 +12,6 @@ export const changeMyPasswordResolver: MutationResolvers<GraphqlContext>['change
 
     return {
       success: true,
-      message: 'Password changed successfully',
+      message: t(context.req, 'common.success.passwordChanged'),
     };
   };

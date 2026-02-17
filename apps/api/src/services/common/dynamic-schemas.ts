@@ -9,7 +9,7 @@ export function createDynamicEntitySchema<T extends z.ZodObject<any>>(
   }
 
   const dynamicFields: Record<string, z.ZodTypeAny> = {
-    id: z.string().min(1, 'ID is required'),
+    id: z.string().min(1, 'errors.validation.idRequired'),
   };
 
   requestedFields.forEach((field) => {

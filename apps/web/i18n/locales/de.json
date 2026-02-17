@@ -1,5 +1,8 @@
 {
   "errors": {
+    "common": {
+      "unknownError": "Ein unbekannter Fehler ist aufgetreten"
+    },
     "notFound": {
       "title": "Seite nicht gefunden",
       "description": "Die gesuchte Seite existiert nicht oder wurde verschoben. Überprüfen Sie die URL oder navigieren Sie zurück.",
@@ -14,6 +17,10 @@
       "signIn": "Anmelden",
       "helpText": "Wenn Sie glauben, dass dies ein Fehler ist, kontaktieren Sie bitte Ihren Organisationsadministrator."
     }
+  },
+  "session": {
+    "expiredTitle": "Sitzung abgelaufen",
+    "expiredDescription": "Ihre Sitzung ist abgelaufen oder wurde widerrufen. Weiterleitung zur Anmeldung..."
   },
   "common": {
     "app": {
@@ -93,6 +100,8 @@
     "saving": "Wird gespeichert...",
     "emptyElements": "Keine {title} zum Anzeigen",
     "loading": "Wird geladen...",
+    "noItemsAvailable": "Keine Einträge verfügbar",
+    "noTagsAvailable": "Keine Tags verfügbar",
     "redirecting": "Wird weitergeleitet...",
     "error": "Fehler",
     "organizations": {
@@ -210,6 +219,8 @@
         }
       }
     },
+    "resendEmail": "E-Mail erneut senden",
+    "validationErrors": "Bitte überprüfen Sie das Formular auf Validierungsfehler",
     "login": {
       "title": "Anmelden",
       "description": "Melden Sie sich an, um den Zugriff für Ihre Projekte zu verwalten",
@@ -2445,7 +2456,10 @@
         "export": "Meine Daten exportieren",
         "exporting": "Export wird vorbereitet...",
         "success": "Daten erfolgreich exportiert",
-        "error": "Datenexport fehlgeschlagen"
+        "error": "Datenexport fehlgeschlagen",
+        "loginRequired": "Sie müssen angemeldet sein, um Ihre Daten zu exportieren",
+        "downloadSuccess": "Ihre Daten wurden erfolgreich heruntergeladen",
+        "exportErrorDescription": "Datenexport fehlgeschlagen"
       },
       "dataRetention": {
         "title": "Datenspeicherung",
@@ -2488,7 +2502,10 @@
         },
         "success": "Konto erfolgreich gelöscht",
         "error": "Kontolöschung fehlgeschlagen",
-        "userIdMismatch": "Die eingegebene Benutzer-ID stimmt nicht mit Ihrer Benutzer-ID überein. Bitte versuchen Sie es erneut."
+        "userIdMismatch": "Die eingegebene Benutzer-ID stimmt nicht mit Ihrer Benutzer-ID überein. Bitte versuchen Sie es erneut.",
+        "loginRequired": "Sie müssen angemeldet sein, um Ihr Konto zu löschen",
+        "deleteSuccessDescription": "Ihr Konto wurde erfolgreich gelöscht",
+        "deleteErrorDescription": "Kontolöschung fehlgeschlagen"
       }
     },
     "notifications": {

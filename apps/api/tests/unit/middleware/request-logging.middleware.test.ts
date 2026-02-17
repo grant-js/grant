@@ -57,15 +57,27 @@ function createMockReq(overrides: Partial<Request> = {}): Request {
   } as Request;
 }
 
+interface MockRes extends Record<string, unknown> {
+  setHeader: ReturnType<typeof vi.fn>;
+  statusCode: number;
+  writableEnded: boolean;
+  _onFinish?: () => void;
+  _onClose?: () => void;
+  on: (event: string, fn: () => void) => MockRes;
+  emit: (event: string) => boolean;
+}
+
 function createMockRes(): Response & {
   statusCode: number;
   _onFinish?: () => void;
   _onClose?: () => void;
 } {
-  const res: Record<string, unknown> = {
+  const res: MockRes = {
     setHeader: vi.fn(),
     statusCode: 200,
     writableEnded: false,
+    _onFinish: undefined,
+    _onClose: undefined,
     on(event: string, fn: () => void) {
       if (event === 'finish') this._onFinish = fn;
       if (event === 'close') this._onClose = fn;
@@ -77,7 +89,11 @@ function createMockRes(): Response & {
       return true;
     },
   };
-  return res as Response & { statusCode: number; _onFinish?: () => void; _onClose?: () => void };
+  return res as unknown as Response & {
+    statusCode: number;
+    _onFinish?: () => void;
+    _onClose?: () => void;
+  };
 }
 
 describe('requestLoggingMiddleware', () => {
@@ -103,7 +119,7 @@ describe('requestLoggingMiddleware', () => {
     expect((req as { logger?: { info: unknown } }).logger).toBe(childLogger);
     expect(res.setHeader).toHaveBeenCalledWith(
       'X-Request-ID',
-      (req as { requestId: string }).requestId
+      (req as unknown as { requestId: string }).requestId
     );
   });
 

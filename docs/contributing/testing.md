@@ -21,6 +21,9 @@ pnpm test:coverage     # With coverage report
 apps/api/tests/
 ├── unit/
 │   ├── graphql/                # Field selection, custom scalars
+│   ├── i18n/                   # i18n error mapper translationKey, helpers
+│   │   ├── error-mapper.translationKey.test.ts
+│   │   └── helpers.test.ts
 │   ├── middleware/             # Rate limiting, request-logging middleware logic
 │   │   ├── rate-limit.middleware.test.ts
 │   │   └── request-logging.middleware.test.ts
@@ -29,6 +32,7 @@ apps/api/tests/
 │   ├── services/              # Audit service tenant scoping
 │   └── jobs/                  # Tenant job context validation
 ├── integration/
+│   ├── i18n.integration.test.ts          # REST error body includes translationKey and localized error
 │   ├── rate-limit.integration.test.ts   # HTTP-level rate limit tests
 │   ├── observability.integration.test.ts   # Metrics endpoint, telemetry/analytics/tracing adapters
 │   └── request-logging.integration.test.ts   # Request-scoped logger and requestId in log payload
@@ -105,6 +109,14 @@ Observability is covered at two levels:
 - **E2E** (`observability.e2e.test.ts`) — GET /metrics against the real API container. The E2E stack enables metrics (`METRICS_ENABLED=true` in `docker-compose.e2e.yml`); telemetry and analytics are set to noop/disabled. Full E2E for log-push or analytics would require a test backend (e.g. mock HTTP receiver).
 
 **Request logging:** Unit tests (`request-logging.middleware.test.ts`) assert requestId and request-scoped logger on `req`, and the completion log payload on `res.finish`. Handler unit test (`auth.handler.request-logger.test.ts`) asserts that when `requestLogger` is passed, the handler uses it for error logs. Integration test (`request-logging.integration.test.ts`) uses a minimal Express app with the middleware and one route that calls `getRequestLogger(req).info(...)`; it asserts the log payload includes `requestId` and the event message.
+
+## i18n Testing
+
+i18n correctness is covered at three levels:
+
+- **Unit** (`tests/unit/i18n/`) — `mapDomainToHttp` assigns the correct `translationKey` (and optional `translationParams`) for each domain exception (NotFoundError, ValidationError, TokenExpiredError, etc.). Helpers unit tests assert `translateError`, `t`, `getLocale`, and `translateStatic` with mocked `req.i18n` and `getFixedT`.
+- **Integration** (`tests/integration/i18n.integration.test.ts`) — Minimal Express app with mock i18n middleware and the real error handler; requests that throw `AuthenticationError` or `NotFoundError` return 401/404 with `translationKey` and localized `error` in the JSON body. Asserts that `Accept-Language` influences the localized message.
+- **E2E** — `negative-auth.e2e.test.ts` asserts that every 4xx error response includes a `translationKey` string matching `^errors\.` (and auth/validation/conflict segments where applicable). `flows.e2e.test.ts` includes a short "Error response i18n" check: unauthenticated `GET /api/me` returns 401 with `translationKey` and `error`.
 
 ## Coverage Goals
 

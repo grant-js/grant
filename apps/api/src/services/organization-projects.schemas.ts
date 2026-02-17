@@ -13,17 +13,23 @@ export const queryOrganizationProjectArgsSchema = z.object({
 export const addOrganizationProjectInputSchema = z.object({
   organizationId: idSchema.refine(
     (organizationId) => organizationId.trim().length > 0,
-    'Organization ID is required'
+    'errors.validation.organizationIdRequired'
   ),
-  projectId: idSchema.refine((projectId) => projectId.trim().length > 0, 'Project ID is required'),
+  projectId: idSchema.refine(
+    (projectId) => projectId.trim().length > 0,
+    'errors.validation.projectIdRequired'
+  ),
 });
 
 export const removeOrganizationProjectInputSchema = deleteSchema.extend({
   organizationId: idSchema.refine(
     (organizationId) => organizationId.trim().length > 0,
-    'Organization ID is required'
+    'errors.validation.organizationIdRequired'
   ),
-  projectId: idSchema.refine((projectId) => projectId.trim().length > 0, 'Project ID is required'),
+  projectId: idSchema.refine(
+    (projectId) => projectId.trim().length > 0,
+    'errors.validation.projectIdRequired'
+  ),
 });
 
 export const addOrganizationProjectArgsSchema = addOrganizationProjectInputSchema;

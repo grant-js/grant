@@ -17,14 +17,14 @@ export const createUserSessionInputSchema = z.object({
   scope: sessionScopeSchema,
   scopeId: idSchema,
   expiresAt: z.date(),
-  userAgent: z.string().max(500, 'User agent too long').nullable().optional(),
-  ipAddress: z.string().max(45, 'IP address too long').nullable().optional(),
+  userAgent: z.string().max(500, 'errors.validation.userAgentTooLong').nullable().optional(),
+  ipAddress: z.string().max(45, 'errors.validation.ipAddressTooLong').nullable().optional(),
 });
 
 export const updateUserSessionInputSchema = z.object({
   lastUsedAt: z.date().nullable().optional(),
-  userAgent: z.string().max(500, 'User agent too long').nullable().optional(),
-  ipAddress: z.string().max(45, 'IP address too long').nullable().optional(),
+  userAgent: z.string().max(500, 'errors.validation.userAgentTooLong').nullable().optional(),
+  ipAddress: z.string().max(45, 'errors.validation.ipAddressTooLong').nullable().optional(),
 });
 
 export const updateUserSessionArgsSchema = z.object({

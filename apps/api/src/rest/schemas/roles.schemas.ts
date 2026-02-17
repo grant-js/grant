@@ -25,7 +25,7 @@ export const roleWithRelationsSchema = roleSchema.extend({
 export const roleRelationsEnum = z.enum(['groups', 'tags']);
 
 export const getRolesQuerySchema = listQuerySchema.omit({ relations: true }).extend({
-  scopeId: z.uuid('Invalid scope ID'),
+  scopeId: z.uuid('errors.validation.invalidScopeId'),
   tenant: tenantSchema,
   sortField: z
     .enum(Object.values(RoleSortableField) as [RoleSortableField, ...RoleSortableField[]])
@@ -58,10 +58,14 @@ export const getRolesResponseSchema = createSuccessResponseSchema(
 );
 
 export const createRoleRequestSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255, 'Name too long').openapi({
-    description: 'Name of the role',
-    example: 'Developer',
-  }),
+  name: z
+    .string()
+    .min(1, 'errors.validation.nameRequired')
+    .max(255, 'errors.validation.nameTooLong')
+    .openapi({
+      description: 'Name of the role',
+      example: 'Developer',
+    }),
   description: z.string().optional().openapi({
     description: 'Description of the role',
     example: 'Full access to development resources',
@@ -83,10 +87,15 @@ export const createRoleRequestSchema = z.object({
 export const createRoleResponseSchema = createSuccessResponseSchema(roleSchema);
 
 export const updateRoleRequestSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255, 'Name too long').optional().openapi({
-    description: 'Updated name of the role',
-    example: 'Senior Developer',
-  }),
+  name: z
+    .string()
+    .min(1, 'errors.validation.nameRequired')
+    .max(255, 'errors.validation.nameTooLong')
+    .optional()
+    .openapi({
+      description: 'Updated name of the role',
+      example: 'Senior Developer',
+    }),
   description: z.string().optional().openapi({
     description: 'Updated description of the role',
     example: 'Senior level access to development resources',
@@ -107,7 +116,7 @@ export const updateRoleRequestSchema = z.object({
 export const roleParamsSchema = z.object({
   id: z
     .string()
-    .uuid('Invalid role ID')
+    .uuid('errors.validation.invalidRoleId')
     .openapi({
       description: 'UUID of the role',
       example: '123e4567-e89b-12d3-a456-426614174004',
@@ -118,7 +127,7 @@ export const roleParamsSchema = z.object({
 export const updateRoleResponseSchema = createSuccessResponseSchema(roleSchema);
 
 export const deleteRoleQuerySchema = z.object({
-  scopeId: z.uuid('Invalid scope ID'),
+  scopeId: z.uuid('errors.validation.invalidScopeId'),
   tenant: tenantSchema,
 });
 

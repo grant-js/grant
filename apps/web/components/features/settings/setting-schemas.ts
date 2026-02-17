@@ -4,34 +4,34 @@ import { passwordPolicySchema } from '@/lib/validation/password-policy';
 
 export const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, 'Current password is required'),
+    currentPassword: z.string().min(1, 'errors.validation.currentPasswordRequired'),
     newPassword: passwordPolicySchema,
-    confirmPassword: z.string().min(1, 'Password confirmation is required'),
+    confirmPassword: z.string().min(1, 'errors.validation.confirmPasswordRequired'),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
-    message: 'Passwords do not match',
+    message: 'errors.validation.passwordMismatch',
     path: ['confirmPassword'],
   })
   .refine((data) => data.currentPassword !== data.newPassword, {
-    message: 'New password must be different from current password',
+    message: 'errors.validation.newPasswordDifferent',
     path: ['newPassword'],
   });
 
 export const addEmailAuthMethodSchema = z
   .object({
-    email: z.email('Please enter a valid email address'),
+    email: z.email('errors.validation.invalidEmail'),
     password: passwordPolicySchema,
-    confirmPassword: z.string().min(1, 'Password confirmation is required'),
+    confirmPassword: z.string().min(1, 'errors.validation.confirmPasswordRequired'),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwords do not match',
+    message: 'errors.validation.passwordMismatch',
     path: ['confirmPassword'],
   });
 
 export const profileSettingsSchema = z.object({
   name: z
     .string()
-    .min(1, { message: 'Display name is required' })
-    .min(2, { message: 'Display name must be at least 2 characters' })
-    .max(100, { message: 'Display name must be less than 100 characters' }),
+    .min(1, { message: 'errors.validation.displayNameRequired' })
+    .min(2, { message: 'errors.validation.displayNameMin2' })
+    .max(100, { message: 'errors.validation.displayNameMax100' }),
 });

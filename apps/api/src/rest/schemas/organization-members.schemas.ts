@@ -8,7 +8,7 @@ import { z } from '@/lib/zod-openapi.lib';
 import { createSuccessResponseSchema, scopeSchema } from '@/rest/schemas/common.schemas';
 
 export const getOrganizationMembersQuerySchema = z.object({
-  scopeId: z.uuid('Invalid scope ID').openapi({
+  scopeId: z.uuid('errors.validation.invalidScopeId').openapi({
     description: 'UUID of the scope to list members for',
     example: '123e4567-e89b-12d3-a456-426614174000',
   }),
@@ -36,7 +36,7 @@ export const getOrganizationMembersQuerySchema = z.object({
     description: 'Number of items per page (-1 for all)',
     example: 50,
   }),
-  search: z.string().min(2, 'Search term must be at least 2 characters').optional().openapi({
+  search: z.string().min(2, 'errors.validation.searchMin2').optional().openapi({
     description: 'Search term to filter members by name or email',
     example: 'john@example.com',
   }),

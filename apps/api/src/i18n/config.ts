@@ -1,44 +1,39 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-import { SupportedLocale } from '@grantjs/constants';
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES, type SupportedLocale } from '@grantjs/i18n';
+import { getMergedMessages } from '@grantjs/i18n/loader';
 import i18next from 'i18next';
-import Backend from 'i18next-fs-backend';
 import * as middleware from 'i18next-http-middleware';
 
 import { config } from '@/config';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 export const defaultLocale = config.i18n.defaultLocale;
 
-export const namespaces = ['common', 'errors', 'email'] as const;
-export type Namespace = (typeof namespaces)[number];
+/** Single namespace key for merged messages (errors, common, email) with dot keys */
+const NS = 'translation';
 
 export async function initializeI18n() {
-  await i18next
-    .use(Backend)
-    .use(middleware.LanguageDetector)
-    .init({
-      fallbackLng: defaultLocale,
-      supportedLngs: config.i18n.supportedLocales,
-      preload: config.i18n.supportedLocales,
-      ns: namespaces,
-      defaultNS: 'errors',
-      backend: {
-        loadPath: path.join(__dirname, 'locales/{{lng}}/{{ns}}.json'),
-      },
-      detection: {
-        order: ['header'],
-        lookupHeader: 'accept-language',
-        caches: false,
-      },
-      interpolation: {
-        escapeValue: false,
-      },
-      debug: config.app.isDevelopment,
-    });
+  const resources: Record<string, Record<string, Record<string, unknown>>> = {};
+  for (const lng of SUPPORTED_LOCALES) {
+    resources[lng] = { [NS]: getMergedMessages(lng) as Record<string, unknown> };
+  }
+
+  await i18next.use(middleware.LanguageDetector).init({
+    fallbackLng: DEFAULT_LOCALE,
+    supportedLngs: [...SUPPORTED_LOCALES],
+    preload: SUPPORTED_LOCALES,
+    ns: [NS],
+    defaultNS: NS,
+    resources,
+    keySeparator: '.',
+    detection: {
+      order: ['header'],
+      lookupHeader: 'accept-language',
+      caches: false,
+    },
+    interpolation: {
+      escapeValue: false,
+    },
+    debug: config.app.isDevelopment,
+  });
 
   return i18next;
 }

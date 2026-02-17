@@ -2,6 +2,7 @@ import { UserAuthenticationEmailProviderAction } from '@grantjs/schema';
 import { Response, Router } from 'express';
 
 import { config } from '@/config';
+import { t } from '@/i18n';
 import { authenticateRestRoute } from '@/lib/authorization';
 import { AuthenticationError } from '@/lib/errors';
 import { getRefreshTokenFromCookie } from '@/lib/headers.lib';
@@ -319,7 +320,11 @@ export function createAuthRoutes(context: RequestContext) {
       if (!payload) {
         res.status(400).json({
           success: false,
-          error: { code: 'invalid_or_expired_code', message: 'Invalid or expired one-time code' },
+          error: {
+            code: 'invalid_or_expired_code',
+            message: t(req, 'errors.auth.invalidOrExpiredCode'),
+            translationKey: 'errors.auth.invalidOrExpiredCode',
+          },
         });
         return;
       }

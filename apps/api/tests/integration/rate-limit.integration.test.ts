@@ -45,7 +45,10 @@ const { mockSecurity } = vi.hoisted(() => {
 });
 
 vi.mock('@/config', () => ({
-  config: { security: mockSecurity },
+  config: {
+    security: mockSecurity,
+    i18n: { defaultLocale: 'en' as const },
+  },
 }));
 
 vi.mock('@/lib/headers.lib', () => ({
@@ -127,9 +130,11 @@ describe('rate limit integration', () => {
         success: false,
         error: {
           code: 'rate_limit_exceeded',
-          message: 'Too many requests. Please try again later.',
+          translationKey: 'errors.common.tooManyRequests',
         },
       });
+      expect(res.body.error.message).toBeDefined();
+      expect(typeof res.body.error.message).toBe('string');
     });
 
     it('returns 429 for auth endpoints when auth limit exceeded', async () => {

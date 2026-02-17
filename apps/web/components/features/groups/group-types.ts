@@ -2,7 +2,7 @@ import { Group } from '@grantjs/schema';
 import { z } from 'zod';
 
 export const createGroupSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
+  name: z.string().min(2, 'errors.validation.nameMin2'),
   description: z.string().optional(),
   permissionIds: z.array(z.string()).optional(),
   tagIds: z.array(z.string()).optional(),
@@ -11,7 +11,7 @@ export const createGroupSchema = z.object({
 });
 
 export const editGroupSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
+  name: z.string().min(2, 'errors.validation.nameMin2'),
   description: z.string().optional(),
   permissionIds: z.array(z.string()).optional(),
   tagIds: z.array(z.string()).optional(),

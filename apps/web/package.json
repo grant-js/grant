@@ -21,6 +21,7 @@
     "@grantjs/client": "workspace:*",
     "@grantjs/constants": "workspace:*",
     "@grantjs/core": "workspace:*",
+    "@grantjs/i18n": "workspace:*",
     "@grantjs/schema": "workspace:*",
     "@radix-ui/react-alert-dialog": "^1.1.6",
     "@radix-ui/react-avatar": "^1.1.3",

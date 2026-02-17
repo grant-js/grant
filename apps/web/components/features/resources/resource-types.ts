@@ -2,10 +2,10 @@ import { Resource } from '@grantjs/schema';
 import { z } from 'zod';
 
 export const createResourceSchema = z.object({
-  name: z.string().min(2, 'Label must be at least 2 characters'),
+  name: z.string().min(2, 'errors.validation.labelMin2'),
   slug: z
     .string()
-    .min(2, 'Slug must be at least 2 characters')
+    .min(2, 'errors.validation.slugMin2')
     .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens')
     .optional(),
   description: z.string().optional(),
@@ -16,10 +16,10 @@ export const createResourceSchema = z.object({
 });
 
 export const editResourceSchema = z.object({
-  name: z.string().min(2, 'Label must be at least 2 characters'),
+  name: z.string().min(2, 'errors.validation.labelMin2'),
   slug: z
     .string()
-    .min(2, 'Slug must be at least 2 characters')
+    .min(2, 'errors.validation.slugMin2')
     .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens')
     .optional(),
   description: z.string().optional(),

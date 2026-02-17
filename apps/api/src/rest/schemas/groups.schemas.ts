@@ -25,7 +25,7 @@ export const groupWithRelationsSchema = groupSchema.extend({
 export const groupRelationsEnum = z.enum(['permissions', 'tags']);
 
 export const getGroupsQuerySchema = listQuerySchema.omit({ relations: true }).extend({
-  scopeId: z.uuid('Invalid scope ID'),
+  scopeId: z.uuid('errors.validation.invalidScopeId'),
   tenant: tenantSchema,
   sortField: z
     .enum(Object.values(GroupSortableField) as [GroupSortableField, ...GroupSortableField[]])
@@ -58,10 +58,14 @@ export const getGroupsResponseSchema = createSuccessResponseSchema(
 );
 
 export const createGroupRequestSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255, 'Name too long').openapi({
-    description: 'Name of the group',
-    example: 'Engineering Team',
-  }),
+  name: z
+    .string()
+    .min(1, 'errors.validation.nameRequired')
+    .max(255, 'errors.validation.nameTooLong')
+    .openapi({
+      description: 'Name of the group',
+      example: 'Engineering Team',
+    }),
   description: z.string().optional().openapi({
     description: 'Description of the group',
     example: 'Development and engineering staff',
@@ -90,10 +94,15 @@ export const createGroupRequestSchema = z.object({
 export const createGroupResponseSchema = createSuccessResponseSchema(groupSchema);
 
 export const updateGroupRequestSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255, 'Name too long').optional().openapi({
-    description: 'Updated name of the group',
-    example: 'Senior Engineering Team',
-  }),
+  name: z
+    .string()
+    .min(1, 'errors.validation.nameRequired')
+    .max(255, 'errors.validation.nameTooLong')
+    .optional()
+    .openapi({
+      description: 'Updated name of the group',
+      example: 'Senior Engineering Team',
+    }),
   description: z.string().optional().openapi({
     description: 'Updated description of the group',
     example: 'Senior development and engineering staff',
@@ -121,7 +130,7 @@ export const updateGroupRequestSchema = z.object({
 export const groupParamsSchema = z.object({
   id: z
     .string()
-    .uuid('Invalid group ID')
+    .uuid('errors.validation.invalidGroupId')
     .openapi({
       description: 'UUID of the group',
       example: '123e4567-e89b-12d3-a456-426614174006',
@@ -132,7 +141,7 @@ export const groupParamsSchema = z.object({
 export const updateGroupResponseSchema = createSuccessResponseSchema(groupSchema);
 
 export const deleteGroupQuerySchema = z.object({
-  scopeId: z.uuid('Invalid scope ID'),
+  scopeId: z.uuid('errors.validation.invalidScopeId'),
   tenant: tenantSchema,
   hardDelete: z
     .string()

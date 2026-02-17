@@ -18,6 +18,7 @@ type VerificationStatus = 'verifying' | 'success' | 'error' | 'expired' | 'missi
 
 export default function VerifyEmailPage() {
   const t = useTranslations('auth');
+  const tErrors = useTranslations('errors');
   const { isAuthenticated } = useAuthStore();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -61,11 +62,11 @@ export default function VerifyEmailPage() {
         const graphQLError = apolloError.errors?.[0];
         const translationKey = graphQLError?.extensions?.translationKey;
 
-        if (translationKey === 'errors:auth.tokenExpired') {
+        if (translationKey === 'errors.auth.tokenExpired') {
           setStatus('expired');
         } else {
           setStatus('error');
-          setErrorMessage(error instanceof Error ? error.message : 'An unknown error occurred');
+          setErrorMessage(error instanceof Error ? error.message : tErrors('common.unknownError'));
         }
       }
     };

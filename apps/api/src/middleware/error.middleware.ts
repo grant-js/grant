@@ -1,7 +1,7 @@
 import { GrantException } from '@grantjs/core';
 import { NextFunction, Request, Response } from 'express';
 
-import { translateError } from '@/i18n';
+import { t, translateError } from '@/i18n';
 import { HttpException, mapDomainToHttp } from '@/lib/errors';
 import { getRequestLogger } from '@/middleware/request-logging.middleware';
 
@@ -29,6 +29,8 @@ export function errorHandler(error: Error, req: Request, res: Response, _next: N
     res.status(httpError.statusCode).json({
       error: localizedMessage,
       code: httpError.code,
+      ...(httpError.translationKey && { translationKey: httpError.translationKey }),
+      ...(httpError.translationParams && { translationParams: httpError.translationParams }),
       ...(httpError.extensions && { extensions: httpError.extensions }),
       ...(process.env.NODE_ENV === 'development' && { stack: error.stack }),
     });
@@ -36,8 +38,9 @@ export function errorHandler(error: Error, req: Request, res: Response, _next: N
   }
 
   res.status(500).json({
-    error: 'Internal server error',
+    error: t(req, 'errors.common.internalError'),
     code: 'INTERNAL_ERROR',
+    translationKey: 'errors.common.internalError',
     ...(process.env.NODE_ENV === 'development' && {
       details: error.message,
       stack: error.stack,

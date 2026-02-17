@@ -26,7 +26,7 @@ export const userWithRelationsSchema = userSchema.extend({
 export const userRelationsEnum = z.enum(['roles', 'tags', 'accounts', 'authenticationMethods']);
 
 export const getUsersQuerySchema = listQuerySchema.omit({ relations: true }).extend({
-  scopeId: z.uuid('Invalid scope ID'),
+  scopeId: z.uuid('errors.validation.invalidScopeId'),
   tenant: tenantSchema,
   sortField: z
     .enum(Object.values(UserSortableField) as [UserSortableField, ...UserSortableField[]])
@@ -60,10 +60,14 @@ export const getUsersResponseSchema = createSuccessResponseSchema(
 );
 
 export const createUserRequestSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255, 'Name too long').openapi({
-    description: "User's full name",
-    example: 'John Doe',
-  }),
+  name: z
+    .string()
+    .min(1, 'errors.validation.nameRequired')
+    .max(255, 'errors.validation.nameTooLong')
+    .openapi({
+      description: "User's full name",
+      example: 'John Doe',
+    }),
   scope: scopeSchema,
   roleIds: z
     .array(z.string())
@@ -92,10 +96,15 @@ export const createUserResponseSchema = createSuccessResponseSchema(
 
 export const updateUserRequestSchema = z.object({
   scope: scopeSchema,
-  name: z.string().min(1, 'Name is required').max(255, 'Name too long').optional().openapi({
-    description: "Updated user's full name",
-    example: 'Jane Doe',
-  }),
+  name: z
+    .string()
+    .min(1, 'errors.validation.nameRequired')
+    .max(255, 'errors.validation.nameTooLong')
+    .optional()
+    .openapi({
+      description: "Updated user's full name",
+      example: 'Jane Doe',
+    }),
   roleIds: z
     .array(z.string())
     .optional()
@@ -117,7 +126,7 @@ export const updateUserRequestSchema = z.object({
 });
 
 export const userParamsSchema = z.object({
-  id: z.uuid('Invalid user ID').openapi({
+  id: z.uuid('errors.validation.invalidUserId').openapi({
     description: 'UUID of the user',
     example: '123e4567-e89b-12d3-a456-426614174003',
     param: { in: 'path', name: 'id' },
@@ -130,7 +139,7 @@ export const updateUserResponseSchema = createSuccessResponseSchema(
 );
 
 export const deleteUserQuerySchema = z.object({
-  scopeId: z.uuid('Invalid scope ID'),
+  scopeId: z.uuid('errors.validation.invalidScopeId'),
   tenant: tenantSchema,
   hardDelete: z
     .string()
@@ -144,15 +153,15 @@ export const deleteUserResponseSchema = createSuccessResponseSchema(
 );
 
 export const uploadUserPictureRequestSchema = z.object({
-  file: z.string().min(1, 'File is required').openapi({
+  file: z.string().min(1, 'errors.validation.fileRequired').openapi({
     description: 'Base64-encoded file data (with optional data URI prefix)',
     example: 'data:image/jpeg;base64,/9j/4AAQSkZJRg...',
   }),
-  filename: z.string().min(1, 'Filename is required').openapi({
+  filename: z.string().min(1, 'errors.validation.filenameRequired').openapi({
     description: 'Original filename with extension',
     example: 'profile.jpg',
   }),
-  contentType: z.string().min(1, 'Content type is required').openapi({
+  contentType: z.string().min(1, 'errors.validation.contentTypeRequired').openapi({
     description: 'MIME type of the file',
     example: 'image/jpeg',
   }),
@@ -233,33 +242,33 @@ export const getUserAuthenticationMethodsResponseSchema = createSuccessResponseS
 
 export const changePasswordRequestSchema = z
   .object({
-    currentPassword: z.string().min(1, 'Current password is required').openapi({
+    currentPassword: z.string().min(1, 'errors.validation.currentPasswordRequired').openapi({
       description: 'Current password',
       example: 'CurrentPassword123!',
     }),
     newPassword: z
       .string()
-      .min(8, 'Password must be at least 8 characters')
-      .max(128, 'Password must be at most 128 characters')
-      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-      .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-      .regex(/[0-9]/, 'Password must contain at least one number')
-      .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character')
+      .min(8, 'errors.validation.passwordMin8')
+      .max(128, 'errors.validation.passwordMax128')
+      .regex(/[A-Z]/, 'errors.validation.passwordUppercase')
+      .regex(/[a-z]/, 'errors.validation.passwordLowercase')
+      .regex(/[0-9]/, 'errors.validation.passwordNumber')
+      .regex(/[^A-Za-z0-9]/, 'errors.validation.passwordSpecialChar')
       .openapi({
         description: 'New password (must meet password policy requirements)',
         example: 'NewPassword123!',
       }),
-    confirmPassword: z.string().min(1, 'Password confirmation is required').openapi({
+    confirmPassword: z.string().min(1, 'errors.validation.confirmPasswordRequired').openapi({
       description: 'Password confirmation (must match new password)',
       example: 'NewPassword123!',
     }),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
-    message: 'Passwords do not match',
+    message: 'errors.validation.passwordMismatch',
     path: ['confirmPassword'],
   })
   .refine((data) => data.currentPassword !== data.newPassword, {
-    message: 'New password must be different from current password',
+    message: 'errors.validation.newPasswordDifferent',
     path: ['newPassword'],
   });
 
@@ -372,7 +381,7 @@ export const getUserSessionsResponseSchema = createSuccessResponseSchema(
 export const revokeUserSessionParamsSchema = z.object({
   id: z
     .string()
-    .uuid('Invalid session ID')
+    .uuid('errors.validation.invalidSessionId')
     .openapi({
       description: 'Session ID to revoke',
       example: '123e4567-e89b-12d3-a456-426614174001',
@@ -451,6 +460,6 @@ export const exportUserDataResponseSchema = z.object({
 });
 
 export const deleteUserAccountRequestSchema = z.object({
-  userId: z.uuid('Invalid user ID'),
+  userId: z.uuid('errors.validation.invalidUserId'),
   hardDelete: z.boolean().optional().default(false),
 });

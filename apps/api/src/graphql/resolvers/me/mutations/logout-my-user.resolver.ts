@@ -1,6 +1,7 @@
 import { MutationResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
+import { t } from '@/i18n';
 import { getRefreshTokenFromCookie } from '@/lib/headers.lib';
 import { clearRefreshTokenCookie } from '@/rest/utils/refresh-cookie';
 
@@ -19,6 +20,6 @@ export const logoutMyUserResolver: MutationResolvers<GraphqlContext>['logoutMyUs
   }
   clearRefreshTokenCookie(context.res);
   return {
-    message: 'Logged out successfully',
+    message: t(context.req, 'common.success.loggedOut'),
   };
 };

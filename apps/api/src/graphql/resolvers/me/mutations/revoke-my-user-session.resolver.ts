@@ -1,6 +1,7 @@
 import { MutationResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
+import { t } from '@/i18n';
 
 export const revokeMyUserSessionResolver: MutationResolvers<GraphqlContext>['revokeMyUserSession'] =
   async (_parent, { id }, context) => {
@@ -8,6 +9,6 @@ export const revokeMyUserSessionResolver: MutationResolvers<GraphqlContext>['rev
 
     return {
       success: true,
-      message: 'Session revoked successfully',
+      message: t(context.req, 'common.success.sessionRevoked'),
     };
   };

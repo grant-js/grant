@@ -33,7 +33,7 @@ export const organizationInvitationWithRelationsSchema = organizationInvitationS
 });
 
 export const invitationParamsSchema = z.object({
-  id: z.uuid('Invalid invitation ID').openapi({
+  id: z.uuid('errors.validation.invalidInvitationId').openapi({
     description: 'UUID of the invitation to revoke',
     example: '123e4567-e89b-12d3-a456-426614174002',
     param: { in: 'path', name: 'id' },
@@ -43,7 +43,7 @@ export const invitationParamsSchema = z.object({
 export const invitationTokenParamsSchema = z.object({
   token: z
     .string()
-    .min(1, 'Token is required')
+    .min(1, 'errors.validation.tokenRequired')
     .openapi({
       description: 'Unique invitation token',
       example: 'inv_a1b2c3d4e5f6g7h8i9j0',
@@ -55,11 +55,11 @@ export const inviteMemberRequestSchema = z.object({
   scope: scopeSchema.openapi({
     description: 'Scope context for authorization',
   }),
-  email: z.string().email('Invalid email address').openapi({
+  email: z.string().email('errors.validation.invalidEmail').openapi({
     description: 'Email address of the user to invite',
     example: 'newmember@example.com',
   }),
-  roleId: z.uuid('Invalid role ID').openapi({
+  roleId: z.uuid('errors.validation.invalidRoleId').openapi({
     description: 'UUID of the role to assign to the invited member',
     example: '123e4567-e89b-12d3-a456-426614174001',
   }),
@@ -68,7 +68,7 @@ export const inviteMemberRequestSchema = z.object({
 export const inviteMemberResponseSchema = createSuccessResponseSchema(organizationInvitationSchema);
 
 export const getOrganizationInvitationsQuerySchema = z.object({
-  scopeId: z.uuid('Invalid scope ID').openapi({
+  scopeId: z.uuid('errors.validation.invalidScopeId').openapi({
     description: 'UUID of the scope for authorization',
     example: '123e4567-e89b-12d3-a456-426614174000',
   }),
@@ -76,7 +76,7 @@ export const getOrganizationInvitationsQuerySchema = z.object({
     description: 'Tenant type for the scope',
     example: 'organization',
   }),
-  organizationId: z.uuid('Invalid organization ID').openapi({
+  organizationId: z.uuid('errors.validation.invalidOrganizationId').openapi({
     description: 'UUID of the organization to list invitations for',
     example: '123e4567-e89b-12d3-a456-426614174000',
   }),
@@ -100,7 +100,7 @@ export const getOrganizationInvitationsQuerySchema = z.object({
     description: 'Number of items per page (-1 for all)',
     example: 50,
   }),
-  search: z.string().min(2, 'Search term must be at least 2 characters').optional().openapi({
+  search: z.string().min(2, 'errors.validation.searchMin2').optional().openapi({
     description: 'Search term to filter invitations by email',
     example: 'john@example.com',
   }),
@@ -141,21 +141,21 @@ export const getOrganizationInvitationsResponseSchema = createSuccessResponseSch
 );
 
 export const acceptInvitationRequestSchema = z.object({
-  token: z.string().min(1, 'Token is required').openapi({
+  token: z.string().min(1, 'errors.validation.tokenRequired').openapi({
     description: 'Unique invitation token received via email',
     example: 'inv_a1b2c3d4e5f6g7h8i9j0',
   }),
   userData: z
     .object({
-      name: z.string().min(1, 'Name is required').openapi({
+      name: z.string().min(1, 'errors.validation.nameRequired').openapi({
         description: "User's full name",
         example: 'Jane Doe',
       }),
-      username: z.string().min(3, 'Username must be at least 3 characters').openapi({
+      username: z.string().min(3, 'errors.validation.usernameMin3').openapi({
         description: 'Unique username for the account',
         example: 'janedoe',
       }),
-      password: z.string().min(8, 'Password must be at least 8 characters').openapi({
+      password: z.string().min(8, 'errors.validation.passwordMin8').openapi({
         description: 'Secure password (minimum 8 characters)',
         example: 'SecureP@ssw0rd',
       }),

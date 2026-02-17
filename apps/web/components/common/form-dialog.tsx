@@ -31,7 +31,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
+  TranslatedFormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -390,9 +390,9 @@ export function FormDialog<TFormValues extends Record<string, any>>({
               )}
             </FormControl>
             {hasError && (
-              <FormMessage className="text-destructive text-sm mt-1">
+              <TranslatedFormMessage className="text-destructive text-sm mt-1">
                 {String(error?.message || '')}
-              </FormMessage>
+              </TranslatedFormMessage>
             )}
           </FormItem>
         )}

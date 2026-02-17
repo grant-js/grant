@@ -71,14 +71,14 @@ describe('request-scoped logger integration', () => {
     expect(res.status).toBe(200);
     expect(infoSpy).toHaveBeenCalled();
     const completionLog = infoSpy.mock.calls.find(
-      (call: [object]) => (call[0] as { msg?: string }).msg === 'Request completed'
+      (call: unknown[]) => (call[0] as { msg?: string })?.msg === 'Request completed'
     );
     const eventLog = infoSpy.mock.calls.find(
-      (call: [object]) => (call[0] as { msg?: string }).msg === 'Test event'
+      (call: unknown[]) => (call[0] as { msg?: string })?.msg === 'Test event'
     );
     expect(completionLog).toBeDefined();
     expect(eventLog).toBeDefined();
-    expect(eventLog[0]).toMatchObject({
+    expect(eventLog![0]).toMatchObject({
       requestId: expect.any(String),
       msg: 'Test event',
     });

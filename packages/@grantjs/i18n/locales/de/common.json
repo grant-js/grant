@@ -4,7 +4,12 @@
     "updated": "{{resource}} erfolgreich aktualisiert",
     "deleted": "{{resource}} erfolgreich gelöscht",
     "emailVerified": "E-Mail erfolgreich verifiziert",
-    "verificationEmailSent": "Verifizierungs-E-Mail erfolgreich gesendet"
+    "verificationEmailSent": "Verifizierungs-E-Mail erfolgreich gesendet",
+    "passwordResetEmailSent": "E-Mail zum Zurücksetzen des Passworts gesendet",
+    "passwordReset": "Passwort erfolgreich zurückgesetzt",
+    "passwordChanged": "Passwort erfolgreich geändert",
+    "sessionRevoked": "Sitzung erfolgreich widerrufen",
+    "loggedOut": "Erfolgreich abgemeldet"
   },
   "actions": {
     "create": "Erstellen",

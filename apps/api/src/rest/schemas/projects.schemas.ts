@@ -29,7 +29,7 @@ export const projectWithRelationsSchema = projectSchema.extend({
 export const projectRelationsEnum = z.enum(['roles', 'groups', 'permissions', 'users', 'tags']);
 
 export const getProjectsQuerySchema = listQuerySchema.omit({ relations: true }).extend({
-  scopeId: z.uuid('Invalid scope ID'),
+  scopeId: z.uuid('errors.validation.invalidScopeId'),
   tenant: tenantSchema,
   sortField: z
     .enum(Object.values(ProjectSortableField) as [ProjectSortableField, ...ProjectSortableField[]])
@@ -62,10 +62,14 @@ export const getProjectsResponseSchema = createSuccessResponseSchema(
 );
 
 export const createProjectRequestSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255, 'Name too long').openapi({
-    description: 'Name of the project',
-    example: 'Mobile App',
-  }),
+  name: z
+    .string()
+    .min(1, 'errors.validation.nameRequired')
+    .max(255, 'errors.validation.nameTooLong')
+    .openapi({
+      description: 'Name of the project',
+      example: 'Mobile App',
+    }),
   description: z.string().optional().openapi({
     description: 'Description of the project',
     example: 'iOS and Android mobile application',
@@ -88,10 +92,15 @@ export const createProjectResponseSchema = createSuccessResponseSchema(projectSc
 
 export const updateProjectRequestSchema = z.object({
   scope: scopeSchema,
-  name: z.string().min(1, 'Name is required').max(255, 'Name too long').optional().openapi({
-    description: 'Updated name of the project',
-    example: 'Mobile App v2',
-  }),
+  name: z
+    .string()
+    .min(1, 'errors.validation.nameRequired')
+    .max(255, 'errors.validation.nameTooLong')
+    .optional()
+    .openapi({
+      description: 'Updated name of the project',
+      example: 'Mobile App v2',
+    }),
   description: z.string().optional().openapi({
     description: 'Updated description of the project',
     example: 'Next generation mobile application',
@@ -112,7 +121,7 @@ export const updateProjectRequestSchema = z.object({
 export const projectParamsSchema = z.object({
   id: z
     .string()
-    .uuid('Invalid project ID')
+    .uuid('errors.validation.invalidProjectId')
     .openapi({
       description: 'UUID of the project',
       example: '123e4567-e89b-12d3-a456-426614174005',
@@ -123,7 +132,7 @@ export const projectParamsSchema = z.object({
 export const updateProjectResponseSchema = createSuccessResponseSchema(projectSchema);
 
 export const deleteProjectQuerySchema = z.object({
-  scopeId: z.uuid('Invalid scope ID'),
+  scopeId: z.uuid('errors.validation.invalidScopeId'),
   tenant: tenantSchema,
   hardDelete: z
     .string()

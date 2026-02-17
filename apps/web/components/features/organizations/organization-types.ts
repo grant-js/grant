@@ -10,12 +10,12 @@ export interface OrganizationsQueryResult {
 }
 
 export const createOrganizationSchema = z.object({
-  name: z.string().min(1, 'Organization name is required'),
+  name: z.string().min(1, 'errors.validation.organizationNameRequired'),
   tagIds: z.array(z.string()).optional(),
 });
 
 export const editOrganizationSchema = z.object({
-  name: z.string().min(1, 'Organization name is required'),
+  name: z.string().min(1, 'errors.validation.organizationNameRequired'),
   tagIds: z.array(z.string()).optional(),
 });
 

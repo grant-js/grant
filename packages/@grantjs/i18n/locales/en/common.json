@@ -4,7 +4,12 @@
     "updated": "{{resource}} updated successfully",
     "deleted": "{{resource}} deleted successfully",
     "emailVerified": "Email verified successfully",
-    "verificationEmailSent": "Verification email sent successfully"
+    "verificationEmailSent": "Verification email sent successfully",
+    "passwordResetEmailSent": "Password reset email sent successfully",
+    "passwordReset": "Password reset successfully",
+    "passwordChanged": "Password changed successfully",
+    "sessionRevoked": "Session revoked successfully",
+    "loggedOut": "Logged out successfully"
   },
   "actions": {
     "create": "Create",

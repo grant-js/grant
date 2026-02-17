@@ -32,7 +32,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
+  TranslatedFormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useEmailVerified } from '@/hooks/auth';
@@ -135,7 +135,7 @@ export function MemberInviteDialog({ open, onOpenChange, onSuccess }: MemberInvi
                       {...field}
                     />
                   </FormControl>
-                  <FormMessage />
+                  <TranslatedFormMessage />
                 </FormItem>
               )}
             />
@@ -196,7 +196,7 @@ export function MemberInviteDialog({ open, onOpenChange, onSuccess }: MemberInvi
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <FormMessage />
+                  <TranslatedFormMessage />
                 </FormItem>
               )}
             />

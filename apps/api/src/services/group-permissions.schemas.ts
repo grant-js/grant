@@ -8,7 +8,7 @@ export const getGroupPermissionsParamsSchema = z
     permissionId: idSchema.optional(),
   })
   .refine((data) => data.groupId || data.permissionId, {
-    message: 'Either groupId or permissionId must be provided',
+    message: 'errors.validation.eitherGroupIdOrPermissionIdRequired',
   });
 
 export const addGroupPermissionParamsSchema = z.object({

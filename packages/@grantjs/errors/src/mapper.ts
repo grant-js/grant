@@ -4,14 +4,14 @@
  * This is the single boundary where domain semantics are translated into
  * transport concerns (HTTP status codes, i18n translation keys, etc.).
  *
- * Translation key convention:
- *   NotFoundError { resource: 'User' }        → 'errors:notFound.user'
- *   ConflictError { resource: 'ProjectTag' }   → 'errors:conflict.projectTag'
- *   AuthenticationError                        → 'errors:auth.notAuthenticated'
- *   AuthorizationError                         → 'errors:auth.forbidden'
- *   ValidationError                            → 'errors:validation.invalid'
- *   BadRequestError                            → 'errors:validation.badRequest'
- *   ConfigurationError                         → 'errors:common.internalError'
+ * Translation key convention (dot-only, no colon):
+ *   NotFoundError { resource: 'User' }        → 'errors.notFound.user'
+ *   ConflictError { resource: 'ProjectTag' }   → 'errors.conflict.projectTag'
+ *   AuthenticationError                        → 'errors.auth.notAuthenticated'
+ *   AuthorizationError                         → 'errors.auth.forbidden'
+ *   ValidationError                            → 'errors.validation.invalid'
+ *   BadRequestError                            → 'errors.validation.badRequest'
+ *   ConfigurationError                         → 'errors.common.internalError'
  */
 import {
   AuthenticationError,
@@ -64,7 +64,7 @@ export function mapDomainToHttp(error: GrantException): HttpException {
   if (error instanceof NotFoundError) {
     const segment = toTranslationSegment(error.resource);
     return new HttpNotFoundError(error.message, {
-      translationKey: `errors:notFound.${segment}`,
+      translationKey: `errors.notFound.${segment}`,
       translationParams: error.resourceId ? { [`${segment}Id`]: error.resourceId } : undefined,
       extensions: error.resourceId ? { [`${segment}Id`]: error.resourceId } : undefined,
     });
@@ -73,47 +73,47 @@ export function mapDomainToHttp(error: GrantException): HttpException {
   // Validation
   if (error instanceof ValidationError) {
     return new HttpValidationError(error.message, error.violations, {
-      translationKey: 'errors:validation.invalid',
+      translationKey: 'errors.validation.invalid',
     });
   }
 
   // Bad request
   if (error instanceof BadRequestError) {
     return new HttpBadRequestError(error.message, {
-      translationKey: 'errors:validation.badRequest',
+      translationKey: 'errors.validation.badRequest',
     });
   }
 
   // Authentication — includes token errors
   if (error instanceof TokenExpiredError) {
     return new HttpUnauthorizedError(error.message, {
-      translationKey: 'errors:auth.tokenExpired',
+      translationKey: 'errors.auth.tokenExpired',
       extensions: error.expiredAt ? { expiredAt: error.expiredAt.toISOString() } : undefined,
     });
   }
 
   if (error instanceof TokenInvalidError || error instanceof TokenValidationError) {
     return new HttpUnauthorizedError(error.message, {
-      translationKey: 'errors:auth.tokenInvalid',
+      translationKey: 'errors.auth.tokenInvalid',
     });
   }
 
   if (error instanceof NoSessionSigningKeyError) {
     return new HttpUnauthorizedError(error.message, {
-      translationKey: 'errors:auth.noSigningKey',
+      translationKey: 'errors.auth.noSigningKey',
     });
   }
 
   if (error instanceof AuthenticationError) {
     return new HttpUnauthorizedError(error.message, {
-      translationKey: 'errors:auth.notAuthenticated',
+      translationKey: 'errors.auth.notAuthenticated',
     });
   }
 
   // Authorization
   if (error instanceof AuthorizationError) {
     return new HttpForbiddenError(error.message, {
-      translationKey: 'errors:auth.forbidden',
+      translationKey: 'errors.auth.forbidden',
       extensions: error.reason ? { reason: error.reason } : undefined,
     });
   }
@@ -126,8 +126,8 @@ export function mapDomainToHttp(error: GrantException): HttpException {
 
     return new HttpConflictError(error.message, {
       translationKey: error.resource
-        ? `errors:conflict.${toTranslationSegment(error.resource)}`
-        : 'errors:conflict.duplicateEntry',
+        ? `errors.conflict.${toTranslationSegment(error.resource)}`
+        : 'errors.conflict.duplicateEntry',
       extensions: Object.keys(extensions).length > 0 ? extensions : undefined,
     });
   }
@@ -135,13 +135,13 @@ export function mapDomainToHttp(error: GrantException): HttpException {
   // Configuration
   if (error instanceof ConfigurationError) {
     return new HttpInternalError(error.message, {
-      translationKey: 'errors:common.internalError',
+      translationKey: 'errors.common.internalError',
     });
   }
 
   // Fallback for any other GrantException
   return new HttpInternalError(error.message, {
-    translationKey: 'errors:common.internalError',
+    translationKey: 'errors.common.internalError',
     extensions: { code: error.code },
   });
 }

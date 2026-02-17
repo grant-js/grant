@@ -50,42 +50,36 @@ export const passwordPolicyConfig = {
   ],
 } as const;
 
-// Client-side password validation schema
+// Client-side password validation schema (messages are translation keys; TranslatedFormMessage translates at display time)
 export const passwordPolicySchema = z
   .string()
-  .min(1, 'Password is required')
-  .min(
-    passwordPolicyConfig.minLength,
-    `Password must be at least ${passwordPolicyConfig.minLength} characters`
-  )
-  .max(
-    passwordPolicyConfig.maxLength,
-    `Password must not exceed ${passwordPolicyConfig.maxLength} characters`
-  )
+  .min(1, 'errors.validation.passwordRequired')
+  .min(passwordPolicyConfig.minLength, 'errors.validation.passwordMin8')
+  .max(passwordPolicyConfig.maxLength, 'errors.validation.passwordMax128')
   .refine(
     (password) => !passwordPolicyConfig.requireUppercase || /[A-Z]/.test(password),
-    'Password must contain at least one uppercase letter'
+    'errors.validation.passwordUppercase'
   )
   .refine(
     (password) => !passwordPolicyConfig.requireLowercase || /[a-z]/.test(password),
-    'Password must contain at least one lowercase letter'
+    'errors.validation.passwordLowercase'
   )
   .refine(
     (password) => !passwordPolicyConfig.requireNumbers || /\d/.test(password),
-    'Password must contain at least one number'
+    'errors.validation.passwordNumber'
   )
   .refine((password) => {
     if (!passwordPolicyConfig.requireSpecialChars) return true;
     const specialChars = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/;
     return specialChars.test(password);
-  }, `Password must contain at least ${passwordPolicyConfig.minSpecialChars} special character(s)`)
+  }, 'errors.validation.passwordSpecialChar')
   .refine((password) => {
     return !passwordPolicyConfig.forbiddenPatterns.some((pattern) => pattern.test(password));
-  }, 'Password contains forbidden patterns (e.g., too many repeated characters or common weak passwords)')
+  }, 'errors.validation.passwordForbiddenPatterns')
   .refine((password) => {
     const lowerPassword = password.toLowerCase();
     return !passwordPolicyConfig.forbiddenSequences.some((seq) => lowerPassword.includes(seq));
-  }, 'Password must not contain sequential characters (e.g., abc, 123)');
+  }, 'errors.validation.passwordSequential');
 
 // Password strength checker for real-time feedback
 export function getPasswordStrength(password: string) {

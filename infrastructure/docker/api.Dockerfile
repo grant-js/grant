@@ -30,6 +30,7 @@ COPY packages/@grantjs/database/package.json packages/@grantjs/database/package.
 COPY packages/@grantjs/schema/package.json packages/@grantjs/schema/package.json
 COPY packages/@grantjs/core/package.json packages/@grantjs/core/package.json
 COPY packages/@grantjs/constants/package.json packages/@grantjs/constants/package.json
+COPY packages/@grantjs/i18n/package.json packages/@grantjs/i18n/package.json
 COPY packages/@grantjs/logger/package.json packages/@grantjs/logger/package.json
 COPY packages/@grantjs/errors/package.json packages/@grantjs/errors/package.json
 COPY packages/@grantjs/cache/package.json packages/@grantjs/cache/package.json
@@ -41,6 +42,11 @@ COPY packages/@grantjs/telemetry/package.json packages/@grantjs/telemetry/packag
 COPY packages/@grantjs/client/package.json packages/@grantjs/client/package.json
 COPY packages/@grantjs/server/package.json packages/@grantjs/server/package.json
 COPY packages/@grantjs/cli/package.json packages/@grantjs/cli/package.json
+
+# Copy i18n package source and locales so pnpm can resolve the workspace package
+COPY packages/@grantjs/i18n/tsconfig.json packages/@grantjs/i18n/tsconfig.json
+COPY packages/@grantjs/i18n/src packages/@grantjs/i18n/src
+COPY packages/@grantjs/i18n/locales packages/@grantjs/i18n/locales
 
 # Install ALL deps (need tsx + typescript in runtime for TS workspace packages)
 RUN pnpm install --frozen-lockfile
@@ -61,6 +67,7 @@ COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=deps /app/packages/@grantjs/database/node_modules ./packages/@grantjs/database/node_modules
 COPY --from=deps /app/packages/@grantjs/core/node_modules ./packages/@grantjs/core/node_modules
 COPY --from=deps /app/packages/@grantjs/constants/node_modules ./packages/@grantjs/constants/node_modules
+COPY --from=deps /app/packages/@grantjs/i18n/node_modules ./packages/@grantjs/i18n/node_modules
 COPY --from=deps /app/packages/@grantjs/schema/node_modules ./packages/@grantjs/schema/node_modules
 COPY --from=deps /app/packages/@grantjs/logger/node_modules ./packages/@grantjs/logger/node_modules
 COPY --from=deps /app/packages/@grantjs/errors/node_modules ./packages/@grantjs/errors/node_modules
@@ -77,6 +84,12 @@ COPY package.json pnpm-workspace.yaml tsconfig.json ./
 # -- @grantjs/constants (source-only package) --
 COPY packages/@grantjs/constants/package.json packages/@grantjs/constants/package.json
 COPY packages/@grantjs/constants/src packages/@grantjs/constants/src
+
+# -- @grantjs/i18n (locale constants + translation data) --
+COPY packages/@grantjs/i18n/package.json packages/@grantjs/i18n/package.json
+COPY packages/@grantjs/i18n/tsconfig.json packages/@grantjs/i18n/tsconfig.json
+COPY packages/@grantjs/i18n/src packages/@grantjs/i18n/src
+COPY packages/@grantjs/i18n/locales packages/@grantjs/i18n/locales
 
 # -- @grantjs/database (source-only; schemas + connection) --
 COPY packages/@grantjs/database/package.json packages/@grantjs/database/package.json

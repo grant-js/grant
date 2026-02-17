@@ -36,7 +36,7 @@ export const organizationRelationsEnum = z.enum([
 ]);
 
 export const getOrganizationsQuerySchema = listQuerySchema.omit({ relations: true }).extend({
-  scopeId: z.uuid('Invalid scope ID'),
+  scopeId: z.uuid('errors.validation.invalidScopeId'),
   tenant: tenantSchema,
   sortField: z
     .enum(
@@ -66,26 +66,35 @@ export const getOrganizationsResponseSchema = createSuccessResponseSchema(
 
 export const createOrganizationRequestSchema = z.object({
   scope: scopeSchema,
-  name: z.string().min(1, 'Name is required').max(255, 'Name too long').openapi({
-    description: 'Name of the organization',
-    example: 'Acme Corporation',
-  }),
+  name: z
+    .string()
+    .min(1, 'errors.validation.nameRequired')
+    .max(255, 'errors.validation.nameTooLong')
+    .openapi({
+      description: 'Name of the organization',
+      example: 'Acme Corporation',
+    }),
 });
 
 export const createOrganizationResponseSchema = createSuccessResponseSchema(organizationSchema);
 
 export const updateOrganizationRequestSchema = z.object({
   scope: scopeSchema,
-  name: z.string().min(1, 'Name is required').max(255, 'Name too long').optional().openapi({
-    description: 'Updated name of the organization',
-    example: 'Acme Corp',
-  }),
+  name: z
+    .string()
+    .min(1, 'errors.validation.nameRequired')
+    .max(255, 'errors.validation.nameTooLong')
+    .optional()
+    .openapi({
+      description: 'Updated name of the organization',
+      example: 'Acme Corp',
+    }),
 });
 
 export const organizationParamsSchema = z.object({
   id: z
     .string()
-    .uuid('Invalid organization ID')
+    .uuid('errors.validation.invalidOrganizationId')
     .openapi({
       description: 'UUID of the organization',
       example: '123e4567-e89b-12d3-a456-426614174000',

@@ -30,7 +30,7 @@ const baseCreateApiKeySchema = z.object({
         if (!val) return true;
         return val > new Date();
       },
-      { message: 'Expiration date must be in the future' }
+      { message: 'errors.validation.expirationMustBeFuture' }
     ),
 });
 
@@ -109,7 +109,10 @@ export function ApiKeyCreateDialog({
   const createApiKeySchema = useMemo(() => {
     if (showRoleField) {
       return baseCreateApiKeySchema.extend({
-        roleId: z.string().min(1, 'Role is required for project API keys').uuid('Invalid role'),
+        roleId: z
+          .string()
+          .min(1, 'errors.validation.roleRequired')
+          .uuid('errors.validation.invalidRoleId'),
       });
     }
     return baseCreateApiKeySchema;

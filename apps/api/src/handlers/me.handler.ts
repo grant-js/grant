@@ -1,5 +1,5 @@
-import { SupportedLocale } from '@grantjs/constants';
 import { GrantAuth } from '@grantjs/core';
+import { SupportedLocale } from '@grantjs/i18n';
 import {
   Account,
   CreateMyUserAuthenticationMethodInput,

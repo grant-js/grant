@@ -10,7 +10,7 @@ export const scopeIdSchema = z.string().refine(
     const parts = val.split(':');
     return parts.every((part) => z.uuid().safeParse(part).success);
   },
-  { message: 'Invalid scope ID: must be a UUID or multiple UUIDs separated by colons' }
+  { message: 'errors.validation.scopeIdInvalid' }
 );
 
 export const scopeSchema = z.object({

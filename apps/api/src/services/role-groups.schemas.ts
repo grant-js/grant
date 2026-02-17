@@ -8,17 +8,23 @@ export const queryRoleGroupsArgsSchema = z
     groupId: idSchema.optional(),
   })
   .refine((data) => data.roleId || data.groupId, {
-    message: 'Either roleId or groupId must be provided',
+    message: 'errors.validation.eitherRoleIdOrGroupIdRequired',
   });
 
 export const addRoleGroupInputSchema = z.object({
-  roleId: idSchema.refine((roleId) => roleId.trim().length > 0, 'Role ID is required'),
-  groupId: idSchema.refine((groupId) => groupId.trim().length > 0, 'Group ID is required'),
+  roleId: idSchema.refine((roleId) => roleId.trim().length > 0, 'errors.validation.roleIdRequired'),
+  groupId: idSchema.refine(
+    (groupId) => groupId.trim().length > 0,
+    'errors.validation.groupIdRequired'
+  ),
 });
 
 export const removeRoleGroupInputSchema = deleteSchema.extend({
-  roleId: idSchema.refine((roleId) => roleId.trim().length > 0, 'Role ID is required'),
-  groupId: idSchema.refine((groupId) => groupId.trim().length > 0, 'Group ID is required'),
+  roleId: idSchema.refine((roleId) => roleId.trim().length > 0, 'errors.validation.roleIdRequired'),
+  groupId: idSchema.refine(
+    (groupId) => groupId.trim().length > 0,
+    'errors.validation.groupIdRequired'
+  ),
 });
 
 export const addRoleGroupArgsSchema = z.object({

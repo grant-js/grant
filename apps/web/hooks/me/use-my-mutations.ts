@@ -33,6 +33,7 @@ import { evictMeCache } from './cache';
 
 export function useMyMutations() {
   const t = useTranslations('settings');
+  const tErrors = useTranslations('errors');
   const router = useRouter();
   const { setAccounts, clearAuth } = useAuthStore();
 
@@ -114,7 +115,7 @@ export function useMyMutations() {
     } catch (error) {
       console.error('Error creating secondary account:', error);
       toast.error(t('account.notifications.createComplementaryAccountError'), {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        description: error instanceof Error ? error.message : tErrors('common.unknownError'),
       });
       throw error;
     }
@@ -131,7 +132,7 @@ export function useMyMutations() {
     } catch (error) {
       console.error('Error deleting accounts:', error);
       toast.error(t('account.notifications.deleteError'), {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        description: error instanceof Error ? error.message : tErrors('common.unknownError'),
       });
       throw error;
     }
@@ -148,7 +149,7 @@ export function useMyMutations() {
     } catch (error) {
       console.error('Error uploading user picture:', error);
       toast.error(t('profile.notifications.uploadPictureError'), {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        description: error instanceof Error ? error.message : tErrors('common.unknownError'),
       });
       throw error;
     }
@@ -163,7 +164,7 @@ export function useMyMutations() {
     } catch (error) {
       console.error('Error updating user:', error);
       toast.error(t('profile.notifications.updateError'), {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        description: error instanceof Error ? error.message : tErrors('common.unknownError'),
       });
       throw error;
     }
@@ -180,7 +181,7 @@ export function useMyMutations() {
     } catch (error) {
       console.error('Error changing password:', error);
       toast.error(t('security.notifications.changePasswordError'), {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        description: error instanceof Error ? error.message : tErrors('common.unknownError'),
       });
       throw error;
     }
@@ -197,7 +198,7 @@ export function useMyMutations() {
     } catch (error) {
       console.error('Error revoking session:', error);
       toast.error(t('security.notifications.revokeSessionError'), {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        description: error instanceof Error ? error.message : tErrors('common.unknownError'),
       });
       throw error;
     }
@@ -216,7 +217,7 @@ export function useMyMutations() {
     } catch (error) {
       console.error('Error creating authentication method:', error);
       toast.error(t('security.authenticationMethods.emailConnectError'), {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        description: error instanceof Error ? error.message : tErrors('common.unknownError'),
       });
       throw error;
     }
@@ -237,7 +238,7 @@ export function useMyMutations() {
     } catch (error) {
       console.error('Error deleting authentication method:', error);
       toast.error(t('security.authenticationMethods.disconnectError'), {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        description: error instanceof Error ? error.message : tErrors('common.unknownError'),
       });
       throw error;
     }
@@ -254,7 +255,7 @@ export function useMyMutations() {
     } catch (error) {
       console.error('Error setting primary method:', error);
       toast.error(t('security.authenticationMethods.setPrimaryError'), {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        description: error instanceof Error ? error.message : tErrors('common.unknownError'),
       });
       throw error;
     }
@@ -270,7 +271,7 @@ export function useMyMutations() {
     } catch (error) {
       clearAuth();
       toast.error(t('notifications.logoutError'), {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        description: error instanceof Error ? error.message : tErrors('common.unknownError'),
       });
       router.push('/auth/login');
       throw error;

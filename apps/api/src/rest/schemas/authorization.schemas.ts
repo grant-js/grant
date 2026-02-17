@@ -21,8 +21,8 @@ export const authorizationResultSchema = z.object({
 
 export const isAuthorizedRequestSchema = z.object({
   permission: z.object({
-    resource: z.string().min(1, 'Resource slug is required'),
-    action: z.string().min(1, 'Action is required'),
+    resource: z.string().min(1, 'errors.validation.resourceRequired'),
+    action: z.string().min(1, 'errors.validation.actionRequired'),
   }),
   context: z
     .object({

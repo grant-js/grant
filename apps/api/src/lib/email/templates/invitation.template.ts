@@ -1,4 +1,5 @@
-import { isRoleI18nKey, SupportedLocale } from '@grantjs/constants';
+import { isRoleI18nKey } from '@grantjs/constants';
+import { SupportedLocale } from '@grantjs/i18n';
 
 import { defaultLocale, translateStatic } from '@/i18n';
 
@@ -11,7 +12,7 @@ export function getInvitationEmailSubject(
   locale: SupportedLocale = defaultLocale
 ): string {
   const emailLocale = (params.locale || locale) as SupportedLocale;
-  return translateStatic('email:invitation.subject', emailLocale, {
+  return translateStatic('email.invitation.subject', emailLocale, {
     organizationName: params.organizationName,
   });
 }
@@ -31,10 +32,10 @@ export function getInvitationEmailHtml(
   const emailLocale = (paramsLocale || locale) as SupportedLocale;
 
   const translatedRoleName = isRoleI18nKey(roleName)
-    ? translateStatic(`common:${roleName}`, emailLocale)
+    ? translateStatic(`common.${roleName}`, emailLocale)
     : roleName;
 
-  const subject = translateStatic('email:invitation.subject', emailLocale, {
+  const subject = translateStatic('email.invitation.subject', emailLocale, {
     organizationName,
   });
 
@@ -44,11 +45,11 @@ export function getInvitationEmailHtml(
     </mj-text>
 
     <mj-text>
-      ${translateStatic('email:invitation.greeting', emailLocale)}
+      ${translateStatic('email.invitation.greeting', emailLocale)}
     </mj-text>
 
     <mj-text>
-      ${translateStatic('email:invitation.message', emailLocale, {
+      ${translateStatic('email.invitation.message', emailLocale, {
         inviterName,
         organizationName,
         roleName: translatedRoleName,
@@ -62,10 +63,10 @@ export function getInvitationEmailHtml(
       <span style="color: #4B5563;">${translatedRoleName}</span>
     </mj-text>
 
-    ${createButton(invitationUrl, translateStatic('email:invitation.button', emailLocale))}
+    ${createButton(invitationUrl, translateStatic('email.invitation.button', emailLocale))}
 
     <mj-text align="center" font-size="14px" color="#6B7280" padding="10px 0 20px 0">
-      ${translateStatic('email:invitation.expiresIn', emailLocale, {
+      ${translateStatic('email.invitation.expiresIn', emailLocale, {
         days: expiresInDays,
       })}
     </mj-text>
@@ -95,24 +96,24 @@ export function getInvitationEmailText(
   const emailLocale = (paramsLocale || locale) as SupportedLocale;
 
   const translatedRoleName = isRoleI18nKey(roleName)
-    ? translateStatic(`common:${roleName}`, emailLocale)
+    ? translateStatic(`common.${roleName}`, emailLocale)
     : roleName;
 
   const t = {
-    subject: translateStatic('email:invitation.subject', emailLocale, {
+    subject: translateStatic('email.invitation.subject', emailLocale, {
       organizationName,
     }),
-    greeting: translateStatic('email:invitation.greeting', emailLocale),
-    message: translateStatic('email:invitation.message', emailLocale, {
+    greeting: translateStatic('email.invitation.greeting', emailLocale),
+    message: translateStatic('email.invitation.message', emailLocale, {
       inviterName,
       organizationName,
       roleName: translatedRoleName,
     }),
-    expiresIn: translateStatic('email:invitation.expiresIn', emailLocale, {
+    expiresIn: translateStatic('email.invitation.expiresIn', emailLocale, {
       days: expiresInDays,
     }),
-    footerNoRequest: translateStatic('email:invitation.footer.noRequest', emailLocale),
-    signature: translateStatic('email:common.signature', emailLocale),
+    footerNoRequest: translateStatic('email.invitation.footer.noRequest', emailLocale),
+    signature: translateStatic('email.common.signature', emailLocale),
   };
 
   return `
@@ -122,8 +123,8 @@ ${t.greeting}
 
 ${t.message}
 
-${translateStatic('email:invitation.organization', emailLocale)}: ${organizationName}
-${translateStatic('email:invitation.role', emailLocale)}: ${translatedRoleName}
+${translateStatic('email.invitation.organization', emailLocale)}: ${organizationName}
+${translateStatic('email.invitation.role', emailLocale)}: ${translatedRoleName}
 
 ${invitationUrl}
 

@@ -1,9 +1,16 @@
 import { useCallback } from 'react';
 
+import { useTranslations } from 'next-intl';
 import { Control } from 'react-hook-form';
 
 import { Checkbox } from '@/components/ui/checkbox';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  TranslatedFormMessage,
+} from '@/components/ui/form';
 import { cn } from '@/lib/utils';
 
 export interface CheckboxItem {
@@ -31,12 +38,15 @@ export function CheckboxList({
   label,
   items,
   loading = false,
-  loadingText = 'Loading...',
-  emptyText = 'No items available',
+  loadingText,
+  emptyText,
   error,
   maxHeight = '200px',
   disabled = false,
 }: CheckboxListProps) {
+  const t = useTranslations('common');
+  const resolvedLoadingText = loadingText ?? t('loading');
+  const resolvedEmptyText = emptyText ?? t('noItemsAvailable');
   const renderItems = useCallback(
     () => (
       <div className="space-y-2 pr-4">
@@ -88,16 +98,20 @@ export function CheckboxList({
           <FormLabel className="mb-2">{label}</FormLabel>
           <div className="space-y-2">
             {loading ? (
-              <div className="text-sm text-muted-foreground">{loadingText}</div>
+              <div className="text-sm text-muted-foreground">{resolvedLoadingText}</div>
             ) : items.length === 0 ? (
-              <div className="text-sm text-muted-foreground">{emptyText}</div>
+              <div className="text-sm text-muted-foreground">{resolvedEmptyText}</div>
             ) : (
               <div className={cn('space-y-2 overflow-y-auto', `max-h-[${maxHeight}]`)}>
                 {renderItems()}
               </div>
             )}
           </div>
-          {error && <FormMessage className="text-destructive text-sm mt-1">{error}</FormMessage>}
+          {error && (
+            <TranslatedFormMessage className="text-destructive text-sm mt-1">
+              {error}
+            </TranslatedFormMessage>
+          )}
         </FormItem>
       )}
     />

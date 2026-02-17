@@ -15,7 +15,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
+  TranslatedFormMessage,
 } from '@/components/ui/form';
 import { useEmailVerified } from '@/hooks/auth';
 
@@ -75,7 +75,7 @@ export function SettingPasswordChangeForm({ onSubmit, onCancel }: PasswordChange
                     disabled={isSubmitting}
                   />
                 </FormControl>
-                <FormMessage />
+                <TranslatedFormMessage />
               </FormItem>
             )}
           />
@@ -89,7 +89,7 @@ export function SettingPasswordChangeForm({ onSubmit, onCancel }: PasswordChange
                 <FormControl>
                   <PasswordInput {...field} autoComplete="new-password" disabled={isSubmitting} />
                 </FormControl>
-                <FormMessage />
+                <TranslatedFormMessage />
                 <PasswordStrengthIndicator password={passwordValue} />
               </FormItem>
             )}
@@ -104,7 +104,7 @@ export function SettingPasswordChangeForm({ onSubmit, onCancel }: PasswordChange
                 <FormControl>
                   <PasswordInput {...field} autoComplete="new-password" disabled={isSubmitting} />
                 </FormControl>
-                <FormMessage />
+                <TranslatedFormMessage />
               </FormItem>
             )}
           />

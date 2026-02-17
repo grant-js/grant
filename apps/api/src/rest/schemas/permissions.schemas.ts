@@ -65,15 +65,19 @@ export const getPermissionsResponseSchema = createSuccessResponseSchema(
 );
 
 export const createPermissionRequestSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255, 'Name too long').openapi({
-    description: 'Name of the permission',
-    example: 'Read Users',
-  }),
+  name: z
+    .string()
+    .min(1, 'errors.validation.nameRequired')
+    .max(255, 'errors.validation.nameTooLong')
+    .openapi({
+      description: 'Name of the permission',
+      example: 'Read Users',
+    }),
   description: z.string().optional().openapi({
     description: 'Description of the permission',
     example: 'Allows reading user data',
   }),
-  action: z.string().min(1, 'Action is required').openapi({
+  action: z.string().min(1, 'errors.validation.actionRequired').openapi({
     description: 'Action identifier for the permission',
     example: 'users:read',
   }),
@@ -102,15 +106,20 @@ export const createPermissionRequestSchema = z.object({
 export const createPermissionResponseSchema = createSuccessResponseSchema(permissionSchema);
 
 export const updatePermissionRequestSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255, 'Name too long').optional().openapi({
-    description: 'Updated name of the permission',
-    example: 'Read All Users',
-  }),
+  name: z
+    .string()
+    .min(1, 'errors.validation.nameRequired')
+    .max(255, 'errors.validation.nameTooLong')
+    .optional()
+    .openapi({
+      description: 'Updated name of the permission',
+      example: 'Read All Users',
+    }),
   description: z.string().optional().openapi({
     description: 'Updated description of the permission',
     example: 'Allows reading all user data across the system',
   }),
-  action: z.string().min(1, 'Action is required').optional().openapi({
+  action: z.string().min(1, 'errors.validation.actionRequired').optional().openapi({
     description: 'Updated action identifier for the permission',
     example: 'users:read:all',
   }),
@@ -136,7 +145,7 @@ export const updatePermissionRequestSchema = z.object({
 });
 
 export const permissionParamsSchema = z.object({
-  id: z.uuid('Invalid permission ID').openapi({
+  id: z.uuid('errors.validation.invalidPermissionId').openapi({
     description: 'UUID of the permission',
     example: '123e4567-e89b-12d3-a456-426614174007',
     param: { in: 'path', name: 'id' },

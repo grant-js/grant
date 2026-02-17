@@ -106,6 +106,9 @@ importers:
       '@grantjs/errors':
         specifier: workspace:*
         version: link:../../packages/@grantjs/errors
+      '@grantjs/i18n':
+        specifier: workspace:*
+        version: link:../../packages/@grantjs/i18n
       '@grantjs/jobs':
         specifier: workspace:*
         version: link:../../packages/@grantjs/jobs
@@ -199,9 +202,6 @@ importers:
       i18next:
         specifier: ^25.6.0
         version: 25.8.0(typescript@5.9.3)
-      i18next-fs-backend:
-        specifier: ^2.6.0
-        version: 2.6.1
       i18next-http-middleware:
         specifier: ^3.8.1
         version: 3.9.2
@@ -338,6 +338,9 @@ importers:
       '@grantjs/core':
         specifier: workspace:*
         version: link:../../packages/@grantjs/core
+      '@grantjs/i18n':
+        specifier: workspace:*
+        version: link:../../packages/@grantjs/i18n
       '@grantjs/schema':
         specifier: workspace:*
         version: link:../../packages/@grantjs/schema
@@ -804,6 +807,18 @@ importers:
       '@types/node':
         specifier: ^24.7.2
         version: 24.10.9
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
+  packages/@grantjs/i18n:
+    devDependencies:
+      '@types/node':
+        specifier: ^24.7.2
+        version: 24.10.9
+      eslint:
+        specifier: ^9.37.0
+        version: 9.39.2
       typescript:
         specifier: ^5
         version: 5.9.3
@@ -20352,13 +20367,6 @@ packages:
       }
     hasBin: true
     dev: true
-
-  /i18next-fs-backend@2.6.1:
-    resolution:
-      {
-        integrity: sha512-eYWTX7QT7kJ0sZyCPK6x1q+R63zvNKv2D6UdbMf15A8vNb2ZLyw4NNNZxPFwXlIv/U+oUtg8SakW6ZgJZcoqHQ==,
-      }
-    dev: false
 
   /i18next-http-middleware@3.9.2:
     resolution:

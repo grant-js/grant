@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { ZodError, z } from 'zod';
 
+import { isTranslationKey, t, translateMessage } from '@/i18n';
 import { createLogger } from '@/lib/logger';
 
 /**
@@ -18,18 +19,25 @@ export interface ValidationSchemas {
 }
 
 /**
- * Format Zod validation errors into a user-friendly structure
+ * Format Zod validation errors into a user-friendly structure (localized top-level and per-issue messages).
+ * When an issue message is a translation key (e.g. errors.validation.passwordMismatch), it is translated
+ * and the key is included so clients can re-translate if needed.
  */
-function formatZodError(error: ZodError) {
-  const errors = error.issues.map((err) => ({
-    field: err.path.join('.'),
-    message: err.message,
-    code: err.code,
-  }));
+function formatZodError(req: Request, error: ZodError) {
+  const errors = error.issues.map((err) => {
+    const key = isTranslationKey(err.message) ? err.message : undefined;
+    return {
+      field: err.path.join('.'),
+      message: translateMessage(req, err.message),
+      code: err.code,
+      ...(key && { translationKey: key }),
+    };
+  });
 
   return {
-    error: 'Validation failed',
+    error: t(req, 'errors.validation.failed'),
     code: 'VALIDATION_ERROR',
+    translationKey: 'errors.validation.failed',
     details: errors,
   };
 }
@@ -93,7 +101,7 @@ export function validate(schemas: ValidationSchemas) {
           path: req.path,
           errors: error.issues,
         });
-        return res.status(400).json(formatZodError(error));
+        return res.status(400).json(formatZodError(req, error));
       }
 
       // Handle unexpected errors
@@ -111,8 +119,9 @@ export function validate(schemas: ValidationSchemas) {
       );
 
       return res.status(500).json({
-        error: 'Internal server error',
+        error: t(req, 'errors.common.internalError'),
         code: 'INTERNAL_ERROR',
+        translationKey: 'errors.common.internalError',
       });
     }
   };

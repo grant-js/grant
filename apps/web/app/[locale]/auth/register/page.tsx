@@ -30,7 +30,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
+  TranslatedFormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -58,7 +58,7 @@ export default function RegisterPage() {
   const { register: handleRegister } = useAuthMutations();
 
   const formSchema = z.object({
-    email: z.email(t('validation.email')),
+    email: z.email('errors.validation.invalidEmail'),
     password: passwordPolicySchema,
     accountType: z.enum(Object.values(AccountType) as [AccountType, ...AccountType[]]),
   });
@@ -173,7 +173,7 @@ export default function RegisterPage() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <FormMessage />
+              <TranslatedFormMessage />
             </FormItem>
           )}
         />
@@ -210,7 +210,7 @@ export default function RegisterPage() {
                   {...field}
                 />
               </FormControl>
-              <FormMessage />
+              <TranslatedFormMessage />
             </FormItem>
           )}
         />
@@ -227,7 +227,7 @@ export default function RegisterPage() {
                   {...field}
                 />
               </FormControl>
-              <FormMessage />
+              <TranslatedFormMessage />
 
               <PasswordStrengthIndicator password={passwordValue} />
             </FormItem>

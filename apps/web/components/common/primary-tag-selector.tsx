@@ -8,7 +8,7 @@ import { ChevronDownIcon } from 'lucide-react';
 import { Control, useFormContext, useWatch } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
-import { FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { FormField, FormItem, FormLabel, TranslatedFormMessage } from '@/components/ui/form';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
@@ -138,7 +138,11 @@ export function PrimaryTagSelector({
                 </Popover>
               )}
             </div>
-            {error && <FormMessage className="text-destructive text-sm mt-1">{error}</FormMessage>}
+            {error && (
+              <TranslatedFormMessage className="text-destructive text-sm mt-1">
+                {error}
+              </TranslatedFormMessage>
+            )}
           </FormItem>
         );
       }}

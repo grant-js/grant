@@ -35,7 +35,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
+  TranslatedFormMessage,
 } from '@/components/ui/form';
 import { useEmailVerified } from '@/hooks/auth';
 import { useScopeFromParams } from '@/hooks/common';
@@ -45,7 +45,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useMembersStore } from '@/stores/members.store';
 
 const updateMemberRoleSchema = z.object({
-  roleId: z.string().min(1, 'Please select a role'),
+  roleId: z.string().min(1, 'errors.validation.roleRequired'),
 });
 
 type MemberRoleUpdateFormValues = z.infer<typeof updateMemberRoleSchema>;
@@ -210,7 +210,7 @@ export function MemberRoleUpdateDialog({
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <FormMessage />
+                  <TranslatedFormMessage />
                 </FormItem>
               )}
             />

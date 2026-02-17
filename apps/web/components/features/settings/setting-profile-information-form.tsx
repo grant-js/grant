@@ -17,7 +17,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
+  TranslatedFormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useEmailVerified } from '@/hooks/auth';
@@ -101,7 +101,7 @@ export function SettingProfileInformationForm({
                     />
                   </FormControl>
                   <FormDescription>{t('information.fields.name.description')}</FormDescription>
-                  <FormMessage />
+                  <TranslatedFormMessage />
                 </FormItem>
               )}
             />

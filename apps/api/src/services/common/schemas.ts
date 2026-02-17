@@ -2,10 +2,20 @@ import { TAG_COLORS, TagColor } from '@grantjs/constants';
 import { SortOrder, Tenant } from '@grantjs/schema';
 import { z } from 'zod';
 
-export const idSchema = z.string().min(1, 'ID is required');
-export const emailSchema = z.string().email('Invalid email format').min(1, 'Email is required');
-export const nameSchema = z.string().min(1, 'Name is required').max(255, 'Name too long');
-export const descriptionSchema = z.string().max(1000, 'Description too long').nullable().optional();
+export const idSchema = z.string().min(1, 'errors.validation.idRequired');
+export const emailSchema = z
+  .string()
+  .email('errors.validation.invalidEmail')
+  .min(1, 'errors.validation.emailRequired');
+export const nameSchema = z
+  .string()
+  .min(1, 'errors.validation.nameRequired')
+  .max(255, 'errors.validation.nameTooLong');
+export const descriptionSchema = z
+  .string()
+  .max(1000, 'errors.validation.descriptionTooLong')
+  .nullable()
+  .optional();
 export const limitSchema = z
   .union([z.string(), z.number(), z.null()])
   .optional()
@@ -13,7 +23,7 @@ export const limitSchema = z
     if (val === undefined || val === null || val === '') return undefined;
     return typeof val === 'string' ? parseInt(val, 10) : val;
   })
-  .pipe(z.number().int().min(-1).max(100, 'Limit must be between -1 and 100').optional());
+  .pipe(z.number().int().min(-1).max(100, 'errors.validation.limitRange').optional());
 
 export const pageSchema = z
   .union([z.string(), z.number(), z.null()])
@@ -22,17 +32,20 @@ export const pageSchema = z
     if (val === undefined || val === null || val === '') return undefined;
     return typeof val === 'string' ? parseInt(val, 10) : val;
   })
-  .pipe(z.number().int().min(1, 'Page must be at least 1').optional());
+  .pipe(z.number().int().min(1, 'errors.validation.pageMin1').optional());
 export const searchSchema = z
   .string()
   .nullable()
   .optional()
   .refine(
     (value) => !value || value.trim().length === 0 || value.trim().length >= 2,
-    'Search term must be at least 2 characters'
+    'errors.validation.searchMin2'
   );
 
-export const actionSchema = z.string().min(1, 'Action is required').max(255, 'Action too long');
+export const actionSchema = z
+  .string()
+  .min(1, 'errors.validation.actionRequired')
+  .max(255, 'errors.validation.actionTooLong');
 
 export const tenantSchema = z.enum(Object.values(Tenant) as [Tenant, ...Tenant[]]);
 
@@ -45,15 +58,12 @@ export const sortOrderSchema = z.enum(Object.values(SortOrder) as [SortOrder, ..
 
 export const colorSchema = z
   .string()
-  .refine(
-    (value) => TAG_COLORS.includes(value as TagColor),
-    'Invalid tag color. Must be one of the predefined colors.'
-  );
+  .refine((value) => TAG_COLORS.includes(value as TagColor), 'errors.validation.colorInvalid');
 export const slugSchema = z
   .string()
-  .min(1, 'Slug is required')
-  .max(255, 'Slug too long')
-  .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens');
+  .min(1, 'errors.validation.slugRequired')
+  .max(255, 'errors.validation.slugTooLong')
+  .regex(/^[a-z0-9-]+$/, 'errors.validation.slugInvalidFormat');
 
 export const createdAtSchema = z.date();
 export const updatedAtSchema = z.date();
@@ -75,7 +85,7 @@ export const searchFilterSchema = z.object({
 });
 
 export const sortSchema = z.object({
-  field: z.string().min(1, 'Sort field is required'),
+  field: z.string().min(1, 'errors.validation.sortFieldRequired'),
   order: sortOrderSchema,
 });
 
@@ -131,7 +141,7 @@ export const sortableParamsSchema = queryParamsSchema.extend({
 });
 
 export const nonEmptyStringRefinement = (value: string) => value.trim().length > 0;
-export const nonEmptyStringMessage = 'Field cannot be empty';
+export const nonEmptyStringMessage = 'errors.validation.fieldCannotBeEmpty';
 
 export const nonEmptyNameSchema = nameSchema.refine(
   nonEmptyStringRefinement,

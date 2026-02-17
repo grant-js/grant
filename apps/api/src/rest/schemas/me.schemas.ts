@@ -22,15 +22,15 @@ export const createMySecondaryAccountResponseSchema = createComplementaryAccount
 
 // Picture Upload Schemas
 export const uploadMyUserPictureRequestSchema = z.object({
-  file: z.string().min(1, 'File is required').openapi({
+  file: z.string().min(1, 'errors.validation.fileRequired').openapi({
     description: 'Base64-encoded file data (with optional data URI prefix)',
     example: 'data:image/jpeg;base64,/9j/4AAQSkZJRg...',
   }),
-  filename: z.string().min(1, 'Filename is required').openapi({
+  filename: z.string().min(1, 'errors.validation.filenameRequired').openapi({
     description: 'Original filename with extension',
     example: 'profile.jpg',
   }),
-  contentType: z.string().min(1, 'Content type is required').openapi({
+  contentType: z.string().min(1, 'errors.validation.contentTypeRequired').openapi({
     description: 'MIME type of the file',
     example: 'image/jpeg',
   }),
@@ -73,7 +73,10 @@ export const createMyUserAuthenticationMethodRequestSchema = z.object({
       description: 'Authentication provider',
       example: 'email',
     }),
-  providerId: z.string().min(1, 'Provider ID is required').max(255, 'Provider ID too long'),
+  providerId: z
+    .string()
+    .min(1, 'errors.validation.providerIdRequired')
+    .max(255, 'errors.validation.providerIdTooLong'),
   providerData: providerDataSchema,
   isVerified: z.boolean().nullable().optional(),
   isPrimary: z.boolean().nullable().optional(),
@@ -84,36 +87,36 @@ export const createMyUserAuthenticationMethodResponseSchema = createSuccessRespo
   'Successfully created user authentication method'
 );
 
-// Password Change Schemas
+// Password Change Schemas (messages are translation keys; API middleware translates in formatZodError)
 export const changeMyPasswordRequestSchema = z
   .object({
-    currentPassword: z.string().min(1, 'Current password is required').openapi({
+    currentPassword: z.string().min(1, 'errors.validation.currentPasswordRequired').openapi({
       description: 'Current password',
       example: 'CurrentPassword123!',
     }),
     newPassword: z
       .string()
-      .min(8, 'Password must be at least 8 characters')
-      .max(128, 'Password must be at most 128 characters')
-      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-      .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-      .regex(/[0-9]/, 'Password must contain at least one number')
-      .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character')
+      .min(8, 'errors.validation.passwordMin8')
+      .max(128, 'errors.validation.passwordMax128')
+      .regex(/[A-Z]/, 'errors.validation.passwordUppercase')
+      .regex(/[a-z]/, 'errors.validation.passwordLowercase')
+      .regex(/[0-9]/, 'errors.validation.passwordNumber')
+      .regex(/[^A-Za-z0-9]/, 'errors.validation.passwordSpecialChar')
       .openapi({
         description: 'New password (must meet password policy requirements)',
         example: 'NewPassword123!',
       }),
-    confirmPassword: z.string().min(1, 'Password confirmation is required').openapi({
+    confirmPassword: z.string().min(1, 'errors.validation.confirmPasswordRequired').openapi({
       description: 'Password confirmation (must match new password)',
       example: 'NewPassword123!',
     }),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
-    message: 'Passwords do not match',
+    message: 'errors.validation.passwordMismatch',
     path: ['confirmPassword'],
   })
   .refine((data) => data.currentPassword !== data.newPassword, {
-    message: 'New password must be different from current password',
+    message: 'errors.validation.newPasswordDifferent',
     path: ['newPassword'],
   });
 
@@ -227,7 +230,7 @@ export const getMyUserSessionsResponseSchema = createSuccessResponseSchema(
 export const revokeMyUserSessionParamsSchema = z.object({
   sessionId: z
     .string()
-    .uuid('Invalid session ID')
+    .uuid('errors.validation.invalidSessionId')
     .openapi({
       description: 'Session ID to revoke',
       example: '123e4567-e89b-12d3-a456-426614174001',

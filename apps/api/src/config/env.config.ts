@@ -14,7 +14,7 @@
  * - NODE_ENV - Standard Node.js environment variable (no prefix)
  */
 
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '@grantjs/constants';
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '@grantjs/i18n';
 import * as dotenv from 'dotenv';
 
 import { ConfigurationError } from '@/lib/errors';

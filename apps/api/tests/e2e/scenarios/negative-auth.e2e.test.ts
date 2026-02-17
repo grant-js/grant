@@ -17,35 +17,55 @@ afterAll(async () => {
 // ---------------------------------------------------------------------------
 // 1. Unauthenticated access
 // ---------------------------------------------------------------------------
+/** Assert error response body includes i18n translationKey (dot-only key under errors.*). */
+function expectErrorBodyWithTranslationKey(res: { status: number; body: Record<string, unknown> }) {
+  expect(res.body).toHaveProperty('translationKey');
+  expect(typeof res.body.translationKey).toBe('string');
+  expect((res.body.translationKey as string).length).toBeGreaterThan(0);
+  expect(res.body.translationKey).toMatch(/^errors\./);
+}
+
+/** When translationKey is present, assert it is a valid dot-only key. Use for 4xx paths that may return validation/guard errors without translationKey. */
+function expectTranslationKeyWhenPresent(res: { body: Record<string, unknown> }) {
+  if (res.body.translationKey !== undefined) {
+    expect(typeof res.body.translationKey).toBe('string');
+    expect((res.body.translationKey as string).length).toBeGreaterThan(0);
+    expect(res.body.translationKey).toMatch(/^errors\./);
+  }
+}
+
 describe('Negative: Unauthenticated access', () => {
   it('rejects GET /api/me without auth header → 401', async () => {
     const res = await unauthenticatedClient().get('/api/me');
     expect(res.status).toBe(401);
+    expectErrorBodyWithTranslationKey(res);
+    expect(res.body.translationKey).toMatch(/^errors\.auth\./);
   });
 
   it('rejects POST /api/organizations without auth header → 4xx', async () => {
     const res = await unauthenticatedClient()
       .post('/api/organizations')
       .send({ name: 'Unauthorized Org', scope: { id: 'fake', tenant: 'account' } });
-    // May return 400 (scope validation) or 401 (auth) depending on middleware order
+    // May return 400 (scope/body validation) or 401 (auth); validation path may not include translationKey
     expect(res.status).toBeGreaterThanOrEqual(400);
     expect(res.status).toBeLessThan(500);
+    expectTranslationKeyWhenPresent(res);
   });
 
   it('rejects POST /api/projects without auth header → 4xx', async () => {
     const res = await unauthenticatedClient()
       .post('/api/projects')
       .send({ name: 'Unauthorized Project', scope: { id: 'fake', tenant: 'organization' } });
-    // May return 400 (scope validation) or 401 (auth) depending on middleware order
     expect(res.status).toBeGreaterThanOrEqual(400);
     expect(res.status).toBeLessThan(500);
+    expectTranslationKeyWhenPresent(res);
   });
 
   it('rejects DELETE /api/me/accounts without auth header → 4xx', async () => {
     const res = await unauthenticatedClient().delete('/api/me/accounts');
-    // May return 400 (missing scope/body) or 401 (auth) depending on middleware order
     expect(res.status).toBeGreaterThanOrEqual(400);
     expect(res.status).toBeLessThan(500);
+    expectTranslationKeyWhenPresent(res);
   });
 });
 
@@ -54,7 +74,6 @@ describe('Negative: Unauthenticated access', () => {
 // ---------------------------------------------------------------------------
 describe('Negative: Invalid credentials', () => {
   it('rejects login with wrong password → 401', async () => {
-    // First, create a real user so the email exists
     const user = await TestUser.create();
 
     const res = await apiClient()
@@ -66,6 +85,8 @@ describe('Negative: Invalid credentials', () => {
       });
 
     expect(res.status).toBe(401);
+    expectErrorBodyWithTranslationKey(res);
+    expect(res.body.translationKey).toMatch(/^errors\.auth\./);
   });
 
   it('rejects login with non-existent email → 401', async () => {
@@ -78,6 +99,8 @@ describe('Negative: Invalid credentials', () => {
       });
 
     expect(res.status).toBe(401);
+    expectErrorBodyWithTranslationKey(res);
+    expect(res.body.translationKey).toMatch(/^errors\.auth\./);
   });
 
   it('rejects registration with duplicate email → 409', async () => {
@@ -94,6 +117,8 @@ describe('Negative: Invalid credentials', () => {
       });
 
     expect(res.status).toBe(409);
+    expectErrorBodyWithTranslationKey(res);
+    expect(res.body.translationKey).toMatch(/^errors\.conflict\./);
   });
 });
 
@@ -107,18 +132,22 @@ describe('Negative: Invalid tokens', () => {
       .set('Authorization', 'Bearer not-a-valid-jwt-token');
 
     expect(res.status).toBe(401);
+    expectErrorBodyWithTranslationKey(res);
+    expect(res.body.translationKey).toMatch(/^errors\.auth\./);
   });
 
   it('rejects request with empty Bearer token → 401', async () => {
     const res = await apiClient().get('/api/me').set('Authorization', 'Bearer ');
 
     expect(res.status).toBe(401);
+    expectErrorBodyWithTranslationKey(res);
   });
 
   it('rejects request with wrong auth scheme → 401', async () => {
     const res = await apiClient().get('/api/me').set('Authorization', 'Basic dXNlcjpwYXNz');
 
     expect(res.status).toBe(401);
+    expectErrorBodyWithTranslationKey(res);
   });
 
   it('rejects request with tampered JWT payload → 401', async () => {
@@ -136,6 +165,7 @@ describe('Negative: Invalid tokens', () => {
       const res = await apiClient().get('/api/me').set('Authorization', `Bearer ${tamperedToken}`);
 
       expect(res.status).toBe(401);
+      expectErrorBodyWithTranslationKey(res);
     }
   });
 });
@@ -178,8 +208,11 @@ describe('Negative: Unverified user restrictions', () => {
           scope: { id: orgAccountId, tenant: 'account' },
         });
 
-      // Unverified users should be blocked from org-context mutations
       expect(orgRes.status).toBe(403);
+      expectTranslationKeyWhenPresent(orgRes);
+      if (orgRes.body.translationKey) {
+        expect(orgRes.body.translationKey).toMatch(/^errors\.auth\./);
+      }
     }
   });
 });
@@ -200,6 +233,8 @@ describe('Negative: Input validation', () => {
       });
 
     expect(res.status).toBe(400);
+    expectErrorBodyWithTranslationKey(res);
+    expect(res.body.translationKey).toMatch(/^errors\.validation\./);
   });
 
   it('rejects registration with invalid email → 400', async () => {
@@ -214,6 +249,7 @@ describe('Negative: Input validation', () => {
       });
 
     expect(res.status).toBe(400);
+    expectErrorBodyWithTranslationKey(res);
   });
 
   it('rejects email verification with invalid token → 400 or 401', async () => {
@@ -221,7 +257,7 @@ describe('Negative: Input validation', () => {
       .post('/api/auth/verify-email')
       .send({ token: 'invalid-token-abc123' });
 
-    // API may return 400 (bad request), 401 (unauthorized), or 404 (token not found)
     expect([400, 401, 404]).toContain(res.status);
+    expectErrorBodyWithTranslationKey(res);
   });
 });

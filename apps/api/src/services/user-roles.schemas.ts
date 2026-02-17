@@ -8,17 +8,17 @@ export const queryUserRolesArgsSchema = z
     roleId: idSchema.optional(),
   })
   .refine((data) => data.userId || data.roleId, {
-    message: 'Either userId or roleId must be provided',
+    message: 'errors.validation.eitherUserIdOrRoleIdRequired',
   });
 
 export const addUserRoleInputSchema = z.object({
-  roleId: idSchema.refine((roleId) => roleId.trim().length > 0, 'Role ID is required'),
-  userId: idSchema.refine((userId) => userId.trim().length > 0, 'User ID is required'),
+  roleId: idSchema.refine((roleId) => roleId.trim().length > 0, 'errors.validation.roleIdRequired'),
+  userId: idSchema.refine((userId) => userId.trim().length > 0, 'errors.validation.userIdRequired'),
 });
 
 export const removeUserRoleInputSchema = deleteSchema.extend({
-  roleId: idSchema.refine((roleId) => roleId.trim().length > 0, 'Role ID is required'),
-  userId: idSchema.refine((userId) => userId.trim().length > 0, 'User ID is required'),
+  roleId: idSchema.refine((roleId) => roleId.trim().length > 0, 'errors.validation.roleIdRequired'),
+  userId: idSchema.refine((userId) => userId.trim().length > 0, 'errors.validation.userIdRequired'),
 });
 
 export const addUserRoleArgsSchema = z.object({

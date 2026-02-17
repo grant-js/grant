@@ -12,11 +12,9 @@ import {
   sortOrderSchema,
 } from './common/schemas';
 
-export const clientIdSchema = z.uuid('Invalid client ID format');
+export const clientIdSchema = z.uuid('errors.validation.invalidClientId');
 
-export const clientSecretSchema = z
-  .string()
-  .min(32, 'Client secret must be at least 32 characters');
+export const clientSecretSchema = z.string().min(32, 'errors.validation.clientSecretMin32');
 
 export const apiKeySortableFieldSchema = z.enum(
   Object.values(ApiKeySortableField) as [ApiKeySortableField, ...ApiKeySortableField[]]

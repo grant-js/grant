@@ -3,8 +3,8 @@ import { Permission } from '@grantjs/schema';
 import { z } from 'zod';
 
 export const createPermissionSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  action: z.string().min(1, 'Action is required'),
+  name: z.string().min(2, 'errors.validation.nameMin2'),
+  action: z.string().min(1, 'errors.validation.actionRequired'),
   description: z.string().optional(),
   resourceId: z.string().optional(),
   tagIds: z.array(z.string()).optional(),
@@ -13,8 +13,8 @@ export const createPermissionSchema = z.object({
 });
 
 export const editPermissionSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  action: z.string().min(1, 'Action is required'),
+  name: z.string().min(2, 'errors.validation.nameMin2'),
+  action: z.string().min(1, 'errors.validation.actionRequired'),
   description: z.string().optional(),
   resourceId: z.string().optional(),
   tagIds: z.array(z.string()).optional(),

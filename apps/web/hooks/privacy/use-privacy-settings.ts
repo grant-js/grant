@@ -29,7 +29,7 @@ export function usePrivacySettings() {
     const userId = getCurrentUserId(accessToken!);
     if (!userId) {
       toast.error(t('dataExport.error'), {
-        description: 'You must be logged in to export your data',
+        description: t('dataExport.loginRequired'),
       });
       return;
     }
@@ -55,12 +55,13 @@ export function usePrivacySettings() {
       window.URL.revokeObjectURL(url);
 
       toast.success(t('dataExport.success'), {
-        description: 'Your data has been downloaded successfully',
+        description: t('dataExport.downloadSuccess'),
       });
     } catch (error) {
       console.error('Error exporting user data:', error);
       toast.error(t('dataExport.error'), {
-        description: error instanceof Error ? error.message : 'Failed to export your data',
+        description:
+          error instanceof Error ? error.message : t('dataExport.exportErrorDescription'),
       });
     } finally {
       setIsExporting(false);
@@ -71,7 +72,7 @@ export function usePrivacySettings() {
     const userId = getCurrentUserId(accessToken!);
     if (!userId) {
       toast.error(t('accountDeletion.error'), {
-        description: 'You must be logged in to delete your account',
+        description: t('accountDeletion.loginRequired'),
       });
       return;
     }
@@ -95,7 +96,7 @@ export function usePrivacySettings() {
       });
 
       toast.success(t('accountDeletion.success'), {
-        description: 'Your account has been deleted successfully',
+        description: t('accountDeletion.deleteSuccessDescription'),
       });
 
       // Clear auth and redirect to login
@@ -104,7 +105,8 @@ export function usePrivacySettings() {
     } catch (error) {
       console.error('Error deleting account:', error);
       toast.error(t('accountDeletion.error'), {
-        description: error instanceof Error ? error.message : 'Failed to delete your account',
+        description:
+          error instanceof Error ? error.message : t('accountDeletion.deleteErrorDescription'),
       });
       throw error; // Re-throw to allow component to handle
     } finally {

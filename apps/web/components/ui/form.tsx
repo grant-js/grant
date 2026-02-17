@@ -2,8 +2,10 @@
 
 import * as React from 'react';
 
+import { isTranslationKey } from '@grantjs/i18n';
 import * as LabelPrimitive from '@radix-ui/react-label';
 import { Slot } from '@radix-ui/react-slot';
+import { useTranslations } from 'next-intl';
 import {
   Controller,
   FormProvider,
@@ -141,6 +143,38 @@ function FormMessage({ className, ...props }: React.ComponentProps<'p'>) {
   );
 }
 
+/**
+ * Like FormMessage but translates the message when it is a translation key
+ * (e.g. errors.validation.passwordMismatch). Use for validation errors so schema
+ * messages can be keys and are localized at display time.
+ */
+function TranslatedFormMessage({ className, ...props }: React.ComponentProps<'p'>) {
+  const { error, formMessageId } = useFormField();
+  const t = useTranslations();
+  const raw = error
+    ? String(error?.message ?? '')
+    : typeof props.children === 'string'
+      ? props.children
+      : '';
+
+  if (!raw) {
+    return null;
+  }
+
+  const body = isTranslationKey(raw) ? String(t(raw)) : raw;
+
+  return (
+    <p
+      data-slot="form-message"
+      id={formMessageId}
+      className={cn('text-destructive text-sm', className)}
+      {...props}
+    >
+      {body}
+    </p>
+  );
+}
+
 export {
   useFormField,
   Form,
@@ -149,5 +183,6 @@ export {
   FormControl,
   FormDescription,
   FormMessage,
+  TranslatedFormMessage,
   FormField,
 };

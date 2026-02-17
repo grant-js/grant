@@ -1,5 +1,6 @@
 import { Response, Router } from 'express';
 
+import { t } from '@/i18n';
 import { authenticateRestRoute } from '@/lib/authorization';
 import { getRefreshTokenFromCookie } from '@/lib/headers.lib';
 import { validate } from '@/middleware/validation.middleware';
@@ -104,7 +105,7 @@ export function createMeRouter(context: RequestContext): Router {
       });
       sendSuccessResponse(res, {
         success: true,
-        message: 'Password changed successfully',
+        message: t(req, 'common.success.passwordChanged'),
       });
     }
   );
@@ -138,7 +139,7 @@ export function createMeRouter(context: RequestContext): Router {
       await context.handlers.me.revokeMyUserSession(req.params.sessionId);
       sendSuccessResponse(res, {
         success: true,
-        message: 'Session revoked successfully',
+        message: t(req, 'common.success.sessionRevoked'),
       });
     }
   );
@@ -149,7 +150,7 @@ export function createMeRouter(context: RequestContext): Router {
       await context.handlers.auth.logout(refreshTokenFromCookie);
     }
     clearRefreshTokenCookie(res);
-    sendSuccessResponse(res, { message: 'Logged out successfully' });
+    sendSuccessResponse(res, { message: t(req, 'common.success.loggedOut') });
   });
 
   return router;

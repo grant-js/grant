@@ -17,7 +17,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
+  TranslatedFormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useAuthMutations, usePageTitle } from '@/hooks';
@@ -25,8 +25,8 @@ import { Link, useRouter } from '@/i18n/navigation';
 import { getAuthRedirectUrl } from '@/lib/redirect';
 
 const loginSchema = z.object({
-  email: z.email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.email('errors.validation.invalidEmail'),
+  password: z.string().min(6, 'errors.validation.passwordMin6'),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -120,9 +120,9 @@ export default function LoginPage() {
                   />
                 </FormControl>
                 {form.formState.errors.email && (
-                  <FormMessage className="text-destructive text-sm mt-1">
+                  <TranslatedFormMessage className="text-destructive text-sm mt-1">
                     {t('login.emailError')}
-                  </FormMessage>
+                  </TranslatedFormMessage>
                 )}
               </FormItem>
             )}
@@ -142,9 +142,9 @@ export default function LoginPage() {
                   />
                 </FormControl>
                 {form.formState.errors.password && (
-                  <FormMessage className="text-destructive text-sm mt-1">
+                  <TranslatedFormMessage className="text-destructive text-sm mt-1">
                     {t('login.passwordError')}
-                  </FormMessage>
+                  </TranslatedFormMessage>
                 )}
               </FormItem>
             )}

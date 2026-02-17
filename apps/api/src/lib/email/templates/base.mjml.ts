@@ -1,4 +1,4 @@
-import { SupportedLocale } from '@grantjs/constants';
+import { SupportedLocale } from '@grantjs/i18n';
 import mjml from 'mjml';
 
 import { config } from '@/config';
@@ -143,10 +143,10 @@ export function renderBaseEmailTemplate(props: BaseEmailTemplateProps): string {
                 ${footerWarning}
               </mj-text>`
                   : `<mj-text align="center" font-size="13px" color="#9CA3AF" line-height="20px" padding="0 0 5px 0">
-                ${translateStatic('email:common.footer.noRequest', locale)}
+                ${translateStatic('email.common.footer.noRequest', locale)}
               </mj-text>
               <mj-text align="center" font-size="13px" color="#9CA3AF" line-height="20px" padding="0 0 15px 0">
-                ${translateStatic('email:common.footer.typo', locale)}
+                ${translateStatic('email.common.footer.typo', locale)}
               </mj-text>`
               }
               <mj-text align="center" font-size="12px" color="#D1D5DB" padding="0">
@@ -190,7 +190,7 @@ export function createButton(
 export function createAlternativeLink(url: string, locale: SupportedLocale): string {
   return `
     <mj-text font-size="13px" color="#6B7280" padding="20px 0 5px 0">
-      <strong>${translateStatic('email:common.alternativeText', locale)}</strong>
+      <strong>${translateStatic('email.common.alternativeText', locale)}</strong>
     </mj-text>
     <mj-wrapper padding="0">
       <mj-section padding="0">
