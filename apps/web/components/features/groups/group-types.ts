@@ -7,6 +7,7 @@ export const createGroupSchema = z.object({
   permissionIds: z.array(z.string()).optional(),
   tagIds: z.array(z.string()).optional(),
   primaryTagId: z.string().optional(),
+  metadataEnabled: z.boolean().optional(),
   metadata: z.any().optional(),
 });
 
@@ -16,6 +17,7 @@ export const editGroupSchema = z.object({
   permissionIds: z.array(z.string()).optional(),
   tagIds: z.array(z.string()).optional(),
   primaryTagId: z.string().optional(),
+  metadataEnabled: z.boolean().optional(),
   metadata: z.any().optional(),
 });
 

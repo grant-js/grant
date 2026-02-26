@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Info } from 'lucide-react';
+import { ChevronDown, ChevronRight, Info } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { DefaultValues, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
@@ -16,6 +16,7 @@ import {
   SlugInput,
 } from '@/components/common';
 import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { DatePicker } from '@/components/ui/date-picker';
 import {
   Dialog,
@@ -116,6 +117,20 @@ export function FormDialog<TFormValues extends Record<string, any>>({
         dependentFields.push(field.name);
         dependencyMap.set(field.dependsOn, dependentFields);
       }
+      // When a field has showWhen, reset its value when the toggle field changes to false
+      if (field.showWhen) {
+        const toggleField = field.showWhen.field;
+        const dependentFields = dependencyMap.get(toggleField) || [];
+        dependentFields.push(field.name);
+        dependencyMap.set(toggleField, dependentFields);
+      }
+      // When a field is partOfCollapsible, reset its value when the collapsible closes
+      if (field.partOfCollapsible) {
+        const toggleField = field.partOfCollapsible;
+        const dependentFields = dependencyMap.get(toggleField) || [];
+        dependentFields.push(field.name);
+        dependencyMap.set(toggleField, dependentFields);
+      }
     });
 
     if (dependencyMap.size === 0) {
@@ -125,8 +140,18 @@ export function FormDialog<TFormValues extends Record<string, any>>({
     const subscription = form.watch((value, { name }) => {
       if (name && dependencyMap.has(name)) {
         const dependentFields = dependencyMap.get(name)!;
+        const toggleValue = value[name];
         dependentFields.forEach((dependentField) => {
-          form.setValue(dependentField as any, defaultValues[dependentField] ?? null, {
+          const fieldConfig = fields.find((f) => f.name === dependentField);
+          const shouldReset =
+            (fieldConfig?.showWhen && toggleValue !== fieldConfig.showWhen.value) ||
+            (fieldConfig?.partOfCollapsible && !toggleValue);
+          const resetValue = shouldReset
+            ? fieldConfig?.type === 'json'
+              ? {}
+              : null
+            : (defaultValues[dependentField] ?? null);
+          form.setValue(dependentField as any, resetValue, {
             shouldValidate: false,
           });
         });
@@ -187,15 +212,33 @@ export function FormDialog<TFormValues extends Record<string, any>>({
     defaultValue: '',
   });
 
+  const watchedAllValues = useWatch({
+    control: form.control as any,
+    defaultValue: defaultValues as any,
+  });
+
   const watchedValues: Record<string, any> = {
     name: String(watchedNameValue || ''),
     resourceId: watchedResourceId || '',
+    ...watchedAllValues,
   };
 
-  const renderField = (field: DialogField) => {
+  const renderField = (field: DialogField, fromCollapsibleContent = false) => {
     const fieldName = field.name as keyof TFormValues;
     const error = form.formState.errors[fieldName];
     const hasError = !!error;
+
+    // Skip fields that are rendered inside a collapsible (unless we're rendering from there)
+    if (field.partOfCollapsible && !fromCollapsibleContent) {
+      return null;
+    }
+
+    if (field.showWhen) {
+      const toggleValue = watchedValues[field.showWhen.field];
+      if (toggleValue !== field.showWhen.value) {
+        return null;
+      }
+    }
 
     const fieldType =
       field.dependsOn && field.getType
@@ -251,25 +294,41 @@ export function FormDialog<TFormValues extends Record<string, any>>({
         name={fieldName as any}
         render={({ field: formField }) => (
           <FormItem>
-            <FormLabel className="flex items-center gap-2">
-              {t(field.label)}
-              {field.info && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      className="inline-flex items-center justify-center w-4 h-4 text-muted-foreground hover:text-foreground transition-colors"
-                      aria-label="Field information"
-                    >
-                      <Info className="w-4 h-4" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 z-[99999999]" align="start">
-                    <p className="text-sm text-muted-foreground">{t(field.info)}</p>
-                  </PopoverContent>
-                </Popover>
-              )}
-            </FormLabel>
+            {fieldType !== 'collapsible-group' && !fromCollapsibleContent && (
+              <FormLabel className="flex items-center gap-2">
+                {t(field.label)}
+                {field.info && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className="inline-flex items-center justify-center w-4 h-4 text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Field information"
+                      >
+                        <Info className="w-4 h-4" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 z-[99999999]" align="start">
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">{t(field.info)}</p>
+                        {field.infoLink && (
+                          <a
+                            href={field.infoLink.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline"
+                          >
+                            {field.infoLink.label
+                              ? t(field.infoLink.label)
+                              : 'Full syntax reference'}
+                          </a>
+                        )}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                )}
+              </FormLabel>
+            )}
             <FormControl>
               {fieldType === 'textarea' ? (
                 <Textarea
@@ -286,6 +345,73 @@ export function FormDialog<TFormValues extends Record<string, any>>({
                   disabled={isSubmitting}
                   className={hasError ? 'border-red-500' : ''}
                 />
+              ) : fieldType === 'collapsible-group' && field.contentField ? (
+                (() => {
+                  const contentFieldConfig = fields.find((f) => f.name === field.contentField);
+                  return (
+                    <Collapsible
+                      open={!!formField.value}
+                      onOpenChange={(open) => formField.onChange(open)}
+                    >
+                      <CollapsibleTrigger asChild>
+                        <button
+                          type="button"
+                          disabled={isSubmitting}
+                          className="flex w-full items-center justify-between gap-2 text-sm font-medium text-foreground hover:text-foreground/80 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          <span className="flex min-w-0 flex-1 items-center gap-2">
+                            {t(contentFieldConfig?.label ?? field.label)}
+                            {contentFieldConfig?.info && (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="inline-flex shrink-0 items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                                    aria-label="Field information"
+                                  >
+                                    <Info className="w-4 h-4" />
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                  className="w-80 z-[99999999]"
+                                  align="start"
+                                  onOpenAutoFocus={(e) => e.preventDefault()}
+                                >
+                                  <div className="space-y-2">
+                                    <p className="text-sm text-muted-foreground">
+                                      {t(contentFieldConfig.info)}
+                                    </p>
+                                    {contentFieldConfig.infoLink && (
+                                      <a
+                                        href={contentFieldConfig.infoLink.href}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sm text-primary hover:underline"
+                                      >
+                                        {contentFieldConfig.infoLink.label
+                                          ? t(contentFieldConfig.infoLink.label)
+                                          : 'Full syntax reference'}
+                                      </a>
+                                    )}
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            )}
+                          </span>
+                          {formField.value ? (
+                            <ChevronDown className="h-4 w-4 shrink-0" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 shrink-0" />
+                          )}
+                        </button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="pt-2">
+                        {contentFieldConfig ? renderField(contentFieldConfig, true) : null}
+                      </CollapsibleContent>
+                    </Collapsible>
+                  );
+                })()
               ) : fieldType === 'switch' ? (
                 <Switch
                   checked={formField.value as boolean}
@@ -419,7 +545,7 @@ export function FormDialog<TFormValues extends Record<string, any>>({
             className="flex min-h-0 flex-1 flex-col"
           >
             <div className="flex-1 space-y-4 overflow-y-auto pr-1 border-t py-4">
-              {fields.map(renderField)}
+              {fields.map((f) => renderField(f))}
 
               {relationships?.map((relationship) => (
                 <div key={relationship.name}>

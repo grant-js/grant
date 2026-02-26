@@ -57,6 +57,10 @@ Tags support standard CRUD via GraphQL mutations:
 
 Attaching and detaching tags from entities is handled through entity-specific mutations (e.g. adding a tag to a resource is part of the resource mutation flow, not the tag mutation flow).
 
+## Tag color palette
+
+Tag colors are defined in `@grantjs/constants` and must be **perceptually distinct**. We use the **CIEDE2000 (ΔE00)** metric in LAB space, comparing each color at **Tailwind shade 500**. Every pair of palette colors must have ΔE00 ≥ `MIN_PALETTE_DELTA_E` (see `packages/@grantjs/constants/src/colors.ts`). This avoids ambiguous choices (e.g. multiple near-identical grays). The palette check is enforced in CI via `pnpm --filter @grantjs/constants run check:palette`. When adding or changing tag colors, ensure the script passes.
+
 ---
 
 **Related:**

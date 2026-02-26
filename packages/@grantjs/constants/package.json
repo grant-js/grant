@@ -12,7 +12,8 @@
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "check:palette": "tsx scripts/check-palette-distance.ts"
   },
   "dependencies": {
     "@grantjs/core": "workspace:*"
@@ -20,6 +21,7 @@
   "devDependencies": {
     "@types/node": "^24.7.2",
     "eslint": "^9.37.0",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

@@ -1,3 +1,9 @@
+/**
+ * Minimum CIEDE2000 (ΔE00) between any two tag palette colors (at Tailwind shade 500).
+ * Ensures colors are perceptually distinct. ΔE00 < 1 ≈ imperceptible; 15–25 ≈ clearly distinct in UI.
+ */
+export const MIN_PALETTE_DELTA_E = 20;
+
 export const TAG_CONFIGURATION = {
   purple: {
     background: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
@@ -43,25 +49,9 @@ export const TAG_CONFIGURATION = {
     background: 'bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900 dark:text-fuchsia-200',
     border: 'border-fuchsia-300 dark:border-fuchsia-600',
   },
-  slate: {
-    background: 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200',
-    border: 'border-slate-300 dark:border-slate-600',
-  },
   gray: {
     background: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
     border: 'border-gray-300 dark:border-gray-600',
-  },
-  zinc: {
-    background: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-900 dark:text-zinc-200',
-    border: 'border-zinc-300 dark:border-zinc-600',
-  },
-  neutral: {
-    background: 'bg-neutral-100 text-neutral-800 dark:bg-neutral-900 dark:text-neutral-200',
-    border: 'border-neutral-300 dark:border-neutral-600',
-  },
-  stone: {
-    background: 'bg-stone-100 text-stone-800 dark:bg-stone-900 dark:text-stone-200',
-    border: 'border-stone-300 dark:border-stone-600',
   },
   red: {
     background: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
@@ -89,30 +79,71 @@ export const TAG_CONFIGURATION = {
   },
 };
 
+/** Canonical tag colors (perceptually distinct). New tags may only use these. */
 export const TAG_COLORS = Object.keys(TAG_CONFIGURATION) as TagColor[];
 
 export type TagColor = keyof typeof TAG_CONFIGURATION;
 
-export const TAG_BACKGROUND_CLASSES: Record<string, string> = Object.fromEntries(
-  Object.entries(TAG_CONFIGURATION).map(([color, config]) => [color, config.background])
-) as Record<string, string>;
+/**
+ * Legacy color names that are no longer offered for new tags but still resolve to gray for display
+ * (backward compatibility for existing tags in the database).
+ */
+export const DISPLAY_ALIASES_TO_GRAY = ['slate', 'zinc', 'neutral', 'stone'] as const;
+export type DisplayAliasColor = (typeof DISPLAY_ALIASES_TO_GRAY)[number];
 
-export const TAG_BORDER_CLASSES: Record<string, string> = Object.fromEntries(
-  Object.entries(TAG_CONFIGURATION).map(([color, config]) => [color, config.border])
-) as Record<string, string>;
+const grayConfig = TAG_CONFIGURATION.gray;
+const backgroundAliases = Object.fromEntries(
+  DISPLAY_ALIASES_TO_GRAY.map((alias) => [alias, grayConfig.background])
+);
+const borderAliases = Object.fromEntries(
+  DISPLAY_ALIASES_TO_GRAY.map((alias) => [alias, grayConfig.border])
+);
+
+export const TAG_BACKGROUND_CLASSES: Record<string, string> = {
+  ...Object.fromEntries(
+    Object.entries(TAG_CONFIGURATION).map(([color, config]) => [color, config.background])
+  ),
+  ...backgroundAliases,
+};
+
+export const TAG_BORDER_CLASSES: Record<string, string> = {
+  ...Object.fromEntries(
+    Object.entries(TAG_CONFIGURATION).map(([color, config]) => [color, config.border])
+  ),
+  ...borderAliases,
+};
 
 export function isValidTagColor(color: string): color is TagColor {
   return TAG_COLORS.includes(color as TagColor);
+}
+
+/**
+ * True if the value is a canonical color or a legacy alias (for display only).
+ */
+export function isDisplayableTagColor(color: string): color is TagColor | DisplayAliasColor {
+  return color in TAG_BACKGROUND_CLASSES;
 }
 
 export function getAvailableTagColors(): TagColor[] {
   return [...TAG_COLORS] as TagColor[];
 }
 
-export function getTagBackgroundClasses(color: TagColor): string {
-  return TAG_BACKGROUND_CLASSES[color];
+/**
+ * Maps a stored tag color (canonical or legacy alias) to a canonical TagColor for pickers/forms.
+ * Use when initializing an edit form so legacy values (slate, zinc, neutral, stone) show as gray.
+ */
+export function normalizeTagColorForPicker(color: string): TagColor {
+  if (TAG_COLORS.includes(color as TagColor)) return color as TagColor;
+  if (DISPLAY_ALIASES_TO_GRAY.includes(color as DisplayAliasColor)) return 'gray';
+  return 'gray';
 }
 
-export function getTagBorderClasses(color: TagColor): string {
-  return TAG_BORDER_CLASSES[color];
+/** Accepts canonical colors and legacy aliases (slate, zinc, neutral, stone); unknown values fall back to gray. */
+export function getTagBackgroundClasses(color: string): string {
+  return TAG_BACKGROUND_CLASSES[color] ?? TAG_CONFIGURATION.gray.background;
+}
+
+/** Accepts canonical colors and legacy aliases (slate, zinc, neutral, stone); unknown values fall back to gray. */
+export function getTagBorderClasses(color: string): string {
+  return TAG_BORDER_CLASSES[color] ?? TAG_CONFIGURATION.gray.border;
 }

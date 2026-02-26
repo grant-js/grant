@@ -20,17 +20,27 @@ import { useScopeFromParams } from '@/hooks/common';
 import { useRoles } from '@/hooks/roles';
 import { useTags } from '@/hooks/tags';
 import { useUserMutations } from '@/hooks/users';
+import { getDocsUrl } from '@/lib/constants';
 import { useUsersStore } from '@/stores/users.store';
 
 import { UserEditFormValues, editUserSchema } from './user-types';
 
-const mapUserToFormValues = (user: UserType): UserEditFormValues => ({
-  name: user.name,
-  roleIds: user.roles?.map((role: Role) => role.id),
-  tagIds: user.tags?.map((tag: Tag) => tag.id),
-  primaryTagId: user.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
-  metadata: user.metadata || null,
-});
+const mapUserToFormValues = (user: UserType): UserEditFormValues => {
+  const metadata = user.metadata ?? null;
+  const hasMetadata =
+    metadata &&
+    typeof metadata === 'object' &&
+    !Array.isArray(metadata) &&
+    Object.keys(metadata).length > 0;
+  return {
+    name: user.name,
+    roleIds: user.roles?.map((role: Role) => role.id),
+    tagIds: user.tags?.map((tag: Tag) => tag.id),
+    primaryTagId: user.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
+    metadataEnabled: !!hasMetadata,
+    metadata: metadata || {},
+  };
+};
 
 const renderCheckboxList = (props: CheckboxListProps) => <CheckboxList {...props} />;
 const renderTagCheckboxList = (props: TagCheckboxListProps) => <TagCheckboxList {...props} />;
@@ -63,20 +73,38 @@ export function UserEditDialog() {
       required: true,
     },
     {
+      name: 'metadataEnabled',
+      label: 'form.showMetadata',
+      type: 'collapsible-group',
+      contentField: 'metadata',
+    },
+    {
       name: 'metadata',
       label: 'form.metadata',
       placeholder: 'form.metadata',
       type: 'json',
       info: 'form.metadataInfo',
+      infoLink: {
+        href: `${getDocsUrl()}/core-concepts/permission-conditions#field-paths`,
+        label: 'form.metadataDocsLink',
+      },
+      partOfCollapsible: 'metadataEnabled',
     },
   ];
 
+  const metadata = userToEdit?.metadata ?? null;
+  const hasMetadata =
+    metadata &&
+    typeof metadata === 'object' &&
+    !Array.isArray(metadata) &&
+    Object.keys(metadata).length > 0;
   const defaultValues = {
     name: userToEdit?.name || '',
     roleIds: userToEdit?.roles?.map((role: Role) => role.id) || [],
     tagIds: userToEdit?.tags?.map((tag: Tag) => tag.id) || [],
     primaryTagId: userToEdit?.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
-    metadata: userToEdit?.metadata || null,
+    metadataEnabled: !!hasMetadata,
+    metadata: metadata || {},
   };
 
   const roleItems = roles.map((role: Role) => ({
@@ -123,10 +151,10 @@ export function UserEditDialog() {
       tagIds: values.tagIds,
       primaryTagId: values.primaryTagId,
       metadata:
+        values.metadataEnabled &&
         values.metadata &&
         typeof values.metadata === 'object' &&
-        !Array.isArray(values.metadata) &&
-        Object.keys(values.metadata).length > 0
+        !Array.isArray(values.metadata)
           ? values.metadata
           : undefined,
     });

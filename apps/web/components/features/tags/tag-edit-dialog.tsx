@@ -2,7 +2,7 @@
 
 import { useGrant, type UseGrantResult } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
-import { getAvailableTagColors } from '@grantjs/constants';
+import { getAvailableTagColors, normalizeTagColorForPicker } from '@grantjs/constants';
 import { Tag } from '@grantjs/schema';
 import { useTranslations } from 'next-intl';
 import { DefaultValues } from 'react-hook-form';
@@ -24,7 +24,7 @@ import { TagEditFormValues, editTagSchema } from './tag-types';
 export function TagEditDialog() {
   const t = useTranslations('tags');
   const scope = useScopeFromParams();
-  const { tags, loading: tagsLoading } = useTags({ scope: scope!, limit: -1 });
+  const { loading: tagsLoading } = useTags({ scope: scope!, limit: -1 });
   const tagToEdit = useTagsStore((state) => state.tagToEdit);
   const setTagToEdit = useTagsStore((state) => state.setTagToEdit);
   const { handleUpdateTag } = useTagMutations();
@@ -51,14 +51,11 @@ export function TagEditDialog() {
     return null;
   }
 
-  const usedColors = tags.map((tag) => tag.color);
   const availableColors = getAvailableTagColors();
-
   const colorItems: Partial<Tag>[] = availableColors.map((color) => ({
     id: color,
     name: color,
     color: color,
-    disabled: usedColors.includes(color) && color !== tagToEdit?.color,
   }));
 
   const fields: DialogField[] = [
@@ -73,7 +70,7 @@ export function TagEditDialog() {
 
   const defaultValues: DefaultValues<TagEditFormValues> = {
     name: tagToEdit?.name || '',
-    color: tagToEdit?.color || '',
+    color: tagToEdit ? normalizeTagColorForPicker(tagToEdit.color) : '',
   };
 
   const relationships: DialogRelationship[] = [

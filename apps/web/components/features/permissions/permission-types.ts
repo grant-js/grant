@@ -9,6 +9,7 @@ export const createPermissionSchema = z.object({
   resourceId: z.string().optional(),
   tagIds: z.array(z.string()).optional(),
   primaryTagId: z.string().optional(),
+  conditionEnabled: z.boolean().optional(),
   condition: permissionConditionSchema,
 });
 
@@ -19,6 +20,7 @@ export const editPermissionSchema = z.object({
   resourceId: z.string().optional(),
   tagIds: z.array(z.string()).optional(),
   primaryTagId: z.string().optional(),
+  conditionEnabled: z.boolean().optional(),
   condition: permissionConditionSchema,
 });
 

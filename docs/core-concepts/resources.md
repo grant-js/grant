@@ -74,16 +74,15 @@ Permissions can include **conditions** that restrict access beyond the action it
 
 Example — an `ApiKeyOwner` group might grant `Delete` on the `ApiKey` resource only when `resource.createdBy` equals the requesting user:
 
-```
-resource: ApiKey
-action:   Delete
-condition:
-  field:    resource.createdBy
-  operator: StringEquals
-  value:    {{user.id}}
+```json
+{
+  "StringEquals": {
+    "resource.createdBy": "{{user.id}}"
+  }
+}
 ```
 
-This is how Grant implements attribute-based rules within the RBAC model — no separate ABAC engine required.
+This is how Grant implements attribute-based rules within the RBAC model — no separate ABAC engine required. See [Permission Conditions](/core-concepts/permission-conditions) for full syntax reference.
 
 ## Custom Resources
 
@@ -95,6 +94,7 @@ This is the primary extension point for integrating Grant's permission system wi
 
 **Related:**
 
+- [Permission Conditions](/core-concepts/permission-conditions) — Full condition syntax reference
 - [RBAC System](/architecture/rbac) — Roles, groups, and permission evaluation
 - [Data Model](/architecture/data-model) — Entity relationships
 - [API Keys](/core-concepts/api-keys) — API key resource actions

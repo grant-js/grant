@@ -270,7 +270,7 @@ The `grant()` middleware extracts the token from the `Authorization` header, sen
 
 ## Next Steps
 
-- Add [resource resolvers](/integration/server-sdk#resource-resolvers) for condition-based permissions on update/delete
+- Add [resource resolvers](/integration/server-sdk#resource-resolvers) for condition-based permissions on update/delete. See [Permission Conditions](/core-concepts/permission-conditions) for condition syntax
 - Protect React components with the [Client SDK](/integration/client-sdk) (`GrantGate`, `useGrant`)
 - Explore the full [Server SDK reference](/integration/server-sdk) for Fastify, Next.js, and NestJS integrations
 - Browse the [example apps](https://github.com/logusgraphics/grant/tree/main/packages/%40grantjs/server/examples) for complete implementations

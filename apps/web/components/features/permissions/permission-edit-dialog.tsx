@@ -19,6 +19,7 @@ import { useScopeFromParams } from '@/hooks/common';
 import { usePermissionMutations } from '@/hooks/permissions';
 import { useResources } from '@/hooks/resources';
 import { useTags } from '@/hooks/tags';
+import { getDocsUrl } from '@/lib/constants';
 import { usePermissionsStore } from '@/stores/permissions.store';
 
 import { PermissionEditFormValues, editPermissionSchema } from './permission-types';
@@ -101,14 +102,31 @@ export function PermissionEditDialog() {
       type: 'textarea',
     },
     {
+      name: 'conditionEnabled',
+      label: 'form.showCondition',
+      type: 'collapsible-group',
+      contentField: 'condition',
+    },
+    {
       name: 'condition',
       label: 'form.condition',
       placeholder: 'form.condition',
       info: 'form.conditionInfo',
+      infoLink: {
+        href: `${getDocsUrl()}/core-concepts/permission-conditions`,
+        label: 'form.conditionDocsLink',
+      },
       type: 'json',
+      partOfCollapsible: 'conditionEnabled',
     },
   ];
 
+  const condition = permissionToEdit?.condition ?? null;
+  const hasCondition =
+    condition &&
+    typeof condition === 'object' &&
+    !Array.isArray(condition) &&
+    Object.keys(condition).length > 0;
   const defaultValues: DefaultValues<PermissionEditFormValues> = {
     name: permissionToEdit?.name || '',
     action: permissionToEdit?.action || '',
@@ -116,7 +134,8 @@ export function PermissionEditDialog() {
     resourceId: permissionToEdit?.resourceId || '__none__',
     tagIds: permissionToEdit?.tags?.map((tag: Tag) => tag.id) || [],
     primaryTagId: permissionToEdit?.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
-    condition: permissionToEdit?.condition || {},
+    conditionEnabled: !!hasCondition,
+    condition: condition || {},
   };
 
   const relationships: DialogRelationship[] = [
@@ -140,17 +159,35 @@ export function PermissionEditDialog() {
     },
   ];
 
-  const mapPermissionToFormValues = (permission: Permission): PermissionEditFormValues => ({
-    name: permission.name,
-    action: permission.action || '',
-    description: permission.description || '',
-    resourceId: permission.resourceId || '__none__',
-    tagIds: permission.tags?.map((tag: Tag) => tag.id),
-    primaryTagId: permission.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
-    condition: permission.condition || {},
-  });
+  const mapPermissionToFormValues = (permission: Permission): PermissionEditFormValues => {
+    const condition = permission.condition ?? null;
+    const hasCondition =
+      condition &&
+      typeof condition === 'object' &&
+      !Array.isArray(condition) &&
+      Object.keys(condition).length > 0;
+    return {
+      name: permission.name,
+      action: permission.action || '',
+      description: permission.description || '',
+      resourceId: permission.resourceId || '__none__',
+      tagIds: permission.tags?.map((tag: Tag) => tag.id),
+      primaryTagId: permission.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
+      conditionEnabled: !!hasCondition,
+      condition: condition || {},
+    };
+  };
 
   const handleUpdate = async (permissionId: string, values: PermissionEditFormValues) => {
+    const conditionValue =
+      values.conditionEnabled &&
+      values.condition &&
+      typeof values.condition === 'object' &&
+      !Array.isArray(values.condition) &&
+      Object.keys(values.condition).length > 0
+        ? (values.condition as Record<string, unknown>)
+        : null;
+
     await updatePermission(permissionId, {
       scope: scope!,
       name: values.name,
@@ -159,7 +196,7 @@ export function PermissionEditDialog() {
       resourceId: values.resourceId === '__none__' || !values.resourceId ? null : values.resourceId,
       tagIds: values.tagIds,
       primaryTagId: values.primaryTagId,
-      condition: values.condition as Record<string, unknown> | null | undefined,
+      condition: conditionValue,
     });
   };
 

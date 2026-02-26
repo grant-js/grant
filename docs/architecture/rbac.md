@@ -604,7 +604,7 @@ While Grant currently implements a flat role model, the permission mapping above
 
 ### Self-Management Permissions
 
-Certain permissions are scoped to self-management via conditions:
+Certain permissions are scoped to self-management via conditions. See [Permission Conditions](/core-concepts/permission-conditions) for full syntax reference.
 
 - Developers can update their own user profile (`update` action on `user` resource with condition)
 - Users can read their own sessions (`read`, `query` actions on `user-session` resource with condition)
@@ -641,7 +641,7 @@ User → [Role1, Role2, ...] → [Group1, Group2, ...] → [Permission1, Permiss
 **Key Points:**
 
 - The system evaluates **all role-group combinations** for a user, ensuring comprehensive permission checking
-- Conditions are evaluated with execution context (user metadata, resource data) provided at evaluation time
+- Conditions are evaluated with execution context (user metadata, resource data) provided at evaluation time. See [Permission Conditions](/core-concepts/permission-conditions) for full syntax reference
 - Permissions without conditions are granted immediately if matched
 - Permissions with conditions must pass condition evaluation before access is granted
 

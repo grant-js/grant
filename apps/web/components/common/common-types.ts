@@ -29,6 +29,7 @@ export type DialogFieldType =
   | 'textarea'
   | 'date'
   | 'switch'
+  | 'collapsible-group'
   | 'slug'
   | 'actions'
   | 'select'
@@ -63,6 +64,14 @@ export interface DialogField {
   required?: boolean;
   autoSlugifyFrom?: string;
   info?: string;
+  /** Optional external docs link shown in the info popover (e.g. for syntax reference) */
+  infoLink?: { href: string; label?: string };
+  /** When set, this field is only shown when the named field equals the given value (e.g. for toggleable json fields) */
+  showWhen?: { field: string; value: boolean };
+  /** When set, this field is rendered inside the named collapsible-group (not as a standalone field) */
+  partOfCollapsible?: string;
+  /** For type 'collapsible-group': the name of the field to render inside the collapsible content */
+  contentField?: string;
   options?: DialogFieldOption[];
   dependsOn?: string;
   getOptions?: (dependsOnValue: string) => DialogFieldOption[];

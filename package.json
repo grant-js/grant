@@ -33,6 +33,7 @@
     "compliance:report": "./scripts/e2e.sh --report",
     "clean": "turbo clean",
     "type-check": "turbo type-check",
+    "check:palette": "pnpm --filter @grantjs/constants run check:palette",
     "generate": "pnpm --filter @grantjs/schema generate",
     "generate:watch": "pnpm --filter @grantjs/schema generate:watch",
     "db:generate": "pnpm --filter @grantjs/database db:generate",

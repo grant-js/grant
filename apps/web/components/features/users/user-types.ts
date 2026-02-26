@@ -6,6 +6,7 @@ export const createUserSchema = z.object({
   roleIds: z.array(z.string()).optional(),
   tagIds: z.array(z.string()).optional(),
   primaryTagId: z.string().optional(),
+  metadataEnabled: z.boolean().optional(),
   metadata: z.any().optional(),
 });
 
@@ -14,6 +15,7 @@ export const editUserSchema = z.object({
   roleIds: z.array(z.string()).optional(),
   tagIds: z.array(z.string()).optional(),
   primaryTagId: z.string().optional(),
+  metadataEnabled: z.boolean().optional(),
   metadata: z.any().optional(),
 });
 

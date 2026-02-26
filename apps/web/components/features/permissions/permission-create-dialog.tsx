@@ -19,6 +19,7 @@ import { useScopeFromParams } from '@/hooks/common';
 import { usePermissionMutations } from '@/hooks/permissions';
 import { useResources } from '@/hooks/resources';
 import { useTags } from '@/hooks/tags';
+import { getDocsUrl } from '@/lib/constants';
 import { usePermissionsStore } from '@/stores/permissions.store';
 
 import { PermissionCreateFormValues, createPermissionSchema } from './permission-types';
@@ -94,11 +95,22 @@ export function PermissionCreateDialog() {
       type: 'textarea',
     },
     {
+      name: 'conditionEnabled',
+      label: 'form.showCondition',
+      type: 'collapsible-group',
+      contentField: 'condition',
+    },
+    {
       name: 'condition',
       label: 'form.condition',
       placeholder: 'form.condition',
       info: 'form.conditionInfo',
+      infoLink: {
+        href: `${getDocsUrl()}/core-concepts/permission-conditions`,
+        label: 'form.conditionDocsLink',
+      },
       type: 'json',
+      partOfCollapsible: 'conditionEnabled',
     },
   ];
 
@@ -109,6 +121,7 @@ export function PermissionCreateDialog() {
     resourceId: '__none__',
     tagIds: [],
     primaryTagId: '',
+    conditionEnabled: false,
     condition: {},
   };
 
@@ -134,7 +147,14 @@ export function PermissionCreateDialog() {
   ];
 
   const handleCreate = async (values: PermissionCreateFormValues) => {
-    const conditionValue = values.condition as Record<string, unknown> | null | undefined;
+    const conditionValue =
+      values.conditionEnabled &&
+      values.condition &&
+      typeof values.condition === 'object' &&
+      !Array.isArray(values.condition) &&
+      Object.keys(values.condition).length > 0
+        ? (values.condition as Record<string, unknown>)
+        : null;
 
     await createPermission({
       scope: scope!,

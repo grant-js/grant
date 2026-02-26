@@ -49,7 +49,10 @@
     "navigation": {
       "home": "Startseite",
       "dashboard": "Dashboard",
-      "toggleMenu": "Navigationstabelle umschalten"
+      "toggleMenu": "Navigationstabelle umschalten",
+      "docs": "Docs",
+      "apiDocs": "API-Referenz",
+      "graphqlPlayground": "GQL Sandbox"
     },
     "theme": {
       "label": "Design"
@@ -461,8 +464,10 @@
       "roles": "Rollen",
       "tags": "Tags",
       "metadata": "Metadaten",
+      "showMetadata": "Metadaten anzeigen",
       "primaryTag": "Haupt-Tag",
       "metadataInfo": "Optionale Metadaten für den Benutzer. Dies kann verwendet werden, um in Berechtigungsbedingungen zu übereinstimmen.",
+      "metadataDocsLink": "Vollständige Syntaxreferenz",
       "validation": {
         "rolesRequired": "Benutzer muss mindestens eine Rolle haben"
       },
@@ -757,7 +762,9 @@
       "groups": "Gruppen",
       "tags": "Tags",
       "metadata": "Metadaten",
+      "showMetadata": "Metadaten anzeigen",
       "metadataInfo": "Optionale Metadaten für die Rolle. Dies kann verwendet werden, um in Berechtigungsbedingungen zu übereinstimmen.",
+      "metadataDocsLink": "Vollständige Syntaxreferenz",
       "primaryTag": "Haupt-Tag",
       "groupsLoading": "Gruppen werden geladen...",
       "noGroupsAvailable": "Keine Gruppen verfügbar",
@@ -1041,7 +1048,9 @@
       "permissions": "Berechtigungen",
       "tags": "Tags",
       "metadata": "Metadaten",
+      "showMetadata": "Metadaten anzeigen",
       "metadataInfo": "Optionale Metadaten für die Gruppe. Dies kann verwendet werden, um in Berechtigungsbedingungen zu übereinstimmen.",
+      "metadataDocsLink": "Vollständige Syntaxreferenz",
       "primaryTag": "Haupt-Tag",
       "permissionsLoading": "Berechtigungen werden geladen...",
       "noPermissionsAvailable": "Keine Berechtigungen verfügbar",
@@ -1334,7 +1343,9 @@
       "noOptionsAvailable": "Keine Optionen verfügbar",
       "tags": "Tags",
       "condition": "Bedingung",
+      "showCondition": "Bedingung anzeigen",
       "conditionInfo": "Optional benutzerdefinierte Bedingung für die Berechtigung. Dies kann verwendet werden, um Metadaten von Benutzern, Rollen oder Gruppen zu übereinstimmen.",
+      "conditionDocsLink": "Vollständige Syntaxreferenz",
       "primaryTag": "Haupt-Tag",
       "tagsLoading": "Tags werden geladen...",
       "noTagsAvailable": "Keine Tags verfügbar",
@@ -1684,7 +1695,13 @@
     },
     "deleteDialog": {
       "title": "Organisation löschen",
-      "description": "Sind Sie sicher, dass Sie {name} löschen möchten?",
+      "description": "Sind Sie sicher, dass Sie {name} löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+      "warning": "Bitte bestätigen Sie die Organisations-ID, um fortzufahren.",
+      "orgIdLabel": "Organisations-ID",
+      "orgIdHint": "Kopieren Sie die Organisations-ID mit der Schaltfläche oben.",
+      "confirmOrgIdLabel": "Organisations-ID bestätigen",
+      "confirmOrgIdPlaceholder": "Organisations-ID hier einfügen",
+      "confirmOrgIdHint": "Geben Sie die Organisations-ID ein, um die Löschung zu bestätigen. Dies verhindert versehentliche Löschungen.",
       "cancel": "Abbrechen",
       "confirm": "Löschen",
       "deleting": "Wird gelöscht..."
@@ -1795,7 +1812,13 @@
     },
     "deleteDialog": {
       "title": "Projekt löschen",
-      "description": "Sind Sie sicher, dass Sie {name} löschen möchten?",
+      "description": "Sind Sie sicher, dass Sie {name} löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+      "warning": "Bitte bestätigen Sie die Projekt-ID, um fortzufahren.",
+      "projectIdLabel": "Projekt-ID",
+      "projectIdHint": "Kopieren Sie die Projekt-ID mit der Schaltfläche oben.",
+      "confirmProjectIdLabel": "Projekt-ID bestätigen",
+      "confirmProjectIdPlaceholder": "Projekt-ID hier einfügen",
+      "confirmProjectIdHint": "Geben Sie die Projekt-ID ein, um die Löschung zu bestätigen. Dies verhindert versehentliche Löschungen.",
       "cancel": "Abbrechen",
       "confirm": "Löschen",
       "deleting": "Wird gelöscht..."
@@ -1902,7 +1925,13 @@
       },
       "deleteDialog": {
         "title": "Projekt löschen",
-        "description": "Sind Sie sicher, dass Sie {name} löschen möchten?",
+        "description": "Sind Sie sicher, dass Sie {name} löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+        "warning": "Bitte bestätigen Sie die Projekt-ID, um fortzufahren.",
+        "projectIdLabel": "Projekt-ID",
+        "projectIdHint": "Kopieren Sie die Projekt-ID mit der Schaltfläche oben.",
+        "confirmProjectIdLabel": "Projekt-ID bestätigen",
+        "confirmProjectIdPlaceholder": "Projekt-ID hier einfügen",
+        "confirmProjectIdHint": "Geben Sie die Projekt-ID ein, um die Löschung zu bestätigen. Dies verhindert versehentliche Löschungen.",
         "cancel": "Abbrechen",
         "confirm": "Löschen",
         "deleting": "Wird gelöscht..."

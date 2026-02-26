@@ -89,6 +89,7 @@ export default withMermaid({
           text: 'Core Concepts',
           items: [
             { text: 'Resources', link: '/core-concepts/resources' },
+            { text: 'Permission Conditions', link: '/core-concepts/permission-conditions' },
             { text: 'API Keys', link: '/core-concepts/api-keys' },
             {
               text: 'Organization Members & Invitations',

@@ -22,6 +22,7 @@ import { useScopeFromParams } from '@/hooks/common';
 import { useGroupMutations } from '@/hooks/groups';
 import { usePermissions } from '@/hooks/permissions';
 import { useTags } from '@/hooks/tags';
+import { getDocsUrl } from '@/lib/constants';
 import { useGroupsStore } from '@/stores/groups.store';
 
 import { GroupCreateFormValues, createGroupSchema } from './group-types';
@@ -57,11 +58,22 @@ export function GroupCreateDialog() {
       type: 'textarea',
     },
     {
+      name: 'metadataEnabled',
+      label: 'form.showMetadata',
+      type: 'collapsible-group',
+      contentField: 'metadata',
+    },
+    {
       name: 'metadata',
       label: 'form.metadata',
       placeholder: 'form.metadata',
       type: 'json',
       info: 'form.metadataInfo',
+      infoLink: {
+        href: `${getDocsUrl()}/core-concepts/permission-conditions#field-paths`,
+        label: 'form.metadataDocsLink',
+      },
+      partOfCollapsible: 'metadataEnabled',
     },
   ];
 
@@ -71,6 +83,7 @@ export function GroupCreateDialog() {
     permissionIds: [],
     tagIds: [],
     primaryTagId: '',
+    metadataEnabled: false,
     metadata: {},
   };
 
@@ -117,10 +130,10 @@ export function GroupCreateDialog() {
       tagIds: values.tagIds,
       primaryTagId: values.primaryTagId,
       metadata:
+        values.metadataEnabled &&
         values.metadata &&
         typeof values.metadata === 'object' &&
-        !Array.isArray(values.metadata) &&
-        Object.keys(values.metadata).length > 0
+        !Array.isArray(values.metadata)
           ? values.metadata
           : undefined,
     });

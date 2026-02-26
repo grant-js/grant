@@ -21,6 +21,7 @@ import { useScopeFromParams } from '@/hooks/common';
 import { useGroups } from '@/hooks/groups';
 import { useRoleMutations } from '@/hooks/roles';
 import { useTags } from '@/hooks/tags';
+import { getDocsUrl } from '@/lib/constants';
 import { useRolesStore } from '@/stores/roles.store';
 
 import { RoleEditFormValues, editRoleSchema } from './role-types';
@@ -62,11 +63,22 @@ export function RoleEditDialog() {
       type: 'textarea',
     },
     {
+      name: 'metadataEnabled',
+      label: 'form.showMetadata',
+      type: 'collapsible-group',
+      contentField: 'metadata',
+    },
+    {
       name: 'metadata',
       label: 'form.metadata',
       placeholder: 'form.metadata',
       type: 'json',
       info: 'form.metadataInfo',
+      infoLink: {
+        href: `${getDocsUrl()}/core-concepts/permission-conditions#field-paths`,
+        label: 'form.metadataDocsLink',
+      },
+      partOfCollapsible: 'metadataEnabled',
     },
   ];
 
@@ -104,14 +116,23 @@ export function RoleEditDialog() {
     },
   ];
 
-  const mapRoleToFormValues = (role: Role): RoleEditFormValues => ({
-    name: role.name,
-    description: role.description || '',
-    groupIds: role.groups?.map((group: Group) => group.id),
-    tagIds: role.tags?.map((tag: Tag) => tag.id),
-    primaryTagId: role.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
-    metadata: role.metadata || {},
-  });
+  const mapRoleToFormValues = (role: Role): RoleEditFormValues => {
+    const metadata = role.metadata ?? {};
+    const hasMetadata =
+      metadata &&
+      typeof metadata === 'object' &&
+      !Array.isArray(metadata) &&
+      Object.keys(metadata).length > 0;
+    return {
+      name: role.name,
+      description: role.description || '',
+      groupIds: role.groups?.map((group: Group) => group.id),
+      tagIds: role.tags?.map((tag: Tag) => tag.id),
+      primaryTagId: role.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
+      metadataEnabled: !!hasMetadata,
+      metadata: metadata || {},
+    };
+  };
 
   const handleUpdate = async (roleId: string, values: RoleEditFormValues) => {
     await updateRole(roleId, {
@@ -122,21 +143,29 @@ export function RoleEditDialog() {
       tagIds: values.tagIds,
       primaryTagId: values.primaryTagId,
       metadata:
+        values.metadataEnabled &&
         values.metadata &&
         typeof values.metadata === 'object' &&
-        !Array.isArray(values.metadata) &&
-        Object.keys(values.metadata).length > 0
+        !Array.isArray(values.metadata)
           ? values.metadata
           : undefined,
     });
   };
 
+  const metadata = roleToEdit?.metadata ?? {};
+  const hasMetadata =
+    metadata &&
+    typeof metadata === 'object' &&
+    !Array.isArray(metadata) &&
+    Object.keys(metadata).length > 0;
   const defaultValues: DefaultValues<RoleEditFormValues> = {
     name: roleToEdit?.name || '',
     description: roleToEdit?.description || '',
     groupIds: roleToEdit?.groups?.map((group: Group) => group.id) || [],
     tagIds: roleToEdit?.tags?.map((tag: Tag) => tag.id) || [],
     primaryTagId: roleToEdit?.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
+    metadataEnabled: !!hasMetadata,
+    metadata: metadata || {},
   };
 
   const handleOpenChange = (open: boolean) => {

@@ -49,7 +49,10 @@
     "navigation": {
       "home": "Home",
       "dashboard": "Dashboard",
-      "toggleMenu": "Toggle navigation menu"
+      "toggleMenu": "Toggle navigation menu",
+      "docs": "Docs",
+      "apiDocs": "API Reference",
+      "graphqlPlayground": "GQL Sandbox"
     },
     "theme": {
       "label": "Theme"
@@ -461,8 +464,10 @@
       "roles": "Roles",
       "tags": "Tags",
       "metadata": "Metadata",
+      "showMetadata": "Show metadata",
       "primaryTag": "Primary Tag",
       "metadataInfo": "Optional metadata for the user. This can be used to match in permission conditions.",
+      "metadataDocsLink": "Full syntax reference",
       "validation": {
         "rolesRequired": "User must have at least one role"
       },
@@ -757,7 +762,9 @@
       "groups": "Groups",
       "tags": "Tags",
       "metadata": "Metadata",
+      "showMetadata": "Show metadata",
       "metadataInfo": "Optional metadata for the role. This can be used to match in permission conditions.",
+      "metadataDocsLink": "Full syntax reference",
       "primaryTag": "Primary Tag",
       "groupsLoading": "Loading groups...",
       "noGroupsAvailable": "No groups available",
@@ -1042,7 +1049,9 @@
       "tags": "Tags",
       "primaryTag": "Primary Tag",
       "metadata": "Metadata",
+      "showMetadata": "Show metadata",
       "metadataInfo": "Optional metadata for the group. This can be used to match in permission conditions.",
+      "metadataDocsLink": "Full syntax reference",
       "permissionsLoading": "Loading permissions...",
       "noPermissionsAvailable": "No permissions available",
       "tagsLoading": "Loading tags...",
@@ -1334,7 +1343,9 @@
       "noOptionsAvailable": "No options available",
       "tags": "Tags",
       "condition": "Condition",
+      "showCondition": "Show condition",
       "conditionInfo": "Optional condition for the permission. This can be used to match user, role or group metadata.",
+      "conditionDocsLink": "Full syntax reference",
       "primaryTag": "Primary Tag",
       "tagsLoading": "Loading tags...",
       "noTagsAvailable": "No tags available",
@@ -1684,7 +1695,13 @@
     },
     "deleteDialog": {
       "title": "Delete Organization",
-      "description": "Are you sure you want to delete {name}?",
+      "description": "Are you sure you want to delete {name}? This action cannot be undone.",
+      "warning": "Please confirm the organization ID to proceed with deletion.",
+      "orgIdLabel": "Organization ID",
+      "orgIdHint": "Copy the organization ID using the button above.",
+      "confirmOrgIdLabel": "Confirm Organization ID",
+      "confirmOrgIdPlaceholder": "Paste the organization ID here",
+      "confirmOrgIdHint": "Enter the organization ID above to confirm deletion. This prevents accidental deletions.",
       "cancel": "Cancel",
       "confirm": "Delete",
       "deleting": "Deleting..."
@@ -1795,7 +1812,13 @@
     },
     "deleteDialog": {
       "title": "Delete Project",
-      "description": "Are you sure you want to delete {name}?",
+      "description": "Are you sure you want to delete {name}? This action cannot be undone.",
+      "warning": "Please confirm the project ID to proceed with deletion.",
+      "projectIdLabel": "Project ID",
+      "projectIdHint": "Copy the project ID using the button above.",
+      "confirmProjectIdLabel": "Confirm Project ID",
+      "confirmProjectIdPlaceholder": "Paste the project ID here",
+      "confirmProjectIdHint": "Enter the project ID above to confirm deletion. This prevents accidental deletions.",
       "cancel": "Cancel",
       "confirm": "Delete",
       "deleting": "Deleting..."
@@ -1902,7 +1925,13 @@
       },
       "deleteDialog": {
         "title": "Delete Project",
-        "description": "Are you sure you want to delete {name}?",
+        "description": "Are you sure you want to delete {name}? This action cannot be undone.",
+        "warning": "Please confirm the project ID to proceed with deletion.",
+        "projectIdLabel": "Project ID",
+        "projectIdHint": "Copy the project ID using the button above.",
+        "confirmProjectIdLabel": "Confirm Project ID",
+        "confirmProjectIdPlaceholder": "Paste the project ID here",
+        "confirmProjectIdHint": "Enter the project ID above to confirm deletion. This prevents accidental deletions.",
         "cancel": "Cancel",
         "confirm": "Delete",
         "deleting": "Deleting..."

@@ -24,7 +24,7 @@ import { TagCreateFormValues, createTagSchema } from './tag-types';
 export function TagCreateDialog() {
   const t = useTranslations('tags');
   const scope = useScopeFromParams();
-  const { tags, loading: tagsLoading } = useTags({ scope: scope!, limit: -1 });
+  const { loading: tagsLoading } = useTags({ scope: scope!, limit: -1 });
   const { handleCreateTag } = useTagMutations();
   const isCreateDialogOpen = useTagsStore((state) => state.isCreateDialogOpen);
   const setCreateDialogOpen = useTagsStore((state) => state.setCreateDialogOpen);
@@ -38,14 +38,11 @@ export function TagCreateDialog() {
     return null;
   }
 
-  const usedColors = tags.map((tag) => tag.color);
   const availableColors = getAvailableTagColors();
-
   const colorItems = availableColors.map((color) => ({
     id: color,
     name: color,
     color: color,
-    disabled: usedColors.includes(color),
   }));
 
   const fields: DialogField[] = [

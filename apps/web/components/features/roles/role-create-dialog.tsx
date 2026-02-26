@@ -22,6 +22,7 @@ import { useScopeFromParams } from '@/hooks/common';
 import { useGroups } from '@/hooks/groups';
 import { useRoleMutations } from '@/hooks/roles';
 import { useTags } from '@/hooks/tags';
+import { getDocsUrl } from '@/lib/constants';
 import { useRolesStore } from '@/stores/roles.store';
 
 import { RoleCreateFormValues, createRoleSchema } from './role-types';
@@ -57,11 +58,22 @@ export function RoleCreateDialog() {
       type: 'textarea',
     },
     {
+      name: 'metadataEnabled',
+      label: 'form.showMetadata',
+      type: 'collapsible-group',
+      contentField: 'metadata',
+    },
+    {
       name: 'metadata',
       label: 'form.metadata',
       placeholder: 'form.metadata',
       type: 'json',
       info: 'form.metadataInfo',
+      infoLink: {
+        href: `${getDocsUrl()}/core-concepts/permission-conditions#field-paths`,
+        label: 'form.metadataDocsLink',
+      },
+      partOfCollapsible: 'metadataEnabled',
     },
   ];
 
@@ -71,6 +83,7 @@ export function RoleCreateDialog() {
     groupIds: [],
     tagIds: [],
     primaryTagId: '',
+    metadataEnabled: false,
     metadata: {},
   };
 
@@ -117,10 +130,10 @@ export function RoleCreateDialog() {
       tagIds: values.tagIds,
       primaryTagId: values.primaryTagId,
       metadata:
+        values.metadataEnabled &&
         values.metadata &&
         typeof values.metadata === 'object' &&
-        !Array.isArray(values.metadata) &&
-        Object.keys(values.metadata).length > 0
+        !Array.isArray(values.metadata)
           ? values.metadata
           : undefined,
     });

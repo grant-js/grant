@@ -2,13 +2,14 @@
 
 import { useRef, useState } from 'react';
 
-import { Globe, Menu, Moon, Sun, X } from 'lucide-react';
+import { BookOpen, FileJson, Globe, Menu, Moon, Network, Sun, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Logo } from '@/components/common';
 import { LanguageSwitcher, ThemeToggle } from '@/components/features/settings';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
+import { getApiDocsUrl, getDocsUrl, getGraphqlPlaygroundUrl } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -77,7 +78,34 @@ export function Header() {
 
         {/* Desktop Navigation and Controls */}
         <div className="hidden md:flex md:items-center md:space-x-3">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-4">
+            <a
+              href={getDocsUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <BookOpen className="h-[1rem] w-[1rem] shrink-0" />
+              {t('navigation.docs')}
+            </a>
+            <a
+              href={getApiDocsUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <FileJson className="h-[1rem] w-[1rem] shrink-0" />
+              {t('navigation.apiDocs')}
+            </a>
+            <a
+              href={getGraphqlPlaygroundUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Network className="h-[1rem] w-[1rem] shrink-0" />
+              {t('navigation.graphqlPlayground')}
+            </a>
             <ThemeToggle ref={themeToggleRef} trigger={desktopThemeTrigger} />
             <LanguageSwitcher ref={languageSwitcherRef} trigger={desktopLanguageTrigger} />
           </div>
@@ -96,6 +124,35 @@ export function Header() {
             <nav className="flex flex-col space-y-2">
               {/* Dashboard link removed - breadcrumb provides better navigation */}
             </nav>
+            <div className="flex flex-col space-y-2">
+              <a
+                href={getDocsUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 py-2 px-2 -mx-2 rounded-md hover:bg-accent text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <BookOpen className="h-[1rem] w-[1rem] shrink-0" />
+                {t('navigation.docs')}
+              </a>
+              <a
+                href={getApiDocsUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 py-2 px-2 -mx-2 rounded-md hover:bg-accent text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <FileJson className="h-[1rem] w-[1rem] shrink-0" />
+                {t('navigation.apiDocs')}
+              </a>
+              <a
+                href={getGraphqlPlaygroundUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 py-2 px-2 -mx-2 rounded-md hover:bg-accent text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Network className="h-[1rem] w-[1rem] shrink-0" />
+                {t('navigation.graphqlPlayground')}
+              </a>
+            </div>
             <div className="h-px bg-border" />
             <div className="flex flex-col space-y-2">
               <ThemeToggle ref={themeToggleRef} trigger={mobileThemeTrigger} />

@@ -22,6 +22,7 @@ import { useScopeFromParams } from '@/hooks/common';
 import { useRoles } from '@/hooks/roles';
 import { useTags } from '@/hooks/tags';
 import { useUserMutations } from '@/hooks/users';
+import { getDocsUrl } from '@/lib/constants';
 import { useUsersStore } from '@/stores/users.store';
 
 import { UserCreateFormValues, createUserSchema } from './user-types';
@@ -51,11 +52,22 @@ export function UserCreateDialog() {
       type: 'text',
     },
     {
+      name: 'metadataEnabled',
+      label: 'form.showMetadata',
+      type: 'collapsible-group',
+      contentField: 'metadata',
+    },
+    {
       name: 'metadata',
       label: 'form.metadata',
       placeholder: 'form.metadata',
       type: 'json',
       info: 'form.metadataInfo',
+      infoLink: {
+        href: `${getDocsUrl()}/core-concepts/permission-conditions#field-paths`,
+        label: 'form.metadataDocsLink',
+      },
+      partOfCollapsible: 'metadataEnabled',
     },
   ];
 
@@ -64,6 +76,7 @@ export function UserCreateDialog() {
     roleIds: [],
     tagIds: [],
     primaryTagId: '',
+    metadataEnabled: false,
     metadata: {},
   };
 
@@ -109,10 +122,10 @@ export function UserCreateDialog() {
       tagIds: values.tagIds,
       primaryTagId: values.primaryTagId,
       metadata:
+        values.metadataEnabled &&
         values.metadata &&
         typeof values.metadata === 'object' &&
-        !Array.isArray(values.metadata) &&
-        Object.keys(values.metadata).length > 0
+        !Array.isArray(values.metadata)
           ? values.metadata
           : undefined,
     });

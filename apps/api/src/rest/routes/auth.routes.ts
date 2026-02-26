@@ -183,20 +183,36 @@ export function createAuthRoutes(context: RequestContext) {
     async (req: TypedRequest<{ query: typeof initiateGithubAuthQuerySchema }>, res: Response) => {
       const { redirect, accountType, action } = req.query;
 
-      // For connect flow, require authenticated user
+      // For connect flow, require authenticated user (from access token or refresh token)
       if (action === UserAuthenticationEmailProviderAction.Connect) {
-        if (!context.user) {
+        let userId = context.user?.userId;
+
+        if (!userId) {
+          const refreshToken = getRefreshTokenFromCookie(req);
+          if (refreshToken) {
+            try {
+              const result = await context.handlers.auth.refreshSession(
+                refreshToken,
+                context.userAgent,
+                context.ipAddress
+              );
+              setRefreshTokenCookie(res, result.refreshToken);
+              const claims = await context.grant.verifyToken(result.accessToken);
+              userId = claims.sub;
+            } catch {
+              // Invalid or expired refresh token
+            }
+          }
+        }
+
+        if (!userId) {
           const frontendUrl = config.security.frontendUrl;
           const locale = context.locale || 'en';
           res.redirect(`${frontendUrl}/${locale}/auth/login?error=authenticationRequired`);
           return;
         }
 
-        const authorizationUrl = await handleGithubConnectFlow(
-          context,
-          redirect,
-          context.user.userId
-        );
+        const authorizationUrl = await handleGithubConnectFlow(context, redirect, userId);
         res.redirect(authorizationUrl);
         return;
       }

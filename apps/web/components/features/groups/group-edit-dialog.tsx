@@ -21,6 +21,7 @@ import { useScopeFromParams } from '@/hooks/common';
 import { useGroupMutations } from '@/hooks/groups';
 import { usePermissions } from '@/hooks/permissions';
 import { useTags } from '@/hooks/tags';
+import { getDocsUrl } from '@/lib/constants';
 import { useGroupsStore } from '@/stores/groups.store';
 
 import { GroupEditFormValues, editGroupSchema } from './group-types';
@@ -63,21 +64,39 @@ export function GroupEditDialog() {
       type: 'textarea',
     },
     {
+      name: 'metadataEnabled',
+      label: 'form.showMetadata',
+      type: 'collapsible-group',
+      contentField: 'metadata',
+    },
+    {
       name: 'metadata',
       label: 'form.metadata',
       placeholder: 'form.metadata',
       type: 'json',
       info: 'form.metadataInfo',
+      infoLink: {
+        href: `${getDocsUrl()}/core-concepts/permission-conditions#field-paths`,
+        label: 'form.metadataDocsLink',
+      },
+      partOfCollapsible: 'metadataEnabled',
     },
   ];
 
+  const metadata = groupToEdit?.metadata ?? {};
+  const hasMetadata =
+    metadata &&
+    typeof metadata === 'object' &&
+    !Array.isArray(metadata) &&
+    Object.keys(metadata).length > 0;
   const defaultValues: DefaultValues<GroupEditFormValues> = {
     name: groupToEdit?.name || '',
     description: groupToEdit?.description || '',
     permissionIds: [],
     tagIds: [],
     primaryTagId: '',
-    metadata: groupToEdit?.metadata || {},
+    metadataEnabled: !!hasMetadata,
+    metadata: metadata || {},
   };
 
   const relationships: DialogRelationship[] = [
@@ -114,14 +133,23 @@ export function GroupEditDialog() {
     },
   ];
 
-  const mapGroupToFormValues = (group: Group): GroupEditFormValues => ({
-    name: group.name,
-    description: group.description || '',
-    permissionIds: group.permissions?.map((permission: Permission) => permission.id),
-    tagIds: group.tags?.map((tag: Tag) => tag.id),
-    primaryTagId: group.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
-    metadata: group.metadata || {},
-  });
+  const mapGroupToFormValues = (group: Group): GroupEditFormValues => {
+    const metadata = group.metadata ?? {};
+    const hasMetadata =
+      metadata &&
+      typeof metadata === 'object' &&
+      !Array.isArray(metadata) &&
+      Object.keys(metadata).length > 0;
+    return {
+      name: group.name,
+      description: group.description || '',
+      permissionIds: group.permissions?.map((permission: Permission) => permission.id),
+      tagIds: group.tags?.map((tag: Tag) => tag.id),
+      primaryTagId: group.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
+      metadataEnabled: !!hasMetadata,
+      metadata: metadata || {},
+    };
+  };
 
   const handleUpdate = async (groupId: string, values: GroupEditFormValues) => {
     await updateGroup({
@@ -134,10 +162,10 @@ export function GroupEditDialog() {
         tagIds: values.tagIds,
         primaryTagId: values.primaryTagId,
         metadata:
+          values.metadataEnabled &&
           values.metadata &&
           typeof values.metadata === 'object' &&
-          !Array.isArray(values.metadata) &&
-          Object.keys(values.metadata).length > 0
+          !Array.isArray(values.metadata)
             ? values.metadata
             : undefined,
       },
