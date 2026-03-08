@@ -55,11 +55,30 @@ export function createProjectAppsRouter(context: RequestContext): Router {
       resourceResolver: 'projectApp',
     }),
     async (req: TypedRequest<{ body: typeof createProjectAppRequestSchema }>, res: Response) => {
-      const { scope, name, redirectUris, scopes, enabledProviders, allowSignUp, signUpRoleId, tagIds, primaryTagId } =
-        req.body;
+      const {
+        scope,
+        name,
+        redirectUris,
+        scopes,
+        enabledProviders,
+        allowSignUp,
+        signUpRoleId,
+        tagIds,
+        primaryTagId,
+      } = req.body;
 
       const result = await context.handlers.projectApps.createProjectApp({
-        input: { scope, name, redirectUris, scopes, enabledProviders, allowSignUp, signUpRoleId, tagIds, primaryTagId },
+        input: {
+          scope,
+          name,
+          redirectUris,
+          scopes,
+          enabledProviders,
+          allowSignUp,
+          signUpRoleId,
+          tagIds,
+          primaryTagId,
+        },
       });
 
       sendSuccessResponse(
@@ -96,12 +115,31 @@ export function createProjectAppsRouter(context: RequestContext): Router {
       res: Response
     ) => {
       const { id } = req.params;
-      const { scope, name, redirectUris, scopes, enabledProviders, allowSignUp, signUpRoleId, tagIds, primaryTagId } =
-        req.body;
+      const {
+        scope,
+        name,
+        redirectUris,
+        scopes,
+        enabledProviders,
+        allowSignUp,
+        signUpRoleId,
+        tagIds,
+        primaryTagId,
+      } = req.body;
 
       const updated = await context.handlers.projectApps.updateProjectApp({
         id,
-        input: { scope, name, redirectUris, scopes, enabledProviders, allowSignUp, signUpRoleId, tagIds, primaryTagId },
+        input: {
+          scope,
+          name,
+          redirectUris,
+          scopes,
+          enabledProviders,
+          allowSignUp,
+          signUpRoleId,
+          tagIds,
+          primaryTagId,
+        },
       });
 
       sendSuccessResponse(res, updated);

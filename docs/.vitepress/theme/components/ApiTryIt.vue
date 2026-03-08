@@ -85,7 +85,7 @@ const props = defineProps<{
   captures?: Record<string, string>;
 }>();
 
-const { state, setVariable, resolveTemplate, resolveDeep, getByPath, findUnresolved, tryRefresh } = useApiState();
+const { state, setVariable, setAccounts, resolveTemplate, resolveDeep, getByPath, findUnresolved, tryRefresh } = useApiState();
 
 const bodyOpen = ref(true);
 const resOpen = ref(true);
@@ -186,9 +186,14 @@ async function run() {
         for (const [varName, jsonPath] of Object.entries(props.captures)) {
           const val = getByPath(json, jsonPath);
           if (val !== undefined && val !== null) {
-            const str = String(val);
-            setVariable(varName, str);
-            captured.value.push({ name: varName, value: str });
+            if (varName === '$accounts' && Array.isArray(val)) {
+              setAccounts(val);
+              captured.value.push({ name: 'accounts', value: `${val.length} account(s)` });
+            } else {
+              const str = String(val);
+              setVariable(varName, str);
+              captured.value.push({ name: varName, value: str });
+            }
           }
         }
       }

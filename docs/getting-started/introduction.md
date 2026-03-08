@@ -4,70 +4,59 @@ Grant is an open-source, multi-tenant RBAC (Role-Based Access Control) platform 
 
 ## Key Features
 
-### Multi-Tenant
+Grant gives teams secure access control without slowing delivery.
 
-- **Account-based multi-tenancy** with organization and project isolation
-- **Flexible permission system** with action-based scoping
-- **Role and group management** with inheritance and delegation
-- **Real-time permission updates** across all connected systems
-
-### Modern Architecture
-
-- **Monorepo structure** with shared packages and independent apps
-- **GraphQL API** with type-safe operations and subscriptions
-- **REST API** with Swagger and Open API integration
-- **PostgreSQL database** with Drizzle ORM and migrations
-- **Containerized deployment** with Docker
-
-### Developer Experience
-
-- **TypeScript-first** with full type safety
-- **Comprehensive SDK** for Express, Nest, Fastify, and more
-- **Rich documentation** with examples and best practices
-
-### Deployment
-
-- **Self-hosted** -- deploy on your own infrastructure with Docker Compose or AWS CloudFormation
-- **No vendor lock-in** -- MIT licensed, you own your data
+| Feature                  | Instant value                              | What you get                                             |
+| ------------------------ | ------------------------------------------ | -------------------------------------------------------- |
+| **Tenant Isolation**     | Keep customer/org data separated by design | Organization + project scoping across APIs and data      |
+| **Flexible RBAC**        | Ship least-privilege access from day one   | Permissions, roles, and groups with fine-grained control |
+| **Developer Experience** | Enjoy integrating authz into existing apps | Type-safe APIs, SDKs, and practical docs                 |
+| **Self-Hosted Control**  | Own your stack and your data               | Docker-based deployment, open source, no vendor lock-in  |
 
 ## Use Cases
 
-### Internal RBAC
+### <span class="use-case-title"><span class="use-case-icon"><IconFluentColorPersonKey20 /></span><span>Internal RBAC</span></span>
 
-Manage employee access to internal systems, applications, and resources with fine-grained permissions and audit trails.
+Manage employee access to internal tools with least-privilege permissions and full traceability.
 
-### Customer Portals
+### <span class="use-case-title"><span class="use-case-icon"><IconFluentColorPeopleTeam20 /></span><span>Customer Portals</span></span>
 
-Provide secure, role-based access to customer-facing applications with organization and project-level isolation.
+Deliver secure customer-facing access with organization and project isolation by default.
 
-### API Access Control
+### <span class="use-case-title"><span class="use-case-icon"><IconFluentColorCode20 /></span><span>API Access Control</span></span>
 
-Control access to your APIs with rate limiting, permission-based endpoints, and comprehensive audit logging.
+Protect APIs with permission-aware endpoints and auditable authorization decisions.
 
-### Compliance & Auditing
+### <span class="use-case-title"><span class="use-case-icon"><IconFluentColorShieldCheckmark20 /></span><span>Compliance & Auditing</span></span>
 
-Meet compliance requirements with detailed audit logs, permission tracking, and data access monitoring.
+Prove who accessed what and when with structured logs and permission tracking.
 
 ## Why Grant?
 
-### For Developers
+### <span class="use-case-title"><span class="use-case-icon"><IconFluentColorCode20 /></span><span>For Developers</span></span>
 
-- **Type-safe** GraphQL API with generated TypeScript types
-- **Comprehensive SDK** with middleware for popular frameworks
-- **Rich documentation** with examples and best practices
-- **Active development** with regular updates and community contributions
+<ul class="grant-icon-list">
+  <li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Type-safe</strong> GraphQL API with generated TypeScript types</span></li>
+  <li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Comprehensive SDK</strong> with middleware for popular frameworks</span></li>
+  <li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Rich documentation</strong> with examples and best practices</span></li>
+  <li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Active development</strong> with regular updates and community contributions</span></li>
+</ul>
 
-### For Organizations
+### <span class="use-case-title"><span class="use-case-icon"><IconFluentColorBuildingPeople20 /></span><span>For Organizations</span></span>
 
-- **Open source** with transparent development and community support
-- **Self-hosting** option with no vendor lock-in
-- **Scalable architecture** that grows with your needs
-- **Compliance ready** with audit logging and data protection
+<ul class="grant-icon-list">
+  <li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Open source</strong> with transparent development and community support</span></li>
+  <li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Self-hosting</strong> option with no vendor lock-in</span></li>
+  <li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Scalable architecture</strong> that grows with your needs</span></li>
+  <li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Compliance ready</strong> with audit logging and data protection</span></li>
+</ul>
 
-### For DevOps
+### <span class="use-case-title"><span class="use-case-icon"><IconFluentColorCloud20 /></span><span>For DevOps</span></span>
 
-- **Containerized** deployment with Docker and Kubernetes support
-- **Monitoring integration** with comprehensive metrics and logging
+<ul class="grant-icon-list">
+  <li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Containerized</strong> deployment with Docker and Kubernetes support</span></li>
+  <li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Monitoring integration</strong> with comprehensive metrics and logging</span></li>
+</ul>
 
 ## Getting Started
 
@@ -81,8 +70,7 @@ Ready to get started with Grant? Here are your next steps:
 ## Community & Support
 
 - **GitHub** - [Source code and issues](https://github.com/logusgraphics/grant)
-- **Discord** - [Community discussions](https://discord.gg/grant)
-- **Email** - [Support and inquiries](mailto:support@grant.logus.graphics)
+- **Email** - [Support and inquiries](mailto:ale@logus.graphics)
 
 ---
 

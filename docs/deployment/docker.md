@@ -311,8 +311,8 @@ docker exec -it grant-redis redis-cli -a grant_redis_password DEL grant:some-key
    ```
 
 4. **Use external managed services**:
-   - AWS RDS for PostgreSQL
-   - AWS ElastiCache for Redis
+   - Managed PostgreSQL (e.g. from your cloud or database provider)
+   - Managed Redis (e.g. Redis Cloud, Upstash, or provider-hosted)
    - Don't run databases in containers in production
 
 ### Recommended Production Setup
@@ -321,8 +321,8 @@ For production, use managed services instead of Docker Compose:
 
 ```bash
 # apps/api/.env (production)
-DB_URL=postgresql://user:pass@your-rds-instance.amazonaws.com:5432/grant
-REDIS_HOST=your-elasticache.cache.amazonaws.com
+DB_URL=postgresql://user:pass@your-db-host:5432/grant
+REDIS_HOST=your-redis-host
 REDIS_PORT=6379
 REDIS_PASSWORD=your-secure-password
 REDIS_ENABLE_TLS=true
@@ -471,7 +471,7 @@ cd apps/api && pnpm run dev
 - **API Configuration**: `apps/api/src/config/README.md`
 - **API Setup Guide**: `apps/api/CONFIG_MIGRATION.md`
 - **Cache Setup**: `docs/advanced-topics/caching.md`
-- **Installation Guide**: `docs/getting-started/installation.md`
+- **Quick Start Guide**: `docs/getting-started/quick-start.md`
 
 ## Support
 

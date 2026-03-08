@@ -5,7 +5,7 @@ description: Optional analytics integrations (e.g. Umami) in Grant
 
 # Analytics
 
-**Status:** Grant does not implement an analytics event store or dashboards. This page describes how to add analytics via **integrations** (e.g. [Umami](https://umami.is/), or other backends), so your app can send events without Grant owning the storage or UI. Analytics is optional; enable it by configuring a provider.
+This page describes how to add analytics via **integrations** (e.g. [Umami](https://umami.is/), or other backends), so your app can send events without Grant owning the storage or UI. Analytics is optional; enable it by configuring a provider.
 
 ## Overview
 
@@ -15,7 +15,7 @@ Analytics is delivered through **integrations** using the port-and-adapter patte
 - **Integrations:** Noop (default), Umami (self-hosted, privacy-friendly). Additional integrations can be implemented and registered in the factory.
 - **Usage:** Config and adapter are wired in the API app; handlers call `trackEvent` (fire-and-forget, same pattern as telemetry).
 
-```mermaid
+```bmermaid
 flowchart LR
     A[Handlers] --> B[IAnalyticsAdapter]
     B --> C[Noop]

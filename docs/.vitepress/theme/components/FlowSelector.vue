@@ -71,11 +71,12 @@ function truncate(s: string, n: number) {
 function select(flow: 'personal' | 'organization') {
   state.selectedFlow = flow;
 
+  // Only set ACCOUNT_ID when the selected flow has an existing account.
+  // If user selects organization but has no org account, they must create one first (Step 1 widget).
   if (flow === 'personal' && personalAccount.value) {
     setVariable('ACCOUNT_ID', personalAccount.value.id);
-  } else if (flow === 'organization') {
-    const acct = organizationAccount.value ?? personalAccount.value;
-    if (acct) setVariable('ACCOUNT_ID', acct.id);
+  } else if (flow === 'organization' && organizationAccount.value) {
+    setVariable('ACCOUNT_ID', organizationAccount.value.id);
   }
 }
 

@@ -4,6 +4,8 @@ node_modules
 # next.js
 .next
 out
+# Next.js auto-generated (do not format; Next.js controls style)
+next-env.d.ts
 
 # generated files
 graphql/generated/**/*

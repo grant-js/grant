@@ -44,6 +44,21 @@
   --vp-c-brand-2: #1d4ed8;
   --vp-c-brand-3: #1e40af;
   --vp-c-brand-soft: rgba(37, 99, 235, 0.14);
+  /*
+   * Beautiful Mermaid: max width per breakpoint (docs center column ≈ 688px on desktop).
+   * Override on :root, .dark, or any parent (e.g. .page-class .beautiful-mermaid-svg) for per-page or per-diagram control.
+   */
+  --bm-diagram-max-width-sm: 100%;
+  --bm-diagram-max-width-md: 688px;
+  --bm-diagram-max-width-lg: 688px;
+}
+
+/* Per-diagram override: use ```bmermaid diagram-narrow ``` for max-width 450px, centered */
+.beautiful-mermaid.diagram-narrow .beautiful-mermaid-svg {
+  --bm-diagram-max-width-sm: 450px;
+  --bm-diagram-max-width-md: 450px;
+  --bm-diagram-max-width-lg: 450px;
+  margin-inline: auto;
 }
 
 .dark {
@@ -143,6 +158,32 @@
 
 .vp-doc th {
   background-color: var(--vp-c-bg-soft);
+}
+
+/* RBAC permission tables: ensure all cells have right border (including last column) */
+.vp-doc table:has(.rbac-perm-icon) th,
+.vp-doc table:has(.rbac-perm-icon) td {
+  border-right: 1px solid var(--vp-c-divider);
+}
+
+/* RBAC permission mapping tables: center and enlarge check/dismiss icons (keep table layout) */
+.vp-doc td:has(.rbac-perm-icon) {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.vp-doc .rbac-perm-icon {
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 0;
+}
+
+.vp-doc .rbac-perm-icon svg {
+  display: block;
+  width: 1.5em;
+  height: 1.5em;
+  min-width: 22px;
+  min-height: 22px;
 }
 
 /* Alert styling */
@@ -406,7 +447,150 @@
   margin-bottom: 4rem;
 }
 
+/* Homepage feature cards: icon spacing + centered titles */
+.VPHome .VPFeatures .VPFeature {
+  text-align: center;
+}
+
+.VPHome .VPFeatures .VPFeature .icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.2rem;
+  margin: 0.35rem auto 0.95rem;
+}
+
+.VPHome .VPFeatures .VPFeature .title {
+  text-align: center;
+  justify-content: center;
+}
+
+.VPHome .VPFeatures .VPFeature .details {
+  text-align: center;
+}
+
 /* Header anchor positioning */
 .vp-doc h2 .header-anchor {
   top: 15px;
+}
+
+/* Config app screenshots: show light or dark image based on VitePress theme */
+.config-app-screenshots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.config-app-fig {
+  margin: 0;
+  max-width: 100%;
+}
+
+.config-app-fig img {
+  width: 100%;
+  max-width: 720px;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid var(--vp-c-divider);
+}
+
+.config-app-fig figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.9em;
+  color: var(--vp-c-text-2);
+}
+
+/* Light theme: show only light screenshot */
+.config-app-dark {
+  display: none;
+}
+
+.dark .config-app-light {
+  display: none;
+}
+
+.dark .config-app-dark {
+  display: block;
+}
+
+/* Use case heading icons */
+.vp-doc .use-case-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.vp-doc .use-case-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vp-doc .use-case-icon svg {
+  display: block;
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+/* Reusable icon-list style (opt-in) */
+.vp-doc ul.grant-icon-list {
+  list-style: none;
+  padding-left: 0;
+  margin-left: 1rem;
+}
+
+.vp-doc ul.grant-icon-list > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin: 0.42rem 0;
+}
+
+.vp-doc .grant-icon-list-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.08rem;
+  height: 1.08rem;
+  flex-shrink: 0;
+  margin-top: 0.24rem;
+  color: var(--vp-c-text-2);
+}
+
+.vp-doc .grant-icon-list-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Backward-compatible aliases for existing pages */
+.vp-doc ul.grant-why-list {
+  list-style: none;
+  padding-left: 0;
+  margin-left: 1rem;
+}
+
+.vp-doc ul.grant-why-list > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin: 0.42rem 0;
+}
+
+.vp-doc .grant-why-list-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.08rem;
+  height: 1.08rem;
+  flex-shrink: 0;
+  margin-top: 0.24rem;
+  color: var(--vp-c-text-2);
+}
+
+.vp-doc .grant-why-list-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }

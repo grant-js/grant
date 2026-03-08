@@ -9,7 +9,7 @@ Organizations add members through an email invitation flow. The inviter selects 
 
 ## Invitation Lifecycle
 
-```mermaid
+```bmermaid
 sequenceDiagram
     participant Admin as Org Admin
     participant API as Grant API

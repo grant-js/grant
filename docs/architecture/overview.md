@@ -9,7 +9,7 @@ Grant is a multi-tenant RBAC platform organized as a TypeScript monorepo. It fol
 
 ## System Overview
 
-```mermaid
+```bmermaid
 graph LR
     subgraph Clients
         Web["Web Dashboard<br/><small>Next.js · Apollo Client</small>"]
@@ -31,68 +31,39 @@ graph LR
 
 The platform ships two deployable applications and a set of shared packages:
 
-| Component                      | Description                                                                                                    |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| **Grant API** (`apps/api`)     | Express server exposing both a GraphQL API (Apollo Server) and a REST API with OpenAPI / Swagger documentation |
-| **Web Dashboard** (`apps/web`) | Next.js 15 (App Router) admin interface with i18n and permission-aware UI                                      |
-| **PostgreSQL**                 | Primary data store with Row-Level Security for tenant isolation                                                |
-| **Redis**                      | Optional — caching, session storage, and job queues (BullMQ)                                                   |
-| **Object Storage**             | Optional — file and image uploads via S3-compatible storage or local filesystem                                |
+| Component          | Description                                                                                                    |
+| ------------------ | -------------------------------------------------------------------------------------------------------------- |
+| **Grant API**      | Express server exposing both a GraphQL API (Apollo Server) and a REST API with OpenAPI / Swagger documentation |
+| **Web Dashboard**  | Next.js 15 (App Router) admin interface with i18n and permission-aware UI                                      |
+| **PostgreSQL**     | Primary data store with Row-Level Security for tenant isolation                                                |
+| **Redis**          | Optional — caching, session storage, and job queues (BullMQ)                                                   |
+| **Object Storage** | Optional — file and image uploads via S3-compatible storage or local filesystem                                |
 
 ## Monorepo Packages
 
-All shared code lives under `packages/@grantjs/`. The dependency graph is a strict DAG — no circular imports are allowed.
+All shared code lives under `packages/@grantjs`. The dependency graph is a strict DAG — no circular imports are allowed.
 
-```mermaid
-graph BT
-    schema["<b>@grantjs/schema</b><br/>Codegen types · Operations"]
-    core["<b>@grantjs/core</b><br/>Ports · Interfaces · Exceptions"]
-
-    constants["@grantjs/constants"]
-    db["@grantjs/database"]
-    logger["@grantjs/logger"]
-    errors["@grantjs/errors"]
-    cache["@grantjs/cache"]
-    storage["@grantjs/storage"]
-    email["@grantjs/email"]
-    jobs["@grantjs/jobs"]
-
-    core --> schema
-    constants --> core
-    db --> core
-    logger --> core
-    errors --> core
-    cache --> core
-    storage --> core
-    email --> core
-    jobs --> core
-```
-
-| Package                | Role                                                                                                                                                                                                                                                        |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **@grantjs/schema**    | GraphQL schema definitions, operation documents, and generated TypeScript types. Single source of truth for API contracts — types are imported from here, never redefined.                                                                                  |
-| **@grantjs/core**      | Domain ports (`ILogger`, `ICacheAdapter`, `IStorageAdapter`, `IEmailAdapter`, `IJobAdapter`), the exception hierarchy (`GrantException` → `NotFoundError`, `ValidationError`, …), and the RBAC engine (`Grant`, `PermissionChecker`, `ConditionEvaluator`). |
-| **@grantjs/database**  | Drizzle ORM schemas, relationships, migrations, and seed scripts. Accepts an optional `ILogger` via config.                                                                                                                                                 |
-| **@grantjs/constants** | Canonical permission, role, and group definitions used by the database seeder and the authorization layer.                                                                                                                                                  |
-| **@grantjs/logger**    | Pino-based implementation of `ILoggerFactory` / `ILogger` from core.                                                                                                                                                                                        |
-| **@grantjs/errors**    | `HttpException` and `mapDomainToHttp()` — maps domain exceptions to HTTP status codes for the transport layer.                                                                                                                                              |
-| **@grantjs/cache**     | Memory and Redis cache adapters implementing `ICacheAdapter`.                                                                                                                                                                                               |
-| **@grantjs/storage**   | Local filesystem and S3 adapters implementing `IFileStorageService`.                                                                                                                                                                                        |
-| **@grantjs/email**     | SMTP, SES, Mailgun, Mailjet, and console adapters implementing `IEmailAdapter`.                                                                                                                                                                             |
-| **@grantjs/jobs**      | node-cron and BullMQ adapters implementing `IJobAdapter`.                                                                                                                                                                                                   |
-| **@grantjs/client**    | Browser SDK — React hooks and components for permission-based UI rendering.                                                                                                                                                                                 |
-| **@grantjs/server**    | Server SDK — middleware guards for Express, Fastify, NestJS, and Next.js.                                                                                                                                                                                   |
-| **@grantjs/cli**       | CLI tool for setup, authentication, and typings generation for `@grantjs/server`.                                                                                                                                                                           |
-
-::: tip Dependency inversion rule
-Adapter packages accept `ILogger` / `ILoggerFactory` via constructor injection. They never import `@grantjs/logger` directly.
-:::
+| Package       | Role                                                                                                                                                                                                                                                        |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Schema**    | GraphQL schema definitions, operation documents, and generated TypeScript types. Single source of truth for API contracts — types are imported from here, never redefined.                                                                                  |
+| **Core**      | Domain ports (`ILogger`, `ICacheAdapter`, `IStorageAdapter`, `IEmailAdapter`, `IJobAdapter`), the exception hierarchy (`GrantException` → `NotFoundError`, `ValidationError`, …), and the RBAC engine (`Grant`, `PermissionChecker`, `ConditionEvaluator`). |
+| **Database**  | Drizzle ORM schemas, relationships, migrations, and seed scripts. Accepts an optional `ILogger` via config.                                                                                                                                                 |
+| **Constants** | Canonical permission, role, and group definitions used by the database seeder and the authorization layer.                                                                                                                                                  |
+| **Logger**    | Pino-based implementation of `ILoggerFactory` / `ILogger` from core.                                                                                                                                                                                        |
+| **Errors**    | `HttpException` and `mapDomainToHttp()` — maps domain exceptions to HTTP status codes for the transport layer.                                                                                                                                              |
+| **Cache**     | Memory and Redis cache adapters implementing `ICacheAdapter`.                                                                                                                                                                                               |
+| **Storage**   | Local filesystem and S3 adapters implementing `IFileStorageService`.                                                                                                                                                                                        |
+| **Email**     | SMTP, SES, Mailgun, Mailjet, and console adapters implementing `IEmailAdapter`.                                                                                                                                                                             |
+| **Jobs**      | node-cron and BullMQ adapters implementing `IJobAdapter`.                                                                                                                                                                                                   |
+| **Client**    | Browser SDK — React hooks and components for permission-based UI rendering.                                                                                                                                                                                 |
+| **Server**    | Server SDK — middleware guards for Express, Fastify, NestJS, and Next.js.                                                                                                                                                                                   |
+| **CLI**       | CLI tool for setup, authentication, and typings generation for `@grantjs/server`.                                                                                                                                                                           |
 
 ## API Request Lifecycle
 
 Every request — GraphQL or REST — flows through the same layered pipeline:
 
-```mermaid
+```bmermaid diagram-narrow
 flowchart TB
     Req([HTTP Request]) --> MW["<b>Middleware</b><br/><small>Authentication · Context creation · RLS setup</small>"]
     MW --> Transport
@@ -110,12 +81,12 @@ flowchart TB
 
 ### Layer responsibilities
 
-| Layer            | Location                             | Allowed dependencies                                                        |
-| ---------------- | ------------------------------------ | --------------------------------------------------------------------------- |
-| **Transport**    | `graphql/resolvers/`, `rest/routes/` | Handlers only — never services or repositories                              |
-| **Handlers**     | `handlers/`                          | Services only — never repositories                                          |
-| **Services**     | `services/`                          | Repositories and adapter ports (cache, email, storage, jobs)                |
-| **Repositories** | `repositories/`                      | Database schemas from `@grantjs/database` only — never services or handlers |
+| Layer            | Location                            | Allowed dependencies                                                        |
+| ---------------- | ----------------------------------- | --------------------------------------------------------------------------- |
+| **Transport**    | `graphql/resolvers/` `rest/routes/` | Handlers only — never services or repositories                              |
+| **Handlers**     | `handlers/`                         | Services only — never repositories                                          |
+| **Services**     | `services/`                         | Repositories and adapter ports (cache, email, storage, jobs)                |
+| **Repositories** | `repositories/`                     | Database schemas from `@grantjs/database` only — never services or handlers |
 
 ### Composition root
 
@@ -132,7 +103,7 @@ Background jobs and startup tasks use a separate `lib/app-context.lib.ts` factor
 
 Grant uses account-based multi-tenancy. Each account is a fully isolated tenant with its own organizations, projects, and users:
 
-```mermaid
+```bmermaid
 graph LR
     subgraph "Account: Acme Corp"
         A1[Organization A]
@@ -172,7 +143,7 @@ See [Multi-Tenancy](/architecture/multi-tenancy) for the full data model and sco
 
 ## Permission Evaluation
 
-```mermaid
+```bmermaid diagram-narrow
 flowchart TD
     Start([User Request]) --> Auth{Authenticated?}
     Auth -->|No| Deny[Access Denied]

@@ -6,7 +6,7 @@ This directory contains the VitePress documentation site for Grant.
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 22+
 - pnpm (recommended) or npm
 
 ### Installation
@@ -31,11 +31,11 @@ pnpm preview
 docs/
 ├── .vitepress/
 │   └── config.ts          # VitePress configuration
-├── getting-started/       # Introduction, quick start, installation, config
+├── getting-started/       # Introduction, quick start, configuration
 ├── architecture/          # System design, multi-tenancy, RBAC, security
 ├── core-concepts/         # Resources, API keys, invitations, tags
 ├── development/           # Dev guide, SDKs, CLI, REST API, testing
-├── deployment/            # Self-hosting, Docker, CloudFormation
+├── deployment/            # Self-hosting, Docker
 ├── api-reference/         # REST API, error handling
 ├── advanced-topics/       # Caching, email, jobs, i18n, observability
 ├── index.md               # Homepage
@@ -140,7 +140,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '22'
       - run: pnpm install
       - run: pnpm build
       - name: Deploy to GitHub Pages

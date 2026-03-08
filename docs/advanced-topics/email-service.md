@@ -9,7 +9,7 @@ Grant uses the **Adapter Pattern** for email delivery — a single `IEmailAdapte
 
 ## Architecture
 
-```mermaid
+```bmermaid
 graph TB
     Handler[Handlers] --> Service[EmailService]
     Service --> Factory[EmailAdapterFactory]

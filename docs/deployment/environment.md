@@ -74,7 +74,7 @@ Pre-production environment for testing before going live.
 
 **Infrastructure** (Managed Services):
 
-Use AWS RDS, ElastiCache, or equivalent managed services.
+Use managed PostgreSQL and Redis from your preferred provider (e.g. cloud or self-hosted).
 
 **Application**:
 
@@ -83,8 +83,8 @@ Use AWS RDS, ElastiCache, or equivalent managed services.
 NODE_ENV=staging
 APP_PORT=4000
 
-# Database (managed RDS)
-DB_URL=postgresql://user:pass@staging-db.amazonaws.com:5432/grant
+# Database (managed)
+DB_URL=postgresql://user:pass@staging-db-host:5432/grant
 DB_LOG_QUERIES=false
 
 # Cache (Redis for multi-instance)
@@ -189,7 +189,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '22'
 
       - name: Install dependencies
         run: pnpm install
@@ -349,8 +349,6 @@ echo $DB_URL
 - **[Configuration](/getting-started/configuration)** - Complete configuration reference
 - **[Docker Deployment](/deployment/docker)** - Local infrastructure setup
 - **[Self-Hosting](/deployment/self-hosting)** - Self-hosting guide
-- **[AWS CloudFormation](/deployment/cloudformation)** - AWS deployment
-
 ---
 
 **Next Steps:**

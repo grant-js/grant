@@ -36,21 +36,21 @@ export default function Home() {
       <header className="page-header">
         <h1 className="page-title">Grant Client Example</h1>
         <p className="page-subtitle">
-          Next.js app using <code>@grantjs/client</code> for Project OAuth, permission checks,
-          and gated rendering.
+          Next.js app using <code>@grantjs/client</code> for Project OAuth, permission checks, and
+          gated rendering.
         </p>
       </header>
 
       <section className="section">
         <h2 className="section-title">Sign in with Project App</h2>
         <p className="section-desc">
-          Start the Project OAuth redirect flow. After authentication, Grant redirects back
-          to the callback page with an access token in the URL fragment.
+          Start the Project OAuth redirect flow. After authentication, Grant redirects back to the
+          callback page with an access token in the URL fragment.
         </p>
 
         <div className="tip">
-          <strong>Tip:</strong> Add your <code>redirect_uri</code> to the project app&apos;s
-          allowed redirect URIs in the Grant dashboard or via the API.
+          <strong>Tip:</strong> Add your <code>redirect_uri</code> to the project app&apos;s allowed
+          redirect URIs in the Grant dashboard or via the API.
         </div>
 
         <div className="card">
@@ -101,17 +101,17 @@ export default function Home() {
         </div>
 
         <p className="section-desc" style={{ marginTop: '1rem', marginBottom: 0 }}>
-          After the flow completes, the <strong>callback page</strong> shows the token details
-          and runs permission checks with <code>useGrant</code> and <code>GrantGate</code>.
+          After the flow completes, the <strong>callback page</strong> shows the token details and
+          runs permission checks with <code>useGrant</code> and <code>GrantGate</code>.
         </p>
       </section>
 
       <p className="setup-note">
         Set <code>NEXT_PUBLIC_GRANT_API_URL</code> and <code>NEXT_PUBLIC_GRANT_FRONTEND_URL</code>{' '}
         in <code>.env</code>. The frontend URL points to the Grant web app where{' '}
-        <code>/auth/project</code> is served. Implement <code>getAccessToken</code> in your
-        Grant config to return the token from your secure auth store (e.g. server session,
-        httpOnly cookie).
+        <code>/auth/project</code> is served. Implement <code>getAccessToken</code> in your Grant
+        config to return the token from your secure auth store (e.g. server session, httpOnly
+        cookie).
       </p>
     </main>
   );

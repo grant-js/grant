@@ -1,6 +1,6 @@
 # Grant
 
-An open-source, multi-tenant RBAC platform with self-hosting capabilities via AWS CloudFormation.
+An open-source, multi-tenant RBAC platform with self-hosting capabilities.
 
 ## Compliance
 
@@ -17,9 +17,9 @@ An open-source, multi-tenant RBAC platform with self-hosting capabilities via AW
 ## 🚀 Features
 
 - **Multi-tenant RBAC** - Organization and project-level access control
-- **Self-hosting** - Deploy with AWS CloudFormation templates
+- **Self-hosting** - Deploy with Docker Compose or your own infrastructure
 - **Containerized** - Docker containers for web and API
-- **Scalable** - Auto-scaling with AWS Fargate
+- **Scalable** - Scale with your preferred stack
 - **Open Source** - MIT licensed with active community
 
 ## 🏗️ Architecture
@@ -28,7 +28,7 @@ An open-source, multi-tenant RBAC platform with self-hosting capabilities via AW
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │    Web App      │    │   API Server    │    │    Database     │
 │   (Next.js)     │◄──►│    (Apollo)     │◄──►│  (PostgreSQL)   │
-│   Container     │    │    Container    │    │     (RDS)       │
+│   Container     │    │    Container    │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
@@ -42,27 +42,10 @@ An open-source, multi-tenant RBAC platform with self-hosting capabilities via AW
 
 - **Web App** - Containerized Next.js frontend
 - **API** - Containerized Apollo Server backend
-- **Database** - AWS RDS PostgreSQL cluster
-- **Infrastructure** - CloudFormation templates
+- **Database** - PostgreSQL (self-hosted or managed)
+- **Infrastructure** - Docker Compose for local and small deployments
 
 ## 🚀 Quick Start
-
-### Self-Hosting (AWS)
-
-1. **Launch CloudFormation Stack**
-
-   ```bash
-   aws cloudformation create-stack \
-     --stack-name grant \
-     --template-body file://infrastructure/cloudformation/main.yaml \
-     --parameters file://infrastructure/cloudformation/parameters/dev.json \
-     --capabilities CAPABILITY_IAM
-   ```
-
-2. **Configure via AWS Console**
-   - Use the CloudFormation wizard
-   - Configure parameters
-   - Launch the stack
 
 ### Local Development
 
@@ -82,8 +65,7 @@ pnpm dev
 
 ### Open Source
 
-- [Self-Hosting Guide](./docs/self-hosting/README.md)
-- [CloudFormation Setup](./infrastructure/cloudformation/README.md)
+- [Self-Hosting Guide](./docs/deployment/self-hosting.md)
 - [Docker Configuration](./infrastructure/docker/README.md)
 - [API Documentation](./docs/api/README.md)
 
@@ -127,9 +109,8 @@ pnpm --filter @grantjs/core dev
 
 ### Open Source (Self-Hosting)
 
-- **AWS CloudFormation** - One-click deployment
-- **Docker Compose** - Local development
-- **Manual Deployment** - Custom infrastructure
+- **Docker Compose** - Local development and small deployments
+- **Manual Deployment** - Custom infrastructure (any cloud or on-premises)
 
 ### SaaS Enterprise (Hosted)
 

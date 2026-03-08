@@ -5,722 +5,232 @@ description: End-to-end request tracing with OpenTelemetry in Grant
 
 # Distributed Tracing
 
-**Status:** Implemented. The API uses the OpenTelemetry SDK with auto-instrumentation (HTTP, Express, GraphQL, ioredis). Bootstrap: [apps/api/src/lib/tracing/index.ts](apps/api/src/lib/tracing/index.ts). Config: `TRACING_CONFIG` in [apps/api/src/config/env.config.ts](apps/api/src/config/env.config.ts). Runbook: [observability/README.md](observability/README.md) (Tracing section) and optional Jaeger service in `docker-compose.yml`.
+Grant uses [OpenTelemetry](https://opentelemetry.io/) for distributed tracing. The API is auto-instrumented for HTTP, Express, GraphQL, and Redis; you choose a backend (Jaeger or OTLP) via configuration and can add custom spans for business operations. Bootstrap: `apps/api/src/lib/tracing/index.ts`. Config: `TRACING_CONFIG` in [env.config.ts](https://github.com/logusgraphics/grant-platform/blob/main/apps/api/src/config/env.config.ts).
 
-**Current implementation details:** Request IDs are set on the active span in [request-logging middleware](apps/api/src/middleware/request-logging.middleware.ts) (`http.request_id`, optional `http.user_id`). Redis is instrumented via `@opentelemetry/instrumentation-ioredis` (app uses ioredis). PostgreSQL is not auto-instrumented (app uses postgres.js; no standard OTel instrumentation). Shutdown is triggered from the server's graceful shutdown (`shutdownTracing()` before DB/cache close). The rest of this page is reference for custom spans, exporters, and backends.
+## What you get
 
----
+Distributed tracing records a **trace** per request: a tree of **spans** (units of work) with timing and attributes. That gives you:
 
-Grant uses [OpenTelemetry](https://opentelemetry.io/) for distributed tracing, providing visibility into request flows across services, databases, and external APIs.
+- **Request timelines** — See where time is spent (middleware, resolvers, DB, cache, external calls).
+- **Cross-service correlation** — Same trace ID across logs and downstream services when propagation is enabled.
+- **Debugging** — Filter by `user.id`, `error=true`, or duration in your trace backend.
 
-## What is Distributed Tracing?
+::: details How it's wired
+Tracing is initialized at server startup before other services. Request IDs and optional user IDs are set on the active span in [request-logging middleware](https://github.com/logusgraphics/grant-platform/blob/main/apps/api/src/middleware/request-logging.middleware.ts). Redis is instrumented via `@opentelemetry/instrumentation-ioredis`. PostgreSQL is not auto-instrumented (app uses postgres.js). Shutdown runs during graceful server shutdown (`shutdownTracing()` before DB/cache close).
+:::
 
-Distributed tracing tracks a request as it flows through your system, creating a detailed timeline of operations:
+## Request flow example
 
-```mermaid
-gantt
-    title Request Trace Example
-    dateFormat  X
-    axisFormat %L ms
+A trace is a tree of spans over time. Conceptually, one request might look like this:
 
-    section API
-    HTTP Request     :0, 150
-    Auth Middleware  :10, 30
-    Permission Check :40, 20
-
-    section Database
-    Query Users     :60, 25
-    Query Permissions :85, 30
-
-    section Cache
-    Cache Lookup    :115, 15
-
-    section External
-    Email Service   :130, 20
+```bmermaid
+sequenceDiagram
+    participant C as Client
+    participant API as API
+    participant DB as Database
+    participant Cache as Cache
+    participant Ext as External
+    C->>+API: Request
+    Note over API: Auth (30ms)
+    Note over API: Permission check (20ms)
+    API->>DB: Query users (25ms)
+    DB-->>API: Results
+    API->>DB: Query permissions (30ms)
+    DB-->>API: Results
+    API->>Cache: Lookup (15ms)
+    Cache-->>API: Hit
+    API->>Ext: Email (20ms)
+    Ext-->>API: Sent
+    API-->>-C: Response (~150ms total)
 ```
-
-## Why OpenTelemetry?
-
-- **Vendor-neutral**: Works with Jaeger, Zipkin, AWS X-Ray, Datadog, New Relic
-- **Auto-instrumentation**: Automatically traces HTTP, GraphQL, PostgreSQL, Redis
-- **Standard**: Industry-standard observability framework
-- **Flexible**: Easy to add custom spans and attributes
-- **Industry-backed**: CNCF project supported by major cloud providers
 
 ## Architecture
 
-```mermaid
-flowchart LR
+```bmermaid diagram-narrow
+flowchart TD
     A[API Server] --> B[OpenTelemetry SDK]
     B --> C[Auto-instrumentation]
     B --> D[Custom Spans]
     C --> E[HTTP/GraphQL]
-    C --> F[PostgreSQL]
-    C --> G[Redis]
+    C --> F[Redis]
     D --> H[Business Logic]
     E --> I[Trace Exporter]
     F --> I
-    G --> I
     H --> I
     I --> J{Backend}
-    J -->|Dev| K[Jaeger]
-    J -->|AWS| L[X-Ray]
-    J -->|Cloud| M[Datadog/NewRelic]
+    J -->|Local| K[Jaeger]
+    J -->|OTLP| L[Datadog / New Relic / Honeycomb]
 ```
 
-## Installation
+## Backends
 
-Install OpenTelemetry packages:
+| Backend    | Use case                | Key config                                  |
+| ---------- | ----------------------- | ------------------------------------------- |
+| **Jaeger** | Local dev, self-hosted  | `TRACING_BACKEND=jaeger`, `JAEGER_ENDPOINT` |
+| **OTLP**   | Cloud / vendor backends | `TRACING_BACKEND=otlp`, `OTLP_ENDPOINT`     |
 
-```bash
-cd apps/api
-pnpm add @opentelemetry/sdk-node \
-         @opentelemetry/auto-instrumentations-node \
-         @opentelemetry/exporter-trace-otlp-http \
-         @opentelemetry/exporter-jaeger \
-         @opentelemetry/propagator-aws-xray \
-         @opentelemetry/id-generator-aws-xray \
-         @opentelemetry/semantic-conventions
-```
+OTLP is the standard export format; most vendors (Datadog, New Relic, Honeycomb, etc.) accept OTLP. Set `OTLP_ENDPOINT` to your collector or vendor endpoint.
 
 ## Configuration
 
-### Environment Variables
+| Variable                | Default                             | Description                                  |
+| ----------------------- | ----------------------------------- | -------------------------------------------- |
+| `TRACING_ENABLED`       | `false`                             | Enable tracing                               |
+| `TRACING_BACKEND`       | `jaeger`                            | `jaeger` or `otlp`                           |
+| `JAEGER_ENDPOINT`       | `http://localhost:14268/api/traces` | Jaeger collector (when backend is `jaeger`)  |
+| `OTLP_ENDPOINT`         | `http://localhost:4318/v1/traces`   | OTLP endpoint (when backend is `otlp`)       |
+| `TRACING_SAMPLING_RATE` | `1.0`                               | Sampling rate `0.0`–`1.0` (e.g. `0.1` = 10%) |
+| `TRACING_SERVICE_NAME`  | `grant-api`                         | Service name in traces                       |
 
-Add to your `.env` file:
+Minimal local setup:
 
 ```bash
-# Enable tracing
-TRACING_ENABLED=true
-
-# Trace backend
-TRACING_BACKEND=jaeger  # jaeger, otlp, xray
-
-# Jaeger endpoint (for local development)
-JAEGER_ENDPOINT=http://localhost:14268/api/traces
-
-# OTLP endpoint (for cloud providers)
-OTLP_ENDPOINT=http://localhost:4318/v1/traces
-
-# Sampling rate (0.0 to 1.0)
-TRACING_SAMPLING_RATE=1.0
-
-# Service name
-TRACING_SERVICE_NAME=grant-api
-```
-
-### Tracing Configuration
-
-Create tracing configuration:
-
-```typescript
-// src/config/env.config.ts
-
-export const TRACING_CONFIG = {
-  /** Enable distributed tracing */
-  enabled: getEnvBoolean('TRACING_ENABLED', !APP_CONFIG.isProduction),
-
-  /** Trace backend: jaeger, otlp, xray */
-  backend: getEnvEnum('TRACING_BACKEND', ['jaeger', 'otlp', 'xray'] as const, 'jaeger'),
-
-  /** Jaeger endpoint */
-  jaegerEndpoint: getEnv('JAEGER_ENDPOINT', 'http://localhost:14268/api/traces'),
-
-  /** OTLP endpoint */
-  otlpEndpoint: getEnv('OTLP_ENDPOINT', 'http://localhost:4318/v1/traces'),
-
-  /** Sampling rate (0.0 to 1.0) */
-  samplingRate: getEnvNumber('TRACING_SAMPLING_RATE', 1.0),
-
-  /** Service name */
-  serviceName: getEnv('TRACING_SERVICE_NAME', 'grant-api'),
-} as const;
-```
-
-## Implementation
-
-### Initialize Tracing
-
-Create the tracing module:
-
-```typescript
-// src/lib/telemetry/tracing.ts
-import { NodeSDK } from '@opentelemetry/sdk-node';
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
-import { Resource } from '@opentelemetry/resources';
-import {
-  SemanticResourceAttributes,
-  SemanticAttributes,
-} from '@opentelemetry/semantic-conventions';
-import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { AWSXRayPropagator } from '@opentelemetry/propagator-aws-xray';
-import { AWSXRayIdGenerator } from '@opentelemetry/id-generator-aws-xray';
-import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
-import { config } from '@/config';
-import { logger } from '@/lib/logger';
-
-let sdk: NodeSDK | null = null;
-
-/**
- * Initialize OpenTelemetry tracing
- */
-export function initializeTracing(): NodeSDK | null {
-  if (!config.tracing.enabled) {
-    logger.info('Tracing is disabled');
-    return null;
-  }
-
-  try {
-    // Create exporter based on backend
-    const exporter = createExporter();
-
-    // Create SDK
-    sdk = new NodeSDK({
-      resource: new Resource({
-        [SemanticResourceAttributes.SERVICE_NAME]: config.tracing.serviceName,
-        [SemanticResourceAttributes.SERVICE_VERSION]: config.app.version,
-        [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: config.app.nodeEnv,
-      }),
-
-      spanProcessor: new BatchSpanProcessor(exporter, {
-        maxQueueSize: 2048,
-        scheduledDelayMillis: 5000,
-      }),
-
-      instrumentations: [
-        getNodeAutoInstrumentations({
-          // Disable file system instrumentation (too verbose)
-          '@opentelemetry/instrumentation-fs': {
-            enabled: false,
-          },
-
-          // HTTP instrumentation
-          '@opentelemetry/instrumentation-http': {
-            enabled: true,
-            ignoreIncomingPaths: ['/health', '/metrics'],
-            applyCustomAttributesOnSpan: (span, request, response) => {
-              span.setAttribute('http.request_id', (request as any).requestId);
-              span.setAttribute('http.user_id', (request as any).user?.id);
-            },
-          },
-
-          // Express instrumentation
-          '@opentelemetry/instrumentation-express': {
-            enabled: true,
-          },
-
-          // GraphQL instrumentation
-          '@opentelemetry/instrumentation-graphql': {
-            enabled: true,
-            allowAttributes: true,
-            mergeItems: true,
-          },
-
-          // PostgreSQL instrumentation
-          '@opentelemetry/instrumentation-pg': {
-            enabled: true,
-            enhancedDatabaseReporting: true,
-          },
-
-          // Redis instrumentation
-          '@opentelemetry/instrumentation-redis-4': {
-            enabled: true,
-          },
-
-          // DNS instrumentation
-          '@opentelemetry/instrumentation-dns': {
-            enabled: false, // Usually too verbose
-          },
-        }),
-      ],
-
-      // Use AWS X-Ray propagator if on AWS
-      textMapPropagator: config.tracing.backend === 'xray' ? new AWSXRayPropagator() : undefined,
-
-      // Use AWS X-Ray ID generator if on AWS
-      idGenerator: config.tracing.backend === 'xray' ? new AWSXRayIdGenerator() : undefined,
-    });
-
-    sdk.start();
-
-    logger.info({
-      msg: 'OpenTelemetry tracing initialized',
-      backend: config.tracing.backend,
-      serviceName: config.tracing.serviceName,
-      samplingRate: config.tracing.samplingRate,
-    });
-
-    // Graceful shutdown
-    process.on('SIGTERM', () => {
-      logger.info('Shutting down OpenTelemetry...');
-      sdk
-        ?.shutdown()
-        .then(() => logger.info('OpenTelemetry shut down successfully'))
-        .catch((error) => logger.error({ msg: 'Error shutting down OpenTelemetry', err: error }))
-        .finally(() => process.exit(0));
-    });
-
-    return sdk;
-  } catch (error) {
-    logger.error({
-      msg: 'Failed to initialize tracing',
-      err: error,
-    });
-    return null;
-  }
-}
-
-/**
- * Create trace exporter based on backend
- */
-function createExporter() {
-  switch (config.tracing.backend) {
-    case 'jaeger':
-      return new JaegerExporter({
-        endpoint: config.tracing.jaegerEndpoint,
-      });
-
-    case 'otlp':
-      return new OTLPTraceExporter({
-        url: config.tracing.otlpEndpoint,
-      });
-
-    case 'xray':
-      // AWS X-Ray uses OTLP exporter with AWS SDK
-      return new OTLPTraceExporter({
-        url: config.tracing.otlpEndpoint,
-      });
-
-    default:
-      throw new Error(`Unknown tracing backend: ${config.tracing.backend}`);
-  }
-}
-
-/**
- * Get the active tracer
- */
-export function getTracer() {
-  const trace = require('@opentelemetry/api').trace;
-  return trace.getTracer(config.tracing.serviceName, config.app.version);
-}
-```
-
-### Initialize in Server
-
-Add tracing initialization to your server:
-
-```typescript
-// src/server.ts
-import { initializeTracing } from '@/lib/telemetry/tracing';
-
-async function startServer() {
-  validateConfig();
-  printConfigSummary();
-
-  // Initialize tracing first (before any other operations)
-  initializeTracing();
-
-  // Initialize i18n
-  await initializeI18n();
-
-  // ... rest of server setup
-}
-```
-
-## Custom Spans
-
-### Creating Custom Spans
-
-Add custom spans for important operations:
-
-```typescript
-import { getTracer } from '@/lib/telemetry/tracing';
-import { SpanStatusCode } from '@opentelemetry/api';
-
-export class OrganizationService {
-  private tracer = getTracer();
-
-  async createOrganization(data: CreateOrganizationInput): Promise<Organization> {
-    // Create a span
-    return this.tracer.startActiveSpan('OrganizationService.createOrganization', async (span) => {
-      try {
-        // Add attributes
-        span.setAttribute('organization.name', data.name);
-        span.setAttribute('organization.accountId', data.accountId);
-
-        // Your business logic
-        const organization = await this.repository.create(data);
-
-        // Add more attributes
-        span.setAttribute('organization.id', organization.id);
-
-        // Mark as successful
-        span.setStatus({ code: SpanStatusCode.OK });
-
-        return organization;
-      } catch (error) {
-        // Record error
-        span.recordException(error);
-        span.setStatus({
-          code: SpanStatusCode.ERROR,
-          message: error.message,
-        });
-        throw error;
-      } finally {
-        // End span
-        span.end();
-      }
-    });
-  }
-}
-```
-
-### Span Attributes
-
-Add meaningful attributes to spans:
-
-```typescript
-// User context
-span.setAttribute('user.id', userId);
-span.setAttribute('user.accountId', accountId);
-
-// Business context
-span.setAttribute('organization.id', organizationId);
-span.setAttribute('project.id', projectId);
-
-// Operation details
-span.setAttribute('operation.type', 'create');
-span.setAttribute('operation.entity', 'organization');
-
-// Performance metrics
-span.setAttribute('records.count', recordCount);
-span.setAttribute('batch.size', batchSize);
-```
-
-### Nested Spans
-
-Create child spans for sub-operations:
-
-```typescript
-async function processImport(data: ImportData) {
-  return this.tracer.startActiveSpan('processImport', async (parentSpan) => {
-    try {
-      // Parse CSV
-      const records = await this.tracer.startActiveSpan('parseCSV', async (span) => {
-        const result = await parseCSV(data.file);
-        span.setAttribute('records.count', result.length);
-        span.end();
-        return result;
-      });
-
-      // Validate records
-      const valid = await this.tracer.startActiveSpan('validateRecords', async (span) => {
-        const result = await validateRecords(records);
-        span.setAttribute('valid.count', result.length);
-        span.setAttribute('invalid.count', records.length - result.length);
-        span.end();
-        return result;
-      });
-
-      // Insert into database
-      await this.tracer.startActiveSpan('insertRecords', async (span) => {
-        await insertRecords(valid);
-        span.setAttribute('inserted.count', valid.length);
-        span.end();
-      });
-
-      parentSpan.setStatus({ code: SpanStatusCode.OK });
-    } catch (error) {
-      parentSpan.recordException(error);
-      parentSpan.setStatus({ code: SpanStatusCode.ERROR });
-      throw error;
-    } finally {
-      parentSpan.end();
-    }
-  });
-}
-```
-
-## Local Development with Jaeger
-
-### Start Jaeger
-
-Use Docker to run Jaeger locally:
-
-```bash
-docker run -d --name jaeger \
-  -e COLLECTOR_OTLP_ENABLED=true \
-  -p 16686:16686 \
-  -p 14268:14268 \
-  -p 14250:14250 \
-  -p 4318:4318 \
-  jaegertracing/all-in-one:latest
-```
-
-**Ports**:
-
-- `16686`: Jaeger UI
-- `14268`: Jaeger collector (HTTP)
-- `14250`: Jaeger collector (gRPC)
-- `4318`: OTLP HTTP receiver
-
-### Access Jaeger UI
-
-Open [http://localhost:16686](http://localhost:16686) to view traces.
-
-### Configure API
-
-```bash
-# .env
 TRACING_ENABLED=true
 TRACING_BACKEND=jaeger
 JAEGER_ENDPOINT=http://localhost:14268/api/traces
 ```
 
-## AWS X-Ray Integration
+## Custom spans
 
-### Configure X-Ray
+Add spans for business operations so they show up in the trace tree. Use **active spans** so context propagates.
 
-For AWS deployments:
-
-```bash
-# .env
-TRACING_ENABLED=true
-TRACING_BACKEND=xray
-AWS_REGION=us-east-1
-```
-
-### IAM Permissions
-
-Add X-Ray permissions to your ECS task role:
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": ["xray:PutTraceSegments", "xray:PutTelemetryRecords"],
-      "Resource": "*"
-    }
-  ]
-}
-```
-
-### X-Ray Daemon
-
-Deploy the X-Ray daemon as a sidecar container:
-
-```yaml
-# docker-compose.yml or ECS task definition
-xray-daemon:
-  image: amazon/aws-xray-daemon
-  ports:
-    - '2000:2000/udp'
-  environment:
-    AWS_REGION: us-east-1
-```
-
-## Cloud Provider Integration
-
-### Datadog
-
-```bash
-# Install Datadog exporter
-pnpm add @opentelemetry/exporter-datadog
-
-# Configure
-TRACING_BACKEND=otlp
-OTLP_ENDPOINT=http://localhost:8126/v0.4/traces
-DD_API_KEY=your-api-key
-```
-
-### New Relic
-
-```bash
-# Configure
-TRACING_BACKEND=otlp
-OTLP_ENDPOINT=https://otlp.nr-data.net:4318/v1/traces
-NEW_RELIC_API_KEY=your-api-key
-```
-
-### Honeycomb
-
-```bash
-# Configure
-TRACING_BACKEND=otlp
-OTLP_ENDPOINT=https://api.honeycomb.io/v1/traces
-HONEYCOMB_API_KEY=your-api-key
-```
-
-## Best Practices
-
-### 1. Add Business Context
-
-Include business-relevant attributes:
+### Creating a span
 
 ```typescript
-span.setAttribute('tenant.id', accountId);
-span.setAttribute('user.role', userRole);
-span.setAttribute('feature.name', 'advanced-permissions');
-```
+import { getTracer } from '@/lib/telemetry/tracing';
+import { SpanStatusCode } from '@opentelemetry/api';
 
-### 2. Trace Important Operations
+const tracer = getTracer();
 
-Focus on:
-
-- API requests
-- Database queries
-- External API calls
-- Cache operations
-- Authentication/authorization
-- Business-critical operations
-
-### 3. Use Sampling in Production
-
-Reduce cost and overhead with sampling:
-
-```bash
-# Sample 10% of traces
-TRACING_SAMPLING_RATE=0.1
-```
-
-### 4. Add Error Information
-
-Always record exceptions:
-
-```typescript
-try {
-  await operation();
-} catch (error) {
-  span.recordException(error);
-  span.setStatus({ code: SpanStatusCode.ERROR, message: error.message });
-  throw error;
-}
-```
-
-### 5. Keep Spans Short
-
-Avoid long-running spans:
-
-```typescript
-// ❌ Bad: Span for entire background job
-span.startActiveSpan('processAll', async (span) => {
-  for (const item of items) {
-    await process(item); // Could take hours
-  }
-  span.end();
-});
-
-// ✅ Good: Span per item
-for (const item of items) {
-  await tracer.startActiveSpan('processItem', async (span) => {
-    await process(item);
+return tracer.startActiveSpan('OrganizationService.createOrganization', async (span) => {
+  try {
+    span.setAttribute('organization.name', data.name);
+    const organization = await this.repository.create(data);
+    span.setAttribute('organization.id', organization.id);
+    span.setStatus({ code: SpanStatusCode.OK });
+    return organization;
+  } catch (error) {
+    span.recordException(error);
+    span.setStatus({ code: SpanStatusCode.ERROR, message: (error as Error).message });
+    throw error;
+  } finally {
     span.end();
-  });
-}
+  }
+});
 ```
 
-## Querying Traces
+::: tip
+Use `startActiveSpan`, not `startSpan`, so the span is attached to the current trace context. Get the tracer once (e.g. in the service constructor) via `getTracer()` from `@/lib/telemetry/tracing`.
+:::
 
-### Find Slow Requests
+### Useful attributes
 
-In Jaeger UI:
+| Context       | Example attributes                       |
+| ------------- | ---------------------------------------- |
+| User / tenant | `user.id`, `user.accountId`, `tenant.id` |
+| Domain        | `organization.id`, `project.id`          |
+| Operation     | `operation.type`, `operation.entity`     |
+| Counts        | `records.count`, `batch.size`            |
 
-1. Select service: `grant-api`
-2. Set minimum duration: `500ms`
-3. Click "Find Traces"
+### Nested spans
 
-### Find Errors
+Create child spans for sub-operations so the trace shows a clear hierarchy:
 
-1. Select service: `grant-api`
-2. Add tag: `error=true`
-3. Click "Find Traces"
+```typescript
+return this.tracer.startActiveSpan('processImport', async (parentSpan) => {
+  try {
+    const records = await this.tracer.startActiveSpan('parseCSV', async (span) => {
+      const result = await parseCSV(data.file);
+      span.setAttribute('records.count', result.length);
+      span.end();
+      return result;
+    });
+    // ... validateRecords, insertRecords as separate startActiveSpan calls
+    parentSpan.setStatus({ code: SpanStatusCode.OK });
+  } catch (error) {
+    parentSpan.recordException(error);
+    parentSpan.setStatus({ code: SpanStatusCode.ERROR });
+    throw error;
+  } finally {
+    parentSpan.end();
+  }
+});
+```
 
-### Find by User
+## Local development with Jaeger
 
-1. Select service: `grant-api`
-2. Add tag: `user.id=user-123`
-3. Click "Find Traces"
+Run Jaeger (all-in-one) with OTLP enabled:
 
-## Performance Impact
+```bash
+docker run -d --name jaeger \
+  -e COLLECTOR_OTLP_ENABLED=true \
+  -p 16686:16686 -p 14268:14268 -p 4318:4318 \
+  jaegertracing/all-in-one:latest
+```
 
-OpenTelemetry is designed for minimal overhead:
+| Port    | Purpose                 |
+| ------- | ----------------------- |
+| `16686` | Jaeger UI               |
+| `14268` | Jaeger collector (HTTP) |
+| `4318`  | OTLP HTTP               |
 
-- **CPU**: < 5% increase
-- **Memory**: < 50MB additional
-- **Latency**: < 1ms per span
-- **Network**: Batched exports (default: 5s intervals)
+Open [http://localhost:16686](http://localhost:16686), select service `grant-api`, and run "Find Traces".
 
-### Optimization Tips
+## Cloud / vendor backends (OTLP)
 
-1. **Use sampling**: Sample 10-50% in high-traffic production
-2. **Batch exports**: Default batch interval is good for most cases
-3. **Limit attributes**: Don't add too many attributes per span
-4. **Async exports**: Exports happen in background, not blocking
+Use `TRACING_BACKEND=otlp` and set `OTLP_ENDPOINT` (and any API key env your vendor needs). No extra packages required for standard OTLP HTTP.
+
+| Vendor        | Endpoint (typical)                        | Notes                        |
+| ------------- | ----------------------------------------- | ---------------------------- |
+| **Datadog**   | `http://localhost:8126` or agent OTLP     | Set `DD_API_KEY` if required |
+| **New Relic** | `https://otlp.nr-data.net:4318/v1/traces` | Set `NEW_RELIC_API_KEY`      |
+| **Honeycomb** | `https://api.honeycomb.io/v1/traces`      | Set `HONEYCOMB_API_KEY`      |
+
+Refer to each vendor’s docs for exact endpoint and headers.
+
+## Best practices
+
+- **Add business context** — `tenant.id`, `user.id`, `organization.id` so you can filter traces by customer or feature.
+- **Record errors** — In `catch`, call `span.recordException(error)` and `span.setStatus({ code: SpanStatusCode.ERROR, message })`.
+- **Sample in production** — Set `TRACING_SAMPLING_RATE=0.1` (or 0.2–0.5) to limit cost and overhead.
+- **Keep spans focused** — One span per logical operation; use child spans for sub-steps, not one span around a long loop.
+
+## Querying traces (Jaeger UI)
+
+| Goal          | Steps                                                                                    |
+| ------------- | ---------------------------------------------------------------------------------------- |
+| Slow requests | Service `grant-api` → Min duration e.g. `500ms` → Find Traces                            |
+| Errors        | Service `grant-api` → Tag `error=true` → Find Traces                                     |
+| By user       | Service `grant-api` → Tag `http.user_id=<id>` (or `user.id` if you set it) → Find Traces |
+
+## Performance
+
+| Aspect  | Typical impact                      |
+| ------- | ----------------------------------- |
+| CPU     | &lt; 5%                             |
+| Memory  | &lt; 50 MB                          |
+| Latency | &lt; 1 ms per span                  |
+| Network | Batched exports (e.g. 5 s interval) |
+
+Use sampling and limit attributes per span in high-traffic environments.
 
 ## Troubleshooting
 
-### Traces Not Appearing
-
-1. Check if tracing is enabled:
-
-   ```bash
-   echo $TRACING_ENABLED
-   ```
-
-2. Check exporter endpoint:
-
-   ```bash
-   curl http://localhost:14268/api/traces
-   ```
-
-3. Check logs for errors:
-   ```bash
-   docker logs grant-api | grep -i "tracing\|opentelemetry"
-   ```
-
-### High Overhead
-
-1. Reduce sampling rate:
-
-   ```bash
-   TRACING_SAMPLING_RATE=0.1
-   ```
-
-2. Disable verbose instrumentations:
-   ```typescript
-   '@opentelemetry/instrumentation-fs': { enabled: false },
-   '@opentelemetry/instrumentation-dns': { enabled: false },
-   ```
-
-### Missing Context
-
-Ensure you're using the tracer properly:
-
-```typescript
-// ❌ Bad: New span without context
-const span = tracer.startSpan('operation');
-
-// ✅ Good: Active span maintains context
-tracer.startActiveSpan('operation', (span) => {
-  // Context is propagated automatically
-});
-```
-
-## Next Steps
-
-- **Add custom metrics**: [Metrics Guide](/advanced-topics/metrics)
-- **Set up dashboards and alerts**: [Metrics & Monitoring](/advanced-topics/metrics)
-
-## Resources
-
-- [OpenTelemetry Documentation](https://opentelemetry.io/docs/)
-- [OpenTelemetry JavaScript](https://opentelemetry.io/docs/instrumentation/js/)
-- [Jaeger Documentation](https://www.jaegertracing.io/docs/)
-- [AWS X-Ray Documentation](https://docs.aws.amazon.com/xray/)
+| Issue             | What to check                                                                                                     |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------- |
+| No traces         | `TRACING_ENABLED=true`; correct `JAEGER_ENDPOINT` or `OTLP_ENDPOINT`; logs for "tracing" / "OpenTelemetry" errors |
+| High overhead     | Lower `TRACING_SAMPLING_RATE`; ensure noisy instrumentations (e.g. fs, dns) are disabled in bootstrap             |
+| Span not in trace | Use `startActiveSpan` (not `startSpan`) so the span is attached to the current context                            |
 
 ---
 
-**Next**: Learn about [Metrics Collection](/advanced-topics/metrics) →
+**Related:**
+
+- [Observability Overview](/advanced-topics/observability-overview) — Logging, metrics, telemetry, tracing
+- [Metrics](/advanced-topics/metrics) — Prometheus metrics and dashboards
+- [Configuration](/getting-started/configuration) — All environment variables
+
+**References:**
+
+- [OpenTelemetry JS](https://opentelemetry.io/docs/instrumentation/js/)
+- [Jaeger](https://www.jaegertracing.io/docs/)

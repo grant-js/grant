@@ -16,7 +16,6 @@ When working on a topic below, read the linked doc for detailed patterns, conven
 | Authentication, JWT, sessions, JWKS | `docs/architecture/security.md` |
 | Database schema, entity relationships, ER diagrams | `docs/architecture/data-model.md` |
 | System overview, tech stack, design principles | `docs/architecture/overview.md` |
-| File/image storage adapter pattern | `docs/architecture/file-storage.md` |
 
 ## Core concepts (domain-specific knowledge)
 
@@ -41,6 +40,7 @@ When working on a topic below, read the linked doc for detailed patterns, conven
 | Grafana dashboards (first dashboard walkthrough) | `docs/advanced-topics/grafana-dashboards.md` |
 | Umami dashboards (first analytics dashboard) | `docs/advanced-topics/umami-dashboards.md` |
 | Email service, adapter pattern | `docs/advanced-topics/email-service.md` |
+| File/image storage adapter pattern | `docs/advanced-topics/file-storage.md` |
 | Background jobs, tenant context | `docs/advanced-topics/job-scheduling.md` |
 | GDPR, data export/deletion | `docs/advanced-topics/privacy-settings.md` |
 

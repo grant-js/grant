@@ -29,7 +29,7 @@ Grant stores all data in PostgreSQL using [Drizzle ORM](https://orm.drizzle.team
 
 How users, accounts, organizations, and projects relate to each other:
 
-```mermaid
+```bmermaid
 erDiagram
     Users ||--o{ Accounts : "owns"
     Users }o--o{ Organizations : "member of"
@@ -44,7 +44,7 @@ Each many-to-many relationship is backed by a pivot table (`organization_users`,
 
 How permissions are structured from user down to resource:
 
-```mermaid
+```bmermaid
 erDiagram
     Users }o--o{ Roles : "assigned"
     Roles }o--o{ Groups : "contains"

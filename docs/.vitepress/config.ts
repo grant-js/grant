@@ -1,5 +1,8 @@
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
+import IconsResolver from 'unplugin-icons/resolver';
+import Icons from 'unplugin-icons/vite';
+import Components from 'unplugin-vue-components/vite';
 import { withMermaid } from 'vitepress-plugin-mermaid';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -70,7 +73,6 @@ export default withMermaid({
           items: [
             { text: 'Introduction', link: '/getting-started/introduction' },
             { text: 'Quick Start', link: '/getting-started/quick-start' },
-            { text: 'Installation', link: '/getting-started/installation' },
             { text: 'Configuration', link: '/getting-started/configuration' },
           ],
         },
@@ -82,7 +84,6 @@ export default withMermaid({
             { text: 'RBAC System', link: '/architecture/rbac' },
             { text: 'Data Model', link: '/architecture/data-model' },
             { text: 'Security', link: '/architecture/security' },
-            { text: 'File Storage', link: '/architecture/file-storage' },
           ],
         },
         {
@@ -115,14 +116,12 @@ export default withMermaid({
             { text: 'Adding REST Endpoints', link: '/contributing/rest-api' },
             { text: 'Testing', link: '/contributing/testing' },
             { text: 'Security Audit', link: '/contributing/security-audit' },
-            { text: 'Interactive API docs', link: '/contributing/interactive-api-docs' },
           ],
         },
         {
           text: 'Deployment',
           items: [
             { text: 'Self-Hosting', link: '/deployment/self-hosting' },
-            { text: 'AWS CloudFormation', link: '/deployment/cloudformation' },
             { text: 'Docker', link: '/deployment/docker' },
             { text: 'Environment Setup', link: '/deployment/environment' },
           ],
@@ -140,6 +139,7 @@ export default withMermaid({
           items: [
             { text: 'Caching System', link: '/advanced-topics/caching' },
             { text: 'Email Service & Adapters', link: '/advanced-topics/email-service' },
+            { text: 'File Storage', link: '/advanced-topics/file-storage' },
             { text: 'Job Scheduling', link: '/advanced-topics/job-scheduling' },
             { text: 'Privacy Settings', link: '/advanced-topics/privacy-settings' },
             { text: 'Field Selection', link: '/advanced-topics/field-selection' },
@@ -202,8 +202,30 @@ export default withMermaid({
     languageAlias: {
       conf: 'ini', // Map .conf files to INI syntax highlighting
     },
-    config: (_md) => {
-      // Add custom markdown plugins here
+    config: (md) => {
+      const defaultFence =
+        md.renderer.rules.fence ??
+        ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
+
+      md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+        const token = tokens[idx];
+        const info = token.info.trim();
+
+        // Custom fence for beautiful-mermaid diagrams:
+        // ```bmermaid
+        // ```bmermaid diagram-narrow   (max-width 450px, centered)
+        const bmMatch = info.match(/^(bmermaid|beautiful-mermaid)(?:\s+(.+))?$/);
+        if (bmMatch) {
+          const wrapperClass = bmMatch[2] ?? undefined;
+          const classAttr =
+            wrapperClass != null
+              ? ` wrapper-class="${String(wrapperClass).replace(/"/g, '&quot;')}"`
+              : '';
+          return `<BeautifulMermaid :code='${JSON.stringify(token.content)}'${classAttr} />`;
+        }
+
+        return defaultFence(tokens, idx, options, env, self);
+      };
     },
   },
 
@@ -233,6 +255,18 @@ export default withMermaid({
       noExternal: ['vitepress-plugin-mermaid'], // Ensure Mermaid plugin is processed by Vite
     },
     plugins: [
+      Components({
+        include: [/\.vue$/, /\.vue\?vue/, /\.md$/],
+        dts: false,
+        resolvers: [
+          IconsResolver({
+            prefix: 'Icon',
+          }),
+        ],
+      }),
+      Icons({
+        autoInstall: true,
+      }),
       {
         name: 'fix-debug-esm',
         enforce: 'pre',

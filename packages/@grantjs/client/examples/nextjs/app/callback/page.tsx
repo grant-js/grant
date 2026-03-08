@@ -86,9 +86,7 @@ export default function CallbackPage() {
     <main>
       <header className="page-header">
         <h1 className="page-title">OAuth Callback</h1>
-        <p className="page-subtitle">
-          Token received from the Project OAuth redirect flow.
-        </p>
+        <p className="page-subtitle">Token received from the Project OAuth redirect flow.</p>
       </header>
 
       {parsed === null ? (
@@ -118,7 +116,9 @@ export default function CallbackPage() {
                 <span className="kv-value">{parsed.token_type ?? '—'}</span>
 
                 <span className="kv-key">expires_in</span>
-                <span className="kv-value">{parsed.expires_in ? `${parsed.expires_in}s` : '—'}</span>
+                <span className="kv-value">
+                  {parsed.expires_in ? `${parsed.expires_in}s` : '—'}
+                </span>
 
                 <span className="kv-key">state</span>
                 <span className="kv-value">{parsed.state || '—'}</span>
@@ -158,10 +158,7 @@ export default function CallbackPage() {
               {/* JWT payload collapsible */}
               {decodedPayload && (
                 <div style={{ marginTop: '0.75rem' }}>
-                  <button
-                    className="collapsible-toggle"
-                    onClick={() => setPayloadOpen((p) => !p)}
-                  >
+                  <button className="collapsible-toggle" onClick={() => setPayloadOpen((p) => !p)}>
                     <span className={`collapsible-chevron${payloadOpen ? ' open' : ''}`}>›</span>
                     JWT payload
                   </button>
@@ -188,14 +185,9 @@ export default function CallbackPage() {
 
                 <div className="perm-grid">
                   {permissions.map(({ action, granted }) => (
-                    <div
-                      key={action}
-                      className={`perm-item ${granted ? 'granted' : 'denied'}`}
-                    >
+                    <div key={action} className={`perm-item ${granted ? 'granted' : 'denied'}`}>
                       <span className="perm-label">Document:{action}</span>
-                      <span
-                        className={`badge ${granted ? 'badge-success' : 'badge-error'}`}
-                      >
+                      <span className={`badge ${granted ? 'badge-success' : 'badge-error'}`}>
                         {granted ? 'granted' : 'denied'}
                       </span>
                     </div>
@@ -206,7 +198,8 @@ export default function CallbackPage() {
               <section className="section">
                 <h2 className="section-title">GrantGate</h2>
                 <p className="section-desc">
-                  Content gated by <code>Document:Update</code>. If denied, the fallback renders instead.
+                  Content gated by <code>Document:Update</code>. If denied, the fallback renders
+                  instead.
                 </p>
 
                 <GrantGate

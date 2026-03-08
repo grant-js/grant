@@ -12,7 +12,6 @@ Grant is designed to be self-hosted, giving you complete control over your data 
 Grant can be self-hosted using:
 
 - **Docker Compose** - For local development and small deployments
-- **AWS** - Using CloudFormation templates for production deployments
 
 ## Deployment Options
 
@@ -63,28 +62,13 @@ Perfect for local development, testing, and small deployments.
 
 See the **[Docker Deployment](/deployment/docker)** guide for detailed instructions.
 
-### Option 2: AWS CloudFormation (Recommended for Production)
-
-Fully managed AWS deployment with auto-scaling, load balancing, and managed databases.
-
-**Features:**
-
-- Auto-scaling API instances
-- AWS RDS PostgreSQL database
-- ElastiCache Redis for caching
-- Application Load Balancer
-- CloudWatch monitoring
-- Automatic backups
-
-See the **[AWS CloudFormation](/deployment/cloudformation)** guide for detailed instructions.
-
-### Option 3: Manual Deployment
+### Option 2: Manual Deployment
 
 Deploy to any cloud provider or your own servers.
 
 **Requirements:**
 
-- Node.js 18+ runtime
+- Node.js 22+ runtime
 - PostgreSQL 14+ database
 - Redis 7+ (optional, for caching)
 - Reverse proxy (Nginx/Caddy)
@@ -295,9 +279,8 @@ For common deployment issues, check [Docker Deployment](/deployment/docker) and 
 ## Related Documentation
 
 - **[Docker Deployment](/deployment/docker)** - Docker Compose setup
-- **[AWS CloudFormation](/deployment/cloudformation)** - AWS deployment
 - **[Configuration](/getting-started/configuration)** - Environment variables
-- **[Installation](/getting-started/installation)** - Local development setup
+- **[Quick Start](/getting-started/quick-start)** - Local development setup
 
 ---
 

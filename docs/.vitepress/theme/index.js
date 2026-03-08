@@ -6,6 +6,7 @@ import './custom.css';
 
 import ApiConfig from './components/ApiConfig.vue';
 import ApiTryIt from './components/ApiTryIt.vue';
+import BeautifulMermaid from './components/BeautifulMermaid.vue';
 import FlowSelector from './components/FlowSelector.vue';
 
 export default {
@@ -13,6 +14,7 @@ export default {
   enhanceApp({ app }) {
     app.component('ApiConfig', ApiConfig);
     app.component('ApiTryIt', ApiTryIt);
+    app.component('BeautifulMermaid', BeautifulMermaid);
     app.component('FlowSelector', FlowSelector);
   },
   setup() {

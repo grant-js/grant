@@ -10,12 +10,15 @@
   },
   "description": "Multi-tenant RBAC platform with monorepo architecture",
   "scripts": {
+    "env:setup": "node scripts/env/setup.mjs",
     "build": "turbo build",
+    "predev": "pnpm env:setup",
     "dev": "turbo dev",
     "dev:docs": "pnpm --filter grant-docs dev",
     "dev:web": "pnpm --filter grant-web dev",
     "dev:api": "pnpm --filter grant-api dev",
     "dev:both": "concurrently --kill-others-on-fail --success first --raw \"pnpm dev:api\" \"pnpm dev:web\"",
+    "config": "pnpm --filter grant-config dev",
     "lint": "turbo lint",
     "lint:fix": "turbo lint:fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,graphql}\" --ignore-path .gitignore",
@@ -51,7 +54,8 @@
     "audit:pnpm": "pnpm audit --recursive",
     "changeset": "changeset",
     "version": "changeset version",
-    "release": "pnpm build && changeset publish"
+    "release": "pnpm build && changeset publish",
+    "postinstall": "node scripts/env/setup.mjs --quiet"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.8",

@@ -37,15 +37,6 @@ docker-compose logs -f
 docker-compose down
 ```
 
-## Production Deployment
-
-Images are automatically built and pushed to ECR during CloudFormation deployment.
-
-### ECR Repositories
-
-- `grant-web` - Frontend container
-- `grant-api` - Backend container
-
 ## Environment Variables
 
 Required environment variables:

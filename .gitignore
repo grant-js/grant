@@ -8,6 +8,8 @@ build/
 .next/
 out/
 tsconfig.tsbuildinfo
+# Next.js auto-generated (do not format/lint; Next.js controls content)
+next-env.d.ts
 
 # VitePress
 docs/.vitepress/cache/

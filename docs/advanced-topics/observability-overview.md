@@ -9,7 +9,7 @@ The API provides **structured logging**, **metrics**, **log-shipping**, **tracin
 
 ## Architecture
 
-```mermaid
+```bmermaid
 flowchart TB
   API[API]
   API --> Logs[Logging Pino]

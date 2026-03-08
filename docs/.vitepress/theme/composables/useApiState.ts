@@ -64,7 +64,7 @@ function persist() {
         accounts: state.accounts,
         selectedFlow: state.selectedFlow,
         variables: state.variables,
-      }),
+      })
     );
   } catch {
     /* storage full or blocked */
@@ -104,7 +104,7 @@ async function verifyConnection(): Promise<{
       id: String(a.id ?? ''),
       type: String(a.type ?? ''),
       ownerId: String(a.ownerId ?? ''),
-    }),
+    })
   );
 
   state.accounts = accounts;
@@ -189,6 +189,16 @@ export function useApiState() {
     return out;
   }
 
+  function setAccounts(accounts: unknown) {
+    const list = Array.isArray(accounts) ? accounts : [];
+    state.accounts = list.map((a: Record<string, unknown>) => ({
+      id: String(a.id ?? ''),
+      type: String(a.type ?? ''),
+      ownerId: String(a.ownerId ?? ''),
+    }));
+    persist();
+  }
+
   function clearState() {
     state.accessToken = '';
     state.refreshToken = '';
@@ -204,6 +214,7 @@ export function useApiState() {
   return {
     state,
     setVariable,
+    setAccounts,
     getVariable,
     resolveTemplate,
     resolveDeep,

@@ -15,6 +15,25 @@ const isOrg = computed(() => flow.value === 'organization')
 const isPersonal = computed(() => flow.value === 'personal')
 const hasFlow = computed(() => !!flow.value)
 
+const personalAccount = computed(() => state.accounts.find((a) => a.type === 'personal') ?? null)
+const organizationAccount = computed(() => state.accounts.find((a) => a.type === 'organization') ?? null)
+const hasPersonal = computed(() => !!personalAccount.value)
+const hasOrganization = computed(() => !!organizationAccount.value)
+const hasBothAccounts = computed(() => hasPersonal.value && hasOrganization.value)
+const needsComplementaryAccount = computed(
+  () =>
+    hasFlow.value &&
+    !hasBothAccounts.value &&
+    ((isPersonal.value && !hasPersonal.value) || (isOrg.value && !hasOrganization.value))
+)
+const complementaryAccountLabel = computed(() =>
+  isOrg.value && !hasOrganization.value
+    ? 'Organization'
+    : isPersonal.value && !hasPersonal.value
+      ? 'Personal'
+      : ''
+)
+
 /* ── Scope helpers ──────────────────────────────────────── */
 
 function projectScope() {
@@ -124,12 +143,14 @@ const authUrl = computed(() => {
 
 # Integration Guide
 
-This tutorial walks you from a running Grant instance to a fully configured RBAC setup: resources, permissions, roles, a project user, and a JWT access token. By the end you will have everything needed to integrate the [Server SDK](/integration/server-sdk) or [Client SDK](/integration/client-sdk) into your application.
+This tutorial walks you from a running Grant instance to a fully configured RBAC setup: resources, permissions, groups, roles, a project user, an api-key, a JWT access token and an auth app. By the end you will have everything needed to integrate the [Server SDK](/integration/server-sdk) or [Client SDK](/integration/client-sdk) into your application.
 
 ::: info Prerequisites
+
 - Grant running locally — see [Quick Start](/getting-started/quick-start)
-- `curl` and a terminal (optional — you can run every request from this page)
-:::
+- Set up email provider — see [Email Service](/advanced-topics/email-service)
+- Complete the sign up process with email provider — see [Email verification](/architecture/security#email-verification)
+  :::
 
 ## Step 1 — Setup
 
@@ -149,7 +170,21 @@ Choose **Personal** or **Organization** above to continue.
 
 <div v-if="hasFlow">
 
-<div v-if="isOrg">
+<div v-if="needsComplementaryAccount" class="vp-doc">
+
+### Create your {{ complementaryAccountLabel }} account
+
+You only have one account type. Creating the complementary account lets you use the **{{ complementaryAccountLabel }}** flow. The API creates it for you (personal if you only had organization, or organization if you only had personal). After creation, the new account is added to the list above and **ACCOUNT_ID** is set so the rest of the steps work as if you had both accounts from the start.
+
+<ApiTryIt
+  method="POST"
+  path="/api/me/accounts"
+  :captures="{ ACCOUNT_ID: 'data.account.id', '$accounts': 'data.accounts' }"
+/>
+
+</div>
+
+<div v-if="isOrg && !needsComplementaryAccount">
 
 ### Create an Organization
 

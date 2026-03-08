@@ -9,7 +9,7 @@ Grant uses the **Adapter Pattern** for caching — a single interface with swapp
 
 ## Architecture
 
-```mermaid
+```bmermaid
 graph TB
     Server[Server.ts] --> Factory[CacheFactory]
     Factory --> Strategy{CACHE_STRATEGY}

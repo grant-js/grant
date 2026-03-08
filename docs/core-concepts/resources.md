@@ -9,7 +9,7 @@ A **resource** is a named entity that declares which actions can be performed on
 
 ## How It Fits Together
 
-```mermaid
+```bmermaid
 graph LR
     Resource -->|"defines"| Permission
     Permission -->|"bundled into"| Group

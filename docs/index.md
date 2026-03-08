@@ -2,8 +2,8 @@
 layout: home
 
 hero:
-  name: 'Modern'
-  text: 'Authorization Platform'
+  name: 'Open Auth'
+  text: 'Identity & Access Platform'
   tagline: 'Open-source, self-hosted, ready to deploy'
   actions:
     - theme: brand
@@ -17,37 +17,40 @@ hero:
       link: https://github.com/logusgraphics/grant
 
 features:
-  - icon: 🔐
+  - icon:
+      src: /icons/feature-rbac.svg
     title: Multi-Tenant RBAC
     details: Account-based multi-tenancy with organization and project isolation, flexible permission system with action-based scoping.
-  - icon: 🏢
+  - icon:
+      src: /icons/feature-workspaces.svg
     title: Account Workspaces
-    details: Flexible workspace model supporting both personal accounts for individual users and organization accounts for teams, with seamless switching and role-based access.
-  - icon: 🚀
+    details: Flexible workspace model with support fo personal and organization accounts with seamless switching and role-based access.
+  - icon:
+      src: /icons/feature-dx.svg
     title: Developer Experience
-    details: TypeScript-first with full type safety, comprehensive SDK for Node.js, Express, Next.js, and more.
-  - icon: 🌍
+    details: TypeScript-first with full type safety, rich tooling, client and server SDKs with support for agnostic and framework specific integration.
+  - icon:
+      src: /icons/feature-i18n.svg
     title: Internationalization
-    details: Built-in i18n/l10n support with automatic error message translation in multiple languages (English, German).
-  - icon: 🌐
+    details: Built-in internationalization and localization support with automatic error message translation in multiple languages.
+  - icon:
+      src: /icons/feature-selfhost.svg
     title: Self-Hosted Deployment
-    details: Deploy on your own infrastructure with Docker Compose, AWS CloudFormation templates, or any container platform.
-  - icon: 🛡️
+    details: Deploy on your own infrastructure with Docker Compose, Kubernetes, or any container-based platform.
+  - icon:
+      src: /icons/feature-privacy.svg
     title: Privacy Compliance
-    details: GDPR-compliant data export and account deletion with configurable retention periods, ensuring user privacy rights and regulatory compliance.
+    details: GDPR-compliant data export and account deletion with configurable retention periods, ensuring user privacy rights.
 ---
-
-# Documentation
-
-Welcome to the Grant documentation. Grant is an open-source, multi-tenant RBAC platform that you self-host on your own infrastructure.
 
 ## Quick Start
 
 Get up and running with Grant in minutes:
 
 - **[Quick Start Guide](/getting-started/quick-start)** - From `git clone` to running in under 10 minutes
+- **[Integration Guide](/integration/guide)** - Simple walkthrough on how to guard your apps and test auth flows
 - **[Self-Hosting](/deployment/self-hosting)** - Production deployment on your infrastructure
-- **[Local Development](/contributing/guide)** - Set up your development environment
+- **[Contributing](/contributing/guide)** - How to support this project and prepare the features you need for review
 
 ## What You'll Find Here
 
@@ -55,34 +58,34 @@ Get up and running with Grant in minutes:
 
 <div class="audience-card">
 <div class="audience-header">
-<h3>For Developers</h3>
+<h3><span class="use-case-title"><span class="use-case-icon"><IconFluentColorCode20 /></span><span>For Developers</span></span></h3>
 </div>
-<ul class="feature-list">
-<li><strong>API Reference</strong><br>Complete REST and GraphQL API documentation</li>
-<li><strong>SDKs</strong><br>Server SDK (Express, Fastify, NestJS, Next.js) and Client SDK (React)</li>
-<li><strong>CLI</strong><br>Setup, authentication, and TypeScript type generation</li>
+<ul class="grant-icon-list">
+<li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>API Reference</strong><br>Complete REST and GraphQL API documentation</span></li>
+<li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>SDKs</strong><br>Server SDK (Express, Fastify, NestJS, Next.js) and Client SDK (React)</span></li>
+<li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>CLI</strong><br>Setup, authentication, and TypeScript type generation</span></li>
 </ul>
 </div>
 
 <div class="audience-card">
 <div class="audience-header">
-<h3>For DevOps</h3>
+<h3><span class="use-case-title"><span class="use-case-icon"><IconFluentColorCloud20 /></span><span>For DevOps</span></span></h3>
 </div>
-<ul class="feature-list">
-<li><strong>Deployment Guides</strong><br>Docker Compose, AWS CloudFormation</li>
-<li><strong>Configuration</strong><br>Environment setup and optimization</li>
-<li><strong>Observability</strong><br>Structured logging, tracing, and metrics</li>
+<ul class="grant-icon-list">
+<li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Deployment Guides</strong><br>Docker Compose and manual deployment</span></li>
+<li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Configuration</strong><br>Environment setup and optimization</span></li>
+<li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Observability</strong><br>Structured logging, tracing, and metrics</span></li>
 </ul>
 </div>
 
 <div class="audience-card">
 <div class="audience-header">
-<h3>For Architects</h3>
+<h3><span class="use-case-title"><span class="use-case-icon"><IconFluentColorGlobeShield20 /></span><span>For Architects</span></span></h3>
 </div>
-<ul class="feature-list">
-<li><strong>Architecture Overview</strong><br>System design and components</li>
-<li><strong>Multi-Tenancy</strong><br>Account-based design and isolation</li>
-<li><strong>Security</strong><br>Authentication, authorization, and compliance</li>
+<ul class="grant-icon-list">
+<li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Architecture Overview</strong><br>System design and components</span></li>
+<li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Multi-Tenancy</strong><br>Account-based design and isolation</span></li>
+<li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Security</strong><br>Authentication, authorization, and compliance</span></li>
 </ul>
 </div>
 
@@ -92,9 +95,10 @@ Get up and running with Grant in minutes:
 
 - **[RBAC System](/architecture/rbac)** - Understanding the permission model
 - **[API Keys](/core-concepts/api-keys)** - User-scoped and project-level API keys, scopes, exchange
-- **[Server SDK](/integration/server-sdk)** - Protect routes with @grantjs/server (Express, Fastify)
-- **[Client SDK](/integration/client-sdk)** - Permission-based UI with @grantjs/client (React hooks, GrantGate)
-- **[Grant CLI](/integration/cli)** - Setup, authentication, and typings generation
+- **[Integration Guide](/integration/guide)** - Interactive tutorial with instant results
+- **[Server SDK](/integration/server-sdk)** - Protect routes with @grantjs/server
+- **[Client SDK](/integration/client-sdk)** - Permission-based UI with @grantjs/client
+- **[Grant CLI](/integration/cli)** - Setup, authentication, and typings generation with @grantjs/cli
 - **[Multi-Tenancy](/architecture/multi-tenancy)** - Account and organization isolation
 - **[Self-Hosting](/deployment/self-hosting)** - Deploy on your infrastructure
 - **[REST API](/api-reference/rest-api)** - Complete REST API documentation

@@ -9,7 +9,7 @@ Grant uses the **Adapter Pattern** for background jobs — a single `IJobAdapter
 
 ## Architecture
 
-```mermaid
+```bmermaid diagram-narrow
 graph TB
     Server[Server Startup] --> Init[initializeJobs]
     Init --> Factory[JobFactory]

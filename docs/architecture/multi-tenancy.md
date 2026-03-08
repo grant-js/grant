@@ -9,7 +9,7 @@ Grant uses account-based multi-tenancy with three isolation levels: **Account**,
 
 ## Tenant Levels
 
-```mermaid
+```bmermaid diagram-narrow
 graph TB
     User["User<br/>(person)"]
     Account["Account<br/>(personal or organization)"]
@@ -22,24 +22,28 @@ graph TB
     Org -->|contains| Project
 ```
 
-### Account
+### <span class="use-case-title"><span class="use-case-icon"><IconFluentColorPersonKey20 /></span><span>Account</span></span>
 
 A person-centric identity. Each account has an **owner** (User) and a **type** — personal or organization. Accounts are the top-level tenant and link to projects via the `account_projects` pivot table. Users can own multiple accounts and switch between them without re-authenticating.
 
-### Organization
+### <span class="use-case-title"><span class="use-case-icon"><IconFluentColorBuildingPeople20 /></span><span>Organization</span></span>
 
 A business entity that groups related projects and team members. Organizations contain:
 
-- **Members** — users who belong to the organization (via `organization_users`)
-- **Projects** — isolated environments managed by the organization (via `organization_projects`)
-- **Roles, Groups, Permissions** — scoped to the organization level for managing access to the organization itself
+<ul class="grant-icon-list">
+  <li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Members</strong> — users who belong to the organization (via <code>organization_users</code>)</span></li>
+  <li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Projects</strong> — isolated environments managed by the organization (via <code>organization_projects</code>)</span></li>
+  <li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Roles, Groups, Permissions</strong> — scoped to the organization level for managing access to the organization itself</span></li>
+</ul>
 
-### Project
+### <span class="use-case-title"><span class="use-case-icon"><IconFluentColorDocumentFolder20 /></span><span>Project</span></span>
 
 A fully isolated environment for managing external system identities. Each project independently contains:
 
-- **Users, Roles, Groups, Permissions, Resources** — all scoped to the project
-- **API Keys and Signing Keys** — project-scoped credentials and JWT signing
+<ul class="grant-icon-list">
+  <li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Users, Roles, Groups, Permissions, Resources</strong> — all scoped to the project</span></li>
+  <li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>API Keys and Signing Keys</strong> — project-scoped credentials and JWT signing</span></li>
+</ul>
 
 There is **no cross-project inheritance**. Two projects within the same organization share nothing unless entities are explicitly created in both.
 
@@ -54,6 +58,7 @@ Every RBAC entity (role, group, permission) is scoped to exactly one tenant via 
 | **Groups**       | `organization_groups`      | `project_groups`                       |
 | **Permissions**  | `organization_permissions` | `project_permissions`                  |
 | **Resources**    | —                          | `project` (direct FK)                  |
+| **Apps**         | —                          | `project_apps` (direct FK)             |
 | **API Keys**     | —                          | `project` (direct FK)                  |
 | **Signing Keys** | —                          | Scoped via `scope_tenant` + `scope_id` |
 

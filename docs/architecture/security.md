@@ -34,21 +34,35 @@ The flow supports three actions: **login** (existing user), **register** (new ac
 
 ### JWT Token Structure
 
+All JWTs include a **`type`** claim (`TokenType`) that identifies how the token was issued. Optional claims depend on `type`.
+
+**Common claims (all token types):**
+
 ```typescript
 {
   sub: string;    // User ID
-  aud: string;    // Platform API URL (e.g. "https://api.grant.com")
-  iss: string;    // Same as aud (platform is both issuer and audience)
+  aud: string;    // Audience (platform API URL for sessions; client_id for project-app tokens)
+  iss: string;    // Issuer URL (platform or project JWKS issuer)
   exp: number;    // Expiration timestamp
   iat: number;    // Issued at
-  jti: string;    // Session ID (user sessions) or API Key ID (API keys)
-  scope?: string; // Tenant scope for API keys (e.g. "project:uuid")
+  jti: string;    // Session ID, API Key ID, or project-app token id
+  type: TokenType; // "session" | "apiKey" | "projectApp" — required
 }
 ```
 
-- **`aud` / `iss`** — Both set to the platform API URL per RFC 7519
-- **`jti`** — Identifies the session or API key, enabling targeted revocation
-- **`scope`** — Present in API key tokens to identify tenant context; for user sessions, scope is stored in the session's `audience` field in the database
+**TokenType and optional claims:**
+
+| type | Description | scope | scopes | isVerified |
+| ---- | ----------- | ----- | ------ | ---------- |
+| **session** | User login/refresh (system key) | Optional (session audience) | — | Yes (email verification) |
+| **apiKey** | API key exchange (project key) | Required (tenant scope) | — | — |
+| **projectApp** | Project OAuth app (project key) | Required (tenant scope) | Yes (consented resource:action) | — |
+
+- **scope** — Tenant scope (e.g. accountProjectUser / organizationProjectUser with id). Required for apiKey and projectApp; for session, scope can be taken from the session's audience or from the request.
+- **scopes** — Only when type is projectApp. Array of granted scope slugs (resource:action) — intersection of the app's configured scopes and the user's project permissions. Authorization is capped to this list.
+- **isVerified** — Only for session tokens (email verification status). Omitted for API key and project-app tokens (treated as verified).
+- **aud** / **iss** — For sessions, both are the platform API URL per RFC 7519. For project-app tokens, aud is the ProjectApp client_id and iss is the project JWKS issuer.
+- **jti** — Identifies the session, API key, or project-app token, enabling targeted revocation.
 
 ## Session Management
 
@@ -62,7 +76,7 @@ Sessions are unique per combination of **user + tenant scope + user agent + IP a
 
 ### Session Lifecycle
 
-```mermaid
+```bmermaid
 sequenceDiagram
     participant Client
     participant API
@@ -132,58 +146,88 @@ The JWKS HTTP endpoints exist for **external verifiers** (your backend services,
 
 ### Project OAuth
 
-Projects can register **OAuth apps** (ProjectApp) so that project users can sign in with a provider (e.g. GitHub) and receive tokens scoped to that project, without using API keys. This follows the same **global user + scoped authorization** model: the user is resolved globally (find or create by provider/email), then membership is checked against `project_users`, and a JWT is issued with project scope.
+Projects can register **OAuth apps** (ProjectApp) so that project users can sign in with a provider (e.g. GitHub) and receive tokens scoped to that project, without using API keys. This follows the same **global user + scoped authorization** model: the user is resolved globally (find or create by provider/email), then membership is checked against project users, and a JWT is issued with project scope.
 
-**Flow:**
+#### Flow
 
-1. **Authorize:** The tenant app (SPA) redirects the user to `GET /api/auth/project/authorize?client_id={ProjectApp.clientId}&redirect_uri={allowed URI}&state={optional}`. The API loads the ProjectApp by `client_id`, validates `redirect_uri` against the app’s allowed list, stores state in cache, and redirects the user to the provider (e.g. GitHub) with a state that identifies the project flow.
-2. **Callback:** The provider redirects to `GET /api/auth/project/callback?code=…&state=…`. The API decodes state, loads the ProjectApp, exchanges the code for a provider token (using the project callback URL), resolves the global user (find by provider, link by email, or create), checks `project_users` membership, resolves scope (`accountProjectUser` or `organizationProjectUser`), signs a JWT with the **project signing key** (same as API key tokens), and redirects to the app’s `redirect_uri` with the access token in the URL fragment.
+| Step | Endpoint | What happens |
+| ---- | -------- | ------------ |
+| **1. Authorize** | `GET /api/auth/project/authorize` | Tenant app (SPA) redirects the user here with query params **client_id**, **redirect_uri** (must be in the app's allowed list), and optional **state**. The API loads the ProjectApp by client_id, stores state in cache, and redirects the user to the provider (e.g. GitHub). |
+| **2. Callback** | `GET /api/auth/project/callback` | Provider redirects back with **code** and **state**. The API decodes state, loads the ProjectApp, exchanges the code for a provider token, resolves the global user (find by provider, link by email, or create), checks project membership, resolves scope (account or organization project user), signs a JWT with the project signing key, and redirects to the app's redirect_uri with the access token in the URL fragment. |
 
-**Token shape (project OAuth):**
+Query parameters for **Authorize:** `client_id`, `redirect_uri`, `state` (optional). For **Callback:** `code`, `state`.
 
-- `sub` — global user id
-- `aud` — ProjectApp `client_id` (so only that app accepts the token)
-- `iss` — project JWKS issuer (same as API key tokens: `{APP_URL}/acc/{accId}/prj/{projectId}` or `…/org/{orgId}/prj/{projectId}`)
-- `scope` — `accountProjectUser` or `organizationProjectUser` with id `accountId:projectId:userId` or `orgId:projectId:userId`
-- `type` — `apiKey` (no app scopes) or `projectApp` (when app has `scopes`; authorization capped by `scopes` claim)
-- `scopes` — (when `type === projectApp`) granted resource:action list
-- `exp`, `iat`, `jti` — standard claims
+```bmermaid
+sequenceDiagram
+    participant SPA as Tenant app (SPA)
+    participant API as Grant API
+    participant Provider as OAuth provider (e.g. GitHub)
 
-**Security:**
+    SPA->>API: GET /api/auth/project/authorize?client_id=&redirect_uri=&state=
+    API->>API: Load ProjectApp, store state in cache
+    API->>Provider: Redirect to provider
+    Provider->>API: Redirect with code & state
+    API->>API: Exchange code, resolve user, check project membership
+    API->>SPA: Redirect to redirect_uri#access_token=...
+```
 
-- `redirect_uri` is validated strictly against the ProjectApp’s `redirect_uris` on both authorize and callback.
+#### Token shape (project OAuth)
+
+Project-app tokens use the same base structure as [JWT Token Structure](#jwt-token-structure). The **type** is **projectApp** when the app has scopes configured; otherwise **apiKey**. Project-app–specific claims:
+
+| Claim | Description |
+| ----- | ----------- |
+| **sub** | Global user id. |
+| **aud** | ProjectApp client_id (only that app should accept the token). |
+| **iss** | Project JWKS issuer: `{APP_URL}/acc/{accId}/prj/{projectId}` or `…/org/{orgId}/prj/{projectId}`. |
+| **scope** | Tenant scope: accountProjectUser or organizationProjectUser with id `accountId:projectId:userId` or `orgId:projectId:userId`. |
+| **type** | **projectApp** when the app has scopes (authorization capped by **scopes**); otherwise **apiKey**. |
+| **scopes** | When type is projectApp: consented resource:action list (intersection of app scopes and user's project permissions). |
+| **exp**, **iat**, **jti** | Standard expiration, issued-at, and token id. |
+
+#### Security
+
+- **redirect_uri** is validated strictly against the ProjectApp's allowed redirect URIs on both authorize and callback.
 - State is stored in cache with a short TTL (e.g. 10 minutes) and deleted after use.
 - The provider (e.g. GitHub) must have the platform callback URL(s) registered. See [Configuring the GitHub OAuth app](#configuring-the-github-oauth-app) below.
-- **Enabled providers:** Each ProjectApp can set `enabledProviders` (e.g. `['github','email']`). If set, only those providers are allowed for authorize; if empty or null, all configured providers are allowed. Configure `PROJECT_OAUTH_EMAIL_ENTRY_URL` for the email entry page (default: `{SECURITY_FRONTEND_URL}/auth/project/email`).
-- **Email flow:** For `provider=email`, authorize redirects to the email entry URL; the app posts to `POST /api/auth/project/email/request` (client_id, redirect_uri, state, email); the API sends a magic link to the callback; callback validates the one-time token and resolves the user by email.
-- **Project-app token type:** When the app has `scopes` configured (resource:action strings), the issued token has `type: projectApp` and a `scopes` claim (intersection of app scopes and user's project permissions). Authorization is capped to those scopes; session and API key tokens are not capped.
-- **Extensibility:** Providers are implemented via `IProjectOAuthProvider`; adding a new provider (e.g. Google) requires implementing the interface, registering in the handler, and adding callback handling.
+- **Enabled providers:** Each ProjectApp can restrict which providers are allowed (e.g. GitHub, email). If set, only those are allowed for authorize; if empty or null, all configured providers are allowed. Configure **PROJECT_OAUTH_EMAIL_ENTRY_URL** for the email entry page (default: `{SECURITY_FRONTEND_URL}/auth/project/email`).
+- **Email flow:** For provider=email, authorize redirects to the email entry URL; the app posts to `POST /api/auth/project/email/request` with client_id, redirect_uri, state, email; the API sends a magic link; callback validates the one-time token and resolves the user by email.
+- **Project-app token type:** When the app has scopes configured (resource:action strings), the issued token has type **projectApp** and a **scopes** claim (intersection of app scopes and user's project permissions). Authorization is capped to those scopes; session and API key tokens are not capped.
+- **Extensibility:** Providers are implemented via **IProjectOAuthProvider**; adding a new provider (e.g. Google) requires implementing the interface, registering in the handler, and adding callback handling.
 
-**Related:** ProjectApp is created via GraphQL `createProjectApp` (scope: accountProject or organizationProject). Multi-provider flow (GitHub, email magic link), optional `enabledProviders` per app, and project-app token type with scope capping are described above.
+**Related:** ProjectApp is created via GraphQL **createProjectApp** (scope: accountProject or organizationProject). Multi-provider flow (GitHub, email magic link), optional enabled providers per app, and project-app token type with scope capping are described above.
 
 #### Configuring the GitHub OAuth app
 
-GitHub OAuth Apps support only **one** Authorization callback URL in the app settings. To support both **platform sign-in/up** (`/api/auth/github/callback`) and **Project App sign-in/up** (`/api/auth/project/callback`) with the same app, use a **base path** as the callback URL. GitHub accepts the registered URL and any **subpath** of it ([Redirect URLs](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#redirect-urls)).
+GitHub OAuth Apps allow only **one** Authorization callback URL. To support both platform sign-in and Project App sign-in with the same app, register the **base path** for auth; GitHub accepts that URL and any **subpath** ([Redirect URLs](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#redirect-urls)).
 
-1. In [GitHub → Settings → Developer settings → OAuth Apps](https://github.com/settings/developers), create or edit your OAuth App.
-2. Set **Authorization callback URL** to the API base path for auth, **not** a full callback path:
-   - **Local:** `http://localhost:4000/api/auth`
-   - **Production:** `https://api.yourdomain.com/api/auth` (replace with your API base URL + `/api/auth`).
-3. Ensure `GITHUB_CALLBACK_URL` and `GITHUB_PROJECT_CALLBACK_URL` in your API config use paths under that base (defaults are `{APP_URL}/api/auth/github/callback` and `{APP_URL}/api/auth/project/callback`, which are subpaths of `{APP_URL}/api/auth`).
+| Step | Action |
+| ---- | ------ |
+| 1 | In [GitHub → Settings → Developer settings → OAuth Apps](https://github.com/settings/developers), create or edit your OAuth App. |
+| 2 | Set **Authorization callback URL** to the API base path for auth (see table below), **not** a full callback path. |
+| 3 | Ensure **GITHUB_CALLBACK_URL** and **GITHUB_PROJECT_CALLBACK_URL** in your API config use paths under that base. |
+
+**Callback URL to set in GitHub:**
+
+| Environment | Authorization callback URL |
+| ----------- | -------------------------- |
+| Local | `http://localhost:4000/api/auth` |
+| Production | `https://api.yourdomain.com/api/auth` (replace with your API base URL + `/api/auth`) |
+
+Default API config values are `{APP_URL}/api/auth/github/callback` and `{APP_URL}/api/auth/project/callback` — both are subpaths of the base path above.
 
 No separate OAuth app is needed per project-app; one GitHub OAuth app serves both platform and project-app flows.
 
 ### Configuration
 
-| Variable                                    | Default      | Description                                   |
-| ------------------------------------------- | ------------ | --------------------------------------------- |
-| `JWT_ACCESS_TOKEN_EXPIRATION_MINUTES`       | `15`         | Access token lifetime                         |
-| `JWT_REFRESH_TOKEN_EXPIRATION_DAYS`         | `30`         | Refresh token lifetime                        |
-| `JWT_JWKS_MAX_AGE_SECONDS`                  | `3600`       | Cache-Control max-age for JWKS responses      |
-| `JWT_SYSTEM_SIGNING_KEY_CACHE_TTL_SECONDS`  | `300`        | TTL for cached signing and verification keys  |
-| `JWT_PER_PROJECT_KEYS_ENABLED`              | `true`       | Enable per-project signing for API key tokens |
-| `JOBS_SYSTEM_SIGNING_KEY_ROTATION_ENABLED`  | `false`      | Enable automatic system key rotation          |
-| `JOBS_SYSTEM_SIGNING_KEY_ROTATION_SCHEDULE` | Monthly cron | Rotation schedule                             |
+| Variable                                    | Default      | Description                                  |
+| ------------------------------------------- | ------------ | -------------------------------------------- |
+| `JWT_ACCESS_TOKEN_EXPIRATION_MINUTES`       | `15`         | Access token lifetime                        |
+| `JWT_REFRESH_TOKEN_EXPIRATION_DAYS`         | `30`         | Refresh token lifetime                       |
+| `JWT_JWKS_MAX_AGE_SECONDS`                  | `3600`       | Cache-Control max-age for JWKS responses     |
+| `JWT_SYSTEM_SIGNING_KEY_CACHE_TTL_SECONDS`  | `300`        | TTL for cached signing and verification keys |
+| `JOBS_SYSTEM_SIGNING_KEY_ROTATION_ENABLED`  | `false`      | Enable automatic system key rotation         |
+| `JOBS_SYSTEM_SIGNING_KEY_ROTATION_SCHEDULE` | Monthly cron | Rotation schedule                            |
 
 ## Password Policy
 

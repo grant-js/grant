@@ -9,7 +9,7 @@ API keys let external services authenticate with Grant using client credentials.
 
 ## Lifecycle
 
-```mermaid
+```bmermaid
 sequenceDiagram
     participant Admin
     participant Grant as Grant API

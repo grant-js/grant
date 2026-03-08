@@ -450,10 +450,7 @@ describe('Grant', () => {
       });
       await grant.authenticate(`Bearer ${token}`);
 
-      await grant.isAuthorized(
-        { resource: 'document', action: 'read' },
-        { resource: null }
-      );
+      await grant.isAuthorized({ resource: 'document', action: 'read' }, { resource: null });
 
       expect(mockService.getUserPermissions).toHaveBeenCalledWith(
         'user-123',
@@ -484,10 +481,7 @@ describe('Grant', () => {
       });
       await grant.authenticate(`Bearer ${token}`);
 
-      await grant.isAuthorized(
-        { resource: 'document', action: 'read' },
-        { resource: null }
-      );
+      await grant.isAuthorized({ resource: 'document', action: 'read' }, { resource: null });
 
       expect(mockService.getUserPermissions).toHaveBeenCalledWith(
         'user-123',

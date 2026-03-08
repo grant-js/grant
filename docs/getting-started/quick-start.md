@@ -4,7 +4,7 @@ Get Grant running locally in under 10 minutes: clone, start infrastructure, run 
 
 ## Prerequisites
 
-- **Node.js** 20+ and **pnpm** (`npm install -g pnpm` if you don't have it)
+- **Node.js** 22+ and **pnpm** (`npm install -g pnpm` if you don't have it)
 - **Docker** and **Docker Compose**
 
 ## 1. Clone the repository
@@ -16,10 +16,24 @@ cd grant
 
 ## 2. Start infrastructure
 
-Grant needs PostgreSQL and Redis. Docker Compose handles both:
+Start the infrastructure path(s) you need:
+
+### Core (database + cache)
 
 ```bash
-docker compose up -d
+docker compose up -d postgres redis
+```
+
+### Debugging (database/cache tooling)
+
+```bash
+docker compose up -d pgadmin redisinsight
+```
+
+### Observability (metrics, tracing, analytics)
+
+```bash
+docker compose up -d prometheus grafana jaeger umami-db umami
 ```
 
 Verify everything is healthy:
@@ -28,7 +42,7 @@ Verify everything is healthy:
 docker compose ps
 ```
 
-You should see `grant-postgres` and `grant-redis` running with status `healthy`.
+You should see at least `grant-postgres` and `grant-redis` running with status `healthy`.
 
 ## 3. Install dependencies
 
@@ -36,28 +50,15 @@ You should see `grant-postgres` and `grant-redis` running with status `healthy`.
 pnpm install
 ```
 
-## 4. Configure environment
+## 4. Environment config
 
-Copy the example environment files:
+For quick start, defaults are enough in most cases:
 
-```bash
-cp .env.example .env
-cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env
-```
+- `pnpm install` runs the **postinstall** script, which auto-creates missing `.env` files from `.env.example` (root, API, web, database, examples)
+- Existing `.env` files are never overwritten
+- If you changed ports/hosts, verify `APP_URL` and database/redis connection values match your local setup
 
-The defaults work out of the box for local development. The key variables:
-
-| File            | Variable              | Default                                                          | Purpose                            |
-| --------------- | --------------------- | ---------------------------------------------------------------- | ---------------------------------- |
-| `.env`          | `POSTGRES_PASSWORD`   | `grant_password`                                                 | Docker Compose PostgreSQL password |
-| `apps/api/.env` | `DB_URL`              | `postgresql://grant_user:grant_password@localhost:5432/grant_db` | API database connection            |
-| `apps/api/.env` | `APP_URL`             | `http://localhost:4000`                                          | API base URL (JWT issuer)          |
-| `apps/web/.env` | `NEXT_PUBLIC_API_URL` | `http://localhost:4000`                                          | Frontend API URL                   |
-
-::: tip
-For production, update passwords, enable rate limiting, and configure a real email provider. See the [Configuration Guide](/getting-started/configuration) for all options.
-:::
+Need custom auth, CORS, or provider settings? See the full [Configuration](/getting-started/configuration) guide.
 
 ## 5. Run database migrations and seed
 
@@ -85,7 +86,7 @@ Expected output:
 pnpm dev
 ```
 
-This starts both services:
+This runs the **predev** script (creating any missing `.env` files), then starts both services:
 
 | Service | URL                                            | Description        |
 | ------- | ---------------------------------------------- | ------------------ |
@@ -151,5 +152,5 @@ docker compose down -v
 ### `pnpm dev` fails to start
 
 - Ensure all dependencies are installed: `pnpm install`
-- Check Node.js version: `node --version` (requires 20+)
-- Verify environment files exist: `ls apps/api/.env apps/web/.env`
+- Check Node.js version: `node --version` (requires 22+)
+- Let predev create env files: run `pnpm dev` once (or `pnpm env:setup`), then check `apps/api/.env` and `apps/web/.env` exist
