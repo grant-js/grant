@@ -92,7 +92,8 @@
       "placeholder": "Select tags",
       "selected": "{count} selected",
       "clearAll": "Clear all",
-      "loading": "Loading tags..."
+      "loading": "Loading tags...",
+      "empty": "No tags available"
     },
     "actions": {
       "save": "Save Changes",
@@ -160,7 +161,7 @@
       "account": "Account",
       "settings": "Settings",
       "backToOrganization": "Back to Organization",
-      "signingKeys": "Signing Keys (JWKS)",
+      "signingKeys": "Signing Keys",
       "projectApps": "Apps"
     }
   },
@@ -172,9 +173,151 @@
     "system": "System"
   },
   "auth": {
+    "errors": {
+      "auth": {
+        "invalidOrUsedVerificationToken": "Link already used or invalid"
+      }
+    },
     "welcome": {
       "title": "Welcome to Grant",
       "description": "A modern authorization platform for individuals and organizations. Manage user access, permissions and roles for your applications with simplicity."
+    },
+    "assistant": {
+      "help": "Help",
+      "login": {
+        "passwordPolicy": {
+          "title": "Password requirements",
+          "description": "Use at least 6 characters. For stronger security we recommend a mix of letters, numbers and symbols."
+        },
+        "githubSignIn": {
+          "title": "Sign in with GitHub",
+          "description": "New users can create an account with GitHub in one click. Existing users will link their GitHub identity to sign in."
+        },
+        "forgotPassword": {
+          "title": "Forgot your password?",
+          "description": "Use the link below the form to request a secure reset link sent to your email."
+        }
+      },
+      "register": {
+        "accountType": {
+          "title": "Account type",
+          "description": "Choose Personal for solo use or Organization for teams. You can create or join organizations later."
+        },
+        "passwordStrength": {
+          "title": "Strong password",
+          "description": "The indicator shows how strong your password is. A mix of length, letters, numbers and symbols improves security."
+        },
+        "verification": {
+          "title": "Email verification",
+          "description": "After signing up you may need to verify your email before full access. Check your inbox for the link."
+        }
+      },
+      "forgotPassword": {
+        "checkInbox": {
+          "title": "Check your inbox",
+          "description": "If an account exists for that email, we send a reset link. Check spam if you don't see it."
+        },
+        "noEmail": {
+          "title": "No account?",
+          "description": "For security we don't reveal whether an email is registered. Try signing up if you're new."
+        }
+      },
+      "verifyEmail": {
+        "linkExpiry": {
+          "title": "Link expires soon",
+          "description": "Each verification link is valid for a short time (a few minutes). If it expires, go to the login page and use \"Resend verification email\" to get a new one."
+        },
+        "alreadyUsed": {
+          "title": "Link already used?",
+          "description": "If you already clicked the link and verified your email, you're all set—use \"Go to dashboard\" to continue. The link only works once for security."
+        },
+        "checkSpam": {
+          "title": "Can't find the email?",
+          "description": "Check your spam or junk folder. The message might take a minute to arrive. If you still don't see it, go to the login page and request a new verification email."
+        },
+        "resendLink": {
+          "title": "Need a new link?",
+          "description": "You can request a new verification email from the login page. Enter your email and choose \"Resend verification email\" if the option is available."
+        }
+      },
+      "resetPassword": {
+        "linkFromEmail": {
+          "title": "Link from your email",
+          "description": "You opened this page from the password reset email we sent you. Enter a new password below; the link is valid for a limited time. If you didn't request a reset, you can ignore the email or change your password to stay secure."
+        },
+        "linkExpired": {
+          "title": "Link expired or invalid?",
+          "description": "Reset links expire after a set time. If yours doesn't work or has expired, go to the \"Forgot password\" page and request a new reset link. We'll send another email to your address."
+        },
+        "strongPassword": {
+          "title": "Choose a strong password",
+          "description": "Use a mix of letters, numbers, and symbols, and avoid reusing a password you've used before. The strength indicator helps you meet the requirements. You'll use this password to sign in from now on."
+        },
+        "afterReset": {
+          "title": "After resetting",
+          "description": "Once you've set your new password, use \"Continue to login\" to sign in with your email and the new password. If you see an error, the link may have expired—request a new one from the Forgot password page."
+        }
+      },
+      "invitation": {
+        "whatIsThis": {
+          "title": "What is this invitation?",
+          "description": "You were invited to join an organization. Accept to get the role and access, or decline if you're not interested. You must be signed in to accept; use the same email address you were invited with."
+        },
+        "linkExpired": {
+          "title": "Invitation expired?",
+          "description": "Invitations are valid for a limited time (for example, 7 days). If yours has expired, ask the person who invited you to send a new invitation from the organization settings."
+        },
+        "alreadyAccepted": {
+          "title": "Already accepted?",
+          "description": "If you already accepted this invitation, you're all set. Use \"Go to organization\" to open the organization, or find it from your dashboard and switch to that workspace."
+        },
+        "signInRequired": {
+          "title": "Sign in to accept",
+          "description": "You need to be signed in to accept an invitation. Sign in with the email you were invited with, or register first if you don't have an account. After signing in you'll return here to complete the acceptance."
+        }
+      },
+      "projectEntry": {
+        "whatIsThis": {
+          "title": "What is this?",
+          "description": "You're signing in to a project app that uses Grant for authentication. Choose GitHub or email to continue. The app may request access to certain data; you'll see and approve that on the next screen if needed."
+        },
+        "requestedScopes": {
+          "title": "Requested permissions",
+          "description": "The list above shows what this app is asking to access (e.g. profile, email). You can allow or deny these on the consent screen after you sign in. Only grant access if you trust the app."
+        },
+        "trustApp": {
+          "title": "Is it safe?",
+          "description": "Only sign in if you trust the app and its publisher. You stay in control: you can deny access on the consent screen or revoke it later from your account settings."
+        }
+      },
+      "projectEmail": {
+        "linkFromEmail": {
+          "title": "Sign-in link by email",
+          "description": "Enter the email address for your Grant account. We'll send a one-time sign-in link to that address. Use the same email you use for the main Grant platform so your identity is linked correctly."
+        },
+        "checkInbox": {
+          "title": "Check your inbox",
+          "description": "After submitting, check your email (and spam/junk folder) for the sign-in link. Click the link to complete sign-in for this app. The link expires after a short time for security."
+        },
+        "sameEmail": {
+          "title": "Use your Grant email",
+          "description": "Use the same email you use to sign in to the Grant platform. If you don't have an account yet, you may need to register first from the main login page, then return here to sign in to the app."
+        }
+      },
+      "projectConsent": {
+        "reviewPermissions": {
+          "title": "Review before allowing",
+          "description": "This screen shows exactly what the app wants to access. Read the list and only click Allow if you're comfortable with those permissions. You can deny to cancel and the app won't get access."
+        },
+        "allowOrDeny": {
+          "title": "Allow or deny",
+          "description": "Allow grants the app the permissions listed above and redirects you back to the app. Deny cancels the request and the app will not receive access. You can revoke access later from your account if you change your mind."
+        },
+        "revokeLater": {
+          "title": "Change your mind later?",
+          "description": "You can revoke this app's access at any time from your account or profile settings. Revoking stops the app from using your data; you can always sign in again later to re-authorize if needed."
+        }
+      }
     },
     "form": {
       "name": {
@@ -333,6 +476,9 @@
       "missingToken": "Invalid Verification Link",
       "missingTokenDescription": "This verification link is invalid or missing required information.",
       "goToLogin": "Go to Login",
+      "goToDashboard": "Go to dashboard",
+      "invalidOrUsedTitle": "Link Already Used or Invalid",
+      "invalidOrUsedDescription": "This verification link was already used or is invalid. If you've already verified your email, go to the dashboard. Otherwise, log in to request a new verification email.",
       "redirecting": "Redirecting to login..."
     },
     "resendVerification": {
@@ -2451,7 +2597,8 @@
       "details": {
         "title": "Account",
         "titlePlural": "Accounts",
-        "description": "View and switch between workspaces"
+        "description": "View your workspace accounts, their features, and account IDs",
+        "idLabel": "Account ID"
       },
       "information": {
         "title": "Account Details",
@@ -2477,19 +2624,36 @@
         "description": "Your account type determines the features available to you",
         "currentAccount": "Current Workspace",
         "features": {
+          "title": "Features",
           "personal": {
             "title": "Personal Account Features",
-            "feature1": "Individual user access and permissions",
-            "feature2": "Personal project management",
-            "feature3": "Basic collaboration features"
+            "feature1Title": "Single-owner workspace",
+            "feature1Description": "Only you have access; projects are linked directly to your account.",
+            "feature2Title": "Personal Account Owner role",
+            "feature2Description": "Full control over your account and its projects.",
+            "feature3Title": "No member management",
+            "feature3Description": "No invitations or team roles; ideal for individual use.",
+            "feature4Title": "Account-scoped projects",
+            "feature4Description": "Projects are scoped to your account (account_projects); no organization layer.",
+            "feature5Title": "Individual use",
+            "feature5Description": "Ideal for side projects and individual development."
           },
           "organization": {
             "title": "Organization Account Features",
-            "feature1": "Team management and collaboration",
-            "feature2": "Advanced project management",
-            "feature3": "Organization-wide settings and controls"
+            "feature1Title": "Multiple members",
+            "feature1Description": "Invite users by email and assign roles (Owner, Admin, Dev, Viewer).",
+            "feature2Title": "Organization-level roles and permissions",
+            "feature2Description": "Manage members, create projects, and control access.",
+            "feature3Title": "Projects and members",
+            "feature3Description": "Organization contains projects and members; org roles apply to org projects.",
+            "feature4Title": "Four org roles",
+            "feature4Description": "Owner (full control), Admin (teams and permissions), Dev (resources and roles), Viewer (read-only).",
+            "feature5Title": "Team use",
+            "feature5Description": "Ideal for teams and business use."
           }
         },
+        "showMore": "Show more",
+        "showLess": "Show less",
         "complementary": {
           "title": "Create a Complementary Workspace",
           "description": "You can also create a {type} workspace to access additional features.",
@@ -2677,9 +2841,17 @@
         "includes": {
           "title": "Your data export will include:",
           "account": "Account information and settings",
+          "accountTitle": "Account",
+          "accountDescription": "Account information and settings",
           "profile": "Profile information and preferences",
+          "profileTitle": "Profile",
+          "profileDescription": "Profile information and preferences",
           "sessions": "Active and expired session history",
-          "activity": "Account activity and audit logs"
+          "sessionsTitle": "Sessions",
+          "sessionsDescription": "Active and expired session history",
+          "activity": "Account activity and audit logs",
+          "activityTitle": "Activity",
+          "activityDescription": "Account activity and audit logs"
         },
         "export": "Export My Data",
         "exporting": "Preparing Export...",
@@ -2698,7 +2870,7 @@
         },
         "deleted": {
           "title": "Deleted Accounts",
-          "description": "When you delete your account, your data is marked for deletion and will be permanently removed after 30 days. During this period, you can restore your account."
+          "description": "When you delete your account, your data is marked for deletion and will be permanently removed after {days} days. During this period, you can restore your account."
         },
         "backup": {
           "title": "Backup & Recovery",
@@ -2712,8 +2884,15 @@
         "consequences": {
           "title": "What happens when you delete your account:",
           "data": "All your account data, projects, and settings will be permanently deleted",
+          "dataTitle": "Account data",
+          "dataDescription": "All your account data, projects, and settings will be permanently deleted",
           "access": "You will lose access to all organizations and projects you're a member of",
-          "irreversible": "This action is irreversible and cannot be undone"
+          "accessTitle": "Access loss",
+          "accessDescription": "You will lose access to all organizations and projects you're a member of",
+          "irreversible": "This action is irreversible and cannot be undone",
+          "irreversibleTitle": "Irreversible",
+          "irreversibleDescription": "This action cannot be undone",
+          "retentionTitle": "Retention period"
         },
         "deleteButton": "Delete My Account",
         "dialog": {
@@ -2782,7 +2961,7 @@
     "success": {
       "title": "Invitation Accepted",
       "description": "You have successfully joined the organization!",
-      "redirecting": "Redirecting to organization..."
+      "goToOrganization": "Go to organization"
     },
     "error": {
       "title": "Error Accepting Invitation",
@@ -2810,7 +2989,7 @@
     }
   },
   "signingKeys": {
-    "title": "Signing Keys (JWKS)",
+    "title": "Signing Keys",
     "toolbar": {
       "rotate": "Rotate key",
       "create": "Create signing key"

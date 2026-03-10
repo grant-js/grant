@@ -115,7 +115,7 @@ export class OAuthHandler extends CacheHandler {
 
       const providerId = githubUser.id.toString();
 
-      const existingAuthMethod =
+      let existingAuthMethod =
         await this.userAuthenticationMethods.getUserAuthenticationMethodByProvider(
           UserAuthenticationMethodProvider.Github,
           providerId,
@@ -138,6 +138,17 @@ export class OAuthHandler extends CacheHandler {
             email: githubUser.email,
           };
         }
+      }
+
+      // Re-check by provider so we don't treat an existing GitHub user as new (e.g. first lookup missed)
+      if (!existingAuthMethod && !existingUserByEmail) {
+        existingAuthMethod =
+          await this.userAuthenticationMethods.getUserAuthenticationMethodByProvider(
+            UserAuthenticationMethodProvider.Github,
+            providerId,
+            undefined,
+            tx
+          );
       }
 
       const redirectUrl = storedState.redirectUrl;

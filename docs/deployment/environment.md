@@ -349,6 +349,7 @@ echo $DB_URL
 - **[Configuration](/getting-started/configuration)** - Complete configuration reference
 - **[Docker Deployment](/deployment/docker)** - Local infrastructure setup
 - **[Self-Hosting](/deployment/self-hosting)** - Self-hosting guide
+
 ---
 
 **Next Steps:**

@@ -2,7 +2,18 @@
 
 import { useMemo, useState } from 'react';
 
-import { AlertTriangle, Download, Trash2 } from 'lucide-react';
+import {
+  Activity,
+  AlertTriangle,
+  CalendarClock,
+  Download,
+  FolderOpen,
+  ShieldAlert,
+  Trash2,
+  User,
+  UserCog,
+  UserX,
+} from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { CopyToClipboard } from '@/components/common';
@@ -21,11 +32,33 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
+} from '@/components/ui/item';
 import { Label } from '@/components/ui/label';
 import { useEmailVerified } from '@/hooks/auth';
 import { usePrivacySettings } from '@/hooks/privacy';
 import { getCurrentUserId } from '@/lib/auth';
 import { useAuthStore } from '@/stores/auth.store';
+
+const DATA_EXPORT_INCLUDES = [
+  { key: 'account' as const, Icon: User },
+  { key: 'profile' as const, Icon: UserCog },
+  { key: 'sessions' as const, Icon: Activity },
+  { key: 'activity' as const, Icon: FolderOpen },
+] as const;
+
+const DELETION_CONSEQUENCES = [
+  { key: 'data' as const, Icon: Trash2 },
+  { key: 'access' as const, Icon: UserX },
+  { key: 'irreversible' as const, Icon: ShieldAlert },
+  { key: 'retention' as const, Icon: CalendarClock },
+] as const;
 
 export function SettingPrivacy() {
   const t = useTranslations('settings.privacy');
@@ -56,43 +89,24 @@ export function SettingPrivacy() {
           <p className="text-sm text-muted-foreground">{t('dataExport.info')}</p>
           <div className="rounded-lg border bg-muted/50 p-4">
             <p className="text-sm font-medium mb-2">{t('dataExport.includes.title')}</p>
-            <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-              <li>{t('dataExport.includes.account')}</li>
-              <li>{t('dataExport.includes.profile')}</li>
-              <li>{t('dataExport.includes.sessions')}</li>
-              <li>{t('dataExport.includes.activity')}</li>
-            </ul>
+            <ItemGroup className="gap-4">
+              {DATA_EXPORT_INCLUDES.map(({ key, Icon }) => (
+                <Item key={key} variant="default" size="sm">
+                  <ItemMedia variant="icon">
+                    <Icon className="size-4 text-muted-foreground" />
+                  </ItemMedia>
+                  <ItemContent>
+                    <ItemTitle>{t(`dataExport.includes.${key}Title`)}</ItemTitle>
+                    <ItemDescription>{t(`dataExport.includes.${key}Description`)}</ItemDescription>
+                  </ItemContent>
+                </Item>
+              ))}
+            </ItemGroup>
           </div>
           <Button onClick={handleExportData} disabled={isExporting} className="w-full sm:w-auto">
             <Download className="mr-2 h-4 w-4" />
             {isExporting ? t('dataExport.exporting') : t('dataExport.export')}
           </Button>
-        </div>
-      </SettingCard>
-
-      {/* Data Retention Card */}
-      <SettingCard title={t('dataRetention.title')} description={t('dataRetention.description')}>
-        <div className="space-y-4">
-          <div className="space-y-3">
-            <div>
-              <p className="text-sm font-medium mb-1">{t('dataRetention.active.title')}</p>
-              <p className="text-sm text-muted-foreground">
-                {t('dataRetention.active.description')}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium mb-1">{t('dataRetention.deleted.title')}</p>
-              <p className="text-sm text-muted-foreground">
-                {t('dataRetention.deleted.description')}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium mb-1">{t('dataRetention.backup.title')}</p>
-              <p className="text-sm text-muted-foreground">
-                {t('dataRetention.backup.description')}
-              </p>
-            </div>
-          </div>
         </div>
       </SettingCard>
 
@@ -109,11 +123,25 @@ export function SettingPrivacy() {
 
           <div className="space-y-3">
             <p className="text-sm font-medium">{t('accountDeletion.consequences.title')}</p>
-            <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-              <li>{t('accountDeletion.consequences.data')}</li>
-              <li>{t('accountDeletion.consequences.access')}</li>
-              <li>{t('accountDeletion.consequences.irreversible')}</li>
-            </ul>
+            <ItemGroup className="gap-4">
+              {DELETION_CONSEQUENCES.map(({ key, Icon }) => (
+                <Item key={key} variant="default" size="sm">
+                  <ItemMedia variant="icon">
+                    <Icon className="size-4 text-muted-foreground" />
+                  </ItemMedia>
+                  <ItemContent>
+                    <ItemTitle>{t(`accountDeletion.consequences.${key}Title`)}</ItemTitle>
+                    <ItemDescription>
+                      {key === 'retention'
+                        ? t('dataRetention.deleted.description', {
+                            days: process.env.NEXT_PUBLIC_ACCOUNT_DELETION_RETENTION_DAYS ?? '30',
+                          })
+                        : t(`accountDeletion.consequences.${key}Description`)}
+                    </ItemDescription>
+                  </ItemContent>
+                </Item>
+              ))}
+            </ItemGroup>
           </div>
 
           <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

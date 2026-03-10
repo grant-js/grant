@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -26,6 +26,7 @@ type FormValues = { email: string };
 
 export default function ProjectOAuthEmailPage() {
   const t = useTranslations('auth.projectOAuth.email');
+  const locale = useLocale();
   const searchParams = useSearchParams();
   const clientId = searchParams.get('client_id');
   const redirectUri = searchParams.get('redirect_uri');
@@ -68,6 +69,7 @@ export default function ProjectOAuthEmailPage() {
           email: values.email,
           ...(clientState && { client_state: clientState }),
           ...(scopeParam?.trim() && { scope: scopeParam.trim() }),
+          locale,
         }),
       });
       if (!res.ok) {

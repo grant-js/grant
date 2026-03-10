@@ -22,35 +22,36 @@ This page covers **authorization** (which actions need which permissions). These
 Actions that require authorization: **read** (single resource by ID), **query** (list/collection). Some resources expose only `query` (e.g. Project, Role, Tag, API Key); others support both `read` and `query`.
 
 ::: details Which resources have read vs query only
+
 - **Both read + query:** User, Account, Organization, Organization Member, Organization Invitation, Project User, User Session, User Authentication Method
-- **Query only:** Project, Resource, Role, Group, Permission, Tag, API Key (list with optional `ids` filter)
-:::
+- **Query only:** Project, Project App, Resource, Role, Group, Permission, Tag, API Key (list with optional `ids` filter)
+  :::
 
 ### Core Resources
 
-| Resource         | Actions                                                 | Description                          |
-| ---------------- | ------------------------------------------------------- | ------------------------------------ |
-| **User**         | `create` `read` `update` `delete` `query` `export-data` | Platform users                       |
-| **Account**      | `read` `delete` `query`                                 | Personal or organization workspace  |
-| **Organization** | `create` `read` `update` `delete` `query`               | Container for projects and members  |
-| **Project**      | `create` `update` `delete` `query`                      | Isolated environment (query only)   |
-| **Resource**     | `create` `update` `delete` `query`                      | Domain entities (query only)        |
-| **Role**         | `create` `update` `delete` `query`                      | Named permission sets (query only)   |
-| **Group**        | `create` `update` `delete` `query`                      | Role–resource permission bundles    |
-| **Permission**   | `create` `update` `delete` `query`                      | Action on a resource                 |
-| **Tag**          | `create` `update` `delete` `query`                      | Labels (query only)                  |
-| **API Key**      | `create` `delete` `query` `revoke` `exchange`            | Programmatic credentials             |
-| **App**          | `create` `update` `query` `delete`                      | Consent-flow applications            |
+| Resource         | Actions                                                 | Description                        |
+| ---------------- | ------------------------------------------------------- | ---------------------------------- |
+| **User**         | `create` `read` `update` `delete` `query` `export-data` | Platform users                     |
+| **Account**      | `read` `delete` `query`                                 | Personal or organization workspace |
+| **Organization** | `create` `read` `update` `delete` `query`               | Container for projects and members |
+| **Project**      | `create` `update` `delete` `query`                      | Isolated environment (query only)  |
+| **Resource**     | `create` `update` `delete` `query`                      | Domain entities (query only)       |
+| **Role**         | `create` `update` `delete` `query`                      | Named permission sets (query only) |
+| **Group**        | `create` `update` `delete` `query`                      | Role–resource permission bundles   |
+| **Permission**   | `create` `update` `delete` `query`                      | Action on a resource               |
+| **Tag**          | `create` `update` `delete` `query`                      | Labels (query only)                |
+| **API Key**      | `create` `delete` `query` `revoke` `exchange`           | Programmatic credentials           |
+| **App**          | `create` `update` `query` `delete`                      | Consent-flow applications          |
 
 ### Relationship & Session Resources
 
-| Resource                    | Actions                                                 | Description                |
-| --------------------------- | ------------------------------------------------------- | -------------------------- |
-| **Organization Member**     | `read` `update` `remove` `query`                        | Users in an organization   |
-| **Organization Invitation** | `create` `read` `query` `revoke` `resend-email` `renew` | Join-org invitations       |
-| **Project User**            | `read` `query`                                          | Users in a project         |
-| **User Session**            | `read` `query`                                          | Active sessions (own only)|
-| **User Authentication Method** | `read` `query`                                       | Auth methods (own only)   |
+| Resource                       | Actions                                                 | Description                |
+| ------------------------------ | ------------------------------------------------------- | -------------------------- |
+| **Organization Member**        | `read` `update` `remove` `query`                        | Users in an organization   |
+| **Organization Invitation**    | `create` `read` `query` `revoke` `resend-email` `renew` | Join-org invitations       |
+| **Project User**               | `read` `query`                                          | Users in a project         |
+| **User Session**               | `read` `query`                                          | Active sessions (own only) |
+| **User Authentication Method** | `read` `query`                                          | Auth methods (own only)    |
 
 ## Roles
 
@@ -82,6 +83,7 @@ Groups link **roles** to **permissions** via a **Role + Resource** combination. 
 **Common groups** — assigned to all roles (basic read/query, some create). **Role-specific groups** — extra permissions for Owner, Admin, Dev, or Viewer. Summary: Tags are Owner-only; API Key delete/revoke for Dev is own-keys only (condition). Expand below for full reference.
 
 ::: details Full group → permission reference
+
 ### Common Groups (all roles)
 
 | Group Name                          | Resource                   | Permissions                | Description                                                                   |
@@ -202,6 +204,18 @@ These groups control what organization-level roles can do **with** the Project r
 ::: info
 Dev can only delete/revoke their own API keys (enforced by condition) \*
 :::
+
+#### Project App Groups
+
+Project App (Apps) are OAuth/consent applications scoped to a project. Account owners get full app management via `Account Project App Owner`; organization roles get app management via Project App Owner/Admin/Dev. There is no Project App Common group — only these role-specific groups grant access.
+
+| Group Name                 | Resource    | Permissions                   | Assigned To                    | Description                                |
+| -------------------------- | ----------- | ------------------------------ | ------------------------------ | ------------------------------------------ |
+| `Account Project App Owner` | Project App | `create` `update` `delete` `query` | Personal/Organization Account Owner | Full app management for account projects   |
+| `Project App Owner`        | Project App | `create` `update` `delete` `query` | Organization Owner             | Full project app management                |
+| `Project App Admin`        | Project App | `create` `update` `delete` `query` | Organization Admin             | Full project app management                |
+| `Project App Dev`         | Project App | `create` `update` `delete` `query` | Organization Dev               | Full project app management                |
+| `Project App Viewer`      | Project App | _(no additional permissions)_  | —                              | Viewer has no project app access by default |
 
 #### Organization Member Groups
 
@@ -428,8 +442,9 @@ Organization `read` is enforced by scope (users can only read organizations they
 **Role hierarchy (conceptual):** Owner ⊃ Admin ⊃ Dev ⊃ Viewer; only Tags are Owner-only (Admin has no tag write). **Self-management (conditions):** Dev can update own user; all users can read own sessions and auth methods; Dev can delete/revoke own API keys. See [Permission Conditions](/core-concepts/permission-conditions) for syntax. **Auth-only (no RBAC):** Login, register, session refresh, password reset, profile picture, session revocation, auth method CRUD — require only authentication.
 
 ::: details Permission evaluation steps
+
 1. Get user's roles in the scope (account/org/project). 2. For each role, get assigned groups. 3. For each group, get permissions. 4. Build all role–group combinations. 5. Match requested action + resource to any permission. 6. If permission has a condition, evaluate with execution context. 7. Enforce tenant isolation (resource in user's scope). Flow: `User → Roles → Groups → Permissions → Resource + Action`. Conditions: [Permission Conditions](/core-concepts/permission-conditions).
-:::
+   :::
 
 ---
 

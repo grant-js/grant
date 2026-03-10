@@ -132,6 +132,11 @@ code {
   .main-container {
     min-width: 850px;
     padding: 2.5rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    min-height: 100vh;
+    box-sizing: border-box;
   }
 }
 
@@ -144,9 +149,18 @@ code {
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  overflow: visible;
   background: var(--color-surface);
   min-height: 50vh;
+}
+
+@media (min-width: 769px) {
+  .config-layout {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 768px) {
@@ -183,7 +197,7 @@ code {
 }
 
 .panel-header-logo {
-  height: 2.25rem;
+  height: 2rem;
   width: auto;
   display: block;
   vertical-align: middle;
@@ -208,7 +222,7 @@ code {
 
 .panel-header-title {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 300;
   letter-spacing: 0.02em;
   line-height: 1;
@@ -239,7 +253,9 @@ code {
   background: var(--color-surface);
   color: var(--color-text);
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 
 .hamburger-btn:hover {
@@ -267,6 +283,12 @@ code {
   align-items: stretch;
 }
 
+@media (min-width: 769px) {
+  .config-body {
+    overflow: hidden;
+  }
+}
+
 .config-body-message {
   flex: 1;
   padding: 2rem 1rem;
@@ -285,9 +307,8 @@ code {
 .config-sidebar {
   flex-shrink: 0;
   width: var(--sidebar-width);
-  position: sticky;
-  top: 0;
   align-self: stretch;
+  background: var(--color-surface-soft);
 }
 
 .config-sidebar .card {
@@ -297,6 +318,14 @@ code {
   box-shadow: none;
   min-height: 100%;
   background: var(--color-surface-soft);
+}
+
+@media (min-width: 769px) {
+  .config-sidebar .card {
+    min-height: 0;
+    max-height: 100%;
+    overflow-y: auto;
+  }
 }
 
 /* Mobile: sidebar becomes overlay drawer */
@@ -378,6 +407,13 @@ code {
 .config-content {
   flex: 1;
   min-width: 0;
+}
+
+@media (min-width: 769px) {
+  .config-content {
+    overflow-y: auto;
+    min-height: 0;
+  }
 }
 
 .config-content .card {
@@ -715,13 +751,17 @@ code {
 .sidebar-tab:hover {
   color: var(--color-primary);
   background: var(--color-primary-soft);
-  box-shadow: inset 0 -1px 0 0 var(--color-border), inset -3px 0 0 0 var(--color-primary);
+  box-shadow:
+    inset 0 -1px 0 0 var(--color-border),
+    inset -3px 0 0 0 var(--color-primary);
 }
 
 .sidebar-tab.active {
   color: var(--color-primary);
   background: var(--color-primary-soft);
-  box-shadow: inset 0 -1px 0 0 var(--color-border), inset -3px 0 0 0 var(--color-primary);
+  box-shadow:
+    inset 0 -1px 0 0 var(--color-border),
+    inset -3px 0 0 0 var(--color-primary);
 }
 
 .sidebar-tab .tab-icon {

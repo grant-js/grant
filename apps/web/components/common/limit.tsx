@@ -39,14 +39,14 @@ export function Limit({
     <Button
       variant="outline"
       size="default"
-      className={`${className} max-[1600px]:aspect-square max-[1600px]:p-2`}
+      className={`${className} sm:aspect-square sm:p-2 min-[1600px]:aspect-auto min-[1600px]:px-4 min-[1600px]:py-2`}
     >
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-2">
-          <span className="max-[1600px]:hidden">
+          <List className="size-4 shrink-0 min-[1600px]:hidden" />
+          <span className="sm:hidden min-[1600px]:inline">
             {t(translationKey)}: {limit}
           </span>
-          <List className="size-4 max-[1600px]:block hidden" />
         </div>
         <ChevronDown className="size-4 max-[1600px]:hidden" />
       </div>
@@ -61,7 +61,7 @@ export function Limit({
             <DropdownMenuTrigger asChild>{buttonContent}</DropdownMenuTrigger>
           </TooltipTrigger>
           <TooltipContent side="bottom">{tooltipText}</TooltipContent>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" fullWidthOnMobile>
             {options.map((option) => (
               <DropdownMenuItem
                 key={option}

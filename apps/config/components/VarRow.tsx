@@ -1,9 +1,10 @@
 'use client';
 
-import { Check, ChevronDown, Plus, RefreshCw, X, Zap } from 'lucide-react';
+import { Check, ChevronDown, Heart, Plus, RefreshCw, X, Zap } from 'lucide-react';
+
 import type { EnvVarValue } from '@/app/types/env';
-import { envKeyToTitleCase } from '@/lib/format-env-key';
 import type { EnvVarMeta } from '@/lib/env-metadata';
+import { envKeyToTitleCase } from '@/lib/format-env-key';
 
 export interface VarRowProps {
   var: EnvVarValue;
@@ -20,6 +21,14 @@ export interface VarRowProps {
   useDockerDb: boolean;
   testDbStatus: 'idle' | 'loading' | 'success' | 'error';
   testDbMessage: string;
+  testHealthStatus: 'idle' | 'loading' | 'success' | 'error';
+  testHealthMessage: string;
+  testRedisStatus: 'idle' | 'loading' | 'success' | 'error';
+  testRedisMessage: string;
+  onTestRedis: () => void;
+  testGithubOAuthStatus: 'idle' | 'loading' | 'success' | 'error';
+  testGithubOAuthMessage: string;
+  onTestGithubOAuth: () => void;
   isSelectOpen: boolean;
   onEdit: (key: string, value: string) => void;
   onReset: (key: string) => void;
@@ -27,6 +36,7 @@ export interface VarRowProps {
   onSave: (key: string) => void;
   onUseDockerDbChange: (checked: boolean) => void;
   onTestDbUrl: (dbUrl: string) => void;
+  onTestHealth: (appUrl: string) => void;
   onOpenSelectKeyChange: (key: string | null) => void;
   onGenerateSystemUserId: () => void;
   onGeneratePassword: (key: string) => void;
@@ -47,6 +57,14 @@ export function VarRow({
   useDockerDb,
   testDbStatus,
   testDbMessage,
+  testHealthStatus,
+  testHealthMessage,
+  testRedisStatus,
+  testRedisMessage,
+  onTestRedis,
+  testGithubOAuthStatus,
+  testGithubOAuthMessage,
+  onTestGithubOAuth,
   isSelectOpen,
   onEdit,
   onReset,
@@ -54,11 +72,15 @@ export function VarRow({
   onSave,
   onUseDockerDbChange,
   onTestDbUrl,
+  onTestHealth,
   onOpenSelectKeyChange,
   onGenerateSystemUserId,
   onGeneratePassword,
 }: VarRowProps) {
   const isDbUrl = v.key === 'DB_URL';
+  const isAppUrl = v.key === 'APP_URL';
+  const isRedisHost = v.key === 'REDIS_HOST';
+  const isGithubClientSecret = v.key === 'GITHUB_CLIENT_SECRET';
   const isSystemUserId = v.key === 'SYSTEM_USER_ID';
   const statusSet =
     v.status === 'set' ||
@@ -96,7 +118,10 @@ export function VarRow({
       </div>
       <div className="input-cell">
         <div className="input-wrapper">
-          {multiValues !== undefined && onMultiVarChange && addMultiVarItem && removeMultiVarItem ? (
+          {multiValues !== undefined &&
+          onMultiVarChange &&
+          addMultiVarItem &&
+          removeMultiVarItem ? (
             <div className="multi-value-inputs">
               {multiValues.map((item, index) => (
                 <div key={index} className="multi-value-row">
@@ -291,6 +316,93 @@ export function VarRow({
                   }
                 >
                   {testDbMessage}
+                </span>
+              </div>
+            )}
+          </>
+        )}
+        {isAppUrl && (
+          <>
+            <div className="test-db-row">
+              <button
+                type="button"
+                className="test-db-btn"
+                disabled={testHealthStatus === 'loading' || !currentValue?.trim()}
+                onClick={() => onTestHealth(currentValue ?? '')}
+              >
+                <Heart size={14} className="test-db-btn-icon" />
+                {testHealthStatus === 'loading' ? 'Testing…' : 'Check service'}
+              </button>
+            </div>
+            {(testHealthStatus === 'success' || testHealthStatus === 'error') && (
+              <div className="test-db-msg-row">
+                <span
+                  className={
+                    testHealthStatus === 'success'
+                      ? 'test-db-msg test-db-msg-success'
+                      : 'test-db-msg test-db-msg-error'
+                  }
+                >
+                  {testHealthMessage}
+                </span>
+              </div>
+            )}
+          </>
+        )}
+        {isRedisHost && (
+          <>
+            <div className="test-db-row">
+              <button
+                type="button"
+                className="test-db-btn"
+                disabled={testRedisStatus === 'loading' || !currentValue?.trim()}
+                onClick={onTestRedis}
+              >
+                <Zap size={14} className="test-db-btn-icon" />
+                {testRedisStatus === 'loading' ? 'Testing…' : 'Test connection'}
+              </button>
+            </div>
+            {(testRedisStatus === 'success' || testRedisStatus === 'error') && (
+              <div className="test-db-msg-row">
+                <span
+                  className={
+                    testRedisStatus === 'success'
+                      ? 'test-db-msg test-db-msg-success'
+                      : 'test-db-msg test-db-msg-error'
+                  }
+                >
+                  {testRedisMessage}
+                </span>
+              </div>
+            )}
+          </>
+        )}
+        {isGithubClientSecret && (
+          <>
+            <div className="test-db-row">
+              <button
+                type="button"
+                className="test-db-btn"
+                disabled={
+                  testGithubOAuthStatus === 'loading' ||
+                  !currentValue?.trim()
+                }
+                onClick={onTestGithubOAuth}
+              >
+                <Zap size={14} className="test-db-btn-icon" />
+                {testGithubOAuthStatus === 'loading' ? 'Testing…' : 'Test connection'}
+              </button>
+            </div>
+            {(testGithubOAuthStatus === 'success' || testGithubOAuthStatus === 'error') && (
+              <div className="test-db-msg-row">
+                <span
+                  className={
+                    testGithubOAuthStatus === 'success'
+                      ? 'test-db-msg test-db-msg-success'
+                      : 'test-db-msg test-db-msg-error'
+                  }
+                >
+                  {testGithubOAuthMessage}
                 </span>
               </div>
             )}

@@ -48,8 +48,10 @@ COPY packages/@grantjs/i18n/tsconfig.json packages/@grantjs/i18n/tsconfig.json
 COPY packages/@grantjs/i18n/src packages/@grantjs/i18n/src
 COPY packages/@grantjs/i18n/locales packages/@grantjs/i18n/locales
 
-# Install ALL deps (need tsx + typescript in runtime for TS workspace packages)
-RUN pnpm install --frozen-lockfile
+# Install ALL deps (need tsx + typescript in runtime for TS workspace packages).
+# Skip lifecycle scripts (postinstall runs scripts/env/setup.mjs which is for local .env creation;
+# in Docker, env is provided at runtime via compose or environment).
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # ---------------------------------------------------------------------------
 # Stage 3 – runner: copy source and run with tsx

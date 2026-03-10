@@ -15,6 +15,7 @@ import {
   AuthorizationError,
   BadRequestError,
   ConflictError,
+  InvalidOrUsedVerificationTokenError,
   mapDomainToHttp,
   NotFoundError,
   ValidationError,
@@ -45,6 +46,14 @@ describe('mapDomainToHttp translationKey', () => {
     const err = new BadRequestError('Malformed body');
     const http = mapDomainToHttp(err);
     expect(http.translationKey).toBe('errors.validation.badRequest');
+  });
+
+  it('maps InvalidOrUsedVerificationTokenError to errors.auth.invalidOrUsedVerificationToken', () => {
+    const err = new InvalidOrUsedVerificationTokenError(
+      'Invalid or already used verification token'
+    );
+    const http = mapDomainToHttp(err);
+    expect(http.translationKey).toBe('errors.auth.invalidOrUsedVerificationToken');
   });
 
   it('maps TokenExpiredError to errors.auth.tokenExpired', () => {

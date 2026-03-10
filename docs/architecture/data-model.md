@@ -14,7 +14,8 @@ Grant stores all data in PostgreSQL using [Drizzle ORM](https://orm.drizzle.team
 | **User**         | A person who can log in                                                   | Owns accounts, belongs to organizations and projects via pivots                            |
 | **Account**      | Person-centric identity (personal or organization)                        | Owned by a user; links to projects via `account_projects`                                  |
 | **Organization** | Business entity that groups projects and members                          | Contains projects and users via pivot tables                                               |
-| **Project**      | Isolated environment for managing external identities                     | Contains resources, users, roles, groups, permissions, API keys, signing keys              |
+| **Project**      | Isolated environment for managing external identities                     | Contains resources, users, roles, groups, permissions, API keys, signing keys, apps         |
+| **Project App**  | OAuth/consent application in a project                                    | Belongs to a project; tags via `project_app_tags`; scopes and redirect URIs                |
 | **Resource**     | Domain entity defined by an external system (e.g. invoice, order, policy) | Belongs to a project; permissions are scoped to resources                                  |
 | **Role**         | Named collection of groups                                                | Assigned to users via `user_roles`; contains groups via `role_groups`                      |
 | **Group**        | Collection of permissions                                                 | Belongs to roles; contains permissions via `group_permissions`                             |
@@ -67,7 +68,7 @@ Account (top-level tenant)
 
 - **Account** — A person's identity. One user can own multiple accounts (personal and organization types). Accounts can switch context without re-authenticating.
 - **Organization** — Groups related projects and team members. Users can belong to multiple organizations.
-- **Project** — A fully isolated environment. Each project manages its own users, roles, groups, permissions, resources, API keys, and signing keys independently.
+- **Project** — A fully isolated environment. Each project manages its own users, roles, groups, permissions, resources, API keys, signing keys, and apps independently.
 
 ::: tip
 For the full isolation model including Row-Level Security, see [Multi-Tenancy](/architecture/multi-tenancy).
@@ -91,7 +92,7 @@ For the complete permission model, evaluation flow, and standard roles, see [RBA
 
 Tags provide a generic labeling system for organizing and filtering entities. A tag can be applied to any of the following via a dedicated pivot table:
 
-- Users, Roles, Groups, Permissions, Organizations, Projects
+- Users, Roles, Groups, Permissions, Organizations, Projects, Project Apps
 
 Tags are scoped to the same tenant as the entity they are applied to.
 

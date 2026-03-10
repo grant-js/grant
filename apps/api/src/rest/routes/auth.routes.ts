@@ -389,13 +389,14 @@ export function createAuthRoutes(context: RequestContext) {
     '/project/authorize',
     validateQuery(projectAuthorizeQuerySchema),
     async (req: TypedRequest<{ query: typeof projectAuthorizeQuerySchema }>, res: Response) => {
-      const { client_id, redirect_uri, state, provider, scope } = req.query;
+      const { client_id, redirect_uri, state, provider, scope, locale } = req.query;
       const result = await context.handlers.projectOAuth.initiateProjectAuthorize(
         client_id,
         redirect_uri,
         state,
         provider as ProjectOAuthProvider,
-        scope
+        scope,
+        locale
       );
       res.redirect(result.authorizationUrl);
     }
@@ -405,14 +406,15 @@ export function createAuthRoutes(context: RequestContext) {
     '/project/email/request',
     validateBody(projectEmailRequestSchema),
     async (req: TypedRequest<{ body: typeof projectEmailRequestSchema }>, res: Response) => {
-      const { client_id, redirect_uri, state, email, client_state, scope } = req.body;
+      const { client_id, redirect_uri, state, email, client_state, scope, locale } = req.body;
       await context.handlers.projectOAuth.requestProjectEmailMagicLink(
         client_id,
         redirect_uri,
         state,
         email,
         client_state,
-        scope
+        scope,
+        locale
       );
       res.status(202).send();
     }
@@ -438,7 +440,6 @@ export function createAuthRoutes(context: RequestContext) {
         res.redirect(url.toString());
       } catch (err) {
         const errorCode = determineErrorCode(err);
-        const locale = config.i18n.defaultLocale;
         const frontendUrl = config.security.frontendUrl;
         const {
           code,
@@ -453,7 +454,12 @@ export function createAuthRoutes(context: RequestContext) {
           client_id?: string;
           redirect_uri?: string;
         };
-        let entryParams: { clientId: string; redirectUri: string; state: string } | null = null;
+        let entryParams: {
+          clientId: string;
+          redirectUri: string;
+          state: string;
+          locale?: string;
+        } | null = null;
         if (queryClientId && queryRedirectUri) {
           entryParams = {
             clientId: queryClientId,
@@ -463,6 +469,10 @@ export function createAuthRoutes(context: RequestContext) {
         } else if (state) {
           entryParams = await context.handlers.projectOAuth.getProjectEntryParamsFromState(state);
         }
+        const locale =
+          entryParams?.locale && config.i18n.supportedLocales.includes(entryParams.locale)
+            ? entryParams.locale
+            : config.i18n.defaultLocale;
         if (entryParams) {
           const entryUrl = new URL(`${frontendUrl}/${locale}/auth/project`);
           entryUrl.searchParams.set('client_id', entryParams.clientId);

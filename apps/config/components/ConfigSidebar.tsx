@@ -1,8 +1,10 @@
 'use client';
 
 import { AlertCircle, Check } from 'lucide-react';
+
 import type { EnvCategoryId } from '@/lib/env-metadata';
 import { ENV_CATEGORIES } from '@/lib/env-metadata';
+
 import { CATEGORY_ICONS } from './category-icons';
 
 interface ConfigSidebarProps {

@@ -57,6 +57,8 @@ export interface ProjectOAuthState {
   provider?: ProjectOAuthProvider;
   /** Requested scope slugs from authorize query (subset of app scopes). */
   requestedScopeSlugs?: string[];
+  /** Frontend locale for consent/entry redirects (e.g. en, de). */
+  locale?: string;
 }
 
 export interface ProjectOAuthEmailTokenPayload {
@@ -67,6 +69,8 @@ export interface ProjectOAuthEmailTokenPayload {
   clientState?: string;
   /** Requested scope slugs from email request (subset of app scopes). */
   requestedScopeSlugs?: string[];
+  /** Frontend locale for consent redirect and email content (e.g. en, de). */
+  locale?: string;
 }
 
 export interface InitiateProjectAuthorizeResult {
@@ -135,23 +139,32 @@ export class ProjectOAuthHandler {
 
   /**
    * Build frontend URL with locale for redirects (consent, email entry).
-   * If configuredUrl already contains a supported locale segment (e.g. /en/), use it as-is.
-   * Otherwise use config.security.frontendUrl + config.i18n.defaultLocale + path.
+   * If locale is provided and supported, use it. Else if configuredUrl already contains a supported
+   * locale segment (e.g. /en/), use it as-is. Otherwise use config.i18n.defaultLocale.
    */
-  private buildFrontendUrlWithLocale(configuredUrl: string, path: string): string {
+  private buildFrontendUrlWithLocale(
+    configuredUrl: string,
+    path: string,
+    locale?: string | null
+  ): string {
     const supported = new Set<string>(config.i18n.supportedLocales);
-    try {
-      const parsed = new URL(configuredUrl);
-      const firstSegment = parsed.pathname.replace(/^\//, '').split('/')[0];
-      if (firstSegment && supported.has(firstSegment)) {
-        return `${parsed.origin}${parsed.pathname.replace(/\/$/, '')}`;
-      }
-    } catch {
-      // invalid URL, fall through to build from config
-    }
+    const effectiveLocale =
+      locale && supported.has(locale)
+        ? locale
+        : (() => {
+            try {
+              const parsed = new URL(configuredUrl);
+              const firstSegment = parsed.pathname.replace(/^\//, '').split('/')[0];
+              if (firstSegment && supported.has(firstSegment)) {
+                return firstSegment;
+              }
+            } catch {
+              // invalid URL, fall through
+            }
+            return config.i18n.defaultLocale;
+          })();
     const base = config.security.frontendUrl.replace(/\/$/, '');
-    const locale = config.i18n.defaultLocale;
-    return `${base}/${locale}${path.startsWith('/') ? path : `/${path}`}`;
+    return `${base}/${effectiveLocale}${path.startsWith('/') ? path : `/${path}`}`;
   }
 
   async getProjectAppPublicInfo(
@@ -191,7 +204,8 @@ export class ProjectOAuthHandler {
     redirectUri: string,
     clientState?: string,
     provider: ProjectOAuthProvider = UserAuthenticationMethodProvider.Github,
-    scopeParam?: string | null
+    scopeParam?: string | null,
+    locale?: string | null
   ): Promise<InitiateProjectAuthorizeResult> {
     const app = await this.projectApps.getProjectAppByClientId(clientId);
     if (!app) {
@@ -230,6 +244,7 @@ export class ProjectOAuthHandler {
       clientState,
       provider,
       ...(requestedScopeSlugs?.length ? { requestedScopeSlugs } : {}),
+      ...(locale?.trim() ? { locale: locale.trim() } : {}),
     };
     const key = `${PROJECT_OAUTH_STATE_KEY_PREFIX}${stateId}` as CacheKey;
     await this.cache.oauth.set(key, statePayload, PROJECT_OAUTH_STATE_TTL_SECONDS);
@@ -289,7 +304,8 @@ export class ProjectOAuthHandler {
     stateId: string | undefined,
     email: string,
     clientState?: string,
-    scopeParam?: string | null
+    scopeParam?: string | null,
+    locale?: string | null
   ): Promise<void> {
     const app = await this.projectApps.getProjectAppByClientId(clientId);
     if (!app) {
@@ -331,6 +347,7 @@ export class ProjectOAuthHandler {
       Math.max(1, Math.floor(PROJECT_OAUTH_EMAIL_TOKEN_TTL_SECONDS / 60)),
       32
     );
+    const effectiveLocale = locale?.trim() || undefined;
     const payload: ProjectOAuthEmailTokenPayload = {
       projectAppId: app.id,
       redirectUri,
@@ -338,6 +355,7 @@ export class ProjectOAuthHandler {
       email: email.trim().toLowerCase(),
       clientState,
       ...(requestedScopeSlugs?.length ? { requestedScopeSlugs } : {}),
+      ...(effectiveLocale ? { locale: effectiveLocale } : {}),
     };
     const key = `${PROJECT_OAUTH_EMAIL_TOKEN_KEY_PREFIX}${oneTimeToken.token}` as CacheKey;
     await this.cache.oauth.set(key, payload, PROJECT_OAUTH_EMAIL_TOKEN_TTL_SECONDS);
@@ -348,6 +366,7 @@ export class ProjectOAuthHandler {
       to: payload.email,
       magicLinkUrl: callbackUrl,
       appName: app.name ?? undefined,
+      ...(effectiveLocale ? { locale: effectiveLocale } : {}),
     });
   }
 
@@ -357,7 +376,7 @@ export class ProjectOAuthHandler {
    */
   async getProjectEntryParamsFromState(
     stateId: string
-  ): Promise<{ clientId: string; redirectUri: string; state: string } | null> {
+  ): Promise<{ clientId: string; redirectUri: string; state: string; locale?: string } | null> {
     const key = `${PROJECT_OAUTH_STATE_KEY_PREFIX}${stateId}` as CacheKey;
     const state = await this.cache.oauth.get<ProjectOAuthState>(key);
     if (!state) return null;
@@ -367,6 +386,7 @@ export class ProjectOAuthHandler {
       clientId: app.clientId,
       redirectUri: state.redirectUri,
       state: stateId,
+      ...(state.locale ? { locale: state.locale } : {}),
     };
   }
 
@@ -403,6 +423,7 @@ export class ProjectOAuthHandler {
     const providerId = githubUser.id.toString();
     const providerData = {
       accessToken: githubAccessToken,
+      githubId: githubUser.id,
       avatarUrl: githubUser.avatar_url,
       login: githubUser.login,
       email: githubUser.email,
@@ -423,6 +444,7 @@ export class ProjectOAuthHandler {
       redirectUri,
       clientState: state.clientState,
       requestedScopeSlugs: state.requestedScopeSlugs,
+      locale: state.locale,
     });
     await this.cache.oauth.delete(key);
     return result;
@@ -465,6 +487,7 @@ export class ProjectOAuthHandler {
       redirectUri,
       clientState: payload.clientState,
       requestedScopeSlugs: payload.requestedScopeSlugs,
+      locale: payload.locale,
     });
   }
 
@@ -483,8 +506,10 @@ export class ProjectOAuthHandler {
     redirectUri: string;
     clientState?: string;
     requestedScopeSlugs?: string[];
+    /** Frontend locale for consent page URL (e.g. en, de). */
+    locale?: string | null;
   }): Promise<HandleProjectCallbackConsentRedirectResult> {
-    const { userId, app, redirectUri, clientState, requestedScopeSlugs } = params;
+    const { userId, app, redirectUri, clientState, requestedScopeSlugs, locale } = params;
 
     const projectUsers = await this.projectUsers.getProjectUsers({
       projectId: app.projectId,
@@ -538,7 +563,8 @@ export class ProjectOAuthHandler {
 
     const consentBase = this.buildFrontendUrlWithLocale(
       config.projectOAuth.consentUrl,
-      '/auth/project/consent'
+      '/auth/project/consent',
+      locale
     );
     const consentUrl = `${consentBase}?consent_token=${encodeURIComponent(consentToken)}`;
     return { redirectToConsent: true as const, consentUrl };

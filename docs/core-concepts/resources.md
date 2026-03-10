@@ -27,7 +27,7 @@ Resources are always scoped to a **project**. Each project can have the platform
 
 ## Built-in Resources
 
-Grant ships with 15 platform resources. These are seeded automatically and cover the core domain:
+Grant ships with 16 platform resources. These are seeded automatically and cover the core domain:
 
 | Resource                     | Actions                                                                |
 | ---------------------------- | ---------------------------------------------------------------------- |
@@ -35,6 +35,7 @@ Grant ships with 15 platform resources. These are seeded automatically and cover
 | **Account**                  | `Read` `Delete` `Query`                                                |
 | **Organization**             | `Create` `Read` `Update` `Delete` `Query`                              |
 | **Project**                  | `Create` `Update` `Delete` `Query`                                     |
+| **ProjectApp**               | `Create` `Update` `Delete` `Query`                                     |
 | **Resource**                 | `Create` `Update` `Delete` `Query`                                     |
 | **Role**                     | `Create` `Update` `Delete` `Query`                                     |
 | **Group**                    | `Create` `Update` `Delete` `Query`                                     |

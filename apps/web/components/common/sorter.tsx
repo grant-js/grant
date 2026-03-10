@@ -59,18 +59,18 @@ export function Sorter<T extends string>({
     <Button
       variant="outline"
       size="default"
-      className="w-full sm:w-auto max-[1600px]:aspect-square max-[1600px]:p-2"
+      className="w-full sm:w-auto sm:aspect-square sm:p-2 min-[1600px]:aspect-auto min-[1600px]:px-4 min-[1600px]:py-2"
     >
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-2">
-          <span className="max-[1600px]:hidden">{t('sort.label')}: </span>
-          <span className="max-[1600px]:hidden">{sortLabel}</span>
+          <ArrowUpDown className="size-4 shrink-0 min-[1600px]:hidden" />
+          <span className="sm:hidden min-[1600px]:inline">{t('sort.label')}: </span>
+          <span className="sm:hidden min-[1600px]:inline">{sortLabel}</span>
           {currentSort.order === SortOrder.Asc ? (
-            <ArrowUp className="size-4 max-[1600px]:hidden" />
+            <ArrowUp className="size-4 shrink-0 sm:hidden min-[1600px]:inline" />
           ) : (
-            <ArrowDown className="size-4 max-[1600px]:hidden" />
+            <ArrowDown className="size-4 shrink-0 sm:hidden min-[1600px]:inline" />
           )}
-          <ArrowUpDown className="size-4 max-[1600px]:block hidden" />
         </div>
         <ChevronDown className="size-4 max-[1600px]:hidden" />
       </div>
@@ -85,7 +85,7 @@ export function Sorter<T extends string>({
             <DropdownMenuTrigger asChild>{buttonContent}</DropdownMenuTrigger>
           </TooltipTrigger>
           <TooltipContent side="bottom">{tooltipText}</TooltipContent>
-          <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuContent align="end" className="w-48" fullWidthOnMobile>
             {showLabel && (
               <>
                 <DropdownMenuLabel className="px-3 py-1.5 text-sm font-medium">

@@ -27,7 +27,8 @@
     "stateRequired": "State-Parameter ist aus Sicherheitsgründen erforderlich",
     "stateNotFound": "Ungültiger oder abgelaufener State-Parameter",
     "invalidState": "Ungültiger oder abgelaufener State-Parameter",
-    "invalidOrExpiredCode": "Ungültiger oder abgelaufener Einmalcode"
+    "invalidOrExpiredCode": "Ungültiger oder abgelaufener Einmalcode",
+    "invalidOrUsedVerificationToken": "Dieser Verifizierungslink wurde bereits verwendet oder ist ungültig. Wenn Sie Ihre E-Mail bereits verifiziert haben, gehen Sie zum Dashboard; andernfalls melden Sie sich an, um einen neuen Link anzufordern."
   },
   "validation": {
     "required": "{{field}} ist erforderlich",

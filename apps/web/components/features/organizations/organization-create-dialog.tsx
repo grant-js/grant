@@ -13,7 +13,12 @@ import { useOrganizationsStore } from '@/stores/organizations.store';
 
 import { CreateOrganizationFormValues, createOrganizationSchema } from './organization-types';
 
-export function OrganizationCreateDialog() {
+interface OrganizationCreateDialogProps {
+  /** When true, no trigger is rendered; dialog is opened only via store (e.g. from organization switcher). */
+  hideTrigger?: boolean;
+}
+
+export function OrganizationCreateDialog({ hideTrigger }: OrganizationCreateDialogProps = {}) {
   const { createOrganization } = useOrganizationMutations();
   const scope = useAccountScope();
 
@@ -71,6 +76,7 @@ export function OrganizationCreateDialog() {
       submittingText="createDialog.submitting"
       onCreate={handleCreate}
       onOpenChange={handleOpenChange}
+      hideTrigger={hideTrigger}
     />
   );
 }

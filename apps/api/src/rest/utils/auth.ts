@@ -294,7 +294,11 @@ export function determineErrorCode(error: unknown): string {
 
   const message = error.message.toLowerCase();
 
-  if (message.includes('duplicate') || message.includes('unique constraint')) {
+  if (
+    message.includes('duplicate') ||
+    message.includes('unique constraint') ||
+    message.includes('already connected to another account')
+  ) {
     return 'accountExists';
   }
 

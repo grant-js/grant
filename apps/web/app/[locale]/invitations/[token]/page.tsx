@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { useParams } from 'next/navigation';
 
@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { usePageTitle } from '@/hooks';
 import { useAccountsSync } from '@/hooks/accounts';
 import { useInvitation, useMemberMutations } from '@/hooks/members';
-import { Link, useRouter } from '@/i18n/navigation';
+import { Link } from '@/i18n/navigation';
 import { useAuthStore } from '@/stores/auth.store';
 
 type InvitationStatus =
@@ -34,7 +34,6 @@ export default function InvitationPage() {
   const t = useTranslations('invitations');
   const tRoot = useTranslations();
   const params = useParams();
-  const router = useRouter();
   const locale = useLocale();
   const token = params.token as string;
 
@@ -86,15 +85,6 @@ export default function InvitationPage() {
 
     return 'ready';
   }, [actionStatus, invitationLoading, invitationError, invitation, isAuthenticated]);
-
-  useEffect(() => {
-    if (status === 'success' && invitation?.organizationId) {
-      const timer = setTimeout(() => {
-        router.push(`/dashboard/organizations/${invitation.organizationId}`);
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [status, invitation?.organizationId, router]);
 
   const handleAcceptInvitation = async () => {
     if (!token) {
@@ -363,11 +353,17 @@ export default function InvitationPage() {
             <Alert variant="success">
               <CheckCircle2 />
               <AlertTitle>{t('success.title')}</AlertTitle>
-              <AlertDescription>
-                {t('success.description')}
-                <p className="text-xs text-muted-foreground mt-2">{t('success.redirecting')}</p>
-              </AlertDescription>
+              <AlertDescription>{t('success.description')}</AlertDescription>
             </Alert>
+            {invitation?.organizationId && (
+              <div>
+                <Link href={`/dashboard/organizations/${invitation.organizationId}`}>
+                  <Button className="w-full" variant="default">
+                    {t('success.goToOrganization')}
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         );
 

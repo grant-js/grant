@@ -15,10 +15,15 @@ interface UseProjectsResult {
   ) => Promise<ApolloClient.QueryResult<{ projects: ProjectPage }>>;
 }
 
-export function useProjects(params: QueryProjectsArgs): UseProjectsResult {
-  const { scope, ids, limit, page, search, sort, tagIds } = params;
+export function useProjects(
+  params: QueryProjectsArgs & { skip?: boolean }
+): UseProjectsResult {
+  const { scope, ids, limit, page, search, sort, tagIds, skip: skipParam } = params;
 
-  const skip = useMemo(() => !scope || !scope.id || !scope.tenant, [scope]);
+  const skip = useMemo(
+    () => skipParam === true || !scope || !scope.id || !scope.tenant,
+    [skipParam, scope]
+  );
 
   const variables = useMemo(
     () => ({

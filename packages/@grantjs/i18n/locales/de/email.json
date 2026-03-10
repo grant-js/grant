@@ -33,6 +33,15 @@
     "organization": "Organisation",
     "role": "Rolle"
   },
+  "projectOAuthMagicLink": {
+    "subject": "Bei {{appName}} anmelden",
+    "defaultAppName": "der App",
+    "message": "Klicken Sie auf die Schaltfläche unten, um sich anzumelden.",
+    "messageWithApp": "Klicken Sie auf die Schaltfläche unten, um sich bei {{appName}} anzumelden.",
+    "button": "Anmelden",
+    "messageLink": "Klicken Sie auf den Link unten, um sich anzumelden:",
+    "messageLinkWithApp": "Klicken Sie auf den Link unten, um sich bei {{appName}} anzumelden:"
+  },
   "common": {
     "alternativeText": "Wenn die Schaltfläche nicht funktioniert, kopieren Sie diesen Link und fügen Sie ihn ein:",
     "footer": {

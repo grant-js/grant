@@ -3,18 +3,66 @@
 import { useState } from 'react';
 
 import { AccountType } from '@grantjs/schema';
-import { Building2, Info, User } from 'lucide-react';
+import {
+  Briefcase,
+  Building2,
+  ChevronDown,
+  ChevronUp,
+  FolderKanban,
+  Shield,
+  ShieldCheck,
+  Sparkles,
+  User,
+  UserCog,
+  Users,
+  UserX,
+} from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+import { CopyToClipboard } from '@/components/common';
 import { SettingCard } from '@/components/features/settings';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
+} from '@/components/ui/item';
+import { Label } from '@/components/ui/label';
 import { useEmailVerified } from '@/hooks/auth';
 import { useMyMutations } from '@/hooks/me';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
 
 import { SettingAccountDetailsCardProps } from './setting-types';
+
+import type { LucideIcon } from 'lucide-react';
+
+const VISIBLE_FEATURE_COUNT = 3;
+const TOTAL_FEATURE_KEYS = ['feature1', 'feature2', 'feature3', 'feature4', 'feature5'] as const;
+
+const FEATURE_ICONS: Record<
+  'personal' | 'organization',
+  Record<(typeof TOTAL_FEATURE_KEYS)[number], LucideIcon>
+> = {
+  personal: {
+    feature1: User,
+    feature2: Shield,
+    feature3: UserX,
+    feature4: FolderKanban,
+    feature5: Sparkles,
+  },
+  organization: {
+    feature1: Users,
+    feature2: ShieldCheck,
+    feature3: Building2,
+    feature4: UserCog,
+    feature5: Briefcase,
+  },
+};
 
 export function SettingAccountDetailsCard({
   accountType,
@@ -25,18 +73,16 @@ export function SettingAccountDetailsCard({
   const tCommon = useTranslations('common');
   const tAccountTypes = useTranslations('common.accountTypes');
   const [isCreating, setIsCreating] = useState(false);
-  const { accounts, getCurrentAccount, setCurrentAccount } = useAuthStore();
+  const [expandedFeaturesByAccountId, setExpandedFeaturesByAccountId] = useState<
+    Record<string, boolean>
+  >({});
+  const { accounts } = useAuthStore();
   const { createMySecondaryAccount } = useMyMutations();
-  const currentAccount = getCurrentAccount();
   const isEmailVerified = useEmailVerified();
 
   const complementaryType =
     accountType === 'personal' ? AccountType.Organization : AccountType.Personal;
   const canCreateComplementary = accountCount < 2 && !hasComplementaryAccount;
-
-  const handleAccountSwitch = (accountId: string) => {
-    setCurrentAccount(accountId);
-  };
 
   const handleCreateComplementary = async () => {
     setIsCreating(true);
@@ -53,82 +99,120 @@ export function SettingAccountDetailsCard({
     <>
       <SettingCard title={cardTitle} description={t('details.description')}>
         <div className="space-y-6">
-          {/* Account Switcher (always shown) */}
-          <div>
-            <p className="text-sm font-medium">{t('type.currentAccount')}</p>
-            <div className="flex flex-col gap-2 mt-2">
-              {accounts.map((account) => {
-                const isSelected = account.id === currentAccount?.id;
-                const accountTypeKey =
-                  account.type === AccountType.Organization ? 'organization' : 'personal';
-                const isClickable = accounts.length > 1;
-                return (
-                  <button
-                    key={account.id}
-                    type="button"
-                    onClick={() => isClickable && handleAccountSwitch(account.id)}
-                    disabled={!isClickable}
-                    className={cn(
-                      'flex items-center gap-3 rounded-lg border p-3 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
-                      isSelected
-                        ? 'border-primary bg-primary/5 dark:bg-primary/10'
-                        : 'border-border bg-background',
-                      isClickable && !isSelected && 'hover:bg-accent/50',
-                      !isClickable && 'cursor-default'
+          {/* Account list with expanded type info and ID */}
+          <div className="flex flex-col gap-4">
+            {accounts.map((account) => {
+              const accountTypeKey =
+                account.type === AccountType.Organization ? 'organization' : 'personal';
+              return (
+                <div
+                  key={account.id}
+                  className="rounded-lg border border-border bg-background p-4 space-y-4"
+                >
+                  <div className="flex items-center gap-2">
+                    {account.type === AccountType.Organization ? (
+                      <Building2 className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                    ) : (
+                      <User className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
                     )}
-                  >
-                    <div
-                      className={cn(
-                        'h-4 w-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors',
-                        isSelected
-                          ? 'border-primary bg-primary'
-                          : 'border-muted-foreground/40 bg-background'
-                      )}
-                    >
-                      {isSelected && <div className="h-2 w-2 rounded-full bg-primary-foreground" />}
+                    <span className="text-sm font-medium">
+                      {account.type === AccountType.Organization
+                        ? tAccountTypes('organization')
+                        : tAccountTypes('personal')}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">{t('details.idLabel')}</Label>
+                    <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2">
+                      <code className="flex-1 min-w-0 truncate text-sm font-mono">
+                        {account.id}
+                      </code>
+                      <CopyToClipboard text={account.id} size="sm" variant="ghost" />
                     </div>
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      {account.type === AccountType.Organization ? (
-                        <Building2 className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                      ) : (
-                        <User className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                      )}
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <span className="text-sm font-medium">
-                          {account.type === AccountType.Organization
-                            ? tAccountTypes('organization')
-                            : tAccountTypes('personal')}
-                        </span>
-                      </div>
-                    </div>
-                    <TooltipProvider delayDuration={0}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div
-                            onClick={(e) => e.stopPropagation()}
-                            className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors cursor-help"
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-foreground">
+                      {t('type.features.title')}
+                    </p>
+                    <ItemGroup className="gap-4">
+                      {TOTAL_FEATURE_KEYS.slice(0, VISIBLE_FEATURE_COUNT).map((key) => {
+                        const Icon = FEATURE_ICONS[accountTypeKey][key];
+                        return (
+                          <Item key={key} variant="default" size="sm">
+                            <ItemMedia variant="icon">
+                              <Icon className="size-4 text-muted-foreground" />
+                            </ItemMedia>
+                            <ItemContent>
+                              <ItemTitle>
+                                {t(`type.features.${accountTypeKey}.${key}Title`)}
+                              </ItemTitle>
+                              <ItemDescription>
+                                {t(`type.features.${accountTypeKey}.${key}Description`)}
+                              </ItemDescription>
+                            </ItemContent>
+                          </Item>
+                        );
+                      })}
+                    </ItemGroup>
+                    {TOTAL_FEATURE_KEYS.length > VISIBLE_FEATURE_COUNT && (
+                      <Collapsible
+                        open={expandedFeaturesByAccountId[account.id] ?? false}
+                        onOpenChange={(open) =>
+                          setExpandedFeaturesByAccountId((prev) => ({
+                            ...prev,
+                            [account.id]: open,
+                          }))
+                        }
+                      >
+                        <CollapsibleContent asChild>
+                          <ItemGroup className="mt-1 gap-4">
+                            {TOTAL_FEATURE_KEYS.slice(VISIBLE_FEATURE_COUNT).map((key) => {
+                              const Icon = FEATURE_ICONS[accountTypeKey][key];
+                              return (
+                                <Item key={key} variant="default" size="sm">
+                                  <ItemMedia variant="icon">
+                                    <Icon className="size-4 text-muted-foreground" />
+                                  </ItemMedia>
+                                  <ItemContent>
+                                    <ItemTitle>
+                                      {t(`type.features.${accountTypeKey}.${key}Title`)}
+                                    </ItemTitle>
+                                    <ItemDescription>
+                                      {t(`type.features.${accountTypeKey}.${key}Description`)}
+                                    </ItemDescription>
+                                  </ItemContent>
+                                </Item>
+                              );
+                            })}
+                          </ItemGroup>
+                        </CollapsibleContent>
+                        <CollapsibleTrigger asChild>
+                          <button
+                            type="button"
+                            className={cn(
+                              'inline-flex items-center gap-1 text-sm font-medium text-primary',
+                              'hover:underline focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded mt-1'
+                            )}
                           >
-                            <Info className="h-4 w-4" />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" className="max-w-xs px-4 py-3" sideOffset={8}>
-                          <div className="space-y-2">
-                            <p className="font-semibold">
-                              {t(`type.features.${accountTypeKey}.title`)}
-                            </p>
-                            <ul className="space-y-1 text-xs">
-                              <li>• {t(`type.features.${accountTypeKey}.feature1`)}</li>
-                              <li>• {t(`type.features.${accountTypeKey}.feature2`)}</li>
-                              <li>• {t(`type.features.${accountTypeKey}.feature3`)}</li>
-                            </ul>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </button>
-                );
-              })}
-            </div>
+                            {expandedFeaturesByAccountId[account.id] ? (
+                              <>
+                                {t('type.showLess')}
+                                <ChevronUp className="h-4 w-4 shrink-0" />
+                              </>
+                            ) : (
+                              <>
+                                {t('type.showMore')}
+                                <ChevronDown className="h-4 w-4 shrink-0" />
+                              </>
+                            )}
+                          </button>
+                        </CollapsibleTrigger>
+                      </Collapsible>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Complementary Account Creation */}

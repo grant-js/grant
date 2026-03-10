@@ -92,7 +92,8 @@
       "placeholder": "Tags auswählen",
       "selected": "{count} ausgewählt",
       "clearAll": "Alle löschen",
-      "loading": "Tags werden geladen..."
+      "loading": "Tags werden geladen...",
+      "empty": "Keine Tags verfügbar"
     },
     "actions": {
       "save": "Änderungen speichern",
@@ -153,14 +154,14 @@
       "organization": "Organisation",
       "organizations": "Organisationen",
       "organizationTags": "Organisations-Tags",
-      "accountTags": "Account-Tags",
+      "accountTags": "Konto-Tags",
       "projectTags": "Projekt-Tags",
       "projects": "Projekte",
       "project": "Projekt",
-      "account": "Account",
+      "account": "Konto",
       "settings": "Einstellungen",
       "backToOrganization": "Zurück zur Organisation",
-      "signingKeys": "Signierungsschlüssel (JWKS)",
+      "signingKeys": "Signierungsschlüssel",
       "projectApps": "Apps"
     }
   },
@@ -172,9 +173,151 @@
     "system": "System"
   },
   "auth": {
+    "errors": {
+      "auth": {
+        "invalidOrUsedVerificationToken": "Link bereits verwendet oder ungültig"
+      }
+    },
     "welcome": {
       "title": "Willkommen bei Grant",
       "description": "Eine moderne Autorisierungsplattform für Einzelpersonen und Organisationen. Verwalten Sie Benutzerzugriff, Berechtigungen und Rollen für Ihre Anwendungen mit Einfachheit."
+    },
+    "assistant": {
+      "help": "Hilfe",
+      "login": {
+        "passwordPolicy": {
+          "title": "Passwortanforderungen",
+          "description": "Mindestens 6 Zeichen. Für mehr Sicherheit empfehlen wir eine Mischung aus Buchstaben, Zahlen und Symbolen."
+        },
+        "githubSignIn": {
+          "title": "Mit GitHub anmelden",
+          "description": "Neue Nutzer können sich mit einem Klick per GitHub registrieren. Bestehende Nutzer verknüpfen ihr GitHub-Konto zur Anmeldung."
+        },
+        "forgotPassword": {
+          "title": "Passwort vergessen?",
+          "description": "Nutzen Sie den Link unter dem Formular, um einen sicheren Link zum Zurücksetzen an Ihre E-Mail zu erhalten."
+        }
+      },
+      "register": {
+        "accountType": {
+          "title": "Kontotyp",
+          "description": "Wählen Sie Persönlich für Einzelnutzung oder Organisation für Teams. Organisationen können Sie später erstellen oder beitreten."
+        },
+        "passwordStrength": {
+          "title": "Sicheres Passwort",
+          "description": "Der Indikator zeigt die Stärke Ihres Passworts. Länge, Buchstaben, Zahlen und Symbole verbessern die Sicherheit."
+        },
+        "verification": {
+          "title": "E-Mail-Verifizierung",
+          "description": "Nach der Registrierung müssen Sie ggf. Ihre E-Mail bestätigen. Prüfen Sie Ihren Posteingang für den Link."
+        }
+      },
+      "forgotPassword": {
+        "checkInbox": {
+          "title": "Posteingang prüfen",
+          "description": "Falls ein Konto für diese E-Mail existiert, senden wir einen Link. Prüfen Sie den Spam-Ordner, falls nichts ankommt."
+        },
+        "noEmail": {
+          "title": "Kein Konto?",
+          "description": "Aus Sicherheitsgründen teilen wir nicht mit, ob eine E-Mail registriert ist. Bei Neuanmeldung nutzen Sie die Registrierung."
+        }
+      },
+      "verifyEmail": {
+        "linkExpiry": {
+          "title": "Link läuft bald ab",
+          "description": "Jeder Verifizierungslink ist nur kurze Zeit (einige Minuten) gültig. Wenn er abgelaufen ist, gehen Sie zur Anmeldeseite und nutzen Sie „Verifizierungs-E-Mail erneut senden“, um einen neuen zu erhalten."
+        },
+        "alreadyUsed": {
+          "title": "Link bereits verwendet?",
+          "description": "Wenn Sie den Link bereits geklickt und Ihre E-Mail verifiziert haben, sind Sie fertig—nutzen Sie „Zum Dashboard“, um fortzufahren. Der Link funktioniert aus Sicherheitsgründen nur einmal."
+        },
+        "checkSpam": {
+          "title": "E-Mail nicht gefunden?",
+          "description": "Prüfen Sie Ihren Spam- oder Junk-Ordner. Die Nachricht kann einen Moment brauchen. Wenn Sie sie weiterhin nicht sehen, gehen Sie zur Anmeldeseite und fordern Sie eine neue Verifizierungs-E-Mail an."
+        },
+        "resendLink": {
+          "title": "Neuen Link benötigt?",
+          "description": "Sie können von der Anmeldeseite aus eine neue Verifizierungs-E-Mail anfordern. Geben Sie Ihre E-Mail ein und wählen Sie „Verifizierungs-E-Mail erneut senden“, falls die Option verfügbar ist."
+        }
+      },
+      "resetPassword": {
+        "linkFromEmail": {
+          "title": "Link aus Ihrer E-Mail",
+          "description": "Sie haben diese Seite über den Link in der Passwort-Zurücksetzen-E-Mail geöffnet. Geben Sie unten ein neues Passwort ein; der Link ist nur begrenzt gültig. Wenn Sie keine Zurücksetzung angefordert haben, können Sie die E-Mail ignorieren oder Ihr Passwort ändern, um sicher zu bleiben."
+        },
+        "linkExpired": {
+          "title": "Link abgelaufen oder ungültig?",
+          "description": "Links zum Zurücksetzen laufen nach einer gewissen Zeit ab. Wenn Ihrer nicht funktioniert oder abgelaufen ist, gehen Sie zur Seite \"Passwort vergessen\" und fordern Sie einen neuen Link an. Wir senden eine weitere E-Mail an Ihre Adresse."
+        },
+        "strongPassword": {
+          "title": "Starkes Passwort wählen",
+          "description": "Verwenden Sie eine Mischung aus Buchstaben, Zahlen und Symbolen und vermeiden Sie die Wiederverwendung eines früheren Passworts. Der Stärke-Indikator hilft Ihnen, die Anforderungen zu erfüllen. Dieses Passwort verwenden Sie ab sofort für die Anmeldung."
+        },
+        "afterReset": {
+          "title": "Nach dem Zurücksetzen",
+          "description": "Nach dem Setzen Ihres neuen Passworts nutzen Sie \"Weiter zur Anmeldung\", um sich mit Ihrer E-Mail und dem neuen Passwort anzumelden. Bei einer Fehlermeldung ist der Link möglicherweise abgelaufen—fordern Sie auf der Seite Passwort vergessen einen neuen an."
+        }
+      },
+      "invitation": {
+        "whatIsThis": {
+          "title": "Was ist diese Einladung?",
+          "description": "Sie wurden in eine Organisation eingeladen. Akzeptieren Sie, um die Rolle und den Zugang zu erhalten, oder lehnen Sie ab, wenn Sie nicht interessiert sind. Sie müssen angemeldet sein, um zu akzeptieren—verwenden Sie dieselbe E-Mail-Adresse, mit der Sie eingeladen wurden."
+        },
+        "linkExpired": {
+          "title": "Einladung abgelaufen?",
+          "description": "Einladungen sind nur begrenzt gültig (z. B. 7 Tage). Wenn Ihre abgelaufen ist, bitten Sie die einladende Person, eine neue Einladung über die Organisationseinstellungen zu senden."
+        },
+        "alreadyAccepted": {
+          "title": "Bereits akzeptiert?",
+          "description": "Wenn Sie diese Einladung bereits angenommen haben, sind Sie fertig. Nutzen Sie „Zur Organisation“, um die Organisation zu öffnen, oder finden Sie sie in Ihrem Dashboard und wechseln Sie in diesen Arbeitsbereich."
+        },
+        "signInRequired": {
+          "title": "Anmelden zum Akzeptieren",
+          "description": "Sie müssen angemeldet sein, um eine Einladung anzunehmen. Melden Sie sich mit der E-Mail-Adresse an, mit der Sie eingeladen wurden, oder registrieren Sie sich zuerst, wenn Sie noch kein Konto haben. Nach der Anmeldung kehren Sie hierher zurück, um die Annahme abzuschließen."
+        }
+      },
+      "projectEntry": {
+        "whatIsThis": {
+          "title": "Was ist das?",
+          "description": "Sie melden sich bei einer Projekt-App an, die Grant zur Authentifizierung nutzt. Wählen Sie GitHub oder E-Mail, um fortzufahren. Die App kann Zugriff auf bestimmte Daten anfordern; diese sehen und genehmigen Sie auf dem nächsten Bildschirm."
+        },
+        "requestedScopes": {
+          "title": "Angeforderte Berechtigungen",
+          "description": "Die Liste oben zeigt, worauf diese App zugreifen möchte (z. B. Profil, E-Mail). Sie können diese auf dem Zustimmungsbildschirm nach der Anmeldung erlauben oder ablehnen. Gewähren Sie Zugriff nur, wenn Sie der App vertrauen."
+        },
+        "trustApp": {
+          "title": "Ist das sicher?",
+          "description": "Melden Sie sich nur an, wenn Sie der App und ihrem Anbieter vertrauen. Sie behalten die Kontrolle: Sie können den Zugriff auf dem Zustimmungsbildschirm ablehnen oder später in Ihren Kontoeinstellungen widerrufen."
+        }
+      },
+      "projectEmail": {
+        "linkFromEmail": {
+          "title": "Anmeldelink per E-Mail",
+          "description": "Geben Sie die E-Mail-Adresse Ihres Grant-Kontos ein. Wir senden einen einmaligen Anmeldelink an diese Adresse. Verwenden Sie dieselbe E-Mail wie für die Grant-Plattform, damit Ihre Identität korrekt verknüpft wird."
+        },
+        "checkInbox": {
+          "title": "Posteingang prüfen",
+          "description": "Nach dem Absenden prüfen Sie Ihre E-Mail (und den Spam-Ordner) auf den Anmeldelink. Klicken Sie auf den Link, um die Anmeldung für diese App abzuschließen. Der Link läuft aus Sicherheitsgründen nach kurzer Zeit ab."
+        },
+        "sameEmail": {
+          "title": "Ihre Grant-E-Mail verwenden",
+          "description": "Verwenden Sie dieselbe E-Mail, mit der Sie sich bei der Grant-Plattform anmelden. Wenn Sie noch kein Konto haben, müssen Sie sich möglicherweise zuerst auf der Haupt-Anmeldeseite registrieren und dann hierher zurückkehren, um sich bei der App anzumelden."
+        }
+      },
+      "projectConsent": {
+        "reviewPermissions": {
+          "title": "Vor dem Erlauben prüfen",
+          "description": "Dieser Bildschirm zeigt genau, worauf die App zugreifen möchte. Lesen Sie die Liste und klicken Sie nur auf Erlauben, wenn Sie mit diesen Berechtigungen einverstanden sind. Mit Ablehnen brechen Sie den Vorgang ab und die App erhält keinen Zugriff."
+        },
+        "allowOrDeny": {
+          "title": "Erlauben oder Ablehnen",
+          "description": "Erlauben gewährt der App die oben aufgeführten Berechtigungen und leitet Sie zurück zur App. Ablehnen bricht die Anfrage ab und die App erhält keinen Zugriff. Sie können den Zugriff später in Ihrem Konto widerrufen."
+        },
+        "revokeLater": {
+          "title": "Später anders entscheiden?",
+          "description": "Sie können den Zugriff dieser App jederzeit in Ihren Kontoeinstellungen widerrufen. Durch den Widerruf kann die App Ihre Daten nicht mehr nutzen; Sie können sich bei Bedarf später erneut anmelden und erneut autorisieren."
+        }
+      }
     },
     "form": {
       "name": {
@@ -333,6 +476,9 @@
       "missingToken": "Ungültiger Verifizierungslink",
       "missingTokenDescription": "Dieser Verifizierungslink ist ungültig oder enthält nicht die erforderlichen Informationen.",
       "goToLogin": "Zur Anmeldung",
+      "goToDashboard": "Zum Dashboard",
+      "invalidOrUsedTitle": "Link bereits verwendet oder ungültig",
+      "invalidOrUsedDescription": "Dieser Verifizierungslink wurde bereits verwendet oder ist ungültig. Wenn Sie Ihre E-Mail bereits verifiziert haben, gehen Sie zum Dashboard. Andernfalls melden Sie sich an, um einen neuen Verifizierungslink anzufordern.",
       "redirecting": "Weiterleitung zur Anmeldung..."
     },
     "resendVerification": {
@@ -2451,7 +2597,8 @@
       "details": {
         "title": "Konto",
         "titlePlural": "Konten",
-        "description": "Anzeigen und zwischen Arbeitsbereichen wechseln"
+        "description": "Ihre Arbeitsbereich-Konten, deren Funktionen und Konto-IDs anzeigen",
+        "idLabel": "Konto-ID"
       },
       "information": {
         "title": "Kontodetails",
@@ -2477,19 +2624,36 @@
         "description": "Ihr Kontotyp bestimmt die verfügbaren Funktionen",
         "currentAccount": "Aktueller Arbeitsbereich",
         "features": {
+          "title": "Funktionen",
           "personal": {
             "title": "Funktionen des persönlichen Kontos",
-            "feature1": "Individueller Benutzerzugriff und Berechtigungen",
-            "feature2": "Persönliche Projektverwaltung",
-            "feature3": "Grundlegende Kollaborationsfunktionen"
+            "feature1Title": "Einzelner Inhaber",
+            "feature1Description": "Nur Sie haben Zugriff; Projekte sind direkt mit Ihrem Konto verknüpft.",
+            "feature2Title": "Rolle „Inhaber des persönlichen Kontos“",
+            "feature2Description": "Volle Kontrolle über Ihr Konto und dessen Projekte.",
+            "feature3Title": "Keine Mitgliederverwaltung",
+            "feature3Description": "Keine Einladungen oder Teamrollen; ideal für die Einzelnutzung.",
+            "feature4Title": "Kontozugeordnete Projekte",
+            "feature4Description": "Projekte sind Ihrem Konto zugeordnet (account_projects); keine Organisationsebene.",
+            "feature5Title": "Individuelle Nutzung",
+            "feature5Description": "Ideal für Nebenprojekte und individuelle Entwicklung."
           },
           "organization": {
             "title": "Funktionen des Organisationskontos",
-            "feature1": "Team-Management und Zusammenarbeit",
-            "feature2": "Erweiterte Projektverwaltung",
-            "feature3": "Organisationsweite Einstellungen und Kontrollen"
+            "feature1Title": "Mehrere Mitglieder",
+            "feature1Description": "Benutzer per E-Mail einladen und Rollen zuweisen (Owner, Admin, Dev, Viewer).",
+            "feature2Title": "Organisationsweite Rollen und Berechtigungen",
+            "feature2Description": "Mitglieder verwalten, Projekte erstellen, Zugriff steuern.",
+            "feature3Title": "Projekte und Mitglieder",
+            "feature3Description": "Die Organisation enthält Projekte und Mitglieder; Org-Rollen gelten für Org-Projekte.",
+            "feature4Title": "Vier Org-Rollen",
+            "feature4Description": "Owner (volle Kontrolle), Admin (Teams und Berechtigungen), Dev (Ressourcen und Rollen), Viewer (nur Lesen).",
+            "feature5Title": "Teamnutzung",
+            "feature5Description": "Ideal für Teams und den geschäftlichen Einsatz."
           }
         },
+        "showMore": "Mehr anzeigen",
+        "showLess": "Weniger anzeigen",
         "complementary": {
           "title": "Erstellen Sie einen ergänzenden Arbeitsbereich",
           "description": "Sie können auch einen {type} Arbeitsbereich erstellen, um auf zusätzliche Funktionen zuzugreifen.",
@@ -2676,9 +2840,17 @@
         "includes": {
           "title": "Ihr Datenexport umfasst:",
           "account": "Kontoinformationen und Einstellungen",
+          "accountTitle": "Konto",
+          "accountDescription": "Kontoinformationen und Einstellungen",
           "profile": "Profilinformationen und Präferenzen",
+          "profileTitle": "Profil",
+          "profileDescription": "Profilinformationen und Präferenzen",
           "sessions": "Aktive und abgelaufene Sitzungshistorie",
-          "activity": "Kontoaktivität und Audit-Protokolle"
+          "sessionsTitle": "Sitzungen",
+          "sessionsDescription": "Aktive und abgelaufene Sitzungshistorie",
+          "activity": "Kontoaktivität und Audit-Protokolle",
+          "activityTitle": "Aktivität",
+          "activityDescription": "Kontoaktivität und Audit-Protokolle"
         },
         "export": "Meine Daten exportieren",
         "exporting": "Export wird vorbereitet...",
@@ -2697,7 +2869,7 @@
         },
         "deleted": {
           "title": "Gelöschte Konten",
-          "description": "Wenn Sie Ihr Konto löschen, werden Ihre Daten zur Löschung markiert und nach 30 Tagen dauerhaft entfernt. Während dieser Zeit können Sie Ihr Konto wiederherstellen."
+          "description": "Wenn Sie Ihr Konto löschen, werden Ihre Daten zur Löschung markiert und nach {days} Tagen dauerhaft entfernt. Während dieser Zeit können Sie Ihr Konto wiederherstellen."
         },
         "backup": {
           "title": "Backup & Wiederherstellung",
@@ -2711,8 +2883,15 @@
         "consequences": {
           "title": "Was passiert, wenn Sie Ihr Konto löschen:",
           "data": "Alle Ihre Kontodaten, Projekte und Einstellungen werden dauerhaft gelöscht",
+          "dataTitle": "Kontodaten",
+          "dataDescription": "Alle Ihre Kontodaten, Projekte und Einstellungen werden dauerhaft gelöscht",
           "access": "Sie verlieren den Zugriff auf alle Organisationen und Projekte, in denen Sie Mitglied sind",
-          "irreversible": "Diese Aktion ist unwiderruflich und kann nicht rückgängig gemacht werden"
+          "accessTitle": "Zugriffsverlust",
+          "accessDescription": "Sie verlieren den Zugriff auf alle Organisationen und Projekte, in denen Sie Mitglied sind",
+          "irreversible": "Diese Aktion ist unwiderruflich und kann nicht rückgängig gemacht werden",
+          "irreversibleTitle": "Unwiderruflich",
+          "irreversibleDescription": "Diese Aktion kann nicht rückgängig gemacht werden",
+          "retentionTitle": "Aufbewahrungsfrist"
         },
         "deleteButton": "Mein Konto löschen",
         "dialog": {
@@ -2781,7 +2960,7 @@
     "success": {
       "title": "Einladung angenommen",
       "description": "Sie sind der Organisation erfolgreich beigetreten!",
-      "redirecting": "Weiterleitung zur Organisation..."
+      "goToOrganization": "Zur Organisation"
     },
     "error": {
       "title": "Fehler beim Annehmen der Einladung",
@@ -2809,7 +2988,7 @@
     }
   },
   "signingKeys": {
-    "title": "Signaturschlüssel (JWKS)",
+    "title": "Signaturschlüssel",
     "toolbar": {
       "rotate": "Schlüssel rotieren",
       "create": "Signaturschlüssel erstellen"

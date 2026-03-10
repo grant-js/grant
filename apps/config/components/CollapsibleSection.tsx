@@ -9,7 +9,12 @@ export interface CollapsibleSectionProps {
   children: React.ReactNode;
 }
 
-export function CollapsibleSection({ title, expanded, onToggle, children }: CollapsibleSectionProps) {
+export function CollapsibleSection({
+  title,
+  expanded,
+  onToggle,
+  children,
+}: CollapsibleSectionProps) {
   return (
     <div className="collapsible-section">
       <button
@@ -20,18 +25,11 @@ export function CollapsibleSection({ title, expanded, onToggle, children }: Coll
         aria-controls={`collapsible-section-${title.replace(/\s+/g, '-').toLowerCase()}`}
         id={`collapsible-section-trigger-${title.replace(/\s+/g, '-').toLowerCase()}`}
       >
-        <ChevronDown
-          size={16}
-          className="collapsible-section__chevron"
-          aria-hidden
-        />
+        <ChevronDown size={16} className="collapsible-section__chevron" aria-hidden />
         <span className="collapsible-section__title">{title}</span>
         <div className="collapsible-section__line" aria-hidden />
       </button>
-      <div
-        className="collapsible-section__content-wrapper"
-        data-expanded={expanded}
-      >
+      <div className="collapsible-section__content-wrapper" data-expanded={expanded}>
         <div
           id={`collapsible-section-${title.replace(/\s+/g, '-').toLowerCase()}`}
           className="collapsible-section__content"

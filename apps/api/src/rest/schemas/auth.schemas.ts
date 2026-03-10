@@ -247,6 +247,8 @@ export const projectAuthorizeQuerySchema = z.object({
   provider: projectOAuthProviderSchema.optional().default('github'),
   /** Optional space-delimited scopes (subset of app-configured scopes). */
   scope: z.string().optional(),
+  /** Frontend locale for consent redirect (e.g. en, de). */
+  locale: z.string().min(1).optional(),
 });
 
 export const projectCallbackQuerySchema = z
@@ -275,6 +277,8 @@ export const projectEmailRequestSchema = z.object({
   client_state: z.string().optional(),
   /** Optional space-delimited scopes (subset of app-configured scopes). */
   scope: z.string().optional(),
+  /** Frontend locale for consent redirect and magic-link email content (e.g. en, de). */
+  locale: z.string().min(1).optional(),
 });
 
 /** Query for GET project app public info (OAuth entry/consent UI). */

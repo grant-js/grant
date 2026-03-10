@@ -150,7 +150,7 @@ export const AUTH_CONFIG = {
   /** Provider verification token expiration in days */
   providerVerificationExpirationDays: getEnvNumber('AUTH_PROVIDER_VERIFICATION_EXPIRATION_DAYS', 7),
 
-  /** OTP (One-Time Password) validity in minutes */
+  /** OTP (One-Time Password) verification token validity in minutes (backend enforces this; also shown in verification email). */
   otpValidityMinutes: getEnvNumber('AUTH_OTP_VALIDITY_MINUTES', 5),
 
   /** Password reset OTP validity in minutes */

@@ -5,7 +5,6 @@
 
 export type EnvCategoryId =
   | 'main'
-  | 'docker'
   | 'database'
   | 'cache'
   | 'auth'
@@ -45,9 +44,8 @@ export interface EnvVarMeta {
   critical?: boolean;
 }
 
-/** Categories shown as tabs; order = display order. Docker first, then App. */
+/** Categories shown as tabs; order = display order. */
 export const ENV_CATEGORIES: { id: EnvCategoryId; label: string; priority: number }[] = [
-  { id: 'docker', label: 'Docker', priority: 0 },
   { id: 'main', label: 'App', priority: 1 },
   { id: 'database', label: 'Database', priority: 2 },
   { id: 'cache', label: 'Cache / Redis', priority: 4 },
@@ -70,7 +68,21 @@ export const ENV_FILE_PATHS = [
 export const SYNC_VARS: Record<string, string[]> = {
   DB_URL: ['packages/@grantjs/database/.env', 'apps/api/.env'],
   SYSTEM_USER_ID: ['packages/@grantjs/database/.env', 'apps/api/.env'],
+  AUTH_PROVIDER_VERIFICATION_EXPIRATION_DAYS: ['apps/api/.env', 'apps/web/.env'],
+  AUTH_OTP_VALIDITY_MINUTES: ['apps/api/.env', 'apps/web/.env'],
 };
+
+/** When an API (or other) var is updated, replicate its value to the web app under a different key. */
+export const REPLICATE_TO_WEB: Record<string, { key: string; file: string }> = {
+  PRIVACY_ACCOUNT_DELETION_RETENTION_DAYS: {
+    key: 'NEXT_PUBLIC_ACCOUNT_DELETION_RETENTION_DAYS',
+    file: 'apps/web/.env',
+  },
+};
+
+export function getReplicateToWeb(key: string): { key: string; file: string } | undefined {
+  return REPLICATE_TO_WEB[key];
+}
 
 const META: EnvVarMeta[] = [
   // Main
@@ -95,10 +107,48 @@ const META: EnvVarMeta[] = [
     section: 'Core',
     critical: true,
   },
+  {
+    key: 'APP_PORT',
+    category: 'main',
+    label: 'API port',
+    description: 'Port the API server listens on.',
+    envFiles: ['apps/api/.env'],
+    digitsOnly: true,
+    section: 'Core',
+    critical: true,
+  },
+  {
+    key: 'SYSTEM_USER_ID',
+    category: 'main',
+    label: 'System user ID',
+    description: 'Internal user ID for seeding; must match API config.',
+    envFiles: ['packages/@grantjs/database/.env', 'apps/api/.env'],
+    syncAcrossFiles: true,
+    section: 'Core',
+    critical: true,
+  },
+  {
+    key: 'PRIVACY_ACCOUNT_DELETION_RETENTION_DAYS',
+    category: 'main',
+    label: 'Account deletion retention (days)',
+    description: 'Data retention period for deleted accounts (default: 30).',
+    envFiles: ['apps/api/.env'],
+    digitsOnly: true,
+    section: 'Privacy & retention',
+  },
+  {
+    key: 'PRIVACY_BACKUP_RETENTION_DAYS',
+    category: 'main',
+    label: 'Backup retention (days)',
+    description: 'Data retention period for backups (default: 90).',
+    envFiles: ['apps/api/.env'],
+    digitsOnly: true,
+    section: 'Privacy & retention',
+  },
   // Docker
   {
     key: 'POSTGRES_DB',
-    category: 'docker',
+    category: 'database',
     label: 'Postgres DB name',
     description: 'Database name for Docker Compose PostgreSQL.',
     envFiles: ['.env'],
@@ -107,7 +157,7 @@ const META: EnvVarMeta[] = [
   },
   {
     key: 'POSTGRES_USER',
-    category: 'docker',
+    category: 'database',
     label: 'Postgres user',
     description: 'Database user for Docker Compose.',
     envFiles: ['.env'],
@@ -116,7 +166,7 @@ const META: EnvVarMeta[] = [
   },
   {
     key: 'POSTGRES_PASSWORD',
-    category: 'docker',
+    category: 'database',
     label: 'Postgres password',
     description: 'Database password for Docker Compose.',
     envFiles: ['.env'],
@@ -125,18 +175,8 @@ const META: EnvVarMeta[] = [
     critical: true,
   },
   {
-    key: 'REDIS_PASSWORD',
-    category: 'docker',
-    label: 'Redis password',
-    description: 'Redis auth password (Docker Compose and API when CACHE_STRATEGY=redis).',
-    envFiles: ['.env', 'apps/api/.env'],
-    isPassword: true,
-    section: 'Redis',
-    critical: true,
-  },
-  {
     key: 'PGADMIN_EMAIL',
-    category: 'docker',
+    category: 'database',
     label: 'PgAdmin email',
     description: 'PgAdmin login email.',
     envFiles: ['.env'],
@@ -145,49 +185,13 @@ const META: EnvVarMeta[] = [
   },
   {
     key: 'PGADMIN_PASSWORD',
-    category: 'docker',
+    category: 'database',
     label: 'PgAdmin password',
     description: 'PgAdmin login password.',
     envFiles: ['.env'],
     isPassword: true,
     section: 'PgAdmin',
     critical: true,
-  },
-  {
-    key: 'GRAFANA_ADMIN_PASSWORD',
-    category: 'docker',
-    label: 'Grafana admin password',
-    description: 'Grafana admin password (UI at http://localhost:3001).',
-    envFiles: ['.env'],
-    isPassword: true,
-    section: 'Grafana',
-  },
-  {
-    key: 'COLLECTOR_OTLP_ENABLED',
-    category: 'docker',
-    label: 'Jaeger OTLP enabled',
-    description: 'Enable OTLP receiver for trace ingestion (default: true).',
-    envFiles: ['.env'],
-    options: ['true', 'false'],
-    section: 'Jaeger',
-  },
-  {
-    key: 'UMAMI_DB_PASSWORD',
-    category: 'docker',
-    label: 'Umami DB password',
-    description: 'Umami Postgres password (used by umami-db and umami app).',
-    envFiles: ['.env'],
-    isPassword: true,
-    section: 'Umami',
-  },
-  {
-    key: 'UMAMI_APP_SECRET',
-    category: 'docker',
-    label: 'Umami app secret',
-    description: 'Umami app secret; use a random string in production.',
-    envFiles: ['.env'],
-    isPassword: true,
-    section: 'Umami',
   },
   // Database
   {
@@ -288,8 +292,9 @@ const META: EnvVarMeta[] = [
     key: 'AUTH_PROVIDER_VERIFICATION_EXPIRATION_DAYS',
     category: 'auth',
     label: 'Provider verification expiration (days)',
-    description: 'Provider verification token expiration in days (default: 7).',
-    envFiles: ['apps/api/.env'],
+    description:
+      'Window in days to verify email; user can resend link during this period. After this, login is blocked (default: 7).',
+    envFiles: ['apps/api/.env', 'apps/web/.env'],
     digitsOnly: true,
     section: 'Authentication',
     critical: true,
@@ -297,9 +302,10 @@ const META: EnvVarMeta[] = [
   {
     key: 'AUTH_OTP_VALIDITY_MINUTES',
     category: 'auth',
-    label: 'OTP validity (min)',
-    description: 'OTP validity in minutes (default: 5).',
-    envFiles: ['apps/api/.env'],
+    label: 'OTP verification token validity (min)',
+    description:
+      'How long each verification link/code is valid. Shown in email as "expires in X minutes" (default: 5).',
+    envFiles: ['apps/api/.env', 'apps/web/.env'],
     digitsOnly: true,
     section: 'Authentication',
   },
@@ -359,30 +365,11 @@ const META: EnvVarMeta[] = [
   },
   // API
   {
-    key: 'APP_PORT',
-    category: 'main',
-    label: 'API port',
-    description: 'Port the API server listens on.',
-    envFiles: ['apps/api/.env'],
-    digitsOnly: true,
-    section: 'Core',
-    critical: true,
-  },
-  {
-    key: 'SYSTEM_USER_ID',
-    category: 'main',
-    label: 'System user ID',
-    description: 'Internal user ID for seeding; must match API config.',
-    envFiles: ['packages/@grantjs/database/.env', 'apps/api/.env'],
-    syncAcrossFiles: true,
-    section: 'Core',
-    critical: true,
-  },
-  {
     key: 'CORS_DEV_ORIGINS',
     category: 'main',
     label: 'Dev CORS origins',
-    description: 'Development-only CORS origins (comma-separated). In production only frontend and additional origins apply.',
+    description:
+      'Development-only CORS origins (comma-separated). In production only frontend and additional origins apply.',
     envFiles: ['apps/api/.env'],
     multiValueSeparator: ',',
     section: 'Runtime',
@@ -504,6 +491,17 @@ const META: EnvVarMeta[] = [
     options: ['true', 'false'],
     section: 'Redis',
   },
+  {
+    key: 'REDIS_PASSWORD',
+    category: 'cache',
+    label: 'Redis password',
+    description: 'Redis auth password (Docker Compose and API when CACHE_STRATEGY=redis).',
+    envFiles: ['.env', 'apps/api/.env'],
+    isPassword: true,
+    dependsOn: { key: 'CACHE_STRATEGY', values: ['redis'] },
+    section: 'Redis',
+    critical: true,
+  },
   // GitHub
   {
     key: 'GITHUB_CLIENT_ID',
@@ -544,7 +542,8 @@ const META: EnvVarMeta[] = [
     key: 'GITHUB_AUTHORIZATION_URL',
     category: 'github',
     label: 'GitHub OAuth authorization URL',
-    description: 'GitHub OAuth authorization URL (default: https://github.com/login/oauth/authorize).',
+    description:
+      'GitHub OAuth authorization URL (default: https://github.com/login/oauth/authorize).',
     envFiles: ['apps/api/.env'],
     section: 'Advanced',
   },
@@ -716,7 +715,8 @@ const META: EnvVarMeta[] = [
     key: 'SECURITY_RLS_ROLE',
     category: 'security',
     label: 'RLS role name',
-    description: 'RLS restricted role; must match role in DB migration (default: grant_app_restricted).',
+    description:
+      'RLS restricted role; must match role in DB migration (default: grant_app_restricted).',
     envFiles: ['apps/api/.env'],
     section: 'Row-Level Security',
   },
@@ -745,6 +745,15 @@ const META: EnvVarMeta[] = [
     description: 'Collect default metrics e.g. CPU, memory (default: true).',
     envFiles: ['apps/api/.env'],
     options: ['true', 'false'],
+    section: 'Metrics',
+  },
+  {
+    key: 'GRAFANA_ADMIN_PASSWORD',
+    category: 'optional',
+    label: 'Grafana admin password',
+    description: 'Grafana dashboard login (http://localhost:3001). Add Prometheus (and optionally Jaeger) as data sources in Grafana to view metrics and traces.',
+    envFiles: ['.env'],
+    isPassword: true,
     section: 'Metrics',
   },
   {
@@ -829,6 +838,24 @@ const META: EnvVarMeta[] = [
     section: 'Analytics',
   },
   {
+    key: 'UMAMI_DB_PASSWORD',
+    category: 'optional',
+    label: 'Umami DB password',
+    description: 'Umami Postgres password (used by umami-db and umami app).',
+    envFiles: ['.env'],
+    isPassword: true,
+    section: 'Analytics',
+  },
+  {
+    key: 'UMAMI_APP_SECRET',
+    category: 'optional',
+    label: 'Umami app secret',
+    description: 'Umami app secret; use a random string in production.',
+    envFiles: ['.env'],
+    isPassword: true,
+    section: 'Analytics',
+  },
+  {
     key: 'TRACING_ENABLED',
     category: 'optional',
     label: 'Enable tracing',
@@ -878,6 +905,15 @@ const META: EnvVarMeta[] = [
     label: 'Service name',
     description: 'Tracing service name (default: grant-api).',
     envFiles: ['apps/api/.env'],
+    section: 'Tracing',
+  },
+  {
+    key: 'COLLECTOR_OTLP_ENABLED',
+    category: 'optional',
+    label: 'Jaeger OTLP enabled',
+    description: 'Enable OTLP receiver for trace ingestion (default: true).',
+    envFiles: ['.env'],
+    options: ['true', 'false'],
     section: 'Tracing',
   },
   {
@@ -1036,7 +1072,8 @@ const META: EnvVarMeta[] = [
     key: 'OPENAPI_PRODUCTION_URL',
     category: 'optional',
     label: 'Production URL (OpenAPI doc)',
-    description: 'Production server URL shown in OpenAPI document in dev (default: https://api.grant.center).',
+    description:
+      'Production server URL shown in OpenAPI document in dev (default: https://api.grant.center).',
     envFiles: ['apps/api/.env'],
     section: 'Swagger / OpenAPI',
   },
@@ -1047,6 +1084,7 @@ const META: EnvVarMeta[] = [
     description: 'Default locale; must be a supported locale (default: en).',
     envFiles: ['apps/api/.env'],
     section: 'Internationalization',
+    options: ['en', 'de'],
   },
   {
     key: 'I18N_DEBUG',
@@ -1378,24 +1416,6 @@ const META: EnvVarMeta[] = [
     digitsOnly: true,
     section: 'Jobs',
   },
-  {
-    key: 'PRIVACY_ACCOUNT_DELETION_RETENTION_DAYS',
-    category: 'optional',
-    label: 'Account deletion retention (days)',
-    description: 'Data retention period for deleted accounts (default: 30).',
-    envFiles: ['apps/api/.env'],
-    digitsOnly: true,
-    section: 'Privacy & retention',
-  },
-  {
-    key: 'PRIVACY_BACKUP_RETENTION_DAYS',
-    category: 'optional',
-    label: 'Backup retention (days)',
-    description: 'Data retention period for backups (default: 90).',
-    envFiles: ['apps/api/.env'],
-    digitsOnly: true,
-    section: 'Privacy & retention',
-  },
   // Web
   {
     key: 'NEXT_PUBLIC_API_URL',
@@ -1410,6 +1430,15 @@ const META: EnvVarMeta[] = [
     label: 'Public app URL',
     description: 'Web app public URL.',
     envFiles: ['apps/web/.env'],
+  },
+  {
+    key: 'NEXT_PUBLIC_ACCOUNT_DELETION_RETENTION_DAYS',
+    category: 'web',
+    label: 'Account deletion retention (days)',
+    description:
+      'Shown in the web app (e.g. privacy settings). Replicated from API PRIVACY_ACCOUNT_DELETION_RETENTION_DAYS when set in config.',
+    envFiles: ['apps/web/.env'],
+    digitsOnly: true,
   },
 ];
 

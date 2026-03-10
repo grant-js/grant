@@ -17,7 +17,10 @@ export function parseEnvContent(content: string): Map<string, string> {
     if (eq === -1) continue;
     const key = trimmed.slice(0, eq).trim();
     let value = trimmed.slice(eq + 1).trim();
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
       value = value.slice(1, -1).replace(/\\(.)/g, '$1');
     }
     map.set(key, value);
@@ -39,7 +42,10 @@ function updateEnvLine(content: string, key: string, value: string): string {
   let found = false;
   const out: string[] = [];
   for (const line of lines) {
-    if (line.trimStart().startsWith(keyEq) || (line.trimStart().startsWith(key) && line.includes('='))) {
+    if (
+      line.trimStart().startsWith(keyEq) ||
+      (line.trimStart().startsWith(key) && line.includes('='))
+    ) {
       out.push(`${key}=${escapeEnvValue(value)}`);
       found = true;
     } else {
@@ -61,7 +67,12 @@ function escapeEnvValue(value: string): string {
 }
 
 /** Write a single key to a .env file. Creates file and parent dir if needed. */
-export function writeEnvKey(absPath: string, key: string, value: string, existingContent?: string): void {
+export function writeEnvKey(
+  absPath: string,
+  key: string,
+  value: string,
+  existingContent?: string
+): void {
   const dir = dirname(absPath);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   const content = existingContent ?? (existsSync(absPath) ? readFileSync(absPath, ENCODING) : '');
@@ -70,7 +81,10 @@ export function writeEnvKey(absPath: string, key: string, value: string, existin
 }
 
 /** Read all env files under repo root and return { filePath -> { key -> value } }. */
-export function readAllEnvFiles(repoRoot: string, filePaths: string[]): Record<string, Record<string, string>> {
+export function readAllEnvFiles(
+  repoRoot: string,
+  filePaths: string[]
+): Record<string, Record<string, string>> {
   const result: Record<string, Record<string, string>> = {};
   for (const rel of filePaths) {
     const abs = resolve(repoRoot, rel);

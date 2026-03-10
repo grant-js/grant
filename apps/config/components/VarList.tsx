@@ -1,7 +1,11 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
+
+import { Mail } from 'lucide-react';
+
 import type { EnvStateResponse, EnvVarValue } from '@/app/types/env';
+
 import { CollapsibleSection } from './CollapsibleSection';
 import { VarRow } from './VarRow';
 
@@ -28,6 +32,18 @@ export interface VarListProps {
   onTestDbUrl: (dbUrl: string) => void;
   testDbStatus: 'idle' | 'loading' | 'success' | 'error';
   testDbMessage: string;
+  onTestHealth: (appUrl: string) => void;
+  testHealthStatus: 'idle' | 'loading' | 'success' | 'error';
+  testHealthMessage: string;
+  onTestRedis: () => void;
+  testRedisStatus: 'idle' | 'loading' | 'success' | 'error';
+  testRedisMessage: string;
+  onTestGithubOAuth: () => void;
+  testGithubOAuthStatus: 'idle' | 'loading' | 'success' | 'error';
+  testGithubOAuthMessage: string;
+  onTestEmail: (toEmail: string) => void;
+  testEmailStatus: 'idle' | 'loading' | 'success' | 'error';
+  testEmailMessage: string;
   openSelectKey: string | null;
   onOpenSelectKeyChange: (key: string | null) => void;
   onGenerateSystemUserId: () => void;
@@ -115,11 +131,24 @@ export function VarList({
   onTestDbUrl,
   testDbStatus,
   testDbMessage,
+  onTestHealth,
+  testHealthStatus,
+  testHealthMessage,
+  onTestRedis,
+  testRedisStatus,
+  testRedisMessage,
+  onTestGithubOAuth,
+  testGithubOAuthStatus,
+  testGithubOAuthMessage,
+  onTestEmail,
+  testEmailStatus,
+  testEmailMessage,
   openSelectKey,
   onOpenSelectKeyChange,
   onGenerateSystemUserId,
   onGeneratePassword,
 }: VarListProps) {
+  const [emailTestTo, setEmailTestTo] = useState('');
   const sortedGroups = useMemo(() => {
     const groups = groupVarsBySection(vars, meta);
     const withSortedVars = groups.map((g) => ({
@@ -159,9 +188,12 @@ export function VarList({
       const boundToDocker = isDbUrl && useDockerDb;
       const isMulti = !!m?.multiValueSeparator;
       const currentValue = boundToDocker ? computedDbUrl : (editing[v.key] ?? v.value);
-      const isDirty = !boundToDocker && (isMulti && getMultiVar
-        ? normalizedMultiValue(getMultiVar(v.key).filter(Boolean).join(',')) !== normalizedMultiValue(v.value ?? '')
-        : (editing[v.key] ?? v.value) !== v.value);
+      const isDirty =
+        !boundToDocker &&
+        (isMulti && getMultiVar
+          ? normalizedMultiValue(getMultiVar(v.key).filter(Boolean).join(',')) !==
+            normalizedMultiValue(v.value ?? '')
+          : (editing[v.key] ?? v.value) !== v.value);
       const invalid = validationErrors[v.key];
 
       return (
@@ -181,6 +213,14 @@ export function VarList({
           useDockerDb={useDockerDb}
           testDbStatus={testDbStatus}
           testDbMessage={testDbMessage}
+          testHealthStatus={testHealthStatus}
+          testHealthMessage={testHealthMessage}
+          testRedisStatus={testRedisStatus}
+          testRedisMessage={testRedisMessage}
+          onTestRedis={onTestRedis}
+          testGithubOAuthStatus={testGithubOAuthStatus}
+          testGithubOAuthMessage={testGithubOAuthMessage}
+          onTestGithubOAuth={onTestGithubOAuth}
           isSelectOpen={openSelectKey === v.key}
           onEdit={onEdit}
           onReset={onReset}
@@ -188,6 +228,7 @@ export function VarList({
           onSave={onSave}
           onUseDockerDbChange={onUseDockerDbChange}
           onTestDbUrl={onTestDbUrl}
+          onTestHealth={onTestHealth}
           onOpenSelectKeyChange={onOpenSelectKeyChange}
           onGenerateSystemUserId={onGenerateSystemUserId}
           onGeneratePassword={onGeneratePassword}
@@ -198,7 +239,10 @@ export function VarList({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
       {sortedGroups.map(({ section, vars: groupVars }) => (
-        <div key={section ?? '_'} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div
+          key={section ?? '_'}
+          style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
+        >
           {section !== undefined ? (
             <CollapsibleSection
               title={section}
@@ -206,11 +250,56 @@ export function VarList({
               onToggle={() => toggleSection(section)}
             >
               {renderVarRows(groupVars)}
+              {section === 'Email' && getVar('EMAIL_PROVIDER')?.trim() !== 'console' && (
+                <div className="var-row">
+                  <div>
+                    <div className="var-name-row">
+                      <span className="var-name">Send test email to</span>
+                    </div>
+                    <div className="depends-on">
+                      Recipient address for the test email.
+                    </div>
+                  </div>
+                  <div className="input-cell">
+                    <div className="input-wrapper">
+                      <input
+                        type="email"
+                        className="input"
+                        placeholder="recipient@example.com"
+                        value={emailTestTo}
+                        onChange={(e) => setEmailTestTo(e.target.value)}
+                      />
+                    </div>
+                    <div className="test-db-row">
+                      <button
+                        type="button"
+                        className="test-db-btn"
+                        disabled={testEmailStatus === 'loading' || !emailTestTo.trim()}
+                        onClick={() => onTestEmail(emailTestTo)}
+                      >
+                        <Mail size={14} className="test-db-btn-icon" />
+                        {testEmailStatus === 'loading' ? 'Sending…' : 'Send test email'}
+                      </button>
+                    </div>
+                    {(testEmailStatus === 'success' || testEmailStatus === 'error') && (
+                      <div className="test-db-msg-row">
+                        <span
+                          className={
+                            testEmailStatus === 'success'
+                              ? 'test-db-msg test-db-msg-success'
+                              : 'test-db-msg test-db-msg-error'
+                          }
+                        >
+                          {testEmailMessage}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </CollapsibleSection>
           ) : (
-            <>
-              {renderVarRows(groupVars)}
-            </>
+            <>{renderVarRows(groupVars)}</>
           )}
         </div>
       ))}

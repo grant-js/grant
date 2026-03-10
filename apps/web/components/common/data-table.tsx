@@ -75,7 +75,7 @@ export function DataTable<T>({
   }
 
   return (
-    <div className="rounded-md border">
+    <div className="min-w-0 rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>

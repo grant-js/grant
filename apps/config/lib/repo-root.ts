@@ -1,6 +1,5 @@
 import { existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 /**
  * Resolve monorepo root when the config app runs from apps/config.
@@ -10,7 +9,10 @@ export function getRepoRoot(): string {
   const cwd = typeof process !== 'undefined' ? process.cwd() : '';
   let dir = cwd;
   for (let i = 0; i < 5; i++) {
-    if (existsSync(resolve(dir, 'package.json')) && existsSync(resolve(dir, 'pnpm-workspace.yaml'))) {
+    if (
+      existsSync(resolve(dir, 'package.json')) &&
+      existsSync(resolve(dir, 'pnpm-workspace.yaml'))
+    ) {
       return dir;
     }
     const parent = dirname(dir);

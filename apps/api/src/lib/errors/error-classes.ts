@@ -6,6 +6,7 @@ export {
   ConfigurationError,
   ConflictError,
   GrantException,
+  InvalidOrUsedVerificationTokenError,
   NotFoundError,
   ValidationError,
 } from '@grantjs/core';

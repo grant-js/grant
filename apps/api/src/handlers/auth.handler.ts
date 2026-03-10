@@ -234,10 +234,27 @@ export class AuthHandler extends CacheHandler {
         throw new AuthenticationError('User not found');
       }
 
-      const user = usersResult.users[0];
+      let user = usersResult.users[0];
 
       if (!Array.isArray(user.accounts) || user.accounts.length === 0) {
-        throw new AuthenticationError('User does not have an account');
+        // User has auth method but no account (e.g. created via project OAuth). Create default Personal account on first platform login.
+        const account = await this.accounts.createAccount(
+          { type: AccountType.Personal, ownerId: user.id },
+          tx
+        );
+        const seededRoles = await this.accountRoles.seedAccountRoles(account.id, tx);
+        const accountOwnerRole = seededRoles[0];
+        if (accountOwnerRole) {
+          await this.userRoles.addUserRole(
+            { userId: user.id, roleId: accountOwnerRole.role.id },
+            tx
+          );
+        }
+        const usersResultAfter = await this.users.getUsers(
+          { ids: [user.id], limit: 1, requestedFields: ['accounts'] },
+          tx
+        );
+        user = usersResultAfter.users?.[0] ?? user;
       }
 
       // Check for existing non-expired sessions (without requiring exact userAgent/ipAddress match)
@@ -628,6 +645,17 @@ export class AuthHandler extends CacheHandler {
       if (options?.allowSignUp === false) {
         throw new BadRequestError('Sign-up is disabled for this app');
       }
+
+      // Re-check by provider so we never create a duplicate when (github, providerId) already exists
+      // (e.g. first lookup missed due to timing or providerId format).
+      const existingByProviderAgain =
+        await this.userAuthenticationMethods.getUserAuthenticationMethodByProvider(
+          UserAuthenticationMethodProvider.Github,
+          providerId,
+          undefined,
+          tx
+        );
+      if (existingByProviderAgain) return existingByProviderAgain.userId;
 
       const name = githubUser.name ?? githubUser.login ?? 'User';
       const { providerData: processedProviderData, isVerified } =

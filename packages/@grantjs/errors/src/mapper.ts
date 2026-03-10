@@ -20,6 +20,7 @@ import {
   ConfigurationError,
   ConflictError,
   GrantException,
+  InvalidOrUsedVerificationTokenError,
   NotFoundError,
   NoSessionSigningKeyError,
   TokenExpiredError,
@@ -78,6 +79,12 @@ export function mapDomainToHttp(error: GrantException): HttpException {
   }
 
   // Bad request
+  if (error instanceof InvalidOrUsedVerificationTokenError) {
+    return new HttpBadRequestError(error.message, {
+      translationKey: 'errors.auth.invalidOrUsedVerificationToken',
+    });
+  }
+
   if (error instanceof BadRequestError) {
     return new HttpBadRequestError(error.message, {
       translationKey: 'errors.validation.badRequest',

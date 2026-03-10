@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 import { Check, Github } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { AuthLayoutStandalone } from '@/components/layout';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -35,6 +35,7 @@ const PROJECT_OAUTH_ERROR_CODES = [
 export default function ProjectOAuthEntryPage() {
   const t = useTranslations('auth.projectOAuth.entry');
   const tAuth = useTranslations('auth');
+  const locale = useLocale();
   const searchParams = useSearchParams();
   const displayPopup = searchParams.get('display') === 'popup';
   const clientId = searchParams.get('client_id');
@@ -103,9 +104,10 @@ export default function ProjectOAuthEntryPage() {
         provider,
       });
       if (scopeParam?.trim()) q.set('scope', scopeParam.trim());
+      q.set('locale', locale);
       return `${apiBase}/api/auth/project/authorize?${q.toString()}`;
     },
-    [clientId, redirectUri, state, scopeParam]
+    [clientId, redirectUri, state, scopeParam, locale]
   );
 
   const emailPageUrl = useCallback(() => {

@@ -35,12 +35,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="flex w-full h-full">
-      <div className="flex-1 flex flex-col">
+    <div className="flex min-w-0 w-full h-full">
+      <div className="flex min-w-0 flex-1 flex-col">
         {requiresEmailVerification && email && (
           <EmailVerificationBanner email={email} expiresAt={verificationExpiry} />
         )}
-        <div className="flex-1">{children}</div>
+        <div className="flex min-w-0 flex-1">{children}</div>
       </div>
     </div>
   );

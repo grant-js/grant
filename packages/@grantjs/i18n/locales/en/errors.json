@@ -27,7 +27,8 @@
     "stateRequired": "State parameter is required for security",
     "stateNotFound": "Invalid or expired state parameter",
     "invalidState": "Invalid or expired state parameter",
-    "invalidOrExpiredCode": "Invalid or expired one-time code"
+    "invalidOrExpiredCode": "Invalid or expired one-time code",
+    "invalidOrUsedVerificationToken": "This verification link was already used or is invalid. If you've already verified your email, go to the dashboard; otherwise log in to request a new verification email."
   },
   "validation": {
     "required": "{{field}} is required",

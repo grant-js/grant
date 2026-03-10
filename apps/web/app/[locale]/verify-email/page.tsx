@@ -11,17 +11,22 @@ import { AuthLayout } from '@/components/layout';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useAuthMutations, usePageTitle } from '@/hooks';
-import { Link, useRouter } from '@/i18n/navigation';
+import { Link } from '@/i18n/navigation';
 import { useAuthStore } from '@/stores/auth.store';
 
-type VerificationStatus = 'verifying' | 'success' | 'error' | 'expired' | 'missing-token';
+type VerificationStatus =
+  | 'verifying'
+  | 'success'
+  | 'error'
+  | 'expired'
+  | 'invalidOrUsed'
+  | 'missing-token';
 
 export default function VerifyEmailPage() {
   const t = useTranslations('auth');
   const tErrors = useTranslations('errors');
   const { isAuthenticated } = useAuthStore();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const [status, setStatus] = useState<VerificationStatus>('verifying');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const { verifyEmail } = useAuthMutations();
@@ -47,14 +52,6 @@ export default function VerifyEmailPage() {
       try {
         await verifyEmail(token);
         setStatus('success');
-
-        setTimeout(() => {
-          if (isAuthenticated()) {
-            router.push(`/dashboard`);
-          } else {
-            router.push(`/auth/login`);
-          }
-        }, 3000);
       } catch (error) {
         const apolloError = error as {
           errors?: Array<{ extensions?: { translationKey?: string } }>;
@@ -64,6 +61,8 @@ export default function VerifyEmailPage() {
 
         if (translationKey === 'errors.auth.tokenExpired') {
           setStatus('expired');
+        } else if (translationKey === 'errors.auth.invalidOrUsedVerificationToken') {
+          setStatus('invalidOrUsed');
         } else {
           setStatus('error');
           setErrorMessage(error instanceof Error ? error.message : tErrors('common.unknownError'));
@@ -73,7 +72,7 @@ export default function VerifyEmailPage() {
 
     handleVerification();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, router]);
+  }, [searchParams]);
 
   const renderContent = () => {
     switch (status) {
@@ -92,11 +91,23 @@ export default function VerifyEmailPage() {
             <Alert variant="success">
               <CheckCircle2 />
               <AlertTitle>{t('verifyEmail.success')}</AlertTitle>
-              <AlertDescription>
-                {t('verifyEmail.successDescription')}
-                <p className="text-xs text-muted-foreground mt-2">{t('verifyEmail.redirecting')}</p>
-              </AlertDescription>
+              <AlertDescription>{t('verifyEmail.successDescription')}</AlertDescription>
             </Alert>
+            <div>
+              {isAuthenticated() ? (
+                <Link href="/dashboard">
+                  <Button className="w-full" variant="default">
+                    {t('verifyEmail.goToDashboard')}
+                  </Button>
+                </Link>
+              ) : (
+                <Link href="/auth/login">
+                  <Button className="w-full" variant="default">
+                    {t('verifyEmail.goToLogin')}
+                  </Button>
+                </Link>
+              )}
+            </div>
           </div>
         );
 
@@ -134,6 +145,32 @@ export default function VerifyEmailPage() {
                   {t('verifyEmail.goToLogin')}
                 </Button>
               </Link>
+            </div>
+          </div>
+        );
+
+      case 'invalidOrUsed':
+        return (
+          <div className="space-y-8">
+            <Alert variant="warning">
+              <AlertTriangle />
+              <AlertTitle>{t('verifyEmail.invalidOrUsedTitle')}</AlertTitle>
+              <AlertDescription>{t('verifyEmail.invalidOrUsedDescription')}</AlertDescription>
+            </Alert>
+            <div>
+              {isAuthenticated() ? (
+                <Link href="/dashboard">
+                  <Button className="w-full" variant="default">
+                    {t('verifyEmail.goToDashboard')}
+                  </Button>
+                </Link>
+              ) : (
+                <Link href="/auth/login">
+                  <Button className="w-full" variant="default">
+                    {t('verifyEmail.goToLogin')}
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         );

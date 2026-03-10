@@ -20,6 +20,7 @@ Tags can be applied to the following entities via dedicated pivot tables:
 | **Permission**   | `IPermissionTagService`   | Tag permissions by domain                        |
 | **Organization** | `IOrganizationTagService` | Classify organizations                           |
 | **Project**      | `IProjectTagService`      | Label projects by environment or purpose         |
+| **Project App**  | `IProjectAppTagService`  | Label apps by purpose or environment             |
 | **Account**      | `IAccountTagService`      | Tag accounts                                     |
 
 Each pivot relationship supports an optional `isPrimary` flag to designate a primary tag per entity.

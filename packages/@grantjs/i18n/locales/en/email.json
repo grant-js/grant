@@ -33,6 +33,15 @@
     "organization": "Organization",
     "role": "Role"
   },
+  "projectOAuthMagicLink": {
+    "subject": "Sign in to {{appName}}",
+    "defaultAppName": "the app",
+    "message": "Click the button below to sign in.",
+    "messageWithApp": "Click the button below to sign in to {{appName}}.",
+    "button": "Sign in",
+    "messageLink": "Click the link below to sign in:",
+    "messageLinkWithApp": "Click the link below to sign in to {{appName}}:"
+  },
   "common": {
     "alternativeText": "If the button doesn't work, copy and paste this link:",
     "footer": {

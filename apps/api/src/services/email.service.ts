@@ -81,7 +81,8 @@ export class EmailService implements IEmailService {
             ? {
                 host: config.email.smtp.host,
                 port: config.email.smtp.port,
-                secure: config.email.smtp.secure,
+                // Port 465 = implicit TLS; 587/25 = STARTTLS. Derive from port so 587 works regardless of SMTP_SECURE.
+                secure: config.email.smtp.port === 465,
                 auth: {
                   user: config.email.smtp.user,
                   pass: config.email.smtp.password,

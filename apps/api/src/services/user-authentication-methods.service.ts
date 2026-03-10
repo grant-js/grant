@@ -13,6 +13,7 @@ import {
   AuthenticationError,
   BadRequestError,
   ConflictError,
+  InvalidOrUsedVerificationTokenError,
   NotFoundError,
   ValidationError,
 } from '@/lib/errors';
@@ -502,7 +503,9 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
     );
 
     if (!targetMethod) {
-      throw new NotFoundError('UserAuthenticationMethod');
+      throw new InvalidOrUsedVerificationTokenError(
+        'Invalid or already used verification token. If you already verified, go to dashboard; otherwise request a new link from login.'
+      );
     }
 
     if (targetMethod.isVerified) {

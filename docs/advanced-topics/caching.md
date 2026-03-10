@@ -23,6 +23,7 @@ graph TB
     Entity --> Permissions[permissions]
     Entity --> Tags[tags]
     Entity --> Projects[projects]
+    Entity --> ProjectApps[project apps]
 ```
 
 ## Adapter Comparison
@@ -83,6 +84,7 @@ interface IEntityCacheAdapter {
   permissions: ICacheAdapter;
   tags: ICacheAdapter;
   projects: ICacheAdapter;
+  projectApps: ICacheAdapter;
 }
 ```
 

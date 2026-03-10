@@ -35,8 +35,7 @@ const logLevelSchema = z
   .trim()
   .refine(
     (v) =>
-      v === '' ||
-      ['trace', 'debug', 'info', 'warn', 'error', 'fatal'].includes(v.toLowerCase()),
+      v === '' || ['trace', 'debug', 'info', 'warn', 'error', 'fatal'].includes(v.toLowerCase()),
     { message: 'Must be trace, debug, info, warn, error, or fatal' }
   );
 
@@ -79,10 +78,9 @@ const uuidSchema = z
 const dbUrlSchema = z
   .string()
   .trim()
-  .refine(
-    (v) => v === '' || /^postgres(?:ql)?:\/\/[^\s]+$/.test(v),
-    { message: 'Must be a postgresql:// connection string' }
-  );
+  .refine((v) => v === '' || /^postgres(?:ql)?:\/\/[^\s]+$/.test(v), {
+    message: 'Must be a postgresql:// connection string',
+  });
 
 /** PostgreSQL connection string required (for test-db endpoint) */
 export const dbUrlRequiredSchema = z
@@ -93,6 +91,68 @@ export const dbUrlRequiredSchema = z
     message: 'Must be a postgresql:// connection string',
   });
 
+/** Base URL required (for test-health endpoint) */
+export const appUrlRequiredSchema = z
+  .string()
+  .trim()
+  .min(1, 'APP_URL is required')
+  .refine((v) => /^https?:\/\/[^\s]+$/.test(v), 'Must be a valid http(s) URL');
+
+/** Redis connection params for test-redis endpoint */
+export const redisTestParamsSchema = z.object({
+  host: z.string().trim().min(1, 'REDIS_HOST is required'),
+  port: z.string().trim().optional(),
+  password: z.string().trim().optional(),
+});
+
+/** GitHub OAuth app credentials for test-github-oauth endpoint */
+export const githubOAuthTestParamsSchema = z.object({
+  clientId: z.string().trim().min(1, 'GITHUB_CLIENT_ID is required'),
+  clientSecret: z.string().trim().min(1, 'GITHUB_CLIENT_SECRET is required'),
+});
+
+const emailSchema = z.string().trim().refine((v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), {
+  message: 'Must be a valid email address',
+});
+
+/** Email provider test params for test-email endpoint */
+export const emailTestParamsSchema = z.object({
+  to: emailSchema,
+  provider: z.enum(['mailgun', 'mailjet', 'ses', 'smtp']),
+  from: z.string().trim().min(1, 'EMAIL_FROM is required'),
+  fromName: z.string().trim().optional(),
+  mailgun: z
+    .object({
+      apiKey: z.string().trim().min(1),
+      domain: z.string().trim().min(1),
+    })
+    .optional(),
+  mailjet: z
+    .object({
+      apiKey: z.string().trim().min(1),
+      secretKey: z.string().trim().min(1),
+    })
+    .optional(),
+  ses: z
+    .object({
+      clientId: z.string().trim().min(1),
+      clientSecret: z.string().trim().min(1),
+      region: z.string().trim().min(1),
+    })
+    .optional(),
+  smtp: z
+    .object({
+      host: z.string().trim().min(1),
+      port: z
+        .union([z.number(), z.string()])
+        .transform((v) => Math.max(1, Math.min(65535, typeof v === 'string' ? parseInt(v, 10) || 587 : v))),
+      secure: z.union([z.boolean(), z.string()]).transform((v) => v === true || v === 'true'),
+      user: z.string().trim().min(1),
+      password: z.string().trim(),
+    })
+    .optional(),
+});
+
 /** Map of env key -> schema. Empty string typically allowed for optional vars. */
 const schemas: Record<string, z.ZodType<string>> = {
   DB_URL: dbUrlSchema,
@@ -100,6 +160,7 @@ const schemas: Record<string, z.ZodType<string>> = {
   SECURITY_FRONTEND_URL: urlSchema,
   NEXT_PUBLIC_API_URL: urlSchema,
   NEXT_PUBLIC_APP_URL: urlSchema,
+  NEXT_PUBLIC_ACCOUNT_DELETION_RETENTION_DAYS: positiveIntSchema,
   GITHUB_CALLBACK_URL: urlSchema,
   GITHUB_PROJECT_CALLBACK_URL: urlSchema,
   APP_PORT: portSchema,
@@ -181,6 +242,12 @@ const schemas: Record<string, z.ZodType<string>> = {
   SWAGGER_DISPLAY_OPERATION_ID: booleanSchema,
   SWAGGER_SHOW_EXTENSIONS: booleanSchema,
   SWAGGER_SHOW_COMMON_EXTENSIONS: booleanSchema,
+  I18N_DEFAULT_LOCALE: z
+    .string()
+    .trim()
+    .refine((v) => v === '' || ['en', 'de'].includes(v), {
+      message: 'Must be a supported locale (en, de)',
+    }),
   I18N_DEBUG: booleanSchema,
   SMTP_SECURE: booleanSchema,
   JOBS_ENABLED: booleanSchema,
@@ -211,9 +278,6 @@ export function validateEnvValue(key: string, value: string): EnvValidationResul
   const result = schema.safeParse(value);
   if (result.success) return { success: true };
   const err = result.error;
-  const first =
-    (err.flatten().formErrors as string[])[0] ??
-    err.issues[0]?.message ??
-    err.message;
+  const first = (err.flatten().formErrors as string[])[0] ?? err.issues[0]?.message ?? err.message;
   return { success: false, error: first };
 }

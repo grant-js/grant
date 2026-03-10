@@ -9,9 +9,12 @@ export function Toolbar({ items }: ToolbarProps) {
   const filteredItems = items.filter(Boolean);
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-2 max-[1600px]:gap-1.5">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
       {filteredItems.map((item, index) => (
-        <div key={index} className="w-full sm:w-auto">
+        <div
+          key={index}
+          className="flex min-h-10 items-center sm:min-h-0 w-full sm:w-auto flex-shrink-0"
+        >
           {item}
         </div>
       ))}

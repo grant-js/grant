@@ -40,23 +40,23 @@ All JWTs include a **`type`** claim (`TokenType`) that identifies how the token 
 
 ```typescript
 {
-  sub: string;    // User ID
-  aud: string;    // Audience (platform API URL for sessions; client_id for project-app tokens)
-  iss: string;    // Issuer URL (platform or project JWKS issuer)
-  exp: number;    // Expiration timestamp
-  iat: number;    // Issued at
-  jti: string;    // Session ID, API Key ID, or project-app token id
+  sub: string; // User ID
+  aud: string; // Audience (platform API URL for sessions; client_id for project-app tokens)
+  iss: string; // Issuer URL (platform or project JWKS issuer)
+  exp: number; // Expiration timestamp
+  iat: number; // Issued at
+  jti: string; // Session ID, API Key ID, or project-app token id
   type: TokenType; // "session" | "apiKey" | "projectApp" — required
 }
 ```
 
 **TokenType and optional claims:**
 
-| type | Description | scope | scopes | isVerified |
-| ---- | ----------- | ----- | ------ | ---------- |
-| **session** | User login/refresh (system key) | Optional (session audience) | — | Yes (email verification) |
-| **apiKey** | API key exchange (project key) | Required (tenant scope) | — | — |
-| **projectApp** | Project OAuth app (project key) | Required (tenant scope) | Yes (consented resource:action) | — |
+| type           | Description                     | scope                       | scopes                          | isVerified               |
+| -------------- | ------------------------------- | --------------------------- | ------------------------------- | ------------------------ |
+| **session**    | User login/refresh (system key) | Optional (session audience) | —                               | Yes (email verification) |
+| **apiKey**     | API key exchange (project key)  | Required (tenant scope)     | —                               | —                        |
+| **projectApp** | Project OAuth app (project key) | Required (tenant scope)     | Yes (consented resource:action) | —                        |
 
 - **scope** — Tenant scope (e.g. accountProjectUser / organizationProjectUser with id). Required for apiKey and projectApp; for session, scope can be taken from the session's audience or from the request.
 - **scopes** — Only when type is projectApp. Array of granted scope slugs (resource:action) — intersection of the app's configured scopes and the user's project permissions. Authorization is capped to this list.
@@ -150,10 +150,10 @@ Projects can register **OAuth apps** (ProjectApp) so that project users can sign
 
 #### Flow
 
-| Step | Endpoint | What happens |
-| ---- | -------- | ------------ |
-| **1. Authorize** | `GET /api/auth/project/authorize` | Tenant app (SPA) redirects the user here with query params **client_id**, **redirect_uri** (must be in the app's allowed list), and optional **state**. The API loads the ProjectApp by client_id, stores state in cache, and redirects the user to the provider (e.g. GitHub). |
-| **2. Callback** | `GET /api/auth/project/callback` | Provider redirects back with **code** and **state**. The API decodes state, loads the ProjectApp, exchanges the code for a provider token, resolves the global user (find by provider, link by email, or create), checks project membership, resolves scope (account or organization project user), signs a JWT with the project signing key, and redirects to the app's redirect_uri with the access token in the URL fragment. |
+| Step             | Endpoint                          | What happens                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ---------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1. Authorize** | `GET /api/auth/project/authorize` | Tenant app (SPA) redirects the user here with query params **client_id**, **redirect_uri** (must be in the app's allowed list), and optional **state**. The API loads the ProjectApp by client_id, stores state in cache, and redirects the user to the provider (e.g. GitHub).                                                                                                                                                  |
+| **2. Callback**  | `GET /api/auth/project/callback`  | Provider redirects back with **code** and **state**. The API decodes state, loads the ProjectApp, exchanges the code for a provider token, resolves the global user (find by provider, link by email, or create), checks project membership, resolves scope (account or organization project user), signs a JWT with the project signing key, and redirects to the app's redirect_uri with the access token in the URL fragment. |
 
 Query parameters for **Authorize:** `client_id`, `redirect_uri`, `state` (optional). For **Callback:** `code`, `state`.
 
@@ -175,15 +175,15 @@ sequenceDiagram
 
 Project-app tokens use the same base structure as [JWT Token Structure](#jwt-token-structure). The **type** is **projectApp** when the app has scopes configured; otherwise **apiKey**. Project-app–specific claims:
 
-| Claim | Description |
-| ----- | ----------- |
-| **sub** | Global user id. |
-| **aud** | ProjectApp client_id (only that app should accept the token). |
-| **iss** | Project JWKS issuer: `{APP_URL}/acc/{accId}/prj/{projectId}` or `…/org/{orgId}/prj/{projectId}`. |
-| **scope** | Tenant scope: accountProjectUser or organizationProjectUser with id `accountId:projectId:userId` or `orgId:projectId:userId`. |
-| **type** | **projectApp** when the app has scopes (authorization capped by **scopes**); otherwise **apiKey**. |
-| **scopes** | When type is projectApp: consented resource:action list (intersection of app scopes and user's project permissions). |
-| **exp**, **iat**, **jti** | Standard expiration, issued-at, and token id. |
+| Claim                     | Description                                                                                                                   |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **sub**                   | Global user id.                                                                                                               |
+| **aud**                   | ProjectApp client_id (only that app should accept the token).                                                                 |
+| **iss**                   | Project JWKS issuer: `{APP_URL}/acc/{accId}/prj/{projectId}` or `…/org/{orgId}/prj/{projectId}`.                              |
+| **scope**                 | Tenant scope: accountProjectUser or organizationProjectUser with id `accountId:projectId:userId` or `orgId:projectId:userId`. |
+| **type**                  | **projectApp** when the app has scopes (authorization capped by **scopes**); otherwise **apiKey**.                            |
+| **scopes**                | When type is projectApp: consented resource:action list (intersection of app scopes and user's project permissions).          |
+| **exp**, **iat**, **jti** | Standard expiration, issued-at, and token id.                                                                                 |
 
 #### Security
 
@@ -201,18 +201,18 @@ Project-app tokens use the same base structure as [JWT Token Structure](#jwt-tok
 
 GitHub OAuth Apps allow only **one** Authorization callback URL. To support both platform sign-in and Project App sign-in with the same app, register the **base path** for auth; GitHub accepts that URL and any **subpath** ([Redirect URLs](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#redirect-urls)).
 
-| Step | Action |
-| ---- | ------ |
-| 1 | In [GitHub → Settings → Developer settings → OAuth Apps](https://github.com/settings/developers), create or edit your OAuth App. |
-| 2 | Set **Authorization callback URL** to the API base path for auth (see table below), **not** a full callback path. |
-| 3 | Ensure **GITHUB_CALLBACK_URL** and **GITHUB_PROJECT_CALLBACK_URL** in your API config use paths under that base. |
+| Step | Action                                                                                                                           |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | In [GitHub → Settings → Developer settings → OAuth Apps](https://github.com/settings/developers), create or edit your OAuth App. |
+| 2    | Set **Authorization callback URL** to the API base path for auth (see table below), **not** a full callback path.                |
+| 3    | Ensure **GITHUB_CALLBACK_URL** and **GITHUB_PROJECT_CALLBACK_URL** in your API config use paths under that base.                 |
 
 **Callback URL to set in GitHub:**
 
-| Environment | Authorization callback URL |
-| ----------- | -------------------------- |
-| Local | `http://localhost:4000/api/auth` |
-| Production | `https://api.yourdomain.com/api/auth` (replace with your API base URL + `/api/auth`) |
+| Environment | Authorization callback URL                                                           |
+| ----------- | ------------------------------------------------------------------------------------ |
+| Local       | `http://localhost:4000/api/auth`                                                     |
+| Production  | `https://api.yourdomain.com/api/auth` (replace with your API base URL + `/api/auth`) |
 
 Default API config values are `{APP_URL}/api/auth/github/callback` and `{APP_URL}/api/auth/project/callback` — both are subpaths of the base path above.
 

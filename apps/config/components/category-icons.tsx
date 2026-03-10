@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
 } from 'lucide-react';
+
 import type { EnvCategoryId } from '@/lib/env-metadata';
 
 export const CATEGORY_ICONS: Record<EnvCategoryId, React.ComponentType<{ className?: string }>> = {

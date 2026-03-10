@@ -1,11 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+
 import type { EnvStateResponse } from '@/app/types/env';
-import type { EnvCategoryId } from '@/lib/env-metadata';
-import { getEnvVarMeta } from '@/lib/env-metadata';
 import { getPortFromAppUrl, normalizeAppUrl, setPortInAppUrl } from '@/lib/app-url-port';
 import { computeDbUrlFromPostgres } from '@/lib/db-url';
+import type { EnvCategoryId } from '@/lib/env-metadata';
+import { getEnvVarMeta } from '@/lib/env-metadata';
 import { validateEnvValue } from '@/lib/env-schemas';
 import { generateSecurePassword } from '@/lib/generate-password';
 
@@ -23,6 +24,22 @@ export function useEnvState() {
     'idle'
   );
   const [testDbMessage, setTestDbMessage] = useState<string>('');
+  const [testHealthStatus, setTestHealthStatus] = useState<
+    'idle' | 'loading' | 'success' | 'error'
+  >('idle');
+  const [testHealthMessage, setTestHealthMessage] = useState<string>('');
+  const [testRedisStatus, setTestRedisStatus] = useState<'idle' | 'loading' | 'success' | 'error'>(
+    'idle'
+  );
+  const [testRedisMessage, setTestRedisMessage] = useState<string>('');
+  const [testGithubOAuthStatus, setTestGithubOAuthStatus] = useState<
+    'idle' | 'loading' | 'success' | 'error'
+  >('idle');
+  const [testGithubOAuthMessage, setTestGithubOAuthMessage] = useState<string>('');
+  const [testEmailStatus, setTestEmailStatus] = useState<'idle' | 'loading' | 'success' | 'error'>(
+    'idle'
+  );
+  const [testEmailMessage, setTestEmailMessage] = useState<string>('');
   const [openSelectKey, setOpenSelectKey] = useState<string | null>(null);
 
   useEffect(() => {
@@ -157,6 +174,180 @@ export function useEnvState() {
       setTestDbMessage(e instanceof Error ? e.message : 'Request failed');
     }
   }, []);
+
+  const handleTestHealth = useCallback(async (appUrl: string) => {
+    const validation = validateEnvValue('APP_URL', appUrl);
+    if (!validation.success) {
+      setTestHealthStatus('error');
+      setTestHealthMessage(validation.error);
+      return;
+    }
+    if (!appUrl.trim()) {
+      setTestHealthStatus('error');
+      setTestHealthMessage('APP_URL is required');
+      return;
+    }
+    setTestHealthStatus('loading');
+    setTestHealthMessage('');
+    try {
+      const res = await fetch('/api/env/test-health', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appUrl: appUrl.trim() }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        setTestHealthStatus('success');
+        setTestHealthMessage('Service is healthy');
+      } else {
+        setTestHealthStatus('error');
+        setTestHealthMessage(json.error ?? 'Health check failed');
+      }
+    } catch (e) {
+      setTestHealthStatus('error');
+      setTestHealthMessage(e instanceof Error ? e.message : 'Request failed');
+    }
+  }, []);
+
+  const handleTestRedis = useCallback(
+    async (host: string, port?: string, password?: string) => {
+      const hostTrim = host?.trim() ?? '';
+      if (!hostTrim) {
+        setTestRedisStatus('error');
+        setTestRedisMessage('REDIS_HOST is required');
+        return;
+      }
+      setTestRedisStatus('loading');
+      setTestRedisMessage('');
+      try {
+        const res = await fetch('/api/env/test-redis', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            host: hostTrim,
+            port: port?.trim() || undefined,
+            password: password?.trim() || undefined,
+          }),
+        });
+        const json = await res.json();
+        if (json.ok) {
+          setTestRedisStatus('success');
+          setTestRedisMessage('Connection successful');
+        } else {
+          setTestRedisStatus('error');
+          setTestRedisMessage(json.error ?? 'Connection failed');
+        }
+      } catch (e) {
+        setTestRedisStatus('error');
+        setTestRedisMessage(e instanceof Error ? e.message : 'Request failed');
+      }
+    },
+    []
+  );
+
+  const handleTestGithubOAuth = useCallback(
+    async (clientId: string, clientSecret: string) => {
+      const idTrim = clientId?.trim() ?? '';
+      const secretTrim = clientSecret?.trim() ?? '';
+      if (!idTrim || !secretTrim) {
+        setTestGithubOAuthStatus('error');
+        setTestGithubOAuthMessage('Client ID and Client Secret are required');
+        return;
+      }
+      setTestGithubOAuthStatus('loading');
+      setTestGithubOAuthMessage('');
+      try {
+        const res = await fetch('/api/env/test-github-oauth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clientId: idTrim, clientSecret: secretTrim }),
+        });
+        const json = await res.json();
+        if (json.ok) {
+          setTestGithubOAuthStatus('success');
+          setTestGithubOAuthMessage('Credentials accepted by GitHub');
+        } else {
+          setTestGithubOAuthStatus('error');
+          setTestGithubOAuthMessage(json.error ?? 'GitHub OAuth check failed');
+        }
+      } catch (e) {
+        setTestGithubOAuthStatus('error');
+        setTestGithubOAuthMessage(e instanceof Error ? e.message : 'Request failed');
+      }
+    },
+    []
+  );
+
+  const handleTestEmail = useCallback(
+    async (toEmail: string, getEmailVars: () => Record<string, string>) => {
+      const toTrim = toEmail?.trim() ?? '';
+      if (!toTrim) {
+        setTestEmailStatus('error');
+        setTestEmailMessage('Recipient email is required');
+        return;
+      }
+      const provider = getEmailVars().EMAIL_PROVIDER?.trim() ?? '';
+      if (provider === 'console') {
+        setTestEmailStatus('error');
+        setTestEmailMessage('Select a real provider (mailgun, mailjet, ses, smtp) to send a test');
+        return;
+      }
+      setTestEmailStatus('loading');
+      setTestEmailMessage('');
+      try {
+        const v = getEmailVars();
+        const from = v.EMAIL_FROM?.trim() ?? '';
+        const body: Record<string, unknown> = {
+          to: toTrim,
+          provider,
+          from,
+          fromName: v.EMAIL_FROM_NAME?.trim() || undefined,
+        };
+        if (provider === 'mailgun') {
+          body.mailgun = {
+            apiKey: v.MAILGUN_API_KEY?.trim() ?? '',
+            domain: v.MAILGUN_DOMAIN?.trim() ?? '',
+          };
+        } else if (provider === 'mailjet') {
+          body.mailjet = {
+            apiKey: v.MAILJET_API_KEY?.trim() ?? '',
+            secretKey: v.MAILJET_SECRET_KEY?.trim() ?? '',
+          };
+        } else if (provider === 'ses') {
+          body.ses = {
+            clientId: v.EMAIL_SES_CLIENT_ID?.trim() ?? '',
+            clientSecret: v.EMAIL_SES_CLIENT_SECRET?.trim() ?? '',
+            region: v.EMAIL_SES_REGION?.trim() ?? 'us-east-1',
+          };
+        } else if (provider === 'smtp') {
+          body.smtp = {
+            host: v.SMTP_HOST?.trim() ?? '',
+            port: parseInt(v.SMTP_PORT?.trim() ?? '587', 10) || 587,
+            secure: v.SMTP_SECURE?.trim() === 'true',
+            user: v.SMTP_USER?.trim() ?? '',
+            password: v.SMTP_PASSWORD?.trim() ?? '',
+          };
+        }
+        const res = await fetch('/api/env/test-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const json = await res.json();
+        if (json.ok) {
+          setTestEmailStatus('success');
+          setTestEmailMessage('Test email sent');
+        } else {
+          setTestEmailStatus('error');
+          setTestEmailMessage(json.error ?? 'Failed to send test email');
+        }
+      } catch (e) {
+        setTestEmailStatus('error');
+        setTestEmailMessage(e instanceof Error ? e.message : 'Request failed');
+      }
+    },
+    []
+  );
 
   const handleUseDockerDbChange = useCallback(
     (checked: boolean) => {
@@ -313,6 +504,14 @@ export function useEnvState() {
     useDockerDb,
     testDbStatus,
     testDbMessage,
+    testHealthStatus,
+    testHealthMessage,
+    testRedisStatus,
+    testRedisMessage,
+    testGithubOAuthStatus,
+    testGithubOAuthMessage,
+    testEmailStatus,
+    testEmailMessage,
     openSelectKey,
     setOpenSelectKey,
     getVar,
@@ -326,6 +525,10 @@ export function useEnvState() {
     handleGenerateSystemUserId,
     handleGeneratePassword,
     handleTestDbConnection,
+    handleTestHealth,
+    handleTestRedis,
+    handleTestGithubOAuth,
+    handleTestEmail,
     handleUseDockerDbChange,
     handleSave,
     handleBlur,

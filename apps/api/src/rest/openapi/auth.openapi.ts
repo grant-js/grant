@@ -634,6 +634,7 @@ The user is redirected to the provider; after authorization, the provider redire
 - \`state\` (optional): Opaque value echoed back in the callback for CSRF protection.
 - \`scope\` (optional): Space-delimited scopes to request; must be a subset of the app's configured scopes. If omitted, all app scopes are used.
 - \`provider\` (optional): Auth provider (e.g. \`github\`, \`email\`). Default: \`github\`.
+- \`locale\` (optional): Frontend locale for the consent redirect (e.g. \`en\`, \`de\`). When provided, the callback redirects to \`/{locale}/auth/project/consent\`.
 
 ### Flow
 1. Validates client_id and redirect_uri against the project app.
@@ -662,6 +663,10 @@ The user is redirected to the provider; after authorization, the provider redire
         provider: z.enum(['github', 'email']).optional().openapi({
           description: 'Auth provider',
           default: 'github',
+        }),
+        locale: z.string().min(1).optional().openapi({
+          description: 'Frontend locale for consent redirect (e.g. en, de)',
+          example: 'en',
         }),
       }),
     },
@@ -701,6 +706,7 @@ Sends an email containing a one-time link to \`/api/auth/project/callback?token=
 - \`email\` (required): User's email address.
 - \`client_state\` (optional): Optional opaque value to pass through to the app in the callback fragment.
 - \`scope\` (optional): Space-delimited scopes to request (subset of app-configured scopes). If omitted, all app scopes are used.
+- \`locale\` (optional): Frontend locale for consent redirect and magic-link email content (e.g. \`en\`, \`de\`).
     `.trim(),
     request: {
       body: {
@@ -713,6 +719,7 @@ Sends an email containing a one-time link to \`/api/auth/project/callback?token=
               email: z.string().email(),
               client_state: z.string().optional(),
               scope: z.string().optional(),
+              locale: z.string().min(1).optional(),
             }),
           },
         },

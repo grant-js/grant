@@ -69,6 +69,20 @@ export class BadRequestError extends GrantException {
 }
 
 /**
+ * Thrown when an email verification token is invalid or was already used.
+ * Used so the API can return a specific translation key for the verify-email flow.
+ */
+export class InvalidOrUsedVerificationTokenError extends GrantException {
+  constructor(
+    message: string = 'Invalid or already used verification token',
+    originalError?: Error
+  ) {
+    super(message, 'BAD_REQUEST', originalError);
+    this.name = 'InvalidOrUsedVerificationTokenError';
+  }
+}
+
+/**
  * Thrown when authentication is required or credentials are invalid.
  */
 export class AuthenticationError extends GrantException {

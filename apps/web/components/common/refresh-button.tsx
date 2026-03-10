@@ -21,13 +21,17 @@ export function RefreshButton({ onRefresh, loading = false, className }: Refresh
       <TooltipTrigger asChild>
         <Button
           variant="outline"
-          size="icon"
+          size="default"
           onClick={onRefresh}
           disabled={loading || !onRefresh}
-          className={cn('h-8 w-8', className)}
+          className={cn(
+            'w-full sm:w-auto sm:size-9 sm:min-w-9 sm:max-w-9 sm:p-2 min-[1600px]:size-auto min-[1600px]:min-w-0 min-[1600px]:max-w-none min-[1600px]:aspect-auto min-[1600px]:px-4 min-[1600px]:py-2',
+            className
+          )}
           aria-label={t('actions.refresh')}
         >
-          <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
+          <RefreshCw className={cn('size-4 shrink-0', loading && 'animate-spin')} />
+          <span className="sm:hidden">{t('actions.refresh')}</span>
         </Button>
       </TooltipTrigger>
       <TooltipContent side="bottom">

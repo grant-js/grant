@@ -16,25 +16,31 @@ import {
 } from '@/components/common';
 import { useProjectMutations } from '@/hooks';
 import { useRequiresEmailVerificationForMutation } from '@/hooks/auth';
-import { useScopeFromParams } from '@/hooks/common';
+import { useProjectScope, useScopeFromParams } from '@/hooks/common';
 import { useTags } from '@/hooks/tags';
 import { useProjectsStore } from '@/stores/projects.store';
 
 import { createProjectSchema, type ProjectCreateFormValues } from './project-types';
 
-export function ProjectCreateDialog() {
-  const scope = useScopeFromParams();
-  const { tags, loading: tagsLoading } = useTags({ scope: scope!, limit: -1 });
+interface ProjectCreateDialogProps {
+  /** When true, no trigger is rendered; dialog is opened only via store (e.g. from project switcher). */
+  hideTrigger?: boolean;
+}
+
+export function ProjectCreateDialog({ hideTrigger }: ProjectCreateDialogProps = {}) {
+  const grantScope = useScopeFromParams();
+  const projectScope = useProjectScope();
+  const { tags, loading: tagsLoading } = useTags({ scope: grantScope!, limit: -1 });
   const isCreateDialogOpen = useProjectsStore((state) => state.isCreateDialogOpen);
   const setCreateDialogOpen = useProjectsStore((state) => state.setCreateDialogOpen);
   const { createProject } = useProjectMutations();
 
   const canCreate = useGrant(ResourceSlug.Project, ResourceAction.Create, {
-    scope: scope!,
+    scope: grantScope!,
   });
-  const requiresEmailVerification = useRequiresEmailVerificationForMutation(scope);
+  const requiresEmailVerification = useRequiresEmailVerificationForMutation(grantScope);
 
-  if (!scope || !canCreate || requiresEmailVerification) {
+  if (!grantScope || !canCreate || requiresEmailVerification) {
     return null;
   }
 
@@ -64,7 +70,7 @@ export function ProjectCreateDialog() {
     await createProject({
       name: values.name,
       description: values.description,
-      scope: scope!,
+      scope: projectScope!,
       tagIds: values.tagIds,
       primaryTagId: values.primaryTagId,
     });
@@ -112,6 +118,7 @@ export function ProjectCreateDialog() {
       submittingText="createDialog.submitting"
       onCreate={handleSubmit}
       onOpenChange={handleOpenChange}
+      hideTrigger={hideTrigger}
     />
   );
 }

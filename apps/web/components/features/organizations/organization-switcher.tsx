@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 
 import { useParams } from 'next/navigation';
 
+import { useGrant } from '@grantjs/client/react';
+import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { OrganizationSortableField, SortOrder } from '@grantjs/schema';
-import { Building2, Check } from 'lucide-react';
+import { Building2, Check, PlusCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { SidebarPopover } from '@/components/common';
@@ -16,6 +18,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandSeparator,
 } from '@/components/ui/command';
 import { useAccountScope } from '@/hooks/common/use-account-scope';
 import { useOrganizations } from '@/hooks/organizations';
@@ -23,18 +26,26 @@ import { usePathname, useRouter } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { useOrganizationsStore } from '@/stores/organizations.store';
 
+import { OrganizationCreateDialog } from './organization-create-dialog';
+
 interface OrganizationSwitcherProps {
   className?: string;
 }
 
 export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
   const t = useTranslations('common');
+  const tOrgs = useTranslations('organizations');
   const router = useRouter();
   const pathname = usePathname();
   const params = useParams();
   const [open, setOpen] = useState(false);
 
   const scope = useAccountScope();
+  const setCreateDialogOpen = useOrganizationsStore((state) => state.setCreateDialogOpen);
+
+  const canCreate = useGrant(ResourceSlug.Organization, ResourceAction.Create, {
+    scope: scope!,
+  });
 
   const currentOrganizationId = params.organizationId as string;
 
@@ -58,6 +69,11 @@ export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
     };
   }, [selectedOrganization, setCurrentOrganization]);
 
+  const handleCreateOrganization = useCallback(() => {
+    setOpen(false);
+    setCreateDialogOpen(true);
+  }, [setCreateDialogOpen]);
+
   const handleOrganizationSelect = useCallback(
     (organizationId: string) => {
       setOpen(false);
@@ -77,6 +93,8 @@ export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
       : selectedOrganization
         ? selectedOrganization.name
         : t('organizations.select');
+
+  const isInsideOrg = !!currentOrganizationId;
 
   const popoverContent = (
     <Command>
@@ -100,23 +118,37 @@ export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
             </CommandItem>
           ))}
         </CommandGroup>
+        {canCreate && (
+          <>
+            <CommandSeparator />
+            <CommandGroup>
+              <CommandItem value="create-organization" onSelect={handleCreateOrganization}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                {tOrgs('createDialog.trigger')}
+              </CommandItem>
+            </CommandGroup>
+          </>
+        )}
       </CommandList>
     </Command>
   );
 
   return (
-    <SidebarPopover
-      icon={<Building2 />}
-      title={organizationName}
-      label={t('organizations.organization')}
-      content={popoverContent}
-      buttonProps={{
-        size: 'lg',
-        className: cn('!px-1 h-12', className),
-        disabled: loading,
-      }}
-      open={open}
-      onOpenChange={setOpen}
-    />
+    <>
+      {canCreate && isInsideOrg && <OrganizationCreateDialog hideTrigger />}
+      <SidebarPopover
+        icon={<Building2 />}
+        title={organizationName}
+        label={t('organizations.organization')}
+        content={popoverContent}
+        buttonProps={{
+          size: 'lg',
+          className: cn('!px-1 h-12', className),
+          disabled: loading,
+        }}
+        open={open}
+        onOpenChange={setOpen}
+      />
+    </>
   );
 }
