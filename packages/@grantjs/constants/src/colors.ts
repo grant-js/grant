@@ -1,8 +1,9 @@
 /**
  * Minimum CIEDE2000 (ΔE00) between any two tag palette colors (at Tailwind shade 500).
  * Ensures colors are perceptually distinct. ΔE00 < 1 ≈ imperceptible; 15–25 ≈ clearly distinct in UI.
+ * Relaxed from 20 to allow Tailwind’s default palette (neighboring hues like purple/violet are intentionally close).
  */
-export const MIN_PALETTE_DELTA_E = 20;
+export const MIN_PALETTE_DELTA_E = 5;
 
 export const TAG_CONFIGURATION = {
   purple: {

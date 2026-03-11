@@ -5,7 +5,7 @@
     "dev": "dotenv -e .env.development -- next dev",
     "build": "next build",
     "start": "dotenv -e .env -- next start",
-    "lint": "next lint"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@grantjs/server": "workspace:*",
@@ -14,10 +14,14 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.37.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "dotenv-cli": "^7.4.0",
-    "typescript": "^5.0.0"
+    "eslint": "^9.37.0",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.46.0"
   }
 }

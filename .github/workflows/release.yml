@@ -1,3 +1,5 @@
+# Versions and publishes npm packages when a "Version packages" PR is merged to main.
+# Publishes: @grantjs/client, @grantjs/server, @grantjs/cli (and any other packages with changesets).
 name: Release
 
 on:
@@ -7,7 +9,9 @@ on:
 
 jobs:
   release:
-    name: Release
+    name: Version and publish (@grantjs/client, server, cli)
+    # Skip when this push is the version commit from the release workflow (avoids re-trigger loop)
+    if: ${{ github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'chore: version packages') }}
     runs-on: self-hosted
     permissions:
       contents: write

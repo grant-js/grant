@@ -794,6 +794,9 @@ importers:
         specifier: ^19.0.0
         version: 19.2.3(react@19.2.3)
     devDependencies:
+      '@eslint/js':
+        specifier: ^9.37.0
+        version: 9.39.2
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.9
@@ -806,9 +809,18 @@ importers:
       dotenv-cli:
         specifier: ^7.4.0
         version: 7.4.4
+      eslint:
+        specifier: ^9.37.0
+        version: 9.39.2
+      eslint-plugin-react-hooks:
+        specifier: ^7.0.0
+        version: 7.0.1(eslint@9.39.2)
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.46.0
+        version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
 
   packages/@grantjs/constants:
     dependencies:
@@ -1176,6 +1188,9 @@ importers:
         specifier: ^19.0.0
         version: 19.2.3(react@19.2.3)
     devDependencies:
+      '@eslint/js':
+        specifier: ^9.37.0
+        version: 9.39.2
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.9
@@ -1188,9 +1203,18 @@ importers:
       dotenv-cli:
         specifier: ^7.4.0
         version: 7.4.4
+      eslint:
+        specifier: ^9.37.0
+        version: 9.39.2
+      eslint-plugin-react-hooks:
+        specifier: ^7.0.0
+        version: 7.0.1(eslint@9.39.2)
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.46.0
+        version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
 
   packages/@grantjs/storage:
     dependencies:
