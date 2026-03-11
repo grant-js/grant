@@ -12,6 +12,7 @@
   "scripts": {
     "env:setup": "node scripts/env/setup.mjs",
     "build": "turbo build",
+    "build:release": "turbo run build --filter=@grantjs/client... --filter=@grantjs/server... --filter=@grantjs/cli...",
     "predev": "pnpm env:setup",
     "dev": "turbo dev",
     "dev:docs": "pnpm --filter grant-docs dev",
@@ -56,7 +57,7 @@
     "audit:pnpm": "pnpm audit --recursive",
     "changeset": "changeset",
     "version": "changeset version",
-    "release": "pnpm build && changeset publish",
+    "release": "pnpm build:release && changeset publish",
     "postinstall": "node scripts/env/setup.mjs --quiet"
   },
   "devDependencies": {

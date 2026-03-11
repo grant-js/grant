@@ -25,9 +25,25 @@
 
 Complete the following so CI and security work as intended.
 
+## How to protect your branches (Rulesets)
+
+Use one ruleset that applies to your default branch (e.g. `main`). Go to **Settings → Rules → Rulesets**. Create a new ruleset or edit **Protect Main**, then:
+
+| What                       | Where in ruleset | Suggested value                                                                       |
+| -------------------------- | ---------------- | ------------------------------------------------------------------------------------- |
+| **Target branches**        | Ruleset scope    | Include by name: `main` (add others like `release/*` if you use them).                |
+| **Require a pull request** | Pull request     | On. Required approvals: **1** (increase when you have more reviewers).                |
+| **Require status checks**  | Status checks    | Add **Lint, build, test** (your CI job). Only appears after CI has run at least once. |
+| **Bypass list**            | Bypass list      | Add **Repository Admin** so you can merge your own PRs when you’re the only one.      |
+| **Restrict pushes**        | (optional)       | Leave off unless you want only certain people/teams to push to `main`.                |
+| **Block force pushes**     | (optional)       | On for `main` to prevent `--force` overwriting history.                               |
+| **Require linear history** | (optional)       | On if you use squash/rebase-only; keeps history linear.                               |
+
+Save the ruleset. Result: merges to `main` require a PR, passing CI, and (for non-bypass users) one approval; you can still merge as admin.
+
 ## 1. Branch ruleset: required status check
 
-- Go to **Settings → Rules → Rulesets** and edit **Protect Main**.
+- Go to **Settings → Rules → Rulesets** and edit **Protect Main** (or the ruleset that targets `main`).
 - Under **Require status checks to pass**, click **Add checks** and add **Lint, build, test** (the CI job name). It appears only after the CI workflow has run at least once.
 
 ## 2. Advanced Security → CodeQL
@@ -39,6 +55,29 @@ Complete the following so CI and security work as intended.
 ## 3. (Optional) Configure alert notifications
 
 - **Settings → Advanced Security** → **Configure alert notifications** to choose who receives Dependabot and code scanning alerts (email, web, etc.).
+
+## 4. Pull request approvals and default merge method
+
+### Required reviews (with bypass for sole owner)
+
+GitHub does not allow approving your own PR. As the only contributor you can still enforce “PR + approval” for future contributors by using a ruleset and giving yourself **bypass** so you can merge without approval when you’re alone.
+
+- Go to **Settings → Rules → Rulesets** and edit **Protect Main** (or create a ruleset that applies to `main`).
+- Under **Pull request** (or equivalent):
+  - Enable **Require a pull request before merging**.
+  - Set **Required approvals** to **1** (or more when you have more reviewers).
+- Under **Bypass list** (or **Allow specified actors to bypass**):
+  - Add **your user** (or a team that includes you). Only users in this list can merge without waiting for an approval; everyone else must get the required reviews.
+- Save the ruleset.
+
+Result: you can merge your own PRs (bypass), while the rule stays in place for others.
+
+### Default to squash merge
+
+- Go to **Settings** → in the left sidebar under **Code and automation** open **General** (or **Pull Requests**).
+- Scroll to **Merge button** / **Pull Requests**.
+- Enable **Allow squash merging** if needed, then set **Default merge method** to **Squash and merge**.
+- Save.
 
 ---
 
