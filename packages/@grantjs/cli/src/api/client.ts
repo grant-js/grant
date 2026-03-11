@@ -27,7 +27,7 @@ export interface ApiErrorBody {
 }
 
 /** Set GRANT_CLI_DEBUG=1 for extra verbosity (e.g. request headers). */
-const DEBUG = process.env.GRANT_CLI_DEBUG === '1' || process.env.GRANT_CLI_DEBUG === 'true';
+const _DEBUG = process.env.GRANT_CLI_DEBUG === '1' || process.env.GRANT_CLI_DEBUG === 'true';
 
 /** Log request URL, status, and response body when an API call fails (always on failure). */
 function logFailedRequest(

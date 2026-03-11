@@ -1,3 +1,5 @@
+# Versions and publishes npm packages when a "Version packages" PR is merged to main.
+# Publishes: @grantjs/client, @grantjs/server, @grantjs/cli (and any other packages with changesets).
 name: Release
 
 on:
@@ -7,7 +9,9 @@ on:
 
 jobs:
   release:
-    name: Release
+    name: Version and publish (@grantjs/client, server, cli)
+    # Run on every push to main so that merging the "Version packages" PR (squash or merge) triggers publish.
+    # When the workflow itself pushes a version commit, the re-run finds no new changesets and exits without publishing.
     runs-on: self-hosted
     permissions:
       contents: write

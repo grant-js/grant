@@ -85,12 +85,30 @@
     "pnpm": ">=8.0.0"
   },
   "packageManager": "pnpm@8.15.0",
+  "pnpm": {
+    "overrides": {
+      "fast-xml-parser": "5.3.6",
+      "@isaacs/brace-expansion": "5.0.1",
+      "multer": "2.1.1",
+      "rollup": "4.59.0",
+      "serialize-javascript": "7.0.3",
+      "immutable": "3.8.3",
+      "axios": "1.13.5",
+      "minimatch@3.1.2": "3.1.4",
+      "minimatch@9.0.1": "9.0.7",
+      "minimatch@9.0.5": "9.0.7",
+      "minimatch@10.0.3": "10.2.3",
+      "minimatch@10.1.2": "10.2.3"
+    }
+  },
   "lint-staged": {
     "apps/**/*.{ts,tsx}": [
-      "prettier --write"
+      "prettier --write",
+      "eslint --fix"
     ],
     "packages/**/*.{ts,tsx}": [
-      "prettier --write"
+      "prettier --write",
+      "eslint --fix"
     ],
     "*.{js,jsx,json,md,graphql,yml,yaml}": [
       "prettier --write"

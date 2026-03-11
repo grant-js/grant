@@ -442,8 +442,8 @@ export function createAuthRoutes(context: RequestContext) {
         const errorCode = determineErrorCode(err);
         const frontendUrl = config.security.frontendUrl;
         const {
-          code,
-          token,
+          code: _code,
+          token: _token,
           state,
           client_id: queryClientId,
           redirect_uri: queryRedirectUri,

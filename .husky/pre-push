@@ -1,1 +1,2 @@
-pnpm run secret-scan:protect
+# CI=1 disables Vitest watch mode so tests run once and exit
+pnpm run format:check && pnpm run lint && pnpm run type-check && pnpm run build && CI=1 pnpm test && pnpm run secret-scan:protect

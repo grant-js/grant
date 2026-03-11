@@ -257,7 +257,7 @@ async function seedPermissionsData(
 
   // Collect all unique permissions from all groups
   const allPermissions = new Map<string, (typeof PERMISSION_MAPPINGS)[string][number]>();
-  for (const [groupName, permissions] of Object.entries(PERMISSION_MAPPINGS)) {
+  for (const [_groupName, permissions] of Object.entries(PERMISSION_MAPPINGS)) {
     for (const permission of permissions) {
       const key = `${permission.resource}:${permission.action}`;
       if (!allPermissions.has(key)) {

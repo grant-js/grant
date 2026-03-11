@@ -6,12 +6,12 @@ describe('exchangeApiKey', () => {
   beforeEach(() => {
     vi.stubGlobal(
       'fetch',
-      vi.fn((url: string, init?: RequestInit) => {
+      vi.fn((url: string, _init?: RequestInit) => {
         const u = new URL(url);
         if (u.pathname !== '/api/auth/token') {
           return Promise.resolve(new Response('Not Found', { status: 404 }));
         }
-        const body = init?.body ? JSON.parse(init.body as string) : {};
+        const body = _init?.body ? JSON.parse(_init.body as string) : {};
         const validPairs = [
           { clientId: 'id', clientSecret: 'secret' },
           { clientId: 'cid', clientSecret: 'secret32charsminimumrequired!!' },
@@ -107,12 +107,12 @@ describe('exchangeCliCallback', () => {
   beforeEach(() => {
     vi.stubGlobal(
       'fetch',
-      vi.fn((url: string, init?: RequestInit) => {
+      vi.fn((url: string, _init?: RequestInit) => {
         const u = new URL(url);
         if (u.pathname !== '/api/auth/cli-callback') {
           return Promise.resolve(new Response('Not Found', { status: 404 }));
         }
-        const body = init?.body ? JSON.parse(init.body as string) : {};
+        const body = _init?.body ? JSON.parse(_init.body as string) : {};
         if (body.code !== 'valid-code-123') {
           return Promise.resolve(
             new Response(
@@ -200,7 +200,7 @@ describe('fetchResources', () => {
   beforeEach(() => {
     vi.stubGlobal(
       'fetch',
-      vi.fn((url: string, init?: RequestInit) => {
+      vi.fn((url: string, _init?: RequestInit) => {
         const u = new URL(url);
         if (u.pathname === '/api/resources') {
           return Promise.resolve(

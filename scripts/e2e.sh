@@ -5,6 +5,10 @@
 # Starts the E2E Docker Compose stack (Postgres, Redis, API), runs migrations
 # and seed, waits for the API to be healthy, then executes the E2E test suite.
 #
+# Environment: This script does NOT load any .env file. It sets E2E_API_BASE_URL
+# and E2E_DB_URL with defaults below and passes them when running migrate, seed,
+# and tests. Override by exporting those vars before running (e.g. in CI).
+#
 # Usage:
 #   ./scripts/e2e.sh          # full run (start → migrate → seed → test → stop)
 #   ./scripts/e2e.sh --up     # start stack + migrate + seed only (no tests)
@@ -22,7 +26,7 @@ cd "$REPO_ROOT"
 COMPOSE_FILE="docker-compose.e2e.yml"
 PROJECT_NAME="grant-e2e"
 
-# Host-side URLs (exposed ports from docker-compose.e2e.yml)
+# Host-side URLs (exposed ports from docker-compose.e2e.yml). No .env required.
 E2E_API_BASE_URL="${E2E_API_BASE_URL:-http://localhost:4000}"
 E2E_DB_URL="${E2E_DB_URL:-postgresql://grant_user:grant_password@localhost:5433/grant_e2e}"
 
