@@ -60,64 +60,23 @@ export function renderBaseEmailTemplate(props: BaseEmailTemplateProps): string {
             font-size: 13px;
           }
 
-          /* Logo container */
-          .logo-container {
-            display: inline-block;
-          }
-
-          /* Default: show black logo (for clients without media query support) */
-          .logo-light {
+          /* Logo: single image (black on white). Mail clients that invert in dark mode will show white on black. */
+          .logo-email {
             display: block !important;
+            width: 140px;
             max-width: 140px;
             height: auto;
-          }
-          .logo-dark {
-            display: none !important;
-            max-height: 0 !important;
-            overflow: hidden !important;
-          }
-
-          /* Light mode: show black logo */
-          @media (prefers-color-scheme: light) {
-            .logo-light {
-              display: block !important;
-            }
-            .logo-dark {
-              display: none !important;
-              max-height: 0 !important;
-              overflow: hidden !important;
-            }
-          }
-
-          /* Dark mode: show white logo */
-          @media (prefers-color-scheme: dark) {
-            .logo-light {
-              display: none !important;
-              max-height: 0 !important;
-              overflow: hidden !important;
-            }
-            .logo-dark {
-              display: block !important;
-            }
           }
         </mj-style>
       </mj-head>
 
       <mj-body background-color="#F9FAFB">
         <!-- Header Section -->
-        <mj-section padding="40px 0px">
+        <mj-section padding="48px 0 20px 0">
           <mj-column>
             <mj-raw>
               <div style="text-align: center;">
-                <div class="logo-container">
-                  <!--[if !mso]><!-->
-                  <img src="${logoUrl || `${config.security.frontendUrl}/grant-logo-black.png`}" alt="${companyName}" width="120" class="logo-light" />
-                  <img src="${logoUrl || `${config.security.frontendUrl}/grant-logo-white.png`}" alt="${companyName}" width="120" class="logo-dark" />
-                  <!--<![endif]-->
-                  <!--[if mso]>
-                  <img src="${logoUrl || `${config.security.frontendUrl}/grant-logo-white.png`}" alt="${companyName}" width="120" style="display: block; max-width: 140px; height: auto;" />
-                  <![endif]-->
-                </div>
+                <img src="${logoUrl || `${config.security.frontendUrl}/grant-logo-email.png`}" alt="${companyName}" width="140" class="logo-email" style="display: block; width: 140px; max-width: 140px; height: auto; margin: 0 auto;" />
               </div>
             </mj-raw>
           </mj-column>
@@ -149,7 +108,7 @@ export function renderBaseEmailTemplate(props: BaseEmailTemplateProps): string {
                 ${translateStatic('email.common.footer.typo', locale)}
               </mj-text>`
               }
-              <mj-text align="center" font-size="12px" color="#D1D5DB" padding="0">
+              <mj-text align="center" font-size="12px" color="#D1D5DB" padding="24px 0 32px 0">
                 ${companyName}
               </mj-text>
             </mj-column>

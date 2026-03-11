@@ -8,8 +8,17 @@ interface LogoProps extends SVGProps<SVGSVGElement> {
 }
 
 export function Logo({ size = 24, className, ...props }: LogoProps) {
-  const { theme } = useTheme();
-  const logoColor = theme === 'dark' ? '#ffffff' : '#000000';
+  const { resolvedTheme } = useTheme();
+  // Use resolvedTheme so "system" is resolved to "light" or "dark". When undefined (before hydration),
+  // use currentColor so the logo inherits from CSS (theme class set by script before paint).
+  const logoColor =
+    resolvedTheme === 'dark'
+      ? '#ffffff'
+      : resolvedTheme === 'light'
+        ? '#000000'
+        : 'currentColor';
+  const svgClassName =
+    logoColor === 'currentColor' ? [className, 'text-foreground'].filter(Boolean).join(' ') : className;
   return (
     <svg
       version="1.0"
@@ -17,7 +26,7 @@ export function Logo({ size = 24, className, ...props }: LogoProps) {
       width={size}
       height={size}
       viewBox="0 0 500 200"
-      className={className}
+      className={svgClassName}
       {...props}
     >
       <g fill={logoColor}>

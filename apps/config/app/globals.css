@@ -87,6 +87,15 @@
     --color-warning-soft: rgba(251, 191, 36, 0.12);
     color-scheme: dark;
   }
+  /* Logo visibility when theme is "system" (no data-theme) and OS is dark */
+  :root:not([data-theme='light']) .panel-header-logo-light,
+  :root:not([data-theme='light']) .page-header-logo-light {
+    display: none;
+  }
+  :root:not([data-theme='light']) .panel-header-logo-dark,
+  :root:not([data-theme='light']) .page-header-logo-dark {
+    display: block;
+  }
 }
 
 html {
