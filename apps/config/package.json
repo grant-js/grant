@@ -12,6 +12,7 @@
     "clean": "rm -rf .next dist"
   },
   "dependencies": {
+    "@grantjs/core": "workspace:*",
     "@grantjs/email": "workspace:*",
     "@aws-sdk/client-ses": "^3",
     "form-data": "^4",

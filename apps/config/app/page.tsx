@@ -10,6 +10,7 @@ import { ConfigSidebar } from '@/components/ConfigSidebar';
 import { HamburgerButton } from '@/components/HamburgerButton';
 import { VarList, getNonCriticalSectionNames } from '@/components/VarList';
 import { useEnvState } from '@/hooks/useEnvState';
+import type { EnvCategoryId } from '@/lib/env-metadata';
 
 export default function ConfigPage() {
   const {
@@ -103,7 +104,7 @@ export default function ConfigPage() {
     [getVar]
   );
   const handleTabChange = useCallback(
-    (tab: Parameters<typeof setActiveTab>[0]) => {
+    (tab: EnvCategoryId) => {
       setActiveTab(tab);
       setSidebarOpen(false);
       const params = new URLSearchParams(window.location.search);
