@@ -8,7 +8,6 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "grant",
     "grant-api",
     "grant-config",
     "grant-web",
@@ -28,7 +27,6 @@
     "@grantjs/i18n",
     "@grantjs/jobs",
     "@grantjs/logger",
-    "@grantjs/schema",
     "@grantjs/storage",
     "@grantjs/telemetry"
   ]
