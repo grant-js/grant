@@ -8,7 +8,9 @@ describe('cn (merge-class-names)', () => {
   });
 
   it('handles conditional classes', () => {
-    expect(cn('base', false && 'hidden', true && 'visible')).toBe('base visible');
+    const showHidden = false;
+    const showVisible = true;
+    expect(cn('base', showHidden && 'hidden', showVisible && 'visible')).toBe('base visible');
   });
 
   it('merges tailwind classes correctly', () => {

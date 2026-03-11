@@ -87,10 +87,12 @@
   "packageManager": "pnpm@8.15.0",
   "lint-staged": {
     "apps/**/*.{ts,tsx}": [
-      "prettier --write"
+      "prettier --write",
+      "eslint --fix"
     ],
     "packages/**/*.{ts,tsx}": [
-      "prettier --write"
+      "prettier --write",
+      "eslint --fix"
     ],
     "*.{js,jsx,json,md,graphql,yml,yaml}": [
       "prettier --write"

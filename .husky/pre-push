@@ -1,1 +1,1 @@
-pnpm run secret-scan:protect
+pnpm run format:check && pnpm run lint && pnpm run type-check && pnpm run build && pnpm test && pnpm run secret-scan:protect
