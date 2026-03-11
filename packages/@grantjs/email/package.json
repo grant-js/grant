@@ -1,6 +1,7 @@
 {
   "name": "@grantjs/email",
   "version": "1.0.0",
+  "private": true,
   "description": "Email adapters for Grant (console, mailgun, mailjet, SES, SMTP)",
   "type": "module",
   "main": "src/index.ts",

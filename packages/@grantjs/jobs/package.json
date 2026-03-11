@@ -1,6 +1,7 @@
 {
   "name": "@grantjs/jobs",
   "version": "1.0.0",
+  "private": true,
   "description": "Job scheduling adapters for Grant (node-cron, BullMQ)",
   "type": "module",
   "main": "src/index.ts",

@@ -1,6 +1,7 @@
 {
   "name": "@grantjs/telemetry",
   "version": "1.0.0",
+  "private": true,
   "description": "Telemetry adapters for Grant (log shipping: noop, CloudWatch)",
   "type": "module",
   "main": "src/index.ts",

@@ -1,6 +1,7 @@
 {
   "name": "grant-docs",
   "version": "1.0.0",
+  "private": true,
   "description": "Grant Documentation Site",
   "type": "module",
   "scripts": {

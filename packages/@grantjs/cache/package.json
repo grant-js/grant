@@ -1,6 +1,7 @@
 {
   "name": "@grantjs/cache",
   "version": "1.0.0",
+  "private": true,
   "description": "Cache adapters for Grant (memory, Redis)",
   "type": "module",
   "main": "src/index.ts",

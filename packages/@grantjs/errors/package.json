@@ -1,6 +1,7 @@
 {
   "name": "@grantjs/errors",
   "version": "1.0.0",
+  "private": true,
   "description": "HTTP error mapping for Grant domain exceptions",
   "type": "module",
   "main": "src/index.ts",
