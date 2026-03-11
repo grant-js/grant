@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "@grantjs/server": "workspace:*",
-    "@nestjs/common": "^11.0.0",
-    "@nestjs/core": "^11.0.0",
-    "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/common": "^11.1.16",
+    "@nestjs/core": "^11.1.16",
+    "@nestjs/platform-express": "^11.1.16",
     "dotenv": "^16.0.0",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.0"

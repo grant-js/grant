@@ -44,7 +44,7 @@
   },
   "devDependencies": {
     "node-cron": "^3.0.3",
-    "bullmq": "^5.52.2",
+    "bullmq": "^5.70.4",
     "@types/node-cron": "^3.0.11",
     "@types/node": "^24.7.2",
     "typescript": "^5"

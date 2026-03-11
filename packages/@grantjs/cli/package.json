@@ -57,7 +57,7 @@
   },
   "dependencies": {
     "commander": "^12.1.0",
-    "inquirer": "^13.2.2"
+    "inquirer": "^13.3.0"
   },
   "devDependencies": {
     "@types/inquirer": "^9.0.7",
