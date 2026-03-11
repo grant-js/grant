@@ -58,6 +58,7 @@
     "changeset": "changeset",
     "version": "changeset version",
     "release": "pnpm build:release && changeset publish",
+    "release:check": "node scripts/check-publishable-packages.mjs",
     "postinstall": "node scripts/env/setup.mjs --quiet"
   },
   "devDependencies": {

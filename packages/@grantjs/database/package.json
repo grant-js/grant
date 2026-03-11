@@ -1,6 +1,7 @@
 {
   "name": "@grantjs/database",
   "version": "1.0.0",
+  "private": true,
   "description": "Database schemas, migrations, and utilities for Grant",
   "main": "src/index.ts",
   "types": "src/index.ts",

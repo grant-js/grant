@@ -1,6 +1,7 @@
 {
   "name": "@grantjs/core",
   "version": "1.0.0",
+  "private": true,
   "description": "Core RBAC system for Grant",
   "main": "src/index.ts",
   "types": "src/index.ts",

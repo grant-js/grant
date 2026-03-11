@@ -1,6 +1,7 @@
 {
   "name": "@grantjs/logger",
   "version": "1.0.0",
+  "private": true,
   "description": "Pino-based logger adapter implementing the ILogger port from @grantjs/core",
   "type": "module",
   "main": "src/index.ts",

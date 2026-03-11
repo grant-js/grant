@@ -1,6 +1,7 @@
 {
   "name": "@grantjs/storage",
   "version": "1.0.0",
+  "private": true,
   "description": "File storage adapters for Grant (local, S3)",
   "type": "module",
   "main": "src/index.ts",
