@@ -116,9 +116,30 @@ const step9Body = computed(() => JSON.stringify({
   scope: { tenant: 'projectUser', id: '{PROJECT_ID}:{PROJ_USER_ID}' },
 }))
 
+// Env is inlined at build time by Vite (set docs/.env or Docker build-args for demo).
+const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {}
+const exampleAppOrigin = (env.VITE_EXAMPLE_APP_URL || '').trim().replace(/\/+$/, '')
+const exampleCallbackUrl = exampleAppOrigin ? `${exampleAppOrigin}/example/callback` : ''
+
+function normalizeFrontendUrl (url) {
+  const u = (url || '').trim()
+  if (!u) return ''
+  try {
+    const parsed = new URL(u)
+    const port = parsed.port
+    if ((parsed.protocol === 'https:' && (port === '443' || port === '3000')) || (parsed.protocol === 'http:' && port === '80')) {
+      parsed.port = ''
+    }
+    return parsed.origin
+  } catch {
+    return u
+  }
+}
+const frontendUrl = normalizeFrontendUrl(env.VITE_APP_URL || '')
+
 const step10Body = computed(() => JSON.stringify({
   name: 'Documents App',
-  redirectUris: ['http://localhost:3004/callback'],
+  redirectUris: [exampleCallbackUrl],
   scopes: ['document:create', 'document:read', 'document:update', 'document:delete', 'document:query'],
   enabledProviders: ['email', 'github'],
   allowSignUp: true,
@@ -127,18 +148,13 @@ const step10Body = computed(() => JSON.stringify({
 }))
 
 const oauthState = computed(() => Math.random().toString(36).slice(2, 10))
-const frontendUrl = computed(() => {
-  try {
-    const url = new URL(state.baseUrl || 'http://localhost:4000')
-    url.port = '3000'
-    return url.origin
-  } catch { return 'http://localhost:3000' }
-})
 const authUrl = computed(() => {
+  if (!frontendUrl || !exampleCallbackUrl) return ''
   const clientId = state.variables.APP_CLIENT_ID || ''
-  const redirect = encodeURIComponent('http://localhost:3004/callback')
-  return `${frontendUrl.value}/en/auth/project?client_id=${clientId}&redirect_uri=${redirect}&state=${oauthState.value}`
+  const redirect = encodeURIComponent(exampleCallbackUrl)
+  return `${frontendUrl}/en/auth/project?client_id=${clientId}&redirect_uri=${redirect}&state=${oauthState.value}`
 })
+const canOpenAuthFlow = computed(() => !!(frontendUrl && exampleCallbackUrl && state.variables.APP_CLIENT_ID))
 </script>
 
 # Integration Guide
@@ -331,12 +347,15 @@ A Project App is an OAuth client that lets users sign in or sign up through Gran
 
 The app was created with **client_id** <code>{{ state.variables.APP_CLIENT_ID }}</code>. Click below to open the Project OAuth sign-in flow — you'll be redirected to the Grant UI to authenticate, grant consent, and then back to the callback URL with an access token.
 
-<a :href="authUrl" target="_blank" rel="noopener" class="api-tryit-auth-btn">
+<a v-if="canOpenAuthFlow" :href="authUrl" target="_blank" rel="noopener" class="api-tryit-auth-btn">
   Open Sign-in Flow →
 </a>
+<p v-else-if="!frontendUrl || !exampleCallbackUrl" class="api-tryit-auth-note">
+  Set <code>VITE_APP_URL</code> and <code>VITE_EXAMPLE_APP_URL</code> in <code>docs/.env</code> (see <code>docs/.env.example</code>) so the sign-in link and callback URL work.
+</p>
 
 ::: tip
-Make sure the Grant **web app** is running at <code>{{ frontendUrl }}</code> (see [Quick Start](/getting-started/quick-start)). The callback URL `http://localhost:3004/callback` matches the [client example](https://github.com/logusgraphics/grant/tree/main/packages/%40grantjs/client/examples) — or point it at your own app.
+Make sure the Grant **web app** is running at the URL set by <code>VITE_APP_URL</code> (see [Quick Start](/getting-started/quick-start)). The callback URL is <code>VITE_EXAMPLE_APP_URL</code> + <code>/example/callback</code>, matching the [client example](https://github.com/logusgraphics/grant/tree/main/packages/%40grantjs/client/examples). Set <code>VITE_APP_URL</code>, <code>VITE_EXAMPLE_APP_URL</code>, and <code>VITE_API_URL</code> in <code>docs/.env</code> (copy from <code>docs/.env.example</code>) or as build args when building the docs image.
 :::
 
 </div>

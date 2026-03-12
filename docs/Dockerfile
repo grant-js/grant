@@ -23,7 +23,8 @@ FROM base AS builder
 # VitePress lastUpdated uses git; Alpine does not include it
 RUN apk add --no-cache git
 
-# Env-driven defaults for docs theme (API/App/Example URLs); same env as rest of demo stack
+# Env-driven defaults (API/App/Example URLs). Inlined at build time — for demo/production
+# pass build-args so integration guide and API config use correct URLs (e.g. https://demo.grant.center).
 ARG VITE_API_URL=http://localhost:4000
 ARG VITE_APP_URL=http://localhost:3000
 ARG VITE_EXAMPLE_APP_URL=http://localhost:3004
