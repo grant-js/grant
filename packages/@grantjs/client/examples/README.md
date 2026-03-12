@@ -19,15 +19,15 @@ pnpm --filter @grantjs/client build
 # Run the Next.js example (uses port 3004 to avoid conflicting with main app on 3000 and server example on 3003)
 cd packages/@grantjs/client/examples/nextjs
 cp .env.example .env
-# Edit .env: set NEXT_PUBLIC_GRANT_API_URL and NEXT_PUBLIC_GRANT_FRONTEND_URL (required).
+# Edit .env: set NEXT_PUBLIC_GRANT_API_URL, NEXT_PUBLIC_GRANT_FRONTEND_URL, and optionally NEXT_PUBLIC_EXAMPLE_APP_ORIGIN (default http://localhost:3004).
 pnpm dev
 ```
 
-Then open http://localhost:3004. Implement `getAccessToken` in the example's Grant config to return the token from your secure auth store so permission checks work.
+Then open the example app at the origin you set in `NEXT_PUBLIC_EXAMPLE_APP_ORIGIN` (default `http://localhost:3004`; the app is served under base path `/example`). Implement `getAccessToken` in the example's Grant config to return the token from your secure auth store so permission checks work.
 
 ### Project OAuth (redirect flow)
 
-Add your app's callback URL (e.g. `http://localhost:3004/callback`) to the project app's **allowed redirect URIs** in the Grant dashboard. After sign-in and consent, the user is redirected back with the token in the URL fragment; your backend should establish a secure session (e.g. httpOnly cookie) and redirect the user.
+Add your app's callback URL (`${NEXT_PUBLIC_EXAMPLE_APP_ORIGIN}/example/callback`, e.g. `http://localhost:3004/example/callback`) to the project app's **allowed redirect URIs** in the Grant dashboard. After sign-in and consent, the user is redirected back with the token in the URL fragment; your backend should establish a secure session (e.g. httpOnly cookie) and redirect the user.
 
 ## Examples
 

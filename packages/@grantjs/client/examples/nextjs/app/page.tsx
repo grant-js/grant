@@ -8,7 +8,11 @@ export default function Home() {
   const grant = useGrantClient();
 
   const [clientId, setClientId] = useState('');
-  const [redirectUri, setRedirectUri] = useState('http://localhost:3004/example/callback');
+  const defaultRedirectUri =
+    (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_EXAMPLE_APP_ORIGIN
+      ? process.env.NEXT_PUBLIC_EXAMPLE_APP_ORIGIN
+      : 'http://localhost:3004') + '/example/callback';
+  const [redirectUri, setRedirectUri] = useState(defaultRedirectUri);
   const [scopes, setScopes] = useState('');
   const [appState, setAppState] = useState('');
   const [signInError, setSignInError] = useState<string | null>(null);
@@ -70,7 +74,7 @@ export default function Home() {
               type="text"
               value={redirectUri}
               onChange={(e) => setRedirectUri(e.target.value)}
-              placeholder="http://localhost:3004/example/callback"
+              placeholder={defaultRedirectUri}
               className="input"
             />
           </label>
@@ -107,11 +111,12 @@ export default function Home() {
       </section>
 
       <p className="setup-note">
-        Set <code>NEXT_PUBLIC_GRANT_API_URL</code> and <code>NEXT_PUBLIC_GRANT_FRONTEND_URL</code>{' '}
-        in <code>.env</code>. The frontend URL points to the Grant web app where{' '}
-        <code>/auth/project</code> is served. Implement <code>getAccessToken</code> in your Grant
-        config to return the token from your secure auth store (e.g. server session, httpOnly
-        cookie).
+        Set <code>NEXT_PUBLIC_GRANT_API_URL</code>, <code>NEXT_PUBLIC_GRANT_FRONTEND_URL</code>, and{' '}
+        <code>NEXT_PUBLIC_EXAMPLE_APP_ORIGIN</code> in <code>.env</code>. The frontend URL points to
+        the Grant web app where <code>/auth/project</code> is served; the example app origin is used
+        for the default redirect URI (callback = origin + <code>/example/callback</code>). Implement{' '}
+        <code>getAccessToken</code> in your Grant config to return the token from your secure auth
+        store (e.g. server session, httpOnly cookie).
       </p>
     </main>
   );

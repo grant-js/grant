@@ -23,11 +23,13 @@ FROM base AS builder
 # VitePress lastUpdated uses git; Alpine does not include it
 RUN apk add --no-cache git
 
-# Env-driven defaults for docs theme (API/App URLs); same env as rest of demo stack
+# Env-driven defaults for docs theme (API/App/Example URLs); same env as rest of demo stack
 ARG VITE_API_URL=http://localhost:4000
 ARG VITE_APP_URL=http://localhost:3000
+ARG VITE_EXAMPLE_APP_URL=http://localhost:3004
 ENV VITE_API_URL=${VITE_API_URL}
 ENV VITE_APP_URL=${VITE_APP_URL}
+ENV VITE_EXAMPLE_APP_URL=${VITE_EXAMPLE_APP_URL}
 
 COPY . .
 RUN pnpm install --frozen-lockfile --ignore-scripts

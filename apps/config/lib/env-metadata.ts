@@ -56,12 +56,13 @@ export const ENV_CATEGORIES: { id: EnvCategoryId; label: string; priority: numbe
   { id: 'optional', label: 'Advanced', priority: 9 },
 ];
 
-/** Env files we manage (relative to repo root). Same list as scripts/env/setup.mjs targets. */
+/** Env files we manage (relative to repo root). Includes core apps and client example (see scripts/env/setup.mjs). */
 export const ENV_FILE_PATHS = [
   '.env',
   'apps/api/.env',
   'apps/web/.env',
   'packages/@grantjs/database/.env',
+  'packages/@grantjs/client/examples/nextjs/.env',
 ] as const;
 
 /** Variables that appear in multiple files; when one is updated, we write to all. */
@@ -1460,6 +1461,28 @@ const META: EnvVarMeta[] = [
     label: 'Public app URL',
     description: 'Web app public URL.',
     envFiles: ['apps/web/.env'],
+  },
+  {
+    key: 'NEXT_PUBLIC_GRANT_API_URL',
+    category: 'web',
+    label: 'Grant API URL (example app)',
+    description: 'Grant API base URL for the client example app (permission checks).',
+    envFiles: ['packages/@grantjs/client/examples/nextjs/.env'],
+  },
+  {
+    key: 'NEXT_PUBLIC_GRANT_FRONTEND_URL',
+    category: 'web',
+    label: 'Grant frontend URL (example app)',
+    description: 'Grant web app URL for the client example (signInWithProjectApp /auth/project).',
+    envFiles: ['packages/@grantjs/client/examples/nextjs/.env'],
+  },
+  {
+    key: 'NEXT_PUBLIC_EXAMPLE_APP_ORIGIN',
+    category: 'web',
+    label: 'Example app origin',
+    description:
+      'Origin of the client example app (base path is /example). Used for default redirect URI (origin + /example/callback).',
+    envFiles: ['packages/@grantjs/client/examples/nextjs/.env'],
   },
   {
     key: 'NEXT_PUBLIC_ACCOUNT_DELETION_RETENTION_DAYS',
