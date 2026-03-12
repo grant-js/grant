@@ -8,7 +8,7 @@ export default function Home() {
   const grant = useGrantClient();
 
   const [clientId, setClientId] = useState('');
-  const [redirectUri, setRedirectUri] = useState('http://localhost:3004/callback');
+  const [redirectUri, setRedirectUri] = useState('http://localhost:3004/example/callback');
   const [scopes, setScopes] = useState('');
   const [appState, setAppState] = useState('');
   const [signInError, setSignInError] = useState<string | null>(null);
@@ -70,7 +70,7 @@ export default function Home() {
               type="text"
               value={redirectUri}
               onChange={(e) => setRedirectUri(e.target.value)}
-              placeholder="http://localhost:3004/callback"
+              placeholder="http://localhost:3004/example/callback"
               className="input"
             />
           </label>

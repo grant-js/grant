@@ -880,7 +880,7 @@ const DEV_CORS_ORIGINS = getEnv(
 /** CORS configuration for Express middleware */
 const CORS_CONFIG = {
   origin: APP_CONFIG.isProduction
-    ? SECURITY_CONFIG.frontendUrl
+    ? [SECURITY_CONFIG.frontendUrl, ...SECURITY_CONFIG.additionalOrigins]
     : [...DEV_CORS_ORIGINS, ...SECURITY_CONFIG.additionalOrigins],
   credentials: true,
 } as const;
