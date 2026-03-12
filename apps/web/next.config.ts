@@ -43,6 +43,8 @@ const nextConfig: NextConfig = {
         source: '/storage/:path*',
         destination: `${apiUrl}/storage/:path*`,
       },
+      // Legacy path: browsers and caches often request /favicon.ico; serve the same icon so cache refreshes get the new asset.
+      { source: '/favicon.ico', destination: '/favicon.png' },
     ];
   },
 };
