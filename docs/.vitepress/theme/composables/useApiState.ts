@@ -19,7 +19,8 @@ interface ApiState {
 const STORAGE_KEY = 'grant-docs-api-state';
 
 export const defaultApiBaseUrl =
-  (typeof import.meta !== 'undefined' && (import.meta as unknown as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL) ||
+  (typeof import.meta !== 'undefined' &&
+    (import.meta as unknown as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL) ||
   'http://localhost:4000';
 
 const state = reactive<ApiState>({
