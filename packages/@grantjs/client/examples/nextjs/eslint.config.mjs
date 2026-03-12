@@ -8,7 +8,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig(
-  { ignores: ['node_modules/**', '.next/**', '*.config.*'] },
+  { ignores: ['node_modules/**', '.next/**', '*.config.*', '**/next-env.d.ts'] },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
