@@ -17,6 +17,7 @@ docs/.vitepress/dist/
 
 # Environment files
 .env
+.env.demo
 .env.local
 .env.e2e
 .env.development.local

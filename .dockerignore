@@ -1,0 +1,39 @@
+# Dependencies and build outputs
+node_modules
+**/node_modules
+.next
+**/.next
+dist
+**/dist
+.turbo
+**/.turbo
+
+# Git and IDE
+.git
+.gitignore
+.cursor
+*.md
+!apps/api/README.md
+!packages/**/README.md
+
+# Tests and tooling
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+coverage
+**/coverage
+.vitest
+**/.vitest
+e2e
+**/e2e
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+
+# Misc
+*.log
+.DS_Store
+*.plan.md

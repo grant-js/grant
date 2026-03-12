@@ -9,7 +9,7 @@ import { DemoModeDialog, Logo } from '@/components/common';
 import { LanguageSwitcher, ThemeToggle } from '@/components/features/settings';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
-import { getApiDocsUrl, getDocsUrl, getGraphqlPlaygroundUrl } from '@/lib/constants';
+import { getApiDocsUrl, getAppVersion, getDocsUrl, getGraphqlPlaygroundUrl } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -79,6 +79,9 @@ export function Header() {
         {/* Desktop Navigation and Controls */}
         <div className="hidden md:flex md:items-center md:space-x-3">
           <div className="flex items-center gap-4">
+            <span className="text-muted-foreground text-xs" title="App version">
+              v{getAppVersion()}
+            </span>
             <DemoModeDialog />
             <a
               href={getDocsUrl()}
@@ -126,6 +129,9 @@ export function Header() {
               {/* Dashboard link removed - breadcrumb provides better navigation */}
             </nav>
             <div className="flex flex-col space-y-2">
+              <div className="py-2 -mx-2 text-muted-foreground text-xs" title="App version">
+                v{getAppVersion()}
+              </div>
               <div className="py-2 -mx-2">
                 <DemoModeDialog />
               </div>

@@ -885,9 +885,37 @@ const CORS_CONFIG = {
   credentials: true,
 } as const;
 
+/** Apollo Sandbox CDN origins (required when CSP is enabled and playground is used) */
+const APOLLO_SANDBOX_CDN = [
+  'https://embeddable-sandbox.cdn.apollographql.com',
+  'https://apollo-server-landing-page.cdn.apollographql.com',
+  'https://sandbox.embed.apollographql.com',
+] as const;
+
 /** Helmet security headers configuration */
 const HELMET_CONFIG = {
-  contentSecurityPolicy: APP_CONFIG.isProduction ? undefined : false,
+  crossOriginEmbedderPolicy: APOLLO_CONFIG.playground ? false : undefined,
+  contentSecurityPolicy: (():
+    | false
+    | undefined
+    | { useDefaults: false; directives: Record<string, string[]> } => {
+    if (!APP_CONFIG.isProduction) return false;
+    if (!APOLLO_CONFIG.playground) return undefined;
+    const cdnList = [...APOLLO_SANDBOX_CDN];
+    return {
+      useDefaults: false,
+      directives: {
+        defaultSrc: ["'self'", ...cdnList],
+        scriptSrc: ["'self'", "'unsafe-inline'", ...cdnList],
+        scriptSrcElem: ["'self'", "'unsafe-inline'", ...cdnList],
+        imgSrc: ["'self'", 'data:', ...cdnList],
+        styleSrc: ["'self'", "'unsafe-inline'", ...cdnList],
+        manifestSrc: ["'self'", ...cdnList],
+        frameSrc: ["'self'", ...cdnList],
+        connectSrc: ["'self'"],
+      },
+    };
+  })(),
 } as const;
 
 /** Swagger UI setup configuration (computed from SWAGGER_CONFIG) */

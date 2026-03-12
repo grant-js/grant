@@ -1,8 +1,21 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { NextConfig } from 'next';
 
 import createNextIntlPlugin from 'next-intl/plugin';
 
+// App version: from env override or package.json (single source of truth at build time)
+const pkg = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf-8')) as {
+  version?: string;
+};
+const appVersion = process.env.NEXT_PUBLIC_APP_VERSION || pkg.version || 'dev';
+
 const nextConfig: NextConfig = {
+  output: 'standalone',
+  env: {
+    NEXT_PUBLIC_APP_VERSION: appVersion,
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },

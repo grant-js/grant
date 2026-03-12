@@ -50,7 +50,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: infrastructure/docker/api.Dockerfile
+      dockerfile: apps/api/Dockerfile
     container_name: grant-e2e-api
     depends_on:
       postgres:

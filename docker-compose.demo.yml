@@ -1,0 +1,198 @@
+# =============================================================================
+# Grant Platform – Demo deployment (demo.grant.center)
+# =============================================================================
+# Run with: docker compose -f docker-compose.demo.yml --env-file .env.demo up -d
+#
+# .env.demo is used for:
+#   - Deploy time: ${VAR} in this file (e.g. POSTGRES_PASSWORD, REDIS_PASSWORD,
+#     build args) are interpolated from the environment when the compose file
+#     is parsed (docker compose uses --env-file; docker stack deploy has no
+#     --env-file, so the deploy script sources .env.demo in a subshell).
+#   - Runtime: env_file: .env.demo on the api service injects vars into the
+#     api container when using "docker compose up". For "docker stack deploy",
+#     Swarm does not support env_file; the api gets env from the interpolated
+#     "environment:" block below.
+#
+# For CD: use pre-built images (image:). For local: override with build or
+# build first: docker compose -f docker-compose.demo.yml build
+#
+# Host port mapping (chosen to avoid server conflicts):
+#   - 3000  → web (Next.js)   — avoid 3007, 3010, 3011 (Umami, Aguatuya)
+#   - 3004  → example-nextjs (SDK example app)
+#   - 4000  → api
+#   - 5173  → docs (VitePress) — matches default NEXT_PUBLIC_DOCS_URL / docs link from header
+#   Postgres and Redis are not exposed on the host (internal only).
+#
+# Swarm: use "docker stack deploy -c docker-compose.demo.yml grant-demo" so the
+# api service runs with 2 replicas (deploy.replicas). Plain "docker compose up"
+# ignores deploy; use --scale api=2 for multiple API instances without Swarm.
+# =============================================================================
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: grant-demo-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-grant_demo}
+      POSTGRES_USER: ${POSTGRES_USER:-grant_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.demo}
+      POSTGRES_INITDB_ARGS: '--encoding=UTF-8 --lc-collate=C --lc-ctype=C'
+    volumes:
+      - demo_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-grant_user} -d ${POSTGRES_DB:-grant_demo}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - demo-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: grant-demo-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env.demo}
+    volumes:
+      - demo_redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD}', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - demo-network
+
+  api:
+    image: ${GRANT_API_IMAGE:-ghcr.io/logusgraphics/grant-platform/grant-api:demo}
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    # No container_name: required for replicas (Swarm or compose --scale)
+    deploy:
+      replicas: 2
+      update_config:
+        order: start-first
+        delay: 10s
+        failure_action: rollback
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+    # List form required for Swarm; Compose also supports condition: service_healthy
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - .env.demo
+    environment:
+      NODE_ENV: production
+      APP_PORT: 4000
+      APOLLO_PLAYGROUND: ${APOLLO_PLAYGROUND:-true}
+      DB_URL: postgresql://${POSTGRES_USER:-grant_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-grant_demo}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      CACHE_STRATEGY: redis
+    volumes:
+      - demo_api_storage:/app/apps/api/storage
+    ports:
+      - '4000:4000'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:4000/health || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    stop_grace_period: 35s
+    restart: unless-stopped
+    networks:
+      - demo-network
+
+  web:
+    image: ${GRANT_WEB_IMAGE:-ghcr.io/logusgraphics/grant-platform/grant-web:demo}
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+        # NEXT_PUBLIC_APP_VERSION: omitted so next.config uses package.json version
+    container_name: grant-demo-web
+    depends_on:
+      - api
+    ports:
+      - target: 3000
+        published: 3000
+        protocol: tcp
+        mode: host
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+    # No healthcheck: with host mode, a failing check causes restarts and "port already in use"
+    # on the node. Next.js is up (logs show "Ready"); use docker service logs if needed.
+    restart: unless-stopped
+    networks:
+      - demo-network
+
+  docs:
+    image: ${GRANT_DOCS_IMAGE:-ghcr.io/logusgraphics/grant-platform/grant-docs:demo}
+    build:
+      context: .
+      dockerfile: docs/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:4000}
+        VITE_APP_URL: ${VITE_APP_URL:-http://localhost:3000}
+    container_name: grant-demo-docs
+    ports:
+      - target: 8080
+        published: 5173
+        protocol: tcp
+        mode: host
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:8080/ || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - demo-network
+
+  example-nextjs:
+    image: ${GRANT_EXAMPLE_NEXTJS_IMAGE:-ghcr.io/logusgraphics/grant-platform/example-nextjs:demo}
+    build:
+      context: .
+      dockerfile: packages/@grantjs/client/examples/nextjs/Dockerfile
+      args:
+        NEXT_PUBLIC_GRANT_API_URL: ${NEXT_PUBLIC_GRANT_API_URL:-http://localhost:4000}
+        NEXT_PUBLIC_GRANT_FRONTEND_URL: ${NEXT_PUBLIC_GRANT_FRONTEND_URL:-http://localhost:3000}
+    container_name: grant-demo-example-nextjs
+    depends_on:
+      - api
+    ports:
+      - target: 3000
+        published: 3004
+        protocol: tcp
+        mode: host
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      NEXT_PUBLIC_GRANT_API_URL: ${NEXT_PUBLIC_GRANT_API_URL:-http://localhost:4000}
+      NEXT_PUBLIC_GRANT_FRONTEND_URL: ${NEXT_PUBLIC_GRANT_FRONTEND_URL:-http://localhost:3000}
+    restart: unless-stopped
+    networks:
+      - demo-network
+
+volumes:
+  demo_postgres_data:
+  demo_redis_data:
+  demo_api_storage:
+
+networks:
+  demo-network:
+    # overlay required for docker stack deploy (Swarm); attachable so one-off migrate/seed can use it
+    driver: overlay
+    attachable: true

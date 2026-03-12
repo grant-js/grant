@@ -60,7 +60,9 @@ async function startServer() {
     formatError: formatGraphQLError,
     plugins: [
       ApolloServerPluginDrainHttpServer({ httpServer }),
-      ApolloServerPluginLandingPageLocalDefault({ embed: true }),
+      ...(config.apollo.playground
+        ? [ApolloServerPluginLandingPageLocalDefault({ embed: true })]
+        : []),
       ApolloServerPluginInlineTrace(),
     ],
   });

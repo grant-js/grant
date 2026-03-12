@@ -65,6 +65,8 @@
     "@changesets/cli": "^2.29.8",
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.37.0",
+    "@iconify-json/fluent": "^1.2.40",
+    "@iconify-json/fluent-color": "^1.2.21",
     "@types/node": "^24.7.2",
     "badge-maker": "^5.0.2",
     "concurrently": "^9.2.1",

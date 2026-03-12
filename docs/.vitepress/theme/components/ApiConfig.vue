@@ -18,7 +18,7 @@
       <div v-show="expanded" class="api-config-body">
         <div class="api-config-field">
           <label for="ac-base-url">Base URL</label>
-          <input id="ac-base-url" v-model="state.baseUrl" placeholder="http://localhost:4000" spellcheck="false" />
+          <input id="ac-base-url" v-model="state.baseUrl" :placeholder="defaultApiBaseUrl" spellcheck="false" />
         </div>
 
         <div class="api-config-divider"><span>Authentication</span></div>
@@ -99,7 +99,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useApiState } from '../composables/useApiState';
+import { useApiState, defaultApiBaseUrl } from '../composables/useApiState';
 
 const { state, setVariable, clearState, verifyConnection, tryRefresh } = useApiState();
 
