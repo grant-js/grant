@@ -150,6 +150,7 @@ services:
       args:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:4000}
         VITE_APP_URL: ${VITE_APP_URL:-http://localhost:3000}
+        VITE_EXAMPLE_APP_URL: ${VITE_EXAMPLE_APP_URL:-http://localhost:3004}
     container_name: grant-demo-docs
     env_file:
       - .env.demo
