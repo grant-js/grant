@@ -81,17 +81,11 @@ services:
       - redis
     env_file:
       - .env.demo
-    # Topology and composed variables (env_file does not expand ${VAR} references)
     environment:
       NODE_ENV: production
-      DB_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       CACHE_STRATEGY: redis
-      SECURITY_FRONTEND_URL: ${APP_URL}
-      GITHUB_CALLBACK_URL: ${APP_URL}/api/auth/github/callback
-      GITHUB_PROJECT_CALLBACK_URL: ${APP_URL}/api/auth/project/callback
-      OPENAPI_PRODUCTION_URL: ${APP_URL}
     volumes:
       - demo_api_storage:/app/apps/api/storage
     ports:

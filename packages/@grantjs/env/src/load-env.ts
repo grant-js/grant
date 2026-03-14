@@ -42,4 +42,10 @@ export function loadEnv(rootArg?: string): void {
       dotenvExpand.expand(result);
     }
   }
+
+  // Expand ${VAR} in process.env so runtime-injected vars (Docker env_file/environment, CI, shell) are expanded too.
+  // Without this, vars injected by the container runtime are never expanded; only values from dotenv.config() above were.
+  dotenvExpand.expand({
+    parsed: process.env as Record<string, string>,
+  });
 }
