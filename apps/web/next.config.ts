@@ -39,6 +39,14 @@ const nextConfig: NextConfig = {
       { source: '/storage/:path*', destination: `${api}/storage/:path*` },
       { source: '/health', destination: `${api}/health` },
       { source: '/.well-known/:path*', destination: `${api}/.well-known/:path*` },
+      {
+        source: '/org/:orgId/prj/:projectId/.well-known/:path*',
+        destination: `${api}/org/:orgId/prj/:projectId/.well-known/:path*`,
+      },
+      {
+        source: '/acc/:accId/prj/:projectId/.well-known/:path*',
+        destination: `${api}/acc/:accId/prj/:projectId/.well-known/:path*`,
+      },
       { source: '/favicon.ico', destination: '/favicon.png' },
     ];
   },
