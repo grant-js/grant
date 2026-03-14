@@ -81,14 +81,11 @@ services:
       - redis
     env_file:
       - .env.demo
+    # Topology-only overrides; all other config (API_PORT, DB_URL, APP_URL, etc.) from .env.demo
     environment:
       NODE_ENV: production
-      API_PORT: ${API_PORT}
-      APOLLO_PLAYGROUND: ${APOLLO_PLAYGROUND:-true}
-      DB_URL: postgresql://${POSTGRES_USER:-grant_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-grant_demo}
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
       CACHE_STRATEGY: redis
     volumes:
       - demo_api_storage:/app/apps/api/storage

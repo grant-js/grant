@@ -55,6 +55,7 @@ fi
 
 # docker stack deploy has no --env-file; compose ${VAR} interpolation uses the process
 # environment. Load env in a subshell so we don't modify the caller's shell, then deploy.
+# Expand ${VAR} in values so SECURITY_FRONTEND_URL=${APP_URL} etc. resolve correctly.
 echo "Loading $ENV_FILE for variable substitution (subshell)..."
 (
   while IFS= read -r line || [[ -n "$line" ]]; do
@@ -62,7 +63,15 @@ echo "Loading $ENV_FILE for variable substitution (subshell)..."
     line="${line%"${line##*[![:space:]]}"}"
     [[ -z "$line" ]] && continue
     if [[ "$line" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
-      export "${BASH_REMATCH[1]}=${BASH_REMATCH[2]}"
+      key="${BASH_REMATCH[1]}"
+      value="${BASH_REMATCH[2]}"
+      # Expand ${VAR} references in value using already-exported vars
+      while [[ "$value" =~ \$\{([A-Za-z_][A-Za-z0-9_]*)\} ]]; do
+        ref="${BASH_REMATCH[1]}"
+        refval="${!ref:-}"
+        value="${value//\$\{$ref\}/$refval}"
+      done
+      export "$key=$value"
     fi
   done < "$ENV_FILE"
   echo "Deploying stack $STACK_NAME..."
