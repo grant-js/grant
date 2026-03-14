@@ -64,12 +64,12 @@ function hydrate() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const saved = JSON.parse(raw);
-      if (saved.baseUrl !== undefined) state.baseUrl = saved.baseUrl;
-      else state.baseUrl = originDefaults.baseUrl;
-      if (saved.appUrl !== undefined) state.appUrl = saved.appUrl;
-      else state.appUrl = originDefaults.appUrl;
-      if (saved.exampleAppUrl !== undefined) state.exampleAppUrl = saved.exampleAppUrl;
-      else state.exampleAppUrl = originDefaults.exampleAppUrl;
+      state.baseUrl = saved.baseUrl && saved.baseUrl.trim() !== '' ? saved.baseUrl : originDefaults.baseUrl;
+      state.appUrl = saved.appUrl && saved.appUrl.trim() !== '' ? saved.appUrl : originDefaults.appUrl;
+      // Treat legacy relative default '/example' as unset so we use origin + '/example'
+      const legacyExample = (saved.exampleAppUrl || '').trim();
+      state.exampleAppUrl =
+        legacyExample !== '' && legacyExample !== '/example' ? saved.exampleAppUrl : originDefaults.exampleAppUrl;
       if (saved.accessToken) state.accessToken = saved.accessToken;
       if (saved.refreshToken) state.refreshToken = saved.refreshToken;
       if (saved.verifiedEmail) state.verifiedEmail = saved.verifiedEmail;
