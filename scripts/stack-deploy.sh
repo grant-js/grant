@@ -98,9 +98,12 @@ fi
 # docker stack deploy has no --env-file; compose ${VAR} interpolation uses the process
 # environment. Load env in a subshell so we don't modify the caller's shell, then deploy.
 # Expand ${VAR} in values so SECURITY_FRONTEND_URL=${APP_URL} etc. resolve correctly.
+# Disable set -e during load_demo_env so EOF from read (or any parse quirk) doesn't exit before deploy.
 echo "Loading $ENV_FILE for variable substitution (subshell)..."
 (
+  set +e
   load_demo_env
+  set -e
   echo "Deploying stack $STACK_NAME..."
   exec docker stack deploy -c "$COMPOSE_FILE" "$STACK_NAME"
 )
