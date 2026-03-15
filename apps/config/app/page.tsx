@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ThemeToggle } from '@/app/theme-toggle';
 import { ConfigPageHeader } from '@/components/ConfigPageHeader';
 import { ConfigSidebar } from '@/components/ConfigSidebar';
+import { EnvironmentDropdown } from '@/components/EnvironmentDropdown';
 import { HamburgerButton } from '@/components/HamburgerButton';
 import { VarList, getNonCriticalSectionNames } from '@/components/VarList';
 import { useEnvState } from '@/hooks/useEnvState';
@@ -41,6 +42,7 @@ function ConfigPageContent() {
     openSelectKey,
     setOpenSelectKey,
     getVar,
+    getDefault,
     getMultiVar,
     onMultiVarChange,
     addMultiVarItem,
@@ -51,6 +53,9 @@ function ConfigPageContent() {
     handleGeneratePassword,
     handleTestDbConnection,
     handleUseDockerDbChange,
+    useAppUrlForFrontend,
+    handleUseAppUrlForFrontendChange,
+    computedFrontendUrl,
     handleSave,
     handleBlur,
     isCategoryMisconfigured,
@@ -70,7 +75,7 @@ function ConfigPageContent() {
     if (!data) return [];
     return data.vars.filter((v) => {
       const m = data.meta.find((x) => x.key === v.key);
-      return m?.category === activeTab;
+      return m ? m.category === activeTab : activeTab === 'optional';
     });
   }, [data, activeTab]);
 
@@ -122,7 +127,12 @@ function ConfigPageContent() {
           leftSlot={
             <HamburgerButton expanded={sidebarOpen} onToggle={() => setSidebarOpen((o) => !o)} />
           }
-          rightSlot={<ThemeToggle />}
+          rightSlot={
+            <>
+              <EnvironmentDropdown />
+              <ThemeToggle />
+            </>
+          }
         />
 
         <div className="config-body">
@@ -171,12 +181,16 @@ function ConfigPageContent() {
                       validationErrors={validationErrors}
                       useDockerDb={useDockerDb}
                       onUseDockerDbChange={handleUseDockerDbChange}
+                      useAppUrlForFrontend={useAppUrlForFrontend}
+                      onUseAppUrlForFrontendChange={handleUseAppUrlForFrontendChange}
                       getVar={getVar}
+                      getDefault={getDefault}
                       getMultiVar={getMultiVar}
                       onMultiVarChange={onMultiVarChange}
                       addMultiVarItem={addMultiVarItem}
                       removeMultiVarItem={removeMultiVarItem}
                       computedDbUrl={computedDbUrl}
+                      computedFrontendUrl={computedFrontendUrl}
                       onEdit={(key, value) => setEditing((prev) => ({ ...prev, [key]: value }))}
                       onReset={handleReset}
                       onBlur={handleBlur}

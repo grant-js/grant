@@ -7,6 +7,15 @@ import { dirname, resolve } from 'node:path';
 
 const ENCODING = 'utf-8' as const;
 
+/** Environment selector → root env file. Used by config app only; runtime (@grantjs/env) does not reference .env.demo / .env.test. */
+export const ENVIRONMENTS = {
+  default: '.env',
+  demo: '.env.demo',
+  test: '.env.test',
+} as const;
+
+export type EnvEnvironment = keyof typeof ENVIRONMENTS;
+
 /** Parse .env content into a map. Preserves which keys were present. */
 export function parseEnvContent(content: string): Map<string, string> {
   const map = new Map<string, string>();

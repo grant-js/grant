@@ -2,15 +2,26 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import { useSearchParams } from 'next/navigation';
+
 import type { EnvStateResponse } from '@/app/types/env';
 import { getPortFromAppUrl, normalizeAppUrl, setPortInAppUrl } from '@/lib/app-url-port';
 import { computeDbUrlFromPostgres } from '@/lib/db-url';
+import type { EnvEnvironment } from '@/lib/env-files';
 import type { EnvCategoryId } from '@/lib/env-metadata';
 import { getEnvVarMeta } from '@/lib/env-metadata';
 import { validateEnvValue } from '@/lib/env-schemas';
 import { generateSecurePassword } from '@/lib/generate-password';
 
+function parseEnvironment(value: string | null): EnvEnvironment {
+  if (value === 'demo' || value === 'test') return value;
+  return 'default';
+}
+
 export function useEnvState() {
+  const searchParams = useSearchParams();
+  const selectedEnvironment: EnvEnvironment = parseEnvironment(searchParams.get('env'));
+
   const [data, setData] = useState<EnvStateResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +31,7 @@ export function useEnvState() {
   const [saving, setSaving] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [useDockerDb, setUseDockerDb] = useState(false);
+  const [useAppUrlForFrontend, setUseAppUrlForFrontend] = useState(false);
   const [testDbStatus, setTestDbStatus] = useState<'idle' | 'loading' | 'success' | 'error'>(
     'idle'
   );
@@ -62,7 +74,7 @@ export function useEnvState() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/env');
+      const res = await fetch(`/api/env?environment=${selectedEnvironment}`);
       if (!res.ok) throw new Error(await res.text());
       const json: EnvStateResponse = await res.json();
       setData(json);
@@ -71,7 +83,7 @@ export function useEnvState() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedEnvironment]);
 
   useEffect(() => {
     fetchEnv();
@@ -80,6 +92,15 @@ export function useEnvState() {
   const getVar = useCallback(
     (key: string) => editing[key] ?? data?.vars.find((v) => v.key === key)?.value ?? '',
     [data, editing]
+  );
+
+  const getDefault = useCallback(
+    (key: string): string | undefined => {
+      const d = data?.defaults?.[key];
+      if (d === undefined) return undefined;
+      return String(d);
+    },
+    [data?.defaults]
   );
 
   const getMultiVar = useCallback(
@@ -132,6 +153,9 @@ export function useEnvState() {
           getVar('POSTGRES_PASSWORD')
         )
       : '';
+
+  const computedFrontendUrl =
+    useAppUrlForFrontend && data ? normalizeAppUrl(getVar('APP_URL') || '') : '';
 
   const handleGenerateSystemUserId = useCallback(() => {
     setEditing((prev) => ({ ...prev, SYSTEM_USER_ID: crypto.randomUUID() }));
@@ -356,14 +380,37 @@ export function useEnvState() {
           fetch('/api/env', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ key: 'DB_URL', value: url }),
+            body: JSON.stringify({ key: 'DB_URL', value: url, environment: selectedEnvironment }),
           })
             .then((r) => r.json())
             .then((json) => json.ok && fetchEnv());
         }
       }
     },
-    [data, getVar, fetchEnv]
+    [data, getVar, fetchEnv, selectedEnvironment]
+  );
+
+  const handleUseAppUrlForFrontendChange = useCallback(
+    (checked: boolean) => {
+      setUseAppUrlForFrontend(checked);
+      if (checked && data) {
+        const url = normalizeAppUrl(getVar('APP_URL') || '');
+        if (url) {
+          fetch('/api/env', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              key: 'SECURITY_FRONTEND_URL',
+              value: url,
+              environment: selectedEnvironment,
+            }),
+          })
+            .then((r) => r.json())
+            .then((json) => json.ok && fetchEnv());
+        }
+      }
+    },
+    [data, getVar, fetchEnv, selectedEnvironment]
   );
 
   const handleSave = useCallback(
@@ -394,7 +441,7 @@ export function useEnvState() {
         const res = await fetch('/api/env', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key, value }),
+          body: JSON.stringify({ key, value, environment: selectedEnvironment }),
         });
         const json = await res.json();
         if (!json.ok) throw new Error(json.error ?? 'Save failed');
@@ -410,11 +457,28 @@ export function useEnvState() {
         });
         await fetchEnv();
         if (key === 'APP_URL') {
+          if (useAppUrlForFrontend && value) {
+            const resFrontend = await fetch('/api/env', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                key: 'SECURITY_FRONTEND_URL',
+                value,
+                environment: selectedEnvironment,
+              }),
+            });
+            const jsonFrontend = await resFrontend.json();
+            if (jsonFrontend.ok) await fetchEnv();
+          }
           const port = getPortFromAppUrl(value);
           const resPort = await fetch('/api/env', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ key: 'API_PORT', value: String(port) }),
+            body: JSON.stringify({
+              key: 'API_PORT',
+              value: String(port),
+              environment: selectedEnvironment,
+            }),
           });
           const jsonPort = await resPort.json();
           if (jsonPort.ok) await fetchEnv();
@@ -425,7 +489,11 @@ export function useEnvState() {
             const resUrl = await fetch('/api/env', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ key: 'APP_URL', value: newAppUrl }),
+              body: JSON.stringify({
+                key: 'APP_URL',
+                value: newAppUrl,
+                environment: selectedEnvironment,
+              }),
             });
             const jsonUrl = await resUrl.json();
             if (jsonUrl.ok) await fetchEnv();
@@ -440,7 +508,11 @@ export function useEnvState() {
             const resDb = await fetch('/api/env', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ key: 'DB_URL', value: newDbUrl }),
+              body: JSON.stringify({
+                key: 'DB_URL',
+                value: newDbUrl,
+                environment: selectedEnvironment,
+              }),
             });
             const jsonDb = await resDb.json();
             if (jsonDb.ok) await fetchEnv();
@@ -452,7 +524,16 @@ export function useEnvState() {
         setSaving(null);
       }
     },
-    [data, editing, useDockerDb, getVar, getMultiVar, fetchEnv]
+    [
+      data,
+      editing,
+      useDockerDb,
+      useAppUrlForFrontend,
+      getVar,
+      getMultiVar,
+      fetchEnv,
+      selectedEnvironment,
+    ]
   );
 
   const handleBlur = useCallback((key: string, value: string) => {
@@ -489,6 +570,7 @@ export function useEnvState() {
     data,
     loading,
     error,
+    selectedEnvironment,
     activeTab,
     setActiveTab,
     editing,
@@ -496,6 +578,10 @@ export function useEnvState() {
     saving,
     validationErrors,
     useDockerDb,
+    useAppUrlForFrontend,
+    handleUseAppUrlForFrontendChange,
+    computedDbUrl,
+    computedFrontendUrl,
     testDbStatus,
     testDbMessage,
     testHealthStatus,
@@ -510,11 +596,11 @@ export function useEnvState() {
     setOpenSelectKey,
     getVar,
     getMultiVar,
+    getDefault,
     onMultiVarChange,
     addMultiVarItem,
     removeMultiVarItem,
     handleReset,
-    computedDbUrl,
     fetchEnv,
     handleGenerateSystemUserId,
     handleGeneratePassword,

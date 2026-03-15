@@ -19,12 +19,16 @@ export interface VarListProps {
   validationErrors: Record<string, string>;
   useDockerDb: boolean;
   onUseDockerDbChange: (checked: boolean) => void;
+  useAppUrlForFrontend: boolean;
+  onUseAppUrlForFrontendChange: (checked: boolean) => void;
   getVar: (key: string) => string;
+  getDefault?: (key: string) => string | undefined;
   getMultiVar?: (key: string) => string[];
   onMultiVarChange?: (key: string, values: string[]) => void;
   addMultiVarItem?: (key: string) => void;
   removeMultiVarItem?: (key: string, index: number) => void;
   computedDbUrl: string;
+  computedFrontendUrl: string;
   onEdit: (key: string, value: string) => void;
   onReset: (key: string) => void;
   onBlur: (key: string, value: string) => void;
@@ -58,32 +62,28 @@ function normalizedMultiValue(value: string): string {
     .join(',');
 }
 
-/** Group vars by section (preserving order). Entries with the same section are consecutive. */
+/** Group vars by section so all vars with the same section name are in one group. Preserves first-seen order of sections. */
 function groupVarsBySection(
   vars: EnvVarValue[],
   meta: EnvStateResponse['meta']
 ): { section: string | undefined; vars: EnvVarValue[] }[] {
-  const groups: { section: string | undefined; vars: EnvVarValue[] }[] = [];
-  let currentSection: string | undefined = undefined;
-  let currentVars: EnvVarValue[] = [];
+  const sectionOrder: (string | undefined)[] = [];
+  const sectionToVars = new Map<string | undefined, EnvVarValue[]>();
 
   for (const v of vars) {
     const m = meta.find((x) => x.key === v.key);
     const section = m?.section;
-    if (section !== currentSection) {
-      if (currentVars.length > 0) {
-        groups.push({ section: currentSection, vars: currentVars });
-      }
-      currentSection = section;
-      currentVars = [v];
-    } else {
-      currentVars.push(v);
+    if (!sectionToVars.has(section)) {
+      sectionOrder.push(section);
+      sectionToVars.set(section, []);
     }
+    sectionToVars.get(section)!.push(v);
   }
-  if (currentVars.length > 0) {
-    groups.push({ section: currentSection, vars: currentVars });
-  }
-  return groups;
+
+  return sectionOrder.map((section) => ({
+    section,
+    vars: sectionToVars.get(section)!,
+  }));
 }
 
 function isSectionCritical(
@@ -118,12 +118,16 @@ export function VarList({
   validationErrors,
   useDockerDb,
   onUseDockerDbChange,
+  useAppUrlForFrontend,
+  onUseAppUrlForFrontendChange,
   getVar,
+  getDefault,
   getMultiVar,
   onMultiVarChange,
   addMultiVarItem,
   removeMultiVarItem,
   computedDbUrl,
+  computedFrontendUrl,
   onEdit,
   onReset,
   onBlur,
@@ -186,10 +190,16 @@ export function VarList({
       const m = meta.find((x) => x.key === v.key);
       const isDbUrl = v.key === 'DB_URL';
       const boundToDocker = isDbUrl && useDockerDb;
+      const boundToAppUrl = v.key === 'SECURITY_FRONTEND_URL' && useAppUrlForFrontend;
       const isMulti = !!m?.multiValueSeparator;
-      const currentValue = boundToDocker ? computedDbUrl : (editing[v.key] ?? v.value);
+      const currentValue = boundToDocker
+        ? computedDbUrl
+        : boundToAppUrl
+          ? computedFrontendUrl
+          : (editing[v.key] ?? v.value);
       const isDirty =
         !boundToDocker &&
+        !boundToAppUrl &&
         (isMulti && getMultiVar
           ? normalizedMultiValue(getMultiVar(v.key).filter(Boolean).join(',')) !==
             normalizedMultiValue(v.value ?? '')
@@ -202,15 +212,19 @@ export function VarList({
           var={v}
           meta={m}
           currentValue={currentValue}
+          getDefault={getDefault}
           multiValues={isMulti && getMultiVar ? getMultiVar(v.key) : undefined}
           onMultiVarChange={onMultiVarChange}
           addMultiVarItem={addMultiVarItem}
           removeMultiVarItem={removeMultiVarItem}
           isDirty={isDirty}
           boundToDocker={boundToDocker}
+          boundToAppUrl={boundToAppUrl}
           invalid={invalid}
           isSaving={saving === v.key}
           useDockerDb={useDockerDb}
+          useAppUrlForFrontend={useAppUrlForFrontend}
+          onUseAppUrlForFrontendChange={onUseAppUrlForFrontendChange}
           testDbStatus={testDbStatus}
           testDbMessage={testDbMessage}
           testHealthStatus={testHealthStatus}
@@ -238,9 +252,9 @@ export function VarList({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-      {sortedGroups.map(({ section, vars: groupVars }) => (
+      {sortedGroups.map(({ section, vars: groupVars }, index) => (
         <div
-          key={section ?? '_'}
+          key={`${section ?? '_'}-${groupVars[0]?.key ?? index}`}
           style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
         >
           {section !== undefined ? (

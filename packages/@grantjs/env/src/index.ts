@@ -36,6 +36,40 @@ export function resetEnv(): void {
 }
 
 /**
+ * Extract default values from the env schema for keys that have .default().
+ * Does not run full validation; only includes keys where a default is defined.
+ * Used by the config app for placeholders and "Default" indicator.
+ */
+export function getSchemaDefaults(): Record<string, unknown> {
+  const defaults: Record<string, unknown> = {};
+
+  for (const key of Object.keys(envSchema.shape) as (keyof Env)[]) {
+    const partial = envSchema.pick({ [key]: true } as Record<keyof Env, true>);
+    const result = partial.safeParse({});
+    if (result.success && result.data[key as keyof Env] !== undefined) {
+      defaults[key] = result.data[key as keyof Env];
+    }
+  }
+
+  return defaults;
+}
+
+/**
+ * Canonical list of env keys from the schema. Single source of truth for "which keys exist".
+ */
+export const ENV_KEYS = Object.keys(envSchema.shape) as (keyof Env)[];
+
+/**
+ * Validate a single env key's value using the schema. Keeps config app and runtime validation identical.
+ */
+export function validateEnvValue(key: keyof Env, value: string) {
+  // Zod 4 pick() has a strict param type that rejects dynamic keys. Runtime behavior is correct.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const partial = envSchema.pick({ [key]: true } as any);
+  return partial.safeParse({ [key]: value });
+}
+
+/**
  * Build database URL from env. Uses DB_URL if set, otherwise builds from POSTGRES_*.
  */
 export function resolveDatabaseUrl(env: Env): string {

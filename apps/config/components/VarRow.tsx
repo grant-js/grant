@@ -10,15 +10,20 @@ export interface VarRowProps {
   var: EnvVarValue;
   meta: EnvVarMeta | undefined;
   currentValue: string;
+  /** Schema default for this key (for placeholder and "Default" badge when value is empty). */
+  getDefault?: (key: string) => string | undefined;
   multiValues?: string[];
   onMultiVarChange?: (key: string, values: string[]) => void;
   addMultiVarItem?: (key: string) => void;
   removeMultiVarItem?: (key: string, index: number) => void;
   isDirty: boolean;
   boundToDocker: boolean;
+  boundToAppUrl: boolean;
   invalid: string | undefined;
   isSaving: boolean;
   useDockerDb: boolean;
+  useAppUrlForFrontend: boolean;
+  onUseAppUrlForFrontendChange?: (checked: boolean) => void;
   testDbStatus: 'idle' | 'loading' | 'success' | 'error';
   testDbMessage: string;
   testHealthStatus: 'idle' | 'loading' | 'success' | 'error';
@@ -46,15 +51,19 @@ export function VarRow({
   var: v,
   meta: m,
   currentValue,
+  getDefault,
   multiValues,
   onMultiVarChange,
   addMultiVarItem,
   removeMultiVarItem,
   isDirty,
   boundToDocker,
+  boundToAppUrl,
   invalid,
   isSaving,
   useDockerDb,
+  useAppUrlForFrontend,
+  onUseAppUrlForFrontendChange,
   testDbStatus,
   testDbMessage,
   testHealthStatus,
@@ -78,17 +87,34 @@ export function VarRow({
   onGeneratePassword,
 }: VarRowProps) {
   const isDbUrl = v.key === 'DB_URL';
+  const isSecurityFrontendUrl = v.key === 'SECURITY_FRONTEND_URL';
   const isAppUrl = v.key === 'APP_URL';
   const isRedisHost = v.key === 'REDIS_HOST';
   const isGithubClientSecret = v.key === 'GITHUB_CLIENT_SECRET';
   const isSystemUserId = v.key === 'SYSTEM_USER_ID';
+  const bound = boundToDocker || boundToAppUrl;
   const statusSet =
     v.status === 'set' ||
     (boundToDocker && currentValue?.trim()) ||
+    (boundToAppUrl && currentValue?.trim()) ||
     (multiValues !== undefined && multiValues.some((s) => s.trim() !== ''));
   const statusMissing = v.status === 'missing';
-  const badgeClass = statusSet ? 'badge-success' : statusMissing ? 'badge-error' : 'badge-muted';
-  const badgeLabel = statusSet ? 'Set' : statusMissing ? 'Missing' : 'Empty';
+  const hasDefault = getDefault?.(v.key) !== undefined;
+  const statusDefault = !statusSet && !statusMissing && hasDefault;
+  const badgeClass = statusSet
+    ? 'badge-success'
+    : statusMissing
+      ? 'badge-error'
+      : statusDefault
+        ? 'badge-muted'
+        : 'badge-muted';
+  const badgeLabel = statusSet
+    ? 'Set'
+    : statusMissing
+      ? 'Missing'
+      : statusDefault
+        ? 'Default'
+        : 'Empty';
 
   return (
     <div className="var-row">
@@ -110,7 +136,12 @@ export function VarRow({
             <code>POSTGRES_PASSWORD</code> (Docker). Edit those to change.
           </div>
         )}
-        {m?.dependsOn && !boundToDocker && (
+        {boundToAppUrl && (
+          <div className="depends-on">
+            Derived from <code>APP_URL</code>. Edit that to change.
+          </div>
+        )}
+        {m?.dependsOn && !bound && (
           <div className="depends-on">
             Depends on <code>{m.dependsOn.key}</code> = {m.dependsOn.values.join(' | ')}
           </div>
@@ -193,9 +224,9 @@ export function VarRow({
               <button
                 type="button"
                 className="custom-select-trigger"
-                disabled={boundToDocker}
-                onClick={() => !boundToDocker && onOpenSelectKeyChange(isSelectOpen ? null : v.key)}
-                onBlur={() => boundToDocker || onBlur(v.key, currentValue)}
+                disabled={bound}
+                onClick={() => !bound && onOpenSelectKeyChange(isSelectOpen ? null : v.key)}
+                onBlur={() => bound || onBlur(v.key, currentValue)}
               >
                 <span className="custom-select-value">{currentValue || 'Not set'}</span>
                 <ChevronDown size={16} className="custom-select-chevron" aria-hidden />
@@ -232,18 +263,18 @@ export function VarRow({
               className={`input ${invalid ? 'input-invalid' : ''}`}
               value={currentValue}
               onChange={(e) =>
-                !boundToDocker &&
+                !bound &&
                 onEdit(v.key, m?.digitsOnly ? e.target.value.replace(/\D/g, '') : e.target.value)
               }
-              onBlur={() => !boundToDocker && onBlur(v.key, currentValue)}
-              placeholder={v.source ? `From ${v.source}` : 'Not set'}
+              onBlur={() => !bound && onBlur(v.key, currentValue)}
+              placeholder={getDefault?.(v.key) ?? (v.source ? `From ${v.source}` : 'Not set')}
               style={{
                 fontFamily: 'var(--font-mono)',
                 fontSize: '0.8rem',
                 paddingRight: isDirty ? '4.5rem' : undefined,
               }}
-              readOnly={boundToDocker}
-              disabled={boundToDocker}
+              readOnly={bound}
+              disabled={bound}
             />
           )}
           {isDirty && multiValues === undefined && (
@@ -320,6 +351,18 @@ export function VarRow({
               </div>
             )}
           </>
+        )}
+        {isSecurityFrontendUrl && onUseAppUrlForFrontendChange && (
+          <div className="db-url-actions-row">
+            <label className="db-url-docker-toggle">
+              <input
+                type="checkbox"
+                checked={useAppUrlForFrontend}
+                onChange={(e) => onUseAppUrlForFrontendChange(e.target.checked)}
+              />
+              <span>Use app URL</span>
+            </label>
+          </div>
         )}
         {isAppUrl && (
           <>

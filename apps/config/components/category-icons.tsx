@@ -3,7 +3,6 @@ import {
   Box,
   Database,
   Github,
-  Globe,
   KeyRound,
   ShieldCheck,
   SlidersHorizontal,
@@ -18,6 +17,5 @@ export const CATEGORY_ICONS: Record<EnvCategoryId, React.ComponentType<{ classNa
   auth: KeyRound,
   github: Github,
   security: ShieldCheck,
-  web: Globe,
   optional: SlidersHorizontal,
 };

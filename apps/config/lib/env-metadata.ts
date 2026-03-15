@@ -10,7 +10,6 @@ export type EnvCategoryId =
   | 'auth'
   | 'github'
   | 'security'
-  | 'web'
   | 'optional';
 
 export interface EnvVarMeta {
@@ -52,7 +51,6 @@ export const ENV_CATEGORIES: { id: EnvCategoryId; label: string; priority: numbe
   { id: 'auth', label: 'Auth', priority: 5 },
   { id: 'github', label: 'GitHub OAuth', priority: 6 },
   { id: 'security', label: 'Security', priority: 7 },
-  { id: 'web', label: 'Web', priority: 8 },
   { id: 'optional', label: 'Advanced', priority: 9 },
 ];
 
@@ -1419,10 +1417,9 @@ const META: EnvVarMeta[] = [
     digitsOnly: true,
     section: 'Jobs',
   },
-  // Web
   {
     key: 'NEXT_PUBLIC_ACCOUNT_DELETION_RETENTION_DAYS',
-    category: 'web',
+    category: 'optional',
     label: 'Account deletion retention (days)',
     description:
       'Shown in the web app (e.g. privacy settings). Replicated from API PRIVACY_ACCOUNT_DELETION_RETENTION_DAYS when set in config.',
