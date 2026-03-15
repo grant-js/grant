@@ -66,10 +66,10 @@ start_stack() {
   wait_for_service "grant-e2e-redis"
 
   log "Running database migrations..."
-  DB_URL="$E2E_DB_URL" pnpm --filter @grantjs/database db:migrate
+  NODE_ENV=test pnpm --filter @grantjs/database db:migrate
 
   log "Running database seed..."
-  DB_URL="$E2E_DB_URL" pnpm --filter @grantjs/database db:seed
+  NODE_ENV=test pnpm --filter @grantjs/database db:seed
 
   log "Building and starting API container..."
   docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" --env-file "$ENV_FILE" up -d --build api

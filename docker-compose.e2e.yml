@@ -10,6 +10,7 @@
 #   docker compose -f docker-compose.e2e.yml --env-file .env.test down -v
 #
 # Interpolation (${VAR}) uses --env-file .env.test; copy from .env.test.example.
+# Defaults below allow the stack to run even if .env.test is missing or outdated.
 # =============================================================================
 
 services:
@@ -17,16 +18,16 @@ services:
     image: postgres:16-alpine
     container_name: grant-e2e-postgres
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-grant_e2e}
+      POSTGRES_USER: ${POSTGRES_USER:-grant_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-grant_password}
       POSTGRES_INITDB_ARGS: '--encoding=UTF-8 --lc-collate=C --lc-ctype=C'
     ports:
       - '5433:5432'
     tmpfs:
       - /var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-grant_user} -d ${POSTGRES_DB:-grant_e2e}']
       interval: 3s
       timeout: 3s
       retries: 10
@@ -36,13 +37,13 @@ services:
   redis:
     image: redis:7-alpine
     container_name: grant-e2e-redis
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    command: redis-server --requirepass ${REDIS_PASSWORD:-grant_redis_password}
     ports:
       - '6380:6379'
     tmpfs:
       - /data
     healthcheck:
-      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD}', 'ping']
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD:-grant_redis_password}', 'ping']
       interval: 3s
       timeout: 3s
       retries: 10
@@ -66,15 +67,15 @@ services:
       API_PORT: 4000
       APP_URL: http://localhost:4000
 
-      # Database – from .env.test via interpolation
-      DB_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      # Database – from .env.test via interpolation (defaults for E2E)
+      DB_URL: postgresql://${POSTGRES_USER:-grant_user}:${POSTGRES_PASSWORD:-grant_password}@postgres:5432/${POSTGRES_DB:-grant_e2e}
       DB_POOL_MAX: 5
       DB_LOG_QUERIES: 'false'
 
       # Redis – from .env.test via interpolation
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-grant_redis_password}
 
       # Cache
       CACHE_STRATEGY: redis
