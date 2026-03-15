@@ -48,7 +48,7 @@ set -a
 set +a
 
 # Host-side URLs (exposed ports from docker-compose.e2e.yml); from .env.test or defaults
-E2E_API_BASE_URL="${E2E_API_BASE_URL:-http://localhost:4000}"
+E2E_API_BASE_URL="${E2E_API_BASE_URL:-http://localhost:4001}"
 E2E_DB_URL="${E2E_DB_URL:-postgresql://grant_user:grant_password@localhost:5433/grant_e2e}"
 
 # ---------------------------------------------------------------------------
