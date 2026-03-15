@@ -103,6 +103,8 @@ For production, terminate TLS and route traffic through a reverse proxy or load 
 
 You can use nginx, Traefik, Caddy, or your cloud’s load balancer / ingress. Reuse the URLs you configured in `.env` to keep CORS and redirects consistent.
 
+For a single canonical APP_URL (e.g. `https://demo.grant.center`) that routes to api, web, docs, and the example app by path, see the sample `docs/deployment/nginx-gateway.conf.example` in the repo. Copy and adapt `server_name`, upstream ports, and SSL paths for your host; it is not required for deployment.
+
 ## 7. Docker Swarm: replicas and rolling updates
 
 The `docker-compose.demo.yml` file is tuned for **Swarm** and used to run `demo.grant.center`:
@@ -167,7 +169,7 @@ This script:
 After building or pulling new images:
 
 ```bash
-docker stack deploy -c docker-compose.demo.yml grant-platform
+docker stack deploy -c docker-compose.demo.yml grant-demo
 ```
 
 Swarm will:
@@ -247,7 +249,7 @@ docker compose ps
 
 ```bash
 docker compose logs -f api
-# Swarm: docker service logs grant-platform_api
+# Swarm: docker service logs grant-demo_api
 ```
 
 **Stop (Compose)**
@@ -277,8 +279,40 @@ Back them up like any Docker volume:
 - PostgreSQL: `docker exec <postgres-container> pg_dump -U grant_user grant_db > backup.sql`
 - API storage: back up the mounted volume path if you store uploads there
 
+## 12. Pipelines and CI/CD
+
+On **push to main**, three workflows run independently:
+
+- **ci.yml** — Lint, build, test.
+- **deploy.yml** — Build and push four images (grant-api, grant-web, grant-docs, example-nextjs) to GHCR with tags `:demo` and `:demo-$sha`; optionally deploy the demo stack via SSH.
+- **release.yml** — Version and publish npm packages via [Changesets](/contributing/versioning) when the "chore: version packages" PR is merged.
+
+### Release surfaces
+
+| Artifact         | Trigger                                  | Versioning                    |
+| ---------------- | ---------------------------------------- | ----------------------------- |
+| npm packages     | Changesets (merge "Version packages" PR) | semver                        |
+| Docker images    | push to main                             | `:demo`, `:demo-$sha`         |
+| Demo environment | deploy workflow                          | latest main                   |
+| Future releases  | version PR merge                         | semver images (e.g. `:1.4.0`) |
+
+### GHCR authentication on the server
+
+For the demo deploy job (or any pull from GitHub Container Registry), the server must authenticate to GHCR or pulls will fail. **One-time setup on the server:**
+
+```bash
+docker login ghcr.io
+```
+
+Use a GitHub PAT (Personal Access Token) with the **`read:packages`** scope. Document this in your runbook; without it, the deploy step can silently fail.
+
+### Deploy job (optional)
+
+To enable the deploy step in `deploy.yml`, set the repository variable **DEMO_DEPLOY_ENABLED** to `true` and configure secrets: **SSH_HOST**, **SSH_USER**, **SSH_PRIVATE_KEY**, **SSH_DEPLOY_PATH** (path on the server to the repo or directory containing `docker-compose.demo.yml`, `.env.demo`, and `scripts/stack-deploy.sh`). Optionally **SSH_PORT**. The job SSHs to the server and runs `./scripts/stack-deploy.sh up`, which loads `.env.demo` and runs `docker stack deploy -c docker-compose.demo.yml grant-demo`.
+
 ## Related
 
 - [Deployment overview](/deployment/self-hosting)
 - [Environment setup](/deployment/environment)
 - [Configuration](/getting-started/configuration)
+- [Versioning and release](/contributing/versioning)

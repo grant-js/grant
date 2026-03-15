@@ -1,0 +1,208 @@
+# Example: Grant Platform behind a single canonical APP_URL
+# Routes: /graphql, /api, /api-docs, /health, /storage, /.well-known, ... → API (4000),
+#         /example, /callback → example-nextjs (3004),
+#         /docs → docs (5173), everything else → web (3000)
+#
+# Copy and adapt server_name, upstream ports, and SSL paths for your host.
+# Not required for deployment — use any reverse proxy (nginx, Traefik, Caddy, etc.).
+
+upstream grant_api {
+    server 127.0.0.1:4000;
+}
+
+upstream grant_web {
+    server 127.0.0.1:3000;
+}
+
+upstream grant_example_nextjs {
+    server 127.0.0.1:3004;
+}
+
+upstream grant_docs {
+    server 127.0.0.1:5173;
+}
+
+server {
+    server_name demo.grant.center;
+
+    client_max_body_size 100M;
+
+    # Gzip
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css text/xml text/javascript application/javascript application/json application/xml+rss image/svg+xml;
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # --- /graphql → API (port 4000) ---
+    location /graphql {
+        proxy_pass http://grant_api;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+    }
+
+    # --- /api → API (port 4000) ---
+    location = /api {
+        return 302 /api/;
+    }
+
+    location /api/ {
+        proxy_pass http://grant_api;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+    }
+
+    # --- /api-docs → API (port 4000) ---
+    location /api-docs {
+        proxy_pass http://grant_api;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # --- /.well-known (JWKS) → API (port 4000) ---
+    location /.well-known/ {
+        proxy_pass http://grant_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # --- /org/…/prj/…/.well-known (per-project JWKS) → API (port 4000) ---
+    location ~ ^/org/[^/]+/prj/[^/]+/\.well-known/ {
+        proxy_pass http://grant_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # --- /acc/…/prj/…/.well-known (per-project JWKS) → API (port 4000) ---
+    location ~ ^/acc/[^/]+/prj/[^/]+/\.well-known/ {
+        proxy_pass http://grant_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # --- /health, /storage → API (port 4000) ---
+    location /health {
+        proxy_pass http://grant_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /storage {
+        proxy_pass http://grant_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # --- /example → example-nextjs (port 3004) ---
+    location /example {
+        proxy_pass http://grant_example_nextjs;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Next.js static assets for example-nextjs (long cache, no upgrade)
+    location /example/_next {
+        proxy_pass http://grant_example_nextjs;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # --- /docs → docs (port 5173) ---
+    location = /docs {
+        return 302 /docs/;
+    }
+
+    location ^~ /docs/ {
+        proxy_pass http://grant_docs/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # --- Everything else → web (port 3000) ---
+    location / {
+        proxy_pass http://grant_web;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    ssl_certificate /etc/letsencrypt/live/demo.grant.center/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/demo.grant.center/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
+
+
+server {
+    if ($host = demo.grant.center) {
+        return 301 https://$host$request_uri;
+    }
+
+    listen 80;
+    listen [::]:80;
+    server_name demo.grant.center;
+    return 404;
+}

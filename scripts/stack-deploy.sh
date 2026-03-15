@@ -6,13 +6,14 @@
 # Usage:
 #   ./scripts/stack-deploy.sh              # deploy stack "grant-demo"
 #   ./scripts/stack-deploy.sh up            # same
+#   ./scripts/stack-deploy.sh update       # same as up (redeploy/rolling update)
 #   ./scripts/stack-deploy.sh down         # remove stack "grant-demo"
 #   ./scripts/stack-deploy.sh env           # print computed env (same load/expand as deploy, no deploy)
 #   ./scripts/stack-deploy.sh up my-stack  # deploy stack "my-stack"
 #   ./scripts/stack-deploy.sh down my-stack # remove stack "my-stack"
 #   ./scripts/stack-deploy.sh grant-demo   # deploy stack "grant-demo" (backward compat)
 #
-# From repo root: ./scripts/stack-deploy.sh [up|down|env] [stack-name]
+# From repo root: ./scripts/stack-deploy.sh [up|update|down|env] [stack-name]
 
 set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -23,11 +24,11 @@ COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.demo.yml}"
 ENV_FILE="${ENV_FILE:-.env.demo}"
 STACK_NAME="${STACK_NAME:-grant-demo}"
 
-# Parse: [up|down|env] [stack-name] or legacy: [stack-name]
+# Parse: [up|update|down|env] [stack-name] or legacy: [stack-name]
 if [[ "$1" == "down" ]]; then
   ACTION="down"
   STACK_NAME="${2:-$STACK_NAME}"
-elif [[ "$1" == "up" ]]; then
+elif [[ "$1" == "up" || "$1" == "update" ]]; then
   ACTION="up"
   STACK_NAME="${2:-$STACK_NAME}"
 elif [[ "$1" == "env" ]]; then

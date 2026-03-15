@@ -113,6 +113,7 @@ export default withMermaid({
           collapsed: true,
           items: [
             { text: 'Development Guide', link: '/contributing/guide' },
+            { text: 'Versioning and Release', link: '/contributing/versioning' },
             { text: 'Adding REST Endpoints', link: '/contributing/rest-api' },
             { text: 'Testing', link: '/contributing/testing' },
             { text: 'Security Audit', link: '/contributing/security-audit' },
