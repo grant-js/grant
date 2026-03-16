@@ -81,16 +81,16 @@ jobs:
       - name: Restore build outputs
         run: tar --zstd -xf build-artifacts/build.tar.zst -C .
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4.1.0
+        with:
+          version: '8.15.0'
+
       - name: Setup Node.js
         uses: actions/setup-node@v6.1.0
         with:
           node-version: '24'
           cache: 'pnpm'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4.1.0
-        with:
-          version: '8.15.0'
 
       - name: Install (prefer offline)
         run: pnpm install --prefer-offline --frozen-lockfile
