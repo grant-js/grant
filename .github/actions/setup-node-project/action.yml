@@ -1,6 +1,7 @@
 # Composite action: Node + pnpm + native pnpm cache + install.
 # Single place for install logic; used by ci.yml and release.yml.
 # Pin checkout in each workflow job that needs the repo (e.g. actions/checkout@v4.2.2, fetch-depth: 0).
+# pnpm is enabled via corepack in the same step as install so PATH is reliable in composite steps.
 name: Setup Node project
 description: Setup Node.js, pnpm with native cache, and install dependencies
 runs:
@@ -12,14 +13,12 @@ runs:
         node-version: ${{ inputs.node-version }}
         cache: 'pnpm'
 
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v4.1.0
-      with:
-        version: ${{ inputs.pnpm-version }}
-
     - name: Install dependencies
       shell: bash
-      run: pnpm install --frozen-lockfile
+      run: |
+        corepack enable
+        corepack prepare pnpm@${{ inputs.pnpm-version }} --activate
+        pnpm install --frozen-lockfile
 
 inputs:
   node-version:
