@@ -18,11 +18,11 @@
     "@aws-sdk/client-ses": "^3",
     "form-data": "^4",
     "ioredis": "^5.4.1",
-    "lucide-react": "^0.545.0",
-    "mailgun.js": "^10",
+    "lucide-react": "^0.577.0",
+    "mailgun.js": "^12",
     "node-mailjet": "^6",
-    "nodemailer": "^7.0.11",
-    "next": "15.5.10",
+    "nodemailer": "^8.0.2",
+    "next": "16.1.6",
     "postgres": "^3.4.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -30,14 +30,14 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
-    "@eslint/js": "^9.37.0",
-    "@types/node": "^24.7.2",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.5.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint": "^9.37.0",
-    "eslint-config-next": "15.5.10",
+    "eslint": "^10.0.3",
+    "eslint-config-next": "16.1.6",
     "eslint-plugin-react-hooks": "^7.0.0",
     "typescript": "^5",
-    "typescript-eslint": "^8.46.0"
+    "typescript-eslint": "^8.57.1"
   }
 }

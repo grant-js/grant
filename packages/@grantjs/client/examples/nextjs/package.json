@@ -9,19 +9,19 @@
   },
   "dependencies": {
     "@grantjs/client": "workspace:*",
-    "next": "15.5.10",
+    "next": "16.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.37.0",
-    "@types/node": "^22.0.0",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.5.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "dotenv-cli": "^7.4.0",
-    "eslint": "^9.37.0",
+    "dotenv-cli": "^11.0.0",
+    "eslint": "^10.0.3",
     "eslint-plugin-react-hooks": "^7.0.0",
     "typescript": "^5.0.0",
-    "typescript-eslint": "^8.46.0"
+    "typescript-eslint": "^8.57.1"
   }
 }
