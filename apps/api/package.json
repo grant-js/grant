@@ -43,7 +43,7 @@
     "@opentelemetry/exporter-jaeger": "^1.29.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.57.0",
     "@opentelemetry/instrumentation-ioredis": "^0.59.0",
-    "@opentelemetry/resources": "^1.29.0",
+    "@opentelemetry/resources": "^2.6.0",
     "@opentelemetry/sdk-node": "^0.57.0",
     "@opentelemetry/sdk-trace-base": "^1.29.0",
     "@opentelemetry/semantic-conventions": "^1.29.0",
