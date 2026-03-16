@@ -22,7 +22,7 @@ jobs:
         uses: ./.github/actions/setup-node-project
         with:
           node-version: '24'
-          pnpm-version: '8.15.0'
+          pnpm-version: '8.15.9'
 
       - name: Gitleaks (secret scanning)
         uses: gitleaks/gitleaks-action@v2
