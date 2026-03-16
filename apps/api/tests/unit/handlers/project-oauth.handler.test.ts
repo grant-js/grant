@@ -700,7 +700,7 @@ describe('ProjectOAuthHandler', () => {
       redirectUri: 'https://example.com/callback',
       clientState: 'client-state',
     };
-    const scope: Scope = {
+    const _scope: Scope = {
       tenant: Tenant.OrganizationProjectUser,
       id: 'org-id:project-id:user-id',
     };

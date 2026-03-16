@@ -1,6 +1,11 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Theme variables for Tailwind v4 utilities (border-border, bg-background, text-foreground) */
+@theme {
+  --color-border: var(--border);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
 
 /* vanilla-jsoneditor themes */
 @import 'vanilla-jsoneditor/themes/jse-theme-dark.css';

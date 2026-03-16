@@ -60,7 +60,7 @@ export class RoleService implements IRoleService {
     return existingRoles.roles[0];
   }
 
-  public async getRoleById(id: string, transaction?: Transaction): Promise<Role | null> {
+  public async getRoleById(id: string, _transaction?: Transaction): Promise<Role | null> {
     try {
       return await this.getRole(id);
     } catch {

@@ -118,7 +118,7 @@ export async function exchangeApiKey(
       body: JSON.stringify(body),
     });
   } catch (err) {
-    throw new Error(detailFetchError(url, err));
+    throw new Error(detailFetchError(url, err), { cause: err });
   }
 
   if (!res.ok) {
@@ -163,7 +163,7 @@ export async function loginWithEmail(
       }),
     });
   } catch (err) {
-    throw new Error(detailFetchError(url, err));
+    throw new Error(detailFetchError(url, err), { cause: err });
   }
 
   if (!res.ok) {
@@ -219,7 +219,7 @@ export async function exchangeCliCallback(baseUrl: string, code: string): Promis
       body: JSON.stringify({ code }),
     });
   } catch (err) {
-    throw new Error(detailFetchError(url, err));
+    throw new Error(detailFetchError(url, err), { cause: err });
   }
 
   if (!res.ok) {

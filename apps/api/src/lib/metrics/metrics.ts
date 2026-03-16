@@ -66,7 +66,7 @@ export async function metricsHandler(_req: Request, res: Response): Promise<void
     res.setHeader('Content-Type', register.contentType);
     const metrics = await register.metrics();
     res.send(metrics);
-  } catch (_error) {
+  } catch {
     res.status(500).send('Error collecting metrics');
   }
 }

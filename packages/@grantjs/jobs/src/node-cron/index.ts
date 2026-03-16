@@ -10,13 +10,16 @@ import type {
   ScheduledJob,
 } from '@grantjs/core';
 
+/** Task type returned by node-cron schedule() (v4 has no namespace export) */
+type CronTask = ReturnType<typeof cron.schedule>;
+
 /**
  * Node-cron job adapter for simple in-process scheduling
  * Suitable for single-instance deployments and development
  * Note: Jobs are lost on server restart and duplicate in multi-instance deployments
  */
 export class NodeCronJobAdapter implements IJobAdapter {
-  private jobs: Map<string, cron.ScheduledTask> = new Map();
+  private jobs: Map<string, CronTask> = new Map();
   private handlers: Map<string, JobHandler> = new Map();
 
   constructor(private readonly logger: ILogger) {}
@@ -49,7 +52,6 @@ export class NodeCronJobAdapter implements IJobAdapter {
         }
       },
       {
-        scheduled: true,
         timezone: 'UTC',
       }
     );

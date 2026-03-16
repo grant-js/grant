@@ -223,7 +223,7 @@ export class OrganizationInvitationsHandler {
       }
 
       // 2. Check if user authentication method exists
-      let userAuthMethod =
+      const userAuthMethod =
         await this.userAuthenticationMethods.getUserAuthenticationMethodByProvider(
           UserAuthenticationMethodProvider.Email,
           invitation.email,
@@ -262,7 +262,7 @@ export class OrganizationInvitationsHandler {
           }
         );
 
-        userAuthMethod = await this.userAuthenticationMethods.createUserAuthenticationMethod(
+        await this.userAuthenticationMethods.createUserAuthenticationMethod(
           {
             userId: user.id,
             provider: UserAuthenticationMethodProvider.Email,
