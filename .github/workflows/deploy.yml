@@ -1,5 +1,7 @@
-# Production deploy: runs when Release workflow completes (workflow_run).
-# Only on successful push to main; manual re-runs do not deploy.
+# Rolling update: runs when Release workflow completes successfully.
+# Pulls already-published images and updates Swarm services in-place.
+# Does NOT redeploy the full stack (stack-deploy.sh); the stack must
+# already be running on the self-hosted runner host.
 name: Deploy
 
 on:
@@ -13,20 +15,15 @@ concurrency:
 
 jobs:
   deploy:
-    name: Deploy production
+    name: Rolling update (demo)
     runs-on: self-hosted
     if: >
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'main' &&
       github.event.workflow_run.event == 'push'
     permissions:
-      contents: read
+      packages: read
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4.2.2
-        with:
-          fetch-depth: 0
-
       - name: Login to GHCR
         uses: docker/login-action@v3.0.0
         with:
@@ -34,13 +31,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Pull images and deploy
+      - name: Pull images and rolling update
         run: |
           set -e
           IMAGE_BASE="ghcr.io/${{ github.repository }}"
+
           docker pull "$IMAGE_BASE/grant-api:demo"
           docker pull "$IMAGE_BASE/grant-web:demo"
           docker pull "$IMAGE_BASE/grant-docs:demo"
           docker pull "$IMAGE_BASE/example-nextjs:demo"
-          ./scripts/stack-deploy.sh up
-          docker service update --force grant-demo_api grant-demo_web grant-demo_docs grant-demo_example-nextjs
+
+          docker service update --image "$IMAGE_BASE/grant-api:demo" grant-demo_api
+          docker service update --image "$IMAGE_BASE/grant-web:demo" grant-demo_web
+          docker service update --image "$IMAGE_BASE/grant-docs:demo" grant-demo_docs
+          docker service update --image "$IMAGE_BASE/example-nextjs:demo" grant-demo_example-nextjs

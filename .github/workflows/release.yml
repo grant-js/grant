@@ -1,6 +1,6 @@
 # Versions and publishes npm packages when a "Version packages" PR is merged to main.
 # On push to main: single prepare job (build + test + artifact), then release and docker in parallel.
-# Deploy (demo stack) runs after docker when DEMO_DEPLOY_ENABLED is true.
+# Deploy is handled by the separate Deploy workflow (deploy.yml) triggered on completion.
 name: Release
 
 on:
@@ -151,33 +151,3 @@ jobs:
             ghcr.io/${{ github.repository }}/${{ matrix.image }}:sha-${{ github.sha }}
           push: true
 
-  deploy:
-    name: Deploy demo stack
-    runs-on: self-hosted
-    needs: docker
-    permissions:
-      contents: read
-    if: vars.DEMO_DEPLOY_ENABLED == 'true'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4.2.2
-        with:
-          fetch-depth: 0
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3.0.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Pull images and deploy
-        run: |
-          set -e
-          IMAGE_BASE="ghcr.io/${{ github.repository }}"
-          docker pull "$IMAGE_BASE/grant-api:demo"
-          docker pull "$IMAGE_BASE/grant-web:demo"
-          docker pull "$IMAGE_BASE/grant-docs:demo"
-          docker pull "$IMAGE_BASE/example-nextjs:demo"
-          ./scripts/stack-deploy.sh up
-          docker service update --force grant-demo_api grant-demo_web grant-demo_docs grant-demo_example-nextjs
