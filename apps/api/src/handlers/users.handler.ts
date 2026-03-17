@@ -128,7 +128,7 @@ export class UserHandler extends CacheHandler {
   public async updateUser(params: MutationUpdateUserArgs): Promise<User> {
     return await this.db.withTransaction(async (tx: Transaction) => {
       const { id: userId, input } = params;
-      const { roleIds, tagIds, primaryTagId } = input;
+      const { roleIds, tagIds, primaryTagId, scope } = input;
       let currentTagIds: string[] = [];
       let currentRoleIds: string[] = [];
       if (Array.isArray(tagIds)) {
@@ -136,8 +136,7 @@ export class UserHandler extends CacheHandler {
         currentTagIds = currentTags.map((pt) => pt.tagId);
       }
       if (Array.isArray(roleIds)) {
-        const currentRoles = await this.userRoles.getUserRoles({ userId }, tx);
-        currentRoleIds = currentRoles.map((ur) => ur.roleId);
+        currentRoleIds = await this.getUserRoleIdsInScope(userId, scope);
       }
       const updatedUser = await this.users.updateUser(userId, input, tx);
       if (Array.isArray(tagIds)) {
@@ -183,19 +182,18 @@ export class UserHandler extends CacheHandler {
 
       switch (scope.tenant) {
         case Tenant.Organization: {
-          const [userTags, userRoles] = await Promise.all([
+          const [userTags, scopedRoleIds] = await Promise.all([
             this.userTags.getUserTags({ userId }, tx),
-            this.userRoles.getUserRoles({ userId }, tx),
+            this.getUserRoleIdsInScope(userId, scope),
           ]);
           const tagIds = userTags.map((ut) => ut.tagId);
-          const roleIds = userRoles.map((ur) => ur.roleId);
           await this.organizationUsers.removeOrganizationUser(
             { organizationId: scope.id, userId },
             tx
           );
           await Promise.all([
             ...tagIds.map((tagId) => this.userTags.removeUserTag({ userId, tagId }, tx)),
-            ...roleIds.map((roleId) => this.userRoles.removeUserRole({ userId, roleId }, tx)),
+            ...scopedRoleIds.map((roleId) => this.userRoles.removeUserRole({ userId, roleId }, tx)),
           ]);
           await this.removeUserIdFromScopeCache(scope, userId);
           return await this.users.deleteUser(params, tx);
