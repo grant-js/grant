@@ -86,12 +86,8 @@ export class BullMQJobAdapter implements IJobAdapter {
       worker = new Worker(
         'grant-jobs',
         async (jobData: Job) => {
-          // Extract job ID from job data (stored in payload) or fallback to job name
-          // jobData.name is the job name (first param to queue.add), which should be job.id
-          // But we also store it in the data payload for reliability
           const jobId = (jobData.data as { jobId?: string })?.jobId || jobData.name;
 
-          // Find handler for this job
           const handler = this.handlers.get(jobId);
           if (!handler) {
             this.logger.warn({ jobId, jobData: jobData.data }, 'No handler found for job');
@@ -111,19 +107,14 @@ export class BullMQJobAdapter implements IJobAdapter {
             ...(data.payload !== undefined && { payload: data.payload }),
           };
 
-          const result = await handler(context);
-
-          // BullMQ expects the return value to be serializable
-          // If handler returns JobResult, we'll return it as-is
-          return result;
+          return await handler(context);
         },
         {
           connection: this.connection,
-          concurrency: 1, // Process one job at a time
+          concurrency: 1,
         }
       );
 
-      // Handle worker events
       worker.on('completed', (jobData: Job) => {
         this.logger.info({ jobId: jobData.id, name: jobData.name }, 'Job completed');
       });
@@ -135,17 +126,13 @@ export class BullMQJobAdapter implements IJobAdapter {
       this.workers.set('main', worker);
     }
 
-    // Schedule recurring job
-    // Store job.id in the job data so we can reliably look it up in the worker
-    await this.queue.add(
-      job.id,
-      { jobId: job.id }, // Store job ID in data payload for reliable lookup
-      {
-        repeat: {
-          pattern: job.schedule,
-        },
-        jobId: `grant-job-${job.id}`, // Unique ID prevents duplicates
-      }
+    // upsertJobScheduler is idempotent: it creates or updates the scheduler
+    // without producing an immediate catch-up job, which prevents spurious
+    // executions during rolling updates / container restarts.
+    await this.queue.upsertJobScheduler(
+      `grant-job-${job.id}`,
+      { pattern: job.schedule },
+      { name: job.id, data: { jobId: job.id } }
     );
 
     this.logger.info({ jobId: job.id, schedule: job.schedule }, 'Job scheduled with BullMQ');
