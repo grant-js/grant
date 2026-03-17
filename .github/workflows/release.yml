@@ -15,9 +15,87 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    name: Detect relevant changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+      release: ${{ steps.filter.outputs.release }}
+      api: ${{ steps.filter.outputs.api }}
+      web: ${{ steps.filter.outputs.web }}
+      docs: ${{ steps.filter.outputs.docs }}
+      example: ${{ steps.filter.outputs.example }}
+      shared: ${{ steps.filter.outputs.shared }}
+      docker_matrix: ${{ steps.matrix.outputs.docker_matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            code:
+              - 'apps/**'
+              - 'packages/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'turbo.json'
+              - 'tsconfig*.json'
+              - '.github/actions/**'
+              - '.eslintrc*'
+              - 'vitest.config.*'
+            release:
+              - '.changeset/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+            api: 'apps/api/**'
+            web: 'apps/web/**'
+            docs: 'docs/**'
+            example: 'packages/@grantjs/client/examples/nextjs/**'
+            shared: 'packages/**'
+
+      - name: Build docker matrix (from changed paths)
+        id: matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Always initialize, so fromJSON(...) never fails if nothing matches.
+          echo 'docker_matrix=[]' >> "$GITHUB_OUTPUT"
+
+          items=()
+
+          if [[ "${{ steps.filter.outputs.api }}" == "true" || "${{ steps.filter.outputs.shared }}" == "true" ]]; then
+            items+=( '{"image":"grant-api","file":"apps/api/Dockerfile"}' )
+          fi
+
+          if [[ "${{ steps.filter.outputs.web }}" == "true" || "${{ steps.filter.outputs.shared }}" == "true" ]]; then
+            items+=( '{"image":"grant-web","file":"apps/web/Dockerfile"}' )
+          fi
+
+          if [[ "${{ steps.filter.outputs.docs }}" == "true" || "${{ steps.filter.outputs.shared }}" == "true" ]]; then
+            items+=( '{"image":"grant-docs","file":"docs/Dockerfile"}' )
+          fi
+
+          if [[ "${{ steps.filter.outputs.example }}" == "true" || "${{ steps.filter.outputs.shared }}" == "true" ]]; then
+            items+=( '{"image":"example-nextjs","file":"packages/@grantjs/client/examples/nextjs/Dockerfile"}' )
+          fi
+
+          json="[$(IFS=,; echo "${items[*]}")]"
+          echo "docker_matrix=$json" >> "$GITHUB_OUTPUT"
+
   prepare:
     name: Build, test, upload artifact
     runs-on: self-hosted
+    needs: changes
+    if: needs.changes.outputs.code == 'true' || needs.changes.outputs.release == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v4.2.2
@@ -110,23 +188,19 @@ jobs:
   docker:
     name: Build and push images
     runs-on: self-hosted
-    needs: prepare
+    needs: [prepare, changes]
+    if: needs.changes.outputs.docker_matrix != '[]'
     permissions:
       contents: read
       packages: write
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - image: grant-api
-            file: apps/api/Dockerfile
-          - image: grant-web
-            file: apps/web/Dockerfile
-          - image: grant-docs
-            file: docs/Dockerfile
-          - image: example-nextjs
-            file: packages/@grantjs/client/examples/nextjs/Dockerfile
+        include: ${{ fromJSON(needs.changes.outputs.docker_matrix) }}
     steps:
+      - name: Debug docker matrix
+        run: echo '${{ needs.changes.outputs.docker_matrix }}'
+
       - name: Checkout
         uses: actions/checkout@v4.2.2
         with:
@@ -150,4 +224,3 @@ jobs:
             ghcr.io/${{ github.repository }}/${{ matrix.image }}:demo
             ghcr.io/${{ github.repository }}/${{ matrix.image }}:sha-${{ github.sha }}
           push: true
-

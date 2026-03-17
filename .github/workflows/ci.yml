@@ -10,9 +10,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect relevant changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            code:
+              - 'apps/**'
+              - 'packages/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'turbo.json'
+              - 'tsconfig*.json'
+              - '.github/actions/**'
+              - '.eslintrc*'
+              - 'vitest.config.*'
+
   build-test:
     name: Lint, build, test
     runs-on: self-hosted
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     # Optional: skip CI for Dependabot PRs to free the runner — uncomment next line:
     # if: github.actor != 'dependabot[bot]'
     steps:
