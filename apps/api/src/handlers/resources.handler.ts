@@ -181,7 +181,7 @@ export class ResourceHandler extends CacheHandler {
       const currentSlug = existingResource.resources[0].slug;
 
       if (slug && slug !== currentSlug) {
-        let scopeResourceIds: string[] = [];
+        let scopeResourceIds: string[];
         switch (scope.tenant) {
           case Tenant.OrganizationProject:
           case Tenant.AccountProject:

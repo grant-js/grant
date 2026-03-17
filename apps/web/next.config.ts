@@ -4,9 +4,6 @@ import createNextIntlPlugin from 'next-intl/plugin';
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typedRoutes: true,
   transpilePackages: ['@grantjs/core', '@grantjs/schema'],
   webpack: (config, { isServer }) => {

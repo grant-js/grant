@@ -284,8 +284,8 @@ export class ApiKeyService implements IApiKeyService {
 
     await this.apiKeyRepository.updateLastUsedAt(apiKey.id, new Date(), transaction);
 
-    let isApiKeyInScope: boolean = false;
-    let userId: string | null = null;
+    let isApiKeyInScope: boolean;
+    let userId: string | null;
 
     switch (scope.tenant) {
       case Tenant.ProjectUser: {

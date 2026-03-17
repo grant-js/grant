@@ -154,7 +154,7 @@ describe('HIPAA 164.312(a)(2)(iii) -- Automatic logoff', () => {
   });
 
   it('sessions have creation timestamps for monitoring', async () => {
-    const user = await TestUser.create();
+    const _user = await TestUser.create();
 
     // Check sessions in DB
     const rows = await query<{ created_at: Date; expires_at: Date }>`
@@ -177,7 +177,7 @@ describe('HIPAA 164.312(a)(2)(iii) -- Automatic logoff', () => {
 // ---------------------------------------------------------------------------
 describe('HIPAA 164.312(b) -- Audit controls', () => {
   it('authentication events are logged', async () => {
-    const user = await TestUser.create();
+    const _user = await TestUser.create();
 
     // After registration + login, there should be session records
     const rows = await query<{ id: string; created_at: Date }>`
@@ -194,7 +194,7 @@ describe('HIPAA 164.312(b) -- Audit controls', () => {
 
   it('data access operations are auditable', async () => {
     const user = await TestUser.create({ withOrgAccount: true });
-    const org = await user.createOrganization('HIPAA Audit Org');
+    const _org = await user.createOrganization('HIPAA Audit Org');
 
     // Creating an org should produce audit entries
     const rows = await query<Record<string, unknown>>`

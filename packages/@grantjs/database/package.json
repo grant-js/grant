@@ -27,20 +27,20 @@
     "@grantjs/constants": "workspace:*",
     "@grantjs/core": "workspace:*",
     "@grantjs/env": "workspace:*",
-    "drizzle-orm": "^0.44.4",
+    "drizzle-orm": "^0.45.1",
     "drizzle-seed": "^0.3.1",
     "postgres": "^3.4.7",
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@types/node": "^24.7.2",
+    "@types/node": "^25.5.0",
     "@types/pg": "^8.15.5",
     "drizzle-kit": "^0.31.4",
-    "eslint": "^9.37.0",
+    "eslint": "^10.0.3",
     "tsx": "^4.20.4",
     "typescript": "^5"
   },
   "peerDependencies": {
-    "drizzle-orm": "^0.44.4"
+    "drizzle-orm": "^0.45.1"
   }
 }

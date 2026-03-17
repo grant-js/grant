@@ -105,7 +105,7 @@ describe('User Story: Single-user personal workflow', () => {
 
   it('user can export all their data at any time', async () => {
     const user = await TestUser.create({ withOrgAccount: true });
-    const org = await user.createOrganization('Export Org');
+    const _org = await user.createOrganization('Export Org');
 
     const exportRes = await user.exportData();
     expect(exportRes.status).toBe(200);

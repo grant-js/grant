@@ -8,7 +8,7 @@ import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentation
 import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
-import { Resource } from '@opentelemetry/resources';
+import { resourceFromAttributes } from '@opentelemetry/resources';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
 
@@ -52,7 +52,7 @@ function initializeTracing(): void {
   try {
     const exporter = createExporter();
 
-    const resource = new Resource({
+    const resource = resourceFromAttributes({
       [ATTR_SERVICE_NAME]: config.tracing.serviceName,
       [ATTR_SERVICE_VERSION]: config.app.version,
       [ATTR_DEPLOYMENT_ENVIRONMENT]: config.app.nodeEnv,
@@ -70,8 +70,7 @@ function initializeTracing(): void {
       },
       // App uses postgres.js, not pg; skip pg instrumentation
       '@opentelemetry/instrumentation-pg': { enabled: false },
-      // Use ioredis instrumentation below instead of redis-4
-      '@opentelemetry/instrumentation-redis-4': { enabled: false },
+      // Use ioredis instrumentation below; redis-4 key removed in newer auto-instrumentations
     });
 
     sdk = new NodeSDK({

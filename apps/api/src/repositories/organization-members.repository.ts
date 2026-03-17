@@ -208,25 +208,20 @@ export class OrganizationMemberRepository implements IOrganizationMemberReposito
       const sortOrder = sort?.order ?? SortOrder.Asc;
 
       allMembers.sort((a, b) => {
-        let comparison = 0;
-
-        switch (sortField) {
-          case OrganizationMemberSortableField.Name:
-            comparison = a.name.localeCompare(b.name);
-            break;
-          case OrganizationMemberSortableField.Email:
-            comparison = (a.email || '').localeCompare(b.email || '');
-            break;
-          case OrganizationMemberSortableField.CreatedAt:
-            comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-            break;
-          case OrganizationMemberSortableField.Role:
-            comparison = (a.roleName || '').localeCompare(b.roleName || '');
-            break;
-          default:
-            comparison = a.name.localeCompare(b.name);
-        }
-
+        const comparison = (() => {
+          switch (sortField) {
+            case OrganizationMemberSortableField.Name:
+              return a.name.localeCompare(b.name);
+            case OrganizationMemberSortableField.Email:
+              return (a.email || '').localeCompare(b.email || '');
+            case OrganizationMemberSortableField.CreatedAt:
+              return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+            case OrganizationMemberSortableField.Role:
+              return (a.roleName || '').localeCompare(b.roleName || '');
+            default:
+              return a.name.localeCompare(b.name);
+          }
+        })();
         return sortOrder === SortOrder.Asc ? comparison : -comparison;
       });
 

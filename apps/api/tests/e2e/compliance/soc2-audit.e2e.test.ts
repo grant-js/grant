@@ -59,7 +59,7 @@ describe('SOC 2 CC7.2 -- Audit logging', () => {
     expect(rows.length).toBeGreaterThan(0);
 
     // Find the entry for our org
-    const entry = rows.find(
+    const _entry = rows.find(
       (r) => r.organization_id === org.id || r.new_values?.toString().includes(org.name)
     );
 
@@ -68,7 +68,7 @@ describe('SOC 2 CC7.2 -- Audit logging', () => {
   });
 
   it('account creation produces an audit log entry', async () => {
-    const user = await TestUser.create({ withOrgAccount: true });
+    const _user = await TestUser.create({ withOrgAccount: true });
 
     const rows = await query<Record<string, unknown>>`
       SELECT *
@@ -82,7 +82,7 @@ describe('SOC 2 CC7.2 -- Audit logging', () => {
   });
 
   it('role assignment produces an audit log entry', async () => {
-    const user = await TestUser.create({ withOrgAccount: true });
+    const _user = await TestUser.create({ withOrgAccount: true });
 
     // Check user_role_audit_logs for CREATE entries (role assignment)
     const rows = await query<Record<string, unknown>>`
@@ -105,7 +105,7 @@ describe('SOC 2 CC7.2 -- Audit logging', () => {
 describe('SOC 2 CC7.2 -- Audit completeness', () => {
   it('audit log entries contain all required fields (who, what, when, where)', async () => {
     const user = await TestUser.create({ withOrgAccount: true });
-    const org = await user.createOrganization('Completeness Org');
+    const _org = await user.createOrganization('Completeness Org');
 
     // Get the latest organization audit log entry
     const rows = await query<Record<string, unknown>>`
@@ -136,7 +136,7 @@ describe('SOC 2 CC7.2 -- Audit completeness', () => {
   });
 
   it('account audit entries include scope context', async () => {
-    const user = await TestUser.create({ withOrgAccount: true });
+    const _user = await TestUser.create({ withOrgAccount: true });
 
     const rows = await query<Record<string, unknown>>`
       SELECT *
@@ -159,7 +159,7 @@ describe('SOC 2 CC7.2 -- Audit completeness', () => {
   });
 
   it('user role audit entries track who assigned the role', async () => {
-    const user = await TestUser.create({ withOrgAccount: true });
+    const _user = await TestUser.create({ withOrgAccount: true });
 
     const rows = await query<Record<string, unknown>>`
       SELECT *

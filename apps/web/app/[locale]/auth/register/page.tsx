@@ -90,7 +90,7 @@ export default function RegisterPage() {
   };
 
   // React Hook Form watch() is not memoizable; disable React Compiler rule for this line.
-  // eslint-disable-next-line react-hooks/incompatible-library -- RHF watch() is safe here for controlled input.
+
   const passwordValue = form.watch('password') || '';
 
   if (isAuthSuccess) {

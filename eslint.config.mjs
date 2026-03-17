@@ -1,20 +1,14 @@
-import { FlatCompat } from '@eslint/eslintrc';
 import eslint from '@eslint/js';
 import prettierConfig from 'eslint-config-prettier';
 import importPlugin from 'eslint-plugin-import';
 import reactHooks from 'eslint-plugin-react-hooks';
 import unusedImports from 'eslint-plugin-unused-imports';
 import { defineConfig } from 'eslint/config';
-import { dirname } from 'path';
 import tseslint from 'typescript-eslint';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+// Next.js compat (FlatCompat) removed: it triggered "Converting circular structure to JSON"
+// in @eslint/eslintrc when loading next config. Base config + react-hooks + typescript
+// cover lint for apps/web; add next-specific rules here if needed.
 
 export default defineConfig(
   // Ignore patterns
@@ -36,18 +30,6 @@ export default defineConfig(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   prettierConfig,
-
-  // Next.js config for web app
-  ...compat.extends('next/core-web-vitals', 'next/typescript').map((config) => ({
-    ...config,
-    files: ['apps/web/**/*.{js,jsx,ts,tsx}'],
-    settings: {
-      ...config.settings,
-      next: {
-        rootDir: 'apps/web',
-      },
-    },
-  })),
 
   // Global settings
   {
