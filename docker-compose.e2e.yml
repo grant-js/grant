@@ -17,6 +17,12 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: grant-e2e-postgres
+    command:
+      - postgres
+      - -c
+      - idle_in_transaction_session_timeout=300000
+      - -c
+      - lock_timeout=30000
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-grant_e2e}
       POSTGRES_USER: ${POSTGRES_USER:-grant_user}

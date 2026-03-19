@@ -20,6 +20,8 @@ export interface DatabaseConfig {
   max?: number;
   idleTimeout?: number;
   connectTimeout?: number;
+  /** Max seconds a connection can live before being recycled (0 = unlimited). */
+  maxLifetime?: number;
   /** Optional structured logger. When omitted, logging is silently skipped. */
   logger?: ILogger;
 }
@@ -42,6 +44,7 @@ export function initializeDBConnection(config: DatabaseConfig): DbSchema {
     max: config?.max ?? 10,
     idle_timeout: config?.idleTimeout ?? 20,
     connect_timeout: config?.connectTimeout ?? 10,
+    max_lifetime: config?.maxLifetime ?? 60 * 30,
   });
 
   const db = drizzle(client, { schema });
