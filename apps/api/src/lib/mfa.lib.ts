@@ -2,6 +2,48 @@ import crypto from 'crypto';
 
 const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 
+/**
+ * Fixed salt for scrypt — binds derived keys to this purpose (not a secret).
+ * Replaces single-pass SHA-256 (flagged by CodeQL as weak password hashing) for key derivation.
+ */
+const MFA_KDF_SALT = Buffer.from('grant-platform:mfa-secret-encryption:v1', 'utf8');
+
+/** Derive a 32-byte AES-256 key from `AUTH_MFA_SECRET_ENCRYPTION_KEY` using scrypt. */
+function deriveMfaAesKey(keyMaterial: string): Buffer {
+  return crypto.scryptSync(keyMaterial, MFA_KDF_SALT, 32, {
+    N: 16384,
+    r: 8,
+    p: 1,
+    maxmem: 64 * 1024 * 1024,
+  });
+}
+
+/** Legacy key material (pre–scrypt); kept only for decrypting existing rows. */
+function legacySha256MfaKey(keyMaterial: string): Buffer {
+  return crypto.createHash('sha256').update(keyMaterial).digest();
+}
+
+function decryptMfaSecretWithKey(
+  params: {
+    encryptedSecret: string;
+    secretIv: string;
+    secretTag: string;
+  },
+  aesKey: Buffer
+): string {
+  const decipher = crypto.createDecipheriv(
+    'aes-256-gcm',
+    aesKey,
+    Buffer.from(params.secretIv, 'base64')
+  );
+  decipher.setAuthTag(Buffer.from(params.secretTag, 'base64'));
+  const decrypted = Buffer.concat([
+    decipher.update(Buffer.from(params.encryptedSecret, 'base64')),
+    decipher.final(),
+  ]);
+  return decrypted.toString('utf8');
+}
+
 export function generateTotpSecret(bytes: number = 20): string {
   const buffer = crypto.randomBytes(bytes);
   let bits = 0;
@@ -94,7 +136,7 @@ export function encryptMfaSecret(
   secretIv: string;
   secretTag: string;
 } {
-  const normalizedKey = crypto.createHash('sha256').update(key).digest();
+  const normalizedKey = deriveMfaAesKey(key);
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', normalizedKey, iv);
   const encrypted = Buffer.concat([cipher.update(secret, 'utf8'), cipher.final()]);
@@ -112,16 +154,9 @@ export function decryptMfaSecret(params: {
   secretTag: string;
   key: string;
 }): string {
-  const normalizedKey = crypto.createHash('sha256').update(params.key).digest();
-  const decipher = crypto.createDecipheriv(
-    'aes-256-gcm',
-    normalizedKey,
-    Buffer.from(params.secretIv, 'base64')
-  );
-  decipher.setAuthTag(Buffer.from(params.secretTag, 'base64'));
-  const decrypted = Buffer.concat([
-    decipher.update(Buffer.from(params.encryptedSecret, 'base64')),
-    decipher.final(),
-  ]);
-  return decrypted.toString('utf8');
+  try {
+    return decryptMfaSecretWithKey(params, deriveMfaAesKey(params.key));
+  } catch {
+    return decryptMfaSecretWithKey(params, legacySha256MfaKey(params.key));
+  }
 }

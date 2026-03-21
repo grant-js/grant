@@ -13,6 +13,10 @@ const AUTH_RATE_LIMIT_PATHS = new Set([
   'POST /api/auth/refresh',
   'POST /api/auth/cli-callback',
   'POST /api/auth/token',
+  'POST /api/auth/mfa/setup',
+  'POST /api/auth/mfa/verify',
+  'POST /api/auth/mfa/recovery/verify',
+  'GET /api/me/mfa/recovery-codes/status',
 ]);
 
 interface WindowState {
