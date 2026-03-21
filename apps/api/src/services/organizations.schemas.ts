@@ -32,6 +32,7 @@ export const updateOrganizationParamsSchema = z.object({
   input: z.object({
     scope: scopeSchema,
     name: nonEmptyNameSchema.nullable().optional(),
+    requireMfaForSensitiveActions: z.boolean().optional(),
   }),
 });
 
@@ -42,6 +43,7 @@ export const deleteOrganizationParamsSchema = deleteSchema.extend({
 export const organizationSchema = baseEntitySchema.extend({
   name: nameSchema,
   slug: slugSchema,
+  requireMfaForSensitiveActions: z.boolean(),
 });
 
 export const organizationPageSchema = paginatedResponseSchema(organizationSchema).transform(

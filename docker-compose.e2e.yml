@@ -89,6 +89,10 @@ services:
       AUTH_VERIFICATION_EXPIRATION_HOURS: 24
       AUTH_OTP_VALIDITY_MINUTES: 30
 
+      # MFA (required for TOTP encrypt-at-rest; test-only key — not for production)
+      AUTH_MFA_SECRET_ENCRYPTION_KEY: e2e-grant-mfa-secret-key-min-32-chars-long
+      AUTH_MFA_TOTP_ISSUER: Grant-E2E
+
       # Email – console adapter (logs to stdout, no real emails)
       EMAIL_PROVIDER: console
       EMAIL_FROM_ADDRESS: noreply@e2e.grant.dev

@@ -116,6 +116,7 @@ export class OrganizationRepository
       input: {
         name: params.input.name,
         slug: params.input.name ? this.generateSlug(params.input.name) : undefined,
+        requireMfaForSensitiveActions: params.input.requireMfaForSensitiveActions,
       },
     };
 
