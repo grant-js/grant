@@ -2,6 +2,7 @@
  * MFA journeys against the real E2E stack: TOTP enrollment (REST), org MFA policy (GraphQL),
  * recovery-code step-up, and invalid-code rejection. Rate limiting is disabled in compose.
  */
+import { AUTH_REFRESH_TOKEN_KEY } from '@grantjs/constants';
 import { authenticator } from 'otplib';
 import { afterAll, describe, expect, it } from 'vitest';
 
@@ -14,6 +15,23 @@ authenticator.options = { step: 30 };
 
 function totpCode(secret: string): string {
   return authenticator.generate(secret);
+}
+
+/** Decode JWT payload (middle segment) without verification — E2E only. */
+function decodeJwtPayload(accessToken: string): {
+  mfaVerified?: boolean;
+  acr?: string;
+  amr?: string[];
+  mfa_auth_time?: number;
+} {
+  const parts = accessToken.split('.');
+  const json = Buffer.from(parts[1], 'base64url').toString('utf8');
+  return JSON.parse(json) as {
+    mfaVerified?: boolean;
+    acr?: string;
+    amr?: string[];
+    mfa_auth_time?: number;
+  };
 }
 
 const M_CREATE_ENROLLMENT = /* GraphQL */ `
@@ -95,6 +113,44 @@ describe('E2E: MFA (TOTP, org policy, recovery)', () => {
     expect(devices.body.errors).toBeUndefined();
     const enabled = devices.body.data?.myMfaDevices?.filter((d) => d.isEnabled) ?? [];
     expect(enabled.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('POST /api/auth/refresh returns an AAL2 access token after MFA verify (mfaVerifiedAt persisted)', async () => {
+    const user = await TestUser.create();
+
+    const setup = await apiClient()
+      .post('/api/auth/mfa/setup')
+      .set('Authorization', user.authHeader)
+      .expect(200);
+    const secret = setup.body.data.secret as string;
+
+    const verify = await apiClient()
+      .post('/api/auth/mfa/verify')
+      .set('Authorization', user.authHeader)
+      .send({ code: totpCode(secret) })
+      .expect(200);
+
+    expect(verify.body.data.mfaVerified).toBe(true);
+    const refreshToken = verify.body.data.refreshToken as string;
+    expect(refreshToken).toBeTruthy();
+
+    const immediate = decodeJwtPayload(verify.body.data.accessToken as string);
+    expect(immediate.mfaVerified).toBe(true);
+    expect(immediate.acr).toBe('aal2');
+    expect(immediate.amr).toEqual(['pwd', 'otp']);
+
+    const refreshed = await apiClient()
+      .post('/api/auth/refresh')
+      .set('Cookie', `${AUTH_REFRESH_TOKEN_KEY}=${encodeURIComponent(refreshToken)}`)
+      .expect(200);
+
+    const newAccess = refreshed.body.data.accessToken as string;
+    expect(newAccess).toBeTruthy();
+    const afterRefresh = decodeJwtPayload(newAccess);
+    expect(afterRefresh.mfaVerified).toBe(true);
+    expect(afterRefresh.acr).toBe('aal2');
+    expect(afterRefresh.amr).toEqual(['pwd', 'otp']);
+    expect(typeof afterRefresh.mfa_auth_time).toBe('number');
   });
 
   it('rejects invalid TOTP on POST /api/auth/mfa/verify', async () => {

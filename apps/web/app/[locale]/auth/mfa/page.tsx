@@ -14,6 +14,7 @@ import { MfaOtpInput } from '@/components/features/auth/mfa-otp-input';
 import { MfaQrPanel } from '@/components/features/auth/mfa-qr-panel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useRouter } from '@/i18n/navigation';
 import { getAuthRedirectUrl } from '@/lib/redirect';
 import { useAuthStore } from '@/stores/auth.store';
@@ -26,6 +27,7 @@ export default function MfaPage() {
   const returnTo = useMemo(() => searchParams.get('returnTo') ?? '/dashboard', [searchParams]);
   const [code, setCode] = useState('');
   const [recoveryCode, setRecoveryCode] = useState('');
+  const [showRecoveryForm, setShowRecoveryForm] = useState(false);
   const [setupSecret, setSetupSecret] = useState<string | null>(null);
   const [setupUrl, setSetupUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -96,30 +98,67 @@ export default function MfaPage() {
 
       {setupSecret && setupUrl ? <MfaQrPanel secret={setupSecret} otpAuthUrl={setupUrl} /> : null}
 
-      <form className="space-y-3" onSubmit={handleVerify}>
-        <MfaOtpInput value={code} onChange={setCode} disabled={verifying} />
-        <Button type="submit" disabled={verifying || code.length < 6}>
+      <form className="space-y-4" onSubmit={handleVerify}>
+        <div className="space-y-2">
+          <Label htmlFor="mfa-challenge-totp">{t('enroll.totpLabel')}</Label>
+          <MfaOtpInput
+            id="mfa-challenge-totp"
+            value={code}
+            onChange={setCode}
+            disabled={verifying}
+          />
+        </div>
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={verifying || code.length < 6}
+        >
           {verifying ? t('enroll.verifying') : t('challenge.verifyCode')}
         </Button>
       </form>
 
-      <div className="space-y-2">
-        <p className="text-xs text-muted-foreground">{t('challenge.useRecoveryCode')}</p>
-        <div className="flex gap-2">
-          <Input
-            value={recoveryCode}
-            onChange={(e) => setRecoveryCode(e.target.value)}
-            placeholder={t('challenge.recoveryCodePlaceholder')}
-          />
-          <Button
-            variant="outline"
-            disabled={verifyingRecovery || recoveryCode.trim().length < 8}
-            onClick={handleVerifyRecoveryCode}
-          >
-            {verifyingRecovery ? t('challenge.checking') : t('challenge.useCode')}
-          </Button>
+      {showRecoveryForm ? (
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">{t('challenge.useRecoveryCode')}</p>
+          <div className="flex gap-2">
+            <Input
+              value={recoveryCode}
+              onChange={(e) => setRecoveryCode(e.target.value)}
+              placeholder={t('challenge.recoveryCodePlaceholder')}
+            />
+            <Button
+              variant="outline"
+              disabled={verifyingRecovery || recoveryCode.trim().length < 8}
+              onClick={handleVerifyRecoveryCode}
+            >
+              {verifyingRecovery ? t('challenge.checking') : t('challenge.useCode')}
+            </Button>
+          </div>
+          <div>
+            <button
+              type="button"
+              onClick={() => {
+                setShowRecoveryForm(false);
+                setRecoveryCode('');
+              }}
+              className="text-sm text-primary hover:text-primary/80"
+            >
+              {t('challenge.backToAuthenticator')}
+            </button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="text-sm text-muted-foreground">
+          {t('challenge.recoveryPrompt')}{' '}
+          <button
+            type="button"
+            onClick={() => setShowRecoveryForm(true)}
+            className="text-primary hover:text-primary/80"
+          >
+            {t('challenge.recoveryLink')}
+          </button>
+        </div>
+      )}
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
     </div>

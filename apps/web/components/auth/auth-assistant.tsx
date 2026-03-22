@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
 
-/** Auth page identifier derived from pathname (e.g. login, register, forgot-password, verify-email, reset-password, invitations, project OAuth). */
+/** Auth page identifier derived from pathname (e.g. login, register, forgot-password, mfa, verify-email, reset-password, invitations, project OAuth). */
 export type AuthPageId =
   | 'login'
   | 'register'
@@ -33,6 +33,7 @@ export type AuthPageId =
   | 'verifyEmail'
   | 'resetPassword'
   | 'invitation'
+  | 'mfa'
   | 'projectEntry'
   | 'projectEmail'
   | 'projectConsent'
@@ -46,6 +47,7 @@ const ITEMS_BY_PAGE: Record<NonNullable<AuthPageId>, string[]> = {
   verifyEmail: ['linkExpiry', 'alreadyUsed', 'checkSpam', 'resendLink'],
   resetPassword: ['linkFromEmail', 'linkExpired', 'strongPassword', 'afterReset'],
   invitation: ['whatIsThis', 'linkExpired', 'alreadyAccepted', 'signInRequired'],
+  mfa: ['whyAuthenticator', 'sixDigitCode', 'recoveryCodes', 'troubleshooting'],
   projectEntry: ['whatIsThis', 'requestedScopes', 'trustApp'],
   projectEmail: ['linkFromEmail', 'checkInbox', 'sameEmail'],
   projectConsent: ['reviewPermissions', 'allowOrDeny', 'revokeLater'],
@@ -78,6 +80,10 @@ const ITEM_ICONS: Record<string, LucideIcon> = {
   reviewPermissions: ShieldCheck,
   allowOrDeny: CheckCircle2,
   revokeLater: HelpCircle,
+  whyAuthenticator: ShieldCheck,
+  sixDigitCode: KeyRound,
+  recoveryCodes: HelpCircle,
+  troubleshooting: RefreshCw,
 };
 
 interface AuthAssistantProps {

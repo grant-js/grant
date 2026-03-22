@@ -345,6 +345,24 @@
           "title": "Change your mind later?",
           "description": "You can revoke this app's access at any time from your account or profile settings. Revoking stops the app from using your data; you can always sign in again later to re-authorize if needed."
         }
+      },
+      "mfa": {
+        "whyAuthenticator": {
+          "title": "Why am I asked for a code?",
+          "description": "Multi-factor authentication adds a second step after your password. You prove you have your phone or authenticator app by entering a short code—so even if someone learns your password, they still can't sign in as you."
+        },
+        "sixDigitCode": {
+          "title": "Where do I get the code?",
+          "description": "Open your authenticator app (Google Authenticator, Microsoft Authenticator, Authy, 1Password, or similar), find the entry for this account, and type the 6-digit code shown. If you're setting up MFA for the first time, scan the QR code with your app first, then enter the code it generates to confirm."
+        },
+        "recoveryCodes": {
+          "title": "Can't use your authenticator app?",
+          "description": "If you lost your phone or can't open the app, use a one-time recovery code instead. Click \"Use a recovery code\" below the form, enter one of the codes you saved when you enabled MFA, and sign in. Each recovery code works only once—generate new codes in account settings when you run low."
+        },
+        "troubleshooting": {
+          "title": "Code not accepted?",
+          "description": "Wait for a fresh code (they usually change every 30 seconds) and try again. Make sure your device's date and time are set automatically so codes stay in sync. Check that you're using the code for this account and that caps lock isn't on. If you recently reset MFA, use the new setup in your app."
+        }
       }
     },
     "form": {
@@ -2053,6 +2071,7 @@
       "name": "Name",
       "description": "Description",
       "roles": "Roles",
+      "requireMfaForSensitiveActions": "Require MFA for sensitive actions",
       "tags": "Tags",
       "tagsLoading": "Loading tags...",
       "noTagsAvailable": "No tags available",
@@ -2880,6 +2899,9 @@
           "title": "Multi-factor authentication",
           "description": "Verify your authenticator app code to continue.",
           "verifyCode": "Verify code",
+          "recoveryPrompt": "Can't access your authenticator app?",
+          "recoveryLink": "Use a recovery code",
+          "backToAuthenticator": "Use authenticator code instead",
           "useRecoveryCode": "Use recovery code",
           "recoveryCodePlaceholder": "Enter recovery code",
           "checking": "Checking...",

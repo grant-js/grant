@@ -177,13 +177,18 @@ export class UserSessionRepository
     params: UpdateUserSessionInput,
     transaction?: Transaction
   ): Promise<UserSession> {
+    const extended = params as UpdateUserSessionInput & { mfaVerifiedAt?: Date | null };
+    const input: Record<string, unknown> = {
+      lastUsedAt: extended.lastUsedAt,
+      userAgent: extended.userAgent,
+      ipAddress: extended.ipAddress,
+    };
+    if (extended.mfaVerifiedAt !== undefined) {
+      input.mfaVerifiedAt = extended.mfaVerifiedAt;
+    }
     const baseUpdateArgs: BaseUpdateArgs = {
       id: params.id,
-      input: {
-        lastUsedAt: params.lastUsedAt,
-        userAgent: params.userAgent,
-        ipAddress: params.ipAddress,
-      },
+      input,
     };
 
     return this.update(baseUpdateArgs, transaction);

@@ -13,7 +13,7 @@ interface AuthLayoutProps {
 
 /**
  * Derives auth page id from pathname.
- * Auth pages under /auth/ (e.g. /en/auth/login -> 'login'), project OAuth at /auth/project, /auth/project/email, /auth/project/consent, verify-email at /en/verify-email, reset-password at /en/reset-password, invitations at /en/invitations/[token].
+ * Auth pages under /auth/ (e.g. /en/auth/login -> 'login', /en/auth/mfa -> 'mfa'), project OAuth at /auth/project, /auth/project/email, /auth/project/consent, verify-email at /en/verify-email, reset-password at /en/reset-password, invitations at /en/invitations/[token].
  */
 function getAuthPageId(pathname: string | null): AuthPageId {
   if (!pathname) return null;
@@ -37,6 +37,7 @@ function getAuthPageId(pathname: string | null): AuthPageId {
   if (pageSegment === 'login') return 'login';
   if (pageSegment === 'register') return 'register';
   if (pageSegment === 'forgot-password') return 'forgotPassword';
+  if (pageSegment === 'mfa') return 'mfa';
   return null;
 }
 

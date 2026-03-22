@@ -345,6 +345,24 @@
           "title": "Später anders entscheiden?",
           "description": "Sie können den Zugriff dieser App jederzeit in Ihren Kontoeinstellungen widerrufen. Durch den Widerruf kann die App Ihre Daten nicht mehr nutzen; Sie können sich bei Bedarf später erneut anmelden und erneut autorisieren."
         }
+      },
+      "mfa": {
+        "whyAuthenticator": {
+          "title": "Warum wird ein Code verlangt?",
+          "description": "Die mehrstufige Authentifizierung ergänzt Ihr Passwort. Sie zeigen mit einem kurzen Code, dass Sie Ihr Smartphone oder Ihre Authenticator-App haben—selbst wenn jemand Ihr Passwort kennt, kann er sich nicht als Sie anmelden."
+        },
+        "sixDigitCode": {
+          "title": "Woher bekomme ich den Code?",
+          "description": "Öffnen Sie Ihre Authenticator-App (Google Authenticator, Microsoft Authenticator, Authy, 1Password oder ähnlich), wählen Sie den Eintrag für dieses Konto und geben Sie den angezeigten 6-stelligen Code ein. Wenn Sie MFA zum ersten Mal einrichten, scannen Sie zuerst den QR-Code mit Ihrer App und geben Sie dann den generierten Code zur Bestätigung ein."
+        },
+        "recoveryCodes": {
+          "title": "Keine Authenticator-App nutzbar?",
+          "description": "Wenn Sie Ihr Telefon verloren haben oder die App nicht öffnen können, verwenden Sie stattdessen einen einmaligen Wiederherstellungscode. Klicken Sie unter dem Formular auf „Wiederherstellungscode verwenden“, geben Sie einen der beim Aktivieren von MFA gespeicherten Codes ein und melden Sie sich an. Jeder Code ist nur einmal gültig—generieren Sie in den Kontoeinstellungen neue Codes, bevor sie zur Neige gehen."
+        },
+        "troubleshooting": {
+          "title": "Code wird nicht akzeptiert?",
+          "description": "Warten Sie auf einen neuen Code (meist alle 30 Sekunden) und versuchen Sie es erneut. Stellen Sie sicher, dass Datum und Uhrzeit Ihres Geräts automatisch gesetzt sind, damit die Codes synchron bleiben. Prüfen Sie, dass Sie den Code für dieses Konto eingeben und die Feststelltaste aus ist. Wenn Sie MFA kürzlich zurückgesetzt haben, verwenden Sie die neue Einrichtung in Ihrer App."
+        }
       }
     },
     "form": {
@@ -2053,6 +2071,7 @@
       "name": "Name",
       "description": "Beschreibung",
       "roles": "Rollen",
+      "requireMfaForSensitiveActions": "MFA für sensible Aktionen erforderlich",
       "tags": "Tags",
       "tagsLoading": "Tags werden geladen...",
       "noTagsAvailable": "Keine Tags verfügbar",
@@ -2879,6 +2898,9 @@
           "title": "Multi-Faktor-Authentifizierung",
           "description": "Bestätigen Sie Ihren Authenticator-Code, um fortzufahren.",
           "verifyCode": "Code prüfen",
+          "recoveryPrompt": "Kein Zugriff auf Ihre Authenticator-App?",
+          "recoveryLink": "Wiederherstellungscode verwenden",
+          "backToAuthenticator": "Stattdessen Authenticator-Code verwenden",
           "useRecoveryCode": "Wiederherstellungscode verwenden",
           "recoveryCodePlaceholder": "Wiederherstellungscode eingeben",
           "checking": "Wird geprüft...",
