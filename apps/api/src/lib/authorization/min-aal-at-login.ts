@@ -25,6 +25,9 @@ export const SAFE_AAL1_GRAPHQL_OPERATION_NAMES = new Set([
   'VerifyMfaRecoveryCode',
   'LogoutMyUser',
   'IntrospectionQuery',
+  'CreateMyMfaEnrollment',
+  'VerifyMyMfaEnrollment',
+  'MyMfaDevices',
 ]);
 
 /**
