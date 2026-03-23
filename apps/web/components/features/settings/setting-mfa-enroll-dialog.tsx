@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useMfaMutations } from '@/hooks/mfa';
+import { refreshSessionViaCookie } from '@/lib/refresh-session';
 
 interface SettingMfaEnrollDialogProps {
   open: boolean;
@@ -61,6 +62,7 @@ export function SettingMfaEnrollDialog({
     try {
       const ok = await verifyEnrollment(code);
       if (ok) {
+        await refreshSessionViaCookie();
         await onCompleted();
         onOpenChange(false);
         setEnrollment(null);

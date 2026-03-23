@@ -376,8 +376,11 @@ export class MeHandler extends CacheHandler {
   }
 
   public async verifyMyMfaEnrollment(code: string): Promise<boolean> {
-    const userId = this.getAuthenticatedUserId();
-    const result = await this.userMfa.verifyTotp(userId, code);
+    const auth = this.getGrantAuth();
+    const result = await this.userMfa.verifyTotp(auth.userId, code);
+    if (result.verified) {
+      await this.userSessions.markMfaVerified(auth.tokenId);
+    }
     return result.verified;
   }
 
