@@ -157,7 +157,9 @@ jobs:
           path: build-artifacts
 
       - name: Restore build outputs
-        run: tar --zstd -xf build-artifacts/build.tar.zst -C .
+        run: |
+          tar --zstd -xf build-artifacts/build.tar.zst -C .
+          rm -rf build-artifacts
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4.4.0
@@ -177,8 +179,8 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          publish: pnpm release
-          version: pnpm version
+          publish: pnpm run release
+          version: pnpm run version
           commit: 'chore: version packages'
           title: 'chore: version packages'
         env:
