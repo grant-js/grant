@@ -39,7 +39,7 @@
     }
   },
   "devDependencies": {
-    "ioredis": "^5.4.2",
+    "ioredis": "^5.10.1",
     "@types/node": "^25.5.0",
     "typescript": "^5"
   },
