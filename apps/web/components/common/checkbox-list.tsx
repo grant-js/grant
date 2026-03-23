@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { Control } from 'react-hook-form';
+import { Control, FieldPathByValue, FieldValues } from 'react-hook-form';
 
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -18,9 +18,9 @@ export interface CheckboxItem {
   description?: string;
 }
 
-export interface CheckboxListProps {
-  control: Control<any>;
-  name: string;
+export interface CheckboxListProps<TFieldValues extends FieldValues = FieldValues> {
+  control: Control<TFieldValues>;
+  name: FieldPathByValue<TFieldValues, string[] | undefined>;
   label: string;
   items: CheckboxItem[];
   loading?: boolean;
@@ -33,7 +33,7 @@ export interface CheckboxListProps {
   disabled?: boolean;
 }
 
-export function CheckboxList({
+export function CheckboxList<TFieldValues extends FieldValues = FieldValues>({
   control,
   name,
   label,
@@ -45,7 +45,7 @@ export function CheckboxList({
   error,
   maxHeight = '200px',
   disabled = false,
-}: CheckboxListProps) {
+}: CheckboxListProps<TFieldValues>) {
   const t = useTranslations('common');
   const resolvedLoadingText = loadingText ?? t('loading');
   const resolvedEmptyText = emptyText ?? t('noItemsAvailable');
@@ -58,18 +58,19 @@ export function CheckboxList({
             control={control}
             name={name}
             render={({ field: itemField }) => {
+              const selectedValues: string[] = Array.isArray(itemField.value)
+                ? (itemField.value as string[])
+                : [];
               return (
                 <FormItem key={item.id} className="flex flex-row items-start space-x-2 space-y-0">
                   <FormControl>
                     <Checkbox
-                      checked={itemField.value?.includes(item.id)}
+                      checked={selectedValues.includes(item.id)}
                       onCheckedChange={(checked: boolean) => {
                         if (disabled) return;
                         return checked
-                          ? itemField.onChange([...(itemField.value || []), item.id])
-                          : itemField.onChange(
-                              itemField.value?.filter((value: string) => value !== item.id)
-                            );
+                          ? itemField.onChange([...selectedValues, item.id])
+                          : itemField.onChange(selectedValues.filter((value) => value !== item.id));
                       }}
                       disabled={disabled}
                       className="mt-0.75"

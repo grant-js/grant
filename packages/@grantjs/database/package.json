@@ -34,9 +34,9 @@
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
-    "@types/pg": "^8.15.5",
-    "drizzle-kit": "^0.31.4",
-    "eslint": "^10.0.3",
+    "@types/pg": "^8.20.0",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^10.1.0",
     "tsx": "^4.20.4",
     "typescript": "^5"
   },

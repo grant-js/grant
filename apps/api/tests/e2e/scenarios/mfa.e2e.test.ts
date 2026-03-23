@@ -3,7 +3,7 @@
  * recovery-code step-up, and invalid-code rejection. Rate limiting is disabled in compose.
  */
 import { AUTH_REFRESH_TOKEN_KEY } from '@grantjs/constants';
-import { authenticator } from 'otplib';
+import { generateSync } from 'otplib';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { apiClient } from '../helpers/api-client';
@@ -11,10 +11,8 @@ import { closeDbHelper } from '../helpers/db-tokens';
 import { graphqlRequest } from '../helpers/graphql';
 import { TestUser } from '../helpers/test-user';
 
-authenticator.options = { step: 30 };
-
 function totpCode(secret: string): string {
-  return authenticator.generate(secret);
+  return generateSync({ secret, period: 30 });
 }
 
 /** Decode JWT payload (middle segment) without verification — E2E only. */

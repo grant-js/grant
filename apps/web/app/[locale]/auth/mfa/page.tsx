@@ -108,11 +108,7 @@ export default function MfaPage() {
             disabled={verifying}
           />
         </div>
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={verifying || code.length < 6}
-        >
+        <Button type="submit" className="w-full" disabled={verifying || code.length < 6}>
           {verifying ? t('enroll.verifying') : t('challenge.verifyCode')}
         </Button>
       </form>

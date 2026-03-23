@@ -5,15 +5,13 @@
  * This file is skipped unless the host sets `E2E_EXPECT_MIN_AAL_AT_LOGIN=aal2` (documented in
  * docs/contributing/testing.md). Default docker-compose.e2e uses `aal1`.
  */
-import { authenticator } from 'otplib';
+import { generateSync } from 'otplib';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { apiClient } from '../helpers/api-client';
 import { closeDbHelper } from '../helpers/db-tokens';
 import { graphqlRequest } from '../helpers/graphql';
 import { TestUser } from '../helpers/test-user';
-
-authenticator.options = { step: 30 };
 
 const M_CREATE_ENROLLMENT = /* GraphQL */ `
   mutation CreateMyMfaEnrollment {
@@ -50,7 +48,7 @@ describe.skipIf(!expectAal2)('E2E: login MFA step-up (AUTH_MIN_AAL_AT_LOGIN=aal2
 
     const verifyEnroll = await graphqlRequest({
       query: M_VERIFY_ENROLLMENT,
-      variables: { input: { code: authenticator.generate(secret) } },
+      variables: { input: { code: generateSync({ secret, period: 30 }) } },
       accessToken: user.accessToken,
     });
     expect(verifyEnroll.body.errors).toBeUndefined();
@@ -70,7 +68,7 @@ describe.skipIf(!expectAal2)('E2E: login MFA step-up (AUTH_MIN_AAL_AT_LOGIN=aal2
     const verify = await apiClient()
       .post('/api/auth/mfa/verify')
       .set('Authorization', `Bearer ${freshToken}`)
-      .send({ code: authenticator.generate(secret) })
+      .send({ code: generateSync({ secret, period: 30 }) })
       .expect(200);
 
     expect(verify.body.data.mfaVerified).toBe(true);

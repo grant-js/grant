@@ -12,10 +12,7 @@ import { UserSessionRepository } from '@/repositories/user-sessions.repository';
 class CapturingUserSessionRepository extends UserSessionRepository {
   public capturedUpdate: BaseUpdateArgs | null = null;
 
-  protected async update(
-    params: BaseUpdateArgs,
-    _transaction?: Transaction
-  ): Promise<UserSession> {
+  protected async update(params: BaseUpdateArgs, _transaction?: Transaction): Promise<UserSession> {
     this.capturedUpdate = params;
     return { id: params.id } as UserSession;
   }
@@ -25,7 +22,10 @@ describe('UserSessionRepository.updateUserSession (MFA persistence)', () => {
   it('forwards mfaVerifiedAt into the Drizzle update input', async () => {
     const repo = new CapturingUserSessionRepository({} as DbSchema);
     const at = new Date('2025-01-15T12:00:00.000Z');
-    await repo.updateUserSession({ id: '550e8400-e29b-41d4-a716-446655440000', mfaVerifiedAt: at } as never);
+    await repo.updateUserSession({
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      mfaVerifiedAt: at,
+    } as never);
     expect(repo.capturedUpdate?.input.mfaVerifiedAt).toEqual(at);
   });
 

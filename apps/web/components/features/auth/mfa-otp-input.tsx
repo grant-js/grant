@@ -10,7 +10,13 @@ interface MfaOtpInputProps {
   id?: string;
 }
 
-export function MfaOtpInput({ value, onChange, disabled, containerClassName, id }: MfaOtpInputProps) {
+export function MfaOtpInput({
+  value,
+  onChange,
+  disabled,
+  containerClassName,
+  id,
+}: MfaOtpInputProps) {
   return (
     <InputOTP
       id={id}

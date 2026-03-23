@@ -294,9 +294,7 @@ function createMfaStepUpObservable(
   graphQLErrors: GraphQLError[]
 ): Observable<ApolloLink.Result> {
   const mfaError = graphQLErrors.find(isMfaRequiredGraphQLError);
-  const extensions = mfaError?.extensions as
-    | { hasActiveEnrollment?: boolean }
-    | undefined;
+  const extensions = mfaError?.extensions as { hasActiveEnrollment?: boolean } | undefined;
   const hasActiveEnrollment = extensions?.hasActiveEnrollment ?? true;
 
   return new Observable<ApolloLink.Result>((observer) => {
