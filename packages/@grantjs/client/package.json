@@ -1,6 +1,6 @@
 {
   "name": "@grantjs/client",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Browser SDK for Grant authorization - React hooks and components for permission-based UI rendering",
   "type": "module",
   "main": "./dist/index.cjs",
