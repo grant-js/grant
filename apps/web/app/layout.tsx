@@ -29,8 +29,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {THEME_SCRIPT}
         </Script>
         <ThemeProvider>
-          {children}
-          <Toast />
+          <>
+            {children}
+            <Toast />
+          </>
         </ThemeProvider>
       </body>
     </html>

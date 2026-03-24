@@ -49,6 +49,7 @@ type SidebarContextProps = {
 };
 
 const SidebarContext = createContext<SidebarContextProps | null>(null);
+SidebarContext.displayName = 'SidebarContext';
 
 function useSidebar() {
   const context = useContext(SidebarContext);

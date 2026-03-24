@@ -38,8 +38,8 @@ export function RefreshButton({
             iconOnly
               ? 'size-9 min-w-9 max-w-9 p-2'
               : labelMinWidthPx === 1200
-                ? 'w-full sm:w-auto sm:size-9 sm:min-w-9 sm:max-w-9 sm:p-2 min-[1200px]:size-auto min-[1200px]:min-w-0 min-[1200px]:max-w-none min-[1200px]:aspect-auto min-[1200px]:px-4 min-[1200px]:py-2'
-                : 'w-full sm:w-auto sm:size-9 sm:min-w-9 sm:max-w-9 sm:p-2 min-[1600px]:size-auto min-[1600px]:min-w-0 min-[1600px]:max-w-none min-[1600px]:aspect-auto min-[1600px]:px-4 min-[1600px]:py-2',
+                ? 'w-full sm:w-auto sm:max-[1199px]:size-9 sm:max-[1199px]:min-w-9 sm:max-[1199px]:max-w-9 sm:max-[1199px]:p-2 min-[1200px]:px-4 min-[1200px]:py-2'
+                : 'w-full sm:w-auto sm:size-9 sm:min-w-9 sm:max-w-9 sm:p-2',
             className
           )}
           aria-label={t('actions.refresh')}
@@ -49,8 +49,8 @@ export function RefreshButton({
             <span
               className={
                 labelMinWidthPx === 1200
-                  ? 'hidden min-[1200px]:inline'
-                  : 'sm:hidden min-[1600px]:inline'
+                  ? 'hidden max-sm:inline min-[1200px]:inline'
+                  : 'hidden max-sm:inline'
               }
             >
               {t('actions.refresh')}

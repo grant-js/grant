@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 /* Theme variables for Tailwind v4 utilities (border-border, bg-background, text-foreground, bg-primary, etc.) */
 @theme {

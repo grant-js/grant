@@ -35,13 +35,13 @@ export function ViewSwitcher({ currentView, onViewChange, options }: ViewSwitche
     <Button
       variant="outline"
       size="default"
-      className="w-full sm:w-auto sm:aspect-square sm:p-2 min-[1600px]:aspect-auto min-[1600px]:px-4 min-[1600px]:py-2"
+      className="w-full sm:w-auto sm:max-[1599px]:aspect-square sm:max-[1599px]:p-2 min-[1600px]:px-4 min-[1600px]:py-2"
     >
-      <div className="flex items-center justify-between w-full">
-        <div className="flex items-center gap-2">
-          <TRIGGER_ICON className="size-4" />
-          <span className="sm:hidden min-[1600px]:inline">{currentOption.label}</span>
-        </div>
+      <div className="flex w-full items-center justify-center min-[1600px]:justify-start gap-2">
+        <TRIGGER_ICON className="size-4 shrink-0" />
+        <span className="hidden max-sm:inline min-[1600px]:inline min-w-0 max-[1599px]:truncate min-[1600px]:overflow-visible">
+          {currentOption.label}
+        </span>
       </div>
     </Button>
   );

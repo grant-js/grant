@@ -42,6 +42,7 @@ const DEMO_RESET_ITEMS = [
 
 type DemoModeContextValue = { open: boolean; setOpen: (open: boolean) => void };
 const DemoModeContext = createContext<DemoModeContextValue | null>(null);
+DemoModeContext.displayName = 'DemoModeContext';
 
 function useDemoMode() {
   const ctx = useContext(DemoModeContext);
@@ -159,12 +160,14 @@ export function DemoModeDialogProvider({ children }: { children: React.ReactNode
 
   return (
     <DemoModeContext.Provider value={{ open, setOpen }}>
-      {children}
-      {enabled ? (
-        <Dialog open={open} onOpenChange={handleOpenChange}>
-          <DemoModeDialogContent />
-        </Dialog>
-      ) : null}
+      <>
+        {children}
+        {enabled ? (
+          <Dialog open={open} onOpenChange={handleOpenChange}>
+            <DemoModeDialogContent />
+          </Dialog>
+        ) : null}
+      </>
     </DemoModeContext.Provider>
   );
 }

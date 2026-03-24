@@ -20,8 +20,8 @@ export interface SearchProps {
   className?: string;
 }
 
-/** Width range where search renders as button + dropdown (frees space for breadcrumbs). */
-const COMPACT_MIN_PX = 641;
+/** Width range where search renders as button + dropdown (frees space for breadcrumbs). Aligns with toolbar “mid” icon-only band (768–1200px). */
+const COMPACT_MIN_PX = 768;
 const COMPACT_MAX_PX = 1200;
 
 function useMatchesCompactBreakpoint() {
@@ -144,7 +144,7 @@ export function Search({
     <>
       {/* Full search bar: mobile (0–640px) and desktop (1201px+) — hidden when forceCompact */}
       {!forceCompact && (
-        <div className="relative w-full hidden max-[640px]:block min-[641px]:max-[1200px]:hidden min-[1201px]:block">
+        <div className="relative w-full hidden max-[640px]:block min-[641px]:max-[767px]:block min-[768px]:max-[1200px]:hidden min-[1201px]:block">
           {inputEl(inputRef)}
         </div>
       )}
@@ -152,7 +152,7 @@ export function Search({
       {/* Compact: button + dropdown; when forceCompact show at all breakpoints */}
       <div
         className={
-          forceCompact ? 'block' : 'hidden min-[641px]:max-[1200px]:block min-[1201px]:hidden'
+          forceCompact ? 'block' : 'hidden min-[768px]:max-[1200px]:block min-[1201px]:hidden'
         }
       >
         <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
@@ -165,7 +165,7 @@ export function Search({
                   className={cn(
                     forceCompact
                       ? 'size-9 min-w-9 max-w-9 p-2'
-                      : 'w-full sm:w-auto sm:size-9 sm:min-w-9 sm:max-w-9 sm:p-2 min-[1600px]:size-auto min-[1600px]:min-w-0 min-[1600px]:max-w-none min-[1600px]:aspect-auto min-[1600px]:px-4 min-[1600px]:py-2'
+                      : 'w-full sm:w-auto sm:size-9 sm:min-w-9 sm:max-w-9 sm:p-2'
                   )}
                   aria-label={placeholder}
                 >

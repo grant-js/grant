@@ -60,12 +60,13 @@ export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
     [organizations, currentOrganizationId]
   );
 
+  // No cleanup on unmount so breadcrumb keeps the name when sidebar is collapsed on mobile;
+  // CurrentOrganizationSync in layout keeps the store in sync and clears when navigating away.
   useEffect(() => {
-    setCurrentOrganization(selectedOrganization || null);
-    return () => {
-      setCurrentOrganization(null);
-    };
-  }, [selectedOrganization, setCurrentOrganization]);
+    if (currentOrganizationId) {
+      setCurrentOrganization(selectedOrganization || null);
+    }
+  }, [currentOrganizationId, selectedOrganization, setCurrentOrganization]);
 
   const handleCreateOrganization = useCallback(() => {
     setOpen(false);

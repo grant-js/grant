@@ -61,6 +61,16 @@ export function Sorter<T extends string>({
   const sortOrderLabel = currentSort.order === SortOrder.Asc ? '↑' : '↓';
   const tooltipText = `${t('sort.label')}: ${sortLabel} ${sortOrderLabel}`;
 
+  const labelFrom =
+    labelMinWidthPx === 1200
+      ? 'hidden max-sm:inline min-[1200px]:inline'
+      : 'hidden max-sm:inline min-[1600px]:inline';
+
+  const sortValueClamp =
+    labelMinWidthPx === 1200
+      ? 'max-[1199px]:truncate min-[1200px]:overflow-visible'
+      : 'max-[1599px]:truncate min-[1600px]:overflow-visible';
+
   const buttonContent = (
     <Button
       variant="outline"
@@ -69,49 +79,29 @@ export function Sorter<T extends string>({
         iconOnly
           ? 'size-9 min-w-9 max-w-9 p-2'
           : labelMinWidthPx === 1200
-            ? 'w-full sm:w-auto sm:aspect-square sm:p-2 min-[1200px]:aspect-auto min-[1200px]:px-4 min-[1200px]:py-2'
-            : 'w-full sm:w-auto sm:aspect-square sm:p-2 min-[1600px]:aspect-auto min-[1600px]:px-4 min-[1600px]:py-2'
+            ? 'w-full sm:w-auto sm:max-[1199px]:aspect-square sm:max-[1199px]:p-2 min-[1200px]:px-4 min-[1200px]:py-2'
+            : 'w-full sm:w-auto sm:max-[1599px]:aspect-square sm:max-[1599px]:p-2 min-[1600px]:px-4 min-[1600px]:py-2'
       }
     >
-      <div className="flex items-center justify-between w-full">
-        <div className="flex items-center gap-2">
+      <div
+        className={
+          iconOnly
+            ? 'flex items-center justify-center w-full'
+            : labelMinWidthPx === 1200
+              ? 'flex items-center w-full justify-center min-[1200px]:justify-between'
+              : 'flex items-center w-full justify-center min-[1600px]:justify-between'
+        }
+      >
+        <div className="flex min-w-0 items-center gap-2">
           <ArrowUpDown className="size-4 shrink-0" />
           {!iconOnly && (
             <>
-              <span
-                className={
-                  labelMinWidthPx === 1200
-                    ? 'hidden min-[1200px]:inline'
-                    : 'sm:hidden min-[1600px]:inline'
-                }
-              >
-                {t('sort.label')}:{' '}
-              </span>
-              <span
-                className={
-                  labelMinWidthPx === 1200
-                    ? 'hidden min-[1200px]:inline'
-                    : 'sm:hidden min-[1600px]:inline'
-                }
-              >
-                {sortLabel}
-              </span>
+              <span className={labelFrom}>{t('sort.label')}: </span>
+              <span className={`min-w-0 ${sortValueClamp} ${labelFrom}`}>{sortLabel}</span>
               {currentSort.order === SortOrder.Asc ? (
-                <ArrowUp
-                  className={
-                    labelMinWidthPx === 1200
-                      ? 'size-4 shrink-0 hidden min-[1200px]:inline'
-                      : 'size-4 shrink-0 sm:hidden min-[1600px]:inline'
-                  }
-                />
+                <ArrowUp className={`size-4 shrink-0 ${labelFrom}`} />
               ) : (
-                <ArrowDown
-                  className={
-                    labelMinWidthPx === 1200
-                      ? 'size-4 shrink-0 hidden min-[1200px]:inline'
-                      : 'size-4 shrink-0 sm:hidden min-[1600px]:inline'
-                  }
-                />
+                <ArrowDown className={`size-4 shrink-0 ${labelFrom}`} />
               )}
             </>
           )}
@@ -119,7 +109,9 @@ export function Sorter<T extends string>({
         {!iconOnly && (
           <ChevronDown
             className={
-              labelMinWidthPx === 1200 ? 'size-4 max-[1200px]:hidden' : 'size-4 max-[1600px]:hidden'
+              labelMinWidthPx === 1200
+                ? 'size-4 shrink-0 hidden min-[1200px]:block'
+                : 'size-4 shrink-0 hidden min-[1600px]:block'
             }
           />
         )}

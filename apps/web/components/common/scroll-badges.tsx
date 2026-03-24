@@ -66,9 +66,9 @@ export function ScrollBadges({
 
       <div className="overflow-y-auto min-h-0" style={{ maxHeight: `${height}px` }}>
         <div className="flex flex-wrap gap-2 pr-4">
-          {items.map((item) => (
+          {items.map((item, index) => (
             <Badge
-              key={item.id}
+              key={item.id != null && item.id !== '' ? String(item.id) : `badge-${index}`}
               variant={item.variant || defaultVariant}
               title={item.title ?? item.label}
               className={cn(

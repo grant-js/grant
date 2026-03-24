@@ -39,16 +39,16 @@ export function Limit({
     <Button
       variant="outline"
       size="default"
-      className={`${className} sm:aspect-square sm:p-2 min-[1600px]:aspect-auto min-[1600px]:px-4 min-[1600px]:py-2`}
+      className={`${className} sm:max-[1599px]:aspect-square sm:max-[1599px]:p-2 min-[1600px]:px-4 min-[1600px]:py-2`}
     >
-      <div className="flex items-center justify-between w-full">
-        <div className="flex items-center gap-2">
-          <List className="size-4 shrink-0 min-[1600px]:hidden" />
-          <span className="sm:hidden min-[1600px]:inline">
+      <div className="flex w-full items-center justify-center min-[1600px]:justify-between">
+        <div className="flex min-w-0 items-center gap-2">
+          <List className="size-4 shrink-0" />
+          <span className="hidden max-sm:inline min-[1600px]:inline">
             {t(translationKey)}: {limit}
           </span>
         </div>
-        <ChevronDown className="size-4 max-[1600px]:hidden" />
+        <ChevronDown className="size-4 shrink-0 hidden min-[1600px]:block" />
       </div>
     </Button>
   );

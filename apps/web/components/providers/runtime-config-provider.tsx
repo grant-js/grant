@@ -12,6 +12,7 @@ const DEFAULTS: RuntimeConfig = {
 };
 
 const RuntimeConfigContext = createContext<RuntimeConfig>(DEFAULTS);
+RuntimeConfigContext.displayName = 'RuntimeConfigContext';
 
 interface RuntimeConfigProviderProps {
   children: ReactNode;

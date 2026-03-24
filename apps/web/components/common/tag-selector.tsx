@@ -52,13 +52,13 @@ export function TagSelector({ selectedTagIds, onTagIdsChange }: TagSelectorProps
       variant="outline"
       size="default"
       className={cn(
-        'w-full sm:w-auto sm:aspect-square sm:p-2 min-[1600px]:aspect-auto min-[1600px]:px-4 min-[1600px]:py-2',
+        'w-full sm:w-auto sm:max-[1599px]:aspect-square sm:max-[1599px]:p-2 min-[1600px]:px-4 min-[1600px]:py-2',
         hasSelectedTags &&
           'sm:border-2 sm:border-primary min-[1600px]:border min-[1600px]:border-input'
       )}
     >
-      <div className="flex items-center w-full sm:justify-center min-[1600px]:justify-start">
-        <div className={cn('flex items-center', 'gap-2 sm:gap-0 min-[1600px]:gap-2')}>
+      <div className="flex w-full items-center justify-center min-[1600px]:justify-start">
+        <div className={cn('flex items-center gap-2 sm:max-[1599px]:gap-0')}>
           <Tag
             className={cn(
               'size-4',
@@ -67,10 +67,10 @@ export function TagSelector({ selectedTagIds, onTagIdsChange }: TagSelectorProps
           />
           {hasSelectedTags ? (
             <div className="flex items-center gap-1">
-              <span className="text-sm sm:hidden min-[1600px]:inline">
+              <span className="text-sm hidden max-sm:inline min-[1600px]:inline">
                 {t('tags.selected', { count: selectedTagIds.length })}
               </span>
-              <div className="flex items-center gap-1 ml-1 sm:ml-0 sm:hidden min-[1600px]:ml-1 min-[1600px]:inline-flex">
+              <div className="flex items-center gap-1 ml-1 sm:ml-0 min-[1600px]:ml-1 sm:max-[1599px]:hidden">
                 {selectedTags.slice(0, 3).map((tag) => (
                   <div
                     key={tag.id}
@@ -84,7 +84,9 @@ export function TagSelector({ selectedTagIds, onTagIdsChange }: TagSelectorProps
               </div>
             </div>
           ) : (
-            <span className="sm:hidden min-[1600px]:inline">{t('tags.placeholder')}</span>
+            <span className="hidden max-sm:inline min-[1600px]:inline">
+              {t('tags.placeholder')}
+            </span>
           )}
         </div>
       </div>

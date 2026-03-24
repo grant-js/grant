@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 
+import { CurrentOrganizationSync } from './current-organization-sync';
 import { CurrentProjectSync } from './current-project-sync';
 import { DashboardToolbar } from './dashboard-toolbar';
 
@@ -26,6 +27,7 @@ export function DashboardLayout({
       <SidebarProvider>
         {sidebar ? sidebar : null}
         <SidebarInset>
+          <CurrentOrganizationSync />
           <CurrentProjectSync />
           <div className="space-y-8 p-4">
             <DashboardToolbar actions={actions} />
@@ -40,6 +42,7 @@ export function DashboardLayout({
     <SidebarProvider>
       {sidebar ? sidebar : null}
       <SidebarInset>
+        <CurrentOrganizationSync />
         <CurrentProjectSync />
         <div className="flex min-w-0 flex-col min-h-[calc(100vh-3.5rem-1px)]">
           {/* Sticky Header */}

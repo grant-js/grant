@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useEffect, useState } from 'react';
+import { Fragment, type ReactNode, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ChevronDown, ChevronRight, Info } from 'lucide-react';
@@ -251,7 +251,7 @@ export function FormDialog<TFormValues extends Record<string, any>>({
 
     if (fieldType === 'actions') {
       return (
-        <div key={field.name} className="space-y-2">
+        <div className="space-y-2">
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
               {t(field.label)}
@@ -288,7 +288,6 @@ export function FormDialog<TFormValues extends Record<string, any>>({
 
     return (
       <FormField
-        key={field.name}
         // @ts-expect-error - Zod v4 generic type compatibility with react-hook-form Control
         control={form.control}
         name={fieldName as any}
@@ -558,7 +557,9 @@ export function FormDialog<TFormValues extends Record<string, any>>({
             className="flex min-h-0 flex-1 flex-col"
           >
             <div className="flex-1 space-y-4 overflow-y-auto pr-1 border-t py-4">
-              {fields.map((f) => renderField(f))}
+              {fields.map((f) => (
+                <Fragment key={f.name}>{renderField(f)}</Fragment>
+              ))}
 
               {relationships?.map((relationship) => (
                 <div key={relationship.name}>
