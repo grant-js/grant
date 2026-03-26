@@ -88,26 +88,26 @@ strategy:
 
 ---
 
-## 4. Deployment (demo) — stack deploy + explicit image
+## 4. Deployment (demo) — pull + compose up
 
-**Do not rely only on `docker service update --force`.** That only triggers a restart; if the tag hasn’t changed locally, Swarm may reuse the old digest. Using explicit `--image` is more deterministic and guarantees Swarm pulls the new digest.
-
-**Preferred: redeploy the entire stack**
+**Preferred: pull new images, then let Compose recreate changed services.** If the tag hasn’t changed locally, Docker may reuse a cached layer; pulling explicitly ensures the latest image is used.
 
 - Run on the server (via SSH in the deploy job):
   ```bash
-  docker stack deploy -c docker-compose.demo.yml grant-demo
+  docker compose -f docker-compose.demo.yml --env-file .env.demo pull
+  docker compose -f docker-compose.demo.yml --env-file .env.demo up -d --no-build
   ```
-- **Advantages:** Declarative, new services auto-deployed, Swarm performs rolling updates. No need to update each service by hand.
+- **Advantages:** Declarative, new services auto-deployed, Compose recreates only containers whose image changed.
 
-**If updating services individually** (e.g. for a lighter step), use explicit `--image` so Swarm pulls the new digest:
+**Pull individual images** (e.g. for traceability in CI logs):
 
 ```bash
 docker pull ghcr.io/<owner>/<repo>/grant-api:demo
-docker service update --image ghcr.io/<owner>/<repo>/grant-api:demo grant-demo_api
+docker pull ghcr.io/<owner>/<repo>/grant-web:demo
+docker pull ghcr.io/<owner>/<repo>/grant-docs:demo
+docker pull ghcr.io/<owner>/<repo>/example-nextjs:demo
+docker compose -f docker-compose.demo.yml --env-file .env.demo up -d --no-build
 ```
-
-Repeat for web, docs, example-nextjs. Recommendation: use **stack deploy** in the deploy job so one command stays the source of truth. The current service-update approach is acceptable for now; moving to `docker stack deploy` is the cleanest Swarm pattern (declarative, new services auto-deploy, fewer commands).
 
 **GHCR authentication on the server**
 
@@ -145,19 +145,19 @@ push to main
 ## 7. nginx sample and docs
 
 - Add `nginx-gateway.conf` as a sample (e.g. `docs/deployment/nginx-gateway.conf.example`) and reference it in docker.md as an example for routing a single APP_URL to api/web/docs/example.
-- In docker.md (or a "Pipelines / CI-CD" section): versioning → package publish; image publish (matrix, four images, demo tags); demo deploy (stack deploy or explicit service update); GHCR login on server.
+- In docker.md (or a "Pipelines / CI-CD" section): versioning → package publish; image publish (matrix, four images, demo tags); demo deploy (compose pull + up); GHCR login on server.
 
 ---
 
 ## Implementation checklist (refined)
 
-| #   | Task                                 | Notes                                                                                                                                                                                                                      |
-| --- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Document versioning                  | New doc: changesets, "Version packages" PR, what gets versioned; optional platform version later.                                                                                                                          |
-| 2   | Refactor image build to matrix       | Single job with matrix (grant-api, grant-web, grant-docs, example-nextjs); dynamic dockerfile and tags; keep GHA build cache.                                                                                              |
-| 3   | Add concurrency to deploy            | `concurrency: group: deploy, cancel-in-progress: true`.                                                                                                                                                                    |
-| 4   | Deploy job: stack deploy             | SSH to server; run `docker stack deploy -c docker-compose.demo.yml grant-demo`. Document GHCR one-time `docker login` with PAT (read:packages).                                                                            |
-| 5   | Add "Release surfaces" table to docs | In docker.md or pipelines doc: artifact, trigger, versioning (npm, images, demo env, future semver images).                                                                                                                |
-| 6   | nginx sample + doc note              | Copy nginx-gateway.conf to docs/deployment as sample; mention in docker.md.                                                                                                                                                |
-| 7   | (Later) Versioned image publish      | On version PR merge, build and push images with semver tag; do not mix with demo deploy.                                                                                                                                   |
-| 8   | stack-deploy.sh `update` command     | Add an `update` (or reuse `up`) command to `scripts/stack-deploy.sh` so the deploy step (e.g. `docker stack deploy -c docker-compose.demo.yml grant-demo`) is scriptable from one place; CI or SSH deploy job can call it. |
+| #   | Task                                 | Notes                                                                                                                                        |
+| --- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Document versioning                  | New doc: changesets, "Version packages" PR, what gets versioned; optional platform version later.                                            |
+| 2   | Refactor image build to matrix       | Single job with matrix (grant-api, grant-web, grant-docs, example-nextjs); dynamic dockerfile and tags; keep GHA build cache.                |
+| 3   | Add concurrency to deploy            | `concurrency: group: deploy, cancel-in-progress: true`.                                                                                      |
+| 4   | Deploy job: compose pull + up        | SSH to server; run `docker compose pull && docker compose up -d --no-build`. Document GHCR one-time `docker login` with PAT (read:packages). |
+| 5   | Add "Release surfaces" table to docs | In docker.md or pipelines doc: artifact, trigger, versioning (npm, images, demo env, future semver images).                                  |
+| 6   | nginx sample + doc note              | Copy nginx-gateway.conf to docs/deployment as sample; mention in docker.md.                                                                  |
+| 7   | (Later) Versioned image publish      | On version PR merge, build and push images with semver tag; do not mix with demo deploy.                                                     |
+| 8   | stack-deploy.sh `update` command     | The `update` command (`./scripts/stack-deploy.sh update`) rebuilds and force-recreates changed services; CI or SSH deploy job can call it.   |

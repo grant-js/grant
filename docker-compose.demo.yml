@@ -1,27 +1,20 @@
 # =============================================================================
 # Grant Platform – Demo deployment (demo.grant.center)
 # =============================================================================
-# Run with: docker compose -f docker-compose.demo.yml --env-file .env.demo up -d
+# Run with:
+#   docker compose -f docker-compose.demo.yml --env-file .env.demo up -d
 #
-# .env.demo is used for:
-#   - Deploy time: ${VAR} in this file (e.g. POSTGRES_PASSWORD, REDIS_PASSWORD,
-#     build args) are interpolated from the environment when the compose file
-#     is parsed (docker compose uses --env-file; docker stack deploy has no
-#     --env-file, so the deploy script sources .env.demo in a subshell).
-#   - Runtime: env_file: .env.demo on the api service injects vars into the
-#     api container when using "docker compose up". For "docker stack deploy",
-#     Swarm does not support env_file; the api gets env from the interpolated
-#     "environment:" block below.
+# Or via the helper script (handles build + up):
+#   ./scripts/stack-deploy.sh           # build + up
+#   ./scripts/stack-deploy.sh down      # tear down
 #
-# For CD: use pre-built images (image:). For local: override with build or
-# build first: docker compose -f docker-compose.demo.yml build
+# Single entry point: the gateway (nginx) listens on one port and routes
+# all traffic internally by path — API, web, docs, example app.
+# The API runs with 2 replicas; the gateway round-robins across them
+# using Docker's embedded DNS.
 #
-# Host port mapping: from .env.demo (API_PORT, WEB_PORT, DOCS_PORT, EXAMPLE_PORT).
-# Postgres and Redis are not exposed on the host (internal only).
-#
-# Swarm: use "docker stack deploy -c docker-compose.demo.yml grant-demo" so the
-# api service runs with 2 replicas (deploy.replicas). Plain "docker compose up"
-# ignores deploy; use --scale api=2 for multiple API instances without Swarm.
+# Only the gateway port is published on the host. All other services
+# communicate on the internal Docker network.
 # =============================================================================
 
 services:
@@ -71,20 +64,13 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-    # No container_name: required for replicas (Swarm or compose --scale)
     deploy:
       replicas: 2
-      update_config:
-        order: start-first
-        delay: 10s
-        failure_action: rollback
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-    # List form required for Swarm; Compose also supports condition: service_healthy
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     env_file:
       - .env.demo
     environment:
@@ -102,36 +88,27 @@ services:
     networks:
       - demo-network
 
-  api-lb:
+  gateway:
     image: nginx:alpine
-    container_name: grant-demo-api-lb
-    configs:
-      - source: api_lb_conf_v2
-        target: /etc/nginx/templates/default.conf.template
+    container_name: grant-demo-gateway
+    volumes:
+      - ./deploy/gateway.conf.template:/etc/nginx/templates/default.conf.template:ro
     environment:
       API_PORT: ${API_PORT}
       NGINX_ENVSUBST_FILTER: API_PORT
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
     ports:
-      - target: ${API_PORT}
-        published: ${API_PORT}
-        protocol: tcp
-        mode: host
+      - '${GATEWAY_PORT:-80}:80'
     healthcheck:
-      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:${API_PORT}/health || exit 1']
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1/health || exit 1']
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 20s
-    deploy:
-      replicas: 1
-      update_config:
-        order: stop-first
-        failure_action: rollback
-      restart_policy:
-        condition: on-failure
-        delay: 5s
     restart: unless-stopped
     networks:
       - demo-network
@@ -145,12 +122,8 @@ services:
     env_file:
       - .env.demo
     depends_on:
-      - api
-    ports:
-      - target: 3000
-        published: ${WEB_PORT}
-        protocol: tcp
-        mode: host
+      api:
+        condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -161,13 +134,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
-    deploy:
-      update_config:
-        order: stop-first
-        failure_action: rollback
-      restart_policy:
-        condition: on-failure
-        delay: 5s
     restart: unless-stopped
     networks:
       - demo-network
@@ -180,24 +146,12 @@ services:
     container_name: grant-demo-docs
     env_file:
       - .env.demo
-    ports:
-      - target: 8080
-        published: ${DOCS_PORT}
-        protocol: tcp
-        mode: host
     healthcheck:
       test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:8080/ || exit 1']
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
-    deploy:
-      update_config:
-        order: stop-first
-        failure_action: rollback
-      restart_policy:
-        condition: on-failure
-        delay: 5s
     restart: unless-stopped
     networks:
       - demo-network
@@ -211,23 +165,12 @@ services:
     env_file:
       - .env.demo
     depends_on:
-      - api
-    ports:
-      - target: 3000
-        published: ${EXAMPLE_PORT}
-        protocol: tcp
-        mode: host
+      api:
+        condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: 3000
       HOSTNAME: 0.0.0.0
-    deploy:
-      update_config:
-        order: stop-first
-        failure_action: rollback
-      restart_policy:
-        condition: on-failure
-        delay: 5s
     restart: unless-stopped
     networks:
       - demo-network
@@ -237,12 +180,5 @@ volumes:
   demo_redis_data:
   demo_api_storage:
 
-configs:
-  api_lb_conf_v2:
-    file: ./deploy/api-lb.conf.template
-
 networks:
   demo-network:
-    # overlay required for docker stack deploy (Swarm); attachable so one-off migrate/seed can use it
-    driver: overlay
-    attachable: true

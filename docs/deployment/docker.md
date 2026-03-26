@@ -1,11 +1,11 @@
 ---
 title: Docker Deployment
-description: Deploy the Grant Platform with Docker Compose or Docker Swarm
+description: Deploy the Grant Platform with Docker Compose
 ---
 
 # Docker Deployment
 
-This guide shows how to deploy the Grant Platform using **Docker Compose** (single host) and how to take the same images and configuration to **Docker Swarm** (replicas and rolling updates). The flow is intentionally short and focused, similar to Umami’s deployment docs.
+This guide shows how to deploy the Grant Platform using **Docker Compose**: from a single-instance stack to a production-style setup with API replicas and a load balancer. The flow is intentionally short and focused, similar to Umami’s deployment docs.
 
 ## Compose files vs env files
 
@@ -15,7 +15,7 @@ This guide shows how to deploy the Grant Platform using **Docker Compose** (sing
 | Compose file              | Env file                                                | Use case                                     |
 | ------------------------- | ------------------------------------------------------- | -------------------------------------------- |
 | `docker-compose.yml`      | `.env` (or `--env-file .env.demo` for a demo-style run) | Default full stack                           |
-| `docker-compose.demo.yml` | `.env.demo`                                             | Demo/Swarm (fewer services, replicas)        |
+| `docker-compose.demo.yml` | `.env.demo`                                             | Demo (replicas, LB, production-style)        |
 | `docker-compose.e2e.yml`  | `.env.test`                                             | E2E tests (minimal stack, ephemeral storage) |
 
 Compose resolves `${VAR}` in the YAML at **parse time** from the env passed to the process (e.g. `docker compose --env-file .env.test up`). Always pass `--env-file .env.<env>` when using a non-default env file so interpolation works. A minimal `.env` in the repo root (e.g. `COMPOSE_PROJECT_NAME=grant`) is kept for Compose and tooling; full config lives in `.env.test`, `.env.demo`, etc.
@@ -24,12 +24,12 @@ Compose resolves `${VAR}` in the YAML at **parse time** from the env passed to t
 
 Decide how users will reach the platform:
 
-| Component              | Default container port             | Typical public URL                    |
-| ---------------------- | ---------------------------------- | ------------------------------------- |
-| Web (Next.js)          | `3000`                             | `https://grant.yourdomain.com`        |
-| API                    | `4000`                             | `https://grant.yourdomain.com` (path) |
-| Docs (optional)        | `8080` (container) → `5173` (host) | `https://docs.yourdomain.com`         |
-| Example app (optional) | `3000` (container) → `3004` (host) | `https://example.yourdomain.com`      |
+| Component              | Default container port             | Typical public URL                      |
+| ---------------------- | ---------------------------------- | --------------------------------------- |
+| Web (Next.js)          | `3000`                             | `https://grant.yourdomain.com`          |
+| API                    | `4000`                             | `https://grant.yourdomain.com/api/`     |
+| Docs (optional)        | `8080` (container) → `5173` (host) | `https://grant.yourdomain.com/docs/`    |
+| Example app (optional) | `3000` (container) → `3004` (host) | `https://grant.yourdomain.com/example/` |
 
 You can keep the default ports from `docker-compose.yml` and put a reverse proxy (nginx, Traefik, load balancer, ingress) in front, or expose ports directly during initial testing.
 
@@ -55,7 +55,7 @@ Update at least:
 - **System user** — `SYSTEM_USER_ID` (must match seed)
 - **Demo mode** — `DEMO_MODE_ENABLED=false` unless you want a resettable sandbox
 
-For **Swarm/demo**, copy `cp .env.demo.example .env.demo` and edit (e.g. with the Config app set to **Environment: Demo**). See [Environment setup](/deployment/environment) for the full list and how build vs runtime env works.
+For the **demo stack**, copy `cp .env.demo.example .env.demo` and edit (e.g. with the Config app set to **Environment: Demo**). See [Environment setup](/deployment/environment) for the full list and how build vs runtime env works.
 
 ## 4. Start the stack with Docker Compose
 
@@ -84,7 +84,7 @@ Default host ports:
 
 ## 5. Run migrations and seed data
 
-With the stack running, apply migrations and seed (same outcome as [§7.3](#73-migrate-and-seed-with-swarm); for Compose):
+With the stack running, apply migrations and seed:
 
 ```bash
 docker compose run --rm api pnpm run db:migrate
@@ -105,78 +105,62 @@ You can use nginx, Traefik, Caddy, or your cloud’s load balancer / ingress. Re
 
 For a single canonical APP_URL (e.g. `https://demo.grant.center`) that routes to api, web, docs, and the example app by path, see the sample `docs/deployment/nginx-gateway.conf.example` in the repo. Copy and adapt `server_name`, upstream ports, and SSL paths for your host; it is not required for deployment.
 
-## 7. Docker Swarm: replicas and rolling updates
+## 7. Demo stack: replicas and load balancer
 
-The `docker-compose.demo.yml` file is tuned for **Swarm** and used to run `demo.grant.center`:
+The `docker-compose.demo.yml` file is the production-style stack used to run `demo.grant.center`:
 
-- `deploy.replicas` for the API (e.g. 2 replicas)
-- `update_config` with `order: start-first` for rolling updates
-- An overlay network suitable for multi-node clusters
-- Host-mode ports for web/docs/example so a single node can bind to the public ports
+- `deploy.replicas: 2` for the API (Docker Compose v2 honors this natively)
+- A single nginx gateway container that handles path-based routing for all services and round-robins across API replicas via Docker's embedded DNS
+- `depends_on: condition: service_healthy` so the API waits for postgres and redis to be ready
+- Database bootstrap (migrations + core seed) runs automatically on API startup, serialized across replicas using a PostgreSQL advisory lock
 
-### 7.1 Initialize Swarm
-
-On the manager node:
-
-```bash
-docker swarm init
-# If the host has multiple IPs:
-# docker swarm init --advertise-addr <your-ip>
-```
-
-### 7.2 Prepare env and deploy the stack
-
-For Swarm we use the dedicated demo compose file and helper script:
+### 7.1 Prepare env and deploy
 
 ```bash
 cp .env.demo.example .env.demo   # or cp .env.example .env.demo, then adjust for demo
-./scripts/stack-deploy.sh up   # uses .env.demo and docker-compose.demo.yml by default
+./scripts/stack-deploy.sh up     # builds images and starts all services
 ```
 
-This script:
+This script wraps `docker compose` with the demo compose file and env:
 
-- Loads variables from `.env.demo` in a subshell (no pollution of your shell)
-- Runs `docker stack deploy` with `docker-compose.demo.yml`
-- Uses `grant-demo` as the default stack name
+- `up` — build + start (detached)
+- `update` — rebuild + force-recreate changed services
+- `down` — tear down containers and network
+- `down -v` — tear down and remove volumes (full reset)
+- `logs` — tail API logs
 
-You can override its defaults:
+You can override defaults:
 
 ```bash
 ENV_FILE=.env.demo \
 COMPOSE_FILE=docker-compose.demo.yml \
-STACK_NAME=grant-demo \
   ./scripts/stack-deploy.sh up
+```
+
+Or use `docker compose` directly:
+
+```bash
+docker compose -f docker-compose.demo.yml --env-file .env.demo up -d --build
 ```
 
 > In CI you can run the same script after providing `.env.demo` (or equivalent env) to the runner.
 
-### 7.3 Migrate and seed with Swarm
+### 7.2 Database bootstrap
 
-Once the stack is up, use the helper script to run migrations and seeding inside a running API task:
+Migrations and core seeding happen automatically when the API starts (`bootstrapDatabase` in `server.ts`). A PostgreSQL advisory lock prevents two replicas from running migrations concurrently — one acquires the lock, runs migrations + seed, releases it; the other waits, then finds nothing to do (everything is idempotent).
 
-```bash
-./scripts/stack-migrate-seed.sh grant-demo
-```
+No manual migrate/seed step is needed for the demo stack.
 
-This script:
-
-- Finds an API task for the given stack that has the database migration config
-- Runs database migrations
-- Runs the seed script (roles, permissions, system user, signing key)
-
-### 7.4 Rolling updates
+### 7.3 Rolling updates
 
 After building or pulling new images:
 
 ```bash
-docker stack deploy -c docker-compose.demo.yml grant-demo
+./scripts/stack-deploy.sh update
+# or: docker compose -f docker-compose.demo.yml --env-file .env.demo up -d --build --force-recreate
 ```
 
-Swarm will:
-
-- Start new API tasks
-- Wait for them to pass health checks
-- Drain and stop old tasks, respecting the `stop_grace_period`
+Compose will recreate containers with the new images. The `restart: unless-stopped` policy handles recovery from transient failures.
 
 ## 8. Architecture diagrams
 
@@ -205,12 +189,15 @@ flowchart TD
   api --> redis
 ```
 
-### Swarm with API replicas
+### Demo stack with gateway and API replicas
 
 ```bmermaid diagram-narrow
 flowchart TD
-  lb[Reverse proxy / LB] --> api1[API replica 1]
-  lb --> api2[API replica 2]
+  gw[Gateway nginx :80] --> api1[API replica 1]
+  gw --> api2[API replica 2]
+  gw --> web[Web :3000]
+  gw --> docs[Docs :8080]
+  gw --> example[Example :3000]
 
   subgraph db[PostgreSQL]
   end
@@ -242,27 +229,29 @@ The test runner (Vitest) and the API container both use `.env.test` (host-side E
 
 ```bash
 docker compose ps
-# Swarm: docker service ls
+# Demo stack: docker compose -f docker-compose.demo.yml --env-file .env.demo ps
 ```
 
 **Logs**
 
 ```bash
 docker compose logs -f api
-# Swarm: docker service logs grant-demo_api
+# Demo stack: ./scripts/stack-deploy.sh logs
 ```
 
-**Stop (Compose)**
+**Stop**
 
 ```bash
 docker compose down
 # Add -v to remove volumes (DELETES database data)
 ```
 
-**Scale API (Compose, no Swarm)**
+**Scale API**
+
+The demo stack uses `deploy.replicas: 2` by default. To override:
 
 ```bash
-docker compose up -d --scale api=2
+docker compose -f docker-compose.demo.yml --env-file .env.demo up -d --scale api=3
 ```
 
 ## 11. Data and volumes
@@ -308,7 +297,7 @@ Use a GitHub PAT (Personal Access Token) with the **`read:packages`** scope. Doc
 
 ### Deploy job (optional)
 
-To enable the deploy step in `deploy.yml`, set the repository variable **DEMO_DEPLOY_ENABLED** to `true` and configure secrets: **SSH_HOST**, **SSH_USER**, **SSH_PRIVATE_KEY**, **SSH_DEPLOY_PATH** (path on the server to the repo or directory containing `docker-compose.demo.yml`, `.env.demo`, and `scripts/stack-deploy.sh`). Optionally **SSH_PORT**. The job SSHs to the server and runs `./scripts/stack-deploy.sh up`, which loads `.env.demo` and runs `docker stack deploy -c docker-compose.demo.yml grant-demo`.
+To enable the deploy step in `deploy.yml`, set the repository variable **DEMO_DEPLOY_ENABLED** to `true` and configure secrets: **SSH_HOST**, **SSH_USER**, **SSH_PRIVATE_KEY**, **SSH_DEPLOY_PATH** (path on the server to the repo or directory containing `docker-compose.demo.yml`, `.env.demo`, and `scripts/stack-deploy.sh`). Optionally **SSH_PORT**. The job SSHs to the server and runs `./scripts/stack-deploy.sh up`, which builds images and runs `docker compose -f docker-compose.demo.yml --env-file .env.demo up -d`.
 
 ## Related
 

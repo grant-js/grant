@@ -14,7 +14,7 @@ Configuration lives in env files; Compose files define topology only.
 | Env file    | Used by                                                                                                                                               |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `.env`      | Default stack (`docker-compose.yml`); keep minimal (e.g. `COMPOSE_PROJECT_NAME=grant`) at root; full config can live in `.env.local` or per-env files |
-| `.env.demo` | Demo/Swarm (`docker-compose.demo.yml`). Copy from `.env.demo.example`.                                                                                |
+| `.env.demo` | Demo stack (`docker-compose.demo.yml`). Copy from `.env.demo.example`.                                                                                |
 | `.env.test` | E2E (`docker-compose.e2e.yml`). Copy from `.env.test.example`.                                                                                        |
 
 - Copy templates: `cp .env.example .env`, `cp .env.demo.example .env.demo`, `cp .env.test.example .env.test` (or let `./scripts/e2e.sh` create `.env.test` on first run).

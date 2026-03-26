@@ -1,13 +1,12 @@
 #!/usr/bin/env tsx
 
-import crypto from 'node:crypto';
-
 import { getEnv, resolveDatabaseUrl } from '@grantjs/env';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
-import type { DbSchema } from '@/connection';
 import { closeDatabase, initializeDBConnection } from '@/connection';
-import { signingKeys, users } from '@/schemas';
+import { users } from '@/schemas';
+
+import { ensureSystemSigningKey } from '../seed-core';
 
 /**
  * System User Seeding Script
@@ -23,47 +22,6 @@ const env = getEnv();
 
 /** System user ID for internal operations (configurable via SYSTEM_USER_ID) */
 const SYSTEM_USER_ID = env.SYSTEM_USER_ID;
-
-const SYSTEM_SCOPE_TENANT = 'system';
-
-async function ensureSystemSigningKey(db: DbSchema): Promise<void> {
-  const existing = await db
-    .select()
-    .from(signingKeys)
-    .where(
-      and(
-        eq(signingKeys.scopeTenant, SYSTEM_SCOPE_TENANT),
-        eq(signingKeys.scopeId, SYSTEM_USER_ID),
-        eq(signingKeys.active, true)
-      )
-    )
-    .limit(1);
-
-  if (existing.length > 0) {
-    console.log('⚠️  System signing key already exists!');
-    console.log(`   Scope: ${SYSTEM_SCOPE_TENANT}:${SYSTEM_USER_ID}`);
-    return;
-  }
-
-  const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
-    modulusLength: 2048,
-    publicKeyEncoding: { type: 'spki', format: 'pem' },
-    privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
-  });
-
-  const kid = `system-${crypto.randomUUID()}`;
-  await db.insert(signingKeys).values({
-    scopeTenant: SYSTEM_SCOPE_TENANT,
-    scopeId: SYSTEM_USER_ID,
-    kid,
-    publicKeyPem: publicKey,
-    privateKeyPem: privateKey,
-    algorithm: 'RS256',
-    active: true,
-  });
-
-  console.log('📝 Seeded system signing key (scope: system + system user ID).');
-}
 
 export async function seedSystemUser() {
   console.log('🌱 Starting system user seeding...');
@@ -107,7 +65,7 @@ export async function seedSystemUser() {
     }
 
     // Always ensure system signing key exists (for session/JWKS)
-    await ensureSystemSigningKey(db);
+    await ensureSystemSigningKey(db, SYSTEM_USER_ID);
 
     console.log('✅ System user seeding completed successfully!');
     console.log('📊 Seeded data:');

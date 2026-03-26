@@ -35,7 +35,7 @@ docs/
 ├── architecture/          # System design, multi-tenancy, RBAC, security
 ├── core-concepts/         # Resources, API keys, invitations, tags
 ├── development/           # Dev guide, SDKs, CLI, REST API, testing
-├── deployment/            # Overview, Docker (Compose/Swarm), environment
+├── deployment/            # Overview, Docker (Compose), environment
 ├── api-reference/         # REST API, error handling
 ├── advanced-topics/       # Caching, email, jobs, i18n, observability
 ├── index.md               # Homepage

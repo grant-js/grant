@@ -1,7 +1,6 @@
 # Rolling update: runs when Release workflow completes successfully.
-# Pulls already-published images and updates Swarm services in-place.
-# Does NOT redeploy the full stack (stack-deploy.sh); the stack must
-# already be running on the self-hosted runner host.
+# Pulls already-published images and recreates services via Docker Compose.
+# The stack must already be running on the self-hosted runner host.
 name: Deploy
 
 on:
@@ -41,7 +40,4 @@ jobs:
           docker pull "$IMAGE_BASE/grant-docs:demo"
           docker pull "$IMAGE_BASE/example-nextjs:demo"
 
-          docker service update --image "$IMAGE_BASE/grant-api:demo" grant-demo_api
-          docker service update --image "$IMAGE_BASE/grant-web:demo" grant-demo_web
-          docker service update --image "$IMAGE_BASE/grant-docs:demo" grant-demo_docs
-          docker service update --image "$IMAGE_BASE/example-nextjs:demo" grant-demo_example-nextjs
+          docker compose -f docker-compose.demo.yml --env-file .env.demo up -d --no-build

@@ -5,7 +5,7 @@ description: Deploy the Grant Platform with Docker – images, .env, and orchest
 
 # Deployment Overview
 
-The recommended way to run the **Grant Platform** is with **Docker**: build or pull images, configure a single `.env` file, and orchestrate everything with `docker compose` (or Docker Swarm / Kubernetes if you prefer).
+The recommended way to run the **Grant Platform** is with **Docker**: build or pull images, configure a single `.env` file, and orchestrate everything with `docker compose`.
 
 ## What you deploy
 
@@ -20,7 +20,7 @@ The recommended way to run the **Grant Platform** is with **Docker**: build or p
 All of these services are described in:
 
 - **`docker-compose.yml`** — default stack for a single host
-- **`docker-compose.demo.yml`** — production-style stack used for `demo.grant.center` (Swarm-friendly, replicas, host-mode ports)
+- **`docker-compose.demo.yml`** — production-style stack used for `demo.grant.center` (API replicas, nginx LB)
 
 ## Configuration checklist
 
@@ -52,7 +52,7 @@ Everything else has safe defaults; you can tighten it later (rate limits, Redis 
 4. **Put a reverse proxy in front**
    - Terminate TLS and route traffic to `web` (`3000`) and `api` (`4000`) or terminate TLS directly in your infrastructure (load balancer, ingress controller).
 
-For clustering and rolling updates, use **Docker Swarm** or **Kubernetes** with the same images and environment variables; only the orchestration layer changes.
+For replicas with a load balancer, use the demo compose file (`docker-compose.demo.yml`). For Kubernetes, the same images and environment variables work; only the orchestration layer changes.
 
 ## Next steps
 

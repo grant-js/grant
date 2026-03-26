@@ -5,7 +5,7 @@ import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHt
 import { ApolloServerPluginInlineTrace } from '@apollo/server/plugin/inlineTrace';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 import { expressMiddleware } from '@as-integrations/express5';
-import { closeDatabase, initializeDBConnection } from '@grantjs/database';
+import { bootstrapDatabase, closeDatabase, initializeDBConnection } from '@grantjs/database';
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
@@ -51,6 +51,9 @@ async function startServer() {
     connectTimeout: config.db.connectionTimeout,
     logger: loggerFactory.createLogger('DatabaseConnection'),
   });
+
+  // Ensure schema + core seed are ready before serving requests.
+  await bootstrapDatabase(db, config.system.systemUserId);
 
   const app = express();
   const httpServer = http.createServer(app);
