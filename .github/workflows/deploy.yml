@@ -33,6 +33,28 @@ jobs:
       - name: Pull images and rolling update
         run: |
           set -e
+          GATEWAY_CONTAINER="grant-demo-gateway"
+          PROJECT_NAME="$(docker inspect -f '{{ index .Config.Labels "com.docker.compose.project" }}' "$GATEWAY_CONTAINER" 2>/dev/null || true)"
+          WORKING_DIR="$(docker inspect -f '{{ index .Config.Labels "com.docker.compose.project.working_dir" }}' "$GATEWAY_CONTAINER" 2>/dev/null || true)"
+          CONFIG_FILES="$(docker inspect -f '{{ index .Config.Labels "com.docker.compose.project.config_files" }}' "$GATEWAY_CONTAINER" 2>/dev/null || true)"
+
+          if [ -z "$PROJECT_NAME" ] || [ -z "$WORKING_DIR" ]; then
+            echo "Could not detect existing compose project from '$GATEWAY_CONTAINER'."
+            echo "Ensure the demo stack is already running and the gateway container exists."
+            exit 1
+          fi
+
+          cd "$WORKING_DIR"
+
+          if [ ! -f ".env.demo" ] && [ -f ".env.demo.example" ]; then
+            cp ".env.demo.example" ".env.demo"
+          fi
+
+          if [ ! -f ".env.demo" ]; then
+            echo "Missing .env.demo in $WORKING_DIR and no .env.demo.example found to bootstrap it."
+            exit 1
+          fi
+
           IMAGE_BASE="ghcr.io/${{ github.repository }}"
 
           docker pull "$IMAGE_BASE/grant-api:demo"
@@ -40,4 +62,14 @@ jobs:
           docker pull "$IMAGE_BASE/grant-docs:demo"
           docker pull "$IMAGE_BASE/example-nextjs:demo"
 
-          docker compose -f docker-compose.demo.yml --env-file .env.demo up -d --no-build
+          set -- docker compose -p "$PROJECT_NAME" --env-file ".env.demo"
+          if [ -n "$CONFIG_FILES" ]; then
+            IFS=',' read -r -a FILES <<< "$CONFIG_FILES"
+            for file in "${FILES[@]}"; do
+              set -- "$@" -f "$file"
+            done
+          else
+            set -- "$@" -f "docker-compose.demo.yml"
+          fi
+
+          "$@" up -d --no-build
