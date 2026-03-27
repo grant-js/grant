@@ -21,7 +21,7 @@
     "lucide-react": "^0.577.0",
     "mailgun.js": "^12",
     "node-mailjet": "^6",
-    "nodemailer": "^8.0.3",
+    "nodemailer": "^8.0.4",
     "next": "16.2.1",
     "postgres": "^3.4.7",
     "react": "^19.0.0",
