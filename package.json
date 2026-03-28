@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "author": {
-    "name": "Alejandro Heredia",
+    "name": "Grant",
     "email": "support@grant.center",
-    "url": "https://logus.graphics"
+    "url": "https://grant.center"
   },
   "description": "Multi-tenant RBAC platform with monorepo architecture",
   "scripts": {

@@ -38,7 +38,11 @@
     "rbac",
     "multi-tenant"
   ],
-  "author": "Alejandro Heredia <support@grant.center>",
+  "author": {
+    "name": "Grant",
+    "email": "support@grant.center",
+    "url": "https://grant.center"
+  },
   "license": "MIT",
   "dependencies": {
     "beautiful-mermaid": "^1.1.3"

@@ -41,6 +41,18 @@ The Grant community can be found on GitHub. Our [Code of Conduct](./CODE_OF_COND
 
 Contributions are welcome. Before submitting a pull request, please read our [Contribution Guidelines](./CONTRIBUTING.md) so you have a smooth experience.
 
+## Contributors
+
+Thanks to everyone who contributes to Grant. Avatars reflect commit authors on [GitHub](https://github.com/grant-js/grant/graphs/contributors).
+
+<p align="center">
+  <a href="https://github.com/grant-js/grant/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=grant-js/grant" alt="Contributors to grant-js/grant" />
+  </a>
+</p>
+
+More context: [CONTRIBUTORS.md](./CONTRIBUTORS.md).
+
 ## Security
 
 If you believe you have found a security vulnerability in Grant, we encourage you to **responsibly disclose it and not open a public issue**. Please see [SECURITY.md](./SECURITY.md) for how to report.

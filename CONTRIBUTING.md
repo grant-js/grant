@@ -33,6 +33,7 @@ Do not run `pnpm release` manually for normal releases; the CI handles it.
 
 ## Further reading
 
+- [Contributors](./CONTRIBUTORS.md) — Contributor recognition and the contributor avatar grid
 - [Development Guide](./docs/contributing/guide.md) — Project structure, workflow, layer boundaries, adding GraphQL/REST features
 - [Adding REST Endpoints](./docs/contributing/rest-api.md) — REST API development
 - [Testing](./docs/contributing/testing.md) — Test setup and patterns
