@@ -4,7 +4,7 @@
 
 Please **do not** report security vulnerabilities in public GitHub issues. To report a vulnerability:
 
-1. **Email** the maintainers at **support@grant.center** with a description of the issue and steps to reproduce (if applicable).
+1. **Email** **engineering@grant.center** with a description of the issue and steps to reproduce (if applicable). This inbox is for responsible security disclosure only—not general product support.
 2. You can expect an acknowledgment within a reasonable time (typically within a few business days).
 3. We will work with you to understand and address the issue. We may ask for more detail or suggest a fix.
 4. Once a fix is ready, we will release it and then disclose the vulnerability (e.g. in release notes or a security advisory). We will credit you unless you prefer to remain anonymous.

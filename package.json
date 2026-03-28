@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "author": {
-    "name": "Grant",
-    "email": "support@grant.center",
+    "name": "Ale Heredia",
+    "email": "ale@grant.center",
     "url": "https://grant.center"
   },
   "description": "Multi-tenant RBAC platform with monorepo architecture",

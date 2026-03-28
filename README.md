@@ -37,6 +37,9 @@ Full documentation—including self-hosting, configuration, REST and GraphQL API
 
 The Grant community can be found on GitHub. Our [Code of Conduct](./CODE_OF_CONDUCT.md) applies to all community channels and contributions.
 
+- **Support & general inquiries:** [support@grant.center](mailto:support@grant.center)
+- **Engineering, contributing, and security reporting:** see [CONTRIBUTING.md](./CONTRIBUTING.md) and [SECURITY.md](./SECURITY.md) (security reports go to **engineering@grant.center**).
+
 ## Contributing
 
 Contributions are welcome. Before submitting a pull request, please read our [Contribution Guidelines](./CONTRIBUTING.md) so you have a smooth experience.

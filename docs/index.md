@@ -106,7 +106,8 @@ Get up and running with Grant in minutes:
 ## Community & Support
 
 - **GitHub** - [Source code and issues](https://github.com/grant-js/grant)
-- **Email** - [Support and inquiries](mailto:support@grant.center)
+- **Support & inquiries** - [support@grant.center](mailto:support@grant.center)
+- **Engineering & security disclosure** - [engineering@grant.center](mailto:engineering@grant.center) (see [Security policy](https://github.com/grant-js/grant/blob/main/SECURITY.md); not for general product support)
 
 ---
 
