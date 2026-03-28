@@ -88,8 +88,15 @@
   "packageManager": "pnpm@8.15.0",
   "pnpm": {
     "overrides": {
-      "fast-xml-parser": "5.3.6",
-      "@isaacs/brace-expansion": "5.0.1",
+      "fast-xml-parser": "^5.5.6",
+      "path-to-regexp": "8.4.0",
+      "picomatch": "4.0.4",
+      "brace-expansion@1.1.12": "1.1.13",
+      "brace-expansion@5.0.4": "5.0.5",
+      "@isaacs/brace-expansion": "5.0.5",
+      "yaml": "^2.8.3",
+      "ajv": "^8.18.0",
+      "esbuild": "^0.25.0",
       "multer": "2.1.1",
       "rollup": "4.59.0",
       "serialize-javascript": "7.0.3",
