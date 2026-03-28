@@ -27,7 +27,7 @@
     "@grantjs/constants": "workspace:*",
     "@grantjs/core": "workspace:*",
     "@grantjs/env": "workspace:*",
-    "drizzle-orm": "^0.45.1",
+    "drizzle-orm": "^0.45.2",
     "drizzle-seed": "^0.3.1",
     "postgres": "^3.4.7",
     "zod": "^4.1.12"
@@ -38,9 +38,9 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^10.1.0",
     "tsx": "^4.20.4",
-    "typescript": "^5"
+    "typescript": "^6"
   },
   "peerDependencies": {
-    "drizzle-orm": "^0.45.1"
+    "drizzle-orm": "^0.45.2"
   }
 }

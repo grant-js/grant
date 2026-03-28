@@ -33,7 +33,7 @@
   "peerDependencies": {
     "node-cron": "^3",
     "bullmq": "^5",
-    "typescript": "^5"
+    "typescript": "^6"
   },
   "peerDependenciesMeta": {
     "node-cron": {
@@ -45,10 +45,10 @@
   },
   "devDependencies": {
     "node-cron": "^4.2.1",
-    "bullmq": "^5.52.2",
+    "bullmq": "^5.71.1",
     "@types/node-cron": "^3.0.11",
     "@types/node": "^25.5.0",
-    "typescript": "^5"
+    "typescript": "^6"
   },
   "license": "MIT"
 }

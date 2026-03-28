@@ -23,7 +23,7 @@
   },
   "peerDependencies": {
     "@aws-sdk/client-cloudwatch-logs": "^3",
-    "typescript": "^5"
+    "typescript": "^6"
   },
   "peerDependenciesMeta": {
     "@aws-sdk/client-cloudwatch-logs": {
@@ -31,9 +31,9 @@
     }
   },
   "devDependencies": {
-    "@aws-sdk/client-cloudwatch-logs": "^3.1014.0",
+    "@aws-sdk/client-cloudwatch-logs": "^3.1019.0",
     "@types/node": "^25.5.0",
-    "typescript": "^5"
+    "typescript": "^6"
   },
   "license": "MIT"
 }
