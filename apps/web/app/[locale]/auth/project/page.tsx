@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import { Check, Github } from 'lucide-react';
+import { Check, GitBranch } from 'lucide-react';
 
 import { AuthLayoutStandalone } from '@/components/layout';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -215,7 +215,7 @@ export default function ProjectOAuthEntryPage() {
               window.location.href = authorizeUrl('github');
             }}
           >
-            <Github className="size-4" />
+            <GitBranch className="size-4" />
             {t('github')}
           </Button>
         )}

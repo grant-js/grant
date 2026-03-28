@@ -2,7 +2,7 @@
 
 import { useParams, useSearchParams } from 'next/navigation';
 import { AccountType } from '@grantjs/schema';
-import { Github } from 'lucide-react';
+import { GitBranch } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { getApiBaseUrl } from '@/lib/constants';
@@ -59,7 +59,7 @@ export function GithubOAuthButton({
       onClick={handleGithubAuth}
       disabled={false}
     >
-      <Github className="size-4" />
+      <GitBranch className="size-4" />
       Github
     </Button>
   );

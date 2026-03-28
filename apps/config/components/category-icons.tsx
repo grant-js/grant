@@ -2,7 +2,7 @@ import {
   AppWindow,
   Box,
   Database,
-  Github,
+  GitBranch,
   KeyRound,
   ShieldCheck,
   SlidersHorizontal,
@@ -15,7 +15,7 @@ export const CATEGORY_ICONS: Record<EnvCategoryId, React.ComponentType<{ classNa
   database: Database,
   cache: Box,
   auth: KeyRound,
-  github: Github,
+  github: GitBranch,
   security: ShieldCheck,
   optional: SlidersHorizontal,
 };

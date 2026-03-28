@@ -6,7 +6,17 @@ import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { User } from '@grantjs/schema';
 import type { LucideIcon } from 'lucide-react';
-import { Calendar, Check, Fingerprint, Github, Info, LogIn, Mail, Pencil, X } from 'lucide-react';
+import {
+  Calendar,
+  Check,
+  Fingerprint,
+  GitBranch,
+  Info,
+  LogIn,
+  Mail,
+  Pencil,
+  X,
+} from 'lucide-react';
 
 import { Avatar, CopyToClipboard, EditableText, JsonEditor } from '@/components/common';
 import { SettingImageUploadDialog } from '@/components/features/settings';
@@ -40,7 +50,7 @@ function getAuthMethodIcon(provider: string): LucideIcon {
     case 'email':
       return Mail;
     case 'github':
-      return Github;
+      return GitBranch;
     default:
       return LogIn;
   }

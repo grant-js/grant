@@ -5,8 +5,10 @@
     "declaration": true,
     "declarationMap": true,
     "jsx": "react-jsx",
-    "baseUrl": ".",
-    "types": ["react", "node"]
+    "types": ["react", "node"],
+    "paths": {
+      "@grantjs/schema": ["../schema/dist/index.d.ts"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"]

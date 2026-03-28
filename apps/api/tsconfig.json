@@ -3,7 +3,6 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": ".",
-    "baseUrl": ".",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "paths": {

@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": ".next",
-    "baseUrl": ".",
+    "rootDir": "../..",
     "paths": {
       "@/*": ["./*"],
       "@/components/*": ["./components/*"],
@@ -10,10 +10,7 @@
       "@/hooks/*": ["./hooks/*"],
       "@/i18n/*": ["./i18n/*"],
       "@/styles/*": ["./styles/*"],
-      "@/stores/*": ["./stores/*"],
-      "@grantjs/core": ["../../packages/@grantjs/core/src/index.ts"],
-      "@grantjs/schema": ["../../packages/@grantjs/schema/src/index.ts"],
-      "@grantjs/*": ["../../packages/@grantjs/*/src"]
+      "@/stores/*": ["./stores/*"]
     }
   },
   "include": ["next-env.d.ts", "types/**/*.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

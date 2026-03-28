@@ -2,8 +2,8 @@
   "extends": "../../../tsconfig.json",
   "compilerOptions": {
     "noEmit": true,
-    "lib": ["esnext"],
-    "baseUrl": "."
+    "lib": ["esnext", "dom"],
+    "types": ["node"]
   },
   "include": ["src/**/*"],
   "exclude": ["dist", "node_modules"]

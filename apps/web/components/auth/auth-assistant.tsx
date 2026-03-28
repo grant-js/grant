@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import {
   CheckCircle2,
   Clock,
-  Github,
+  GitBranch,
   HelpCircle,
   Inbox,
   KeyRound,
@@ -56,7 +56,7 @@ const ITEMS_BY_PAGE: Record<NonNullable<AuthPageId>, string[]> = {
 /** Icon for each item key (shared across pages where key appears). */
 const ITEM_ICONS: Record<string, LucideIcon> = {
   passwordPolicy: KeyRound,
-  githubSignIn: Github,
+  githubSignIn: GitBranch,
   forgotPassword: Mail,
   accountType: UserPlus,
   passwordStrength: ShieldCheck,

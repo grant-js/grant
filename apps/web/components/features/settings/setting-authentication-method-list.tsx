@@ -6,7 +6,7 @@ import {
   UserAuthenticationEmailProviderAction,
   UserAuthenticationMethodProvider,
 } from '@grantjs/schema';
-import { Github, Mail, Shield } from 'lucide-react';
+import { GitBranch, Mail, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -144,7 +144,7 @@ export function SettingAuthenticationMethodsList({
       case UserAuthenticationMethodProvider.Google:
         return <Shield className="h-4 w-4" />;
       case UserAuthenticationMethodProvider.Github:
-        return <Github className="h-4 w-4" />;
+        return <GitBranch className="h-4 w-4" />;
       default:
         return <Shield className="h-4 w-4" />;
     }
