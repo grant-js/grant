@@ -2,6 +2,12 @@
 
 Thank you for your interest in contributing to Grant. This document gives a short overview; for full details see our [Development Guide](./docs/contributing/guide.md).
 
+## Contact (separation of concerns)
+
+- **Engineering & maintainer topics** (implementation questions, integrations, release process): [engineering@grant.center](mailto:engineering@grant.center)
+- **User support, accounts, and general product help** (not the right channel for patch review): [support@grant.center](mailto:support@grant.center)
+- **Security vulnerabilities**: follow [SECURITY.md](./SECURITY.md) — **engineering@grant.center**, not a public issue.
+
 ## How to contribute
 
 1. **Fork** the repository and clone your fork.
