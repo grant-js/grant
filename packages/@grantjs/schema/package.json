@@ -30,6 +30,6 @@
     "@parcel/watcher": "^2.5.4",
     "@types/node": "^25.5.0",
     "eslint": "^10.1.0",
-    "typescript": "^5"
+    "typescript": "^6"
   }
 }
