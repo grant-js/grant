@@ -48,6 +48,7 @@ jobs:
     if: needs.changes.outputs.code == 'true'
     permissions:
       contents: read
+      pull-requests: write # gitleaks-action default PR comments
     # Optional: skip CI for Dependabot PRs to free the runner — uncomment next line:
     # if: github.actor != 'dependabot[bot]'
     steps:
@@ -62,10 +63,13 @@ jobs:
           node-version: '24'
           pnpm-version: '8.15.0'
 
+      # Org-owned repos need GITLEAKS_LICENSE (free key via gitleaks.io). See:
+      # https://github.com/gitleaks/gitleaks-action#-announcement
       - name: Gitleaks (secret scanning)
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
           GITLEAKS_CONFIG: .gitleaks.toml
 
       - name: Build
