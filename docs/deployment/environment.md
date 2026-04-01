@@ -116,3 +116,4 @@ The API validates required env, database connectivity, and Redis when configured
 - [Configuration](/getting-started/configuration) — Full configuration reference
 - [Deployment overview](/deployment/self-hosting)
 - [Docker deployment](/deployment/docker)
+- [Kubernetes (Helm)](/deployment/kubernetes)

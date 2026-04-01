@@ -302,6 +302,7 @@ To enable the deploy step in `deploy.yml`, set the repository variable **DEMO_DE
 ## Related
 
 - [Deployment overview](/deployment/self-hosting)
+- [Kubernetes (Helm)](/deployment/kubernetes)
 - [Environment setup](/deployment/environment)
 - [Configuration](/getting-started/configuration)
 - [Versioning and release](/contributing/versioning)

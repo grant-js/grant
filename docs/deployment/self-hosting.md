@@ -52,11 +52,12 @@ Everything else has safe defaults; you can tighten it later (rate limits, Redis 
 4. **Put a reverse proxy in front**
    - Terminate TLS and route traffic to `web` (`3000`) and `api` (`4000`) or terminate TLS directly in your infrastructure (load balancer, ingress controller).
 
-For replicas with a load balancer, use the demo compose file (`docker-compose.demo.yml`). For Kubernetes, the same images and environment variables work; only the orchestration layer changes.
+For replicas with a load balancer, use the demo compose file (`docker-compose.demo.yml`). For Kubernetes, the same images and environment variables apply; use the [Kubernetes (Helm)](/deployment/kubernetes) guide and the `charts/grant-platform` chart.
 
 ## Next steps
 
 - **Walkthrough**: [Docker deployment](/deployment/docker)
+- **Kubernetes**: [Kubernetes (Helm)](/deployment/kubernetes)
 - **Environment variables**: [Environment setup](/deployment/environment)
 - **Full config reference**: [Configuration](/getting-started/configuration)
 - **Local development**: [Quick Start](/getting-started/quick-start)

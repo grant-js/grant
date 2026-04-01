@@ -72,7 +72,7 @@ Get up and running with Grant in minutes:
 <h3><span class="use-case-title"><span class="use-case-icon"><IconFluentColorCloud20 /></span><span>For DevOps</span></span></h3>
 </div>
 <ul class="grant-icon-list">
-<li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Deployment Guides</strong><br>Docker Compose and manual deployment</span></li>
+<li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Deployment Guides</strong><br>Docker Compose, Kubernetes (Helm), and manual deployment</span></li>
 <li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Configuration</strong><br>Environment setup and optimization</span></li>
 <li><span class="grant-icon-list-icon"><IconFluentCheckmarkCircle12Regular /></span><span><strong>Observability</strong><br>Structured logging, tracing, and metrics</span></li>
 </ul>
@@ -101,6 +101,7 @@ Get up and running with Grant in minutes:
 - **[Grant CLI](/integration/cli)** - Setup, authentication, and typings generation with @grantjs/cli
 - **[Multi-Tenancy](/architecture/multi-tenancy)** - Account and organization isolation
 - **[Self-Hosting](/deployment/self-hosting)** - Deploy on your infrastructure
+- **[Kubernetes (Helm)](/deployment/kubernetes)** - Helm chart and cluster deployment
 - **[REST API](/api-reference/rest-api)** - Complete REST API documentation
 
 ## Community & Support
