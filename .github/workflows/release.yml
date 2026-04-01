@@ -139,7 +139,7 @@ jobs:
           tar --zstd --owner=0 --group=0 -cf build.tar.zst -C . "${include[@]}"
 
       - name: Upload build outputs
-        uses: actions/upload-artifact@v4.4.3
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: build-outputs-${{ github.run_id }}
           path: build.tar.zst
