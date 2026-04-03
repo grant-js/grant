@@ -1,5 +1,5 @@
 # Composite action: Buildx + build-push with cache scope and optional provenance: false.
-# Workflow passes cache_scope: ${{ matrix.image }}-${{ github.sha }}.
+# Workflow passes a stable cache_scope (e.g. matrix image + hashFiles(lockfile, Dockerfiles)).
 name: Docker build and push
 description: Setup Buildx and build/push image with GHA cache scope
 runs:
