@@ -17,7 +17,7 @@ The chart deploys:
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | **API**                | Grant API (REST + GraphQL); `ClusterIP` Service, configurable replicas                                                          |
 | **Web**                | Next.js app; catch-all `/` behind Ingress                                                                                       |
-| **Docs**               | VitePress static site; served under `/docs` (separate Ingress with path rewrite); configurable replicas (`docs.replicaCount`)      |
+| **Docs**               | VitePress static site; served under `/docs` (separate Ingress with path rewrite); configurable replicas (`docs.replicaCount`)   |
 | **Example** (optional) | Next.js example app under `/example`                                                                                            |
 | **Bootstrap Job**      | Post-install/post-upgrade hook; runs `bootstrapDatabase()` (same as API startup; PostgreSQL advisory lock for safe concurrency) |
 
@@ -26,7 +26,7 @@ The chart deploys:
 ## Prerequisites
 
 - Kubernetes **1.25+**
-- An **Ingress controller** — [ingress-nginx](https://kubernetes.github.io/ingress-nginx/) is the reference (path routing, WebSockets for `/graphql`, annotations for body size and timeouts). Other controllers work if they support the same routing and forwarding behavior.
+- An **Ingress controller** — the chart defaults to **Traefik**-style routing (`ingress.docs.mode: traefik`): a `Middleware` strips the `/docs` prefix on a second Ingress. **ingress-nginx** is supported via `ingress.docs.mode: nginx` (regex + rewrite). See **`charts/grant-platform/README.md`** for controller-specific TLS and timeout examples.
 - **PostgreSQL** and **Redis** reachable from the cluster (DNS names or external endpoints).
 - **Helm 3**
 
@@ -62,9 +62,9 @@ This matches the single-host model documented in [Environment setup](/deployment
 ## Ingress and path routing
 
 - **Main Ingress** — Routes `/graphql`, `/api`, `/api-docs`, `/.well-known`, `/org`, `/acc`, `/health`, `/storage` to the API Service; `/example` to the example app; `/` to the web Service.
-- **Docs Ingress** — Uses a **regex path** and `nginx.ingress.kubernetes.io/rewrite-target` so `/docs/...` is served under the same host as the rest of the app.
+- **Docs Ingress** — **`ingress.docs.mode: traefik`** (default): Traefik `Middleware` with `stripPrefix` `/docs` plus a prefix path `/docs`. **`nginx`**: regex path and `nginx.ingress.kubernetes.io/rewrite-target` so `/docs/...` is served under the same host as the rest of the app.
 
-Default annotations include proxy body size (**100m**) and read/send timeouts (**300s**) for long GraphQL operations. Override with `ingress.annotations` / `ingress.extraAnnotations` as needed.
+Configure proxy body size and timeouts for your controller (e.g. nginx annotations in `ingress.annotations`, or Traefik `Middleware` / annotations) via `ingress.annotations` and `ingress.extraAnnotations`.
 
 ## TLS (cert-manager)
 
@@ -80,7 +80,7 @@ and set **`ingress.tls`** to the Secret name your issuer creates. The exact anno
 
 ## Production secrets
 
-Prefer **`api.existingSecretEnv`**: a Kubernetes `Secret` in the release namespace whose keys use **canonical env names** (`DB_URL`, `REDIS_PASSWORD`, `AUTH_MFA_SECRET_ENCRYPTION_KEY`, …). When set, the chart does not generate the default `*-runtime` Secret.
+Prefer **`api.existingSecretEnv`**: a Kubernetes `Secret` in the release namespace whose keys use **canonical env names** (`DB_URL`, `REDIS_PASSWORD`, `AUTH_MFA_SECRET_ENCRYPTION_KEY`, …). When set, the chart does not generate the default `*-runtime` Secret. Alternatively, enable **`externalSecret`** (External Secrets Operator) to populate the same secret name when `api.existingSecretEnv` is unset—see `values.yaml`.
 
 **`AUTH_MFA_SECRET_ENCRYPTION_KEY`** must be **identical across all API replicas**; never use a random per-pod value.
 
