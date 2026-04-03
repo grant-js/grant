@@ -14,6 +14,7 @@ import {
   JsonEditor,
   SlugInput,
 } from '@/components/common';
+import { ApiKeyExpirationPresetsField } from '@/components/common/api-key-expiration-presets-field';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -286,6 +287,18 @@ export function FormDialog<TFormValues extends Record<string, any>>({
       );
     }
 
+    if (fieldType === 'expiration-presets') {
+      return (
+        <div key={field.name} className="space-y-2">
+          <ApiKeyExpirationPresetsField
+            disabled={isSubmitting}
+            translationNamespace={translationNamespace}
+            labelKey={field.label}
+          />
+        </div>
+      );
+    }
+
     return (
       <FormField
         // @ts-expect-error - Zod v4 generic type compatibility with react-hook-form Control
@@ -343,6 +356,8 @@ export function FormDialog<TFormValues extends Record<string, any>>({
                   placeholder={field.placeholder ? t(field.placeholder) : t(field.label)}
                   disabled={isSubmitting}
                   className={hasError ? 'border-red-500' : ''}
+                  minDate={field.minDate}
+                  maxDate={field.maxDate}
                 />
               ) : fieldType === 'collapsible-group' && field.contentField ? (
                 (() => {

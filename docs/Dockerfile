@@ -4,6 +4,8 @@
 # Build context: monorepo root. Base path /docs/; frontend uses relative paths.
 # Gateway serves this app at /docs.
 #
+# Installs only grant-docs and its dependencies (not the full monorepo).
+#
 #   docker build -f docs/Dockerfile -t grant-docs .
 # =============================================================================
 
@@ -15,8 +17,12 @@ FROM base AS builder
 
 RUN apk add --no-cache git
 
-COPY . .
-RUN pnpm install --frozen-lockfile --ignore-scripts
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY docs/package.json docs/package.json
+COPY docs ./docs
+
+RUN mkdir -p apps
+RUN pnpm install --frozen-lockfile --ignore-scripts --filter grant-docs...
 RUN pnpm --filter grant-docs build
 
 FROM nginx:alpine AS runner

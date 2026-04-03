@@ -74,6 +74,7 @@
       "invalidUserId": "Invalid user ID",
       "codeRequired": "Code is required",
       "expirationMustBeFuture": "Expiration date must be in the future",
+      "expirationCustomRequired": "Please choose an expiration date",
       "roleRequired": "Role is required",
       "invalidRoleId": "Invalid role",
       "fileRequired": "File is required",

@@ -74,6 +74,7 @@
       "invalidUserId": "Ungültige Benutzer-ID",
       "codeRequired": "Code ist erforderlich",
       "expirationMustBeFuture": "Ablaufdatum muss in der Zukunft liegen",
+      "expirationCustomRequired": "Bitte wählen Sie ein Ablaufdatum",
       "roleRequired": "Rolle ist erforderlich",
       "invalidRoleId": "Ungültige Rolle",
       "fileRequired": "Datei ist erforderlich",

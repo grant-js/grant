@@ -251,7 +251,7 @@ export function UserInfo({ user, onPictureUpdate }: UserInfoProps) {
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">{tUsers('metadataInfo')}</p>
                   <a
-                    href={`${getDocsUrl()}/core-concepts/permission-conditions#field-paths`}
+                    href={`${getDocsUrl()}/core-concepts/permission-conditions.html#field-paths`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-primary hover:underline"
