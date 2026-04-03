@@ -6,6 +6,8 @@
 # No build-time URL args: the app loads config at runtime from GET /api/config
 # (reads process.env.APP_URL, APP_URL_API, etc. set by compose env_file).
 #
+# Installs only grant-web and its workspace subgraph (not the full monorepo).
+#
 #   docker build -f apps/web/Dockerfile -t grant-web .
 # =============================================================================
 
@@ -15,9 +17,23 @@ WORKDIR /app
 
 FROM base AS builder
 
-COPY . .
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json tsconfig.json ./
 
-RUN pnpm install --frozen-lockfile --ignore-scripts
+COPY apps/web/package.json apps/web/package.json
+COPY packages/@grantjs/client/package.json packages/@grantjs/client/package.json
+COPY packages/@grantjs/constants/package.json packages/@grantjs/constants/package.json
+COPY packages/@grantjs/core/package.json packages/@grantjs/core/package.json
+COPY packages/@grantjs/i18n/package.json packages/@grantjs/i18n/package.json
+COPY packages/@grantjs/schema/package.json packages/@grantjs/schema/package.json
+
+COPY apps/web ./apps/web
+COPY packages/@grantjs/client ./packages/@grantjs/client
+COPY packages/@grantjs/constants ./packages/@grantjs/constants
+COPY packages/@grantjs/core ./packages/@grantjs/core
+COPY packages/@grantjs/i18n ./packages/@grantjs/i18n
+COPY packages/@grantjs/schema ./packages/@grantjs/schema
+
+RUN pnpm install --frozen-lockfile --ignore-scripts --filter grant-web...
 RUN pnpm --filter @grantjs/client build
 RUN pnpm --filter grant-web build
 

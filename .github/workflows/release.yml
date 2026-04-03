@@ -230,7 +230,8 @@ jobs:
         with:
           context: .
           file: ${{ matrix.file }}
-          cache_scope: ${{ matrix.image }}-${{ github.sha }}
+          # Stable across commits so BuildKit GHA cache reuses layers when lockfile/Dockerfiles unchanged.
+          cache_scope: ${{ matrix.image }}-${{ hashFiles('pnpm-lock.yaml', 'apps/api/Dockerfile', 'apps/web/Dockerfile', 'docs/Dockerfile', 'packages/@grantjs/client/examples/nextjs/Dockerfile') }}
           image: ${{ matrix.image }}
           tags: |
             ghcr.io/${{ github.repository }}/${{ matrix.image }}:demo
