@@ -75,7 +75,7 @@ export function GroupCreateDialog({
       type: 'json',
       info: 'form.metadataInfo',
       infoLink: {
-        href: `${getDocsUrl()}/core-concepts/permission-conditions#field-paths`,
+        href: `${getDocsUrl()}/core-concepts/permission-conditions.html#field-paths`,
         label: 'form.metadataDocsLink',
       },
       partOfCollapsible: 'metadataEnabled',
