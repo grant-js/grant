@@ -1,0 +1,13 @@
+{{- if and .Values.ingress.enabled .Values.docs.enabled (eq .Values.ingress.docs.mode "traefik") .Values.ingress.docs.traefik.middleware.create }}
+apiVersion: {{ .Values.ingress.docs.traefik.middleware.apiVersion }}
+kind: Middleware
+metadata:
+  name: {{ include "grant.fullname" . }}-docs-strip
+  labels:
+    {{- include "grant.labels" . | nindent 4 }}
+    app.kubernetes.io/component: docs
+spec:
+  stripPrefix:
+    prefixes:
+      - /docs
+{{- end }}

@@ -2,7 +2,7 @@ apiVersion: v2
 name: grant-platform
 description: Grant Platform — API, web, docs, and example app behind a single canonical APP_URL (Ingress).
 type: application
-version: 0.1.0
+version: 0.2.0
 appVersion: '1.0.0'
 home: https://github.com/grant-js/grant
 maintainers:

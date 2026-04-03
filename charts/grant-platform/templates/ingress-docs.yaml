@@ -1,5 +1,6 @@
 {{- if and .Values.ingress.enabled .Values.docs.enabled }}
 {{- $host := .Values.ingress.host | default (include "grant.appHost" .) | trim | required "global.appUrl (or ingress.host) must be set for Ingress" }}
+{{- if eq .Values.ingress.docs.mode "nginx" }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -10,6 +11,9 @@ metadata:
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     {{- range $k, $v := .Values.ingress.extraAnnotations }}
+    {{ $k }}: {{ $v | quote }}
+    {{- end }}
+    {{- range $k, $v := .Values.ingress.docs.nginx.annotations }}
     {{ $k }}: {{ $v | quote }}
     {{- end }}
 spec:
@@ -31,4 +35,45 @@ spec:
                 name: {{ include "grant.fullname" . }}-docs
                 port:
                   number: {{ .Values.docs.service.port }}
+{{- else if eq .Values.ingress.docs.mode "traefik" }}
+{{- if and (not .Values.ingress.docs.traefik.middleware.create) (not .Values.ingress.docs.traefik.middleware.existingMiddlewareRef) }}
+{{- fail "ingress.docs.traefik.middleware.existingMiddlewareRef is required when middleware.create is false" }}
+{{- end }}
+{{- $mw := .Values.ingress.docs.traefik.middleware.existingMiddlewareRef | default (printf "%s-%s-docs-strip@kubernetescrd" .Release.Namespace (include "grant.fullname" .)) }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "grant.fullname" . }}-docs
+  labels:
+    {{- include "grant.labels" . | nindent 4 }}
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: {{ $mw | quote }}
+    {{- range $k, $v := .Values.ingress.extraAnnotations }}
+    {{ $k }}: {{ $v | quote }}
+    {{- end }}
+    {{- range $k, $v := .Values.ingress.docs.traefik.annotations }}
+    {{ $k }}: {{ $v | quote }}
+    {{- end }}
+spec:
+  {{- with .Values.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    {{- toYaml .Values.ingress.tls | nindent 4 }}
+  {{- end }}
+  rules:
+    - host: {{ $host | quote }}
+      http:
+        paths:
+          - path: /docs
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "grant.fullname" . }}-docs
+                port:
+                  number: {{ .Values.docs.service.port }}
+{{- else }}
+{{- fail "ingress.docs.mode must be \"nginx\" or \"traefik\"" }}
+{{- end }}
 {{- end }}

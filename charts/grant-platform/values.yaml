@@ -19,6 +19,8 @@ serviceAccount:
   create: true
   name: ''
   automountServiceAccountToken: false
+  # EKS IRSA: e.g. eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT:role/grant-api
+  annotations: {}
 
 # -----------------------------------------------------------------------------
 # API
@@ -216,22 +218,39 @@ example:
   extraEnv: []
 
 # -----------------------------------------------------------------------------
-# Ingress (ingress-nginx recommended; docs Ingress uses regex + rewrite)
+# Ingress — Traefik-first (docs strip prefix via Middleware); nginx supported via ingress.docs.mode
 # -----------------------------------------------------------------------------
 ingress:
   enabled: true
-  className: nginx
+  # Set to your IngressClass (e.g. traefik, platform-gateway-services for Traefik at Alteos)
+  className: traefik
   # Override hostname (default: hostname from global.appUrl)
   host: ''
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: 100m
-    nginx.ingress.kubernetes.io/proxy-read-timeout: '300'
-    nginx.ingress.kubernetes.io/proxy-send-timeout: '300'
-  # Extra annotations on main + docs Ingress (e.g. cert-manager.io/cluster-issuer: letsencrypt-prod)
+  # Main Ingress only (API paths, web, example). Add controller-specific timeouts / size limits here.
+  annotations: {}
+  # Applied to main Ingress and docs Ingress (e.g. cert-manager.io/cluster-issuer)
   extraAnnotations: {}
   tls: []
   #  - secretName: grant-tls
   #    hosts: [grant.example.com]
+  docs:
+    # traefik: StripPrefix Middleware + Prefix path /docs (default). nginx: regex rewrite (legacy ingress-nginx).
+    mode: traefik
+    nginx:
+      # Extra annotations on docs Ingress only when mode=nginx (regex + rewrite-target)
+      annotations: {}
+    traefik:
+      # Router annotations for docs Ingress (entrypoints, TLS) — adjust per cluster
+      annotations:
+        traefik.ingress.kubernetes.io/router.entrypoints: web, websecure
+        traefik.ingress.kubernetes.io/router.tls: 'true'
+      middleware:
+        # Create traefik.io/v1alpha1 Middleware with stripPrefix /docs. Set false if you manage Middleware elsewhere.
+        create: true
+        # Use traefik.containo.us/v1alpha1 if your cluster only exposes legacy CRDs
+        apiVersion: traefik.io/v1alpha1
+        # If set, used as traefik.ingress.kubernetes.io/router.middlewares (e.g. myns-my-middleware@kubernetescrd)
+        existingMiddlewareRef: ''
 
 # -----------------------------------------------------------------------------
 # Bootstrap / migration Job (post-install, post-upgrade Helm hooks). Same image as API.
@@ -299,3 +318,17 @@ config:
   demoModeEnabled: false
   metricsEnabled: false
   systemUserId: '00000000-0000-0000-0000-000000000000'
+
+# -----------------------------------------------------------------------------
+# External Secrets Operator — syncs to Secret named {{ fullname }}-runtime (same as generated Secret)
+# Not used together with api.existingSecretEnv (use one or the other).
+# -----------------------------------------------------------------------------
+externalSecret:
+  enabled: false
+  refreshInterval: 5m
+  secretStoreRef:
+    name: cluster-secret-store
+    kind: ClusterSecretStore
+  remoteRef:
+    # Backend key for dataFrom.extract (e.g. AWS Secrets Manager name)
+    key: ''

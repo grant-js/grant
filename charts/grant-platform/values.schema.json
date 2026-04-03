@@ -32,14 +32,53 @@
       "properties": {
         "create": { "type": "boolean" },
         "name": { "type": "string" },
-        "automountServiceAccountToken": { "type": "boolean" }
+        "automountServiceAccountToken": { "type": "boolean" },
+        "annotations": { "type": "object" }
       }
     },
     "api": { "type": "object" },
     "web": { "type": "object" },
     "docs": { "type": "object" },
     "example": { "type": "object" },
-    "ingress": { "type": "object" },
+    "ingress": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "className": { "type": "string" },
+        "host": { "type": "string" },
+        "annotations": { "type": "object" },
+        "extraAnnotations": { "type": "object" },
+        "tls": { "type": "array" },
+        "docs": {
+          "type": "object",
+          "properties": {
+            "mode": { "type": "string", "enum": ["traefik", "nginx"] },
+            "nginx": { "type": "object" },
+            "traefik": { "type": "object" }
+          }
+        }
+      }
+    },
+    "externalSecret": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "refreshInterval": { "type": "string" },
+        "secretStoreRef": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "kind": { "type": "string" }
+          }
+        },
+        "remoteRef": {
+          "type": "object",
+          "properties": {
+            "key": { "type": "string" }
+          }
+        }
+      }
+    },
     "migrationJob": { "type": "object" },
     "podDisruptionBudget": { "type": "object" },
     "serviceMonitor": { "type": "object" },
