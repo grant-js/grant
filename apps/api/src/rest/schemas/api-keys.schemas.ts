@@ -1,5 +1,6 @@
 import { ApiKeySortableField, SortOrder, Tenant } from '@grantjs/schema';
 
+import { isUtcCalendarDateAtLeastTomorrow } from '@/lib/expiration-date';
 import { z } from '@/lib/zod-openapi.lib';
 import { listQuerySchema, scopeSchema } from '@/rest/schemas/common.schemas';
 
@@ -25,13 +26,26 @@ export const getApiKeysQuerySchema = listQuerySchema.omit({ relations: true }).e
     .optional(),
 });
 
-export const createApiKeyRequestSchema = z.object({
-  name: z.string().max(255).optional(),
-  description: z.string().max(1000).optional(),
-  expiresAt: z.date().optional(),
-  scope: scopeSchema,
-  roleId: z.uuid('errors.validation.invalidRoleId').optional(),
-});
+export const createApiKeyRequestSchema = z
+  .object({
+    name: z.string().max(255).optional(),
+    description: z.string().max(1000).optional(),
+    expiresAt: z.date().optional(),
+    scope: scopeSchema,
+    roleId: z.uuid('errors.validation.invalidRoleId').optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.expiresAt == null || data.expiresAt === undefined) {
+      return;
+    }
+    if (!isUtcCalendarDateAtLeastTomorrow(data.expiresAt)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['expiresAt'],
+        message: 'errors.validation.expirationMustBeFuture',
+      });
+    }
+  });
 
 export const exchangeApiKeyRequestSchema = z.object({
   clientId: z.uuid('errors.validation.invalidClientId'),

@@ -1,6 +1,8 @@
 import { ApiKeySortableField } from '@grantjs/schema';
 import { z } from 'zod';
 
+import { isUtcCalendarDateAtLeastTomorrow } from '@/lib/expiration-date';
+
 import {
   baseEntitySchema,
   deleteSchema,
@@ -60,11 +62,24 @@ export const exchangeApiKeyResponseSchema = z.object({
   expiresIn: z.number(),
 });
 
-export const createApiKeyRequestSchema = z.object({
-  name: nameSchema.nullable().optional(),
-  description: descriptionSchema.nullable().optional(),
-  expiresAt: z.date().nullable().optional(),
-});
+export const createApiKeyRequestSchema = z
+  .object({
+    name: nameSchema.nullable().optional(),
+    description: descriptionSchema.nullable().optional(),
+    expiresAt: z.date().nullable().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.expiresAt == null) {
+      return;
+    }
+    if (!isUtcCalendarDateAtLeastTomorrow(data.expiresAt)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['expiresAt'],
+        message: 'errors.validation.expirationMustBeFuture',
+      });
+    }
+  });
 
 export const createApiKeyResponseSchema = z.object({
   id: idSchema,
