@@ -27,6 +27,7 @@ export type DialogFieldType =
   | 'email'
   | 'textarea'
   | 'date'
+  | 'expiration-presets'
   | 'switch'
   | 'collapsible-group'
   | 'slug'
@@ -80,4 +81,8 @@ export interface DialogField {
   getType?: (dependsOnValue: string) => DialogFieldType;
   /** For type 'actions': normalizer applied to each chip value (e.g. slugifyAction). */
   normalizeValue?: (value: string) => string;
+  /** For type 'date': days before this are disabled; this day remains selectable (react-day-picker `before` matcher). */
+  minDate?: Date;
+  /** For type 'date': days after this are disabled; this day remains selectable (react-day-picker `after` matcher). */
+  maxDate?: Date;
 }

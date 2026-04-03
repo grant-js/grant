@@ -6,11 +6,16 @@ import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { canAssignRole } from '@grantjs/constants';
 import { Scope, Tenant } from '@grantjs/schema';
+import { addDays, startOfDay } from 'date-fns';
 import { KeyRound } from 'lucide-react';
 import { DefaultValues } from 'react-hook-form';
 import { z } from 'zod';
 
 import { CreateDialog, DialogField, type DialogFieldOption } from '@/components/common';
+import {
+  type ApiKeyExpirationPreset,
+  apiKeyPresetExpirationDate,
+} from '@/components/common/api-key-expiration-presets-field';
 import { useApiKeyMutations } from '@/hooks/api-keys';
 import { useRequiresEmailVerificationForMutation } from '@/hooks/auth';
 import { useScopeFromParams } from '@/hooks/common';
@@ -18,24 +23,61 @@ import { useMembers } from '@/hooks/members';
 import { useRoles } from '@/hooks/roles';
 import { useAuthStore } from '@/stores/auth.store';
 
-const baseCreateApiKeySchema = z.object({
-  name: z.string().optional(),
-  description: z.string().optional(),
-  expiresAt: z
-    .date()
-    .optional()
-    .refine(
-      (val) => {
-        if (!val) return true;
-        return val > new Date();
-      },
-      { message: 'errors.validation.expirationMustBeFuture' }
-    ),
-});
+const expirationPresetSchema = z.enum(['7d', '30d', '60d', '90d', 'custom', 'none']);
+
+const baseCreateApiKeySchema = z
+  .object({
+    name: z.string().optional(),
+    description: z.string().optional(),
+    expirationPreset: expirationPresetSchema,
+    expiresAt: z.date().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.expirationPreset !== 'custom') {
+      return;
+    }
+    if (!data.expiresAt) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['expiresAt'],
+        message: 'errors.validation.expirationCustomRequired',
+      });
+      return;
+    }
+    const min = startOfDay(addDays(new Date(), 1));
+    if (startOfDay(data.expiresAt).getTime() < min.getTime()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['expiresAt'],
+        message: 'errors.validation.expirationMustBeFuture',
+      });
+    }
+  });
 
 export type ApiKeyCreateFormValues = z.infer<typeof baseCreateApiKeySchema> & {
   roleId?: string;
 };
+
+function resolveApiKeyExpiration(preset: ApiKeyExpirationPreset, custom?: Date): Date | undefined {
+  switch (preset) {
+    case 'none':
+      return undefined;
+    case '7d':
+      return apiKeyPresetExpirationDate('7d');
+    case '30d':
+      return apiKeyPresetExpirationDate('30d');
+    case '60d':
+      return apiKeyPresetExpirationDate('60d');
+    case '90d':
+      return apiKeyPresetExpirationDate('90d');
+    case 'custom':
+      return custom;
+    default: {
+      const _exhaustive: never = preset;
+      return _exhaustive;
+    }
+  }
+}
 
 export interface ApiKeyCreateDialogProps {
   scope?: Scope | null;
@@ -130,7 +172,8 @@ export function ApiKeyCreateDialog({
     () => ({
       name: '',
       description: '',
-      expiresAt: new Date(),
+      expirationPreset: '30d',
+      expiresAt: undefined,
       ...(showRoleField && defaultRoleId ? { roleId: defaultRoleId } : {}),
     }),
     [showRoleField, defaultRoleId]
@@ -149,10 +192,9 @@ export function ApiKeyCreateDialog({
       type: 'textarea',
     },
     {
-      name: 'expiresAt',
-      label: 'form.expiresAt',
-      placeholder: 'form.expiresAtPlaceholder',
-      type: 'date',
+      name: 'expirationPreset',
+      label: 'form.expiration',
+      type: 'expiration-presets',
     },
   ];
 
@@ -181,7 +223,7 @@ export function ApiKeyCreateDialog({
       scope: scope!,
       name: values.name?.trim() || undefined,
       description: values.description?.trim() || undefined,
-      expiresAt: values.expiresAt,
+      expiresAt: resolveApiKeyExpiration(values.expirationPreset, values.expiresAt),
       ...(showRoleField && values.roleId ? { roleId: values.roleId } : {}),
     };
 
