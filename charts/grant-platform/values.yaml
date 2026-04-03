@@ -46,8 +46,9 @@ api:
     httpGet:
       path: /health
       port: http
-    failureThreshold: 30
+    failureThreshold: 60
     periodSeconds: 5
+    timeoutSeconds: 3
   readinessProbe:
     httpGet:
       path: /health
@@ -58,8 +59,12 @@ api:
     httpGet:
       path: /health
       port: http
-    initialDelaySeconds: 30
+    initialDelaySeconds: 60
     periodSeconds: 20
+  # Must exceed GRACEFUL_SHUTDOWN_TIMEOUT_MS (env / ConfigMap, default 25000 ms) so SIGTERM cleanup finishes before SIGKILL
+  terminationGracePeriodSeconds: 60
+  # Optional lifecycle hooks, e.g. preStop: { exec: { command: ['sh','-c','sleep 5'] } }
+  lifecycle: {}
   podSecurityContext:
     fsGroup: 1001
   securityContext:
@@ -84,6 +89,10 @@ api:
   extraEnv: []
   # Optional: Secret name whose keys are env var names (e.g. DB_URL, REDIS_PASSWORD, AUTH_MFA_SECRET_ENCRYPTION_KEY)
   existingSecretEnv: ''
+  # When true, no Kubernetes Secret envFrom for DB/Redis — inject secrets via a file and set GRANT_ENV_FILE (see @grantjs/env) to that path, or use only ConfigMap.
+  useVaultInjectedEnv: false
+  # Vault Agent inject, IRSA, etc. (merged into the API Deployment pod template)
+  podAnnotations: {}
 
 # -----------------------------------------------------------------------------
 # Web (Next.js)
@@ -135,6 +144,7 @@ web:
     - name: tmp
       emptyDir: {}
   extraEnv: []
+  podAnnotations: {}
 
 # -----------------------------------------------------------------------------
 # Docs (VitePress behind nginx)
@@ -167,6 +177,7 @@ docs:
       port: http
     initialDelaySeconds: 10
   extraEnv: []
+  podAnnotations: {}
 
 # -----------------------------------------------------------------------------
 # Example Next.js app (/example)
@@ -216,6 +227,7 @@ example:
     - name: tmp
       emptyDir: {}
   extraEnv: []
+  podAnnotations: {}
 
 # -----------------------------------------------------------------------------
 # Ingress — Traefik-first (docs strip prefix via Middleware); nginx supported via ingress.docs.mode
@@ -253,21 +265,6 @@ ingress:
         existingMiddlewareRef: ''
 
 # -----------------------------------------------------------------------------
-# Bootstrap / migration Job (post-install, post-upgrade Helm hooks). Same image as API.
-# bootstrapDatabase() uses a PostgreSQL advisory lock — safe with multiple API replicas.
-# -----------------------------------------------------------------------------
-migrationJob:
-  enabled: true
-  hookWeight: '5'
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      cpu: '1'
-      memory: 512Mi
-
-# -----------------------------------------------------------------------------
 # PodDisruptionBudget (API)
 # -----------------------------------------------------------------------------
 podDisruptionBudget:
@@ -292,7 +289,7 @@ serviceMonitor:
 externalDatabase:
   # postgresql://user:pass@host:5432/dbname — override via api.existingSecretEnv in production
   url: postgresql://grant_user:changeme@postgres:5432/grant_db
-  # TCP host for initContainer wait (migration Job + API); set to match your Postgres Service
+  # TCP host for initContainer wait (API); set to match your Postgres Service
   host: postgres
   port: 5432
 
@@ -318,10 +315,16 @@ config:
   demoModeEnabled: false
   metricsEnabled: false
   systemUserId: '00000000-0000-0000-0000-000000000000'
+  # Extra / override keys for the API ConfigMap (non-secret). Merged over files/api-configmap-env-defaults.yaml
+  # (see apps/api/.env.example). Structured fields above + global.appUrl + redis.* still win on conflict.
+  env: {}
+  # Optional: extra env var names that must never be emitted in the ConfigMap (treat as secret); use if you add
+  # custom keys via config.env that should only come from the runtime Secret or Vault.
+  envSecretKeys: []
 
 # -----------------------------------------------------------------------------
 # External Secrets Operator — syncs to Secret named {{ fullname }}-runtime (same as generated Secret)
-# Not used together with api.existingSecretEnv (use one or the other).
+# Not used together with api.existingSecretEnv or api.useVaultInjectedEnv (pick one secret source).
 # -----------------------------------------------------------------------------
 externalSecret:
   enabled: false

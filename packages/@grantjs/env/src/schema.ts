@@ -27,6 +27,8 @@ export const envSchema = z.object({
   APP_URL: optionalString('http://localhost:4000'),
   DOCS_URL: optionalString('http://localhost:5173'),
   API_PORT: optionalNumber(4000),
+  /** SIGTERM/SIGINT: max ms for Apollo/HTTP/jobs/cache/DB shutdown before forced exit. Keep below K8s terminationGracePeriodSeconds. */
+  GRACEFUL_SHUTDOWN_TIMEOUT_MS: optionalNumber(25000),
   SYSTEM_USER_ID: optionalString('00000000-0000-0000-0000-000000000000'),
 
   // Database: DB_URL or POSTGRES_* for derivation

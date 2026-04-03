@@ -64,17 +64,22 @@ helm upgrade --install grant ./charts/grant-platform \
   --set redis.password=your-redis-password
 ```
 
-See `values.yaml` for image tags, replica counts, migration Job, and optional `ServiceMonitor`.
+See `values.yaml` for image tags, replica counts, API probes / `terminationGracePeriodSeconds`, and optional `ServiceMonitor`.
 
 ## Key values → environment variables
 
-| Value                                        | Env / effect                                                                      |
-| -------------------------------------------- | --------------------------------------------------------------------------------- |
-| `global.appUrl`                              | `APP_URL`, `SECURITY_FRONTEND_URL`, `OPENAPI_PRODUCTION_URL`, OAuth callback URLs |
-| `include grant.docsUrl` template             | `DOCS_URL` (`{APP_URL}/docs`)                                                     |
-| `externalDatabase.url`                       | `DB_URL` (in generated Secret, ExternalSecret, or `api.existingSecretEnv`)        |
-| `redis.host`, `redis.port`, `redis.password` | `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`                                      |
-| `config.*`                                   | `NODE_ENV`, `CACHE_STRATEGY`, `EMAIL_PROVIDER`, `METRICS_ENABLED`, etc.           |
+| Value                                                  | Env / effect                                                                                                                                                                                                                                                                                            |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `global.appUrl`                                        | `APP_URL`, `SECURITY_FRONTEND_URL`, `OPENAPI_PRODUCTION_URL`, OAuth callback URLs                                                                                                                                                                                                                       |
+| `include grant.docsUrl` template                       | `DOCS_URL` (`{APP_URL}/docs`)                                                                                                                                                                                                                                                                           |
+| `externalDatabase.url`                                 | `DB_URL` (in generated Secret, ExternalSecret, or `api.existingSecretEnv`)                                                                                                                                                                                                                              |
+| `redis.host`, `redis.port`, `redis.password`           | `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`                                                                                                                                                                                                                                                            |
+| `config.*` (structured)                                | `NODE_ENV`, `CACHE_STRATEGY`, `EMAIL_PROVIDER`, `METRICS_ENABLED`, `REDIS_*` host/port/db, URL-derived vars (wins over `config.env`)                                                                                                                                                                    |
+| `files/api-configmap-env-defaults.yaml` + `config.env` | **Non-secret** API ConfigMap defaults (K8s-oriented subset of [`apps/api/.env.example`](../../apps/api/.env.example): no E2E/POSTGRES split, no dev-only localhost tracing/CORS lists); merged in `templates/configmap-env.yaml`. Secret keys are never emitted (see `config.envSecretKeys` to extend). |
+| `config.envSecretKeys`                                 | Extra env names to exclude from the ConfigMap (secret-only).                                                                                                                                                                                                                                            |
+| `api.startupProbe` / `api.livenessProbe`               | `/health` is only available after DB bootstrap and app init; widen `startupProbe` if migrations are slow (~5m budget in defaults).                                                                                                                                                                      |
+| `api.terminationGracePeriodSeconds`                    | Pod grace period (default 60s); must exceed **`GRACEFUL_SHUTDOWN_TIMEOUT_MS`** ([`@grantjs/env` schema](../../packages/@grantjs/env/src/schema.ts), default 25000).                                                                                                                                     |
+| `api.lifecycle`                                        | Optional e.g. `preStop` sleep so endpoints drain before SIGTERM-heavy shutdown.                                                                                                                                                                                                                         |
 
 For the full env surface, see [`packages/@grantjs/env/src/schema.ts`](../../packages/@grantjs/env/src/schema.ts) and [`docs/deployment/environment.md`](../../docs/deployment/environment.md).
 
@@ -92,9 +97,10 @@ Choose one of:
 
 Optional `serviceAccount.annotations` for `eks.amazonaws.com/role-arn` when the API needs AWS APIs (e.g. S3 storage).
 
-## Database bootstrap
+## Database migrations and pod shutdown
 
-- **`apps/api/src/bootstrap-job.ts`** runs in a **post-install / post-upgrade** Job (same image as the API). It uses the same `bootstrapDatabase()` path as API startup (**PostgreSQL advisory lock**). Disable with `migrationJob.enabled: false` if you rely only on API startup.
+- **Migrations** run inside the **API process** before `httpServer.listen()`: [`bootstrapDatabase()`](../../apps/api/src/server.ts) (PostgreSQL **advisory lock**; safe with multiple replicas). There is no separate Helm migration Job.
+- On **SIGTERM** / **SIGINT**, the API stops **Apollo Server** (drain), closes HTTP, then shuts down tracing, jobs, cache, and the DB pool, with a timeout from **`GRACEFUL_SHUTDOWN_TIMEOUT_MS`** (default **25000** ms). Keep **`api.terminationGracePeriodSeconds`** above that value (default **60s**).
 
 ## Storage
 

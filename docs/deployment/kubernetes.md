@@ -13,13 +13,13 @@ The same **canonical environment contract** applies as for Docker: [`@grantjs/en
 
 The chart deploys:
 
-| Workload               | Role                                                                                                                            |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| **API**                | Grant API (REST + GraphQL); `ClusterIP` Service, configurable replicas                                                          |
-| **Web**                | Next.js app; catch-all `/` behind Ingress                                                                                       |
-| **Docs**               | VitePress static site; served under `/docs` (separate Ingress with path rewrite); configurable replicas (`docs.replicaCount`)   |
-| **Example** (optional) | Next.js example app under `/example`                                                                                            |
-| **Bootstrap Job**      | Post-install/post-upgrade hook; runs `bootstrapDatabase()` (same as API startup; PostgreSQL advisory lock for safe concurrency) |
+| Workload               | Role                                                                                                                          |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **API**                | Grant API (REST + GraphQL); `ClusterIP` Service, configurable replicas                                                        |
+| **Web**                | Next.js app; catch-all `/` behind Ingress                                                                                     |
+| **Docs**               | VitePress static site; served under `/docs` (separate Ingress with path rewrite); configurable replicas (`docs.replicaCount`) |
+| **Example** (optional) | Next.js example app under `/example`                                                                                          |
+| **Migrations**         | `bootstrapDatabase()` runs in the **API** before HTTP listen (PostgreSQL advisory lock; safe with multiple replicas)          |
 
 **PostgreSQL** and **Redis** are **not** bundled. Install them separately (managed cloud services, operators, or another Helm release) and point the chart at them.
 
@@ -45,9 +45,9 @@ helm upgrade --install grant ./charts/grant-platform \
   --set redis.password=your-redis-password
 ```
 
-Adjust `externalDatabase.*` and `redis.*` to match your Services (e.g. `my-postgres.default.svc.cluster.local`). The chart sets **`DB_URL`**, **`REDIS_HOST`**, **`REDIS_PASSWORD`**, and **`APP_URL`** (and derived OAuth URLs) via a ConfigMap and Secret. Full defaults and options are in **`charts/grant-platform/values.yaml`**; the chart README in-repo lists image tags, `migrationJob`, `ServiceMonitor`, and optional persistence.
+Adjust `externalDatabase.*` and `redis.*` to match your Services (e.g. `my-postgres.default.svc.cluster.local`). The chart sets **`DB_URL`**, **`REDIS_HOST`**, **`REDIS_PASSWORD`**, and **`APP_URL`** (and derived OAuth URLs) via a ConfigMap and Secret. Full defaults and options are in **`charts/grant-platform/values.yaml`**; the chart README in-repo lists image tags, API probes / graceful shutdown, `ServiceMonitor`, and optional persistence.
 
-**Replica counts** are set per workload (`api.replicaCount`, `web.replicaCount`, `docs.replicaCount`, `example.replicaCount`). If you use a **private registry** (mirrored images), create a pull Secret in the release namespace and set **`imagePullSecrets`** in values so API, web, docs, example, and the bootstrap Job can pull images.
+**Replica counts** are set per workload (`api.replicaCount`, `web.replicaCount`, `docs.replicaCount`, `example.replicaCount`). If you use a **private registry** (mirrored images), create a pull Secret in the release namespace and set **`imagePullSecrets`** in values so API, web, docs, and example can pull images.
 
 ## Canonical `APP_URL`
 

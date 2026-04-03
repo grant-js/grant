@@ -1,6 +1,6 @@
 /**
  * Load .env hierarchy from workspace root. Used by index.ts on first import.
- * Order: .env → .env.local → .env.{NODE_ENV} → .env.{NODE_ENV}.local (later overrides earlier).
+ * Order: .env → .env.local → .env.{NODE_ENV} → .env.{NODE_ENV}.local → optional file at GRANT_ENV_FILE (later overrides earlier).
  */
 
 import fs from 'node:fs';
@@ -40,6 +40,15 @@ export function loadEnv(rootArg?: string): void {
     });
     if (result.parsed) {
       dotenvExpand.expand(result);
+    }
+  }
+
+  // Optional extra .env path (e.g. file injected by a secrets sidecar). Set GRANT_ENV_FILE in the runtime environment; no default path.
+  const extraEnvPath = process.env.GRANT_ENV_FILE;
+  if (extraEnvPath && fs.existsSync(extraEnvPath)) {
+    const extraResult = dotenv.config({ path: extraEnvPath, override: true });
+    if (extraResult.parsed) {
+      dotenvExpand.expand(extraResult);
     }
   }
 

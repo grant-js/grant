@@ -51,6 +51,9 @@ export const APP_CONFIG = {
 
   /** Public docs site URL (for runtime config consumed by web/docs) */
   docsUrl: env.DOCS_URL,
+
+  /** Graceful shutdown budget (ms); from `GRACEFUL_SHUTDOWN_TIMEOUT_MS`. */
+  gracefulShutdownTimeoutMs: env.GRACEFUL_SHUTDOWN_TIMEOUT_MS,
 } as const;
 
 // ============================================================================
