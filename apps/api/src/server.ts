@@ -52,7 +52,7 @@ async function startServer() {
     logger: loggerFactory.createLogger('DatabaseConnection'),
   });
 
-  // Ensure schema + core seed are ready before serving requests.
+  // Sole migrate/seed path for Kubernetes (no Helm hook Job); PostgreSQL advisory lock is safe for multiple replicas.
   await bootstrapDatabase(db, config.system.systemUserId);
 
   const app = express();
@@ -166,20 +166,48 @@ async function startServer() {
   const isDevelopment = config.app.isDevelopment;
 
   const gracefulShutdown = async (signal: string) => {
-    if (isDevelopment) {
-      logger.info({ msg: 'Shutting down...' });
-      httpServer.close(() => {
+    const forceShutdown = setTimeout(() => {
+      logger.error({ msg: 'Forced shutdown after timeout' });
+      process.exit(1);
+    }, config.app.gracefulShutdownTimeoutMs);
+
+    const finish = () => {
+      clearTimeout(forceShutdown);
+    };
+
+    try {
+      if (isDevelopment) {
+        logger.info({ msg: 'Shutting down...' });
+        await apolloServer.stop().catch((err: unknown) => {
+          logger.warn({ msg: 'Apollo stop during dev shutdown', err });
+        });
+        await new Promise<void>((resolve) => {
+          httpServer.close(() => resolve());
+        });
+        finish();
         process.exit(0);
+        return;
+      }
+
+      logger.info({
+        msg: 'Starting graceful shutdown',
+        signal,
       });
-      return;
-    }
 
-    logger.info({
-      msg: 'Starting graceful shutdown',
-      signal,
-    });
+      await apolloServer.stop().catch((error: unknown) => {
+        logger.error({
+          msg: 'Error stopping Apollo Server',
+          err: error,
+        });
+      });
 
-    httpServer.close(async () => {
+      await new Promise<void>((resolve, reject) => {
+        httpServer.close((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+
       logger.info({ msg: 'HTTP server closed' });
 
       try {
@@ -221,17 +249,17 @@ async function startServer() {
         });
       }
 
+      finish();
       process.exit(0);
-    });
-
-    setTimeout(() => {
-      logger.error({ msg: 'Forced shutdown after timeout' });
+    } catch (err) {
+      logger.error({ err }, 'Graceful shutdown failed');
+      finish();
       process.exit(1);
-    }, 30000);
+    }
   };
 
-  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  process.on('SIGTERM', () => void gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => void gracefulShutdown('SIGINT'));
 }
 
 startServer().catch((error) => {

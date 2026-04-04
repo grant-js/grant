@@ -15,7 +15,7 @@ Namespace: {{ .Release.Namespace }}
 
 4. TLS: add cert-manager annotations under ingress.extraAnnotations (e.g. cluster-issuer) or set ingress.tls.
 
-5. Bootstrap Job (post-install/post-upgrade) runs database migrations; API startup also runs bootstrap
-   with a PostgreSQL advisory lock for safe concurrent replicas.
+5. Database migrations run at API startup (before /health); tune api.startupProbe if bootstrap is slow.
+   On SIGTERM the API drains Apollo and HTTP then closes jobs/cache/DB — keep terminationGracePeriodSeconds above GRACEFUL_SHUTDOWN_TIMEOUT_MS (default 25000 ms).
 
 6. Docs are exposed on a separate Ingress with path /docs(/|$)(.*) — requires ingress-nginx or compatible.

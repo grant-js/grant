@@ -17,7 +17,12 @@ spec:
       labels:
         {{- include "grant.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: api
+      {{- with .Values.api.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
+      terminationGracePeriodSeconds: {{ .Values.api.terminationGracePeriodSeconds }}
       {{- include "grant.imagePullSecrets" . | nindent 6 }}
       serviceAccountName: {{ include "grant.serviceAccountName" . }}
       automountServiceAccountToken: {{ .Values.serviceAccount.automountServiceAccountToken }}
@@ -42,6 +47,10 @@ spec:
           imagePullPolicy: {{ .Values.api.image.pullPolicy }}
           securityContext:
             {{- toYaml .Values.api.securityContext | nindent 12 }}
+          {{- if not (empty .Values.api.lifecycle) }}
+          lifecycle:
+            {{- toYaml .Values.api.lifecycle | nindent 12 }}
+          {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.config.apiPort }}
@@ -51,7 +60,7 @@ spec:
             {{- if .Values.api.existingSecretEnv }}
             - secretRef:
                 name: {{ .Values.api.existingSecretEnv }}
-            {{- else }}
+            {{- else if not .Values.api.useVaultInjectedEnv }}
             - secretRef:
                 name: {{ include "grant.fullname" . }}-runtime
             {{- end }}

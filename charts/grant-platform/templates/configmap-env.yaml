@@ -1,4 +1,46 @@
 {{- $_ := .Values.global.appUrl | required "global.appUrl is required (public https base URL)" }}
+{{- $fileDefaults := .Files.Get "api-configmap-env-defaults.yaml" | fromYaml }}
+{{- $user := .Values.config.env | default dict }}
+{{- $base := mergeOverwrite $fileDefaults $user }}
+{{- $appBase := trimSuffix "/" .Values.global.appUrl }}
+{{- $docsUrl := include "grant.docsUrl" . | trim }}
+{{- $derived := dict
+  "NODE_ENV" .Values.config.nodeEnv
+  "API_PORT" (.Values.config.apiPort | toString)
+  "APP_URL" .Values.global.appUrl
+  "DOCS_URL" $docsUrl
+  "SECURITY_FRONTEND_URL" .Values.global.appUrl
+  "OPENAPI_PRODUCTION_URL" .Values.global.appUrl
+  "GITHUB_CALLBACK_URL" (printf "%s/api/auth/github/callback" $appBase)
+  "GITHUB_PROJECT_CALLBACK_URL" (printf "%s/api/auth/project/callback" $appBase)
+  "CACHE_STRATEGY" .Values.config.cacheStrategy
+  "EMAIL_PROVIDER" .Values.config.emailProvider
+  "STORAGE_PROVIDER" .Values.config.storageProvider
+  "JOBS_PROVIDER" .Values.config.jobsProvider
+  "DEMO_MODE_ENABLED" (.Values.config.demoModeEnabled | toString)
+  "METRICS_ENABLED" (.Values.config.metricsEnabled | toString)
+  "SYSTEM_USER_ID" .Values.config.systemUserId
+  "REDIS_HOST" .Values.redis.host
+  "REDIS_PORT" (.Values.redis.port | default 6379 | toString)
+  "REDIS_DB" (.Values.redis.db | default 0 | toString)
+}}
+{{- $merged := mergeOverwrite $base $derived }}
+{{- $secretKeys := concat (list
+  "DB_URL"
+  "POSTGRES_PASSWORD"
+  "REDIS_PASSWORD"
+  "GITHUB_CLIENT_SECRET"
+  "AUTH_MFA_SECRET_ENCRYPTION_KEY"
+  "MAILGUN_API_KEY"
+  "MAILJET_API_KEY"
+  "MAILJET_SECRET_KEY"
+  "EMAIL_SES_CLIENT_ID"
+  "EMAIL_SES_CLIENT_SECRET"
+  "SMTP_PASSWORD"
+  "STORAGE_S3_ACCESS_KEY_ID"
+  "STORAGE_S3_SECRET_ACCESS_KEY"
+  "SECURITY_API_KEY"
+) (.Values.config.envSecretKeys | default list) }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -6,21 +48,8 @@ metadata:
   labels:
     {{- include "grant.labels" . | nindent 4 }}
 data:
-  NODE_ENV: {{ .Values.config.nodeEnv | quote }}
-  API_PORT: {{ .Values.config.apiPort | toString | quote }}
-  APP_URL: {{ .Values.global.appUrl | quote }}
-  DOCS_URL: {{ include "grant.docsUrl" . | quote }}
-  SECURITY_FRONTEND_URL: {{ .Values.global.appUrl | quote }}
-  OPENAPI_PRODUCTION_URL: {{ .Values.global.appUrl | quote }}
-  GITHUB_CALLBACK_URL: {{ printf "%s/api/auth/github/callback" (trimSuffix "/" .Values.global.appUrl) | quote }}
-  GITHUB_PROJECT_CALLBACK_URL: {{ printf "%s/api/auth/project/callback" (trimSuffix "/" .Values.global.appUrl) | quote }}
-  CACHE_STRATEGY: {{ .Values.config.cacheStrategy | quote }}
-  REDIS_HOST: {{ .Values.redis.host | quote }}
-  REDIS_PORT: {{ .Values.redis.port | default 6379 | toString | quote }}
-  REDIS_DB: {{ .Values.redis.db | default 0 | toString | quote }}
-  EMAIL_PROVIDER: {{ .Values.config.emailProvider | quote }}
-  STORAGE_PROVIDER: {{ .Values.config.storageProvider | quote }}
-  JOBS_PROVIDER: {{ .Values.config.jobsProvider | quote }}
-  DEMO_MODE_ENABLED: {{ .Values.config.demoModeEnabled | toString | quote }}
-  METRICS_ENABLED: {{ .Values.config.metricsEnabled | toString | quote }}
-  SYSTEM_USER_ID: {{ .Values.config.systemUserId | quote }}
+{{- range $k, $v := $merged }}
+  {{- if not (has $k $secretKeys) }}
+  {{ $k }}: {{ $v | toString | quote }}
+  {{- end }}
+{{- end }}

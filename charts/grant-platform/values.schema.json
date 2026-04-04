@@ -79,7 +79,6 @@
         }
       }
     },
-    "migrationJob": { "type": "object" },
     "podDisruptionBudget": { "type": "object" },
     "serviceMonitor": { "type": "object" },
     "externalDatabase": {
@@ -99,6 +98,20 @@
         "db": { "type": "integer" }
       }
     },
-    "config": { "type": "object" }
+    "config": {
+      "type": "object",
+      "properties": {
+        "env": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Non-secret API env overrides; merged over files/api-configmap-env-defaults.yaml"
+        },
+        "envSecretKeys": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Additional env keys excluded from ConfigMap (secret-only)"
+        }
+      }
+    }
   }
 }
