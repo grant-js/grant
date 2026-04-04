@@ -12,7 +12,7 @@ Deploys the Grant Platform behind a **single canonical public URL** (`global.app
 
 ### Traefik (default)
 
-Set `ingress.className` to your Traefik `IngressClass` (e.g. `traefik` or `platform-gateway-services`).
+Set `ingress.className` to your Traefik `IngressClass` (e.g. `traefik` or whatever name your platform uses).
 
 - **Main Ingress** — standard `Prefix` paths; add timeouts / body size via Traefik `Middleware` or annotations your platform documents.
 - **Docs** — `ingress.docs.mode: traefik` (default): chart creates a `Middleware` with `stripPrefix` `/docs` and a second Ingress with path prefix `/docs`. Override `ingress.docs.traefik.middleware.apiVersion` if your cluster only exposes legacy CRDs (`traefik.containo.us/v1alpha1`).
@@ -20,7 +20,7 @@ Set `ingress.className` to your Traefik `IngressClass` (e.g. `traefik` or `platf
 
 ```yaml
 ingress:
-  className: platform-gateway-services
+  className: traefik
   extraAnnotations:
     cert-manager.io/cluster-issuer: letsencrypt-dns
   docs:

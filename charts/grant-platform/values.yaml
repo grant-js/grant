@@ -234,7 +234,7 @@ example:
 # -----------------------------------------------------------------------------
 ingress:
   enabled: true
-  # Set to your IngressClass (e.g. traefik, platform-gateway-services for Traefik at Alteos)
+  # Set to your cluster's IngressClass (e.g. traefik, nginx — must match your ingress controller)
   className: traefik
   # Override hostname (default: hostname from global.appUrl)
   host: ''
