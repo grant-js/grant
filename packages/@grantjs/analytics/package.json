@@ -22,7 +22,7 @@
     "@grantjs/core": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^25.5.0",
+    "@types/node": "^25.6.0",
     "typescript": "^6"
   },
   "license": "MIT"

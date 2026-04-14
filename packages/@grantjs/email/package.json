@@ -70,10 +70,10 @@
     "mailgun.js": "^12.7.1",
     "form-data": "^4.0.2",
     "node-mailjet": "^6.0.6",
-    "@aws-sdk/client-ses": "^3.1019.0",
-    "nodemailer": "^8.0.4",
-    "@types/nodemailer": "^7.0.11",
-    "@types/node": "^25.5.0",
+    "@aws-sdk/client-ses": "^3.1030.0",
+    "nodemailer": "^8.0.5",
+    "@types/nodemailer": "^8.0.0",
+    "@types/node": "^25.6.0",
     "typescript": "^6"
   },
   "license": "MIT"

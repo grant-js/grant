@@ -29,14 +29,14 @@
     "@grantjs/env": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "drizzle-seed": "^0.3.1",
-    "postgres": "^3.4.7",
+    "postgres": "^3.4.9",
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@types/node": "^25.5.0",
+    "@types/node": "^25.6.0",
     "@types/pg": "^8.20.0",
     "drizzle-kit": "^0.31.10",
-    "eslint": "^10.1.0",
+    "eslint": "^10.2.0",
     "tsx": "^4.20.4",
     "typescript": "^6"
   },

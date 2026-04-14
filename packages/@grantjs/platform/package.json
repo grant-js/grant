@@ -16,8 +16,8 @@
     "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "@types/node": "^25.5.0",
-    "eslint": "^10.1.0",
+    "@types/node": "^25.6.0",
+    "eslint": "^10.2.0",
     "typescript": "^6"
   }
 }
