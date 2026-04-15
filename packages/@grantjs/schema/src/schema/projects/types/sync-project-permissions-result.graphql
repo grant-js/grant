@@ -1,0 +1,18 @@
+type SyncProjectPermissionsResult {
+  """
+  The project that was synced.
+  """
+  projectId: ID!
+  importId: String
+  rolesCreated: Int!
+  groupsCreated: Int!
+  roleGroupsLinked: Int!
+  groupPermissionsLinked: Int!
+  projectRolesLinked: Int!
+  projectGroupsLinked: Int!
+  projectPermissionsLinked: Int!
+  projectResourcesLinked: Int!
+  projectUsersEnsured: Int!
+  userRolesAssigned: Int!
+  warnings: [String!]!
+}

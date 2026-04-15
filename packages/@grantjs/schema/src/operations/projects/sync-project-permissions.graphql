@@ -1,0 +1,17 @@
+mutation SyncProjectPermissions($id: ID!, $scope: Scope!, $input: SyncProjectPermissionsInput!) {
+  syncProjectPermissions(id: $id, scope: $scope, input: $input) {
+    projectId
+    importId
+    rolesCreated
+    groupsCreated
+    roleGroupsLinked
+    groupPermissionsLinked
+    projectRolesLinked
+    projectGroupsLinked
+    projectPermissionsLinked
+    projectResourcesLinked
+    projectUsersEnsured
+    userRolesAssigned
+    warnings
+  }
+}

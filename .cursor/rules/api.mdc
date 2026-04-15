@@ -28,6 +28,7 @@ Both layers call **handlers** only; handlers never expose repositories to the tr
 - Validate input and output with zod schemas. Service input args align with schema types (e.g. `params: Omit<QueryGroupsArgs, 'scope'> & SelectedFields<Group>`).
 - Access only **domain-related repositories** (e.g. RoleService → RoleRepository, RoleTagRepository, RoleGroupRepository).
 - Service-specific validation helpers (`validateInput`, `validateOutput`, dynamic schemas) live in `services/common/` — import via `./common` within the services layer.
+- **Ports (`@grantjs/core`)**: Add an `I*Service` interface for each new service in `packages/@grantjs/core/src/ports/services/` (same domain file as related ports, or a new `*.service.port.ts` if needed). Export from `packages/@grantjs/core/src/ports/services/index.ts`; add to `packages/@grantjs/core/src/ports/service.port.ts` when that barrel re-exports the domain. The concrete class in `apps/api` **implements** the port; **handlers** type dependencies as the port (e.g. `IProjectPermissionSyncService`), not the implementation class.
 
 ## Repositories (`apps/api/src/repositories`)
 

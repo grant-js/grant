@@ -888,6 +888,12 @@ export type Mutation = {
   setMyPrimaryAuthenticationMethod: UserAuthenticationMethod;
   setMyPrimaryMfaDevice: MfaDevice;
   setupMfa: MfaSetupResponse;
+  /**
+   * Replace-import project RBAC from a canonical data model (CDM): roles, groups,
+   * project pivots, and user role assignments tagged for this project.
+   * Requires Project:update in the given project scope.
+   */
+  syncProjectPermissions: SyncProjectPermissionsResult;
   updateGroup: Group;
   updateMyUser: User;
   updateOrganization: Organization;
@@ -1091,6 +1097,12 @@ export type MutationSetMyPrimaryAuthenticationMethodArgs = {
 
 export type MutationSetMyPrimaryMfaDeviceArgs = {
   input: SetMyPrimaryMfaDeviceInput;
+};
+
+export type MutationSyncProjectPermissionsArgs = {
+  id: Scalars['ID']['input'];
+  input: SyncProjectPermissionsInput;
+  scope: Scope;
 };
 
 export type MutationUpdateGroupArgs = {
@@ -1443,6 +1455,15 @@ export type PermissionPage = PaginatedResults & {
   hasNextPage: Scalars['Boolean']['output'];
   permissions: Array<Permission>;
   totalCount: Scalars['Int']['output'];
+};
+
+/** Reference to a Grant permission (resource + action). Optional permissionId skips lookup. */
+export type PermissionRefCdmInput = {
+  action: Scalars['String']['input'];
+  /** When set, must match the permission row's condition (JSON) for resolution. */
+  condition?: InputMaybe<Scalars['JSON']['input']>;
+  permissionId?: InputMaybe<Scalars['ID']['input']>;
+  resourceSlug: Scalars['String']['input'];
 };
 
 export enum PermissionSearchableField {
@@ -2364,6 +2385,14 @@ export type RoleTagTagArgs = {
   scope: Scope;
 };
 
+/** Logical role from the source system with effective permission set. */
+export type RoleTemplateCdmInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  externalKey: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  permissionRefs: Array<PermissionRefCdmInput>;
+};
+
 export type Scope = {
   id: Scalars['ID']['input'];
   tenant: Tenant;
@@ -2413,6 +2442,33 @@ export enum SortOrder {
   Asc = 'ASC',
   Desc = 'DESC',
 }
+
+export type SyncProjectPermissionsInput = {
+  /** CDM schema version; only 1 is supported initially. */
+  cdmVersion: Scalars['Int']['input'];
+  /** Optional idempotency / audit correlation id. */
+  importId?: InputMaybe<Scalars['String']['input']>;
+  roleTemplates: Array<RoleTemplateCdmInput>;
+  userAssignments: Array<UserAssignmentCdmInput>;
+};
+
+export type SyncProjectPermissionsResult = {
+  __typename?: 'SyncProjectPermissionsResult';
+  groupPermissionsLinked: Scalars['Int']['output'];
+  groupsCreated: Scalars['Int']['output'];
+  importId?: Maybe<Scalars['String']['output']>;
+  projectGroupsLinked: Scalars['Int']['output'];
+  /** The project that was synced. */
+  projectId: Scalars['ID']['output'];
+  projectPermissionsLinked: Scalars['Int']['output'];
+  projectResourcesLinked: Scalars['Int']['output'];
+  projectRolesLinked: Scalars['Int']['output'];
+  projectUsersEnsured: Scalars['Int']['output'];
+  roleGroupsLinked: Scalars['Int']['output'];
+  rolesCreated: Scalars['Int']['output'];
+  userRolesAssigned: Scalars['Int']['output'];
+  warnings: Array<Scalars['String']['output']>;
+};
 
 export type Tag = Auditable & {
   __typename?: 'Tag';
@@ -2698,6 +2754,13 @@ export type User = Auditable & {
   roles?: Maybe<Array<Role>>;
   tags?: Maybe<Array<Tag>>;
   updatedAt: Scalars['Date']['output'];
+};
+
+/** User membership: roles from templates and/or direct permission grants. */
+export type UserAssignmentCdmInput = {
+  directPermissionRefs?: InputMaybe<Array<PermissionRefCdmInput>>;
+  roleTemplateKeys?: InputMaybe<Array<Scalars['String']['input']>>;
+  userId: Scalars['ID']['input'];
 };
 
 export enum UserAuthenticationEmailProviderAction {
@@ -4274,6 +4337,32 @@ export type GetProjectsQuery = {
         isPrimary?: boolean | null;
       }> | null;
     }>;
+  };
+};
+
+export type SyncProjectPermissionsMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  scope: Scope;
+  input: SyncProjectPermissionsInput;
+}>;
+
+export type SyncProjectPermissionsMutation = {
+  __typename?: 'Mutation';
+  syncProjectPermissions: {
+    __typename?: 'SyncProjectPermissionsResult';
+    projectId: string;
+    importId?: string | null;
+    rolesCreated: number;
+    groupsCreated: number;
+    roleGroupsLinked: number;
+    groupPermissionsLinked: number;
+    projectRolesLinked: number;
+    projectGroupsLinked: number;
+    projectPermissionsLinked: number;
+    projectResourcesLinked: number;
+    projectUsersEnsured: number;
+    userRolesAssigned: number;
+    warnings: Array<string>;
   };
 };
 
@@ -9103,6 +9192,92 @@ export const GetProjectsDocument = {
     },
   ],
 } as unknown as DocumentNode<GetProjectsQuery, GetProjectsQueryVariables>;
+export const SyncProjectPermissionsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'SyncProjectPermissions' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Scope' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'SyncProjectPermissionsInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'syncProjectPermissions' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'id' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scope' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'importId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'rolesCreated' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'groupsCreated' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'roleGroupsLinked' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'groupPermissionsLinked' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'projectRolesLinked' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'projectGroupsLinked' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'projectPermissionsLinked' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'projectResourcesLinked' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'projectUsersEnsured' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'userRolesAssigned' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'warnings' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  SyncProjectPermissionsMutation,
+  SyncProjectPermissionsMutationVariables
+>;
 export const UpdateProjectDocument = {
   kind: 'Document',
   definitions: [

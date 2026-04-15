@@ -1,0 +1,44 @@
+"""
+Reference to a Grant permission (resource + action). Optional permissionId skips lookup.
+"""
+input PermissionRefCdmInput {
+  resourceSlug: String!
+  action: String!
+  permissionId: ID
+  """
+  When set, must match the permission row's condition (JSON) for resolution.
+  """
+  condition: JSON
+}
+
+"""
+Logical role from the source system with effective permission set.
+"""
+input RoleTemplateCdmInput {
+  externalKey: String!
+  name: String!
+  description: String
+  permissionRefs: [PermissionRefCdmInput!]!
+}
+
+"""
+User membership: roles from templates and/or direct permission grants.
+"""
+input UserAssignmentCdmInput {
+  userId: ID!
+  roleTemplateKeys: [String!]
+  directPermissionRefs: [PermissionRefCdmInput!]
+}
+
+input SyncProjectPermissionsInput {
+  """
+  CDM schema version; only 1 is supported initially.
+  """
+  cdmVersion: Int!
+  """
+  Optional idempotency / audit correlation id.
+  """
+  importId: String
+  roleTemplates: [RoleTemplateCdmInput!]!
+  userAssignments: [UserAssignmentCdmInput!]!
+}

@@ -889,6 +889,12 @@ export type Mutation = {
   setMyPrimaryAuthenticationMethod: UserAuthenticationMethod;
   setMyPrimaryMfaDevice: MfaDevice;
   setupMfa: MfaSetupResponse;
+  /**
+   * Replace-import project RBAC from a canonical data model (CDM): roles, groups,
+   * project pivots, and user role assignments tagged for this project.
+   * Requires Project:update in the given project scope.
+   */
+  syncProjectPermissions: SyncProjectPermissionsResult;
   updateGroup: Group;
   updateMyUser: User;
   updateOrganization: Organization;
@@ -1092,6 +1098,12 @@ export type MutationSetMyPrimaryAuthenticationMethodArgs = {
 
 export type MutationSetMyPrimaryMfaDeviceArgs = {
   input: SetMyPrimaryMfaDeviceInput;
+};
+
+export type MutationSyncProjectPermissionsArgs = {
+  id: Scalars['ID']['input'];
+  input: SyncProjectPermissionsInput;
+  scope: Scope;
 };
 
 export type MutationUpdateGroupArgs = {
@@ -1444,6 +1456,15 @@ export type PermissionPage = PaginatedResults & {
   hasNextPage: Scalars['Boolean']['output'];
   permissions: Array<Permission>;
   totalCount: Scalars['Int']['output'];
+};
+
+/** Reference to a Grant permission (resource + action). Optional permissionId skips lookup. */
+export type PermissionRefCdmInput = {
+  action: Scalars['String']['input'];
+  /** When set, must match the permission row's condition (JSON) for resolution. */
+  condition?: InputMaybe<Scalars['JSON']['input']>;
+  permissionId?: InputMaybe<Scalars['ID']['input']>;
+  resourceSlug: Scalars['String']['input'];
 };
 
 export enum PermissionSearchableField {
@@ -2365,6 +2386,14 @@ export type RoleTagTagArgs = {
   scope: Scope;
 };
 
+/** Logical role from the source system with effective permission set. */
+export type RoleTemplateCdmInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  externalKey: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  permissionRefs: Array<PermissionRefCdmInput>;
+};
+
 export type Scope = {
   id: Scalars['ID']['input'];
   tenant: Tenant;
@@ -2414,6 +2443,33 @@ export enum SortOrder {
   Asc = 'ASC',
   Desc = 'DESC',
 }
+
+export type SyncProjectPermissionsInput = {
+  /** CDM schema version; only 1 is supported initially. */
+  cdmVersion: Scalars['Int']['input'];
+  /** Optional idempotency / audit correlation id. */
+  importId?: InputMaybe<Scalars['String']['input']>;
+  roleTemplates: Array<RoleTemplateCdmInput>;
+  userAssignments: Array<UserAssignmentCdmInput>;
+};
+
+export type SyncProjectPermissionsResult = {
+  __typename?: 'SyncProjectPermissionsResult';
+  groupPermissionsLinked: Scalars['Int']['output'];
+  groupsCreated: Scalars['Int']['output'];
+  importId?: Maybe<Scalars['String']['output']>;
+  projectGroupsLinked: Scalars['Int']['output'];
+  /** The project that was synced. */
+  projectId: Scalars['ID']['output'];
+  projectPermissionsLinked: Scalars['Int']['output'];
+  projectResourcesLinked: Scalars['Int']['output'];
+  projectRolesLinked: Scalars['Int']['output'];
+  projectUsersEnsured: Scalars['Int']['output'];
+  roleGroupsLinked: Scalars['Int']['output'];
+  rolesCreated: Scalars['Int']['output'];
+  userRolesAssigned: Scalars['Int']['output'];
+  warnings: Array<Scalars['String']['output']>;
+};
 
 export type Tag = Auditable & {
   __typename?: 'Tag';
@@ -2699,6 +2755,13 @@ export type User = Auditable & {
   roles?: Maybe<Array<Role>>;
   tags?: Maybe<Array<Tag>>;
   updatedAt: Scalars['Date']['output'];
+};
+
+/** User membership: roles from templates and/or direct permission grants. */
+export type UserAssignmentCdmInput = {
+  directPermissionRefs?: InputMaybe<Array<PermissionRefCdmInput>>;
+  roleTemplateKeys?: InputMaybe<Array<Scalars['String']['input']>>;
+  userId: Scalars['ID']['input'];
 };
 
 export enum UserAuthenticationEmailProviderAction {
@@ -3186,6 +3249,7 @@ export type ResolversTypes = ResolversObject<{
   >;
   Permission: ResolverTypeWrapper<Permission>;
   PermissionPage: ResolverTypeWrapper<PermissionPage>;
+  PermissionRefCdmInput: PermissionRefCdmInput;
   PermissionSearchableField: PermissionSearchableField;
   PermissionSortInput: PermissionSortInput;
   PermissionSortableField: PermissionSortableField;
@@ -3295,6 +3359,7 @@ export type ResolversTypes = ResolversObject<{
   RoleSortInput: RoleSortInput;
   RoleSortableField: RoleSortableField;
   RoleTag: ResolverTypeWrapper<RoleTag>;
+  RoleTemplateCdmInput: RoleTemplateCdmInput;
   Scope: Scope;
   Searchable: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['Searchable']>;
   SessionExportData: ResolverTypeWrapper<SessionExportData>;
@@ -3302,6 +3367,8 @@ export type ResolversTypes = ResolversObject<{
   SigningKey: ResolverTypeWrapper<SigningKey>;
   SortOrder: SortOrder;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
+  SyncProjectPermissionsInput: SyncProjectPermissionsInput;
+  SyncProjectPermissionsResult: ResolverTypeWrapper<SyncProjectPermissionsResult>;
   Tag: ResolverTypeWrapper<Tag>;
   TagPage: ResolverTypeWrapper<TagPage>;
   TagSearchableField: TagSearchableField;
@@ -3339,6 +3406,7 @@ export type ResolversTypes = ResolversObject<{
   UploadUserPictureInput: UploadUserPictureInput;
   UploadUserPictureResult: ResolverTypeWrapper<UploadUserPictureResult>;
   User: ResolverTypeWrapper<User>;
+  UserAssignmentCdmInput: UserAssignmentCdmInput;
   UserAuthenticationEmailProviderAction: UserAuthenticationEmailProviderAction;
   UserAuthenticationMethod: ResolverTypeWrapper<UserAuthenticationMethod>;
   UserAuthenticationMethodProvider: UserAuthenticationMethodProvider;
@@ -3489,6 +3557,7 @@ export type ResolversParentTypes = ResolversObject<{
   PaginatedResults: ResolversInterfaceTypes<ResolversParentTypes>['PaginatedResults'];
   Permission: Permission;
   PermissionPage: PermissionPage;
+  PermissionRefCdmInput: PermissionRefCdmInput;
   PermissionSortInput: PermissionSortInput;
   PermissionTag: PermissionTag;
   Project: Project;
@@ -3588,12 +3657,15 @@ export type ResolversParentTypes = ResolversObject<{
   RolePage: RolePage;
   RoleSortInput: RoleSortInput;
   RoleTag: RoleTag;
+  RoleTemplateCdmInput: RoleTemplateCdmInput;
   Scope: Scope;
   Searchable: ResolversInterfaceTypes<ResolversParentTypes>['Searchable'];
   SessionExportData: SessionExportData;
   SetMyPrimaryMfaDeviceInput: SetMyPrimaryMfaDeviceInput;
   SigningKey: SigningKey;
   String: Scalars['String']['output'];
+  SyncProjectPermissionsInput: SyncProjectPermissionsInput;
+  SyncProjectPermissionsResult: SyncProjectPermissionsResult;
   Tag: Tag;
   TagPage: TagPage;
   TagSortInput: TagSortInput;
@@ -3627,6 +3699,7 @@ export type ResolversParentTypes = ResolversObject<{
   UploadUserPictureInput: UploadUserPictureInput;
   UploadUserPictureResult: UploadUserPictureResult;
   User: User;
+  UserAssignmentCdmInput: UserAssignmentCdmInput;
   UserAuthenticationMethod: UserAuthenticationMethod;
   UserDataExport: UserDataExport;
   UserExportData: UserExportData;
@@ -4418,6 +4491,12 @@ export type MutationResolvers<
     RequireFields<MutationSetMyPrimaryMfaDeviceArgs, 'input'>
   >;
   setupMfa?: Resolver<ResolversTypes['MfaSetupResponse'], ParentType, ContextType>;
+  syncProjectPermissions?: Resolver<
+    ResolversTypes['SyncProjectPermissionsResult'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationSyncProjectPermissionsArgs, 'id' | 'input' | 'scope'>
+  >;
   updateGroup?: Resolver<
     ResolversTypes['Group'],
     ParentType,
@@ -5394,6 +5473,26 @@ export type SigningKeyResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type SyncProjectPermissionsResultResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['SyncProjectPermissionsResult'] =
+    ResolversParentTypes['SyncProjectPermissionsResult'],
+> = ResolversObject<{
+  groupPermissionsLinked?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  groupsCreated?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  importId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  projectGroupsLinked?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  projectPermissionsLinked?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  projectResourcesLinked?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  projectRolesLinked?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  projectUsersEnsured?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  roleGroupsLinked?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  rolesCreated?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  userRolesAssigned?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  warnings?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
+}>;
+
 export type TagResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['Tag'] = ResolversParentTypes['Tag'],
@@ -5700,6 +5799,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   Searchable?: SearchableResolvers<ContextType>;
   SessionExportData?: SessionExportDataResolvers<ContextType>;
   SigningKey?: SigningKeyResolvers<ContextType>;
+  SyncProjectPermissionsResult?: SyncProjectPermissionsResultResolvers<ContextType>;
   Tag?: TagResolvers<ContextType>;
   TagPage?: TagPageResolvers<ContextType>;
   UploadUserPictureResult?: UploadUserPictureResultResolvers<ContextType>;

@@ -84,6 +84,7 @@ import { PermissionService } from './permissions.service';
 import { ProjectAppTagService } from './project-app-tags.service';
 import { ProjectAppService } from './project-apps.service';
 import { ProjectGroupService } from './project-groups.service';
+import { ProjectPermissionSyncService } from './project-permission-sync.service';
 import { ProjectPermissionService } from './project-permissions.service';
 import { ProjectResourceService } from './project-resources.service';
 import { ProjectRoleService } from './project-roles.service';
@@ -120,7 +121,7 @@ export function createServices(
   cache: IEntityCacheAdapter,
   grant: Grant
 ) {
-  return {
+  const servicesBase = {
     me: new MeService(repositories.userRepository, repositories.accountRepository, grant),
     accounts: new AccountService(
       repositories.accountRepository,
@@ -392,6 +393,23 @@ export function createServices(
       repositories.tagRepository,
       repositories.groupTagRepository,
       audit(groupTagsAuditLogs, 'groupTagId', user, db)
+    ),
+  };
+
+  return {
+    ...servicesBase,
+    projectPermissionSync: new ProjectPermissionSyncService(
+      repositories.projectPermissionSyncRepository,
+      servicesBase.roles,
+      servicesBase.groups,
+      servicesBase.roleGroups,
+      servicesBase.groupPermissions,
+      servicesBase.projectRoles,
+      servicesBase.projectGroups,
+      servicesBase.projectPermissions,
+      servicesBase.projectResources,
+      servicesBase.projectUsers,
+      servicesBase.userRoles
     ),
   };
 }

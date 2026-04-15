@@ -2,7 +2,7 @@
  * Project-domain service port interfaces.
  * Covers: Project, ProjectUser, ProjectRole, ProjectGroup,
  *         ProjectPermission, ProjectResource, ProjectTag,
- *         ProjectUserApiKey.
+ *         ProjectUserApiKey, ProjectPermissionSync (CDM import).
  */
 import type {
   AddProjectGroupInput,
@@ -32,6 +32,9 @@ import type {
   RemoveProjectRoleInput,
   RemoveProjectTagInput,
   RemoveProjectUserInput,
+  Scope,
+  SyncProjectPermissionsInput,
+  SyncProjectPermissionsResult,
   UpdateProjectTagInput,
 } from '@grantjs/schema';
 
@@ -215,4 +218,20 @@ export interface IProjectUserApiKeyService {
     params: { projectId: string; userId: string; apiKeyId: string } & DeleteParams,
     transaction?: unknown
   ): Promise<ProjectUserApiKey>;
+}
+
+// ---------------------------------------------------------------------------
+// IProjectPermissionSyncService
+// ---------------------------------------------------------------------------
+
+/** Replace-import of project RBAC from the canonical data model (CDM). */
+export interface IProjectPermissionSyncService {
+  syncProjectPermissions(
+    params: {
+      projectId: string;
+      scope: Scope;
+      input: SyncProjectPermissionsInput;
+    },
+    transaction: unknown
+  ): Promise<SyncProjectPermissionsResult>;
 }

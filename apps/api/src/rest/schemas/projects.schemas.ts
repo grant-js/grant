@@ -141,3 +141,52 @@ export const deleteProjectQuerySchema = z.object({
 });
 
 export const deleteProjectResponseSchema = createSuccessResponseSchema(projectSchema);
+
+const permissionRefCdmSchema = z.object({
+  resourceSlug: z.string().min(1),
+  action: z.string().min(1),
+  permissionId: z.string().uuid().optional(),
+  condition: z.record(z.string(), z.unknown()).optional().nullable(),
+});
+
+const roleTemplateCdmSchema = z.object({
+  externalKey: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().optional().nullable(),
+  permissionRefs: z.array(permissionRefCdmSchema),
+});
+
+const userAssignmentCdmSchema = z.object({
+  userId: z.string().uuid(),
+  roleTemplateKeys: z.array(z.string()).optional(),
+  directPermissionRefs: z.array(permissionRefCdmSchema).optional(),
+});
+
+/** Body for POST /api/projects/:id/permissions/sync (canonical data model import). */
+export const syncProjectPermissionsRequestSchema = z.object({
+  scope: scopeSchema,
+  cdmVersion: z.number().int(),
+  importId: z.string().optional(),
+  roleTemplates: z.array(roleTemplateCdmSchema),
+  userAssignments: z.array(userAssignmentCdmSchema),
+});
+
+export const syncProjectPermissionsResultSchema = z.object({
+  projectId: z.string(),
+  importId: z.string().nullable(),
+  rolesCreated: z.number(),
+  groupsCreated: z.number(),
+  roleGroupsLinked: z.number(),
+  groupPermissionsLinked: z.number(),
+  projectRolesLinked: z.number(),
+  projectGroupsLinked: z.number(),
+  projectPermissionsLinked: z.number(),
+  projectResourcesLinked: z.number(),
+  projectUsersEnsured: z.number(),
+  userRolesAssigned: z.number(),
+  warnings: z.array(z.string()),
+});
+
+export const syncProjectPermissionsResponseSchema = createSuccessResponseSchema(
+  syncProjectPermissionsResultSchema
+);

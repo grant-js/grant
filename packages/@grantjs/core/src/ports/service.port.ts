@@ -43,6 +43,7 @@ export type { IPermissionService, IPermissionTagService } from './services/permi
 export type {
   IProjectGroupService,
   IProjectPermissionService,
+  IProjectPermissionSyncService,
   IProjectResourceService,
   IProjectRoleService,
   IProjectService,

@@ -99,6 +99,7 @@ When adding or changing features, follow this order. Each step may produce outpu
 
 4. **API** – `apps/api`
    - Add or update GraphQL resolvers and REST routes; both use types from `@grantjs/schema` and map to handlers. See `.cursor/rules/api.mdc` when editing API code.
+   - **Service ports in `@grantjs/core`**: For each new service in `apps/api`, add a matching `I*Service` interface in `packages/@grantjs/core/src/ports/services/` (grouped by domain, e.g. `project.service.port.ts`). Export it from `packages/@grantjs/core/src/ports/services/index.ts`, and if the interface is listed in `packages/@grantjs/core/src/ports/service.port.ts` (backward-compatible barrel), add it there too. Implement the interface on the concrete class; handlers inject the **port** type, not the implementation class.
 
 5. **Web** – `apps/web`
    - Add or update hooks (from operation documents) and feature components. See `.cursor/rules/react-and-web.mdc` when editing web code.

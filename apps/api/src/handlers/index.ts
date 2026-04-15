@@ -179,6 +179,7 @@ export function createHandlers(
       services.projectGroups,
       services.projectRoles,
       services.projectUsers,
+      services.projectPermissionSync,
       cache,
       services,
       db

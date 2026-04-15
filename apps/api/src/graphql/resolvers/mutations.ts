@@ -259,6 +259,18 @@ export const Mutation = {
       projectMutations.updateProject!
     )
   ),
+  syncProjectPermissions: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      {
+        resource: ResourceSlug.Project,
+        action: ResourceAction.Update,
+        resourceResolver: 'project',
+      },
+      projectMutations.syncProjectPermissions!
+    )
+  ),
   deleteProject: requireEmailThenMfaGraphQL(
     ALLOW_PERSONAL_EMAIL,
     ALLOW_PERSONAL_MFA,

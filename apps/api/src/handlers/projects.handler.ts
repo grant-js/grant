@@ -5,6 +5,7 @@ import type {
   IOrganizationProjectTagService,
   IProjectGroupService,
   IProjectPermissionService,
+  IProjectPermissionSyncService,
   IProjectRoleService,
   IProjectService,
   IProjectTagService,
@@ -14,10 +15,12 @@ import type {
 import {
   MutationCreateProjectArgs,
   MutationDeleteProjectArgs,
+  MutationSyncProjectPermissionsArgs,
   MutationUpdateProjectArgs,
   Project,
   ProjectPage,
   QueryProjectsArgs,
+  SyncProjectPermissionsResult,
   Tenant,
 } from '@grantjs/schema';
 
@@ -40,6 +43,7 @@ export class ProjectHandler extends CacheHandler {
     private readonly projectGroups: IProjectGroupService,
     private readonly projectRoles: IProjectRoleService,
     private readonly projectUsers: IProjectUserService,
+    private readonly projectPermissionSync: IProjectPermissionSyncService,
     cache: IEntityCacheAdapter,
     scopeServices: ScopeServices,
     private readonly db: ITransactionalConnection<Transaction>
@@ -115,6 +119,30 @@ export class ProjectHandler extends CacheHandler {
     });
 
     return projectsResult;
+  }
+
+  public async syncProjectPermissions(
+    params: MutationSyncProjectPermissionsArgs
+  ): Promise<SyncProjectPermissionsResult> {
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const result = await this.projectPermissionSync.syncProjectPermissions(
+        {
+          projectId: params.id,
+          scope: params.scope,
+          input: params.input,
+        },
+        tx
+      );
+      await this.invalidatePermissionsCacheForScope(params.scope);
+      await this.invalidateRolesCacheForScope(params.scope);
+      await this.invalidateGroupsCacheForScope(params.scope);
+      await this.invalidateUsersCacheForScope(params.scope);
+      await this.invalidateResourcesCacheForScope(params.scope);
+      for (const ua of params.input.userAssignments) {
+        await this.invalidateAuthorizationCacheForUser(ua.userId);
+      }
+      return result;
+    });
   }
 
   public async createProject(params: MutationCreateProjectArgs): Promise<Project> {

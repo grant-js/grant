@@ -1,0 +1,12 @@
+extend type Mutation {
+  """
+  Replace-import project RBAC from a canonical data model (CDM): roles, groups,
+  project pivots, and user role assignments tagged for this project.
+  Requires Project:update in the given project scope.
+  """
+  syncProjectPermissions(
+    id: ID!
+    scope: Scope!
+    input: SyncProjectPermissionsInput!
+  ): SyncProjectPermissionsResult!
+}

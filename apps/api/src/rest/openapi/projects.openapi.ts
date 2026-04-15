@@ -13,6 +13,8 @@ import {
   projectParamsSchema,
   projectSchema,
   projectWithRelationsSchema,
+  syncProjectPermissionsRequestSchema,
+  syncProjectPermissionsResponseSchema,
   updateProjectRequestSchema,
   updateProjectResponseSchema,
   validationErrorResponseSchema,
@@ -26,6 +28,8 @@ export function registerProjectsOpenApi(registry: OpenAPIRegistry) {
   registry.register('GetProjectsResponse', getProjectsResponseSchema);
   registry.register('GetProjectResponse', createSuccessResponseSchema(projectWithRelationsSchema));
   registry.register('ProjectParams', projectParamsSchema);
+  registry.register('SyncProjectPermissionsRequest', syncProjectPermissionsRequestSchema);
+  registry.register('SyncProjectPermissionsResponse', syncProjectPermissionsResponseSchema);
 
   /**
    * GET /api/projects
@@ -171,6 +175,74 @@ Projects are ideal for:
         content: {
           'application/json': {
             schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * POST /api/projects/:id/permissions/sync
+   */
+  registry.registerPath({
+    method: 'post',
+    path: '/api/projects/{id}/permissions/sync',
+    tags: ['Projects'],
+    summary: 'Sync project RBAC from canonical data model (CDM)',
+    description: `
+Replace-import roles, groups, and user role assignments tagged for this project from a versioned CDM payload.
+Requires \`accountProject\` or \`organizationProject\` scope in the body.
+
+This operation is intended for migrating external permission models into Grant's \`User → Role → Group → Permission\` graph.
+    `.trim(),
+    request: {
+      params: projectParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: syncProjectPermissionsRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Sync completed',
+        content: {
+          'application/json': {
+            schema: syncProjectPermissionsResponseSchema,
+          },
+        },
+      },
+      400: {
+        description: 'Invalid request body',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized - Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      404: {
+        description: 'Project or permission not found',
+        content: {
+          'application/json': {
+            schema: notFoundErrorResponseSchema,
           },
         },
       },

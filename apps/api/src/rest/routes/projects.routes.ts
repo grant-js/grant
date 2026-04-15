@@ -3,6 +3,7 @@ import {
   CreateProjectMutationVariables,
   DeleteProjectMutationVariables,
   Project,
+  SyncProjectPermissionsResult,
   UpdateProjectMutationVariables,
 } from '@grantjs/schema';
 import { ProjectSortInput } from '@grantjs/schema';
@@ -15,6 +16,7 @@ import {
   deleteProjectQuerySchema,
   getProjectsQuerySchema,
   projectParamsSchema,
+  syncProjectPermissionsRequestSchema,
   updateProjectRequestSchema,
 } from '@/rest/schemas';
 import { TypedRequest } from '@/rest/types';
@@ -74,6 +76,36 @@ export function createProjectsRouter(context: RequestContext): Router {
       const project: Project = await context.handlers.projects.createProject(variables);
 
       sendSuccessResponse(res, project, 201);
+    }
+  );
+
+  router.post(
+    '/:id/permissions/sync',
+    validate({ params: projectParamsSchema, body: syncProjectPermissionsRequestSchema }),
+    requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
+    authorizeRestRoute({
+      resource: ResourceSlug.Project,
+      action: ResourceAction.Update,
+      resourceResolver: 'project',
+    }),
+    async (
+      req: TypedRequest<{
+        params: typeof projectParamsSchema;
+        body: typeof syncProjectPermissionsRequestSchema;
+      }>,
+      res: Response
+    ) => {
+      const { id } = req.params;
+      const { scope, cdmVersion, importId, roleTemplates, userAssignments } = req.body;
+
+      const result: SyncProjectPermissionsResult =
+        await context.handlers.projects.syncProjectPermissions({
+          id,
+          scope,
+          input: { cdmVersion, importId, roleTemplates, userAssignments },
+        });
+
+      sendSuccessResponse(res, result);
     }
   );
 
