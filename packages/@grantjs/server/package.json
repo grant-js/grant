@@ -91,7 +91,7 @@
     "@vitest/coverage-v8": "^4.1.4",
     "eslint": "^10.2.0",
     "express": "^5.1.0",
-    "fastify": "^5.8.4",
+    "fastify": "^5.8.5",
     "next": "^16.2.3",
     "@nestjs/common": "^11.1.19",
     "@nestjs/core": "^11.1.19",
