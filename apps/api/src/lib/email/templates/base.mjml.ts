@@ -123,9 +123,7 @@ export async function renderBaseEmailTemplate(props: BaseEmailTemplateProps): Pr
     </mjml>
   `;
 
-  const raw = mjml(mjmlTemplate) as
-    | { html?: string }
-    | Promise<{ html?: string }>;
+  const raw = mjml(mjmlTemplate) as { html?: string } | Promise<{ html?: string }>;
   const { html } = await Promise.resolve(raw);
   if (typeof html !== 'string' || html.length === 0) {
     throw new ConfigurationError(
