@@ -3,6 +3,7 @@
 # =============================================================================
 # Map env names to @grantjs/env (packages/@grantjs/env/src/schema.ts).
 # Production: set secrets via existingSecretEnv or external secrets operator.
+# Default *.image.tag is latest (GHCR Release workflow also publishes :demo and :sha-<git>).
 
 global:
   # Required: public https URL (e.g. https://grant.example.com) — no trailing path
@@ -30,7 +31,7 @@ api:
   replicaCount: 2
   image:
     repository: ghcr.io/grant-js/grant/grant-api
-    tag: demo
+    tag: latest
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
@@ -102,7 +103,7 @@ web:
   replicaCount: 1
   image:
     repository: ghcr.io/grant-js/grant/grant-web
-    tag: demo
+    tag: latest
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
@@ -154,7 +155,7 @@ docs:
   replicaCount: 1
   image:
     repository: ghcr.io/grant-js/grant/grant-docs
-    tag: demo
+    tag: latest
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
@@ -187,7 +188,7 @@ example:
   replicaCount: 1
   image:
     repository: ghcr.io/grant-js/grant/example-nextjs
-    tag: demo
+    tag: latest
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP

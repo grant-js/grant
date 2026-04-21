@@ -34,6 +34,7 @@ jobs:
       docs: ${{ steps.filter.outputs.docs }}
       example: ${{ steps.filter.outputs.example }}
       shared: ${{ steps.filter.outputs.shared }}
+      workflow_release: ${{ steps.filter.outputs.workflow_release }}
       docker_matrix: ${{ steps.matrix.outputs.docker_matrix }}
     steps:
       - name: Checkout
@@ -57,6 +58,8 @@ jobs:
               - '.github/actions/**'
               - '.eslintrc*'
               - 'vitest.config.*'
+              - '.github/workflows/release.yml'
+              - 'charts/**'
             release:
               - '.changeset/**'
               - 'package.json'
@@ -66,6 +69,8 @@ jobs:
             docs: 'docs/**'
             example: 'packages/@grantjs/client/examples/nextjs/**'
             shared: 'packages/**'
+            workflow_release:
+              - '.github/workflows/release.yml'
 
       - name: Build docker matrix (from changed paths)
         id: matrix
@@ -78,21 +83,30 @@ jobs:
 
           items=()
           force="${{ inputs.force }}"
+          workflow_release="${{ steps.filter.outputs.workflow_release }}"
 
-          if [[ "$force" == "true" || "${{ steps.filter.outputs.api }}" == "true" || "${{ steps.filter.outputs.shared }}" == "true" ]]; then
+          # Editing release.yml (e.g. tags) must republish every image so GHCR stays consistent.
+          if [[ "$force" == "true" || "$workflow_release" == "true" ]]; then
             items+=( '{"image":"grant-api","file":"apps/api/Dockerfile"}' )
-          fi
-
-          if [[ "$force" == "true" || "${{ steps.filter.outputs.web }}" == "true" || "${{ steps.filter.outputs.shared }}" == "true" ]]; then
             items+=( '{"image":"grant-web","file":"apps/web/Dockerfile"}' )
-          fi
-
-          if [[ "$force" == "true" || "${{ steps.filter.outputs.docs }}" == "true" || "${{ steps.filter.outputs.shared }}" == "true" ]]; then
             items+=( '{"image":"grant-docs","file":"docs/Dockerfile"}' )
-          fi
-
-          if [[ "$force" == "true" || "${{ steps.filter.outputs.example }}" == "true" || "${{ steps.filter.outputs.shared }}" == "true" ]]; then
             items+=( '{"image":"example-nextjs","file":"packages/@grantjs/client/examples/nextjs/Dockerfile"}' )
+          else
+            if [[ "${{ steps.filter.outputs.api }}" == "true" || "${{ steps.filter.outputs.shared }}" == "true" ]]; then
+              items+=( '{"image":"grant-api","file":"apps/api/Dockerfile"}' )
+            fi
+
+            if [[ "${{ steps.filter.outputs.web }}" == "true" || "${{ steps.filter.outputs.shared }}" == "true" ]]; then
+              items+=( '{"image":"grant-web","file":"apps/web/Dockerfile"}' )
+            fi
+
+            if [[ "${{ steps.filter.outputs.docs }}" == "true" || "${{ steps.filter.outputs.shared }}" == "true" ]]; then
+              items+=( '{"image":"grant-docs","file":"docs/Dockerfile"}' )
+            fi
+
+            if [[ "${{ steps.filter.outputs.example }}" == "true" || "${{ steps.filter.outputs.shared }}" == "true" ]]; then
+              items+=( '{"image":"example-nextjs","file":"packages/@grantjs/client/examples/nextjs/Dockerfile"}' )
+            fi
           fi
 
           json="[$(IFS=,; echo "${items[*]}")]"
@@ -234,6 +248,7 @@ jobs:
           cache_scope: ${{ matrix.image }}-${{ hashFiles('pnpm-lock.yaml', 'apps/api/Dockerfile', 'apps/web/Dockerfile', 'docs/Dockerfile', 'packages/@grantjs/client/examples/nextjs/Dockerfile') }}
           image: ${{ matrix.image }}
           tags: |
+            ghcr.io/${{ github.repository }}/${{ matrix.image }}:latest
             ghcr.io/${{ github.repository }}/${{ matrix.image }}:demo
             ghcr.io/${{ github.repository }}/${{ matrix.image }}:sha-${{ github.sha }}
           push: true
