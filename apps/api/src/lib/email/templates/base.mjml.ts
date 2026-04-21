@@ -2,8 +2,8 @@ import { SupportedLocale } from '@grantjs/i18n';
 import mjml from 'mjml';
 
 import { config } from '@/config';
-import { ConfigurationError } from '@/lib/errors';
 import { translateStatic } from '@/i18n';
+import { ConfigurationError } from '@/lib/errors';
 
 export interface EmailTemplateParams {
   locale: SupportedLocale;
