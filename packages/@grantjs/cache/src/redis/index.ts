@@ -1,6 +1,5 @@
-import Redis from 'ioredis';
-
 import type { CacheKey, ICacheAdapter, ILogger } from '@grantjs/core';
+import Redis from 'ioredis';
 
 /**
  * Redis cache adapter for distributed caching
@@ -12,13 +11,20 @@ export class RedisCacheAdapter implements ICacheAdapter {
   private prefix: string;
 
   constructor(
-    config: { host: string; port: number; password?: string; prefix?: string },
+    config: {
+      host: string;
+      port: number;
+      password?: string;
+      db?: number;
+      prefix?: string;
+    },
     private readonly logger: ILogger
   ) {
     this.client = new Redis({
       host: config.host,
       port: config.port,
       password: config.password,
+      db: config.db ?? 0,
       retryStrategy: (times: number) => {
         const delay = Math.min(times * 50, 2000);
         return delay;

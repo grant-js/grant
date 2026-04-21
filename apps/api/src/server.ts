@@ -82,6 +82,7 @@ async function startServer() {
               host: config.redis.host,
               port: config.redis.port,
               password: config.redis.password,
+              db: config.redis.database,
             }
           : undefined,
     },

@@ -1,8 +1,8 @@
+import type { IEntityCacheAdapter, ILogger, ILoggerFactory } from '@grantjs/core';
 import { ConfigurationError } from '@grantjs/core';
 
 import { InMemoryCacheAdapter } from './memory';
 import { RedisCacheAdapter } from './redis';
-import type { IEntityCacheAdapter, ILogger, ILoggerFactory } from '@grantjs/core';
 
 /** Silent fallback when no logger factory is provided */
 const noop = () => {};
@@ -24,6 +24,8 @@ export interface CacheConfig {
     host: string;
     port: number;
     password?: string;
+    /** Redis logical database index (0–15 typical). Must match across all API replicas. */
+    db?: number;
     prefix?: string;
   };
 }
