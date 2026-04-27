@@ -61,7 +61,7 @@
     "@changesets/cli": "^2.31.0",
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^10.0.1",
-    "@iconify-json/fluent": "^1.2.45",
+    "@iconify-json/fluent": "^1.2.46",
     "@iconify-json/fluent-color": "^1.2.21",
     "@types/node": "^25.6.0",
     "badge-maker": "^5.0.2",
@@ -78,7 +78,7 @@
     "tsx": "^4.21.0",
     "turbo": "^2.9.6",
     "typescript": "^6",
-    "typescript-eslint": "^8.58.2",
+    "typescript-eslint": "^8.59.0",
     "vitepress": "^1.6.4"
   },
   "engines": {
