@@ -20,7 +20,7 @@ jobs:
       code: ${{ steps.filter.outputs.code }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
 
@@ -54,7 +54,7 @@ jobs:
     # if: github.actor != 'dependabot[bot]'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
 
