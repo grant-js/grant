@@ -46,7 +46,7 @@
     "embla-carousel-react": "^8.5.2",
     "graphql": "^16.14.0",
     "input-otp": "^1.4.2",
-    "js-cookie": "^3.0.5",
+    "js-cookie": "^3.0.7",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^1.14.0",
     "next": "16.2.6",
