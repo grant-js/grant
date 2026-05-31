@@ -1,9 +1,9 @@
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import {
   CreateGroupMutationVariables,
-  DeleteGroupMutationVariables,
   Group,
-  UpdateGroupMutationVariables,
+  MutationDeleteGroupArgs,
+  MutationUpdateGroupArgs,
 } from '@grantjs/schema';
 import { GroupSortInput } from '@grantjs/schema';
 import { Response, Router } from 'express';
@@ -100,7 +100,7 @@ export function createGroupsRouter(context: RequestContext): Router {
       const { id } = req.params;
       const { scopeId, tenant } = req.query;
 
-      const variables: UpdateGroupMutationVariables = {
+      const variables: MutationUpdateGroupArgs = {
         id,
         input: {
           ...req.body,
@@ -132,7 +132,7 @@ export function createGroupsRouter(context: RequestContext): Router {
       const { id } = req.params;
       const { scopeId, tenant } = req.query;
 
-      const variables: DeleteGroupMutationVariables = {
+      const variables: MutationDeleteGroupArgs = {
         id,
         scope: { id: scopeId, tenant },
       };

@@ -71,10 +71,7 @@ export function withGrant(
   options: GrantOptions,
   handler: GrantRouteHandler
 ): (request: NextRequest, routeContext: NextRouteContext) => Promise<Response> {
-  return async (
-    request: NextRequest,
-    _routeContext: NextRouteContext
-  ): Promise<Response> => {
+  return async (request: NextRequest, _routeContext: NextRouteContext): Promise<Response> => {
     debugGrant('Next', { resource: options.resource, action: options.action });
 
     const token = await extractTokenFromRequest(request, client.config);

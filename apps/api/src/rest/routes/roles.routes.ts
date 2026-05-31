@@ -1,9 +1,9 @@
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import {
   CreateRoleMutationVariables,
-  DeleteRoleMutationVariables,
+  MutationDeleteRoleArgs,
+  MutationUpdateRoleArgs,
   Role,
-  UpdateRoleMutationVariables,
 } from '@grantjs/schema';
 import { RoleSortInput } from '@grantjs/schema';
 import { Response, Router } from 'express';
@@ -100,7 +100,7 @@ export function createRolesRouter(context: RequestContext): Router {
       const { id } = req.params;
       const { scopeId, tenant } = req.query;
 
-      const variables: UpdateRoleMutationVariables = {
+      const variables: MutationUpdateRoleArgs = {
         id,
         input: {
           ...req.body,
@@ -132,7 +132,7 @@ export function createRolesRouter(context: RequestContext): Router {
       const { id } = req.params;
       const { scopeId, tenant } = req.query;
 
-      const variables: DeleteRoleMutationVariables = {
+      const variables: MutationDeleteRoleArgs = {
         id,
         scope: { id: scopeId, tenant },
       };

@@ -1,6 +1,8 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { loadFilesSync } from '@graphql-tools/load-files';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-import { join } from 'path';
 
 import { Mutation } from '@/graphql/resolvers/mutations';
 import { Query } from '@/graphql/resolvers/queries';
@@ -13,7 +15,22 @@ import { resourceResolver as Resource } from './resources/fields';
 import { roleResolver as Role } from './roles/fields';
 import { userResolver as User } from './users/fields';
 
-const typeDefs = loadFilesSync(join(process.cwd(), '../../packages/@grantjs/schema/src/schema'), {
+function resolveGraphqlSchemaDir(): string {
+  const candidates = [
+    join(process.cwd(), '../../packages/@grantjs/schema/dist/schema'),
+    join(process.cwd(), '../../packages/@grantjs/schema/src/schema'),
+  ];
+  for (const dir of candidates) {
+    if (existsSync(dir)) {
+      return dir;
+    }
+  }
+  throw new Error(
+    'GraphQL schema directory not found (expected packages/@grantjs/schema/dist/schema or src/schema)'
+  );
+}
+
+const typeDefs = loadFilesSync(resolveGraphqlSchemaDir(), {
   extensions: ['graphql'],
   ignoreIndex: true,
 });

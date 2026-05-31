@@ -1,6 +1,6 @@
 import { ComparisonOperator, type ConditionExpression } from '@grantjs/core';
 
-import { GroupKey } from '.';
+import { GroupKey } from './groups';
 import { ResourceAction, ResourceSlug, type ResourceSlug as ResourceSlugType } from './resources';
 
 export interface PermissionMapping {

@@ -1,15 +1,12 @@
 import { useMemo } from 'react';
 import { ApolloClient } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
-import {
-  GetSigningKeysDocument,
-  GetSigningKeysQuery,
-  QuerySigningKeysArgs,
-  SigningKey,
-} from '@grantjs/schema';
+import { GetSigningKeysDocument, GetSigningKeysQuery, QuerySigningKeysArgs } from '@grantjs/schema';
+
+type SigningKeyRow = GetSigningKeysQuery['signingKeys'][number];
 
 interface UseSigningKeysResult {
-  signingKeys: SigningKey[];
+  signingKeys: SigningKeyRow[];
   loading: boolean;
   error: Error | undefined;
   refetch: (

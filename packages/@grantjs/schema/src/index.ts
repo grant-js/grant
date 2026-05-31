@@ -22,6 +22,7 @@ export type {
   TagResolvers,
   UserResolvers,
 } from './generated/resolvers';
+export * from './generated/schema-types';
 export type {
   ProjectAppPublicInfo,
   ProjectAppScopeInfo,
