@@ -1,9 +1,9 @@
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import {
   CreateResourceMutationVariables,
-  DeleteResourceMutationVariables,
+  MutationDeleteResourceArgs,
+  MutationUpdateResourceArgs,
   Resource,
-  UpdateResourceMutationVariables,
 } from '@grantjs/schema';
 import { ResourceSortInput } from '@grantjs/schema';
 import { Response, Router } from 'express';
@@ -102,7 +102,7 @@ export function createResourcesRouter(context: RequestContext): Router {
       const { id } = req.params;
       const { scopeId, tenant } = req.query;
 
-      const variables: UpdateResourceMutationVariables = {
+      const variables: MutationUpdateResourceArgs = {
         id,
         input: {
           ...req.body,
@@ -134,7 +134,7 @@ export function createResourcesRouter(context: RequestContext): Router {
       const { id } = req.params;
       const { scopeId, tenant } = req.query;
 
-      const variables: DeleteResourceMutationVariables = {
+      const variables: MutationDeleteResourceArgs = {
         id,
         scope: { id: scopeId, tenant },
       };

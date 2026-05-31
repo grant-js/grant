@@ -1,9 +1,9 @@
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import {
   CreatePermissionMutationVariables,
-  DeletePermissionMutationVariables,
+  MutationDeletePermissionArgs,
+  MutationUpdatePermissionArgs,
   Permission,
-  UpdatePermissionMutationVariables,
 } from '@grantjs/schema';
 import { PermissionSortInput } from '@grantjs/schema';
 import { Response, Router } from 'express';
@@ -100,7 +100,7 @@ export function createPermissionsRouter(context: RequestContext): Router {
       const { id } = req.params;
       const { scopeId, tenant } = req.query;
 
-      const variables: UpdatePermissionMutationVariables = {
+      const variables: MutationUpdatePermissionArgs = {
         id,
         input: {
           ...req.body,
@@ -132,7 +132,7 @@ export function createPermissionsRouter(context: RequestContext): Router {
       const { id } = req.params;
       const { scopeId, tenant } = req.query;
 
-      const variables: DeletePermissionMutationVariables = {
+      const variables: MutationDeletePermissionArgs = {
         id,
         scope: { id: scopeId, tenant },
       };

@@ -21,8 +21,16 @@ interface UseOrganizationsResult {
 }
 
 export function useOrganizations(options: UseOrganizationsParams): UseOrganizationsResult {
-  const { scope, ids, limit, page, search, sort, skip: skipParam, fetchPolicy = 'cache-and-network' } =
-    options;
+  const {
+    scope,
+    ids,
+    limit,
+    page,
+    search,
+    sort,
+    skip: skipParam,
+    fetchPolicy = 'cache-and-network',
+  } = options;
 
   const skip = useMemo(
     () => skipParam === true || !scope || !scope.id || !scope.tenant,

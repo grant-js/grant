@@ -1,13 +1,13 @@
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import {
   CreateProjectMutationVariables,
-  DeleteProjectMutationVariables,
+  MutationDeleteProjectArgs,
+  MutationUpdateProjectArgs,
   Project,
   ProjectSyncJob,
   ProjectSyncJobSortableField,
   ProjectSyncJobStatus,
   SyncProjectInput,
-  UpdateProjectMutationVariables,
 } from '@grantjs/schema';
 import { ProjectSortInput } from '@grantjs/schema';
 import { Response, Router } from 'express';
@@ -356,7 +356,7 @@ export function createProjectsRouter(context: RequestContext): Router {
     ) => {
       const { id } = req.params;
 
-      const variables: UpdateProjectMutationVariables = {
+      const variables: MutationUpdateProjectArgs = {
         id,
         input: req.body,
       };
@@ -386,7 +386,7 @@ export function createProjectsRouter(context: RequestContext): Router {
       const { id } = req.params;
       const { scopeId, tenant } = req.query;
 
-      const variables: DeleteProjectMutationVariables = {
+      const variables: MutationDeleteProjectArgs = {
         id,
         scope: { id: scopeId, tenant },
       };

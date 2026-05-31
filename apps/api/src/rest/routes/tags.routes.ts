@@ -1,9 +1,9 @@
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import {
   CreateTagMutationVariables,
-  DeleteTagMutationVariables,
+  MutationDeleteTagArgs,
+  MutationUpdateTagArgs,
   Tag,
-  UpdateTagMutationVariables,
 } from '@grantjs/schema';
 import { TagSortInput } from '@grantjs/schema';
 import { Response, Router } from 'express';
@@ -94,7 +94,7 @@ export function createTagsRouter(context: RequestContext): Router {
     ) => {
       const { id } = req.params;
 
-      const variables: UpdateTagMutationVariables = {
+      const variables: MutationUpdateTagArgs = {
         id,
         input: req.body,
       };
@@ -123,7 +123,7 @@ export function createTagsRouter(context: RequestContext): Router {
     ) => {
       const { id } = req.params;
 
-      const variables: DeleteTagMutationVariables = {
+      const variables: MutationDeleteTagArgs = {
         id,
         scope: req.body.scope,
       };
