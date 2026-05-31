@@ -24,10 +24,12 @@ Do **not** set `APP_VERSION` or `NEXT_PUBLIC_APP_VERSION` — they were removed.
 
 ## Fixed versioning group
 
-All of these bump together when you add a changeset for `grant` (or any member of the fixed group):
+All of these bump together when you add a changeset for any member of the fixed group (for example `@grantjs/schema` or `grant-api`):
 
-- `grant`, `grant-api`, `grant-web`, `grant-docs`
+- `grant-api`, `grant-web`, `grant-docs`
 - `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli`
+
+The root `grant` package is private and not in the pnpm workspace, so changesets cannot target it by name.
 
 Internal packages (`@grantjs/core`, `@grantjs/database`, etc.) and examples remain in the [changeset ignore list](.changeset/config.json).
 
@@ -39,7 +41,7 @@ Internal packages (`@grantjs/core`, `@grantjs/database`, etc.) and examples rema
    pnpm changeset
    ```
 
-   Choose bump type (patch/minor/major) for `grant` (or any fixed-group member). This creates a file under `.changeset/`.
+   Choose bump type (patch/minor/major) for any fixed-group member (not the root `grant` package). This creates a file under `.changeset/`.
 
 2. **Open a PR** (or push to an existing PR). The [release workflow](.github/workflows/release.yml) runs on every push to `main`. If there are unversioned changesets, it creates or updates a PR titled **"chore: version packages"**. Nothing is published yet.
 
