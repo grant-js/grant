@@ -8,7 +8,7 @@ build/
 build-artifacts/
 .next/
 out/
-tsconfig.tsbuildinfo
+*.tsbuildinfo
 # Next.js auto-generated (do not format/lint; Next.js controls content)
 next-env.d.ts
 
