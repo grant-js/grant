@@ -2,8 +2,9 @@
 set -e
 
 # Named volumes mount with root-owned metadata; ensure the runtime user can write uploads.
+# Skip when not root (e.g. Kubernetes securityContext.runAsUser): rely on fsGroup / volume mounts instead.
 STORAGE_DIR="/app/apps/api/storage"
-if [ -d "$STORAGE_DIR" ]; then
+if [ "$(id -u)" = "0" ] && [ -d "$STORAGE_DIR" ]; then
   chown -R grantjs:grantjs "$STORAGE_DIR"
 fi
 
