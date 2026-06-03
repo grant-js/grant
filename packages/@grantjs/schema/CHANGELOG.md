@@ -1,5 +1,11 @@
 # @grantjs/schema
 
+## 1.1.4
+
+### Patch Changes
+
+- 6abd436: Skip `su-exec` in the API Docker entrypoint when the container already runs as a non-root user, fixing startup on Kubernetes with `securityContext.runAsUser`.
+
 ## 1.1.3
 
 ### Patch Changes
