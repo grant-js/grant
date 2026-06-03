@@ -9,4 +9,7 @@ if [ "$(id -u)" = "0" ] && [ -d "$STORAGE_DIR" ]; then
 fi
 
 cd /app/apps/api
-exec su-exec grantjs:grantjs "$@"
+if [ "$(id -u)" = "0" ]; then
+  exec su-exec grantjs:grantjs "$@"
+fi
+exec "$@"
