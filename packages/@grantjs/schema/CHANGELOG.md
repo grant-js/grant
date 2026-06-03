@@ -1,5 +1,11 @@
 # @grantjs/schema
 
+## 1.1.3
+
+### Patch Changes
+
+- 8c9af41: Skip storage directory chown in the API Docker entrypoint when the container is not running as root, so Kubernetes deployments with `readOnlyRootFilesystem` and `securityContext.runAsUser` can start successfully.
+
 ## 1.1.2
 
 ### Patch Changes
