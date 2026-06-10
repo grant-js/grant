@@ -91,7 +91,7 @@ async function startServer() {
 
   app.use(cors<cors.CorsRequest>(config.cors));
   app.use(helmet(config.helmet));
-  app.use(express.json({ limit: '10mb' }));
+  app.use(express.json({ limit: config.app.jsonBodyLimitBytes }));
   app.use(i18nMiddleware);
   if (config.storage.provider === 'local') {
     app.use('/storage', storageMiddleware());

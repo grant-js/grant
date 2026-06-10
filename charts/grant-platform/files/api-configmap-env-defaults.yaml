@@ -7,6 +7,8 @@ LOG_LEVEL: info
 LOG_PRETTY_PRINT: 'false'
 # Keep below api.terminationGracePeriodSeconds (Helm default 60s)
 GRACEFUL_SHUTDOWN_TIMEOUT_MS: '25000'
+# Express JSON body limit (bytes). Default 10 MiB; align with ingress proxy-body-size when raising.
+API_JSON_BODY_LIMIT_BYTES: '10485760'
 METRICS_ENDPOINT: /metrics
 METRICS_COLLECT_DEFAULTS: 'true'
 TELEMETRY_PROVIDER: none
