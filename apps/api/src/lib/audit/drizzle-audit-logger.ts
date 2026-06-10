@@ -6,6 +6,8 @@ import { config } from '@/config';
 import { createLogger } from '@/lib/logger';
 import type { Transaction } from '@/lib/transaction-manager.lib';
 
+import { serializeAuditPayload } from './serialize-audit-payload.lib';
+
 const logger = createLogger('AuditLogger');
 
 /**
@@ -52,9 +54,9 @@ export class DrizzleAuditLogger implements IAuditLogger {
       const insertData: any = {
         [this.entityIdField]: params.entityId,
         action: params.action,
-        oldValues: params.oldValues ? JSON.stringify(params.oldValues) : null,
-        newValues: params.newValues ? JSON.stringify(params.newValues) : null,
-        metadata: params.metadata ? JSON.stringify(params.metadata) : null,
+        oldValues: serializeAuditPayload(params.oldValues),
+        newValues: serializeAuditPayload(params.newValues),
+        metadata: serializeAuditPayload(params.metadata),
         performedBy: this.getPerformedBy(),
         createdAt: new Date(),
         ...(scope && {
