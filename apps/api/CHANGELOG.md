@@ -1,5 +1,23 @@
 # grant-api
 
+## 1.1.5
+
+### Patch Changes
+
+- 1d6f27d: Make the Express JSON request body limit configurable via `API_JSON_BODY_LIMIT_BYTES` (default 10 MiB) so large CDM sync imports can be tuned without code changes.
+  - @grantjs/schema@1.1.5
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+
 ## 1.1.4
 
 ### Patch Changes
