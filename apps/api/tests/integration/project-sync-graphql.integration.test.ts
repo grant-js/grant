@@ -7,6 +7,7 @@ import {
   ProjectSyncJobOperation,
   ProjectSyncJobStatus,
   Tenant,
+  TokenType,
 } from '@grantjs/schema';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -15,6 +16,7 @@ import { startProjectExportResolver } from '@/graphql/resolvers/projects/mutatio
 import { startProjectSyncResolver } from '@/graphql/resolvers/projects/mutations/start-project-sync.resolver';
 import { projectSyncJobResolver } from '@/graphql/resolvers/projects/queries/project-sync-job.resolver';
 import { projectSyncJobsResolver } from '@/graphql/resolvers/projects/queries/project-sync-jobs.resolver';
+import { config } from '@/config';
 import type { GraphqlContext } from '@/graphql/types';
 
 import { invokeRootResolver } from '../graphql-field-resolver-invoke';
@@ -121,6 +123,50 @@ describe('project sync GraphQL resolvers', () => {
         id: projectId,
         scope,
         enqueuedById: userId,
+      })
+    );
+  });
+
+  it('startProjectSync maps project-level API key auth to system user for enqueuedById', async () => {
+    const apiKeyId = 'd1bfe5e5-a05d-4e74-8e5e-5c1a64de802b';
+    const ctx = {
+      user: {
+        userId: apiKeyId,
+        tokenId: apiKeyId,
+        type: TokenType.ApiKey,
+        expiresAt: Date.now() + 60_000,
+        scope,
+      },
+      handlers: { projects: { startProjectSync } },
+    } as unknown as GraphqlContext;
+
+    await invokeRootResolver(
+      startProjectSyncResolver,
+      {
+        id: projectId,
+        scope,
+        input: {
+          version: 1,
+          id: null,
+          mode: {
+            strategy: CdmModeStrategy.Merge,
+            onConflict: null,
+            confirmDestructive: false,
+          },
+          roles: [],
+          users: [],
+          resources: [],
+          permissions: [],
+          groups: [],
+          tags: [],
+        },
+      },
+      ctx
+    );
+
+    expect(startProjectSync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        enqueuedById: config.system.systemUserId,
       })
     );
   });

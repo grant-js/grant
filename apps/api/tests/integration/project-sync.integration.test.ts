@@ -13,12 +13,14 @@ import {
   CdmFindBy,
   CdmModeStrategy,
   ProjectSyncJobOperation,
+  TokenType,
   type SyncProjectInput,
 } from '@grantjs/schema';
 import express from 'express';
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { config } from '@/config';
 import { errorHandler } from '@/middleware/error.middleware';
 import { createProjectsRouter } from '@/rest/routes/projects.routes';
 import type { RequestContext } from '@/types';
@@ -226,6 +228,50 @@ describe('project CDM sync REST (async jobs)', () => {
           }),
         ],
       },
+    });
+  });
+
+  it('POST /sync/jobs maps project-level API key auth to system user for enqueuedById', async () => {
+    const apiKeyId = 'd1bfe5e5-a05d-4e74-8e5e-5c1a64de802b';
+    const apiKeyContext = {
+      user: {
+        userId: apiKeyId,
+        tokenId: apiKeyId,
+        type: TokenType.ApiKey,
+        expiresAt: Date.now() + 60_000,
+        scope: { tenant: 'accountProject', id: `${accountId}:${projectId}` },
+      },
+      handlers: {
+        projects: {
+          startProjectSync,
+          getProjectSyncJob,
+          listProjectSyncJobs,
+          getProjectSyncJobPayload,
+          getProjectSyncJobSnapshot,
+          startProjectExport,
+          cancelProjectSync,
+        },
+      },
+    } as unknown as RequestContext;
+
+    const apiKeyApp = express();
+    apiKeyApp.use(express.json());
+    apiKeyApp.use('/api/projects', createProjectsRouter(apiKeyContext));
+    apiKeyApp.use(errorHandler);
+
+    const res = await request(apiKeyApp)
+      .post(`/api/projects/${projectId}/sync/jobs`)
+      .send({
+        scope: { tenant: 'accountProject', id: `${accountId}:${projectId}` },
+        version: 1,
+        mode: canonicalMode,
+        roles: [],
+        users: [],
+      });
+
+    expect(res.status).toBe(202);
+    expect(startProjectSync.mock.calls[0][0]).toMatchObject({
+      enqueuedById: config.system.systemUserId,
     });
   });
 
