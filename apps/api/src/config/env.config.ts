@@ -33,6 +33,9 @@ export const APP_CONFIG = {
   /** Server port */
   port: env.API_PORT,
 
+  /** Max JSON request body size for Express (bytes); from `API_JSON_BODY_LIMIT_BYTES`. */
+  jsonBodyLimitBytes: env.API_JSON_BODY_LIMIT_BYTES,
+
   /** Node environment */
   nodeEnv: env.NODE_ENV,
 
