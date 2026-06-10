@@ -20,9 +20,9 @@
     "@grantjs/core": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^25.6.0",
-    "eslint": "^10.3.0",
-    "tsx": "^4.21.0",
+    "@types/node": "^25.9.2",
+    "eslint": "^10.4.1",
+    "tsx": "^4.22.4",
     "typescript": "^6"
   }
 }
