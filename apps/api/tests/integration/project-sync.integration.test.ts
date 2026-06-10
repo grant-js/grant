@@ -13,8 +13,8 @@ import {
   CdmFindBy,
   CdmModeStrategy,
   ProjectSyncJobOperation,
-  TokenType,
   type SyncProjectInput,
+  TokenType,
 } from '@grantjs/schema';
 import express from 'express';
 import request from 'supertest';

@@ -11,12 +11,12 @@ import {
 } from '@grantjs/schema';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { config } from '@/config';
 import { cancelProjectSyncResolver } from '@/graphql/resolvers/projects/mutations/cancel-project-sync.resolver';
 import { startProjectExportResolver } from '@/graphql/resolvers/projects/mutations/start-project-export.resolver';
 import { startProjectSyncResolver } from '@/graphql/resolvers/projects/mutations/start-project-sync.resolver';
 import { projectSyncJobResolver } from '@/graphql/resolvers/projects/queries/project-sync-job.resolver';
 import { projectSyncJobsResolver } from '@/graphql/resolvers/projects/queries/project-sync-jobs.resolver';
-import { config } from '@/config';
 import type { GraphqlContext } from '@/graphql/types';
 
 import { invokeRootResolver } from '../graphql-field-resolver-invoke';
