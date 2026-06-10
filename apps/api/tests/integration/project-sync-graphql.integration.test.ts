@@ -7,9 +7,11 @@ import {
   ProjectSyncJobOperation,
   ProjectSyncJobStatus,
   Tenant,
+  TokenType,
 } from '@grantjs/schema';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { config } from '@/config';
 import { cancelProjectSyncResolver } from '@/graphql/resolvers/projects/mutations/cancel-project-sync.resolver';
 import { startProjectExportResolver } from '@/graphql/resolvers/projects/mutations/start-project-export.resolver';
 import { startProjectSyncResolver } from '@/graphql/resolvers/projects/mutations/start-project-sync.resolver';
@@ -121,6 +123,50 @@ describe('project sync GraphQL resolvers', () => {
         id: projectId,
         scope,
         enqueuedById: userId,
+      })
+    );
+  });
+
+  it('startProjectSync maps project-level API key auth to system user for enqueuedById', async () => {
+    const apiKeyId = 'd1bfe5e5-a05d-4e74-8e5e-5c1a64de802b';
+    const ctx = {
+      user: {
+        userId: apiKeyId,
+        tokenId: apiKeyId,
+        type: TokenType.ApiKey,
+        expiresAt: Date.now() + 60_000,
+        scope,
+      },
+      handlers: { projects: { startProjectSync } },
+    } as unknown as GraphqlContext;
+
+    await invokeRootResolver(
+      startProjectSyncResolver,
+      {
+        id: projectId,
+        scope,
+        input: {
+          version: 1,
+          id: null,
+          mode: {
+            strategy: CdmModeStrategy.Merge,
+            onConflict: null,
+            confirmDestructive: false,
+          },
+          roles: [],
+          users: [],
+          resources: [],
+          permissions: [],
+          groups: [],
+          tags: [],
+        },
+      },
+      ctx
+    );
+
+    expect(startProjectSync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        enqueuedById: config.system.systemUserId,
       })
     );
   });

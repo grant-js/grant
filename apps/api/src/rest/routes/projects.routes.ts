@@ -14,6 +14,7 @@ import { Response, Router } from 'express';
 
 import { authorizeRestRoute, requireEmailThenMfaRest } from '@/lib/authorization';
 import { AuthenticationError } from '@/lib/errors';
+import { resolveSyncJobEnqueuedById } from '@/lib/resolve-sync-job-enqueued-by.lib';
 import { validate } from '@/middleware/validation.middleware';
 import {
   createProjectRequestSchema,
@@ -106,7 +107,7 @@ export function createProjectsRouter(context: RequestContext): Router {
       const { id } = req.params;
       const { scope, ...input } = req.body;
 
-      const enqueuedById = context.user?.userId;
+      const enqueuedById = resolveSyncJobEnqueuedById(context.user);
       if (!enqueuedById) {
         throw new AuthenticationError('Authenticated user required to start a sync job');
       }
@@ -148,7 +149,7 @@ export function createProjectsRouter(context: RequestContext): Router {
       const { id } = req.params;
       const { scope, version, jobName, sections, includeUserApiKeys, mode } = req.body;
 
-      const enqueuedById = context.user?.userId;
+      const enqueuedById = resolveSyncJobEnqueuedById(context.user);
       if (!enqueuedById) {
         throw new AuthenticationError('Authenticated user required to start an export job');
       }
