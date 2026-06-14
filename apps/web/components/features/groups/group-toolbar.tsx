@@ -1,13 +1,14 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
+import { Group } from 'lucide-react';
 
-import { RefreshButton, Toolbar } from '@/components/common';
+import { EntityCreateNavigateButton, RefreshButton, Toolbar } from '@/components/common';
 import { useScopeFromParams } from '@/hooks/common';
 import { useGroupsStore } from '@/stores/groups.store';
 
-import { GroupCreateDialog } from './group-create-dialog';
 import { GroupLimit } from './group-limit';
 import { GroupSearch } from './group-search';
 import { GroupSorter } from './group-sorter';
@@ -15,6 +16,7 @@ import { GroupTagSelector } from './group-tag-selector';
 import { GroupViewSwitcher } from './group-view-switcher';
 
 export function GroupToolbar() {
+  const t = useTranslations('groups.createDialog');
   const refetch = useGroupsStore((state) => state.refetch);
   const loading = useGroupsStore((state) => state.loading);
   const scope = useScopeFromParams();
@@ -30,7 +32,16 @@ export function GroupToolbar() {
     <GroupTagSelector key="tags" />,
     <GroupLimit key="limit" />,
     <GroupViewSwitcher key="view" />,
-    ...(canCreate ? [<GroupCreateDialog key="create" />] : []),
+    ...(canCreate
+      ? [
+          <EntityCreateNavigateButton
+            key="create"
+            entitySegment="groups"
+            label={t('trigger')}
+            icon={Group}
+          />,
+        ]
+      : []),
   ];
 
   return <Toolbar items={toolbarItems} />;

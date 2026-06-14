@@ -138,6 +138,177 @@ export function replaceCdm(options?: {
   };
 }
 
+/** Rich CDM payload for replace-teardown E2E: multi-resource, tag, group, role, direct user groups. */
+function richCdmEntityBundle(prefix: string, userId: string) {
+  const tagKey = `${prefix}-tag`;
+  const groupKey = `${prefix}-group`;
+  const roleKey = `${prefix}-role`;
+  const resourceKeys = Array.from({ length: 5 }, (_, i) => `${prefix}-res-${i}`);
+  const permissionKeys = resourceKeys.map((_, i) => `${prefix}-perm-${i}`);
+
+  const resources = resourceKeys.map((key, i) => ({
+    key,
+    slug: key,
+    name: `Resource ${i}`,
+    description: null,
+    actions: ['read'],
+    tags: i === 0 ? [tagKey] : [],
+    primaryTag: i === 0 ? tagKey : null,
+    metadata: null,
+  }));
+
+  const permissions = resourceKeys.map((resourceKey, i) => ({
+    key: permissionKeys[i],
+    resource: resourceKey,
+    action: 'read',
+    name: `${resourceKey}:read`,
+    description: null,
+    condition: null,
+    groups: [],
+    tags: [],
+    primaryTag: null,
+    metadata: null,
+  }));
+
+  return {
+    tags: [
+      {
+        key: tagKey,
+        name: tagKey,
+        color: 'blue',
+        metadata: null,
+      },
+    ],
+    resources,
+    permissions,
+    groups: [
+      {
+        key: groupKey,
+        name: `${prefix} Group`,
+        description: null,
+        permissions: [permissionKeys[0]!],
+        tags: [],
+        primaryTag: null,
+        metadata: null,
+      },
+    ],
+    roles: [
+      {
+        key: roleKey,
+        name: `${prefix} Role`,
+        description: null,
+        groups: [],
+        permissions: [permissionKeys[1]!],
+        tags: [],
+        primaryTag: null,
+        metadata: null,
+      },
+    ],
+    users: [
+      {
+        key: { value: userId, findBy: CdmFindBy.Id },
+        name: 'Rich CDM User',
+        roles: [],
+        groups: [groupKey],
+        permissions: [],
+        tags: [],
+        primaryTag: null,
+        apiKeys: [],
+        metadata: null,
+      },
+    ],
+    tagKey,
+    roleKey,
+  };
+}
+
+export function richMergeCdm(prefix: string, userId: string): SyncProjectInput {
+  const bundle = richCdmEntityBundle(prefix, userId);
+  return {
+    version: 1,
+    id: null,
+    mode: mergeMode,
+    tags: bundle.tags,
+    resources: bundle.resources,
+    permissions: bundle.permissions,
+    groups: bundle.groups,
+    roles: bundle.roles,
+    users: bundle.users,
+  };
+}
+
+export function richReplaceCdm(prefix: string, userId: string): SyncProjectInput {
+  const replacePrefix = `${prefix}-repl`;
+  const bundle = richCdmEntityBundle(replacePrefix, userId);
+  return {
+    version: 1,
+    id: `${prefix}-replace-import`,
+    mode: replaceMode(true),
+    tags: bundle.tags,
+    resources: bundle.resources,
+    permissions: bundle.permissions,
+    groups: bundle.groups,
+    roles: bundle.roles,
+    users: bundle.users,
+  };
+}
+
+/** Minimal CDM for direct user.groups → group → permission authorization E2E. */
+export function cdmDirectGroupAuth(userId: string): SyncProjectInput {
+  return minimalCdm({
+    resources: [
+      {
+        key: 'docs',
+        slug: 'docs',
+        name: 'Docs',
+        description: null,
+        actions: ['read'],
+        tags: [],
+        primaryTag: null,
+        metadata: null,
+      },
+    ],
+    permissions: [
+      {
+        key: 'docs-read',
+        resource: 'docs',
+        action: 'read',
+        name: 'Docs:read',
+        description: null,
+        condition: null,
+        groups: [],
+        tags: [],
+        primaryTag: null,
+        metadata: null,
+      },
+    ],
+    groups: [
+      {
+        key: 'direct-group',
+        name: 'Direct Group',
+        description: null,
+        permissions: ['docs-read'],
+        tags: [],
+        primaryTag: null,
+        metadata: null,
+      },
+    ],
+    users: [
+      {
+        key: { value: userId, findBy: CdmFindBy.Id },
+        name: 'Direct Group User',
+        roles: [],
+        groups: ['direct-group'],
+        permissions: [],
+        tags: [],
+        primaryTag: null,
+        apiKeys: [],
+        metadata: null,
+      },
+    ],
+  });
+}
+
 export function invalidCdmMissingVersion(): Record<string, unknown> {
   return {
     mode: mergeMode,

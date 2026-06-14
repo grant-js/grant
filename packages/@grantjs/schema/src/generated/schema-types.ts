@@ -260,6 +260,12 @@ export type AddProjectRoleInput = {
   roleId: Scalars['ID']['input'];
 };
 
+export type AddProjectRolePermissionInput = {
+  permissionId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+  roleId: Scalars['ID']['input'];
+};
+
 export type AddProjectTagInput = {
   isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
   projectId: Scalars['ID']['input'];
@@ -274,8 +280,20 @@ export type AddProjectUserApiKeyInput = {
   userId: Scalars['ID']['input'];
 };
 
+export type AddProjectUserGroupInput = {
+  groupId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
 export type AddProjectUserInput = {
   metadata?: InputMaybe<Scalars['JSON']['input']>;
+  projectId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+export type AddProjectUserPermissionInput = {
+  permissionId: Scalars['ID']['input'];
   projectId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
@@ -295,6 +313,11 @@ export type AddRoleTagInput = {
   isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
   roleId: Scalars['ID']['input'];
   tagId: Scalars['ID']['input'];
+};
+
+export type AddUserGroupInput = {
+  groupId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 export type AddUserRoleInput = {
@@ -353,6 +376,18 @@ export enum ApiKeySortableField {
   LastUsedAt = 'lastUsedAt',
   Name = 'name',
 }
+
+export type AssignRolePermissionInput = {
+  permissionId: Scalars['ID']['input'];
+  roleId: Scalars['ID']['input'];
+  scope: Scope;
+};
+
+export type AssignUserPermissionInput = {
+  permissionId: Scalars['ID']['input'];
+  scope: Scope;
+  userId: Scalars['ID']['input'];
+};
 
 export type Auditable = {
   createdAt: Scalars['Date']['output'];
@@ -595,6 +630,7 @@ export type CreateRoleInput = {
   groupIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   metadata?: InputMaybe<Scalars['JSON']['input']>;
   name: Scalars['String']['input'];
+  permissionIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   primaryTagId?: InputMaybe<Scalars['ID']['input']>;
   scope: Scope;
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -617,8 +653,10 @@ export type CreateUserAuthenticationMethodInput = {
 };
 
 export type CreateUserInput = {
+  groupIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   metadata?: InputMaybe<Scalars['JSON']['input']>;
   name: Scalars['String']['input'];
+  permissionIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   pictureUrl?: InputMaybe<Scalars['String']['input']>;
   primaryTagId?: InputMaybe<Scalars['ID']['input']>;
   roleIds?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -697,7 +735,10 @@ export type Group = Auditable & {
   id: Scalars['ID']['output'];
   metadata: Scalars['JSON']['output'];
   name: Scalars['String']['output'];
+  permissionCount: Scalars['Int']['output'];
   permissions?: Maybe<Array<Permission>>;
+  primaryTag?: Maybe<Tag>;
+  tagCount: Scalars['Int']['output'];
   tags?: Maybe<Array<Tag>>;
   updatedAt: Scalars['Date']['output'];
 };
@@ -784,6 +825,13 @@ export type IsAuthorizedContextInput = {
   resource?: InputMaybe<Scalars['JSON']['input']>;
 };
 
+/**
+ * Check whether the authenticated principal may perform an action on a resource.
+ *
+ * Unions Role → Group → Permission, User → Group → Permission, Role → Permission,
+ * and User → Permission before matching the requested resource and action.
+ * Conditional permissions are evaluated against role/group/user execution context.
+ */
 export type IsAuthorizedInput = {
   context: IsAuthorizedContextInput;
   permission: IsAuthorizedPermissionInput;
@@ -878,6 +926,8 @@ export type Mutation = {
   __typename?: 'Mutation';
   _empty?: Maybe<Scalars['String']['output']>;
   acceptInvitation: AcceptInvitationResult;
+  assignRolePermission: RolePermission;
+  assignUserPermission: UserPermission;
   /**
    * Cancel a pending or running project CDM sync job. Cancellation is
    * immediate when the job is still PENDING; if the job is already RUNNING, the
@@ -929,6 +979,8 @@ export type Mutation = {
   revokeApiKey: ApiKey;
   revokeInvitation: OrganizationInvitation;
   revokeMyUserSession: RevokeMyUserSessionResult;
+  revokeRolePermission: RolePermission;
+  revokeUserPermission: UserPermission;
   /**
    * Rotate the signing key for the given scope: create a new active key and mark the previous one as rotated.
    * Allowed scopes: accountProject, organizationProject only.
@@ -983,6 +1035,14 @@ export type Mutation = {
 
 export type MutationAcceptInvitationArgs = {
   input: AcceptInvitationInput;
+};
+
+export type MutationAssignRolePermissionArgs = {
+  input: AssignRolePermissionInput;
+};
+
+export type MutationAssignUserPermissionArgs = {
+  input: AssignUserPermissionInput;
 };
 
 export type MutationCancelProjectSyncArgs = {
@@ -1158,6 +1218,14 @@ export type MutationRevokeInvitationArgs = {
 
 export type MutationRevokeMyUserSessionArgs = {
   id: Scalars['ID']['input'];
+};
+
+export type MutationRevokeRolePermissionArgs = {
+  input: RevokeRolePermissionInput;
+};
+
+export type MutationRevokeUserPermissionArgs = {
+  input: RevokeUserPermissionInput;
 };
 
 export type MutationRotateSigningKeyArgs = {
@@ -1524,8 +1592,10 @@ export type Permission = Auditable & {
   id: Scalars['ID']['output'];
   metadata: Scalars['JSON']['output'];
   name: Scalars['String']['output'];
+  primaryTag?: Maybe<Tag>;
   resource?: Maybe<Resource>;
   resourceId?: Maybe<Scalars['ID']['output']>;
+  tagCount: Scalars['Int']['output'];
   tags?: Maybe<Array<Tag>>;
   updatedAt: Scalars['Date']['output'];
 };
@@ -1737,6 +1807,17 @@ export type ProjectRoleProjectArgs = {
   organizationId: Scalars['ID']['input'];
 };
 
+export type ProjectRolePermission = Auditable & {
+  __typename?: 'ProjectRolePermission';
+  createdAt: Scalars['Date']['output'];
+  deletedAt?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['ID']['output'];
+  permissionId: Scalars['ID']['output'];
+  projectId: Scalars['ID']['output'];
+  roleId: Scalars['ID']['output'];
+  updatedAt: Scalars['Date']['output'];
+};
+
 export enum ProjectSearchableField {
   Description = 'description',
   Name = 'name',
@@ -1866,12 +1947,35 @@ export type ProjectUserApiKey = Auditable & {
   userId: Scalars['ID']['output'];
 };
 
+export type ProjectUserGroup = Auditable & {
+  __typename?: 'ProjectUserGroup';
+  createdAt: Scalars['Date']['output'];
+  deletedAt?: Maybe<Scalars['Date']['output']>;
+  groupId: Scalars['ID']['output'];
+  id: Scalars['ID']['output'];
+  projectId: Scalars['ID']['output'];
+  updatedAt: Scalars['Date']['output'];
+  userId: Scalars['ID']['output'];
+};
+
+export type ProjectUserPermission = Auditable & {
+  __typename?: 'ProjectUserPermission';
+  createdAt: Scalars['Date']['output'];
+  deletedAt?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['ID']['output'];
+  permissionId: Scalars['ID']['output'];
+  projectId: Scalars['ID']['output'];
+  updatedAt: Scalars['Date']['output'];
+  userId: Scalars['ID']['output'];
+};
+
 export type Query = {
   __typename?: 'Query';
   _empty?: Maybe<Scalars['String']['output']>;
   apiKeys: ApiKeyPage;
   groups: GroupPage;
   invitation?: Maybe<OrganizationInvitation>;
+  /** Evaluate authorization for the current session or API key token. */
   isAuthorized: AuthorizationResult;
   me: MeResponse;
   myMfaDevices: Array<MfaDevice>;
@@ -2167,6 +2271,12 @@ export type QueryProjectResourcesInput = {
   resourceId?: InputMaybe<Scalars['ID']['input']>;
 };
 
+export type QueryProjectRolePermissionsInput = {
+  permissionId?: InputMaybe<Scalars['ID']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+  roleId?: InputMaybe<Scalars['ID']['input']>;
+};
+
 export type QueryProjectRolesInput = {
   projectId: Scalars['ID']['input'];
 };
@@ -2179,6 +2289,18 @@ export type QueryProjectTagsInput = {
 export type QueryProjectUserApiKeysInput = {
   projectId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
+};
+
+export type QueryProjectUserGroupsInput = {
+  groupId?: InputMaybe<Scalars['ID']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+  userId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type QueryProjectUserPermissionsInput = {
+  permissionId?: InputMaybe<Scalars['ID']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+  userId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type QueryProjectUsersInput = {
@@ -2196,9 +2318,24 @@ export type QueryRoleGroupsInput = {
   roleId?: InputMaybe<Scalars['ID']['input']>;
 };
 
+export type QueryRolePermissionsInput = {
+  permissionId?: InputMaybe<Scalars['ID']['input']>;
+  roleId?: InputMaybe<Scalars['ID']['input']>;
+};
+
 export type QueryRoleTagsInput = {
   roleId?: InputMaybe<Scalars['ID']['input']>;
   tagId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type QueryUserGroupsInput = {
+  groupId?: InputMaybe<Scalars['ID']['input']>;
+  userId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type QueryUserPermissionsInput = {
+  permissionId?: InputMaybe<Scalars['ID']['input']>;
+  userId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type QueryUserRolesInput = {
@@ -2341,6 +2478,12 @@ export type RemoveProjectRoleInput = {
   roleId: Scalars['ID']['input'];
 };
 
+export type RemoveProjectRolePermissionInput = {
+  permissionId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+  roleId: Scalars['ID']['input'];
+};
+
 export type RemoveProjectTagInput = {
   projectId: Scalars['ID']['input'];
   tagId: Scalars['ID']['input'];
@@ -2352,7 +2495,19 @@ export type RemoveProjectUserApiKeyInput = {
   userId: Scalars['ID']['input'];
 };
 
+export type RemoveProjectUserGroupInput = {
+  groupId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
 export type RemoveProjectUserInput = {
+  projectId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+export type RemoveProjectUserPermissionInput = {
+  permissionId: Scalars['ID']['input'];
   projectId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
@@ -2370,6 +2525,11 @@ export type RemoveRoleGroupInput = {
 export type RemoveRoleTagInput = {
   roleId: Scalars['ID']['input'];
   tagId: Scalars['ID']['input'];
+};
+
+export type RemoveUserGroupInput = {
+  groupId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 export type RemoveUserRoleInput = {
@@ -2501,25 +2661,52 @@ export type RevokeMyUserSessionResult = {
   success: Scalars['Boolean']['output'];
 };
 
+export type RevokeRolePermissionInput = {
+  hardDelete?: InputMaybe<Scalars['Boolean']['input']>;
+  permissionId: Scalars['ID']['input'];
+  roleId: Scalars['ID']['input'];
+  scope: Scope;
+};
+
+export type RevokeUserPermissionInput = {
+  hardDelete?: InputMaybe<Scalars['Boolean']['input']>;
+  permissionId: Scalars['ID']['input'];
+  scope: Scope;
+  userId: Scalars['ID']['input'];
+};
+
 export type Role = Auditable & {
   __typename?: 'Role';
   createdAt: Scalars['Date']['output'];
   deletedAt?: Maybe<Scalars['Date']['output']>;
   description?: Maybe<Scalars['String']['output']>;
+  groupCount: Scalars['Int']['output'];
   groups?: Maybe<Array<Group>>;
   id: Scalars['ID']['output'];
   metadata: Scalars['JSON']['output'];
   name: Scalars['String']['output'];
+  permissionCount: Scalars['Int']['output'];
+  primaryTag?: Maybe<Tag>;
+  rolePermissions?: Maybe<Array<RolePermission>>;
+  tagCount: Scalars['Int']['output'];
   tags?: Maybe<Array<Tag>>;
   updatedAt: Scalars['Date']['output'];
 };
 
 export type RoleCdmInput = {
   description?: InputMaybe<Scalars['String']['input']>;
+  /**
+   * Group keys from the `groups` section. When set, permissions are linked via
+   * Role → Group → Permission. Omit to use direct `permissions` on the role.
+   */
   groups?: InputMaybe<Array<Scalars['String']['input']>>;
   key: Scalars['String']['input'];
   metadata?: InputMaybe<Scalars['JSON']['input']>;
   name: Scalars['String']['input'];
+  /**
+   * Permission document keys or catalog refs (`resourceSlug:action`). Used for
+   * direct Role → Permission when `groups` is empty.
+   */
   permissions?: InputMaybe<Array<Scalars['String']['input']>>;
   primaryTag?: InputMaybe<Scalars['String']['input']>;
   tags?: InputMaybe<Array<Scalars['String']['input']>>;
@@ -2550,6 +2737,26 @@ export type RolePage = PaginatedResults & {
   hasNextPage: Scalars['Boolean']['output'];
   roles: Array<Role>;
   totalCount: Scalars['Int']['output'];
+};
+
+export type RolePermission = Auditable & {
+  __typename?: 'RolePermission';
+  createdAt: Scalars['Date']['output'];
+  deletedAt?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['ID']['output'];
+  permission?: Maybe<Permission>;
+  permissionId: Scalars['ID']['output'];
+  role?: Maybe<Role>;
+  roleId: Scalars['ID']['output'];
+  updatedAt: Scalars['Date']['output'];
+};
+
+export type RolePermissionPermissionArgs = {
+  scope: Scope;
+};
+
+export type RolePermissionRoleArgs = {
+  scope: Scope;
 };
 
 export enum RoleSearchableField {
@@ -2948,6 +3155,7 @@ export type UpdateUserAuthenticationMethodInput = {
 };
 
 export type UpdateUserInput = {
+  groupIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   metadata?: InputMaybe<Scalars['JSON']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   pictureUrl?: InputMaybe<Scalars['String']['input']>;
@@ -2999,10 +3207,17 @@ export type User = Auditable & {
   id: Scalars['ID']['output'];
   metadata: Scalars['JSON']['output'];
   name: Scalars['String']['output'];
+  permissionCount: Scalars['Int']['output'];
   pictureUrl?: Maybe<Scalars['String']['output']>;
+  primaryTag?: Maybe<Tag>;
+  projectUserApiKeyCount: Scalars['Int']['output'];
+  roleCount: Scalars['Int']['output'];
   roles?: Maybe<Array<Role>>;
+  tagCount: Scalars['Int']['output'];
   tags?: Maybe<Array<Tag>>;
   updatedAt: Scalars['Date']['output'];
+  userGroups?: Maybe<Array<UserGroup>>;
+  userPermissions?: Maybe<Array<UserPermission>>;
 };
 
 export type UserApiKeyCdmInput = {
@@ -3045,12 +3260,15 @@ export enum UserAuthenticationMethodProvider {
 
 export type UserCdmInput = {
   apiKeys?: InputMaybe<Array<UserApiKeyCdmInput>>;
+  /** Direct group assignment. Each key must appear in the document `groups` section. */
   groups?: InputMaybe<Array<Scalars['String']['input']>>;
   key: CdmKeyResolverInput;
   metadata?: InputMaybe<Scalars['JSON']['input']>;
   name: Scalars['String']['input'];
+  /** Direct user → permission grants (document keys or catalog `resourceSlug:action` refs). */
   permissions?: InputMaybe<Array<Scalars['String']['input']>>;
   primaryTag?: InputMaybe<Scalars['String']['input']>;
+  /** Role template keys from the `roles` section. */
   roles?: InputMaybe<Array<Scalars['String']['input']>>;
   tags?: InputMaybe<Array<Scalars['String']['input']>>;
 };
@@ -3075,11 +3293,51 @@ export type UserExportData = {
   updatedAt: Scalars['Date']['output'];
 };
 
+export type UserGroup = Auditable & {
+  __typename?: 'UserGroup';
+  createdAt: Scalars['Date']['output'];
+  deletedAt?: Maybe<Scalars['Date']['output']>;
+  group?: Maybe<Group>;
+  groupId: Scalars['ID']['output'];
+  id: Scalars['ID']['output'];
+  updatedAt: Scalars['Date']['output'];
+  user?: Maybe<User>;
+  userId: Scalars['ID']['output'];
+};
+
+export type UserGroupGroupArgs = {
+  scope: Scope;
+};
+
+export type UserGroupUserArgs = {
+  scope: Scope;
+};
+
 export type UserPage = PaginatedResults & {
   __typename?: 'UserPage';
   hasNextPage: Scalars['Boolean']['output'];
   totalCount: Scalars['Int']['output'];
   users: Array<User>;
+};
+
+export type UserPermission = Auditable & {
+  __typename?: 'UserPermission';
+  createdAt: Scalars['Date']['output'];
+  deletedAt?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['ID']['output'];
+  permission?: Maybe<Permission>;
+  permissionId: Scalars['ID']['output'];
+  updatedAt: Scalars['Date']['output'];
+  user?: Maybe<User>;
+  userId: Scalars['ID']['output'];
+};
+
+export type UserPermissionPermissionArgs = {
+  scope: Scope;
+};
+
+export type UserPermissionUserArgs = {
+  scope: Scope;
 };
 
 export type UserRegistrationData = {

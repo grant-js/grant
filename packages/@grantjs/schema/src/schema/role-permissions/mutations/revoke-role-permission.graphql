@@ -1,0 +1,3 @@
+extend type Mutation {
+  revokeRolePermission(input: RevokeRolePermissionInput!): RolePermission!
+}

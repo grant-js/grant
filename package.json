@@ -51,6 +51,7 @@
     "secret-scan:protect": "GITLEAKS_CONFIG=.gitleaks.toml gitleaks protect -v",
     "audit:fix": "./scripts/audit-fix.sh",
     "audit:pnpm": "pnpm audit --recursive",
+    "benchmark:rbac": "node scripts/benchmarks/rbac-list-queries.mjs",
     "changeset": "changeset",
     "version": "changeset version",
     "release": "pnpm build:release && changeset publish",

@@ -83,6 +83,13 @@ export class RoleGroupService implements IRoleGroupService {
     return validateOutput(createDynamicSingleSchema(roleGroupSchema).array(), result, context);
   }
 
+  public async countRoleGroups(
+    params: { roleId: string },
+    transaction?: Transaction
+  ): Promise<number> {
+    return this.roleGroupRepository.countRoleGroups(params, transaction);
+  }
+
   public async addRoleGroup(
     params: AddRoleGroupInput,
     transaction?: Transaction

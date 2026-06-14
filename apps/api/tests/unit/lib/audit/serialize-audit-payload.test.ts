@@ -58,7 +58,10 @@ function buildLargeProjectUserAuditValues(permissionCount: number): Record<strin
         passwordHash: '$2b$10$abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnop',
         description: null,
         roles: ['customer'],
-        permissions: Array.from({ length: permissionCount }, (_, index) => `permission-id-${index}`),
+        permissions: Array.from(
+          { length: permissionCount },
+          (_, index) => `permission-id-${index}`
+        ),
         accessKeyId: null,
         createdAt: '2020-01-01T00:00:00.000Z',
         updatedAt: '2020-01-01T00:00:00.000Z',

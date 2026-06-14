@@ -13,6 +13,7 @@ import { ProjectSyncJobCardSkeleton } from './project-sync-job-card-skeleton';
 import { getJobAvatarInitial, getOperationLabelKey } from './project-sync-job-display';
 import { ProjectSyncJobExportTrigger } from './project-sync-job-export-trigger';
 import { ProjectSyncJobModeBadge } from './project-sync-job-mode-badge';
+import { ProjectSyncJobNavigationButton } from './project-sync-job-navigation-button';
 import { ProjectSyncJobStartTrigger } from './project-sync-job-start-trigger';
 import { ProjectSyncJobStatusBadge } from './project-sync-job-status-badge';
 import {
@@ -83,7 +84,17 @@ export function ProjectSyncJobCards() {
           ]}
         />
       )}
-      renderFooter={(job) => <ProjectSyncJobAudit job={job} />}
+      renderFooter={(job) => (
+        <div className="flex w-full items-center justify-between gap-2">
+          <ProjectSyncJobAudit job={job} />
+          <ProjectSyncJobNavigationButton
+            projectId={job.projectId}
+            jobId={job.id}
+            ariaLabel={t('actions.view')}
+            size="lg"
+          />
+        </div>
+      )}
     />
   );
 }

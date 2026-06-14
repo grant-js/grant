@@ -4,6 +4,7 @@ input CreateRoleInput {
   metadata: JSON
   tagIds: [ID!]
   groupIds: [ID!]
+  permissionIds: [ID!]
   scope: Scope!
   primaryTagId: ID
 }

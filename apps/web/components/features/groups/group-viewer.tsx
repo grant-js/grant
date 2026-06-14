@@ -5,7 +5,7 @@ import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 
 import { useScopeFromParams } from '@/hooks/common';
-import { useGroups } from '@/hooks/groups';
+import { useGroupsList } from '@/hooks/groups/use-groups-list';
 import { useGroupsStore } from '@/stores/groups.store';
 
 import { GroupCards } from './group-cards';
@@ -25,7 +25,7 @@ export function GroupViewer() {
   const setLoading = useGroupsStore((state) => state.setLoading);
   const setRefetch = useGroupsStore((state) => state.setRefetch);
 
-  const { groups, loading, totalCount, refetch } = useGroups({
+  const { groups, loading, totalCount, refetch } = useGroupsList({
     scope: scope!,
     page,
     limit,

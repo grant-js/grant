@@ -1,0 +1,10 @@
+type UserPermission implements Auditable {
+  id: ID!
+  userId: ID!
+  permissionId: ID!
+  user(scope: Scope!): User
+  permission(scope: Scope!): Permission
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}

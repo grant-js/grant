@@ -235,8 +235,16 @@ in the background. Poll \`GET /api/projects/{id}/sync/jobs/{jobId}\` for status.
 Requires a verified email and the same MFA policy as other mutating project routes, when
 enforced. The body must include an \`accountProject\` or \`organizationProject\` scope.
 
-This operation is intended for migrating external permission models into Grant's
-\`User → Role → Group → Permission\` graph.
+This operation migrates external permission models into Grant using explicit CDM v1
+assignment fields. Supported paths:
+
+- \`users.roles\` + \`roles.groups\` + \`groups.permissions\` → User → Role → Group → Permission
+- \`users.groups\` + \`groups.permissions\` → User → Group → Permission
+- \`users.roles\` + \`roles.permissions\` → User → Role → Permission
+- \`users.permissions\` → User → Permission
+
+Synthetic per-user roles are **not** generated. Legacy \`synthetic:role:user:*:direct\` keys
+in \`users.roles\` are stripped with an import warning — use \`users.permissions\` instead.
 
 ### Idempotency
 

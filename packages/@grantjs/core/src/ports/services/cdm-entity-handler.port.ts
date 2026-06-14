@@ -1,5 +1,5 @@
 /** CDM entity sync port. Implemented in apps/api as `*CdmEntity` under `lib/cdm/entities/`. */
-import type { CdmHandlerInputKey, Scope, SyncProjectResult } from '@grantjs/schema';
+import type { CdmHandlerInputKey, GroupCdmInput, Scope, SyncProjectResult } from '@grantjs/schema';
 
 export interface CdmPermissionRefSpec {
   resourceSlug?: string | null;
@@ -55,6 +55,12 @@ export interface CdmProducedRefs {
    * Consumed by user-assignment and project-user-api-key handlers for `userKey`.
    */
   userIds: Map<string, string>;
+  /**
+   * CDM document group key (`groups[].key`) → Grant group id.
+   * Populated by role-template and user-assignment handlers; consumed when
+   * linking direct `user_groups` from `userAssignments[].directGroupKeys`.
+   */
+  groupIdsByKey: Map<string, string>;
 }
 
 export interface CdmTeardownContext {
@@ -75,6 +81,8 @@ export interface CdmApplyContext {
   result: SyncProjectResult;
   /** Cross-handler shared state. */
   produced: CdmProducedRefs;
+  /** CDM document `groups[]` rows keyed by `key`, for direct user group import. */
+  documentGroupsByKey: ReadonlyMap<string, GroupCdmInput>;
   /**
    * Grant user ids allowed for this import (explicit `userId`s plus provisioned
    * users). Handlers may add ids when creating users. Used so API keys attach

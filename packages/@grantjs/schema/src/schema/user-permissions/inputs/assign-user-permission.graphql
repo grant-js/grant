@@ -1,0 +1,5 @@
+input AssignUserPermissionInput {
+  userId: ID!
+  permissionId: ID!
+  scope: Scope!
+}

@@ -267,6 +267,34 @@ export type GetGroupsQuery = {
   };
 };
 
+export type GetGroupsListQueryVariables = Exact<{
+  scope: Types.Scope;
+  page?: number | null | undefined;
+  limit?: number | null | undefined;
+  sort?: Types.GroupSortInput | null | undefined;
+  search?: string | null | undefined;
+  ids?: Array<string | number> | string | number | null | undefined;
+  tagIds?: Array<string | number> | string | number | null | undefined;
+}>;
+
+export type GetGroupsListQuery = {
+  groups: {
+    totalCount: number;
+    hasNextPage: boolean;
+    groups: Array<{
+      id: string;
+      name: string;
+      description: string | null;
+      metadata: Record<string, unknown>;
+      createdAt: Date;
+      updatedAt: Date;
+      permissionCount: number;
+      tagCount: number;
+      primaryTag: { id: string; name: string; color: string; isPrimary: boolean | null } | null;
+    }>;
+  };
+};
+
 export type UpdateGroupMutationVariables = Exact<{
   id: string | number;
   input: Types.UpdateGroupInput;
@@ -280,6 +308,7 @@ export type UpdateGroupMutation = {
     metadata: Record<string, unknown>;
     createdAt: Date;
     updatedAt: Date;
+    tags: Array<{ id: string; name: string; color: string; isPrimary: boolean | null }> | null;
   };
 };
 
@@ -397,6 +426,10 @@ export type MeQuery = {
         name: string;
         pictureUrl: string | null;
         metadata: Record<string, unknown>;
+        roleCount: number;
+        permissionCount: number;
+        projectUserApiKeyCount: number;
+        tagCount: number;
         createdAt: Date;
         updatedAt: Date;
       };
@@ -893,6 +926,37 @@ export type GetPermissionsQuery = {
   };
 };
 
+export type GetPermissionsListQueryVariables = Exact<{
+  scope: Types.Scope;
+  page?: number | null | undefined;
+  limit?: number | null | undefined;
+  sort?: Types.PermissionSortInput | null | undefined;
+  search?: string | null | undefined;
+  ids?: Array<string | number> | string | number | null | undefined;
+  tagIds?: Array<string | number> | string | number | null | undefined;
+}>;
+
+export type GetPermissionsListQuery = {
+  permissions: {
+    totalCount: number;
+    hasNextPage: boolean;
+    permissions: Array<{
+      id: string;
+      name: string;
+      action: string;
+      description: string | null;
+      metadata: Record<string, unknown>;
+      resourceId: string | null;
+      condition: Record<string, unknown> | null;
+      createdAt: Date;
+      updatedAt: Date;
+      tagCount: number;
+      primaryTag: { id: string; name: string; color: string; isPrimary: boolean | null } | null;
+      resource: { id: string; name: string; slug: string } | null;
+    }>;
+  };
+};
+
 export type UpdatePermissionMutationVariables = Exact<{
   id: string | number;
   input: Types.UpdatePermissionInput;
@@ -909,6 +973,7 @@ export type UpdatePermissionMutation = {
     createdAt: Date;
     updatedAt: Date;
     resource: { id: string; name: string; slug: string } | null;
+    tags: Array<{ id: string; name: string; color: string; isPrimary: boolean | null }> | null;
   };
 };
 
@@ -1349,6 +1414,58 @@ export type UpdateResourceMutation = {
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
+    tags: Array<{ id: string; name: string; color: string; isPrimary: boolean | null }>;
+  };
+};
+
+export type AssignRolePermissionMutationVariables = Exact<{
+  input: Types.AssignRolePermissionInput;
+}>;
+
+export type AssignRolePermissionMutation = {
+  assignRolePermission: {
+    id: string;
+    roleId: string;
+    permissionId: string;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+};
+
+export type RevokeRolePermissionMutationVariables = Exact<{
+  input: Types.RevokeRolePermissionInput;
+}>;
+
+export type RevokeRolePermissionMutation = {
+  revokeRolePermission: {
+    id: string;
+    roleId: string;
+    permissionId: string;
+    deletedAt: Date | null;
+  };
+};
+
+export type GetRoleDirectPermissionsQueryVariables = Exact<{
+  scope: Types.Scope;
+  roleId: string | number;
+}>;
+
+export type GetRoleDirectPermissionsQuery = {
+  roles: {
+    roles: Array<{
+      id: string;
+      permissionCount: number;
+      rolePermissions: Array<{
+        id: string;
+        permissionId: string;
+        permission: {
+          id: string;
+          name: string;
+          action: string;
+          resource: { slug: string } | null;
+        } | null;
+      }> | null;
+    }>;
   };
 };
 
@@ -1408,7 +1525,45 @@ export type GetRolesQuery = {
         name: string;
         tags: Array<{ id: string; name: string; color: string; isPrimary: boolean | null }> | null;
       }> | null;
+      rolePermissions: Array<{
+        id: string;
+        permissionId: string;
+        permission: {
+          id: string;
+          name: string;
+          action: string;
+          resource: { slug: string } | null;
+        } | null;
+      }> | null;
       tags: Array<{ id: string; name: string; color: string; isPrimary: boolean | null }> | null;
+    }>;
+  };
+};
+
+export type GetRolesListQueryVariables = Exact<{
+  scope: Types.Scope;
+  page?: number | null | undefined;
+  limit?: number | null | undefined;
+  sort?: Types.RoleSortInput | null | undefined;
+  search?: string | null | undefined;
+  ids?: Array<string | number> | string | number | null | undefined;
+  tagIds?: Array<string | number> | string | number | null | undefined;
+}>;
+
+export type GetRolesListQuery = {
+  roles: {
+    totalCount: number;
+    hasNextPage: boolean;
+    roles: Array<{
+      id: string;
+      name: string;
+      description: string | null;
+      metadata: Record<string, unknown>;
+      createdAt: Date;
+      updatedAt: Date;
+      groupCount: number;
+      tagCount: number;
+      primaryTag: { id: string; name: string; color: string; isPrimary: boolean | null } | null;
     }>;
   };
 };
@@ -1426,6 +1581,7 @@ export type UpdateRoleMutation = {
     metadata: Record<string, unknown>;
     createdAt: Date;
     updatedAt: Date;
+    tags: Array<{ id: string; name: string; color: string; isPrimary: boolean | null }> | null;
   };
 };
 
@@ -1503,6 +1659,57 @@ export type UpdateTagMutation = {
   updateTag: { id: string; name: string; color: string; createdAt: Date; updatedAt: Date };
 };
 
+export type AssignUserPermissionMutationVariables = Exact<{
+  input: Types.AssignUserPermissionInput;
+}>;
+
+export type AssignUserPermissionMutation = {
+  assignUserPermission: {
+    id: string;
+    userId: string;
+    permissionId: string;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+};
+
+export type RevokeUserPermissionMutationVariables = Exact<{
+  input: Types.RevokeUserPermissionInput;
+}>;
+
+export type RevokeUserPermissionMutation = {
+  revokeUserPermission: {
+    id: string;
+    userId: string;
+    permissionId: string;
+    deletedAt: Date | null;
+  };
+};
+
+export type GetUserDirectPermissionsQueryVariables = Exact<{
+  scope: Types.Scope;
+  userId: string | number;
+}>;
+
+export type GetUserDirectPermissionsQuery = {
+  users: {
+    users: Array<{
+      id: string;
+      permissionCount: number;
+      userPermissions: Array<{
+        id: string;
+        permissionId: string;
+        permission: {
+          id: string;
+          name: string;
+          action: string;
+          resource: { slug: string } | null;
+        } | null;
+      }> | null;
+    }>;
+  };
+};
+
 export type CreateUserMutationVariables = Exact<{
   input: Types.CreateUserInput;
 }>;
@@ -1552,7 +1759,64 @@ export type GetUsersQuery = {
         name: string;
         tags: Array<{ id: string; name: string; color: string; isPrimary: boolean | null }> | null;
       }> | null;
+      userGroups: Array<{
+        id: string;
+        groupId: string;
+        group: {
+          id: string;
+          name: string;
+          tags: Array<{
+            id: string;
+            name: string;
+            color: string;
+            isPrimary: boolean | null;
+          }> | null;
+        } | null;
+      }> | null;
+      userPermissions: Array<{
+        id: string;
+        permissionId: string;
+        permission: {
+          id: string;
+          name: string;
+          action: string;
+          resource: { slug: string } | null;
+        } | null;
+      }> | null;
       tags: Array<{ id: string; name: string; color: string; isPrimary: boolean | null }> | null;
+      authenticationMethods: Array<{
+        provider: Types.UserAuthenticationMethodProvider;
+        providerId: string;
+      }> | null;
+    }>;
+  };
+};
+
+export type GetUsersListQueryVariables = Exact<{
+  scope: Types.Scope;
+  page?: number | null | undefined;
+  limit?: number | null | undefined;
+  sort?: Types.UserSortInput | null | undefined;
+  search?: string | null | undefined;
+  ids?: Array<string | number> | string | number | null | undefined;
+  tagIds?: Array<string | number> | string | number | null | undefined;
+}>;
+
+export type GetUsersListQuery = {
+  users: {
+    totalCount: number;
+    hasNextPage: boolean;
+    users: Array<{
+      id: string;
+      name: string;
+      pictureUrl: string | null;
+      metadata: Record<string, unknown>;
+      createdAt: Date;
+      updatedAt: Date;
+      roleCount: number;
+      projectUserApiKeyCount: number;
+      tagCount: number;
+      primaryTag: { id: string; name: string; color: string; isPrimary: boolean | null } | null;
       authenticationMethods: Array<{
         provider: Types.UserAuthenticationMethodProvider;
         providerId: string;
@@ -1573,6 +1837,7 @@ export type UpdateUserMutation = {
     metadata: Record<string, unknown>;
     createdAt: Date;
     updatedAt: Date;
+    tags: Array<{ id: string; name: string; color: string; isPrimary: boolean | null }> | null;
   };
 };
 
@@ -2671,6 +2936,151 @@ export const GetGroupsDocument = {
     },
   ],
 } as unknown as DocumentNode<GetGroupsQuery, GetGroupsQueryVariables>;
+export const GetGroupsListDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'GetGroupsList' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Scope' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'sort' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'GroupSortInput' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'search' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'ids' } },
+          type: {
+            kind: 'ListType',
+            type: {
+              kind: 'NonNullType',
+              type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+            },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'tagIds' } },
+          type: {
+            kind: 'ListType',
+            type: {
+              kind: 'NonNullType',
+              type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'groups' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scope' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'page' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'limit' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'sort' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'sort' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'search' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'search' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'ids' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'ids' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'tagIds' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'tagIds' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'groups' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'metadata' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'primaryTag' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'color' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'isPrimary' } },
+                          ],
+                        },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'permissionCount' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'tagCount' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'totalCount' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'hasNextPage' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<GetGroupsListQuery, GetGroupsListQueryVariables>;
 export const UpdateGroupDocument = {
   kind: 'Document',
   definitions: [
@@ -2723,6 +3133,19 @@ export const UpdateGroupDocument = {
                 { kind: 'Field', name: { kind: 'Name', value: 'metadata' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'tags' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'color' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'isPrimary' } },
+                    ],
+                  },
+                },
               ],
             },
           },
@@ -3136,6 +3559,13 @@ export const MeDocument = {
                             { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                             { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
                             { kind: 'Field', name: { kind: 'Name', value: 'metadata' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'roleCount' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'permissionCount' } },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'projectUserApiKeyCount' },
+                            },
+                            { kind: 'Field', name: { kind: 'Name', value: 'tagCount' } },
                             { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                             { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
                           ],
@@ -5156,6 +5586,165 @@ export const GetPermissionsDocument = {
     },
   ],
 } as unknown as DocumentNode<GetPermissionsQuery, GetPermissionsQueryVariables>;
+export const GetPermissionsListDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'GetPermissionsList' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Scope' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'sort' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'PermissionSortInput' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'search' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'ids' } },
+          type: {
+            kind: 'ListType',
+            type: {
+              kind: 'NonNullType',
+              type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+            },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'tagIds' } },
+          type: {
+            kind: 'ListType',
+            type: {
+              kind: 'NonNullType',
+              type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'permissions' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scope' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'page' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'limit' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'sort' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'sort' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'search' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'search' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'ids' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'ids' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'tagIds' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'tagIds' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'permissions' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'action' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'metadata' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'resourceId' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'condition' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'primaryTag' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'color' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'isPrimary' } },
+                          ],
+                        },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'resource' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
+                          ],
+                        },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'tagCount' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'totalCount' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'hasNextPage' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<GetPermissionsListQuery, GetPermissionsListQueryVariables>;
 export const UpdatePermissionDocument = {
   kind: 'Document',
   definitions: [
@@ -5222,6 +5811,19 @@ export const UpdatePermissionDocument = {
                 { kind: 'Field', name: { kind: 'Name', value: 'condition' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'tags' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'color' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'isPrimary' } },
+                    ],
+                  },
+                },
               ],
             },
           },
@@ -6846,6 +7448,19 @@ export const UpdateResourceDocument = {
                 { kind: 'Field', name: { kind: 'Name', value: 'isActive' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'tags' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'color' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'isPrimary' } },
+                    ],
+                  },
+                },
               ],
             },
           },
@@ -6854,6 +7469,213 @@ export const UpdateResourceDocument = {
     },
   ],
 } as unknown as DocumentNode<UpdateResourceMutation, UpdateResourceMutationVariables>;
+export const AssignRolePermissionDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'AssignRolePermission' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'AssignRolePermissionInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'assignRolePermission' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'roleId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'permissionId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<AssignRolePermissionMutation, AssignRolePermissionMutationVariables>;
+export const RevokeRolePermissionDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'RevokeRolePermission' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'RevokeRolePermissionInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'revokeRolePermission' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'roleId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'permissionId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'deletedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<RevokeRolePermissionMutation, RevokeRolePermissionMutationVariables>;
+export const GetRoleDirectPermissionsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'GetRoleDirectPermissions' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Scope' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'roleId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'roles' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scope' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'ids' },
+                value: {
+                  kind: 'ListValue',
+                  values: [{ kind: 'Variable', name: { kind: 'Name', value: 'roleId' } }],
+                },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'limit' },
+                value: { kind: 'IntValue', value: '1' },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'roles' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'permissionCount' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'rolePermissions' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'permissionId' } },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'permission' },
+                              arguments: [
+                                {
+                                  kind: 'Argument',
+                                  name: { kind: 'Name', value: 'scope' },
+                                  value: {
+                                    kind: 'Variable',
+                                    name: { kind: 'Name', value: 'scope' },
+                                  },
+                                },
+                              ],
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'action' } },
+                                  {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'resource' },
+                                    selectionSet: {
+                                      kind: 'SelectionSet',
+                                      selections: [
+                                        { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
+                                      ],
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<GetRoleDirectPermissionsQuery, GetRoleDirectPermissionsQueryVariables>;
 export const CreateRoleDocument = {
   kind: 'Document',
   definitions: [
@@ -7103,6 +7925,49 @@ export const GetRolesDocument = {
                       },
                       {
                         kind: 'Field',
+                        name: { kind: 'Name', value: 'rolePermissions' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'permissionId' } },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'permission' },
+                              arguments: [
+                                {
+                                  kind: 'Argument',
+                                  name: { kind: 'Name', value: 'scope' },
+                                  value: {
+                                    kind: 'Variable',
+                                    name: { kind: 'Name', value: 'scope' },
+                                  },
+                                },
+                              ],
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'action' } },
+                                  {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'resource' },
+                                    selectionSet: {
+                                      kind: 'SelectionSet',
+                                      selections: [
+                                        { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
+                                      ],
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                      {
+                        kind: 'Field',
                         name: { kind: 'Name', value: 'tags' },
                         selectionSet: {
                           kind: 'SelectionSet',
@@ -7127,6 +7992,151 @@ export const GetRolesDocument = {
     },
   ],
 } as unknown as DocumentNode<GetRolesQuery, GetRolesQueryVariables>;
+export const GetRolesListDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'GetRolesList' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Scope' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'sort' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'RoleSortInput' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'search' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'ids' } },
+          type: {
+            kind: 'ListType',
+            type: {
+              kind: 'NonNullType',
+              type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+            },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'tagIds' } },
+          type: {
+            kind: 'ListType',
+            type: {
+              kind: 'NonNullType',
+              type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'roles' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scope' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'page' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'limit' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'sort' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'sort' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'search' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'search' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'ids' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'ids' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'tagIds' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'tagIds' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'roles' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'metadata' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'primaryTag' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'color' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'isPrimary' } },
+                          ],
+                        },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'groupCount' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'tagCount' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'totalCount' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'hasNextPage' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<GetRolesListQuery, GetRolesListQueryVariables>;
 export const UpdateRoleDocument = {
   kind: 'Document',
   definitions: [
@@ -7179,6 +8189,19 @@ export const UpdateRoleDocument = {
                 { kind: 'Field', name: { kind: 'Name', value: 'metadata' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'tags' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'color' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'isPrimary' } },
+                    ],
+                  },
+                },
               ],
             },
           },
@@ -7559,6 +8582,213 @@ export const UpdateTagDocument = {
     },
   ],
 } as unknown as DocumentNode<UpdateTagMutation, UpdateTagMutationVariables>;
+export const AssignUserPermissionDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'AssignUserPermission' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'AssignUserPermissionInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'assignUserPermission' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'userId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'permissionId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<AssignUserPermissionMutation, AssignUserPermissionMutationVariables>;
+export const RevokeUserPermissionDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'RevokeUserPermission' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'RevokeUserPermissionInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'revokeUserPermission' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'userId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'permissionId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'deletedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<RevokeUserPermissionMutation, RevokeUserPermissionMutationVariables>;
+export const GetUserDirectPermissionsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'GetUserDirectPermissions' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Scope' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'userId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'users' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scope' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'ids' },
+                value: {
+                  kind: 'ListValue',
+                  values: [{ kind: 'Variable', name: { kind: 'Name', value: 'userId' } }],
+                },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'limit' },
+                value: { kind: 'IntValue', value: '1' },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'users' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'permissionCount' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'userPermissions' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'permissionId' } },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'permission' },
+                              arguments: [
+                                {
+                                  kind: 'Argument',
+                                  name: { kind: 'Name', value: 'scope' },
+                                  value: {
+                                    kind: 'Variable',
+                                    name: { kind: 'Name', value: 'scope' },
+                                  },
+                                },
+                              ],
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'action' } },
+                                  {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'resource' },
+                                    selectionSet: {
+                                      kind: 'SelectionSet',
+                                      selections: [
+                                        { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
+                                      ],
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<GetUserDirectPermissionsQuery, GetUserDirectPermissionsQueryVariables>;
 export const CreateUserDocument = {
   kind: 'Document',
   definitions: [
@@ -7806,6 +9036,97 @@ export const GetUsersDocument = {
                       },
                       {
                         kind: 'Field',
+                        name: { kind: 'Name', value: 'userGroups' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'groupId' } },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'group' },
+                              arguments: [
+                                {
+                                  kind: 'Argument',
+                                  name: { kind: 'Name', value: 'scope' },
+                                  value: {
+                                    kind: 'Variable',
+                                    name: { kind: 'Name', value: 'scope' },
+                                  },
+                                },
+                              ],
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                  {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'tags' },
+                                    selectionSet: {
+                                      kind: 'SelectionSet',
+                                      selections: [
+                                        { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                        { kind: 'Field', name: { kind: 'Name', value: 'color' } },
+                                        {
+                                          kind: 'Field',
+                                          name: { kind: 'Name', value: 'isPrimary' },
+                                        },
+                                      ],
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'userPermissions' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'permissionId' } },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'permission' },
+                              arguments: [
+                                {
+                                  kind: 'Argument',
+                                  name: { kind: 'Name', value: 'scope' },
+                                  value: {
+                                    kind: 'Variable',
+                                    name: { kind: 'Name', value: 'scope' },
+                                  },
+                                },
+                              ],
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'action' } },
+                                  {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'resource' },
+                                    selectionSet: {
+                                      kind: 'SelectionSet',
+                                      selections: [
+                                        { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
+                                      ],
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                      {
+                        kind: 'Field',
                         name: { kind: 'Name', value: 'tags' },
                         selectionSet: {
                           kind: 'SelectionSet',
@@ -7841,6 +9162,163 @@ export const GetUsersDocument = {
     },
   ],
 } as unknown as DocumentNode<GetUsersQuery, GetUsersQueryVariables>;
+export const GetUsersListDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'GetUsersList' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Scope' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'sort' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'UserSortInput' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'search' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'ids' } },
+          type: {
+            kind: 'ListType',
+            type: {
+              kind: 'NonNullType',
+              type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+            },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'tagIds' } },
+          type: {
+            kind: 'ListType',
+            type: {
+              kind: 'NonNullType',
+              type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'users' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scope' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'page' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'limit' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'sort' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'sort' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'search' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'search' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'ids' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'ids' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'tagIds' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'tagIds' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'users' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'metadata' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'primaryTag' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'color' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'isPrimary' } },
+                          ],
+                        },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'roleCount' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'projectUserApiKeyCount' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'tagCount' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'authenticationMethods' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'provider' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'providerId' } },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'totalCount' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'hasNextPage' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<GetUsersListQuery, GetUsersListQueryVariables>;
 export const UpdateUserDocument = {
   kind: 'Document',
   definitions: [
@@ -7892,6 +9370,19 @@ export const UpdateUserDocument = {
                 { kind: 'Field', name: { kind: 'Name', value: 'metadata' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'tags' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'color' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'isPrimary' } },
+                    ],
+                  },
+                },
               ],
             },
           },

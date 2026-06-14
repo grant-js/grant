@@ -18,6 +18,10 @@ export interface GraphQLGuardOptions {
   resource: ResourceSlug;
   action: ResourceAction;
   resourceResolver?: ResourceResolver | keyof ResourceResolversMap;
+  /** When set, overrides `action`. Ignored if `resolveActions` is provided. */
+  resolveAction?: (args: Record<string, unknown>) => ResourceAction;
+  /** Ordered actions to try; first match wins. Falls back to `[action]` when omitted. */
+  resolveActions?: (args: Record<string, unknown>) => ResourceAction[];
 }
 
 function extractResolverFn<TResult, TParent, TContext, TArgs>(
@@ -88,21 +92,31 @@ export function authorizeGraphQLResolver<
       resource: resolvedResource || undefined,
     };
 
-    const permission: IsAuthorizedPermissionInput = {
-      resource: options.resource,
-      action: options.action,
-    };
+    const argsRecord = args as Record<string, unknown>;
+    const actions = options.resolveActions?.(argsRecord) ?? [
+      options.resolveAction?.(argsRecord) ?? options.action,
+    ];
 
-    const result = await gqlContext.handlers.auth.isAuthorized({
-      permission,
-      context: authContext,
-    });
+    let lastReason: string | undefined;
+    for (const action of actions) {
+      const permission: IsAuthorizedPermissionInput = {
+        resource: options.resource,
+        action,
+      };
 
-    if (!result.authorized) {
-      throw new AuthorizationError('Forbidden', result.reason ?? undefined);
+      const result = await gqlContext.handlers.auth.isAuthorized({
+        permission,
+        context: authContext,
+      });
+
+      if (result.authorized) {
+        return await resolverFn(parent, args, context, info);
+      }
+
+      lastReason = result.reason ?? undefined;
     }
 
-    return await resolverFn(parent, args, context, info);
+    throw new AuthorizationError('Forbidden', lastReason);
   };
 
   return (

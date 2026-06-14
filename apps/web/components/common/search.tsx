@@ -17,6 +17,8 @@ export interface SearchProps {
   debounceDelay?: number;
   /** When true, always show compact icon+popover (no full-width bar). Use in compact toolbars e.g. user detail cards. */
   forceCompact?: boolean;
+  /** When true, expand to fill remaining toolbar width (always shows the full search input). */
+  grow?: boolean;
   className?: string;
 }
 
@@ -49,6 +51,7 @@ export function Search({
   placeholder,
   debounceDelay = 300,
   forceCompact = false,
+  grow = false,
   className = 'pl-10 w-full sm:w-[200px]',
 }: SearchProps) {
   const [localValue, setLocalValue] = useState(search);
@@ -58,7 +61,7 @@ export function Search({
   const wasFocusedRef = useRef(false);
   const debouncedSearchChange = useDebounce(onSearchChange, debounceDelay);
   const matchesCompactBreakpoint = useMatchesCompactBreakpoint();
-  const isCompact = forceCompact || matchesCompactBreakpoint;
+  const isCompact = !grow && (forceCompact || matchesCompactBreakpoint);
 
   // Sync local value with prop when it changes externally (e.g., from store reset)
   useEffect(() => {
@@ -139,6 +142,10 @@ export function Search({
       return () => cancelAnimationFrame(t);
     }
   }, [popoverOpen, isCompact]);
+
+  if (grow) {
+    return <div className="relative min-w-0 w-full">{inputEl(inputRef, true)}</div>;
+  }
 
   return (
     <>

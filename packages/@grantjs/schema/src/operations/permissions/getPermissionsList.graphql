@@ -1,0 +1,45 @@
+query GetPermissionsList(
+  $scope: Scope!
+  $page: Int
+  $limit: Int
+  $sort: PermissionSortInput
+  $search: String
+  $ids: [ID!]
+  $tagIds: [ID!]
+) {
+  permissions(
+    scope: $scope
+    page: $page
+    limit: $limit
+    sort: $sort
+    search: $search
+    ids: $ids
+    tagIds: $tagIds
+  ) {
+    permissions {
+      id
+      name
+      action
+      description
+      metadata
+      resourceId
+      condition
+      createdAt
+      updatedAt
+      primaryTag {
+        id
+        name
+        color
+        isPrimary
+      }
+      resource {
+        id
+        name
+        slug
+      }
+      tagCount
+    }
+    totalCount
+    hasNextPage
+  }
+}

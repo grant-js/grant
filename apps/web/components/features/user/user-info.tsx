@@ -194,7 +194,7 @@ export function UserInfo({ user, onPictureUpdate, onAfterUserMutation }: UserInf
         {/* Left: avatar + main user data */}
         <div className="flex min-w-0 flex-1 items-start gap-4 md:gap-6">
           {/* Avatar: 1/3 smaller on mobile so User ID fits; full size from md up */}
-          <div className="relative shrink-0 group">
+          <div className="relative shrink-0 group/avatar">
             <Avatar
               initial={getInitials(user.name)}
               imageUrl={validPictureUrl}
@@ -207,7 +207,7 @@ export function UserInfo({ user, onPictureUpdate, onAfterUserMutation }: UserInf
                 type="button"
                 variant="secondary"
                 size="icon"
-                className="absolute inset-0 h-full w-full rounded-full opacity-0 transition-opacity group-hover:opacity-100 bg-black/50 hover:bg-black/60"
+                className="absolute inset-0 h-full w-full rounded-full opacity-0 transition-opacity group-hover/avatar:opacity-100 bg-black/50 hover:bg-black/60"
                 onClick={() => setIsUploadDialogOpen(true)}
               >
                 <Pencil className="h-5 w-5 text-white" />

@@ -70,6 +70,12 @@ function buildService(
     {} as never,
     {} as never,
     {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
     handlers
   );
 }
@@ -119,6 +125,38 @@ describe('ProjectExportService', () => {
     expect(userAssignment.export).toHaveBeenCalledWith(
       expect.objectContaining({ projectId, scope })
     );
+  });
+
+  it('maps directPermissionRefs to users.permissions', async () => {
+    const userAssignment = stubHandler('userAssignments', [
+      {
+        userId: 'u-2',
+        roleTemplateKeys: [],
+        directPermissionRefs: [
+          {
+            resourceSlug: 'project',
+            action: 'update',
+            permissionKey: null,
+            permissionId: null,
+            condition: null,
+          },
+        ],
+        metadata: null,
+      },
+    ]);
+    const provisioned = stubHandler('provisionedUsers', []);
+    const keys = stubHandler('projectUserApiKeys', []);
+
+    const svc = buildService([userAssignment, provisioned, keys]);
+    const out = await svc.exportProjectCdm({ projectId, scope, version: 1 });
+
+    expect(out.users).toEqual([
+      expect.objectContaining({
+        key: { value: 'u-2', findBy: CdmFindBy.Id },
+        roles: [],
+        permissions: ['project:update'],
+      }),
+    ]);
   });
 
   it('embeds custom mode in the exported SyncProjectInput', async () => {

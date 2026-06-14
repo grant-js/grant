@@ -86,7 +86,15 @@ input RoleCdmInput {
   key: String!
   name: String!
   description: String
+  """
+  Group keys from the `groups` section. When set, permissions are linked via
+  Role → Group → Permission. Omit to use direct `permissions` on the role.
+  """
   groups: [String!]
+  """
+  Permission document keys or catalog refs (`resourceSlug:action`). Used for
+  direct Role → Permission when `groups` is empty.
+  """
   permissions: [String!]
   tags: [String!]
   primaryTag: String
@@ -106,8 +114,17 @@ input UserApiKeyCdmInput {
 input UserCdmInput {
   key: CdmKeyResolverInput!
   name: String!
+  """
+  Role template keys from the `roles` section.
+  """
   roles: [String!]
+  """
+  Direct group assignment. Each key must appear in the document `groups` section.
+  """
   groups: [String!]
+  """
+  Direct user → permission grants (document keys or catalog `resourceSlug:action` refs).
+  """
   permissions: [String!]
   tags: [String!]
   primaryTag: String

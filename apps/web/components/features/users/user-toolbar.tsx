@@ -1,13 +1,14 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
+import { UserPlus } from 'lucide-react';
 
-import { RefreshButton, Toolbar } from '@/components/common';
+import { EntityCreateNavigateButton, RefreshButton, Toolbar } from '@/components/common';
 import { useScopeFromParams } from '@/hooks/common';
 import { useUsersStore } from '@/stores/users.store';
 
-import { UserCreateDialog } from './user-create-dialog';
 import { UserLimit } from './user-limit';
 import { UserSearch } from './user-search';
 import { UserSorter } from './user-sorter';
@@ -15,6 +16,7 @@ import { UserTagSelector } from './user-tag-selector';
 import { UserViewSwitcher } from './user-view-switcher';
 
 export function UserToolbar() {
+  const t = useTranslations('users.createDialog');
   const refetch = useUsersStore((state) => state.refetch);
   const loading = useUsersStore((state) => state.loading);
   const scope = useScopeFromParams();
@@ -30,7 +32,16 @@ export function UserToolbar() {
     <UserTagSelector key="tags" />,
     <UserLimit key="limit" />,
     <UserViewSwitcher key="view" />,
-    ...(canCreate ? [<UserCreateDialog key="create" />] : []),
+    ...(canCreate
+      ? [
+          <EntityCreateNavigateButton
+            key="create"
+            entitySegment="users"
+            label={t('trigger')}
+            icon={UserPlus}
+          />,
+        ]
+      : []),
   ];
 
   return <Toolbar items={toolbarItems} />;

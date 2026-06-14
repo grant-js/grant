@@ -25,7 +25,9 @@ interface ResourcesState {
   // Dialog state
   resourceToDelete: Resource | null;
   resourceToEdit: Resource | null;
-  isCreateDialogOpen: boolean;
+
+  // Current resource (for breadcrumb)
+  currentResource: Resource | null;
 
   // Actions
   setPage: (page: number) => void;
@@ -44,7 +46,7 @@ interface ResourcesState {
   // Dialog actions
   setResourceToDelete: (resource: Resource | null) => void;
   setResourceToEdit: (resource: Resource | null) => void;
-  setCreateDialogOpen: (open: boolean) => void;
+  setCurrentResource: (resource: Resource | null) => void;
 }
 
 const defaultSort = { field: ResourceSortableField.Name, order: SortOrder.Asc };
@@ -72,7 +74,7 @@ export const useResourcesStore = create<ResourcesState>()(
       // Dialog state
       resourceToDelete: null,
       resourceToEdit: null,
-      isCreateDialogOpen: false,
+      currentResource: null,
 
       // Actions
       setPage: (page) => set({ page }),
@@ -100,7 +102,7 @@ export const useResourcesStore = create<ResourcesState>()(
           refetch: null,
           resourceToDelete: null,
           resourceToEdit: null,
-          isCreateDialogOpen: false,
+          currentResource: null,
         }),
       initializeFromUrl: (params) => {
         const currentState = get();
@@ -132,7 +134,7 @@ export const useResourcesStore = create<ResourcesState>()(
       // Dialog actions
       setResourceToDelete: (resource) => set({ resourceToDelete: resource }),
       setResourceToEdit: (resource) => set({ resourceToEdit: resource }),
-      setCreateDialogOpen: (open) => set({ isCreateDialogOpen: open }),
+      setCurrentResource: (resource) => set({ currentResource: resource }),
     }),
     { name: 'grant-resources-store' }
   )

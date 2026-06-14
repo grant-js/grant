@@ -1,0 +1,3 @@
+extend type Mutation {
+  assignRolePermission(input: AssignRolePermissionInput!): RolePermission!
+}

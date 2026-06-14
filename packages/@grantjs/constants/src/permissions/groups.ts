@@ -159,6 +159,7 @@ const GROUPS: Record<GroupKey, GroupTemplate> = {
     resource: ResourceSlug.Role,
     permissions: [
       ResourceAction.Create,
+      ResourceAction.Read,
       ResourceAction.Update,
       ResourceAction.Delete,
       ResourceAction.Query,
@@ -169,6 +170,7 @@ const GROUPS: Record<GroupKey, GroupTemplate> = {
     resource: ResourceSlug.Group,
     permissions: [
       ResourceAction.Create,
+      ResourceAction.Read,
       ResourceAction.Update,
       ResourceAction.Delete,
       ResourceAction.Query,
@@ -179,6 +181,7 @@ const GROUPS: Record<GroupKey, GroupTemplate> = {
     resource: ResourceSlug.Permission,
     permissions: [
       ResourceAction.Create,
+      ResourceAction.Read,
       ResourceAction.Update,
       ResourceAction.Delete,
       ResourceAction.Query,
@@ -228,17 +231,17 @@ const GROUPS: Record<GroupKey, GroupTemplate> = {
   },
   [GroupKey.RoleCommon]: {
     resource: ResourceSlug.Role,
-    permissions: [ResourceAction.Query],
+    permissions: [ResourceAction.Read, ResourceAction.Query],
     assignedRoles: ORGANIZATION_ROLES,
   },
   [GroupKey.GroupCommon]: {
     resource: ResourceSlug.Group,
-    permissions: [ResourceAction.Query],
+    permissions: [ResourceAction.Read, ResourceAction.Query],
     assignedRoles: ORGANIZATION_ROLES,
   },
   [GroupKey.PermissionCommon]: {
     resource: ResourceSlug.Permission,
-    permissions: [ResourceAction.Query],
+    permissions: [ResourceAction.Read, ResourceAction.Query],
     assignedRoles: ORGANIZATION_ROLES,
   },
   [GroupKey.TagCommon]: {

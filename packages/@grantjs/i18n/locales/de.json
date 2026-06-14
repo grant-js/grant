@@ -185,6 +185,10 @@
       "view": "Anzeigen",
       "list": "Liste"
     },
+    "fields": {
+      "name": "Name",
+      "description": "Beschreibung"
+    },
     "roles": {
       "names": {
         "organizationOwner": "Organisations-Eigentümer",

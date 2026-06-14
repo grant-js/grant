@@ -42,16 +42,30 @@ export interface CdmRoleTemplateInternal {
    */
   linkedGroupImportName?: string | null;
   linkedGroupImportDescription?: string | null;
+  /** Import-only: CDM `roles[].groups` keys mapped to the paired Grant group. */
+  linkedDocumentGroupKeys?: string[];
 }
 
 export interface CdmUserAssignmentInternal {
   userId?: string | null;
   userKey?: string | null;
   roleTemplateKeys?: string[];
+  /** CDM document `users[].groups` keys → native `user_groups` on import. */
+  directGroupKeys?: string[];
+  /** Resolved permission refs per direct group key (computed during expand). */
+  directGroups?: Array<{
+    groupKey: string;
+    permissionRefs: CdmPermissionRefInternal[];
+  }>;
   directPermissionRefs?: CdmPermissionRefInternal[];
   metadata?: Record<string, unknown> | null;
   tagKeys?: string[];
   primaryUserTagKey?: string | null;
+  /**
+   * Export-only: document groups referenced via `directGroupKeys` that are
+   * not already emitted through a role's `linkedGrantGroup`.
+   */
+  exportDocumentGroups?: NonNullable<CdmRoleTemplateInternal['linkedGrantGroup']>[];
 }
 
 export interface CdmProjectUserApiKeyInternal {

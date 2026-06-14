@@ -11,6 +11,10 @@ query Me {
         name
         pictureUrl
         metadata
+        roleCount
+        permissionCount
+        projectUserApiKeyCount
+        tagCount
         createdAt
         updatedAt
       }

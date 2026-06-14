@@ -4,7 +4,9 @@ import type {
   IPermissionService,
   IPermissionTagService,
   IProjectPermissionService,
+  IRolePermissionService,
   ITransactionalConnection,
+  IUserPermissionService,
 } from '@grantjs/core';
 import {
   MutationCreatePermissionArgs,
@@ -18,6 +20,7 @@ import {
 } from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
+import { BadRequestError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -30,6 +33,8 @@ export class PermissionHandler extends CacheHandler {
     private readonly organizationPermissions: IOrganizationPermissionService,
     private readonly projectPermissions: IProjectPermissionService,
     private readonly groupPermissions: IGroupPermissionService,
+    private readonly rolePermissions: IRolePermissionService,
+    private readonly userPermissions: IUserPermissionService,
     cache: IEntityCacheAdapter,
     scopeServices: ScopeServices,
     private readonly db: ITransactionalConnection<Transaction>
@@ -167,6 +172,29 @@ export class PermissionHandler extends CacheHandler {
             )
           )
         );
+      } else if (primaryTagId !== undefined) {
+        const permissionTagPivots = await this.permissionTags.getPermissionTags(
+          { permissionId },
+          tx
+        );
+        if (
+          primaryTagId &&
+          !permissionTagPivots.some((permissionTag) => permissionTag.tagId === primaryTagId)
+        ) {
+          throw new BadRequestError('Primary tag must be one of the permission assigned tags');
+        }
+        await Promise.all(
+          permissionTagPivots.map((permissionTag) =>
+            this.permissionTags.updatePermissionTag(
+              {
+                permissionId,
+                tagId: permissionTag.tagId,
+                isPrimary: primaryTagId ? permissionTag.tagId === primaryTagId : false,
+              },
+              tx
+            )
+          )
+        );
       }
 
       return updatedPermission;
@@ -183,6 +211,14 @@ export class PermissionHandler extends CacheHandler {
 
       // Get all GroupPermission relationships where this permission is assigned
       const groupPermissionRelations = await this.groupPermissions.getGroupPermissions(
+        { permissionId },
+        tx
+      );
+      const rolePermissionRelations = await this.rolePermissions.getRolePermissions(
+        { permissionId },
+        tx
+      );
+      const userPermissionRelations = await this.userPermissions.getUserPermissions(
         { permissionId },
         tx
       );
@@ -210,6 +246,18 @@ export class PermissionHandler extends CacheHandler {
         ...groupPermissionRelations.map((gp) =>
           this.groupPermissions.removeGroupPermission(
             { groupId: gp.groupId, permissionId: gp.permissionId },
+            tx
+          )
+        ),
+        ...rolePermissionRelations.map((rp) =>
+          this.rolePermissions.revokeRolePermission(
+            { roleId: rp.roleId, permissionId: rp.permissionId, scope },
+            tx
+          )
+        ),
+        ...userPermissionRelations.map((up) =>
+          this.userPermissions.revokeUserPermission(
+            { userId: up.userId, permissionId: up.permissionId, scope },
             tx
           )
         ),

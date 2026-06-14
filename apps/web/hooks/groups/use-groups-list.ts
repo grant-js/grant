@@ -1,0 +1,59 @@
+import { useMemo } from 'react';
+import { ApolloClient } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
+import { GetGroupsListDocument, Group, GroupPage, QueryGroupsArgs } from '@grantjs/schema';
+
+interface UseGroupsListResult {
+  groups: Group[];
+  loading: boolean;
+  error: Error | undefined;
+  totalCount: number;
+  refetch: (
+    variables?: Partial<QueryGroupsArgs>
+  ) => Promise<ApolloClient.QueryResult<{ groups: GroupPage }>>;
+}
+
+export function useGroupsList(params: QueryGroupsArgs): UseGroupsListResult {
+  const { scope, ids, limit, page, search, sort, tagIds } = params;
+
+  const skip = useMemo(
+    () => !scope || !scope.id || !scope.tenant || (ids != null && ids.length === 0),
+    [scope, ids]
+  );
+
+  const variables = useMemo(
+    () => ({
+      scope,
+      ids,
+      limit,
+      page,
+      search,
+      sort,
+      tagIds,
+    }),
+    [scope, ids, limit, page, search, sort, tagIds]
+  );
+
+  const { data, loading, error, refetch } = useQuery<{ groups: GroupPage }>(GetGroupsListDocument, {
+    variables,
+    skip,
+    fetchPolicy: 'cache-and-network',
+    notifyOnNetworkStatusChange: true,
+  });
+
+  const { groups, totalCount } = useMemo(
+    () => ({
+      groups: data?.groups?.groups ?? [],
+      totalCount: data?.groups?.totalCount ?? 0,
+    }),
+    [data]
+  );
+
+  return {
+    groups,
+    loading,
+    error,
+    totalCount,
+    refetch,
+  };
+}

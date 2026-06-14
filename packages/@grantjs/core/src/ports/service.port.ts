@@ -46,11 +46,14 @@ export type {
   IProjectImportService,
   IProjectPermissionService,
   IProjectResourceService,
+  IProjectRolePermissionService,
   IProjectRoleService,
   IProjectService,
   IProjectSyncJobService,
   IProjectTagService,
   IProjectUserApiKeyService,
+  IProjectUserGroupService,
+  IProjectUserPermissionService,
   IProjectUserService,
 } from './services/project.service.port';
 export type {
@@ -58,6 +61,17 @@ export type {
   IProjectAppTagService,
 } from './services/project-app.service.port';
 export type { IResourceService, IResourceTagService } from './services/resource.service.port';
-export type { IRoleService } from './services/role.service.port';
+export type {
+  IRoleGroupService,
+  IRolePermissionService,
+  IRoleService,
+  IRoleTagService,
+} from './services/role.service.port';
 export type { ITagService } from './services/tag.service.port';
-export type { DeleteParams, IUserService } from './services/user.service.port';
+export type {
+  DeleteParams,
+  IUserGroupService,
+  IUserPermissionService,
+  IUserRoleService,
+  IUserService,
+} from './services/user.service.port';

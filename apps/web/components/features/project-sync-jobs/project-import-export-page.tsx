@@ -11,7 +11,6 @@ import { ProjectSyncJobExportDialog } from './project-sync-job-export-dialog';
 import { ProjectSyncJobPagination } from './project-sync-job-pagination';
 import { ProjectSyncJobStartDialog } from './project-sync-job-start-dialog';
 import { ProjectSyncJobToolbar } from './project-sync-job-toolbar';
-import { ProjectSyncJobViewDialog } from './project-sync-job-view-dialog';
 import { ProjectSyncJobViewer } from './project-sync-job-viewer';
 
 export interface ProjectImportExportPageProps {
@@ -33,7 +32,6 @@ export function ProjectImportExportPage({ sidebar }: ProjectImportExportPageProp
         <ProjectSyncJobViewer />
         <ProjectSyncJobStartDialog />
         <ProjectSyncJobExportDialog />
-        <ProjectSyncJobViewDialog />
         <ProjectSyncJobCancelDialog />
       </>
     </DashboardLayout>

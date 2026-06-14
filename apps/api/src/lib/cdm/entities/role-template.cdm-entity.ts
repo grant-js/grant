@@ -19,6 +19,7 @@ import type {
 
 import type { CdmEntityBuilder } from '../cdm-entity-builder';
 import type { CdmRoleTemplateInternal } from '../cdm-internal.types';
+import { isSyntheticCdmRoleMetadata } from '../cdm-synthetic.lib';
 import { buildExternalKey } from '../identity.lib';
 
 const ROLE_TEMPLATE_INPUT_KEY = 'roleTemplates' as const;
@@ -143,24 +144,46 @@ export class RoleTemplateCdmEntity implements ICdmEntityHandler<
           condition: (r.condition as Record<string, unknown> | null | undefined) ?? null,
         })
       );
-      const { roleId, groupId, counts } = await this.builder.createRoleWithGroup(
-        ctx.projectId,
-        ctx.scope,
-        tmpl.externalKey,
-        tmpl.name,
-        tmpl.description ?? null,
-        'role',
-        perms,
-        tmpl.metadata,
-        tx,
-        {
-          groupDisplayName: tmpl.linkedGroupImportName ?? undefined,
-          groupDisplayDescription: tmpl.linkedGroupImportDescription ?? undefined,
-        }
-      );
+      const usesGroupPath =
+        (tmpl.groupTagKeys?.length ?? 0) > 0 ||
+        (tmpl.linkedGroupImportName != null && tmpl.linkedGroupImportName !== '') ||
+        tmpl.linkedGrantGroup != null;
+
+      const { roleId, groupId, counts } = usesGroupPath
+        ? await this.builder.createRoleWithGroup(
+            ctx.projectId,
+            ctx.scope,
+            tmpl.externalKey,
+            tmpl.name,
+            tmpl.description ?? null,
+            'role',
+            perms,
+            tmpl.metadata,
+            tx,
+            {
+              groupDisplayName: tmpl.linkedGroupImportName ?? undefined,
+              groupDisplayDescription: tmpl.linkedGroupImportDescription ?? undefined,
+            }
+          )
+        : await this.builder.createRoleWithDirectPermissions(
+            ctx.projectId,
+            ctx.scope,
+            tmpl.externalKey,
+            tmpl.name,
+            tmpl.description ?? null,
+            'role',
+            perms,
+            tmpl.metadata,
+            tx
+          );
       ctx.produced.roleIdsByKey.set(tmpl.externalKey, roleId);
       ctx.result.rolesCreated += 1;
-      ctx.result.groupsCreated += 1;
+      if (usesGroupPath && groupId) {
+        ctx.result.groupsCreated += 1;
+        for (const groupKey of tmpl.linkedDocumentGroupKeys ?? []) {
+          ctx.produced.groupIdsByKey.set(groupKey, groupId);
+        }
+      }
       ctx.result.roleGroupsLinked += counts.roleGroups;
       ctx.result.groupPermissionsLinked += counts.groupPermissions;
       ctx.result.projectRolesLinked += counts.projectRoles;
@@ -186,6 +209,7 @@ export class RoleTemplateCdmEntity implements ICdmEntityHandler<
             `roleTemplates[${tmpl.externalKey}]: unknown groupTagKey '${tagKey}'; must appear in the tags section`
           );
         }
+        if (!usesGroupPath || !groupId) continue;
         const isPrimary = tagKey === (tmpl.primaryGroupTagKey ?? '');
         await this.groupTags.addGroupTag({ groupId, tagId, isPrimary }, tx);
         ctx.result.groupTagsLinked += 1;
@@ -216,7 +240,10 @@ export class RoleTemplateCdmEntity implements ICdmEntityHandler<
     const rows = await this.exportRepo.getProjectRolesWithPermissions(ctx.projectId, tx);
     if (rows.length === 0) return [];
 
-    const roleIds = rows.map((r) => r.roleId);
+    const exportableRows = rows.filter((r) => !isSyntheticCdmRoleMetadata(r.metadata));
+    if (exportableRows.length === 0) return [];
+
+    const roleIds = exportableRows.map((r) => r.roleId);
     const [roleTagAssoc, groupIdByRoleId, projectTagDefs, cdmPermissions] = await Promise.all([
       this.exportRepo.getRoleTagsByRoleIds(roleIds, tx),
       this.exportRepo.getCdmGroupIdsForRoleIds(roleIds, tx),
@@ -286,7 +313,7 @@ export class RoleTemplateCdmEntity implements ICdmEntityHandler<
       }
     }
 
-    return rows.map((r) => {
+    return exportableRows.map((r) => {
       const groupId = groupIdByRoleId.get(r.roleId);
       const tagKeys = (tagKeysByRoleId.get(r.roleId) ?? []).slice().sort();
       const groupTagKeys = groupId ? (tagKeysByGroupId.get(groupId) ?? []).slice().sort() : [];

@@ -30,20 +30,26 @@ import {
   projectPermissionsAuditLogs,
   projectResourceAuditLogs,
   projectRoleAuditLogs,
+  projectRolePermissionAuditLogs,
   projectSyncJobAuditLogs,
   projectTagAuditLogs,
   projectUserApiKeyAuditLogs,
   projectUserAuditLogs,
+  projectUserGroupAuditLogs,
+  projectUserPermissionAuditLogs,
   resourceAuditLogs,
   resourceTagAuditLogs,
   roleAuditLogs,
   roleGroupsAuditLogs,
+  rolePermissionsAuditLogs,
   roleTagAuditLogs,
   signingKeyAuditLogs,
   tagAuditLogs,
   userAuditLogs,
   userAuthenticationMethodsAuditLogs,
+  userGroupsAuditLogs,
   userMfaFactorAuditLogs,
+  userPermissionsAuditLogs,
   userRolesAuditLogs,
   userSessionAuditLogs,
   userTagsAuditLogs,
@@ -89,21 +95,27 @@ import { ProjectGroupService } from './project-groups.service';
 import { ProjectImportService } from './project-import.service';
 import { ProjectPermissionService } from './project-permissions.service';
 import { ProjectResourceService } from './project-resources.service';
+import { ProjectRolePermissionService } from './project-role-permissions.service';
 import { ProjectRoleService } from './project-roles.service';
 import { ProjectSyncJobService } from './project-sync-job.service';
 import { ProjectTagService } from './project-tags.service';
 import { ProjectUserApiKeyService } from './project-user-api-keys.service';
+import { ProjectUserGroupService } from './project-user-groups.service';
+import { ProjectUserPermissionService } from './project-user-permissions.service';
 import { ProjectUserService } from './project-users.service';
 import { ProjectService } from './projects.service';
 import { ResourceTagService } from './resource-tags.service';
 import { ResourceService } from './resources.service';
 import { RoleGroupService } from './role-groups.service';
+import { RolePermissionService } from './role-permissions.service';
 import { RoleTagService } from './role-tags.service';
 import { RoleService } from './roles.service';
 import { SigningKeyService } from './signing-keys.service';
 import { TagService } from './tags.service';
 import { UserAuthenticationMethodService } from './user-authentication-methods.service';
+import { UserGroupService } from './user-groups.service';
 import { UserMfaService } from './user-mfa.service';
+import { UserPermissionService } from './user-permissions.service';
 import { UserRoleService } from './user-roles.service';
 import { UserSessionService } from './user-sessions.service';
 import { UserTagService } from './user-tags.service';
@@ -196,6 +208,18 @@ export function createServices(
       repositories.userRoleRepository,
       audit(userRolesAuditLogs, 'userRoleId', user, db)
     ),
+    userPermissions: new UserPermissionService(
+      repositories.userRepository,
+      repositories.permissionRepository,
+      repositories.userPermissionRepository,
+      audit(userPermissionsAuditLogs, 'userPermissionId', user, db)
+    ),
+    userGroups: new UserGroupService(
+      repositories.userRepository,
+      repositories.groupRepository,
+      repositories.userGroupRepository,
+      audit(userGroupsAuditLogs, 'userGroupId', user, db)
+    ),
     userTags: new UserTagService(
       repositories.userRepository,
       repositories.tagRepository,
@@ -247,6 +271,13 @@ export function createServices(
       repositories.projectRoleRepository,
       audit(projectRoleAuditLogs, 'projectRoleId', user, db)
     ),
+    projectRolePermissions: new ProjectRolePermissionService(
+      repositories.projectRepository,
+      repositories.roleRepository,
+      repositories.permissionRepository,
+      repositories.projectRolePermissionRepository,
+      audit(projectRolePermissionAuditLogs, 'projectRolePermissionId', user, db)
+    ),
     projectPermissions: new ProjectPermissionService(
       repositories.projectRepository,
       repositories.permissionRepository,
@@ -291,6 +322,20 @@ export function createServices(
       repositories.userRepository,
       repositories.projectUserRepository,
       audit(projectUserAuditLogs, 'projectUserId', user, db)
+    ),
+    projectUserPermissions: new ProjectUserPermissionService(
+      repositories.projectRepository,
+      repositories.userRepository,
+      repositories.permissionRepository,
+      repositories.projectUserPermissionRepository,
+      audit(projectUserPermissionAuditLogs, 'projectUserPermissionId', user, db)
+    ),
+    projectUserGroups: new ProjectUserGroupService(
+      repositories.projectRepository,
+      repositories.userRepository,
+      repositories.groupRepository,
+      repositories.projectUserGroupRepository,
+      audit(projectUserGroupAuditLogs, 'projectUserGroupId', user, db)
     ),
     organizations: new OrganizationService(
       repositories.organizationRepository,
@@ -370,6 +415,12 @@ export function createServices(
       repositories.roleGroupRepository,
       audit(roleGroupsAuditLogs, 'roleGroupId', user, db)
     ),
+    rolePermissions: new RolePermissionService(
+      repositories.roleRepository,
+      repositories.permissionRepository,
+      repositories.rolePermissionRepository,
+      audit(rolePermissionsAuditLogs, 'rolePermissionId', user, db)
+    ),
     organizationPermissions: new OrganizationPermissionService(
       repositories.organizationRepository,
       repositories.permissionRepository,
@@ -406,10 +457,16 @@ export function createServices(
       servicesBase.roles,
       servicesBase.groups,
       servicesBase.roleGroups,
+      servicesBase.rolePermissions,
       servicesBase.groupPermissions,
+      servicesBase.userPermissions,
+      servicesBase.userGroups,
       servicesBase.projectRoles,
       servicesBase.projectGroups,
       servicesBase.projectPermissions,
+      servicesBase.projectRolePermissions,
+      servicesBase.projectUserPermissions,
+      servicesBase.projectUserGroups,
       servicesBase.projectResources,
       servicesBase.projectUsers,
       servicesBase.userRoles,
@@ -435,10 +492,16 @@ export function createServices(
       servicesBase.roles,
       servicesBase.groups,
       servicesBase.roleGroups,
+      servicesBase.rolePermissions,
       servicesBase.groupPermissions,
+      servicesBase.userPermissions,
+      servicesBase.userGroups,
       servicesBase.projectRoles,
       servicesBase.projectGroups,
       servicesBase.projectPermissions,
+      servicesBase.projectRolePermissions,
+      servicesBase.projectUserPermissions,
+      servicesBase.projectUserGroups,
       servicesBase.projectResources,
       servicesBase.projectUsers,
       servicesBase.userRoles,

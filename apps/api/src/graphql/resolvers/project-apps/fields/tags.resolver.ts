@@ -2,15 +2,17 @@ import { ProjectAppResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
 
+/**
+ * Resolves ProjectApp.tags scoped to the caller's tenant.
+ *
+ * Loads live project_app_tags pivots, then intersects with scoped getTags so
+ * soft-deleted or out-of-scope tags never appear (including on non-CDM apps).
+ */
 export const projectAppTagsResolver: ProjectAppResolvers<GraphqlContext>['tags'] = async (
   parent,
   _args,
   context
 ) => {
-  if (parent.tags) {
-    return parent.tags;
-  }
-
   const projectAppTags = await context.handlers.projectApps.getProjectAppTags({
     projectAppId: parent.id,
   });
@@ -27,7 +29,9 @@ export const projectAppTagsResolver: ProjectAppResolvers<GraphqlContext>['tags']
   const { tags } = await context.handlers.tags.getTags({
     scope,
     ids: tagIds,
-    limit: tagIds.length,
+    limit: -1,
   });
-  return tags;
+
+  const isPrimaryByTagId = new Map(projectAppTags.map((pt) => [pt.tagId, pt.isPrimary]));
+  return tags.map((t) => ({ ...t, isPrimary: isPrimaryByTagId.get(t.id) ?? false }));
 };

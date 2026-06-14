@@ -28,7 +28,7 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
   };
 
   return (
-    <div className="flex items-center justify-between px-4 py-2">
+    <div className="flex w-full items-center justify-between py-2">
       <div className="text-sm text-muted-foreground">
         {t('pagination.info', { current: page, total: totalPages })}
       </div>

@@ -8,6 +8,7 @@ interface UserTagSearchProps {
   show?: boolean;
   /** When true, render as icon+popover only (no full-width bar). */
   forceCompact?: boolean;
+  grow?: boolean;
 }
 
 export function UserTagSearch({
@@ -15,6 +16,7 @@ export function UserTagSearch({
   onSearchChange,
   show = true,
   forceCompact = false,
+  grow = false,
 }: UserTagSearchProps) {
   const t = useTranslations('user.tags');
 
@@ -28,6 +30,7 @@ export function UserTagSearch({
       onSearchChange={onSearchChange}
       placeholder={t('search.placeholder')}
       forceCompact={forceCompact}
+      grow={grow}
     />
   );
 }

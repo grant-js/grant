@@ -78,6 +78,18 @@ function buildHandler(deps?: {
         projectResources: 1,
       },
     }),
+    createRoleWithDirectPermissions: vi.fn().mockResolvedValue({
+      roleId: counts.roleId,
+      groupId: null,
+      counts: {
+        roleGroups: 0,
+        groupPermissions: 0,
+        projectRoles: 1,
+        projectGroups: 0,
+        projectPermissions: 1,
+        projectResources: 1,
+      },
+    }),
   };
   const defaultExportRepo = {
     getProjectRolesWithPermissions: vi.fn().mockResolvedValue([]),
@@ -164,7 +176,9 @@ describe('RoleTemplateCdmEntity — tag wiring', () => {
         resourceIds: new Map(),
         permissionIds: new Map(),
         userIds: new Map(),
+        groupIdsByKey: new Map(),
       },
+      documentGroupsByKey: new Map(),
       assignmentUserIds: new Set<string>(),
     };
 
@@ -213,7 +227,9 @@ describe('RoleTemplateCdmEntity — tag wiring', () => {
         resourceIds: new Map(),
         permissionIds: new Map(),
         userIds: new Map(),
+        groupIdsByKey: new Map(),
       },
+      documentGroupsByKey: new Map(),
       assignmentUserIds: new Set<string>(),
     };
 

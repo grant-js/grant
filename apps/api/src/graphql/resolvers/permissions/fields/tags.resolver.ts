@@ -35,7 +35,7 @@ export const permissionTagsResolver: PermissionResolvers<GraphqlContext>['tags']
   const { tags } = await context.handlers.tags.getTags({
     scope,
     ids,
-    limit: ids.length,
+    limit: -1,
   });
 
   const isPrimaryByTagId = new Map(pivots.map((p) => [p.tagId, p.isPrimary]));

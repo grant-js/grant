@@ -30,22 +30,28 @@ import { ProjectGroupRepository } from './project-groups.repository';
 import { ProjectImportRepository } from './project-import.repository';
 import { ProjectPermissionRepository } from './project-permissions.repository';
 import { ProjectResourceRepository } from './project-resources.repository';
+import { ProjectRolePermissionRepository } from './project-role-permissions.repository';
 import { ProjectRoleRepository } from './project-roles.repository';
 import { ProjectSyncJobRepository } from './project-sync-job.repository';
 import { ProjectTagRepository } from './project-tags.repository';
 import { ProjectUserApiKeyRepository } from './project-user-api-keys.repository';
+import { ProjectUserGroupRepository } from './project-user-groups.repository';
+import { ProjectUserPermissionRepository } from './project-user-permissions.repository';
 import { ProjectUserRepository } from './project-users.repository';
 import { ProjectRepository } from './projects.repository';
 import { ResourceTagRepository } from './resource-tags.repository';
 import { ResourceRepository } from './resources.repository';
 import { RoleGroupRepository } from './role-groups.repository';
+import { RolePermissionRepository } from './role-permissions.repository';
 import { RoleTagRepository } from './role-tags.repository';
 import { RoleRepository } from './roles.repository';
 import { SigningKeyRepository } from './signing-keys.repository';
 import { TagRepository } from './tags.repository';
 import { UserAuthenticationMethodRepository } from './user-authentication-methods.repository';
+import { UserGroupRepository } from './user-groups.repository';
 import { UserMfaFactorRepository } from './user-mfa-factors.repository';
 import { UserMfaRecoveryCodeRepository } from './user-mfa-recovery-codes.repository';
+import { UserPermissionRepository } from './user-permissions.repository';
 import { UserRoleRepository } from './user-roles.repository';
 import { UserSessionRepository } from './user-sessions.repository';
 import { UserTagRepository } from './user-tags.repository';
@@ -87,14 +93,18 @@ export function createRepositories(db: DbSchema) {
     projectPermissionRepository: new ProjectPermissionRepository(db),
     projectResourceRepository: new ProjectResourceRepository(db),
     projectRoleRepository: new ProjectRoleRepository(db),
+    projectRolePermissionRepository: new ProjectRolePermissionRepository(db),
     signingKeyRepository: new SigningKeyRepository(db),
     projectTagRepository: new ProjectTagRepository(db),
     projectUserApiKeyRepository: new ProjectUserApiKeyRepository(db),
     projectUserRepository: new ProjectUserRepository(db),
+    projectUserPermissionRepository: new ProjectUserPermissionRepository(db),
+    projectUserGroupRepository: new ProjectUserGroupRepository(db),
     projectRepository: new ProjectRepository(db),
     resourceRepository: new ResourceRepository(db),
     resourceTagRepository: new ResourceTagRepository(db),
     roleGroupRepository: new RoleGroupRepository(db),
+    rolePermissionRepository: new RolePermissionRepository(db),
     roleTagRepository: new RoleTagRepository(db),
     roleRepository: new RoleRepository(db),
     tagRepository: new TagRepository(db),
@@ -102,6 +112,8 @@ export function createRepositories(db: DbSchema) {
     userMfaFactorRepository: new UserMfaFactorRepository(db),
     userMfaRecoveryCodeRepository: new UserMfaRecoveryCodeRepository(db),
     userRoleRepository: new UserRoleRepository(db),
+    userPermissionRepository: new UserPermissionRepository(db),
+    userGroupRepository: new UserGroupRepository(db),
     userTagRepository: new UserTagRepository(db),
     userRepository: new UserRepository(db),
     userSessionRepository: new UserSessionRepository(db),

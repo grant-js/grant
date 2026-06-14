@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useGrant, type UseGrantResult } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
@@ -9,6 +10,8 @@ import { FlaskConical, Pencil, Trash2 } from 'lucide-react';
 
 import { type ActionItem, Actions } from '@/components/common';
 import { useRequiresEmailVerificationForMutation } from '@/hooks/auth';
+import { useRouter } from '@/i18n/navigation';
+import { getProjectAppTestUrl } from '@/lib/entity-detail-url';
 import { useProjectAppsStore } from '@/stores/project-apps.store';
 
 export interface ProjectAppActionsProps {
@@ -18,9 +21,10 @@ export interface ProjectAppActionsProps {
 
 export function ProjectAppActions({ projectApp, scope }: ProjectAppActionsProps) {
   const t = useTranslations('projectApps.actions');
+  const params = useParams();
+  const router = useRouter();
   const setProjectAppToEdit = useProjectAppsStore((state) => state.setProjectAppToEdit);
   const setProjectAppToDelete = useProjectAppsStore((state) => state.setProjectAppToDelete);
-  const setProjectAppToTest = useProjectAppsStore((state) => state.setProjectAppToTest);
 
   const [hasBeenOpened, setHasBeenOpened] = useState(false);
   const handleOpenChange = useCallback(
@@ -64,7 +68,15 @@ export function ProjectAppActions({ projectApp, scope }: ProjectAppActionsProps)
       key: 'test',
       label: t('test'),
       icon: <FlaskConical className="mr-2 h-4 w-4" />,
-      onClick: () => setProjectAppToTest(projectApp),
+      onClick: () =>
+        router.push(
+          getProjectAppTestUrl({
+            organizationId: params.organizationId as string | undefined,
+            accountId: params.accountId as string | undefined,
+            projectId: params.projectId as string,
+            appId: projectApp.id,
+          })
+        ),
     });
   }
 

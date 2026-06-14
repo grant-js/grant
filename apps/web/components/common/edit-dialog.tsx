@@ -28,6 +28,7 @@ export function EditDialog<TFormValues extends Record<string, any>, TEntity>({
   defaultValues,
   fields,
   relationships,
+  supplementaryContent,
   mapEntityToFormValues,
   onUpdate,
   translationNamespace,
@@ -58,6 +59,7 @@ export function EditDialog<TFormValues extends Record<string, any>, TEntity>({
       defaultValues={defaultValues}
       fields={fields}
       relationships={relationships}
+      supplementaryContent={supplementaryContent}
       translationNamespace={translationNamespace}
       onSubmit={handleSubmit}
       resetValues={resetValues}

@@ -5,6 +5,7 @@ import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { Scope } from '@grantjs/schema';
 
+import { FeatureModuleCard } from '@/components/common';
 import { useScopeFromParams } from '@/hooks/common';
 import { useApiKeysStore } from '@/stores/api-keys.store';
 
@@ -19,7 +20,7 @@ export interface ApiKeysProps {
 
 /**
  * Embedded API keys view for use inside a card (e.g. user detail view).
- * Renders a card with title, toolbar, viewer (table), and pagination.
+ * Renders a card with title, toolbar, table viewer, and pagination.
  * For project-level API keys pages use DashboardLayout with ApiKeyToolbar, ApiKeyViewer, and ApiKeyPagination directly.
  */
 export function ApiKeys({ scope: scopeProp }: ApiKeysProps) {
@@ -41,17 +42,14 @@ export function ApiKeys({ scope: scopeProp }: ApiKeysProps) {
   const totalPages = Math.ceil(totalCount / limit);
 
   return (
-    <div className="rounded-lg border bg-card p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">{t('title')}</h3>
-        <ApiKeyToolbar />
-      </div>
-      <ApiKeyViewer scope={scope} />
-      {totalPages > 1 && (
-        <div className="mt-4 border-t pt-4">
-          <ApiKeyPagination />
-        </div>
-      )}
-    </div>
+    <FeatureModuleCard
+      title={t('title')}
+      description={t('description')}
+      collapsible
+      toolbar={<ApiKeyToolbar showViewSwitcher={false} showSorter={false} />}
+      footer={totalPages > 1 ? <ApiKeyPagination /> : undefined}
+    >
+      <ApiKeyViewer scope={scope} forcedView="table" embedded />
+    </FeatureModuleCard>
   );
 }

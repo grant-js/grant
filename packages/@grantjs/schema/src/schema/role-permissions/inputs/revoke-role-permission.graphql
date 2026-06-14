@@ -1,0 +1,6 @@
+input RevokeRolePermissionInput {
+  roleId: ID!
+  permissionId: ID!
+  scope: Scope!
+  hardDelete: Boolean
+}

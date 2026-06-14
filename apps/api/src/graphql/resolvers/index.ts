@@ -12,7 +12,9 @@ import { groupResolver as Group } from './groups/fields';
 import { permissionResolver as Permission } from './permissions/fields';
 import { projectAppResolver as ProjectApp } from './project-apps/fields';
 import { resourceResolver as Resource } from './resources/fields';
+import { rolePermissionResolver as RolePermission } from './role-permissions/fields';
 import { roleResolver as Role } from './roles/fields';
+import { userPermissionResolver as UserPermission } from './user-permissions/fields';
 import { userResolver as User } from './users/fields';
 
 function resolveGraphqlSchemaDir(): string {
@@ -44,6 +46,8 @@ export const schema = makeExecutableSchema({
     User,
     Group,
     Role,
+    RolePermission,
+    UserPermission,
     Permission,
     ProjectApp,
     Resource,

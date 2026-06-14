@@ -102,6 +102,7 @@ const RESOURCES: Record<ResourceSlug, ResourceTemplate> = {
   [ResourceSlug.Role]: {
     actions: [
       ResourceAction.Create,
+      ResourceAction.Read,
       ResourceAction.Update,
       ResourceAction.Delete,
       ResourceAction.Query,
@@ -110,6 +111,7 @@ const RESOURCES: Record<ResourceSlug, ResourceTemplate> = {
   [ResourceSlug.Group]: {
     actions: [
       ResourceAction.Create,
+      ResourceAction.Read,
       ResourceAction.Update,
       ResourceAction.Delete,
       ResourceAction.Query,
@@ -118,6 +120,7 @@ const RESOURCES: Record<ResourceSlug, ResourceTemplate> = {
   [ResourceSlug.Permission]: {
     actions: [
       ResourceAction.Create,
+      ResourceAction.Read,
       ResourceAction.Update,
       ResourceAction.Delete,
       ResourceAction.Query,

@@ -106,13 +106,15 @@ export function createUserRoutes(context: RequestContext) {
       action: ResourceAction.Create,
     }),
     async (req: TypedRequest<{ body: typeof createUserRequestSchema }>, res: Response) => {
-      const { name, scope, roleIds, tagIds, primaryTagId } = req.body;
+      const { name, scope, roleIds, groupIds, permissionIds, tagIds, primaryTagId } = req.body;
 
       const user = await context.handlers.users.createUser({
         input: {
           name,
           scope,
           roleIds,
+          groupIds,
+          permissionIds,
           tagIds,
           primaryTagId,
         },
@@ -138,7 +140,8 @@ export function createUserRoutes(context: RequestContext) {
       res: Response
     ) => {
       const { id } = req.params;
-      const { name, roleIds, tagIds, primaryTagId, scope, pictureUrl, metadata } = req.body;
+      const { name, roleIds, groupIds, tagIds, primaryTagId, scope, pictureUrl, metadata } =
+        req.body;
 
       const actorUserId = context.user?.userId;
       if (!actorUserId) {
@@ -147,7 +150,7 @@ export function createUserRoutes(context: RequestContext) {
 
       const user = await context.handlers.users.updateUser({
         id,
-        input: { name, roleIds, tagIds, primaryTagId, scope, pictureUrl, metadata },
+        input: { name, roleIds, groupIds, tagIds, primaryTagId, scope, pictureUrl, metadata },
         actorUserId,
       });
 

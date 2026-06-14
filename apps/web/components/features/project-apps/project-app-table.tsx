@@ -1,33 +1,34 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { getTagBorderClasses, TagColor } from '@grantjs/constants';
-import type { ProjectApp, Tag } from '@grantjs/schema';
+import type { ProjectApp } from '@grantjs/schema';
 import { LayoutGrid } from 'lucide-react';
 
 import {
-  Avatar,
   CopyToClipboard,
   DataTable,
   type DataTableColumnConfig,
+  EntityCreateNavigateButton,
+  EntityNavigationButton,
   ScrollBadges,
   type TableSkeletonColumnConfig,
 } from '@/components/common';
+import { Badge } from '@/components/ui/badge';
 import { useScopeFromParams } from '@/hooks/common';
-import { transformTagsToBadges } from '@/lib/tag';
-import { cn } from '@/lib/utils';
+import { getEntityTagCount } from '@/lib/entity-list';
 import { useProjectAppsStore } from '@/stores/project-apps.store';
 
 import { ProjectAppActions } from './project-app-actions';
-import { ProjectAppAudit } from './project-app-audit';
-import { ProjectAppCreateDialog } from './project-app-create-dialog';
+import { ProjectAppSignUpStatusLabel } from './project-app-sign-up-status-label';
 
 export function ProjectAppTable() {
   const t = useTranslations('projectApps');
+  const tCommon = useTranslations('common');
   const scope = useScopeFromParams();
   const projectApps = useProjectAppsStore((state) => state.projectApps);
   const loading = useProjectAppsStore((state) => state.loading);
   const search = useProjectAppsStore((state) => state.search);
+  const limit = useProjectAppsStore((state) => state.limit);
 
   const hasActiveFilters = search.trim() !== '';
 
@@ -35,109 +36,33 @@ export function ProjectAppTable() {
 
   const columns: DataTableColumnConfig<ProjectApp>[] = [
     {
-      key: 'icon',
-      header: '',
-      width: '50px',
-      className: 'pl-4',
-      render: (app: ProjectApp) => {
-        const primaryTagColor = app.tags?.find((tag: Tag) => tag.isPrimary)?.color;
-        return (
-          <div className="flex items-center justify-center">
-            <Avatar
-              initial={(app.name || app.clientId).charAt(0)}
-              size="sm"
-              icon={<LayoutGrid className="h-3 w-3 text-muted-foreground" />}
-              className={
-                primaryTagColor
-                  ? cn('border-2', getTagBorderClasses(primaryTagColor as TagColor))
-                  : undefined
-              }
-            />
-          </div>
-        );
-      },
-    },
-    {
-      key: 'name',
-      header: t('table.name'),
-      width: '180px',
-      render: (app: ProjectApp) => (
-        <span className="text-sm font-medium">{app.name || app.clientId}</span>
-      ),
-    },
-    {
       key: 'clientId',
       header: t('table.clientId'),
-      width: '280px',
+      width: '320px',
+      className: 'pl-4',
       render: (app: ProjectApp) => (
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground font-mono truncate">{app.clientId}</span>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm font-medium font-mono truncate">{app.clientId}</span>
           <CopyToClipboard text={app.clientId} size="sm" variant="ghost" />
         </div>
       ),
     },
     {
-      key: 'allowSignUp',
-      header: t('table.allowSignUp'),
-      width: '100px',
-      render: (app: ProjectApp) => (
-        <span className="text-sm text-muted-foreground">
-          {app.allowSignUp !== false ? t('common.yes') : t('common.no')}
-        </span>
-      ),
-    },
-    {
-      key: 'signUpRole',
-      header: t('table.signUpRole'),
-      width: '140px',
-      render: (app: ProjectApp) => {
-        const signUpRole = (app as { signUpRole?: { id: string; name: string } | null }).signUpRole;
-        if (app.allowSignUp === false || !signUpRole) return <span className="text-sm">—</span>;
-        return <span className="text-sm text-muted-foreground">{signUpRole.name}</span>;
-      },
-    },
-    {
-      key: 'redirectUris',
-      header: t('table.redirectUris'),
-      width: '200px',
-      render: (app: ProjectApp) => (
-        <ScrollBadges
-          items={
-            app.redirectUris?.map((uri) => ({
-              id: uri,
-              label: uri,
-            })) ?? []
-          }
-          height={60}
-        />
-      ),
+      key: 'signUp',
+      header: t('table.signUp'),
+      width: '120px',
+      render: (app: ProjectApp) => <ProjectAppSignUpStatusLabel allowSignUp={app.allowSignUp} />,
     },
     {
       key: 'enabledProviders',
       header: t('table.enabledProviders'),
-      width: '140px',
+      width: '180px',
       render: (app: ProjectApp) => (
         <ScrollBadges
           items={
-            app.enabledProviders?.map((p) => ({
-              id: p,
-              label: t(`providers.${p}` as 'providers.email' | 'providers.github'),
-            })) ?? []
-          }
-          height={60}
-        />
-      ),
-    },
-    {
-      key: 'scopes',
-      header: t('table.scopes'),
-      width: '150px',
-      render: (app: ProjectApp) => (
-        <ScrollBadges
-          items={
-            app.scopes?.map((s) => ({
-              id: s,
-              label: s,
+            app.enabledProviders?.map((provider) => ({
+              id: provider,
+              label: t(`providers.${provider}` as 'providers.email' | 'providers.github'),
             })) ?? []
           }
           height={60}
@@ -147,33 +72,35 @@ export function ProjectAppTable() {
     {
       key: 'tags',
       header: t('table.tags'),
-      width: '200px',
+      width: '120px',
       render: (app: ProjectApp) => (
-        <ScrollBadges items={transformTagsToBadges(app.tags)} height={60} showAsRound={true} />
+        <Badge variant="secondary">{tCommon('tagCount', { count: getEntityTagCount(app) })}</Badge>
       ),
     },
     {
-      key: 'audit',
-      header: t('table.audit'),
-      width: '200px',
-      render: (app: ProjectApp) => <ProjectAppAudit projectApp={app} />,
+      key: 'navigation',
+      header: '',
+      width: '60px',
+      render: (app: ProjectApp) => (
+        <EntityNavigationButton
+          entitySegment="apps"
+          entityId={app.id}
+          ariaLabel={t('actions.view')}
+          size="sm"
+        />
+      ),
     },
   ];
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: [
-      { key: 'icon', type: 'text' },
-      { key: 'name', type: 'text' },
       { key: 'clientId', type: 'text' },
-      { key: 'allowSignUp', type: 'text' },
-      { key: 'signUpRole', type: 'text' },
-      { key: 'redirectUris', type: 'list' },
+      { key: 'signUp', type: 'text' },
       { key: 'enabledProviders', type: 'list' },
-      { key: 'scopes', type: 'list' },
-      { key: 'tags', type: 'list' },
-      { key: 'audit', type: 'audit' },
+      { key: 'tags', type: 'text' },
+      { key: 'navigation', type: 'icon' },
     ],
-    rowCount: 5,
+    rowCount: limit,
   };
 
   return (
@@ -185,7 +112,14 @@ export function ProjectAppTable() {
         icon: <LayoutGrid />,
         title: hasActiveFilters ? t('noSearchResults.title') : t('empty.title'),
         description: hasActiveFilters ? t('noSearchResults.description') : t('empty.description'),
-        action: hasActiveFilters ? undefined : <ProjectAppCreateDialog triggerAlwaysShowLabel />,
+        action: hasActiveFilters ? undefined : (
+          <EntityCreateNavigateButton
+            entitySegment="apps"
+            label={t('createDialog.trigger')}
+            icon={LayoutGrid}
+            alwaysShowLabel
+          />
+        ),
       }}
       actionsColumn={{
         render: (app: ProjectApp) => <ProjectAppActions projectApp={app} scope={scope} />,

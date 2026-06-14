@@ -9,10 +9,10 @@ import {
   Avatar,
   DataTable,
   type DataTableColumnConfig,
-  ScrollBadges,
   type TableSkeletonColumnConfig,
 } from '@/components/common';
-import { transformTagsToBadges } from '@/lib/tag';
+import { Badge } from '@/components/ui/badge';
+import { getEntityTagCount } from '@/lib/entity-list';
 import { useOrganizationsStore } from '@/stores/organizations.store';
 
 import { OrganizationActions } from './organization-actions';
@@ -22,6 +22,7 @@ import { OrganizationNavigationButton } from './organization-navigation-button';
 
 export function OrganizationTable() {
   const t = useTranslations('organizations');
+  const tCommon = useTranslations('common');
   const limit = useOrganizationsStore((state) => state.limit);
   const search = useOrganizationsStore((state) => state.search);
   const organizations = useOrganizationsStore((state) => state.organizations);
@@ -64,13 +65,11 @@ export function OrganizationTable() {
     {
       key: 'tags',
       header: t('table.tags'),
-      width: '150px',
+      width: '120px',
       render: (organization: Organization) => (
-        <ScrollBadges
-          items={transformTagsToBadges(organization.tags)}
-          height={60}
-          showAsRound={true}
-        />
+        <Badge variant="secondary">
+          {tCommon('tagCount', { count: getEntityTagCount(organization) })}
+        </Badge>
       ),
     },
     {
@@ -100,7 +99,7 @@ export function OrganizationTable() {
       { key: 'avatar', type: 'avatar-only' },
       { key: 'name', type: 'text' },
       { key: 'slug', type: 'text' },
-      { key: 'tags', type: 'list' },
+      { key: 'tags', type: 'text' },
       { key: 'audit', type: 'audit' },
       { key: 'actions', type: 'actions' },
       { key: 'navigation', type: 'button' },

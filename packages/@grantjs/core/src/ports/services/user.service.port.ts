@@ -3,8 +3,10 @@
  * Covers: User, UserRole, UserTag, UserSession, UserAuthenticationMethod.
  */
 import type {
+  AddUserGroupInput,
   AddUserRoleInput,
   AddUserTagInput,
+  AssignUserPermissionInput,
   CreateUserAuthenticationMethodInput,
   CreateUserInput,
   CreateUserSessionInput,
@@ -12,17 +14,23 @@ import type {
   GetUserAuthenticationMethodsInput,
   GetUserSessionsInput,
   MutationDeleteUserArgs,
+  QueryUserGroupsInput,
+  QueryUserPermissionsInput,
   QueryUserRolesInput,
   QueryUsersArgs,
+  RemoveUserGroupInput,
   RemoveUserRoleInput,
   RemoveUserTagInput,
+  RevokeUserPermissionInput,
   UpdateUserAuthenticationMethodInput,
   UpdateUserInput,
   UpdateUserTagInput,
   User,
   UserAuthenticationMethod,
   UserAuthenticationMethodProvider,
+  UserGroup,
   UserPage,
+  UserPermission,
   UserRole,
   UserSession,
   UserSessionPage,
@@ -76,12 +84,54 @@ export interface IUserService {
 export interface IUserRoleService {
   getUserRoles(params: QueryUserRolesInput, transaction?: unknown): Promise<UserRole[]>;
 
+  countUserRoles(params: { userId: string }, transaction?: unknown): Promise<number>;
+
   addUserRole(params: AddUserRoleInput, transaction?: unknown): Promise<UserRole>;
 
   removeUserRole(
     params: RemoveUserRoleInput & DeleteParams,
     transaction?: unknown
   ): Promise<UserRole>;
+}
+
+// ---------------------------------------------------------------------------
+// IUserGroupService
+// ---------------------------------------------------------------------------
+
+export interface IUserGroupService {
+  getUserGroups(params: QueryUserGroupsInput, transaction?: unknown): Promise<UserGroup[]>;
+
+  countUserGroups(params: { userId: string }, transaction?: unknown): Promise<number>;
+
+  addUserGroup(params: AddUserGroupInput, transaction?: unknown): Promise<UserGroup>;
+
+  removeUserGroup(
+    params: RemoveUserGroupInput & DeleteParams,
+    transaction?: unknown
+  ): Promise<UserGroup>;
+}
+
+// ---------------------------------------------------------------------------
+// IUserPermissionService
+// ---------------------------------------------------------------------------
+
+export interface IUserPermissionService {
+  getUserPermissions(
+    params: QueryUserPermissionsInput,
+    transaction?: unknown
+  ): Promise<UserPermission[]>;
+
+  countUserPermissions(params: { userId: string }, transaction?: unknown): Promise<number>;
+
+  assignUserPermission(
+    params: AssignUserPermissionInput,
+    transaction?: unknown
+  ): Promise<UserPermission>;
+
+  revokeUserPermission(
+    params: RevokeUserPermissionInput & DeleteParams,
+    transaction?: unknown
+  ): Promise<UserPermission>;
 }
 
 // ---------------------------------------------------------------------------

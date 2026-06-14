@@ -1,0 +1,27 @@
+type ProjectUserPermission implements Auditable {
+  id: ID!
+  projectId: ID!
+  userId: ID!
+  permissionId: ID!
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}
+
+input AddProjectUserPermissionInput {
+  projectId: ID!
+  userId: ID!
+  permissionId: ID!
+}
+
+input RemoveProjectUserPermissionInput {
+  projectId: ID!
+  userId: ID!
+  permissionId: ID!
+}
+
+input QueryProjectUserPermissionsInput {
+  projectId: ID
+  userId: ID
+  permissionId: ID
+}

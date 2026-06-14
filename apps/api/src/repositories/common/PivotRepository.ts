@@ -1,5 +1,5 @@
 import { DbSchema } from '@grantjs/database';
-import { and, eq, inArray, isNotNull, isNull, sql, SQLWrapper } from 'drizzle-orm';
+import { and, count, eq, inArray, isNotNull, isNull, sql, SQLWrapper } from 'drizzle-orm';
 
 import { NotFoundError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
@@ -65,6 +65,19 @@ export abstract class PivotRepository<
 
   protected first<T>(result: T | T[]): T {
     return Array.isArray(result) ? result[0] : result;
+  }
+
+  protected async countActive(
+    params: Record<string, unknown>,
+    transaction?: Transaction
+  ): Promise<number> {
+    const db = transaction || this.db;
+    const unique = this.whereUnique(params);
+    const notSoftDeleted = unique
+      ? and(unique, isNull(this.table.deletedAt))
+      : isNull(this.table.deletedAt);
+    const result = await db.select({ count: count() }).from(this.table).where(notSoftDeleted);
+    return Number(result[0]?.count ?? 0);
   }
 
   protected async query(

@@ -4,10 +4,21 @@ import { useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { Scope, Tenant } from '@grantjs/schema';
 
+/** Static create-route segments that share a URL level with `[entityId]` dynamic routes. */
+const RESERVED_ENTITY_ROUTE_SEGMENTS = new Set(['new']);
+
 /** Normalize Next dynamic segment (string | string[] | undefined) to a single string. */
 function segment(value: string | string[] | undefined): string | undefined {
   if (value == null) return undefined;
   return Array.isArray(value) ? value[0] : value;
+}
+
+function entityRouteSegment(value: string | string[] | undefined): string | undefined {
+  const normalized = segment(value);
+  if (normalized == null || RESERVED_ENTITY_ROUTE_SEGMENTS.has(normalized)) {
+    return undefined;
+  }
+  return normalized;
 }
 
 /**
@@ -21,7 +32,7 @@ export function useScopeFromParams(): Scope | null {
   const accountId = segment(params.accountId as string | string[] | undefined);
   const organizationId = segment(params.organizationId as string | string[] | undefined);
   const projectId = segment(params.projectId as string | string[] | undefined);
-  const userId = segment(params.userId as string | string[] | undefined);
+  const userId = entityRouteSegment(params.userId as string | string[] | undefined);
 
   return useMemo(() => {
     if (accountId && projectId && userId) {

@@ -5,7 +5,7 @@ import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 
 import { useScopeFromParams } from '@/hooks/common';
-import { useRoles } from '@/hooks/roles';
+import { useRolesList } from '@/hooks/roles/use-roles-list';
 import { useRolesStore } from '@/stores/roles.store';
 
 import { RoleCards } from './role-cards';
@@ -25,7 +25,7 @@ export function RoleViewer() {
   const setLoading = useRolesStore((state) => state.setLoading);
   const setRefetch = useRolesStore((state) => state.setRefetch);
 
-  const { roles, loading, totalCount, refetch } = useRoles({
+  const { roles, loading, totalCount, refetch } = useRolesList({
     scope: scope!,
     page,
     limit,

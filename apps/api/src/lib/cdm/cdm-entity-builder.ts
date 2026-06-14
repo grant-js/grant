@@ -4,9 +4,15 @@ import type {
   IProjectGroupService,
   IProjectPermissionService,
   IProjectResourceService,
+  IProjectRolePermissionService,
   IProjectRoleService,
+  IProjectUserGroupService,
+  IProjectUserPermissionService,
   IRoleGroupService,
+  IRolePermissionService,
   IRoleService,
+  IUserGroupService,
+  IUserPermissionService,
   IUserRoleService,
 } from '@grantjs/core';
 import { Scope } from '@grantjs/schema';
@@ -25,9 +31,13 @@ import {
 export interface CdmRoleCreationCounts {
   roleGroups: number;
   groupPermissions: number;
+  rolePermissions: number;
+  userPermissions: number;
   projectRoles: number;
   projectGroups: number;
   projectPermissions: number;
+  projectRolePermissions: number;
+  projectUserPermissions: number;
   projectResources: number;
 }
 
@@ -59,20 +69,24 @@ export class CdmEntityBuilder {
     private readonly groups: IGroupService,
     private readonly roleGroups: IRoleGroupService,
     private readonly groupPermissions: IGroupPermissionService,
+    private readonly rolePermissions: IRolePermissionService,
+    private readonly userPermissions: IUserPermissionService,
     private readonly projectRoles: IProjectRoleService,
     private readonly projectGroups: IProjectGroupService,
     private readonly projectPermissions: IProjectPermissionService,
+    private readonly projectRolePermissions: IProjectRolePermissionService,
+    private readonly projectUserPermissions: IProjectUserPermissionService,
     private readonly projectResources: IProjectResourceService,
-    private readonly userRoles: IUserRoleService
+    private readonly userRoles: IUserRoleService,
+    private readonly userGroups: IUserGroupService,
+    private readonly projectUserGroups: IProjectUserGroupService
   ) {}
 
   /**
    * Create a CDM-marked role + paired group, link permissions to the group,
    * and ensure the project has rows in `project_*` for everything touched.
    *
-   * `kind` is the metadata kind written to `metadata.cdmImport.kind`. Use
-   * `'role'` for normal templates and `'directRole'` for direct-user-role
-   * bundles created from `userAssignments[].directPermissionRefs`.
+   * `kind` is the metadata kind written to `metadata.cdmImport.kind` (always `'role'` for templates).
    */
   public async createRoleWithGroup(
     projectId: string,
@@ -149,12 +163,282 @@ export class CdmEntityBuilder {
       counts: {
         roleGroups: 1,
         groupPermissions: groupPermissionsLinked,
+        rolePermissions: 0,
+        userPermissions: 0,
         projectRoles: 1,
         projectGroups: 1,
         projectPermissions: projectPermissionsLinked,
+        projectRolePermissions: 0,
+        projectUserPermissions: 0,
         projectResources: projectResourcesLinked,
       },
     };
+  }
+
+  /**
+   * Create a CDM-marked role with direct {@link role_permissions} links (no paired group).
+   */
+  public async createRoleWithDirectPermissions(
+    projectId: string,
+    scope: Scope,
+    externalKey: string,
+    name: string,
+    description: string | null,
+    kind: 'role' | 'directRole',
+    perms: readonly ResolvedCdmPermission[],
+    importerMetadata: unknown,
+    tx: Transaction
+  ): Promise<CdmRoleCreationResult> {
+    const roleName = this.truncateName(name.trim());
+    const roleMetadata = mergeCdmImporterMetadata(
+      buildCdmImportMetadata(projectId, kind, externalKey),
+      importerMetadata
+    );
+    const role = await this.roles.createRole(
+      {
+        name: roleName,
+        description: description ?? undefined,
+        metadata: roleMetadata,
+      },
+      tx
+    );
+    await this.projectRoles.addProjectRole({ projectId, roleId: role.id }, tx);
+
+    let rolePermissionsLinked = 0;
+    let projectPermissionsLinked = 0;
+    let projectRolePermissionsLinked = 0;
+    let projectResourcesLinked = 0;
+
+    for (const p of perms) {
+      const linked = await this.linkDirectPermissionToRole(projectId, scope, role.id, p, tx);
+      rolePermissionsLinked += linked.rolePermissions;
+      projectRolePermissionsLinked += linked.projectRolePermissions;
+      projectPermissionsLinked += linked.projectPermissions;
+      projectResourcesLinked += linked.projectResources;
+    }
+
+    return {
+      roleId: role.id,
+      groupId: '',
+      counts: {
+        roleGroups: 0,
+        groupPermissions: 0,
+        rolePermissions: rolePermissionsLinked,
+        userPermissions: 0,
+        projectRoles: 1,
+        projectGroups: 0,
+        projectPermissions: projectPermissionsLinked,
+        projectRolePermissions: projectRolePermissionsLinked,
+        projectUserPermissions: 0,
+        projectResources: projectResourcesLinked,
+      },
+    };
+  }
+
+  public async linkDirectPermissionsToUser(
+    projectId: string,
+    scope: Scope,
+    userId: string,
+    perms: readonly ResolvedCdmPermission[],
+    tx: Transaction
+  ): Promise<
+    Pick<
+      CdmRoleCreationCounts,
+      'userPermissions' | 'projectUserPermissions' | 'projectPermissions' | 'projectResources'
+    >
+  > {
+    let userPermissionsLinked = 0;
+    let projectUserPermissionsLinked = 0;
+    let projectPermissionsLinked = 0;
+    let projectResourcesLinked = 0;
+
+    for (const p of perms) {
+      const hasUp = await this.userHasPermission(userId, p.id, tx);
+      if (!hasUp) {
+        await this.userPermissions.assignUserPermission({ userId, permissionId: p.id, scope }, tx);
+        userPermissionsLinked += 1;
+      }
+      const pList = await this.projectUserPermissions.getProjectUserPermissions(
+        { projectId, userId },
+        tx
+      );
+      if (!pList.some((row) => row.permissionId === p.id)) {
+        await this.projectUserPermissions.addProjectUserPermission(
+          { projectId, userId, permissionId: p.id },
+          tx
+        );
+        projectUserPermissionsLinked += 1;
+      }
+      const n = await this.ensureProjectPermissionAndResource(projectId, p, tx);
+      projectPermissionsLinked += n.permissions;
+      projectResourcesLinked += n.resources;
+    }
+
+    return {
+      userPermissions: userPermissionsLinked,
+      projectUserPermissions: projectUserPermissionsLinked,
+      projectPermissions: projectPermissionsLinked,
+      projectResources: projectResourcesLinked,
+    };
+  }
+
+  /**
+   * Create a CDM-marked standalone group from a document group key and link
+   * permissions. Used when `userAssignments[].directGroupKeys` reference a
+   * group not already created by a role template.
+   */
+  public async createDocumentGroup(
+    projectId: string,
+    groupKey: string,
+    displayName: string,
+    description: string | null,
+    perms: readonly ResolvedCdmPermission[],
+    importerMetadata: unknown,
+    tx: Transaction
+  ): Promise<{
+    groupId: string;
+    groupPermissions: number;
+    projectGroups: number;
+    projectPermissions: number;
+    projectResources: number;
+  }> {
+    const groupName = this.truncateName(displayName.trim() !== '' ? displayName.trim() : groupKey);
+    const groupMetadata = mergeCdmImporterMetadata(
+      buildCdmImportMetadata(projectId, 'group', groupKey),
+      importerMetadata
+    );
+    const group = await this.groups.createGroup(
+      {
+        name: groupName,
+        description: description ?? `Imported group ${groupKey}`,
+        metadata: groupMetadata,
+      },
+      tx
+    );
+    await this.projectGroups.addProjectGroup({ projectId, groupId: group.id }, tx);
+
+    let groupPermissionsLinked = 0;
+    let projectPermissionsLinked = 0;
+    let projectResourcesLinked = 0;
+    for (const p of perms) {
+      const hasGp = await this.groupHasPermission(group.id, p.id, tx);
+      if (!hasGp) {
+        await this.groupPermissions.addGroupPermission(
+          { groupId: group.id, permissionId: p.id },
+          tx
+        );
+        groupPermissionsLinked += 1;
+      }
+      const n = await this.ensureProjectPermissionAndResource(projectId, p, tx);
+      projectPermissionsLinked += n.permissions;
+      projectResourcesLinked += n.resources;
+    }
+
+    return {
+      groupId: group.id,
+      groupPermissions: groupPermissionsLinked,
+      projectGroups: 1,
+      projectPermissions: projectPermissionsLinked,
+      projectResources: projectResourcesLinked,
+    };
+  }
+
+  public async linkDirectGroupsToUser(
+    projectId: string,
+    scope: Scope,
+    userId: string,
+    groupIds: readonly string[],
+    tx: Transaction
+  ): Promise<
+    Pick<CdmRoleCreationCounts, 'projectGroups' | 'projectPermissions' | 'projectResources'>
+  > {
+    let projectGroupsLinked = 0;
+    const projectPermissionsLinked = 0;
+    const projectResourcesLinked = 0;
+
+    for (const groupId of groupIds) {
+      const hasUg = await this.userHasGroup(userId, groupId, tx);
+      if (!hasUg) {
+        await this.userGroups.addUserGroup({ userId, groupId }, tx);
+      }
+      const pugList = await this.projectUserGroups.getProjectUserGroups({ projectId, userId }, tx);
+      if (!pugList.some((row) => row.groupId === groupId)) {
+        await this.projectUserGroups.addProjectUserGroup({ projectId, userId, groupId }, tx);
+      }
+      try {
+        await this.projectGroups.addProjectGroup({ projectId, groupId }, tx);
+        projectGroupsLinked += 1;
+      } catch {
+        /* idempotent when group already linked to project */
+      }
+    }
+
+    return {
+      projectGroups: projectGroupsLinked,
+      projectPermissions: projectPermissionsLinked,
+      projectResources: projectResourcesLinked,
+    };
+  }
+
+  private async userHasGroup(userId: string, groupId: string, tx: Transaction): Promise<boolean> {
+    const list = await this.userGroups.getUserGroups({ userId }, tx);
+    return list.some((ug) => ug.groupId === groupId);
+  }
+
+  private async linkDirectPermissionToRole(
+    projectId: string,
+    scope: Scope,
+    roleId: string,
+    permission: ResolvedCdmPermission,
+    tx: Transaction
+  ): Promise<{
+    rolePermissions: number;
+    projectRolePermissions: number;
+    projectPermissions: number;
+    projectResources: number;
+  }> {
+    let rolePermissions = 0;
+    let projectRolePermissions = 0;
+    const permissionId = permission.id;
+
+    const hasRp = await this.roleHasPermission(roleId, permissionId, tx);
+    if (!hasRp) {
+      await this.rolePermissions.assignRolePermission({ roleId, permissionId, scope }, tx);
+      rolePermissions = 1;
+    }
+    const prpList = await this.projectRolePermissions.getProjectRolePermissions(
+      { projectId, roleId },
+      tx
+    );
+    if (!prpList.some((row) => row.permissionId === permissionId)) {
+      await this.projectRolePermissions.addProjectRolePermission(
+        { projectId, roleId, permissionId },
+        tx
+      );
+      projectRolePermissions = 1;
+    }
+    const { permissions: projectPermissions, resources: projectResources } =
+      await this.ensureProjectPermissionAndResource(projectId, permission, tx);
+
+    return { rolePermissions, projectRolePermissions, projectPermissions, projectResources };
+  }
+
+  private async roleHasPermission(
+    roleId: string,
+    permissionId: string,
+    tx: Transaction
+  ): Promise<boolean> {
+    const list = await this.rolePermissions.getRolePermissions({ roleId }, tx);
+    return list.some((row) => row.permissionId === permissionId);
+  }
+
+  private async userHasPermission(
+    userId: string,
+    permissionId: string,
+    tx: Transaction
+  ): Promise<boolean> {
+    const list = await this.userPermissions.getUserPermissions({ userId }, tx);
+    return list.some((row) => row.permissionId === permissionId);
   }
 
   /**
@@ -177,6 +461,7 @@ export class CdmEntityBuilder {
     for (const rg of rgs) {
       await this.roleGroups.removeRoleGroup({ roleId: rg.roleId, groupId: rg.groupId }, tx);
     }
+    await this.importRepo.bulkSoftDeletePivotsForRoles([roleId], projectId, tx);
     await this.roles.deleteRole({ id: roleId }, tx);
   }
 
@@ -203,6 +488,7 @@ export class CdmEntityBuilder {
     for (const rg of rgs) {
       await this.roleGroups.removeRoleGroup({ roleId: rg.roleId, groupId: rg.groupId }, tx);
     }
+    await this.importRepo.bulkSoftDeletePivotsForGroups([groupId], projectId, tx);
     await this.groups.deleteGroup({ id: groupId }, tx);
   }
 

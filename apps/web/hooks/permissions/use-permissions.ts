@@ -15,20 +15,24 @@ interface UsePermissionsResult {
 }
 
 export function usePermissions(options: QueryPermissionsArgs): UsePermissionsResult {
-  const { scope, page, limit, search, sort, tagIds } = options;
+  const { scope, ids, page, limit, search, sort, tagIds } = options;
 
-  const skip = useMemo(() => !scope || !scope.id || !scope.tenant, [scope]);
+  const skip = useMemo(
+    () => !scope || !scope.id || !scope.tenant || (ids != null && ids.length === 0),
+    [scope, ids]
+  );
 
   const variables = useMemo(
     () => ({
       scope,
+      ids,
       page,
       limit,
       search,
       sort,
       tagIds,
     }),
-    [scope, page, limit, search, sort, tagIds]
+    [scope, ids, page, limit, search, sort, tagIds]
   );
 
   const { data, loading, error, refetch } = useQuery<{ permissions: PermissionPage }>(

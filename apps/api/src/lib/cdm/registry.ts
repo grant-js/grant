@@ -8,15 +8,21 @@ import type {
   IProjectGroupService,
   IProjectPermissionService,
   IProjectResourceService,
+  IProjectRolePermissionService,
   IProjectRoleService,
   IProjectTagService,
   IProjectUserApiKeyService,
+  IProjectUserGroupService,
+  IProjectUserPermissionService,
   IProjectUserService,
   IResourceService,
   IRoleGroupService,
+  IRolePermissionService,
   IRoleService,
   IRoleTagService,
   ITagService,
+  IUserGroupService,
+  IUserPermissionService,
   IUserRepository,
   IUserRoleService,
   IUserService,
@@ -41,10 +47,16 @@ export interface CdmEntityRegistryDeps {
   roles: IRoleService;
   groups: IGroupService;
   roleGroups: IRoleGroupService;
+  rolePermissions: IRolePermissionService;
   groupPermissions: IGroupPermissionService;
+  userPermissions: IUserPermissionService;
+  userGroups: IUserGroupService;
   projectRoles: IProjectRoleService;
   projectGroups: IProjectGroupService;
   projectPermissions: IProjectPermissionService;
+  projectRolePermissions: IProjectRolePermissionService;
+  projectUserPermissions: IProjectUserPermissionService;
+  projectUserGroups: IProjectUserGroupService;
   projectResources: IProjectResourceService;
   projectUsers: IProjectUserService;
   userRoles: IUserRoleService;
@@ -70,11 +82,17 @@ export function createDefaultCdmEntities(
     deps.groups,
     deps.roleGroups,
     deps.groupPermissions,
+    deps.rolePermissions,
+    deps.userPermissions,
     deps.projectRoles,
     deps.projectGroups,
     deps.projectPermissions,
+    deps.projectRolePermissions,
+    deps.projectUserPermissions,
     deps.projectResources,
-    deps.userRoles
+    deps.userRoles,
+    deps.userGroups,
+    deps.projectUserGroups
   );
 
   const entities: ICdmEntityHandler[] = [

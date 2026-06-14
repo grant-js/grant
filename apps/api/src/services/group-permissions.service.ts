@@ -93,6 +93,13 @@ export class GroupPermissionService implements IGroupPermissionService {
     );
   }
 
+  public async countGroupPermissions(
+    params: { groupId: string },
+    transaction?: Transaction
+  ): Promise<number> {
+    return this.groupPermissionRepository.countGroupPermissions(params, transaction);
+  }
+
   public async addGroupPermission(
     params: AddGroupPermissionInput,
     transaction?: Transaction

@@ -81,3 +81,10 @@ export function getPayloadModeDetails(
   }
   return details;
 }
+
+/** Fixed height for CDM JSON editors — CodeMirror scrolls inside the editor viewport. */
+export const PROJECT_SYNC_JOB_CDM_EDITOR_HEIGHT = 'min(32rem, 70vh)';
+
+/** Scrollable cap for non-editor card bodies (e.g. warning lists). */
+export const PROJECT_SYNC_JOB_SCROLLABLE_CARD_BODY_CLASS =
+  'max-h-[min(32rem,70vh)] min-h-0 overflow-y-auto';

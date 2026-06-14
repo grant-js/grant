@@ -16,6 +16,7 @@ import { ProjectSyncJobActions } from './project-sync-job-actions';
 import { getJobAvatarInitial } from './project-sync-job-display';
 import { ProjectSyncJobExportTrigger } from './project-sync-job-export-trigger';
 import { ProjectSyncJobModeBadge } from './project-sync-job-mode-badge';
+import { ProjectSyncJobNavigationButton } from './project-sync-job-navigation-button';
 import { ProjectSyncJobOperationBadge } from './project-sync-job-operation-badge';
 import { ProjectSyncJobStartTrigger } from './project-sync-job-start-trigger';
 import { ProjectSyncJobStatusBadge } from './project-sync-job-status-badge';
@@ -39,12 +40,16 @@ export function ProjectSyncJobTable() {
     {
       key: 'jobName',
       header: t('table.jobName'),
-      width: '200px',
-      render: (job) => (
-        <span className="text-sm font-mono break-all">
-          {job.jobName ?? <span className="text-muted-foreground">{t('table.noJobName')}</span>}
-        </span>
-      ),
+      width: '240px',
+      className: 'whitespace-normal',
+      render: (job) =>
+        job.jobName ? (
+          <span className="block truncate text-sm font-mono" title={job.jobName}>
+            {job.jobName}
+          </span>
+        ) : (
+          <span className="text-sm text-muted-foreground">{t('table.noJobName')}</span>
+        ),
     },
     {
       key: 'operation',
@@ -98,6 +103,19 @@ export function ProjectSyncJobTable() {
         </span>
       ),
     },
+    {
+      key: 'navigation',
+      header: '',
+      width: '60px',
+      render: (job) => (
+        <ProjectSyncJobNavigationButton
+          projectId={job.projectId}
+          jobId={job.id}
+          ariaLabel={t('actions.view')}
+          size="sm"
+        />
+      ),
+    },
   ];
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
@@ -111,6 +129,7 @@ export function ProjectSyncJobTable() {
       { key: 'enqueuedAt', type: 'text' },
       { key: 'startedAt', type: 'text' },
       { key: 'completedAt', type: 'text' },
+      { key: 'navigation', type: 'icon' },
     ],
     rowCount: limit,
   };

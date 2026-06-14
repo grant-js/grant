@@ -1,4 +1,6 @@
 export * from './use-debounce';
+export * from './use-detail-table-column-visibility';
+export * from './use-infinite-scroll';
 export * from './use-mobile';
 export * from './use-page-title';
 export * from './use-project-scope';

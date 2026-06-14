@@ -1,0 +1,39 @@
+mutation AssignUserPermission($input: AssignUserPermissionInput!) {
+  assignUserPermission(input: $input) {
+    id
+    userId
+    permissionId
+    createdAt
+    updatedAt
+  }
+}
+
+mutation RevokeUserPermission($input: RevokeUserPermissionInput!) {
+  revokeUserPermission(input: $input) {
+    id
+    userId
+    permissionId
+    deletedAt
+  }
+}
+
+query GetUserDirectPermissions($scope: Scope!, $userId: ID!) {
+  users(scope: $scope, ids: [$userId], limit: 1) {
+    users {
+      id
+      permissionCount
+      userPermissions {
+        id
+        permissionId
+        permission(scope: $scope) {
+          id
+          name
+          action
+          resource {
+            slug
+          }
+        }
+      }
+    }
+  }
+}

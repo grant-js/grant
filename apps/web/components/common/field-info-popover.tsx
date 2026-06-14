@@ -36,17 +36,25 @@ export function FieldInfoPopover({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button
-          type="button"
+        <span
+          role="button"
+          tabIndex={0}
           onClick={stopPropagation ? (event) => event.stopPropagation() : undefined}
+          onKeyDown={
+            stopPropagation
+              ? (event) => {
+                  event.stopPropagation();
+                }
+              : undefined
+          }
           className={cn(
-            'inline-flex shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground',
+            'inline-flex shrink-0 cursor-pointer items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
             className
           )}
           aria-label={ariaLabel}
         >
           <Info className={iconClassName} aria-hidden />
-        </button>
+        </span>
       </PopoverTrigger>
       <PopoverContent
         className="z-[99999999] w-80"

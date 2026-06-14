@@ -43,6 +43,20 @@ const SKIP_ERROR_REDIRECT_OPERATIONS = [
   'RefreshSession',
 ] as const;
 
+/** RBAC entity queries show inline errors on detail/list panels instead of /forbidden redirect. */
+const SKIP_FORBIDDEN_REDIRECT_OPERATIONS = [
+  'GetRoles',
+  'GetRolesList',
+  'GetGroups',
+  'GetGroupsList',
+  'GetPermissions',
+  'GetPermissionsList',
+  'GetTags',
+  'GetProjects',
+  'GetUsers',
+  'GetUsersList',
+] as const;
+
 /** Prevents multiple concurrent clear-session flows from 401s. */
 let clearingSession = false;
 
@@ -360,6 +374,13 @@ function shouldSkipErrorRedirect(operationName: string | undefined): boolean {
   );
 }
 
+function shouldSkipForbiddenRedirect(operationName: string | undefined): boolean {
+  if (!operationName) return false;
+  return SKIP_FORBIDDEN_REDIRECT_OPERATIONS.includes(
+    operationName as (typeof SKIP_FORBIDDEN_REDIRECT_OPERATIONS)[number]
+  );
+}
+
 function createTokenRefreshObservable(
   operation: Parameters<ErrorLink.ErrorHandler>[0]['operation'],
   forward: Parameters<ErrorLink.ErrorHandler>[0]['forward']
@@ -467,7 +488,7 @@ const errorLink = new ErrorLink(({ error, operation, forward }) => {
     }
 
     const hasForbiddenError = graphQLErrors.some(isForbiddenGraphQLError);
-    if (hasForbiddenError) {
+    if (hasForbiddenError && !shouldSkipForbiddenRedirect(operation.operationName)) {
       redirectToForbidden();
       return;
     }
@@ -521,7 +542,7 @@ export function getClient(options?: ApolloClientOptions) {
               keyArgs: ['scope'],
             },
             tags: {
-              keyArgs: ['scope'],
+              keyArgs: ['scope', 'page', 'limit', 'sort', 'search', 'ids'],
             },
             resources: {
               keyArgs: ['scope', 'ids'],

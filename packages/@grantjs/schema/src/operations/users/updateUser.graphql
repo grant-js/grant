@@ -5,5 +5,11 @@ mutation UpdateUser($id: ID!, $input: UpdateUserInput!) {
     metadata
     createdAt
     updatedAt
+    tags {
+      id
+      name
+      color
+      isPrimary
+    }
   }
 }

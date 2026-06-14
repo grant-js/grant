@@ -12,6 +12,7 @@ interface RolesState {
   sort: { field: RoleSortableField; order: SortOrder };
   view: RoleView;
   selectedTagIds: string[];
+  hideSyntheticEntities: boolean;
   totalCount: number;
   isInitialized: boolean;
 
@@ -25,7 +26,9 @@ interface RolesState {
   // Dialog state
   roleToDelete: Role | null;
   roleToEdit: Role | null;
-  isCreateDialogOpen: boolean;
+
+  // Current role (for breadcrumb)
+  currentRole: Role | null;
 
   // Actions
   setPage: (page: number) => void;
@@ -34,6 +37,7 @@ interface RolesState {
   setSort: (field: RoleSortableField, order: SortOrder) => void;
   setView: (view: RoleView) => void;
   setSelectedTagIds: (tagIds: string[]) => void;
+  setHideSyntheticEntities: (hide: boolean) => void;
   setTotalCount: (count: number) => void;
   setRoles: (roles: Role[]) => void;
   setLoading: (loading: boolean) => void;
@@ -44,7 +48,7 @@ interface RolesState {
   // Dialog actions
   setRoleToDelete: (role: Role | null) => void;
   setRoleToEdit: (role: Role | null) => void;
-  setCreateDialogOpen: (open: boolean) => void;
+  setCurrentRole: (role: Role | null) => void;
 }
 
 const defaultSort = { field: RoleSortableField.Name, order: SortOrder.Asc };
@@ -59,6 +63,7 @@ export const useRolesStore = create<RolesState>()(
       sort: defaultSort,
       view: RoleView.CARD,
       selectedTagIds: [],
+      hideSyntheticEntities: true,
       totalCount: 0,
       isInitialized: false,
 
@@ -72,7 +77,7 @@ export const useRolesStore = create<RolesState>()(
       // Dialog state
       roleToDelete: null,
       roleToEdit: null,
-      isCreateDialogOpen: false,
+      currentRole: null,
 
       // Actions
       setPage: (page) => set({ page }),
@@ -81,6 +86,7 @@ export const useRolesStore = create<RolesState>()(
       setSort: (field, order) => set({ sort: { field, order }, page: 1 }),
       setView: (view) => set({ view }),
       setSelectedTagIds: (tagIds) => set({ selectedTagIds: tagIds, page: 1 }),
+      setHideSyntheticEntities: (hideSyntheticEntities) => set({ hideSyntheticEntities }),
       setTotalCount: (totalCount) => set({ totalCount }),
       setRoles: (roles) => set({ roles }),
       setLoading: (loading) => set({ loading }),
@@ -100,7 +106,7 @@ export const useRolesStore = create<RolesState>()(
           refetch: null,
           roleToDelete: null,
           roleToEdit: null,
-          isCreateDialogOpen: false,
+          currentRole: null,
         }),
       initializeFromUrl: (params) => {
         const currentState = get();
@@ -132,7 +138,7 @@ export const useRolesStore = create<RolesState>()(
       // Dialog actions
       setRoleToDelete: (role) => set({ roleToDelete: role }),
       setRoleToEdit: (role) => set({ roleToEdit: role }),
-      setCreateDialogOpen: (open) => set({ isCreateDialogOpen: open }),
+      setCurrentRole: (role) => set({ currentRole: role }),
     }),
     { name: 'grant-roles-store' }
   )

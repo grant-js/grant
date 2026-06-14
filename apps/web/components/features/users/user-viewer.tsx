@@ -5,7 +5,7 @@ import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 
 import { useScopeFromParams } from '@/hooks/common';
-import { useUsers } from '@/hooks/users';
+import { useUsersList } from '@/hooks/users/use-users-list';
 import { useUsersStore } from '@/stores/users.store';
 
 import { UserCards } from './user-cards';
@@ -25,7 +25,7 @@ export function UserViewer() {
   const setLoading = useUsersStore((state) => state.setLoading);
   const setRefetch = useUsersStore((state) => state.setRefetch);
 
-  const { users, loading, totalCount, refetch } = useUsers({
+  const { users, loading, totalCount, refetch } = useUsersList({
     scope: scope!,
     page,
     limit,

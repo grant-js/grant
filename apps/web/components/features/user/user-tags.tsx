@@ -1,33 +1,50 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useGrant } from '@grantjs/client/react';
 import { getTagBorderClasses, TagColor } from '@grantjs/constants';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
-import { SortOrder, Tag, TagSortField, User } from '@grantjs/schema';
+import { Tag, User } from '@grantjs/schema';
 import { Loader2, Tag as TagIcon } from 'lucide-react';
 
 import {
   Avatar,
   DataTable,
   type DataTableColumnConfig,
+  DataTableColumnToggle,
+  DetailAttachmentFilterToggle,
+  FeatureModuleCard,
   Pagination,
   RefreshButton,
   type TableSkeletonColumnConfig,
   Toolbar,
+  toolbarGrow,
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useDebounce } from '@/hooks/common';
+import { useDebounce, useDetailTableColumnVisibility } from '@/hooks/common';
 import { useProjectUserScope } from '@/hooks/common/use-project-user-scope';
 import { useTags } from '@/hooks/tags';
 import { useUserMutations } from '@/hooks/users';
+import { resolveDetailQueryIds } from '@/lib/detail-attachment-filter';
 import { cn } from '@/lib/utils';
 import { useUserStore } from '@/stores/user.store';
 
+import {
+  USER_DETAIL_CHECKBOX_COLUMN,
+  USER_DETAIL_CHECKBOX_SKELETON,
+  USER_DETAIL_CONTENT_COLUMN_CLASS,
+  USER_DETAIL_ICON_COLUMN,
+  USER_DETAIL_ICON_SKELETON,
+  USER_DETAIL_LOADING_COLUMN,
+  USER_DETAIL_LOADING_SKELETON,
+  USER_DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
+  USER_DETAIL_TEXT_COLUMN,
+  UserDetailTableCheckboxCell,
+  UserDetailTableIconCell,
+} from './user-detail-table-layout';
 import { UserTagSearch } from './user-tag-search';
-import { UserTagSorter } from './user-tag-sorter';
 
 interface UserTagsProps {
   user: User;
@@ -45,18 +62,29 @@ export function UserTags({ user }: UserTagsProps) {
   const limit = useUserStore((state) => state.tagsLimit);
   const search = useUserStore((state) => state.tagsSearch);
   const sort = useUserStore((state) => state.tagsSort);
+  const tagsAttachmentFilter = useUserStore((state) => state.tagsAttachmentFilter);
   const updatingTagId = useUserStore((state) => state.updatingTagId);
   const optimisticCheckedTagIds = useUserStore((state) => state.optimisticCheckedTagIds);
 
   const setPage = useUserStore((state) => state.setTagsPage);
   const setSearch = useUserStore((state) => state.setTagsSearch);
-  const setSort = useUserStore((state) => state.setTagsSort);
+  const setTagsAttachmentFilter = useUserStore((state) => state.setTagsAttachmentFilter);
   const setUpdatingTagId = useUserStore((state) => state.setUpdatingTagId);
   const setOptimisticCheckedTagIds = useUserStore((state) => state.setOptimisticCheckedTagIds);
   const addOptimisticTagId = useUserStore((state) => state.addOptimisticTagId);
   const removeOptimisticTagId = useUserStore((state) => state.removeOptimisticTagId);
   const tagsRefetch = useUserStore((state) => state.tagsRefetch);
   const setTagsRefetch = useUserStore((state) => state.setTagsRefetch);
+
+  const selectedTagIds = useMemo(
+    () => Array.from(optimisticCheckedTagIds),
+    [optimisticCheckedTagIds]
+  );
+
+  const tagQueryIds = useMemo(
+    () => resolveDetailQueryIds(tagsAttachmentFilter, selectedTagIds),
+    [tagsAttachmentFilter, selectedTagIds]
+  );
 
   const { tags, loading, error, totalCount, refetch } = useTags({
     scope: scope!,
@@ -67,6 +95,7 @@ export function UserTags({ user }: UserTagsProps) {
       field: sort.field,
       order: sort.order,
     },
+    ids: tagQueryIds,
   });
 
   const handleRefetch = useCallback(() => {
@@ -126,10 +155,6 @@ export function UserTags({ user }: UserTagsProps) {
     debouncedUpdateUserTags(tagId, checked, currentTagIds);
   };
 
-  const handleSortChange = (field: TagSortField, order: SortOrder) => {
-    setSort(field, order);
-  };
-
   const handleSearchChange = (newSearch: string) => {
     setSearch(newSearch);
   };
@@ -138,41 +163,46 @@ export function UserTags({ user }: UserTagsProps) {
     {
       key: 'checkbox',
       header: '',
-      width: '50px',
-      className: 'pl-4',
+      ...USER_DETAIL_CHECKBOX_COLUMN,
       render: (tag: Tag) => (
-        <Checkbox
-          checked={isTagChecked(tag.id)}
-          onCheckedChange={(checked) => handleTagToggle(tag.id, checked === true)}
-          disabled={!canUpdate}
-        />
+        <UserDetailTableCheckboxCell>
+          <Checkbox
+            checked={isTagChecked(tag.id)}
+            onCheckedChange={(checked) => handleTagToggle(tag.id, checked === true)}
+            disabled={!canUpdate}
+          />
+        </UserDetailTableCheckboxCell>
       ),
     },
     {
       key: 'icon',
       header: '',
-      width: '50px',
+      ...USER_DETAIL_ICON_COLUMN,
       render: (tag: Tag) => (
-        <div className="flex items-center justify-center">
+        <UserDetailTableIconCell>
           <Avatar
             initial={tag.name.charAt(0)}
             size="sm"
             icon={<TagIcon className="h-3 w-3 text-muted-foreground" />}
             className={cn('border-2', getTagBorderClasses(tag.color as TagColor))}
           />
-        </div>
+        </UserDetailTableIconCell>
       ),
     },
     {
       key: 'name',
       header: t('table.name'),
       width: '240px',
+      ...USER_DETAIL_TEXT_COLUMN,
+      className: USER_DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
       render: (tag: Tag) => <span className="text-sm font-medium">{tag.name}</span>,
     },
     {
       key: 'color',
       header: t('table.color'),
       width: '150px',
+      ...USER_DETAIL_TEXT_COLUMN,
+      className: USER_DETAIL_CONTENT_COLUMN_CLASS,
       render: (tag: Tag) => (
         <div className="flex items-center space-x-2">
           <Badge
@@ -186,76 +216,92 @@ export function UserTags({ user }: UserTagsProps) {
     {
       key: 'loading',
       header: '',
-      width: '50px',
+      ...USER_DETAIL_LOADING_COLUMN,
       render: (tag: Tag) =>
         updatingTagId === tag.id ? (
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <UserDetailTableIconCell>
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          </UserDetailTableIconCell>
         ) : null,
     },
   ];
 
+  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
+    useDetailTableColumnVisibility(columns);
+
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
-    columns: [
-      { key: 'checkbox', type: 'text' },
-      { key: 'icon', type: 'text' },
-      { key: 'name', type: 'text' },
-      { key: 'color', type: 'text' },
-      { key: 'loading', type: 'text' },
-    ],
+    columns: filterSkeletonColumns([
+      USER_DETAIL_CHECKBOX_SKELETON,
+      USER_DETAIL_ICON_SKELETON,
+      { key: 'name', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
+      { key: 'color', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
+      USER_DETAIL_LOADING_SKELETON,
+    ]),
     rowCount: 5,
   };
 
   if (error) {
     return (
-      <div className="rounded-lg border bg-card p-6">
-        <h3 className="text-lg font-semibold mb-4">{t('title')}</h3>
+      <FeatureModuleCard title={t('title')}>
         <p className="text-sm text-destructive">{t('error')}</p>
-      </div>
+      </FeatureModuleCard>
     );
   }
 
   return (
-    <>
-      <div className="min-w-0 rounded-lg border bg-card p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold shrink-0">{t('title')}</h3>
-          <Toolbar
-            alwaysRow
-            items={[
-              <RefreshButton
-                key="refresh"
-                onRefresh={tagsRefetch ?? undefined}
-                loading={loading}
-                iconOnly
-              />,
-              (totalPages > 1 || search.length > 0) && (
-                <UserTagSearch key="search" search={search} onSearchChange={handleSearchChange} />
-              ),
-              totalCount > 0 && (
-                <UserTagSorter key="sorter" sort={sort} onSortChange={handleSortChange} />
-              ),
-            ]}
-          />
-        </div>
-        <div className="min-w-0 overflow-x-auto">
-          <DataTable
-            data={tags}
-            columns={columns}
-            loading={loading}
-            emptyState={{
-              icon: <TagIcon />,
-              title: t('empty'),
-              description: t('emptyDescription'),
-            }}
-            skeletonConfig={skeletonConfig}
-          />
-        </div>
-        {totalPages > 1 && (
-          <div className="mt-4 border-t">
-            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-          </div>
-        )}
-      </div>
-    </>
+    <FeatureModuleCard
+      title={t('title')}
+      description={t('description')}
+      collapsible
+      toolbar={
+        <Toolbar
+          fullWidth
+          alwaysRow
+          items={[
+            <RefreshButton
+              key="refresh"
+              onRefresh={tagsRefetch ?? undefined}
+              loading={loading}
+              iconOnly
+            />,
+            <DetailAttachmentFilterToggle
+              key="attachment-filter"
+              value={tagsAttachmentFilter}
+              onChange={setTagsAttachmentFilter}
+            />,
+            toolbarGrow(
+              <UserTagSearch
+                key="search"
+                search={search}
+                onSearchChange={handleSearchChange}
+                grow
+              />
+            ),
+            <DataTableColumnToggle
+              key="columns"
+              columns={columnToggleItems}
+              onToggle={toggleColumn}
+            />,
+          ]}
+        />
+      }
+      footer={
+        totalPages > 1 ? (
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        ) : undefined
+      }
+    >
+      <DataTable
+        data={tags}
+        columns={visibleColumns}
+        loading={loading}
+        emptyState={{
+          icon: <TagIcon />,
+          title: t('empty'),
+          description: t('emptyDescription'),
+        }}
+        skeletonConfig={skeletonConfig}
+      />
+    </FeatureModuleCard>
   );
 }

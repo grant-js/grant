@@ -1,0 +1,43 @@
+query GetUsersList(
+  $scope: Scope!
+  $page: Int
+  $limit: Int
+  $sort: UserSortInput
+  $search: String
+  $ids: [ID!]
+  $tagIds: [ID!]
+) {
+  users(
+    scope: $scope
+    page: $page
+    limit: $limit
+    sort: $sort
+    search: $search
+    ids: $ids
+    tagIds: $tagIds
+  ) {
+    users {
+      id
+      name
+      pictureUrl
+      metadata
+      createdAt
+      updatedAt
+      primaryTag {
+        id
+        name
+        color
+        isPrimary
+      }
+      roleCount
+      projectUserApiKeyCount
+      tagCount
+      authenticationMethods {
+        provider
+        providerId
+      }
+    }
+    totalCount
+    hasNextPage
+  }
+}

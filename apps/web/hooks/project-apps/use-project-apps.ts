@@ -19,7 +19,7 @@ interface UseProjectAppsResult {
 }
 
 export function useProjectApps(params: QueryProjectAppsArgs): UseProjectAppsResult {
-  const { scope, limit, page, search, sort, tagIds } = params;
+  const { scope, limit, page, search, sort, tagIds, ids } = params;
 
   const skip = useMemo(() => !scope || !scope.id || !scope.tenant, [scope]);
 
@@ -31,8 +31,9 @@ export function useProjectApps(params: QueryProjectAppsArgs): UseProjectAppsResu
       search,
       sort,
       tagIds,
+      ids,
     }),
-    [scope, limit, page, search, sort, tagIds]
+    [scope, limit, page, search, sort, tagIds, ids]
   );
 
   const { data, loading, error, refetch } = useQuery<{

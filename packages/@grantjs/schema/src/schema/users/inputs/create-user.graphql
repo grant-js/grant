@@ -4,6 +4,8 @@ input CreateUserInput {
   metadata: JSON
   tagIds: [ID!]
   roleIds: [ID!]
+  groupIds: [ID!]
+  permissionIds: [ID!]
   scope: Scope!
   primaryTagId: ID
 }

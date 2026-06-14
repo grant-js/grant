@@ -12,6 +12,7 @@ interface UsersState {
   sort: { field: UserSortableField; order: SortOrder };
   view: UserView;
   selectedTagIds: string[];
+  hideSyntheticEntities: boolean;
   totalCount: number;
   isInitialized: boolean;
 
@@ -25,7 +26,6 @@ interface UsersState {
   // Dialog state
   userToDelete: User | null;
   userToEdit: User | null;
-  isCreateDialogOpen: boolean;
 
   // Current user (for breadcrumb)
   currentUser: User | null;
@@ -37,6 +37,7 @@ interface UsersState {
   setSort: (field: UserSortableField, order: SortOrder) => void;
   setView: (view: UserView) => void;
   setSelectedTagIds: (tagIds: string[]) => void;
+  setHideSyntheticEntities: (hide: boolean) => void;
   setTotalCount: (count: number) => void;
   setUsers: (users: User[]) => void;
   setLoading: (loading: boolean) => void;
@@ -47,7 +48,6 @@ interface UsersState {
   // Dialog actions
   setUserToDelete: (user: User | null) => void;
   setUserToEdit: (user: User | null) => void;
-  setCreateDialogOpen: (open: boolean) => void;
   setCurrentUser: (user: User | null) => void;
 }
 
@@ -63,6 +63,7 @@ export const useUsersStore = create<UsersState>()(
       sort: defaultSort,
       view: UserView.CARD,
       selectedTagIds: [],
+      hideSyntheticEntities: true,
       totalCount: 0,
       isInitialized: false,
 
@@ -76,8 +77,6 @@ export const useUsersStore = create<UsersState>()(
       // Dialog state
       userToDelete: null,
       userToEdit: null,
-      isCreateDialogOpen: false,
-
       // Current user
       currentUser: null,
 
@@ -88,6 +87,7 @@ export const useUsersStore = create<UsersState>()(
       setSort: (field, order) => set({ sort: { field, order }, page: 1 }),
       setView: (view) => set({ view }),
       setSelectedTagIds: (tagIds) => set({ selectedTagIds: tagIds, page: 1 }),
+      setHideSyntheticEntities: (hideSyntheticEntities) => set({ hideSyntheticEntities }),
       setTotalCount: (totalCount) => set({ totalCount }),
       setUsers: (users) => set({ users }),
       setLoading: (loading) => set({ loading }),
@@ -107,7 +107,6 @@ export const useUsersStore = create<UsersState>()(
           refetch: null,
           userToDelete: null,
           userToEdit: null,
-          isCreateDialogOpen: false,
           currentUser: null,
         }),
       initializeFromUrl: (params) => {
@@ -140,7 +139,6 @@ export const useUsersStore = create<UsersState>()(
       // Dialog actions
       setUserToDelete: (user) => set({ userToDelete: user }),
       setUserToEdit: (user) => set({ userToEdit: user }),
-      setCreateDialogOpen: (open) => set({ isCreateDialogOpen: open }),
       setCurrentUser: (user) => set({ currentUser: user }),
     }),
     { name: 'grant-users-store' }

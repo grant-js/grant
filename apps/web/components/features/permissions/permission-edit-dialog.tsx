@@ -1,33 +1,33 @@
 'use client';
 
+import { useMemo } from 'react';
+import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useGrant, type UseGrantResult } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
-import { Permission, Tag } from '@grantjs/schema';
+import { Permission } from '@grantjs/schema';
 import { DefaultValues } from 'react-hook-form';
+import { z } from 'zod';
 
-import {
-  DialogField,
-  DialogRelationship,
-  EditDialog,
-  PrimaryTagSelector,
-  PrimaryTagSelectorProps,
-  TagCheckboxList,
-  TagCheckboxListProps,
-} from '@/components/common';
+import { DialogField, EditDialog } from '@/components/common';
 import { useRequiresEmailVerificationForMutation } from '@/hooks/auth';
 import { useScopeFromParams } from '@/hooks/common';
 import { usePermissionMutations } from '@/hooks/permissions';
-import { useResources } from '@/hooks/resources';
-import { useTags } from '@/hooks/tags';
-import { getDocsUrl } from '@/lib/constants';
+import { Link } from '@/i18n/navigation';
+import { getEntityDetailUrl } from '@/lib/entity-detail-url';
 import { usePermissionsStore } from '@/stores/permissions.store';
 
-import { editPermissionSchema, PermissionEditFormValues } from './permission-types';
+const slimEditPermissionSchema = z.object({
+  name: z.string().min(2, 'errors.validation.labelMin2'),
+  description: z.string().optional(),
+});
+
+type SlimPermissionEditFormValues = z.infer<typeof slimEditPermissionSchema>;
 
 export function PermissionEditDialog() {
   const scope = useScopeFromParams();
-  const { tags, loading: tagsLoading } = useTags({ scope: scope!, limit: -1 });
-  const { resources } = useResources({ scope: scope!, isActive: true, limit: -1 });
+  const params = useParams();
+  const t = useTranslations('permissions');
   const { updatePermission } = usePermissionMutations();
   const permissionToEdit = usePermissionsStore((state) => state.permissionToEdit);
   const setPermissionToEdit = usePermissionsStore((state) => state.setPermissionToEdit);
@@ -39,6 +39,21 @@ export function PermissionEditDialog() {
   ) as UseGrantResult;
   const requiresEmailVerification = useRequiresEmailVerificationForMutation(scope);
 
+  const detailHref = useMemo(() => {
+    if (!permissionToEdit) return null;
+    try {
+      return getEntityDetailUrl({
+        organizationId: params.organizationId as string | undefined,
+        accountId: params.accountId as string | undefined,
+        projectId: params.projectId as string | undefined,
+        entitySegment: 'permissions',
+        entityId: permissionToEdit.id,
+      });
+    } catch {
+      return null;
+    }
+  }, [permissionToEdit, params.organizationId, params.accountId, params.projectId]);
+
   if (!scope || requiresEmailVerification) {
     return null;
   }
@@ -46,29 +61,6 @@ export function PermissionEditDialog() {
   if (!isUpdateLoading && !canUpdate) {
     return null;
   }
-
-  const resourceOptions = [
-    { value: '__none__', label: 'None' },
-    ...resources.map((resource) => ({
-      value: resource.id,
-      label: resource.name,
-    })),
-  ];
-
-  const getActionOptions = (resourceId: string) => {
-    if (!resourceId || resourceId === '__none__') return [];
-    const resource = resources.find((r) => r.id === resourceId);
-    if (!resource || !resource.actions || resource.actions.length === 0) return [];
-    return resource.actions.map((action) => ({
-      value: action,
-      label: action,
-    }));
-  };
-
-  const getActionType = (resourceId: string): 'action-slug' | 'select' => {
-    if (!resourceId || resourceId === '__none__') return 'action-slug';
-    return 'select';
-  };
 
   const fields: DialogField[] = [
     {
@@ -79,125 +71,29 @@ export function PermissionEditDialog() {
       required: true,
     },
     {
-      name: 'resourceId',
-      label: 'form.resource',
-      placeholder: 'form.noResourceConnected',
-      type: 'select',
-      options: resourceOptions,
-    },
-    {
-      name: 'action',
-      label: 'form.action',
-      placeholder: 'form.action',
-      type: 'select',
-      dependsOn: 'resourceId',
-      getType: getActionType,
-      getOptions: getActionOptions,
-      required: true,
-    },
-    {
       name: 'description',
       label: 'form.description',
       placeholder: 'form.description',
       type: 'textarea',
     },
-    {
-      name: 'conditionEnabled',
-      label: 'form.showCondition',
-      type: 'collapsible-group',
-      contentField: 'condition',
-    },
-    {
-      name: 'condition',
-      label: 'form.condition',
-      placeholder: 'form.condition',
-      info: 'form.conditionInfo',
-      infoLink: {
-        href: `${getDocsUrl()}/core-concepts/permission-conditions`,
-        label: 'form.conditionDocsLink',
-      },
-      type: 'json',
-      partOfCollapsible: 'conditionEnabled',
-    },
   ];
 
-  const condition = permissionToEdit?.condition ?? null;
-  const hasCondition =
-    condition &&
-    typeof condition === 'object' &&
-    !Array.isArray(condition) &&
-    Object.keys(condition).length > 0;
-  const defaultValues: DefaultValues<PermissionEditFormValues> = {
-    name: permissionToEdit?.name || '',
-    action: permissionToEdit?.action || '',
-    description: permissionToEdit?.description || '',
-    resourceId: permissionToEdit?.resourceId || '__none__',
-    tagIds: permissionToEdit?.tags?.map((tag: Tag) => tag.id) || [],
-    primaryTagId: permissionToEdit?.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
-    conditionEnabled: !!hasCondition,
-    condition: condition || {},
-  };
+  const mapPermissionToFormValues = (permission: Permission): SlimPermissionEditFormValues => ({
+    name: permission.name,
+    description: permission.description || '',
+  });
 
-  const relationships: DialogRelationship[] = [
-    {
-      name: 'tagIds',
-      label: 'form.tags',
-      renderComponent: (props: TagCheckboxListProps) => <TagCheckboxList {...props} />,
-      items: tags,
-      loading: tagsLoading,
-      loadingText: 'form.tagsLoading',
-      emptyText: 'form.noTagsAvailable',
-    },
-    {
-      name: 'primaryTagId',
-      label: 'form.primaryTag',
-      renderComponent: (props: PrimaryTagSelectorProps) => <PrimaryTagSelector {...props} />,
-      items: tags,
-      loading: tagsLoading,
-      loadingText: 'form.tagsLoading',
-      emptyText: 'form.noTagsAvailable',
-    },
-  ];
-
-  const mapPermissionToFormValues = (permission: Permission): PermissionEditFormValues => {
-    const condition = permission.condition ?? null;
-    const hasCondition =
-      condition &&
-      typeof condition === 'object' &&
-      !Array.isArray(condition) &&
-      Object.keys(condition).length > 0;
-    return {
-      name: permission.name,
-      action: permission.action || '',
-      description: permission.description || '',
-      resourceId: permission.resourceId || '__none__',
-      tagIds: permission.tags?.map((tag: Tag) => tag.id),
-      primaryTagId: permission.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
-      conditionEnabled: !!hasCondition,
-      condition: condition || {},
-    };
-  };
-
-  const handleUpdate = async (permissionId: string, values: PermissionEditFormValues) => {
-    const conditionValue =
-      values.conditionEnabled &&
-      values.condition &&
-      typeof values.condition === 'object' &&
-      !Array.isArray(values.condition) &&
-      Object.keys(values.condition).length > 0
-        ? (values.condition as Record<string, unknown>)
-        : null;
-
+  const handleUpdate = async (permissionId: string, values: SlimPermissionEditFormValues) => {
     await updatePermission(permissionId, {
       scope: scope!,
       name: values.name,
-      action: values.action || '',
       description: values.description,
-      resourceId: values.resourceId === '__none__' || !values.resourceId ? null : values.resourceId,
-      tagIds: values.tagIds,
-      primaryTagId: values.primaryTagId,
-      condition: conditionValue,
     });
+  };
+
+  const defaultValues: DefaultValues<SlimPermissionEditFormValues> = {
+    name: permissionToEdit?.name || '',
+    description: permissionToEdit?.description || '',
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -210,10 +106,19 @@ export function PermissionEditDialog() {
     <EditDialog
       entity={permissionToEdit}
       open={!!permissionToEdit}
-      schema={editPermissionSchema}
+      schema={slimEditPermissionSchema}
       defaultValues={defaultValues}
       fields={fields}
-      relationships={relationships}
+      supplementaryContent={
+        detailHref ? (
+          <p className="text-sm text-muted-foreground">
+            {t('editDialog.manageRelationshipsPrefix')}{' '}
+            <Link href={detailHref} className="text-primary hover:underline">
+              {t('editDialog.manageRelationshipsLink')}
+            </Link>
+          </p>
+        ) : null
+      }
       title="editDialog.title"
       description="editDialog.description"
       confirmText="editDialog.confirm"

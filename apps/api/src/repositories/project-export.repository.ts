@@ -8,17 +8,23 @@ import {
   permissionTags,
   projectPermissions,
   projectResources,
+  projectRolePermissions,
   projectRoles,
   projects,
   projectTags,
   projectUserApiKeys,
+  projectUserGroups,
+  projectUserPermissions,
   projectUsers,
   resources,
   resourceTags,
   roleGroups,
+  rolePermissions,
   roles,
   roleTags,
   tags,
+  userGroups,
+  userPermissions,
   userRoles,
   users,
   userTags,
@@ -100,11 +106,27 @@ export interface ProjectPermissionTagExportRow {
   isPrimary: boolean;
 }
 
+/** Direct user → permission grant in project scope (CDM export). */
+export interface ProjectUserDirectPermission {
+  userId: string;
+  permissionId: string;
+  resourceSlug: string;
+  action: string;
+  condition: Record<string, unknown> | null;
+}
+
+/** Direct user → group grant in project scope (CDM export). */
+export interface ProjectUserDirectGroup {
+  userId: string;
+  groupId: string;
+}
+
 /** Grant `groups` row for CDM export (name + id for opaque key). */
 export interface GrantGroupExportRow {
   groupId: string;
   name: string;
   description: string | null;
+  metadata: Record<string, unknown>;
 }
 
 /** `group_permissions` pivot for CDM group ↔ permission export. */
@@ -167,12 +189,10 @@ export class ProjectExportRepository {
   }
 
   /**
-   * Fetch every project role with its effective permissions (resolved through
-   * the role → roleGroups → groups → groupPermissions → permissions chain).
+   * Fetch every project role with its effective permissions from the
+   * role → group → permission chain and direct role → permission links.
    *
-   * Permissions are deduplicated within each role: the same permission may be
-   * granted by multiple groups attached to the role, but we only emit it once
-   * so the round-tripped CDM payload is canonical.
+   * Permissions are deduplicated within each role.
    */
   public async getProjectRolesWithPermissions(
     projectId: string,
@@ -201,32 +221,68 @@ export class ProjectExportRepository {
 
     const roleIds = roleRows.map((r) => r.roleId);
 
-    const permissionRows = await dbInstance
-      .select({
-        roleId: roleGroups.roleId,
-        permissionId: permissions.id,
-        action: permissions.action,
-        condition: permissions.condition,
-        resourceSlug: resources.slug,
-      })
-      .from(roleGroups)
-      .innerJoin(groups, eq(groups.id, roleGroups.groupId))
-      .innerJoin(groupPermissions, eq(groupPermissions.groupId, groups.id))
-      .innerJoin(permissions, eq(permissions.id, groupPermissions.permissionId))
-      .innerJoin(resources, eq(resources.id, permissions.resourceId))
-      .where(
-        and(
-          inArray(roleGroups.roleId, roleIds),
-          isNull(roleGroups.deletedAt),
-          isNull(groups.deletedAt),
-          isNull(groupPermissions.deletedAt),
-          isNull(permissions.deletedAt),
-          isNull(resources.deletedAt)
+    const [groupPathRows, directRoleRows] = await Promise.all([
+      dbInstance
+        .select({
+          roleId: roleGroups.roleId,
+          permissionId: permissions.id,
+          action: permissions.action,
+          condition: permissions.condition,
+          resourceSlug: resources.slug,
+        })
+        .from(roleGroups)
+        .innerJoin(groups, eq(groups.id, roleGroups.groupId))
+        .innerJoin(groupPermissions, eq(groupPermissions.groupId, groups.id))
+        .innerJoin(permissions, eq(permissions.id, groupPermissions.permissionId))
+        .innerJoin(resources, eq(resources.id, permissions.resourceId))
+        .where(
+          and(
+            inArray(roleGroups.roleId, roleIds),
+            isNull(roleGroups.deletedAt),
+            isNull(groups.deletedAt),
+            isNull(groupPermissions.deletedAt),
+            isNull(permissions.deletedAt),
+            isNull(resources.deletedAt)
+          )
+        ),
+      dbInstance
+        .select({
+          roleId: rolePermissions.roleId,
+          permissionId: permissions.id,
+          action: permissions.action,
+          condition: permissions.condition,
+          resourceSlug: resources.slug,
+        })
+        .from(rolePermissions)
+        .innerJoin(
+          projectRolePermissions,
+          and(
+            eq(projectRolePermissions.roleId, rolePermissions.roleId),
+            eq(projectRolePermissions.permissionId, rolePermissions.permissionId),
+            eq(projectRolePermissions.projectId, projectId),
+            isNull(projectRolePermissions.deletedAt)
+          )
         )
-      );
+        .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+        .innerJoin(resources, eq(resources.id, permissions.resourceId))
+        .where(
+          and(
+            inArray(rolePermissions.roleId, roleIds),
+            isNull(rolePermissions.deletedAt),
+            isNull(permissions.deletedAt),
+            isNull(resources.deletedAt)
+          )
+        ),
+    ]);
 
     const permsByRole = new Map<string, Map<string, ProjectRolePermission>>();
-    for (const row of permissionRows) {
+    const mergePermissionRow = (row: {
+      roleId: string;
+      permissionId: string;
+      action: string;
+      condition: unknown;
+      resourceSlug: string;
+    }) => {
       let perRole = permsByRole.get(row.roleId);
       if (!perRole) {
         perRole = new Map<string, ProjectRolePermission>();
@@ -240,6 +296,12 @@ export class ProjectExportRepository {
           condition: (row.condition as Record<string, unknown> | null) ?? null,
         });
       }
+    };
+    for (const row of groupPathRows) {
+      mergePermissionRow(row);
+    }
+    for (const row of directRoleRows) {
+      mergePermissionRow(row);
     }
 
     return roleRows.map((r) => {
@@ -324,6 +386,93 @@ export class ProjectExportRepository {
       roleIds: Array.from(rolesByUser.get(u.userId) ?? []).sort(),
       metadata: (u.metadata as Record<string, unknown>) ?? {},
     }));
+  }
+
+  /**
+   * Direct user → permission grants scoped to the project via `project_user_permissions`.
+   */
+  public async getProjectUserDirectPermissions(
+    projectId: string,
+    userIds?: readonly string[],
+    transaction?: Transaction
+  ): Promise<ProjectUserDirectPermission[]> {
+    const dbInstance = transaction ?? this.db;
+
+    const rows = await dbInstance
+      .select({
+        userId: userPermissions.userId,
+        permissionId: permissions.id,
+        action: permissions.action,
+        condition: permissions.condition,
+        resourceSlug: resources.slug,
+      })
+      .from(userPermissions)
+      .innerJoin(
+        projectUserPermissions,
+        and(
+          eq(projectUserPermissions.userId, userPermissions.userId),
+          eq(projectUserPermissions.permissionId, userPermissions.permissionId),
+          eq(projectUserPermissions.projectId, projectId),
+          isNull(projectUserPermissions.deletedAt)
+        )
+      )
+      .innerJoin(permissions, eq(permissions.id, userPermissions.permissionId))
+      .innerJoin(resources, eq(resources.id, permissions.resourceId))
+      .where(
+        and(
+          userIds != null && userIds.length > 0
+            ? inArray(userPermissions.userId, userIds as string[])
+            : sql`true`,
+          isNull(userPermissions.deletedAt),
+          isNull(permissions.deletedAt),
+          isNull(resources.deletedAt)
+        )
+      );
+
+    return rows.map((r) => ({
+      userId: r.userId,
+      permissionId: r.permissionId,
+      resourceSlug: r.resourceSlug,
+      action: r.action,
+      condition: (r.condition as Record<string, unknown> | null) ?? null,
+    }));
+  }
+
+  /**
+   * Direct user → group grants scoped to the project via `project_user_groups`.
+   */
+  public async getProjectUserDirectGroups(
+    projectId: string,
+    userIds?: readonly string[],
+    transaction?: Transaction
+  ): Promise<ProjectUserDirectGroup[]> {
+    const dbInstance = transaction ?? this.db;
+
+    const rows = await dbInstance
+      .select({
+        userId: userGroups.userId,
+        groupId: userGroups.groupId,
+      })
+      .from(userGroups)
+      .innerJoin(
+        projectUserGroups,
+        and(
+          eq(projectUserGroups.userId, userGroups.userId),
+          eq(projectUserGroups.groupId, userGroups.groupId),
+          eq(projectUserGroups.projectId, projectId),
+          isNull(projectUserGroups.deletedAt)
+        )
+      )
+      .where(
+        and(
+          userIds != null && userIds.length > 0
+            ? inArray(userGroups.userId, userIds as string[])
+            : sql`true`,
+          isNull(userGroups.deletedAt)
+        )
+      );
+
+    return rows;
   }
 
   /**
@@ -474,6 +623,7 @@ export class ProjectExportRepository {
         groupId: groups.id,
         name: groups.name,
         description: groups.description,
+        metadata: groups.metadata,
       })
       .from(groups)
       .where(and(inArray(groups.id, groupIds as string[]), isNull(groups.deletedAt)));
@@ -481,6 +631,7 @@ export class ProjectExportRepository {
       groupId: r.groupId,
       name: r.name,
       description: r.description,
+      metadata: (r.metadata as Record<string, unknown>) ?? {},
     }));
   }
 

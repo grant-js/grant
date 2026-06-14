@@ -12,6 +12,7 @@ interface PermissionsState {
   sort: { field: PermissionSortableField; order: SortOrder };
   view: PermissionView;
   selectedTagIds: string[];
+  hideSyntheticEntities: boolean;
   totalCount: number;
   isInitialized: boolean;
 
@@ -25,7 +26,9 @@ interface PermissionsState {
   // Dialog state
   permissionToDelete: Permission | null;
   permissionToEdit: Permission | null;
-  isCreateDialogOpen: boolean;
+
+  // Current permission (for breadcrumb)
+  currentPermission: Permission | null;
 
   // Actions
   setPage: (page: number) => void;
@@ -34,6 +37,7 @@ interface PermissionsState {
   setSort: (field: PermissionSortableField, order: SortOrder) => void;
   setView: (view: PermissionView) => void;
   setSelectedTagIds: (tagIds: string[]) => void;
+  setHideSyntheticEntities: (hide: boolean) => void;
   setTotalCount: (count: number) => void;
   setPermissions: (permissions: Permission[]) => void;
   setLoading: (loading: boolean) => void;
@@ -44,7 +48,7 @@ interface PermissionsState {
   // Dialog actions
   setPermissionToDelete: (permission: Permission | null) => void;
   setPermissionToEdit: (permission: Permission | null) => void;
-  setCreateDialogOpen: (open: boolean) => void;
+  setCurrentPermission: (permission: Permission | null) => void;
 }
 
 const defaultSort = { field: PermissionSortableField.Name, order: SortOrder.Asc };
@@ -59,6 +63,7 @@ export const usePermissionsStore = create<PermissionsState>()(
       sort: defaultSort,
       view: PermissionView.CARD,
       selectedTagIds: [],
+      hideSyntheticEntities: true,
       totalCount: 0,
       isInitialized: false,
 
@@ -72,7 +77,7 @@ export const usePermissionsStore = create<PermissionsState>()(
       // Dialog state
       permissionToDelete: null,
       permissionToEdit: null,
-      isCreateDialogOpen: false,
+      currentPermission: null,
 
       // Actions
       setPage: (page) => set({ page }),
@@ -81,6 +86,7 @@ export const usePermissionsStore = create<PermissionsState>()(
       setSort: (field, order) => set({ sort: { field, order }, page: 1 }),
       setView: (view) => set({ view }),
       setSelectedTagIds: (tagIds) => set({ selectedTagIds: tagIds, page: 1 }),
+      setHideSyntheticEntities: (hideSyntheticEntities) => set({ hideSyntheticEntities }),
       setTotalCount: (totalCount) => set({ totalCount }),
       setPermissions: (permissions) => set({ permissions }),
       setLoading: (loading) => set({ loading }),
@@ -100,7 +106,7 @@ export const usePermissionsStore = create<PermissionsState>()(
           refetch: null,
           permissionToDelete: null,
           permissionToEdit: null,
-          isCreateDialogOpen: false,
+          currentPermission: null,
         }),
       initializeFromUrl: (params) => {
         const currentState = get();
@@ -132,7 +138,7 @@ export const usePermissionsStore = create<PermissionsState>()(
       // Dialog actions
       setPermissionToDelete: (permission) => set({ permissionToDelete: permission }),
       setPermissionToEdit: (permission) => set({ permissionToEdit: permission }),
-      setCreateDialogOpen: (open) => set({ isCreateDialogOpen: open }),
+      setCurrentPermission: (permission) => set({ currentPermission: permission }),
     }),
     { name: 'grant-permissions-store' }
   )

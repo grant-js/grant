@@ -191,6 +191,11 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
       condition: null,
     },
     {
+      action: ResourceAction.Read,
+      resource: ResourceSlug.Role,
+      condition: null,
+    },
+    {
       action: ResourceAction.Query,
       resource: ResourceSlug.Role,
       condition: null,
@@ -214,6 +219,11 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
       condition: null,
     },
     {
+      action: ResourceAction.Read,
+      resource: ResourceSlug.Group,
+      condition: null,
+    },
+    {
       action: ResourceAction.Query,
       resource: ResourceSlug.Group,
       condition: null,
@@ -233,6 +243,11 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
   [GroupKey.AccountProjectPermissionOwner]: [
     {
       action: ResourceAction.Create,
+      resource: ResourceSlug.Permission,
+      condition: null,
+    },
+    {
+      action: ResourceAction.Read,
       resource: ResourceSlug.Permission,
       condition: null,
     },
@@ -349,6 +364,11 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
 
   [GroupKey.RoleCommon]: [
     {
+      action: ResourceAction.Read,
+      resource: ResourceSlug.Role,
+      condition: null,
+    },
+    {
       action: ResourceAction.Query,
       resource: ResourceSlug.Role,
       condition: null,
@@ -357,6 +377,11 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
 
   [GroupKey.GroupCommon]: [
     {
+      action: ResourceAction.Read,
+      resource: ResourceSlug.Group,
+      condition: null,
+    },
+    {
       action: ResourceAction.Query,
       resource: ResourceSlug.Group,
       condition: null,
@@ -364,6 +389,11 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
   ],
 
   [GroupKey.PermissionCommon]: [
+    {
+      action: ResourceAction.Read,
+      resource: ResourceSlug.Permission,
+      condition: null,
+    },
     {
       action: ResourceAction.Query,
       resource: ResourceSlug.Permission,

@@ -2,7 +2,7 @@ export * from './resource-actions';
 export * from './resource-audit';
 export * from './resource-card-skeleton';
 export * from './resource-cards';
-export * from './resource-create-dialog';
+export * from './resource-create-viewer';
 export * from './resource-delete-dialog';
 export * from './resource-edit-dialog';
 export * from './resource-limit';

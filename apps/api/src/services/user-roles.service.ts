@@ -79,6 +79,13 @@ export class UserRoleService implements IUserRoleService {
     return validateOutput(createDynamicSingleSchema(userRoleSchema).array(), result, context);
   }
 
+  public async countUserRoles(
+    params: { userId: string },
+    transaction?: Transaction
+  ): Promise<number> {
+    return this.userRoleRepository.countUserRoles(params, transaction);
+  }
+
   public async addUserRole(params: AddUserRoleInput, transaction?: Transaction): Promise<UserRole> {
     const context = 'UserRoleService.addUserRole';
     const validatedParams = validateInput(addUserRoleInputSchema, params, context);

@@ -49,6 +49,7 @@ function buildProduced(seed?: { resourceIds?: Map<string, string> }) {
     resourceIds: seed?.resourceIds ?? new Map<string, string>(),
     permissionIds: new Map<string, string>(),
     userIds: new Map<string, string>(),
+    groupIdsByKey: new Map<string, string>(),
   };
 }
 
@@ -160,6 +161,7 @@ describe('PermissionCdmEntity', () => {
       lookupResolvedRef: () => ({}),
       result,
       produced,
+      documentGroupsByKey: new Map(),
       assignmentUserIds: new Set<string>(),
     };
 
@@ -233,6 +235,7 @@ describe('PermissionCdmEntity', () => {
       lookupResolvedRef: () => ({}),
       result,
       produced,
+      documentGroupsByKey: new Map(),
       assignmentUserIds: new Set<string>(),
     };
 
@@ -305,6 +308,7 @@ describe('PermissionCdmEntity', () => {
       lookupResolvedRef: () => ({}),
       result,
       produced,
+      documentGroupsByKey: new Map(),
       assignmentUserIds: new Set<string>(),
     };
 
@@ -338,6 +342,7 @@ describe('PermissionCdmEntity', () => {
       lookupResolvedRef: () => ({}),
       result,
       produced,
+      documentGroupsByKey: new Map(),
       assignmentUserIds: new Set<string>(),
     };
 

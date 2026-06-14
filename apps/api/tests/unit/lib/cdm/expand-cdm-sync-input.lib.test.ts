@@ -195,7 +195,7 @@ describe('expandCdmSyncInput catalog permission strings', () => {
     expect(expanded.roleTemplates[0]!.permissionRefs).toHaveLength(1);
   });
 
-  it('user.permissions direct synthetic role uses catalog strings', () => {
+  it('user.permissions catalog strings become directPermissionRefs on assignment', () => {
     const input: SyncProjectInput = {
       version: 1,
       id: null,
@@ -220,11 +220,43 @@ describe('expandCdmSyncInput catalog permission strings', () => {
       tags: [],
     };
     const expanded = expandCdmSyncInput(input);
-    const direct = expanded.roleTemplates.find((r) => r.externalKey.endsWith(':direct'));
-    expect(direct).toBeDefined();
-    expect(direct!.permissionRefs).toEqual([
+    expect(expanded.userAssignments).toHaveLength(1);
+    expect(expanded.userAssignments[0]?.directPermissionRefs).toEqual([
       expect.objectContaining({ resourceSlug: 'z', action: 'extra', permissionKey: null }),
     ]);
+    expect(expanded.roleTemplates.some((r) => r.externalKey.endsWith(':direct'))).toBe(false);
+    expect(expanded.userAssignments[0]?.roleTemplateKeys).toEqual([]);
+  });
+
+  it('strips legacy synthetic role keys and emits a warning', () => {
+    const syntheticKey = 'synthetic:role:user:u1:direct';
+    const input: SyncProjectInput = {
+      version: 1,
+      id: null,
+      mode,
+      roles: [],
+      users: [
+        {
+          key: { value: 'u1', findBy: CdmFindBy.Key },
+          name: 'U',
+          roles: [syntheticKey, 'viewer'],
+          groups: [],
+          permissions: ['z:extra'],
+          tags: [],
+          primaryTag: null,
+          apiKeys: [],
+          metadata: null,
+        },
+      ],
+      resources: [],
+      permissions: [],
+      groups: [],
+      tags: [],
+    };
+    const expanded = expandCdmSyncInput(input);
+    expect(expanded.userAssignments[0]?.roleTemplateKeys).toEqual(['viewer']);
+    expect(expanded.warnings.some((w) => w.includes(syntheticKey))).toBe(true);
+    expect(expanded.userAssignments[0]?.directPermissionRefs).toHaveLength(1);
   });
 });
 
@@ -381,5 +413,63 @@ describe('expandCdmSyncInput role ↔ group document fields', () => {
     expect(rt!.primaryGroupTagKey).toBe('tag-g1');
     expect(rt!.tagKeys).toEqual(['tag-role']);
     expect(rt!.primaryRoleTagKey).toBe('tag-role');
+  });
+});
+
+describe('expandCdmSyncInput user.groups direct assignment', () => {
+  it('maps user.groups to directGroupKeys instead of synthetic roles', () => {
+    const input: SyncProjectInput = {
+      version: 1,
+      id: null,
+      mode,
+      roles: [],
+      users: [
+        {
+          key: { value: 'u1', findBy: CdmFindBy.Key },
+          name: 'U',
+          roles: [],
+          groups: ['g1'],
+          permissions: [],
+          tags: [],
+          primaryTag: null,
+          apiKeys: [],
+          metadata: null,
+        },
+      ],
+      resources: [],
+      permissions: [
+        {
+          key: 'p1',
+          resource: 'r',
+          action: 'read',
+          name: 'P',
+          description: null,
+          condition: null,
+          groups: [],
+          tags: [],
+          primaryTag: null,
+          metadata: null,
+        },
+      ],
+      groups: [
+        {
+          key: 'g1',
+          name: 'G1',
+          description: null,
+          permissions: ['p1'],
+          tags: [],
+          primaryTag: null,
+          metadata: null,
+        },
+      ],
+      tags: [],
+    };
+    const expanded = expandCdmSyncInput(input);
+    expect(expanded.roleTemplates.some((r) => r.externalKey.includes('synthetic:role:user'))).toBe(
+      false
+    );
+    expect(expanded.userAssignments).toHaveLength(1);
+    expect(expanded.userAssignments[0]?.directGroupKeys).toEqual(['g1']);
+    expect(expanded.userAssignments[0]?.directGroups?.[0]?.permissionRefs).toHaveLength(1);
   });
 });

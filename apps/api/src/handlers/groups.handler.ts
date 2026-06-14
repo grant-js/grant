@@ -20,6 +20,7 @@ import {
 } from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
+import { BadRequestError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -155,6 +156,23 @@ export class GroupHandler extends CacheHandler {
             this.groupTags.updateGroupTag({ groupId, tagId, isPrimary: tagId === primaryTagId }, tx)
           )
         );
+      } else if (primaryTagId !== undefined) {
+        const groupTagPivots = await this.groupTags.getGroupTags({ groupId }, tx);
+        if (primaryTagId && !groupTagPivots.some((groupTag) => groupTag.tagId === primaryTagId)) {
+          throw new BadRequestError('Primary tag must be one of the group assigned tags');
+        }
+        await Promise.all(
+          groupTagPivots.map((groupTag) =>
+            this.groupTags.updateGroupTag(
+              {
+                groupId,
+                tagId: groupTag.tagId,
+                isPrimary: primaryTagId ? groupTag.tagId === primaryTagId : false,
+              },
+              tx
+            )
+          )
+        );
       }
       if (Array.isArray(permissionIds)) {
         const newPermissionIds = permissionIds.filter(
@@ -258,5 +276,9 @@ export class GroupHandler extends CacheHandler {
       return groupsPage.groups[0].permissions || [];
     }
     return [];
+  }
+
+  public async countGroupPermissions(params: { groupId: string }): Promise<number> {
+    return this.groupPermissions.countGroupPermissions(params);
   }
 }

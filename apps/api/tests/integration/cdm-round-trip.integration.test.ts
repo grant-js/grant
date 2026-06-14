@@ -145,6 +145,8 @@ function buildExportRepoForProjectA() {
     getProjectUsersWithRoleIds: vi
       .fn()
       .mockResolvedValue([{ userId, roleIds: [A.roleId], metadata: {} }]),
+    getProjectUserDirectPermissions: vi.fn().mockResolvedValue([]),
+    getProjectUserDirectGroups: vi.fn().mockResolvedValue([]),
     getUserTagsByUserIds: vi.fn().mockResolvedValue([{ ownerId: userId, tagId: A.tagId }]),
     getProjectCdmProvisionedUsers: vi.fn().mockResolvedValue([]),
   };
@@ -438,6 +440,7 @@ describe('CDM round-trip integration', () => {
       resourceIds: new Map<string, string>(),
       permissionIds: new Map<string, string>(),
       userIds: new Map<string, string>(),
+      groupIdsByKey: new Map<string, string>(),
     };
 
     /**
@@ -459,6 +462,7 @@ describe('CDM round-trip integration', () => {
       lookupResolvedRef,
       result,
       produced,
+      documentGroupsByKey: new Map(),
       assignmentUserIds: new Set<string>(),
     };
 
@@ -562,6 +566,8 @@ describe('CDM round-trip integration', () => {
         .mockResolvedValue([{ groupId: catalogGroupId, name: 'CatalogGroup', description: null }]),
       getGroupPermissionIdsByGroupIds: vi.fn().mockResolvedValue([]),
       getProjectUsersWithRoleIds: vi.fn().mockResolvedValue([]),
+      getProjectUserDirectPermissions: vi.fn().mockResolvedValue([]),
+      getProjectUserDirectGroups: vi.fn().mockResolvedValue([]),
       getUserTagsByUserIds: vi.fn().mockResolvedValue([]),
       getProjectCdmProvisionedUsers: vi.fn().mockResolvedValue([]),
     };

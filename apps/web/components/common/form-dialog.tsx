@@ -58,6 +58,7 @@ export interface FormDialogProps<TFormValues extends Record<string, any>> {
   defaultValues: DefaultValues<TFormValues>;
   fields: DialogField[];
   relationships?: DialogRelationship[];
+  supplementaryContent?: ReactNode;
   translationNamespace: string;
   onOpenChange?: (open: boolean) => void;
   onSubmit: (values: TFormValues) => Promise<void>;
@@ -78,6 +79,7 @@ export function FormDialog<TFormValues extends Record<string, any>>({
   defaultValues,
   fields,
   relationships,
+  supplementaryContent,
   onSubmit,
   translationNamespace,
   trigger,
@@ -592,6 +594,8 @@ export function FormDialog<TFormValues extends Record<string, any>>({
                   })}
                 </div>
               ))}
+
+              {supplementaryContent}
             </div>
 
             <DialogFooter className="flex-shrink-0 border-t pt-4">

@@ -992,15 +992,18 @@ After authentication, redirects to the consent page (\`PROJECT_OAUTH_CONSENT_URL
     description: `
 Check if a user is authorized to perform an action on a resource within a scope.
 
-This endpoint evaluates permissions following the cascade:
-User → Role → Group → Permission → Resource
+Grant unions permissions from all grant paths before matching resource and action:
+
+- Role → Group → Permission
+- User → Group → Permission
+- Role → Permission
+- User → Permission
 
 ### Authorization Flow
-1. Gets user roles in the specified scope
-2. Gets groups for those roles
-3. Gets permissions for those groups
-4. Matches permissions against the resource and action
-5. Evaluates any conditions associated with matched permissions
+1. Resolves the caller's roles and groups in the scope (including direct user groups)
+2. Collects permission ids from role groups, direct role permissions, direct user permissions, and group permissions
+3. Matches permissions against the requested resource slug and action
+4. For conditional permissions, evaluates conditions against role/group/user execution context
 
 ### Execution Context
 You can provide additional context to help with condition evaluation:

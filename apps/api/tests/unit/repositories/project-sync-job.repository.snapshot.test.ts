@@ -7,8 +7,8 @@
  *     stored snapshot is null (e.g. legacy jobs enqueued before the column
  *     existed).
  *   - `toEntity` exposes `hasSnapshot` derived from the JSONB column being
- *     non-null, plus the `snapshotTakenAt` / `snapshotSizeBytes` metadata, on
- *     getById/listByProject.
+ *     non-null on full-row reads (`getById`). List queries use a slim projection
+ *     with `snapshot IS NOT NULL` and omit payload/snapshot/result blobs.
  */
 import type { DbSchema } from '@grantjs/database';
 import { CdmModeStrategy, type SyncProjectInput } from '@grantjs/schema';

@@ -1,0 +1,4 @@
+input RemoveUserGroupInput {
+  userId: ID!
+  groupId: ID!
+}
