@@ -27,10 +27,10 @@ interface ProjectSyncJobsState {
   loading: boolean;
   refetch: (() => void | Promise<unknown>) | null;
 
-  // Dialog state
+  // Detail / dialog state
+  currentSyncJob: ProjectSyncJob | null;
   isStartDialogOpen: boolean;
   isExportDialogOpen: boolean;
-  jobToView: ProjectSyncJob | null;
   jobToCancel: ProjectSyncJob | null;
 
   // Actions
@@ -47,9 +47,9 @@ interface ProjectSyncJobsState {
   setLoading: (loading: boolean) => void;
   setRefetch: (refetch: (() => void | Promise<unknown>) | null) => void;
 
+  setCurrentSyncJob: (job: ProjectSyncJob | null) => void;
   setStartDialogOpen: (open: boolean) => void;
   setExportDialogOpen: (open: boolean) => void;
-  setJobToView: (job: ProjectSyncJob | null) => void;
   setJobToCancel: (job: ProjectSyncJob | null) => void;
 
   resetToDefaults: () => void;
@@ -71,9 +71,9 @@ const initialState = {
   totalCount: 0,
   loading: false,
   refetch: null as (() => void) | null,
+  currentSyncJob: null as ProjectSyncJob | null,
   isStartDialogOpen: false,
   isExportDialogOpen: false,
-  jobToView: null as ProjectSyncJob | null,
   jobToCancel: null as ProjectSyncJob | null,
 };
 
@@ -100,9 +100,9 @@ export const useProjectSyncJobsStore = create<ProjectSyncJobsState>()(
       setLoading: (loading) => set({ loading }),
       setRefetch: (refetch) => set({ refetch }),
 
+      setCurrentSyncJob: (currentSyncJob) => set({ currentSyncJob }),
       setStartDialogOpen: (isStartDialogOpen) => set({ isStartDialogOpen }),
       setExportDialogOpen: (isExportDialogOpen) => set({ isExportDialogOpen }),
-      setJobToView: (jobToView) => set({ jobToView }),
       setJobToCancel: (jobToCancel) => set({ jobToCancel }),
 
       resetToDefaults: () => set({ ...initialState }),

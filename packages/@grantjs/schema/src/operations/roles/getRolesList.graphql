@@ -1,0 +1,38 @@
+query GetRolesList(
+  $scope: Scope!
+  $page: Int
+  $limit: Int
+  $sort: RoleSortInput
+  $search: String
+  $ids: [ID!]
+  $tagIds: [ID!]
+) {
+  roles(
+    scope: $scope
+    page: $page
+    limit: $limit
+    sort: $sort
+    search: $search
+    ids: $ids
+    tagIds: $tagIds
+  ) {
+    roles {
+      id
+      name
+      description
+      metadata
+      createdAt
+      updatedAt
+      primaryTag {
+        id
+        name
+        color
+        isPrimary
+      }
+      groupCount
+      tagCount
+    }
+    totalCount
+    hasNextPage
+  }
+}

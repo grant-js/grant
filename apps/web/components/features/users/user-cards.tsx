@@ -1,28 +1,40 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { getTagBorderClasses, TagColor } from '@grantjs/constants';
-import { Tag, User } from '@grantjs/schema';
-import { LogIn, Shield, Tags, UserPlus } from 'lucide-react';
+import { TagColor } from '@grantjs/constants';
+import { User } from '@grantjs/schema';
+import { KeyRound, LogIn, Shield, Tags, UserPlus } from 'lucide-react';
 
-import { CardBody, CardGrid, CardHeader, ScrollBadges } from '@/components/common';
-import { transformTagsToBadges } from '@/lib/tag';
+import {
+  CardBody,
+  CardGrid,
+  CardHeader,
+  EntityCreateNavigateButton,
+  ScrollBadges,
+} from '@/components/common';
+import { Badge } from '@/components/ui/badge';
+import {
+  getEntityTagCount,
+  getPrimaryTagFromEntity,
+  isSyntheticCdmEntity,
+} from '@/lib/entity-list';
 import { getInitials } from '@/lib/utils';
 import { useUsersStore } from '@/stores/users.store';
 
 import { UserActions } from './user-actions';
 import { UserAudit } from './user-audit';
 import { UserCardSkeleton } from './user-card-skeleton';
-import { UserCreateDialog } from './user-create-dialog';
 import { UserNavigationButton } from './user-navigation-button';
 
 export function UserCards() {
   const t = useTranslations('users');
+  const tCommon = useTranslations('common');
 
   const limit = useUsersStore((state) => state.limit);
   const search = useUsersStore((state) => state.search);
   const users = useUsersStore((state) => state.users);
   const loading = useUsersStore((state) => state.loading);
+  const hideSynthetic = useUsersStore((state) => state.hideSyntheticEntities);
 
   const tProjectApps = useTranslations('projectApps');
   const transformAuthMethodsToBadges = (user: User) =>
@@ -32,44 +44,47 @@ export function UserCards() {
       title: m.providerId,
     }));
 
-  const transformRolesToBadges = (user: User) => {
-    return (user.roles || []).map((role) => {
-      const primaryTag = role.tags?.find((tag: Tag) => tag.isPrimary);
-      return {
-        id: role.id,
-        label: role.name,
-        className: primaryTag ? getTagBorderClasses(primaryTag.color as TagColor) : undefined,
-      };
-    });
-  };
+  const visibleUsers = hideSynthetic
+    ? users.filter((user) => !isSyntheticCdmEntity(user.metadata as Record<string, unknown>))
+    : users;
 
   return (
     <CardGrid<User>
-      entities={users}
+      entities={visibleUsers}
       loading={loading}
       emptyState={{
         icon: <UserPlus />,
         title: search ? t('noSearchResults.title') : t('noUsers.title'),
         description: search ? t('noSearchResults.description') : t('noUsers.description'),
-        action: search ? undefined : <UserCreateDialog triggerAlwaysShowLabel />,
+        action: search ? undefined : (
+          <EntityCreateNavigateButton
+            entitySegment="users"
+            label={t('createDialog.trigger')}
+            icon={UserPlus}
+            alwaysShowLabel
+          />
+        ),
       }}
       skeleton={{
         component: <UserCardSkeleton />,
         count: limit,
       }}
-      renderHeader={(user: User) => (
-        <CardHeader
-          avatar={{
-            initial: getInitials(user.name),
-            imageUrl: user.pictureUrl || undefined,
-            cacheBuster: user.updatedAt,
-            size: 'lg',
-          }}
-          title={user.name}
-          color={user.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor}
-          actions={<UserActions user={user} />}
-        />
-      )}
+      renderHeader={(user: User) => {
+        const primaryTag = getPrimaryTagFromEntity(user);
+        return (
+          <CardHeader
+            avatar={{
+              initial: getInitials(user.name),
+              imageUrl: user.pictureUrl || undefined,
+              cacheBuster: user.updatedAt,
+              size: 'lg',
+            }}
+            title={user.name}
+            color={primaryTag?.color as TagColor | undefined}
+            actions={<UserActions user={user} />}
+          />
+        );
+      }}
       renderBody={(user: User) => (
         <CardBody
           items={[
@@ -78,7 +93,20 @@ export function UserCards() {
                 icon: <Shield className="h-3 w-3" />,
                 text: t('form.roles'),
               },
-              value: <ScrollBadges items={transformRolesToBadges(user)} height={80} />,
+              value: (
+                <Badge variant="secondary">{t('roleCount', { count: user.roleCount ?? 0 })}</Badge>
+              ),
+            },
+            {
+              label: {
+                icon: <KeyRound className="h-3 w-3" />,
+                text: t('form.apiKeys'),
+              },
+              value: (
+                <Badge variant="secondary">
+                  {t('apiKeyCount', { count: user.projectUserApiKeyCount ?? 0 })}
+                </Badge>
+              ),
             },
             {
               label: {
@@ -90,14 +118,12 @@ export function UserCards() {
             {
               label: {
                 icon: <Tags className="h-3 w-3" />,
-                text: t('form.tags'),
+                text: t('table.tags'),
               },
               value: (
-                <ScrollBadges
-                  items={transformTagsToBadges(user.tags)}
-                  height={60}
-                  showAsRound={true}
-                />
+                <Badge variant="secondary">
+                  {tCommon('tagCount', { count: getEntityTagCount(user) })}
+                </Badge>
               ),
             },
           ]}

@@ -39,16 +39,44 @@ describe('ProjectImportService CDM metadata', () => {
     addRoleGroup: vi.fn(),
     removeRoleGroup: vi.fn(),
   };
+  const rolePermissions = {
+    getRolePermissions: vi.fn().mockResolvedValue([]),
+    assignRolePermission: vi.fn(),
+    revokeRolePermission: vi.fn(),
+  };
   const groupPermissions = {
     getGroupPermissions: vi.fn().mockResolvedValue([]),
     addGroupPermission: vi.fn(),
     removeGroupPermission: vi.fn(),
+  };
+  const userPermissions = {
+    getUserPermissions: vi.fn().mockResolvedValue([]),
+    assignUserPermission: vi.fn(),
+    revokeUserPermission: vi.fn(),
+  };
+  const userGroups = {
+    getUserGroups: vi.fn().mockResolvedValue([]),
+    addUserGroup: vi.fn(),
+    removeUserGroup: vi.fn(),
+  };
+  const projectUserGroups = {
+    getProjectUserGroups: vi.fn().mockResolvedValue([]),
+    addProjectUserGroup: vi.fn(),
+    removeProjectUserGroup: vi.fn(),
   };
   const projectRoles = { addProjectRole: vi.fn(), removeProjectRole: vi.fn() };
   const projectGroups = { addProjectGroup: vi.fn(), removeProjectGroup: vi.fn() };
   const projectPermissions = {
     getProjectPermissions: vi.fn().mockResolvedValue([]),
     addProjectPermission: vi.fn(),
+  };
+  const projectRolePermissions = {
+    getProjectRolePermissions: vi.fn().mockResolvedValue([]),
+    addProjectRolePermission: vi.fn(),
+  };
+  const projectUserPermissions = {
+    getProjectUserPermissions: vi.fn().mockResolvedValue([]),
+    addProjectUserPermission: vi.fn(),
   };
   const projectResources = {
     getProjectResources: vi.fn().mockResolvedValue([]),
@@ -92,10 +120,16 @@ describe('ProjectImportService CDM metadata', () => {
       roles as never,
       groups as never,
       roleGroups as never,
+      rolePermissions as never,
       groupPermissions as never,
+      userPermissions as never,
+      userGroups as never,
       projectRoles as never,
       projectGroups as never,
       projectPermissions as never,
+      projectRolePermissions as never,
+      projectUserPermissions as never,
+      projectUserGroups as never,
       projectResources as never,
       projectUsers as never,
       userRoles as never,
@@ -133,7 +167,7 @@ describe('ProjectImportService CDM metadata', () => {
     userRoles.addUserRole.mockResolvedValue({});
   });
 
-  it('merges template metadata into role and group create payloads', async () => {
+  it('merges template metadata into role create payload (direct permissions path)', async () => {
     const input: SyncProjectInput = {
       version: 1,
       id: null,
@@ -187,14 +221,8 @@ describe('ProjectImportService CDM metadata', () => {
     const svc = createService();
     await svc.importProjectCdm({ projectId, scope, input }, {});
 
-    expect(groups.createGroup).toHaveBeenCalledTimes(1);
-    const groupMeta = groups.createGroup.mock.calls[0][0].metadata as Record<string, unknown>;
-    expect(groupMeta[CDM_IMPORT_METADATA_KEY]).toMatchObject({
-      projectId,
-      kind: 'group',
-      externalKey: 'viewer',
-    });
-    expect(groupMeta[CDM_SOURCE_METADATA_KEY]).toEqual({ legacyRoleId: 'r-9' });
+    expect(groups.createGroup).not.toHaveBeenCalled();
+    expect(rolePermissions.assignRolePermission).toHaveBeenCalledTimes(1);
 
     expect(roles.createRole).toHaveBeenCalledTimes(1);
     const roleMeta = roles.createRole.mock.calls[0][0].metadata as Record<string, unknown>;

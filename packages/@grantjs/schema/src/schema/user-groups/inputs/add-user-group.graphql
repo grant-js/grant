@@ -1,0 +1,4 @@
+input AddUserGroupInput {
+  userId: ID!
+  groupId: ID!
+}

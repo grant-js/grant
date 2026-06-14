@@ -10,6 +10,8 @@ export interface ApiKeySearchProps {
   show?: boolean;
   /** When true, render as icon+popover only (no full-width bar). */
   forceCompact?: boolean;
+  /** When true, expand to fill remaining toolbar width. */
+  grow?: boolean;
 }
 
 export function ApiKeySearch({
@@ -17,6 +19,7 @@ export function ApiKeySearch({
   onSearchChange,
   show = true,
   forceCompact = false,
+  grow = false,
 }: ApiKeySearchProps) {
   const t = useTranslations('user.apiKeys');
 
@@ -30,6 +33,7 @@ export function ApiKeySearch({
       onSearchChange={onSearchChange}
       placeholder={t('search.placeholder')}
       forceCompact={forceCompact}
+      grow={grow}
     />
   );
 }

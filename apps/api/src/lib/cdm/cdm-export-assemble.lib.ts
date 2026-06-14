@@ -25,12 +25,19 @@ type AggregatedGrantGroup = {
 };
 
 function aggregateLinkedGrantGroups(
-  roleTemplates: readonly CdmRoleTemplateInternal[]
+  roleTemplates: readonly CdmRoleTemplateInternal[],
+  userAssignments: readonly CdmUserAssignmentInternal[]
 ): Map<string, AggregatedGrantGroup> {
   const byGrantId = new Map<string, AggregatedGrantGroup>();
-  for (const rt of roleTemplates) {
-    const lg = rt.linkedGrantGroup;
-    if (!lg) continue;
+  const mergeGroup = (lg: {
+    grantGroupId: string;
+    groupKey: string;
+    groupName: string;
+    groupDescription: string | null;
+    permissionKeys: readonly string[];
+    tagKeys: readonly string[];
+    primaryGroupTagKey?: string | null;
+  }) => {
     let agg = byGrantId.get(lg.grantGroupId);
     if (!agg) {
       agg = {
@@ -55,7 +62,21 @@ function aggregateLinkedGrantGroups(
         agg.primaryGroupTagKey = lg.primaryGroupTagKey;
       }
     }
+  };
+
+  for (const rt of roleTemplates) {
+    if (rt.linkedGrantGroup) mergeGroup(rt.linkedGrantGroup);
   }
+
+  const roleLinkedGroupKeys = new Set([...byGrantId.values()].map((g) => g.groupKey));
+  for (const ua of userAssignments) {
+    for (const dg of ua.exportDocumentGroups ?? []) {
+      if (roleLinkedGroupKeys.has(dg.groupKey)) continue;
+      mergeGroup(dg);
+      roleLinkedGroupKeys.add(dg.groupKey);
+    }
+  }
+
   return byGrantId;
 }
 
@@ -101,7 +122,7 @@ export function assembleExportedSyncProjectInput(params: {
     tagsSlice,
   } = params;
 
-  const grantGroupsById = aggregateLinkedGrantGroups(roleTemplates);
+  const grantGroupsById = aggregateLinkedGrantGroups(roleTemplates, userAssignments);
   const permissionKeyToGroupKeys = permissionKeyToGroupKeysFromGrantGroups(grantGroupsById);
 
   const groups: SyncProjectInput['groups'] = [...grantGroupsById.values()]
@@ -135,7 +156,7 @@ export function assembleExportedSyncProjectInput(params: {
       : { value: ua.userKey ?? '', findBy: CdmFindBy.Key },
     name: ua.userKey ?? ua.userId ?? 'user',
     roles: ua.roleTemplateKeys ?? [],
-    groups: [],
+    groups: ua.directGroupKeys ?? [],
     permissions: (ua.directPermissionRefs ?? [])
       .map((r) => serializePermissionRefForCdmDocument(r))
       .filter((s): s is string => Boolean(s)),

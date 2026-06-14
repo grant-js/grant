@@ -1,0 +1,4 @@
+input QueryUserPermissionsInput {
+  userId: ID
+  permissionId: ID
+}

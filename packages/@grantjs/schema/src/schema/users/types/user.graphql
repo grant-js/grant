@@ -4,7 +4,14 @@ type User implements Auditable {
   pictureUrl: String
   metadata: JSON!
   roles: [Role!]
+  userGroups: [UserGroup!]
+  userPermissions: [UserPermission!]
   tags: [Tag!]
+  primaryTag: Tag
+  roleCount: Int!
+  permissionCount: Int!
+  projectUserApiKeyCount: Int!
+  tagCount: Int!
   authenticationMethods: [UserAuthenticationMethod!]
   accounts: [Account!]
   createdAt: Date!

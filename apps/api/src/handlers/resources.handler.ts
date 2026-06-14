@@ -290,6 +290,26 @@ export class ResourceHandler extends CacheHandler {
             )
           )
         );
+      } else if (primaryTagId !== undefined) {
+        const resourceTagPivots = await this.resourceTags.getResourceTags({ resourceId }, tx);
+        if (
+          primaryTagId &&
+          !resourceTagPivots.some((resourceTag) => resourceTag.tagId === primaryTagId)
+        ) {
+          throw new BadRequestError('Primary tag must be one of the resource assigned tags');
+        }
+        await Promise.all(
+          resourceTagPivots.map((resourceTag) =>
+            this.resourceTags.updateResourceTag(
+              {
+                resourceId,
+                tagId: resourceTag.tagId,
+                isPrimary: primaryTagId ? resourceTag.tagId === primaryTagId : false,
+              },
+              tx
+            )
+          )
+        );
       }
       return updatedResource;
     });

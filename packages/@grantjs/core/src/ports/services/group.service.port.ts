@@ -55,6 +55,8 @@ export interface IGroupPermissionService {
     transaction?: unknown
   ): Promise<GroupPermission[]>;
 
+  countGroupPermissions(params: { groupId: string }, transaction?: unknown): Promise<number>;
+
   addGroupPermission(
     params: AddGroupPermissionInput,
     transaction?: unknown

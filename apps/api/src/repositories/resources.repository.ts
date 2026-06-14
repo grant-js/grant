@@ -37,18 +37,19 @@ export class ResourceRepository
       table: permissions,
       extract: (rows: PermissionModel[]) =>
         rows.map(
-          (p): Permission => ({
-            id: p.id,
-            name: p.name,
-            description: p.description,
-            action: p.action,
-            resourceId: p.resourceId,
-            condition: p.condition as Permission['condition'],
-            metadata: p.metadata as Permission['metadata'],
-            createdAt: p.createdAt,
-            updatedAt: p.updatedAt,
-            deletedAt: p.deletedAt,
-          })
+          (p) =>
+            ({
+              id: p.id,
+              name: p.name,
+              description: p.description,
+              action: p.action,
+              resourceId: p.resourceId,
+              condition: p.condition as Permission['condition'],
+              metadata: p.metadata as Permission['metadata'],
+              createdAt: p.createdAt,
+              updatedAt: p.updatedAt,
+              deletedAt: p.deletedAt,
+            }) as Permission
         ),
     },
   };

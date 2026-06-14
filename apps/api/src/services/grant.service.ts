@@ -15,6 +15,7 @@ import {
 } from '@/constants/cache.constants';
 import { SYSTEM_SCOPE } from '@/constants/system.constants';
 import type { IEntityCacheAdapter } from '@/lib/cache';
+import { tryProjectIdFromScope } from '@/lib/project-id-from-scope.lib';
 import type { Transaction } from '@/lib/transaction-manager.lib';
 
 import type { SigningKeyService } from './signing-keys.service';
@@ -113,21 +114,35 @@ export class GrantService implements IGrantService {
     action: string,
     tokenType?: TokenType
   ): Promise<Permission[]> {
+    const projectId = tryProjectIdFromScope(scope);
     const roleIds = await this.grantRepository.getUserRoleIdsInScope(userId, scope, undefined, {
       tokenType,
     });
 
-    if (roleIds.length === 0) {
-      return [];
+    const permissionIdSets: string[][] = [];
+
+    const roleGroupIds =
+      roleIds.length > 0 ? await this.grantRepository.getGroupIdsForRoles(roleIds) : [];
+    const directUserGroupIds = await this.grantRepository.getDirectGroupIdsForUser(
+      userId,
+      projectId
+    );
+    const groupIds = [...new Set([...roleGroupIds, ...directUserGroupIds])];
+    if (groupIds.length > 0) {
+      permissionIdSets.push(await this.grantRepository.getPermissionIdsForGroups(groupIds));
     }
 
-    const groupIds = await this.grantRepository.getGroupIdsForRoles(roleIds);
-
-    if (groupIds.length === 0) {
-      return [];
+    if (roleIds.length > 0) {
+      permissionIdSets.push(
+        await this.grantRepository.getDirectPermissionIdsForRoles(roleIds, projectId)
+      );
     }
 
-    const permissionIds = await this.grantRepository.getPermissionIdsForGroups(groupIds);
+    permissionIdSets.push(
+      await this.grantRepository.getDirectPermissionIdsForUser(userId, projectId)
+    );
+
+    const permissionIds = [...new Set(permissionIdSets.flat())];
 
     if (permissionIds.length === 0) {
       return [];
@@ -178,20 +193,6 @@ export class GrantService implements IGrantService {
     scope: Scope,
     tokenType?: TokenType
   ): Promise<ExecutionContextGroup[]> {
-    const roleIds = await this.grantRepository.getUserRoleIdsInScope(userId, scope, undefined, {
-      tokenType,
-    });
-
-    if (roleIds.length === 0) {
-      return [];
-    }
-
-    const groupIds = await this.grantRepository.getGroupIdsForRoles(roleIds);
-
-    if (groupIds.length === 0) {
-      return [];
-    }
-
     return this.grantRepository.getUserGroups(userId, scope, undefined, { tokenType });
   }
 

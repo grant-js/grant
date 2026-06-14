@@ -262,6 +262,12 @@ export type AddProjectRoleInput = {
   roleId: Scalars['ID']['input'];
 };
 
+export type AddProjectRolePermissionInput = {
+  permissionId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+  roleId: Scalars['ID']['input'];
+};
+
 export type AddProjectTagInput = {
   isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
   projectId: Scalars['ID']['input'];
@@ -276,8 +282,20 @@ export type AddProjectUserApiKeyInput = {
   userId: Scalars['ID']['input'];
 };
 
+export type AddProjectUserGroupInput = {
+  groupId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
 export type AddProjectUserInput = {
   metadata?: InputMaybe<Scalars['JSON']['input']>;
+  projectId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+export type AddProjectUserPermissionInput = {
+  permissionId: Scalars['ID']['input'];
   projectId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
@@ -297,6 +315,11 @@ export type AddRoleTagInput = {
   isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
   roleId: Scalars['ID']['input'];
   tagId: Scalars['ID']['input'];
+};
+
+export type AddUserGroupInput = {
+  groupId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 export type AddUserRoleInput = {
@@ -355,6 +378,18 @@ export enum ApiKeySortableField {
   LastUsedAt = 'lastUsedAt',
   Name = 'name',
 }
+
+export type AssignRolePermissionInput = {
+  permissionId: Scalars['ID']['input'];
+  roleId: Scalars['ID']['input'];
+  scope: Scope;
+};
+
+export type AssignUserPermissionInput = {
+  permissionId: Scalars['ID']['input'];
+  scope: Scope;
+  userId: Scalars['ID']['input'];
+};
 
 export type Auditable = {
   createdAt: Scalars['Date']['output'];
@@ -597,6 +632,7 @@ export type CreateRoleInput = {
   groupIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   metadata?: InputMaybe<Scalars['JSON']['input']>;
   name: Scalars['String']['input'];
+  permissionIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   primaryTagId?: InputMaybe<Scalars['ID']['input']>;
   scope: Scope;
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -619,8 +655,10 @@ export type CreateUserAuthenticationMethodInput = {
 };
 
 export type CreateUserInput = {
+  groupIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   metadata?: InputMaybe<Scalars['JSON']['input']>;
   name: Scalars['String']['input'];
+  permissionIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   pictureUrl?: InputMaybe<Scalars['String']['input']>;
   primaryTagId?: InputMaybe<Scalars['ID']['input']>;
   roleIds?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -699,7 +737,10 @@ export type Group = Auditable & {
   id: Scalars['ID']['output'];
   metadata: Scalars['JSON']['output'];
   name: Scalars['String']['output'];
+  permissionCount: Scalars['Int']['output'];
   permissions?: Maybe<Array<Permission>>;
+  primaryTag?: Maybe<Tag>;
+  tagCount: Scalars['Int']['output'];
   tags?: Maybe<Array<Tag>>;
   updatedAt: Scalars['Date']['output'];
 };
@@ -786,6 +827,13 @@ export type IsAuthorizedContextInput = {
   resource?: InputMaybe<Scalars['JSON']['input']>;
 };
 
+/**
+ * Check whether the authenticated principal may perform an action on a resource.
+ *
+ * Unions Role → Group → Permission, User → Group → Permission, Role → Permission,
+ * and User → Permission before matching the requested resource and action.
+ * Conditional permissions are evaluated against role/group/user execution context.
+ */
 export type IsAuthorizedInput = {
   context: IsAuthorizedContextInput;
   permission: IsAuthorizedPermissionInput;
@@ -880,6 +928,8 @@ export type Mutation = {
   __typename?: 'Mutation';
   _empty?: Maybe<Scalars['String']['output']>;
   acceptInvitation: AcceptInvitationResult;
+  assignRolePermission: RolePermission;
+  assignUserPermission: UserPermission;
   /**
    * Cancel a pending or running project CDM sync job. Cancellation is
    * immediate when the job is still PENDING; if the job is already RUNNING, the
@@ -931,6 +981,8 @@ export type Mutation = {
   revokeApiKey: ApiKey;
   revokeInvitation: OrganizationInvitation;
   revokeMyUserSession: RevokeMyUserSessionResult;
+  revokeRolePermission: RolePermission;
+  revokeUserPermission: UserPermission;
   /**
    * Rotate the signing key for the given scope: create a new active key and mark the previous one as rotated.
    * Allowed scopes: accountProject, organizationProject only.
@@ -985,6 +1037,14 @@ export type Mutation = {
 
 export type MutationAcceptInvitationArgs = {
   input: AcceptInvitationInput;
+};
+
+export type MutationAssignRolePermissionArgs = {
+  input: AssignRolePermissionInput;
+};
+
+export type MutationAssignUserPermissionArgs = {
+  input: AssignUserPermissionInput;
 };
 
 export type MutationCancelProjectSyncArgs = {
@@ -1160,6 +1220,14 @@ export type MutationRevokeInvitationArgs = {
 
 export type MutationRevokeMyUserSessionArgs = {
   id: Scalars['ID']['input'];
+};
+
+export type MutationRevokeRolePermissionArgs = {
+  input: RevokeRolePermissionInput;
+};
+
+export type MutationRevokeUserPermissionArgs = {
+  input: RevokeUserPermissionInput;
 };
 
 export type MutationRotateSigningKeyArgs = {
@@ -1526,8 +1594,10 @@ export type Permission = Auditable & {
   id: Scalars['ID']['output'];
   metadata: Scalars['JSON']['output'];
   name: Scalars['String']['output'];
+  primaryTag?: Maybe<Tag>;
   resource?: Maybe<Resource>;
   resourceId?: Maybe<Scalars['ID']['output']>;
+  tagCount: Scalars['Int']['output'];
   tags?: Maybe<Array<Tag>>;
   updatedAt: Scalars['Date']['output'];
 };
@@ -1739,6 +1809,17 @@ export type ProjectRoleProjectArgs = {
   organizationId: Scalars['ID']['input'];
 };
 
+export type ProjectRolePermission = Auditable & {
+  __typename?: 'ProjectRolePermission';
+  createdAt: Scalars['Date']['output'];
+  deletedAt?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['ID']['output'];
+  permissionId: Scalars['ID']['output'];
+  projectId: Scalars['ID']['output'];
+  roleId: Scalars['ID']['output'];
+  updatedAt: Scalars['Date']['output'];
+};
+
 export enum ProjectSearchableField {
   Description = 'description',
   Name = 'name',
@@ -1868,12 +1949,35 @@ export type ProjectUserApiKey = Auditable & {
   userId: Scalars['ID']['output'];
 };
 
+export type ProjectUserGroup = Auditable & {
+  __typename?: 'ProjectUserGroup';
+  createdAt: Scalars['Date']['output'];
+  deletedAt?: Maybe<Scalars['Date']['output']>;
+  groupId: Scalars['ID']['output'];
+  id: Scalars['ID']['output'];
+  projectId: Scalars['ID']['output'];
+  updatedAt: Scalars['Date']['output'];
+  userId: Scalars['ID']['output'];
+};
+
+export type ProjectUserPermission = Auditable & {
+  __typename?: 'ProjectUserPermission';
+  createdAt: Scalars['Date']['output'];
+  deletedAt?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['ID']['output'];
+  permissionId: Scalars['ID']['output'];
+  projectId: Scalars['ID']['output'];
+  updatedAt: Scalars['Date']['output'];
+  userId: Scalars['ID']['output'];
+};
+
 export type Query = {
   __typename?: 'Query';
   _empty?: Maybe<Scalars['String']['output']>;
   apiKeys: ApiKeyPage;
   groups: GroupPage;
   invitation?: Maybe<OrganizationInvitation>;
+  /** Evaluate authorization for the current session or API key token. */
   isAuthorized: AuthorizationResult;
   me: MeResponse;
   myMfaDevices: Array<MfaDevice>;
@@ -2169,6 +2273,12 @@ export type QueryProjectResourcesInput = {
   resourceId?: InputMaybe<Scalars['ID']['input']>;
 };
 
+export type QueryProjectRolePermissionsInput = {
+  permissionId?: InputMaybe<Scalars['ID']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+  roleId?: InputMaybe<Scalars['ID']['input']>;
+};
+
 export type QueryProjectRolesInput = {
   projectId: Scalars['ID']['input'];
 };
@@ -2181,6 +2291,18 @@ export type QueryProjectTagsInput = {
 export type QueryProjectUserApiKeysInput = {
   projectId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
+};
+
+export type QueryProjectUserGroupsInput = {
+  groupId?: InputMaybe<Scalars['ID']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+  userId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type QueryProjectUserPermissionsInput = {
+  permissionId?: InputMaybe<Scalars['ID']['input']>;
+  projectId?: InputMaybe<Scalars['ID']['input']>;
+  userId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type QueryProjectUsersInput = {
@@ -2198,9 +2320,24 @@ export type QueryRoleGroupsInput = {
   roleId?: InputMaybe<Scalars['ID']['input']>;
 };
 
+export type QueryRolePermissionsInput = {
+  permissionId?: InputMaybe<Scalars['ID']['input']>;
+  roleId?: InputMaybe<Scalars['ID']['input']>;
+};
+
 export type QueryRoleTagsInput = {
   roleId?: InputMaybe<Scalars['ID']['input']>;
   tagId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type QueryUserGroupsInput = {
+  groupId?: InputMaybe<Scalars['ID']['input']>;
+  userId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type QueryUserPermissionsInput = {
+  permissionId?: InputMaybe<Scalars['ID']['input']>;
+  userId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type QueryUserRolesInput = {
@@ -2343,6 +2480,12 @@ export type RemoveProjectRoleInput = {
   roleId: Scalars['ID']['input'];
 };
 
+export type RemoveProjectRolePermissionInput = {
+  permissionId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+  roleId: Scalars['ID']['input'];
+};
+
 export type RemoveProjectTagInput = {
   projectId: Scalars['ID']['input'];
   tagId: Scalars['ID']['input'];
@@ -2354,7 +2497,19 @@ export type RemoveProjectUserApiKeyInput = {
   userId: Scalars['ID']['input'];
 };
 
+export type RemoveProjectUserGroupInput = {
+  groupId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
 export type RemoveProjectUserInput = {
+  projectId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+export type RemoveProjectUserPermissionInput = {
+  permissionId: Scalars['ID']['input'];
   projectId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
@@ -2372,6 +2527,11 @@ export type RemoveRoleGroupInput = {
 export type RemoveRoleTagInput = {
   roleId: Scalars['ID']['input'];
   tagId: Scalars['ID']['input'];
+};
+
+export type RemoveUserGroupInput = {
+  groupId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 export type RemoveUserRoleInput = {
@@ -2503,25 +2663,52 @@ export type RevokeMyUserSessionResult = {
   success: Scalars['Boolean']['output'];
 };
 
+export type RevokeRolePermissionInput = {
+  hardDelete?: InputMaybe<Scalars['Boolean']['input']>;
+  permissionId: Scalars['ID']['input'];
+  roleId: Scalars['ID']['input'];
+  scope: Scope;
+};
+
+export type RevokeUserPermissionInput = {
+  hardDelete?: InputMaybe<Scalars['Boolean']['input']>;
+  permissionId: Scalars['ID']['input'];
+  scope: Scope;
+  userId: Scalars['ID']['input'];
+};
+
 export type Role = Auditable & {
   __typename?: 'Role';
   createdAt: Scalars['Date']['output'];
   deletedAt?: Maybe<Scalars['Date']['output']>;
   description?: Maybe<Scalars['String']['output']>;
+  groupCount: Scalars['Int']['output'];
   groups?: Maybe<Array<Group>>;
   id: Scalars['ID']['output'];
   metadata: Scalars['JSON']['output'];
   name: Scalars['String']['output'];
+  permissionCount: Scalars['Int']['output'];
+  primaryTag?: Maybe<Tag>;
+  rolePermissions?: Maybe<Array<RolePermission>>;
+  tagCount: Scalars['Int']['output'];
   tags?: Maybe<Array<Tag>>;
   updatedAt: Scalars['Date']['output'];
 };
 
 export type RoleCdmInput = {
   description?: InputMaybe<Scalars['String']['input']>;
+  /**
+   * Group keys from the `groups` section. When set, permissions are linked via
+   * Role → Group → Permission. Omit to use direct `permissions` on the role.
+   */
   groups?: InputMaybe<Array<Scalars['String']['input']>>;
   key: Scalars['String']['input'];
   metadata?: InputMaybe<Scalars['JSON']['input']>;
   name: Scalars['String']['input'];
+  /**
+   * Permission document keys or catalog refs (`resourceSlug:action`). Used for
+   * direct Role → Permission when `groups` is empty.
+   */
   permissions?: InputMaybe<Array<Scalars['String']['input']>>;
   primaryTag?: InputMaybe<Scalars['String']['input']>;
   tags?: InputMaybe<Array<Scalars['String']['input']>>;
@@ -2552,6 +2739,26 @@ export type RolePage = PaginatedResults & {
   hasNextPage: Scalars['Boolean']['output'];
   roles: Array<Role>;
   totalCount: Scalars['Int']['output'];
+};
+
+export type RolePermission = Auditable & {
+  __typename?: 'RolePermission';
+  createdAt: Scalars['Date']['output'];
+  deletedAt?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['ID']['output'];
+  permission?: Maybe<Permission>;
+  permissionId: Scalars['ID']['output'];
+  role?: Maybe<Role>;
+  roleId: Scalars['ID']['output'];
+  updatedAt: Scalars['Date']['output'];
+};
+
+export type RolePermissionPermissionArgs = {
+  scope: Scope;
+};
+
+export type RolePermissionRoleArgs = {
+  scope: Scope;
 };
 
 export enum RoleSearchableField {
@@ -2950,6 +3157,7 @@ export type UpdateUserAuthenticationMethodInput = {
 };
 
 export type UpdateUserInput = {
+  groupIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   metadata?: InputMaybe<Scalars['JSON']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   pictureUrl?: InputMaybe<Scalars['String']['input']>;
@@ -3001,10 +3209,17 @@ export type User = Auditable & {
   id: Scalars['ID']['output'];
   metadata: Scalars['JSON']['output'];
   name: Scalars['String']['output'];
+  permissionCount: Scalars['Int']['output'];
   pictureUrl?: Maybe<Scalars['String']['output']>;
+  primaryTag?: Maybe<Tag>;
+  projectUserApiKeyCount: Scalars['Int']['output'];
+  roleCount: Scalars['Int']['output'];
   roles?: Maybe<Array<Role>>;
+  tagCount: Scalars['Int']['output'];
   tags?: Maybe<Array<Tag>>;
   updatedAt: Scalars['Date']['output'];
+  userGroups?: Maybe<Array<UserGroup>>;
+  userPermissions?: Maybe<Array<UserPermission>>;
 };
 
 export type UserApiKeyCdmInput = {
@@ -3047,12 +3262,15 @@ export enum UserAuthenticationMethodProvider {
 
 export type UserCdmInput = {
   apiKeys?: InputMaybe<Array<UserApiKeyCdmInput>>;
+  /** Direct group assignment. Each key must appear in the document `groups` section. */
   groups?: InputMaybe<Array<Scalars['String']['input']>>;
   key: CdmKeyResolverInput;
   metadata?: InputMaybe<Scalars['JSON']['input']>;
   name: Scalars['String']['input'];
+  /** Direct user → permission grants (document keys or catalog `resourceSlug:action` refs). */
   permissions?: InputMaybe<Array<Scalars['String']['input']>>;
   primaryTag?: InputMaybe<Scalars['String']['input']>;
+  /** Role template keys from the `roles` section. */
   roles?: InputMaybe<Array<Scalars['String']['input']>>;
   tags?: InputMaybe<Array<Scalars['String']['input']>>;
 };
@@ -3077,11 +3295,51 @@ export type UserExportData = {
   updatedAt: Scalars['Date']['output'];
 };
 
+export type UserGroup = Auditable & {
+  __typename?: 'UserGroup';
+  createdAt: Scalars['Date']['output'];
+  deletedAt?: Maybe<Scalars['Date']['output']>;
+  group?: Maybe<Group>;
+  groupId: Scalars['ID']['output'];
+  id: Scalars['ID']['output'];
+  updatedAt: Scalars['Date']['output'];
+  user?: Maybe<User>;
+  userId: Scalars['ID']['output'];
+};
+
+export type UserGroupGroupArgs = {
+  scope: Scope;
+};
+
+export type UserGroupUserArgs = {
+  scope: Scope;
+};
+
 export type UserPage = PaginatedResults & {
   __typename?: 'UserPage';
   hasNextPage: Scalars['Boolean']['output'];
   totalCount: Scalars['Int']['output'];
   users: Array<User>;
+};
+
+export type UserPermission = Auditable & {
+  __typename?: 'UserPermission';
+  createdAt: Scalars['Date']['output'];
+  deletedAt?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['ID']['output'];
+  permission?: Maybe<Permission>;
+  permissionId: Scalars['ID']['output'];
+  updatedAt: Scalars['Date']['output'];
+  user?: Maybe<User>;
+  userId: Scalars['ID']['output'];
+};
+
+export type UserPermissionPermissionArgs = {
+  scope: Scope;
+};
+
+export type UserPermissionUserArgs = {
+  scope: Scope;
 };
 
 export type UserRegistrationData = {
@@ -3338,18 +3596,24 @@ export type ResolversInterfaceTypes<_RefType extends Record<string, unknown>> = 
     | ProjectPermission
     | ProjectResource
     | ProjectRole
+    | ProjectRolePermission
     | ProjectTag
     | ProjectUser
     | ProjectUserApiKey
+    | ProjectUserGroup
+    | ProjectUserPermission
     | Resource
     | ResourceTag
     | Role
     | RoleGroup
+    | RolePermission
     | RoleTag
     | SigningKey
     | Tag
     | User
     | UserAuthenticationMethod
+    | UserGroup
+    | UserPermission
     | UserRole
     | UserSession
     | UserTag;
@@ -3408,12 +3672,16 @@ export type ResolversTypes = ResolversObject<{
   AddProjectPermissionInput: AddProjectPermissionInput;
   AddProjectResourceInput: AddProjectResourceInput;
   AddProjectRoleInput: AddProjectRoleInput;
+  AddProjectRolePermissionInput: AddProjectRolePermissionInput;
   AddProjectTagInput: AddProjectTagInput;
   AddProjectUserApiKeyInput: AddProjectUserApiKeyInput;
+  AddProjectUserGroupInput: AddProjectUserGroupInput;
   AddProjectUserInput: AddProjectUserInput;
+  AddProjectUserPermissionInput: AddProjectUserPermissionInput;
   AddResourceTagInput: AddResourceTagInput;
   AddRoleGroupInput: AddRoleGroupInput;
   AddRoleTagInput: AddRoleTagInput;
+  AddUserGroupInput: AddUserGroupInput;
   AddUserRoleInput: AddUserRoleInput;
   AddUserTagInput: AddUserTagInput;
   ApiKey: ResolverTypeWrapper<ApiKey>;
@@ -3421,6 +3689,8 @@ export type ResolversTypes = ResolversObject<{
   ApiKeySearchableField: ApiKeySearchableField;
   ApiKeySortInput: ApiKeySortInput;
   ApiKeySortableField: ApiKeySortableField;
+  AssignRolePermissionInput: AssignRolePermissionInput;
+  AssignUserPermissionInput: AssignUserPermissionInput;
   Auditable: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['Auditable']>;
   AuthenticationMethodExportData: ResolverTypeWrapper<AuthenticationMethodExportData>;
   AuthorizationReason: AuthorizationReason;
@@ -3540,6 +3810,7 @@ export type ResolversTypes = ResolversObject<{
   ProjectPermission: ResolverTypeWrapper<ProjectPermission>;
   ProjectResource: ResolverTypeWrapper<ProjectResource>;
   ProjectRole: ResolverTypeWrapper<ProjectRole>;
+  ProjectRolePermission: ResolverTypeWrapper<ProjectRolePermission>;
   ProjectSearchableField: ProjectSearchableField;
   ProjectSortInput: ProjectSortInput;
   ProjectSortableField: ProjectSortableField;
@@ -3552,6 +3823,8 @@ export type ResolversTypes = ResolversObject<{
   ProjectTag: ResolverTypeWrapper<ProjectTag>;
   ProjectUser: ResolverTypeWrapper<ProjectUser>;
   ProjectUserApiKey: ResolverTypeWrapper<ProjectUserApiKey>;
+  ProjectUserGroup: ResolverTypeWrapper<ProjectUserGroup>;
+  ProjectUserPermission: ResolverTypeWrapper<ProjectUserPermission>;
   Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
   QueryAccountProjectApiKeysInput: QueryAccountProjectApiKeysInput;
   QueryAccountProjectInput: QueryAccountProjectInput;
@@ -3575,13 +3848,19 @@ export type ResolversTypes = ResolversObject<{
   QueryProjectGroupsInput: QueryProjectGroupsInput;
   QueryProjectPermissionsInput: QueryProjectPermissionsInput;
   QueryProjectResourcesInput: QueryProjectResourcesInput;
+  QueryProjectRolePermissionsInput: QueryProjectRolePermissionsInput;
   QueryProjectRolesInput: QueryProjectRolesInput;
   QueryProjectTagsInput: QueryProjectTagsInput;
   QueryProjectUserApiKeysInput: QueryProjectUserApiKeysInput;
+  QueryProjectUserGroupsInput: QueryProjectUserGroupsInput;
+  QueryProjectUserPermissionsInput: QueryProjectUserPermissionsInput;
   QueryProjectUsersInput: QueryProjectUsersInput;
   QueryResourceTagsInput: QueryResourceTagsInput;
   QueryRoleGroupsInput: QueryRoleGroupsInput;
+  QueryRolePermissionsInput: QueryRolePermissionsInput;
   QueryRoleTagsInput: QueryRoleTagsInput;
+  QueryUserGroupsInput: QueryUserGroupsInput;
+  QueryUserPermissionsInput: QueryUserPermissionsInput;
   QueryUserRolesInput: QueryUserRolesInput;
   QueryUserTagsInput: QueryUserTagsInput;
   RefreshSessionResponse: ResolverTypeWrapper<RefreshSessionResponse>;
@@ -3609,12 +3888,16 @@ export type ResolversTypes = ResolversObject<{
   RemoveProjectPermissionInput: RemoveProjectPermissionInput;
   RemoveProjectResourceInput: RemoveProjectResourceInput;
   RemoveProjectRoleInput: RemoveProjectRoleInput;
+  RemoveProjectRolePermissionInput: RemoveProjectRolePermissionInput;
   RemoveProjectTagInput: RemoveProjectTagInput;
   RemoveProjectUserApiKeyInput: RemoveProjectUserApiKeyInput;
+  RemoveProjectUserGroupInput: RemoveProjectUserGroupInput;
   RemoveProjectUserInput: RemoveProjectUserInput;
+  RemoveProjectUserPermissionInput: RemoveProjectUserPermissionInput;
   RemoveResourceTagInput: RemoveResourceTagInput;
   RemoveRoleGroupInput: RemoveRoleGroupInput;
   RemoveRoleTagInput: RemoveRoleTagInput;
+  RemoveUserGroupInput: RemoveUserGroupInput;
   RemoveUserRoleInput: RemoveUserRoleInput;
   RemoveUserTagInput: RemoveUserTagInput;
   RequestPasswordResetInput: RequestPasswordResetInput;
@@ -3632,10 +3915,13 @@ export type ResolversTypes = ResolversObject<{
   ResourceTag: ResolverTypeWrapper<ResourceTag>;
   RevokeApiKeyInput: RevokeApiKeyInput;
   RevokeMyUserSessionResult: ResolverTypeWrapper<RevokeMyUserSessionResult>;
+  RevokeRolePermissionInput: RevokeRolePermissionInput;
+  RevokeUserPermissionInput: RevokeUserPermissionInput;
   Role: ResolverTypeWrapper<Role>;
   RoleCdmInput: RoleCdmInput;
   RoleGroup: ResolverTypeWrapper<RoleGroup>;
   RolePage: ResolverTypeWrapper<RolePage>;
+  RolePermission: ResolverTypeWrapper<RolePermission>;
   RoleSearchableField: RoleSearchableField;
   RoleSortInput: RoleSortInput;
   RoleSortableField: RoleSortableField;
@@ -3695,7 +3981,9 @@ export type ResolversTypes = ResolversObject<{
   UserCdmInput: UserCdmInput;
   UserDataExport: ResolverTypeWrapper<UserDataExport>;
   UserExportData: ResolverTypeWrapper<UserExportData>;
+  UserGroup: ResolverTypeWrapper<UserGroup>;
   UserPage: ResolverTypeWrapper<UserPage>;
+  UserPermission: ResolverTypeWrapper<UserPermission>;
   UserRegistrationData: UserRegistrationData;
   UserRole: ResolverTypeWrapper<UserRole>;
   UserSearchableField: UserSearchableField;
@@ -3748,17 +4036,23 @@ export type ResolversParentTypes = ResolversObject<{
   AddProjectPermissionInput: AddProjectPermissionInput;
   AddProjectResourceInput: AddProjectResourceInput;
   AddProjectRoleInput: AddProjectRoleInput;
+  AddProjectRolePermissionInput: AddProjectRolePermissionInput;
   AddProjectTagInput: AddProjectTagInput;
   AddProjectUserApiKeyInput: AddProjectUserApiKeyInput;
+  AddProjectUserGroupInput: AddProjectUserGroupInput;
   AddProjectUserInput: AddProjectUserInput;
+  AddProjectUserPermissionInput: AddProjectUserPermissionInput;
   AddResourceTagInput: AddResourceTagInput;
   AddRoleGroupInput: AddRoleGroupInput;
   AddRoleTagInput: AddRoleTagInput;
+  AddUserGroupInput: AddUserGroupInput;
   AddUserRoleInput: AddUserRoleInput;
   AddUserTagInput: AddUserTagInput;
   ApiKey: ApiKey;
   ApiKeyPage: ApiKeyPage;
   ApiKeySortInput: ApiKeySortInput;
+  AssignRolePermissionInput: AssignRolePermissionInput;
+  AssignUserPermissionInput: AssignUserPermissionInput;
   Auditable: ResolversInterfaceTypes<ResolversParentTypes>['Auditable'];
   AuthenticationMethodExportData: AuthenticationMethodExportData;
   AuthorizationResult: AuthorizationResult;
@@ -3857,6 +4151,7 @@ export type ResolversParentTypes = ResolversObject<{
   ProjectPermission: ProjectPermission;
   ProjectResource: ProjectResource;
   ProjectRole: ProjectRole;
+  ProjectRolePermission: ProjectRolePermission;
   ProjectSortInput: ProjectSortInput;
   ProjectSyncJob: ProjectSyncJob;
   ProjectSyncJobPage: ProjectSyncJobPage;
@@ -3864,6 +4159,8 @@ export type ResolversParentTypes = ResolversObject<{
   ProjectTag: ProjectTag;
   ProjectUser: ProjectUser;
   ProjectUserApiKey: ProjectUserApiKey;
+  ProjectUserGroup: ProjectUserGroup;
+  ProjectUserPermission: ProjectUserPermission;
   Query: Record<PropertyKey, never>;
   QueryAccountProjectApiKeysInput: QueryAccountProjectApiKeysInput;
   QueryAccountProjectInput: QueryAccountProjectInput;
@@ -3887,13 +4184,19 @@ export type ResolversParentTypes = ResolversObject<{
   QueryProjectGroupsInput: QueryProjectGroupsInput;
   QueryProjectPermissionsInput: QueryProjectPermissionsInput;
   QueryProjectResourcesInput: QueryProjectResourcesInput;
+  QueryProjectRolePermissionsInput: QueryProjectRolePermissionsInput;
   QueryProjectRolesInput: QueryProjectRolesInput;
   QueryProjectTagsInput: QueryProjectTagsInput;
   QueryProjectUserApiKeysInput: QueryProjectUserApiKeysInput;
+  QueryProjectUserGroupsInput: QueryProjectUserGroupsInput;
+  QueryProjectUserPermissionsInput: QueryProjectUserPermissionsInput;
   QueryProjectUsersInput: QueryProjectUsersInput;
   QueryResourceTagsInput: QueryResourceTagsInput;
   QueryRoleGroupsInput: QueryRoleGroupsInput;
+  QueryRolePermissionsInput: QueryRolePermissionsInput;
   QueryRoleTagsInput: QueryRoleTagsInput;
+  QueryUserGroupsInput: QueryUserGroupsInput;
+  QueryUserPermissionsInput: QueryUserPermissionsInput;
   QueryUserRolesInput: QueryUserRolesInput;
   QueryUserTagsInput: QueryUserTagsInput;
   RefreshSessionResponse: RefreshSessionResponse;
@@ -3921,12 +4224,16 @@ export type ResolversParentTypes = ResolversObject<{
   RemoveProjectPermissionInput: RemoveProjectPermissionInput;
   RemoveProjectResourceInput: RemoveProjectResourceInput;
   RemoveProjectRoleInput: RemoveProjectRoleInput;
+  RemoveProjectRolePermissionInput: RemoveProjectRolePermissionInput;
   RemoveProjectTagInput: RemoveProjectTagInput;
   RemoveProjectUserApiKeyInput: RemoveProjectUserApiKeyInput;
+  RemoveProjectUserGroupInput: RemoveProjectUserGroupInput;
   RemoveProjectUserInput: RemoveProjectUserInput;
+  RemoveProjectUserPermissionInput: RemoveProjectUserPermissionInput;
   RemoveResourceTagInput: RemoveResourceTagInput;
   RemoveRoleGroupInput: RemoveRoleGroupInput;
   RemoveRoleTagInput: RemoveRoleTagInput;
+  RemoveUserGroupInput: RemoveUserGroupInput;
   RemoveUserRoleInput: RemoveUserRoleInput;
   RemoveUserTagInput: RemoveUserTagInput;
   RequestPasswordResetInput: RequestPasswordResetInput;
@@ -3942,10 +4249,13 @@ export type ResolversParentTypes = ResolversObject<{
   ResourceTag: ResourceTag;
   RevokeApiKeyInput: RevokeApiKeyInput;
   RevokeMyUserSessionResult: RevokeMyUserSessionResult;
+  RevokeRolePermissionInput: RevokeRolePermissionInput;
+  RevokeUserPermissionInput: RevokeUserPermissionInput;
   Role: Role;
   RoleCdmInput: RoleCdmInput;
   RoleGroup: RoleGroup;
   RolePage: RolePage;
+  RolePermission: RolePermission;
   RoleSortInput: RoleSortInput;
   RoleTag: RoleTag;
   Scope: Scope;
@@ -3996,7 +4306,9 @@ export type ResolversParentTypes = ResolversObject<{
   UserCdmInput: UserCdmInput;
   UserDataExport: UserDataExport;
   UserExportData: UserExportData;
+  UserGroup: UserGroup;
   UserPage: UserPage;
+  UserPermission: UserPermission;
   UserRegistrationData: UserRegistrationData;
   UserRole: UserRole;
   UserSession: UserSession;
@@ -4213,18 +4525,24 @@ export type AuditableResolvers<
     | 'ProjectPermission'
     | 'ProjectResource'
     | 'ProjectRole'
+    | 'ProjectRolePermission'
     | 'ProjectTag'
     | 'ProjectUser'
     | 'ProjectUserApiKey'
+    | 'ProjectUserGroup'
+    | 'ProjectUserPermission'
     | 'Resource'
     | 'ResourceTag'
     | 'Role'
     | 'RoleGroup'
+    | 'RolePermission'
     | 'RoleTag'
     | 'SigningKey'
     | 'Tag'
     | 'User'
     | 'UserAuthenticationMethod'
+    | 'UserGroup'
+    | 'UserPermission'
     | 'UserRole'
     | 'UserSession'
     | 'UserTag',
@@ -4349,7 +4667,10 @@ export type GroupResolvers<
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   metadata?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  permissionCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   permissions?: Resolver<Maybe<Array<ResolversTypes['Permission']>>, ParentType, ContextType>;
+  primaryTag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
+  tagCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -4522,6 +4843,18 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationAcceptInvitationArgs, 'input'>
+  >;
+  assignRolePermission?: Resolver<
+    ResolversTypes['RolePermission'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationAssignRolePermissionArgs, 'input'>
+  >;
+  assignUserPermission?: Resolver<
+    ResolversTypes['UserPermission'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationAssignUserPermissionArgs, 'input'>
   >;
   cancelProjectSync?: Resolver<
     ResolversTypes['ProjectSyncJob'],
@@ -4770,6 +5103,18 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationRevokeMyUserSessionArgs, 'id'>
+  >;
+  revokeRolePermission?: Resolver<
+    ResolversTypes['RolePermission'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationRevokeRolePermissionArgs, 'input'>
+  >;
+  revokeUserPermission?: Resolver<
+    ResolversTypes['UserPermission'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationRevokeUserPermissionArgs, 'input'>
   >;
   rotateSigningKey?: Resolver<
     ResolversTypes['SigningKey'],
@@ -5181,8 +5526,10 @@ export type PermissionResolvers<
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   metadata?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  primaryTag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
   resource?: Resolver<Maybe<ResolversTypes['Resource']>, ParentType, ContextType>;
   resourceId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  tagCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -5392,6 +5739,21 @@ export type ProjectRoleResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type ProjectRolePermissionResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['ProjectRolePermission'] =
+    ResolversParentTypes['ProjectRolePermission'],
+> = ResolversObject<{
+  createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  permissionId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  roleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type ProjectSyncJobResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['ProjectSyncJob'] =
@@ -5485,6 +5847,36 @@ export type ProjectUserApiKeyResolvers<
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
+  userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type ProjectUserGroupResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['ProjectUserGroup'] =
+    ResolversParentTypes['ProjectUserGroup'],
+> = ResolversObject<{
+  createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  groupId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type ProjectUserPermissionResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['ProjectUserPermission'] =
+    ResolversParentTypes['ProjectUserPermission'],
+> = ResolversObject<{
+  createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  permissionId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -5727,10 +6119,19 @@ export type RoleResolvers<
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  groupCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   groups?: Resolver<Maybe<Array<ResolversTypes['Group']>>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   metadata?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  permissionCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  primaryTag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
+  rolePermissions?: Resolver<
+    Maybe<Array<ResolversTypes['RolePermission']>>,
+    ParentType,
+    ContextType
+  >;
+  tagCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -5768,6 +6169,32 @@ export type RolePageResolvers<
   hasNextPage?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   roles?: Resolver<Array<ResolversTypes['Role']>, ParentType, ContextType>;
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type RolePermissionResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['RolePermission'] =
+    ResolversParentTypes['RolePermission'],
+> = ResolversObject<{
+  createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  permission?: Resolver<
+    Maybe<ResolversTypes['Permission']>,
+    ParentType,
+    ContextType,
+    RequireFields<RolePermissionPermissionArgs, 'scope'>
+  >;
+  permissionId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  role?: Resolver<
+    Maybe<ResolversTypes['Role']>,
+    ParentType,
+    ContextType,
+    RequireFields<RolePermissionRoleArgs, 'scope'>
+  >;
+  roleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -5909,10 +6336,21 @@ export type UserResolvers<
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   metadata?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  permissionCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   pictureUrl?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  primaryTag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
+  projectUserApiKeyCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  roleCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   roles?: Resolver<Maybe<Array<ResolversTypes['Role']>>, ParentType, ContextType>;
+  tagCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  userGroups?: Resolver<Maybe<Array<ResolversTypes['UserGroup']>>, ParentType, ContextType>;
+  userPermissions?: Resolver<
+    Maybe<Array<ResolversTypes['UserPermission']>>,
+    ParentType,
+    ContextType
+  >;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -5974,6 +6412,31 @@ export type UserExportDataResolvers<
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
 }>;
 
+export type UserGroupResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['UserGroup'] = ResolversParentTypes['UserGroup'],
+> = ResolversObject<{
+  createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  group?: Resolver<
+    Maybe<ResolversTypes['Group']>,
+    ParentType,
+    ContextType,
+    RequireFields<UserGroupGroupArgs, 'scope'>
+  >;
+  groupId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  user?: Resolver<
+    Maybe<ResolversTypes['User']>,
+    ParentType,
+    ContextType,
+    RequireFields<UserGroupUserArgs, 'scope'>
+  >;
+  userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type UserPageResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['UserPage'] = ResolversParentTypes['UserPage'],
@@ -5981,6 +6444,32 @@ export type UserPageResolvers<
   hasNextPage?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   users?: Resolver<Array<ResolversTypes['User']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type UserPermissionResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['UserPermission'] =
+    ResolversParentTypes['UserPermission'],
+> = ResolversObject<{
+  createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  permission?: Resolver<
+    Maybe<ResolversTypes['Permission']>,
+    ParentType,
+    ContextType,
+    RequireFields<UserPermissionPermissionArgs, 'scope'>
+  >;
+  permissionId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  user?: Resolver<
+    Maybe<ResolversTypes['User']>,
+    ParentType,
+    ContextType,
+    RequireFields<UserPermissionUserArgs, 'scope'>
+  >;
+  userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -6148,11 +6637,14 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   ProjectPermission?: ProjectPermissionResolvers<ContextType>;
   ProjectResource?: ProjectResourceResolvers<ContextType>;
   ProjectRole?: ProjectRoleResolvers<ContextType>;
+  ProjectRolePermission?: ProjectRolePermissionResolvers<ContextType>;
   ProjectSyncJob?: ProjectSyncJobResolvers<ContextType>;
   ProjectSyncJobPage?: ProjectSyncJobPageResolvers<ContextType>;
   ProjectTag?: ProjectTagResolvers<ContextType>;
   ProjectUser?: ProjectUserResolvers<ContextType>;
   ProjectUserApiKey?: ProjectUserApiKeyResolvers<ContextType>;
+  ProjectUserGroup?: ProjectUserGroupResolvers<ContextType>;
+  ProjectUserPermission?: ProjectUserPermissionResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   RefreshSessionResponse?: RefreshSessionResponseResolvers<ContextType>;
   RequestPasswordResetResponse?: RequestPasswordResetResponseResolvers<ContextType>;
@@ -6165,6 +6657,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   Role?: RoleResolvers<ContextType>;
   RoleGroup?: RoleGroupResolvers<ContextType>;
   RolePage?: RolePageResolvers<ContextType>;
+  RolePermission?: RolePermissionResolvers<ContextType>;
   RoleTag?: RoleTagResolvers<ContextType>;
   Searchable?: SearchableResolvers<ContextType>;
   SessionExportData?: SessionExportDataResolvers<ContextType>;
@@ -6177,7 +6670,9 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   UserAuthenticationMethod?: UserAuthenticationMethodResolvers<ContextType>;
   UserDataExport?: UserDataExportResolvers<ContextType>;
   UserExportData?: UserExportDataResolvers<ContextType>;
+  UserGroup?: UserGroupResolvers<ContextType>;
   UserPage?: UserPageResolvers<ContextType>;
+  UserPermission?: UserPermissionResolvers<ContextType>;
   UserRole?: UserRoleResolvers<ContextType>;
   UserSession?: UserSessionResolvers<ContextType>;
   UserSessionPage?: UserSessionPageResolvers<ContextType>;

@@ -129,8 +129,26 @@ describe('scoped entity tags field resolvers', () => {
     expect(getTags).toHaveBeenCalledWith({
       scope: orgProjectScope,
       ids: [tagT1.id, tagT2.id],
-      limit: 2,
+      limit: -1,
     });
+  });
+
+  it('Group.tags uses limit -1 when pivot count exceeds pagination max (101+ tags)', async () => {
+    const manyPivots = Array.from({ length: 101 }, (_, i) => ({
+      tagId: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`,
+      isPrimary: i === 0,
+    }));
+    getGroupTagPivots.mockResolvedValueOnce(manyPivots);
+    getTags.mockResolvedValueOnce(tagPage([]));
+    const ctx = baseContext();
+    await invokeFieldResolver(groupTagsResolver, { id: 'group-heavy' }, ctx);
+    expect(getTags).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: orgProjectScope,
+        limit: -1,
+        ids: manyPivots.map((p) => p.tagId),
+      })
+    );
   });
 
   it('Role.tags returns only in-scope tags and preserves isPrimary from pivot', async () => {

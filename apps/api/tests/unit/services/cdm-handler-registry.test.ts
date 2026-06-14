@@ -76,6 +76,7 @@ function createRecordingHandler(
 
 function buildService(handlers: ReadonlyArray<ICdmEntityHandler>) {
   const importRepo = {
+    resetStaggerSoftDeleteEpoch: vi.fn(),
     listCdmRoleIdsForProject: vi.fn().mockResolvedValue([]),
     listCdmGroupIdsForProject: vi.fn().mockResolvedValue([]),
     listCdmProjectUserApiKeyIdsForProject: vi.fn().mockResolvedValue([]),
@@ -95,8 +96,14 @@ function buildService(handlers: ReadonlyArray<ICdmEntityHandler>) {
     users: { delete: vi.fn() },
     resources: { delete: vi.fn() },
   };
-  return new ProjectImportService(
+  const svc = new ProjectImportService(
     importRepo as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
     {} as never,
     {} as never,
     {} as never,
@@ -124,6 +131,7 @@ function buildService(handlers: ReadonlyArray<ICdmEntityHandler>) {
     undefined,
     handlers
   );
+  return { svc, importRepo };
 }
 
 const baseInput: SyncProjectInput = {
@@ -175,7 +183,7 @@ describe('ICdmEntityHandler registry contract', () => {
     const userAssignment = createRecordingHandler('userAssignment', 'userAssignments', 200, log);
     const roleTemplate = createRecordingHandler('roleTemplate', 'roleTemplates', 100, log);
 
-    const svc = buildService([userAssignment, roleTemplate]);
+    const { svc } = buildService([userAssignment, roleTemplate]);
     await svc.importProjectCdm({ projectId, scope, input: baseInput }, {});
 
     /**
@@ -194,7 +202,7 @@ describe('ICdmEntityHandler registry contract', () => {
     const roleTemplate = createRecordingHandler('roleTemplate', 'roleTemplates', 100, log);
     const userAssignment = createRecordingHandler('userAssignment', 'userAssignments', 200, log);
 
-    const svc = buildService([roleTemplate, userAssignment]);
+    const { svc, importRepo } = buildService([roleTemplate, userAssignment]);
     const replaceInput: SyncProjectInput = {
       ...baseInput,
       mode: {
@@ -204,6 +212,8 @@ describe('ICdmEntityHandler registry contract', () => {
       },
     };
     await svc.importProjectCdm({ projectId, scope, input: replaceInput }, {});
+
+    expect(importRepo.resetStaggerSoftDeleteEpoch).toHaveBeenCalledTimes(1);
 
     const teardownIdx = log.events
       .map((e, i) => ({ e, i }))
@@ -232,7 +242,7 @@ describe('ICdmEntityHandler registry contract', () => {
     });
     const second = createRecordingHandler('second', 'userAssignments', 200, log);
 
-    const svc = buildService([failing, second]);
+    const { svc } = buildService([failing, second]);
     await expect(svc.importProjectCdm({ projectId, scope, input: baseInput }, {})).rejects.toThrow(
       'bad input'
     );
@@ -260,7 +270,7 @@ describe('ICdmEntityHandler registry contract', () => {
       },
     });
 
-    const svc = buildService([roleTemplate, userAssignment]);
+    const { svc } = buildService([roleTemplate, userAssignment]);
     await svc.importProjectCdm({ projectId, scope, input: baseInput }, {});
 
     expect(observedFromLater).toBe('role-1');
@@ -292,7 +302,7 @@ describe('ICdmEntityHandler registry contract', () => {
       },
     });
 
-    const svc = buildService([tag, roleTemplate, userAssignment]);
+    const { svc } = buildService([tag, roleTemplate, userAssignment]);
     await svc.importProjectCdm({ projectId, scope, input: baseInput }, {});
 
     expect(observedByRole).toBe('tag-1');
@@ -314,7 +324,7 @@ describe('ICdmEntityHandler registry contract', () => {
       },
     });
 
-    const svc = buildService([permission, roleTemplate]);
+    const { svc } = buildService([permission, roleTemplate]);
     await svc.importProjectCdm({ projectId, scope, input: baseInput }, {});
 
     expect(observedByRole).toBe('perm-1');
@@ -338,7 +348,7 @@ describe('ICdmEntityHandler registry contract', () => {
       },
     });
 
-    const svc = buildService([permission, roleTemplate]);
+    const { svc } = buildService([permission, roleTemplate]);
     await svc.importProjectCdm({ projectId, scope, input: baseInput }, {});
 
     expect(resolved?.id).toBe('perm-from-cdm');
@@ -354,7 +364,7 @@ describe('ICdmEntityHandler registry contract', () => {
       },
     });
 
-    const svc = buildService([failing]);
+    const { svc } = buildService([failing]);
     await expect(svc.importProjectCdm({ projectId, scope, input: baseInput }, {})).rejects.toThrow(
       /permissionKey "missing" did not match any permission/
     );

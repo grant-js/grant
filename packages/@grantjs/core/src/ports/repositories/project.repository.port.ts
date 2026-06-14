@@ -8,9 +8,12 @@ import type {
   AddProjectPermissionInput,
   AddProjectResourceInput,
   AddProjectRoleInput,
+  AddProjectRolePermissionInput,
   AddProjectTagInput,
   AddProjectUserApiKeyInput,
+  AddProjectUserGroupInput,
   AddProjectUserInput,
+  AddProjectUserPermissionInput,
   CreateProjectAppInput,
   CreateProjectAppResult,
   CreateProjectInput,
@@ -26,30 +29,39 @@ import type {
   ProjectPermission,
   ProjectResource,
   ProjectRole,
+  ProjectRolePermission,
   ProjectSyncJob,
   ProjectSyncJobSortInput,
   ProjectSyncJobStatus,
   ProjectTag,
   ProjectUser,
   ProjectUserApiKey,
+  ProjectUserGroup,
+  ProjectUserPermission,
   QueryProjectAppsArgs,
   QueryProjectAppTagsInput,
   QueryProjectGroupsInput,
   QueryProjectPermissionsInput,
   QueryProjectResourcesInput,
+  QueryProjectRolePermissionsInput,
   QueryProjectRolesInput,
   QueryProjectsArgs,
   QueryProjectTagsInput,
   QueryProjectUserApiKeysInput,
+  QueryProjectUserGroupsInput,
+  QueryProjectUserPermissionsInput,
   QueryProjectUsersInput,
   RemoveProjectAppTagInput,
   RemoveProjectGroupInput,
   RemoveProjectPermissionInput,
   RemoveProjectResourceInput,
   RemoveProjectRoleInput,
+  RemoveProjectRolePermissionInput,
   RemoveProjectTagInput,
   RemoveProjectUserApiKeyInput,
+  RemoveProjectUserGroupInput,
   RemoveProjectUserInput,
+  RemoveProjectUserPermissionInput,
   SyncProjectInput,
   SyncProjectResult,
   UpdateProjectAppInput,
@@ -169,6 +181,72 @@ export interface IProjectGroupRepository {
     params: RemoveProjectGroupInput,
     transaction?: unknown
   ): Promise<ProjectGroup>;
+}
+
+export interface IProjectRolePermissionRepository {
+  getProjectRolePermissions(
+    params: QueryProjectRolePermissionsInput,
+    transaction?: unknown
+  ): Promise<ProjectRolePermission[]>;
+
+  addProjectRolePermission(
+    params: AddProjectRolePermissionInput,
+    transaction?: unknown
+  ): Promise<ProjectRolePermission>;
+
+  softDeleteProjectRolePermission(
+    params: RemoveProjectRolePermissionInput,
+    transaction?: unknown
+  ): Promise<ProjectRolePermission>;
+
+  hardDeleteProjectRolePermission(
+    params: RemoveProjectRolePermissionInput,
+    transaction?: unknown
+  ): Promise<ProjectRolePermission>;
+}
+
+export interface IProjectUserPermissionRepository {
+  getProjectUserPermissions(
+    params: QueryProjectUserPermissionsInput,
+    transaction?: unknown
+  ): Promise<ProjectUserPermission[]>;
+
+  addProjectUserPermission(
+    params: AddProjectUserPermissionInput,
+    transaction?: unknown
+  ): Promise<ProjectUserPermission>;
+
+  softDeleteProjectUserPermission(
+    params: RemoveProjectUserPermissionInput,
+    transaction?: unknown
+  ): Promise<ProjectUserPermission>;
+
+  hardDeleteProjectUserPermission(
+    params: RemoveProjectUserPermissionInput,
+    transaction?: unknown
+  ): Promise<ProjectUserPermission>;
+}
+
+export interface IProjectUserGroupRepository {
+  getProjectUserGroups(
+    params: QueryProjectUserGroupsInput,
+    transaction?: unknown
+  ): Promise<ProjectUserGroup[]>;
+
+  addProjectUserGroup(
+    params: AddProjectUserGroupInput,
+    transaction?: unknown
+  ): Promise<ProjectUserGroup>;
+
+  softDeleteProjectUserGroup(
+    params: RemoveProjectUserGroupInput,
+    transaction?: unknown
+  ): Promise<ProjectUserGroup>;
+
+  hardDeleteProjectUserGroup(
+    params: RemoveProjectUserGroupInput,
+    transaction?: unknown
+  ): Promise<ProjectUserGroup>;
 }
 
 export interface IProjectPermissionRepository {
@@ -321,6 +399,11 @@ export interface IProjectUserApiKeyRepository {
     params: RemoveProjectUserApiKeyInput,
     transaction?: unknown
   ): Promise<ProjectUserApiKey>;
+
+  countProjectUserApiKeys(
+    params: { projectId: string; userId: string },
+    transaction?: unknown
+  ): Promise<number>;
 }
 
 /** Worker-internal view of a sync job, including the persisted payload + scope. */

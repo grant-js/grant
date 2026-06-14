@@ -76,6 +76,15 @@
       "next": "Next",
       "info": "Page {current} of {total}"
     },
+    "dataTable": {
+      "columns": "Columns",
+      "toggleColumns": "Toggle columns"
+    },
+    "detailAttachmentFilter": {
+      "label": "Show",
+      "all": "All",
+      "selected": "Selected"
+    },
     "audit": {
       "id": "ID",
       "created": "Created",
@@ -94,7 +103,9 @@
       "selected": "{count} selected",
       "clearAll": "Clear all",
       "loading": "Loading tags...",
-      "empty": "No tags available"
+      "empty": "No tags available",
+      "searchPlaceholder": "Search tags...",
+      "loadMore": "Load more"
     },
     "actions": {
       "save": "Save Changes",
@@ -108,11 +119,16 @@
       "uploading": "Uploading...",
       "refresh": "Refresh"
     },
+    "fields": {
+      "name": "Name",
+      "description": "Description"
+    },
     "saving": "Saving...",
     "emptyElements": "No {title} to display",
     "loading": "Loading...",
     "noItemsAvailable": "No items available",
     "noTagsAvailable": "No tags available",
+    "tagCount": "{count, plural, =0 {No tags} one {# tag} other {# tags}}",
     "yes": "Yes",
     "no": "No",
     "redirecting": "Redirecting...",
@@ -191,6 +207,7 @@
       "backToOrganization": "Back to Organization",
       "signingKeys": "Signing Keys",
       "projectApps": "Apps",
+      "testApp": "Test App",
       "projectSyncJobs": "Import/Export"
     }
   },
@@ -751,6 +768,9 @@
       "default": "Default"
     },
     "limit": "Items per page",
+    "roleCount": "{count, plural, =0 {No roles} one {# role} other {# roles}}",
+    "apiKeyCount": "{count, plural, =0 {No API keys} one {# API key} other {# API keys}}",
+    "hideSynthetic": "Hide CDM synthetic users",
     "search": {
       "placeholder": "Search users..."
     },
@@ -758,11 +778,13 @@
       "name": "Name",
       "email": "Email",
       "roles": "Roles",
+      "apiKeys": "API keys",
       "tags": "Tags",
       "authMethods": "Auth methods",
       "metadata": "Metadata",
       "showMetadata": "Show metadata",
       "primaryTag": "Primary Tag",
+      "selectTagsFirstForPrimaryTag": "Select tags first to choose a primary tag",
       "metadataInfo": "Optional metadata for the user. This can be used to match in permission conditions.",
       "metadataProjectContext": "In a project, this JSON is stored on the project membership and merged with the user's global profile for permission checks here. Same keys on the membership override global keys.",
       "metadataDocsLink": "Full syntax reference",
@@ -790,7 +812,18 @@
       "description": "Update user information",
       "confirm": "Save Changes",
       "cancel": "Cancel",
-      "updating": "Updating..."
+      "updating": "Updating...",
+      "manageRelationshipsPrefix": "Manage roles and tags on the",
+      "manageRelationshipsLink": "user detail page"
+    },
+    "permissionsPanel": {
+      "title": "Direct permissions",
+      "description": "Permissions granted directly to {userName}, not via roles or groups.",
+      "empty": "No direct permissions on this user.",
+      "assignSuccess": "Permission assigned to user",
+      "assignError": "Failed to assign permission",
+      "revokeSuccess": "Permission revoked from user",
+      "revokeError": "Failed to revoke permission"
     },
     "deleteDialog": {
       "title": "Delete User",
@@ -839,6 +872,7 @@
       "name": "Name",
       "email": "Email",
       "roles": "Roles",
+      "apiKeys": "API keys",
       "tags": "Tags",
       "authMethods": "Auth methods",
       "audit": "Audit",
@@ -852,16 +886,27 @@
     "detail": {
       "title": "User Details"
     },
+    "create": {
+      "title": "Create User",
+      "generalDescription": "Enter the name for the new user."
+    },
     "info": {
+      "generalTitle": "General",
+      "generalDescription": "Name, avatar, authentication methods, and audit information for this user.",
       "title": "User Information",
       "userId": "User ID",
+      "tableField": "Field",
+      "tableValue": "Value",
       "created": "Created",
       "updated": "Updated",
       "authMethods": "Authentication methods",
-      "metadata": "Metadata"
+      "metadata": "Metadata",
+      "metadataDescription": "Optional JSON metadata used in permission conditions."
     },
     "roles": {
       "title": "Roles",
+      "description": "Assign or remove roles for this user.",
+      "descriptionInfo": "Assigned roles can grant groups and permissions indirectly. Review the Groups and Permissions sections for inherited access.",
       "empty": "No roles assigned",
       "emptyDescription": "This user has no roles assigned in this project",
       "loading": "Loading roles...",
@@ -900,6 +945,7 @@
     },
     "tags": {
       "title": "Tags",
+      "description": "Assign or remove tags for this user.",
       "empty": "No tags assigned",
       "emptyDescription": "This user has no tags assigned in this project",
       "loading": "Loading tags...",
@@ -919,6 +965,7 @@
     },
     "apiKeys": {
       "title": "API Keys",
+      "description": "Create and manage API keys for programmatic access on behalf of this user.",
       "view": {
         "card": "Cards",
         "table": "Table"
@@ -932,7 +979,7 @@
       "never": "Never",
       "noDescription": "No description",
       "search": {
-        "placeholder": "Search API keys..."
+        "placeholder": "Search by name or description..."
       },
       "sort": {
         "label": "Sort by",
@@ -1008,36 +1055,365 @@
     },
     "groups": {
       "title": "Groups",
-      "empty": "No groups assigned",
-      "emptyDescription": "This user has no groups assigned through their roles",
+      "empty": "No groups in catalog",
+      "emptyDescription": "No groups match your search in this scope",
       "loading": "Loading groups...",
       "error": "Error loading groups",
-      "description": "Groups for user (through roles)",
+      "description": "Assign or remove groups for this user.",
+      "descriptionInfo": "Groups inherited from roles appear checked but cannot be removed here. Change role assignments or edit a role's groups to update inherited membership.",
       "table": {
         "name": "Name",
         "description": "Description",
         "tags": "Tags",
+        "source": "Source",
+        "sourceDirect": "Direct assignment",
+        "sourceViaRole": "Via role {roleName}",
+        "sourceDirectAndViaRole": "Direct and via role {roleName}",
         "inheritedFrom": "Inherited From Role"
       },
       "noDescription": "No description"
     },
     "permissions": {
       "title": "Permissions",
-      "empty": "No permissions assigned",
-      "emptyDescription": "This user has no permissions assigned through their groups",
+      "empty": "No permissions in catalog",
+      "emptyDescription": "No permissions match your search in this scope",
       "loading": "Loading permissions...",
       "error": "Error loading permissions",
-      "description": "Permissions for user (through groups)",
+      "description": "Assign or revoke permissions for this user.",
+      "descriptionInfo": "Permissions inherited from groups or roles appear checked but disabled. Update group or role assignments to change inherited permissions.",
       "table": {
         "name": "Name",
         "action": "Action",
         "tags": "Tags",
+        "source": "Source",
+        "sourceDirect": "Direct assignment",
+        "sourceViaGroup": "Via group {groupName}",
+        "sourceViaRole": "Via role {roleName}",
+        "sourceDirectAndInherited": "Direct and via {name}",
         "inheritedFrom": "Inherited From Group"
       }
     },
     "loading": {
       "title": "Loading user...",
       "error": "Error loading user"
+    }
+  },
+  "role": {
+    "detail": {
+      "title": "Role Details"
+    },
+    "create": {
+      "title": "Create Role",
+      "generalDescription": "Enter the name and description for the new role."
+    },
+    "info": {
+      "generalTitle": "General",
+      "generalDescription": "Name, description, and audit information for this role.",
+      "roleId": "Role ID",
+      "tableField": "Field",
+      "tableValue": "Value",
+      "created": "Created",
+      "updated": "Updated",
+      "metadata": "Metadata",
+      "metadataDescription": "Optional JSON metadata used in permission conditions.",
+      "noDescription": "No description"
+    },
+    "groups": {
+      "title": "Groups",
+      "description": "Assign or remove groups for this role.",
+      "empty": "No groups assigned",
+      "emptyDescription": "This role has no groups assigned",
+      "error": "Error loading groups",
+      "noDescription": "No description",
+      "search": {
+        "placeholder": "Search groups..."
+      },
+      "sort": {
+        "label": "Sort by",
+        "name": "Name"
+      },
+      "table": {
+        "name": "Name",
+        "description": "Description",
+        "tags": "Tags"
+      }
+    },
+    "tags": {
+      "title": "Tags",
+      "description": "Assign or remove tags for this role.",
+      "empty": "No tags assigned",
+      "emptyDescription": "This role has no tags assigned",
+      "error": "Error loading tags",
+      "search": {
+        "placeholder": "Search tags..."
+      },
+      "sort": {
+        "label": "Sort by",
+        "name": "Name",
+        "color": "Color"
+      },
+      "table": {
+        "name": "Name",
+        "color": "Color"
+      }
+    },
+    "permissions": {
+      "title": "Permissions",
+      "description": "Direct and inherited permissions for this role. Permissions from groups are checked but disabled.",
+      "empty": "No permissions in catalog",
+      "emptyDescription": "No permissions match your search in this scope",
+      "error": "Error loading permissions",
+      "table": {
+        "name": "Name",
+        "action": "Action",
+        "tags": "Tags",
+        "source": "Source",
+        "sourceDirect": "Direct assignment",
+        "sourceViaGroup": "Via group {groupName}",
+        "sourceDirectAndViaGroup": "Direct and via group {groupName}"
+      }
+    },
+    "loading": {
+      "title": "Loading role...",
+      "error": "Error loading role"
+    }
+  },
+  "group": {
+    "detail": {
+      "title": "Group Details"
+    },
+    "create": {
+      "title": "Create Group",
+      "generalDescription": "Enter the name and description for the new group."
+    },
+    "info": {
+      "generalTitle": "General",
+      "generalDescription": "Name, description, and audit information for this group.",
+      "groupId": "Group ID",
+      "tableField": "Field",
+      "tableValue": "Value",
+      "created": "Created",
+      "updated": "Updated",
+      "metadata": "Metadata",
+      "metadataDescription": "Optional JSON metadata used in permission conditions.",
+      "noDescription": "No description"
+    },
+    "permissions": {
+      "title": "Permissions",
+      "description": "Assign or remove permissions for this group.",
+      "empty": "No permissions assigned",
+      "emptyDescription": "This group has no permissions assigned",
+      "error": "Error loading permissions",
+      "search": {
+        "placeholder": "Search permissions..."
+      },
+      "sort": {
+        "label": "Sort by",
+        "name": "Name"
+      },
+      "table": {
+        "name": "Name",
+        "action": "Action",
+        "tags": "Tags"
+      }
+    },
+    "tags": {
+      "title": "Tags",
+      "description": "Assign or remove tags for this group.",
+      "empty": "No tags assigned",
+      "emptyDescription": "This group has no tags assigned",
+      "error": "Error loading tags",
+      "search": {
+        "placeholder": "Search tags..."
+      },
+      "sort": {
+        "label": "Sort by",
+        "name": "Name",
+        "color": "Color"
+      },
+      "table": {
+        "name": "Name",
+        "color": "Color"
+      }
+    },
+    "loading": {
+      "title": "Loading group...",
+      "error": "Error loading group"
+    }
+  },
+  "permission": {
+    "detail": {
+      "title": "Permission Details"
+    },
+    "create": {
+      "title": "Create Permission",
+      "generalDescription": "Enter the name, resource, action, and description for the new permission."
+    },
+    "info": {
+      "generalTitle": "General",
+      "generalDescription": "Name, description, resource, action, and audit information for this permission.",
+      "permissionId": "Permission ID",
+      "tableField": "Field",
+      "tableValue": "Value",
+      "created": "Created",
+      "updated": "Updated",
+      "resource": "Resource",
+      "action": "Action",
+      "condition": "Condition",
+      "conditionDescription": "Optional JSON condition for when this permission applies.",
+      "conditionInfo": "Optional JSON condition for when this permission applies.",
+      "noDescription": "No description"
+    },
+    "tags": {
+      "title": "Tags",
+      "description": "Assign or remove tags for this permission.",
+      "empty": "No tags assigned",
+      "emptyDescription": "This permission has no tags assigned",
+      "error": "Error loading tags",
+      "search": {
+        "placeholder": "Search tags..."
+      },
+      "sort": {
+        "label": "Sort by",
+        "name": "Name",
+        "color": "Color"
+      },
+      "table": {
+        "name": "Name",
+        "color": "Color"
+      }
+    },
+    "loading": {
+      "title": "Loading permission...",
+      "error": "Error loading permission"
+    }
+  },
+  "resource": {
+    "detail": {
+      "title": "Resource Details"
+    },
+    "create": {
+      "title": "Create Resource",
+      "generalDescription": "Enter the name, slug, description, and actions for the new resource."
+    },
+    "info": {
+      "generalTitle": "General",
+      "generalDescription": "Name, slug, description, status, and audit information for this resource.",
+      "resourceId": "Resource ID",
+      "tableField": "Field",
+      "tableValue": "Value",
+      "created": "Created",
+      "updated": "Updated"
+    },
+    "actions": {
+      "title": "Actions",
+      "description": "Define the actions that can be performed on this resource."
+    },
+    "tags": {
+      "title": "Tags",
+      "description": "Assign or remove tags for this resource.",
+      "empty": "No tags assigned",
+      "emptyDescription": "This resource has no tags assigned",
+      "error": "Error loading tags",
+      "search": {
+        "placeholder": "Search tags..."
+      },
+      "sort": {
+        "label": "Sort by",
+        "name": "Name",
+        "color": "Color"
+      },
+      "table": {
+        "name": "Name",
+        "color": "Color"
+      }
+    },
+    "loading": {
+      "title": "Loading resource...",
+      "error": "Error loading resource"
+    }
+  },
+  "projectApp": {
+    "detail": {
+      "title": "App Details"
+    },
+    "create": {
+      "title": "Create App",
+      "generalDescription": "Display name and primary tag for this app."
+    },
+    "info": {
+      "generalTitle": "General",
+      "generalDescription": "Display name and audit information for this app.",
+      "appId": "App ID",
+      "clientId": "Client ID",
+      "created": "Created",
+      "updated": "Updated",
+      "tableField": "Field",
+      "tableValue": "Value"
+    },
+    "oauth": {
+      "title": "OAuth",
+      "description": "Redirect URIs, auth providers, and sign-up settings."
+    },
+    "scopes": {
+      "title": "Scopes",
+      "description": "Select OAuth scopes from project permissions.",
+      "empty": "No scopes selected",
+      "emptyDescription": "No scopes match your search or filter",
+      "error": "Error loading scopes",
+      "search": {
+        "placeholder": "Search scopes..."
+      },
+      "table": {
+        "name": "Name",
+        "scope": "Scope",
+        "description": "Description"
+      }
+    },
+    "tags": {
+      "title": "Tags",
+      "description": "Assign or remove tags for this app.",
+      "empty": "No tags assigned",
+      "emptyDescription": "This app has no tags assigned",
+      "error": "Error loading tags",
+      "search": {
+        "placeholder": "Search tags..."
+      },
+      "sort": {
+        "label": "Sort by",
+        "name": "Name",
+        "color": "Color"
+      },
+      "table": {
+        "name": "Name",
+        "color": "Color"
+      }
+    },
+    "loading": {
+      "title": "Loading app...",
+      "error": "Error loading app"
+    },
+    "test": {
+      "title": "Test App",
+      "loading": "Loading app...",
+      "error": "Error loading app",
+      "summary": {
+        "title": "App",
+        "description": "The OAuth client that will be used for this test flow.",
+        "name": "Name",
+        "clientId": "Client ID"
+      },
+      "configuration": {
+        "title": "OAuth flow",
+        "description": "Choose the redirect URI used when opening the project OAuth flow in a new tab."
+      },
+      "redirectUri": "Redirect URI",
+      "redirectUriPlaceholder": "Select redirect URI",
+      "scopes": "Scopes (optional)",
+      "scopesLoading": "Loading scopes...",
+      "noScopesAvailable": "No scopes available",
+      "noRedirectUris": "This app has no redirect URIs. Add at least one on the app detail page to test the OAuth flow.",
+      "confirm": "Test app"
     }
   },
   "roles": {
@@ -1054,6 +1430,7 @@
       "create": "Create Role",
       "edit": "Edit",
       "delete": "Delete",
+      "view": "View",
       "cancel": "Cancel",
       "updating": "Updating...",
       "label": "Show/Hide Actions"
@@ -1064,6 +1441,8 @@
       "default": "Default"
     },
     "limit": "Items per page",
+    "groupCount": "{count, plural, =0 {No groups} one {# group} other {# groups}}",
+    "hideSynthetic": "Hide CDM synthetic roles",
     "search": {
       "placeholder": "Search roles..."
     },
@@ -1078,6 +1457,7 @@
       "metadataInfo": "Optional metadata for the role. This can be used to match in permission conditions.",
       "metadataDocsLink": "Full syntax reference",
       "primaryTag": "Primary Tag",
+      "selectTagsFirstForPrimaryTag": "Select tags first to choose a primary tag",
       "groupsLoading": "Loading groups...",
       "noGroupsAvailable": "No groups available",
       "tagsLoading": "Loading tags...",
@@ -1098,7 +1478,18 @@
       "description": "Update role information",
       "confirm": "Save Changes",
       "cancel": "Cancel",
-      "updating": "Updating..."
+      "updating": "Updating...",
+      "manageRelationshipsPrefix": "Manage groups on the",
+      "manageRelationshipsLink": "role detail page"
+    },
+    "permissionsPanel": {
+      "title": "Direct permissions",
+      "description": "Permissions assigned directly to {roleName}, outside the group chain.",
+      "empty": "No direct permissions on this role.",
+      "assignSuccess": "Permission assigned to role",
+      "assignError": "Failed to assign permission",
+      "revokeSuccess": "Permission revoked from role",
+      "revokeError": "Failed to revoke permission"
     },
     "deleteDialog": {
       "title": "Delete Role",
@@ -1180,7 +1571,9 @@
   "projectApps": {
     "common": {
       "yes": "Yes",
-      "no": "No"
+      "no": "No",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
     },
     "title": "Apps",
     "empty": {
@@ -1207,6 +1600,7 @@
     "table": {
       "name": "Name",
       "clientId": "Client ID",
+      "signUp": "Sign-up",
       "redirectUris": "Redirect URIs",
       "enabledProviders": "Auth providers",
       "allowSignUp": "Allow sign-up",
@@ -1228,10 +1622,13 @@
       "scopesPlaceholder": "Add scope (e.g. openid)",
       "noScopesAvailable": "No project permissions available. Add permissions to the project first.",
       "allowSignUp": "Allow sign-up",
+      "signUp": "Sign-up",
+      "enableSignUp": "Enable",
       "signUpRole": "Sign-up role",
       "signUpRolePlaceholder": "Select role for new users",
       "tags": "Tags",
       "primaryTag": "Primary Tag",
+      "selectTagsFirstForPrimaryTag": "Select tags first to choose a primary tag",
       "tagsLoading": "Loading tags...",
       "noTagsAvailable": "No tags available"
     },
@@ -1249,10 +1646,12 @@
     },
     "editDialog": {
       "title": "Edit app",
-      "description": "Update app name, redirect URIs, or scopes.",
+      "description": "Update app name.",
       "confirm": "Save",
       "cancel": "Cancel",
-      "submitting": "Saving..."
+      "submitting": "Saving...",
+      "manageRelationshipsPrefix": "Manage OAuth settings and tags on the",
+      "manageRelationshipsLink": "app detail page"
     },
     "deleteDialog": {
       "title": "Delete app",
@@ -1282,7 +1681,8 @@
     "actions": {
       "edit": "Edit",
       "delete": "Delete",
-      "test": "Test app"
+      "test": "Test app",
+      "view": "View app details"
     },
     "notifications": {
       "createSuccess": "Project app created",
@@ -1307,6 +1707,7 @@
       "create": "Create Resource",
       "edit": "Edit",
       "delete": "Delete",
+      "view": "View resource details",
       "cancel": "Cancel",
       "updating": "Updating...",
       "label": "Show/Hide Actions"
@@ -1320,6 +1721,9 @@
       "default": "Default"
     },
     "limit": "Items per page",
+    "actionCount": "{count, plural, =0 {No actions} one {# action} other {# actions}}",
+    "activeYes": "Active",
+    "activeNo": "Inactive",
     "search": {
       "placeholder": "Search resources..."
     },
@@ -1338,6 +1742,7 @@
       "createPermissionsInfo": "Creates one project-scoped permission per action on this resource. Useful for onboarding or migrating resources.",
       "tags": "Tags",
       "primaryTag": "Primary Tag",
+      "selectTagsFirstForPrimaryTag": "Select tags first to choose a primary tag",
       "tagsLoading": "Loading tags...",
       "noTagsAvailable": "No tags available"
     },
@@ -1353,7 +1758,9 @@
       "description": "Update resource information",
       "confirm": "Save Changes",
       "cancel": "Cancel",
-      "updating": "Updating..."
+      "updating": "Updating...",
+      "manageRelationshipsPrefix": "Manage tags and actions on the",
+      "manageRelationshipsLink": "resource detail page"
     },
     "deleteDialog": {
       "title": "Delete Resource",
@@ -1382,6 +1789,7 @@
       "name": "Name",
       "slug": "Slug",
       "description": "Description",
+      "isActive": "Status",
       "actions": "Actions",
       "tags": "Tags",
       "audit": "Audit",
@@ -1453,6 +1861,7 @@
       "create": "Create Group",
       "edit": "Edit",
       "delete": "Delete",
+      "view": "View",
       "update": "Update",
       "cancel": "Cancel",
       "creating": "Creating...",
@@ -1469,6 +1878,8 @@
       "label": "Items per page",
       "option": "{count} items"
     },
+    "permissionCount": "{count, plural, =0 {No permissions} one {# permission} other {# permissions}}",
+    "hideSynthetic": "Hide CDM synthetic groups",
     "search": {
       "placeholder": "Search groups..."
     },
@@ -1480,6 +1891,7 @@
       "permissions": "Permissions",
       "tags": "Tags",
       "primaryTag": "Primary Tag",
+      "selectTagsFirstForPrimaryTag": "Select tags first to choose a primary tag",
       "metadata": "Metadata",
       "showMetadata": "Show metadata",
       "metadataInfo": "Optional metadata for the group. This can be used to match in permission conditions.",
@@ -1514,7 +1926,9 @@
       "description": "Update group information",
       "confirm": "Save Changes",
       "cancel": "Cancel",
-      "updating": "Updating..."
+      "updating": "Updating...",
+      "manageRelationshipsPrefix": "Manage permissions on the",
+      "manageRelationshipsLink": "group detail page"
     },
     "deleteDialog": {
       "title": "Delete Group",
@@ -1760,6 +2174,7 @@
       "create": "Create Permission",
       "edit": "Edit",
       "delete": "Delete",
+      "view": "View",
       "cancel": "Cancel",
       "updating": "Updating...",
       "label": "Show/Hide Actions"
@@ -1771,6 +2186,7 @@
       "default": "Default"
     },
     "limit": "Items per page",
+    "hideSynthetic": "Hide CDM synthetic permissions",
     "search": {
       "placeholder": "Search permissions..."
     },
@@ -1789,6 +2205,7 @@
       "conditionInfo": "Optional condition for the permission. This can be used to match user, role or group metadata.",
       "conditionDocsLink": "Full syntax reference",
       "primaryTag": "Primary Tag",
+      "selectTagsFirstForPrimaryTag": "Select tags first to choose a primary tag",
       "tagsLoading": "Loading tags...",
       "noTagsAvailable": "No tags available",
       "validation": {
@@ -1808,7 +2225,9 @@
       "description": "Update permission information",
       "confirm": "Save Changes",
       "cancel": "Cancel",
-      "updating": "Updating..."
+      "updating": "Updating...",
+      "manageRelationshipsPrefix": "Manage resource, condition, and tags on the",
+      "manageRelationshipsLink": "permission detail page"
     },
     "deleteDialog": {
       "title": "Delete Permission",
@@ -1892,18 +2311,21 @@
       },
       "role": {
         "create": "Create Role",
+        "read": "Read Role",
         "update": "Update Role",
         "delete": "Delete Role",
         "query": "Query Role"
       },
       "group": {
         "create": "Create Group",
+        "read": "Read Group",
         "update": "Update Group",
         "delete": "Delete Group",
         "query": "Query Group"
       },
       "permission": {
         "create": "Create Permission",
+        "read": "Read Permission",
         "update": "Update Permission",
         "delete": "Delete Permission",
         "query": "Query Permission"
@@ -3208,6 +3630,38 @@
   },
   "projectSyncJobs": {
     "title": "Import/Export",
+    "detail": {
+      "title": "Sync job",
+      "loading": "Loading job details…",
+      "error": "Could not load this sync job.",
+      "polling": "Updating…",
+      "tableField": "Field",
+      "tableValue": "Value",
+      "general": {
+        "title": "Overview",
+        "description": "Lifecycle status, identifiers, and timing for this job."
+      },
+      "result": {
+        "title": "Import result",
+        "description": "Counters recorded when the import completed."
+      },
+      "payload": {
+        "title": "CDM payload",
+        "description": "Original JSON submitted when this import was enqueued."
+      },
+      "snapshot": {
+        "title": "Rollback snapshot",
+        "description": "Pre-sync project state captured before the import ran."
+      },
+      "exportArtifact": {
+        "title": "Exported CDM",
+        "description": "Generated CDM JSON produced when the export completed."
+      },
+      "warnings": {
+        "title": "{count, plural, =1 {# warning} other {# warnings}}",
+        "description": "Non-fatal issues reported while this job ran."
+      }
+    },
     "view": {
       "cards": "Cards",
       "table": "Table"
@@ -3320,7 +3774,7 @@
       "description": "Try clearing filters or searching for a different job name."
     },
     "actions": {
-      "view": "View details",
+      "view": "View job details",
       "downloadPayload": "Download payload",
       "downloadExport": "Download export",
       "cancel": "Cancel job"
@@ -3405,6 +3859,8 @@
         "startedAt": "Started",
         "completedAt": "Completed",
         "cancelledAt": "Cancelled",
+        "rollbackSnapshot": "Rollback snapshot",
+        "exportedCdm": "Exported CDM",
         "notSet": "—",
         "errorMessage": "Error",
         "warnings": "{count, plural, =1 {# warning} other {# warnings}}"

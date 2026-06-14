@@ -15,9 +15,12 @@ interface UseTagsResult {
 }
 
 export function useTags(params: QueryTagsArgs): UseTagsResult {
-  const { scope } = params;
+  const { scope, ids } = params;
 
-  const skip = useMemo(() => !scope || !scope.id || !scope.tenant, [scope]);
+  const skip = useMemo(
+    () => !scope || !scope.id || !scope.tenant || (ids != null && ids.length === 0),
+    [scope, ids]
+  );
 
   const variables = useMemo(() => params, [params]);
 
@@ -28,13 +31,17 @@ export function useTags(params: QueryTagsArgs): UseTagsResult {
     notifyOnNetworkStatusChange: true,
   });
 
-  const { tags, totalCount } = useMemo(
-    () => ({
-      tags: data?.tags?.tags || [],
+  const { tags, totalCount } = useMemo(() => {
+    const rawTags = data?.tags?.tags || [];
+    const limit = params.limit;
+    const cappedTags =
+      limit != null && limit > 0 && rawTags.length > limit ? rawTags.slice(0, limit) : rawTags;
+
+    return {
+      tags: cappedTags,
       totalCount: data?.tags?.totalCount || 0,
-    }),
-    [data]
-  );
+    };
+  }, [data, params.limit]);
 
   return {
     tags,

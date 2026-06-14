@@ -5,12 +5,14 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
 import { ApiKeys } from '@/components/features/api-keys';
+import { FeatureDetailLayout } from '@/components/layout';
 import { useScopeFromParams } from '@/hooks/common';
 import { useUsers } from '@/hooks/users';
 import { useUsersStore } from '@/stores/users.store';
 
+import { UserGeneralCard } from './user-general-card';
 import { UserGroups } from './user-groups';
-import { UserInfo } from './user-info';
+import { UserMetadataCard } from './user-metadata-card';
 import { UserPermissions } from './user-permissions';
 import { UserRoles } from './user-roles';
 import { UserTags } from './user-tags';
@@ -46,17 +48,14 @@ export function UserDetailViewer() {
   }
 
   return (
-    <div className="min-w-0 space-y-6">
-      <UserInfo user={user} onAfterUserMutation={refetch} />
-      <div className="grid min-w-0 gap-6 min-[1200px]:grid-cols-2">
-        <UserRoles user={user} />
-        <UserTags user={user} />
-      </div>
-      <div className="grid min-w-0 gap-6 min-[1200px]:grid-cols-2">
-        <UserGroups user={user} />
-        <UserPermissions user={user} />
-      </div>
+    <FeatureDetailLayout>
+      <UserGeneralCard user={user} onAfterUserMutation={refetch} />
+      <UserMetadataCard user={user} onAfterUserMutation={refetch} />
+      <UserRoles user={user} />
+      <UserGroups user={user} />
+      <UserPermissions user={user} />
       <ApiKeys />
-    </div>
+      <UserTags user={user} />
+    </FeatureDetailLayout>
   );
 }

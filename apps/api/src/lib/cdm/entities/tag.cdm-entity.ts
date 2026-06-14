@@ -34,7 +34,8 @@ const TAG_INPUT_KEY = 'tags' as const;
  * `groupTagKeys` against `produced.tagIds` populated here.
  *
  * Teardown deletes only CDM-marked tags belonging to this project plus
- * their pivot rows (`project_tags`, `role_tags`, `group_tags`, `user_tags`).
+ * their pivot rows (`project_tags`, `role_tags`, `group_tags`, `user_tags`,
+ * `project_app_tags`, `permission_tags`, `resource_tags`).
  * User-created tags are never touched.
  */
 export class TagCdmEntity implements ICdmEntityHandler<TagCdmInput, TagCdmInput> {

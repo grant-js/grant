@@ -33,6 +33,13 @@ export class ProjectUserApiKeyRepository
     return this.query(params, transaction);
   }
 
+  public async countProjectUserApiKeys(
+    params: { projectId: string; userId: string },
+    transaction?: Transaction
+  ): Promise<number> {
+    return this.countActive({ projectId: params.projectId, userId: params.userId }, transaction);
+  }
+
   public async addProjectUserApiKey(
     params: AddProjectUserApiKeyInput,
     transaction?: Transaction

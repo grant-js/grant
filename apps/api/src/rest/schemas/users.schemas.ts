@@ -77,6 +77,20 @@ export const createUserRequestSchema = z.object({
       description: 'Array of role IDs to assign to the user',
       example: ['123e4567-e89b-12d3-a456-426614174001'],
     }),
+  groupIds: z
+    .array(z.string())
+    .optional()
+    .openapi({
+      description: 'Array of group IDs to assign directly to the user',
+      example: ['123e4567-e89b-12d3-a456-426614174003'],
+    }),
+  permissionIds: z
+    .array(z.string())
+    .optional()
+    .openapi({
+      description: 'Array of permission IDs to assign directly to the user',
+      example: ['123e4567-e89b-12d3-a456-426614174004'],
+    }),
   tagIds: z
     .array(z.string())
     .optional()
@@ -118,6 +132,13 @@ export const updateUserRequestSchema = z.object({
     .openapi({
       description: 'Array of role IDs to assign to the user',
       example: ['123e4567-e89b-12d3-a456-426614174001'],
+    }),
+  groupIds: z
+    .array(z.string())
+    .optional()
+    .openapi({
+      description: 'Array of group IDs to assign directly to the user',
+      example: ['123e4567-e89b-12d3-a456-426614174003'],
     }),
   tagIds: z
     .array(z.string())

@@ -59,7 +59,7 @@ export function DashboardLayout({
 
           {/* Sticky Footer */}
           {footer && (
-            <div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t">
+            <div className="sticky bottom-0 border-t bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
               {footer}
             </div>
           )}

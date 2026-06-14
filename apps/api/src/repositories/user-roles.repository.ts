@@ -28,6 +28,13 @@ export class UserRoleRepository
     return this.query(params, transaction);
   }
 
+  public async countUserRoles(
+    params: { userId: string },
+    transaction?: Transaction
+  ): Promise<number> {
+    return this.countActive({ userId: params.userId }, transaction);
+  }
+
   public async addUserRole(params: AddUserRoleInput, transaction?: Transaction): Promise<UserRole> {
     return this.add(params, transaction);
   }

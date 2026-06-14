@@ -9,11 +9,11 @@ import {
   Avatar,
   DataTable,
   type DataTableColumnConfig,
-  ScrollBadges,
   type TableSkeletonColumnConfig,
 } from '@/components/common';
+import { Badge } from '@/components/ui/badge';
 import { useProjectTags } from '@/hooks/common';
-import { transformTagsToBadges } from '@/lib/tag';
+import { getEntityTagCount } from '@/lib/entity-list';
 import { cn } from '@/lib/utils';
 import { useProjectsStore } from '@/stores/projects.store';
 
@@ -24,6 +24,7 @@ import { ProjectNavigationButton } from './project-navigation-button';
 
 export function ProjectTable() {
   const t = useTranslations('projects');
+  const tCommon = useTranslations('common');
   const getProjectTags = useProjectTags();
   const limit = useProjectsStore((state) => state.limit);
   const search = useProjectsStore((state) => state.search);
@@ -102,13 +103,13 @@ export function ProjectTable() {
     {
       key: 'tags',
       header: t('table.tags'),
-      width: '150px',
+      width: '120px',
       render: (project: Project) => (
-        <ScrollBadges
-          items={transformTagsToBadges(getProjectTags(project))}
-          height={60}
-          showAsRound={true}
-        />
+        <Badge variant="secondary">
+          {tCommon('tagCount', {
+            count: getEntityTagCount({ tags: getProjectTags(project) }),
+          })}
+        </Badge>
       ),
     },
     {
@@ -139,7 +140,7 @@ export function ProjectTable() {
       { key: 'name', type: 'text' },
       { key: 'description', type: 'text' },
       { key: 'roles', type: 'list' },
-      { key: 'tags', type: 'list' },
+      { key: 'tags', type: 'text' },
       { key: 'audit', type: 'audit' },
       { key: 'actions', type: 'actions' },
       { key: 'navigation', type: 'button' },

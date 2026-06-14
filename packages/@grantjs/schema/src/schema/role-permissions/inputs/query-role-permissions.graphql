@@ -1,0 +1,4 @@
+input QueryRolePermissionsInput {
+  roleId: ID
+  permissionId: ID
+}

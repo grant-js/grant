@@ -1,0 +1,5 @@
+input AssignRolePermissionInput {
+  roleId: ID!
+  permissionId: ID!
+  scope: Scope!
+}

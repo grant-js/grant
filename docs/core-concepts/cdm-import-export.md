@@ -109,8 +109,23 @@ Imports and exports use **`SyncProjectInput`** (GraphQL / codegen). Top-level fi
 
 - Every section is optional; omit a section to leave it unchanged (export) or skip it (import).
 - If `permissions` is present, **`resources` must be present** in the same document.
-- The worker normalizes `user → role → group → permission` and fills gaps with synthetic chains when needed.
+- Grant does **not** auto-generate synthetic roles. Use the explicit CDM fields below for each grant path.
 - **`user_tags` are global**—re-importing them affects every project the user belongs to. See [Tags & Relationships → CDM lifecycle](/core-concepts/tags-relationships#cdm-lifecycle-for-tags).
+
+### Permission assignment paths (v1)
+
+Each path in the document maps to native Grant edges on import:
+
+| CDM fields                                                    | Runtime path                     |
+| ------------------------------------------------------------- | -------------------------------- |
+| `groups[].permissions` + `roles[].groups` + `users[].roles`   | User → Role → Group → Permission |
+| `groups[].permissions` + `users[].groups`                     | User → Group → Permission        |
+| `roles[].permissions` (no `roles[].groups`) + `users[].roles` | User → Role → Permission         |
+| `users[].permissions`                                         | User → Permission                |
+
+Export emits the same fields. Users may have **roles only**, **direct permissions only**, **direct groups only**, or any combination.
+
+**Legacy documents:** if `users[].roles` contains `synthetic:role:user:…:direct`, import strips those keys and adds a job warning. Use `users.permissions` instead.
 
 Replace-import removes existing **CDM-managed** rows for the project, then applies the payload. See [RBAC](/architecture/rbac) for how roles, groups, and permissions connect.
 
@@ -201,7 +216,7 @@ The export dialog **enqueues a job**. It does not change live data—the worker 
 | Permissions                                 | Requires **Resources** checked                                   |
 
 - Selecting every section = full export (same as omitting `sections` filter).
-- Exporting **users** without **roles** may produce a file that is hard to re-import alone.
+- Exporting **users** without **roles** is valid when users have direct `permissions` or `groups` assignments.
 
 ### Re-import options {#export-reimport-defaults}
 

@@ -1,0 +1,27 @@
+type ProjectUserGroup implements Auditable {
+  id: ID!
+  projectId: ID!
+  userId: ID!
+  groupId: ID!
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}
+
+input AddProjectUserGroupInput {
+  projectId: ID!
+  userId: ID!
+  groupId: ID!
+}
+
+input RemoveProjectUserGroupInput {
+  projectId: ID!
+  userId: ID!
+  groupId: ID!
+}
+
+input QueryProjectUserGroupsInput {
+  projectId: ID
+  userId: ID
+  groupId: ID
+}

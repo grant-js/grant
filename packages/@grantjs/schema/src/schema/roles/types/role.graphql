@@ -4,7 +4,12 @@ type Role implements Auditable {
   description: String
   metadata: JSON!
   groups: [Group!]
+  rolePermissions: [RolePermission!]
   tags: [Tag!]
+  primaryTag: Tag
+  groupCount: Int!
+  permissionCount: Int!
+  tagCount: Int!
   createdAt: Date!
   updatedAt: Date!
   deletedAt: Date

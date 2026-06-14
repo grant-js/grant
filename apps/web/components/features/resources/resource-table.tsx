@@ -2,26 +2,29 @@
 
 import { useTranslations } from 'next-intl';
 import { getTagBorderClasses, TagColor } from '@grantjs/constants';
-import { Resource, Tag } from '@grantjs/schema';
-import { Package } from 'lucide-react';
+import { Resource } from '@grantjs/schema';
+import { Package, PackagePlus } from 'lucide-react';
 
 import {
   Avatar,
   DataTable,
   type DataTableColumnConfig,
-  ScrollBadges,
+  EntityCreateNavigateButton,
+  EntityNavigationButton,
   type TableSkeletonColumnConfig,
 } from '@/components/common';
-import { transformTagsToBadges } from '@/lib/tag';
+import { Badge } from '@/components/ui/badge';
+import { getEntityTagCount, getPrimaryTagFromEntity } from '@/lib/entity-list';
 import { cn } from '@/lib/utils';
 import { useResourcesStore } from '@/stores/resources.store';
 
 import { ResourceActions } from './resource-actions';
+import { ResourceActiveStatusLabel } from './resource-active-status-label';
 import { ResourceAudit } from './resource-audit';
-import { ResourceCreateDialog } from './resource-create-dialog';
 
 export function ResourceTable() {
   const t = useTranslations('resources');
+  const tCommon = useTranslations('common');
 
   const limit = useResourcesStore((state) => state.limit);
   const search = useResourcesStore((state) => state.search);
@@ -34,22 +37,20 @@ export function ResourceTable() {
       header: '',
       width: '60px',
       className: 'pl-4',
-      render: (resource: Resource) => (
-        <Avatar
-          initial={resource.name.charAt(0)}
-          size="md"
-          className={
-            resource.tags?.find((tag: Tag) => tag.isPrimary)?.color
-              ? cn(
-                  'border-2',
-                  getTagBorderClasses(
-                    resource.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor
-                  )
-                )
-              : undefined
-          }
-        />
-      ),
+      render: (resource: Resource) => {
+        const primaryTag = getPrimaryTagFromEntity(resource);
+        return (
+          <Avatar
+            initial={resource.name.charAt(0)}
+            size="md"
+            className={
+              primaryTag?.color
+                ? cn('border-2', getTagBorderClasses(primaryTag.color as TagColor))
+                : undefined
+            }
+          />
+        );
+      },
     },
     {
       key: 'name',
@@ -76,27 +77,29 @@ export function ResourceTable() {
       ),
     },
     {
+      key: 'isActive',
+      header: t('table.isActive'),
+      width: '140px',
+      render: (resource: Resource) => <ResourceActiveStatusLabel isActive={resource.isActive} />,
+    },
+    {
       key: 'actions',
       header: t('form.actions'),
-      width: '200px',
+      width: '120px',
       render: (resource: Resource) => (
-        <ScrollBadges
-          items={
-            resource.actions?.map((action) => ({
-              id: action,
-              label: action,
-            })) || []
-          }
-          height={60}
-        />
+        <Badge variant="secondary">
+          {t('actionCount', { count: resource.actions?.length ?? 0 })}
+        </Badge>
       ),
     },
     {
       key: 'tags',
       header: t('table.tags'),
-      width: '150px',
+      width: '120px',
       render: (resource: Resource) => (
-        <ScrollBadges items={transformTagsToBadges(resource.tags)} height={60} showAsRound={true} />
+        <Badge variant="secondary">
+          {tCommon('tagCount', { count: getEntityTagCount(resource) })}
+        </Badge>
       ),
     },
     {
@@ -104,6 +107,19 @@ export function ResourceTable() {
       header: t('table.audit'),
       width: '200px',
       render: (resource: Resource) => <ResourceAudit resource={resource} />,
+    },
+    {
+      key: 'navigation',
+      header: '',
+      width: '60px',
+      render: (resource: Resource) => (
+        <EntityNavigationButton
+          entitySegment="resources"
+          entityId={resource.id}
+          ariaLabel={t('actions.view')}
+          size="sm"
+        />
+      ),
     },
   ];
 
@@ -113,9 +129,11 @@ export function ResourceTable() {
       { key: 'name', type: 'text' },
       { key: 'slug', type: 'text' },
       { key: 'description', type: 'text' },
-      { key: 'actions', type: 'list' },
-      { key: 'tags', type: 'list' },
+      { key: 'isActive', type: 'text' },
+      { key: 'actions', type: 'text' },
+      { key: 'tags', type: 'text' },
       { key: 'audit', type: 'audit' },
+      { key: 'navigation', type: 'icon' },
     ],
     rowCount: limit,
   };
@@ -129,7 +147,14 @@ export function ResourceTable() {
         icon: <Package />,
         title: search ? t('noSearchResults.title') : t('noResources.title'),
         description: search ? t('noSearchResults.description') : t('noResources.description'),
-        action: search ? undefined : <ResourceCreateDialog triggerAlwaysShowLabel />,
+        action: search ? undefined : (
+          <EntityCreateNavigateButton
+            entitySegment="resources"
+            label={t('createDialog.trigger')}
+            icon={PackagePlus}
+            alwaysShowLabel
+          />
+        ),
       }}
       actionsColumn={{
         render: (resource) => <ResourceActions resource={resource} />,

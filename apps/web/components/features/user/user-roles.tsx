@@ -1,34 +1,52 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useGrant } from '@grantjs/client/react';
 import { getTagBorderClasses, TagColor } from '@grantjs/constants';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
-import { Role, RoleSortableField, SortOrder, Tag, User } from '@grantjs/schema';
+import { Role, Tag, User } from '@grantjs/schema';
 import { Loader2, Shield } from 'lucide-react';
 
 import {
   Avatar,
   DataTable,
   type DataTableColumnConfig,
+  DataTableColumnToggle,
+  DetailAttachmentFilterToggle,
+  FeatureModuleCard,
+  FieldInfoPopover,
   Pagination,
   RefreshButton,
   ScrollBadges,
   type TableSkeletonColumnConfig,
   Toolbar,
+  toolbarGrow,
 } from '@/components/common';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useDebounce } from '@/hooks/common';
+import { useDebounce, useDetailTableColumnVisibility } from '@/hooks/common';
 import { useProjectUserScope } from '@/hooks/common/use-project-user-scope';
 import { useRoles } from '@/hooks/roles';
 import { useUserMutations } from '@/hooks/users';
+import { resolveDetailQueryIds } from '@/lib/detail-attachment-filter';
 import { transformTagsToBadges } from '@/lib/tag';
 import { cn } from '@/lib/utils';
 import { useUserStore } from '@/stores/user.store';
 
+import {
+  USER_DETAIL_CHECKBOX_COLUMN,
+  USER_DETAIL_CHECKBOX_SKELETON,
+  USER_DETAIL_CONTENT_COLUMN_CLASS,
+  USER_DETAIL_ICON_COLUMN,
+  USER_DETAIL_ICON_SKELETON,
+  USER_DETAIL_LOADING_COLUMN,
+  USER_DETAIL_LOADING_SKELETON,
+  USER_DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
+  USER_DETAIL_TEXT_COLUMN,
+  UserDetailTableCheckboxCell,
+  UserDetailTableIconCell,
+} from './user-detail-table-layout';
 import { UserRoleSearch } from './user-role-search';
-import { UserRoleSorter } from './user-role-sorter';
 
 interface UserRolesProps {
   user: User;
@@ -46,12 +64,13 @@ export function UserRoles({ user }: UserRolesProps) {
   const limit = useUserStore((state) => state.rolesLimit);
   const search = useUserStore((state) => state.rolesSearch);
   const sort = useUserStore((state) => state.rolesSort);
+  const rolesAttachmentFilter = useUserStore((state) => state.rolesAttachmentFilter);
   const updatingRoleId = useUserStore((state) => state.updatingRoleId);
   const optimisticCheckedRoleIds = useUserStore((state) => state.optimisticCheckedRoleIds);
 
   const setPage = useUserStore((state) => state.setRolesPage);
   const setSearch = useUserStore((state) => state.setRolesSearch);
-  const setSort = useUserStore((state) => state.setRolesSort);
+  const setRolesAttachmentFilter = useUserStore((state) => state.setRolesAttachmentFilter);
   const setUpdatingRoleId = useUserStore((state) => state.setUpdatingRoleId);
   const setOptimisticCheckedRoleIds = useUserStore((state) => state.setOptimisticCheckedRoleIds);
   const addOptimisticRoleId = useUserStore((state) => state.addOptimisticRoleId);
@@ -59,12 +78,23 @@ export function UserRoles({ user }: UserRolesProps) {
   const rolesRefetch = useUserStore((state) => state.rolesRefetch);
   const setRolesRefetch = useUserStore((state) => state.setRolesRefetch);
 
+  const selectedRoleIds = useMemo(
+    () => Array.from(optimisticCheckedRoleIds),
+    [optimisticCheckedRoleIds]
+  );
+
+  const roleQueryIds = useMemo(
+    () => resolveDetailQueryIds(rolesAttachmentFilter, selectedRoleIds),
+    [rolesAttachmentFilter, selectedRoleIds]
+  );
+
   const { roles, loading, error, totalCount, refetch } = useRoles({
     scope: scope!,
     page,
     limit,
     search,
     sort,
+    ids: roleQueryIds,
   });
 
   const { updateUser } = useUserMutations();
@@ -124,10 +154,6 @@ export function UserRoles({ user }: UserRolesProps) {
     debouncedUpdateUserRoles(roleId, checked, currentRoleIds);
   };
 
-  const handleSortChange = (field: RoleSortableField, order: SortOrder) => {
-    setSort(field, order);
-  };
-
   const handleSearchChange = (newSearch: string) => {
     setSearch(newSearch);
   };
@@ -136,24 +162,25 @@ export function UserRoles({ user }: UserRolesProps) {
     {
       key: 'checkbox',
       header: '',
-      width: '50px',
-      className: 'pl-4',
+      ...USER_DETAIL_CHECKBOX_COLUMN,
       render: (role: Role) => (
-        <Checkbox
-          checked={isRoleChecked(role.id)}
-          onCheckedChange={(checked) => handleRoleToggle(role.id, checked === true)}
-          disabled={!canUpdate}
-        />
+        <UserDetailTableCheckboxCell>
+          <Checkbox
+            checked={isRoleChecked(role.id)}
+            onCheckedChange={(checked) => handleRoleToggle(role.id, checked === true)}
+            disabled={!canUpdate}
+          />
+        </UserDetailTableCheckboxCell>
       ),
     },
     {
       key: 'icon',
       header: '',
-      width: '50px',
+      ...USER_DETAIL_ICON_COLUMN,
       render: (role: Role) => {
         const primaryTag = role.tags?.find((tag: Tag) => tag.isPrimary);
         return (
-          <div className="flex items-center justify-center">
+          <UserDetailTableIconCell>
             <Avatar
               initial={role.name.charAt(0)}
               size="sm"
@@ -164,7 +191,7 @@ export function UserRoles({ user }: UserRolesProps) {
                   : undefined
               }
             />
-          </div>
+          </UserDetailTableIconCell>
         );
       },
     },
@@ -172,12 +199,16 @@ export function UserRoles({ user }: UserRolesProps) {
       key: 'name',
       header: t('table.name'),
       width: '240px',
+      ...USER_DETAIL_TEXT_COLUMN,
+      className: USER_DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
       render: (role: Role) => <span className="text-sm font-medium">{role.name}</span>,
     },
     {
       key: 'description',
       header: t('table.description'),
       width: '250px',
+      ...USER_DETAIL_TEXT_COLUMN,
+      className: USER_DETAIL_CONTENT_COLUMN_CLASS,
       render: (role: Role) => (
         <span className="text-sm text-muted-foreground">
           {role.description || t('noDescription')}
@@ -187,85 +218,108 @@ export function UserRoles({ user }: UserRolesProps) {
     {
       key: 'tags',
       header: t('table.tags'),
-      width: '150px',
-      render: (role: Role) => (
-        <ScrollBadges items={transformTagsToBadges(role.tags)} height={60} showAsRound={true} />
-      ),
+      width: '180px',
+      ...USER_DETAIL_TEXT_COLUMN,
+      className: USER_DETAIL_CONTENT_COLUMN_CLASS,
+      render: (role: Role) => <ScrollBadges items={transformTagsToBadges(role.tags)} height={60} />,
     },
     {
       key: 'loading',
       header: '',
-      width: '50px',
+      ...USER_DETAIL_LOADING_COLUMN,
       render: (role: Role) =>
         updatingRoleId === role.id ? (
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <UserDetailTableIconCell>
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          </UserDetailTableIconCell>
         ) : null,
     },
   ];
 
+  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
+    useDetailTableColumnVisibility(columns);
+
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
-    columns: [
-      { key: 'checkbox', type: 'text' },
-      { key: 'icon', type: 'text' },
-      { key: 'name', type: 'text' },
-      { key: 'description', type: 'text' },
-      { key: 'tags', type: 'text' },
-      { key: 'loading', type: 'text' },
-    ],
+    columns: filterSkeletonColumns([
+      USER_DETAIL_CHECKBOX_SKELETON,
+      USER_DETAIL_ICON_SKELETON,
+      { key: 'name', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
+      { key: 'description', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
+      { key: 'tags', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
+      USER_DETAIL_LOADING_SKELETON,
+    ]),
     rowCount: 5,
   };
 
   if (error) {
     return (
-      <div className="rounded-lg border bg-card p-6">
-        <h3 className="text-lg font-semibold mb-4">{t('title')}</h3>
+      <FeatureModuleCard title={t('title')}>
         <p className="text-sm text-destructive">{t('error')}</p>
-      </div>
+      </FeatureModuleCard>
     );
   }
 
   return (
-    <>
-      <div className="min-w-0 rounded-lg border bg-card p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold shrink-0">{t('title')}</h3>
-          <Toolbar
-            alwaysRow
-            items={[
-              <RefreshButton
-                key="refresh"
-                onRefresh={rolesRefetch ?? undefined}
-                loading={loading}
-                iconOnly
-              />,
-              totalPages > 1 && (
-                <UserRoleSearch key="search" search={search} onSearchChange={handleSearchChange} />
-              ),
-              totalCount > 0 && (
-                <UserRoleSorter key="sorter" sort={sort} onSortChange={handleSortChange} />
-              ),
-            ]}
-          />
-        </div>
-        <div className="min-w-0 overflow-x-auto">
-          <DataTable
-            data={roles}
-            columns={columns}
-            loading={loading}
-            emptyState={{
-              icon: <Shield />,
-              title: t('empty'),
-              description: t('emptyDescription'),
-            }}
-            skeletonConfig={skeletonConfig}
-          />
-        </div>
-        {totalPages > 1 && (
-          <div className="mt-4 border-t">
-            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-          </div>
-        )}
-      </div>
-    </>
+    <FeatureModuleCard
+      title={t('title')}
+      description={t('description')}
+      titleAdornment={
+        <FieldInfoPopover
+          description={t('descriptionInfo')}
+          className="rounded-sm p-0.5"
+          stopPropagation
+        />
+      }
+      collapsible
+      toolbar={
+        <Toolbar
+          fullWidth
+          alwaysRow
+          items={[
+            <RefreshButton
+              key="refresh"
+              onRefresh={rolesRefetch ?? undefined}
+              loading={loading}
+              iconOnly
+            />,
+            <DetailAttachmentFilterToggle
+              key="attachment-filter"
+              value={rolesAttachmentFilter}
+              onChange={setRolesAttachmentFilter}
+            />,
+            toolbarGrow(
+              <UserRoleSearch
+                key="search"
+                search={search}
+                onSearchChange={handleSearchChange}
+                grow
+              />
+            ),
+            <DataTableColumnToggle
+              key="columns"
+              columns={columnToggleItems}
+              onToggle={toggleColumn}
+            />,
+          ]}
+        />
+      }
+      footer={
+        totalPages > 1 ? (
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        ) : undefined
+      }
+    >
+      <DataTable
+        data={roles}
+        columns={visibleColumns}
+        loading={loading}
+        emptyState={{
+          icon: <Shield />,
+          title: t('empty'),
+          description: t('emptyDescription'),
+        }}
+        skeletonConfig={skeletonConfig}
+      />
+    </FeatureModuleCard>
   );
 }

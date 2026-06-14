@@ -22,6 +22,7 @@ interface UseProjectAppFormDataResult {
   scopeSlugs: ScopeSlugOption[];
   loading: boolean;
   error: Error | undefined;
+  refetch: () => Promise<unknown>;
 }
 
 /**
@@ -34,7 +35,7 @@ export function useProjectAppFormData(
 ): UseProjectAppFormDataResult {
   const skip = !scope?.id || !scope?.tenant || !projectId;
 
-  const { data, loading, error } = useQuery<GetProjectAppFormDataQuery>(
+  const { data, loading, error, refetch } = useQuery<GetProjectAppFormDataQuery>(
     GetProjectAppFormDataDocument,
     {
       variables: { scope: scope!, projectId: projectId! },
@@ -48,7 +49,10 @@ export function useProjectAppFormData(
   const projectRoles = useMemo((): ProjectRoleOption[] => {
     if (!project?.roles) return [];
     return project.roles
-      .filter((r): r is { id: string; name: string } => !!r)
+      .filter(
+        (r): r is { id: string; name: string } =>
+          !!r && !!r.name && !r.name.startsWith('synthetic:')
+      )
       .map((r) => ({
         id: r.id,
         name: r.name,
@@ -80,5 +84,6 @@ export function useProjectAppFormData(
     scopeSlugs,
     loading,
     error: error ?? undefined,
+    refetch,
   };
 }

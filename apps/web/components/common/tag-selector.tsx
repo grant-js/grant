@@ -2,13 +2,13 @@
 
 import { useTranslations } from 'next-intl';
 import { getTagBorderClasses, TagColor } from '@grantjs/constants';
-import { Check, Tag } from 'lucide-react';
+import { Tag as TagIcon } from 'lucide-react';
 
+import { PaginatedTagPicker } from '@/components/common/paginated-tag-picker';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -24,9 +24,13 @@ export interface TagSelectorProps {
 export function TagSelector({ selectedTagIds, onTagIdsChange }: TagSelectorProps) {
   const t = useTranslations('common');
   const scope = useScopeFromParams();
-  const { tags, loading } = useTags({ scope: scope!, limit: -1 });
 
-  const selectedTags = tags.filter((tag) => selectedTagIds.includes(tag.id));
+  const { tags: selectedTagDetails } = useTags({
+    scope: scope!,
+    ids: selectedTagIds.length > 0 ? selectedTagIds : undefined,
+    limit: selectedTagIds.length > 0 ? selectedTagIds.length : undefined,
+    page: 1,
+  });
 
   const handleTagToggle = (tagId: string) => {
     const newSelectedTagIds = selectedTagIds.includes(tagId)
@@ -46,6 +50,11 @@ export function TagSelector({ selectedTagIds, onTagIdsChange }: TagSelectorProps
       : t('tags.placeholder');
 
   const hasSelectedTags = selectedTagIds.length > 0;
+  const selectedTags = selectedTagDetails.filter((tag) => selectedTagIds.includes(tag.id));
+
+  if (!scope) {
+    return null;
+  }
 
   const buttonContent = (
     <Button
@@ -59,7 +68,7 @@ export function TagSelector({ selectedTagIds, onTagIdsChange }: TagSelectorProps
     >
       <div className="flex w-full items-center justify-center min-[1600px]:justify-start">
         <div className={cn('flex items-center gap-2 sm:max-[1599px]:gap-0')}>
-          <Tag
+          <TagIcon
             className={cn(
               'size-4',
               hasSelectedTags && 'sm:text-primary min-[1600px]:text-foreground'
@@ -102,50 +111,13 @@ export function TagSelector({ selectedTagIds, onTagIdsChange }: TagSelectorProps
               <DropdownMenuTrigger asChild>{buttonContent}</DropdownMenuTrigger>
             </TooltipTrigger>
             <TooltipContent side="bottom">{tooltipText}</TooltipContent>
-            <DropdownMenuContent align="end" className="w-56" fullWidthOnMobile>
-              <div className="p-2">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">{t('tags.title')}</span>
-                  {selectedTagIds.length > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleClearAll}
-                      className="h-auto p-1 text-xs"
-                    >
-                      {t('tags.clearAll')}
-                    </Button>
-                  )}
-                </div>
-                {loading ? (
-                  <div className="text-sm text-muted-foreground p-2">{t('tags.loading')}</div>
-                ) : tags.length === 0 ? (
-                  <div className="text-sm text-muted-foreground p-2">{t('tags.empty')}</div>
-                ) : (
-                  <div className="max-h-[200px] overflow-y-auto">
-                    <div className="space-y-1 pr-2">
-                      {tags.map((tag) => {
-                        const isSelected = selectedTagIds.includes(tag.id);
-                        return (
-                          <DropdownMenuItem
-                            key={tag.id}
-                            onClick={() => handleTagToggle(tag.id)}
-                            className="flex items-center justify-between cursor-pointer"
-                          >
-                            <div className="flex items-center gap-2">
-                              <div
-                                className={`w-3 h-3 rounded-full border-2 bg-transparent ${getTagBorderClasses(tag.color as TagColor)}`}
-                              />
-                              <span className="text-sm">{tag.name}</span>
-                            </div>
-                            {isSelected && <Check className="size-4" />}
-                          </DropdownMenuItem>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
+            <DropdownMenuContent align="end" className="w-56 p-0" fullWidthOnMobile>
+              <PaginatedTagPicker
+                scope={scope}
+                selectedTagIds={selectedTagIds}
+                onToggle={handleTagToggle}
+                onClearAll={handleClearAll}
+              />
             </DropdownMenuContent>
           </DropdownMenu>
         </Tooltip>

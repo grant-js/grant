@@ -52,6 +52,12 @@ function buildHandler(deps?: {
     getProjectRolesWithPermissions: ReturnType<typeof vi.fn>;
     getProjectTagDefinitions: ReturnType<typeof vi.fn>;
     getProjectCdmProvisionedUsers: ReturnType<typeof vi.fn>;
+    getProjectLinkedPermissionsForExport?: ReturnType<typeof vi.fn>;
+    getProjectUserDirectPermissions?: ReturnType<typeof vi.fn>;
+    getProjectUserDirectGroups?: ReturnType<typeof vi.fn>;
+    getGroupsByIds?: ReturnType<typeof vi.fn>;
+    getGroupPermissionIdsByGroupIds?: ReturnType<typeof vi.fn>;
+    getGroupTagsByGroupIds?: ReturnType<typeof vi.fn>;
   };
   projectUsers?: {
     addProjectUser: ReturnType<typeof vi.fn>;
@@ -66,6 +72,12 @@ function buildHandler(deps?: {
     getProjectRolesWithPermissions: vi.fn().mockResolvedValue([]),
     getProjectTagDefinitions: vi.fn().mockResolvedValue([]),
     getProjectCdmProvisionedUsers: vi.fn().mockResolvedValue([]),
+    getProjectLinkedPermissionsForExport: vi.fn().mockResolvedValue([]),
+    getProjectUserDirectPermissions: vi.fn().mockResolvedValue([]),
+    getProjectUserDirectGroups: vi.fn().mockResolvedValue([]),
+    getGroupsByIds: vi.fn().mockResolvedValue([]),
+    getGroupPermissionIdsByGroupIds: vi.fn().mockResolvedValue([]),
+    getGroupTagsByGroupIds: vi.fn().mockResolvedValue([]),
   };
   const projectUsers = deps?.projectUsers ?? {
     addProjectUser: vi.fn().mockResolvedValue(undefined),
@@ -116,7 +128,9 @@ describe('UserAssignmentCdmEntity — tag wiring', () => {
         resourceIds: new Map(),
         permissionIds: new Map(),
         userIds: new Map(),
+        groupIdsByKey: new Map(),
       },
+      documentGroupsByKey: new Map(),
       assignmentUserIds: new Set([userId]),
     };
 
@@ -150,7 +164,9 @@ describe('UserAssignmentCdmEntity — tag wiring', () => {
         resourceIds: new Map(),
         permissionIds: new Map(),
         userIds: new Map(),
+        groupIdsByKey: new Map(),
       },
+      documentGroupsByKey: new Map(),
       assignmentUserIds: new Set([userId]),
     };
 
@@ -182,6 +198,12 @@ describe('UserAssignmentCdmEntity — tag wiring', () => {
           { tagId: tagB, name: 'Beta', color: '#000', isPrimary: false, metadata: {} },
         ]),
         getProjectCdmProvisionedUsers: vi.fn().mockResolvedValue([]),
+        getProjectLinkedPermissionsForExport: vi.fn().mockResolvedValue([]),
+        getProjectUserDirectPermissions: vi.fn().mockResolvedValue([]),
+        getProjectUserDirectGroups: vi.fn().mockResolvedValue([]),
+        getGroupsByIds: vi.fn().mockResolvedValue([]),
+        getGroupPermissionIdsByGroupIds: vi.fn().mockResolvedValue([]),
+        getGroupTagsByGroupIds: vi.fn().mockResolvedValue([]),
       },
     });
 
@@ -214,6 +236,12 @@ describe('UserAssignmentCdmEntity — tag wiring', () => {
           ]),
         getProjectTagDefinitions: vi.fn().mockResolvedValue([]),
         getProjectCdmProvisionedUsers: vi.fn().mockResolvedValue([]),
+        getProjectLinkedPermissionsForExport: vi.fn().mockResolvedValue([]),
+        getProjectUserDirectPermissions: vi.fn().mockResolvedValue([]),
+        getProjectUserDirectGroups: vi.fn().mockResolvedValue([]),
+        getGroupsByIds: vi.fn().mockResolvedValue([]),
+        getGroupPermissionIdsByGroupIds: vi.fn().mockResolvedValue([]),
+        getGroupTagsByGroupIds: vi.fn().mockResolvedValue([]),
       },
     });
 

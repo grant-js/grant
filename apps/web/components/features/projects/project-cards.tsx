@@ -4,9 +4,10 @@ import { useTranslations } from 'next-intl';
 import { Project } from '@grantjs/schema';
 import { FolderOpen, Tags } from 'lucide-react';
 
-import { CardBody, CardGrid, ScrollBadges } from '@/components/common';
+import { CardBody, CardGrid } from '@/components/common';
+import { Badge } from '@/components/ui/badge';
 import { useProjectTags } from '@/hooks/common';
-import { transformTagsToBadges } from '@/lib/tag';
+import { getEntityTagCount } from '@/lib/entity-list';
 import { useProjectsStore } from '@/stores/projects.store';
 
 import { ProjectAudit } from './project-audit';
@@ -17,6 +18,7 @@ import { ProjectNavigationButton } from './project-navigation-button';
 
 export function ProjectCards() {
   const t = useTranslations('projects');
+  const tCommon = useTranslations('common');
   const getProjectTags = useProjectTags();
 
   const limit = useProjectsStore((state) => state.limit);
@@ -50,14 +52,14 @@ export function ProjectCards() {
             {
               label: {
                 icon: <Tags className="h-3 w-3" />,
-                text: t('form.tags'),
+                text: t('table.tags'),
               },
               value: (
-                <ScrollBadges
-                  items={transformTagsToBadges(getProjectTags(project))}
-                  height={60}
-                  showAsRound={true}
-                />
+                <Badge variant="secondary">
+                  {tCommon('tagCount', {
+                    count: getEntityTagCount({ tags: getProjectTags(project) }),
+                  })}
+                </Badge>
               ),
             },
           ]}

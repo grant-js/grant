@@ -3,8 +3,10 @@
  * Implementations (Drizzle-based) live in apps/api.
  */
 import type {
+  AddUserGroupInput,
   AddUserRoleInput,
   AddUserTagInput,
+  AssignUserPermissionInput,
   CreateUserAuthenticationMethodInput,
   CreateUserInput,
   CreateUserSessionInput,
@@ -13,18 +15,24 @@ import type {
   GetUserAuthenticationMethodsInput,
   GetUserSessionsInput,
   MutationDeleteUserArgs,
+  QueryUserGroupsInput,
+  QueryUserPermissionsInput,
   QueryUserRolesInput,
   QueryUsersArgs,
   QueryUserTagsInput,
+  RemoveUserGroupInput,
   RemoveUserRoleInput,
   RemoveUserTagInput,
+  RevokeUserPermissionInput,
   UpdateUserAuthenticationMethodInput,
   UpdateUserInput,
   UpdateUserSessionInput,
   UpdateUserTagInput,
   User,
   UserAuthenticationMethod,
+  UserGroup,
   UserPage,
+  UserPermission,
   UserRole,
   UserSession,
   UserSessionPage,
@@ -71,9 +79,38 @@ export interface IUserRepository {
 
 export interface IUserRoleRepository {
   getUserRoles(params: QueryUserRolesInput, transaction?: unknown): Promise<UserRole[]>;
+  countUserRoles(params: { userId: string }, transaction?: unknown): Promise<number>;
   addUserRole(params: AddUserRoleInput, transaction?: unknown): Promise<UserRole>;
   softDeleteUserRole(params: RemoveUserRoleInput, transaction?: unknown): Promise<UserRole>;
   hardDeleteUserRole(params: RemoveUserRoleInput, transaction?: unknown): Promise<UserRole>;
+}
+
+export interface IUserGroupRepository {
+  getUserGroups(params: QueryUserGroupsInput, transaction?: unknown): Promise<UserGroup[]>;
+  countUserGroups(params: { userId: string }, transaction?: unknown): Promise<number>;
+  addUserGroup(params: AddUserGroupInput, transaction?: unknown): Promise<UserGroup>;
+  softDeleteUserGroup(params: RemoveUserGroupInput, transaction?: unknown): Promise<UserGroup>;
+  hardDeleteUserGroup(params: RemoveUserGroupInput, transaction?: unknown): Promise<UserGroup>;
+}
+
+export interface IUserPermissionRepository {
+  getUserPermissions(
+    params: QueryUserPermissionsInput,
+    transaction?: unknown
+  ): Promise<UserPermission[]>;
+  countUserPermissions(params: { userId: string }, transaction?: unknown): Promise<number>;
+  addUserPermission(
+    params: AssignUserPermissionInput,
+    transaction?: unknown
+  ): Promise<UserPermission>;
+  softDeleteUserPermission(
+    params: RevokeUserPermissionInput,
+    transaction?: unknown
+  ): Promise<UserPermission>;
+  hardDeleteUserPermission(
+    params: RevokeUserPermissionInput,
+    transaction?: unknown
+  ): Promise<UserPermission>;
 }
 
 export interface IUserTagRepository {

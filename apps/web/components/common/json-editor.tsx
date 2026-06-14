@@ -23,6 +23,7 @@ export function JsonEditor({
   disabled = false,
   className = '',
   error,
+  height,
 }: JsonEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<ReturnType<typeof createJSONEditor> | null>(null);
@@ -212,16 +213,23 @@ export function JsonEditor({
     editorRef.current.updateProps(getBaseProps(contentChanged ? { content } : undefined));
   }, [value, disabled, getBaseProps]);
 
+  const heightValue =
+    height == null ? undefined : typeof height === 'number' ? `${height}px` : height;
+  const usesFixedHeight = heightValue != null;
+
   return (
     <div className={cn('relative', className)}>
       <div
         className={cn(
           'rounded-md border overflow-hidden',
           error ? 'border-destructive' : 'border-input',
-          disabled && 'opacity-50 cursor-not-allowed'
+          disabled && 'opacity-50 cursor-not-allowed',
+          usesFixedHeight &&
+            '[&_.jse-main]:flex [&_.jse-main]:h-full [&_.jse-main]:min-h-0 [&_.jse-main]:flex-col [&_.jse-text]:min-h-0 [&_.jse-text]:flex-1 [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto'
         )}
+        style={usesFixedHeight ? { height: heightValue } : undefined}
       >
-        <div ref={containerRef} />
+        <div ref={containerRef} className={usesFixedHeight ? 'h-full min-h-0' : undefined} />
       </div>
     </div>
   );

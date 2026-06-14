@@ -90,6 +90,13 @@ export const createRoleRequestSchema = z.object({
       description: 'Array of group IDs to assign to the role',
       example: ['123e4567-e89b-12d3-a456-426614174002'],
     }),
+  permissionIds: z
+    .array(z.string())
+    .optional()
+    .openapi({
+      description: 'Array of permission IDs to assign directly to the role',
+      example: ['123e4567-e89b-12d3-a456-426614174003'],
+    }),
   primaryTagId: z.string().optional().openapi({
     description: 'Primary tag ID for the role',
     example: '123e4567-e89b-12d3-a456-426614174001',

@@ -7,7 +7,7 @@ Core authorization engine for the Grant. This package provides the internal auth
 `grant-core` is the internal authorization engine that:
 
 - Parses and validates JWT tokens
-- Queries user permissions following the cascade: User → Role → Group → Permission → Resource
+- Queries user permissions by unioning: Role → Group → Permission, User → Group → Permission, Role → Permission, and User → Permission
 - Evaluates permission conditions with support for async resource resolution
 - Provides a unified `Grant` class that orchestrates all components
 

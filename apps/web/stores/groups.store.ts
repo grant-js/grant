@@ -12,6 +12,7 @@ interface GroupsState {
   sort: { field: GroupSortableField; order: SortOrder };
   view: GroupView;
   selectedTagIds: string[];
+  hideSyntheticEntities: boolean;
   totalCount: number;
   isInitialized: boolean;
 
@@ -25,7 +26,9 @@ interface GroupsState {
   // Dialog state
   groupToDelete: Group | null;
   groupToEdit: Group | null;
-  isCreateDialogOpen: boolean;
+
+  // Current group (for breadcrumb)
+  currentGroup: Group | null;
 
   // Actions
   setPage: (page: number) => void;
@@ -34,6 +37,7 @@ interface GroupsState {
   setSort: (field: GroupSortableField, order: SortOrder) => void;
   setView: (view: GroupView) => void;
   setSelectedTagIds: (tagIds: string[]) => void;
+  setHideSyntheticEntities: (hide: boolean) => void;
   setTotalCount: (count: number) => void;
   setGroups: (groups: Group[]) => void;
   setLoading: (loading: boolean) => void;
@@ -44,7 +48,7 @@ interface GroupsState {
   // Dialog actions
   setGroupToDelete: (group: Group | null) => void;
   setGroupToEdit: (group: Group | null) => void;
-  setCreateDialogOpen: (open: boolean) => void;
+  setCurrentGroup: (group: Group | null) => void;
 }
 
 const defaultSort = { field: GroupSortableField.Name, order: SortOrder.Asc };
@@ -59,6 +63,7 @@ export const useGroupsStore = create<GroupsState>()(
       sort: defaultSort,
       view: GroupView.CARDS,
       selectedTagIds: [],
+      hideSyntheticEntities: true,
       totalCount: 0,
       isInitialized: false,
 
@@ -72,7 +77,7 @@ export const useGroupsStore = create<GroupsState>()(
       // Dialog state
       groupToDelete: null,
       groupToEdit: null,
-      isCreateDialogOpen: false,
+      currentGroup: null,
 
       // Actions
       setPage: (page) => set({ page }),
@@ -81,6 +86,7 @@ export const useGroupsStore = create<GroupsState>()(
       setSort: (field, order) => set({ sort: { field, order }, page: 1 }),
       setView: (view) => set({ view }),
       setSelectedTagIds: (tagIds) => set({ selectedTagIds: tagIds, page: 1 }),
+      setHideSyntheticEntities: (hideSyntheticEntities) => set({ hideSyntheticEntities }),
       setTotalCount: (totalCount) => set({ totalCount }),
       setGroups: (groups) => set({ groups }),
       setLoading: (loading) => set({ loading }),
@@ -100,7 +106,7 @@ export const useGroupsStore = create<GroupsState>()(
           refetch: null,
           groupToDelete: null,
           groupToEdit: null,
-          isCreateDialogOpen: false,
+          currentGroup: null,
         }),
       initializeFromUrl: (params) => {
         const currentState = get();
@@ -132,7 +138,7 @@ export const useGroupsStore = create<GroupsState>()(
       // Dialog actions
       setGroupToDelete: (group) => set({ groupToDelete: group }),
       setGroupToEdit: (group) => set({ groupToEdit: group }),
-      setCreateDialogOpen: (open) => set({ isCreateDialogOpen: open }),
+      setCurrentGroup: (group) => set({ currentGroup: group }),
     }),
     { name: 'grant-groups-store' }
   )

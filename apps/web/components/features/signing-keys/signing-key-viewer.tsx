@@ -15,7 +15,6 @@ import {
   type DataTableColumnConfig,
   type TableSkeletonColumnConfig,
 } from '@/components/common';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useScopeFromParams } from '@/hooks/common';
 import { useSigningKeys } from '@/hooks/signing-keys';
@@ -110,17 +109,23 @@ export function SigningKeyViewer({ scope: scopeProp }: SigningKeyViewerProps) {
     {
       key: 'kid',
       header: t('kid'),
-      width: '180px',
-      render: (row: SigningKeyRow) => <span className="font-mono text-sm">{row.kid}</span>,
+      width: '240px',
+      columnWidthMode: 'min',
+      className: 'min-w-0',
+      render: (row: SigningKeyRow) => (
+        <span className="block font-mono text-sm break-all">{row.kid}</span>
+      ),
     },
     {
       key: 'active',
       header: t('active'),
       width: '100px',
       render: (row: SigningKeyRow) => (
-        <Badge variant={row.active ? 'default' : 'secondary'}>
+        <span
+          className={`text-sm ${row.active ? 'text-green-600 dark:text-green-500' : 'text-destructive'}`}
+        >
           {row.active ? t('activeYes') : t('activeNo')}
-        </Badge>
+        </span>
       ),
     },
     {
@@ -153,7 +158,7 @@ export function SigningKeyViewer({ scope: scopeProp }: SigningKeyViewerProps) {
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount: number } = {
     columns: [
       { key: 'icon', type: 'text' },
-      { key: 'kid', type: 'text' },
+      { key: 'kid', type: 'text', width: '240px', columnWidthMode: 'min', className: 'min-w-0' },
       { key: 'active', type: 'text' },
       { key: 'rotatedAt', type: 'text' },
       { key: 'publicKeyPem', type: 'text' },

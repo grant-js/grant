@@ -8,6 +8,8 @@ interface UserRoleSearchProps {
   show?: boolean;
   /** When true, render as icon+popover only (no full-width bar). */
   forceCompact?: boolean;
+  /** When true, expand to fill remaining toolbar width. */
+  grow?: boolean;
 }
 
 export function UserRoleSearch({
@@ -15,6 +17,7 @@ export function UserRoleSearch({
   onSearchChange,
   show = true,
   forceCompact = false,
+  grow = false,
 }: UserRoleSearchProps) {
   const t = useTranslations('user.roles');
 
@@ -28,6 +31,7 @@ export function UserRoleSearch({
       onSearchChange={onSearchChange}
       placeholder={t('search.placeholder')}
       forceCompact={forceCompact}
+      grow={grow}
     />
   );
 }

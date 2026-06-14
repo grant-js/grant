@@ -1,0 +1,10 @@
+type RolePermission implements Auditable {
+  id: ID!
+  roleId: ID!
+  permissionId: ID!
+  role(scope: Scope!): Role
+  permission(scope: Scope!): Permission
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}

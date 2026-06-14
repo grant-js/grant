@@ -49,6 +49,7 @@ function buildProduced() {
     resourceIds: new Map<string, string>(),
     permissionIds: new Map<string, string>(),
     userIds: new Map<string, string>(),
+    groupIdsByKey: new Map<string, string>(),
   };
 }
 
@@ -179,6 +180,7 @@ describe('ResourceCdmEntity', () => {
       lookupResolvedRef: () => ({}),
       result,
       produced,
+      documentGroupsByKey: new Map(),
       assignmentUserIds: new Set<string>(),
     };
 
@@ -300,7 +302,7 @@ describe('ResourceCdmEntity', () => {
     const getResourceById = vi.fn().mockResolvedValue({ id: existingId, slug: 'documents' });
     const addProjectResource = vi.fn().mockResolvedValue(undefined);
     const createResource = vi.fn();
-    const { handler, projectResources } = buildHandler({
+    const { handler } = buildHandler({
       resources: { createResource, getResourceById },
       projectResources: { addProjectResource },
     });
@@ -314,6 +316,7 @@ describe('ResourceCdmEntity', () => {
       lookupResolvedRef: () => ({}),
       result,
       produced,
+      documentGroupsByKey: new Map(),
       assignmentUserIds: new Set<string>(),
     };
 
@@ -347,7 +350,7 @@ describe('ResourceCdmEntity', () => {
     const reviveCdmResourceAndProjectLinkForProject = vi.fn().mockResolvedValue(true);
     const addProjectResource = vi.fn().mockResolvedValue(undefined);
     const createResource = vi.fn();
-    const { handler, projectResources } = buildHandler({
+    const { handler } = buildHandler({
       importRepo: {
         listCdmResourceIdsForProject: vi.fn().mockResolvedValue([]),
         bulkSoftDeleteCdmResources: vi.fn().mockResolvedValue(undefined),
@@ -366,6 +369,7 @@ describe('ResourceCdmEntity', () => {
       lookupResolvedRef: () => ({}),
       result,
       produced,
+      documentGroupsByKey: new Map(),
       assignmentUserIds: new Set<string>(),
     };
 
@@ -416,6 +420,7 @@ describe('ResourceCdmEntity', () => {
       lookupResolvedRef: () => ({}),
       result,
       produced,
+      documentGroupsByKey: new Map(),
       assignmentUserIds: new Set<string>(),
     };
 

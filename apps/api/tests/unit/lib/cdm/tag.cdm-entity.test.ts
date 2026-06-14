@@ -153,6 +153,7 @@ describe('TagCdmEntity', () => {
       resourceIds: new Map<string, string>(),
       permissionIds: new Map<string, string>(),
       userIds: new Map<string, string>(),
+      groupIdsByKey: new Map<string, string>(),
     };
     const ctx: CdmApplyContext = {
       projectId,
@@ -161,6 +162,7 @@ describe('TagCdmEntity', () => {
       lookupResolvedRef: () => ({}),
       result,
       produced,
+      documentGroupsByKey: new Map(),
       assignmentUserIds: new Set<string>(),
     };
 

@@ -129,7 +129,7 @@ describe('ProjectUserApiKeyCdmEntity', () => {
     ];
     const listCdmProjectUserApiKeyIdsForProject = vi.fn().mockResolvedValue(apiKeyIds);
     const deleteApiKey = vi.fn().mockResolvedValue(undefined);
-    const { handler, apiKeys } = buildHandler({
+    const { handler } = buildHandler({
       importRepo: { listCdmProjectUserApiKeyIdsForProject },
       apiKeys: {
         createApiKeyForCdmImport: vi.fn(),
@@ -159,7 +159,9 @@ describe('ProjectUserApiKeyCdmEntity', () => {
         resourceIds: new Map(),
         permissionIds: new Map(),
         userIds: new Map(),
+        groupIdsByKey: new Map(),
       },
+      documentGroupsByKey: new Map(),
       assignmentUserIds: new Set<string>(),
     };
 
@@ -177,7 +179,7 @@ describe('ProjectUserApiKeyCdmEntity', () => {
     const createdKey = { id: '50000000-0000-4000-8000-000000000077', clientId: 'cid-1' };
     const createApiKeyForCdmImport = vi.fn().mockResolvedValue(createdKey);
     const addProjectUserApiKey = vi.fn().mockResolvedValue(undefined);
-    const { handler, projectUserApiKeys } = buildHandler({
+    const { handler } = buildHandler({
       apiKeys: {
         createApiKeyForCdmImport,
         deleteApiKey: vi.fn(),
@@ -198,7 +200,9 @@ describe('ProjectUserApiKeyCdmEntity', () => {
         resourceIds: new Map(),
         permissionIds: new Map(),
         userIds: new Map(),
+        groupIdsByKey: new Map(),
       },
+      documentGroupsByKey: new Map(),
       assignmentUserIds: new Set([userId]),
     };
 

@@ -5,15 +5,23 @@ import {
   groupTags,
   permissions,
   permissionTags,
+  projectApps,
+  projectAppTags,
   projectPermissions,
   projectResources,
+  projectRolePermissions,
   projectTags,
   projectUserApiKeys,
+  projectUserGroups,
+  projectUserPermissions,
   resources,
   resourceTags,
+  rolePermissions,
   roles,
   roleTags,
   tags,
+  userGroups,
+  userPermissions,
   userRoles,
   userTags,
 } from '@grantjs/database';
@@ -30,6 +38,96 @@ export type ResolvedCdmPermission = {
 /** Read-side helpers for CDM import (resolve refs, find prior import entities). */
 export class ProjectImportRepository {
   constructor(private readonly db: DbSchema) {}
+
+  /** Monotonic microsecond offset so repeated stagger batches in one transaction avoid `deleted_at` unique collisions (`NOW()` is transaction-stable). */
+  private staggerSoftDeleteBaseMicros = 0;
+
+  /** Call at the start of each CDM replace teardown before pivot soft-deletes run. */
+  public resetStaggerSoftDeleteEpoch(): void {
+    this.staggerSoftDeleteBaseMicros = 0;
+  }
+
+  /**
+   * Pivot tables use a UNIQUE index on `deleted_at`; batch updates with one
+   * timestamp violate it. Stagger by microsecond per row within a single statement,
+   * using one `clock_timestamp()` snapshot as the batch base (per-row calls can
+   * collide on the unique index), and advance a monotonic base offset across
+   * multiple batches in the same import.
+   */
+  private async softDeleteRowsByIdWithStaggeredDeletedAt(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shared helper for pivot tables with identical id/deletedAt shape
+    table: any,
+    rowIds: readonly string[],
+    transaction?: Transaction
+  ): Promise<void> {
+    if (rowIds.length === 0) return;
+    const db = transaction ?? this.db;
+    const baseOffsetMicros = this.staggerSoftDeleteBaseMicros;
+    this.staggerSoftDeleteBaseMicros += rowIds.length;
+
+    if (rowIds.length === 1) {
+      await db.execute(sql`
+        UPDATE ${table} AS t
+        SET
+          deleted_at = batch.ts + ${baseOffsetMicros} * INTERVAL '1 microsecond',
+          updated_at = batch.ts + ${baseOffsetMicros} * INTERVAL '1 microsecond'
+        FROM (SELECT clock_timestamp() AS ts) batch
+        WHERE t.id = ${rowIds[0]}
+          AND t.deleted_at IS NULL
+      `);
+      return;
+    }
+
+    await db.execute(sql`
+      UPDATE ${table} AS t
+      SET
+        deleted_at = batch.ts + (${baseOffsetMicros} + ordered.rn - 1) * INTERVAL '1 microsecond',
+        updated_at = batch.ts + (${baseOffsetMicros} + ordered.rn - 1) * INTERVAL '1 microsecond'
+      FROM (
+        SELECT id, ROW_NUMBER() OVER (ORDER BY id) AS rn
+        FROM ${table}
+        WHERE id IN (${sql.join(
+          rowIds.map((id) => sql`${id}`),
+          sql`, `
+        )})
+          AND deleted_at IS NULL
+      ) ordered
+      CROSS JOIN (SELECT clock_timestamp() AS ts) batch
+      WHERE t.id = ordered.id
+    `);
+  }
+
+  private async selectLiveRowIds(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shared helper for pivot tables with identical id/deletedAt shape
+    table: any,
+    where: ReturnType<typeof and>,
+    transaction?: Transaction
+  ): Promise<string[]> {
+    const db = transaction ?? this.db;
+    const rows = await db.select({ id: table.id }).from(table).where(where);
+    return rows.map((r) => r.id);
+  }
+
+  private async selectLiveProjectAppTagRowIdsForProject(
+    tagIds: string[],
+    projectId: string,
+    transaction?: Transaction
+  ): Promise<string[]> {
+    const db = transaction ?? this.db;
+    const rows = await db
+      .select({ id: projectAppTags.id })
+      .from(projectAppTags)
+      .innerJoin(projectApps, eq(projectAppTags.projectAppId, projectApps.id))
+      .where(
+        and(
+          inArray(projectAppTags.tagId, tagIds),
+          isNull(projectAppTags.deletedAt),
+          eq(projectApps.projectId, projectId),
+          isNull(projectApps.deletedAt)
+        )
+      );
+    return rows.map((r) => r.id);
+  }
 
   public listCdmRoleIdsForProject(projectId: string, transaction?: Transaction): Promise<string[]> {
     const db = transaction ?? this.db;
@@ -214,7 +312,8 @@ export class ProjectImportRepository {
    * fires on hard delete) so subsequent reads immediately reflect the teardown.
    *
    * Touches: `project_tags` (this project only), `role_tags`, `group_tags`,
-   * `user_tags` referencing the given tag ids, and the `tags` rows themselves.
+   * `user_tags`, `project_app_tags` (this project's apps only), `permission_tags`,
+   * `resource_tags` referencing the given tag ids, and the `tags` rows themselves.
    */
   public async bulkSoftDeleteCdmTags(
     tagIds: string[],
@@ -225,31 +324,70 @@ export class ProjectImportRepository {
     const db = transaction ?? this.db;
     const now = new Date();
 
-    await db
-      .update(projectTags)
-      .set({ deletedAt: now, updatedAt: now })
-      .where(
-        and(
-          eq(projectTags.projectId, projectId),
-          inArray(projectTags.tagId, tagIds),
-          isNull(projectTags.deletedAt)
-        )
-      );
+    const projectTagRowIds = await this.selectLiveRowIds(
+      projectTags,
+      and(
+        eq(projectTags.projectId, projectId),
+        inArray(projectTags.tagId, tagIds),
+        isNull(projectTags.deletedAt)
+      ),
+      transaction
+    );
+    await this.softDeleteRowsByIdWithStaggeredDeletedAt(projectTags, projectTagRowIds, transaction);
 
-    await db
-      .update(roleTags)
-      .set({ deletedAt: now, updatedAt: now })
-      .where(and(inArray(roleTags.tagId, tagIds), isNull(roleTags.deletedAt)));
+    const roleTagRowIds = await this.selectLiveRowIds(
+      roleTags,
+      and(inArray(roleTags.tagId, tagIds), isNull(roleTags.deletedAt)),
+      transaction
+    );
+    await this.softDeleteRowsByIdWithStaggeredDeletedAt(roleTags, roleTagRowIds, transaction);
 
-    await db
-      .update(groupTags)
-      .set({ deletedAt: now, updatedAt: now })
-      .where(and(inArray(groupTags.tagId, tagIds), isNull(groupTags.deletedAt)));
+    const groupTagRowIds = await this.selectLiveRowIds(
+      groupTags,
+      and(inArray(groupTags.tagId, tagIds), isNull(groupTags.deletedAt)),
+      transaction
+    );
+    await this.softDeleteRowsByIdWithStaggeredDeletedAt(groupTags, groupTagRowIds, transaction);
 
-    await db
-      .update(userTags)
-      .set({ deletedAt: now, updatedAt: now })
-      .where(and(inArray(userTags.tagId, tagIds), isNull(userTags.deletedAt)));
+    const userTagRowIds = await this.selectLiveRowIds(
+      userTags,
+      and(inArray(userTags.tagId, tagIds), isNull(userTags.deletedAt)),
+      transaction
+    );
+    await this.softDeleteRowsByIdWithStaggeredDeletedAt(userTags, userTagRowIds, transaction);
+
+    const projectAppTagRowIds = await this.selectLiveProjectAppTagRowIdsForProject(
+      tagIds,
+      projectId,
+      transaction
+    );
+    await this.softDeleteRowsByIdWithStaggeredDeletedAt(
+      projectAppTags,
+      projectAppTagRowIds,
+      transaction
+    );
+
+    const permissionTagByTagRowIds = await this.selectLiveRowIds(
+      permissionTags,
+      and(inArray(permissionTags.tagId, tagIds), isNull(permissionTags.deletedAt)),
+      transaction
+    );
+    await this.softDeleteRowsByIdWithStaggeredDeletedAt(
+      permissionTags,
+      permissionTagByTagRowIds,
+      transaction
+    );
+
+    const resourceTagByTagRowIds = await this.selectLiveRowIds(
+      resourceTags,
+      and(inArray(resourceTags.tagId, tagIds), isNull(resourceTags.deletedAt)),
+      transaction
+    );
+    await this.softDeleteRowsByIdWithStaggeredDeletedAt(
+      resourceTags,
+      resourceTagByTagRowIds,
+      transaction
+    );
 
     await db
       .update(tags)
@@ -319,21 +457,31 @@ export class ProjectImportRepository {
     const db = transaction ?? this.db;
     const now = new Date();
 
-    await db
-      .update(projectResources)
-      .set({ deletedAt: now, updatedAt: now })
-      .where(
-        and(
-          eq(projectResources.projectId, projectId),
-          inArray(projectResources.resourceId, resourceIds),
-          isNull(projectResources.deletedAt)
-        )
-      );
+    const projectResourceRowIds = await this.selectLiveRowIds(
+      projectResources,
+      and(
+        eq(projectResources.projectId, projectId),
+        inArray(projectResources.resourceId, resourceIds),
+        isNull(projectResources.deletedAt)
+      ),
+      transaction
+    );
+    await this.softDeleteRowsByIdWithStaggeredDeletedAt(
+      projectResources,
+      projectResourceRowIds,
+      transaction
+    );
 
-    await db
-      .update(resourceTags)
-      .set({ deletedAt: now, updatedAt: now })
-      .where(and(inArray(resourceTags.resourceId, resourceIds), isNull(resourceTags.deletedAt)));
+    const resourceTagRowIds = await this.selectLiveRowIds(
+      resourceTags,
+      and(inArray(resourceTags.resourceId, resourceIds), isNull(resourceTags.deletedAt)),
+      transaction
+    );
+    await this.softDeleteRowsByIdWithStaggeredDeletedAt(
+      resourceTags,
+      resourceTagRowIds,
+      transaction
+    );
 
     await db
       .update(resources)
@@ -433,9 +581,10 @@ export class ProjectImportRepository {
   /**
    * Soft-delete CDM-marked permission rows together with their pivot memberships.
    *
-   * Touches: `project_permissions` (this project only), `group_permissions`
-   * and `permission_tags` referencing the given permission ids, and the
-   * `permissions` rows themselves.
+   * Touches: `project_permissions` (this project only), `group_permissions`,
+   * `permission_tags`, `role_permissions`, `user_permissions`,
+   * `project_user_permissions`, `project_role_permissions` referencing the given
+   * permission ids, and the `permissions` rows themselves.
    */
   public async bulkSoftDeleteCdmPermissions(
     permissionIds: string[],
@@ -446,37 +595,173 @@ export class ProjectImportRepository {
     const db = transaction ?? this.db;
     const now = new Date();
 
-    await db
-      .update(projectPermissions)
-      .set({ deletedAt: now, updatedAt: now })
-      .where(
-        and(
-          eq(projectPermissions.projectId, projectId),
-          inArray(projectPermissions.permissionId, permissionIds),
-          isNull(projectPermissions.deletedAt)
-        )
-      );
+    const projectPermissionRowIds = await this.selectLiveRowIds(
+      projectPermissions,
+      and(
+        eq(projectPermissions.projectId, projectId),
+        inArray(projectPermissions.permissionId, permissionIds),
+        isNull(projectPermissions.deletedAt)
+      ),
+      transaction
+    );
+    await this.softDeleteRowsByIdWithStaggeredDeletedAt(
+      projectPermissions,
+      projectPermissionRowIds,
+      transaction
+    );
 
-    await db
-      .update(groupPermissions)
-      .set({ deletedAt: now, updatedAt: now })
-      .where(
-        and(
-          inArray(groupPermissions.permissionId, permissionIds),
-          isNull(groupPermissions.deletedAt)
-        )
-      );
+    const groupPermissionRowIds = await this.selectLiveRowIds(
+      groupPermissions,
+      and(
+        inArray(groupPermissions.permissionId, permissionIds),
+        isNull(groupPermissions.deletedAt)
+      ),
+      transaction
+    );
+    await this.softDeleteRowsByIdWithStaggeredDeletedAt(
+      groupPermissions,
+      groupPermissionRowIds,
+      transaction
+    );
 
-    await db
-      .update(permissionTags)
-      .set({ deletedAt: now, updatedAt: now })
-      .where(
-        and(inArray(permissionTags.permissionId, permissionIds), isNull(permissionTags.deletedAt))
-      );
+    const permissionTagRowIds = await this.selectLiveRowIds(
+      permissionTags,
+      and(inArray(permissionTags.permissionId, permissionIds), isNull(permissionTags.deletedAt)),
+      transaction
+    );
+    await this.softDeleteRowsByIdWithStaggeredDeletedAt(
+      permissionTags,
+      permissionTagRowIds,
+      transaction
+    );
+
+    const rolePermissionRowIds = await this.selectLiveRowIds(
+      rolePermissions,
+      and(inArray(rolePermissions.permissionId, permissionIds), isNull(rolePermissions.deletedAt)),
+      transaction
+    );
+    await this.softDeleteRowsByIdWithStaggeredDeletedAt(
+      rolePermissions,
+      rolePermissionRowIds,
+      transaction
+    );
+
+    const userPermissionRowIds = await this.selectLiveRowIds(
+      userPermissions,
+      and(inArray(userPermissions.permissionId, permissionIds), isNull(userPermissions.deletedAt)),
+      transaction
+    );
+    await this.softDeleteRowsByIdWithStaggeredDeletedAt(
+      userPermissions,
+      userPermissionRowIds,
+      transaction
+    );
+
+    const projectUserPermissionRowIds = await this.selectLiveRowIds(
+      projectUserPermissions,
+      and(
+        eq(projectUserPermissions.projectId, projectId),
+        inArray(projectUserPermissions.permissionId, permissionIds),
+        isNull(projectUserPermissions.deletedAt)
+      ),
+      transaction
+    );
+    await this.softDeleteRowsByIdWithStaggeredDeletedAt(
+      projectUserPermissions,
+      projectUserPermissionRowIds,
+      transaction
+    );
+
+    const projectRolePermissionRowIds = await this.selectLiveRowIds(
+      projectRolePermissions,
+      and(
+        eq(projectRolePermissions.projectId, projectId),
+        inArray(projectRolePermissions.permissionId, permissionIds),
+        isNull(projectRolePermissions.deletedAt)
+      ),
+      transaction
+    );
+    await this.softDeleteRowsByIdWithStaggeredDeletedAt(
+      projectRolePermissions,
+      projectRolePermissionRowIds,
+      transaction
+    );
 
     await db
       .update(permissions)
       .set({ deletedAt: now, updatedAt: now })
       .where(and(inArray(permissions.id, permissionIds), isNull(permissions.deletedAt)));
+  }
+
+  /**
+   * Soft-delete assignment pivots referencing the given role ids before the
+   * role rows themselves are tombstoned during CDM replace teardown.
+   */
+  public async bulkSoftDeletePivotsForRoles(
+    roleIds: string[],
+    projectId: string,
+    transaction?: Transaction
+  ): Promise<void> {
+    if (roleIds.length === 0) return;
+
+    const rolePermissionRowIds = await this.selectLiveRowIds(
+      rolePermissions,
+      and(inArray(rolePermissions.roleId, roleIds), isNull(rolePermissions.deletedAt)),
+      transaction
+    );
+    await this.softDeleteRowsByIdWithStaggeredDeletedAt(
+      rolePermissions,
+      rolePermissionRowIds,
+      transaction
+    );
+
+    const projectRolePermissionRowIds = await this.selectLiveRowIds(
+      projectRolePermissions,
+      and(
+        eq(projectRolePermissions.projectId, projectId),
+        inArray(projectRolePermissions.roleId, roleIds),
+        isNull(projectRolePermissions.deletedAt)
+      ),
+      transaction
+    );
+    await this.softDeleteRowsByIdWithStaggeredDeletedAt(
+      projectRolePermissions,
+      projectRolePermissionRowIds,
+      transaction
+    );
+  }
+
+  /**
+   * Soft-delete assignment pivots referencing the given group ids before the
+   * group rows themselves are tombstoned during CDM replace teardown.
+   */
+  public async bulkSoftDeletePivotsForGroups(
+    groupIds: string[],
+    projectId: string,
+    transaction?: Transaction
+  ): Promise<void> {
+    if (groupIds.length === 0) return;
+
+    const userGroupRowIds = await this.selectLiveRowIds(
+      userGroups,
+      and(inArray(userGroups.groupId, groupIds), isNull(userGroups.deletedAt)),
+      transaction
+    );
+    await this.softDeleteRowsByIdWithStaggeredDeletedAt(userGroups, userGroupRowIds, transaction);
+
+    const projectUserGroupRowIds = await this.selectLiveRowIds(
+      projectUserGroups,
+      and(
+        eq(projectUserGroups.projectId, projectId),
+        inArray(projectUserGroups.groupId, groupIds),
+        isNull(projectUserGroups.deletedAt)
+      ),
+      transaction
+    );
+    await this.softDeleteRowsByIdWithStaggeredDeletedAt(
+      projectUserGroups,
+      projectUserGroupRowIds,
+      transaction
+    );
   }
 }

@@ -1,3 +1,10 @@
+"""
+Check whether the authenticated principal may perform an action on a resource.
+
+Unions Role → Group → Permission, User → Group → Permission, Role → Permission,
+and User → Permission before matching the requested resource and action.
+Conditional permissions are evaluated against role/group/user execution context.
+"""
 input IsAuthorizedInput {
   permission: IsAuthorizedPermissionInput!
   context: IsAuthorizedContextInput!

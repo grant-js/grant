@@ -44,4 +44,22 @@ export interface IGrantRepository {
   getGroupIdsForRoles(roleIds: string[], transaction?: unknown): Promise<string[]>;
 
   getPermissionIdsForGroups(groupIds: string[], transaction?: unknown): Promise<string[]>;
+
+  getDirectPermissionIdsForRoles(
+    roleIds: string[],
+    projectId?: string | null,
+    transaction?: unknown
+  ): Promise<string[]>;
+
+  getDirectPermissionIdsForUser(
+    userId: string,
+    projectId?: string | null,
+    transaction?: unknown
+  ): Promise<string[]>;
+
+  getDirectGroupIdsForUser(
+    userId: string,
+    projectId?: string | null,
+    transaction?: unknown
+  ): Promise<string[]>;
 }

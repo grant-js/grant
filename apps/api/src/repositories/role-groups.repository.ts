@@ -28,6 +28,13 @@ export class RoleGroupRepository
     return this.query(params, transaction);
   }
 
+  public async countRoleGroups(
+    params: { roleId: string },
+    transaction?: Transaction
+  ): Promise<number> {
+    return this.countActive({ roleId: params.roleId }, transaction);
+  }
+
   public async addRoleGroup(
     params: AddRoleGroupInput,
     transaction?: Transaction

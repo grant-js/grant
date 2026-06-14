@@ -16,11 +16,17 @@ import {
   organizationProjects,
   organizationUsers,
   permissions,
+  projectRolePermissions,
   projectRoles,
+  projectUserGroups,
+  projectUserPermissions,
   projectUsers,
   resources,
   roleGroups,
+  rolePermissions,
   roles,
+  userGroups,
+  userPermissions,
   userRoles,
   users,
 } from '@grantjs/database';
@@ -190,12 +196,12 @@ export class GrantRepository implements IGrantRepository {
   ): Promise<ExecutionContextGroup[]> {
     const db = transaction || this.db;
     const roleIds = await this.getUserRoleIdsInScope(userId, scope, transaction, options);
+    const projectId = tryProjectIdFromScope(scope);
 
-    if (roleIds.length === 0) {
-      return [];
-    }
-
-    const groupIds = await this.getGroupIdsForRoles(roleIds, transaction);
+    const roleGroupIds =
+      roleIds.length > 0 ? await this.getGroupIdsForRoles(roleIds, transaction) : [];
+    const directUserGroupIds = await this.getDirectGroupIdsForUser(userId, projectId, transaction);
+    const groupIds = [...new Set([...roleGroupIds, ...directUserGroupIds])];
 
     if (groupIds.length === 0) {
       return [];
@@ -508,5 +514,108 @@ export class GrantRepository implements IGrantRepository {
     return [
       ...new Set(groupPermissionsData.map((gp: { permissionId: string }) => gp.permissionId)),
     ];
+  }
+
+  public async getDirectPermissionIdsForRoles(
+    roleIds: string[],
+    projectId?: string | null,
+    transaction?: Transaction
+  ): Promise<string[]> {
+    if (roleIds.length === 0) {
+      return [];
+    }
+
+    const db = transaction || this.db;
+
+    if (projectId) {
+      const rows = await db
+        .select({ permissionId: rolePermissions.permissionId })
+        .from(rolePermissions)
+        .innerJoin(
+          projectRolePermissions,
+          and(
+            eq(projectRolePermissions.roleId, rolePermissions.roleId),
+            eq(projectRolePermissions.permissionId, rolePermissions.permissionId),
+            eq(projectRolePermissions.projectId, projectId),
+            isNull(projectRolePermissions.deletedAt)
+          )
+        )
+        .where(and(inArray(rolePermissions.roleId, roleIds), isNull(rolePermissions.deletedAt)));
+
+      return [...new Set(rows.map((r: { permissionId: string }) => r.permissionId))];
+    }
+
+    const rows = await db
+      .select({ permissionId: rolePermissions.permissionId })
+      .from(rolePermissions)
+      .where(and(inArray(rolePermissions.roleId, roleIds), isNull(rolePermissions.deletedAt)));
+
+    return [...new Set(rows.map((r: { permissionId: string }) => r.permissionId))];
+  }
+
+  public async getDirectPermissionIdsForUser(
+    userId: string,
+    projectId?: string | null,
+    transaction?: Transaction
+  ): Promise<string[]> {
+    const db = transaction || this.db;
+
+    if (projectId) {
+      const rows = await db
+        .select({ permissionId: userPermissions.permissionId })
+        .from(userPermissions)
+        .innerJoin(
+          projectUserPermissions,
+          and(
+            eq(projectUserPermissions.userId, userPermissions.userId),
+            eq(projectUserPermissions.permissionId, userPermissions.permissionId),
+            eq(projectUserPermissions.projectId, projectId),
+            isNull(projectUserPermissions.deletedAt)
+          )
+        )
+        .where(and(eq(userPermissions.userId, userId), isNull(userPermissions.deletedAt)));
+
+      return [...new Set(rows.map((r: { permissionId: string }) => r.permissionId))];
+    }
+
+    const rows = await db
+      .select({ permissionId: userPermissions.permissionId })
+      .from(userPermissions)
+      .where(and(eq(userPermissions.userId, userId), isNull(userPermissions.deletedAt)));
+
+    return [...new Set(rows.map((r: { permissionId: string }) => r.permissionId))];
+  }
+
+  public async getDirectGroupIdsForUser(
+    userId: string,
+    projectId?: string | null,
+    transaction?: Transaction
+  ): Promise<string[]> {
+    const db = transaction || this.db;
+
+    if (projectId) {
+      const rows = await db
+        .select({ groupId: userGroups.groupId })
+        .from(userGroups)
+        .innerJoin(
+          projectUserGroups,
+          and(
+            eq(projectUserGroups.userId, userGroups.userId),
+            eq(projectUserGroups.groupId, userGroups.groupId),
+            eq(projectUserGroups.projectId, projectId),
+            isNull(projectUserGroups.deletedAt)
+          )
+        )
+        .where(and(eq(userGroups.userId, userId), isNull(userGroups.deletedAt)));
+
+      return [...new Set(rows.map((r: { groupId: string }) => r.groupId))];
+    }
+
+    const rows = await db
+      .select({ groupId: userGroups.groupId })
+      .from(userGroups)
+      .where(and(eq(userGroups.userId, userId), isNull(userGroups.deletedAt)));
+
+    return [...new Set(rows.map((r: { groupId: string }) => r.groupId))];
   }
 }

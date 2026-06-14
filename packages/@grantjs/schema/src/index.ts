@@ -18,8 +18,10 @@ export type {
   ResolversTypes,
   ResolverTypeWrapper,
   ResourceResolvers,
+  RolePermissionResolvers,
   RoleResolvers,
   TagResolvers,
+  UserPermissionResolvers,
   UserResolvers,
 } from './generated/resolvers';
 export * from './generated/schema-types';

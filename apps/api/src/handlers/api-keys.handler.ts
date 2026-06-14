@@ -115,7 +115,7 @@ export class ApiKeysHandler extends CacheHandler {
 
     const rolesResult = await this.roles.getRoles({
       ids: roleIds,
-      limit: roleIds.length,
+      limit: -1,
     });
     const roleById = new Map(rolesResult.roles.map((r) => [r.id, r]));
     const roleIdByApiKeyId = new Map(pivotRows.map((r) => [r.apiKeyId, r.roleId]));

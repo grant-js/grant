@@ -21,7 +21,17 @@ import {
   SyncProjectInput,
   SyncProjectResult,
 } from '@grantjs/schema';
-import { and, asc, count as drizzleCount, desc, eq, ilike, inArray, isNull } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  count as drizzleCount,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  isNull,
+  sql,
+} from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
 
 import { NotFoundError, ValidationError } from '@/lib/errors';
@@ -92,6 +102,45 @@ function normalizeSyncJobResult(raw: unknown): SyncProjectResult | null {
   };
 }
 
+/** Columns loaded for paginated list queries — excludes payload, snapshot, and result blobs. */
+const listJobColumns = {
+  id: projectSyncJobs.id,
+  projectId: projectSyncJobs.projectId,
+  status: projectSyncJobs.status,
+  cdmVersion: projectSyncJobs.cdmVersion,
+  jobName: projectSyncJobs.jobName,
+  operation: projectSyncJobs.operation,
+  modeStrategy: projectSyncJobs.modeStrategy,
+  warnings: projectSyncJobs.warnings,
+  errorMessage: projectSyncJobs.errorMessage,
+  createdAt: projectSyncJobs.createdAt,
+  startedAt: projectSyncJobs.startedAt,
+  completedAt: projectSyncJobs.completedAt,
+  cancelledAt: projectSyncJobs.cancelledAt,
+  hasSnapshot: sql<boolean>`(${projectSyncJobs.snapshot} IS NOT NULL)`.as('has_snapshot'),
+  snapshotTakenAt: projectSyncJobs.snapshotTakenAt,
+  snapshotSizeBytes: projectSyncJobs.snapshotSizeBytes,
+};
+
+type ProjectSyncJobListRow = {
+  id: string;
+  projectId: string;
+  status: string;
+  cdmVersion: number;
+  jobName: string | null;
+  operation: string;
+  modeStrategy: string | null;
+  warnings: unknown;
+  errorMessage: string | null;
+  createdAt: Date;
+  startedAt: Date | null;
+  completedAt: Date | null;
+  cancelledAt: Date | null;
+  hasSnapshot: boolean;
+  snapshotTakenAt: Date | null;
+  snapshotSizeBytes: number | null;
+};
+
 function toEntity(row: ProjectSyncJobModel): ProjectSyncJob {
   const status = STATUS_DB_TO_GQL[row.status] ?? ProjectSyncJobStatus.Pending;
   const operation = OPERATION_DB_TO_GQL[row.operation] ?? ProjectSyncJobOperation.Import;
@@ -111,6 +160,30 @@ function toEntity(row: ProjectSyncJobModel): ProjectSyncJob {
     completedAt: row.completedAt ?? null,
     cancelledAt: row.cancelledAt ?? null,
     hasSnapshot: row.snapshot != null,
+    snapshotTakenAt: row.snapshotTakenAt ?? null,
+    snapshotSizeBytes: row.snapshotSizeBytes ?? null,
+  };
+}
+
+function toListEntity(row: ProjectSyncJobListRow): ProjectSyncJob {
+  const status = STATUS_DB_TO_GQL[row.status] ?? ProjectSyncJobStatus.Pending;
+  const operation = OPERATION_DB_TO_GQL[row.operation] ?? ProjectSyncJobOperation.Import;
+  return {
+    id: row.id,
+    projectId: row.projectId,
+    status,
+    cdmVersion: row.cdmVersion,
+    jobName: row.jobName ?? null,
+    operation,
+    modeStrategy: mapModeStrategyDbToGql(row.modeStrategy ?? null),
+    result: null,
+    warnings: Array.isArray(row.warnings) ? (row.warnings as string[]) : [],
+    errorMessage: row.errorMessage ?? null,
+    enqueuedAt: row.createdAt,
+    startedAt: row.startedAt ?? null,
+    completedAt: row.completedAt ?? null,
+    cancelledAt: row.cancelledAt ?? null,
+    hasSnapshot: row.hasSnapshot,
     snapshotTakenAt: row.snapshotTakenAt ?? null,
     snapshotSizeBytes: row.snapshotSizeBytes ?? null,
   };
@@ -293,7 +366,7 @@ export class ProjectSyncJobRepository implements IProjectSyncJobRepository {
     }
 
     const baseSelect = dbInstance
-      .select()
+      .select(listJobColumns)
       .from(projectSyncJobs)
       .where(whereClause)
       .orderBy(orderBy)
@@ -303,7 +376,7 @@ export class ProjectSyncJobRepository implements IProjectSyncJobRepository {
     const [rows, countResult] = await Promise.all([baseSelect, countQuery]);
 
     return {
-      items: rows.map(toEntity),
+      items: rows.map(toListEntity),
       totalCount: countResult[0]?.value ?? 0,
     };
   }

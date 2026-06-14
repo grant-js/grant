@@ -1,0 +1,10 @@
+type UserGroup implements Auditable {
+  id: ID!
+  userId: ID!
+  groupId: ID!
+  user(scope: Scope!): User
+  group(scope: Scope!): Group
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}

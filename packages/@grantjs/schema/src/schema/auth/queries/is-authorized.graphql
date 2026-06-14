@@ -1,3 +1,6 @@
 extend type Query {
+  """
+  Evaluate authorization for the current session or API key token.
+  """
   isAuthorized(input: IsAuthorizedInput!): AuthorizationResult!
 }

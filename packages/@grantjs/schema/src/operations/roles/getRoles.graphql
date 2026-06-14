@@ -33,6 +33,18 @@ query GetRoles(
           isPrimary
         }
       }
+      rolePermissions {
+        id
+        permissionId
+        permission(scope: $scope) {
+          id
+          name
+          action
+          resource {
+            slug
+          }
+        }
+      }
       tags {
         id
         name

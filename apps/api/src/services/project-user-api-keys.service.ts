@@ -63,6 +63,13 @@ export class ProjectUserApiKeyService implements IProjectUserApiKeyService {
     return existingPivots.some((pivot) => pivot.apiKeyId === apiKeyId);
   }
 
+  public async countProjectUserApiKeys(
+    params: { projectId: string; userId: string },
+    transaction?: Transaction
+  ): Promise<number> {
+    return this.projectUserApiKeyRepository.countProjectUserApiKeys(params, transaction);
+  }
+
   public async getProjectUserApiKeys(
     params: { projectId: string; userId: string },
     transaction?: Transaction

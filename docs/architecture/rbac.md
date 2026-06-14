@@ -70,9 +70,11 @@ Within an organization, four roles: **Owner** (full control), **Admin** (teams a
 
 ## Groups
 
-Groups link **roles** to **permissions** via a **Role + Resource** combination. Naming: `{Resource} {Role}` (e.g. "Organization Owner", "User Dev"). Permissions live in groups; roles get access by being assigned groups.
+Groups link **roles** to **permissions** via a **Role + Resource** combination. Naming: `{Resource} {Role}` (e.g. "Organization Owner", "User Dev"). Permissions live in groups; roles get access by being assigned groups. Users may also be assigned **groups directly** via `user_groups` (and `project_user_groups` in project scope), which contributes permissions alongside role-derived groups.
 
-**Flow:** `User → Role → Group → Permission → Resource`. The system evaluates all role–group combinations for the user when checking access.
+**Flow:** `User → Role → Group → Permission → Resource`, plus direct paths `User → Group → Permission` and `User → Permission`. The system unions all permission sources when checking access.
+
+For CDM import/export field mapping, see [CDM Import & Export → Permission assignment paths](/core-concepts/cdm-import-export#permission-assignment-paths-v1).
 
 ::: details Standard account- and organization-level groups (reference)
 **Account-level:** Only Owner groups — `Personal Account Owner`, `Organization Account Owner` (Role: Owner, Resource: Account). **Organization-level:** All four — `Organization Owner`, `Organization Admin`, `Organization Dev`, `Organization Viewer`. **Project-level:** No standard groups; platform users' project access is inherited from org role; custom project groups are user-defined.
@@ -443,7 +445,7 @@ Organization `read` is enforced by scope (users can only read organizations they
 
 ::: details Permission evaluation steps
 
-1. Get user's roles in the scope (account/org/project). 2. For each role, get assigned groups. 3. For each group, get permissions. 4. Build all role–group combinations. 5. Match requested action + resource to any permission. 6. If permission has a condition, evaluate with execution context. 7. Enforce tenant isolation (resource in user's scope). Flow: `User → Roles → Groups → Permissions → Resource + Action`. Conditions: [Permission Conditions](/core-concepts/permission-conditions).
+1. Get user's roles in the scope (account/org/project). 2. Collect groups from roles (`role_groups`) **and** direct user groups (`user_groups` / `project_user_groups`). 3. For each group, get permissions (`group_permissions`). 4. Add direct role permissions (`role_permissions` / `project_role_permissions`) and direct user permissions (`user_permissions` / `project_user_permissions`). 5. Build all role–group combinations for condition evaluation. 6. Match requested action + resource to any permission. 7. If permission has a condition, evaluate with execution context. 8. Enforce tenant isolation (resource in user's scope). Flow: union of `User → Roles → Groups → Permissions`, `User → Groups → Permissions`, `Role → Permissions`, and `User → Permissions`.
    :::
 
 ---

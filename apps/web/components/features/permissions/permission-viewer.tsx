@@ -5,7 +5,7 @@ import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 
 import { useScopeFromParams } from '@/hooks/common';
-import { usePermissions } from '@/hooks/permissions';
+import { usePermissionsList } from '@/hooks/permissions/use-permissions-list';
 import { usePermissionsStore } from '@/stores/permissions.store';
 
 import { PermissionCards } from './permission-cards';
@@ -25,7 +25,7 @@ export function PermissionViewer() {
   const setLoading = usePermissionsStore((state) => state.setLoading);
   const setRefetch = usePermissionsStore((state) => state.setRefetch);
 
-  const { permissions, loading, totalCount, refetch } = usePermissions({
+  const { permissions, loading, totalCount, refetch } = usePermissionsList({
     scope: scope!,
     page,
     limit,

@@ -1,0 +1,39 @@
+mutation AssignRolePermission($input: AssignRolePermissionInput!) {
+  assignRolePermission(input: $input) {
+    id
+    roleId
+    permissionId
+    createdAt
+    updatedAt
+  }
+}
+
+mutation RevokeRolePermission($input: RevokeRolePermissionInput!) {
+  revokeRolePermission(input: $input) {
+    id
+    roleId
+    permissionId
+    deletedAt
+  }
+}
+
+query GetRoleDirectPermissions($scope: Scope!, $roleId: ID!) {
+  roles(scope: $scope, ids: [$roleId], limit: 1) {
+    roles {
+      id
+      permissionCount
+      rolePermissions {
+        id
+        permissionId
+        permission(scope: $scope) {
+          id
+          name
+          action
+          resource {
+            slug
+          }
+        }
+      }
+    }
+  }
+}

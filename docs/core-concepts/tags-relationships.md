@@ -108,7 +108,7 @@ This is the same behaviour as direct user mutations through the API; CDM sync do
 `TagHandler.teardown` runs at order 5, before `RoleTemplateHandler` (10) and `UserAssignmentHandler` (20), and:
 
 1. lists every tag whose `metadata.cdmImport.projectId` matches the importing project;
-2. soft-deletes those tag rows **and** their pivot rows in `project_tags`, `role_tags`, `group_tags`, and `user_tags` in a single batch (soft-delete cascades do not fire on the FK side, so the pivots must be removed explicitly).
+2. soft-deletes those tag rows **and** their pivot rows in `project_tags`, `role_tags`, `group_tags`, `user_tags`, `project_app_tags` (apps in this project only), `permission_tags`, and `resource_tags` in a single batch (soft-delete cascades do not fire on the FK side, so the pivots must be removed explicitly).
 
 Plain user-created tags are never affected, even if they share a name or color with a CDM-imported tag.
 

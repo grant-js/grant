@@ -3,7 +3,7 @@
  * when pivots span both projects' tag rows — `tags.getTags` is the scope gate
  * (mirrors project_tags membership via getScopedTagIds in the handler).
  *
- * Also asserts ProjectApp.tags still loads pivots + scoped getTags (unchanged pattern).
+ * Also asserts ProjectApp.tags loads pivots + scoped getTags (ignores preloaded parent.tags).
  */
 import { type Tag, Tenant, TokenType } from '@grantjs/schema';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -110,7 +110,7 @@ describe('entity tags scope (cross-project leak regression)', () => {
       expect.objectContaining({
         scope: scopeA,
         ids: [tagProjectA.id, tagProjectB.id],
-        limit: 2,
+        limit: -1,
       })
     );
   });
@@ -126,13 +126,13 @@ describe('entity tags scope (cross-project leak regression)', () => {
       expect.objectContaining({
         scope: scopeB,
         ids: [tagProjectA.id, tagProjectB.id],
-        limit: 2,
+        limit: -1,
       })
     );
   });
 
   it('ProjectApp.tags still resolves via project-app pivots + scoped getTags', async () => {
-    getProjectAppTags.mockResolvedValue([{ tagId: tagProjectA.id }]);
+    getProjectAppTags.mockResolvedValue([{ tagId: tagProjectA.id, isPrimary: true }]);
     const getTagsApp = vi.fn().mockResolvedValue(tagPage([tagProjectA]));
     const ctx = {
       user: {
@@ -150,15 +150,18 @@ describe('entity tags scope (cross-project leak regression)', () => {
 
     const out = await invokeProjectAppTagsResolver(
       projectAppTagsResolver,
-      { id: 'pa-1', tags: undefined },
+      {
+        id: 'pa-1',
+        tags: [{ ...tagProjectB, isPrimary: true }],
+      },
       ctx
     );
-    expect(out).toEqual([tagProjectA]);
+    expect(out).toEqual([{ ...tagProjectA, isPrimary: true }]);
     expect(getProjectAppTags).toHaveBeenCalledWith({ projectAppId: 'pa-1' });
     expect(getTagsApp).toHaveBeenCalledWith({
       scope: scopeA,
       ids: [tagProjectA.id],
-      limit: 1,
+      limit: -1,
     });
   });
 });

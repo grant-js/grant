@@ -8,5 +8,11 @@ mutation UpdateResource($id: ID!, $input: UpdateResourceInput!) {
     isActive
     createdAt
     updatedAt
+    tags {
+      id
+      name
+      color
+      isPrimary
+    }
   }
 }

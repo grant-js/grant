@@ -146,4 +146,76 @@ describe('ProjectSyncJobRepository.listByProject', () => {
     expect(limitCall?.args[0]).toBe(50);
     expect(offsetCall?.args[0]).toBe(0);
   });
+
+  it('selects list columns only and excludes heavy JSONB blobs', async () => {
+    await repo.listByProject({
+      projectId,
+      scopeTenant: 'accountProject',
+      scopeId: `${accountId}:${projectId}`,
+    });
+
+    const selectCall = dataChain.calls.find((c) => c.method === 'select');
+    expect(selectCall).toBeDefined();
+    const columns = selectCall!.args[0] as Record<string, unknown>;
+    expect(Object.keys(columns).sort()).toEqual(
+      [
+        'cancelledAt',
+        'cdmVersion',
+        'completedAt',
+        'createdAt',
+        'errorMessage',
+        'hasSnapshot',
+        'id',
+        'jobName',
+        'modeStrategy',
+        'operation',
+        'projectId',
+        'snapshotSizeBytes',
+        'snapshotTakenAt',
+        'startedAt',
+        'status',
+        'warnings',
+      ].sort()
+    );
+    expect(columns).not.toHaveProperty('payload');
+    expect(columns).not.toHaveProperty('snapshot');
+    expect(columns).not.toHaveProperty('result');
+  });
+
+  it('maps list rows without loading result counters', async () => {
+    buildRepo({
+      countResult: [{ value: 1 }],
+      dataResult: [
+        {
+          id: '40000000-0000-4000-8000-000000000099',
+          projectId,
+          status: 'completed',
+          cdmVersion: 1,
+          jobName: 'nightly-import',
+          operation: 'import',
+          modeStrategy: 'merge',
+          warnings: ['warn-a'],
+          errorMessage: null,
+          createdAt: new Date('2026-06-01T12:00:00.000Z'),
+          startedAt: new Date('2026-06-01T12:00:01.000Z'),
+          completedAt: new Date('2026-06-01T12:00:05.000Z'),
+          cancelledAt: null,
+          hasSnapshot: true,
+          snapshotTakenAt: new Date('2026-06-01T12:00:02.000Z'),
+          snapshotSizeBytes: 2048,
+        },
+      ],
+    });
+
+    const result = await repo.listByProject({
+      projectId,
+      scopeTenant: 'accountProject',
+      scopeId: `${accountId}:${projectId}`,
+    });
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]?.result).toBeNull();
+    expect(result.items[0]?.hasSnapshot).toBe(true);
+    expect(result.items[0]?.jobName).toBe('nightly-import');
+  });
 });

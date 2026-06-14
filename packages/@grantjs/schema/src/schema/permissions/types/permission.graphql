@@ -8,6 +8,8 @@ type Permission implements Auditable {
   condition: JSON
   metadata: JSON!
   tags: [Tag!]
+  primaryTag: Tag
+  tagCount: Int!
   createdAt: Date!
   updatedAt: Date!
   deletedAt: Date

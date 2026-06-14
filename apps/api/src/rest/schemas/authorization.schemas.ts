@@ -26,6 +26,10 @@ export const isAuthorizedRequestSchema = z.object({
       resource: z.string().min(1, 'errors.validation.resourceRequired'),
       action: z.string().min(1, 'errors.validation.actionRequired'),
     })
+    .openapi({
+      description:
+        'Resource slug and action to check. Grant unions all grant paths (role/group/direct) before matching.',
+    })
     .transform((p) => ({
       resource: normalizePermissionSlug(p.resource),
       action: normalizePermissionSlug(p.action),

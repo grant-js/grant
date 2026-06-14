@@ -213,6 +213,105 @@ export async function addProjectUserForE2e(projectId: string, userId: string): P
 }
 
 // ---------------------------------------------------------------------------
+// CDM replace-teardown E2E (pivot orphans, stagger uniqueness, tag lookup)
+// ---------------------------------------------------------------------------
+
+/** Live project-scoped tag id by display name (via project_tags). */
+export async function getLiveTagIdByName(projectId: string, name: string): Promise<string | null> {
+  const conn = getConnection();
+  const rows = await conn<{ id: string }[]>`
+    SELECT t.id
+    FROM tags t
+    INNER JOIN project_tags pt ON pt.tag_id = t.id AND pt.deleted_at IS NULL
+    WHERE pt.project_id = ${projectId}::uuid
+      AND t.name = ${name}
+      AND t.deleted_at IS NULL
+    LIMIT 1
+  `;
+  return rows.length > 0 ? rows[0].id : null;
+}
+
+/** Live project_app_tags pivots pointing at soft-deleted tags (orphan regression). */
+export async function countOrphanProjectAppTags(projectId: string): Promise<number> {
+  const conn = getConnection();
+  const rows = await conn<{ count: string }[]>`
+    SELECT COUNT(*)::text AS count
+    FROM project_app_tags pat
+    INNER JOIN project_apps pa ON pa.id = pat.project_app_id AND pa.deleted_at IS NULL
+    INNER JOIN tags t ON t.id = pat.tag_id
+    WHERE pa.project_id = ${projectId}::uuid
+      AND pat.deleted_at IS NULL
+      AND t.deleted_at IS NOT NULL
+  `;
+  return Number(rows[0]?.count ?? 0);
+}
+
+/** Live project_resources pivots pointing at soft-deleted resources. */
+export async function countOrphanProjectResources(projectId: string): Promise<number> {
+  const conn = getConnection();
+  const rows = await conn<{ count: string }[]>`
+    SELECT COUNT(*)::text AS count
+    FROM project_resources pr
+    INNER JOIN resources r ON r.id = pr.resource_id
+    WHERE pr.project_id = ${projectId}::uuid
+      AND pr.deleted_at IS NULL
+      AND r.deleted_at IS NOT NULL
+  `;
+  return Number(rows[0]?.count ?? 0);
+}
+
+/**
+ * Returns duplicate deleted_at values among tombstoned rows (violates *_deleted_at_idx).
+ * Optionally scoped by project_id when the table has that column.
+ */
+export async function countDuplicateDeletedAtValues(
+  tableName: 'project_resources' | 'user_groups' | 'project_user_groups',
+  projectId?: string
+): Promise<number> {
+  const conn = getConnection();
+  if (tableName === 'project_resources' && projectId) {
+    const rows = await conn<{ count: string }[]>`
+      SELECT COUNT(*)::text AS count
+      FROM (
+        SELECT deleted_at
+        FROM project_resources
+        WHERE project_id = ${projectId}::uuid AND deleted_at IS NOT NULL
+        GROUP BY deleted_at
+        HAVING COUNT(*) > 1
+      ) dupes
+    `;
+    return Number(rows[0]?.count ?? 0);
+  }
+  if (tableName === 'user_groups') {
+    const rows = await conn<{ count: string }[]>`
+      SELECT COUNT(*)::text AS count
+      FROM (
+        SELECT deleted_at
+        FROM user_groups
+        WHERE deleted_at IS NOT NULL
+        GROUP BY deleted_at
+        HAVING COUNT(*) > 1
+      ) dupes
+    `;
+    return Number(rows[0]?.count ?? 0);
+  }
+  if (tableName === 'project_user_groups' && projectId) {
+    const rows = await conn<{ count: string }[]>`
+      SELECT COUNT(*)::text AS count
+      FROM (
+        SELECT deleted_at
+        FROM project_user_groups
+        WHERE project_id = ${projectId}::uuid AND deleted_at IS NOT NULL
+        GROUP BY deleted_at
+        HAVING COUNT(*) > 1
+      ) dupes
+    `;
+    return Number(rows[0]?.count ?? 0);
+  }
+  return 0;
+}
+
+// ---------------------------------------------------------------------------
 // Generic query helper
 // ---------------------------------------------------------------------------
 

@@ -1,18 +1,26 @@
 import type {
   IFileStorageServicePort,
   IOrganizationUserService,
+  IProjectGroupService,
+  IProjectPermissionService,
+  IProjectUserGroupService,
+  IProjectUserPermissionService,
   IProjectUserService,
   ITransactionalConnection,
   IUserAuthenticationMethodService,
+  IUserGroupService,
+  IUserPermissionService,
   IUserRoleService,
   IUserService,
   IUserTagService,
 } from '@grantjs/core';
 import {
+  AssignUserPermissionInput,
   MutationCreateUserArgs,
   MutationDeleteUserArgs,
   MutationUpdateUserArgs,
   QueryUsersArgs,
+  RevokeUserPermissionInput,
   Role,
   Scope,
   Tag,
@@ -20,7 +28,9 @@ import {
   UpdateUserInput,
   UploadUserPictureInput,
   User,
+  UserGroup,
   UserPage,
+  UserPermission,
 } from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
@@ -34,6 +44,7 @@ import {
 } from '@/lib/effective-project-user-metadata.lib';
 import { AuthorizationError, BadRequestError, NotFoundError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
+import { tryProjectIdFromScope } from '@/lib/project-id-from-scope.lib';
 import { assertProjectPivotMetadataMutationAllowed } from '@/lib/project-pivot-metadata-auth.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
@@ -53,6 +64,12 @@ export class UserHandler extends CacheHandler {
     private readonly organizationUsers: IOrganizationUserService,
     private readonly projectUsers: IProjectUserService,
     private readonly userRoles: IUserRoleService,
+    private readonly userGroups: IUserGroupService,
+    private readonly userPermissions: IUserPermissionService,
+    private readonly projectUserPermissions: IProjectUserPermissionService,
+    private readonly projectUserGroups: IProjectUserGroupService,
+    private readonly projectGroups: IProjectGroupService,
+    private readonly projectPermissions: IProjectPermissionService,
     private readonly userAuthenticationMethods: IUserAuthenticationMethodService,
     private readonly fileStorage: IFileStorageServicePort,
     cache: IEntityCacheAdapter,
@@ -154,7 +171,16 @@ export class UserHandler extends CacheHandler {
   public async createUser(params: MutationCreateUserArgs): Promise<User> {
     return await this.db.withTransaction(async (tx: Transaction) => {
       const { input } = params;
-      const { name, scope, tagIds, roleIds, primaryTagId, metadata: inputMetadata } = input;
+      const {
+        name,
+        scope,
+        tagIds,
+        roleIds,
+        groupIds,
+        permissionIds,
+        primaryTagId,
+        metadata: inputMetadata,
+      } = input;
 
       const metadataRecord =
         inputMetadata != null && typeof inputMetadata === 'object' && !Array.isArray(inputMetadata)
@@ -219,6 +245,21 @@ export class UserHandler extends CacheHandler {
         );
       }
 
+      if (groupIds && groupIds.length > 0 && scope.tenant !== Tenant.Organization) {
+        await Promise.all(
+          groupIds.map((groupId) => this.syncDirectUserGroupAdd({ userId, groupId, scope }, tx))
+        );
+      }
+
+      if (permissionIds && permissionIds.length > 0 && scope.tenant !== Tenant.Organization) {
+        await Promise.all(
+          permissionIds.map((permissionId) =>
+            this.syncDirectUserPermissionAdd({ userId, permissionId, scope }, tx)
+          )
+        );
+        await this.invalidatePermissionsCacheForAllScopes();
+      }
+
       this.addUserIdToScopeCache(scope, userId);
 
       if (invalidatePivotAuth) {
@@ -231,7 +272,7 @@ export class UserHandler extends CacheHandler {
 
   public async updateUser(params: UpdateUserHandlerParams): Promise<User> {
     const { id: userId, input, actorUserId } = params;
-    const { roleIds, tagIds, primaryTagId, scope, metadata, name, pictureUrl } = input;
+    const { roleIds, groupIds, tagIds, primaryTagId, scope, metadata, name, pictureUrl } = input;
 
     await this.db.withTransaction(async (tx: Transaction) => {
       const authMethods = await this.userAuthenticationMethods.getUserAuthenticationMethods(
@@ -289,11 +330,16 @@ export class UserHandler extends CacheHandler {
 
       let currentTagIds: string[] = [];
       let currentRoleIds: string[] = [];
+      let currentGroupIds: string[] = [];
       if (Array.isArray(tagIds)) {
         currentTagIds = await this.getUserTagIdsInScope(userId, scope);
       }
       if (Array.isArray(roleIds)) {
         currentRoleIds = await this.getUserRoleIdsInScope(userId, scope);
+      }
+      if (Array.isArray(groupIds)) {
+        const currentGroups = await this.userGroups.getUserGroups({ userId }, tx);
+        currentGroupIds = currentGroups.map((ug) => ug.groupId);
       }
 
       let shouldInvalidateAuth = false;
@@ -340,11 +386,11 @@ export class UserHandler extends CacheHandler {
       if (roleIds !== undefined) {
         usersRowPatch.roleIds = roleIds;
       }
+      if (groupIds !== undefined) {
+        usersRowPatch.groupIds = groupIds;
+      }
       if (tagIds !== undefined) {
         usersRowPatch.tagIds = tagIds;
-      }
-      if (primaryTagId !== undefined) {
-        usersRowPatch.primaryTagId = primaryTagId;
       }
 
       await this.users.updateUser(userId, usersRowPatch, tx);
@@ -366,6 +412,30 @@ export class UserHandler extends CacheHandler {
             this.userTags.updateUserTag({ userId, tagId, isPrimary: tagId === primaryTagId }, tx)
           )
         );
+      } else if (primaryTagId !== undefined) {
+        const scopedTagIds = await this.getUserTagIdsInScope(userId, scope);
+        if (primaryTagId && !scopedTagIds.includes(primaryTagId)) {
+          throw new BadRequestError(
+            'Primary tag must be one of the user tags assigned in the current scope'
+          );
+        }
+
+        const scopeTagIdSet = new Set(scopedTagIds);
+        const userTagPivots = await this.userTags.getUserTags({ userId }, tx);
+        await Promise.all(
+          userTagPivots
+            .filter((userTag) => scopeTagIdSet.has(userTag.tagId))
+            .map((userTag) =>
+              this.userTags.updateUserTag(
+                {
+                  userId,
+                  tagId: userTag.tagId,
+                  isPrimary: primaryTagId ? userTag.tagId === primaryTagId : false,
+                },
+                tx
+              )
+            )
+        );
       }
       if (Array.isArray(roleIds)) {
         const newRoleIds = roleIds.filter((roleId) => !currentRoleIds.includes(roleId));
@@ -379,6 +449,23 @@ export class UserHandler extends CacheHandler {
 
         if (newRoleIds.length > 0 || removedRoleIds.length > 0) {
           await this.invalidateProjectUserRoleCache(userId);
+        }
+      }
+
+      if (Array.isArray(groupIds)) {
+        const newGroupIds = groupIds.filter((groupId) => !currentGroupIds.includes(groupId));
+        const removedGroupIds = currentGroupIds.filter((groupId) => !groupIds.includes(groupId));
+        await Promise.all(
+          newGroupIds.map((groupId) => this.syncDirectUserGroupAdd({ userId, groupId, scope }, tx))
+        );
+        await Promise.all(
+          removedGroupIds.map((groupId) =>
+            this.syncDirectUserGroupRemove({ userId, groupId, scope }, tx)
+          )
+        );
+
+        if (newGroupIds.length > 0 || removedGroupIds.length > 0) {
+          await this.invalidatePermissionsCacheForAllScopes();
         }
       }
 
@@ -483,6 +570,21 @@ export class UserHandler extends CacheHandler {
     return pivots.map((p) => ({ tagId: p.tagId, isPrimary: p.isPrimary }));
   }
 
+  public async countUserRoles(params: { userId: string }): Promise<number> {
+    return this.userRoles.countUserRoles(params);
+  }
+
+  public async countProjectUserApiKeys(params: { userId: string; scope: Scope }): Promise<number> {
+    const projectId = tryProjectIdFromScope(params.scope);
+    if (!projectId) {
+      return 0;
+    }
+    return this.scopeServices.projectUserApiKeys.countProjectUserApiKeys({
+      projectId,
+      userId: params.userId,
+    });
+  }
+
   /**
    * Returns role IDs that the user has in the given scope (project or organization).
    * Used by User.roles field resolver to avoid leaking global roles.
@@ -533,6 +635,132 @@ export class UserHandler extends CacheHandler {
       return usersPage.users[0].roles || [];
     }
     return [];
+  }
+
+  public async getUserPermissions(params: { userId: string }): Promise<UserPermission[]> {
+    return this.userPermissions.getUserPermissions({ userId: params.userId });
+  }
+
+  public async getUserGroups(params: { userId: string }): Promise<UserGroup[]> {
+    return this.userGroups.getUserGroups({ userId: params.userId });
+  }
+
+  private async syncDirectUserGroupAdd(
+    params: { userId: string; groupId: string; scope: Scope },
+    tx: Transaction
+  ): Promise<void> {
+    const { userId, groupId, scope } = params;
+    await this.userGroups.addUserGroup({ userId, groupId }, tx);
+
+    switch (scope.tenant) {
+      case Tenant.OrganizationProject:
+      case Tenant.AccountProject: {
+        const projectId = this.extractProjectIdFromScope(scope);
+        await this.projectUserGroups.addProjectUserGroup({ projectId, userId, groupId }, tx);
+        try {
+          await this.projectGroups.addProjectGroup({ projectId, groupId }, tx);
+        } catch {
+          /* idempotent when group already linked to project */
+        }
+        break;
+      }
+    }
+  }
+
+  private async syncDirectUserGroupRemove(
+    params: { userId: string; groupId: string; scope: Scope },
+    tx: Transaction
+  ): Promise<void> {
+    const { userId, groupId, scope } = params;
+    await this.userGroups.removeUserGroup({ userId, groupId }, tx);
+
+    switch (scope.tenant) {
+      case Tenant.OrganizationProject:
+      case Tenant.AccountProject: {
+        const projectId = this.extractProjectIdFromScope(scope);
+        try {
+          await this.projectUserGroups.removeProjectUserGroup({ projectId, userId, groupId }, tx);
+        } catch {
+          /* row may already be absent */
+        }
+        break;
+      }
+    }
+  }
+
+  private async syncDirectUserPermissionAdd(
+    params: { userId: string; permissionId: string; scope: Scope },
+    tx: Transaction
+  ): Promise<UserPermission> {
+    const { userId, permissionId, scope } = params;
+    const userPermission = await this.userPermissions.assignUserPermission(
+      { userId, permissionId, scope },
+      tx
+    );
+
+    switch (scope.tenant) {
+      case Tenant.OrganizationProject:
+      case Tenant.AccountProject: {
+        const projectId = this.extractProjectIdFromScope(scope);
+        await this.projectUserPermissions.addProjectUserPermission(
+          { projectId, userId, permissionId },
+          tx
+        );
+        try {
+          await this.projectPermissions.addProjectPermission({ projectId, permissionId }, tx);
+        } catch {
+          /* idempotent when permission already linked to project */
+        }
+        break;
+      }
+    }
+
+    return userPermission;
+  }
+
+  public async countUserPermissions(params: { userId: string }): Promise<number> {
+    return this.userPermissions.countUserPermissions(params);
+  }
+
+  public async assignUserPermission(params: AssignUserPermissionInput): Promise<UserPermission> {
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const userPermission = await this.syncDirectUserPermissionAdd(
+        {
+          userId: params.userId,
+          permissionId: params.permissionId,
+          scope: params.scope,
+        },
+        tx
+      );
+      await this.invalidatePermissionsCacheForAllScopes();
+      return userPermission;
+    });
+  }
+
+  public async revokeUserPermission(params: RevokeUserPermissionInput): Promise<UserPermission> {
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const { scope, userId, permissionId } = params;
+      const userPermission = await this.userPermissions.revokeUserPermission(params, tx);
+
+      switch (scope.tenant) {
+        case Tenant.OrganizationProject:
+        case Tenant.AccountProject: {
+          const projectId = this.extractProjectIdFromScope(scope);
+          try {
+            await this.projectUserPermissions.removeProjectUserPermission(
+              { projectId, userId, permissionId },
+              tx
+            );
+          } catch {
+            /* row may already be absent */
+          }
+          break;
+        }
+      }
+
+      await this.invalidatePermissionsCacheForAllScopes();
+      return userPermission;
+    });
   }
 
   public async uploadUserPicture(

@@ -2,32 +2,44 @@
 
 import { useTranslations } from 'next-intl';
 import { getTagBorderClasses, TagColor } from '@grantjs/constants';
-import { Permission, Tag } from '@grantjs/schema';
+import { Permission } from '@grantjs/schema';
 import { CopyCheck } from 'lucide-react';
 
 import {
   Avatar,
   DataTable,
   type DataTableColumnConfig,
-  ScrollBadges,
+  EntityCreateNavigateButton,
   type TableSkeletonColumnConfig,
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
-import { transformTagsToBadges } from '@/lib/tag';
+import {
+  getEntityTagCount,
+  getPrimaryTagFromEntity,
+  isSyntheticCdmEntity,
+} from '@/lib/entity-list';
 import { cn } from '@/lib/utils';
 import { usePermissionsStore } from '@/stores/permissions.store';
 
 import { PermissionActions } from './permission-actions';
 import { PermissionAudit } from './permission-audit';
-import { PermissionCreateDialog } from './permission-create-dialog';
+import { PermissionNavigationButton } from './permission-navigation-button';
 
 export function PermissionTable() {
   const t = useTranslations('permissions');
+  const tCommon = useTranslations('common');
 
   const limit = usePermissionsStore((state) => state.limit);
   const search = usePermissionsStore((state) => state.search);
   const permissions = usePermissionsStore((state) => state.permissions);
   const loading = usePermissionsStore((state) => state.loading);
+  const hideSynthetic = usePermissionsStore((state) => state.hideSyntheticEntities);
+
+  const visiblePermissions = hideSynthetic
+    ? permissions.filter(
+        (permission) => !isSyntheticCdmEntity(permission.metadata as Record<string, unknown>)
+      )
+    : permissions;
 
   const columns: DataTableColumnConfig<Permission>[] = [
     {
@@ -35,22 +47,20 @@ export function PermissionTable() {
       header: '',
       width: '60px',
       className: 'pl-4',
-      render: (permission: Permission) => (
-        <Avatar
-          initial={permission.name.charAt(0)}
-          size="md"
-          className={
-            permission.tags?.find((tag: Tag) => tag.isPrimary)?.color
-              ? cn(
-                  'border-2',
-                  getTagBorderClasses(
-                    permission.tags?.find((tag: Tag) => tag.isPrimary)?.color as TagColor
-                  )
-                )
-              : undefined
-          }
-        />
-      ),
+      render: (permission: Permission) => {
+        const primaryTag = getPrimaryTagFromEntity(permission);
+        return (
+          <Avatar
+            initial={permission.name.charAt(0)}
+            size="md"
+            className={
+              primaryTag?.color
+                ? cn('border-2', getTagBorderClasses(primaryTag.color as TagColor))
+                : undefined
+            }
+          />
+        );
+      },
     },
     {
       key: 'name',
@@ -88,13 +98,11 @@ export function PermissionTable() {
     {
       key: 'tags',
       header: t('table.tags'),
-      width: '200px',
+      width: '120px',
       render: (permission: Permission) => (
-        <ScrollBadges
-          items={transformTagsToBadges(permission.tags)}
-          height={60}
-          showAsRound={true}
-        />
+        <Badge variant="secondary">
+          {tCommon('tagCount', { count: getEntityTagCount(permission) })}
+        </Badge>
       ),
     },
     {
@@ -102,6 +110,14 @@ export function PermissionTable() {
       header: t('table.audit'),
       width: '200px',
       render: (permission: Permission) => <PermissionAudit permission={permission} />,
+    },
+    {
+      key: 'navigation',
+      header: '',
+      width: '60px',
+      render: (permission: Permission) => (
+        <PermissionNavigationButton permission={permission} size="sm" round={false} />
+      ),
     },
   ];
 
@@ -112,22 +128,30 @@ export function PermissionTable() {
       { key: 'resource', type: 'text' },
       { key: 'action', type: 'text' },
       { key: 'description', type: 'text' },
-      { key: 'tags', type: 'list' },
+      { key: 'tags', type: 'text' },
       { key: 'audit', type: 'audit' },
+      { key: 'navigation', type: 'icon' },
     ],
     rowCount: limit,
   };
 
   return (
     <DataTable
-      data={permissions}
+      data={visiblePermissions}
       columns={columns}
       loading={loading}
       emptyState={{
         icon: <CopyCheck />,
         title: search ? t('noSearchResults.title') : t('noPermissions.title'),
         description: search ? t('noSearchResults.description') : t('noPermissions.description'),
-        action: search ? undefined : <PermissionCreateDialog triggerAlwaysShowLabel />,
+        action: search ? undefined : (
+          <EntityCreateNavigateButton
+            entitySegment="permissions"
+            label={t('createDialog.trigger')}
+            icon={CopyCheck}
+            alwaysShowLabel
+          />
+        ),
       }}
       actionsColumn={{
         render: (permission) => <PermissionActions permission={permission} />,

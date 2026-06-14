@@ -33,6 +33,32 @@ query GetUsers(
           isPrimary
         }
       }
+      userGroups {
+        id
+        groupId
+        group(scope: $scope) {
+          id
+          name
+          tags {
+            id
+            name
+            color
+            isPrimary
+          }
+        }
+      }
+      userPermissions {
+        id
+        permissionId
+        permission(scope: $scope) {
+          id
+          name
+          action
+          resource {
+            slug
+          }
+        }
+      }
       tags {
         id
         name

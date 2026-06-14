@@ -1,65 +1,60 @@
 'use client';
 
+import { useMemo } from 'react';
+import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useGrant, type UseGrantResult } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
-import { Role, Tag, User as UserType } from '@grantjs/schema';
+import { User as UserType } from '@grantjs/schema';
+import { z } from 'zod';
 
-import {
-  CheckboxList,
-  CheckboxListProps,
-  DialogField,
-  DialogRelationship,
-  EditDialog,
-  PrimaryTagSelector,
-  PrimaryTagSelectorProps,
-  TagCheckboxList,
-  TagCheckboxListProps,
-} from '@/components/common';
+import { DialogField, EditDialog } from '@/components/common';
 import { useRequiresEmailVerificationForMutation } from '@/hooks/auth';
 import { useScopeFromParams } from '@/hooks/common';
-import { useRoles } from '@/hooks/roles';
-import { useTags } from '@/hooks/tags';
 import { useUserMutations } from '@/hooks/users';
-import { getDocsUrl } from '@/lib/constants';
+import { Link } from '@/i18n/navigation';
+import { getEntityDetailUrl } from '@/lib/entity-detail-url';
 import { useUsersStore } from '@/stores/users.store';
 
-import { editUserSchema, UserEditFormValues } from './user-types';
+const slimEditUserSchema = z.object({
+  name: z.string().min(2, 'errors.validation.labelMin2'),
+});
 
-const mapUserToFormValues = (user: UserType): UserEditFormValues => {
-  const metadata = user.metadata ?? null;
-  const hasMetadata =
-    metadata &&
-    typeof metadata === 'object' &&
-    !Array.isArray(metadata) &&
-    Object.keys(metadata).length > 0;
-  return {
-    name: user.name,
-    roleIds: user.roles?.map((role: Role) => role.id),
-    tagIds: user.tags?.map((tag: Tag) => tag.id),
-    primaryTagId: user.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
-    metadataEnabled: !!hasMetadata,
-    metadata: metadata || {},
-  };
-};
+type SlimUserEditFormValues = z.infer<typeof slimEditUserSchema>;
 
-const renderCheckboxList = (props: CheckboxListProps) => <CheckboxList {...props} />;
-const renderTagCheckboxList = (props: TagCheckboxListProps) => <TagCheckboxList {...props} />;
+const mapUserToFormValues = (user: UserType): SlimUserEditFormValues => ({
+  name: user.name,
+});
 
 export function UserEditDialog() {
   const scope = useScopeFromParams();
-  const { roles, loading: rolesLoading } = useRoles({ scope: scope!, limit: -1 });
-  const { tags, loading: tagsLoading } = useTags({ scope: scope!, limit: -1 });
+  const params = useParams();
+  const t = useTranslations('users');
   const { updateUser } = useUserMutations();
   const userToEdit = useUsersStore((state) => state.userToEdit);
   const setUserToEdit = useUsersStore((state) => state.setUserToEdit);
 
-  // Defer permission check until the dialog is actually open
   const { isGranted: canUpdate, isLoading: isUpdateLoading } = useGrant(
     ResourceSlug.User,
     ResourceAction.Update,
     { scope: scope!, enabled: !!userToEdit, returnLoading: true }
   ) as UseGrantResult;
   const requiresEmailVerification = useRequiresEmailVerificationForMutation(scope);
+
+  const detailHref = useMemo(() => {
+    if (!userToEdit) return null;
+    try {
+      return getEntityDetailUrl({
+        organizationId: params.organizationId as string | undefined,
+        accountId: params.accountId as string | undefined,
+        projectId: params.projectId as string | undefined,
+        entitySegment: 'users',
+        entityId: userToEdit.id,
+      });
+    } catch {
+      return null;
+    }
+  }, [userToEdit, params.organizationId, params.accountId, params.projectId]);
 
   if (!scope || requiresEmailVerification) return null;
   if (!isUpdateLoading && !canUpdate) return null;
@@ -72,91 +67,16 @@ export function UserEditDialog() {
       type: 'text',
       required: true,
     },
-    {
-      name: 'metadataEnabled',
-      label: 'form.showMetadata',
-      type: 'collapsible-group',
-      contentField: 'metadata',
-    },
-    {
-      name: 'metadata',
-      label: 'form.metadata',
-      placeholder: 'form.metadata',
-      type: 'json',
-      info: 'form.metadataInfo',
-      infoLink: {
-        href: `${getDocsUrl()}/core-concepts/permission-conditions.html#field-paths`,
-        label: 'form.metadataDocsLink',
-      },
-      partOfCollapsible: 'metadataEnabled',
-    },
   ];
 
-  const metadata = userToEdit?.metadata ?? null;
-  const hasMetadata =
-    metadata &&
-    typeof metadata === 'object' &&
-    !Array.isArray(metadata) &&
-    Object.keys(metadata).length > 0;
   const defaultValues = {
     name: userToEdit?.name || '',
-    roleIds: userToEdit?.roles?.map((role: Role) => role.id) || [],
-    tagIds: userToEdit?.tags?.map((tag: Tag) => tag.id) || [],
-    primaryTagId: userToEdit?.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
-    metadataEnabled: !!hasMetadata,
-    metadata: metadata || {},
   };
 
-  const roleItems = roles.map((role: Role) => ({
-    id: role.id,
-    name: role.name,
-    description: role.description || undefined,
-  }));
-
-  const relationships: DialogRelationship[] = [
-    {
-      name: 'roleIds',
-      label: 'form.roles',
-      renderComponent: renderCheckboxList,
-      items: roleItems,
-      loading: rolesLoading,
-      loadingText: 'form.rolesLoading',
-      emptyText: 'form.noRolesAvailable',
-    },
-    {
-      name: 'tagIds',
-      label: 'form.tags',
-      renderComponent: renderTagCheckboxList,
-      items: tags,
-      loading: tagsLoading,
-      loadingText: 'form.tagsLoading',
-      emptyText: 'form.noTagsAvailable',
-    },
-    {
-      name: 'primaryTagId',
-      label: 'form.primaryTag',
-      renderComponent: (props: PrimaryTagSelectorProps) => <PrimaryTagSelector {...props} />,
-      items: tags,
-      loading: tagsLoading,
-      loadingText: 'form.tagsLoading',
-      emptyText: 'form.noTagsAvailable',
-    },
-  ];
-
-  const handleUpdate = async (userId: string, values: UserEditFormValues) => {
+  const handleUpdate = async (userId: string, values: SlimUserEditFormValues) => {
     return await updateUser(userId, {
       scope: scope!,
       name: values.name,
-      roleIds: values.roleIds,
-      tagIds: values.tagIds,
-      primaryTagId: values.primaryTagId,
-      metadata:
-        values.metadataEnabled &&
-        values.metadata &&
-        typeof values.metadata === 'object' &&
-        !Array.isArray(values.metadata)
-          ? values.metadata
-          : undefined,
     });
   };
 
@@ -170,10 +90,19 @@ export function UserEditDialog() {
     <EditDialog
       entity={userToEdit}
       open={!!userToEdit}
-      schema={editUserSchema}
+      schema={slimEditUserSchema}
       defaultValues={defaultValues}
       fields={fields}
-      relationships={relationships}
+      supplementaryContent={
+        detailHref ? (
+          <p className="text-sm text-muted-foreground">
+            {t('editDialog.manageRelationshipsPrefix')}{' '}
+            <Link href={detailHref} className="text-primary hover:underline">
+              {t('editDialog.manageRelationshipsLink')}
+            </Link>
+          </p>
+        ) : null
+      }
       title="editDialog.title"
       description="editDialog.description"
       confirmText="editDialog.confirm"

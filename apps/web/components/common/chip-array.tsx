@@ -1,16 +1,16 @@
 'use client';
 
 import { KeyboardEvent, useCallback, useState } from 'react';
-import { Control } from 'react-hook-form';
+import { Control, FieldPathByValue, FieldValues } from 'react-hook-form';
 
 import { Chip } from '@/components/common';
 import { FormField, FormItem, FormLabel, TranslatedFormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
-export interface ChipArrayProps {
-  control: Control<any>;
-  name: string;
+export interface ChipArrayProps<TFieldValues extends FieldValues = FieldValues> {
+  control: Control<TFieldValues>;
+  name: FieldPathByValue<TFieldValues, string[] | undefined>;
   label?: string;
   placeholder?: string;
   error?: string;
@@ -22,7 +22,7 @@ export interface ChipArrayProps {
   normalizeValue?: (value: string) => string;
 }
 
-export function ChipArray({
+export function ChipArray<TFieldValues extends FieldValues = FieldValues>({
   control,
   name,
   label,
@@ -33,7 +33,7 @@ export function ChipArray({
   allowDuplicates = false,
   chipVariant = 'secondary',
   normalizeValue,
-}: ChipArrayProps) {
+}: ChipArrayProps<TFieldValues>) {
   const [inputValue, setInputValue] = useState('');
 
   const resolveValue = useCallback(
@@ -111,7 +111,7 @@ export function ChipArray({
               {/* Input field with chips stacked inline */}
               <div
                 className={cn(
-                  'flex flex-wrap gap-2 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] min-h-9',
+                  'flex flex-wrap items-center gap-2 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] min-h-9',
                   'focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px]',
                   'aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive',
                   disabled && 'pointer-events-none opacity-50 cursor-not-allowed',
@@ -139,7 +139,7 @@ export function ChipArray({
                   onBlur={() => commitCurrentInput(items, field.onChange)}
                   placeholder={items.length === 0 ? placeholder : ''}
                   disabled={disabled}
-                  className="flex-1 min-w-[120px] border-0 p-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-auto bg-transparent"
+                  className="flex-1 min-w-[120px] h-8 border-0 bg-transparent px-2 py-1 text-sm shadow-none focus-visible:border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                 />
               </div>
 

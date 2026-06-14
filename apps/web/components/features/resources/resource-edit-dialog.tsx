@@ -1,31 +1,35 @@
 'use client';
 
+import { useMemo } from 'react';
+import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useGrant, type UseGrantResult } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
-import { Resource, Tag } from '@grantjs/schema';
+import { Resource } from '@grantjs/schema';
 import { DefaultValues } from 'react-hook-form';
+import { z } from 'zod';
 
-import {
-  DialogField,
-  DialogRelationship,
-  EditDialog,
-  PrimaryTagSelector,
-  PrimaryTagSelectorProps,
-  TagCheckboxList,
-  TagCheckboxListProps,
-} from '@/components/common';
+import { DialogField, EditDialog } from '@/components/common';
 import { useRequiresEmailVerificationForMutation } from '@/hooks/auth';
 import { useScopeFromParams } from '@/hooks/common';
 import { useResourceMutations } from '@/hooks/resources';
-import { useTags } from '@/hooks/tags';
-import { slugifyAction } from '@/lib/slugify';
+import { Link } from '@/i18n/navigation';
+import { getEntityDetailUrl } from '@/lib/entity-detail-url';
 import { useResourcesStore } from '@/stores/resources.store';
 
-import { editResourceSchema, ResourceEditFormValues } from './resource-types';
+const slimEditResourceSchema = z.object({
+  name: z.string().min(2, 'errors.validation.labelMin2'),
+  slug: z.string().min(1, 'errors.validation.required'),
+  description: z.string().optional(),
+  isActive: z.boolean(),
+});
+
+type SlimResourceEditFormValues = z.infer<typeof slimEditResourceSchema>;
 
 export function ResourceEditDialog() {
   const scope = useScopeFromParams();
-  const { tags, loading: tagsLoading } = useTags({ scope: scope!, limit: -1 });
+  const params = useParams();
+  const t = useTranslations('resources');
   const { updateResource } = useResourceMutations();
   const resourceToEdit = useResourcesStore((state) => state.resourceToEdit);
   const setResourceToEdit = useResourcesStore((state) => state.setResourceToEdit);
@@ -36,6 +40,21 @@ export function ResourceEditDialog() {
     { scope: scope!, enabled: !!resourceToEdit, returnLoading: true }
   ) as UseGrantResult;
   const requiresEmailVerification = useRequiresEmailVerificationForMutation(scope);
+
+  const detailHref = useMemo(() => {
+    if (!resourceToEdit) return null;
+    try {
+      return getEntityDetailUrl({
+        organizationId: params.organizationId as string | undefined,
+        accountId: params.accountId as string | undefined,
+        projectId: params.projectId as string | undefined,
+        entitySegment: 'resources',
+        entityId: resourceToEdit.id,
+      });
+    } catch {
+      return null;
+    }
+  }, [resourceToEdit, params.organizationId, params.accountId, params.projectId]);
 
   if (!scope || requiresEmailVerification) {
     return null;
@@ -66,14 +85,6 @@ export function ResourceEditDialog() {
       type: 'textarea',
     },
     {
-      name: 'actions',
-      label: 'form.actions',
-      placeholder: 'form.actionsPlaceholder',
-      type: 'actions',
-      info: 'form.actionsInfo',
-      normalizeValue: slugifyAction,
-    },
-    {
       name: 'isActive',
       label: 'form.isActive',
       type: 'switch',
@@ -81,38 +92,14 @@ export function ResourceEditDialog() {
     },
   ];
 
-  const relationships: DialogRelationship[] = [
-    {
-      name: 'tagIds',
-      label: 'form.tags',
-      renderComponent: (props: TagCheckboxListProps) => <TagCheckboxList {...props} />,
-      items: tags,
-      loading: tagsLoading,
-      loadingText: 'form.tagsLoading',
-      emptyText: 'form.noTagsAvailable',
-    },
-    {
-      name: 'primaryTagId',
-      label: 'form.primaryTag',
-      renderComponent: (props: PrimaryTagSelectorProps) => <PrimaryTagSelector {...props} />,
-      items: tags,
-      loading: tagsLoading,
-      loadingText: 'form.tagsLoading',
-      emptyText: 'form.noTagsAvailable',
-    },
-  ];
-
-  const mapResourceToFormValues = (resource: Resource): ResourceEditFormValues => ({
+  const mapResourceToFormValues = (resource: Resource): SlimResourceEditFormValues => ({
     name: resource.name,
     slug: resource.slug,
     description: resource.description || '',
-    actions: resource.actions || [],
     isActive: resource.isActive,
-    tagIds: resource.tags?.map((tag: Tag) => tag.id),
-    primaryTagId: resource.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
   });
 
-  const handleUpdate = async (resourceId: string, values: ResourceEditFormValues) => {
+  const handleUpdate = async (resourceId: string, values: SlimResourceEditFormValues) => {
     await updateResource({
       id: resourceId,
       input: {
@@ -120,22 +107,16 @@ export function ResourceEditDialog() {
         name: values.name,
         slug: values.slug,
         description: values.description,
-        actions: values.actions,
         isActive: values.isActive,
-        tagIds: values.tagIds,
-        primaryTagId: values.primaryTagId,
       },
     });
   };
 
-  const defaultValues: DefaultValues<ResourceEditFormValues> = {
+  const defaultValues: DefaultValues<SlimResourceEditFormValues> = {
     name: resourceToEdit?.name || '',
     slug: resourceToEdit?.slug || '',
     description: resourceToEdit?.description || '',
-    actions: resourceToEdit?.actions || [],
-    isActive: resourceToEdit?.isActive || true,
-    tagIds: resourceToEdit?.tags?.map((tag: Tag) => tag.id) || [],
-    primaryTagId: resourceToEdit?.tags?.find((tag: Tag) => tag.isPrimary)?.id || '',
+    isActive: resourceToEdit?.isActive ?? true,
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -148,10 +129,19 @@ export function ResourceEditDialog() {
     <EditDialog
       open={!!resourceToEdit}
       entity={resourceToEdit}
-      schema={editResourceSchema}
+      schema={slimEditResourceSchema}
       defaultValues={defaultValues}
       fields={fields}
-      relationships={relationships}
+      supplementaryContent={
+        detailHref ? (
+          <p className="text-sm text-muted-foreground">
+            {t('editDialog.manageRelationshipsPrefix')}{' '}
+            <Link href={detailHref} className="text-primary hover:underline">
+              {t('editDialog.manageRelationshipsLink')}
+            </Link>
+          </p>
+        ) : null
+      }
       title="editDialog.title"
       description="editDialog.description"
       confirmText="editDialog.confirm"

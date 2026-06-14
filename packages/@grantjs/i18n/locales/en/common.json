@@ -18,6 +18,10 @@
     "view": "View",
     "list": "List"
   },
+  "fields": {
+    "name": "Name",
+    "description": "Description"
+  },
   "permissions": {
     "createFromResourceDescription": "Permission to perform \"{{action}}\" on {{resourceName}}."
   },

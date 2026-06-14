@@ -18,6 +18,15 @@ import * as signingKeyQueries from './signing-keys/queries';
 import * as tagQueries from './tags/queries';
 import * as userQueries from './users/queries';
 
+function isDetailFetch(args: Record<string, unknown>): boolean {
+  const ids = args.ids;
+  return Array.isArray(ids) && ids.length > 0;
+}
+
+function detailFetchActions(args: Record<string, unknown>): ResourceAction[] {
+  return isDetailFetch(args) ? [ResourceAction.Read, ResourceAction.Query] : [ResourceAction.Query];
+}
+
 export const Query = {
   _empty: () => null,
 
@@ -93,17 +102,29 @@ export const Query = {
   ),
   // Roles (scoped)
   roles: authorizeGraphQLResolver(
-    { resource: ResourceSlug.Role, action: ResourceAction.Query },
+    {
+      resource: ResourceSlug.Role,
+      action: ResourceAction.Query,
+      resolveActions: detailFetchActions,
+    },
     roleQueries.getRoles!
   ),
   // Permissions (scoped)
   permissions: authorizeGraphQLResolver(
-    { resource: ResourceSlug.Permission, action: ResourceAction.Query },
+    {
+      resource: ResourceSlug.Permission,
+      action: ResourceAction.Query,
+      resolveActions: detailFetchActions,
+    },
     permissionQueries.getPermissions!
   ),
   // Groups (scoped)
   groups: authorizeGraphQLResolver(
-    { resource: ResourceSlug.Group, action: ResourceAction.Query },
+    {
+      resource: ResourceSlug.Group,
+      action: ResourceAction.Query,
+      resolveActions: detailFetchActions,
+    },
     groupQueries.getGroups!
   ),
   // API Keys (scoped)

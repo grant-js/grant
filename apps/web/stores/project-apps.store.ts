@@ -24,10 +24,9 @@ interface ProjectAppsState {
   projectApps: ProjectApp[];
   projectAppToEdit: ProjectApp | null;
   projectAppToDelete: ProjectApp | null;
-  projectAppToTest: ProjectApp | null;
   createdProjectApp: CreateProjectAppResult | null;
-  createDialogOpen: boolean;
   secretDialogOpen: boolean;
+  currentProjectApp: ProjectApp | null;
 
   setPage: (page: number) => void;
   setLimit: (limit: number) => void;
@@ -41,10 +40,9 @@ interface ProjectAppsState {
   setProjectApps: (apps: ProjectApp[]) => void;
   setProjectAppToEdit: (app: ProjectApp | null) => void;
   setProjectAppToDelete: (app: ProjectApp | null) => void;
-  setProjectAppToTest: (app: ProjectApp | null) => void;
   setCreatedProjectApp: (app: CreateProjectAppResult | null) => void;
-  setCreateDialogOpen: (open: boolean) => void;
   setSecretDialogOpen: (open: boolean) => void;
+  setCurrentProjectApp: (app: ProjectApp | null) => void;
   handleProjectAppCreated: (result: CreateProjectAppResult | null) => void;
   resetToDefaults: () => void;
 }
@@ -67,10 +65,9 @@ const initialState = {
   projectApps: [] as ProjectApp[],
   projectAppToEdit: null as ProjectApp | null,
   projectAppToDelete: null as ProjectApp | null,
-  projectAppToTest: null as ProjectApp | null,
   createdProjectApp: null as CreateProjectAppResult | null,
-  createDialogOpen: false,
   secretDialogOpen: false,
+  currentProjectApp: null as ProjectApp | null,
 };
 
 export const useProjectAppsStore = create<ProjectAppsState>()(
@@ -90,10 +87,9 @@ export const useProjectAppsStore = create<ProjectAppsState>()(
       setProjectApps: (projectApps) => set({ projectApps }),
       setProjectAppToEdit: (projectAppToEdit) => set({ projectAppToEdit }),
       setProjectAppToDelete: (projectAppToDelete) => set({ projectAppToDelete }),
-      setProjectAppToTest: (projectAppToTest) => set({ projectAppToTest }),
       setCreatedProjectApp: (createdProjectApp) => set({ createdProjectApp }),
-      setCreateDialogOpen: (createDialogOpen) => set({ createDialogOpen }),
       setSecretDialogOpen: (secretDialogOpen) => set({ secretDialogOpen }),
+      setCurrentProjectApp: (currentProjectApp) => set({ currentProjectApp }),
       handleProjectAppCreated: (result) => {
         if (result) {
           set({ createdProjectApp: result, secretDialogOpen: true });
@@ -106,6 +102,7 @@ export const useProjectAppsStore = create<ProjectAppsState>()(
           selectedTagIds: [],
           createdProjectApp: null,
           secretDialogOpen: false,
+          currentProjectApp: null,
         }),
     }),
     { name: 'grant-project-apps-store' }

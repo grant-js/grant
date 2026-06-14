@@ -9,6 +9,7 @@ import type {
 import { CdmFindBy } from '@grantjs/schema';
 
 import type {
+  CdmPermissionRefInternal,
   CdmProjectUserApiKeyInternal,
   CdmRoleTemplateInternal,
   CdmUserAssignmentInternal,
@@ -16,10 +17,9 @@ import type {
 } from './cdm-internal.types';
 import {
   addPermissionRefDeduped,
-  canonicalPermissionDocumentString,
   parseCdmPermissionDocumentString,
-  serializePermissionRefForCdmDocument,
 } from './cdm-permission-document-ref.lib';
+import { isSyntheticCdmRoleKey } from './cdm-synthetic.lib';
 
 /**
  * Handler pipeline input: canonical CDM document expanded into the slices
@@ -37,6 +37,7 @@ export interface ExpandedCdmSyncPayload {
   provisionedUsers: CdmUserProvisionInternal[];
   userAssignments: CdmUserAssignmentInternal[];
   projectUserApiKeys: CdmProjectUserApiKeyInternal[];
+  warnings: string[];
 }
 
 /**
@@ -46,6 +47,7 @@ export function expandCdmSyncInput(input: SyncProjectInput): ExpandedCdmSyncPayl
   const version = input.version;
   const id = input.id ?? null;
   const mode = input.mode;
+  const warnings: string[] = [];
 
   const permissionByKey = new Map<string, PermissionCdmInput>();
   for (const p of input.permissions ?? []) {
@@ -63,8 +65,6 @@ export function expandCdmSyncInput(input: SyncProjectInput): ExpandedCdmSyncPayl
       perm.groups = Array.from(new Set([...prev, g.key]));
     }
   }
-
-  const roleTemplateByKey = new Map((input.roles ?? []).map((r) => [r.key, r]));
 
   const roleTemplates: CdmRoleTemplateInternal[] = (input.roles ?? []).map((role) => {
     const permissionRefs: CdmRoleTemplateInternal['permissionRefs'] = [];
@@ -102,6 +102,9 @@ export function expandCdmSyncInput(input: SyncProjectInput): ExpandedCdmSyncPayl
       primaryGroupTagKey: linked.primaryGroupTagKey,
       linkedGroupImportName: linked.linkedGroupImportName,
       linkedGroupImportDescription: linked.linkedGroupImportDescription,
+      linkedDocumentGroupKeys: (role.groups ?? []).filter(
+        (k): k is string => typeof k === 'string' && k.length > 0
+      ),
     };
   });
 
@@ -126,85 +129,41 @@ export function expandCdmSyncInput(input: SyncProjectInput): ExpandedCdmSyncPayl
     const requestedDirectPermissionKeys = (u.permissions ?? []).filter(
       (k): k is string => typeof k === 'string' && k.length > 0
     );
-    const roleTemplateKeys = (u.roles ?? []).filter(
-      (k): k is string => typeof k === 'string' && k.length > 0
-    );
-    for (const groupKey of (u.groups ?? []).filter(
-      (k): k is string => typeof k === 'string' && k.length > 0
-    )) {
-      const syntheticRoleKey = `synthetic:role:user:${userKey ?? userId ?? 'unknown'}:${groupKey}`;
-      if (!roleTemplateByKey.has(syntheticRoleKey)) {
-        const refs: CdmRoleTemplateInternal['permissionRefs'] = [];
-        const g = groupByKey.get(groupKey);
-        for (const gp of g?.permissions ?? []) {
-          if (typeof gp === 'string' && gp.length > 0) {
-            addPermissionRefDeduped(refs, parseCdmPermissionDocumentString(gp, permissionByKey));
-          }
-        }
-        for (const [pk, p] of permissionByKey.entries()) {
-          const groups = p.groups ?? [];
-          if (groups.includes(groupKey)) {
-            addPermissionRefDeduped(refs, parseCdmPermissionDocumentString(pk, permissionByKey));
-          }
-        }
-        roleTemplates.push({
-          externalKey: syntheticRoleKey,
-          name: syntheticRoleKey,
-          description: 'Auto-generated role for user.groups normalization',
-          permissionRefs: refs,
-          metadata: { synthetic: true, sourceGroup: groupKey },
-          tagKeys: [],
-          primaryRoleTagKey: null,
-          groupTagKeys: [],
-          primaryGroupTagKey: null,
-        });
-      }
-      roleTemplateKeys.push(syntheticRoleKey);
+    const directPermissionRefs: CdmUserAssignmentInternal['directPermissionRefs'] = [];
+    for (const key of requestedDirectPermissionKeys) {
+      addPermissionRefDeduped(
+        directPermissionRefs,
+        parseCdmPermissionDocumentString(key, permissionByKey)
+      );
     }
 
-    const impliedPermissionDocStrings = new Set<string>();
-    for (const roleKey of roleTemplateKeys) {
-      const role = roleTemplates.find((rt) => rt.externalKey === roleKey);
-      if (!role) continue;
-      for (const ref of role.permissionRefs ?? []) {
-        const s = serializePermissionRefForCdmDocument(ref);
-        if (s) impliedPermissionDocStrings.add(s);
-      }
+    const rawRoleKeys = (u.roles ?? []).filter(
+      (k): k is string => typeof k === 'string' && k.length > 0
+    );
+    const strippedSyntheticKeys = rawRoleKeys.filter((k) => isSyntheticCdmRoleKey(k));
+    const roleTemplateKeys = rawRoleKeys.filter((k) => !isSyntheticCdmRoleKey(k));
+    if (strippedSyntheticKeys.length > 0) {
+      const subject = userKey ?? userId ?? 'unknown';
+      warnings.push(
+        `users[${subject}]: removed legacy synthetic role key(s) ${strippedSyntheticKeys.join(', ')}; use users.permissions for direct grants`
+      );
     }
-    const missingDirectPermissionKeys = requestedDirectPermissionKeys.filter((key) => {
-      const canon = canonicalPermissionDocumentString(key, permissionByKey);
-      return !impliedPermissionDocStrings.has(canon);
-    });
-    const directRoleKey = `synthetic:role:user:${userKey ?? userId ?? 'unknown'}:direct`;
-    if (
-      missingDirectPermissionKeys.length > 0 &&
-      !roleTemplates.some((r) => r.externalKey === directRoleKey)
-    ) {
-      const directRefs: CdmRoleTemplateInternal['permissionRefs'] = [];
-      for (const k of missingDirectPermissionKeys) {
-        addPermissionRefDeduped(directRefs, parseCdmPermissionDocumentString(k, permissionByKey));
-      }
-      roleTemplates.push({
-        externalKey: directRoleKey,
-        name: directRoleKey,
-        description: 'Auto-generated role for unresolved user.permissions',
-        permissionRefs: directRefs,
-        metadata: { synthetic: true, source: 'user.permissions' },
-        tagKeys: [],
-        primaryRoleTagKey: null,
-        groupTagKeys: [],
-        primaryGroupTagKey: null,
-      });
-    }
-    if (missingDirectPermissionKeys.length > 0) {
-      roleTemplateKeys.push(directRoleKey);
-    }
+
+    const directGroupKeys = (u.groups ?? []).filter(
+      (k): k is string => typeof k === 'string' && k.length > 0
+    );
+    const directGroups = directGroupKeys.map((groupKey) => ({
+      groupKey,
+      permissionRefs: collectDocumentGroupPermissionRefs(groupKey, groupByKey, permissionByKey),
+    }));
 
     userAssignments.push({
       userId,
       userKey,
       roleTemplateKeys,
-      directPermissionRefs: [],
+      directGroupKeys,
+      directGroups,
+      directPermissionRefs,
       tagKeys: u.tags ?? [],
       primaryUserTagKey: u.primaryTag ?? null,
       metadata: u.metadata ?? null,
@@ -254,6 +213,7 @@ export function expandCdmSyncInput(input: SyncProjectInput): ExpandedCdmSyncPayl
     provisionedUsers,
     userAssignments,
     projectUserApiKeys,
+    warnings,
   };
 }
 
@@ -263,6 +223,27 @@ function slugify(name: string): string {
     .trim()
     .replace(/[^a-z0-9]+/g, '.')
     .replace(/^\.+|\.+$/g, '');
+}
+
+function collectDocumentGroupPermissionRefs(
+  groupKey: string,
+  groupByKey: Map<string, GroupCdmInput>,
+  permissionByKey: Map<string, PermissionCdmInput>
+): CdmPermissionRefInternal[] {
+  const refs: CdmPermissionRefInternal[] = [];
+  const g = groupByKey.get(groupKey);
+  for (const gp of g?.permissions ?? []) {
+    if (typeof gp === 'string' && gp.length > 0) {
+      addPermissionRefDeduped(refs, parseCdmPermissionDocumentString(gp, permissionByKey));
+    }
+  }
+  for (const [pk, p] of permissionByKey.entries()) {
+    const groups = p.groups ?? [];
+    if (groups.includes(groupKey)) {
+      addPermissionRefDeduped(refs, parseCdmPermissionDocumentString(pk, permissionByKey));
+    }
+  }
+  return refs;
 }
 
 function linkedGroupImportFields(

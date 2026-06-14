@@ -100,6 +100,22 @@ export const Mutation = {
       userMutations.uploadUserPicture!
     )
   ),
+  assignUserPermission: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      { resource: ResourceSlug.User, action: ResourceAction.Update },
+      userMutations.assignUserPermission!
+    )
+  ),
+  revokeUserPermission: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      { resource: ResourceSlug.User, action: ResourceAction.Update },
+      userMutations.revokeUserPermission!
+    )
+  ),
 
   // Roles (scoped - allow personal context)
   createRole: requireEmailThenMfaGraphQL(
@@ -124,6 +140,22 @@ export const Mutation = {
     authorizeGraphQLResolver(
       { resource: ResourceSlug.Role, action: ResourceAction.Update },
       roleMutations.updateRole!
+    )
+  ),
+  assignRolePermission: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      { resource: ResourceSlug.Role, action: ResourceAction.Update },
+      roleMutations.assignRolePermission!
+    )
+  ),
+  revokeRolePermission: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      { resource: ResourceSlug.Role, action: ResourceAction.Update },
+      roleMutations.revokeRolePermission!
     )
   ),
 

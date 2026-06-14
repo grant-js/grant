@@ -121,6 +121,10 @@ The user is created within the specified scope:
 You can optionally assign roles to the user:
 - \`roleIds\`: Array of role UUIDs
 
+### Groups
+You can optionally assign groups directly to the user:
+- \`groupIds\`: Array of group UUIDs
+
 ### Tags
 You can optionally assign tags to the user:
 - \`tagIds\`: Array of tag UUIDs
@@ -186,6 +190,9 @@ All fields are optional - only provide the fields you want to update.
 
 ### Roles
 - \`roleIds\`: Replace all roles with new array
+
+### Groups
+- \`groupIds\`: Replace all direct groups with new array
 
 ### Tags
 - \`tagIds\`: Replace all tags with new array

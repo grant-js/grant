@@ -5,15 +5,19 @@
 import type {
   AddRoleGroupInput,
   AddRoleTagInput,
+  AssignRolePermissionInput,
   CreateRoleInput,
   MutationDeleteRoleArgs,
   QueryRoleGroupsInput,
+  QueryRolePermissionsInput,
   QueryRolesArgs,
   RemoveRoleGroupInput,
   RemoveRoleTagInput,
+  RevokeRolePermissionInput,
   Role,
   RoleGroup,
   RolePage,
+  RolePermission,
   RoleTag,
   UpdateRoleInput,
   UpdateRoleTagInput,
@@ -54,12 +58,37 @@ export interface IRoleService {
 export interface IRoleGroupService {
   getRoleGroups(params: QueryRoleGroupsInput, transaction?: unknown): Promise<RoleGroup[]>;
 
+  countRoleGroups(params: { roleId: string }, transaction?: unknown): Promise<number>;
+
   addRoleGroup(params: AddRoleGroupInput, transaction?: unknown): Promise<RoleGroup>;
 
   removeRoleGroup(
     params: RemoveRoleGroupInput & DeleteParams,
     transaction?: unknown
   ): Promise<RoleGroup>;
+}
+
+// ---------------------------------------------------------------------------
+// IRolePermissionService
+// ---------------------------------------------------------------------------
+
+export interface IRolePermissionService {
+  getRolePermissions(
+    params: QueryRolePermissionsInput,
+    transaction?: unknown
+  ): Promise<RolePermission[]>;
+
+  countRolePermissions(params: { roleId: string }, transaction?: unknown): Promise<number>;
+
+  assignRolePermission(
+    params: AssignRolePermissionInput,
+    transaction?: unknown
+  ): Promise<RolePermission>;
+
+  revokeRolePermission(
+    params: RevokeRolePermissionInput & DeleteParams,
+    transaction?: unknown
+  ): Promise<RolePermission>;
 }
 
 // ---------------------------------------------------------------------------

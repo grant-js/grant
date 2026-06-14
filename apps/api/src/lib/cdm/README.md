@@ -43,10 +43,45 @@ metadata.cdmSource = { ...importer JSON, grantTagId / grantRoleId / ... }
 
 `handlerKind` on the port matches `metadata.cdmImport.kind` for teardown lookup.
 
+## Replace-import pivot sweep
+
+Replace mode tombstones CDM-managed **entities** (`metadata.cdmImport` for the
+project). When an entity row is soft-deleted, **every live pivot pointing at that
+id must be soft-deleted too** — including pivots on non-CDM entities (for example
+`project_app_tags` on manually created apps still referencing a removed CDM tag).
+
+Bulk helpers live on `ProjectImportRepository`:
+
+| Teardown trigger              | Pivot tables swept                                                                                                                                            |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CDM tags                      | `project_tags`, `role_tags`, `group_tags`, `user_tags`, `project_app_tags`, `permission_tags`, `resource_tags`                                                |
+| CDM permissions               | `project_permissions`, `group_permissions`, `permission_tags`, `role_permissions`, `user_permissions`, `project_user_permissions`, `project_role_permissions` |
+| CDM roles (`deleteCdmRole`)   | `role_permissions`, `project_role_permissions`                                                                                                                |
+| CDM groups (`deleteCdmGroup`) | `user_groups`, `project_user_groups`                                                                                                                          |
+
+Pivot soft-deletes use microsecond-staggered timestamps where the table has a
+unique index on `deleted_at`. Non-CDM entities themselves are never removed;
+only their attachments to tombstoned CDM rows are cleared.
+
 ## Permission refs
 
 The orchestrator deduplicates refs from all entities, then resolves in one pass before
 `apply`. Resolution order: `permissionKey` → `permissionId` → `(resourceSlug, action)`.
+
+## Expand → apply mapping (v1)
+
+`expandCdmSyncInput` projects the public document into handler slices:
+
+| Document            | Internal slice                           | Persisted as                                   |
+| ------------------- | ---------------------------------------- | ---------------------------------------------- |
+| `users.permissions` | `userAssignments[].directPermissionRefs` | `user_permissions`, `project_user_permissions` |
+| `users.groups`      | `userAssignments[].directGroupKeys`      | `user_groups`, `project_user_groups`           |
+| `users.roles`       | `userAssignments[].roleTemplateKeys`     | `user_roles`                                   |
+| `roles.permissions` | `roleTemplates[].permissionRefs`         | `role_permissions` or group path               |
+| `roles.groups`      | paired role + group template             | `role_groups`, `group_permissions`             |
+
+Synthetic per-user roles are **not** generated. Legacy `synthetic:role:user:*` keys in
+`users.roles` are stripped during expand with a warning on the import result.
 
 ## Export sections
 

@@ -7,6 +7,7 @@ export {
   parseCdmPermissionDocumentString,
   serializePermissionRefForCdmDocument,
 } from './cdm-permission-document-ref.lib';
+export { isSyntheticCdmRoleKey, isSyntheticCdmRoleMetadata } from './cdm-synthetic.lib';
 export { PermissionCdmEntity } from './entities/permission.cdm-entity';
 export { ProjectUserApiKeyCdmEntity } from './entities/project-user-api-key.cdm-entity';
 export { ResourceCdmEntity } from './entities/resource.cdm-entity';

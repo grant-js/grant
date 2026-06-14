@@ -76,6 +76,15 @@
       "next": "Weiter",
       "info": "Seite {current} von {total}"
     },
+    "dataTable": {
+      "columns": "Spalten",
+      "toggleColumns": "Spalten ein-/ausblenden"
+    },
+    "detailAttachmentFilter": {
+      "label": "Anzeigen",
+      "all": "Alle",
+      "selected": "Ausgewählt"
+    },
     "audit": {
       "id": "ID",
       "created": "Erstellt",
@@ -108,11 +117,16 @@
       "uploading": "Wird hochgeladen...",
       "refresh": "Aktualisieren"
     },
+    "fields": {
+      "name": "Name",
+      "description": "Beschreibung"
+    },
     "saving": "Wird gespeichert...",
     "emptyElements": "Keine {title} zum Anzeigen",
     "loading": "Wird geladen...",
     "noItemsAvailable": "Keine Einträge verfügbar",
     "noTagsAvailable": "Keine Tags verfügbar",
+    "tagCount": "{count, plural, =0 {Keine Tags} one {# Tag} other {# Tags}}",
     "yes": "Ja",
     "no": "Nein",
     "redirecting": "Wird weitergeleitet...",
@@ -191,6 +205,7 @@
       "backToOrganization": "Zurück zur Organisation",
       "signingKeys": "Signierungsschlüssel",
       "projectApps": "Apps",
+      "testApp": "App testen",
       "projectSyncJobs": "Import/Export"
     }
   },
@@ -751,6 +766,8 @@
       "default": "Standard"
     },
     "limit": "Einträge pro Seite",
+    "roleCount": "{count, plural, =0 {Keine Rollen} one {# Rolle} other {# Rollen}}",
+    "apiKeyCount": "{count, plural, =0 {Keine API-Schlüssel} one {# API-Schlüssel} other {# API-Schlüssel}}",
     "search": {
       "placeholder": "Benutzer suchen..."
     },
@@ -758,6 +775,7 @@
       "name": "Name",
       "email": "E-Mail",
       "roles": "Rollen",
+      "apiKeys": "API-Schlüssel",
       "tags": "Tags",
       "authMethods": "Anmeldemethoden",
       "metadata": "Metadaten",
@@ -839,6 +857,7 @@
       "name": "Name",
       "email": "E-Mail",
       "roles": "Rollen",
+      "apiKeys": "API-Schlüssel",
       "tags": "Tags",
       "authMethods": "Anmeldemethoden",
       "audit": "Audit",
@@ -855,6 +874,8 @@
     "info": {
       "title": "Benutzerinformationen",
       "userId": "Benutzer-ID",
+      "tableField": "Feld",
+      "tableValue": "Wert",
       "created": "Erstellt",
       "updated": "Aktualisiert",
       "authMethods": "Anmeldemethoden",
@@ -862,6 +883,8 @@
     },
     "roles": {
       "title": "Rollen",
+      "description": "Rollen für diesen Benutzer zuweisen oder entfernen.",
+      "descriptionInfo": "Zugewiesene Rollen können Gruppen und Berechtigungen indirekt gewähren. Prüfen Sie die Bereiche Gruppen und Berechtigungen für geerbten Zugriff.",
       "empty": "Keine Rollen zugewiesen",
       "emptyDescription": "Diesem Benutzer sind in diesem Projekt keine Rollen zugewiesen",
       "loading": "Rollen werden geladen...",
@@ -919,6 +942,7 @@
     },
     "apiKeys": {
       "title": "API-Schlüssel",
+      "description": "API-Schlüssel für programmatischen Zugriff im Namen dieses Benutzers erstellen und verwalten.",
       "view": {
         "card": "Karten",
         "table": "Tabelle"
@@ -932,7 +956,7 @@
       "never": "Nie",
       "noDescription": "Keine Beschreibung",
       "search": {
-        "placeholder": "API-Schlüssel suchen..."
+        "placeholder": "Nach Name oder Beschreibung suchen..."
       },
       "sort": {
         "label": "Sortieren nach",
@@ -1008,36 +1032,127 @@
     },
     "groups": {
       "title": "Gruppen",
-      "empty": "Keine Gruppen zugewiesen",
-      "emptyDescription": "Diesem Benutzer sind über seine Rollen keine Gruppen zugewiesen",
+      "empty": "Keine Gruppen im Katalog",
+      "emptyDescription": "Keine Gruppen entsprechen Ihrer Suche in diesem Bereich",
       "loading": "Gruppen werden geladen...",
       "error": "Fehler beim Laden der Gruppen",
-      "description": "Gruppen für Benutzer (durch Rollen)",
+      "description": "Gruppen für diesen Benutzer zuweisen oder entfernen.",
+      "descriptionInfo": "Über Rollen geerbte Gruppen sind aktiviert, können hier aber nicht entfernt werden. Ändern Sie Rollenzuweisungen oder bearbeiten Sie die Gruppen einer Rolle, um geerbte Mitgliedschaften anzupassen.",
       "table": {
         "name": "Name",
         "description": "Beschreibung",
         "tags": "Tags",
+        "source": "Quelle",
+        "sourceDirect": "Direkte Zuweisung",
+        "sourceViaRole": "Über Rolle {roleName}",
+        "sourceDirectAndViaRole": "Direkt und über Rolle {roleName}",
         "inheritedFrom": "Geerbt von Rolle"
       },
       "noDescription": "Keine Beschreibung"
     },
     "permissions": {
       "title": "Berechtigungen",
-      "empty": "Keine Berechtigungen zugewiesen",
-      "emptyDescription": "Diesem Benutzer sind über seine Gruppen keine Berechtigungen zugewiesen",
+      "empty": "Keine Berechtigungen im Katalog",
+      "emptyDescription": "Keine Berechtigungen entsprechen Ihrer Suche in diesem Bereich",
       "loading": "Berechtigungen werden geladen...",
       "error": "Fehler beim Laden der Berechtigungen",
-      "description": "Berechtigungen für Benutzer (durch Gruppen)",
+      "description": "Berechtigungen für diesen Benutzer zuweisen oder entziehen.",
+      "descriptionInfo": "Über Gruppen oder Rollen geerbte Berechtigungen sind aktiviert, aber deaktiviert. Aktualisieren Sie Gruppen- oder Rollenzuweisungen, um geerbte Berechtigungen zu ändern.",
       "table": {
         "name": "Name",
         "action": "Aktion",
         "tags": "Tags",
+        "source": "Quelle",
+        "sourceDirect": "Direkte Zuweisung",
+        "sourceViaGroup": "Über Gruppe {groupName}",
+        "sourceViaRole": "Über Rolle {roleName}",
+        "sourceDirectAndInherited": "Direkt und über {name}",
         "inheritedFrom": "Geerbt von Gruppe"
       }
     },
     "loading": {
       "title": "Benutzer wird geladen...",
       "error": "Fehler beim Laden des Benutzers"
+    }
+  },
+  "role": {
+    "detail": {
+      "title": "Rollendetails"
+    },
+    "create": {
+      "title": "Rolle erstellen",
+      "generalDescription": "Geben Sie Name und Beschreibung für die neue Rolle ein."
+    },
+    "info": {
+      "generalTitle": "Allgemein",
+      "generalDescription": "Name, Beschreibung und Audit-Informationen für diese Rolle.",
+      "roleId": "Rollen-ID",
+      "tableField": "Feld",
+      "tableValue": "Wert",
+      "created": "Erstellt",
+      "updated": "Aktualisiert",
+      "metadata": "Metadaten",
+      "metadataDescription": "Optionale JSON-Metadaten für Berechtigungsbedingungen.",
+      "noDescription": "Keine Beschreibung"
+    },
+    "groups": {
+      "title": "Gruppen",
+      "description": "Gruppen für diese Rolle zuweisen oder entfernen.",
+      "empty": "Keine Gruppen zugewiesen",
+      "emptyDescription": "Dieser Rolle sind keine Gruppen zugewiesen",
+      "error": "Fehler beim Laden der Gruppen",
+      "noDescription": "Keine Beschreibung",
+      "search": {
+        "placeholder": "Gruppen suchen..."
+      },
+      "sort": {
+        "label": "Sortieren nach",
+        "name": "Name"
+      },
+      "table": {
+        "name": "Name",
+        "description": "Beschreibung",
+        "tags": "Tags"
+      }
+    },
+    "tags": {
+      "title": "Tags",
+      "description": "Tags für diese Rolle zuweisen oder entfernen.",
+      "empty": "Keine Tags zugewiesen",
+      "emptyDescription": "Dieser Rolle sind keine Tags zugewiesen",
+      "error": "Fehler beim Laden der Tags",
+      "search": {
+        "placeholder": "Tags suchen..."
+      },
+      "sort": {
+        "label": "Sortieren nach",
+        "name": "Name",
+        "color": "Farbe"
+      },
+      "table": {
+        "name": "Name",
+        "color": "Farbe"
+      }
+    },
+    "permissions": {
+      "title": "Berechtigungen",
+      "description": "Direkte und geerbte Berechtigungen für diese Rolle. Berechtigungen aus Gruppen sind aktiviert, aber deaktiviert.",
+      "empty": "Keine Berechtigungen im Katalog",
+      "emptyDescription": "Keine Berechtigungen entsprechen Ihrer Suche in diesem Bereich",
+      "error": "Fehler beim Laden der Berechtigungen",
+      "table": {
+        "name": "Name",
+        "action": "Aktion",
+        "tags": "Tags",
+        "source": "Quelle",
+        "sourceDirect": "Direkte Zuweisung",
+        "sourceViaGroup": "Über Gruppe {groupName}",
+        "sourceDirectAndViaGroup": "Direkt und über Gruppe {groupName}"
+      }
+    },
+    "loading": {
+      "title": "Rolle wird geladen...",
+      "error": "Fehler beim Laden der Rolle"
     }
   },
   "roles": {
@@ -1320,6 +1435,9 @@
       "default": "Standard"
     },
     "limit": "Einträge pro Seite",
+    "actionCount": "{count, plural, =0 {Keine Aktionen} one {# Aktion} other {# Aktionen}}",
+    "activeYes": "Aktiv",
+    "activeNo": "Inaktiv",
     "search": {
       "placeholder": "Ressourcen suchen..."
     },
@@ -1338,6 +1456,7 @@
       "createPermissionsInfo": "Erstellt eine projektbezogene Berechtigung pro Aktion für diese Ressource. Nützlich für Onboarding oder Migration.",
       "tags": "Tags",
       "primaryTag": "Haupt-Tag",
+      "selectTagsFirstForPrimaryTag": "Wählen Sie zuerst Tags aus, um ein Haupt-Tag festzulegen",
       "tagsLoading": "Tags werden geladen...",
       "noTagsAvailable": "Keine Tags verfügbar"
     },
@@ -1382,6 +1501,7 @@
       "name": "Name",
       "slug": "Slug",
       "description": "Beschreibung",
+      "isActive": "Status",
       "actions": "Aktionen",
       "tags": "Tags",
       "audit": "Audit",
@@ -3207,6 +3327,38 @@
   },
   "projectSyncJobs": {
     "title": "Import/Export",
+    "detail": {
+      "title": "Sync-Job",
+      "loading": "Job-Details werden geladen…",
+      "error": "Dieser Sync-Job konnte nicht geladen werden.",
+      "polling": "Aktualisiere…",
+      "tableField": "Feld",
+      "tableValue": "Wert",
+      "general": {
+        "title": "Übersicht",
+        "description": "Lebenszyklusstatus, Kennungen und Zeitpunkte für diesen Job."
+      },
+      "result": {
+        "title": "Import-Ergebnis",
+        "description": "Zähler, die beim Abschluss des Imports erfasst wurden."
+      },
+      "payload": {
+        "title": "CDM-Payload",
+        "description": "Ursprüngliches JSON, das beim Einreihen dieses Imports übermittelt wurde."
+      },
+      "snapshot": {
+        "title": "Rollback-Snapshot",
+        "description": "Projektzustand vor dem Import, der vor dem Sync erfasst wurde."
+      },
+      "exportArtifact": {
+        "title": "Exportiertes CDM",
+        "description": "Generiertes CDM-JSON, das beim Abschluss des Exports erzeugt wurde."
+      },
+      "warnings": {
+        "title": "{count, plural, =1 {# Warnung} other {# Warnungen}}",
+        "description": "Nicht kritische Probleme, die während dieses Jobs gemeldet wurden."
+      }
+    },
     "view": {
       "cards": "Karten",
       "table": "Tabelle"
@@ -3319,7 +3471,7 @@
       "description": "Filter zurücksetzen oder nach einem anderen Jobnamen suchen."
     },
     "actions": {
-      "view": "Details anzeigen",
+      "view": "Job-Details anzeigen",
       "downloadPayload": "Payload herunterladen",
       "downloadExport": "Export herunterladen",
       "cancel": "Job abbrechen"
@@ -3404,6 +3556,8 @@
         "startedAt": "Gestartet",
         "completedAt": "Abgeschlossen",
         "cancelledAt": "Abgebrochen",
+        "rollbackSnapshot": "Rollback-Snapshot",
+        "exportedCdm": "Exportiertes CDM",
         "notSet": "—",
         "errorMessage": "Fehler",
         "warnings": "{count, plural, =1 {# Warnung} other {# Warnungen}}"

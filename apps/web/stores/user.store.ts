@@ -1,6 +1,14 @@
-import { RoleSortableField, SortOrder, TagSortField } from '@grantjs/schema';
+import {
+  GroupSortableField,
+  PermissionSortableField,
+  RoleSortableField,
+  SortOrder,
+  TagSortField,
+} from '@grantjs/schema';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+
+import type { DetailAttachmentFilter } from '@/lib/detail-attachment-filter';
 
 interface UserState {
   // Roles state
@@ -8,6 +16,7 @@ interface UserState {
   rolesLimit: number;
   rolesSearch: string;
   rolesSort: { field: RoleSortableField; order: SortOrder };
+  rolesAttachmentFilter: DetailAttachmentFilter;
   updatingRoleId: string | null;
   optimisticCheckedRoleIds: Set<string>;
   rolesLoading: boolean;
@@ -18,6 +27,7 @@ interface UserState {
   tagsLimit: number;
   tagsSearch: string;
   tagsSort: { field: TagSortField; order: SortOrder };
+  tagsAttachmentFilter: DetailAttachmentFilter;
   updatingTagId: string | null;
   optimisticCheckedTagIds: Set<string>;
   tagsLoading: boolean;
@@ -26,12 +36,22 @@ interface UserState {
   // Groups state
   groupsPage: number;
   groupsLimit: number;
+  groupsSearch: string;
+  groupsSort: { field: GroupSortableField; order: SortOrder };
+  groupsAttachmentFilter: DetailAttachmentFilter;
+  updatingGroupId: string | null;
+  optimisticDirectGroupIds: Set<string>;
   groupsLoading: boolean;
   groupsRefetch: (() => void) | null;
 
   // Permissions state
   permissionsPage: number;
   permissionsLimit: number;
+  permissionsSearch: string;
+  permissionsSort: { field: PermissionSortableField; order: SortOrder };
+  permissionsAttachmentFilter: DetailAttachmentFilter;
+  updatingPermissionId: string | null;
+  optimisticDirectPermissionIds: Set<string>;
   permissionsLoading: boolean;
   permissionsRefetch: (() => void) | null;
 
@@ -40,6 +60,7 @@ interface UserState {
   setRolesLimit: (limit: number) => void;
   setRolesSearch: (search: string) => void;
   setRolesSort: (field: RoleSortableField, order: SortOrder) => void;
+  setRolesAttachmentFilter: (filter: DetailAttachmentFilter) => void;
   setUpdatingRoleId: (roleId: string | null) => void;
   setOptimisticCheckedRoleIds: (roleIds: Set<string>) => void;
   addOptimisticRoleId: (roleId: string) => void;
@@ -52,6 +73,7 @@ interface UserState {
   setTagsLimit: (limit: number) => void;
   setTagsSearch: (search: string) => void;
   setTagsSort: (field: TagSortField, order: SortOrder) => void;
+  setTagsAttachmentFilter: (filter: DetailAttachmentFilter) => void;
   setUpdatingTagId: (tagId: string | null) => void;
   setOptimisticCheckedTagIds: (tagIds: Set<string>) => void;
   addOptimisticTagId: (tagId: string) => void;
@@ -62,12 +84,26 @@ interface UserState {
   // Actions - Groups
   setGroupsPage: (page: number) => void;
   setGroupsLimit: (limit: number) => void;
+  setGroupsSearch: (search: string) => void;
+  setGroupsSort: (field: GroupSortableField, order: SortOrder) => void;
+  setGroupsAttachmentFilter: (filter: DetailAttachmentFilter) => void;
+  setUpdatingGroupId: (groupId: string | null) => void;
+  setOptimisticDirectGroupIds: (groupIds: Set<string>) => void;
+  addOptimisticDirectGroupId: (groupId: string) => void;
+  removeOptimisticDirectGroupId: (groupId: string) => void;
   setGroupsLoading: (loading: boolean) => void;
   setGroupsRefetch: (refetch: (() => void) | null) => void;
 
   // Actions - Permissions
   setPermissionsPage: (page: number) => void;
   setPermissionsLimit: (limit: number) => void;
+  setPermissionsSearch: (search: string) => void;
+  setPermissionsSort: (field: PermissionSortableField, order: SortOrder) => void;
+  setPermissionsAttachmentFilter: (filter: DetailAttachmentFilter) => void;
+  setUpdatingPermissionId: (permissionId: string | null) => void;
+  setOptimisticDirectPermissionIds: (permissionIds: Set<string>) => void;
+  addOptimisticDirectPermissionId: (permissionId: string) => void;
+  removeOptimisticDirectPermissionId: (permissionId: string) => void;
   setPermissionsLoading: (loading: boolean) => void;
   setPermissionsRefetch: (refetch: (() => void) | null) => void;
 
@@ -89,6 +125,16 @@ const defaultTagsSort = {
   order: SortOrder.Asc,
 };
 
+const defaultGroupsSort = {
+  field: GroupSortableField.Name,
+  order: SortOrder.Asc,
+};
+
+const defaultPermissionsSort = {
+  field: PermissionSortableField.Name,
+  order: SortOrder.Asc,
+};
+
 export const useUserStore = create<UserState>()(
   devtools(
     (set) => ({
@@ -97,6 +143,7 @@ export const useUserStore = create<UserState>()(
       rolesLimit: 10,
       rolesSearch: '',
       rolesSort: defaultRolesSort,
+      rolesAttachmentFilter: 'all',
       updatingRoleId: null,
       optimisticCheckedRoleIds: new Set(),
       rolesLoading: false,
@@ -107,6 +154,7 @@ export const useUserStore = create<UserState>()(
       tagsLimit: 10,
       tagsSearch: '',
       tagsSort: defaultTagsSort,
+      tagsAttachmentFilter: 'all',
       updatingTagId: null,
       optimisticCheckedTagIds: new Set(),
       tagsLoading: false,
@@ -115,12 +163,22 @@ export const useUserStore = create<UserState>()(
       // Initial state - Groups
       groupsPage: 1,
       groupsLimit: 10,
+      groupsSearch: '',
+      groupsSort: defaultGroupsSort,
+      groupsAttachmentFilter: 'all',
+      updatingGroupId: null,
+      optimisticDirectGroupIds: new Set(),
       groupsLoading: false,
       groupsRefetch: null,
 
       // Initial state - Permissions
       permissionsPage: 1,
       permissionsLimit: 10,
+      permissionsSearch: '',
+      permissionsSort: defaultPermissionsSort,
+      permissionsAttachmentFilter: 'all',
+      updatingPermissionId: null,
+      optimisticDirectPermissionIds: new Set(),
       permissionsLoading: false,
       permissionsRefetch: null,
 
@@ -129,6 +187,7 @@ export const useUserStore = create<UserState>()(
       setRolesLimit: (limit) => set({ rolesLimit: limit, rolesPage: 1 }),
       setRolesSearch: (search) => set({ rolesSearch: search, rolesPage: 1 }),
       setRolesSort: (field, order) => set({ rolesSort: { field, order }, rolesPage: 1 }),
+      setRolesAttachmentFilter: (filter) => set({ rolesAttachmentFilter: filter, rolesPage: 1 }),
       setUpdatingRoleId: (roleId) => set({ updatingRoleId: roleId }),
       setOptimisticCheckedRoleIds: (roleIds) => set({ optimisticCheckedRoleIds: roleIds }),
       addOptimisticRoleId: (roleId) =>
@@ -151,6 +210,7 @@ export const useUserStore = create<UserState>()(
       setTagsLimit: (limit) => set({ tagsLimit: limit, tagsPage: 1 }),
       setTagsSearch: (search) => set({ tagsSearch: search, tagsPage: 1 }),
       setTagsSort: (field, order) => set({ tagsSort: { field, order }, tagsPage: 1 }),
+      setTagsAttachmentFilter: (filter) => set({ tagsAttachmentFilter: filter, tagsPage: 1 }),
       setUpdatingTagId: (tagId) => set({ updatingTagId: tagId }),
       setOptimisticCheckedTagIds: (tagIds) => set({ optimisticCheckedTagIds: tagIds }),
       addOptimisticTagId: (tagId) =>
@@ -171,12 +231,49 @@ export const useUserStore = create<UserState>()(
       // Actions - Groups
       setGroupsPage: (page) => set({ groupsPage: page }),
       setGroupsLimit: (limit) => set({ groupsLimit: limit, groupsPage: 1 }),
+      setGroupsSearch: (search) => set({ groupsSearch: search, groupsPage: 1 }),
+      setGroupsSort: (field, order) => set({ groupsSort: { field, order }, groupsPage: 1 }),
+      setGroupsAttachmentFilter: (filter) => set({ groupsAttachmentFilter: filter, groupsPage: 1 }),
+      setUpdatingGroupId: (groupId) => set({ updatingGroupId: groupId }),
+      setOptimisticDirectGroupIds: (groupIds) => set({ optimisticDirectGroupIds: groupIds }),
+      addOptimisticDirectGroupId: (groupId) =>
+        set((state) => {
+          const next = new Set(state.optimisticDirectGroupIds);
+          next.add(groupId);
+          return { optimisticDirectGroupIds: next };
+        }),
+      removeOptimisticDirectGroupId: (groupId) =>
+        set((state) => {
+          const next = new Set(state.optimisticDirectGroupIds);
+          next.delete(groupId);
+          return { optimisticDirectGroupIds: next };
+        }),
       setGroupsLoading: (loading) => set({ groupsLoading: loading }),
       setGroupsRefetch: (refetch) => set({ groupsRefetch: refetch }),
 
       // Actions - Permissions
       setPermissionsPage: (page) => set({ permissionsPage: page }),
       setPermissionsLimit: (limit) => set({ permissionsLimit: limit, permissionsPage: 1 }),
+      setPermissionsSearch: (search) => set({ permissionsSearch: search, permissionsPage: 1 }),
+      setPermissionsSort: (field, order) =>
+        set({ permissionsSort: { field, order }, permissionsPage: 1 }),
+      setPermissionsAttachmentFilter: (filter) =>
+        set({ permissionsAttachmentFilter: filter, permissionsPage: 1 }),
+      setUpdatingPermissionId: (permissionId) => set({ updatingPermissionId: permissionId }),
+      setOptimisticDirectPermissionIds: (permissionIds) =>
+        set({ optimisticDirectPermissionIds: permissionIds }),
+      addOptimisticDirectPermissionId: (permissionId) =>
+        set((state) => {
+          const next = new Set(state.optimisticDirectPermissionIds);
+          next.add(permissionId);
+          return { optimisticDirectPermissionIds: next };
+        }),
+      removeOptimisticDirectPermissionId: (permissionId) =>
+        set((state) => {
+          const next = new Set(state.optimisticDirectPermissionIds);
+          next.delete(permissionId);
+          return { optimisticDirectPermissionIds: next };
+        }),
       setPermissionsLoading: (loading) => set({ permissionsLoading: loading }),
       setPermissionsRefetch: (refetch) => set({ permissionsRefetch: refetch }),
 
@@ -187,6 +284,7 @@ export const useUserStore = create<UserState>()(
           rolesLimit: 10,
           rolesSearch: '',
           rolesSort: defaultRolesSort,
+          rolesAttachmentFilter: 'all',
           updatingRoleId: null,
           optimisticCheckedRoleIds: new Set(),
           rolesLoading: false,
@@ -198,6 +296,7 @@ export const useUserStore = create<UserState>()(
           tagsLimit: 10,
           tagsSearch: '',
           tagsSort: defaultTagsSort,
+          tagsAttachmentFilter: 'all',
           updatingTagId: null,
           optimisticCheckedTagIds: new Set(),
           tagsLoading: false,
@@ -207,6 +306,11 @@ export const useUserStore = create<UserState>()(
         set({
           groupsPage: 1,
           groupsLimit: 10,
+          groupsSearch: '',
+          groupsSort: defaultGroupsSort,
+          groupsAttachmentFilter: 'all',
+          updatingGroupId: null,
+          optimisticDirectGroupIds: new Set(),
           groupsLoading: false,
           groupsRefetch: null,
         }),
@@ -214,6 +318,11 @@ export const useUserStore = create<UserState>()(
         set({
           permissionsPage: 1,
           permissionsLimit: 10,
+          permissionsSearch: '',
+          permissionsSort: defaultPermissionsSort,
+          permissionsAttachmentFilter: 'all',
+          updatingPermissionId: null,
+          optimisticDirectPermissionIds: new Set(),
           permissionsLoading: false,
           permissionsRefetch: null,
         }),
@@ -223,6 +332,7 @@ export const useUserStore = create<UserState>()(
           rolesLimit: 10,
           rolesSearch: '',
           rolesSort: defaultRolesSort,
+          rolesAttachmentFilter: 'all',
           updatingRoleId: null,
           optimisticCheckedRoleIds: new Set(),
           rolesLoading: false,
@@ -231,16 +341,27 @@ export const useUserStore = create<UserState>()(
           tagsLimit: 10,
           tagsSearch: '',
           tagsSort: defaultTagsSort,
+          tagsAttachmentFilter: 'all',
           updatingTagId: null,
           optimisticCheckedTagIds: new Set(),
           tagsLoading: false,
           tagsRefetch: null,
           groupsPage: 1,
           groupsLimit: 10,
+          groupsSearch: '',
+          groupsSort: defaultGroupsSort,
+          groupsAttachmentFilter: 'all',
+          updatingGroupId: null,
+          optimisticDirectGroupIds: new Set(),
           groupsLoading: false,
           groupsRefetch: null,
           permissionsPage: 1,
           permissionsLimit: 10,
+          permissionsSearch: '',
+          permissionsSort: defaultPermissionsSort,
+          permissionsAttachmentFilter: 'all',
+          updatingPermissionId: null,
+          optimisticDirectPermissionIds: new Set(),
           permissionsLoading: false,
           permissionsRefetch: null,
         }),

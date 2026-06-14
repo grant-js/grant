@@ -185,6 +185,10 @@
       "view": "View",
       "list": "List"
     },
+    "fields": {
+      "name": "Name",
+      "description": "Description"
+    },
     "roles": {
       "names": {
         "organizationOwner": "Organization Owner",

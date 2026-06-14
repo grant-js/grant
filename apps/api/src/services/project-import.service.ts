@@ -13,16 +13,22 @@ import type {
   IProjectImportService,
   IProjectPermissionService,
   IProjectResourceService,
+  IProjectRolePermissionService,
   IProjectRoleService,
   IProjectTagService,
   IProjectUserApiKeyService,
+  IProjectUserGroupService,
+  IProjectUserPermissionService,
   IProjectUserService,
   IResourceService,
   IResourceTagService,
   IRoleGroupService,
+  IRolePermissionService,
   IRoleService,
   IRoleTagService,
   ITagService,
+  IUserGroupService,
+  IUserPermissionService,
   IUserRepository,
   IUserRoleService,
   IUserService,
@@ -68,10 +74,16 @@ export class ProjectImportService implements IProjectImportService {
     roles: IRoleService,
     groups: IGroupService,
     roleGroups: IRoleGroupService,
+    rolePermissions: IRolePermissionService,
     groupPermissions: IGroupPermissionService,
+    userPermissions: IUserPermissionService,
+    userGroups: IUserGroupService,
     projectRoles: IProjectRoleService,
     projectGroups: IProjectGroupService,
     projectPermissions: IProjectPermissionService,
+    projectRolePermissions: IProjectRolePermissionService,
+    projectUserPermissions: IProjectUserPermissionService,
+    projectUserGroups: IProjectUserGroupService,
     projectResources: IProjectResourceService,
     projectUsers: IProjectUserService,
     userRoles: IUserRoleService,
@@ -120,10 +132,16 @@ export class ProjectImportService implements IProjectImportService {
         roles,
         groups,
         roleGroups,
+        rolePermissions,
         groupPermissions,
+        userPermissions,
+        userGroups,
         projectRoles,
         projectGroups,
         projectPermissions,
+        projectRolePermissions,
+        projectUserPermissions,
+        projectUserGroups,
         projectResources,
         projectUsers,
         userRoles,
@@ -295,7 +313,7 @@ export class ProjectImportService implements IProjectImportService {
       userTagsLinked: 0,
       resourcesCreated: 0,
       permissionsCreated: 0,
-      warnings: [],
+      warnings: [...expanded.warnings],
     };
 
     const produced: CdmProducedRefs = {
@@ -304,7 +322,14 @@ export class ProjectImportService implements IProjectImportService {
       resourceIds: new Map<string, string>(),
       permissionIds: new Map<string, string>(),
       userIds: new Map<string, string>(),
+      groupIdsByKey: new Map<string, string>(),
     };
+
+    const documentGroupsByKey = new Map(
+      (expanded.groups ?? [])
+        .filter((g) => typeof g.key === 'string' && g.key.trim() !== '')
+        .map((g) => [g.key.trim(), g])
+    );
 
     if (expanded.mode?.strategy === CdmModeStrategy.Replace) {
       if (expanded.mode.confirmDestructive !== true) {
@@ -312,6 +337,7 @@ export class ProjectImportService implements IProjectImportService {
           'mode.confirmDestructive must be true when mode.strategy is replace'
         );
       }
+      this.importRepo.resetStaggerSoftDeleteEpoch();
       for (const handler of this.handlers) {
         await handler.teardown({ projectId, scope, tx });
       }
@@ -331,6 +357,7 @@ export class ProjectImportService implements IProjectImportService {
       lookupResolvedRef: (ref) => this.lookupRef(ref, resolvedByKey, produced),
       result,
       produced,
+      documentGroupsByKey,
       assignmentUserIds,
     };
 

@@ -6,7 +6,6 @@ import {
   ProjectAppDeleteDialog,
   ProjectAppEditDialog,
   ProjectAppPagination,
-  ProjectAppTestDialog,
   ProjectAppToolbar,
   ProjectAppViewer,
 } from '@/components/features/project-apps';
@@ -29,7 +28,6 @@ export default function OrganizationProjectAppsPage() {
         <ProjectAppViewer />
         <ProjectAppEditDialog />
         <ProjectAppDeleteDialog />
-        <ProjectAppTestDialog />
       </>
     </DashboardLayout>
   );

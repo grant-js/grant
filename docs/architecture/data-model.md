@@ -18,7 +18,7 @@ Grant stores all data in PostgreSQL using [Drizzle ORM](https://orm.drizzle.team
 | **Project App**  | OAuth/consent application in a project                                    | Belongs to a project; tags via `project_app_tags`; scopes and redirect URIs                |
 | **Resource**     | Domain entity defined by an external system (e.g. invoice, order, policy) | Belongs to a project; permissions are scoped to resources                                  |
 | **Role**         | Named collection of groups                                                | Assigned to users via `user_roles`; contains groups via `role_groups`                      |
-| **Group**        | Collection of permissions                                                 | Belongs to roles; contains permissions via `group_permissions`                             |
+| **Group**        | Collection of permissions                                                 | Linked to roles via `role_groups`; may also attach directly to users via `user_groups`     |
 | **Permission**   | A specific action on a resource (e.g. `user:read`)                        | Belongs to groups; linked to a resource                                                    |
 | **Tag**          | Flexible label for categorization                                         | Applied to users, roles, groups, permissions, organizations, and projects via pivot tables |
 | **API Key**      | Programmatic access credential scoped to a project                        | Belongs to a user and a project; exchanged for a JWT                                       |
@@ -48,13 +48,16 @@ How permissions are structured from user down to resource:
 ```bmermaid
 erDiagram
     Users }o--o{ Roles : "assigned"
+    Users }o--o{ Groups : "direct"
+    Users }o--o{ Permissions : "direct"
     Roles }o--o{ Groups : "contains"
+    Roles }o--o{ Permissions : "direct"
     Groups }o--o{ Permissions : "bundles"
     Resources ||--o{ Permissions : "defines"
     Projects ||--o{ Resources : "scoped to"
 ```
 
-Each link is a pivot table (`user_roles`, `role_groups`, `group_permissions`). A permission is a specific action (e.g. `read`, `create`) on a resource.
+Each link is a pivot table (`user_roles`, `user_groups`, `user_permissions`, `role_groups`, `role_permissions`, `group_permissions`). Project scope adds `project_user_groups`, `project_user_permissions`, and related project pivot tables. A permission is a specific action (e.g. `read`, `create`) on a resource.
 
 ## Tenant Hierarchy
 
@@ -76,13 +79,16 @@ For the full isolation model including Row-Level Security, see [Multi-Tenancy](/
 
 ## RBAC Chain
 
-Permissions are evaluated through a fixed chain:
+Permissions are evaluated through a union of paths:
 
 ```
 User → Role → Group → Permission → Resource
+User → Group → Permission → Resource
+User → Permission → Resource
+Role → Permission → Resource
 ```
 
-A user is assigned roles; each role contains groups; each group bundles permissions; each permission authorizes a specific action on a resource. Roles, groups, and permissions are all scoped to a specific tenant (account, organization, or project).
+A user is assigned roles and may have direct group or permission attachments. Each role contains groups and may have direct permissions; each group bundles permissions. Grant resolution unions all sources before matching action + resource.
 
 ::: tip
 For the complete permission model, evaluation flow, and standard roles, see [RBAC](/architecture/rbac).

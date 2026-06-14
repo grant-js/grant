@@ -6,5 +6,11 @@ mutation UpdateRole($id: ID!, $input: UpdateRoleInput!) {
     metadata
     createdAt
     updatedAt
+    tags {
+      id
+      name
+      color
+      isPrimary
+    }
   }
 }

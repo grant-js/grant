@@ -5,6 +5,9 @@ type Group implements Auditable {
   metadata: JSON!
   permissions: [Permission!]
   tags: [Tag!]
+  primaryTag: Tag
+  permissionCount: Int!
+  tagCount: Int!
   createdAt: Date!
   updatedAt: Date!
   deletedAt: Date

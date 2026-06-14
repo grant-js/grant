@@ -18,6 +18,10 @@
     "view": "Anzeigen",
     "list": "Liste"
   },
+  "fields": {
+    "name": "Name",
+    "description": "Beschreibung"
+  },
   "permissions": {
     "createFromResourceDescription": "Berechtigung für die Aktion „{{action}}“ bei {{resourceName}}."
   },
