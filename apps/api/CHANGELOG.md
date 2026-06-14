@@ -1,5 +1,41 @@
 # grant-api
 
+## 1.2.0
+
+### Minor Changes
+
+- 3355be1: RBAC detail UX, direct permission assignments, and CDM replace pivot teardown.
+
+  **Web**
+  - Settings-style feature module cards and dedicated `/new` + detail routes for roles, groups, permissions, resources, project apps, and users
+  - Slim list edit dialogs (scalar fields only); relationship editing on detail pages
+  - Paginated tag pickers, detail table column visibility, and sync job detail pages
+
+  **API & database**
+  - Direct assignment pivots: `user_groups`, `user_permissions`, `role_permissions`, and project-scoped mirrors
+  - CDM import/export for explicit user→group and user→role permission paths (no synthetic roles)
+  - Replace-mode CDM teardown sweeps orphan pivots (including `project_app_tags`) with monotonic microsecond stagger soft-delete
+  - Scoped entity tag resolvers; slim GraphQL list queries (`getRolesList`, `getGroupsList`, etc.)
+
+  **Testing & tooling**
+  - E2E coverage for rich replace import teardown and direct `users[].groups` authorization
+  - RBAC list-query benchmark script; gitignore ephemeral benchmark outputs under `docs/benchmarks/`
+
+### Patch Changes
+
+- @grantjs/schema@1.2.0
+- @grantjs/core@1.0.0
+- @grantjs/jobs@1.0.0
+- @grantjs/analytics@1.0.0
+- @grantjs/cache@1.0.0
+- @grantjs/constants@1.0.0
+- @grantjs/database@1.0.0
+- @grantjs/email@1.0.0
+- @grantjs/errors@1.0.0
+- @grantjs/logger@1.0.0
+- @grantjs/storage@1.0.0
+- @grantjs/telemetry@1.0.0
+
 ## 1.1.7
 
 ### Patch Changes
