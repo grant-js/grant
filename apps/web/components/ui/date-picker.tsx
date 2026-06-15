@@ -77,7 +77,7 @@ export function DatePicker({
             setOpen(false);
           }}
           disabled={calendarDisabled}
-          initialFocus
+          autoFocus
         />
       </PopoverContent>
     </Popover>
