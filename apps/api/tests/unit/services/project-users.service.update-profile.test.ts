@@ -18,6 +18,7 @@ describe('ProjectUserService.updateProjectUserProfile', () => {
   const projectUserRepository = {
     getProjectUsers: vi.fn(),
     updateProjectUserProfile: vi.fn(),
+    updateProjectUserSearchDocument: vi.fn().mockResolvedValue(undefined),
   };
 
   function svc() {

@@ -315,6 +315,22 @@ Routes under **`/api/projects/{id}/…`** with `scopeId` and `tenant` (see [REST
 
 Operation documents live in `packages/@grantjs/schema` for codegen.
 
+## Searchable metadata
+
+List-view text search uses denormalized **`search_document`** columns (not raw JSONB scans). Importers can supply explicit search tokens via the top-level CDM field **`searchable`** on `users[]`, `roles[]`, and `groups[]`.
+
+| Entity        | Storage                         | List search                          |
+| ------------- | ------------------------------- | ------------------------------------ |
+| Project users | `project_users.search_document` | Project-scoped user lists            |
+| Roles         | `roles.search_document`         | Role lists (`searchDocument` field)  |
+| Groups        | `groups.search_document`        | Group lists (`searchDocument` field) |
+
+On import, `searchable` is merged into **`metadata.cdmSource.searchable`** for export round-trip. Grant also extracts allowlisted metadata paths (e.g. `cdmSource.legacy.email`) when `searchable` is absent.
+
+**Never indexed:** `passwordHash`, `clientSecret`, `accessKeySecretReferenceId`, raw `permissionJson`, and similar secret fields.
+
+**Backfill:** Re-run a CDM replace import after deploying Grant + ETL with `searchable` support; pivot and entity rows are recomputed on apply.
+
 ## Row metadata
 
 CDM-managed rows carry:

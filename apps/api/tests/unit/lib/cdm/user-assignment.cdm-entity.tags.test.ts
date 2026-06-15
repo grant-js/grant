@@ -62,6 +62,7 @@ function buildHandler(deps?: {
   projectUsers?: {
     addProjectUser: ReturnType<typeof vi.fn>;
     mergeProjectUserCdmMetadata: ReturnType<typeof vi.fn>;
+    syncProjectUserSearchDocument: ReturnType<typeof vi.fn>;
   };
   userRoles?: { addUserRole: ReturnType<typeof vi.fn> };
   userTags?: { addUserTag: ReturnType<typeof vi.fn> };
@@ -82,6 +83,7 @@ function buildHandler(deps?: {
   const projectUsers = deps?.projectUsers ?? {
     addProjectUser: vi.fn().mockResolvedValue(undefined),
     mergeProjectUserCdmMetadata: vi.fn().mockResolvedValue(undefined),
+    syncProjectUserSearchDocument: vi.fn().mockResolvedValue(undefined),
   };
   const userRoles = deps?.userRoles ?? { addUserRole: vi.fn().mockResolvedValue(undefined) };
   const userTags = deps?.userTags ?? { addUserTag: vi.fn().mockResolvedValue(undefined) };

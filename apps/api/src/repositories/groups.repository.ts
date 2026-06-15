@@ -51,7 +51,9 @@ export class GroupRepository
   }
 
   public async createGroup(
-    params: Omit<CreateGroupInput, 'scope' | 'tagIds' | 'permissionIds'>,
+    params: Omit<CreateGroupInput, 'scope' | 'tagIds' | 'permissionIds'> & {
+      searchDocument?: string;
+    },
     transaction?: Transaction
   ): Promise<Group> {
     return this.create(params, transaction);

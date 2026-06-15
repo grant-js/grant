@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm';
-import { index, jsonb, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import { index, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 
 export const groups = pgTable(
   'groups',
@@ -8,6 +9,7 @@ export const groups = pgTable(
     name: varchar('name', { length: 255 }).notNull(),
     description: varchar('description', { length: 1000 }),
     metadata: jsonb('metadata').default({}).notNull(),
+    searchDocument: text('search_document').default('').notNull(),
     deletedAt: timestamp('deleted_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -15,6 +17,7 @@ export const groups = pgTable(
   (t) => [
     index('groups_deleted_at_idx').on(t.deletedAt),
     index('groups_metadata_idx').using('gin', t.metadata),
+    index('groups_search_document_trgm_idx').using('gin', sql`${t.searchDocument} gin_trgm_ops`),
   ]
 );
 

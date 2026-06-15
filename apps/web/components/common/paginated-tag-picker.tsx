@@ -41,7 +41,7 @@ export function PaginatedTagPicker({
   });
 
   const { containerRef, sentinelRef } = useInfiniteScroll({
-    enabled: hasNextPage,
+    enabled: hasNextPage && tags.length > 0,
     loading,
     onLoadMore: loadNextPage,
   });
@@ -74,7 +74,11 @@ export function PaginatedTagPicker({
       ) : tags.length === 0 ? (
         <div className="text-sm text-muted-foreground p-2">{t('tags.empty')}</div>
       ) : (
-        <div ref={containerRef} className="overflow-y-auto space-y-1 pr-2" style={{ maxHeight }}>
+        <div
+          ref={containerRef}
+          className="min-h-0 overflow-y-auto overscroll-contain space-y-1 pr-2"
+          style={{ maxHeight }}
+        >
           {tags.map((tag: Tag) => {
             const isSelected = selectedTagIds.includes(tag.id);
             return (

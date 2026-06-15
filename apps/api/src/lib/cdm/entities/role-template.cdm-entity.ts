@@ -10,6 +10,7 @@ import type {
 
 import { CDM_IMPORT_METADATA_KEY, CDM_SOURCE_METADATA_KEY } from '@/constants/cdm-import.constants';
 import { ValidationError } from '@/lib/errors';
+import { extractCdmSearchableFromMetadata } from '@/lib/search-document.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import type { ProjectExportRepository } from '@/repositories/project-export.repository';
 import type {
@@ -163,7 +164,9 @@ export class RoleTemplateCdmEntity implements ICdmEntityHandler<
             {
               groupDisplayName: tmpl.linkedGroupImportName ?? undefined,
               groupDisplayDescription: tmpl.linkedGroupImportDescription ?? undefined,
-            }
+              groupSearchable: tmpl.groupSearchable ?? undefined,
+            },
+            tmpl.searchable
           )
         : await this.builder.createRoleWithDirectPermissions(
             ctx.projectId,
@@ -174,7 +177,8 @@ export class RoleTemplateCdmEntity implements ICdmEntityHandler<
             'role',
             perms,
             tmpl.metadata,
-            tx
+            tx,
+            tmpl.searchable
           );
       ctx.produced.roleIdsByKey.set(tmpl.externalKey, roleId);
       ctx.result.rolesCreated += 1;
@@ -338,6 +342,7 @@ export class RoleTemplateCdmEntity implements ICdmEntityHandler<
               permissionKeys: sortedPermissionKeysByGroupId.get(groupId) ?? [],
               tagKeys: groupTagKeys,
               primaryGroupTagKey: primaryGroupTagKey ?? null,
+              searchable: groupMeta ? extractCdmSearchableFromMetadata(groupMeta.metadata) : null,
             }
           : undefined;
       return {
@@ -361,6 +366,7 @@ export class RoleTemplateCdmEntity implements ICdmEntityHandler<
           };
         }),
         metadata,
+        searchable: extractCdmSearchableFromMetadata(r.metadata),
         tagKeys: tagKeys.length > 0 ? tagKeys : undefined,
         primaryRoleTagKey,
         groupTagKeys: groupTagKeys.length > 0 ? groupTagKeys : undefined,

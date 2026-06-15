@@ -18,6 +18,10 @@ import type {
 import { Scope } from '@grantjs/schema';
 
 import { buildCdmImportMetadata, mergeCdmImporterMetadata } from '@/constants/cdm-import.constants';
+import {
+  buildSearchDocument,
+  mergeImporterMetadataWithSearchable,
+} from '@/lib/search-document.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import {
   ProjectImportRepository,
@@ -51,6 +55,28 @@ export interface CdmRoleCreationResult {
 export interface CdmRoleWithGroupNaming {
   groupDisplayName?: string | null;
   groupDisplayDescription?: string | null;
+  groupSearchable?: Record<string, unknown> | null;
+}
+
+function buildCdmEntityMetadata(
+  projectId: string,
+  kind: 'role' | 'group' | 'directRole',
+  externalKey: string,
+  importerMetadata: unknown,
+  searchable?: Record<string, unknown> | null
+): Record<string, unknown> {
+  const withSearchable = mergeImporterMetadataWithSearchable(
+    importerMetadata != null &&
+      typeof importerMetadata === 'object' &&
+      !Array.isArray(importerMetadata)
+      ? (importerMetadata as Record<string, unknown>)
+      : undefined,
+    searchable
+  );
+  return mergeCdmImporterMetadata(
+    buildCdmImportMetadata(projectId, kind, externalKey),
+    withSearchable
+  );
 }
 
 /**
@@ -98,7 +124,8 @@ export class CdmEntityBuilder {
     perms: readonly ResolvedCdmPermission[],
     importerMetadata: unknown,
     tx: Transaction,
-    naming?: CdmRoleWithGroupNaming
+    naming?: CdmRoleWithGroupNaming,
+    roleSearchable?: Record<string, unknown> | null
   ): Promise<CdmRoleCreationResult> {
     const groupLabel =
       naming?.groupDisplayName != null && String(naming.groupDisplayName).trim() !== ''
@@ -110,15 +137,26 @@ export class CdmEntityBuilder {
       String(naming.groupDisplayDescription).trim() !== ''
         ? String(naming.groupDisplayDescription).trim()
         : (description ?? `Imported group for ${externalKey}`);
-    const groupMetadata = mergeCdmImporterMetadata(
-      buildCdmImportMetadata(projectId, 'group', externalKey),
-      importerMetadata
+    const groupMetadata = buildCdmEntityMetadata(
+      projectId,
+      'group',
+      externalKey,
+      importerMetadata,
+      naming?.groupSearchable ?? roleSearchable
     );
+    const groupSearchDocument = buildSearchDocument({
+      kind: 'group',
+      name: groupName,
+      description: groupDescription,
+      searchable: naming?.groupSearchable ?? roleSearchable,
+      metadata: groupMetadata,
+    });
     const group = await this.groups.createGroup(
       {
         name: groupName,
         description: groupDescription,
         metadata: groupMetadata,
+        searchDocument: groupSearchDocument,
       },
       tx
     );
@@ -142,15 +180,26 @@ export class CdmEntityBuilder {
     }
 
     const roleName = this.truncateName(name.trim());
-    const roleMetadata = mergeCdmImporterMetadata(
-      buildCdmImportMetadata(projectId, kind, externalKey),
-      importerMetadata
+    const roleMetadata = buildCdmEntityMetadata(
+      projectId,
+      kind,
+      externalKey,
+      importerMetadata,
+      roleSearchable
     );
+    const roleSearchDocument = buildSearchDocument({
+      kind: 'role',
+      name: roleName,
+      description,
+      searchable: roleSearchable,
+      metadata: roleMetadata,
+    });
     const role = await this.roles.createRole(
       {
         name: roleName,
         description: description ?? undefined,
         metadata: roleMetadata,
+        searchDocument: roleSearchDocument,
       },
       tx
     );
@@ -187,18 +236,30 @@ export class CdmEntityBuilder {
     kind: 'role' | 'directRole',
     perms: readonly ResolvedCdmPermission[],
     importerMetadata: unknown,
-    tx: Transaction
+    tx: Transaction,
+    roleSearchable?: Record<string, unknown> | null
   ): Promise<CdmRoleCreationResult> {
     const roleName = this.truncateName(name.trim());
-    const roleMetadata = mergeCdmImporterMetadata(
-      buildCdmImportMetadata(projectId, kind, externalKey),
-      importerMetadata
+    const roleMetadata = buildCdmEntityMetadata(
+      projectId,
+      kind,
+      externalKey,
+      importerMetadata,
+      roleSearchable
     );
+    const roleSearchDocument = buildSearchDocument({
+      kind: 'role',
+      name: roleName,
+      description,
+      searchable: roleSearchable,
+      metadata: roleMetadata,
+    });
     const role = await this.roles.createRole(
       {
         name: roleName,
         description: description ?? undefined,
         metadata: roleMetadata,
+        searchDocument: roleSearchDocument,
       },
       tx
     );
@@ -294,7 +355,8 @@ export class CdmEntityBuilder {
     description: string | null,
     perms: readonly ResolvedCdmPermission[],
     importerMetadata: unknown,
-    tx: Transaction
+    tx: Transaction,
+    groupSearchable?: Record<string, unknown> | null
   ): Promise<{
     groupId: string;
     groupPermissions: number;
@@ -303,15 +365,26 @@ export class CdmEntityBuilder {
     projectResources: number;
   }> {
     const groupName = this.truncateName(displayName.trim() !== '' ? displayName.trim() : groupKey);
-    const groupMetadata = mergeCdmImporterMetadata(
-      buildCdmImportMetadata(projectId, 'group', groupKey),
-      importerMetadata
+    const groupMetadata = buildCdmEntityMetadata(
+      projectId,
+      'group',
+      groupKey,
+      importerMetadata,
+      groupSearchable
     );
+    const groupSearchDocument = buildSearchDocument({
+      kind: 'group',
+      name: groupName,
+      description: description ?? `Imported group ${groupKey}`,
+      searchable: groupSearchable,
+      metadata: groupMetadata,
+    });
     const group = await this.groups.createGroup(
       {
         name: groupName,
         description: description ?? `Imported group ${groupKey}`,
         metadata: groupMetadata,
+        searchDocument: groupSearchDocument,
       },
       tx
     );

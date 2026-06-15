@@ -51,7 +51,7 @@ export class RoleRepository extends EntityRepository<RoleModel, Role> implements
   }
 
   public async createRole(
-    params: Omit<CreateRoleInput, 'scope' | 'tagIds' | 'groupIds'>,
+    params: Omit<CreateRoleInput, 'scope' | 'tagIds' | 'groupIds'> & { searchDocument?: string },
     transaction?: Transaction
   ): Promise<Role> {
     return this.create(params, transaction);

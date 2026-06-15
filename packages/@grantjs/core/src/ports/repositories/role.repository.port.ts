@@ -33,7 +33,7 @@ export interface IRoleRepository {
   ): Promise<RolePage>;
 
   createRole(
-    params: Omit<CreateRoleInput, 'scope' | 'tagIds' | 'groupIds'>,
+    params: Omit<CreateRoleInput, 'scope' | 'tagIds' | 'groupIds'> & { searchDocument?: string },
     transaction?: unknown
   ): Promise<Role>;
 

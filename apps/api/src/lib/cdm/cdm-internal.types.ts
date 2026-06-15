@@ -34,6 +34,7 @@ export interface CdmRoleTemplateInternal {
     permissionKeys: readonly string[];
     tagKeys: readonly string[];
     primaryGroupTagKey?: string | null;
+    searchable?: Record<string, unknown> | null;
   };
   /**
    * Import-only: first `groups[].name` / description from the CDM document for
@@ -44,6 +45,9 @@ export interface CdmRoleTemplateInternal {
   linkedGroupImportDescription?: string | null;
   /** Import-only: CDM `roles[].groups` keys mapped to the paired Grant group. */
   linkedDocumentGroupKeys?: string[];
+  searchable?: Record<string, unknown> | null;
+  /** Searchable tokens for the paired Grant group (from document `groups[]`). */
+  groupSearchable?: Record<string, unknown> | null;
 }
 
 export interface CdmUserAssignmentInternal {
@@ -59,6 +63,7 @@ export interface CdmUserAssignmentInternal {
   }>;
   directPermissionRefs?: CdmPermissionRefInternal[];
   metadata?: Record<string, unknown> | null;
+  searchable?: Record<string, unknown> | null;
   tagKeys?: string[];
   primaryUserTagKey?: string | null;
   /**
@@ -84,4 +89,5 @@ export interface CdmUserProvisionInternal {
   externalKey: string;
   name: string;
   metadata?: Record<string, unknown> | null;
+  searchable?: Record<string, unknown> | null;
 }

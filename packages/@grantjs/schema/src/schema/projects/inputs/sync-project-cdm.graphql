@@ -79,6 +79,11 @@ input GroupCdmInput {
   permissions: [String!]
   tags: [String!]
   primaryTag: String
+  """
+  Denormalized search tokens for list views (email, legacy ids, etc.).
+  Also persisted under metadata.cdmSource.searchable on import.
+  """
+  searchable: JSON
   metadata: JSON
 }
 
@@ -98,6 +103,7 @@ input RoleCdmInput {
   permissions: [String!]
   tags: [String!]
   primaryTag: String
+  searchable: JSON
   metadata: JSON
 }
 
@@ -129,6 +135,10 @@ input UserCdmInput {
   tags: [String!]
   primaryTag: String
   apiKeys: [UserApiKeyCdmInput!]
+  """
+  Denormalized search tokens for project-scoped user list views.
+  """
+  searchable: JSON
   metadata: JSON
 }
 

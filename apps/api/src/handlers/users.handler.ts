@@ -117,12 +117,30 @@ export class UserHandler extends CacheHandler {
       };
     }
 
+    let effectiveSearch = search;
+    if (search != null && search.trim() !== '' && isProjectScopedUserMetadataTenant(scope.tenant)) {
+      const projectId = this.extractProjectIdFromScope(scope);
+      userIds = await this.projectUsers.filterUserIdsBySearchDocument({
+        projectId,
+        userIds,
+        search: search.trim(),
+      });
+      if (userIds.length === 0) {
+        return {
+          users: [],
+          totalCount: 0,
+          hasNextPage: false,
+        };
+      }
+      effectiveSearch = undefined;
+    }
+
     const usersResult = await this.users.getUsers({
       ids: userIds,
       page,
       limit,
       sort,
-      search,
+      search: effectiveSearch,
       requestedFields,
     });
 

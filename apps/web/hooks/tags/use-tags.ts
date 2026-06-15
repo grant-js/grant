@@ -22,7 +22,17 @@ export function useTags(params: QueryTagsArgs): UseTagsResult {
     [scope, ids]
   );
 
-  const variables = useMemo(() => params, [params]);
+  const variables = useMemo(
+    () => ({
+      scope: params.scope,
+      page: params.page,
+      limit: params.limit,
+      sort: params.sort,
+      search: params.search,
+      ids: params.ids,
+    }),
+    [params.scope, params.page, params.limit, params.sort, params.search, params.ids]
+  );
 
   const { data, loading, error, refetch } = useQuery<{ tags: TagPage }>(GetTagsDocument, {
     variables,

@@ -1,4 +1,5 @@
 enum RoleSearchableField {
   name
   description
+  searchDocument
 }

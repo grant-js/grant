@@ -120,6 +120,24 @@ export interface IProjectUserService {
     transaction?: unknown
   ): Promise<ProjectUser>;
 
+  syncProjectUserSearchDocument(
+    params: {
+      projectId: string;
+      userId: string;
+      searchable?: Record<string, unknown> | null;
+    },
+    transaction?: unknown
+  ): Promise<void>;
+
+  filterUserIdsBySearchDocument(
+    params: {
+      projectId: string;
+      userIds: readonly string[];
+      search: string;
+    },
+    transaction?: unknown
+  ): Promise<string[]>;
+
   removeProjectUser(
     params: RemoveProjectUserInput & DeleteParams,
     transaction?: unknown

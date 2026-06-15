@@ -138,6 +138,24 @@ export interface IProjectUserRepository {
     transaction?: unknown
   ): Promise<ProjectUser>;
 
+  updateProjectUserSearchDocument(
+    params: {
+      projectId: string;
+      userId: string;
+      searchDocument: string;
+    },
+    transaction?: unknown
+  ): Promise<ProjectUser>;
+
+  filterUserIdsBySearchDocument(
+    params: {
+      projectId: string;
+      userIds: readonly string[];
+      search: string;
+    },
+    transaction?: unknown
+  ): Promise<string[]>;
+
   getProjectUserMemberships(
     userId: string,
     transaction?: unknown
