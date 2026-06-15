@@ -1,5 +1,36 @@
 # grant-api
 
+## 1.3.0
+
+### Minor Changes
+
+- b911b9a: CDM searchable metadata and denormalized `search_document` for list search, plus tag picker infinite scroll fix.
+
+  **API & CDM**
+
+  - Add `search_document` on `project_users`, `roles`, and `groups` with pg_trgm indexes
+  - CDM `searchable` on user, role, and group inputs; import, export, and runtime recomputation
+  - Project-scoped user list search filters via pivot `search_document`
+
+  **Web**
+
+  - Fix toolbar tag filter infinite loading (nested dropdown scroll, stable tag query variables, IntersectionObserver reconnect)
+
+### Patch Changes
+
+- @grantjs/schema@1.3.0
+- @grantjs/core@1.0.0
+- @grantjs/jobs@1.0.0
+- @grantjs/analytics@1.0.0
+- @grantjs/cache@1.0.0
+- @grantjs/constants@1.0.0
+- @grantjs/database@1.0.0
+- @grantjs/email@1.0.0
+- @grantjs/errors@1.0.0
+- @grantjs/logger@1.0.0
+- @grantjs/storage@1.0.0
+- @grantjs/telemetry@1.0.0
+
 ## 1.2.0
 
 ### Minor Changes
