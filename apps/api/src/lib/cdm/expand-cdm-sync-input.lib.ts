@@ -8,6 +8,8 @@ import type {
 } from '@grantjs/schema';
 import { CdmFindBy } from '@grantjs/schema';
 
+import { readCdmInputSearchable } from '@/lib/search-document.lib';
+
 import type {
   CdmPermissionRefInternal,
   CdmProjectUserApiKeyInternal,
@@ -90,12 +92,21 @@ export function expandCdmSyncInput(input: SyncProjectInput): ExpandedCdmSyncPayl
       }
     }
     const linked = linkedGroupImportFields(role, groupByKey);
+    const firstGroupKey = (role.groups ?? []).find(
+      (k): k is string => typeof k === 'string' && k.length > 0
+    );
+    const groupSearchable =
+      firstGroupKey != null
+        ? readCdmInputSearchable(groupByKey.get(firstGroupKey)?.searchable)
+        : null;
     return {
       externalKey: role.key,
       name: role.name,
       description: role.description ?? null,
       permissionRefs,
       metadata: role.metadata ?? null,
+      searchable: readCdmInputSearchable(role.searchable),
+      groupSearchable,
       tagKeys: role.tags ?? [],
       primaryRoleTagKey: role.primaryTag ?? null,
       groupTagKeys: linked.groupTagKeys,
@@ -123,6 +134,7 @@ export function expandCdmSyncInput(input: SyncProjectInput): ExpandedCdmSyncPayl
         externalKey: userKey,
         name: u.name,
         metadata: u.metadata ?? null,
+        searchable: readCdmInputSearchable(u.searchable),
       });
     }
 
@@ -167,6 +179,7 @@ export function expandCdmSyncInput(input: SyncProjectInput): ExpandedCdmSyncPayl
       tagKeys: u.tags ?? [],
       primaryUserTagKey: u.primaryTag ?? null,
       metadata: u.metadata ?? null,
+      searchable: readCdmInputSearchable(u.searchable),
     });
 
     for (const apiKey of u.apiKeys ?? []) {

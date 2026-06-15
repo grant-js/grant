@@ -75,7 +75,7 @@ jobs:
       # Org-owned repos need GITLEAKS_LICENSE (free key via gitleaks.io). See:
       # https://github.com/gitleaks/gitleaks-action#-announcement
       - name: Gitleaks (secret scanning)
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}

@@ -111,7 +111,7 @@ export function TagSelector({ selectedTagIds, onTagIdsChange }: TagSelectorProps
               <DropdownMenuTrigger asChild>{buttonContent}</DropdownMenuTrigger>
             </TooltipTrigger>
             <TooltipContent side="bottom">{tooltipText}</TooltipContent>
-            <DropdownMenuContent align="end" className="w-56 p-0" fullWidthOnMobile>
+            <DropdownMenuContent align="end" className="w-56 overflow-hidden p-0" fullWidthOnMobile>
               <PaginatedTagPicker
                 scope={scope}
                 selectedTagIds={selectedTagIds}

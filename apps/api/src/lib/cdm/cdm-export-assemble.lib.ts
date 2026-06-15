@@ -6,6 +6,8 @@ import {
   type TagCdmInput,
 } from '@grantjs/schema';
 
+import { extractCdmSearchableFromMetadata } from '@/lib/search-document.lib';
+
 import type {
   CdmProjectUserApiKeyInternal,
   CdmRoleTemplateInternal,
@@ -22,6 +24,7 @@ type AggregatedGrantGroup = {
   permissionKeys: Set<string>;
   tagKeys: string[];
   primaryGroupTagKey: string | null | undefined;
+  searchable?: Record<string, unknown> | null;
 };
 
 function aggregateLinkedGrantGroups(
@@ -37,6 +40,7 @@ function aggregateLinkedGrantGroups(
     permissionKeys: readonly string[];
     tagKeys: readonly string[];
     primaryGroupTagKey?: string | null;
+    searchable?: Record<string, unknown> | null;
   }) => {
     let agg = byGrantId.get(lg.grantGroupId);
     if (!agg) {
@@ -48,6 +52,7 @@ function aggregateLinkedGrantGroups(
         permissionKeys: new Set(lg.permissionKeys),
         tagKeys: [...lg.tagKeys],
         primaryGroupTagKey: lg.primaryGroupTagKey,
+        searchable: lg.searchable,
       };
       byGrantId.set(lg.grantGroupId, agg);
     } else {
@@ -133,6 +138,7 @@ export function assembleExportedSyncProjectInput(params: {
       permissions: [...g.permissionKeys].sort(),
       tags: [...new Set(g.tagKeys)].sort(),
       primaryTag: g.primaryGroupTagKey ?? null,
+      searchable: g.searchable ?? null,
       metadata: { grantGroupId: g.grantGroupId },
     }))
     .sort((a, b) => a.key.localeCompare(b.key));
@@ -147,6 +153,7 @@ export function assembleExportedSyncProjectInput(params: {
       .filter((s): s is string => Boolean(s)),
     tags: rt.tagKeys ?? [],
     primaryTag: rt.primaryRoleTagKey ?? null,
+    searchable: rt.searchable ?? extractCdmSearchableFromMetadata(rt.metadata ?? undefined),
     metadata: rt.metadata ?? null,
   }));
 
@@ -181,6 +188,7 @@ export function assembleExportedSyncProjectInput(params: {
         metadata: k.metadata ?? null,
       })),
     metadata: ua.metadata ?? null,
+    searchable: ua.searchable ?? extractCdmSearchableFromMetadata(ua.metadata ?? undefined),
   }));
 
   const assignedProvisionKeys = new Set(

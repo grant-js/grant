@@ -10,6 +10,7 @@ import {
 } from '@grantjs/schema';
 
 import { BadRequestError, NotFoundError } from '@/lib/errors';
+import { buildSearchDocument } from '@/lib/search-document.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -83,18 +84,30 @@ export class GroupService implements IGroupService {
   }
 
   public async createGroup(
-    params: Omit<CreateGroupInput, 'scope' | 'tagIds' | 'permissionIds'>,
+    params: Omit<CreateGroupInput, 'scope' | 'tagIds' | 'permissionIds'> & {
+      searchDocument?: string;
+    },
     transaction?: Transaction
   ): Promise<Group> {
     const context = 'GroupService.createGroup';
-    const validatedParams = validateInput(createGroupParamsSchema, params, context);
+    const { searchDocument: providedSearchDocument, ...rest } = params;
+    const validatedParams = validateInput(createGroupParamsSchema, rest, context);
     const { name, description, metadata } = validatedParams;
 
     // Validate that the group name is not a reserved core platform group name
     this.validateGroupNameNotReserved(name);
 
+    const searchDocument =
+      providedSearchDocument ??
+      buildSearchDocument({
+        kind: 'group',
+        name,
+        description,
+        metadata: metadata as Record<string, unknown> | undefined,
+      });
+
     const group = await this.groupRepository.createGroup(
-      { name, description, metadata: metadata ?? {} },
+      { name, description, metadata: metadata ?? {}, searchDocument },
       transaction
     );
 
@@ -132,6 +145,21 @@ export class GroupService implements IGroupService {
     const oldGroup = await this.getGroup(id, transaction);
     const updatedGroup = await this.groupRepository.updateGroup(id, input, transaction);
 
+    const searchDocument = buildSearchDocument({
+      kind: 'group',
+      name: updatedGroup.name,
+      description: updatedGroup.description,
+      metadata: updatedGroup.metadata as Record<string, unknown>,
+    });
+    const groupWithSearch =
+      searchDocument !== (updatedGroup as Group & { searchDocument?: string }).searchDocument
+        ? await this.groupRepository.updateGroup(
+            id,
+            { searchDocument } as unknown as UpdateGroupInput,
+            transaction
+          )
+        : updatedGroup;
+
     const oldValues = {
       id: oldGroup.id,
       name: oldGroup.name,
@@ -142,21 +170,27 @@ export class GroupService implements IGroupService {
     };
 
     const newValues = {
-      id: updatedGroup.id,
-      name: updatedGroup.name,
-      description: updatedGroup.description,
-      metadata: updatedGroup.metadata,
-      createdAt: updatedGroup.createdAt,
-      updatedAt: updatedGroup.updatedAt,
+      id: groupWithSearch.id,
+      name: groupWithSearch.name,
+      description: groupWithSearch.description,
+      metadata: groupWithSearch.metadata,
+      createdAt: groupWithSearch.createdAt,
+      updatedAt: groupWithSearch.updatedAt,
     };
 
     const auditMetadata = {
       context,
     };
 
-    await this.audit.logUpdate(updatedGroup.id, oldValues, newValues, auditMetadata, transaction);
+    await this.audit.logUpdate(
+      groupWithSearch.id,
+      oldValues,
+      newValues,
+      auditMetadata,
+      transaction
+    );
 
-    return validateOutput(createDynamicSingleSchema(groupSchema), updatedGroup, context);
+    return validateOutput(createDynamicSingleSchema(groupSchema), groupWithSearch, context);
   }
 
   public async deleteGroup(

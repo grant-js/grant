@@ -13,6 +13,7 @@ import {
   toMetadataRecord,
 } from '@/lib/effective-project-user-metadata.lib';
 import { ConflictError, NotFoundError } from '@/lib/errors';
+import { syncProjectUserSearchDocument } from '@/lib/sync-project-user-search-document.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams } from '@/types';
 
@@ -132,6 +133,33 @@ export class ProjectUserService implements IProjectUserService {
     return validateOutput(createDynamicSingleSchema(projectUserSchema), projectUser, context);
   }
 
+  public async syncProjectUserSearchDocument(
+    params: {
+      projectId: string;
+      userId: string;
+      searchable?: Record<string, unknown> | null;
+    },
+    transaction?: Transaction
+  ): Promise<void> {
+    await syncProjectUserSearchDocument(
+      this.projectUserRepository,
+      this.userRepository,
+      params,
+      transaction
+    );
+  }
+
+  public async filterUserIdsBySearchDocument(
+    params: {
+      projectId: string;
+      userIds: readonly string[];
+      search: string;
+    },
+    transaction?: Transaction
+  ): Promise<string[]> {
+    return this.projectUserRepository.filterUserIdsBySearchDocument(params, transaction);
+  }
+
   public async mergeProjectUserCdmMetadata(
     params: {
       projectId: string;
@@ -151,6 +179,14 @@ export class ProjectUserService implements IProjectUserService {
         projectId: validatedParams.projectId,
         userId: validatedParams.userId,
         importerMetadata: validatedParams.importerMetadata ?? null,
+      },
+      transaction
+    );
+
+    await this.syncProjectUserSearchDocument(
+      {
+        projectId: validatedParams.projectId,
+        userId: validatedParams.userId,
       },
       transaction
     );
@@ -216,6 +252,14 @@ export class ProjectUserService implements IProjectUserService {
 
     await this.audit.logUpdate(projectUser.id, oldValues, newValues, { context }, transaction);
 
+    await this.syncProjectUserSearchDocument(
+      {
+        projectId: validatedParams.projectId,
+        userId: validatedParams.userId,
+      },
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(projectUserSchema), projectUser, context);
   }
 
@@ -274,6 +318,14 @@ export class ProjectUserService implements IProjectUserService {
     };
 
     await this.audit.logUpdate(projectUser.id, oldValues, newValues, { context }, transaction);
+
+    await this.syncProjectUserSearchDocument(
+      {
+        projectId: validatedParams.projectId,
+        userId: validatedParams.userId,
+      },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(projectUserSchema), projectUser, context);
   }

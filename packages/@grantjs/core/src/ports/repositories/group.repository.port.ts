@@ -29,7 +29,9 @@ export interface IGroupRepository {
   ): Promise<GroupPage>;
 
   createGroup(
-    params: Omit<CreateGroupInput, 'scope' | 'tagIds' | 'permissionIds'>,
+    params: Omit<CreateGroupInput, 'scope' | 'tagIds' | 'permissionIds'> & {
+      searchDocument?: string;
+    },
     transaction?: unknown
   ): Promise<Group>;
 

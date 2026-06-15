@@ -11,6 +11,11 @@ import type {
 
 import { extractProjectUserMetadataForCdmExport } from '@/constants/cdm-import.constants';
 import { ConflictError, ValidationError } from '@/lib/errors';
+import {
+  extractCdmSearchableFromMetadata,
+  readCdmInputSearchable,
+} from '@/lib/search-document.lib';
+import { mergeUserAssignmentImporterMetadata } from '@/lib/sync-project-user-search-document.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import type { ProjectExportRepository } from '@/repositories/project-export.repository';
 import type { ResolvedCdmPermission } from '@/repositories/project-import.repository';
@@ -183,14 +188,20 @@ export class UserAssignmentCdmEntity implements ICdmEntityHandler<
                 condition: (r.condition as Record<string, unknown> | null | undefined) ?? null,
               }) as ResolvedCdmPermission
           );
+          const docSearchable = readCdmInputSearchable(doc.searchable);
+          const docImporterMetadata = mergeUserAssignmentImporterMetadata(
+            doc.metadata as Record<string, unknown> | null | undefined,
+            docSearchable
+          );
           const created = await this.builder.createDocumentGroup(
             ctx.projectId,
             dg.groupKey,
             displayName,
             description,
             perms,
-            ua.metadata,
-            tx
+            docImporterMetadata ?? doc.metadata,
+            tx,
+            docSearchable
           );
           groupId = created.groupId;
           ctx.produced.groupIdsByKey.set(dg.groupKey, groupId);
@@ -237,16 +248,31 @@ export class UserAssignmentCdmEntity implements ICdmEntityHandler<
         }
       }
 
-      if (ua.metadata != null) {
-        await this.projectUsers.mergeProjectUserCdmMetadata(
-          {
-            projectId: ctx.projectId,
-            userId: effectiveUserId,
-            importerMetadata: ua.metadata as Record<string, unknown>,
-          },
-          tx
+      if (ua.metadata != null || ua.searchable != null) {
+        const importerMetadata = mergeUserAssignmentImporterMetadata(
+          ua.metadata as Record<string, unknown> | null | undefined,
+          ua.searchable
         );
+        if (importerMetadata != null) {
+          await this.projectUsers.mergeProjectUserCdmMetadata(
+            {
+              projectId: ctx.projectId,
+              userId: effectiveUserId,
+              importerMetadata,
+            },
+            tx
+          );
+        }
       }
+
+      await this.projectUsers.syncProjectUserSearchDocument(
+        {
+          projectId: ctx.projectId,
+          userId: effectiveUserId,
+          searchable: ua.searchable,
+        },
+        tx
+      );
 
       for (const key of roleKeys) {
         const rid = ctx.produced.roleIdsByKey.get(key);
@@ -385,6 +411,7 @@ export class UserAssignmentCdmEntity implements ICdmEntityHandler<
         permissionKeys: [...(permissionKeysByGroupId.get(g.groupId) ?? [])].sort(),
         tagKeys: groupTagKeys,
         primaryGroupTagKey: pgk != null && groupTagKeys.includes(pgk) ? pgk : null,
+        searchable: extractCdmSearchableFromMetadata(g.metadata),
       });
     }
 
@@ -502,12 +529,14 @@ export class UserAssignmentCdmEntity implements ICdmEntityHandler<
       const tagKeys = (tagKeysByUserId.get(u.userId) ?? []).slice().sort();
       const userKey = provisionKeyByUserId.get(u.userId);
       const primaryUserTagKey = primaryUserTagKeyByUserId.get(u.userId);
+      const exportedMetadata = extractProjectUserMetadataForCdmExport(u.metadata);
       const base = {
         roleTemplateKeys,
         directGroupKeys: directGroupKeys.length > 0 ? directGroupKeys : undefined,
         exportDocumentGroups: exportDocumentGroups.length > 0 ? exportDocumentGroups : undefined,
         directPermissionRefs: directPermissionRefs.length > 0 ? directPermissionRefs : undefined,
-        metadata: extractProjectUserMetadataForCdmExport(u.metadata),
+        metadata: exportedMetadata,
+        searchable: extractCdmSearchableFromMetadata(u.metadata),
         tagKeys: tagKeys.length > 0 ? tagKeys : undefined,
         primaryUserTagKey:
           primaryUserTagKey != null && tagKeys.includes(primaryUserTagKey)

@@ -1,4 +1,5 @@
 enum GroupSearchableField {
   name
   description
+  searchDocument
 }

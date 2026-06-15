@@ -85,6 +85,7 @@ describe('ProjectImportService CDM metadata', () => {
   const projectUsers = {
     addProjectUser: vi.fn(),
     mergeProjectUserCdmMetadata: vi.fn(),
+    syncProjectUserSearchDocument: vi.fn().mockResolvedValue(undefined),
     getProjectUsers: vi.fn().mockResolvedValue([]),
   };
   const userRoles = { addUserRole: vi.fn(), removeUserRole: vi.fn(), getUserRoles: vi.fn() };

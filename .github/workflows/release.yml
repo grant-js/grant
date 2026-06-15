@@ -1,6 +1,8 @@
 # Versions and publishes npm packages when a "Version packages" PR is merged to main.
-# On push to main: single prepare job (build + test + artifact), then release and docker in parallel.
-# Deploy is handled by the separate Deploy workflow (deploy.yml) triggered on completion.
+# On push to main: prepare → release (changesets) → docker build OR semver retag (not both).
+#   - Feature merge: build/push :demo, :sha-<commit> (deploy pulls :demo).
+#   - Version PR merge: npm publish + retag existing :demo → :<semver> (no image rebuild).
+# Deploy is handled by deploy.yml when the Release workflow built new images.
 name: Release
 
 on:
@@ -84,6 +86,13 @@ jobs:
           items=()
           force="${{ inputs.force }}"
           workflow_release="${{ steps.filter.outputs.workflow_release }}"
+          subject="$(git log -1 --pretty=%s)"
+
+          # Version-packages commits only bump package.json/CHANGELOG; images were built on the prior merge.
+          if [[ "$force" != "true" && "$subject" == "chore: version packages" ]]; then
+            echo "Version-packages-only commit; skipping docker matrix (semver retags existing :demo)."
+            exit 0
+          fi
 
           # Editing release.yml (e.g. tags) must republish every image so GHCR stays consistent.
           if [[ "$force" == "true" || "$workflow_release" == "true" ]]; then
@@ -216,8 +225,12 @@ jobs:
   docker:
     name: Build and push images
     runs-on: self-hosted
-    needs: [prepare, changes]
-    if: needs.changes.outputs.docker_matrix != '[]'
+    needs: [prepare, changes, release]
+    if: >-
+      needs.prepare.result == 'success' &&
+      needs.release.result == 'success' &&
+      needs.release.outputs.published != 'true' &&
+      needs.changes.outputs.docker_matrix != '[]'
     permissions:
       contents: read
       packages: write
@@ -261,11 +274,13 @@ jobs:
     needs: release
     if: needs.release.outputs.published == 'true'
     permissions:
-      contents: read
+      contents: write
       packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
 
       - name: Read platform version
         id: version
@@ -291,3 +306,18 @@ jobs:
               --tag "${IMAGE_BASE}/${image}:${VERSION}" \
               --tag "${IMAGE_BASE}/${image}:latest"
           done
+
+      - name: Create and push git tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          TAG="v${VERSION}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag ${TAG} already exists; skipping."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release ${TAG}"
+          git push origin "$TAG"

@@ -39,7 +39,7 @@ export interface IRoleService {
   getRoleById(id: string, transaction?: unknown): Promise<Role | null>;
 
   createRole(
-    params: Omit<CreateRoleInput, 'scope' | 'tagIds' | 'groupIds'>,
+    params: Omit<CreateRoleInput, 'scope' | 'tagIds' | 'groupIds'> & { searchDocument?: string },
     transaction?: unknown
   ): Promise<Role>;
 

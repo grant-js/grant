@@ -13,7 +13,7 @@ import {
   QueryProjectUsersInput,
   RemoveProjectUserInput,
 } from '@grantjs/schema';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, ilike, inArray, isNull } from 'drizzle-orm';
 
 import { mergeCdmImporterMetadata } from '@/constants/cdm-import.constants';
 import { NotFoundError } from '@/lib/errors';
@@ -122,6 +122,48 @@ export class ProjectUserRepository
       update.pictureUrl = params.pictureUrl;
     }
     return this.update({ projectId: params.projectId, userId: params.userId }, update, transaction);
+  }
+
+  public async updateProjectUserSearchDocument(
+    params: {
+      projectId: string;
+      userId: string;
+      searchDocument: string;
+    },
+    transaction?: Transaction
+  ): Promise<ProjectUser> {
+    return this.update(
+      { projectId: params.projectId, userId: params.userId },
+      { searchDocument: params.searchDocument, updatedAt: new Date() },
+      transaction
+    );
+  }
+
+  public async filterUserIdsBySearchDocument(
+    params: {
+      projectId: string;
+      userIds: readonly string[];
+      search: string;
+    },
+    transaction?: Transaction
+  ): Promise<string[]> {
+    const trimmed = params.search.trim();
+    if (trimmed.length === 0 || params.userIds.length === 0) {
+      return [...params.userIds];
+    }
+    const dbInstance = transaction || this.db;
+    const rows = await dbInstance
+      .select({ userId: projectUsers.userId })
+      .from(projectUsers)
+      .where(
+        and(
+          eq(projectUsers.projectId, params.projectId),
+          inArray(projectUsers.userId, [...params.userIds]),
+          ilike(projectUsers.searchDocument, `%${trimmed}%`),
+          isNull(projectUsers.deletedAt)
+        )
+      );
+    return rows.map((r) => r.userId);
   }
 
   public async softDeleteProjectUser(

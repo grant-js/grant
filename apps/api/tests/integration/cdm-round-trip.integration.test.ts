@@ -399,6 +399,7 @@ describe('CDM round-trip integration', () => {
     const projectUsers = {
       addProjectUser: vi.fn().mockResolvedValue(undefined),
       mergeProjectUserCdmMetadata: vi.fn().mockResolvedValue(undefined),
+      syncProjectUserSearchDocument: vi.fn().mockResolvedValue(undefined),
     };
     const userRoles = { addUserRole: vi.fn().mockResolvedValue(undefined) };
     const userTags = { addUserTag: vi.fn().mockResolvedValue(undefined) };

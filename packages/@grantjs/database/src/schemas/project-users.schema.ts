@@ -4,6 +4,7 @@ import {
   jsonb,
   pgPolicy,
   pgTable,
+  text,
   timestamp,
   uniqueIndex,
   uuid,
@@ -28,12 +29,18 @@ export const projectUsers = pgTable(
     displayName: varchar('display_name', { length: 255 }),
     /** Project-visible picture URL override; null means use global users.picture_url */
     pictureUrl: varchar('picture_url', { length: 500 }),
+    /** Denormalized search tokens (name, displayName, CDM searchable, allowlisted metadata). */
+    searchDocument: text('search_document').default('').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
     deletedAt: timestamp('deleted_at'),
   },
   (table) => [
     index('project_users_metadata_idx').using('gin', table.metadata),
+    index('project_users_search_document_trgm_idx').using(
+      'gin',
+      sql`${table.searchDocument} gin_trgm_ops`
+    ),
     uniqueIndex('project_users_project_id_user_id_unique')
       .on(table.projectId, table.userId)
       .where(sql`${table.deletedAt} IS NULL`),

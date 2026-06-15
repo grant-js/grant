@@ -10,6 +10,7 @@ import {
 } from '@grantjs/schema';
 
 import { BadRequestError, NotFoundError } from '@/lib/errors';
+import { buildSearchDocument } from '@/lib/search-document.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -90,15 +91,28 @@ export class RoleService implements IRoleService {
   }
 
   public async createRole(
-    params: Omit<CreateRoleInput, 'scope' | 'tagIds' | 'groupIds'>,
+    params: Omit<CreateRoleInput, 'scope' | 'tagIds' | 'groupIds'> & { searchDocument?: string },
     transaction?: Transaction
   ): Promise<Role> {
     const context = 'RoleService.createRole';
-    const validatedParams = validateInput(createRoleInputSchema, params, context);
+    const { searchDocument: providedSearchDocument, ...rest } = params;
+    const validatedParams = validateInput(createRoleInputSchema, rest, context);
 
     this.validateRoleNameNotReserved(validatedParams.name);
 
-    const role = await this.roleRepository.createRole(validatedParams, transaction);
+    const searchDocument =
+      providedSearchDocument ??
+      buildSearchDocument({
+        kind: 'role',
+        name: validatedParams.name,
+        description: validatedParams.description,
+        metadata: validatedParams.metadata as Record<string, unknown> | undefined,
+      });
+
+    const role = await this.roleRepository.createRole(
+      { ...validatedParams, searchDocument },
+      transaction
+    );
 
     const newValues = {
       id: role.id,
@@ -133,6 +147,21 @@ export class RoleService implements IRoleService {
     const oldRole = await this.getRole(id);
     const updatedRole = await this.roleRepository.updateRole(id, input, transaction);
 
+    const searchDocument = buildSearchDocument({
+      kind: 'role',
+      name: updatedRole.name,
+      description: updatedRole.description,
+      metadata: updatedRole.metadata as Record<string, unknown>,
+    });
+    const roleWithSearch =
+      searchDocument !== (updatedRole as Role & { searchDocument?: string }).searchDocument
+        ? await this.roleRepository.updateRole(
+            id,
+            { searchDocument } as unknown as UpdateRoleInput,
+            transaction
+          )
+        : updatedRole;
+
     const oldValues = {
       id: oldRole.id,
       name: oldRole.name,
@@ -143,12 +172,12 @@ export class RoleService implements IRoleService {
     };
 
     const newValues = {
-      id: updatedRole.id,
-      name: updatedRole.name,
-      description: updatedRole.description,
-      metadata: updatedRole.metadata,
-      createdAt: updatedRole.createdAt,
-      updatedAt: updatedRole.updatedAt,
+      id: roleWithSearch.id,
+      name: roleWithSearch.name,
+      description: roleWithSearch.description,
+      metadata: roleWithSearch.metadata,
+      createdAt: roleWithSearch.createdAt,
+      updatedAt: roleWithSearch.updatedAt,
     };
 
     const metadata = {
@@ -157,7 +186,7 @@ export class RoleService implements IRoleService {
 
     await this.audit.logUpdate(updatedRole.id, oldValues, newValues, metadata, transaction);
 
-    return validateOutput(createDynamicSingleSchema(roleSchema), updatedRole, context);
+    return validateOutput(createDynamicSingleSchema(roleSchema), roleWithSearch, context);
   }
 
   public async deleteRole(

@@ -750,6 +750,11 @@ export type GroupCdmInput = {
   name: Scalars['String']['input'];
   permissions?: InputMaybe<Array<Scalars['String']['input']>>;
   primaryTag?: InputMaybe<Scalars['String']['input']>;
+  /**
+   * Denormalized search tokens for list views (email, legacy ids, etc.).
+   * Also persisted under metadata.cdmSource.searchable on import.
+   */
+  searchable?: InputMaybe<Scalars['JSON']['input']>;
   tags?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
@@ -783,6 +788,7 @@ export type GroupPermissionPermissionArgs = {
 export enum GroupSearchableField {
   Description = 'description',
   Name = 'name',
+  SearchDocument = 'searchDocument',
 }
 
 export type GroupSortInput = {
@@ -2709,6 +2715,7 @@ export type RoleCdmInput = {
    */
   permissions?: InputMaybe<Array<Scalars['String']['input']>>;
   primaryTag?: InputMaybe<Scalars['String']['input']>;
+  searchable?: InputMaybe<Scalars['JSON']['input']>;
   tags?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
@@ -2762,6 +2769,7 @@ export type RolePermissionRoleArgs = {
 export enum RoleSearchableField {
   Description = 'description',
   Name = 'name',
+  SearchDocument = 'searchDocument',
 }
 
 export type RoleSortInput = {
@@ -3270,6 +3278,8 @@ export type UserCdmInput = {
   primaryTag?: InputMaybe<Scalars['String']['input']>;
   /** Role template keys from the `roles` section. */
   roles?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** Denormalized search tokens for project-scoped user list views. */
+  searchable?: InputMaybe<Scalars['JSON']['input']>;
   tags?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
