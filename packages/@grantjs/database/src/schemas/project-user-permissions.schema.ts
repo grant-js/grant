@@ -34,7 +34,7 @@ export const projectUserPermissions = pgTable(
     uniqueIndex('project_user_permissions_project_user_permission_unique')
       .on(table.projectId, table.userId, table.permissionId)
       .where(sql`${table.deletedAt} IS NULL`),
-    uniqueIndex('project_user_permissions_deleted_at_idx').on(table.deletedAt),
+    index('project_user_permissions_deleted_at_idx').on(table.deletedAt),
     pgPolicy('tenant_isolation_policy', {
       as: 'restrictive',
       for: 'select',

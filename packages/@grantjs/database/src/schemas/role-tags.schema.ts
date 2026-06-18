@@ -31,7 +31,7 @@ export const roleTags = pgTable(
     uniqueIndex('role_tags_role_id_tag_id_unique')
       .on(table.roleId, table.tagId)
       .where(sql`${table.deletedAt} IS NULL`),
-    uniqueIndex('role_tags_deleted_at_idx').on(table.deletedAt),
+    index('role_tags_deleted_at_idx').on(table.deletedAt),
   ]
 );
 

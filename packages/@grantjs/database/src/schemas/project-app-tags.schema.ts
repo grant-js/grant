@@ -31,7 +31,7 @@ export const projectAppTags = pgTable(
     uniqueIndex('project_app_tags_project_app_id_tag_id_unique')
       .on(table.projectAppId, table.tagId)
       .where(sql`${table.deletedAt} IS NULL`),
-    uniqueIndex('project_app_tags_deleted_at_idx').on(table.deletedAt),
+    index('project_app_tags_deleted_at_idx').on(table.deletedAt),
   ]
 );
 

@@ -31,7 +31,7 @@ export const resourceTags = pgTable(
     uniqueIndex('resource_tags_resource_id_tag_id_unique')
       .on(table.resourceId, table.tagId)
       .where(sql`${table.deletedAt} IS NULL`),
-    uniqueIndex('resource_tags_deleted_at_idx').on(table.deletedAt),
+    index('resource_tags_deleted_at_idx').on(table.deletedAt),
   ]
 );
 

@@ -31,7 +31,7 @@ export const permissionTags = pgTable(
     uniqueIndex('permission_tags_permission_id_tag_id_unique')
       .on(table.permissionId, table.tagId)
       .where(sql`${table.deletedAt} IS NULL`),
-    uniqueIndex('permission_tags_deleted_at_idx').on(table.deletedAt),
+    index('permission_tags_deleted_at_idx').on(table.deletedAt),
   ]
 );
 

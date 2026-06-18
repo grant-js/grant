@@ -512,6 +512,13 @@
       "when": 1781769557503,
       "tag": "0072_tough_lila_cheney",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1781796631475,
+      "tag": "0073_brainy_bucky",
+      "breakpoints": true
     }
   ]
 }

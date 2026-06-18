@@ -45,7 +45,7 @@ export const organizationInvitations = pgTable(
       table.organizationId
     ),
     uniqueIndex('organization_invitations_token_unique').on(table.token),
-    uniqueIndex('organization_invitations_deleted_at_idx').on(table.deletedAt),
+    index('organization_invitations_deleted_at_idx').on(table.deletedAt),
     pgPolicy('tenant_isolation_policy', {
       as: 'restrictive',
       for: 'select',

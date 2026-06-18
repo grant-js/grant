@@ -22,7 +22,7 @@ export const userGroups = pgTable(
     uniqueIndex('user_groups_user_id_group_id_unique')
       .on(table.userId, table.groupId)
       .where(sql`${table.deletedAt} IS NULL`),
-    uniqueIndex('user_groups_deleted_at_idx').on(table.deletedAt),
+    index('user_groups_deleted_at_idx').on(table.deletedAt),
   ]
 );
 
