@@ -7,6 +7,7 @@ import type {
   ICdmEntityHandler,
   IProjectUserApiKeyService,
 } from '@grantjs/core';
+import { Tenant } from '@grantjs/schema';
 
 import {
   buildCdmImportMetadata,
@@ -109,6 +110,7 @@ export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
         {
           clientSecret: secret,
           clientId: row.clientId ?? undefined,
+          scope: { tenant: Tenant.ProjectUser, id: `${ctx.projectId}:${effectiveUserId}` },
           name: row.name ?? undefined,
           description: row.description ?? undefined,
           expiresAt: row.expiresAt != null ? new Date(row.expiresAt as string | Date) : undefined,

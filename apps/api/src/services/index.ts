@@ -303,9 +303,6 @@ export function createServices(
     apiKeys: new ApiKeyService(
       repositories.accountProjectRepository,
       repositories.organizationProjectRepository,
-      repositories.projectUserApiKeyRepository,
-      repositories.accountProjectApiKeyRepository,
-      repositories.organizationProjectApiKeyRepository,
       repositories.apiKeyRepository,
       user,
       audit(apiKeyAuditLogs, 'apiKeyId', user, db),
