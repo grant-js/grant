@@ -1,5 +1,17 @@
 # grant-web
 
+## 1.3.2
+
+### Patch Changes
+
+- ed06fc0: Improve detail page loading states with skeleton placeholders, hide native search clear
+  controls, and fix project app update validation for existing sign-up and primary tag values.
+- Updated dependencies [ed06fc0]
+  - @grantjs/client@1.3.2
+  - @grantjs/schema@1.3.2
+  - @grantjs/core@1.0.0
+  - @grantjs/constants@1.0.0
+
 ## 1.3.1
 
 ### Patch Changes
