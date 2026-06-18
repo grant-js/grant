@@ -3248,6 +3248,12 @@
       "description": "Sie müssen mit einem Organisationskonto angemeldet sein, um diese Einladung anzunehmen. Bitte wechseln Sie zu Ihrem Organisationskonto oder melden Sie sich mit einem an.",
       "switchAccount": "Konto wechseln"
     },
+    "requiresEmailVerification": {
+      "title": "E-Mail zuerst bestätigen",
+      "description": "Dieser Einladungslink wurde kopiert und nicht aus Ihrem E-Mail-Posteingang geöffnet. Daher kann er Ihre E-Mail nicht automatisch bestätigen. Prüfen Sie Ihren Posteingang, bestätigen Sie Ihre E-Mail-Adresse und kehren Sie dann zu diesem Einladungslink zurück, um die Einladung anzunehmen.",
+      "refresh": "Ich habe meine E-Mail bestätigt, aktualisieren",
+      "tryAgain": "Einladung erneut annehmen"
+    },
     "ready": {
       "title": "Einladung annehmen",
       "description": "Sie wurden eingeladen, dieser Organisation beizutreten. Überprüfen Sie die unten stehenden Details und nehmen Sie die Einladung an, um Mitglied zu werden."

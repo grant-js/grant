@@ -246,13 +246,19 @@ export class OrganizationInvitationsHandler {
           undefined,
           tx
         );
+      const authMethodByInviteEmail =
+        await this.userAuthenticationMethods.getUserAuthenticationMethodByEmail(
+          invitation.email,
+          tx
+        );
+      const invitationAuthMethod = userAuthMethod ?? authMethodByInviteEmail;
 
       let user;
       let isNewUser = false;
       const authenticatedUserId = this.auth.getAuth()?.userId ?? null;
 
       // 3. If user doesn't exist and userData not provided, require registration
-      if (!userAuthMethod && !userData) {
+      if (!invitationAuthMethod && !userData) {
         if (authenticatedUserId) {
           throw new AuthorizationError('Authenticated user does not match invitation email');
         }
@@ -267,7 +273,7 @@ export class OrganizationInvitationsHandler {
       }
 
       // 4. Create user if doesn't exist
-      if (!userAuthMethod && userData) {
+      if (!invitationAuthMethod && userData) {
         if (authenticatedUserId) {
           throw new AuthorizationError('Authenticated user does not match invitation email');
         }
@@ -323,14 +329,14 @@ export class OrganizationInvitationsHandler {
           throw new AuthenticationError('Authentication required');
         }
 
-        if (authenticatedUserId !== userAuthMethod!.userId) {
+        if (authenticatedUserId !== invitationAuthMethod!.userId) {
           throw new AuthorizationError('Authenticated user does not match invitation email');
         }
 
         // Get existing user with accounts
         const usersResult = await this.users.getUsers(
           {
-            ids: [userAuthMethod!.userId],
+            ids: [invitationAuthMethod!.userId],
             limit: 1,
             requestedFields: ['accounts'],
           },

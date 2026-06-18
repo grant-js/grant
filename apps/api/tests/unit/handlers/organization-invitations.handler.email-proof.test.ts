@@ -1,4 +1,9 @@
-import { OrganizationInvitationStatus, Tenant } from '@grantjs/schema';
+import {
+  AccountType,
+  OrganizationInvitationStatus,
+  Tenant,
+  UserAuthenticationMethodProvider,
+} from '@grantjs/schema';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { OrganizationInvitationsHandler } from '@/handlers/organization-invitations.handler';
@@ -20,17 +25,18 @@ const mockOrganizationInvitations = {
 };
 const mockUserAuthenticationMethods = {
   getUserAuthenticationMethodByProvider: vi.fn(),
+  getUserAuthenticationMethodByEmail: vi.fn(),
 };
 const mockOrganizationRoles = { getOrganizationRoles: vi.fn() };
 const mockOrganizations = { getOrganizations: vi.fn() };
 const mockUsers = { getUsers: vi.fn() };
 const mockRoles = { getRoles: vi.fn() };
 const mockEmail = { sendInvitation: vi.fn() };
-const mockAccounts = {};
-const mockOrganizationUsers = {};
-const mockUserRoles = {};
+const mockAccounts = { createAccount: vi.fn() };
+const mockOrganizationUsers = { addOrganizationUser: vi.fn() };
+const mockUserRoles = { addUserRole: vi.fn(), getUserRoles: vi.fn() };
 const mockAuth = { getAuth: vi.fn() };
-const mockAccountRoles = {};
+const mockAccountRoles = { seedAccountRoles: vi.fn() };
 const mockWithTransaction = vi.fn((fn: (transaction: unknown) => Promise<unknown>) => fn(tx));
 const mockDb = { withTransaction: mockWithTransaction };
 
@@ -60,6 +66,7 @@ describe('OrganizationInvitationsHandler email proof links', () => {
     );
     mockOrganizationInvitations.validateInvitationRolePermission.mockResolvedValue(undefined);
     mockUserAuthenticationMethods.getUserAuthenticationMethodByProvider.mockResolvedValue(null);
+    mockUserAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue(null);
     mockOrganizationInvitations.checkPendingInvitation.mockResolvedValue(null);
     mockOrganizationRoles.getOrganizationRoles.mockResolvedValue([{ roleId }]);
     mockOrganizations.getOrganizations.mockResolvedValue({
@@ -94,6 +101,14 @@ describe('OrganizationInvitationsHandler email proof links', () => {
       ...input,
     }));
     mockEmail.sendInvitation.mockResolvedValue(undefined);
+    mockAccounts.createAccount.mockResolvedValue({
+      id: 'organization-account-1',
+      type: AccountType.Organization,
+    });
+    mockAccountRoles.seedAccountRoles.mockResolvedValue([{ role: { id: 'account-owner-role-1' } }]);
+    mockUserRoles.getUserRoles.mockResolvedValue([]);
+    mockUserRoles.addUserRole.mockResolvedValue({});
+    mockOrganizationUsers.addOrganizationUser.mockResolvedValue({});
   });
 
   it('sends emailed invitations with a separate proof token and stores only its hash', async () => {
@@ -121,5 +136,59 @@ describe('OrganizationInvitationsHandler email proof links', () => {
     );
 
     expect(mockOrganizationInvitations.updateInvitation).not.toHaveBeenCalled();
+  });
+
+  it('accepts a GitHub-authenticated user when the GitHub email matches the invitation', async () => {
+    mockAuth.getAuth.mockReturnValue({ userId: 'github-user-1', isVerified: true });
+    mockUserAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue({
+      id: 'github-auth-1',
+      userId: 'github-user-1',
+      provider: UserAuthenticationMethodProvider.Github,
+      isVerified: true,
+    });
+    mockUsers.getUsers
+      .mockResolvedValueOnce({
+        users: [
+          {
+            id: 'github-user-1',
+            accounts: [{ id: 'personal-account-1', type: AccountType.Personal }],
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        users: [
+          {
+            id: 'github-user-1',
+            accounts: [
+              { id: 'personal-account-1', type: AccountType.Personal },
+              { id: 'organization-account-1', type: AccountType.Organization },
+            ],
+          },
+        ],
+      });
+
+    const result = await createHandler().acceptInvitation({ token: 'invitation-token' });
+
+    expect(result.requiresRegistration).toBe(false);
+    expect(mockAccounts.createAccount).toHaveBeenCalledWith(
+      {
+        type: AccountType.Organization,
+        ownerId: 'github-user-1',
+      },
+      tx
+    );
+    expect(mockOrganizationUsers.addOrganizationUser).toHaveBeenCalledWith(
+      {
+        organizationId,
+        userId: 'github-user-1',
+        roleId,
+      },
+      tx
+    );
+    expect(mockOrganizationInvitations.updateInvitation).toHaveBeenCalledWith(
+      'invitation-1',
+      expect.objectContaining({ status: OrganizationInvitationStatus.Accepted }),
+      tx
+    );
   });
 });

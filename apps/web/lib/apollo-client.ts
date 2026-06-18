@@ -45,6 +45,7 @@ const SKIP_ERROR_REDIRECT_OPERATIONS = [
 
 /** RBAC entity queries show inline errors on detail/list panels instead of /forbidden redirect. */
 const SKIP_FORBIDDEN_REDIRECT_OPERATIONS = [
+  'AcceptInvitation',
   'GetRoles',
   'GetRolesList',
   'GetGroups',

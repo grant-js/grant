@@ -7,6 +7,7 @@ import {
   AcceptInvitationResult,
   InviteMemberDocument,
   InviteMemberInput,
+  MeDocument,
   OrganizationInvitation,
   OrganizationMember,
   RemoveOrganizationMemberDocument,
@@ -19,6 +20,10 @@ import {
 import { toast } from 'sonner';
 
 import { evictMembersAndInvitationsCache } from './cache';
+
+interface AcceptInvitationOptions {
+  suppressErrorToast?: boolean;
+}
 
 export function useMemberMutations() {
   const t = useTranslations('members');
@@ -38,6 +43,8 @@ export function useMemberMutations() {
     AcceptInvitationDocument,
     {
       update,
+      refetchQueries: [MeDocument],
+      awaitRefetchQueries: true,
     }
   );
 
@@ -91,7 +98,10 @@ export function useMemberMutations() {
     }
   };
 
-  const handleAcceptInvitation = async (input: AcceptInvitationInput) => {
+  const handleAcceptInvitation = async (
+    input: AcceptInvitationInput,
+    options: AcceptInvitationOptions = {}
+  ) => {
     try {
       const result = await acceptInvitation({
         variables: { input },
@@ -101,9 +111,11 @@ export function useMemberMutations() {
       return result.data?.acceptInvitation;
     } catch (error) {
       console.error('Error accepting invitation:', error);
-      toast.error(t('notifications.acceptError'), {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
-      });
+      if (!options.suppressErrorToast) {
+        toast.error(t('notifications.acceptError'), {
+          description: error instanceof Error ? error.message : 'An unknown error occurred',
+        });
+      }
       throw error;
     }
   };

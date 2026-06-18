@@ -4,7 +4,7 @@ import { GraphqlContext } from '@/graphql/types';
 import { setRefreshTokenCookie } from '@/rest/utils/refresh-cookie';
 
 export const register: MutationResolvers<GraphqlContext>['register'] = async (_, args, context) => {
-  const { type, provider, providerId, providerData } = args.input;
+  const { type, provider, providerId, providerData, emailVerificationProof } = args.input;
   const { locale, userAgent, ipAddress } = context;
   const result = await context.handlers.auth.register(
     {
@@ -12,6 +12,7 @@ export const register: MutationResolvers<GraphqlContext>['register'] = async (_,
       provider,
       providerId,
       providerData,
+      emailVerificationProof,
     },
     locale,
     userAgent,
