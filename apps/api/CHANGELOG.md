@@ -1,5 +1,23 @@
 # grant-api
 
+## 1.3.3
+
+### Patch Changes
+
+- 661935f: Fix project import failures caused by globally unique soft-delete timestamp indexes on pivot tables.
+  - @grantjs/schema@1.3.3
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+
 ## 1.3.2
 
 ### Patch Changes

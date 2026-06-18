@@ -1,6 +1,6 @@
 {
   "name": "@grantjs/schema",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "GraphQL schema and generated types for Grant",
   "main": "src/index.ts",
   "types": "src/index.ts",
