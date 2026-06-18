@@ -4,6 +4,7 @@ import type {
   IAuthService,
   IEmailService,
   ILogger,
+  IOrganizationInvitationService,
   ITransactionalConnection,
   IUserAuthenticationMethodService,
   IUserMfaService,
@@ -17,9 +18,12 @@ import {
   AuthorizationReason,
   AuthorizationResult,
   CreateAccountResult,
+  EmailVerificationProofInput,
+  EmailVerificationProofType,
   IsAuthorizedInput,
   LoginResponse,
   MutationLoginArgs,
+  OrganizationInvitationStatus,
   RefreshSessionResponse,
   RegisterInput,
   RequestPasswordResetResponse,
@@ -64,6 +68,71 @@ export class AuthHandler extends CacheHandler {
     return this.userMfa.hasActiveMfaEnrollment(userId, tx);
   }
 
+  private normalizeEmail(email: string): string {
+    return email.trim().toLowerCase();
+  }
+
+  private removeEmailOtp(providerData: Record<string, unknown>): Record<string, unknown> {
+    const updatedProviderData = { ...providerData };
+    delete updatedProviderData.otp;
+    return updatedProviderData;
+  }
+
+  private async validatesInvitationEmailProof(
+    provider: UserAuthenticationMethodProvider,
+    providerId: string,
+    proof: EmailVerificationProofInput | null | undefined,
+    tx: Transaction
+  ): Promise<boolean> {
+    if (!proof) {
+      return false;
+    }
+
+    if (provider !== UserAuthenticationMethodProvider.Email) {
+      throw new BadRequestError(
+        'Email verification proof is only supported for email authentication'
+      );
+    }
+
+    if (proof.type !== EmailVerificationProofType.OrganizationInvitation) {
+      throw new BadRequestError('Unsupported email verification proof');
+    }
+
+    const invitation = await this.organizationInvitations.getInvitationByToken(
+      {
+        token: proof.token,
+        requestedFields: [],
+      },
+      tx
+    );
+
+    if (!invitation || invitation.status !== OrganizationInvitationStatus.Pending) {
+      throw new BadRequestError('Invalid or expired invitation proof');
+    }
+
+    if (new Date() > invitation.expiresAt) {
+      throw new BadRequestError('Invalid or expired invitation proof');
+    }
+
+    if (this.normalizeEmail(invitation.email) !== this.normalizeEmail(providerId)) {
+      throw new BadRequestError('Invitation proof does not match email address');
+    }
+
+    const proofTokenHash = (
+      invitation as typeof invitation & { emailVerificationProofTokenHash?: string | null }
+    ).emailVerificationProofTokenHash;
+
+    if (
+      !proof.emailProofToken ||
+      !proofTokenHash ||
+      !verifySecret(proof.emailProofToken, proofTokenHash)
+    ) {
+      throw new BadRequestError('Invalid or expired invitation proof');
+    }
+
+    return true;
+  }
+
   constructor(
     private readonly userAuthenticationMethods: IUserAuthenticationMethodService,
     private readonly users: IUserService,
@@ -74,6 +143,7 @@ export class AuthHandler extends CacheHandler {
     private readonly userSessions: IUserSessionService,
     private readonly email: IEmailService,
     private readonly auth: IAuthService,
+    private readonly organizationInvitations: IOrganizationInvitationService,
     cache: IEntityCacheAdapter,
     scopeServices: ScopeServices,
     private readonly db: ITransactionalConnection<Transaction>
@@ -89,7 +159,7 @@ export class AuthHandler extends CacheHandler {
     requestLogger?: ILogger,
     requestBaseUrl?: string
   ): Promise<CreateAccountResult> {
-    const { type, provider, providerId, providerData } = params;
+    const { type, provider, providerId, providerData, emailVerificationProof } = params;
 
     return await this.db.withTransaction(async (tx: Transaction) => {
       const existingAuthMethod =
@@ -104,6 +174,13 @@ export class AuthHandler extends CacheHandler {
         throw new ConflictError('An account with this email already exists');
       }
 
+      const isVerifiedByInvitationProof = await this.validatesInvitationEmailProof(
+        provider,
+        providerId,
+        emailVerificationProof,
+        tx
+      );
+
       const {
         providerData: processedProviderData,
         isVerified,
@@ -113,6 +190,11 @@ export class AuthHandler extends CacheHandler {
         action: UserAuthenticationEmailProviderAction.Register,
       });
 
+      const finalIsVerified = isVerified || isVerifiedByInvitationProof;
+      const finalProviderData = isVerifiedByInvitationProof
+        ? this.removeEmailOtp(processedProviderData)
+        : processedProviderData;
+
       const user = await this.users.createUser({ name }, tx);
 
       const userAuthenticationMethod =
@@ -121,8 +203,8 @@ export class AuthHandler extends CacheHandler {
             userId: user.id,
             provider,
             providerId,
-            providerData: processedProviderData,
-            isVerified,
+            providerData: finalProviderData,
+            isVerified: finalIsVerified,
           },
           tx
         );
@@ -150,13 +232,13 @@ export class AuthHandler extends CacheHandler {
           userAuthenticationMethodId: userAuthenticationMethod.id,
           userAgent: userAgent || null,
           ipAddress: ipAddress || null,
-          isVerified,
+          isVerified: finalIsVerified,
         },
         tx,
         requestBaseUrl
       );
 
-      if (provider === UserAuthenticationMethodProvider.Email) {
+      if (provider === UserAuthenticationMethodProvider.Email && !finalIsVerified) {
         const { token, validUntil } = processedProviderData.otp as Otp;
         if (token && validUntil > Date.now()) {
           try {
@@ -178,8 +260,8 @@ export class AuthHandler extends CacheHandler {
         account,
         accessToken: session.accessToken,
         refreshToken: session.refreshToken,
-        requiresEmailVerification: !isVerified,
-        verificationExpiry: isVerified ? null : getVerificationExpiryDate(authMethodCreatedAt),
+        requiresEmailVerification: !finalIsVerified,
+        verificationExpiry: finalIsVerified ? null : getVerificationExpiryDate(authMethodCreatedAt),
         email: provider === UserAuthenticationMethodProvider.Email ? providerId : null,
       };
 
@@ -195,11 +277,11 @@ export class AuthHandler extends CacheHandler {
   ): Promise<LoginResponse> {
     const issuerBaseUrl = requestBaseUrl ?? config.app.url;
     return await this.db.withTransaction(async (tx: Transaction) => {
-      const { provider, providerId, providerData } = params.input;
+      const { provider, providerId, providerData, emailVerificationProof } = params.input;
       const { providerData: processedProviderData } =
         await this.userAuthenticationMethods.processProvider(provider, providerId, providerData);
 
-      const userAuthenticationMethod =
+      let userAuthenticationMethod =
         await this.userAuthenticationMethods.getUserAuthenticationMethodByProvider(
           provider,
           providerId,
@@ -221,6 +303,27 @@ export class AuthHandler extends CacheHandler {
         ) {
           throw new AuthenticationError('Invalid credentials');
         }
+      }
+
+      const isVerifiedByInvitationProof = await this.validatesInvitationEmailProof(
+        provider,
+        providerId,
+        emailVerificationProof,
+        tx
+      );
+
+      if (!userAuthenticationMethod.isVerified && isVerifiedByInvitationProof) {
+        userAuthenticationMethod =
+          await this.userAuthenticationMethods.updateUserAuthenticationMethod(
+            userAuthenticationMethod.id,
+            {
+              isVerified: true,
+              providerData: this.removeEmailOtp(
+                (userAuthenticationMethod.providerData as Record<string, unknown>) || {}
+              ),
+            },
+            tx
+          );
       }
 
       const verificationCreatedAt = userAuthenticationMethod.createdAt

@@ -34,14 +34,30 @@ import {
 
 import { config } from '@/config';
 import { defaultLocale } from '@/i18n';
-import { AuthenticationError, BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
+import {
+  AuthenticationError,
+  AuthorizationError,
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+} from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
-import { generateSecureTokenMs } from '@/lib/token.lib';
+import { generateSecureTokenMs, hashSecret } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { SelectedFields } from '@/types';
 
 export class OrganizationInvitationsHandler {
   private readonly logger = createLogger('OrganizationInvitationsHandler');
+
+  private createEmailVerificationProof(): { token: string; hash: string } {
+    const { token } = generateSecureTokenMs(7 * MILLISECONDS_PER_DAY);
+    return { token, hash: hashSecret(token) };
+  }
+
+  private buildEmailInvitationUrl(locale: string | undefined, token: string, emailProof: string) {
+    const localePrefix = locale || defaultLocale;
+    return `${config.security.frontendUrl}/${localePrefix}/invitations/${token}?emailProof=${encodeURIComponent(emailProof)}`;
+  }
 
   constructor(
     private readonly organizationInvitations: IOrganizationInvitationService,
@@ -152,6 +168,7 @@ export class OrganizationInvitationsHandler {
 
       // 6. Create invitation (invitedAt will be set after email is successfully sent)
       const { token, validUntil } = generateSecureTokenMs(7 * MILLISECONDS_PER_DAY); // 7 days
+      const emailProof = this.createEmailVerificationProof();
       const expiresAt = new Date(validUntil);
 
       // Create invitation without invitedAt initially (schema default will set it, but we'll update after email)
@@ -161,6 +178,7 @@ export class OrganizationInvitationsHandler {
           email,
           roleId,
           token,
+          emailVerificationProofTokenHash: emailProof.hash,
           expiresAt,
           invitedBy,
           // invitedAt will be set after email is successfully sent
@@ -170,8 +188,7 @@ export class OrganizationInvitationsHandler {
       );
 
       // 7. Send invitation email and update invitedAt only on success
-      const localePrefix = locale || defaultLocale;
-      const invitationUrl = `${config.security.frontendUrl}/${localePrefix}/invitations/${token}`;
+      const invitationUrl = this.buildEmailInvitationUrl(locale, token, emailProof.token);
 
       try {
         await this.email.sendInvitation({
@@ -232,9 +249,14 @@ export class OrganizationInvitationsHandler {
 
       let user;
       let isNewUser = false;
+      const authenticatedUserId = this.auth.getAuth()?.userId ?? null;
 
       // 3. If user doesn't exist and userData not provided, require registration
       if (!userAuthMethod && !userData) {
+        if (authenticatedUserId) {
+          throw new AuthorizationError('Authenticated user does not match invitation email');
+        }
+
         return {
           requiresRegistration: true,
           invitation: invitation as OrganizationInvitation,
@@ -246,6 +268,10 @@ export class OrganizationInvitationsHandler {
 
       // 4. Create user if doesn't exist
       if (!userAuthMethod && userData) {
+        if (authenticatedUserId) {
+          throw new AuthorizationError('Authenticated user does not match invitation email');
+        }
+
         isNewUser = true;
 
         // Create user
@@ -293,6 +319,14 @@ export class OrganizationInvitationsHandler {
           );
         }
       } else {
+        if (!authenticatedUserId) {
+          throw new AuthenticationError('Authentication required');
+        }
+
+        if (authenticatedUserId !== userAuthMethod!.userId) {
+          throw new AuthorizationError('Authenticated user does not match invitation email');
+        }
+
         // Get existing user with accounts
         const usersResult = await this.users.getUsers(
           {
@@ -461,9 +495,20 @@ export class OrganizationInvitationsHandler {
       const roles = await this.roles.getRoles({ ids: [invitation.roleId], limit: 1 });
       const role = roles.roles[0];
 
-      // 5. Resend invitation email (async, fire-and-forget)
-      const localePrefix = locale || defaultLocale;
-      const invitationUrl = `${config.security.frontendUrl}/${localePrefix}/invitations/${invitation.token}`;
+      // 5. Rotate email proof and resend invitation email (async, fire-and-forget)
+      const emailProof = this.createEmailVerificationProof();
+      await this.organizationInvitations.updateInvitation(
+        invitation.id,
+        {
+          emailVerificationProofTokenHash: emailProof.hash,
+        } as UpdateOrganizationInvitationInput & { emailVerificationProofTokenHash: string },
+        tx
+      );
+      const invitationUrl = this.buildEmailInvitationUrl(
+        locale,
+        invitation.token,
+        emailProof.token
+      );
 
       this.email
         .sendInvitation({
@@ -516,6 +561,7 @@ export class OrganizationInvitationsHandler {
 
       // 3. Generate new token and expiration date
       const { token, validUntil } = generateSecureTokenMs(7 * MILLISECONDS_PER_DAY); // 7 days
+      const emailProof = this.createEmailVerificationProof();
       const expiresAt = new Date(validUntil);
 
       // 4. Get organization and inviter details for email (before updating)
@@ -541,15 +587,19 @@ export class OrganizationInvitationsHandler {
         id,
         {
           token,
+          emailVerificationProofTokenHash: emailProof.hash,
           expiresAt,
           status: OrganizationInvitationStatus.Pending, // Ensure it's pending
-        } as UpdateOrganizationInvitationInput & { token: string; expiresAt: Date },
+        } as UpdateOrganizationInvitationInput & {
+          token: string;
+          emailVerificationProofTokenHash: string;
+          expiresAt: Date;
+        },
         tx
       );
 
       // 6. Send invitation email and update invitedAt only on success
-      const localePrefix = locale || defaultLocale;
-      const invitationUrl = `${config.security.frontendUrl}/${localePrefix}/invitations/${token}`;
+      const invitationUrl = this.buildEmailInvitationUrl(locale, token, emailProof.token);
 
       try {
         await this.email.sendInvitation({

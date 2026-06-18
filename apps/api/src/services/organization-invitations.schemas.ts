@@ -15,6 +15,7 @@ export const createInvitationParamsSchema = z.object({
   email: emailSchema,
   roleId: idSchema,
   token: z.string().min(1),
+  emailVerificationProofTokenHash: z.string().min(1).optional(),
   expiresAt: z.date(),
   invitedBy: idSchema,
   invitedAt: z.date().optional(),
@@ -75,6 +76,7 @@ export const updateInvitationParamsSchema = z.object({
     .optional(),
   acceptedAt: z.date().optional(),
   token: z.string().min(1).optional(),
+  emailVerificationProofTokenHash: z.string().min(1).optional(),
   expiresAt: z.date().optional(),
   invitedAt: z.date().optional(),
 });
@@ -89,6 +91,7 @@ export const organizationInvitationSchema = z.object({
   email: emailSchema,
   roleId: idSchema,
   token: z.string(),
+  emailVerificationProofTokenHash: z.string().nullable().optional(),
   status: z.string(),
   expiresAt: z.date(),
   invitedBy: idSchema,

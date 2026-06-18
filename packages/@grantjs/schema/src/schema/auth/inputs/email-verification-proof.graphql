@@ -1,0 +1,5 @@
+input EmailVerificationProofInput {
+  type: EmailVerificationProofType!
+  token: String!
+  emailProofToken: String!
+}

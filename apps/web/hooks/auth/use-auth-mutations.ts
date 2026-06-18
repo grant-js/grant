@@ -3,6 +3,7 @@ import { useMutation } from '@apollo/client/react';
 import {
   AccountType,
   CreateAccountResult,
+  EmailVerificationProofInput,
   LoginDocument,
   LoginResponse,
   RefreshSessionDocument,
@@ -26,12 +27,14 @@ import { useAuthStore } from '@/stores/auth.store';
 interface LoginInput {
   email: string;
   password: string;
+  emailVerificationProof?: EmailVerificationProofInput;
 }
 
 interface RegisterInput {
   email: string;
   password: string;
   accountType: AccountType;
+  emailVerificationProof?: EmailVerificationProofInput;
 }
 
 export function useAuthMutations() {
@@ -69,6 +72,7 @@ export function useAuthMutations() {
               password: input.password,
               action: UserAuthenticationEmailProviderAction.Login,
             },
+            emailVerificationProof: input.emailVerificationProof,
           },
         },
       });
@@ -158,6 +162,7 @@ export function useAuthMutations() {
               password: input.password,
               action: UserAuthenticationEmailProviderAction.Register,
             },
+            emailVerificationProof: input.emailVerificationProof,
           },
         },
       });

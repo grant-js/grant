@@ -10,6 +10,7 @@
  *   2. DB migrations + seed have been applied
  *   3. pnpm --filter grant-api test:e2e
  */
+import { hashSync } from 'bcrypt';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { apiClient } from './helpers/api-client';
@@ -18,6 +19,7 @@ import {
   getInvitationTokenForEmail,
   getMemberRoleId,
   getVerificationTokenForEmail,
+  setInvitationEmailProofTokenHash,
 } from './helpers/db-tokens';
 
 // ---------------------------------------------------------------------------
@@ -32,6 +34,7 @@ const PRIMARY_NAME = `E2E User ${RUN_ID}`;
 const INVITEE_EMAIL = `e2e-invite-${RUN_ID}@test.grant.dev`;
 const INVITEE_PASSWORD = 'Rw4&jN8!pL3x';
 const INVITEE_NAME = `E2E Invitee ${RUN_ID}`;
+const INVITEE_EMAIL_PROOF_TOKEN = 'invitee-email-proof-token';
 
 const state: {
   accessToken: string;
@@ -247,8 +250,51 @@ describe('Invite member', () => {
 // 8. Accept invitation (personal-only user — backend creates org account)
 // ---------------------------------------------------------------------------
 describe('Accept invitation', () => {
-  it('Register invitee → verify → login (personal account only)', async () => {
-    // 8a. Register the invitee with a personal account
+  it('rejects accepting an invitation for a different authenticated email', async () => {
+    const invitationToken = await getInvitationTokenForEmail(INVITEE_EMAIL, state.organizationId);
+    expect(invitationToken).toBeTruthy();
+    state.invitationToken = invitationToken!;
+
+    const res = await apiClient()
+      .post('/api/organization-invitations/accept')
+      .set('Authorization', `Bearer ${state.accessToken}`)
+      .send({
+        token: state.invitationToken,
+      });
+
+    expect(res.status).toBe(403);
+  });
+
+  it('Register invitee with invitation proof (personal account only)', async () => {
+    state.invitationToken ??= (await getInvitationTokenForEmail(
+      INVITEE_EMAIL,
+      state.organizationId
+    ))!;
+    expect(state.invitationToken).toBeTruthy();
+
+    await apiClient()
+      .post('/api/auth/register')
+      .send({
+        name: INVITEE_NAME,
+        type: 'personal',
+        provider: 'email',
+        providerId: INVITEE_EMAIL,
+        providerData: {
+          password: INVITEE_PASSWORD,
+        },
+        emailVerificationProof: {
+          type: 'ORGANIZATION_INVITATION',
+          token: state.invitationToken,
+        },
+      })
+      .expect(400);
+
+    await setInvitationEmailProofTokenHash(
+      state.invitationToken,
+      hashSync(INVITEE_EMAIL_PROOF_TOKEN, 10)
+    );
+
+    // 8a. Register the invitee with the emailed proof, not just the copied invitation token.
     const regRes = await apiClient()
       .post('/api/auth/register')
       .send({
@@ -259,42 +305,25 @@ describe('Accept invitation', () => {
         providerData: {
           password: INVITEE_PASSWORD,
         },
+        emailVerificationProof: {
+          type: 'ORGANIZATION_INVITATION',
+          token: state.invitationToken,
+          emailProofToken: INVITEE_EMAIL_PROOF_TOKEN,
+        },
       })
       .expect(201);
 
     expect(regRes.body.success).toBe(true);
+    expect(regRes.body.data.requiresEmailVerification).toBe(false);
+    expect(regRes.body.data.verificationExpiry).toBeNull();
     state.inviteePersonalAccountId = regRes.body.data.account.id;
-
-    // 8b. Verify invitee's email (token is in the DB via console email provider)
-    const verifyToken = await getVerificationTokenForEmail(INVITEE_EMAIL);
-    expect(verifyToken).toBeTruthy();
-
-    await apiClient().post('/api/auth/verify-email').send({ token: verifyToken }).expect(200);
-
-    // 8c. Login as invitee to get a verified access token
-    const loginRes = await apiClient()
-      .post('/api/auth/login')
-      .send({
-        provider: 'email',
-        providerId: INVITEE_EMAIL,
-        providerData: {
-          password: INVITEE_PASSWORD,
-        },
-      })
-      .expect(200);
-
-    state.inviteeAccessToken = loginRes.body.data.accessToken;
+    state.inviteeAccessToken = regRes.body.data.accessToken;
 
     // NOTE: No manual secondary account creation — the accept handler now
     // creates the Organization account and seeds roles automatically.
   });
 
   it('POST /api/organization-invitations/accept → 200 with org account created', async () => {
-    // Retrieve the invitation token from the database
-    const invitationToken = await getInvitationTokenForEmail(INVITEE_EMAIL, state.organizationId);
-    expect(invitationToken).toBeTruthy();
-    state.invitationToken = invitationToken!;
-
     // No scope is sent — the accept endpoint needs cross-tenant access
     // (organization_invitations, accounts, account_roles, etc.) which would
     // be blocked by RLS if a scoped context were applied.

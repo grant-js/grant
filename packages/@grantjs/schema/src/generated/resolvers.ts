@@ -562,6 +562,7 @@ export type CreateOrganizationInput = {
 
 export type CreateOrganizationInvitationInput = {
   email: Scalars['String']['input'];
+  emailVerificationProofTokenHash?: InputMaybe<Scalars['String']['input']>;
   expiresAt: Scalars['Date']['input'];
   invitedAt?: InputMaybe<Scalars['Date']['input']>;
   invitedBy: Scalars['ID']['input'];
@@ -704,6 +705,16 @@ export type DeleteUserAuthenticationMethodInput = {
 export type DeleteUserSessionInput = {
   id: Scalars['ID']['input'];
 };
+
+export type EmailVerificationProofInput = {
+  emailProofToken: Scalars['String']['input'];
+  token: Scalars['String']['input'];
+  type: EmailVerificationProofType;
+};
+
+export enum EmailVerificationProofType {
+  OrganizationInvitation = 'ORGANIZATION_INVITATION',
+}
 
 export type ExchangeApiKeyInput = {
   clientId: Scalars['String']['input'];
@@ -862,6 +873,7 @@ export type IsAuthorizedPermissionInput = {
 };
 
 export type LoginInput = {
+  emailVerificationProof?: InputMaybe<EmailVerificationProofInput>;
   provider: UserAuthenticationMethodProvider;
   providerData: Scalars['JSON']['input'];
   providerId: Scalars['String']['input'];
@@ -2374,6 +2386,7 @@ export type RefreshSessionResponse = {
 };
 
 export type RegisterInput = {
+  emailVerificationProof?: InputMaybe<EmailVerificationProofInput>;
   provider: UserAuthenticationMethodProvider;
   providerData: Scalars['JSON']['input'];
   providerId: Scalars['String']['input'];
@@ -3046,6 +3059,7 @@ export type UpdateOrganizationInput = {
 
 export type UpdateOrganizationInvitationInput = {
   acceptedAt?: InputMaybe<Scalars['Date']['input']>;
+  emailVerificationProofTokenHash?: InputMaybe<Scalars['String']['input']>;
   expiresAt?: InputMaybe<Scalars['Date']['input']>;
   invitedAt?: InputMaybe<Scalars['Date']['input']>;
   status?: InputMaybe<OrganizationInvitationStatus>;
@@ -3750,6 +3764,8 @@ export type ResolversTypes = ResolversObject<{
   DeleteMyAccountsInput: DeleteMyAccountsInput;
   DeleteUserAuthenticationMethodInput: DeleteUserAuthenticationMethodInput;
   DeleteUserSessionInput: DeleteUserSessionInput;
+  EmailVerificationProofInput: EmailVerificationProofInput;
+  EmailVerificationProofType: EmailVerificationProofType;
   ExchangeApiKeyInput: ExchangeApiKeyInput;
   ExchangeApiKeyResult: ResolverTypeWrapper<ExchangeApiKeyResult>;
   GenerateMyMfaRecoveryCodesInput: GenerateMyMfaRecoveryCodesInput;
@@ -4107,6 +4123,7 @@ export type ResolversParentTypes = ResolversObject<{
   DeleteMyAccountsInput: DeleteMyAccountsInput;
   DeleteUserAuthenticationMethodInput: DeleteUserAuthenticationMethodInput;
   DeleteUserSessionInput: DeleteUserSessionInput;
+  EmailVerificationProofInput: EmailVerificationProofInput;
   ExchangeApiKeyInput: ExchangeApiKeyInput;
   ExchangeApiKeyResult: ExchangeApiKeyResult;
   GenerateMyMfaRecoveryCodesInput: GenerateMyMfaRecoveryCodesInput;

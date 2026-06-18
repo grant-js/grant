@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { AccountType } from '@grantjs/schema';
+import { AccountType, EmailVerificationProofType } from '@grantjs/schema';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ChevronDown, Info } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -34,7 +34,12 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuthMutations, usePageTitle } from '@/hooks';
 import { Link, useRouter } from '@/i18n/navigation';
-import { getAuthRedirectUrl, validateRedirectUrl } from '@/lib/redirect';
+import {
+  getAuthRedirectUrl,
+  getInvitationProofFromRedirectUrl,
+  getInvitationTokenFromRedirectUrl,
+  validateRedirectUrl,
+} from '@/lib/redirect';
 import { passwordPolicySchema } from '@/lib/validation/password-policy';
 
 export default function RegisterPage() {
@@ -49,9 +54,10 @@ export default function RegisterPage() {
   const redirectParam = searchParams.get('redirect');
   const emailParam = searchParams.get('email');
 
-  const isInvitationRedirect = redirectParam?.includes('/invitations/');
+  const invitationToken = getInvitationTokenFromRedirectUrl(redirectParam);
+  const invitationProof = getInvitationProofFromRedirectUrl(redirectParam);
 
-  const defaultAccountType = isInvitationRedirect ? AccountType.Organization : AccountType.Personal;
+  const defaultAccountType = invitationToken ? AccountType.Organization : AccountType.Personal;
 
   const { register: handleRegister } = useAuthMutations();
 
@@ -77,6 +83,13 @@ export default function RegisterPage() {
         email: values.email,
         password: values.password,
         accountType: values.accountType,
+        emailVerificationProof: invitationProof
+          ? {
+              type: EmailVerificationProofType.OrganizationInvitation,
+              token: invitationProof.token,
+              emailProofToken: invitationProof.emailProofToken,
+            }
+          : undefined,
       });
       setIsAuthSuccess(true);
       const redirectUrl =
@@ -207,6 +220,7 @@ export default function RegisterPage() {
                   type="email"
                   placeholder={t('form.email.placeholder')}
                   disabled={isSubmitting}
+                  readOnly={Boolean(invitationToken && emailParam)}
                   {...field}
                 />
               </FormControl>

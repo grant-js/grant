@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { AccountType, OrganizationInvitationStatus } from '@grantjs/schema';
 import { AlertTriangle, CheckCircle2, Loader2, Mail, MailCheck, XCircle } from 'lucide-react';
@@ -32,8 +32,11 @@ export default function InvitationPage() {
   const t = useTranslations('invitations');
   const tRoot = useTranslations();
   const params = useParams();
+  const searchParams = useSearchParams();
   const locale = useLocale();
   const token = params.token as string;
+  const emailProof = searchParams.get('emailProof');
+  const invitationRedirect = `/invitations/${token}${emailProof ? `?emailProof=${encodeURIComponent(emailProof)}` : ''}`;
 
   const [actionStatus, setActionStatus] = useState<InvitationStatus | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -231,14 +234,14 @@ export default function InvitationPage() {
                 />
                 <div className="flex flex-col gap-4">
                   <Link
-                    href={`/auth/login?email=${invitation?.email || ''}&redirect=${encodeURIComponent(`/invitations/${token}`)}`}
+                    href={`/auth/login?email=${invitation?.email || ''}&redirect=${encodeURIComponent(invitationRedirect)}`}
                   >
                     <Button className="w-full" variant="default">
                       {t('requiresLogin.login')}
                     </Button>
                   </Link>
                   <Link
-                    href={`/auth/register?email=${invitation?.email || ''}&redirect=${encodeURIComponent(`/invitations/${token}`)}`}
+                    href={`/auth/register?email=${invitation?.email || ''}&redirect=${encodeURIComponent(invitationRedirect)}`}
                   >
                     <Button className="w-full" variant="outline">
                       {t('requiresLogin.register')}

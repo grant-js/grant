@@ -35,6 +35,7 @@ const mockEmail = {
   sendProjectOAuthMagicLink: vi.fn(),
 };
 const mockAuth = { getAuth: vi.fn() };
+const mockOrganizationInvitations = { getInvitationByToken: vi.fn() };
 const mockCache = {
   get: vi.fn(),
   set: vi.fn(),
@@ -56,6 +57,7 @@ function createHandler(): AuthHandler {
     mockUserSessions as never,
     mockEmail as never,
     mockAuth as never,
+    mockOrganizationInvitations as never,
     mockCache as never,
     mockScopeServices as never,
     mockDb as never

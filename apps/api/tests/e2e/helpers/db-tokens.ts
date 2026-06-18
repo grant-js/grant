@@ -95,6 +95,20 @@ export async function getInvitationTokenForEmail(
   return rows[0].token;
 }
 
+export async function setInvitationEmailProofTokenHash(
+  token: string,
+  emailProofTokenHash: string
+): Promise<void> {
+  const conn = getConnection();
+  await conn`
+    UPDATE organization_invitations
+    SET email_verification_proof_token_hash = ${emailProofTokenHash},
+        updated_at = NOW()
+    WHERE token = ${token}
+      AND deleted_at IS NULL
+  `;
+}
+
 // ---------------------------------------------------------------------------
 // Roles (for invitation – we need a valid roleId)
 // ---------------------------------------------------------------------------

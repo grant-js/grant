@@ -1,0 +1,3 @@
+enum EmailVerificationProofType {
+  ORGANIZATION_INVITATION
+}

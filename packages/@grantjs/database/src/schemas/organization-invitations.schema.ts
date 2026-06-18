@@ -25,6 +25,9 @@ export const organizationInvitations = pgTable(
       .references(() => roles.id, { onDelete: 'cascade' })
       .notNull(),
     token: varchar('token', { length: 255 }).notNull().unique(),
+    emailVerificationProofTokenHash: varchar('email_verification_proof_token_hash', {
+      length: 255,
+    }),
     status: varchar('status', { length: 50 }).notNull().default('pending'),
     expiresAt: timestamp('expires_at').notNull(),
     invitedBy: uuid('invited_by')
