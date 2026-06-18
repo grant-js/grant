@@ -33,11 +33,23 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
         {t('pagination.info', { current: page, total: totalPages })}
       </div>
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={page <= 1}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handlePreviousPage}
+          disabled={page <= 1}
+        >
           <ChevronLeft className="size-4" />
           <span className="sr-only">{t('pagination.previous')}</span>
         </Button>
-        <Button variant="outline" size="sm" onClick={handleNextPage} disabled={page >= totalPages}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleNextPage}
+          disabled={page >= totalPages}
+        >
           <span className="sr-only">{t('pagination.next')}</span>
           <ChevronRight className="size-4" />
         </Button>

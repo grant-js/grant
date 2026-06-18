@@ -4,7 +4,7 @@ import { useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
-import { FeatureDetailLayout } from '@/components/layout';
+import { FeatureDetailLayout, FeatureDetailSkeleton } from '@/components/layout';
 import { useScopeFromParams } from '@/hooks/common';
 import { usePermissions } from '@/hooks/permissions';
 import { usePermissionsStore } from '@/stores/permissions.store';
@@ -36,7 +36,15 @@ export function PermissionDetailViewer() {
   }, [permission, setCurrentPermission]);
 
   if (loading && !permission) {
-    return <div>{t('loading.title')}</div>;
+    return (
+      <FeatureDetailSkeleton
+        cards={[
+          { showAvatar: true, showFooter: true, rows: 4 },
+          { variant: 'json', showFooter: true },
+          { variant: 'table', rows: 3, showToolbar: true },
+        ]}
+      />
+    );
   }
 
   if (error || !permission) {

@@ -4,7 +4,7 @@ import { useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
-import { FeatureDetailLayout } from '@/components/layout';
+import { FeatureDetailLayout, FeatureDetailSkeleton } from '@/components/layout';
 import { useScopeFromParams } from '@/hooks/common';
 import { useGroups } from '@/hooks/groups';
 import { useGroupsStore } from '@/stores/groups.store';
@@ -37,7 +37,16 @@ export function GroupDetailViewer() {
   }, [group, setCurrentGroup]);
 
   if (loading && !group) {
-    return <div>{t('loading.title')}</div>;
+    return (
+      <FeatureDetailSkeleton
+        cards={[
+          { showAvatar: true, showFooter: true, rows: 3 },
+          { variant: 'json', showFooter: true },
+          { variant: 'table', rows: 4, showToolbar: true },
+          { variant: 'table', rows: 3, showToolbar: true },
+        ]}
+      />
+    );
   }
 
   if (error || !group) {

@@ -4,7 +4,7 @@ import { useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
-import { FeatureDetailLayout } from '@/components/layout';
+import { FeatureDetailLayout, FeatureDetailSkeleton } from '@/components/layout';
 import { useScopeFromParams } from '@/hooks/common';
 import { useProjectApps } from '@/hooks/project-apps';
 import { useProjectAppsStore } from '@/stores/project-apps.store';
@@ -35,7 +35,16 @@ export function ProjectAppDetailViewer() {
   }, [projectApp, setCurrentProjectApp]);
 
   if (loading && !projectApp) {
-    return <div>{t('loading.title')}</div>;
+    return (
+      <FeatureDetailSkeleton
+        cards={[
+          { showAvatar: true, showFooter: true, rows: 4 },
+          { showFooter: true, rows: 4 },
+          { variant: 'table', rows: 4, showToolbar: true },
+          { variant: 'table', rows: 3, showToolbar: true },
+        ]}
+      />
+    );
   }
 
   if (error || !projectApp) {

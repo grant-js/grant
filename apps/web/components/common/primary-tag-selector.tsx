@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { getTagBorderClasses, TagColor } from '@grantjs/constants';
 import { Tag } from '@grantjs/schema';
 import { ChevronDownIcon } from 'lucide-react';
@@ -52,17 +52,25 @@ export function PrimaryTagSelector<TFieldValues extends FieldValues = FieldValue
   const [open, setOpen] = useState(false);
   const resolvedTagIdsFieldName =
     tagIdsFieldName ?? ('tagIds' as FieldPathByValue<TFieldValues, string[] | undefined>);
-  const selectedTagIds =
-    (useWatch({ control, name: resolvedTagIdsFieldName }) as string[] | undefined) ?? [];
-  const noTagsSelected = selectedTagIds.length === 0;
+  const watchedSelectedTagIds = useWatch({ control, name: resolvedTagIdsFieldName }) as
+    | string[]
+    | undefined;
+  const selectedTagIds = watchedSelectedTagIds ?? [];
+  const hasTagIdsFieldValue = Array.isArray(watchedSelectedTagIds);
+  const noTagsSelected = hasTagIdsFieldValue ? selectedTagIds.length === 0 : items.length === 0;
   const availablePrimaryTags =
-    selectedTagIds.length > 0 ? items.filter((tag) => selectedTagIds.includes(tag.id)) : items;
+    hasTagIdsFieldValue && selectedTagIds.length > 0
+      ? items.filter((tag) => selectedTagIds.includes(tag.id))
+      : items;
   const currentPrimaryTagId = useWatch({ control, name }) || '';
   const { setValue } = useFormContext<TFieldValues>();
 
-  const setPrimaryTagId = (value: string) => {
-    setValue(name, value as PathValue<TFieldValues, typeof name>);
-  };
+  const setPrimaryTagId = useCallback(
+    (value: string) => {
+      setValue(name, value as PathValue<TFieldValues, typeof name>);
+    },
+    [name, setValue]
+  );
 
   useEffect(() => {
     if (noTagsSelected) {
@@ -85,7 +93,7 @@ export function PrimaryTagSelector<TFieldValues extends FieldValues = FieldValue
     ) {
       setPrimaryTagId(availablePrimaryTags[0].id);
     }
-  }, [availablePrimaryTags, currentPrimaryTagId, noTagsSelected, name, setValue]);
+  }, [availablePrimaryTags, currentPrimaryTagId, noTagsSelected, setPrimaryTagId]);
 
   if (!alwaysVisible && availablePrimaryTags.length === 0) {
     return null;
