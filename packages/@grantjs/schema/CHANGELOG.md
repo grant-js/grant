@@ -1,5 +1,11 @@
 # @grantjs/schema
 
+## 1.4.1
+
+### Patch Changes
+
+- 4fcca1d: Separate shareable organization invitation links from email-delivered verification proof so copied invitation links cannot auto-verify an email address.
+
 ## 1.4.0
 
 ### Minor Changes
