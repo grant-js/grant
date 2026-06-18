@@ -8,6 +8,7 @@ import type {
 } from '@grantjs/schema';
 import { CdmFindBy } from '@grantjs/schema';
 
+import { ValidationError } from '@/lib/errors';
 import { readCdmInputSearchable } from '@/lib/search-document.lib';
 
 import type {
@@ -126,12 +127,14 @@ export function expandCdmSyncInput(input: SyncProjectInput): ExpandedCdmSyncPayl
   for (const u of input.users ?? []) {
     const resolver = u.key;
     const isId = resolver.findBy === CdmFindBy.Id;
-    const userKey = !isId ? resolver.value : null;
+    const isEmail = resolver.findBy === CdmFindBy.Email;
+    const userKey = !isId ? normalizeUserKey(resolver.value, resolver.findBy) : null;
     const userId = isId ? resolver.value : null;
 
     if (userKey) {
       provisionedUsers.push({
         externalKey: userKey,
+        findBy: isEmail ? 'email' : 'key',
         name: u.name,
         metadata: u.metadata ?? null,
         searchable: readCdmInputSearchable(u.searchable),
@@ -236,6 +239,17 @@ function slugify(name: string): string {
     .trim()
     .replace(/[^a-z0-9]+/g, '.')
     .replace(/^\.+|\.+$/g, '');
+}
+
+function normalizeUserKey(value: string, findBy: CdmFindBy | null | undefined): string {
+  if (findBy !== CdmFindBy.Email) {
+    return value;
+  }
+  const email = value.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new ValidationError(`users[${value}]: key.value must be a valid email`);
+  }
+  return email;
 }
 
 function collectDocumentGroupPermissionRefs(

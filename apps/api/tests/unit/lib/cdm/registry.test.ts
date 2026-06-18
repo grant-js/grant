@@ -50,6 +50,7 @@ function buildDeps(): CdmEntityRegistryDeps {
     resources: stub as never,
     permissions: stub as never,
     users: stub as never,
+    userAuthenticationMethods: stub as never,
     userRepository: stub as never,
   };
 }

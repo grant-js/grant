@@ -478,6 +478,7 @@ export function createServices(
       servicesBase.resources,
       servicesBase.permissions,
       servicesBase.users,
+      servicesBase.userAuthenticationMethods,
       repositories.userRepository,
       servicesBase.resourceTags,
       servicesBase.permissionTags,
@@ -512,6 +513,7 @@ export function createServices(
       servicesBase.resources,
       servicesBase.permissions,
       servicesBase.users,
+      servicesBase.userAuthenticationMethods,
       repositories.userRepository
     ),
     projectSyncJobs: new ProjectSyncJobService(

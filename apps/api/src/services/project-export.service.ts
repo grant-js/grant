@@ -23,6 +23,7 @@ import type {
   IRoleService,
   IRoleTagService,
   ITagService,
+  IUserAuthenticationMethodService,
   IUserGroupService,
   IUserPermissionService,
   IUserRepository,
@@ -114,6 +115,7 @@ export class ProjectExportService implements IProjectExportService {
     resources: IResourceService,
     permissions: IPermissionService,
     users: IUserService,
+    userAuthenticationMethods: IUserAuthenticationMethodService,
     userRepository: IUserRepository,
     handlers?: ReadonlyArray<ICdmEntityHandler>
   ) {
@@ -149,6 +151,7 @@ export class ProjectExportService implements IProjectExportService {
         resources,
         permissions,
         users,
+        userAuthenticationMethods,
         userRepository,
       });
   }

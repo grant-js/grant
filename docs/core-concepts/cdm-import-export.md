@@ -175,7 +175,19 @@ Every CDM-portable entity has an opaque **`externalKey`**:
 
 ## Provisioned users
 
-The optional **`users`** section creates **new** Grant accounts for inbound porting. Assignments may reference them with **`userKey`**. Existing users still use **`userId`**.
+The optional **`users`** section creates or resolves global Grant users for inbound porting, then the assignment fields (`roles`, `groups`, or `permissions`) add project membership. CDM user imports never create Grant accounts, sessions, passwords, OTPs, or outgoing verification emails.
+
+User keys support two important modes:
+
+| Resolver            | Behavior                                                                                                                                                                                                                    |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `findBy: id`        | `key.value` is an existing Grant user id. Import skips global user provisioning and uses that user directly.                                                                                                                |
+| `findBy: key`/empty | `key.value` is a CDM-local external key. Grant creates or reuses a user with `metadata.cdmImport` for this project.                                                                                                         |
+| `findBy: email`     | `key.value` is normalized to lowercase and resolved against the global authentication catalog. If no identity exists, Grant creates a global user plus a passwordless email authentication method with `isVerified: false`. |
+
+For `findBy: email`, import treats the address as an identity claim, not proof of mailbox ownership. The email method reserves/links the global identity but remains unverified until Grant sees a later inbox-proof flow, such as project OAuth email magic link.
+
+Export remains conservative: CDM-managed users are emitted with opaque external keys unless a future export mode explicitly opts into exposing global login identifiers.
 
 Schema reference: [`SyncProjectInput`](https://github.com/logusgraphics/grant-platform/blob/main/packages/@grantjs/schema/src/schema/projects/inputs/sync-project-cdm.graphql).
 

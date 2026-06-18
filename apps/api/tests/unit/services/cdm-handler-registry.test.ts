@@ -128,6 +128,7 @@ function buildService(handlers: ReadonlyArray<ICdmEntityHandler>) {
     {} as never,
     {} as never,
     {} as never,
+    {} as never,
     undefined,
     handlers
   );
