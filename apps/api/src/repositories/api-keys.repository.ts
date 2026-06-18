@@ -1,5 +1,17 @@
 import type { IApiKeyRepository } from '@grantjs/core';
-import { ApiKeyModel, apiKeys, users } from '@grantjs/database';
+import type {
+  AccountProjectApiKeyModel,
+  ApiKeyModel,
+  OrganizationProjectApiKeyModel,
+  ProjectUserApiKeyModel,
+} from '@grantjs/database';
+import {
+  accountProjectApiKeys,
+  apiKeys,
+  organizationProjectApiKeys,
+  projectUserApiKeys,
+  users,
+} from '@grantjs/database';
 import {
   ApiKey,
   ApiKeyPage,
@@ -8,7 +20,7 @@ import {
   QueryApiKeysArgs,
   User,
 } from '@grantjs/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { SelectedFields } from '@/types';
@@ -40,6 +52,16 @@ export class ApiKeyRepository
       extract: (v: User) => v,
     },
   };
+
+  private isActiveKey(key: ApiKeyModel): boolean {
+    return (
+      !key.isRevoked && !key.deletedAt && (!key.expiresAt || new Date(key.expiresAt) >= new Date())
+    );
+  }
+
+  private toApiKey(key: ApiKeyModel): ApiKey {
+    return key as ApiKey;
+  }
 
   public async getApiKeys(
     params: Omit<QueryApiKeysArgs, 'scope'> & SelectedFields<ApiKey>,
@@ -136,6 +158,96 @@ export class ApiKeyRepository
     }
 
     return key;
+  }
+
+  public async findActiveProjectUserApiKeysByClientId(
+    params: { clientId: string; projectId: string; userId: string },
+    transaction?: Transaction
+  ): Promise<ApiKey[]> {
+    const dbInstance = transaction ?? this.db;
+    const rows = await dbInstance
+      .select({
+        apiKey: this.table,
+      })
+      .from(this.table)
+      .innerJoin(projectUserApiKeys, eq(projectUserApiKeys.apiKeyId, this.table.id))
+      .where(
+        and(
+          eq(this.table.clientId, params.clientId),
+          isNull(this.table.deletedAt),
+          eq(this.table.isRevoked, false),
+          eq(projectUserApiKeys.projectId, params.projectId),
+          eq(projectUserApiKeys.userId, params.userId),
+          isNull(projectUserApiKeys.deletedAt)
+        )
+      );
+
+    return rows
+      .map((row: { apiKey: ApiKeyModel; project_user_api_keys?: ProjectUserApiKeyModel }) =>
+        this.toApiKey(row.apiKey)
+      )
+      .filter((key) => this.isActiveKey(key as ApiKeyModel));
+  }
+
+  public async findActiveAccountProjectApiKeysByClientId(
+    params: { clientId: string; accountId: string; projectId: string },
+    transaction?: Transaction
+  ): Promise<ApiKey[]> {
+    const dbInstance = transaction ?? this.db;
+    const rows = await dbInstance
+      .select({
+        apiKey: this.table,
+      })
+      .from(this.table)
+      .innerJoin(accountProjectApiKeys, eq(accountProjectApiKeys.apiKeyId, this.table.id))
+      .where(
+        and(
+          eq(this.table.clientId, params.clientId),
+          isNull(this.table.deletedAt),
+          eq(this.table.isRevoked, false),
+          eq(accountProjectApiKeys.accountId, params.accountId),
+          eq(accountProjectApiKeys.projectId, params.projectId),
+          isNull(accountProjectApiKeys.deletedAt)
+        )
+      );
+
+    return rows
+      .map((row: { apiKey: ApiKeyModel; account_project_api_keys?: AccountProjectApiKeyModel }) =>
+        this.toApiKey(row.apiKey)
+      )
+      .filter((key) => this.isActiveKey(key as ApiKeyModel));
+  }
+
+  public async findActiveOrganizationProjectApiKeysByClientId(
+    params: { clientId: string; organizationId: string; projectId: string },
+    transaction?: Transaction
+  ): Promise<ApiKey[]> {
+    const dbInstance = transaction ?? this.db;
+    const rows = await dbInstance
+      .select({
+        apiKey: this.table,
+      })
+      .from(this.table)
+      .innerJoin(organizationProjectApiKeys, eq(organizationProjectApiKeys.apiKeyId, this.table.id))
+      .where(
+        and(
+          eq(this.table.clientId, params.clientId),
+          isNull(this.table.deletedAt),
+          eq(this.table.isRevoked, false),
+          eq(organizationProjectApiKeys.organizationId, params.organizationId),
+          eq(organizationProjectApiKeys.projectId, params.projectId),
+          isNull(organizationProjectApiKeys.deletedAt)
+        )
+      );
+
+    return rows
+      .map(
+        (row: {
+          apiKey: ApiKeyModel;
+          organization_project_api_keys?: OrganizationProjectApiKeyModel;
+        }) => this.toApiKey(row.apiKey)
+      )
+      .filter((key) => this.isActiveKey(key as ApiKeyModel));
   }
 
   public async getClientSecretHash(id: string, transaction?: Transaction): Promise<string | null> {

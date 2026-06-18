@@ -1,13 +1,5 @@
 import { relations } from 'drizzle-orm';
-import {
-  boolean,
-  index,
-  pgTable,
-  timestamp,
-  uniqueIndex,
-  uuid,
-  varchar,
-} from 'drizzle-orm/pg-core';
+import { boolean, index, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 
 import { users } from './users.schema';
 
@@ -30,7 +22,7 @@ export const apiKeys = pgTable(
     deletedAt: timestamp('deleted_at'),
   },
   (table) => [
-    uniqueIndex('api_keys_client_id_unique').on(table.clientId),
+    index('api_keys_client_id_idx').on(table.clientId),
     index('api_keys_deleted_at_idx').on(table.deletedAt),
     index('api_keys_is_revoked_idx').on(table.isRevoked),
   ]

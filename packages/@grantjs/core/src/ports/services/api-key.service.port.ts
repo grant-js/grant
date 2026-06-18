@@ -47,6 +47,7 @@ export interface IApiKeyService {
     params: {
       clientSecret: string;
       clientId?: string | null;
+      scope?: Scope | null;
       name?: string | null;
       description?: string | null;
       expiresAt?: Date | null;

@@ -24,6 +24,21 @@ export interface IApiKeyRepository {
 
   findActiveByClientId(clientId: string, transaction?: unknown): Promise<ApiKey | null>;
 
+  findActiveProjectUserApiKeysByClientId(
+    params: { clientId: string; projectId: string; userId: string },
+    transaction?: unknown
+  ): Promise<ApiKey[]>;
+
+  findActiveAccountProjectApiKeysByClientId(
+    params: { clientId: string; accountId: string; projectId: string },
+    transaction?: unknown
+  ): Promise<ApiKey[]>;
+
+  findActiveOrganizationProjectApiKeysByClientId(
+    params: { clientId: string; organizationId: string; projectId: string },
+    transaction?: unknown
+  ): Promise<ApiKey[]>;
+
   getClientSecretHash(id: string, transaction?: unknown): Promise<string | null>;
 
   createApiKey(

@@ -67,6 +67,7 @@ export const createApiKeyForCdmImportParamsSchema = z
   .object({
     clientSecret: clientSecretSchema,
     clientId: clientIdSchema.nullable().optional(),
+    scope: scopeSchema.nullable().optional(),
     name: nameSchema.nullable().optional(),
     description: descriptionSchema.nullable().optional(),
     expiresAt: z.date().nullable().optional(),

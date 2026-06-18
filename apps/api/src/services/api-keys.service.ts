@@ -1,13 +1,10 @@
 import { MILLISECONDS_PER_MINUTE } from '@grantjs/constants';
 import type {
-  IAccountProjectApiKeyRepository,
   IAccountProjectRepository,
   IApiKeyRepository,
   IApiKeyService,
   IAuditLogger,
-  IOrganizationProjectApiKeyRepository,
   IOrganizationProjectRepository,
-  IProjectUserApiKeyRepository,
 } from '@grantjs/core';
 import { Grant, GrantAuth, NoSessionSigningKeyError } from '@grantjs/core';
 import {
@@ -20,6 +17,7 @@ import {
   Scope,
   Tenant,
 } from '@grantjs/schema';
+import { sql } from 'drizzle-orm';
 
 import { config } from '@/config';
 import { AuthenticationError, BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
@@ -52,13 +50,15 @@ interface SignTokenParams {
   userId: string;
 }
 
+interface ScopedApiKeyResolution {
+  apiKeys: ApiKey[];
+  userId: string;
+}
+
 export class ApiKeyService implements IApiKeyService {
   constructor(
     private readonly accountProjectRepository: IAccountProjectRepository,
     private readonly organizationProjectRepository: IOrganizationProjectRepository,
-    private readonly projectUserApiKeyRepository: IProjectUserApiKeyRepository,
-    private readonly accountProjectApiKeyRepository: IAccountProjectApiKeyRepository,
-    private readonly organizationProjectApiKeyRepository: IOrganizationProjectApiKeyRepository,
     private readonly apiKeyRepository: IApiKeyRepository,
     private readonly user: GrantAuth | null,
     private readonly audit: IAuditLogger,
@@ -181,6 +181,85 @@ export class ApiKeyService implements IApiKeyService {
     return { clientId, clientSecret };
   }
 
+  private parseScopeId(scope: Scope, expectedParts: number, label: string): string[] {
+    const parts = scope.id.split(':');
+    if (parts.length !== expectedParts || parts.some((part) => !part)) {
+      throw new AuthenticationError(`Invalid ${label} scope`);
+    }
+    return parts;
+  }
+
+  private async findScopedApiKeysByClientId(
+    clientId: string,
+    scope: Scope,
+    transaction?: Transaction
+  ): Promise<ScopedApiKeyResolution> {
+    switch (scope.tenant) {
+      case Tenant.ProjectUser: {
+        const [projectId, userId] = this.parseScopeId(scope, 2, 'projectUser');
+        const apiKeys = await this.apiKeyRepository.findActiveProjectUserApiKeysByClientId(
+          { clientId, projectId, userId },
+          transaction
+        );
+        return { apiKeys, userId };
+      }
+
+      case Tenant.AccountProject: {
+        const [accountId, projectId] = this.parseScopeId(scope, 2, 'accountProject');
+        const apiKeys = await this.apiKeyRepository.findActiveAccountProjectApiKeysByClientId(
+          { clientId, accountId, projectId },
+          transaction
+        );
+        return { apiKeys, userId: apiKeys[0]?.id ?? '' };
+      }
+
+      case Tenant.OrganizationProject: {
+        const [organizationId, projectId] = this.parseScopeId(scope, 2, 'organizationProject');
+        const apiKeys = await this.apiKeyRepository.findActiveOrganizationProjectApiKeysByClientId(
+          { clientId, organizationId, projectId },
+          transaction
+        );
+        return { apiKeys, userId: apiKeys[0]?.id ?? '' };
+      }
+
+      case Tenant.Organization:
+      case Tenant.Account:
+        throw new AuthenticationError(
+          `API key exchange for ${scope.tenant} scope is not yet implemented`
+        );
+
+      default:
+        throw new AuthenticationError(`Unsupported tenant type: ${scope.tenant}`);
+    }
+  }
+
+  private async lockScopedClientId(
+    params: { clientId: string; scope: Scope },
+    transaction?: Transaction
+  ): Promise<void> {
+    if (!transaction) {
+      return;
+    }
+
+    const lockKey = `${params.scope.tenant}:${params.scope.id}:${params.clientId}`;
+    await transaction.execute(
+      sql`SELECT pg_advisory_xact_lock(hashtext('grant-api-key-client-id'), hashtext(${lockKey}))`
+    );
+  }
+
+  private async assertScopedClientIdAvailable(
+    clientId: string,
+    scope: Scope,
+    transaction?: Transaction
+  ): Promise<void> {
+    await this.lockScopedClientId({ clientId, scope }, transaction);
+    const { apiKeys } = await this.findScopedApiKeysByClientId(clientId, scope, transaction);
+
+    if (apiKeys.length > 0) {
+      throw new ConflictError('clientId is already in use for this scope');
+    }
+  }
+
   public async createApiKey(
     params: Omit<CreateApiKeyInput, 'scope'>,
     transaction?: Transaction
@@ -232,6 +311,7 @@ export class ApiKeyService implements IApiKeyService {
     params: {
       clientSecret: string;
       clientId?: string | null;
+      scope?: Scope | null;
       name?: string | null;
       description?: string | null;
       expiresAt?: Date | null;
@@ -246,7 +326,9 @@ export class ApiKeyService implements IApiKeyService {
         ? validatedParams.clientId
         : generateUUID();
 
-    if (validatedParams.clientId) {
+    if (validatedParams.clientId && validatedParams.scope) {
+      await this.assertScopedClientIdAvailable(clientId, validatedParams.scope, transaction);
+    } else if (validatedParams.clientId) {
       const existing = await this.apiKeyRepository.findByClientId(clientId, transaction);
       if (existing) {
         throw new ConflictError('clientId is already in use');
@@ -325,13 +407,19 @@ export class ApiKeyService implements IApiKeyService {
 
     const { clientId, clientSecret, scope } = validatedParams;
 
-    const apiKey = await this.apiKeyRepository.findActiveByClientId(clientId, transaction);
+    const scopedResolution = await this.findScopedApiKeysByClientId(clientId, scope, transaction);
 
-    this.validateApiKeyActive(apiKey);
-
-    if (!apiKey) {
+    if (scopedResolution.apiKeys.length === 0) {
       throw new AuthenticationError('Invalid credentials');
     }
+
+    if (scopedResolution.apiKeys.length > 1) {
+      throw new AuthenticationError('Invalid credentials');
+    }
+
+    const apiKey = scopedResolution.apiKeys[0];
+
+    this.validateApiKeyActive(apiKey);
 
     const clientSecretHash = await this.apiKeyRepository.getClientSecretHash(
       apiKey.id,
@@ -348,77 +436,7 @@ export class ApiKeyService implements IApiKeyService {
 
     await this.apiKeyRepository.updateLastUsedAt(apiKey.id, new Date(), transaction);
 
-    let isApiKeyInScope: boolean;
-    let userId: string | null;
-
-    switch (scope.tenant) {
-      case Tenant.ProjectUser: {
-        const [projectId, projectUserId] = scope.id.split(':');
-        userId = projectUserId;
-        if (!projectId || !userId) {
-          throw new AuthenticationError(
-            'Invalid projectUser scope: id must be in format "projectId:userId"'
-          );
-        }
-        const pivots = await this.projectUserApiKeyRepository.getProjectUserApiKeys(
-          { projectId, userId },
-          transaction
-        );
-        isApiKeyInScope = pivots.some((p) => p.apiKeyId === apiKey.id);
-        break;
-      }
-
-      case Tenant.AccountProject: {
-        const [accountId, projectId] = scope.id.split(':');
-        if (!accountId || !projectId) {
-          throw new AuthenticationError(
-            'Invalid accountProject scope: id must be in format "accountId:projectId"'
-          );
-        }
-        const accountPivot =
-          await this.accountProjectApiKeyRepository.getByApiKeyAndAccountAndProject(
-            apiKey.id,
-            accountId,
-            projectId,
-            transaction
-          );
-        isApiKeyInScope = accountPivot !== null;
-        userId = apiKey.id; // Sentinel for project-level keys (auditing)
-        break;
-      }
-
-      case Tenant.OrganizationProject: {
-        const [organizationId, projectId] = scope.id.split(':');
-        if (!organizationId || !projectId) {
-          throw new AuthenticationError(
-            'Invalid organizationProject scope: id must be in format "organizationId:projectId"'
-          );
-        }
-        const orgPivot =
-          await this.organizationProjectApiKeyRepository.getByApiKeyAndOrganizationAndProject(
-            apiKey.id,
-            organizationId,
-            projectId,
-            transaction
-          );
-        isApiKeyInScope = orgPivot !== null;
-        userId = apiKey.id; // Sentinel for project-level keys (auditing)
-        break;
-      }
-
-      case Tenant.Organization:
-      case Tenant.Account:
-        throw new AuthenticationError(
-          `API key exchange for ${scope.tenant} scope is not yet implemented`
-        );
-
-      default:
-        throw new AuthenticationError(`Unsupported tenant type: ${scope.tenant}`);
-    }
-
-    if (!isApiKeyInScope) {
-      throw new AuthenticationError('API key is not associated with the specified scope');
-    }
+    const userId = scopedResolution.userId || apiKey.id;
 
     if (!userId) {
       throw new AuthenticationError('User ID not found');
