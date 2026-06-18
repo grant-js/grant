@@ -1,5 +1,29 @@
 # grant-api
 
+## 1.4.0
+
+### Minor Changes
+
+- fd61e91: Add CDM email identity imports for project sync jobs.
+
+  CDM users with `findBy: email` now resolve through the global email authentication catalog, creating an unverified passwordless email authentication method when needed. Project OAuth email magic-link proof verifies imported email methods, and the docs/schema now describe the global identity semantics.
+
+### Patch Changes
+
+- Updated dependencies [fd61e91]
+  - @grantjs/schema@1.4.0
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+
 ## 1.3.3
 
 ### Patch Changes
