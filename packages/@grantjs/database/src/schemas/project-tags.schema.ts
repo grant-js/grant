@@ -33,7 +33,7 @@ export const projectTags = pgTable(
     uniqueIndex('project_tags_project_id_tag_id_unique')
       .on(table.projectId, table.tagId)
       .where(sql`${table.deletedAt} IS NULL`),
-    uniqueIndex('project_tags_deleted_at_idx').on(table.deletedAt),
+    index('project_tags_deleted_at_idx').on(table.deletedAt),
     pgPolicy('tenant_isolation_policy', {
       as: 'restrictive',
       for: 'select',
