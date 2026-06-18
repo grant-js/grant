@@ -16,7 +16,7 @@ import {
 } from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
-import { BadRequestError, ValidationError } from '@/lib/errors';
+import { BadRequestError, NotFoundError, ValidationError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { SelectedFields } from '@/types';
 
@@ -186,15 +186,21 @@ export class ProjectAppsHandler extends CacheHandler {
     if (!projectIds.includes(projectId)) {
       throw new BadRequestError('Project not in scope');
     }
-    if (allowSignUp !== false) {
-      if (!signUpRoleId) {
+    const existing = await this.projectApps.getProjectAppById(id);
+    if (!existing) {
+      throw new NotFoundError('ProjectApp');
+    }
+    const effectiveAllowSignUp = allowSignUp ?? existing.allowSignUp;
+    const effectiveSignUpRoleId = signUpRoleId !== undefined ? signUpRoleId : existing.signUpRoleId;
+    if (effectiveAllowSignUp !== false) {
+      if (!effectiveSignUpRoleId) {
         throw new ValidationError(
           'signUpRoleId is required when allowSignUp is enabled. Select a role from the project.'
         );
       }
       const projectRoles = await this.scopeServices.projectRoles.getProjectRoles({ projectId });
       const projectRoleIds = new Set(projectRoles.map((pr) => pr.roleId));
-      if (!projectRoleIds.has(signUpRoleId)) {
+      if (!projectRoleIds.has(effectiveSignUpRoleId)) {
         throw new ValidationError(
           'signUpRoleId must be a role that exists in this project (project_roles).'
         );
@@ -253,6 +259,23 @@ export class ProjectAppsHandler extends CacheHandler {
             );
           }
         }
+      } else if (primaryTagId !== undefined) {
+        const current = await this.projectAppTags.getProjectAppTags({ projectAppId: id }, tx);
+        if (primaryTagId && !current.some((pt) => pt.tagId === primaryTagId)) {
+          throw new BadRequestError('Primary tag must be one of the project app assigned tags');
+        }
+        await Promise.all(
+          current.map((pt) =>
+            this.projectAppTags.updateProjectAppTag(
+              {
+                projectAppId: id,
+                tagId: pt.tagId,
+                isPrimary: primaryTagId ? pt.tagId === primaryTagId : false,
+              },
+              tx
+            )
+          )
+        );
       }
       return updated;
     });
