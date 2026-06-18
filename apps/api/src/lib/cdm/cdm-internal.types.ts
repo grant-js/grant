@@ -87,6 +87,7 @@ export interface CdmProjectUserApiKeyInternal {
 
 export interface CdmUserProvisionInternal {
   externalKey: string;
+  findBy: 'key' | 'email';
   name: string;
   metadata?: Record<string, unknown> | null;
   searchable?: Record<string, unknown> | null;

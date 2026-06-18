@@ -228,6 +228,110 @@ describe('expandCdmSyncInput catalog permission strings', () => {
     expect(expanded.userAssignments[0]?.roleTemplateKeys).toEqual([]);
   });
 
+  it('marks findBy=email users as email identities and normalizes the email key', () => {
+    const input: SyncProjectInput = {
+      version: 1,
+      id: null,
+      mode,
+      roles: [],
+      users: [
+        {
+          key: { value: '  User@Example.COM ', findBy: CdmFindBy.Email },
+          name: 'U',
+          roles: [],
+          groups: [],
+          permissions: [],
+          tags: [],
+          primaryTag: null,
+          apiKeys: [],
+          metadata: null,
+        },
+      ],
+      resources: [],
+      permissions: [],
+      groups: [],
+      tags: [],
+    };
+
+    const expanded = expandCdmSyncInput(input);
+
+    expect(expanded.provisionedUsers).toEqual([
+      expect.objectContaining({
+        externalKey: 'user@example.com',
+        findBy: 'email',
+      }),
+    ]);
+    expect(expanded.userAssignments[0]).toEqual(
+      expect.objectContaining({
+        userKey: 'user@example.com',
+        userId: null,
+      })
+    );
+  });
+
+  it('marks findBy=key users as project-local CDM keys', () => {
+    const input: SyncProjectInput = {
+      version: 1,
+      id: null,
+      mode,
+      roles: [],
+      users: [
+        {
+          key: { value: 'legacy-user-key', findBy: CdmFindBy.Key },
+          name: 'U',
+          roles: [],
+          groups: [],
+          permissions: [],
+          tags: [],
+          primaryTag: null,
+          apiKeys: [],
+          metadata: null,
+        },
+      ],
+      resources: [],
+      permissions: [],
+      groups: [],
+      tags: [],
+    };
+
+    const expanded = expandCdmSyncInput(input);
+
+    expect(expanded.provisionedUsers[0]).toEqual(
+      expect.objectContaining({
+        externalKey: 'legacy-user-key',
+        findBy: 'key',
+      })
+    );
+  });
+
+  it('rejects invalid findBy=email values', () => {
+    const input: SyncProjectInput = {
+      version: 1,
+      id: null,
+      mode,
+      roles: [],
+      users: [
+        {
+          key: { value: 'not-an-email', findBy: CdmFindBy.Email },
+          name: 'U',
+          roles: [],
+          groups: [],
+          permissions: [],
+          tags: [],
+          primaryTag: null,
+          apiKeys: [],
+          metadata: null,
+        },
+      ],
+      resources: [],
+      permissions: [],
+      groups: [],
+      tags: [],
+    };
+
+    expect(() => expandCdmSyncInput(input)).toThrow(ValidationError);
+  });
+
   it('strips legacy synthetic role keys and emits a warning', () => {
     const syntheticKey = 'synthetic:role:user:u1:direct';
     const input: SyncProjectInput = {

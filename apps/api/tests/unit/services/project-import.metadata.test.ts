@@ -112,6 +112,12 @@ describe('ProjectImportService CDM metadata', () => {
   const userTags = { addUserTag: vi.fn() };
   const resourcesService = { createResource: vi.fn() };
   const permissionsService = { createPermission: vi.fn() };
+  const users = { createUser: vi.fn() };
+  const userAuthenticationMethods = {
+    getUserAuthenticationMethodByEmail: vi.fn().mockResolvedValue(null),
+    createUserAuthenticationMethod: vi.fn(),
+  };
+  const userRepository = { findUserIdByCdmImport: vi.fn().mockResolvedValue(null) };
   const resourceTags = { addResourceTag: vi.fn() };
   const permissionTags = { addPermissionTag: vi.fn() };
 
@@ -144,8 +150,9 @@ describe('ProjectImportService CDM metadata', () => {
       userTags as never,
       resourcesService as never,
       permissionsService as never,
-      {} as never,
-      {} as never,
+      users as never,
+      userAuthenticationMethods as never,
+      userRepository as never,
       resourceTags as never,
       permissionTags as never
     );
@@ -166,6 +173,10 @@ describe('ProjectImportService CDM metadata', () => {
     projectResources.addProjectResource.mockResolvedValue({});
     projectUsers.addProjectUser.mockResolvedValue({});
     userRoles.addUserRole.mockResolvedValue({});
+    users.createUser.mockResolvedValue({ id: 'created-user-id' });
+    userAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue(null);
+    userAuthenticationMethods.createUserAuthenticationMethod.mockResolvedValue({});
+    userRepository.findUserIdByCdmImport.mockResolvedValue(null);
   });
 
   it('merges template metadata into role create payload (direct permissions path)', async () => {
@@ -310,6 +321,96 @@ describe('ProjectImportService CDM metadata', () => {
       },
       {}
     );
+  });
+
+  it('imports findBy=email users as unverified email identities and project members', async () => {
+    const input: SyncProjectInput = {
+      version: 1,
+      id: null,
+      mode: {
+        strategy: CdmModeStrategy.Merge,
+        onConflict: null,
+        confirmDestructive: false,
+      },
+      roles: [
+        {
+          key: 'viewer',
+          name: 'Viewer',
+          permissions: [CDM_PERM_KEY],
+          groups: [],
+          tags: [],
+          primaryTag: null,
+          metadata: null,
+        },
+      ],
+      users: [
+        {
+          key: { value: ' Imported@Example.COM ', findBy: CdmFindBy.Email },
+          name: 'Imported Member',
+          roles: ['viewer'],
+          groups: [],
+          permissions: [],
+          tags: [],
+          primaryTag: null,
+          apiKeys: [],
+          metadata: null,
+        },
+      ],
+      resources: [
+        {
+          key: CDM_RES_KEY,
+          slug: 'documents',
+          name: 'Documents',
+          description: null,
+          actions: ['read'],
+          tags: [],
+          primaryTag: null,
+          metadata: null,
+        },
+      ],
+      permissions: [
+        {
+          key: CDM_PERM_KEY,
+          resource: CDM_RES_KEY,
+          action: 'read',
+          name: 'Documents:read',
+          description: null,
+          condition: null,
+          groups: [],
+          tags: [],
+          primaryTag: null,
+          metadata: null,
+        },
+      ],
+      groups: [],
+      tags: [],
+    };
+
+    const svc = createService();
+    const result = await svc.importProjectCdm({ projectId, scope, input }, {});
+
+    expect(users.createUser).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Imported Member' }),
+      {}
+    );
+    expect(userAuthenticationMethods.createUserAuthenticationMethod).toHaveBeenCalledWith(
+      {
+        userId: 'created-user-id',
+        provider: 'email',
+        providerId: 'imported@example.com',
+        providerData: {},
+        isVerified: false,
+      },
+      {}
+    );
+    expect(projectUsers.addProjectUser).toHaveBeenCalledWith(
+      {
+        projectId,
+        userId: 'created-user-id',
+      },
+      {}
+    );
+    expect(result.usersCreated).toBe(1);
   });
 
   it('invalidateCachesForImportResult clears scoped entity caches including tags and API keys', async () => {

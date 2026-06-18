@@ -441,8 +441,19 @@ export enum CdmIfMissing {
 }
 
 export type CdmKeyResolverInput = {
+  /**
+   * `id` references an existing Grant user id. `email` resolves or creates a
+   * global passwordless email authentication method. Other values are treated as
+   * CDM-local external keys for project import/export.
+   */
   findBy?: InputMaybe<CdmFindBy>;
   ifMissing?: InputMaybe<CdmIfMissing>;
+  /**
+   * Identifier value. For `findBy: email`, Grant normalizes this to lowercase
+   * and resolves it against the global email authentication method catalog.
+   * Imported email authentication methods start unverified until a later inbox
+   * proof flow, such as project OAuth email magic link, verifies them.
+   */
   value: Scalars['String']['input'];
 };
 

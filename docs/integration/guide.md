@@ -311,6 +311,8 @@ The response contains an `accessToken` (RS256 JWT) and `expiresIn` (seconds). Th
 
 A Project App is an OAuth client that lets users sign in or sign up through Grant and be redirected back to your application with a token. Create one with all Document scopes, email and GitHub providers, and the role from Step 5 as the sign-up/default role:
 
+When users were imported through CDM with `findBy: email`, their email authentication method starts unverified. Completing this Project OAuth email magic-link flow proves mailbox ownership and verifies that imported method before issuing project-scoped access.
+
 <ApiTryIt
   method="POST"
   path="/api/project-apps"

@@ -14,6 +14,7 @@ const mockUserAuthenticationMethods = {
   getUserAuthenticationMethodByEmail: vi.fn(),
   processProvider: vi.fn(),
   createUserAuthenticationMethod: vi.fn(),
+  updateUserAuthenticationMethod: vi.fn(),
   resendVerificationEmail: vi.fn(),
   getUserAuthenticationMethod: vi.fn(),
   verifyEmail: vi.fn(),
@@ -170,6 +171,62 @@ describe('AuthHandler project OAuth resolution', () => {
         tx
       );
       expect(mockUsers.createUser).not.toHaveBeenCalled();
+    });
+
+    it('marks an existing unverified email auth method verified after email magic-link proof', async () => {
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue({
+        id: 'email-method-id',
+        userId: 'existing-email-user-id',
+        provider: UserAuthenticationMethodProvider.Email,
+        isVerified: false,
+      });
+      const handler = createHandler();
+
+      const userId = await handler.resolveUserIdFromEmailForProject(
+        'user@example.com',
+        tx as never
+      );
+
+      expect(userId).toBe('existing-email-user-id');
+      expect(mockUserAuthenticationMethods.updateUserAuthenticationMethod).toHaveBeenCalledWith(
+        'email-method-id',
+        { isVerified: true },
+        tx
+      );
+      expect(mockUsers.createUser).not.toHaveBeenCalled();
+      expect(mockAccounts.createAccount).not.toHaveBeenCalled();
+    });
+
+    it('does not update an existing verified email auth method', async () => {
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue({
+        id: 'email-method-id',
+        userId: 'existing-email-user-id',
+        provider: UserAuthenticationMethodProvider.Email,
+        isVerified: true,
+      });
+      const handler = createHandler();
+
+      const userId = await handler.resolveUserIdFromEmailForProject(
+        'user@example.com',
+        tx as never
+      );
+
+      expect(userId).toBe('existing-email-user-id');
+      expect(mockUserAuthenticationMethods.updateUserAuthenticationMethod).not.toHaveBeenCalled();
+    });
+
+    it('does not create a user when sign-up is disabled and no email identity exists', async () => {
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue(null);
+      const handler = createHandler();
+
+      await expect(
+        handler.resolveUserIdFromEmailForProject('newuser@example.com', tx as never, {
+          allowSignUp: false,
+        })
+      ).rejects.toThrow('Sign-up is disabled for this app');
+
+      expect(mockUsers.createUser).not.toHaveBeenCalled();
+      expect(mockUserAuthenticationMethods.createUserAuthenticationMethod).not.toHaveBeenCalled();
     });
 
     it('creates user and email auth method when new', async () => {

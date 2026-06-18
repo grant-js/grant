@@ -804,7 +804,19 @@ export class AuthHandler extends CacheHandler {
         emailNorm,
         tx
       );
-      if (existing) return existing.userId;
+      if (existing) {
+        if (
+          existing.provider === UserAuthenticationMethodProvider.Email &&
+          existing.isVerified === false
+        ) {
+          await this.userAuthenticationMethods.updateUserAuthenticationMethod(
+            existing.id,
+            { isVerified: true },
+            tx
+          );
+        }
+        return existing.userId;
+      }
 
       if (options?.allowSignUp === false) {
         throw new BadRequestError('Sign-up is disabled for this app');

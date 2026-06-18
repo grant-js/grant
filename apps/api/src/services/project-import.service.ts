@@ -27,6 +27,7 @@ import type {
   IRoleService,
   IRoleTagService,
   ITagService,
+  IUserAuthenticationMethodService,
   IUserGroupService,
   IUserPermissionService,
   IUserRepository,
@@ -98,6 +99,7 @@ export class ProjectImportService implements IProjectImportService {
     resources: IResourceService,
     permissions: IPermissionService,
     users: IUserService,
+    userAuthenticationMethods: IUserAuthenticationMethodService,
     userRepository: IUserRepository,
     resourceTags: IResourceTagService,
     permissionTags: IPermissionTagService,
@@ -155,6 +157,7 @@ export class ProjectImportService implements IProjectImportService {
         resources,
         permissions,
         users,
+        userAuthenticationMethods,
         userRepository,
       });
   }

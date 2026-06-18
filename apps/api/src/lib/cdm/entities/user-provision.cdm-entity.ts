@@ -4,9 +4,11 @@ import type {
   CdmPermissionRefSpec,
   CdmTeardownContext,
   ICdmEntityHandler,
+  IUserAuthenticationMethodService,
   IUserRepository,
   IUserService,
 } from '@grantjs/core';
+import { UserAuthenticationMethodProvider } from '@grantjs/schema';
 
 import {
   buildCdmImportMetadata,
@@ -35,6 +37,7 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
   constructor(
     private readonly exportRepo: ProjectExportRepository,
     private readonly users: IUserService,
+    private readonly userAuthenticationMethods: IUserAuthenticationMethodService,
     private readonly userRepository: IUserRepository
   ) {}
 
@@ -43,6 +46,9 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
     for (const row of input) {
       if (row.externalKey == null || row.externalKey === '') {
         throw new ValidationError('users[]: externalKey is required for each entry');
+      }
+      if (row.findBy === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.externalKey)) {
+        throw new ValidationError(`users[${row.externalKey}]: externalKey must be a valid email`);
       }
       if (keys.has(row.externalKey)) {
         throw new ValidationError(`Duplicate users externalKey: ${row.externalKey}`);
@@ -73,6 +79,11 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
   ): Promise<void> {
     const tx = ctx.tx as Transaction;
     for (const row of input) {
+      if (row.findBy === 'email') {
+        await this.applyEmailIdentity(ctx, row, tx);
+        continue;
+      }
+
       const existingId = await this.userRepository.findUserIdByCdmImport(
         {
           projectId: ctx.projectId,
@@ -97,6 +108,77 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
     }
   }
 
+  private async applyEmailIdentity(
+    ctx: CdmApplyContext,
+    row: CdmUserProvisionInternal,
+    tx: Transaction
+  ): Promise<void> {
+    const existingAuthMethod =
+      await this.userAuthenticationMethods.getUserAuthenticationMethodByEmail(row.externalKey, tx);
+    if (existingAuthMethod) {
+      if (existingAuthMethod.provider === UserAuthenticationMethodProvider.Github) {
+        await this.userAuthenticationMethods.createUserAuthenticationMethod(
+          {
+            userId: existingAuthMethod.userId,
+            provider: UserAuthenticationMethodProvider.Email,
+            providerId: row.externalKey,
+            providerData: {},
+            isVerified: false,
+          },
+          tx
+        );
+      }
+      this.recordProducedUser(ctx, row.externalKey, existingAuthMethod.userId);
+      return;
+    }
+
+    const existingCdmUserId = await this.userRepository.findUserIdByCdmImport(
+      {
+        projectId: ctx.projectId,
+        kind: 'user',
+        externalKey: row.externalKey,
+      },
+      tx
+    );
+    if (existingCdmUserId) {
+      await this.userAuthenticationMethods.createUserAuthenticationMethod(
+        {
+          userId: existingCdmUserId,
+          provider: UserAuthenticationMethodProvider.Email,
+          providerId: row.externalKey,
+          providerData: {},
+          isVerified: false,
+        },
+        tx
+      );
+      this.recordProducedUser(ctx, row.externalKey, existingCdmUserId);
+      return;
+    }
+
+    const metadata = mergeCdmImporterMetadata(
+      buildCdmImportMetadata(ctx.projectId, 'user', row.externalKey),
+      row.metadata
+    );
+    const user = await this.users.createUser({ name: row.name.trim(), metadata }, tx);
+    await this.userAuthenticationMethods.createUserAuthenticationMethod(
+      {
+        userId: user.id,
+        provider: UserAuthenticationMethodProvider.Email,
+        providerId: row.externalKey,
+        providerData: {},
+        isVerified: false,
+      },
+      tx
+    );
+    this.recordProducedUser(ctx, row.externalKey, user.id);
+    ctx.result.usersCreated += 1;
+  }
+
+  private recordProducedUser(ctx: CdmApplyContext, externalKey: string, userId: string): void {
+    ctx.produced.userIds.set(externalKey, userId);
+    ctx.assignmentUserIds.add(userId);
+  }
+
   public async export(ctx: CdmExportContext): Promise<readonly CdmUserProvisionInternal[]> {
     const tx = ctx.tx as Transaction | undefined;
     const rows = await this.exportRepo.getProjectCdmProvisionedUsers(ctx.projectId, tx);
@@ -108,6 +190,7 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
       };
       return {
         externalKey: buildExternalKey('user', r.userId, r.name),
+        findBy: 'key',
         name: r.name,
         metadata,
       };

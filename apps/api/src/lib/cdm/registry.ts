@@ -21,6 +21,7 @@ import type {
   IRoleService,
   IRoleTagService,
   ITagService,
+  IUserAuthenticationMethodService,
   IUserGroupService,
   IUserPermissionService,
   IUserRepository,
@@ -70,6 +71,7 @@ export interface CdmEntityRegistryDeps {
   resources: IResourceService;
   permissions: IPermissionService;
   users: IUserService;
+  userAuthenticationMethods: IUserAuthenticationMethodService;
   userRepository: IUserRepository;
 }
 
@@ -112,7 +114,12 @@ export function createDefaultCdmEntities(
       deps.roleTags,
       deps.groupTags
     ),
-    new UserProvisionCdmEntity(deps.exportRepo, deps.users, deps.userRepository),
+    new UserProvisionCdmEntity(
+      deps.exportRepo,
+      deps.users,
+      deps.userAuthenticationMethods,
+      deps.userRepository
+    ),
     new UserAssignmentCdmEntity(
       deps.exportRepo,
       builder,
