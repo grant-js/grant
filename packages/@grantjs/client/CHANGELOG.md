@@ -1,5 +1,13 @@
 # @grantjs/client
 
+## 1.3.2
+
+### Patch Changes
+
+- ed06fc0: Fix the release workflow Docker matrix expression so GitHub Actions can parse
+  `release.yml` and run the release pipeline after merges to `main`.
+  - @grantjs/schema@1.3.2
+
 ## 1.3.1
 
 ### Patch Changes
