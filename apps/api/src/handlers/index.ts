@@ -65,6 +65,7 @@ export function createHandlers(
     services.userSessions,
     services.email,
     services.auth,
+    services.organizationInvitations,
     cache,
     services,
     db

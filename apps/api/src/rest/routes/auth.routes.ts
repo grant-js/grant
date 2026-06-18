@@ -55,7 +55,7 @@ export function createAuthRoutes(context: RequestContext) {
     '/login',
     validateBody(loginRequestSchema),
     async (req: TypedRequest<{ body: typeof loginRequestSchema }>, res: Response) => {
-      const { provider, providerId, providerData } = req.body;
+      const { provider, providerId, providerData, emailVerificationProof } = req.body;
 
       const result = await context.handlers.auth.login(
         {
@@ -63,6 +63,7 @@ export function createAuthRoutes(context: RequestContext) {
             provider,
             providerId,
             providerData: { ...providerData, action: UserAuthenticationEmailProviderAction.Login },
+            emailVerificationProof,
           },
         },
         context.userAgent,
@@ -142,7 +143,7 @@ export function createAuthRoutes(context: RequestContext) {
     '/register',
     validateBody(registerRequestSchema),
     async (req: TypedRequest<{ body: typeof registerRequestSchema }>, res: Response) => {
-      const { type, provider, providerId, providerData } = req.body;
+      const { type, provider, providerId, providerData, emailVerificationProof } = req.body;
 
       const result = await context.handlers.auth.register(
         {
@@ -150,6 +151,7 @@ export function createAuthRoutes(context: RequestContext) {
           provider,
           providerId,
           providerData,
+          emailVerificationProof,
         },
         context.locale,
         context.userAgent,

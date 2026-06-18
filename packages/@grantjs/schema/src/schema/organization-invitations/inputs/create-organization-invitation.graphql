@@ -3,6 +3,7 @@ input CreateOrganizationInvitationInput {
   email: String!
   roleId: ID!
   token: String!
+  emailVerificationProofTokenHash: String
   expiresAt: Date!
   invitedBy: ID!
   invitedAt: Date

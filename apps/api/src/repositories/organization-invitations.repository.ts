@@ -61,6 +61,7 @@ export class OrganizationInvitationRepository
         email: params.email,
         roleId: params.roleId,
         token: params.token,
+        emailVerificationProofTokenHash: params.emailVerificationProofTokenHash,
         expiresAt: params.expiresAt,
         invitedBy: params.invitedBy,
         invitedAt: params.invitedAt || new Date(),
@@ -198,6 +199,10 @@ export class OrganizationInvitationRepository
 
     if (input.token !== undefined) {
       updateData.token = input.token;
+    }
+
+    if (input.emailVerificationProofTokenHash !== undefined) {
+      updateData.emailVerificationProofTokenHash = input.emailVerificationProofTokenHash;
     }
 
     if (input.expiresAt !== undefined) {

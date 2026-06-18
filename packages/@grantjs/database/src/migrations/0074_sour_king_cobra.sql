@@ -1,0 +1,1 @@
+ALTER TABLE "organization_invitations" ADD COLUMN "email_verification_proof_token_hash" varchar(255);

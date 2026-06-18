@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { AccountType, OrganizationInvitationStatus } from '@grantjs/schema';
 import { AlertTriangle, CheckCircle2, Loader2, Mail, MailCheck, XCircle } from 'lucide-react';
@@ -23,17 +23,50 @@ type InvitationStatus =
   | 'expired'
   | 'already-accepted'
   | 'requires-login'
+  | 'requires-email-verification'
   | 'ready'
   | 'accepting'
   | 'success'
   | 'error';
 
+type InvitationGraphQLError = {
+  extensions?: {
+    reason?: string;
+    extensions?: {
+      reason?: string;
+    };
+  };
+};
+
+function isEmailVerificationRequiredError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const apolloError = error as {
+    errors?: InvitationGraphQLError[];
+    graphQLErrors?: InvitationGraphQLError[];
+  };
+  const graphQLErrors = [...(apolloError.errors ?? []), ...(apolloError.graphQLErrors ?? [])];
+
+  return graphQLErrors.some((graphQLError) => {
+    const extensions = graphQLError.extensions;
+    return (
+      extensions?.reason === 'EMAIL_VERIFICATION_REQUIRED' ||
+      extensions?.extensions?.reason === 'EMAIL_VERIFICATION_REQUIRED'
+    );
+  });
+}
+
 export default function InvitationPage() {
   const t = useTranslations('invitations');
   const tRoot = useTranslations();
   const params = useParams();
+  const searchParams = useSearchParams();
   const locale = useLocale();
   const token = params.token as string;
+  const emailProof = searchParams.get('emailProof');
+  const invitationRedirect = `/invitations/${token}${emailProof ? `?emailProof=${encodeURIComponent(emailProof)}` : ''}`;
 
   const [actionStatus, setActionStatus] = useState<InvitationStatus | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -93,7 +126,7 @@ export default function InvitationPage() {
     setActionStatus('accepting');
 
     try {
-      const result = await acceptInvitation({ token });
+      const result = await acceptInvitation({ token }, { suppressErrorToast: true });
 
       if (result?.requiresRegistration) {
         setActionStatus('requires-login');
@@ -112,6 +145,11 @@ export default function InvitationPage() {
 
       setActionStatus('success');
     } catch (error) {
+      if (isEmailVerificationRequiredError(error)) {
+        setActionStatus('requires-email-verification');
+        return;
+      }
+
       setActionStatus('error');
       setErrorMessage(error instanceof Error ? error.message : tRoot('errors.common.unknownError'));
     }
@@ -231,14 +269,14 @@ export default function InvitationPage() {
                 />
                 <div className="flex flex-col gap-4">
                   <Link
-                    href={`/auth/login?email=${invitation?.email || ''}&redirect=${encodeURIComponent(`/invitations/${token}`)}`}
+                    href={`/auth/login?email=${invitation?.email || ''}&redirect=${encodeURIComponent(invitationRedirect)}`}
                   >
                     <Button className="w-full" variant="default">
                       {t('requiresLogin.login')}
                     </Button>
                   </Link>
                   <Link
-                    href={`/auth/register?email=${invitation?.email || ''}&redirect=${encodeURIComponent(`/invitations/${token}`)}`}
+                    href={`/auth/register?email=${invitation?.email || ''}&redirect=${encodeURIComponent(invitationRedirect)}`}
                   >
                     <Button className="w-full" variant="outline">
                       {t('requiresLogin.register')}
@@ -247,6 +285,46 @@ export default function InvitationPage() {
                 </div>
               </div>
             )}
+          </div>
+        );
+
+      case 'requires-email-verification':
+        return (
+          <div className="space-y-8">
+            <Alert variant="warning">
+              <Mail />
+              <AlertTitle>{t('requiresEmailVerification.title')}</AlertTitle>
+              <AlertDescription>{t('requiresEmailVerification.description')}</AlertDescription>
+            </Alert>
+            {invitation && (
+              <InfoPanel
+                compact
+                rows={[
+                  {
+                    label: t('details.email'),
+                    value: (
+                      <span className="font-semibold text-foreground">{invitation.email}</span>
+                    ),
+                  },
+                  {
+                    label: t('details.organization'),
+                    value: (
+                      <span className="font-semibold text-foreground">
+                        {invitation.organization?.name}
+                      </span>
+                    ),
+                  },
+                ]}
+              />
+            )}
+            <div className="flex flex-col gap-4">
+              <Button className="w-full" variant="default" onClick={() => window.location.reload()}>
+                {t('requiresEmailVerification.refresh')}
+              </Button>
+              <Button className="w-full" variant="outline" onClick={() => setActionStatus(null)}>
+                {t('requiresEmailVerification.tryAgain')}
+              </Button>
+            </div>
           </div>
         );
 

@@ -1,6 +1,6 @@
 {
-  "id": "6706f61a-f780-48f5-b19a-b34211f13610",
-  "prevId": "1dfffb0d-58e4-4c7e-ac6a-561d110896a8",
+  "id": "dfadac5a-2f59-4762-95e6-cfcd695dfaed",
+  "prevId": "6706f61a-f780-48f5-b19a-b34211f13610",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -2899,6 +2899,12 @@
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true
+        },
+        "email_verification_proof_token_hash": {
+          "name": "email_verification_proof_token_hash",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
         },
         "status": {
           "name": "status",

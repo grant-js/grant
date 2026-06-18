@@ -115,7 +115,13 @@ describe('Project sync jobs - CDM email identity import', () => {
       cdmWithEmailUser(`email-a-${suffix}`, email)
     );
     expect(importA.status).toBe(202);
-    await resolveJob(owner.authHeader, projectAId, scopeA, importA.job, ProjectSyncJobStatus.Completed);
+    await resolveJob(
+      owner.authHeader,
+      projectAId,
+      scopeA,
+      importA.job,
+      ProjectSyncJobStatus.Completed
+    );
 
     const importB = await postImport(
       owner.authHeader,
@@ -124,7 +130,13 @@ describe('Project sync jobs - CDM email identity import', () => {
       cdmWithEmailUser(`email-b-${suffix}`, email)
     );
     expect(importB.status).toBe(202);
-    await resolveJob(owner.authHeader, projectBId, scopeB, importB.job, ProjectSyncJobStatus.Completed);
+    await resolveJob(
+      owner.authHeader,
+      projectBId,
+      scopeB,
+      importB.job,
+      ProjectSyncJobStatus.Completed
+    );
 
     const rows = await getImportedEmailIdentity(email, projectAId, projectBId);
 

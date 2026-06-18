@@ -2,4 +2,5 @@ input LoginInput {
   provider: UserAuthenticationMethodProvider!
   providerId: String!
   providerData: JSON!
+  emailVerificationProof: EmailVerificationProofInput
 }

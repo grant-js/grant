@@ -3551,6 +3551,12 @@
       "description": "You need to be logged in with an organization account to accept this invitation. Please switch to your organization account or log in with one.",
       "switchAccount": "Switch Account"
     },
+    "requiresEmailVerification": {
+      "title": "Verify your email first",
+      "description": "This invitation link was copied instead of opened from your email inbox, so it cannot verify your email automatically. Check your inbox, verify your email address, then return to this invitation link to accept it.",
+      "refresh": "I verified my email, refresh",
+      "tryAgain": "Try accepting again"
+    },
     "ready": {
       "title": "Accept Invitation",
       "description": "You've been invited to join this organization. Review the details below and accept to become a member."

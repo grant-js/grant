@@ -3,4 +3,5 @@ input RegisterInput {
   provider: UserAuthenticationMethodProvider!
   providerId: String!
   providerData: JSON!
+  emailVerificationProof: EmailVerificationProofInput
 }

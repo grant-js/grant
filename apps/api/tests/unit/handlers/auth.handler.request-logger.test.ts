@@ -31,6 +31,7 @@ const mockUserMfa = { setupTotp: vi.fn(), verifyTotp: vi.fn() };
 const mockUserSessions = { createSession: vi.fn() };
 const mockEmail = { sendOtp: mockSendOtp, sendPasswordReset: vi.fn(), sendInvitation: vi.fn() };
 const mockAuth = { getAuth: vi.fn() };
+const mockOrganizationInvitations = { getInvitationByToken: vi.fn() };
 const mockCache = { get: vi.fn(), set: vi.fn(), delete: vi.fn(), clear: vi.fn() };
 const mockScopeServices = {};
 const mockDb = { withTransaction: mockWithTransaction };
@@ -46,6 +47,7 @@ function createHandler(): AuthHandler {
     mockUserSessions as never,
     mockEmail as never,
     mockAuth as never,
+    mockOrganizationInvitations as never,
     mockCache as never,
     mockScopeServices as never,
     mockDb as never

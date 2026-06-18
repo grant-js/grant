@@ -519,6 +519,13 @@
       "when": 1781796631475,
       "tag": "0073_brainy_bucky",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1781814309433,
+      "tag": "0074_sour_king_cobra",
+      "breakpoints": true
     }
   ]
 }

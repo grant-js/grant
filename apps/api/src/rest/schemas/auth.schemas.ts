@@ -1,4 +1,5 @@
 import {
+  EmailVerificationProofType,
   UserAuthenticationEmailProviderAction,
   UserAuthenticationMethodProvider,
 } from '@grantjs/schema';
@@ -54,6 +55,26 @@ export const loginRequestSchema = z.object({
     description: 'Additional provider-specific data',
     example: { password: '123456' },
   }),
+  emailVerificationProof: z
+    .object({
+      type: z.enum(
+        Object.values(EmailVerificationProofType) as [
+          EmailVerificationProofType,
+          ...EmailVerificationProofType[],
+        ]
+      ),
+      token: z.string().min(1, 'errors.validation.tokenRequired'),
+      emailProofToken: z.string().min(1, 'errors.validation.tokenRequired'),
+    })
+    .optional()
+    .openapi({
+      description: 'Optional server-validated proof that can verify the email during auth',
+      example: {
+        type: 'ORGANIZATION_INVITATION',
+        token: 'inv_a1b2c3d4e5f6g7h8i9j0',
+        emailProofToken: 'proof_a1b2c3d4e5f6g7h8i9j0',
+      },
+    }),
 });
 
 export const loginResponseSchema = createSuccessResponseSchema(
@@ -90,6 +111,26 @@ export const registerRequestSchema = z.object({
     description: 'Additional provider-specific data',
     example: { email_verified: true, password: 'hashedPassword' },
   }),
+  emailVerificationProof: z
+    .object({
+      type: z.enum(
+        Object.values(EmailVerificationProofType) as [
+          EmailVerificationProofType,
+          ...EmailVerificationProofType[],
+        ]
+      ),
+      token: z.string().min(1, 'errors.validation.tokenRequired'),
+      emailProofToken: z.string().min(1, 'errors.validation.tokenRequired'),
+    })
+    .optional()
+    .openapi({
+      description: 'Optional server-validated proof that can verify the email during registration',
+      example: {
+        type: 'ORGANIZATION_INVITATION',
+        token: 'inv_a1b2c3d4e5f6g7h8i9j0',
+        emailProofToken: 'proof_a1b2c3d4e5f6g7h8i9j0',
+      },
+    }),
 });
 
 export const registerResponseSchema = createSuccessResponseSchema(

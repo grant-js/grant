@@ -104,6 +104,13 @@ When adding or changing features, follow this order. Each step may produce outpu
 5. **Web** – `apps/web`
    - Add or update hooks (from operation documents) and feature components. See `.cursor/rules/react-and-web.mdc` when editing web code.
 
+## Testing
+
+- Unit and integration tests can be run with package-level Vitest commands, for example `pnpm --filter grant-api exec vitest run tests/unit/path/to/file.test.ts`.
+- **End-to-end tests must be run from the repo root with the e2e wrapper**, not by invoking Vitest directly. Use `pnpm test:e2e` so `scripts/e2e.sh` sets up `.env.test`, starts the Docker e2e stack, runs migrations/seeds, executes the API e2e suite, and tears the stack down.
+- To keep the e2e stack up while iterating, use `pnpm test:e2e:up`, then run the API e2e command against the prepared stack, for example `pnpm --filter grant-api test:e2e -- tests/e2e/flows.e2e.test.ts`, and finally `pnpm test:e2e:down`. Use `pnpm test:e2e:run` only for a full e2e run against an already-up stack.
+- Do not run `pnpm --filter grant-api test:e2e ...` unless the e2e API, Postgres, and Redis stack is already running and prepared; direct package commands do not perform the environment setup.
+
 ## Code style
 
 - TypeScript everywhere; strict mode. Conventional Commits: `feat:`, `fix:`, `docs:`, `chore:`, etc.

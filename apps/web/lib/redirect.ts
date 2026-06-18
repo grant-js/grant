@@ -41,3 +41,36 @@ export function validateRedirectUrl(url: string | null): string | null {
     return null;
   }
 }
+
+export function getInvitationTokenFromRedirectUrl(url: string | null): string | null {
+  const validatedUrl = validateRedirectUrl(url);
+  if (!validatedUrl) return null;
+
+  const [pathname] = validatedUrl.split(/[?#]/);
+  const segments = pathname.split('/').filter(Boolean);
+  const invitationIndex = segments.indexOf('invitations');
+
+  if (invitationIndex === -1 || invitationIndex > 1) {
+    return null;
+  }
+
+  return segments[invitationIndex + 1] || null;
+}
+
+export function getInvitationProofFromRedirectUrl(
+  url: string | null
+): { token: string; emailProofToken: string } | null {
+  const validatedUrl = validateRedirectUrl(url);
+  const token = getInvitationTokenFromRedirectUrl(validatedUrl);
+  if (!validatedUrl || !token) return null;
+
+  const [, queryString = ''] = validatedUrl.split('?');
+  const searchParams = new URLSearchParams(queryString.split('#')[0]);
+  const emailProofToken = searchParams.get('emailProof');
+
+  if (!emailProofToken) {
+    return null;
+  }
+
+  return { token, emailProofToken };
+}

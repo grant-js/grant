@@ -2,6 +2,7 @@ input UpdateOrganizationInvitationInput {
   status: OrganizationInvitationStatus
   acceptedAt: Date
   token: String
+  emailVerificationProofTokenHash: String
   expiresAt: Date
   invitedAt: Date
 }

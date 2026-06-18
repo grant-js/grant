@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { EmailVerificationProofType } from '@grantjs/schema';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -20,7 +21,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { useAuthMutations, usePageTitle } from '@/hooks';
 import { Link, useRouter } from '@/i18n/navigation';
-import { getAuthRedirectUrl } from '@/lib/redirect';
+import {
+  getAuthRedirectUrl,
+  getInvitationProofFromRedirectUrl,
+  getInvitationTokenFromRedirectUrl,
+} from '@/lib/redirect';
 
 const loginSchema = z.object({
   email: z.email('errors.validation.invalidEmail'),
@@ -39,6 +44,8 @@ export default function LoginPage() {
   const redirectParam = searchParams.get('redirect');
   const emailParam = searchParams.get('email');
   const errorParam = searchParams.get('error');
+  const invitationToken = getInvitationTokenFromRedirectUrl(redirectParam);
+  const invitationProof = getInvitationProofFromRedirectUrl(redirectParam);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -66,6 +73,13 @@ export default function LoginPage() {
       const loginData = await login({
         email: values.email,
         password: values.password,
+        emailVerificationProof: invitationProof
+          ? {
+              type: EmailVerificationProofType.OrganizationInvitation,
+              token: invitationProof.token,
+              emailProofToken: invitationProof.emailProofToken,
+            }
+          : undefined,
       });
       setIsAuthSuccess(true);
       const returnTo = getAuthRedirectUrl() ?? '/dashboard';
@@ -140,6 +154,7 @@ export default function LoginPage() {
                 <FormControl>
                   <Input
                     disabled={isSubmitting}
+                    readOnly={Boolean(invitationToken && emailParam)}
                     type="email"
                     placeholder={t('login.emailPlaceholder')}
                     {...field}
