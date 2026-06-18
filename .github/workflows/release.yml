@@ -249,7 +249,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(inputs.rebuild_release_images == true || needs.release.outputs.published == 'true' ? needs.changes.outputs.docker_matrix_release : needs.changes.outputs.docker_matrix) }}
+        include: ${{ fromJSON((inputs.rebuild_release_images == true || needs.release.outputs.published == 'true') && needs.changes.outputs.docker_matrix_release || needs.changes.outputs.docker_matrix) }}
     steps:
       - name: Debug docker matrix
         run: |
