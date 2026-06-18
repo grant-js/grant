@@ -63,6 +63,13 @@ Prefer self-documenting code. Put CDM and job lifecycle detail in `lib/cdm/READM
 - Use existing middleware and `@/lib/authorization` / context helpers; do not bypass scoping.
 - `context.middleware.ts` and `lib/app-context.lib.ts` are the **composition roots** that wire handlers, services, and repositories. This is the only place cross-layer imports are permitted.
 
+## Testing
+
+- Unit and integration tests may use direct Vitest invocations, e.g. `pnpm --filter grant-api exec vitest run tests/unit/path/to/file.test.ts`.
+- For `apps/api/tests/e2e/**`, run from the repo root with `pnpm test:e2e`; this wrapper sets up `.env.test`, Docker services, migrations, and seeds before running the suite.
+- While iterating on one e2e file, use `pnpm test:e2e:up`, then run the package e2e command against the prepared stack, e.g. `pnpm --filter grant-api test:e2e -- tests/e2e/flows.e2e.test.ts`, then `pnpm test:e2e:down`. Use `pnpm test:e2e:run` only for a full e2e run against an already-up stack.
+- Avoid `pnpm --filter grant-api test:e2e ...` unless the e2e stack is already up and prepared; otherwise failures like `ECONNREFUSED :4001` or `:5433` indicate missing setup, not necessarily code failure.
+
 ## Deep-dive docs
 
 Before implementing in these areas, read the referenced doc for detailed patterns:

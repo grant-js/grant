@@ -104,21 +104,21 @@ E2E tests create real tenant contexts (users, organizations, projects, tokens) a
 ### Running Security Tests
 
 ```bash
-cd apps/api
+# All E2E tests from the repo root (starts API, Postgres, Redis, migrates, seeds)
+pnpm test:e2e
 
-# All E2E tests (requires running API and database)
-pnpm test tests/e2e/
+# Focused E2E iteration: prepare the stack, run selected files, then stop it
+pnpm test:e2e:up
+pnpm --filter grant-api test:e2e -- tests/e2e/scenarios/multi-tenant.e2e.test.ts
 
-# Isolation scenarios only
-pnpm test tests/e2e/scenarios/multi-tenant.e2e.test.ts
-
-# Compliance suites only
-pnpm test tests/e2e/compliance/
+# Compliance suites only, against the prepared stack
+pnpm --filter grant-api test:e2e -- tests/e2e/compliance/
+pnpm test:e2e:down
 ```
 
 ## MFA testing
 
-MFA is covered across layers; **unit** and **integration** suites are independent and can run **in parallel** in CI (separate jobs or `pnpm exec vitest run` processes). **E2E** needs the Docker stack (`./scripts/e2e.sh` or `docker compose -f docker-compose.e2e.yml` + `pnpm --filter grant-api test:e2e`).
+MFA is covered across layers; **unit** and **integration** suites are independent and can run **in parallel** in CI (separate jobs or `pnpm exec vitest run` processes). **E2E** needs the Docker stack; prefer the root wrapper (`pnpm test:e2e`, or `pnpm test:e2e:up` + package e2e commands + `pnpm test:e2e:down`) so setup, migrations, and seeds run first.
 
 | Layer                 | Location                                                                                                                                                                                                     | What it asserts                                                                                                                    |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
@@ -147,8 +147,13 @@ pnpm --filter grant-api exec vitest run \
   tests/integration/mfa-auth.integration.test.ts \
   tests/integration/rate-limit.integration.test.ts
 
-# E2E — stack must be up; see Quick Start in docker-compose.e2e.yml
-pnpm --filter grant-api test:e2e
+# E2E — from repo root, starts stack, migrates, seeds, runs tests, then stops stack
+pnpm test:e2e
+
+# Focused E2E while iterating
+pnpm test:e2e:up
+pnpm --filter grant-api test:e2e -- tests/e2e/scenarios/mfa.e2e.test.ts
+pnpm test:e2e:down
 ```
 
 ## Rate Limit Testing
@@ -215,9 +220,11 @@ pnpm --filter grant-api exec vitest run \
   tests/integration/project-sync.integration.test.ts \
   tests/integration/cdm-round-trip.integration.test.ts
 
-# E2E (stack migrated + seeded)
+# E2E (prepare stack, run selected files, then stop it)
+pnpm test:e2e:up
 pnpm --filter grant-api test:e2e -- tests/e2e/scenarios/project-sync-jobs.e2e.test.ts
 pnpm --filter grant-api test:e2e -- tests/e2e/scenarios/project-sync-replace-teardown.e2e.test.ts
+pnpm test:e2e:down
 ```
 
 ## i18n Testing
