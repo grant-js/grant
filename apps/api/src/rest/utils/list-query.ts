@@ -8,6 +8,7 @@ export interface SortInput<TSortableField extends string = string> {
 }
 
 export interface QueryListCommonsParams {
+  fields?: string[] | string | null;
   relations?: string[] | string | null;
   sortField?: string;
   sortOrder?: SortOrder;
@@ -50,18 +51,24 @@ export function buildScope(
 }
 
 export function parseRequestedFields<TEntity>(
+  fields?: string[] | string | null,
   relations?: string[] | string | null
 ): Array<keyof TEntity> | undefined {
-  return parseRelations<TEntity>(relations);
+  const requestedFields = [
+    ...(parseRelations<TEntity>(relations) ?? []),
+    ...(parseRelations<TEntity>(fields) ?? []),
+  ];
+
+  return requestedFields.length > 0 ? [...new Set(requestedFields)] : undefined;
 }
 
 export function queryListCommons<TEntity, TSortInput extends SortInput>(
   params: QueryListCommonsParams
 ): QueryListCommonsResult<TEntity, TSortInput> {
-  const { relations, sortField, sortOrder, scopeId, tenant } = params;
+  const { fields, relations, sortField, sortOrder, scopeId, tenant } = params;
 
   return {
-    requestedFields: parseRequestedFields<TEntity>(relations),
+    requestedFields: parseRequestedFields<TEntity>(fields, relations),
     sort: buildSortInput<TSortInput['field']>(
       sortField as TSortInput['field'] | undefined,
       sortOrder

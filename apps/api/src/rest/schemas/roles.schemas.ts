@@ -2,6 +2,7 @@ import { RoleSortableField, SortOrder } from '@grantjs/schema';
 
 import { z } from '@/lib/zod-openapi.lib';
 import {
+  createStringArrayQuerySchema,
   createSuccessResponseSchema,
   jsonSchema,
   listQuerySchema,
@@ -19,10 +20,15 @@ export const roleSchema = z.object({
 });
 
 export const roleWithRelationsSchema = roleSchema.extend({
+  groupCount: z.number().optional(),
   groups: z.array(z.unknown()).optional(),
+  permissionCount: z.number().optional(),
+  primaryTag: z.unknown().nullable().optional(),
   tags: z.array(z.unknown()).optional(),
+  tagCount: z.number().optional(),
 });
 
+export const roleFieldsEnum = z.enum(['groupCount', 'permissionCount', 'primaryTag', 'tagCount']);
 export const roleRelationsEnum = z.enum(['groups', 'tags']);
 
 export const getRolesQuerySchema = listQuerySchema.omit({ relations: true }).extend({
@@ -47,6 +53,12 @@ export const getRolesQuerySchema = listQuerySchema.omit({ relations: true }).ext
     .openapi({
       description: 'Related entities to include in the response',
       example: ['groups', 'tags'],
+    }),
+  fields: createStringArrayQuerySchema(roleFieldsEnum)
+    .optional()
+    .openapi({
+      description: 'Computed fields to include in the response',
+      example: ['primaryTag', 'groupCount', 'tagCount'],
     }),
 });
 

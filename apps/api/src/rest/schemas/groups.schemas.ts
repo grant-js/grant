@@ -2,6 +2,7 @@ import { GroupSortableField, SortOrder } from '@grantjs/schema';
 
 import { z } from '@/lib/zod-openapi.lib';
 import {
+  createStringArrayQuerySchema,
   createSuccessResponseSchema,
   jsonSchema,
   listQuerySchema,
@@ -19,10 +20,14 @@ export const groupSchema = z.object({
 });
 
 export const groupWithRelationsSchema = groupSchema.extend({
+  permissionCount: z.number().optional(),
   permissions: z.array(z.unknown()).optional(),
+  primaryTag: z.unknown().nullable().optional(),
   tags: z.array(z.unknown()).optional(),
+  tagCount: z.number().optional(),
 });
 
+export const groupFieldsEnum = z.enum(['permissionCount', 'primaryTag', 'tagCount']);
 export const groupRelationsEnum = z.enum(['permissions', 'tags']);
 
 export const getGroupsQuerySchema = listQuerySchema.omit({ relations: true }).extend({
@@ -47,6 +52,12 @@ export const getGroupsQuerySchema = listQuerySchema.omit({ relations: true }).ex
     .openapi({
       description: 'Related entities to include in the response',
       example: ['permissions', 'tags'],
+    }),
+  fields: createStringArrayQuerySchema(groupFieldsEnum)
+    .optional()
+    .openapi({
+      description: 'Computed fields to include in the response',
+      example: ['primaryTag', 'permissionCount', 'tagCount'],
     }),
 });
 

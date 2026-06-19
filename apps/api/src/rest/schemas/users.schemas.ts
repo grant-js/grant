@@ -2,6 +2,7 @@ import { SortOrder, UserAuthenticationMethodProvider, UserSortableField } from '
 
 import { z } from '@/lib/zod-openapi.lib';
 import {
+  createStringArrayQuerySchema,
   createSuccessResponseSchema,
   jsonSchema,
   listQuerySchema,
@@ -22,8 +23,20 @@ export const userWithRelationsSchema = userSchema.extend({
   tags: z.array(z.unknown()).optional(),
   accounts: z.array(z.unknown()).optional(),
   authenticationMethods: z.array(z.unknown()).optional(),
+  permissionCount: z.number().optional(),
+  primaryTag: z.unknown().nullable().optional(),
+  projectUserApiKeyCount: z.number().optional(),
+  roleCount: z.number().optional(),
+  tagCount: z.number().optional(),
 });
 
+export const userFieldsEnum = z.enum([
+  'permissionCount',
+  'primaryTag',
+  'projectUserApiKeyCount',
+  'roleCount',
+  'tagCount',
+]);
 export const userRelationsEnum = z.enum(['roles', 'tags', 'accounts', 'authenticationMethods']);
 
 export const getUsersQuerySchema = listQuerySchema.omit({ relations: true }).extend({
@@ -48,6 +61,12 @@ export const getUsersQuerySchema = listQuerySchema.omit({ relations: true }).ext
     .openapi({
       description: 'Related entities to include in the response',
       example: ['roles', 'tags'],
+    }),
+  fields: createStringArrayQuerySchema(userFieldsEnum)
+    .optional()
+    .openapi({
+      description: 'Computed fields to include in the response',
+      example: ['primaryTag', 'roleCount', 'tagCount'],
     }),
 });
 

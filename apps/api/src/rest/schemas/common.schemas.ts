@@ -58,6 +58,16 @@ export const relationsQuerySchema = z.object({
     .optional(),
 });
 
+export const createStringArrayQuerySchema = <TItem extends z.ZodTypeAny>(itemSchema: TItem) =>
+  z.union([z.string(), z.array(z.string())]).transform((val) => {
+    const values = typeof val === 'string' ? val.split(',') : val;
+
+    return values
+      .map((v) => v.trim())
+      .filter((v) => v.length > 0)
+      .map((v) => itemSchema.parse(v));
+  });
+
 export const idsQuerySchema = z.object({
   ids: z
     .union([z.string(), z.array(z.string())])

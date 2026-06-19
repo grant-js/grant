@@ -47,6 +47,16 @@ You can load related data by specifying the \`relations\` query parameter:
 
 Example: \`?relations=roles,tags\`
 
+### Computed Fields
+You can include computed fields by specifying the \`fields\` query parameter:
+- \`primaryTag\`: Load the user's primary tag in the requested scope
+- \`tagCount\`: Count user's tags in the requested scope
+- \`roleCount\`: Count user's roles in the requested scope
+- \`permissionCount\`: Count user's direct permissions in the requested scope
+- \`projectUserApiKeyCount\`: Count user's project API keys in the requested scope
+
+Example: \`?fields=primaryTag,roleCount,tagCount\`
+
 ### Scope
 Users are scoped to a tenant context. You must provide:
 - \`scopeId\`: The UUID of the scope (account, organization, or project)
