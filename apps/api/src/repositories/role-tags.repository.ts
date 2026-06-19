@@ -29,6 +29,13 @@ export class RoleTagRepository
     return this.query(params, transaction);
   }
 
+  public async getRoleTagsByRoleIds(
+    roleIds: string[],
+    transaction?: Transaction
+  ): Promise<RoleTag[]> {
+    return this.queryByFieldValues('roleId', roleIds, transaction);
+  }
+
   public async getRoleTag(params: QueryRoleTagsInput, transaction?: Transaction): Promise<RoleTag> {
     const result = await this.getRoleTags(params, transaction);
     return this.first(result);

@@ -373,6 +373,11 @@ export interface IProjectAppTagRepository {
     transaction?: unknown
   ): Promise<ProjectAppTag[]>;
 
+  getProjectAppTagsByProjectAppIds(
+    projectAppIds: string[],
+    transaction?: unknown
+  ): Promise<ProjectAppTag[]>;
+
   getProjectAppTagIntersection(
     projectAppIds: string[],
     tagIds: string[],
@@ -422,6 +427,11 @@ export interface IProjectUserApiKeyRepository {
     params: { projectId: string; userId: string },
     transaction?: unknown
   ): Promise<number>;
+
+  countProjectUserApiKeysByUserIds(
+    params: { projectId: string; userIds: string[] },
+    transaction?: unknown
+  ): Promise<Map<string, number>>;
 }
 
 /** Worker-internal view of a sync job, including the persisted payload + scope. */

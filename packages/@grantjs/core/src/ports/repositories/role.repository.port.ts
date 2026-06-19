@@ -53,6 +53,7 @@ export interface IRoleRepository {
 export interface IRoleGroupRepository {
   getRoleGroups(params: QueryRoleGroupsInput, transaction?: unknown): Promise<RoleGroup[]>;
   countRoleGroups(params: { roleId: string }, transaction?: unknown): Promise<number>;
+  countRoleGroupsByRoleIds(roleIds: string[], transaction?: unknown): Promise<Map<string, number>>;
   addRoleGroup(params: AddRoleGroupInput, transaction?: unknown): Promise<RoleGroup>;
   softDeleteRoleGroup(params: RemoveRoleGroupInput, transaction?: unknown): Promise<RoleGroup>;
   hardDeleteRoleGroup(params: RemoveRoleGroupInput, transaction?: unknown): Promise<RoleGroup>;
@@ -64,6 +65,10 @@ export interface IRolePermissionRepository {
     transaction?: unknown
   ): Promise<RolePermission[]>;
   countRolePermissions(params: { roleId: string }, transaction?: unknown): Promise<number>;
+  countRolePermissionsByRoleIds(
+    roleIds: string[],
+    transaction?: unknown
+  ): Promise<Map<string, number>>;
   addRolePermission(
     params: AssignRolePermissionInput,
     transaction?: unknown
@@ -80,6 +85,7 @@ export interface IRolePermissionRepository {
 
 export interface IRoleTagRepository {
   getRoleTags(params: QueryRoleTagsInput, transaction?: unknown): Promise<RoleTag[]>;
+  getRoleTagsByRoleIds(roleIds: string[], transaction?: unknown): Promise<RoleTag[]>;
   getRoleTag(params: QueryRoleTagsInput, transaction?: unknown): Promise<RoleTag>;
   getRoleTagIntersection(
     roleIds: string[],

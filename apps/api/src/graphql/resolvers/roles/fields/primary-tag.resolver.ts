@@ -8,6 +8,10 @@ export const rolePrimaryTagResolver: RoleResolvers<GraphqlContext>['primaryTag']
   _args,
   context
 ) => {
+  if ((parent as { __scopedTagsHydrated?: boolean }).__scopedTagsHydrated) {
+    return parent.primaryTag ?? null;
+  }
+
   const pivots = await context.handlers.roles.getRoleTagPivots({ roleId: parent.id });
   return resolvePrimaryTagFromPivots(context, pivots);
 };

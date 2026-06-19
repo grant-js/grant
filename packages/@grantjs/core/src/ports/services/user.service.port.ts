@@ -84,7 +84,11 @@ export interface IUserService {
 export interface IUserRoleService {
   getUserRoles(params: QueryUserRolesInput, transaction?: unknown): Promise<UserRole[]>;
 
+  getUserRolesByUserIds(userIds: string[], transaction?: unknown): Promise<UserRole[]>;
+
   countUserRoles(params: { userId: string }, transaction?: unknown): Promise<number>;
+
+  countUserRolesByUserIds(userIds: string[], transaction?: unknown): Promise<Map<string, number>>;
 
   addUserRole(params: AddUserRoleInput, transaction?: unknown): Promise<UserRole>;
 
@@ -121,7 +125,14 @@ export interface IUserPermissionService {
     transaction?: unknown
   ): Promise<UserPermission[]>;
 
+  getUserPermissionsByUserIds(userIds: string[], transaction?: unknown): Promise<UserPermission[]>;
+
   countUserPermissions(params: { userId: string }, transaction?: unknown): Promise<number>;
+
+  countUserPermissionsByUserIds(
+    userIds: string[],
+    transaction?: unknown
+  ): Promise<Map<string, number>>;
 
   assignUserPermission(
     params: AssignUserPermissionInput,
@@ -140,6 +151,8 @@ export interface IUserPermissionService {
 
 export interface IUserTagService {
   getUserTags(params: { userId: string }, transaction?: unknown): Promise<UserTag[]>;
+
+  getUserTagsByUserIds(userIds: string[], transaction?: unknown): Promise<UserTag[]>;
 
   getUserTagIntersection(
     userIds: string[],

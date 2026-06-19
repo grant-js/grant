@@ -96,6 +96,13 @@ export class RolePermissionService implements IRolePermissionService {
     return this.rolePermissionRepository.countRolePermissions(params, transaction);
   }
 
+  public async countRolePermissionsByRoleIds(
+    roleIds: string[],
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    return this.rolePermissionRepository.countRolePermissionsByRoleIds(roleIds, transaction);
+  }
+
   public async assignRolePermission(
     params: AssignRolePermissionInput,
     transaction?: Transaction

@@ -45,6 +45,15 @@ You can load related data by specifying the \`relations\` query parameter:
 
 Example: \`?relations=groups,tags\`
 
+### Computed Fields
+You can include computed fields by specifying the \`fields\` query parameter:
+- \`primaryTag\`: Load the role's primary tag in the requested scope
+- \`tagCount\`: Count role's tags in the requested scope
+- \`groupCount\`: Count role's groups in the requested scope
+- \`permissionCount\`: Count role's permissions in the requested scope
+
+Example: \`?fields=primaryTag,groupCount,tagCount\`
+
 ### Scope
 Roles are scoped to a tenant context. You must provide:
 - \`scopeId\`: The UUID of the scope (account, organization, or project)

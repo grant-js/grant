@@ -28,11 +28,25 @@ export class UserRoleRepository
     return this.query(params, transaction);
   }
 
+  public async getUserRolesByUserIds(
+    userIds: string[],
+    transaction?: Transaction
+  ): Promise<UserRole[]> {
+    return this.queryByFieldValues('userId', userIds, transaction);
+  }
+
   public async countUserRoles(
     params: { userId: string },
     transaction?: Transaction
   ): Promise<number> {
     return this.countActive({ userId: params.userId }, transaction);
+  }
+
+  public async countUserRolesByUserIds(
+    userIds: string[],
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    return this.countActiveByFieldValues('userId', userIds, transaction);
   }
 
   public async addUserRole(params: AddUserRoleInput, transaction?: Transaction): Promise<UserRole> {

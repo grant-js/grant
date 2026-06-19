@@ -15,12 +15,18 @@ import {
   Permission,
   PermissionPage,
   QueryPermissionsArgs,
+  Scope,
   Tag,
   Tenant,
 } from '@grantjs/schema';
 
+import {
+  type PermissionListHydrationContext,
+  permissionListHydrators,
+} from '@/hydrators/permissions.hydrators';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
+import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -74,16 +80,40 @@ export class PermissionHandler extends CacheHandler {
       };
     }
 
+    const repositoryRequestedFields = stripHydratedFields<Permission>(
+      requestedFields,
+      permissionListHydrators
+    );
     const permissionsResult = await this.permissions.getPermissions({
       ids: permissionIds,
       page,
       limit,
       sort,
       search,
-      requestedFields,
+      requestedFields: repositoryRequestedFields,
     });
 
-    return permissionsResult;
+    return hydrateList({
+      context: this.createPermissionListHydrationContext(scope),
+      hydrators: permissionListHydrators,
+      itemsKey: 'permissions',
+      page: permissionsResult,
+      requestedFields,
+    });
+  }
+
+  private createPermissionListHydrationContext(scope: Scope): PermissionListHydrationContext {
+    return {
+      loadScopedTags: async (permissionIds) => {
+        const pivots = await this.permissionTags.getPermissionTagsByPermissionIds(permissionIds);
+        return this.hydrateScopedTagsForOwners({
+          scope,
+          ownerIds: permissionIds,
+          pivots,
+          getOwnerId: (pivot) => pivot.permissionId,
+        });
+      },
+    };
   }
 
   /** Permissions linked by `resource_id` (e.g. Resource.permissions field resolver). */

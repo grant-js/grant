@@ -89,11 +89,31 @@ export class UserPermissionService implements IUserPermissionService {
     return validateOutput(createDynamicSingleSchema(userPermissionSchema).array(), result, context);
   }
 
+  public async getUserPermissionsByUserIds(
+    userIds: string[],
+    transaction?: Transaction
+  ): Promise<UserPermission[]> {
+    const context = 'UserPermissionService.getUserPermissionsByUserIds';
+    const result = await this.userPermissionRepository.getUserPermissionsByUserIds(
+      userIds,
+      transaction
+    );
+
+    return validateOutput(createDynamicSingleSchema(userPermissionSchema).array(), result, context);
+  }
+
   public async countUserPermissions(
     params: { userId: string },
     transaction?: Transaction
   ): Promise<number> {
     return this.userPermissionRepository.countUserPermissions(params, transaction);
+  }
+
+  public async countUserPermissionsByUserIds(
+    userIds: string[],
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    return this.userPermissionRepository.countUserPermissionsByUserIds(userIds, transaction);
   }
 
   public async assignUserPermission(

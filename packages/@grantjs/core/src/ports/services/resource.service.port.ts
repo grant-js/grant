@@ -64,6 +64,11 @@ export interface IResourceService {
 export interface IResourceTagService {
   getResourceTags(params: { resourceId: string }, transaction?: unknown): Promise<ResourceTag[]>;
 
+  getResourceTagsByResourceIds(
+    resourceIds: string[],
+    transaction?: unknown
+  ): Promise<ResourceTag[]>;
+
   getResourceTagIntersection(
     params: { resourceIds: string[]; tagIds: string[] },
     transaction?: unknown

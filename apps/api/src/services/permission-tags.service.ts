@@ -88,6 +88,19 @@ export class PermissionTagService implements IPermissionTagService {
     return validateOutput(createDynamicSingleSchema(permissionTagSchema).array(), result, context);
   }
 
+  public async getPermissionTagsByPermissionIds(
+    permissionIds: string[],
+    transaction?: Transaction
+  ): Promise<PermissionTag[]> {
+    const context = 'PermissionTagService.getPermissionTagsByPermissionIds';
+    const result = await this.permissionTagRepository.getPermissionTagsByPermissionIds(
+      permissionIds,
+      transaction
+    );
+
+    return validateOutput(createDynamicSingleSchema(permissionTagSchema).array(), result, context);
+  }
+
   public async getPermissionTagIntersection(
     params: {
       permissionIds: string[];

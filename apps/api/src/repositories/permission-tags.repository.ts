@@ -29,6 +29,13 @@ export class PermissionTagRepository
     return this.query(params, transaction);
   }
 
+  public async getPermissionTagsByPermissionIds(
+    permissionIds: string[],
+    transaction?: Transaction
+  ): Promise<PermissionTag[]> {
+    return this.queryByFieldValues('permissionId', permissionIds, transaction);
+  }
+
   public async getPermissionTag(
     params: QueryPermissionTagsInput,
     transaction?: Transaction

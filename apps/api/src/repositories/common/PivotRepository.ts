@@ -80,6 +80,45 @@ export abstract class PivotRepository<
     return Number(result[0]?.count ?? 0);
   }
 
+  protected async countActiveByFieldValues(
+    fieldKey: keyof TPivotModel,
+    values: string[],
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    if (values.length === 0) {
+      return new Map();
+    }
+
+    const db = transaction || this.db;
+    const field = this.table[fieldKey as string];
+    const result = await db
+      .select({ ownerId: field, count: count() })
+      .from(this.table)
+      .where(and(inArray(field, values), isNull(this.table.deletedAt)))
+      .groupBy(field);
+
+    return new Map(result.map((row) => [String(row.ownerId), Number(row.count)]));
+  }
+
+  protected async queryByFieldValues(
+    fieldKey: keyof TPivotModel,
+    values: string[],
+    transaction?: Transaction
+  ): Promise<TPivotEntity[]> {
+    if (values.length === 0) {
+      return [];
+    }
+
+    const db = transaction || this.db;
+    const field = this.table[fieldKey as string];
+    const result = await db
+      .select()
+      .from(this.table)
+      .where(and(inArray(field, values), isNull(this.table.deletedAt)));
+
+    return result.map((item: TPivotModel) => this.toEntity(item));
+  }
+
   protected async query(
     params: Record<string, unknown>,
     transaction?: Transaction

@@ -18,13 +18,19 @@ import {
   QueryResourcesArgs,
   Resource,
   ResourcePage,
+  Scope,
   Tag,
   Tenant,
 } from '@grantjs/schema';
 
+import {
+  type ResourceListHydrationContext,
+  resourceListHydrators,
+} from '@/hydrators/resources.hydrators';
 import { defaultLocale, getFixedT } from '@/i18n/config';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError, NotFoundError } from '@/lib/errors';
+import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -82,6 +88,10 @@ export class ResourceHandler extends CacheHandler {
       };
     }
 
+    const repositoryRequestedFields = stripHydratedFields<Resource>(
+      requestedFields,
+      resourceListHydrators
+    );
     const resourcesResult = await this.resources.getResources({
       ids: resourceIds,
       page,
@@ -89,10 +99,30 @@ export class ResourceHandler extends CacheHandler {
       sort,
       search,
       isActive,
-      requestedFields,
+      requestedFields: repositoryRequestedFields,
     });
 
-    return resourcesResult;
+    return hydrateList({
+      context: this.createResourceListHydrationContext(scope),
+      hydrators: resourceListHydrators,
+      itemsKey: 'resources',
+      page: resourcesResult,
+      requestedFields,
+    });
+  }
+
+  private createResourceListHydrationContext(scope: Scope): ResourceListHydrationContext {
+    return {
+      loadScopedTags: async (resourceIds) => {
+        const pivots = await this.resourceTags.getResourceTagsByResourceIds(resourceIds);
+        return this.hydrateScopedTagsForOwners({
+          scope,
+          ownerIds: resourceIds,
+          pivots,
+          getOwnerId: (pivot) => pivot.resourceId,
+        });
+      },
+    };
   }
 
   private async validateSlugUniqueness(

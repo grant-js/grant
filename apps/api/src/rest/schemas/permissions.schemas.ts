@@ -4,6 +4,7 @@ import { PermissionSortableField, SortOrder } from '@grantjs/schema';
 import { z } from '@/lib/zod-openapi.lib';
 import {
   actionSlugSchema,
+  createStringArrayQuerySchema,
   createSuccessResponseSchema,
   listQuerySchema,
   scopeIdSchema,
@@ -22,9 +23,12 @@ export const permissionSchema = z.object({
 });
 
 export const permissionWithRelationsSchema = permissionSchema.extend({
+  primaryTag: z.unknown().nullable().optional(),
   tags: z.array(z.unknown()).optional(),
+  tagCount: z.number().optional(),
 });
 
+export const permissionFieldsEnum = z.enum(['primaryTag', 'tagCount']);
 export const permissionRelationsEnum = z.enum(['tags']);
 
 export const getPermissionsQuerySchema = listQuerySchema.omit({ relations: true }).extend({
@@ -54,6 +58,12 @@ export const getPermissionsQuerySchema = listQuerySchema.omit({ relations: true 
     .openapi({
       description: 'Related entities to include in the response',
       example: ['tags'],
+    }),
+  fields: createStringArrayQuerySchema(permissionFieldsEnum)
+    .optional()
+    .openapi({
+      description: 'Computed fields to include in the response',
+      example: ['primaryTag', 'tagCount'],
     }),
 });
 

@@ -29,6 +29,13 @@ export class UserTagRepository
     return this.query(params, transaction);
   }
 
+  public async getUserTagsByUserIds(
+    userIds: string[],
+    transaction?: Transaction
+  ): Promise<UserTag[]> {
+    return this.queryByFieldValues('userId', userIds, transaction);
+  }
+
   public async getUserTag(params: QueryUserTagsInput, transaction?: Transaction): Promise<UserTag> {
     const result = await this.getUserTags(params, transaction);
     return this.first(result);

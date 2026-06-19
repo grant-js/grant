@@ -72,6 +72,15 @@ export class RoleTagService implements IRoleTagService {
     return validateOutput(createDynamicSingleSchema(roleTagSchema).array(), result, context);
   }
 
+  public async getRoleTagsByRoleIds(
+    roleIds: string[],
+    transaction?: Transaction
+  ): Promise<RoleTag[]> {
+    const context = 'RoleTagService.getRoleTagsByRoleIds';
+    const roleTags = await this.roleTagRepository.getRoleTagsByRoleIds(roleIds, transaction);
+    return validateOutput(createDynamicSingleSchema(roleTagSchema).array(), roleTags, context);
+  }
+
   public async getRoleTagIntersection(
     params: {
       roleIds: string[];

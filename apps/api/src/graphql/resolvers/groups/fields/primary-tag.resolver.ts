@@ -8,6 +8,10 @@ export const groupPrimaryTagResolver: GroupResolvers<GraphqlContext>['primaryTag
   _args,
   context
 ) => {
+  if ((parent as { __scopedTagsHydrated?: boolean }).__scopedTagsHydrated) {
+    return parent.primaryTag ?? null;
+  }
+
   const pivots = await context.handlers.groups.getGroupTagPivots({ groupId: parent.id });
   return resolvePrimaryTagFromPivots(context, pivots);
 };

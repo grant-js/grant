@@ -47,6 +47,13 @@ You can load related data by specifying the \`relations\` query parameter:
 
 Example: \`?relations=tags\`
 
+### Computed Fields
+You can include computed fields by specifying the \`fields\` query parameter:
+- \`primaryTag\`: Load the permission's primary tag in the requested scope
+- \`tagCount\`: Count permission's tags in the requested scope
+
+Example: \`?fields=primaryTag,tagCount\`
+
 ### Scope
 Permissions are scoped to a tenant context. You must provide:
 - \`scopeId\`: The UUID of the scope (account, organization, or project)

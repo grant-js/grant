@@ -18,9 +18,10 @@ import type {
   IProjectUserApiKeyService,
   IProjectUserService,
   IScopedIdProvider,
+  ITagService,
   IUserRoleService,
 } from '@grantjs/core';
-import { AccountTag, AuthorizationResult, Scope, Tenant } from '@grantjs/schema';
+import { AccountTag, AuthorizationResult, Scope, Tag, Tenant } from '@grantjs/schema';
 import { createHash } from 'crypto';
 
 import { AUTH_RESULT_CACHE_KEY_PREFIX } from '@/constants/cache.constants';
@@ -49,16 +50,46 @@ export interface ScopeServices {
   accountTags: IAccountTagService;
   organizationTags: IOrganizationTagService;
   projectTags: IProjectTagService;
+  tags: ITagService;
   projectUserApiKeys: IProjectUserApiKeyService;
   accountProjectApiKeys: IAccountProjectApiKeyService;
   organizationProjectApiKeys: IOrganizationProjectApiKeyService;
 }
+
+type ScopedTagPivot = {
+  tagId: string;
+  isPrimary?: boolean | null;
+};
+
+type ScopedTagHydration = {
+  tagsByOwnerId: Map<string, Tag[]>;
+  primaryTagByOwnerId: Map<string, Tag | null>;
+  tagCountByOwnerId: Map<string, number>;
+};
 
 export class CacheHandler implements IScopedIdProvider {
   constructor(
     protected cache: IEntityCacheAdapter,
     protected readonly scopeServices: ScopeServices
   ) {}
+
+  protected hasRequestedField<TField extends PropertyKey>(
+    requestedFields: TField[] | null | undefined,
+    field: TField
+  ): boolean {
+    return requestedFields?.includes(field) ?? false;
+  }
+
+  protected withoutRequestedFields<TField extends PropertyKey>(
+    requestedFields: TField[] | null | undefined,
+    fieldsToRemove: TField[]
+  ): TField[] | undefined {
+    if (!requestedFields) {
+      return undefined;
+    }
+
+    return requestedFields.filter((field) => !fieldsToRemove.includes(field));
+  }
 
   /**
    * Extracts the projectId from a composite scope.id
@@ -538,6 +569,56 @@ export class CacheHandler implements IScopedIdProvider {
 
     await this.cache.tags.set(cacheKey, new Set(tagIds));
     return tagIds;
+  }
+
+  protected async hydrateScopedTagsForOwners<TPivot extends ScopedTagPivot>(params: {
+    scope: Scope;
+    ownerIds: string[];
+    pivots: TPivot[];
+    getOwnerId: (pivot: TPivot) => string;
+  }): Promise<ScopedTagHydration> {
+    const { scope, ownerIds, pivots, getOwnerId } = params;
+    const tagsByOwnerId = new Map<string, Tag[]>(ownerIds.map((ownerId) => [ownerId, []]));
+    const primaryTagByOwnerId = new Map<string, Tag | null>(
+      ownerIds.map((ownerId) => [ownerId, null])
+    );
+    const tagCountByOwnerId = new Map<string, number>(ownerIds.map((ownerId) => [ownerId, 0]));
+
+    if (ownerIds.length === 0 || pivots.length === 0) {
+      return { tagsByOwnerId, primaryTagByOwnerId, tagCountByOwnerId };
+    }
+
+    const ownerIdSet = new Set(ownerIds);
+    const scopedTagIds = new Set(await this.getScopedTagIds(scope));
+    const scopedPivots = pivots.filter((pivot) => {
+      return ownerIdSet.has(getOwnerId(pivot)) && scopedTagIds.has(pivot.tagId);
+    });
+
+    if (scopedPivots.length === 0) {
+      return { tagsByOwnerId, primaryTagByOwnerId, tagCountByOwnerId };
+    }
+
+    const tagIds = [...new Set(scopedPivots.map((pivot) => pivot.tagId))];
+    const { tags } = await this.scopeServices.tags.getTags({ ids: tagIds, limit: -1 });
+    const tagsById = new Map(tags.map((tag) => [tag.id, tag]));
+
+    for (const pivot of scopedPivots) {
+      const ownerId = getOwnerId(pivot);
+      const tag = tagsById.get(pivot.tagId);
+      if (!tag) {
+        continue;
+      }
+
+      const hydratedTag = { ...tag, isPrimary: pivot.isPrimary ?? false };
+      tagsByOwnerId.get(ownerId)?.push(hydratedTag);
+      tagCountByOwnerId.set(ownerId, (tagCountByOwnerId.get(ownerId) ?? 0) + 1);
+
+      if (hydratedTag.isPrimary && !primaryTagByOwnerId.get(ownerId)) {
+        primaryTagByOwnerId.set(ownerId, hydratedTag);
+      }
+    }
+
+    return { tagsByOwnerId, primaryTagByOwnerId, tagCountByOwnerId };
   }
 
   async getScopedApiKeyIds(scope: Scope): Promise<string[]> {

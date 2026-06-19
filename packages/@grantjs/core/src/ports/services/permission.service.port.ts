@@ -56,6 +56,11 @@ export interface IPermissionTagService {
     transaction?: unknown
   ): Promise<PermissionTag[]>;
 
+  getPermissionTagsByPermissionIds(
+    permissionIds: string[],
+    transaction?: unknown
+  ): Promise<PermissionTag[]>;
+
   getPermissionTagIntersection(
     params: { permissionIds: string[]; tagIds: string[] },
     transaction?: unknown

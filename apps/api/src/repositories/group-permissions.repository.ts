@@ -42,6 +42,13 @@ export class GroupPermissionRepository
     return this.countActive({ groupId: params.groupId }, transaction);
   }
 
+  public async countGroupPermissionsByGroupIds(
+    groupIds: string[],
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    return this.countActiveByFieldValues('groupId', groupIds, transaction);
+  }
+
   public async addGroupPermission(
     params: AddGroupPermissionInput,
     transaction?: Transaction

@@ -52,6 +52,10 @@ export interface IPermissionTagRepository {
     params: QueryPermissionTagsInput,
     transaction?: unknown
   ): Promise<PermissionTag[]>;
+  getPermissionTagsByPermissionIds(
+    permissionIds: string[],
+    transaction?: unknown
+  ): Promise<PermissionTag[]>;
   getPermissionTag(params: QueryPermissionTagsInput, transaction?: unknown): Promise<PermissionTag>;
   getPermissionTagIntersection(
     permissionIds: string[],

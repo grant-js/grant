@@ -15,12 +15,15 @@ import {
   MutationUpdateGroupArgs,
   Permission,
   QueryGroupsArgs,
+  Scope,
   Tag,
   Tenant,
 } from '@grantjs/schema';
 
+import { type GroupListHydrationContext, groupListHydrators } from '@/hydrators/groups.hydrators';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
+import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -68,16 +71,42 @@ export class GroupHandler extends CacheHandler {
       };
     }
 
+    const repositoryRequestedFields = stripHydratedFields<Group>(
+      requestedFields,
+      groupListHydrators
+    );
     const groupsResult = await this.groups.getGroups({
       ids: groupIds,
       page,
       limit,
       sort,
       search,
-      requestedFields,
+      requestedFields: repositoryRequestedFields,
     });
 
-    return groupsResult;
+    return hydrateList({
+      context: this.createGroupListHydrationContext(scope),
+      hydrators: groupListHydrators,
+      itemsKey: 'groups',
+      page: groupsResult,
+      requestedFields,
+    });
+  }
+
+  private createGroupListHydrationContext(scope: Scope): GroupListHydrationContext {
+    return {
+      countPermissions: (groupIds) =>
+        this.groupPermissions.countGroupPermissionsByGroupIds(groupIds),
+      loadScopedTags: async (groupIds) => {
+        const pivots = await this.groupTags.getGroupTagsByGroupIds(groupIds);
+        return this.hydrateScopedTagsForOwners({
+          scope,
+          ownerIds: groupIds,
+          pivots,
+          getOwnerId: (pivot) => pivot.groupId,
+        });
+      },
+    };
   }
 
   public async createGroup(params: MutationCreateGroupArgs): Promise<Group> {

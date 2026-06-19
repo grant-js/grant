@@ -33,10 +33,21 @@ export function createGroupsRouter(context: RequestContext): Router {
       action: ResourceAction.Query,
     }),
     async (req: TypedRequest<{ query: typeof getGroupsQuerySchema }>, res: Response) => {
-      const { page, limit, search, sortField, sortOrder, tagIds, scopeId, tenant, relations } =
-        req.query;
+      const {
+        page,
+        limit,
+        search,
+        sortField,
+        sortOrder,
+        tagIds,
+        scopeId,
+        tenant,
+        relations,
+        fields,
+      } = req.query;
 
       const { requestedFields, sort, scope } = queryListCommons<Group, GroupSortInput>({
+        fields,
         relations,
         sortField,
         sortOrder,

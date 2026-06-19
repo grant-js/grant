@@ -79,11 +79,27 @@ export class UserRoleService implements IUserRoleService {
     return validateOutput(createDynamicSingleSchema(userRoleSchema).array(), result, context);
   }
 
+  public async getUserRolesByUserIds(
+    userIds: string[],
+    transaction?: Transaction
+  ): Promise<UserRole[]> {
+    const context = 'UserRoleService.getUserRolesByUserIds';
+    const result = await this.userRoleRepository.getUserRolesByUserIds(userIds, transaction);
+    return validateOutput(createDynamicSingleSchema(userRoleSchema).array(), result, context);
+  }
+
   public async countUserRoles(
     params: { userId: string },
     transaction?: Transaction
   ): Promise<number> {
     return this.userRoleRepository.countUserRoles(params, transaction);
+  }
+
+  public async countUserRolesByUserIds(
+    userIds: string[],
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    return this.userRoleRepository.countUserRolesByUserIds(userIds, transaction);
   }
 
   public async addUserRole(params: AddUserRoleInput, transaction?: Transaction): Promise<UserRole> {

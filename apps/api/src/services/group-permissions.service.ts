@@ -100,6 +100,13 @@ export class GroupPermissionService implements IGroupPermissionService {
     return this.groupPermissionRepository.countGroupPermissions(params, transaction);
   }
 
+  public async countGroupPermissionsByGroupIds(
+    groupIds: string[],
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    return this.groupPermissionRepository.countGroupPermissionsByGroupIds(groupIds, transaction);
+  }
+
   public async addGroupPermission(
     params: AddGroupPermissionInput,
     transaction?: Transaction

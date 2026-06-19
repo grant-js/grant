@@ -35,6 +35,13 @@ export class RoleGroupRepository
     return this.countActive({ roleId: params.roleId }, transaction);
   }
 
+  public async countRoleGroupsByRoleIds(
+    roleIds: string[],
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    return this.countActiveByFieldValues('roleId', roleIds, transaction);
+  }
+
   public async addRoleGroup(
     params: AddRoleGroupInput,
     transaction?: Transaction

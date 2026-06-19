@@ -8,6 +8,10 @@ export const userPrimaryTagResolver: UserResolvers<GraphqlContext>['primaryTag']
   _args,
   context
 ) => {
+  if ((parent as { __scopedTagsHydrated?: boolean }).__scopedTagsHydrated) {
+    return parent.primaryTag ?? null;
+  }
+
   const pivots = await context.handlers.users.getUserTagPivots({ userId: parent.id });
   return resolvePrimaryTagFromPivots(context, pivots);
 };

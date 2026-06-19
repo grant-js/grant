@@ -30,6 +30,13 @@ export class GroupTagRepository
     return this.query(params, transaction);
   }
 
+  public async getGroupTagsByGroupIds(
+    groupIds: string[],
+    transaction?: Transaction
+  ): Promise<GroupTag[]> {
+    return this.queryByFieldValues('groupId', groupIds, transaction);
+  }
+
   public async getGroupTag(
     params: QueryGroupTagsInput,
     transaction?: Transaction

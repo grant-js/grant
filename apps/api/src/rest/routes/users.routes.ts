@@ -29,10 +29,22 @@ export function createUserRoutes(context: RequestContext) {
       action: ResourceAction.Query,
     }),
     async (req: TypedRequest<{ query: typeof getUsersQuerySchema }>, res: Response) => {
-      const { page, limit, search, ids, relations, sortField, sortOrder, tagIds, scopeId, tenant } =
-        req.query;
+      const {
+        page,
+        limit,
+        search,
+        ids,
+        relations,
+        fields,
+        sortField,
+        sortOrder,
+        tagIds,
+        scopeId,
+        tenant,
+      } = req.query;
 
       const { requestedFields, sort, scope } = queryListCommons<User, UserSortInput>({
+        fields,
         relations,
         sortField,
         sortOrder,
@@ -74,9 +86,10 @@ export function createUserRoutes(context: RequestContext) {
       res: Response
     ) => {
       const { id } = req.params;
-      const { relations, scopeId, tenant } = req.query;
+      const { fields, relations, scopeId, tenant } = req.query;
 
       const { requestedFields } = queryListCommons<User, UserSortInput>({
+        fields,
         relations,
         scopeId,
         tenant,

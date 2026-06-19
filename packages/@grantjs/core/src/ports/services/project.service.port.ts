@@ -354,6 +354,11 @@ export interface IProjectUserApiKeyService {
     params: { projectId: string; userId: string },
     transaction?: unknown
   ): Promise<number>;
+
+  countProjectUserApiKeysByUserIds(
+    params: { projectId: string; userIds: string[] },
+    transaction?: unknown
+  ): Promise<Map<string, number>>;
 }
 
 // ---------------------------------------------------------------------------

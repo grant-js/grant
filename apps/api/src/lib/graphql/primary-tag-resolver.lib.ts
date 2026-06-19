@@ -25,10 +25,24 @@ export async function resolvePrimaryTagFromPivots(
     limit: 1,
   });
 
-  const tag = tags[0];
-  if (!tag) {
+  let resolvedTag: Tag | undefined = tags[0];
+  if (!resolvedTag) {
+    const primaryPivots = pivots.filter((p) => p.isPrimary);
+    const scopedCandidates = primaryPivots.length > 0 ? primaryPivots : [primaryPivot];
+    const { tags: scopedTags } = await context.handlers.tags.getTags({
+      scope,
+      ids: scopedCandidates.map((p) => p.tagId),
+      limit: -1,
+    });
+    const scopedTagById = new Map(scopedTags.map((candidate) => [candidate.id, candidate]));
+    resolvedTag = scopedCandidates
+      .map((p) => scopedTagById.get(p.tagId))
+      .find((candidate): candidate is Tag => candidate != null);
+  }
+
+  if (!resolvedTag) {
     return null;
   }
 
-  return { ...tag, isPrimary: true };
+  return { ...resolvedTag, isPrimary: true };
 }

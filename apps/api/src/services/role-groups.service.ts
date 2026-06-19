@@ -90,6 +90,13 @@ export class RoleGroupService implements IRoleGroupService {
     return this.roleGroupRepository.countRoleGroups(params, transaction);
   }
 
+  public async countRoleGroupsByRoleIds(
+    roleIds: string[],
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    return this.roleGroupRepository.countRoleGroupsByRoleIds(roleIds, transaction);
+  }
+
   public async addRoleGroup(
     params: AddRoleGroupInput,
     transaction?: Transaction
