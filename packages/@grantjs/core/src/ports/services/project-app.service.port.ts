@@ -53,6 +53,11 @@ export interface IProjectAppTagService {
     transaction?: unknown
   ): Promise<ProjectAppTag[]>;
 
+  getProjectAppTagsByProjectAppIds(
+    projectAppIds: string[],
+    transaction?: unknown
+  ): Promise<ProjectAppTag[]>;
+
   getProjectAppTagIntersection(
     params: { projectAppIds: string[]; tagIds: string[] },
     transaction?: unknown

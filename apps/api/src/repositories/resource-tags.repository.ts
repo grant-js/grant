@@ -29,6 +29,13 @@ export class ResourceTagRepository
     return this.query(params, transaction);
   }
 
+  public async getResourceTagsByResourceIds(
+    resourceIds: string[],
+    transaction?: Transaction
+  ): Promise<ResourceTag[]> {
+    return this.queryByFieldValues('resourceId', resourceIds, transaction);
+  }
+
   public async getResourceTag(
     params: QueryResourceTagsInput,
     transaction?: Transaction

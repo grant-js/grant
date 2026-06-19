@@ -5,6 +5,10 @@ import { resolvePrimaryTagFromPivots } from '@/lib/graphql/primary-tag-resolver.
 
 export const permissionPrimaryTagResolver: PermissionResolvers<GraphqlContext>['primaryTag'] =
   async (parent, _args, context) => {
+    if ((parent as { __scopedTagsHydrated?: boolean }).__scopedTagsHydrated) {
+      return parent.primaryTag ?? null;
+    }
+
     const pivots = await context.handlers.permissions.getPermissionTagPivots({
       permissionId: parent.id,
     });

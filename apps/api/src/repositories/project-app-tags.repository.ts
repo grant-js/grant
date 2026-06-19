@@ -41,6 +41,13 @@ export class ProjectAppTagRepository
     return this.query(params as Record<string, unknown>, transaction);
   }
 
+  public async getProjectAppTagsByProjectAppIds(
+    projectAppIds: string[],
+    transaction?: Transaction
+  ): Promise<ProjectAppTag[]> {
+    return this.queryByFieldValues('projectAppId', projectAppIds, transaction);
+  }
+
   public async getProjectAppTagIntersection(
     projectAppIds: string[],
     tagIds: string[],

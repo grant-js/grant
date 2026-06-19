@@ -13,6 +13,10 @@ export const projectAppTagsResolver: ProjectAppResolvers<GraphqlContext>['tags']
   _args,
   context
 ) => {
+  if ((parent as { __scopedTagsHydrated?: boolean }).__scopedTagsHydrated && parent.tags) {
+    return parent.tags;
+  }
+
   const projectAppTags = await context.handlers.projectApps.getProjectAppTags({
     projectAppId: parent.id,
   });

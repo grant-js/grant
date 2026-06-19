@@ -21,6 +21,10 @@ export const permissionTagsResolver: PermissionResolvers<GraphqlContext>['tags']
 ) => {
   const permissionId = parent.id;
 
+  if ((parent as { __scopedTagsHydrated?: boolean }).__scopedTagsHydrated && parent.tags) {
+    return parent.tags;
+  }
+
   const scope = context.user?.scope;
   if (!scope) {
     return [];

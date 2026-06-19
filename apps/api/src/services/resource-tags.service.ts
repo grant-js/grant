@@ -83,6 +83,22 @@ export class ResourceTagService implements IResourceTagService {
     return validateOutput(createDynamicSingleSchema(resourceTagSchema).array(), result, context);
   }
 
+  public async getResourceTagsByResourceIds(
+    resourceIds: string[],
+    transaction?: Transaction
+  ): Promise<ResourceTag[]> {
+    const context = 'ResourceTagService.getResourceTagsByResourceIds';
+    const resourceTags = await this.resourceTagRepository.getResourceTagsByResourceIds(
+      resourceIds,
+      transaction
+    );
+    return validateOutput(
+      createDynamicSingleSchema(resourceTagSchema).array(),
+      resourceTags,
+      context
+    );
+  }
+
   public async getResourceTagIntersection(
     params: {
       resourceIds: string[];

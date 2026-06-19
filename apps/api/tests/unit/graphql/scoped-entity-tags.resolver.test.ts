@@ -7,6 +7,7 @@ import { type Tag, Tenant, TokenType } from '@grantjs/schema';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { groupTagsResolver } from '@/graphql/resolvers/groups/fields/tags.resolver';
+import { permissionResourceResolver } from '@/graphql/resolvers/permissions/fields/resource.resolver';
 import { permissionTagsResolver } from '@/graphql/resolvers/permissions/fields/tags.resolver';
 import { resourceTagsResolver } from '@/graphql/resolvers/resources/fields/tags.resolver';
 import { roleTagsResolver } from '@/graphql/resolvers/roles/fields/tags.resolver';
@@ -131,6 +132,52 @@ describe('scoped entity tags field resolvers', () => {
       ids: [tagT1.id, tagT2.id],
       limit: -1,
     });
+  });
+
+  it('User.tags returns handler-scoped parent tags without fallback calls', async () => {
+    const ctx = baseContext();
+    const out = await invokeFieldResolver(
+      userTagsResolver,
+      { id: 'user-1', tags: [{ ...tagT2, isPrimary: true }], __scopedTagsHydrated: true } as never,
+      ctx
+    );
+
+    expect(out).toEqual([{ ...tagT2, isPrimary: true }]);
+    expect(getUserTagPivots).not.toHaveBeenCalled();
+    expect(getTags).not.toHaveBeenCalled();
+  });
+
+  it('Role.tags ignores unmarked parent tags and falls back to scoped lookup', async () => {
+    const ctx = baseContext();
+    const out = await invokeFieldResolver(
+      roleTagsResolver,
+      { id: 'role-1', tags: [{ ...tagT1, isPrimary: true }] } as never,
+      ctx
+    );
+
+    expect(out).toEqual([{ ...tagT2, isPrimary: false }]);
+    expect(getRoleTagPivots).toHaveBeenCalledWith({ roleId: 'role-1' });
+  });
+
+  it('Permission.resource returns hydrated parent resource without fallback call', async () => {
+    const getResourceById = vi.fn();
+    const ctx = {
+      ...baseContext(),
+      handlers: {
+        ...baseContext().handlers,
+        resources: { getResourceById },
+      },
+    } as unknown as GraphqlContext;
+    const resource = { id: 'resource-1', name: 'Resource', slug: 'resource' };
+
+    const out = await invokeFieldResolver(
+      permissionResourceResolver,
+      { id: 'permission-1', resourceId: 'resource-1', resource } as never,
+      ctx
+    );
+
+    expect(out).toBe(resource);
+    expect(getResourceById).not.toHaveBeenCalled();
   });
 
   it('Group.tags uses limit -1 when pivot count exceeds pagination max (101+ tags)', async () => {

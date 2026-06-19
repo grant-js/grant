@@ -54,6 +54,10 @@ export interface IGroupPermissionRepository {
     transaction?: unknown
   ): Promise<GroupPermission[]>;
   countGroupPermissions(params: { groupId: string }, transaction?: unknown): Promise<number>;
+  countGroupPermissionsByGroupIds(
+    groupIds: string[],
+    transaction?: unknown
+  ): Promise<Map<string, number>>;
   addGroupPermission(
     params: AddGroupPermissionInput,
     transaction?: unknown
@@ -70,6 +74,7 @@ export interface IGroupPermissionRepository {
 
 export interface IGroupTagRepository {
   getGroupTags(params: QueryGroupTagsInput, transaction?: unknown): Promise<GroupTag[]>;
+  getGroupTagsByGroupIds(groupIds: string[], transaction?: unknown): Promise<GroupTag[]>;
   getGroupTag(params: QueryGroupTagsInput, transaction?: unknown): Promise<GroupTag>;
   getGroupTagIntersection(
     groupIds: string[],

@@ -35,11 +35,25 @@ export class UserPermissionRepository
     return this.query(params, transaction);
   }
 
+  public async getUserPermissionsByUserIds(
+    userIds: string[],
+    transaction?: Transaction
+  ): Promise<UserPermission[]> {
+    return this.queryByFieldValues('userId', userIds, transaction);
+  }
+
   public async countUserPermissions(
     params: { userId: string },
     transaction?: Transaction
   ): Promise<number> {
     return this.countActive({ userId: params.userId }, transaction);
+  }
+
+  public async countUserPermissionsByUserIds(
+    userIds: string[],
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    return this.countActiveByFieldValues('userId', userIds, transaction);
   }
 
   public async addUserPermission(

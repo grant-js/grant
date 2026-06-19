@@ -73,6 +73,15 @@ export class UserTagService implements IUserTagService {
     return validateOutput(createDynamicSingleSchema(userTagSchema).array(), result, context);
   }
 
+  public async getUserTagsByUserIds(
+    userIds: string[],
+    transaction?: Transaction
+  ): Promise<UserTag[]> {
+    const context = 'UserTagService.getUserTagsByUserIds';
+    const result = await this.userTagRepository.getUserTagsByUserIds(userIds, transaction);
+    return validateOutput(createDynamicSingleSchema(userTagSchema).array(), result, context);
+  }
+
   public async getUserTagIntersection(
     userIds: string[],
     tagIds: string[],

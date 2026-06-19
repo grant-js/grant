@@ -70,6 +70,13 @@ export class ProjectUserApiKeyService implements IProjectUserApiKeyService {
     return this.projectUserApiKeyRepository.countProjectUserApiKeys(params, transaction);
   }
 
+  public async countProjectUserApiKeysByUserIds(
+    params: { projectId: string; userIds: string[] },
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    return this.projectUserApiKeyRepository.countProjectUserApiKeysByUserIds(params, transaction);
+  }
+
   public async getProjectUserApiKeys(
     params: { projectId: string; userId: string },
     transaction?: Transaction

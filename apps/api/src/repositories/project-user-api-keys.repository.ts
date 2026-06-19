@@ -40,6 +40,23 @@ export class ProjectUserApiKeyRepository
     return this.countActive({ projectId: params.projectId, userId: params.userId }, transaction);
   }
 
+  public async countProjectUserApiKeysByUserIds(
+    params: { projectId: string; userIds: string[] },
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    const projectPivots = await this.queryIntersection(
+      { projectId: [params.projectId], userId: params.userIds },
+      transaction
+    );
+    const counts = new Map<string, number>();
+
+    for (const pivot of projectPivots) {
+      counts.set(pivot.userId, (counts.get(pivot.userId) ?? 0) + 1);
+    }
+
+    return counts;
+  }
+
   public async addProjectUserApiKey(
     params: AddProjectUserApiKeyInput,
     transaction?: Transaction

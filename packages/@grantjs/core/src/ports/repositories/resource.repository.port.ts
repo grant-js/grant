@@ -50,6 +50,10 @@ export interface IResourceRepository {
 
 export interface IResourceTagRepository {
   getResourceTags(params: QueryResourceTagsInput, transaction?: unknown): Promise<ResourceTag[]>;
+  getResourceTagsByResourceIds(
+    resourceIds: string[],
+    transaction?: unknown
+  ): Promise<ResourceTag[]>;
   getResourceTag(params: QueryResourceTagsInput, transaction?: unknown): Promise<ResourceTag>;
   getResourceTagIntersection(
     resourceIds: string[],

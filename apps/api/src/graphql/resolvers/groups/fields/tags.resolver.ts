@@ -20,6 +20,10 @@ export const groupTagsResolver: GroupResolvers<GraphqlContext>['tags'] = async (
 ) => {
   const groupId = parent.id;
 
+  if ((parent as { __scopedTagsHydrated?: boolean }).__scopedTagsHydrated && parent.tags) {
+    return parent.tags;
+  }
+
   const scope = context.user?.scope;
   if (!scope) {
     return [];

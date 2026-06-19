@@ -12,11 +12,17 @@ import {
   ProjectAppPage,
   ProjectAppTag,
   QueryProjectAppsArgs,
+  Scope,
   Tenant,
 } from '@grantjs/schema';
 
+import {
+  type ProjectAppListHydrationContext,
+  projectAppListHydrators,
+} from '@/hydrators/project-apps.hydrators';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError, NotFoundError, ValidationError } from '@/lib/errors';
+import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { SelectedFields } from '@/types';
 
@@ -72,15 +78,41 @@ export class ProjectAppsHandler extends CacheHandler {
     }
 
     const projectId = this.extractProjectIdFromScope(scope);
-    return this.projectApps.getProjectApps({
+    const repositoryRequestedFields = stripHydratedFields<ProjectApp>(
+      requestedFields,
+      projectAppListHydrators
+    );
+    const projectAppsResult = await this.projectApps.getProjectApps({
       projectId,
       ids: projectAppIds,
       page,
       limit,
       search,
       sort,
+      requestedFields: repositoryRequestedFields,
+    });
+
+    return hydrateList({
+      context: this.createProjectAppListHydrationContext(scope),
+      hydrators: projectAppListHydrators,
+      itemsKey: 'projectApps',
+      page: projectAppsResult,
       requestedFields,
     });
+  }
+
+  private createProjectAppListHydrationContext(scope: Scope): ProjectAppListHydrationContext {
+    return {
+      loadScopedTags: async (projectAppIds) => {
+        const pivots = await this.projectAppTags.getProjectAppTagsByProjectAppIds(projectAppIds);
+        return this.hydrateScopedTagsForOwners({
+          scope,
+          ownerIds: projectAppIds,
+          pivots,
+          getOwnerId: (pivot) => pivot.projectAppId,
+        });
+      },
+    };
   }
 
   public async createProjectApp(

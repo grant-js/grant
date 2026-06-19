@@ -20,6 +20,10 @@ export const userTagsResolver: UserResolvers<GraphqlContext>['tags'] = async (
 ) => {
   const userId = _parent.id;
 
+  if ((_parent as { __scopedTagsHydrated?: boolean }).__scopedTagsHydrated && _parent.tags) {
+    return _parent.tags;
+  }
+
   const scope = context.user?.scope;
   if (!scope) {
     return [];

@@ -76,6 +76,18 @@ export class ProjectAppTagService implements IProjectAppTagService {
     return validateOutput(createDynamicSingleSchema(projectAppTagSchema).array(), result, context);
   }
 
+  public async getProjectAppTagsByProjectAppIds(
+    projectAppIds: string[],
+    transaction?: Transaction
+  ): Promise<ProjectAppTag[]> {
+    const context = 'ProjectAppTagService.getProjectAppTagsByProjectAppIds';
+    const result = await this.projectAppTagRepository.getProjectAppTagsByProjectAppIds(
+      projectAppIds,
+      transaction
+    );
+    return validateOutput(createDynamicSingleSchema(projectAppTagSchema).array(), result, context);
+  }
+
   public async getProjectAppTagIntersection(
     params: { projectAppIds: string[]; tagIds: string[] },
     transaction?: Transaction

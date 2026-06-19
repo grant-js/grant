@@ -80,6 +80,15 @@ export class GroupTagService implements IGroupTagService {
     return validateOutput(createDynamicSingleSchema(groupTagSchema).array(), result, context);
   }
 
+  public async getGroupTagsByGroupIds(
+    groupIds: string[],
+    transaction?: Transaction
+  ): Promise<GroupTag[]> {
+    const context = 'GroupTagService.getGroupTagsByGroupIds';
+    const result = await this.groupTagRepository.getGroupTagsByGroupIds(groupIds, transaction);
+    return validateOutput(createDynamicSingleSchema(groupTagSchema).array(), result, context);
+  }
+
   public async getGroupTagIntersection(
     params: {
       groupIds: string[];

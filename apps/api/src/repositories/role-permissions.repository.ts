@@ -42,6 +42,13 @@ export class RolePermissionRepository
     return this.countActive({ roleId: params.roleId }, transaction);
   }
 
+  public async countRolePermissionsByRoleIds(
+    roleIds: string[],
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    return this.countActiveByFieldValues('roleId', roleIds, transaction);
+  }
+
   public async addRolePermission(
     params: AssignRolePermissionInput,
     transaction?: Transaction

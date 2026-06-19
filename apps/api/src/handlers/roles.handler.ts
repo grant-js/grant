@@ -21,12 +21,15 @@ import {
   Role,
   RolePage,
   RolePermission,
+  Scope,
   Tag,
   Tenant,
 } from '@grantjs/schema';
 
+import { type RoleListHydrationContext, roleListHydrators } from '@/hydrators/roles.hydrators';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
+import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -78,16 +81,39 @@ export class RoleHandler extends CacheHandler {
       };
     }
 
+    const repositoryRequestedFields = stripHydratedFields<Role>(requestedFields, roleListHydrators);
     const rolesResult = await this.roles.getRoles({
       ids: roleIds,
       page,
       limit,
       sort,
       search,
-      requestedFields,
+      requestedFields: repositoryRequestedFields,
     });
 
-    return rolesResult;
+    return hydrateList({
+      context: this.createRoleListHydrationContext(scope),
+      hydrators: roleListHydrators,
+      itemsKey: 'roles',
+      page: rolesResult,
+      requestedFields,
+    });
+  }
+
+  private createRoleListHydrationContext(scope: Scope): RoleListHydrationContext {
+    return {
+      countGroups: (roleIds) => this.roleGroups.countRoleGroupsByRoleIds(roleIds),
+      countPermissions: (roleIds) => this.rolePermissions.countRolePermissionsByRoleIds(roleIds),
+      loadScopedTags: async (roleIds) => {
+        const pivots = await this.roleTags.getRoleTagsByRoleIds(roleIds);
+        return this.hydrateScopedTagsForOwners({
+          scope,
+          ownerIds: roleIds,
+          pivots,
+          getOwnerId: (pivot) => pivot.roleId,
+        });
+      },
+    };
   }
 
   public async createRole(params: MutationCreateRoleArgs): Promise<Role> {

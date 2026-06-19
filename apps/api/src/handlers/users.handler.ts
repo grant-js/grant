@@ -33,6 +33,7 @@ import {
   UserPermission,
 } from '@grantjs/schema';
 
+import { type UserListHydrationContext, userListHydrators } from '@/hydrators/users.hydrators';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import {
   isParentProjectScopeForPivotWrites,
@@ -43,6 +44,7 @@ import {
   toMetadataRecord,
 } from '@/lib/effective-project-user-metadata.lib';
 import { AuthorizationError, BadRequestError, NotFoundError } from '@/lib/errors';
+import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
 import { createLogger } from '@/lib/logger';
 import { tryProjectIdFromScope } from '@/lib/project-id-from-scope.lib';
 import { assertProjectPivotMetadataMutationAllowed } from '@/lib/project-pivot-metadata-auth.lib';
@@ -135,13 +137,14 @@ export class UserHandler extends CacheHandler {
       effectiveSearch = undefined;
     }
 
+    const repositoryRequestedFields = stripHydratedFields<User>(requestedFields, userListHydrators);
     const usersResult = await this.users.getUsers({
       ids: userIds,
       page,
       limit,
       sort,
       search: effectiveSearch,
-      requestedFields,
+      requestedFields: repositoryRequestedFields,
     });
 
     const fieldList = requestedFields as Array<keyof User> | undefined;
@@ -183,7 +186,88 @@ export class UserHandler extends CacheHandler {
       });
     }
 
-    return usersResult;
+    return hydrateList({
+      context: this.createUserListHydrationContext(scope),
+      hydrators: userListHydrators,
+      itemsKey: 'users',
+      page: usersResult,
+      requestedFields,
+    });
+  }
+
+  private createUserListHydrationContext(scope: Scope): UserListHydrationContext {
+    return {
+      countPermissions: async (userIds) => {
+        const projectId = tryProjectIdFromScope(scope);
+        return projectId
+          ? this.countUserPermissionsByScope(userIds, scope)
+          : this.userPermissions.countUserPermissionsByUserIds(userIds);
+      },
+      countProjectUserApiKeys: async (userIds) => {
+        const projectId = tryProjectIdFromScope(scope);
+        return projectId
+          ? await this.scopeServices.projectUserApiKeys.countProjectUserApiKeysByUserIds({
+              projectId,
+              userIds,
+            })
+          : new Map<string, number>();
+      },
+      countRoles: async (userIds) => {
+        const projectId = tryProjectIdFromScope(scope);
+        return projectId
+          ? this.countUserRolesByScope(userIds, scope)
+          : this.userRoles.countUserRolesByUserIds(userIds);
+      },
+      loadScopedTags: async (userIds) => {
+        const pivots = await this.userTags.getUserTagsByUserIds(userIds);
+        return this.hydrateScopedTagsForOwners({
+          scope,
+          ownerIds: userIds,
+          pivots,
+          getOwnerId: (pivot) => pivot.userId,
+        });
+      },
+    };
+  }
+
+  private async countUserRolesByScope(
+    userIds: string[],
+    scope: Scope
+  ): Promise<Map<string, number>> {
+    const [scopedRoleIds, userRoles] = await Promise.all([
+      this.getScopedRoleIds(scope),
+      this.userRoles.getUserRolesByUserIds(userIds),
+    ]);
+    const scopedRoleIdSet = new Set(scopedRoleIds);
+    const counts = new Map<string, number>(userIds.map((userId) => [userId, 0]));
+
+    for (const userRole of userRoles) {
+      if (scopedRoleIdSet.has(userRole.roleId)) {
+        counts.set(userRole.userId, (counts.get(userRole.userId) ?? 0) + 1);
+      }
+    }
+
+    return counts;
+  }
+
+  private async countUserPermissionsByScope(
+    userIds: string[],
+    scope: Scope
+  ): Promise<Map<string, number>> {
+    const [scopedPermissionIds, userPermissions] = await Promise.all([
+      this.getScopedPermissionIds(scope),
+      this.userPermissions.getUserPermissionsByUserIds(userIds),
+    ]);
+    const scopedPermissionIdSet = new Set(scopedPermissionIds);
+    const counts = new Map<string, number>(userIds.map((userId) => [userId, 0]));
+
+    for (const userPermission of userPermissions) {
+      if (scopedPermissionIdSet.has(userPermission.permissionId)) {
+        counts.set(userPermission.userId, (counts.get(userPermission.userId) ?? 0) + 1);
+      }
+    }
+
+    return counts;
   }
 
   public async createUser(params: MutationCreateUserArgs): Promise<User> {
