@@ -31,8 +31,8 @@
     }
   },
   "devDependencies": {
-    "@aws-sdk/client-cloudwatch-logs": "^3.1068.0",
-    "@types/node": "^25.9.3",
+    "@aws-sdk/client-cloudwatch-logs": "^3.1075.0",
+    "@types/node": "^26.0.1",
     "typescript": "^6"
   },
   "license": "MIT"
