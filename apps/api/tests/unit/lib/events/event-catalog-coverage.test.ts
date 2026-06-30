@@ -1,4 +1,4 @@
-import { readdirSync,readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { EVENT_CATALOG, EVENT_TYPES, isKnownEventType } from '@grantjs/schema';
