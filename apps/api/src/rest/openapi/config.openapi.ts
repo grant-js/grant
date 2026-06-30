@@ -31,6 +31,7 @@ import { registerRuntimeConfigOpenApi } from './runtime-config.openapi';
 import { registerSigningKeysOpenApi } from './signing-keys.openapi';
 import { registerTagsOpenApi } from './tags.openapi';
 import { registerUserEndpoints } from './users.openapi';
+import { registerWebhookSubscriptionsOpenApi } from './webhook-subscriptions.openapi';
 
 /**
  * OpenAPI registry for the REST API
@@ -77,6 +78,7 @@ function registerAllEndpoints() {
   registerTagsOpenApi(registry);
   registerJwksOpenApi(registry);
   registerSigningKeysOpenApi(registry);
+  registerWebhookSubscriptionsOpenApi(registry);
 }
 
 /**

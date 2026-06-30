@@ -1,15 +1,16 @@
-import { SESClient, SendEmailCommand, SendEmailCommandInput } from '@aws-sdk/client-ses';
-import { GrantException } from '@grantjs/core';
-
-import type { EmailTemplates } from '../templates';
+import { SendEmailCommand, SendEmailCommandInput, SESClient } from '@aws-sdk/client-ses';
 import type {
   IEmailService,
   ILogger,
   SendInvitationParams,
+  SendNotificationEmailParams,
   SendOtpParams,
   SendPasswordResetParams,
   SendProjectOAuthMagicLinkParams,
 } from '@grantjs/core';
+import { GrantException } from '@grantjs/core';
+
+import type { EmailTemplates } from '../templates';
 
 export interface SesConfig {
   clientId: string;
@@ -212,6 +213,29 @@ export class SesEmailAdapter implements IEmailService {
     } catch (error) {
       throw new GrantException(
         `Failed to send project OAuth magic link: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'EMAIL_SEND_ERROR',
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  async sendNotification(params: SendNotificationEmailParams): Promise<void> {
+    try {
+      const commandInput: SendEmailCommandInput = {
+        Source: this.from,
+        Destination: { ToAddresses: [params.to] },
+        Message: {
+          Subject: { Data: params.subject, Charset: 'UTF-8' },
+          Body: {
+            ...(params.html ? { Html: { Data: params.html, Charset: 'UTF-8' } } : {}),
+            Text: { Data: params.text, Charset: 'UTF-8' },
+          },
+        },
+      };
+      await this.sesClient.send(new SendEmailCommand(commandInput));
+    } catch (error) {
+      throw new GrantException(
+        `Failed to send notification email: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'EMAIL_SEND_ERROR',
         error instanceof Error ? error : undefined
       );

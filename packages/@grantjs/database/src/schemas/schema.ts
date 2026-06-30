@@ -20,9 +20,15 @@ import {
   apiKeys,
   apiKeysRelations,
 } from './api-keys.schema';
+import { eventLog, eventLogRelations } from './event-log.schema';
 import { groupPermissions, groupPermissionsRelations } from './group-permissions.schema';
 import { groupTags, groupTagsRelations } from './group-tags.schema';
 import { groups, groupsRelations } from './groups.schema';
+import {
+  notificationPreferences,
+  notificationPreferencesRelations,
+} from './notification-preferences.schema';
+import { notifications, notificationsRelations } from './notifications.schema';
 import { organizationGroups, organizationGroupsRelations } from './organization-groups.schema';
 import {
   organizationInvitations,
@@ -142,6 +148,14 @@ import { userRoles, userRolesRelations } from './user-roles.schema';
 import { userSessions, userSessionsRelations } from './user-sessions.schema';
 import { userTags, userTagsRelations } from './user-tags.schema';
 import { users, usersRelations } from './users.schema';
+import {
+  webhookDeliveryAttempts,
+  webhookDeliveryAttemptsRelations,
+} from './webhook-delivery-attempts.schema';
+import {
+  webhookSubscriptions,
+  webhookSubscriptionsRelations,
+} from './webhook-subscriptions.schema';
 
 // New authentication entities
 
@@ -156,9 +170,12 @@ export const schema = {
   accounts,
   apiKeys,
   apiKeyAuditLogs,
+  eventLog,
   groupPermissions,
   groupTags,
   groups,
+  notificationPreferences,
+  notifications,
   organizationGroups,
   organizationInvitations,
   organizationPermissions,
@@ -218,6 +235,8 @@ export const schema = {
   userMfaRecoveryCodes,
   userMfaFactorAuditLogs,
   userSessions,
+  webhookSubscriptions,
+  webhookDeliveryAttempts,
   accountProjectApiKeyAuditLogsRelations,
   accountProjectApiKeysRelations,
   accountProjectTagsRelations,
@@ -263,6 +282,9 @@ export const schema = {
   projectUsersRelations,
   apiKeysRelations,
   apiKeyAuditLogsRelations,
+  eventLogRelations,
+  notificationPreferencesRelations,
+  notificationsRelations,
   projectsRelations,
   roleGroupsRelations,
   rolePermissionsRelations,
@@ -279,6 +301,8 @@ export const schema = {
   userMfaFactorsRelations,
   userMfaRecoveryCodesRelations,
   userSessionsRelations,
+  webhookSubscriptionsRelations,
+  webhookDeliveryAttemptsRelations,
 };
 
 export type Schema = typeof schema;

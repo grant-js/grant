@@ -1,4 +1,4 @@
-import type { IApiKeyRepository, IAuditLogger } from '@grantjs/core';
+import type { IApiKeyRepository, IAuditLogger, IEventPublisher } from '@grantjs/core';
 import { type ApiKey, Tenant } from '@grantjs/schema';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -62,6 +62,10 @@ function buildService(repositoryOverrides: Partial<IApiKeyRepository> = {}) {
     signApiKeyToken: vi.fn().mockResolvedValue('access-token'),
   };
 
+  const events = {
+    publish: vi.fn(),
+  } as unknown as IEventPublisher;
+
   const service = new ApiKeyService(
     {
       getFirstByProjectId: vi.fn().mockResolvedValue({ accountId, projectId }),
@@ -72,10 +76,11 @@ function buildService(repositoryOverrides: Partial<IApiKeyRepository> = {}) {
     apiKeyRepository,
     null,
     audit,
-    grant as never
+    grant as never,
+    events
   );
 
-  return { service, apiKeyRepository, grant };
+  return { service, apiKeyRepository, grant, events };
 }
 
 describe('ApiKeyService scoped client ids', () => {

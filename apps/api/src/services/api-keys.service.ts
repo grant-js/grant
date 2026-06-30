@@ -4,6 +4,7 @@ import type {
   IApiKeyRepository,
   IApiKeyService,
   IAuditLogger,
+  IEventPublisher,
   IOrganizationProjectRepository,
 } from '@grantjs/core';
 import { Grant, GrantAuth, NoSessionSigningKeyError } from '@grantjs/core';
@@ -62,7 +63,8 @@ export class ApiKeyService implements IApiKeyService {
     private readonly apiKeyRepository: IApiKeyRepository,
     private readonly user: GrantAuth | null,
     private readonly audit: IAuditLogger,
-    private readonly grant: Grant
+    private readonly grant: Grant,
+    private readonly events: IEventPublisher
   ) {}
 
   private getPerformedBy(): string {
@@ -294,6 +296,15 @@ export class ApiKeyService implements IApiKeyService {
 
     await this.audit.logCreate(apiKey.id, newValues, { action: 'CREATE_API_KEY' }, transaction);
 
+    await this.events.publish(
+      {
+        type: 'api_key.created',
+        aggregate: { kind: 'apiKey', id: apiKey.id },
+        data: { after: newValues },
+      },
+      transaction
+    );
+
     const response: CreateApiKeyResult = {
       id: apiKey.id,
       clientId: apiKey.clientId,
@@ -492,6 +503,15 @@ export class ApiKeyService implements IApiKeyService {
     };
 
     await this.audit.logUpdate(id, oldValues, newValues, { action: 'REVOKE_API_KEY' }, transaction);
+
+    await this.events.publish(
+      {
+        type: 'api_key.revoked',
+        aggregate: { kind: 'apiKey', id: revokedKey.id },
+        data: { before: oldValues, after: newValues },
+      },
+      transaction
+    );
 
     return revokedKey;
   }

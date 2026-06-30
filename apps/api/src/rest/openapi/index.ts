@@ -34,3 +34,4 @@ export { registerRolesOpenApi } from './roles.openapi';
 export { registerSigningKeysOpenApi } from './signing-keys.openapi';
 export { registerTagsOpenApi } from './tags.openapi';
 export { registerUserEndpoints } from './users.openapi';
+export { registerWebhookSubscriptionsOpenApi } from './webhook-subscriptions.openapi';

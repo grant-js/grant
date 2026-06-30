@@ -29,6 +29,15 @@ export interface SendProjectOAuthMagicLinkParams {
   locale?: string;
 }
 
+export interface SendNotificationEmailParams {
+  to: string;
+  subject: string;
+  /** Plain-text body (always provided). */
+  text: string;
+  /** Optional HTML body. */
+  html?: string;
+}
+
 export interface IEmailService {
   /**
    * Send an organization invitation email
@@ -49,4 +58,10 @@ export interface IEmailService {
    * Send a project OAuth magic link (sign-in link for project app)
    */
   sendProjectOAuthMagicLink(params: SendProjectOAuthMagicLinkParams): Promise<void>;
+
+  /**
+   * Send a generic notification email (subject + text/html body). Used by the
+   * notification email channel.
+   */
+  sendNotification(params: SendNotificationEmailParams): Promise<void>;
 }

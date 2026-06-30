@@ -15,6 +15,7 @@ import {
   Shield,
   Tag,
   Users,
+  Webhook,
 } from 'lucide-react';
 
 import { WorkspaceSwitcher } from '@/components/common';
@@ -114,6 +115,11 @@ export function ProjectSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
           title: t('projectSyncJobs'),
           url: `/dashboard/organizations/${organizationId}/projects/${projectId}/import-export`,
           icon: ProjectSyncJobsModuleIcon,
+        },
+        {
+          title: t('webhooks'),
+          url: `/dashboard/organizations/${organizationId}/projects/${projectId}/webhooks`,
+          icon: Webhook,
         },
       ],
       checkActive: true,

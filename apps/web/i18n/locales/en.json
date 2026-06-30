@@ -208,7 +208,9 @@
       "signingKeys": "Signing Keys",
       "projectApps": "Apps",
       "testApp": "Test App",
-      "projectSyncJobs": "Import/Export"
+      "projectSyncJobs": "Import/Export",
+      "webhooks": "Webhooks",
+      "notifications": "Notifications"
     }
   },
   "theme": {
@@ -3118,7 +3120,8 @@
       "profile": "Profile",
       "security": "Security",
       "preferences": "Preferences",
-      "privacy": "Privacy"
+      "privacy": "Privacy",
+      "notifications": "Notifications"
     },
     "account": {
       "title": "Account Information",
@@ -3593,6 +3596,15 @@
       "revokeError": "Failed to revoke API key",
       "exchangeError": "Failed to exchange API key"
     }
+  },
+  "webhooks": {
+    "title": "Webhooks"
+  },
+  "notifications": {
+    "title": "Notifications"
+  },
+  "notificationPreferences": {
+    "title": "Notification Preferences"
   },
   "signingKeys": {
     "title": "Signing Keys",

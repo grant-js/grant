@@ -206,7 +206,9 @@
       "signingKeys": "Signierungsschlüssel",
       "projectApps": "Apps",
       "testApp": "App testen",
-      "projectSyncJobs": "Import/Export"
+      "projectSyncJobs": "Import/Export",
+      "webhooks": "Webhooks",
+      "notifications": "Benachrichtigungen"
     }
   },
   "theme": {
@@ -2816,7 +2818,8 @@
       "profile": "Profil",
       "security": "Sicherheit",
       "preferences": "Einstellungen",
-      "privacy": "Datenschutz"
+      "privacy": "Datenschutz",
+      "notifications": "Benachrichtigungen"
     },
     "account": {
       "title": "Kontoinformationen",
@@ -3290,6 +3293,15 @@
       "revokeError": "Fehler beim Widerrufen des API-Schlüssels",
       "exchangeError": "Fehler beim Austauschen des API-Schlüssels"
     }
+  },
+  "webhooks": {
+    "title": "Webhooks"
+  },
+  "notifications": {
+    "title": "Benachrichtigungen"
+  },
+  "notificationPreferences": {
+    "title": "Benachrichtigungseinstellungen"
   },
   "signingKeys": {
     "title": "Signaturschlüssel",

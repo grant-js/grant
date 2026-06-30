@@ -17,6 +17,7 @@ import { createRolesRouter } from '@/rest/routes/roles.routes';
 import { createSigningKeysRoutes } from '@/rest/routes/signing-keys.routes';
 import { createTagsRouter } from '@/rest/routes/tags.routes';
 import { createUserRoutes } from '@/rest/routes/users.routes';
+import { createWebhookSubscriptionsRoutes } from '@/rest/routes/webhook-subscriptions.routes';
 import { RequestContext } from '@/types';
 
 export function createRestRouter(context: RequestContext): Router {
@@ -40,6 +41,7 @@ export function createRestRouter(context: RequestContext): Router {
   router.use('/roles', createRolesRouter(context));
   router.use('/tags', createTagsRouter(context));
   router.use('/users', createUserRoutes(context));
+  router.use('/webhook-subscriptions', createWebhookSubscriptionsRoutes(context));
 
   return router;
 }

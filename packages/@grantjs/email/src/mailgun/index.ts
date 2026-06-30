@@ -1,16 +1,17 @@
+import type {
+  IEmailService,
+  ILogger,
+  SendInvitationParams,
+  SendNotificationEmailParams,
+  SendOtpParams,
+  SendPasswordResetParams,
+  SendProjectOAuthMagicLinkParams,
+} from '@grantjs/core';
 import { GrantException } from '@grantjs/core';
 import FormData from 'form-data';
 import Mailgun from 'mailgun.js';
 
 import type { EmailTemplates } from '../templates';
-import type {
-  IEmailService,
-  ILogger,
-  SendInvitationParams,
-  SendOtpParams,
-  SendPasswordResetParams,
-  SendProjectOAuthMagicLinkParams,
-} from '@grantjs/core';
 
 export interface MailgunConfig {
   apiKey: string;
@@ -132,6 +133,24 @@ export class MailgunEmailAdapter implements IEmailService {
     } catch (error) {
       throw new GrantException(
         `Failed to send project OAuth magic link: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'EMAIL_SEND_ERROR',
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  async sendNotification(params: SendNotificationEmailParams): Promise<void> {
+    try {
+      await this.client.messages.create(this.config.domain, {
+        from: this.from,
+        to: [params.to],
+        subject: params.subject,
+        text: params.text,
+        html: params.html,
+      });
+    } catch (error) {
+      throw new GrantException(
+        `Failed to send notification email: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'EMAIL_SEND_ERROR',
         error instanceof Error ? error : undefined
       );

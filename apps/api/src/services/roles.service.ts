@@ -1,5 +1,5 @@
 import { ROLES } from '@grantjs/constants';
-import type { IAuditLogger, IRoleRepository, IRoleService } from '@grantjs/core';
+import type { IAuditLogger, IEventPublisher, IRoleRepository, IRoleService } from '@grantjs/core';
 import {
   CreateRoleInput,
   MutationDeleteRoleArgs,
@@ -31,7 +31,8 @@ import {
 export class RoleService implements IRoleService {
   constructor(
     private readonly roleRepository: IRoleRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   private getCorePlatformRoleNames(): string[] {
@@ -128,6 +129,15 @@ export class RoleService implements IRoleService {
     };
 
     await this.audit.logCreate(role.id, newValues, metadata, transaction);
+
+    await this.events.publish(
+      {
+        type: 'role.created',
+        aggregate: { kind: 'role', id: role.id },
+        data: { after: newValues },
+      },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(roleSchema), role, context);
   }

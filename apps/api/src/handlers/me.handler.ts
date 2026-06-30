@@ -3,9 +3,11 @@ import type {
   IAccountService,
   IAuthService,
   IEmailService,
+  IEventPublisher,
   IFileStorageServicePort,
   ILogger,
   IMeService,
+  INotificationService,
   IOrganizationUserService,
   IProjectUserService,
   ITransactionalConnection,
@@ -21,8 +23,12 @@ import {
   Account,
   CreateMyUserAuthenticationMethodInput,
   DeleteMyAccountsInput,
+  ListNotificationsInput,
   MeResponse,
   MyUserSessionsInput,
+  NotificationPage,
+  NotificationPreference,
+  SetNotificationPreferenceInput,
   SortOrder,
   UpdateMyUserInput,
   UploadMyUserPictureInput,
@@ -58,6 +64,8 @@ export class MeHandler extends CacheHandler {
     private readonly organizationUsers: IOrganizationUserService,
     private readonly projectUsers: IProjectUserService,
     private readonly auth: IAuthService,
+    private readonly notifications: INotificationService,
+    private readonly events: IEventPublisher,
     cache: IEntityCacheAdapter,
     scopeServices: ScopeServices,
     private readonly db: ITransactionalConnection<Transaction>
@@ -128,6 +136,34 @@ export class MeHandler extends CacheHandler {
   private getAuthenticatedUserId(): string {
     const auth = this.getGrantAuth();
     return auth.userId;
+  }
+
+  public async myNotifications(input: ListNotificationsInput): Promise<NotificationPage> {
+    return this.notifications.list(this.getAuthenticatedUserId(), input);
+  }
+
+  public async myUnreadNotificationCount(): Promise<{ unreadCount: number }> {
+    const unreadCount = await this.notifications.unreadCount(this.getAuthenticatedUserId());
+    return { unreadCount };
+  }
+
+  public async markMyNotificationRead(id: string): Promise<void> {
+    await this.notifications.markRead(this.getAuthenticatedUserId(), id);
+  }
+
+  public async markAllMyNotificationsRead(): Promise<{ updated: number }> {
+    const updated = await this.notifications.markAllRead(this.getAuthenticatedUserId());
+    return { updated };
+  }
+
+  public async myNotificationPreferences(scopeTenant: string): Promise<NotificationPreference[]> {
+    return this.notifications.listPreferences(this.getAuthenticatedUserId(), scopeTenant);
+  }
+
+  public async setMyNotificationPreference(
+    input: SetNotificationPreferenceInput
+  ): Promise<NotificationPreference> {
+    return this.notifications.setPreference(this.getAuthenticatedUserId(), input);
   }
 
   public async updateMyUser(input: UpdateMyUserInput): Promise<User> {
@@ -430,6 +466,15 @@ export class MeHandler extends CacheHandler {
       if (input.provider === UserAuthenticationMethodProvider.Email) {
         const { token, validUntil } = processedProviderData.otp as Otp;
         if (token && validUntil > Date.now()) {
+          await this.events.publish(
+            {
+              type: 'user.email_verification_requested',
+              subjectUserId: userId,
+              aggregate: { kind: 'userAuthenticationMethod', id: userAuthenticationMethod.id },
+              data: { after: { provider: input.provider, providerId: input.providerId } },
+            },
+            tx
+          );
           try {
             await this.email.sendOtp({
               to: input.providerId,
