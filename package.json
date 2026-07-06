@@ -62,24 +62,24 @@
     "@changesets/cli": "^2.31.0",
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^10.0.1",
-    "@iconify-json/fluent": "^1.2.50",
+    "@iconify-json/fluent": "^1.2.52",
     "@iconify-json/fluent-color": "^1.2.21",
-    "@types/node": "^25.9.3",
-    "badge-maker": "^5.0.2",
+    "@types/node": "^26.1.0",
+    "badge-maker": "^6.0.0",
     "concurrently": "^10.0.3",
     "dotenv-cli": "^11.0.0",
-    "eslint": "^10.5.0",
+    "eslint": "^10.6.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-simple-import-sort": "^13.0.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-unused-imports": "^4.2.0",
-    "graphql": "^16.14.2",
-    "lint-staged": "^17.0.7",
-    "prettier": "^3.8.4",
-    "tsx": "^4.22.4",
-    "turbo": "^2.9.18",
+    "graphql": "^17.0.2",
+    "lint-staged": "^17.0.8",
+    "prettier": "^3.9.4",
+    "tsx": "^4.23.0",
+    "turbo": "^2.10.3",
     "typescript": "^6",
-    "typescript-eslint": "^8.61.0",
+    "typescript-eslint": "^8.62.1",
     "vitepress": "^1.6.4"
   },
   "engines": {
@@ -114,7 +114,7 @@
       "minimatch@10.1.2": "10.2.3",
       "react": "19.2.6",
       "react-dom": "19.2.6",
-      "graphql": "16.14.2"
+      "graphql": "17.0.2"
     }
   },
   "lint-staged": {
