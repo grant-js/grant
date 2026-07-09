@@ -80,7 +80,7 @@
     "prom-client": "^15.1.0",
     "slugify": "^1.6.9",
     "swagger-ui-express": "^5.0.1",
-    "uuid": "^14.0.0",
+    "uuid": "^14.0.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
