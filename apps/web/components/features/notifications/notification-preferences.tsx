@@ -1,8 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { NotificationChannel, NotificationPreference } from '@grantjs/schema';
 
+import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -20,15 +22,14 @@ const EDITABLE_CATEGORIES = ['iam', 'membership', 'integrations'] as const;
 const CHANNELS: NotificationChannel[] = ['in_app', 'email'];
 
 const CATEGORY_DEFAULTS: Record<string, Record<NotificationChannel, boolean>> = {
+  security: { in_app: true, email: true },
   iam: { in_app: true, email: false },
   membership: { in_app: true, email: true },
   integrations: { in_app: true, email: false },
 };
 
-interface NotificationPreferencesProps {
-  /** Tenant the preferences apply to (e.g. "organization"). */
-  scopeTenant: string;
-}
+const TENANT_TABS = ['account', 'organization'] as const;
+type TenantTab = (typeof TENANT_TABS)[number];
 
 function resolveEnabled(
   preferences: NotificationPreference[],
@@ -42,19 +43,40 @@ function resolveEnabled(
   return CATEGORY_DEFAULTS[category]?.[channel] ?? false;
 }
 
-export function NotificationPreferences({ scopeTenant }: NotificationPreferencesProps) {
+function isOrgEnforced(
+  preferences: NotificationPreference[],
+  category: string,
+  channel: NotificationChannel
+): boolean {
+  return preferences.some(
+    (p) => p.source === 'org_enforced' && p.category === category && p.channel === channel
+  );
+}
+
+function PreferencesTable({ scopeTenant }: { scopeTenant: string }) {
+  const t = useTranslations('notificationPreferences');
   const { preferences, loading, error, setPreference } = useNotificationPreferences(scopeTenant);
   const [saving, setSaving] = useState<string | null>(null);
 
   const rows = useMemo(
-    () =>
-      EDITABLE_CATEGORIES.map((category) => ({
+    () => [
+      {
+        category: 'security' as const,
+        locked: true,
+        channels: CHANNELS.map((channel) => ({
+          channel,
+          enabled: true,
+        })),
+      },
+      ...EDITABLE_CATEGORIES.map((category) => ({
         category,
+        locked: false,
         channels: CHANNELS.map((channel) => ({
           channel,
           enabled: resolveEnabled(preferences, category, channel),
         })),
       })),
+    ],
     [preferences]
   );
 
@@ -68,7 +90,7 @@ export function NotificationPreferences({ scopeTenant }: NotificationPreferences
     try {
       await setPreference({ scopeTenant, category, channel, enabled });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to save preference');
+      toast.error(err instanceof Error ? err.message : t('errors.save'));
     } finally {
       setSaving(null);
     }
@@ -87,39 +109,71 @@ export function NotificationPreferences({ scopeTenant }: NotificationPreferences
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">Notification preferences</h2>
-        <p className="text-muted-foreground text-sm">
-          Security notifications are always on and cannot be disabled.
-        </p>
-      </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Category</TableHead>
-            <TableHead className="text-center">In-app</TableHead>
-            <TableHead className="text-center">Email</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((row) => (
-            <TableRow key={row.category}>
-              <TableCell className="capitalize">{row.category}</TableCell>
-              {row.channels.map(({ channel, enabled }) => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>{t('category')}</TableHead>
+          <TableHead className="text-center">{t('inApp')}</TableHead>
+          <TableHead className="text-center">{t('email')}</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((row) => (
+          <TableRow key={row.category}>
+            <TableCell className="capitalize">{t(`categories.${row.category}`)}</TableCell>
+            {row.channels.map(({ channel, enabled }) => {
+              const enforced = isOrgEnforced(preferences, row.category, channel);
+              const disabled = row.locked || enforced || saving === `${row.category}:${channel}`;
+              return (
                 <TableCell key={channel} className="text-center">
                   <Switch
-                    checked={enabled}
-                    disabled={saving === `${row.category}:${channel}`}
-                    onCheckedChange={(checked) => handleToggle(row.category, channel, checked)}
+                    checked={row.locked ? true : enabled}
+                    disabled={disabled}
+                    onCheckedChange={(checked) => {
+                      if (!row.locked) {
+                        void handleToggle(
+                          row.category as (typeof EDITABLE_CATEGORIES)[number],
+                          channel,
+                          checked
+                        );
+                      }
+                    }}
                     aria-label={`${row.category} ${channel}`}
                   />
                 </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+              );
+            })}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+export function NotificationPreferences() {
+  const t = useTranslations('notificationPreferences');
+  const [activeTenant, setActiveTenant] = useState<TenantTab>('organization');
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-lg font-semibold">{t('title')}</h2>
+        <p className="text-muted-foreground text-sm">{t('securityLockedHint')}</p>
+      </div>
+      <div className="flex gap-2">
+        {TENANT_TABS.map((tenant) => (
+          <Button
+            key={tenant}
+            type="button"
+            variant={activeTenant === tenant ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTenant(tenant)}
+          >
+            {t(`tenants.${tenant}`)}
+          </Button>
+        ))}
+      </div>
+      <PreferencesTable scopeTenant={activeTenant} />
     </div>
   );
 }

@@ -3126,9 +3126,7 @@
       },
       "notifications": {
         "title": "Benachrichtigungen",
-        "description": "Verwalten Sie Ihre Benachrichtigungseinstellungen",
-        "comingSoon": "Benachrichtigungseinstellungen kommen bald!",
-        "comingSoonDescription": "Sie können E-Mail-Benachrichtigungen, In-App-Benachrichtigungen und Benachrichtigungshäufigkeit anpassen."
+        "description": "Verwalten Sie Ihre Benachrichtigungseinstellungen"
       }
     },
     "privacy": {
@@ -3295,13 +3293,186 @@
     }
   },
   "webhooks": {
-    "title": "Webhooks"
+    "title": "Webhooks",
+    "search": {
+      "placeholder": "Nach URL, Beschreibung oder Event-Typ suchen…"
+    },
+    "sort": {
+      "label": "Sortieren",
+      "url": "URL",
+      "createdAt": "Erstellt",
+      "active": "Aktiv"
+    },
+    "limit": {
+      "label": "Pro Seite"
+    },
+    "view": {
+      "card": "Karten",
+      "table": "Tabelle"
+    },
+    "activeYes": "Aktiv",
+    "activeNo": "Inaktiv",
+    "eventCount": "{count, plural, =0 {Keine Events} one {# Event} other {# Events}}",
+    "table": {
+      "status": "Status",
+      "audit": "Audit"
+    },
+    "actions": {
+      "view": "Abonnement anzeigen"
+    },
+    "status": {
+      "active": "Aktiv",
+      "inactive": "Inaktiv"
+    },
+    "detail": {
+      "title": "Webhook-Abonnement",
+      "back": "Zurück zu Webhooks",
+      "open": "Abonnementdetails anzeigen",
+      "notFound": "Webhook-Abonnement nicht gefunden",
+      "info": {
+        "generalTitle": "Allgemein",
+        "generalDescription": "URL, Beschreibung, Reihenfolgemodus, Status und Audit-Informationen für dieses Abonnement.",
+        "descriptionPlaceholder": "Optionale Beschreibung für diesen Webhook-Endpunkt",
+        "subscriptionId": "Abonnement-ID",
+        "orderingMode": "Reihenfolgemodus",
+        "orderingModes": {
+          "best_effort": "Best effort",
+          "strict": "Strikt"
+        },
+        "isActive": "Aktiv",
+        "created": "Erstellt",
+        "updated": "Aktualisiert",
+        "tableField": "Feld",
+        "tableValue": "Wert"
+      },
+      "general": {
+        "title": "Allgemein",
+        "description": "Endpunkt-Konfiguration und Event-Filter.",
+        "orderingMode": "Reihenfolgemodus",
+        "updatedAt": "Aktualisiert"
+      },
+      "deliveries": {
+        "description": "Letzte Zustellversuche für dieses Abonnement."
+      }
+    },
+    "events": {
+      "title": "Events",
+      "description": "Wählen Sie aus, welche Domain-Events an diesen Endpunkt geliefert werden.",
+      "updateSuccess": "Webhook-Events aktualisiert",
+      "empty": "Keine Events ausgewählt",
+      "emptyDescription": "Keine Events entsprechen Ihrer Suche oder Ihrem Filter",
+      "search": {
+        "placeholder": "Events suchen..."
+      },
+      "table": {
+        "name": "Name",
+        "event": "Event"
+      }
+    },
+    "deleteDialog": {
+      "title": "Webhook-Abonnement löschen",
+      "description": "{name} löschen? Dies kann nicht rückgängig gemacht werden.",
+      "cancel": "Abbrechen",
+      "confirm": "Löschen",
+      "deleting": "Wird gelöscht…"
+    },
+    "subscriptions": {
+      "title": "Webhook-Abonnements",
+      "description": "Signierte Domain-Events an externe Endpunkte senden (Slack, n8n usw.).",
+      "new": "Neues Abonnement",
+      "empty": "Noch keine Webhook-Abonnements.",
+      "emptyDescription": "Erstellen Sie ein Abonnement, um Projekt-Events an einen externen Endpunkt zu senden.",
+      "noDescription": "Keine Beschreibung",
+      "loadError": "Abonnements konnten nicht geladen werden",
+      "secretTitle": "Signaturgeheimnis (nur einmal angezeigt)",
+      "copy": "Kopieren",
+      "copied": "In die Zwischenablage kopiert",
+      "enabled": "Abonnement aktiviert",
+      "disabled": "Abonnement deaktiviert",
+      "updateSuccess": "Webhook-Abonnement aktualisiert",
+      "updateError": "Abonnement konnte nicht aktualisiert werden",
+      "rotateSuccess": "Signaturgeheimnis rotiert",
+      "rotateError": "Geheimnis konnte nicht rotiert werden",
+      "deleteSuccess": "Abonnement gelöscht",
+      "deleteError": "Abonnement konnte nicht gelöscht werden",
+      "createSuccess": "Abonnement erstellt",
+      "createError": "Abonnement konnte nicht erstellt werden",
+      "columns": {
+        "url": "URL",
+        "events": "Events",
+        "active": "Aktiv",
+        "actions": "Aktionen"
+      },
+      "rotateSecret": "Geheimnis rotieren",
+      "delete": "Löschen",
+      "deliveriesTitle": "Letzte Zustellungen"
+    },
+    "createDialog": {
+      "title": "Neues Webhook-Abonnement",
+      "description": "Das Signaturgeheimnis wird erzeugt und nach der Erstellung einmal angezeigt.",
+      "urlLabel": "Endpunkt-URL",
+      "urlPlaceholder": "https://example.com/webhooks/grant",
+      "descriptionLabel": "Beschreibung (optional)",
+      "eventTypesLabel": "Event-Typen",
+      "cancel": "Abbrechen",
+      "create": "Erstellen"
+    },
+    "deliveries": {
+      "empty": "Noch keine Zustellungen.",
+      "emptyHint": "Lösen Sie eine IAM-Änderung in diesem Projekt aus, um die Webhook-Zustellung zu testen.",
+      "columns": {
+        "status": "Status",
+        "attempts": "Versuche",
+        "lastResponse": "Letzte Antwort",
+        "nextRetry": "Nächster Versuch",
+        "createdAt": "Erstellt",
+        "actions": "Aktionen"
+      },
+      "replay": "Erneut senden",
+      "replaySuccess": "Zustellung erneut eingereiht",
+      "replayError": "Zustellung konnte nicht erneut gesendet werden"
+    }
   },
   "notifications": {
-    "title": "Benachrichtigungen"
+    "title": "Benachrichtigungen",
+    "empty": "Noch keine Benachrichtigungen.",
+    "unreadBadge": "{count} ungelesen",
+    "markAllRead": "Alle als gelesen markieren",
+    "markAllSuccess": "Alle Benachrichtigungen als gelesen markiert",
+    "markRead": "Als gelesen markieren",
+    "loadMore": "Mehr laden",
+    "preferencesHint": "Verwalten Sie Ihre Benachrichtigungen unter",
+    "preferencesLink": "Benachrichtigungseinstellungen",
+    "errors": {
+      "markRead": "Als gelesen markieren fehlgeschlagen",
+      "markAllRead": "Alle als gelesen markieren fehlgeschlagen"
+    }
+  },
+  "notificationBell": {
+    "ariaLabel": "Benachrichtigungen",
+    "title": "Benachrichtigungen",
+    "empty": "Noch keine Benachrichtigungen.",
+    "viewAll": "Alle Benachrichtigungen anzeigen"
   },
   "notificationPreferences": {
-    "title": "Benachrichtigungseinstellungen"
+    "title": "Benachrichtigungseinstellungen",
+    "securityLockedHint": "Sicherheitsbenachrichtigungen sind immer aktiv und können nicht deaktiviert werden.",
+    "category": "Kategorie",
+    "inApp": "In-App",
+    "email": "E-Mail",
+    "tenants": {
+      "account": "Konto",
+      "organization": "Organisation"
+    },
+    "categories": {
+      "security": "Sicherheit",
+      "iam": "IAM",
+      "membership": "Mitgliedschaft",
+      "integrations": "Integrationen"
+    },
+    "errors": {
+      "save": "Einstellung konnte nicht gespeichert werden"
+    }
   },
   "signingKeys": {
     "title": "Signaturschlüssel",

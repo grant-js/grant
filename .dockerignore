@@ -5,6 +5,7 @@ node_modules
 **/.next
 dist
 **/dist
+**/*.tsbuildinfo
 .turbo
 **/.turbo
 

@@ -115,3 +115,39 @@ export function getProjectImportExportListUrl({
   }
   throw new Error('Invalid scope for project import/export list URL');
 }
+
+interface WebhookDetailUrlParams {
+  organizationId?: string;
+  accountId?: string;
+  projectId: string;
+  subscriptionId: string;
+}
+
+export function getWebhookDetailUrl({
+  organizationId,
+  accountId,
+  projectId,
+  subscriptionId,
+}: WebhookDetailUrlParams): string {
+  if (organizationId) {
+    return `/dashboard/organizations/${organizationId}/projects/${projectId}/webhooks/${subscriptionId}`;
+  }
+  if (accountId) {
+    return `/dashboard/accounts/${accountId}/projects/${projectId}/webhooks/${subscriptionId}`;
+  }
+  throw new Error('Invalid scope for webhook detail URL');
+}
+
+export function getWebhookListUrl({
+  organizationId,
+  accountId,
+  projectId,
+}: Omit<WebhookDetailUrlParams, 'subscriptionId'>): string {
+  if (organizationId) {
+    return `/dashboard/organizations/${organizationId}/projects/${projectId}/webhooks`;
+  }
+  if (accountId) {
+    return `/dashboard/accounts/${accountId}/projects/${projectId}/webhooks`;
+  }
+  throw new Error('Invalid scope for webhook list URL');
+}

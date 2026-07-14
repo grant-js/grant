@@ -51,7 +51,11 @@ export function createWebhookSubscriptionsRoutes(context: RequestContext) {
       body: webhookSubscriptionScopeBodySchema,
     }),
     mfa(),
-    authorizeRestRoute({ resource: ResourceSlug.Project, action: ResourceAction.Update }),
+    authorizeRestRoute({
+      resource: ResourceSlug.Project,
+      action: ResourceAction.Update,
+      resourceResolver: 'projectApp',
+    }),
     async (
       req: TypedRequest<{
         params: typeof webhookDeliveryParamsSchema;
@@ -128,7 +132,11 @@ export function createWebhookSubscriptionsRoutes(context: RequestContext) {
       body: updateWebhookSubscriptionRequestSchema,
     }),
     mfa(),
-    authorizeRestRoute({ resource: ResourceSlug.Project, action: ResourceAction.Update }),
+    authorizeRestRoute({
+      resource: ResourceSlug.Project,
+      action: ResourceAction.Update,
+      resourceResolver: 'projectApp',
+    }),
     async (
       req: TypedRequest<{
         params: typeof webhookSubscriptionParamsSchema;
@@ -153,7 +161,11 @@ export function createWebhookSubscriptionsRoutes(context: RequestContext) {
       body: webhookSubscriptionScopeBodySchema,
     }),
     mfa(),
-    authorizeRestRoute({ resource: ResourceSlug.Project, action: ResourceAction.Update }),
+    authorizeRestRoute({
+      resource: ResourceSlug.Project,
+      action: ResourceAction.Update,
+      resourceResolver: 'projectApp',
+    }),
     async (
       req: TypedRequest<{
         params: typeof webhookSubscriptionParamsSchema;
@@ -173,7 +185,11 @@ export function createWebhookSubscriptionsRoutes(context: RequestContext) {
     '/:id',
     validate({ params: webhookSubscriptionParamsSchema, query: webhookScopeQuerySchema }),
     mfa(),
-    authorizeRestRoute({ resource: ResourceSlug.Project, action: ResourceAction.Delete }),
+    authorizeRestRoute({
+      resource: ResourceSlug.Project,
+      action: ResourceAction.Delete,
+      resourceResolver: 'projectApp',
+    }),
     async (
       req: TypedRequest<{
         params: typeof webhookSubscriptionParamsSchema;

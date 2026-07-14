@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { BookOpen, FileJson, Globe, Menu, Moon, Network, Sun, X } from 'lucide-react';
 
 import { DemoModeDialogProvider, DemoModeDialogTrigger, Logo } from '@/components/common';
+import { NotificationBell } from '@/components/features/notifications';
 import { LanguageSwitcher, ThemeToggle } from '@/components/features/settings';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
@@ -83,6 +84,7 @@ export function Header() {
                 v{getAppVersion()}
               </span>
               <DemoModeDialogTrigger />
+              {isAuthenticated() ? <NotificationBell /> : null}
               <a
                 href={getDocsUrl()}
                 target="_blank"
@@ -135,6 +137,11 @@ export function Header() {
                 <div className="py-2 -mx-2">
                   <DemoModeDialogTrigger />
                 </div>
+                {isAuthenticated() ? (
+                  <div className="py-2 -mx-2">
+                    <NotificationBell />
+                  </div>
+                ) : null}
                 <a
                   href={getDocsUrl()}
                   target="_blank"

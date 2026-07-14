@@ -46,6 +46,10 @@ export function listWebhookSubscriptions(scope: Scope): Promise<WebhookSubscript
   return request<WebhookSubscription[]>(`?${scopeQuery(scope)}`);
 }
 
+export function getWebhookSubscription(scope: Scope, id: string): Promise<WebhookSubscription> {
+  return request<WebhookSubscription>(`/${id}?${scopeQuery(scope)}`);
+}
+
 export function createWebhookSubscription(
   scope: Scope,
   input: CreateWebhookSubscriptionInput

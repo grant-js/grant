@@ -29,6 +29,7 @@ import { useProjectsStore } from '@/stores/projects.store';
 import { useResourcesStore } from '@/stores/resources.store';
 import { useRolesStore } from '@/stores/roles.store';
 import { useUsersStore } from '@/stores/users.store';
+import { useWebhooksStore } from '@/stores/webhooks.store';
 
 export interface BreadCrumbItem {
   label: string;
@@ -49,6 +50,7 @@ const DASHBOARD_SEGMENT_LABEL_KEYS: Record<string, string> = {
   'api-keys': 'apiKeys',
   'signing-keys': 'signingKeys',
   'import-export': 'projectSyncJobs',
+  webhooks: 'webhooks',
 };
 
 function getProjectBasePath(params: ReturnType<typeof useParams>): string {
@@ -72,6 +74,7 @@ export function Breadcrumb() {
   const currentProjectApp = useProjectAppsStore((state) => state.currentProjectApp);
   const currentSyncJob = useProjectSyncJobsStore((state) => state.currentSyncJob);
   const currentResource = useResourcesStore((state) => state.currentResource);
+  const currentSubscription = useWebhooksStore((state) => state.currentSubscription);
 
   if (pathname === '/' || pathname.startsWith('/auth')) {
     return null;
@@ -335,6 +338,30 @@ export function Breadcrumb() {
           t('loading');
         breadcrumbs.push({
           label: jobLabel,
+        });
+        return;
+      }
+
+      if (params.subscriptionId && segment === params.subscriptionId) {
+        const basePath = getProjectBasePath(params);
+        const hasWebhooksBreadcrumb = breadcrumbs.some(
+          (crumb) => crumb.label === dashboardT('webhooks')
+        );
+        if (!hasWebhooksBreadcrumb) {
+          breadcrumbs.push({
+            label: dashboardT('webhooks'),
+            href: `${basePath}/projects/${params.projectId}/webhooks`,
+          });
+        }
+
+        const subscriptionLabel =
+          currentSubscription?.description ||
+          currentSubscription?.url ||
+          params.subscriptionId ||
+          t('loading');
+        breadcrumbs.push({
+          label: subscriptionLabel,
+          href: `${basePath}/projects/${params.projectId}/webhooks/${segment}`,
         });
         return;
       }

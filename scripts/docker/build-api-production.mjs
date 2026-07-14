@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, unlinkSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -16,6 +16,7 @@ const RESOLVE_ESM_EXTENSIONS = join(ROOT, 'scripts/docker/resolve-esm-extensions
 const WORKSPACE_PACKAGES = [
   { dir: 'packages/@grantjs/schema', assets: ['src/schema'] },
   { dir: 'packages/@grantjs/core' },
+  { dir: 'packages/@grantjs/webhooks' },
   { dir: 'packages/@grantjs/constants' },
   { dir: 'packages/@grantjs/env' },
   { dir: 'packages/@grantjs/i18n' },
@@ -68,8 +69,22 @@ function buildPackage(relDir, assets = []) {
   }
 
   console.log(`\n[build-api] Compiling ${relDir}...`);
+
+  const tsbuildInfo = join(absDir, 'tsconfig.build.tsbuildinfo');
+  if (existsSync(tsbuildInfo)) {
+    unlinkSync(tsbuildInfo);
+  }
+
   run(process.execPath, [TSC, '-p', tsconfig, '--pretty', 'false']);
-  run(process.execPath, [RESOLVE_ESM_EXTENSIONS, join(absDir, 'dist')]);
+
+  const distDir = join(absDir, 'dist');
+  if (!existsSync(distDir)) {
+    throw new Error(
+      `Compile produced no dist output for ${relDir}. Remove stale tsbuildinfo or fix tsconfig.build.json.`
+    );
+  }
+
+  run(process.execPath, [RESOLVE_ESM_EXTENSIONS, distDir]);
 
   if (assets.length > 0) {
     copyAssets(absDir, assets);

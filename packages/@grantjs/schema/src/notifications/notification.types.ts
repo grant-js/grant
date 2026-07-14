@@ -9,6 +9,12 @@ export type NotificationStatus = (typeof NOTIFICATION_STATUSES)[number];
 export const NOTIFICATION_PREFERENCE_SOURCES = ['user', 'org_enforced'] as const;
 export type NotificationPreferenceSource = (typeof NOTIFICATION_PREFERENCE_SOURCES)[number];
 
+/** Scope of the originating domain event (for inbox deep-links). */
+export interface NotificationScope {
+  tenant: string;
+  id: string;
+}
+
 /** Public representation of an in-app notification. */
 export interface Notification {
   id: string;
@@ -20,6 +26,7 @@ export interface Notification {
   body: string | null;
   refEntity: string | null;
   refId: string | null;
+  scope?: NotificationScope | null;
   status: NotificationStatus;
   seenAt: Date | null;
   readAt: Date | null;

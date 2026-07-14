@@ -3429,9 +3429,7 @@
       },
       "notifications": {
         "title": "Notifications",
-        "description": "Manage your notification preferences",
-        "comingSoon": "Notification preferences are coming soon!",
-        "comingSoonDescription": "You'll be able to customize email notifications, in-app alerts, and notification frequency."
+        "description": "Manage your notification preferences"
       }
     },
     "privacy": {
@@ -3598,13 +3596,186 @@
     }
   },
   "webhooks": {
-    "title": "Webhooks"
+    "title": "Webhooks",
+    "search": {
+      "placeholder": "Search by URL, description, or event type…"
+    },
+    "sort": {
+      "label": "Sort",
+      "url": "URL",
+      "createdAt": "Created",
+      "active": "Active"
+    },
+    "limit": {
+      "label": "Per page"
+    },
+    "view": {
+      "card": "Cards",
+      "table": "Table"
+    },
+    "activeYes": "Active",
+    "activeNo": "Inactive",
+    "eventCount": "{count, plural, =0 {No events} one {# event} other {# events}}",
+    "table": {
+      "status": "Status",
+      "audit": "Audit"
+    },
+    "actions": {
+      "view": "View subscription"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "detail": {
+      "title": "Webhook subscription",
+      "back": "Back to webhooks",
+      "open": "View subscription details",
+      "notFound": "Webhook subscription not found",
+      "info": {
+        "generalTitle": "General",
+        "generalDescription": "URL, description, ordering mode, status, and audit information for this subscription.",
+        "descriptionPlaceholder": "Optional description for this webhook endpoint",
+        "subscriptionId": "Subscription ID",
+        "orderingMode": "Ordering mode",
+        "orderingModes": {
+          "best_effort": "Best effort",
+          "strict": "Strict"
+        },
+        "isActive": "Is Active",
+        "created": "Created",
+        "updated": "Updated",
+        "tableField": "Field",
+        "tableValue": "Value"
+      },
+      "general": {
+        "title": "General",
+        "description": "Endpoint configuration and event filters.",
+        "orderingMode": "Ordering mode",
+        "updatedAt": "Updated"
+      },
+      "deliveries": {
+        "description": "Recent delivery attempts for this subscription."
+      }
+    },
+    "events": {
+      "title": "Events",
+      "description": "Select which domain events are delivered to this endpoint.",
+      "updateSuccess": "Webhook events updated",
+      "empty": "No events selected",
+      "emptyDescription": "No events match your search or filter",
+      "search": {
+        "placeholder": "Search events..."
+      },
+      "table": {
+        "name": "Name",
+        "event": "Event"
+      }
+    },
+    "deleteDialog": {
+      "title": "Delete webhook subscription",
+      "description": "Delete {name}? This cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "deleting": "Deleting…"
+    },
+    "subscriptions": {
+      "title": "Webhook subscriptions",
+      "description": "Send signed domain events to external endpoints (Slack, n8n, etc.).",
+      "new": "New subscription",
+      "empty": "No webhook subscriptions yet.",
+      "emptyDescription": "Create a subscription to deliver project events to an external endpoint.",
+      "noDescription": "No description",
+      "loadError": "Failed to load subscriptions",
+      "secretTitle": "Signing secret (shown once)",
+      "copy": "Copy",
+      "copied": "Copied to clipboard",
+      "enabled": "Subscription enabled",
+      "disabled": "Subscription disabled",
+      "updateSuccess": "Webhook subscription updated",
+      "updateError": "Failed to update subscription",
+      "rotateSuccess": "Signing secret rotated",
+      "rotateError": "Failed to rotate secret",
+      "deleteSuccess": "Subscription deleted",
+      "deleteError": "Failed to delete subscription",
+      "createSuccess": "Subscription created",
+      "createError": "Failed to create subscription",
+      "columns": {
+        "url": "URL",
+        "events": "Events",
+        "active": "Active",
+        "actions": "Actions"
+      },
+      "rotateSecret": "Rotate secret",
+      "delete": "Delete",
+      "deliveriesTitle": "Recent deliveries"
+    },
+    "createDialog": {
+      "title": "New webhook subscription",
+      "description": "The signing secret is generated and shown once after creation.",
+      "urlLabel": "Endpoint URL",
+      "urlPlaceholder": "https://example.com/webhooks/grant",
+      "descriptionLabel": "Description (optional)",
+      "eventTypesLabel": "Event types",
+      "cancel": "Cancel",
+      "create": "Create"
+    },
+    "deliveries": {
+      "empty": "No deliveries yet.",
+      "emptyHint": "Trigger an IAM change in this project to test webhook delivery.",
+      "columns": {
+        "status": "Status",
+        "attempts": "Attempts",
+        "lastResponse": "Last response",
+        "nextRetry": "Next retry",
+        "createdAt": "Created",
+        "actions": "Actions"
+      },
+      "replay": "Replay",
+      "replaySuccess": "Delivery re-queued",
+      "replayError": "Failed to replay delivery"
+    }
   },
   "notifications": {
-    "title": "Notifications"
+    "title": "Notifications",
+    "empty": "No notifications yet.",
+    "unreadBadge": "{count} unread",
+    "markAllRead": "Mark all read",
+    "markAllSuccess": "All notifications marked as read",
+    "markRead": "Mark as read",
+    "loadMore": "Load more",
+    "preferencesHint": "Manage how you receive alerts in",
+    "preferencesLink": "notification preferences",
+    "errors": {
+      "markRead": "Failed to mark as read",
+      "markAllRead": "Failed to mark all as read"
+    }
+  },
+  "notificationBell": {
+    "ariaLabel": "Notifications",
+    "title": "Notifications",
+    "empty": "No notifications yet.",
+    "viewAll": "View all notifications"
   },
   "notificationPreferences": {
-    "title": "Notification Preferences"
+    "title": "Notification Preferences",
+    "securityLockedHint": "Security notifications are always on and cannot be disabled.",
+    "category": "Category",
+    "inApp": "In-app",
+    "email": "Email",
+    "tenants": {
+      "account": "Account",
+      "organization": "Organization"
+    },
+    "categories": {
+      "security": "Security",
+      "iam": "IAM",
+      "membership": "Membership",
+      "integrations": "Integrations"
+    },
+    "errors": {
+      "save": "Failed to save preference"
+    }
   },
   "signingKeys": {
     "title": "Signing Keys",

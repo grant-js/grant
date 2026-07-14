@@ -13,7 +13,7 @@ export default function NotificationPreferencesSettingsPage() {
 
   return (
     <DashboardLayout title={t('title')} variant="simple" sidebar={<SettingsSidebar />}>
-      <NotificationPreferences scopeTenant="organization" />
+      <NotificationPreferences />
     </DashboardLayout>
   );
 }

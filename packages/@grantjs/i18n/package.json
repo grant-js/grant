@@ -11,10 +11,16 @@
     "locales/**/*"
   ],
   "exports": {
-    ".": "./src/index.ts",
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
     "./locales/en.json": "./locales/en.json",
     "./locales/de.json": "./locales/de.json",
-    "./loader": "./src/loader.ts"
+    "./loader": {
+      "types": "./src/loader.ts",
+      "default": "./src/loader.ts"
+    }
   },
   "scripts": {
     "lint": "eslint src --ext .ts,.tsx",

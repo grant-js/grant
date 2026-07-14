@@ -1,5 +1,6 @@
 import {
   type DbSchema,
+  eventLog,
   type NewNotificationModel,
   type NotificationModel,
   notifications,
@@ -8,6 +9,11 @@ import {
 import { and, count, desc, eq, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
+
+export interface NotificationWithScope extends NotificationModel {
+  scopeTenant: string | null;
+  scopeId: string | null;
+}
 
 export interface NotificationResultUpdate {
   status: NotificationStatus;
@@ -34,7 +40,7 @@ export class NotificationRepository {
     recipientUserId: string,
     options: { unreadOnly?: boolean; offset: number; limit: number },
     transaction?: Transaction
-  ): Promise<{ rows: NotificationModel[]; totalCount: number }> {
+  ): Promise<{ rows: NotificationWithScope[]; totalCount: number }> {
     const dbInstance = transaction ?? this.db;
     const conditions = [
       eq(notifications.recipientUserId, recipientUserId),
@@ -47,8 +53,30 @@ export class NotificationRepository {
 
     const [rows, countRows] = await Promise.all([
       dbInstance
-        .select()
+        .select({
+          id: notifications.id,
+          eventId: notifications.eventId,
+          recipientUserId: notifications.recipientUserId,
+          category: notifications.category,
+          type: notifications.type,
+          channel: notifications.channel,
+          title: notifications.title,
+          body: notifications.body,
+          refEntity: notifications.refEntity,
+          refId: notifications.refId,
+          status: notifications.status,
+          seenAt: notifications.seenAt,
+          readAt: notifications.readAt,
+          attemptCount: notifications.attemptCount,
+          nextRetryAt: notifications.nextRetryAt,
+          errorDetails: notifications.errorDetails,
+          createdAt: notifications.createdAt,
+          updatedAt: notifications.updatedAt,
+          scopeTenant: eventLog.scopeTenant,
+          scopeId: eventLog.scopeId,
+        })
         .from(notifications)
+        .leftJoin(eventLog, eq(notifications.eventId, eventLog.id))
         .where(whereClause)
         .orderBy(desc(notifications.createdAt))
         .offset(options.offset)

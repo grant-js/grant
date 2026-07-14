@@ -53,6 +53,16 @@ export class AccountRepository
     };
   }
 
+  public async getOwnerId(accountId: string, transaction?: Transaction): Promise<string | null> {
+    const dbInstance = transaction ?? this.db;
+    const [row] = await dbInstance
+      .select({ ownerId: this.table.ownerId })
+      .from(this.table)
+      .where(and(eq(this.table.id, accountId), isNull(this.table.deletedAt)))
+      .limit(1);
+    return row?.ownerId ?? null;
+  }
+
   public async getAccountsByOwnerId(
     ownerId: string,
     transaction?: Transaction,

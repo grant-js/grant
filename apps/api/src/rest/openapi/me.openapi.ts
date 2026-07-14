@@ -1033,6 +1033,14 @@ This endpoint automatically identifies and revokes the session associated with t
     },
   });
 
+  const notificationScopeSchema = z
+    .object({
+      tenant: z.string(),
+      id: z.string(),
+    })
+    .nullable()
+    .optional();
+
   const notificationSchema = z.object({
     id: z.string(),
     eventId: z.string(),
@@ -1043,6 +1051,7 @@ This endpoint automatically identifies and revokes the session associated with t
     body: z.string().nullable(),
     refEntity: z.string().nullable(),
     refId: z.string().nullable(),
+    scope: notificationScopeSchema,
     status: z.string(),
     seenAt: z.string().nullable(),
     readAt: z.string().nullable(),

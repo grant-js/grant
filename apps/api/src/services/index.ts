@@ -152,7 +152,10 @@ export function createServices(
   const notificationGenerator = new NotificationGeneratorConsumer(
     new AudienceResolver(
       repositories.projectUserRepository,
-      repositories.organizationUserRepository
+      repositories.organizationUserRepository,
+      repositories.organizationProjectRepository,
+      repositories.accountProjectRepository,
+      repositories.accountRepository
     ),
     repositories.notificationPreferenceRepository,
     repositories.notificationRepository

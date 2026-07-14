@@ -1,5 +1,5 @@
 import type { INotificationService } from '@grantjs/core';
-import type { NotificationModel, NotificationPreferenceModel } from '@grantjs/database';
+import type { NotificationPreferenceModel } from '@grantjs/database';
 import type {
   ListNotificationsInput,
   Notification,
@@ -10,12 +10,15 @@ import type {
 
 import { NotFoundError } from '@/lib/errors';
 import type { NotificationPreferenceRepository } from '@/repositories/notification-preferences.repository';
-import type { NotificationRepository } from '@/repositories/notifications.repository';
+import type {
+  NotificationRepository,
+  NotificationWithScope,
+} from '@/repositories/notifications.repository';
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
 
-function toNotificationDto(model: NotificationModel): Notification {
+function toNotificationDto(model: NotificationWithScope): Notification {
   return {
     id: model.id,
     eventId: model.eventId,
@@ -26,6 +29,8 @@ function toNotificationDto(model: NotificationModel): Notification {
     body: model.body,
     refEntity: model.refEntity,
     refId: model.refId,
+    scope:
+      model.scopeTenant && model.scopeId ? { tenant: model.scopeTenant, id: model.scopeId } : null,
     status: model.status,
     seenAt: model.seenAt,
     readAt: model.readAt,

@@ -15,6 +15,7 @@ import type {
   WebhookSubscription,
   WebhookSubscriptionWithSecret,
 } from '@grantjs/schema';
+import { SsrfBlockedError } from '@grantjs/webhooks';
 
 import { config } from '@/config';
 import { NotFoundError, ValidationError } from '@/lib/errors';
@@ -61,6 +62,17 @@ export class WebhookSubscriptionService implements IWebhookSubscriptionService {
     return randomBytes(config.webhooks.secretBytes).toString('base64url');
   }
 
+  private async validateSubscriptionUrl(url: string): Promise<void> {
+    try {
+      await this.delivery.validateUrl(url);
+    } catch (error: unknown) {
+      if (error instanceof SsrfBlockedError) {
+        throw new ValidationError(error.message);
+      }
+      throw error;
+    }
+  }
+
   async list(
     params: ListWebhookSubscriptionsParams,
     transaction?: Transaction
@@ -93,7 +105,7 @@ export class WebhookSubscriptionService implements IWebhookSubscriptionService {
       'WebhookSubscriptionService.create'
     );
 
-    await this.delivery.validateUrl(input.url);
+    await this.validateSubscriptionUrl(input.url);
 
     const secret = this.generateSecret();
     const row = await this.subscriptions.insert(
@@ -132,7 +144,7 @@ export class WebhookSubscriptionService implements IWebhookSubscriptionService {
     );
 
     if (input.url) {
-      await this.delivery.validateUrl(input.url);
+      await this.validateSubscriptionUrl(input.url);
     }
 
     const updated = await this.subscriptions.update(

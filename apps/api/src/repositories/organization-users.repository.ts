@@ -6,7 +6,7 @@ import {
   QueryOrganizationUsersInput,
   RemoveOrganizationUserInput,
 } from '@grantjs/schema';
-import { and, eq, isNotNull, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 
 import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -99,6 +99,28 @@ export class OrganizationUserRepository
     transaction?: Transaction
   ): Promise<OrganizationUser> {
     return this.hardDelete(params, transaction);
+  }
+
+  /** User ids of org members whose assigned role name is in `roleNames`. */
+  public async getUserIdsByOrganizationRoleNames(
+    organizationId: string,
+    roleNames: readonly string[],
+    transaction?: Transaction
+  ): Promise<string[]> {
+    if (roleNames.length === 0) return [];
+    const db = transaction ?? this.db;
+    const rows = await db
+      .select({ userId: organizationUsers.userId })
+      .from(organizationUsers)
+      .innerJoin(roles, eq(organizationUsers.roleId, roles.id))
+      .where(
+        and(
+          eq(organizationUsers.organizationId, organizationId),
+          inArray(roles.name, [...roleNames]),
+          isNull(organizationUsers.deletedAt)
+        )
+      );
+    return rows.map((r) => r.userId);
   }
 
   public async getUserOrganizationMemberships(
