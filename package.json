@@ -47,6 +47,7 @@
     "docs:preview": "vitepress preview docs",
     "audit": "./scripts/audit-security.sh",
     "audit:quick": "./scripts/audit-quick.sh",
+    "webhook:listen": "node scripts/webhook-receiver.mjs",
     "secret-scan": "gitleaks detect --config .gitleaks.toml -v",
     "secret-scan:protect": "GITLEAKS_CONFIG=.gitleaks.toml gitleaks protect -v",
     "audit:fix": "./scripts/audit-fix.sh",

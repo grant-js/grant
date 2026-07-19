@@ -2,10 +2,15 @@
 
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import type { NotificationChannel, NotificationPreference } from '@grantjs/schema';
+import {
+  AccountType,
+  type NotificationChannel,
+  type NotificationPreference,
+} from '@grantjs/schema';
 
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { FieldInfoPopover } from '@/components/common';
+import { SettingCard } from '@/components/features/settings';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import {
   Table,
@@ -17,9 +22,11 @@ import {
 } from '@/components/ui/table';
 import { toast } from '@/components/ui/toast';
 import { useNotificationPreferences } from '@/hooks/notifications';
+import { useAuthStore } from '@/stores/auth.store';
 
 const EDITABLE_CATEGORIES = ['iam', 'membership', 'integrations'] as const;
 const CHANNELS: NotificationChannel[] = ['in_app', 'email'];
+const PREFERENCE_ROW_COUNT = 1 + EDITABLE_CATEGORIES.length;
 
 const CATEGORY_DEFAULTS: Record<string, Record<NotificationChannel, boolean>> = {
   security: { in_app: true, email: true },
@@ -28,8 +35,7 @@ const CATEGORY_DEFAULTS: Record<string, Record<NotificationChannel, boolean>> = 
   integrations: { in_app: true, email: false },
 };
 
-const TENANT_TABS = ['account', 'organization'] as const;
-type TenantTab = (typeof TENANT_TABS)[number];
+type ScopeTenant = 'account' | 'organization';
 
 function resolveEnabled(
   preferences: NotificationPreference[],
@@ -53,7 +59,45 @@ function isOrgEnforced(
   );
 }
 
-function PreferencesTable({ scopeTenant }: { scopeTenant: string }) {
+function PreferencesTableSkeleton() {
+  return (
+    <div className="space-y-3">
+      <Skeleton className="h-4 w-3/4 max-w-md" />
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>
+              <Skeleton className="h-4 w-20" />
+            </TableHead>
+            <TableHead className="text-center">
+              <Skeleton className="mx-auto h-4 w-12" />
+            </TableHead>
+            <TableHead className="text-center">
+              <Skeleton className="mx-auto h-4 w-12" />
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {Array.from({ length: PREFERENCE_ROW_COUNT }, (_, index) => (
+            <TableRow key={index}>
+              <TableCell>
+                <Skeleton className="h-4 w-24" />
+              </TableCell>
+              <TableCell className="text-center">
+                <Skeleton className="mx-auto h-5 w-9 rounded-full" />
+              </TableCell>
+              <TableCell className="text-center">
+                <Skeleton className="mx-auto h-5 w-9 rounded-full" />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function PreferencesTable({ scopeTenant }: { scopeTenant: ScopeTenant }) {
   const t = useTranslations('notificationPreferences');
   const { preferences, loading, error, setPreference } = useNotificationPreferences(scopeTenant);
   const [saving, setSaving] = useState<string | null>(null);
@@ -97,11 +141,7 @@ function PreferencesTable({ scopeTenant }: { scopeTenant: string }) {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-6">
-        <Spinner />
-      </div>
-    );
+    return <PreferencesTableSkeleton />;
   }
 
   if (error) {
@@ -109,71 +149,84 @@ function PreferencesTable({ scopeTenant }: { scopeTenant: string }) {
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>{t('category')}</TableHead>
-          <TableHead className="text-center">{t('inApp')}</TableHead>
-          <TableHead className="text-center">{t('email')}</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((row) => (
-          <TableRow key={row.category}>
-            <TableCell className="capitalize">{t(`categories.${row.category}`)}</TableCell>
-            {row.channels.map(({ channel, enabled }) => {
-              const enforced = isOrgEnforced(preferences, row.category, channel);
-              const disabled = row.locked || enforced || saving === `${row.category}:${channel}`;
-              return (
-                <TableCell key={channel} className="text-center">
-                  <Switch
-                    checked={row.locked ? true : enabled}
-                    disabled={disabled}
-                    onCheckedChange={(checked) => {
-                      if (!row.locked) {
-                        void handleToggle(
-                          row.category as (typeof EDITABLE_CATEGORIES)[number],
-                          channel,
-                          checked
-                        );
-                      }
-                    }}
-                    aria-label={`${row.category} ${channel}`}
-                  />
-                </TableCell>
-              );
-            })}
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">{t('securityLockedHint')}</p>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t('category')}</TableHead>
+            <TableHead className="text-center">{t('inApp')}</TableHead>
+            <TableHead className="text-center">{t('email')}</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {rows.map((row) => (
+            <TableRow key={row.category}>
+              <TableCell className="capitalize">{t(`categories.${row.category}`)}</TableCell>
+              {row.channels.map(({ channel, enabled }) => {
+                const enforced = isOrgEnforced(preferences, row.category, channel);
+                const disabled = row.locked || enforced || saving === `${row.category}:${channel}`;
+                return (
+                  <TableCell key={channel} className="text-center">
+                    <Switch
+                      checked={row.locked ? true : enabled}
+                      disabled={disabled}
+                      onCheckedChange={(checked) => {
+                        if (!row.locked) {
+                          void handleToggle(
+                            row.category as (typeof EDITABLE_CATEGORIES)[number],
+                            channel,
+                            checked
+                          );
+                        }
+                      }}
+                      aria-label={`${row.category} ${channel}`}
+                    />
+                  </TableCell>
+                );
+              })}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function PreferenceScopeCard({ scopeTenant }: { scopeTenant: ScopeTenant }) {
+  const t = useTranslations('notificationPreferences');
+
+  return (
+    <SettingCard
+      title={t(`cards.${scopeTenant}.title`)}
+      description={t(`cards.${scopeTenant}.description`)}
+      titleAdornment={
+        <FieldInfoPopover
+          description={t(`cards.${scopeTenant}.info`)}
+          ariaLabel={t(`cards.${scopeTenant}.infoAriaLabel`)}
+        />
+      }
+    >
+      <PreferencesTable scopeTenant={scopeTenant} />
+    </SettingCard>
   );
 }
 
 export function NotificationPreferences() {
-  const t = useTranslations('notificationPreferences');
-  const [activeTenant, setActiveTenant] = useState<TenantTab>('organization');
+  const { accounts } = useAuthStore();
+  const hasPersonal = useMemo(
+    () => accounts.some((account) => account.type === AccountType.Personal),
+    [accounts]
+  );
+  const hasOrganization = useMemo(
+    () => accounts.some((account) => account.type === AccountType.Organization),
+    [accounts]
+  );
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">{t('title')}</h2>
-        <p className="text-muted-foreground text-sm">{t('securityLockedHint')}</p>
-      </div>
-      <div className="flex gap-2">
-        {TENANT_TABS.map((tenant) => (
-          <Button
-            key={tenant}
-            type="button"
-            variant={activeTenant === tenant ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setActiveTenant(tenant)}
-          >
-            {t(`tenants.${tenant}`)}
-          </Button>
-        ))}
-      </div>
-      <PreferencesTable scopeTenant={activeTenant} />
+    <div className="space-y-6">
+      {hasPersonal ? <PreferenceScopeCard scopeTenant="account" /> : null}
+      {hasOrganization ? <PreferenceScopeCard scopeTenant="organization" /> : null}
     </div>
   );
 }

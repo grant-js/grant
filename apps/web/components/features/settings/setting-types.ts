@@ -86,6 +86,8 @@ export interface ThemeToggleProps {
 
 export interface SettingCardProps {
   title: string;
+  /** Renders inline next to the title (e.g. info popover). */
+  titleAdornment?: ReactNode;
   description?: string;
   children: ReactNode;
   footer?: ReactNode;

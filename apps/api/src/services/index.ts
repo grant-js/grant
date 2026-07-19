@@ -58,7 +58,11 @@ import {
 import { DrizzleAuditLogger } from '@/lib/audit';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { DrizzleEventPublisher } from '@/lib/events';
-import { AudienceResolver, NotificationGeneratorConsumer } from '@/lib/notifications';
+import {
+  AudienceResolver,
+  NotificationDisplayContextResolver,
+  NotificationGeneratorConsumer,
+} from '@/lib/notifications';
 import { webhookAdapters, WebhookDispatcherConsumer } from '@/lib/webhooks';
 import { Repositories } from '@/repositories';
 
@@ -158,7 +162,14 @@ export function createServices(
       repositories.accountRepository
     ),
     repositories.notificationPreferenceRepository,
-    repositories.notificationRepository
+    repositories.notificationRepository,
+    new NotificationDisplayContextResolver(
+      repositories.userRepository,
+      repositories.organizationRepository,
+      repositories.accountRepository,
+      repositories.projectRepository,
+      repositories.roleRepository
+    )
   );
   const servicesBase = {
     events,

@@ -18,11 +18,16 @@ export function useNotificationPreferences(
   scopeTenant: string | null | undefined
 ): UseNotificationPreferencesResult {
   const [preferences, setPreferences] = useState<NotificationPreference[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(() => Boolean(scopeTenant));
   const [error, setError] = useState<Error | null>(null);
 
   const refetch = useCallback(async () => {
-    if (!scopeTenant) return;
+    if (!scopeTenant) {
+      setPreferences([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {

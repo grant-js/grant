@@ -84,7 +84,6 @@ export function Header() {
                 v{getAppVersion()}
               </span>
               <DemoModeDialogTrigger />
-              {isAuthenticated() ? <NotificationBell /> : null}
               <a
                 href={getDocsUrl()}
                 target="_blank"
@@ -112,6 +111,7 @@ export function Header() {
                 <Network className="h-[1rem] w-[1rem] shrink-0" />
                 {t('navigation.graphqlPlayground')}
               </a>
+              {isAuthenticated() ? <NotificationBell /> : null}
               <ThemeToggle ref={themeToggleRef} trigger={desktopThemeTrigger} />
               <LanguageSwitcher ref={languageSwitcherRef} trigger={desktopLanguageTrigger} />
             </div>
@@ -137,11 +137,6 @@ export function Header() {
                 <div className="py-2 -mx-2">
                   <DemoModeDialogTrigger />
                 </div>
-                {isAuthenticated() ? (
-                  <div className="py-2 -mx-2">
-                    <NotificationBell />
-                  </div>
-                ) : null}
                 <a
                   href={getDocsUrl()}
                   target="_blank"
@@ -169,6 +164,11 @@ export function Header() {
                   <Network className="h-[1rem] w-[1rem] shrink-0" />
                   {t('navigation.graphqlPlayground')}
                 </a>
+                {isAuthenticated() ? (
+                  <div className="py-2 -mx-2">
+                    <NotificationBell />
+                  </div>
+                ) : null}
               </div>
               <div className="h-px bg-border" />
               <div className="flex flex-col space-y-2">

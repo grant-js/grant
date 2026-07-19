@@ -190,6 +190,7 @@ export class OrganizationService implements IOrganizationService {
           aggregate: { kind: 'organization', id: updatedOrganization.id },
           data: {
             after: {
+              name: updatedOrganization.name,
               requireMfaForSensitiveActions: updatedOrganization.requireMfaForSensitiveActions,
             },
             delta: {

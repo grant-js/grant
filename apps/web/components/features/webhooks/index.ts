@@ -4,6 +4,7 @@ export * from './webhook-card-skeleton';
 export * from './webhook-cards';
 export * from './webhook-create-dialog';
 export * from './webhook-delete-dialog';
+export * from './webhook-delivery-status-label';
 export * from './webhook-limit';
 export * from './webhook-navigation-button';
 export * from './webhook-pagination';

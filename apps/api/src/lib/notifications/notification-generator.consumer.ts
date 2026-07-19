@@ -8,6 +8,7 @@ import type { NotificationPreferenceRepository } from '@/repositories/notificati
 import type { NotificationRepository } from '@/repositories/notifications.repository';
 
 import type { AudienceResolver } from './audience-resolver';
+import type { NotificationDisplayContextResolver } from './notification-display-context';
 import { resolvePreferenceEnabled } from './notification-preferences.lib';
 import { renderNotification } from './notification-renderer';
 
@@ -31,7 +32,8 @@ export class NotificationGeneratorConsumer implements IEventConsumer {
   constructor(
     private readonly audience: AudienceResolver,
     private readonly preferences: NotificationPreferenceRepository,
-    private readonly notifications: NotificationRepository
+    private readonly notifications: NotificationRepository,
+    private readonly displayContext: NotificationDisplayContextResolver
   ) {}
 
   private channelsFor(deliveryClass: 'transactional' | 'notification'): NotificationChannel[] {
@@ -62,7 +64,8 @@ export class NotificationGeneratorConsumer implements IEventConsumer {
     const recipients = await this.audience.resolve(event, tx);
     if (recipients.length === 0) return;
 
-    const content = renderNotification(event);
+    const ctx = await this.displayContext.resolve(event, tx);
+    const content = renderNotification(event, ctx);
     const channels = this.channelsFor(entry.deliveryClass);
     let created = 0;
 

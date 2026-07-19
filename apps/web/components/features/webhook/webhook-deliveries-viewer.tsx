@@ -2,26 +2,16 @@
 
 import { useCallback, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import type { Scope, WebhookDeliveryAttempt, WebhookDeliveryStatus } from '@grantjs/schema';
-import { RotateCcw, Webhook } from 'lucide-react';
+import type { Scope, WebhookDeliveryAttempt } from '@grantjs/schema';
+import { Play, Webhook } from 'lucide-react';
 
 import { DataTable, type DataTableColumnConfig } from '@/components/common';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
 import { useWebhookDeliveries } from '@/hooks/webhooks';
 import { useWebhookDeliveriesStore } from '@/stores/webhook-deliveries.store';
 
-const STATUS_VARIANT: Record<
-  WebhookDeliveryStatus,
-  'default' | 'secondary' | 'destructive' | 'outline'
-> = {
-  pending: 'secondary',
-  running: 'secondary',
-  delivered: 'default',
-  failed: 'destructive',
-  dead: 'destructive',
-};
+import { WebhookDeliveryStatusLabel } from '../webhooks/webhook-delivery-status-label';
 
 interface WebhookDeliveriesViewerProps {
   scope: Scope;
@@ -80,9 +70,7 @@ export function WebhookDeliveriesViewer({ scope, subscriptionId }: WebhookDelive
         key: 'status',
         header: t('columns.status'),
         width: '120px',
-        render: (delivery) => (
-          <Badge variant={STATUS_VARIANT[delivery.status]}>{delivery.status}</Badge>
-        ),
+        render: (delivery) => <WebhookDeliveryStatusLabel status={delivery.status} />,
       },
       {
         key: 'attempts',
@@ -135,7 +123,7 @@ export function WebhookDeliveriesViewer({ scope, subscriptionId }: WebhookDelive
             onClick={() => void handleReplay(delivery.id)}
             title={t('replay')}
           >
-            <RotateCcw className="size-4" />
+            <Play className="size-4" />
           </Button>
         ),
       }}

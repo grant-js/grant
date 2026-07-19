@@ -34,6 +34,14 @@ export class UserRoleService implements IUserRoleService {
     private readonly events: IEventPublisher
   ) {}
 
+  private async getRoleName(
+    roleId: string,
+    transaction?: Transaction
+  ): Promise<string | undefined> {
+    const { roles } = await this.roleRepository.getRoles({ ids: [roleId], limit: 1 }, transaction);
+    return roles[0]?.name;
+  }
+
   private async userExists(userId: string, transaction?: Transaction): Promise<void> {
     const users = await this.userRepository.getUsers({ ids: [userId], limit: 1 }, transaction);
 
@@ -124,10 +132,13 @@ export class UserRoleService implements IUserRoleService {
 
     const userRole = await this.userRoleRepository.addUserRole(validatedParams, transaction);
 
+    const roleName = await this.getRoleName(roleId, transaction);
+
     const newValues = {
       id: userRole.id,
       userId: userRole.userId,
       roleId: userRole.roleId,
+      roleName,
       createdAt: userRole.createdAt,
       updatedAt: userRole.updatedAt,
     };
@@ -175,6 +186,7 @@ export class UserRoleService implements IUserRoleService {
       id: userRole.id,
       userId: userRole.userId,
       roleId: userRole.roleId,
+      roleName: await this.getRoleName(roleId, transaction),
       createdAt: userRole.createdAt,
       updatedAt: userRole.updatedAt,
     };

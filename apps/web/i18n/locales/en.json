@@ -3723,6 +3723,13 @@
     "deliveries": {
       "empty": "No deliveries yet.",
       "emptyHint": "Trigger an IAM change in this project to test webhook delivery.",
+      "status": {
+        "pending": "Pending",
+        "running": "Running",
+        "delivered": "Delivered",
+        "failed": "Failed",
+        "dead": "Dead"
+      },
       "columns": {
         "status": "Status",
         "attempts": "Attempts",
@@ -3763,6 +3770,20 @@
     "category": "Category",
     "inApp": "In-app",
     "email": "Email",
+    "cards": {
+      "account": {
+        "title": "Personal account",
+        "description": "Notifications for events in your personal account workspace.",
+        "info": "These preferences apply when you are working in your personal account (not an organization). They control in-app and email alerts for security, IAM, membership, and integrations events scoped to that account.",
+        "infoAriaLabel": "About personal account notifications"
+      },
+      "organization": {
+        "title": "Organization",
+        "description": "Notifications for events in your current organization workspace.",
+        "info": "These preferences apply when you are working in an organization. They control in-app and email alerts for events in that organization. Organization administrators may enforce some categories so they cannot be turned off.",
+        "infoAriaLabel": "About organization notifications"
+      }
+    },
     "tenants": {
       "account": "Account",
       "organization": "Organization"
