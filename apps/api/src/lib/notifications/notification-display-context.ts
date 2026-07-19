@@ -5,7 +5,7 @@ import type {
   IRoleRepository,
   IUserRepository,
 } from '@grantjs/core';
-import { type DomainEvent, type Scope,Tenant } from '@grantjs/schema';
+import { type DomainEvent, type Scope, Tenant } from '@grantjs/schema';
 
 import type { Transaction } from '@/lib/transaction-manager.lib';
 
