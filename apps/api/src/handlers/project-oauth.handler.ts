@@ -532,6 +532,10 @@ export class ProjectOAuthHandler {
     }
 
     const projectScope = await this.getProjectScopeForUsersCache(app.projectId);
+    await this.projectUsers.syncProjectUserSearchDocument({
+      projectId: app.projectId,
+      userId,
+    });
     if (projectScope) {
       await this.usersScopeCacheUpdater.addUserIdToScopeCache(projectScope, userId);
     }

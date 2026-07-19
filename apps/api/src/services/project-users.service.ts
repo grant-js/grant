@@ -3,6 +3,7 @@ import type {
   IProjectRepository,
   IProjectUserRepository,
   IProjectUserService,
+  IUserAuthenticationMethodRepository,
   IUserRepository,
 } from '@grantjs/core';
 import { AddProjectUserInput, ProjectUser, RemoveProjectUserInput } from '@grantjs/schema';
@@ -33,7 +34,8 @@ export class ProjectUserService implements IProjectUserService {
     private readonly projectRepository: IProjectRepository,
     private readonly userRepository: IUserRepository,
     private readonly projectUserRepository: IProjectUserRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly userAuthenticationMethods?: IUserAuthenticationMethodRepository
   ) {}
 
   private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
@@ -115,6 +117,8 @@ export class ProjectUserService implements IProjectUserService {
       transaction
     );
 
+    await this.syncProjectUserSearchDocument({ projectId, userId }, transaction);
+
     const newValues = {
       id: projectUser.id,
       projectId: projectUser.projectId,
@@ -145,7 +149,8 @@ export class ProjectUserService implements IProjectUserService {
       this.projectUserRepository,
       this.userRepository,
       params,
-      transaction
+      transaction,
+      this.userAuthenticationMethods
     );
   }
 

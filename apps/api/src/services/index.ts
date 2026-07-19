@@ -389,7 +389,8 @@ export function createServices(
       repositories.projectRepository,
       repositories.userRepository,
       repositories.projectUserRepository,
-      audit(projectUserAuditLogs, 'projectUserId', user, db)
+      audit(projectUserAuditLogs, 'projectUserId', user, db),
+      repositories.userAuthenticationMethodRepository
     ),
     projectUserPermissions: new ProjectUserPermissionService(
       repositories.projectRepository,

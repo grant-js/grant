@@ -48,6 +48,7 @@ const mockProjectApps = {
 const mockProjectUsers = {
   getProjectUsers: vi.fn(),
   addProjectUser: vi.fn(),
+  syncProjectUserSearchDocument: vi.fn().mockResolvedValue(undefined),
 };
 const mockUserRoles = { addUserRole: vi.fn() };
 const mockAccountProjects = { getAccountProject: vi.fn() };
