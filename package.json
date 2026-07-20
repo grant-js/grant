@@ -51,12 +51,13 @@
     "secret-scan:protect": "GITLEAKS_CONFIG=.gitleaks.toml gitleaks protect -v",
     "audit:fix": "./scripts/audit-fix.sh",
     "audit:pnpm": "pnpm audit --recursive",
-    "benchmark:rbac": "node scripts/benchmarks/rbac-list-queries.mjs",
+    "benchmark:rbac": "node scripts/benchmarks/permission-evaluation.mjs",
     "changeset": "changeset",
     "version": "changeset version",
     "release": "pnpm build:release && changeset publish",
     "release:check": "node scripts/check-publishable-packages.mjs",
-    "postinstall": "pnpm env:setup --quiet"
+    "postinstall": "pnpm env:setup --quiet",
+    "benchmark:authz": "node scripts/benchmarks/permission-evaluation.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",

@@ -29,6 +29,12 @@ query GetGroupsList(
         color
         isPrimary
       }
+      tags {
+        id
+        name
+        color
+        isPrimary
+      }
       permissionCount
       tagCount
     }

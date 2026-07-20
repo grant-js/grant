@@ -1,6 +1,5 @@
-import { resolve } from 'path';
-
 import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
@@ -28,12 +27,19 @@ export default defineConfig({
     },
     rollupOptions: {
       // Externalize deps that shouldn't be bundled
-      external: ['react', 'react/jsx-runtime', '@grantjs/schema', '@tanstack/react-query'],
+      external: [
+        'react',
+        'react/jsx-runtime',
+        'react/jsx-dev-runtime',
+        '@grantjs/schema',
+        '@tanstack/react-query',
+      ],
       output: {
         // Global vars for UMD build
         globals: {
           react: 'React',
           'react/jsx-runtime': 'jsxRuntime',
+          'react/jsx-dev-runtime': 'jsxDevRuntime',
           '@grantjs/schema': 'GrantSchema',
           '@tanstack/react-query': 'ReactQuery',
         },

@@ -35,7 +35,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { useDebounce, useDetailTableColumnVisibility } from '@/hooks/common';
 import { useScopeFromParams } from '@/hooks/common';
-import { useGroups } from '@/hooks/groups';
+import { useGroupsList } from '@/hooks/groups';
 import { useRoleMutations } from '@/hooks/roles';
 import { resolveDetailQueryIds } from '@/lib/detail-attachment-filter';
 import { transformTagsToBadges } from '@/lib/tag';
@@ -84,7 +84,7 @@ export function RoleGroups({ role }: RoleGroupsProps) {
     [groupsAttachmentFilter, selectedGroupIds]
   );
 
-  const { groups, loading, error, totalCount, refetch } = useGroups({
+  const { groups, loading, error, totalCount, refetch } = useGroupsList({
     scope: scope!,
     page,
     limit,

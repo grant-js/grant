@@ -143,24 +143,43 @@ See [Multi-Tenancy](/architecture/multi-tenancy) for the full data model and sco
 
 ## Permission Evaluation
 
-```bmermaid diagram-narrow
+Grant resolves access by **unioning** every permission source for the user in the current scope. A role is not required — direct group or permission attachments are enough.
+
+```bmermaid
 flowchart TD
     Start([User Request]) --> Auth{Authenticated?}
     Auth -->|No| Deny[Access Denied]
-    Auth -->|Yes| CheckRole{Has Role?}
-    CheckRole -->|No| Deny
-    CheckRole -->|Yes| CheckPerm{Has Permission?}
-    CheckPerm -->|No| Deny
-    CheckPerm -->|Yes| CheckScope{In Scope?}
-    CheckScope -->|No| Deny
-    CheckScope -->|Yes| Allow[Access Granted]
+    Auth -->|Yes| Collect["Collect permission IDs<br/><small>union of all paths below</small>"]
+
+    Collect --> P1["User → Role → Group → Permission"]
+    Collect --> P2["User → Group → Permission"]
+    Collect --> P3["User → Role → Permission"]
+    Collect --> P4["User → Permission"]
+
+    P1 --> Match
+    P2 --> Match
+    P3 --> Match
+    P4 --> Match
+
+    Match{"Any permission matches<br/>action + resource?"}
+    Match -->|No| Deny
+    Match -->|Yes| Cond{"Condition + tenant scope OK?"}
+    Cond -->|No| Deny
+    Cond -->|Yes| Allow[Access Granted]
 
     style Start stroke:#2563eb,stroke-width:3px
     style Allow stroke:#10b981,stroke-width:2px
     style Deny stroke:#ef4444,stroke-width:2px
 ```
 
-The RBAC engine evaluates in this order: authenticate → resolve roles → check permissions → evaluate scope conditions. Conditions support attribute-based rules (e.g. "only if the user owns the resource") on top of the role-based model. See [RBAC](/architecture/rbac) for the full permission model.
+| Path                             | Pivot tables (account/org · project)                           |
+| -------------------------------- | -------------------------------------------------------------- |
+| User → Role → Group → Permission | `user_roles` → `role_groups` → `group_permissions`             |
+| User → Group → Permission        | `user_groups` / `project_user_groups` → `group_permissions`    |
+| User → Role → Permission         | `user_roles` → `role_permissions` / `project_role_permissions` |
+| User → Permission                | `user_permissions` / `project_user_permissions`                |
+
+Evaluation order: authenticate → union permission sources → match action + resource → evaluate permission conditions (if any) → enforce tenant scope. Conditions support attribute-based rules (e.g. “only if the user owns the resource”) on top of RBAC. See [RBAC](/architecture/rbac) for the full permission model.
 
 ## Technology Stack
 

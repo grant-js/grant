@@ -26,38 +26,303 @@ Grant stores all data in PostgreSQL using [Drizzle ORM](https://orm.drizzle.team
 
 ## Entity Relationships
 
-### Tenant Hierarchy
+The diagrams below are architect-facing EERs. They intentionally omit audit-log tables and tag pivots — every mutable entity has a corresponding `*_audit_logs` table, and tags are an orthogonal labeling layer (see [Tagging](#tagging)).
 
-How users, accounts, organizations, and projects relate to each other:
+### Diagram A — Core authorization
 
-```bmermaid
-erDiagram
-    Users ||--o{ Accounts : "owns"
-    Users }o--o{ Organizations : "member of"
-    Users }o--o{ Projects : "member of"
-    Accounts }o--o{ Projects : "has"
-    Organizations }o--o{ Projects : "contains"
-```
+Tenant hierarchy plus the RBAC chain. The isolation boundary for authorization data is the **Project**; permission checks resolve as a union of paths that end at **action + resource**.
 
-Each many-to-many relationship is backed by a pivot table (`organization_users`, `project_users`, `account_projects`, `organization_projects`) with soft-delete-aware unique constraints.
+Many-to-many links are drawn as **pivot entities** (named after the real tables) so every relationship is visible — Mermaid’s bare `}o--o{` edges often drop when entities have attributes.
 
-### RBAC Chain
-
-How permissions are structured from user down to resource:
+#### A1 — Tenant hierarchy
 
 ```bmermaid
 erDiagram
-    Users }o--o{ Roles : "assigned"
-    Users }o--o{ Groups : "direct"
-    Users }o--o{ Permissions : "direct"
-    Roles }o--o{ Groups : "contains"
-    Roles }o--o{ Permissions : "direct"
-    Groups }o--o{ Permissions : "bundles"
-    Resources ||--o{ Permissions : "defines"
-    Projects ||--o{ Resources : "scoped to"
+    USER {
+        uuid id PK
+        varchar name
+        jsonb metadata
+        timestamp deleted_at
+    }
+    ACCOUNT {
+        uuid id PK
+        varchar type
+        uuid owner_id FK
+        timestamp deleted_at
+    }
+    ORGANIZATION {
+        uuid id PK
+        varchar name
+        varchar slug
+        timestamp deleted_at
+    }
+    PROJECT {
+        uuid id PK
+        varchar name
+        varchar slug
+        varchar description
+        timestamp deleted_at
+    }
+    organization_users {
+        uuid id PK
+        uuid organization_id FK
+        uuid user_id FK
+        timestamp deleted_at
+    }
+    project_users {
+        uuid id PK
+        uuid project_id FK
+        uuid user_id FK
+        timestamp deleted_at
+    }
+    account_projects {
+        uuid id PK
+        uuid account_id FK
+        uuid project_id FK
+        timestamp deleted_at
+    }
+    organization_projects {
+        uuid id PK
+        uuid organization_id FK
+        uuid project_id FK
+        timestamp deleted_at
+    }
+
+    USER ||--o{ ACCOUNT : "owns"
+    USER ||--o{ organization_users : ""
+    ORGANIZATION ||--o{ organization_users : ""
+    USER ||--o{ project_users : ""
+    PROJECT ||--o{ project_users : ""
+    ACCOUNT ||--o{ account_projects : ""
+    PROJECT ||--o{ account_projects : ""
+    ORGANIZATION ||--o{ organization_projects : ""
+    PROJECT ||--o{ organization_projects : ""
 ```
 
-Each link is a pivot table (`user_roles`, `user_groups`, `user_permissions`, `role_groups`, `role_permissions`, `group_permissions`). Project scope adds `project_user_groups`, `project_user_permissions`, and related project pivot tables. A permission is a specific action (e.g. `read`, `create`) on a resource.
+#### A2 — RBAC chain and project scope
+
+```bmermaid
+erDiagram
+    USER {
+        uuid id PK
+        varchar name
+    }
+    PROJECT {
+        uuid id PK
+        varchar name
+        varchar slug
+    }
+    ROLE {
+        uuid id PK
+        varchar name
+        varchar description
+        jsonb metadata
+        timestamp deleted_at
+    }
+    GROUP {
+        uuid id PK
+        varchar name
+        varchar description
+        jsonb metadata
+        timestamp deleted_at
+    }
+    PERMISSION {
+        uuid id PK
+        varchar name
+        varchar action
+        uuid resource_id FK
+        jsonb condition
+        timestamp deleted_at
+    }
+    RESOURCE {
+        uuid id PK
+        varchar name
+        varchar slug
+        text[] actions
+        boolean is_active
+        timestamp deleted_at
+    }
+    user_roles {
+        uuid id PK
+        uuid user_id FK
+        uuid role_id FK
+        timestamp deleted_at
+    }
+    user_groups {
+        uuid id PK
+        uuid user_id FK
+        uuid group_id FK
+        timestamp deleted_at
+    }
+    user_permissions {
+        uuid id PK
+        uuid user_id FK
+        uuid permission_id FK
+        timestamp deleted_at
+    }
+    role_groups {
+        uuid id PK
+        uuid role_id FK
+        uuid group_id FK
+        timestamp deleted_at
+    }
+    role_permissions {
+        uuid id PK
+        uuid role_id FK
+        uuid permission_id FK
+        timestamp deleted_at
+    }
+    group_permissions {
+        uuid id PK
+        uuid group_id FK
+        uuid permission_id FK
+        timestamp deleted_at
+    }
+    project_roles {
+        uuid id PK
+        uuid project_id FK
+        uuid role_id FK
+        timestamp deleted_at
+    }
+    project_groups {
+        uuid id PK
+        uuid project_id FK
+        uuid group_id FK
+        timestamp deleted_at
+    }
+    project_permissions {
+        uuid id PK
+        uuid project_id FK
+        uuid permission_id FK
+        timestamp deleted_at
+    }
+    project_resources {
+        uuid id PK
+        uuid project_id FK
+        uuid resource_id FK
+        timestamp deleted_at
+    }
+
+    USER ||--o{ user_roles : ""
+    ROLE ||--o{ user_roles : ""
+    USER ||--o{ user_groups : ""
+    GROUP ||--o{ user_groups : ""
+    USER ||--o{ user_permissions : ""
+    PERMISSION ||--o{ user_permissions : ""
+    ROLE ||--o{ role_groups : ""
+    GROUP ||--o{ role_groups : ""
+    ROLE ||--o{ role_permissions : ""
+    PERMISSION ||--o{ role_permissions : ""
+    GROUP ||--o{ group_permissions : ""
+    PERMISSION ||--o{ group_permissions : ""
+    RESOURCE ||--o{ PERMISSION : "defines"
+    PROJECT ||--o{ project_resources : ""
+    RESOURCE ||--o{ project_resources : ""
+    PROJECT ||--o{ project_roles : ""
+    ROLE ||--o{ project_roles : ""
+    PROJECT ||--o{ project_groups : ""
+    GROUP ||--o{ project_groups : ""
+    PROJECT ||--o{ project_permissions : ""
+    PERMISSION ||--o{ project_permissions : ""
+```
+
+Pivot tables use soft-delete-aware unique constraints (`deleted_at IS NULL`). Project scope also adds attachments such as `project_user_groups` and `project_user_permissions` (same pattern; omitted here for readability).
+
+Authorization resolution unions these paths before matching action + resource:
+
+```
+User → Role → Group → Permission → Resource
+User → Group → Permission → Resource
+User → Role → Permission → Resource
+User → Permission → Resource
+```
+
+### Diagram B — Supporting systems
+
+Integrations and operational entities that hang off a project (and sometimes a user). API keys attach through scope-specific pivots (`account_project_api_keys`, `organization_project_api_keys`, `project_user_api_keys`) rather than a single FK — shown here as scoped edges.
+
+```bmermaid
+erDiagram
+    USER {
+        uuid id PK
+        varchar name
+    }
+    PROJECT {
+        uuid id PK
+        varchar name
+        varchar slug
+    }
+    API_KEY {
+        uuid id PK
+        varchar client_id
+        varchar client_secret_hash
+        varchar name
+        boolean is_revoked
+        timestamp expires_at
+        timestamp deleted_at
+    }
+    PROJECT_APP {
+        uuid id PK
+        uuid project_id FK
+        varchar client_id
+        varchar name
+        jsonb redirect_uris
+        jsonb scopes
+        uuid sign_up_role_id FK
+        timestamp deleted_at
+    }
+    PROJECT_SYNC_JOB {
+        uuid id PK
+        uuid project_id FK
+        varchar scope_tenant
+        varchar scope_id
+        varchar operation "import | export"
+        varchar status
+        jsonb payload
+        jsonb result
+        timestamp deleted_at
+    }
+    WEBHOOK_SUBSCRIPTION {
+        uuid id PK
+        uuid project_id FK
+        varchar scope_tenant
+        varchar scope_id
+        varchar url
+        varchar secret_ref
+        text[] event_types
+        varchar ordering_mode
+        boolean active
+        timestamp deleted_at
+    }
+    WEBHOOK_DELIVERY_ATTEMPT {
+        uuid id PK
+        uuid subscription_id FK
+        uuid event_id FK
+        varchar status
+        integer attempt_count
+        timestamp delivered_at
+    }
+    SIGNING_KEY {
+        uuid id PK
+        varchar scope_tenant
+        varchar scope_id
+        varchar kid
+        text public_key_pem
+        varchar algorithm
+        boolean active
+        timestamp deleted_at
+    }
+
+    USER ||--o{ API_KEY : "created_by"
+    PROJECT }o--o{ API_KEY : "scoped via account/org/project pivots"
+    PROJECT ||--o{ PROJECT_APP : "hosts"
+    USER ||--o{ PROJECT_APP : "created_by"
+    PROJECT ||--o{ PROJECT_SYNC_JOB : "CDM import/export"
+    USER ||--o{ PROJECT_SYNC_JOB : "enqueued_by"
+    PROJECT ||--o{ WEBHOOK_SUBSCRIPTION : "delivers events"
+    WEBHOOK_SUBSCRIPTION ||--o{ WEBHOOK_DELIVERY_ATTEMPT : "attempts"
+    PROJECT ||--o{ SIGNING_KEY : "JWKS scope (or system)"
+```
 
 ## Tenant Hierarchy
 
@@ -84,8 +349,8 @@ Permissions are evaluated through a union of paths:
 ```
 User → Role → Group → Permission → Resource
 User → Group → Permission → Resource
+User → Role → Permission → Resource
 User → Permission → Resource
-Role → Permission → Resource
 ```
 
 A user is assigned roles and may have direct group or permission attachments. Each role contains groups and may have direct permissions; each group bundles permissions. Grant resolution unions all sources before matching action + resource.
@@ -129,6 +394,7 @@ All tables in the schema share these conventions:
 - **Drizzle schemas:** `packages/@grantjs/database/src/schemas/`
 - **GraphQL types:** `packages/@grantjs/schema/src/generated/`
 - **Migrations:** `pnpm --filter @grantjs/database db:generate` and `db:migrate`
+- **Permission evaluation benchmarks:** [Benchmark report](/benchmarks/report)
   :::
 
 ---
