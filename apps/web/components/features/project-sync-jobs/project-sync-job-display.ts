@@ -35,9 +35,7 @@ export function formatModeStrategy(
 }
 
 export type ProjectSyncJobOnConflictLabelKey =
-  | 'summary.onConflict.fail'
-  | 'summary.onConflict.skip'
-  | 'summary.onConflict.update';
+  'summary.onConflict.fail' | 'summary.onConflict.skip' | 'summary.onConflict.update';
 
 export function getOnConflictLabelKey(onConflict: CdmOnConflict): ProjectSyncJobOnConflictLabelKey {
   switch (onConflict) {

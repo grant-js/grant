@@ -4,13 +4,7 @@
  */
 
 export type EnvCategoryId =
-  | 'main'
-  | 'database'
-  | 'cache'
-  | 'auth'
-  | 'github'
-  | 'security'
-  | 'optional';
+  'main' | 'database' | 'cache' | 'auth' | 'github' | 'security' | 'optional';
 
 export interface EnvVarMeta {
   key: string;

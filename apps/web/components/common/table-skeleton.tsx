@@ -16,15 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 
 export type TableSkeletonColumnType =
-  | 'avatar'
-  | 'avatar-only'
-  | 'text'
-  | 'button'
-  | 'list'
-  | 'badge'
-  | 'actions'
-  | 'audit'
-  | 'icon';
+  'avatar' | 'avatar-only' | 'text' | 'button' | 'list' | 'badge' | 'actions' | 'audit' | 'icon';
 
 export interface TableSkeletonColumnConfig {
   key: string;

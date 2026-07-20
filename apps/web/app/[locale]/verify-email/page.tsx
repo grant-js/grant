@@ -13,12 +13,7 @@ import { Link } from '@/i18n/navigation';
 import { useAuthStore } from '@/stores/auth.store';
 
 type VerificationStatus =
-  | 'verifying'
-  | 'success'
-  | 'error'
-  | 'expired'
-  | 'invalidOrUsed'
-  | 'missing-token';
+  'verifying' | 'success' | 'error' | 'expired' | 'invalidOrUsed' | 'missing-token';
 
 export default function VerifyEmailPage() {
   const t = useTranslations('auth');

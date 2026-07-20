@@ -45,9 +45,7 @@ export interface FilterGroup<TModel> {
 }
 
 export type Filter<TModel> =
-  | FilterCondition<TModel>
-  | FilterGroup<TModel>
-  | (FilterCondition<TModel> | FilterGroup<TModel>)[];
+  FilterCondition<TModel> | FilterGroup<TModel> | (FilterCondition<TModel> | FilterGroup<TModel>)[];
 
 interface BaseQueryArgs<TModel, TEntity> extends Searchable {
   sort?: BaseSortable<TModel> | null;

@@ -93,8 +93,7 @@ export class GrantGuard implements CanActivate {
     // Fallback: read metadata via Reflect (works when Reflector is not injected, e.g. ESM/CJS boundary)
     if (typeof Reflect !== 'undefined' && typeof Reflect.getMetadata === 'function') {
       const fromHandler = Reflect.getMetadata(GRANT_OPTIONS_KEY, handler) as
-        | GrantOptions
-        | undefined;
+        GrantOptions | undefined;
       const fromClass = Reflect.getMetadata(GRANT_OPTIONS_KEY, clazz) as GrantOptions | undefined;
       if (fromHandler) return fromHandler;
       if (fromClass) return fromClass;

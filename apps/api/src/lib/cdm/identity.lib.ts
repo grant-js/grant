@@ -31,13 +31,7 @@ export function stableHash(...inputs: ReadonlyArray<string>): string {
  * `CdmImportMetadata['kind']` for the cases where the exporter mints a key.
  */
 export type CdmExternalKeyKind =
-  | 'resource'
-  | 'permission'
-  | 'tag'
-  | 'role'
-  | 'group'
-  | 'apikey'
-  | 'user';
+  'resource' | 'permission' | 'tag' | 'role' | 'group' | 'apikey' | 'user';
 
 /**
  * Build an opaque external key for a CDM-exported entity. The result has the
