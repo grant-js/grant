@@ -84,6 +84,7 @@ export default withMermaid({
             { text: 'RBAC System', link: '/architecture/rbac' },
             { text: 'Data Model', link: '/architecture/data-model' },
             { text: 'Security', link: '/architecture/security' },
+            { text: 'Benchmarks', link: '/benchmarks/report' },
           ],
         },
         {

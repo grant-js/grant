@@ -23,27 +23,14 @@ query GetRoles(
       metadata
       createdAt
       updatedAt
+      # Group ids/names only — no nested group.tags (unused by attachment UIs).
       groups {
         id
         name
-        tags {
-          id
-          name
-          color
-          isPrimary
-        }
       }
       rolePermissions {
         id
         permissionId
-        permission(scope: $scope) {
-          id
-          name
-          action
-          resource {
-            slug
-          }
-        }
       }
       tags {
         id

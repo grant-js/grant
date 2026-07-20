@@ -5,7 +5,7 @@ description: Resources, actions, and role-based permissions in Grant
 
 # RBAC Model
 
-Grant uses multi-tenant RBAC: **roles** are assigned to users in a scope (account or organization), **groups** link roles to **permissions**, and permissions grant **actions** on **resources**.
+Grant uses multi-tenant RBAC: **roles**, **groups**, and **permissions** can be combined flexibly. The classic path is `User → Role → Group → Permission → Resource`, but Grant also supports **direct** attachments — groups and permissions on users, and permissions on roles — and **unions** all sources when checking access.
 
 ## Overview
 
@@ -70,9 +70,16 @@ Within an organization, four roles: **Owner** (full control), **Admin** (teams a
 
 ## Groups
 
-Groups link **roles** to **permissions** via a **Role + Resource** combination. Naming: `{Resource} {Role}` (e.g. "Organization Owner", "User Dev"). Permissions live in groups; roles get access by being assigned groups. Users may also be assigned **groups directly** via `user_groups` (and `project_user_groups` in project scope), which contributes permissions alongside role-derived groups.
+Groups bundle **permissions** (often named `{Resource} {Role}`, e.g. "Organization Owner", "User Dev"). Roles typically receive groups via `role_groups`, but that is not the only path: users may be assigned **groups directly** via `user_groups` (and `project_user_groups` in project scope), and both users and roles may receive **permissions directly** via `user_permissions` / `role_permissions` (plus the project-scoped variants).
 
-**Flow:** `User → Role → Group → Permission → Resource`, plus direct paths `User → Group → Permission` and `User → Permission`. The system unions all permission sources when checking access.
+**Permission sources (unioned at check time):**
+
+```
+User → Role → Group → Permission → Resource
+User → Group → Permission → Resource
+User → Role → Permission → Resource
+User → Permission → Resource
+```
 
 For CDM import/export field mapping, see [CDM Import & Export → Permission assignment paths](/core-concepts/cdm-import-export#permission-assignment-paths-v1).
 
@@ -443,10 +450,19 @@ Organization `read` is enforced by scope (users can only read organizations they
 
 **Role hierarchy (conceptual):** Owner ⊃ Admin ⊃ Dev ⊃ Viewer; only Tags are Owner-only (Admin has no tag write). **Self-management (conditions):** Dev can update own user; all users can read own sessions and auth methods; Dev can delete/revoke own API keys. See [Permission Conditions](/core-concepts/permission-conditions) for syntax. **Auth-only (no RBAC):** Login, register, session refresh, password reset, profile picture, session revocation, auth method CRUD — require only authentication.
 
-::: details Permission evaluation steps
+## Permission evaluation
 
-1. Get user's roles in the scope (account/org/project). 2. Collect groups from roles (`role_groups`) **and** direct user groups (`user_groups` / `project_user_groups`). 3. For each group, get permissions (`group_permissions`). 4. Add direct role permissions (`role_permissions` / `project_role_permissions`) and direct user permissions (`user_permissions` / `project_user_permissions`). 5. Build all role–group combinations for condition evaluation. 6. Match requested action + resource to any permission. 7. If permission has a condition, evaluate with execution context. 8. Enforce tenant isolation (resource in user's scope). Flow: union of `User → Roles → Groups → Permissions`, `User → Groups → Permissions`, `Role → Permissions`, and `User → Permissions`.
-   :::
+Implemented by `GrantService.getUserPermissions` (API) and evaluated by `PermissionChecker` (`@grantjs/core`):
+
+1. Load the user’s **roles** in the scope (account / organization / project). Roles are optional — a user with only direct groups or permissions can still be authorized.
+2. Collect **groups** from those roles (`role_groups`) **and** direct user groups (`user_groups` / `project_user_groups`).
+3. Resolve permissions from those groups (`group_permissions`).
+4. Add **direct role permissions** (`role_permissions` / `project_role_permissions`) and **direct user permissions** (`user_permissions` / `project_user_permissions`).
+5. Union all permission IDs, then keep those matching the requested **action + resource**.
+6. If a matching permission has a **condition**, evaluate it with the execution context (role/group combinations when present).
+7. Enforce **tenant isolation** (resource in the user’s scope).
+
+See also the diagram on [Architecture Overview → Permission Evaluation](/architecture/overview#permission-evaluation).
 
 ---
 

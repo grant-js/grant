@@ -26,7 +26,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDetailTableColumnVisibility } from '@/hooks/common';
 import { useProjectUserScope } from '@/hooks/common/use-project-user-scope';
-import { useGroups } from '@/hooks/groups';
+import { useGroupsList } from '@/hooks/groups';
 import { useRoles } from '@/hooks/roles';
 import { collectAttachedGroupIds, resolveDetailQueryIds } from '@/lib/detail-attachment-filter';
 import {
@@ -87,7 +87,7 @@ export function UserCreateGroups() {
     [groupsAttachmentFilter, selectedGroupIds]
   );
 
-  const { groups, loading, error, totalCount, refetch } = useGroups({
+  const { groups, loading, error, totalCount, refetch } = useGroupsList({
     scope: scope!,
     page,
     limit: CREATE_USER_ATTACHMENT_PAGE_LIMIT,

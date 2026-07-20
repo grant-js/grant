@@ -110,7 +110,10 @@ export function buildUserPermissionInheritanceMaps(
   roles: Array<{
     name: string;
     groups?: Array<{ permissions?: Array<{ id: string }> | null }> | null;
-    rolePermissions?: Array<{ permission?: { id: string } | null }> | null;
+    rolePermissions?: Array<{
+      permissionId?: string | null;
+      permission?: { id: string } | null;
+    }> | null;
   }>,
   groups: Array<{ name: string; permissions?: Array<{ id: string }> | null }>
 ): {
@@ -130,7 +133,7 @@ export function buildUserPermissionInheritanceMaps(
 
   for (const role of roles) {
     for (const rolePermission of role.rolePermissions ?? []) {
-      const permissionId = rolePermission.permission?.id;
+      const permissionId = rolePermission.permissionId ?? rolePermission.permission?.id;
       if (permissionId && !inheritedFromRoleByPermissionId.has(permissionId)) {
         inheritedFromRoleByPermissionId.set(permissionId, role.name);
       }
