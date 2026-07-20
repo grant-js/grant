@@ -47,7 +47,7 @@
     "node-mailjet": "^6",
     "@aws-sdk/client-ses": "^3",
     "nodemailer": "^6 || ^7",
-    "typescript": "^6"
+    "typescript": "^7"
   },
   "peerDependenciesMeta": {
     "mailgun.js": {
@@ -67,14 +67,14 @@
     }
   },
   "devDependencies": {
-    "mailgun.js": "^13.2.0",
+    "mailgun.js": "^13.3.0",
     "form-data": "^4.0.6",
     "node-mailjet": "^6.0.6",
-    "@aws-sdk/client-ses": "^3.1068.0",
-    "nodemailer": "^9.0.1",
+    "@aws-sdk/client-ses": "^3.1090.0",
+    "nodemailer": "^9.0.3",
     "@types/nodemailer": "^8.0.1",
-    "@types/node": "^25.9.3",
-    "typescript": "^6"
+    "@types/node": "^26.1.1",
+    "typescript": "^7"
   },
   "license": "MIT"
 }
