@@ -59,8 +59,7 @@ export async function extractTokenFromRequest(
   // Try to extract from request (Express-style or Web API / NextRequest)
   const req = request as {
     headers?:
-      | { authorization?: string; cookie?: string }
-      | { get: (name: string) => string | null };
+      { authorization?: string; cookie?: string } | { get: (name: string) => string | null };
     cookies?: Record<string, string>;
   };
 
