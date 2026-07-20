@@ -23,10 +23,10 @@
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
-    "typescript": "^7"
+    "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "typescript": "^7"
+    "typescript": "^6.0.3"
   },
   "license": "MIT"
 }
