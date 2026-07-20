@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "dotenv -e .env.development -- next dev",
-    "build": "next build",
+    "build": "NODE_ENV=production next build",
     "start": "dotenv -e .env -- next start",
     "lint": "eslint ."
   },

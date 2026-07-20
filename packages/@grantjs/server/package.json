@@ -68,7 +68,7 @@
   },
   "license": "MIT",
   "scripts": {
-    "build": "vite build",
+    "build": "NODE_ENV=production vite build",
     "build:watch": "vite build --watch",
     "type-check": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
