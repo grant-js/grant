@@ -49,11 +49,9 @@ describe('useMfaMutations', () => {
       },
     },
   }));
-  const verifyMutate = vi.fn(
-    async (): Promise<VerifyEnrollmentMutateResult> => ({
-      data: { verifyMyMfaEnrollment: { success: true } },
-    })
-  );
+  const verifyMutate = vi.fn(async (): Promise<VerifyEnrollmentMutateResult> => ({
+    data: { verifyMyMfaEnrollment: { success: true } },
+  }));
   const setPrimaryMutate = vi.fn(async () => ({
     data: {
       setMyPrimaryMfaDevice: {

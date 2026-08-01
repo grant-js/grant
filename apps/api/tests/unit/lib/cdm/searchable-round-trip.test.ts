@@ -23,7 +23,7 @@ describe('CDM searchable round-trip', () => {
           key: { value: 'user-1', findBy: CdmFindBy.Key },
           name: 'Benhur',
           roles: ['role-1'],
-          searchable: { email: 'ben+cs@alteos.com', legacyId: 'user-1' },
+          searchable: { email: 'ben+cs@example.com', legacyId: 'user-1' },
         },
       ],
       resources: [
@@ -58,7 +58,7 @@ describe('CDM searchable round-trip', () => {
       displayLabel: 'Admin',
     });
     expect(expanded.userAssignments[0]?.searchable).toEqual({
-      email: 'ben+cs@alteos.com',
+      email: 'ben+cs@example.com',
       legacyId: 'user-1',
     });
 
@@ -85,7 +85,7 @@ describe('CDM searchable round-trip', () => {
     });
 
     expect(assembled.users[0]?.searchable).toEqual({
-      email: 'ben+cs@alteos.com',
+      email: 'ben+cs@example.com',
       legacyId: 'user-1',
     });
     expect(assembled.roles[0]?.searchable).toEqual({

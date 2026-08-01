@@ -92,9 +92,7 @@ export class MeService implements IMeService {
           : null;
     } else if (githubAuthMethod) {
       const providerData = githubAuthMethod.providerData as
-        | { email?: string | null }
-        | null
-        | undefined;
+        { email?: string | null } | null | undefined;
       email = providerData?.email || null;
       requiresEmailVerification = false;
       verificationExpiry = null;

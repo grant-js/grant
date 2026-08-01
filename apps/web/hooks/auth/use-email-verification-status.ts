@@ -6,9 +6,7 @@ import { useAuthStore } from '@/stores/auth.store';
  * Email verification status
  */
 export type EmailVerificationStatus =
-  | 'verified'
-  | 'unverified-within-expiry'
-  | 'unverified-expired';
+  'verified' | 'unverified-within-expiry' | 'unverified-expired';
 
 /**
  * Hook to get the current email verification status

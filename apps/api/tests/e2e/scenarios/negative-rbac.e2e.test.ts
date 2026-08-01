@@ -124,8 +124,7 @@ describe('Negative: Privilege escalation', () => {
     // GET /api/me returns { data: { accounts: [{ owner: { id } }] } }
     const profileA = await userA.getProfile();
     const accounts = (profileA.body.data as Record<string, unknown>)?.accounts as
-      | Array<Record<string, unknown>>
-      | undefined;
+      Array<Record<string, unknown>> | undefined;
     const userIdA = (accounts?.[0]?.owner as Record<string, unknown>)?.id;
 
     if (userIdA) {

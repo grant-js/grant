@@ -625,8 +625,7 @@ export class ProjectOAuthHandler {
           (m) => m.provider === UserAuthenticationMethodProvider.Github
         );
         const githubData = githubMethod?.providerData as
-          | { name?: string; email?: string; avatarUrl?: string }
-          | undefined;
+          { name?: string; email?: string; avatarUrl?: string } | undefined;
 
         const email =
           (emailMethod?.providerId as string | undefined)?.trim() ||

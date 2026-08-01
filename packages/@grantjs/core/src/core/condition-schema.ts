@@ -100,8 +100,7 @@ export const permissionConditionSchema = z.any().superRefine((val, ctx) => {
         }
       } else {
         const firstIssue = issues[0] as
-          | { path?: (string | number)[]; message?: string }
-          | undefined;
+          { path?: (string | number)[]; message?: string } | undefined;
         if (firstIssue) {
           const path =
             firstIssue.path && firstIssue.path.length > 0

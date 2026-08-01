@@ -145,8 +145,7 @@ function extractGraphQLErrors(error: unknown): GraphQLError[] {
 
 function isUnauthorizedGraphQLError(error: GraphQLError): boolean {
   const extensions = error.extensions as
-    | { http?: { status?: number }; statusCode?: number; code?: string }
-    | undefined;
+    { http?: { status?: number }; statusCode?: number; code?: string } | undefined;
   return (
     extensions?.http?.status === 401 ||
     extensions?.statusCode === 401 ||
@@ -156,8 +155,7 @@ function isUnauthorizedGraphQLError(error: GraphQLError): boolean {
 
 function isNotFoundGraphQLError(error: GraphQLError): boolean {
   const extensions = error.extensions as
-    | { http?: { status?: number }; statusCode?: number; code?: string }
-    | undefined;
+    { http?: { status?: number }; statusCode?: number; code?: string } | undefined;
   return (
     extensions?.http?.status === 404 ||
     extensions?.statusCode === 404 ||
@@ -167,8 +165,7 @@ function isNotFoundGraphQLError(error: GraphQLError): boolean {
 
 function isForbiddenGraphQLError(error: GraphQLError): boolean {
   const extensions = error.extensions as
-    | { http?: { status?: number }; statusCode?: number; code?: string }
-    | undefined;
+    { http?: { status?: number }; statusCode?: number; code?: string } | undefined;
   return (
     extensions?.http?.status === 403 ||
     extensions?.statusCode === 403 ||

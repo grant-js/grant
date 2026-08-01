@@ -2,8 +2,7 @@
 type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 /** Internal type. DO NOT USE DIRECTLY. */
 export type Incremental<T> =
-  | T
-  | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
+  T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 import type * as Types from './schema-types';
 
 import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/core';
@@ -272,12 +271,7 @@ export type GetGroupsQuery = {
       metadata: Record<string, unknown>;
       createdAt: Date;
       updatedAt: Date;
-      permissions: Array<{
-        id: string;
-        name: string;
-        action: string;
-        tags: Array<{ id: string; name: string; color: string; isPrimary: boolean | null }> | null;
-      }> | null;
+      permissions: Array<{ id: string }> | null;
       tags: Array<{ id: string; name: string; color: string; isPrimary: boolean | null }> | null;
     }>;
   };
@@ -307,6 +301,7 @@ export type GetGroupsListQuery = {
       permissionCount: number;
       tagCount: number;
       primaryTag: { id: string; name: string; color: string; isPrimary: boolean | null } | null;
+      tags: Array<{ id: string; name: string; color: string; isPrimary: boolean | null }> | null;
     }>;
   };
 };
@@ -1675,21 +1670,8 @@ export type GetRolesQuery = {
       metadata: Record<string, unknown>;
       createdAt: Date;
       updatedAt: Date;
-      groups: Array<{
-        id: string;
-        name: string;
-        tags: Array<{ id: string; name: string; color: string; isPrimary: boolean | null }> | null;
-      }> | null;
-      rolePermissions: Array<{
-        id: string;
-        permissionId: string;
-        permission: {
-          id: string;
-          name: string;
-          action: string;
-          resource: { slug: string } | null;
-        } | null;
-      }> | null;
+      groups: Array<{ id: string; name: string }> | null;
+      rolePermissions: Array<{ id: string; permissionId: string }> | null;
       tags: Array<{ id: string; name: string; color: string; isPrimary: boolean | null }> | null;
     }>;
   };
@@ -3222,24 +3204,7 @@ export const GetGroupsDocument = {
                         name: { kind: 'Name', value: 'permissions' },
                         selectionSet: {
                           kind: 'SelectionSet',
-                          selections: [
-                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                            { kind: 'Field', name: { kind: 'Name', value: 'action' } },
-                            {
-                              kind: 'Field',
-                              name: { kind: 'Name', value: 'tags' },
-                              selectionSet: {
-                                kind: 'SelectionSet',
-                                selections: [
-                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                                  { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                                  { kind: 'Field', name: { kind: 'Name', value: 'color' } },
-                                  { kind: 'Field', name: { kind: 'Name', value: 'isPrimary' } },
-                                ],
-                              },
-                            },
-                          ],
+                          selections: [{ kind: 'Field', name: { kind: 'Name', value: 'id' } }],
                         },
                       },
                       {
@@ -3388,6 +3353,19 @@ export const GetGroupsListDocument = {
                       {
                         kind: 'Field',
                         name: { kind: 'Name', value: 'primaryTag' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'color' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'isPrimary' } },
+                          ],
+                        },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'tags' },
                         selectionSet: {
                           kind: 'SelectionSet',
                           selections: [
@@ -8700,19 +8678,6 @@ export const GetRolesDocument = {
                           selections: [
                             { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                             { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                            {
-                              kind: 'Field',
-                              name: { kind: 'Name', value: 'tags' },
-                              selectionSet: {
-                                kind: 'SelectionSet',
-                                selections: [
-                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                                  { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                                  { kind: 'Field', name: { kind: 'Name', value: 'color' } },
-                                  { kind: 'Field', name: { kind: 'Name', value: 'isPrimary' } },
-                                ],
-                              },
-                            },
                           ],
                         },
                       },
@@ -8724,38 +8689,6 @@ export const GetRolesDocument = {
                           selections: [
                             { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                             { kind: 'Field', name: { kind: 'Name', value: 'permissionId' } },
-                            {
-                              kind: 'Field',
-                              name: { kind: 'Name', value: 'permission' },
-                              arguments: [
-                                {
-                                  kind: 'Argument',
-                                  name: { kind: 'Name', value: 'scope' },
-                                  value: {
-                                    kind: 'Variable',
-                                    name: { kind: 'Name', value: 'scope' },
-                                  },
-                                },
-                              ],
-                              selectionSet: {
-                                kind: 'SelectionSet',
-                                selections: [
-                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                                  { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                                  { kind: 'Field', name: { kind: 'Name', value: 'action' } },
-                                  {
-                                    kind: 'Field',
-                                    name: { kind: 'Name', value: 'resource' },
-                                    selectionSet: {
-                                      kind: 'SelectionSet',
-                                      selections: [
-                                        { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
-                                      ],
-                                    },
-                                  },
-                                ],
-                              },
-                            },
                           ],
                         },
                       },

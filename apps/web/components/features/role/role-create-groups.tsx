@@ -32,7 +32,7 @@ import {
 } from '@/components/common';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useDetailTableColumnVisibility, useScopeFromParams } from '@/hooks/common';
-import { useGroups } from '@/hooks/groups';
+import { useGroupsList } from '@/hooks/groups';
 import { resolveDetailQueryIds } from '@/lib/detail-attachment-filter';
 import { transformTagsToBadges } from '@/lib/tag';
 import { cn } from '@/lib/utils';
@@ -58,7 +58,7 @@ export function RoleCreateGroups() {
     [groupsAttachmentFilter, selectedGroupIds]
   );
 
-  const { groups, loading, error, totalCount, refetch } = useGroups({
+  const { groups, loading, error, totalCount, refetch } = useGroupsList({
     scope: scope!,
     page,
     limit: CREATE_ROLE_ATTACHMENT_PAGE_LIMIT,

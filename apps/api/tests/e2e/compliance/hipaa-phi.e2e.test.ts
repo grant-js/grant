@@ -39,11 +39,9 @@ describe('HIPAA 164.312(a)(1) -- Access control', () => {
     // GET /api/me returns { data: { accounts: [{ owner: { id } }] } }
     // User ID is available via accounts[].owner.id
     const accounts1 = (profile1.body.data as Record<string, unknown>)?.accounts as
-      | Array<Record<string, unknown>>
-      | undefined;
+      Array<Record<string, unknown>> | undefined;
     const accounts2 = (profile2.body.data as Record<string, unknown>)?.accounts as
-      | Array<Record<string, unknown>>
-      | undefined;
+      Array<Record<string, unknown>> | undefined;
 
     const userId1 = (accounts1?.[0]?.owner as Record<string, unknown>)?.id;
     const userId2 = (accounts2?.[0]?.owner as Record<string, unknown>)?.id;

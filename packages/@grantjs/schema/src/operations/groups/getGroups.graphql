@@ -23,16 +23,9 @@ query GetGroups(
       metadata
       createdAt
       updatedAt
+      # IDs only — enough for inheritance maps; avoid nested permission.tags (N+1).
       permissions {
         id
-        name
-        action
-        tags {
-          id
-          name
-          color
-          isPrimary
-        }
       }
       tags {
         id

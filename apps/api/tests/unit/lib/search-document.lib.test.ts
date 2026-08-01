@@ -17,12 +17,12 @@ describe('buildSearchDocument', () => {
       kind: 'user',
       name: 'Benhur',
       searchable: {
-        email: 'ben+cs@alteos.com',
+        email: 'ben+cs@example.com',
         legacyId: '423342f1-9fda-4753-9041-b537c2a62e4c',
       },
     });
     expect(doc).toContain('benhur');
-    expect(doc).toContain('ben+cs@alteos.com');
+    expect(doc).toContain('ben+cs@example.com');
     expect(doc).toContain('423342f1-9fda-4753-9041-b537c2a62e4c');
   });
 
@@ -43,7 +43,7 @@ describe('buildSearchDocument', () => {
       buildCdmImportMetadata('project-1', 'user', 'legacy-id'),
       {
         legacy: {
-          email: 'agent@alteos.com',
+          email: 'agent@example.com',
           id: 'legacy-id',
           passwordHash: 'should-not-index',
         },
@@ -55,7 +55,7 @@ describe('buildSearchDocument', () => {
       name: 'User',
       metadata,
     });
-    expect(doc).toContain('agent@alteos.com');
+    expect(doc).toContain('agent@example.com');
     expect(doc).toContain('agent one');
     expect(doc).not.toContain('should-not-index');
     expect(doc).not.toContain('$2a$');
@@ -110,10 +110,10 @@ describe('cdmSource searchable round-trip path', () => {
     const metadata = {
       cdmImport: { projectId: 'p', kind: 'user', externalKey: 'k' },
       [CDM_SOURCE_METADATA_KEY]: {
-        [CDM_SEARCHABLE_METADATA_KEY]: { email: 'nested@alteos.com' },
+        [CDM_SEARCHABLE_METADATA_KEY]: { email: 'nested@example.com' },
       },
     };
     const doc = buildSearchDocument({ kind: 'user', name: 'U', metadata });
-    expect(doc).toContain('nested@alteos.com');
+    expect(doc).toContain('nested@example.com');
   });
 });

@@ -472,12 +472,7 @@ export const EMAIL_CONFIG = {
 export const LOGGING_CONFIG = {
   /** Log level: trace, debug, info, warn, error, fatal (default: info in production when not set) */
   level: (env.LOG_LEVEL ?? (APP_CONFIG.isProduction ? 'info' : 'debug')) as
-    | 'fatal'
-    | 'error'
-    | 'warn'
-    | 'info'
-    | 'debug'
-    | 'trace',
+    'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace',
 
   /** Pretty print logs (development only) */
   prettyPrint: env.LOG_PRETTY_PRINT,
@@ -972,9 +967,7 @@ const APOLLO_SANDBOX_CDN = [
 const HELMET_CONFIG = {
   crossOriginEmbedderPolicy: APOLLO_CONFIG.playground ? false : undefined,
   contentSecurityPolicy: (():
-    | false
-    | undefined
-    | { useDefaults: false; directives: Record<string, string[]> } => {
+    false | undefined | { useDefaults: false; directives: Record<string, string[]> } => {
     if (!APP_CONFIG.isProduction) return false;
     if (!APOLLO_CONFIG.playground) return undefined;
     const cdnList = [...APOLLO_SANDBOX_CDN];

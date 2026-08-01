@@ -208,10 +208,9 @@
   margin-bottom: 1.5rem;
 }
 
-/* Table styling */
+/* Table styling — keep VitePress `overflow-x: auto` so wide tables scroll */
 .vp-doc table {
   border-radius: 8px;
-  overflow: hidden;
 }
 
 .vp-doc th {

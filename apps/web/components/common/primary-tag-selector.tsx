@@ -53,8 +53,7 @@ export function PrimaryTagSelector<TFieldValues extends FieldValues = FieldValue
   const resolvedTagIdsFieldName =
     tagIdsFieldName ?? ('tagIds' as FieldPathByValue<TFieldValues, string[] | undefined>);
   const watchedSelectedTagIds = useWatch({ control, name: resolvedTagIdsFieldName }) as
-    | string[]
-    | undefined;
+    string[] | undefined;
   const selectedTagIds = watchedSelectedTagIds ?? [];
   const hasTagIdsFieldValue = Array.isArray(watchedSelectedTagIds);
   const noTagsSelected = hasTagIdsFieldValue ? selectedTagIds.length === 0 : items.length === 0;

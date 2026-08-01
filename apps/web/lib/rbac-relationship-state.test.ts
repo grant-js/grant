@@ -145,6 +145,14 @@ describe('buildUserPermissionInheritanceMaps', () => {
     expect(inheritedFromGroupByPermissionId.get('p-group')).toBe('G1');
     expect(inheritedFromRoleByPermissionId.get('p-role')).toBe('R1');
   });
+
+  it('prefers rolePermissions.permissionId when nested permission is absent', () => {
+    const { inheritedFromRoleByPermissionId } = buildUserPermissionInheritanceMaps(
+      [{ name: 'R1', rolePermissions: [{ permissionId: 'p-direct' }] }],
+      []
+    );
+    expect(inheritedFromRoleByPermissionId.get('p-direct')).toBe('R1');
+  });
 });
 
 describe('buildRolePermissionInheritanceMap', () => {
