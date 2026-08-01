@@ -2,7 +2,7 @@
 
 import { ComponentProps } from 'react';
 import { useTranslations } from 'next-intl';
-import { Bell, Building2, Lock, Shield, User, UserCircle } from 'lucide-react';
+import { Bell, Building2, FolderKanban, Lock, Shield, User, UserCircle } from 'lucide-react';
 
 import { Sidebar } from '@/components/ui/sidebar';
 
@@ -25,6 +25,11 @@ export function SettingsSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
           title: settingsT('profile'),
           url: '/dashboard/settings/profile',
           icon: User,
+        },
+        {
+          title: settingsT('projectMemberships'),
+          url: '/dashboard/settings/projects',
+          icon: FolderKanban,
         },
         {
           title: settingsT('security'),

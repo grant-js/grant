@@ -4,5 +4,7 @@ export function evictMeCache(cache: ApolloCache) {
   cache.evict({ fieldName: 'me' });
   cache.evict({ fieldName: 'myUserSessions' });
   cache.evict({ fieldName: 'myUserAuthenticationMethods' });
+  cache.evict({ fieldName: 'myProjectMemberships' });
+  cache.evict({ fieldName: 'myProjectMembership' });
   cache.gc();
 }

@@ -1,0 +1,14 @@
+query MyProjectMemberships {
+  myProjectMemberships {
+    projectId
+    projectName
+    displayName
+    pictureUrl
+    metadata
+    role
+    joinedAt
+    organizationId
+    organizationName
+    accountId
+  }
+}

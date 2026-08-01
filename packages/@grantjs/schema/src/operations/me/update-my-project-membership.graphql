@@ -1,0 +1,14 @@
+mutation UpdateMyProjectMembership($input: UpdateMyProjectMembershipInput!) {
+  updateMyProjectMembership(input: $input) {
+    projectId
+    projectName
+    displayName
+    pictureUrl
+    metadata
+    role
+    joinedAt
+    organizationId
+    organizationName
+    accountId
+  }
+}

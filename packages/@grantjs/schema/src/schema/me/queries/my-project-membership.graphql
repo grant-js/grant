@@ -1,0 +1,6 @@
+extend type Query {
+  """
+  A single project membership for the authenticated user.
+  """
+  myProjectMembership(projectId: ID!): MyProjectMembership
+}

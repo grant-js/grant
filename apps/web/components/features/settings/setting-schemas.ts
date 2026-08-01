@@ -35,3 +35,11 @@ export const profileSettingsSchema = z.object({
     .min(2, { message: 'errors.validation.displayNameMin2' })
     .max(100, { message: 'errors.validation.displayNameMax100' }),
 });
+
+export const projectMembershipProfileSchema = z.object({
+  displayName: z
+    .string()
+    .min(1, { message: 'errors.validation.displayNameRequired' })
+    .min(2, { message: 'errors.validation.displayNameMin2' })
+    .max(100, { message: 'errors.validation.displayNameMax100' }),
+});

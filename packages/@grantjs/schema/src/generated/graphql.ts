@@ -437,6 +437,42 @@ export type MeQuery = {
   };
 };
 
+export type MyProjectMembershipQueryVariables = Exact<{
+  projectId: string | number;
+}>;
+
+export type MyProjectMembershipQuery = {
+  myProjectMembership: {
+    projectId: string;
+    projectName: string;
+    displayName: string | null;
+    pictureUrl: string | null;
+    metadata: Record<string, unknown>;
+    role: string | null;
+    joinedAt: Date;
+    organizationId: string | null;
+    organizationName: string | null;
+    accountId: string | null;
+  } | null;
+};
+
+export type MyProjectMembershipsQueryVariables = Exact<{ [key: string]: never }>;
+
+export type MyProjectMembershipsQuery = {
+  myProjectMemberships: Array<{
+    projectId: string;
+    projectName: string;
+    displayName: string | null;
+    pictureUrl: string | null;
+    metadata: Record<string, unknown>;
+    role: string | null;
+    joinedAt: Date;
+    organizationId: string | null;
+    organizationName: string | null;
+    accountId: string | null;
+  }>;
+};
+
 export type MyUserAuthenticationMethodsQueryVariables = Exact<{ [key: string]: never }>;
 
 export type MyUserAuthenticationMethodsQuery = {
@@ -575,6 +611,25 @@ export type SetMyPrimaryMfaDeviceMutation = {
   setMyPrimaryMfaDevice: { id: string; isPrimary: boolean };
 };
 
+export type UpdateMyProjectMembershipMutationVariables = Exact<{
+  input: Types.UpdateMyProjectMembershipInput;
+}>;
+
+export type UpdateMyProjectMembershipMutation = {
+  updateMyProjectMembership: {
+    projectId: string;
+    projectName: string;
+    displayName: string | null;
+    pictureUrl: string | null;
+    metadata: Record<string, unknown>;
+    role: string | null;
+    joinedAt: Date;
+    organizationId: string | null;
+    organizationName: string | null;
+    accountId: string | null;
+  };
+};
+
 export type UpdateMyUserMutationVariables = Exact<{
   input: Types.UpdateMyUserInput;
 }>;
@@ -587,6 +642,14 @@ export type UpdateMyUserMutation = {
     createdAt: Date;
     updatedAt: Date;
   };
+};
+
+export type UploadMyProjectMembershipPictureMutationVariables = Exact<{
+  input: Types.UploadMyProjectMembershipPictureInput;
+}>;
+
+export type UploadMyProjectMembershipPictureMutation = {
+  uploadMyProjectMembershipPicture: { url: string; path: string };
 };
 
 export type UploadMyUserPictureMutationVariables = Exact<{
@@ -3586,6 +3649,91 @@ export const MeDocument = {
     },
   ],
 } as unknown as DocumentNode<MeQuery, MeQueryVariables>;
+export const MyProjectMembershipDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'MyProjectMembership' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'myProjectMembership' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'projectId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'projectName' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'displayName' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'metadata' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'role' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'joinedAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'organizationId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'organizationName' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'accountId' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<MyProjectMembershipQuery, MyProjectMembershipQueryVariables>;
+export const MyProjectMembershipsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'MyProjectMemberships' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'myProjectMemberships' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'projectName' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'displayName' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'metadata' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'role' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'joinedAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'organizationId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'organizationName' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'accountId' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<MyProjectMembershipsQuery, MyProjectMembershipsQueryVariables>;
 export const MyUserAuthenticationMethodsDocument = {
   kind: 'Document',
   definitions: [
@@ -4042,6 +4190,63 @@ export const SetMyPrimaryMfaDeviceDocument = {
     },
   ],
 } as unknown as DocumentNode<SetMyPrimaryMfaDeviceMutation, SetMyPrimaryMfaDeviceMutationVariables>;
+export const UpdateMyProjectMembershipDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'UpdateMyProjectMembership' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'UpdateMyProjectMembershipInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'updateMyProjectMembership' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'projectName' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'displayName' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'metadata' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'role' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'joinedAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'organizationId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'organizationName' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'accountId' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UpdateMyProjectMembershipMutation,
+  UpdateMyProjectMembershipMutationVariables
+>;
 export const UpdateMyUserDocument = {
   kind: 'Document',
   definitions: [
@@ -4088,6 +4293,55 @@ export const UpdateMyUserDocument = {
     },
   ],
 } as unknown as DocumentNode<UpdateMyUserMutation, UpdateMyUserMutationVariables>;
+export const UploadMyProjectMembershipPictureDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'UploadMyProjectMembershipPicture' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'UploadMyProjectMembershipPictureInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'uploadMyProjectMembershipPicture' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'path' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UploadMyProjectMembershipPictureMutation,
+  UploadMyProjectMembershipPictureMutationVariables
+>;
 export const UploadMyUserPictureDocument = {
   kind: 'Document',
   definitions: [

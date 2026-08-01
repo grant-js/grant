@@ -1,0 +1,6 @@
+extend type Mutation {
+  """
+  Update the authenticated user's project membership profile (display name / picture).
+  """
+  updateMyProjectMembership(input: UpdateMyProjectMembershipInput!): MyProjectMembership!
+}

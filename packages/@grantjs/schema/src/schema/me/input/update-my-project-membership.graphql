@@ -1,0 +1,5 @@
+input UpdateMyProjectMembershipInput {
+  projectId: ID!
+  displayName: String
+  pictureUrl: String
+}

@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useMyProjectMembership } from '@/hooks/me';
 import { Link, usePathname } from '@/i18n/navigation';
 import { useGroupsStore } from '@/stores/groups.store';
 import { useOrganizationsStore } from '@/stores/organizations.store';
@@ -62,8 +63,14 @@ function getProjectBasePath(params: ReturnType<typeof useParams>): string {
 export function Breadcrumb() {
   const t = useTranslations('common');
   const dashboardT = useTranslations('dashboard.navigation');
+  const settingsNavT = useTranslations('settings.navigation');
   const pathname = usePathname();
   const params = useParams();
+
+  const isSettingsPath = pathname.startsWith('/dashboard/settings');
+  const settingsMembershipProjectId =
+    isSettingsPath && typeof params.projectId === 'string' ? params.projectId : null;
+  const { membership: settingsMembership } = useMyProjectMembership(settingsMembershipProjectId);
 
   const currentOrganization = useOrganizationsStore((state) => state.currentOrganization);
   const currentProject = useProjectsStore((state) => state.currentProject);
@@ -118,6 +125,27 @@ export function Breadcrumb() {
         breadcrumbs.push({
           label: orgLabel,
           href: `/dashboard/organizations/${segment}`,
+        });
+        return;
+      }
+
+      // Settings project memberships: /dashboard/settings/projects[/:projectId]
+      if (isSettingsPath && segment === 'projects') {
+        breadcrumbs.push({
+          label: settingsNavT('projectMemberships'),
+          href: '/dashboard/settings/projects',
+        });
+        return;
+      }
+
+      if (
+        isSettingsPath &&
+        settingsMembershipProjectId &&
+        segment === settingsMembershipProjectId
+      ) {
+        breadcrumbs.push({
+          label: settingsMembership?.projectName || t('loading'),
+          href: `/dashboard/settings/projects/${segment}`,
         });
         return;
       }

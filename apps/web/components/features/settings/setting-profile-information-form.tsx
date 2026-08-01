@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { User } from 'lucide-react';
+import { Pencil, User } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 
 import { Avatar } from '@/components/common';
@@ -80,59 +80,55 @@ export function SettingProfileInformationForm({
           </div>
         }
       >
-        <Form {...form}>
-          <form
-            id="profile-information-form"
-            onSubmit={form.handleSubmit(handleSubmit)}
-            className="space-y-6"
-          >
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('information.fields.name.label')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t('information.fields.name.placeholder')}
-                      {...field}
-                      disabled={isSubmitting}
-                    />
-                  </FormControl>
-                  <FormDescription>{t('information.fields.name.description')}</FormDescription>
-                  <TranslatedFormMessage />
-                </FormItem>
-              )}
-            />
-          </form>
-        </Form>
-      </SettingCard>
-
-      <SettingCard title={t('avatar.title')} description={t('avatar.description')}>
-        <div className="flex items-center gap-6">
-          {currentPictureUrl ? (
+        <div className="flex items-start gap-4">
+          <div className="relative shrink-0 group/avatar">
             <Avatar
               initial={defaultValues.name || 'U'}
               imageUrl={currentPictureUrl}
               cacheBuster={currentPictureUpdatedAt}
+              icon={<User className="h-9 w-9 text-muted-foreground" />}
               size="lg"
-              className="h-24 w-24"
+              className="h-20 w-20"
             />
-          ) : (
-            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-muted">
-              <User className="h-12 w-12 text-muted-foreground" />
-            </div>
-          )}
-          <div className="flex-1 space-y-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsUploadDialogOpen(true)}
-              disabled={!isEmailVerified}
-            >
-              {currentPictureUrl ? t('avatar.changeButton') : t('avatar.uploadButton')}
-            </Button>
+            {isEmailVerified ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                className="absolute inset-0 h-full w-full rounded-full opacity-0 transition-opacity group-hover/avatar:opacity-100 bg-black/50 hover:bg-black/60"
+                onClick={() => setIsUploadDialogOpen(true)}
+                aria-label={currentPictureUrl ? t('avatar.changeButton') : t('avatar.uploadButton')}
+              >
+                <Pencil className="h-5 w-5 text-white" />
+              </Button>
+            ) : null}
           </div>
+          <Form {...form}>
+            <form
+              id="profile-information-form"
+              onSubmit={form.handleSubmit(handleSubmit)}
+              className="min-w-0 flex-1 space-y-4"
+            >
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('information.fields.name.label')}</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder={t('information.fields.name.placeholder')}
+                        {...field}
+                        disabled={isSubmitting}
+                      />
+                    </FormControl>
+                    <FormDescription>{t('information.fields.name.description')}</FormDescription>
+                    <TranslatedFormMessage />
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
         </div>
       </SettingCard>
 

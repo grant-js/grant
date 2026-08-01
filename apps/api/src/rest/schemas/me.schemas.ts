@@ -332,3 +332,50 @@ export const setMyNotificationPreferenceRequestSchema = z.object({
   channel: z.enum(['in_app', 'email']).openapi({ description: 'Channel', example: 'email' }),
   enabled: z.boolean().openapi({ description: 'Whether the channel is enabled', example: true }),
 });
+
+export const myProjectMembershipSchema = z.object({
+  projectId: z.string().uuid(),
+  projectName: z.string(),
+  displayName: z.string().nullable().optional(),
+  pictureUrl: z.string().nullable().optional(),
+  metadata: z.record(z.string(), z.unknown()),
+  role: z.string().nullable().optional(),
+  joinedAt: z.coerce.date(),
+  organizationId: z.string().uuid().nullable().optional(),
+  organizationName: z.string().nullable().optional(),
+  accountId: z.string().uuid().nullable().optional(),
+});
+
+export const myProjectMembershipParamsSchema = z.object({
+  projectId: z
+    .string()
+    .uuid('errors.validation.invalidId')
+    .openapi({
+      description: 'Project ID',
+      param: { in: 'path', name: 'projectId' },
+    }),
+});
+
+export const updateMyProjectMembershipRequestSchema = z
+  .object({
+    displayName: z.string().max(255).nullable().optional(),
+    pictureUrl: z.string().max(2048).nullable().optional(),
+  })
+  .refine((v) => v.displayName !== undefined || v.pictureUrl !== undefined, {
+    message: 'At least one of displayName or pictureUrl must be provided',
+  });
+
+export const getMyProjectMembershipsResponseSchema = createSuccessResponseSchema(
+  z.array(myProjectMembershipSchema),
+  'Successfully retrieved project memberships'
+);
+
+export const getMyProjectMembershipResponseSchema = createSuccessResponseSchema(
+  z.object({ membership: myProjectMembershipSchema.nullable() }),
+  'Successfully retrieved project membership'
+);
+
+export const updateMyProjectMembershipResponseSchema = createSuccessResponseSchema(
+  myProjectMembershipSchema,
+  'Successfully updated project membership'
+);

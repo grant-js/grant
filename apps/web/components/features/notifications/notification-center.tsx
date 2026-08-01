@@ -52,6 +52,13 @@ export function NotificationCenter() {
     pollIntervalMs: POLL_INTERVAL_MS,
   });
 
+  const buildHref = (notification: (typeof notifications)[number]) =>
+    buildNotificationHref({
+      refEntity: notification.refEntity,
+      refId: notification.refId,
+      scope: notification.scope,
+    });
+
   const handleMarkRead = async (id: string) => {
     try {
       await markRead(id);
@@ -70,11 +77,7 @@ export function NotificationCenter() {
   };
 
   const handleRowClick = async (notification: (typeof notifications)[number]) => {
-    const href = buildNotificationHref({
-      refEntity: notification.refEntity,
-      refId: notification.refId,
-      scope: notification.scope,
-    });
+    const href = buildHref(notification);
     if (!notification.readAt) {
       await handleMarkRead(notification.id);
     }
@@ -114,11 +117,7 @@ export function NotificationCenter() {
       {!loading && (
         <ul className="divide-border divide-y">
           {notifications.map((notification) => {
-            const href = buildNotificationHref({
-              refEntity: notification.refEntity,
-              refId: notification.refId,
-              scope: notification.scope,
-            });
+            const href = buildHref(notification);
             return (
               <li key={notification.id}>
                 <NotificationListItem

@@ -169,7 +169,9 @@ export function createServices(
       repositories.accountRepository,
       repositories.projectRepository,
       repositories.roleRepository
-    )
+    ),
+    repositories.organizationUserRepository,
+    repositories.projectUserRepository
   );
   const servicesBase = {
     events,

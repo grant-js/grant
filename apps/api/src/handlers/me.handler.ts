@@ -25,12 +25,15 @@ import {
   DeleteMyAccountsInput,
   ListNotificationsInput,
   MeResponse,
+  MyProjectMembership,
   MyUserSessionsInput,
   NotificationPage,
   NotificationPreference,
   SetNotificationPreferenceInput,
   SortOrder,
+  UpdateMyProjectMembershipInput,
   UpdateMyUserInput,
+  UploadMyProjectMembershipPictureInput,
   UploadMyUserPictureInput,
   User,
   UserAuthenticationMethod,
@@ -371,7 +374,7 @@ export class MeHandler extends CacheHandler {
       projectMemberships: projectMembershipsRaw.map((m) => ({
         projectId: m.projectId,
         projectName: m.projectName,
-        role: m.role,
+        role: m.role ?? 'Member',
         joinedAt: m.joinedAt,
       })),
       exportedAt: new Date(),
@@ -525,4 +528,107 @@ export class MeHandler extends CacheHandler {
       await this.userSessions.revokeSession(session.id, tx);
     });
   }
+
+  public async myProjectMemberships(): Promise<MyProjectMembership[]> {
+    const userId = this.getAuthenticatedUserId();
+    const rows = await this.projectUsers.getUserProjectMemberships(userId);
+    return rows.map(toMyProjectMembership);
+  }
+
+  public async myProjectMembership(projectId: string): Promise<MyProjectMembership | null> {
+    const userId = this.getAuthenticatedUserId();
+    const rows = await this.projectUsers.getUserProjectMemberships(userId);
+    const match = rows.find((row) => row.projectId === projectId);
+    return match ? toMyProjectMembership(match) : null;
+  }
+
+  public async updateMyProjectMembership(
+    input: UpdateMyProjectMembershipInput
+  ): Promise<MyProjectMembership> {
+    const userId = this.getAuthenticatedUserId();
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      await this.projectUsers.updateProjectUserProfile(
+        {
+          projectId: input.projectId,
+          userId,
+          ...(input.displayName !== undefined ? { displayName: input.displayName } : {}),
+          ...(input.pictureUrl !== undefined ? { pictureUrl: input.pictureUrl } : {}),
+        },
+        tx
+      );
+
+      const rows = await this.projectUsers.getUserProjectMemberships(userId, tx);
+      const match = rows.find((row) => row.projectId === input.projectId);
+      if (!match) {
+        throw new NotFoundError('ProjectUser');
+      }
+      return toMyProjectMembership(match);
+    });
+  }
+
+  public async uploadMyProjectMembershipPicture(
+    input: UploadMyProjectMembershipPictureInput
+  ): Promise<{ url: string; path: string }> {
+    const userId = this.getAuthenticatedUserId();
+    const { projectId, file, contentType, filename } = input;
+
+    const fileBuffer = this.fileStorage.validateAndDecodeUpload({
+      file,
+      contentType,
+      filename,
+    });
+
+    const storagePath = this.fileStorage.sanitizeExtensionAndGeneratePath(
+      filename,
+      `users/${userId}/projects/${projectId}/picture`
+    );
+
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const memberships = await this.projectUsers.getUserProjectMemberships(userId, tx);
+      if (!memberships.some((m) => m.projectId === projectId)) {
+        throw new NotFoundError('ProjectUser');
+      }
+
+      const result = await this.fileStorage.upload(fileBuffer, storagePath, {
+        contentType,
+        public: true,
+      });
+
+      await this.projectUsers.updateProjectUserProfile(
+        { projectId, userId, pictureUrl: result.url },
+        tx
+      );
+
+      return {
+        url: result.url,
+        path: result.path,
+      };
+    });
+  }
+}
+
+function toMyProjectMembership(row: {
+  projectId: string;
+  projectName: string;
+  displayName: string | null;
+  pictureUrl: string | null;
+  metadata: Record<string, unknown>;
+  role: string | null;
+  joinedAt: Date;
+  organizationId: string | null;
+  organizationName: string | null;
+  accountId: string | null;
+}): MyProjectMembership {
+  return {
+    projectId: row.projectId,
+    projectName: row.projectName,
+    displayName: row.displayName,
+    pictureUrl: row.pictureUrl,
+    metadata: row.metadata,
+    role: row.role,
+    joinedAt: row.joinedAt,
+    organizationId: row.organizationId,
+    organizationName: row.organizationName,
+    accountId: row.accountId,
+  };
 }

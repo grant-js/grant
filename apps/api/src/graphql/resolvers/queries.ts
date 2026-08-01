@@ -39,6 +39,8 @@ export const Query = {
   myMfaRecoveryCodeStatus: authenticateGraphQLResolver(meQueries.myMfaRecoveryCodeStatus!),
   myUserDataExport: authenticateGraphQLResolver(meQueries.myUserDataExport!),
   myUserSessions: authenticateGraphQLResolver(meQueries.myUserSessions!),
+  myProjectMemberships: authenticateGraphQLResolver(meQueries.myProjectMemberships!),
+  myProjectMembership: authenticateGraphQLResolver(meQueries.myProjectMembership!),
   // Organization (scoped)
   organizationInvitations: authorizeGraphQLResolver(
     {

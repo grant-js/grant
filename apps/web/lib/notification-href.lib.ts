@@ -27,7 +27,7 @@ export function parseNotificationScopeIds(scope: NotificationScope): ParsedScope
 
 /**
  * Build a dashboard href for a notification row when scope + refEntity allow a
- * safe deep-link. Returns null when navigation would be ambiguous.
+ * safe deep-link. Never returns personal account project admin URLs.
  */
 export function buildNotificationHref(params: {
   refEntity: string | null;
@@ -35,7 +35,14 @@ export function buildNotificationHref(params: {
   scope?: NotificationScope | null;
 }): string | null {
   const { refEntity, refId, scope } = params;
-  if (!refEntity || !scope) return null;
+  if (!refEntity) return null;
+
+  if (refEntity === 'projectMembership') {
+    if (!refId) return null;
+    return `/dashboard/settings/projects/${refId}`;
+  }
+
+  if (!scope) return null;
 
   const ids = parseNotificationScopeIds(scope);
 
@@ -44,9 +51,6 @@ export function buildNotificationHref(params: {
       if (!refId) return null;
       if (ids.organizationId && ids.projectId) {
         return `/dashboard/organizations/${ids.organizationId}/projects/${ids.projectId}/roles/${refId}`;
-      }
-      if (ids.accountId && ids.projectId) {
-        return `/dashboard/accounts/${ids.accountId}/projects/${ids.projectId}/roles/${refId}`;
       }
       if (ids.organizationId) {
         return `/dashboard/organizations/${ids.organizationId}/roles/${refId}`;
@@ -57,17 +61,11 @@ export function buildNotificationHref(params: {
       if (ids.organizationId && ids.projectId) {
         return `/dashboard/organizations/${ids.organizationId}/projects/${ids.projectId}/permissions`;
       }
-      if (ids.accountId && ids.projectId) {
-        return `/dashboard/accounts/${ids.accountId}/projects/${ids.projectId}/permissions`;
-      }
       return null;
     }
     case 'apiKey': {
       if (ids.organizationId && ids.projectId) {
         return `/dashboard/organizations/${ids.organizationId}/projects/${ids.projectId}/api-keys`;
-      }
-      if (ids.accountId && ids.projectId) {
-        return `/dashboard/accounts/${ids.accountId}/projects/${ids.projectId}/api-keys`;
       }
       return null;
     }
@@ -84,9 +82,6 @@ export function buildNotificationHref(params: {
     case 'userRole': {
       if (ids.organizationId && ids.projectId) {
         return `/dashboard/organizations/${ids.organizationId}/projects/${ids.projectId}/users`;
-      }
-      if (ids.accountId && ids.projectId) {
-        return `/dashboard/accounts/${ids.accountId}/projects/${ids.projectId}/users`;
       }
       return null;
     }

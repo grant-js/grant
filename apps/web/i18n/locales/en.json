@@ -3121,7 +3121,8 @@
       "security": "Security",
       "preferences": "Preferences",
       "privacy": "Privacy",
-      "notifications": "Notifications"
+      "notifications": "Notifications",
+      "projectMemberships": "Project memberships"
     },
     "account": {
       "title": "Account Information",
@@ -3519,6 +3520,62 @@
     "notifications": {
       "logoutSuccess": "You have been logged out",
       "logoutError": "Failed to logout"
+    },
+    "projectMemberships": {
+      "title": "Project memberships",
+      "description": "Manage your project membership profiles",
+      "goToYourMemberships": "Go to your project memberships",
+      "list": {
+        "title": "Your projects",
+        "description": "Projects where you are a project user member",
+        "personalProject": "Personal project"
+      },
+      "empty": {
+        "title": "No project memberships",
+        "description": "You are not a project user on any projects yet."
+      },
+      "detail": {
+        "loading": "Loading membership…",
+        "notFound": "This project membership was not found.",
+        "overview": {
+          "title": "Project",
+          "description": "Details about this project membership",
+          "project": "Project name",
+          "scope": "Scope",
+          "role": "Role",
+          "tableField": "Field",
+          "tableValue": "Value",
+          "projectId": "Project ID",
+          "joined": "Joined"
+        },
+        "profile": {
+          "title": "Membership profile",
+          "description": "Update your display name for this project",
+          "fields": {
+            "displayName": {
+              "label": "Display name",
+              "placeholder": "Enter your display name",
+              "description": "How you appear in this project."
+            }
+          }
+        },
+        "avatar": {
+          "title": "Profile picture",
+          "description": "Picture for your membership in this project",
+          "uploadButton": "Upload picture",
+          "changeButton": "Change picture"
+        },
+        "metadata": {
+          "title": "Metadata",
+          "description": "Read-only metadata for this membership"
+        }
+      },
+      "notifications": {
+        "updateSuccess": "Membership profile updated",
+        "updateError": "Failed to update membership profile",
+        "uploadPictureSuccess": "Profile picture updated",
+        "uploadPictureError": "Failed to upload profile picture"
+      }
     }
   },
   "invitations": {

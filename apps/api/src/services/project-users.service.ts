@@ -390,8 +390,14 @@ export class ProjectUserService implements IProjectUserService {
     Array<{
       projectId: string;
       projectName: string;
-      role: string;
+      displayName: string | null;
+      pictureUrl: string | null;
+      metadata: Record<string, unknown>;
+      role: string | null;
       joinedAt: Date;
+      organizationId: string | null;
+      organizationName: string | null;
+      accountId: string | null;
     }>
   > {
     const memberships = await this.projectUserRepository.getProjectUserMemberships(
@@ -402,8 +408,14 @@ export class ProjectUserService implements IProjectUserService {
     return memberships.map((m) => ({
       projectId: m.projectId,
       projectName: m.projectName,
+      displayName: m.displayName,
+      pictureUrl: m.pictureUrl,
+      metadata: m.metadata,
       role: m.role,
       joinedAt: m.joinedAt instanceof Date ? m.joinedAt : new Date(m.joinedAt),
+      organizationId: m.organizationId,
+      organizationName: m.organizationName,
+      accountId: m.accountId,
     }));
   }
 }

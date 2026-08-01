@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import {
   Building2,
   ChevronsUpDown,
+  FolderKanban,
   Lock,
   LogOut,
   Mail,
@@ -112,6 +113,12 @@ export function SidebarAccountDropdown() {
                 <Link href="/dashboard/settings/profile" className="flex items-center gap-2">
                   <User className="h-4 w-4" />
                   <span>{settingsT('profile')}</span>
+                </Link>
+              </SidebarDropdownMenuItem>
+              <SidebarDropdownMenuItem asChild>
+                <Link href="/dashboard/settings/projects" className="flex items-center gap-2">
+                  <FolderKanban className="h-4 w-4" />
+                  <span>{settingsT('projectMemberships')}</span>
                 </Link>
               </SidebarDropdownMenuItem>
               <SidebarDropdownMenuItem asChild>

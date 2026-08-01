@@ -66,6 +66,10 @@ export const Mutation = {
   generateMyMfaRecoveryCodes: authenticateGraphQLResolver(meMutations.generateMyMfaRecoveryCodes!),
   uploadMyUserPicture: authenticateGraphQLResolver(meMutations.uploadMyUserPicture!),
   updateMyUser: authenticateGraphQLResolver(meMutations.updateMyUser!),
+  updateMyProjectMembership: authenticateGraphQLResolver(meMutations.updateMyProjectMembership!),
+  uploadMyProjectMembershipPicture: authenticateGraphQLResolver(
+    meMutations.uploadMyProjectMembershipPicture!
+  ),
 
   // Users (scoped - allow personal context)
   createUser: requireEmailThenMfaGraphQL(

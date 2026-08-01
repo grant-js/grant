@@ -10,6 +10,7 @@ import {
   addEmailAuthMethodSchema,
   changePasswordSchema,
   profileSettingsSchema,
+  projectMembershipProfileSchema,
 } from './setting-schemas';
 
 export interface SettingAccountDetailsCardProps {
@@ -74,6 +75,10 @@ export interface SettingImageUploadDialogProps {
 export type SettingEmailAuthMethodAddFormValues = z.infer<typeof addEmailAuthMethodSchema>;
 
 export type SettingProfileFormValues = z.infer<typeof profileSettingsSchema>;
+
+export type SettingProjectMembershipProfileFormValues = z.infer<
+  typeof projectMembershipProfileSchema
+>;
 
 export interface SettingEmailAuthMethodAddFormProps {
   onSubmit: (values: SettingEmailAuthMethodAddFormValues) => Promise<void>;

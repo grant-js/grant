@@ -2819,7 +2819,8 @@
       "security": "Sicherheit",
       "preferences": "Einstellungen",
       "privacy": "Datenschutz",
-      "notifications": "Benachrichtigungen"
+      "notifications": "Benachrichtigungen",
+      "projectMemberships": "Projektmitgliedschaften"
     },
     "account": {
       "title": "Kontoinformationen",
@@ -3216,6 +3217,62 @@
     "notifications": {
       "logoutSuccess": "Sie wurden abgemeldet",
       "logoutError": "Abmeldung fehlgeschlagen"
+    },
+    "projectMemberships": {
+      "title": "Projektmitgliedschaften",
+      "description": "Verwalten Sie Ihre Projektmitgliedschaftsprofile",
+      "goToYourMemberships": "Zu Ihren Projektmitgliedschaften",
+      "list": {
+        "title": "Ihre Projekte",
+        "description": "Projekte, in denen Sie als Projektbenutzer Mitglied sind",
+        "personalProject": "Persönliches Projekt"
+      },
+      "empty": {
+        "title": "Keine Projektmitgliedschaften",
+        "description": "Sie gehören noch keinem Projekt als Projektbenutzer an."
+      },
+      "detail": {
+        "loading": "Mitgliedschaft wird geladen…",
+        "notFound": "Diese Projektmitgliedschaft wurde nicht gefunden.",
+        "overview": {
+          "title": "Projekt",
+          "description": "Details zu dieser Projektmitgliedschaft",
+          "project": "Projektname",
+          "scope": "Bereich",
+          "role": "Rolle",
+          "tableField": "Feld",
+          "tableValue": "Wert",
+          "projectId": "Projekt-ID",
+          "joined": "Beigetreten"
+        },
+        "profile": {
+          "title": "Mitgliedschaftsprofil",
+          "description": "Anzeigename für dieses Projekt aktualisieren",
+          "fields": {
+            "displayName": {
+              "label": "Anzeigename",
+              "placeholder": "Ihren Anzeigenamen eingeben",
+              "description": "So erscheinen Sie in diesem Projekt."
+            }
+          }
+        },
+        "avatar": {
+          "title": "Profilbild",
+          "description": "Bild für Ihre Mitgliedschaft in diesem Projekt",
+          "uploadButton": "Bild hochladen",
+          "changeButton": "Bild ändern"
+        },
+        "metadata": {
+          "title": "Metadaten",
+          "description": "Schreibgeschützte Metadaten für diese Mitgliedschaft"
+        }
+      },
+      "notifications": {
+        "updateSuccess": "Mitgliedschaftsprofil aktualisiert",
+        "updateError": "Mitgliedschaftsprofil konnte nicht aktualisiert werden",
+        "uploadPictureSuccess": "Profilbild aktualisiert",
+        "uploadPictureError": "Profilbild konnte nicht hochgeladen werden"
+      }
     }
   },
   "invitations": {

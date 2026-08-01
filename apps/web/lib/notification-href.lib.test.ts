@@ -25,6 +25,7 @@ describe('parseNotificationScopeIds', () => {
 
 describe('buildNotificationHref', () => {
   const orgProjectScope = { tenant: Tenant.OrganizationProject, id: 'org-1:proj-1' };
+  const accountProjectScope = { tenant: Tenant.AccountProject, id: 'acct-1:proj-2' };
 
   it('builds role detail href for org project', () => {
     expect(
@@ -36,7 +37,7 @@ describe('buildNotificationHref', () => {
     ).toBe('/dashboard/organizations/org-1/projects/proj-1/roles/role-1');
   });
 
-  it('builds api keys list href', () => {
+  it('builds api keys list href for org project', () => {
     expect(
       buildNotificationHref({
         refEntity: 'apiKey',
@@ -44,6 +45,49 @@ describe('buildNotificationHref', () => {
         scope: orgProjectScope,
       })
     ).toBe('/dashboard/organizations/org-1/projects/proj-1/api-keys');
+  });
+
+  it('never builds personal account project admin hrefs', () => {
+    expect(
+      buildNotificationHref({
+        refEntity: 'role',
+        refId: 'role-1',
+        scope: accountProjectScope,
+      })
+    ).toBeNull();
+    expect(
+      buildNotificationHref({
+        refEntity: 'userRole',
+        refId: 'ur-1',
+        scope: accountProjectScope,
+      })
+    ).toBeNull();
+    expect(
+      buildNotificationHref({
+        refEntity: 'permission',
+        refId: null,
+        scope: accountProjectScope,
+      })
+    ).toBeNull();
+  });
+
+  it('builds settings membership href for projectMembership', () => {
+    expect(
+      buildNotificationHref({
+        refEntity: 'projectMembership',
+        refId: 'proj-1',
+        scope: null,
+      })
+    ).toBe('/dashboard/settings/projects/proj-1');
+  });
+
+  it('returns null for projectMembership without project id', () => {
+    expect(
+      buildNotificationHref({
+        refEntity: 'projectMembership',
+        refId: null,
+      })
+    ).toBeNull();
   });
 
   it('builds org members href for invitation', () => {
@@ -56,7 +100,7 @@ describe('buildNotificationHref', () => {
     ).toBe('/dashboard/organizations/org-1/members');
   });
 
-  it('returns null without scope', () => {
+  it('returns null without scope for org dashboard entities', () => {
     expect(
       buildNotificationHref({
         refEntity: 'role',

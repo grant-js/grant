@@ -13,5 +13,7 @@ export * from './setting-password-change-form';
 export * from './setting-preferences';
 export * from './setting-privacy';
 export * from './setting-profile-information-form';
+export * from './setting-project-membership-detail';
+export * from './setting-project-memberships-list';
 export * from './setting-theme-toggle';
 export * from './setting-types';

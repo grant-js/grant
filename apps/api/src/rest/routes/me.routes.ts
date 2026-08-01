@@ -17,8 +17,10 @@ import {
   listMyNotificationPreferencesQuerySchema,
   listMyNotificationsQuerySchema,
   myNotificationParamsSchema,
+  myProjectMembershipParamsSchema,
   revokeMyUserSessionParamsSchema,
   setMyNotificationPreferenceRequestSchema,
+  updateMyProjectMembershipRequestSchema,
   uploadMyUserPictureRequestSchema,
 } from '../schemas/me.schemas';
 
@@ -210,6 +212,46 @@ export function createMeRouter(context: RequestContext): Router {
     ) => {
       const result = await context.handlers.me.setMyNotificationPreference(req.body);
       sendSuccessResponse(res, result, 201);
+    }
+  );
+
+  router.get('/project-memberships', authenticateRestRoute, async (_req, res) => {
+    const result = await context.handlers.me.myProjectMemberships();
+    sendSuccessResponse(res, result);
+  });
+
+  router.get(
+    '/project-memberships/:projectId',
+    validate({ params: myProjectMembershipParamsSchema }),
+    authenticateRestRoute,
+    async (
+      req: TypedRequest<{ params: typeof myProjectMembershipParamsSchema }>,
+      res: Response
+    ) => {
+      const result = await context.handlers.me.myProjectMembership(req.params.projectId);
+      sendSuccessResponse(res, { membership: result });
+    }
+  );
+
+  router.patch(
+    '/project-memberships/:projectId',
+    validate({
+      params: myProjectMembershipParamsSchema,
+      body: updateMyProjectMembershipRequestSchema,
+    }),
+    authenticateRestRoute,
+    async (
+      req: TypedRequest<{
+        params: typeof myProjectMembershipParamsSchema;
+        body: typeof updateMyProjectMembershipRequestSchema;
+      }>,
+      res: Response
+    ) => {
+      const result = await context.handlers.me.updateMyProjectMembership({
+        projectId: req.params.projectId,
+        ...req.body,
+      });
+      sendSuccessResponse(res, result);
     }
   );
 

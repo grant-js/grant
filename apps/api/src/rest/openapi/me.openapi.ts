@@ -18,6 +18,8 @@ import {
   deleteMyAccountsBodySchema,
   deleteMyAccountsResponseSchema,
   getMyMfaRecoveryCodeStatusResponseSchema,
+  getMyProjectMembershipResponseSchema,
+  getMyProjectMembershipsResponseSchema,
   getMyUserAuthenticationMethodsResponseSchema,
   getMyUserSessionsQuerySchema,
   getMyUserSessionsResponseSchema,
@@ -25,10 +27,14 @@ import {
   listMyNotificationsQuerySchema,
   logoutMyUserResponseSchema,
   myNotificationParamsSchema,
+  myProjectMembershipParamsSchema,
+  myProjectMembershipSchema,
   myUserSessionSchema,
   revokeMyUserSessionParamsSchema,
   revokeMyUserSessionResponseSchema,
   setMyNotificationPreferenceRequestSchema,
+  updateMyProjectMembershipRequestSchema,
+  updateMyProjectMembershipResponseSchema,
   uploadMyUserPictureRequestSchema,
   uploadMyUserPictureResponseSchema,
   userAuthenticationMethodSchema,
@@ -1230,6 +1236,78 @@ This endpoint automatically identifies and revokes the session associated with t
       401: {
         description: 'Unauthorized',
         content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+    },
+  });
+
+  registry.register('MyProjectMembership', myProjectMembershipSchema);
+  registry.register('UpdateMyProjectMembershipRequest', updateMyProjectMembershipRequestSchema);
+  registry.register('GetMyProjectMembershipsResponse', getMyProjectMembershipsResponseSchema);
+  registry.register('GetMyProjectMembershipResponse', getMyProjectMembershipResponseSchema);
+  registry.register('UpdateMyProjectMembershipResponse', updateMyProjectMembershipResponseSchema);
+
+  registry.registerPath({
+    method: 'get',
+    path: '/api/me/project-memberships',
+    tags: ['Me'],
+    summary: 'List my project memberships',
+    responses: {
+      200: {
+        description: 'Project memberships',
+        content: { 'application/json': { schema: getMyProjectMembershipsResponseSchema } },
+      },
+      401: {
+        description: 'Unauthorized',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/api/me/project-memberships/{projectId}',
+    tags: ['Me'],
+    summary: 'Get one of my project memberships',
+    request: { params: myProjectMembershipParamsSchema },
+    responses: {
+      200: {
+        description: 'Project membership or null',
+        content: { 'application/json': { schema: getMyProjectMembershipResponseSchema } },
+      },
+      401: {
+        description: 'Unauthorized',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'patch',
+    path: '/api/me/project-memberships/{projectId}',
+    tags: ['Me'],
+    summary: 'Update my project membership profile',
+    request: {
+      params: myProjectMembershipParamsSchema,
+      body: {
+        content: { 'application/json': { schema: updateMyProjectMembershipRequestSchema } },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Updated membership',
+        content: { 'application/json': { schema: updateMyProjectMembershipResponseSchema } },
+      },
+      400: {
+        description: 'Validation error',
+        content: { 'application/json': { schema: validationErrorResponseSchema } },
+      },
+      401: {
+        description: 'Unauthorized',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+      404: {
+        description: 'Not found',
+        content: { 'application/json': { schema: notFoundErrorResponseSchema } },
       },
     },
   });

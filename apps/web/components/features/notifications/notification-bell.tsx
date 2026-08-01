@@ -56,17 +56,20 @@ export function NotificationBell() {
     if (open) void loadPreview();
   }, [open, loadPreview]);
 
+  const buildHref = (notification: Notification) =>
+    buildNotificationHref({
+      refEntity: notification.refEntity,
+      refId: notification.refId,
+      scope: notification.scope,
+    });
+
   const handleItemClick = async (notification: Notification) => {
     if (!notification.readAt) {
       await markNotificationRead(notification.id);
       void refetchCount();
     }
     setOpen(false);
-    const href = buildNotificationHref({
-      refEntity: notification.refEntity,
-      refId: notification.refId,
-      scope: notification.scope,
-    });
+    const href = buildHref(notification);
     if (href) router.push(href);
   };
 
@@ -92,15 +95,18 @@ export function NotificationBell() {
           <p className="text-muted-foreground px-4 py-6 text-center text-sm">{t('empty')}</p>
         ) : (
           <ul className="max-h-80 overflow-y-auto">
-            {preview.map((notification) => (
-              <li key={notification.id}>
-                <NotificationListItem
-                  notification={notification}
-                  compact
-                  onClick={() => void handleItemClick(notification)}
-                />
-              </li>
-            ))}
+            {preview.map((notification) => {
+              const href = buildHref(notification);
+              return (
+                <li key={notification.id}>
+                  <NotificationListItem
+                    notification={notification}
+                    compact
+                    onClick={href ? () => void handleItemClick(notification) : undefined}
+                  />
+                </li>
+              );
+            })}
           </ul>
         )}
         <div className="border-t px-4 py-2">

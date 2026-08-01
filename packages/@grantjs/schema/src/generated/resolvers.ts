@@ -1045,6 +1045,8 @@ export type Mutation = {
    */
   startProjectSync: ProjectSyncJob;
   updateGroup: Group;
+  /** Update the authenticated user's project membership profile (display name / picture). */
+  updateMyProjectMembership: MyProjectMembership;
   updateMyUser: User;
   updateOrganization: Organization;
   updateOrganizationMember: OrganizationMember;
@@ -1056,6 +1058,7 @@ export type Mutation = {
   updateRole: Role;
   updateTag: Tag;
   updateUser: User;
+  uploadMyProjectMembershipPicture: UploadUserPictureResult;
   uploadMyUserPicture: UploadUserPictureResult;
   uploadUserPicture: UploadUserPictureResult;
   verifyEmail: VerifyEmailResponse;
@@ -1288,6 +1291,10 @@ export type MutationUpdateGroupArgs = {
   input: UpdateGroupInput;
 };
 
+export type MutationUpdateMyProjectMembershipArgs = {
+  input: UpdateMyProjectMembershipInput;
+};
+
 export type MutationUpdateMyUserArgs = {
   input: UpdateMyUserInput;
 };
@@ -1337,6 +1344,10 @@ export type MutationUpdateUserArgs = {
   input: UpdateUserInput;
 };
 
+export type MutationUploadMyProjectMembershipPictureArgs = {
+  input: UploadMyProjectMembershipPictureInput;
+};
+
 export type MutationUploadMyUserPictureArgs = {
   input: UploadMyUserPictureInput;
 };
@@ -1359,6 +1370,20 @@ export type MutationVerifyMfaRecoveryCodeArgs = {
 
 export type MutationVerifyMyMfaEnrollmentArgs = {
   input: VerifyMyMfaEnrollmentInput;
+};
+
+export type MyProjectMembership = {
+  __typename?: 'MyProjectMembership';
+  accountId?: Maybe<Scalars['ID']['output']>;
+  displayName?: Maybe<Scalars['String']['output']>;
+  joinedAt: Scalars['Date']['output'];
+  metadata: Scalars['JSON']['output'];
+  organizationId?: Maybe<Scalars['ID']['output']>;
+  organizationName?: Maybe<Scalars['String']['output']>;
+  pictureUrl?: Maybe<Scalars['String']['output']>;
+  projectId: Scalars['ID']['output'];
+  projectName: Scalars['String']['output'];
+  role?: Maybe<Scalars['String']['output']>;
 };
 
 export type MyUserSessionsInput = {
@@ -2011,6 +2036,10 @@ export type Query = {
   me: MeResponse;
   myMfaDevices: Array<MfaDevice>;
   myMfaRecoveryCodeStatus: MfaRecoveryCodeStatus;
+  /** A single project membership for the authenticated user. */
+  myProjectMembership?: Maybe<MyProjectMembership>;
+  /** Project memberships for the authenticated user (project_users pivots). */
+  myProjectMemberships: Array<MyProjectMembership>;
   myUserAuthenticationMethods: Array<UserAuthenticationMethod>;
   myUserDataExport: UserDataExport;
   myUserSessions: UserSessionPage;
@@ -2069,6 +2098,10 @@ export type QueryInvitationArgs = {
 
 export type QueryIsAuthorizedArgs = {
   input: IsAuthorizedInput;
+};
+
+export type QueryMyProjectMembershipArgs = {
+  projectId: Scalars['ID']['input'];
 };
 
 export type QueryMyUserSessionsArgs = {
@@ -3038,6 +3071,12 @@ export type UpdateGroupTagInput = {
   tagId: Scalars['ID']['input'];
 };
 
+export type UpdateMyProjectMembershipInput = {
+  displayName?: InputMaybe<Scalars['String']['input']>;
+  pictureUrl?: InputMaybe<Scalars['String']['input']>;
+  projectId: Scalars['ID']['input'];
+};
+
 export type UpdateMyUserAuthenticationMethodInput = {
   isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
   isVerified?: InputMaybe<Scalars['Boolean']['input']>;
@@ -3211,6 +3250,13 @@ export type UpdateUserTagInput = {
   isPrimary: Scalars['Boolean']['input'];
   tagId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
+};
+
+export type UploadMyProjectMembershipPictureInput = {
+  contentType: Scalars['String']['input'];
+  file: Scalars['String']['input'];
+  filename: Scalars['String']['input'];
+  projectId: Scalars['ID']['input'];
 };
 
 export type UploadMyUserPictureInput = {
@@ -3798,6 +3844,7 @@ export type ResolversTypes = ResolversObject<{
   MfaVerifyResponse: ResolverTypeWrapper<MfaVerifyResponse>;
   MfaVerifyResult: ResolverTypeWrapper<MfaVerifyResult>;
   Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
+  MyProjectMembership: ResolverTypeWrapper<MyProjectMembership>;
   MyUserSessionsInput: MyUserSessionsInput;
   Organization: ResolverTypeWrapper<Organization>;
   OrganizationGroup: ResolverTypeWrapper<OrganizationGroup>;
@@ -3985,6 +4032,7 @@ export type ResolversTypes = ResolversObject<{
   UpdateAccountTagInput: UpdateAccountTagInput;
   UpdateGroupInput: UpdateGroupInput;
   UpdateGroupTagInput: UpdateGroupTagInput;
+  UpdateMyProjectMembershipInput: UpdateMyProjectMembershipInput;
   UpdateMyUserAuthenticationMethodInput: UpdateMyUserAuthenticationMethodInput;
   UpdateMyUserInput: UpdateMyUserInput;
   UpdateOrganizationInput: UpdateOrganizationInput;
@@ -4007,6 +4055,7 @@ export type ResolversTypes = ResolversObject<{
   UpdateUserInput: UpdateUserInput;
   UpdateUserSessionInput: UpdateUserSessionInput;
   UpdateUserTagInput: UpdateUserTagInput;
+  UploadMyProjectMembershipPictureInput: UploadMyProjectMembershipPictureInput;
   UploadMyUserPictureInput: UploadMyUserPictureInput;
   UploadUserPictureInput: UploadUserPictureInput;
   UploadUserPictureResult: ResolverTypeWrapper<UploadUserPictureResult>;
@@ -4153,6 +4202,7 @@ export type ResolversParentTypes = ResolversObject<{
   MfaVerifyResponse: MfaVerifyResponse;
   MfaVerifyResult: MfaVerifyResult;
   Mutation: Record<PropertyKey, never>;
+  MyProjectMembership: MyProjectMembership;
   MyUserSessionsInput: MyUserSessionsInput;
   Organization: Organization;
   OrganizationGroup: OrganizationGroup;
@@ -4313,6 +4363,7 @@ export type ResolversParentTypes = ResolversObject<{
   UpdateAccountTagInput: UpdateAccountTagInput;
   UpdateGroupInput: UpdateGroupInput;
   UpdateGroupTagInput: UpdateGroupTagInput;
+  UpdateMyProjectMembershipInput: UpdateMyProjectMembershipInput;
   UpdateMyUserAuthenticationMethodInput: UpdateMyUserAuthenticationMethodInput;
   UpdateMyUserInput: UpdateMyUserInput;
   UpdateOrganizationInput: UpdateOrganizationInput;
@@ -4335,6 +4386,7 @@ export type ResolversParentTypes = ResolversObject<{
   UpdateUserInput: UpdateUserInput;
   UpdateUserSessionInput: UpdateUserSessionInput;
   UpdateUserTagInput: UpdateUserTagInput;
+  UploadMyProjectMembershipPictureInput: UploadMyProjectMembershipPictureInput;
   UploadMyUserPictureInput: UploadMyUserPictureInput;
   UploadUserPictureInput: UploadUserPictureInput;
   UploadUserPictureResult: UploadUserPictureResult;
@@ -5191,6 +5243,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationUpdateGroupArgs, 'id' | 'input'>
   >;
+  updateMyProjectMembership?: Resolver<
+    ResolversTypes['MyProjectMembership'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateMyProjectMembershipArgs, 'input'>
+  >;
   updateMyUser?: Resolver<
     ResolversTypes['User'],
     ParentType,
@@ -5251,6 +5309,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationUpdateUserArgs, 'id' | 'input'>
   >;
+  uploadMyProjectMembershipPicture?: Resolver<
+    ResolversTypes['UploadUserPictureResult'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUploadMyProjectMembershipPictureArgs, 'input'>
+  >;
   uploadMyUserPicture?: Resolver<
     ResolversTypes['UploadUserPictureResult'],
     ParentType,
@@ -5287,6 +5351,23 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationVerifyMyMfaEnrollmentArgs, 'input'>
   >;
+}>;
+
+export type MyProjectMembershipResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['MyProjectMembership'] =
+    ResolversParentTypes['MyProjectMembership'],
+> = ResolversObject<{
+  accountId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  displayName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  joinedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  metadata?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
+  organizationId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  organizationName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  pictureUrl?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  projectName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  role?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
 }>;
 
 export type OrganizationResolvers<
@@ -5952,6 +6033,17 @@ export type QueryResolvers<
   myMfaDevices?: Resolver<Array<ResolversTypes['MfaDevice']>, ParentType, ContextType>;
   myMfaRecoveryCodeStatus?: Resolver<
     ResolversTypes['MfaRecoveryCodeStatus'],
+    ParentType,
+    ContextType
+  >;
+  myProjectMembership?: Resolver<
+    Maybe<ResolversTypes['MyProjectMembership']>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryMyProjectMembershipArgs, 'projectId'>
+  >;
+  myProjectMemberships?: Resolver<
+    Array<ResolversTypes['MyProjectMembership']>,
     ParentType,
     ContextType
   >;
@@ -6646,6 +6738,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   MfaVerifyResponse?: MfaVerifyResponseResolvers<ContextType>;
   MfaVerifyResult?: MfaVerifyResultResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
+  MyProjectMembership?: MyProjectMembershipResolvers<ContextType>;
   Organization?: OrganizationResolvers<ContextType>;
   OrganizationGroup?: OrganizationGroupResolvers<ContextType>;
   OrganizationInvitation?: OrganizationInvitationResolvers<ContextType>;
