@@ -1,8 +1,8 @@
 # Versions and publishes npm packages when a "Version packages" PR is merged to main.
-# On push to main: prepare → release (changesets) → docker → optional git tag.
+# On push to main: prepare → release (changesets) → docker → optional git tag + GH Release.
 #   - Feature merge: build/push :demo, :sha-<commit> (deploy pulls :demo).
 #   - Version PR merge: rebuild all images with bumped package.json, push
-#     :<semver>, :latest, :demo, :sha, then create v* git tag for GitHub Release.
+#     :<semver>, :latest, :demo, :sha, then create v* git tag and platform GitHub Release.
 # Deploy is handled by deploy.yml when the Release workflow built new images.
 name: Release
 
@@ -226,6 +226,9 @@ jobs:
           version: pnpm run version
           commit: 'chore: version packages'
           title: 'chore: version packages'
+          # Platform GitHub Releases are created as v* by release-git-tag.
+          # Per-package releases are noisy (empty bodies for fixed-group bumps).
+          createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -308,7 +311,7 @@ jobs:
           push: true
 
   release-git-tag:
-    name: Create release git tag
+    name: Create release git tag and GitHub Release
     runs-on: ubuntu-latest
     needs: [release, docker]
     if: needs.release.outputs.published == 'true' && inputs.rebuild_release_images != true
@@ -325,16 +328,42 @@ jobs:
         run: echo "version=$(node -p "require('./apps/api/package.json').version")" >> "$GITHUB_OUTPUT"
 
       - name: Create and push git tag
+        id: tag
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
           TAG="v${VERSION}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "Tag ${TAG} already exists; skipping."
+            echo "Tag ${TAG} already exists; will still ensure GitHub Release."
+            echo "created=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -a "$TAG" -m "Release ${TAG}"
           git push origin "$TAG"
+          echo "created=true" >> "$GITHUB_OUTPUT"
+
+      # Create the release in this job: GITHUB_TOKEN tag pushes do not trigger
+      # github-release.yml (GitHub blocks workflow recursion from the default token).
+      - name: Extract release notes
+        id: notes
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          NOTES_FILE="${RUNNER_TEMP}/release-notes.md"
+          ./scripts/extract-release-notes.sh "$VERSION" "$NOTES_FILE"
+          echo "path=$NOTES_FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3.0.0
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: v${{ steps.version.outputs.version }}
+          body_path: ${{ steps.notes.outputs.path }}
+          draft: false
+          prerelease: false
+          make_latest: true
