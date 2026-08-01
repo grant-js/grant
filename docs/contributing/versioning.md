@@ -43,13 +43,12 @@ Internal packages (`@grantjs/core`, `@grantjs/database`, etc.) and examples rema
 
    Choose bump type (patch/minor/major) for any fixed-group member (not the root `grant` package). This creates a file under `.changeset/`.
 
-2. **Open a PR** (or push to an existing PR). The [release workflow](.github/workflows/release.yml) runs on every push to `main`. If there are unversioned changesets, it creates or updates a PR titled **"chore: version packages"**. Nothing is published yet.
+2. **Open a PR** (or push to an existing PR). The [release workflow](.github/workflows/release.yml) runs on every push to `main`. If there are unversioned changesets, it creates or updates a PR titled **"chore: version packages"** by running `pnpm version` (`changeset version` plus [scripts/update-root-changelog.mjs](https://github.com/grant-js/grant/blob/main/scripts/update-root-changelog.mjs)). That updates package versions, package changelogs, root [CHANGELOG.md](https://github.com/grant-js/grant/blob/main/CHANGELOG.md), and the root `package.json` version. Nothing is published yet.
 
 3. **Merge the "chore: version packages" PR.** The workflow then:
-   - Runs `pnpm version` (updates package versions and package `CHANGELOG.md` files)
    - Runs `pnpm release` (builds and publishes to npm)
    - Tags Docker images with `:<version>` and `:latest`
-   - Creates git tag `v*` and a **platform** GitHub Release (notes from changeset summaries)
+   - Creates git tag `v*` and a **platform** GitHub Release (notes from changeset summaries / root changelog)
    - `.changeset/*` files from that PR are removed in the version commit
 
 4. **Every push to `main`** still builds and pushes app images with `:demo` and `:sha-<commit>` when relevant paths change.
@@ -90,6 +89,6 @@ Pushing a `v*` tag manually also triggers [github-release.yml](.github/workflows
 
 - **Platform release** (`vX.Y.Z`) — created by [release.yml](.github/workflows/release.yml) after npm publish. Notes come from [`scripts/extract-release-notes.sh`](https://github.com/grant-js/grant/blob/main/scripts/extract-release-notes.sh): root [CHANGELOG.md](https://github.com/grant-js/grant/blob/main/CHANGELOG.md) when present, otherwise aggregated changeset entries from the fixed-group package changelogs.
 - **Not created:** per-package GitHub Releases (`@grantjs/client@…`, etc.). Those tags may still exist for npm; the public release page is the platform `v*` release only.
-- [CHANGELOG.md](https://github.com/grant-js/grant/blob/main/CHANGELOG.md) — optional curated platform-wide notes (preferred when present)
+- [CHANGELOG.md](https://github.com/grant-js/grant/blob/main/CHANGELOG.md) — platform-wide notes (kept in sync by `pnpm version` via `scripts/update-root-changelog.mjs`; preferred source for GitHub Release notes when present)
 - `docs/releases/vX.Y.Z.md` — optional long-form detail for a release
 - Package histories: `apps/*/CHANGELOG.md`, `packages/@grantjs/*/CHANGELOG.md`
