@@ -1,6 +1,6 @@
 {
   "name": "grant",
-  "version": "1.0.0",
+  "version": "1.5.0",
   "private": true,
   "type": "module",
   "author": {
@@ -54,7 +54,7 @@
     "audit:pnpm": "pnpm audit --recursive",
     "benchmark:rbac": "node scripts/benchmarks/permission-evaluation.mjs",
     "changeset": "changeset",
-    "version": "changeset version",
+    "version": "changeset version && node scripts/update-root-changelog.mjs",
     "release": "pnpm build:release && changeset publish",
     "release:check": "node scripts/check-publishable-packages.mjs",
     "postinstall": "pnpm env:setup --quiet",

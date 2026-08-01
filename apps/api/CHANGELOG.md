@@ -1,5 +1,29 @@
 # grant-api
 
+## 1.5.0
+
+### Minor Changes
+
+- c515e3e: Add a domain-event backbone with project webhooks and in-app notifications.
+
+  Services publish catalogued events into a transactional outbox that drives signed webhook delivery and preference-aware notifications. The release covers IAM CRUD and assignment events, API key rotate (`api_key.rotated`), CDM import event suppression with `project_sync.completed` / `project_sync.failed` summaries, and dashboard UI for subscriptions, deliveries, and the notification center.
+
+### Patch Changes
+
+- Updated dependencies [c515e3e]
+  - @grantjs/schema@1.5.0
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+
 ## 1.4.2
 
 ### Patch Changes
