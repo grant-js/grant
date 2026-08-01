@@ -41,6 +41,8 @@ Every emitible type lives in `@grantjs/schema` (`EVENT_TYPES` / `EVENT_CATALOG`)
 
 A unit coverage test scans service sources for `events.publish({ type: '…' })` and asserts every emitted type is registered. New mutations should co-locate publish with the existing audit call.
 
+Coverage includes IAM CRUD/assignments, API key lifecycle, CDM sync summaries, and **membership lifecycle** (organization invitations, org members, project users).
+
 ## Publishing
 
 Services inject `IEventPublisher` and call `publish` after a successful mutation:

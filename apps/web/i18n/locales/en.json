@@ -3782,7 +3782,17 @@
         },
         "organization": {
           "invitation_sent": "Organization invitation sent",
+          "invitation_accepted": "Organization invitation accepted",
+          "invitation_revoked": "Organization invitation revoked",
+          "member_added": "Organization member added",
+          "member_role_changed": "Organization member role changed",
+          "member_removed": "Organization member removed",
           "mfa_enforcement_changed": "Organization MFA policy changed"
+        },
+        "project": {
+          "user_added": "Project member added",
+          "user_removed": "Project member removed",
+          "user_profile_updated": "Project member profile updated"
         },
         "project_sync": {
           "completed": "Project sync completed",

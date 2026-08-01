@@ -15,6 +15,7 @@ import {
   GetInvitationQueryVariables,
   OrganizationInvitation,
   OrganizationInvitationPage,
+  OrganizationInvitationStatus,
   QueryOrganizationInvitationsArgs,
   Tenant,
   UpdateOrganizationInvitationInput,
@@ -314,6 +315,29 @@ export class OrganizationInvitationService implements IOrganizationInvitationSer
 
     await this.audit.logUpdate(invitation.id, oldValues, newValues, metadata, transaction);
 
+    if (
+      oldInvitation.status !== OrganizationInvitationStatus.Accepted &&
+      invitation.status === OrganizationInvitationStatus.Accepted
+    ) {
+      const invitedUser = await this.userAuthenticationMethodRepository.findByEmail(
+        invitation.email,
+        transaction
+      );
+      await this.events.publish(
+        {
+          type: 'organization.invitation_accepted',
+          scope: { tenant: Tenant.Organization, id: invitation.organizationId },
+          subjectUserId: invitedUser?.userId ?? null,
+          aggregate: { kind: 'organizationInvitation', id: invitation.id },
+          data: {
+            before: oldValues,
+            after: { ...newValues, email: invitation.email },
+          },
+        },
+        transaction
+      );
+    }
+
     return validateOutput(
       createDynamicSingleSchema(organizationInvitationSchema),
       invitation,
@@ -353,6 +377,21 @@ export class OrganizationInvitationService implements IOrganizationInvitationSer
     };
 
     await this.audit.logSoftDelete(invitation.id, oldValues, newValues, metadata, transaction);
+
+    const invitedUser = await this.userAuthenticationMethodRepository.findByEmail(
+      invitation.email,
+      transaction
+    );
+    await this.events.publish(
+      {
+        type: 'organization.invitation_revoked',
+        scope: { tenant: Tenant.Organization, id: invitation.organizationId },
+        subjectUserId: invitedUser?.userId ?? null,
+        aggregate: { kind: 'organizationInvitation', id: invitation.id },
+        data: { before: oldValues, after: newValues },
+      },
+      transaction
+    );
 
     return validateOutput(
       createDynamicSingleSchema(organizationInvitationSchema),

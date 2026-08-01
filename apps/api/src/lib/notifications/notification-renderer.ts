@@ -100,6 +100,29 @@ const RENDERERS: Partial<Record<EventType, Renderer>> = {
       ? `You were invited to join ${ctx.scopeName}${byActor(ctx)}.`
       : `You were invited to join an organization${byActor(ctx)}.`,
   }),
+  'organization.invitation_accepted': (_e, ctx) => ({
+    title: ctx.scopeName ? `Invitation accepted — ${ctx.scopeName}` : 'Invitation accepted',
+    body: ctx.scopeName
+      ? `An invitation to ${ctx.scopeName} was accepted${byActor(ctx)}.`
+      : `An organization invitation was accepted${byActor(ctx)}.`,
+  }),
+  'organization.invitation_revoked': (_e, ctx) => ({
+    title: ctx.scopeName ? `Invitation revoked — ${ctx.scopeName}` : 'Invitation revoked',
+    body: ctx.scopeName
+      ? `An invitation to ${ctx.scopeName} was revoked${byActor(ctx)}.`
+      : `An organization invitation was revoked${byActor(ctx)}.`,
+  }),
+  'organization.member_added': (_e, ctx) => membershipMutation(ctx, 'Member added', 'joined'),
+  'organization.member_role_changed': (_e, ctx) =>
+    membershipMutation(ctx, 'Member role changed', 'had their role changed'),
+  'organization.member_removed': (_e, ctx) =>
+    membershipMutation(ctx, 'Member removed', 'was removed'),
+  'project.user_added': (_e, ctx) =>
+    membershipMutation(ctx, 'Project member added', 'was added to the project'),
+  'project.user_removed': (_e, ctx) =>
+    membershipMutation(ctx, 'Project member removed', 'was removed from the project'),
+  'project.user_profile_updated': (_e, ctx) =>
+    membershipMutation(ctx, 'Project profile updated', 'updated their project profile'),
   'user.email_verification_requested': () => ({
     title: 'Verify your email',
     body: 'Please verify your email address.',
@@ -216,6 +239,19 @@ function subjectAssignmentMutation(
       verb === 'assigned'
         ? `A ${lower} was assigned to you${by}${where}.`
         : `A ${lower} was revoked from you${by}${where}.`,
+  };
+}
+
+function membershipMutation(
+  ctx: NotificationDisplayContext,
+  title: string,
+  verbPhrase: string
+): { title: string; body: string | null } {
+  const where = inScope(ctx);
+  const by = byActor(ctx);
+  return {
+    title,
+    body: `A member ${verbPhrase}${by}${where}.`,
   };
 }
 

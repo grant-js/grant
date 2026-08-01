@@ -1,5 +1,6 @@
 import type {
   IAuditLogger,
+  IEventPublisher,
   IProjectRepository,
   IProjectUserRepository,
   IProjectUserService,
@@ -14,6 +15,7 @@ import {
   toMetadataRecord,
 } from '@/lib/effective-project-user-metadata.lib';
 import { ConflictError, NotFoundError } from '@/lib/errors';
+import { buildDelta } from '@/lib/events';
 import { syncProjectUserSearchDocument } from '@/lib/sync-project-user-search-document.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams } from '@/types';
@@ -35,6 +37,7 @@ export class ProjectUserService implements IProjectUserService {
     private readonly userRepository: IUserRepository,
     private readonly projectUserRepository: IProjectUserRepository,
     private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher,
     private readonly userAuthenticationMethods?: IUserAuthenticationMethodRepository
   ) {}
 
@@ -133,6 +136,16 @@ export class ProjectUserService implements IProjectUserService {
     };
 
     await this.audit.logCreate(projectUser.id, newValues, auditMetadata, transaction);
+
+    await this.events.publish(
+      {
+        type: 'project.user_added',
+        subjectUserId: projectUser.userId,
+        aggregate: { kind: 'projectUser', id: projectUser.id },
+        data: { after: newValues },
+      },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(projectUserSchema), projectUser, context);
   }
@@ -324,6 +337,16 @@ export class ProjectUserService implements IProjectUserService {
 
     await this.audit.logUpdate(projectUser.id, oldValues, newValues, { context }, transaction);
 
+    await this.events.publish(
+      {
+        type: 'project.user_profile_updated',
+        subjectUserId: projectUser.userId,
+        aggregate: { kind: 'projectUser', id: projectUser.id },
+        data: { before: oldValues, after: newValues, delta: buildDelta(oldValues, newValues) },
+      },
+      transaction
+    );
+
     await this.syncProjectUserSearchDocument(
       {
         projectId: validatedParams.projectId,
@@ -379,6 +402,16 @@ export class ProjectUserService implements IProjectUserService {
     } else {
       await this.audit.logSoftDelete(projectUser.id, oldValues, newValues, metadata, transaction);
     }
+
+    await this.events.publish(
+      {
+        type: 'project.user_removed',
+        subjectUserId: projectUser.userId,
+        aggregate: { kind: 'projectUser', id: projectUser.id },
+        data: { before: oldValues },
+      },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(projectUserSchema), projectUser, context);
   }

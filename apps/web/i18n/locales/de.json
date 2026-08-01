@@ -3479,7 +3479,17 @@
         },
         "organization": {
           "invitation_sent": "Organisationseinladung gesendet",
+          "invitation_accepted": "Organisationseinladung angenommen",
+          "invitation_revoked": "Organisationseinladung widerrufen",
+          "member_added": "Organisationsmitglied hinzugefügt",
+          "member_role_changed": "Rolle des Organisationsmitglieds geändert",
+          "member_removed": "Organisationsmitglied entfernt",
           "mfa_enforcement_changed": "MFA-Richtlinie der Organisation geändert"
+        },
+        "project": {
+          "user_added": "Projektmitglied hinzugefügt",
+          "user_removed": "Projektmitglied entfernt",
+          "user_profile_updated": "Projektmitgliedsprofil aktualisiert"
         },
         "project_sync": {
           "completed": "Projektsynchronisierung abgeschlossen",

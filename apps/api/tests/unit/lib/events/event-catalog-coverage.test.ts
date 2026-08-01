@@ -90,4 +90,22 @@ describe('event catalog coverage', () => {
       expect(emitted.has(type), `expected service emit for "${type}"`).toBe(true);
     }
   });
+
+  it('emits the membership lifecycle slice 3 events', () => {
+    const emitted = new Set(collectEmittedEventTypes());
+    const slice3 = [
+      'organization.invitation_accepted',
+      'organization.invitation_revoked',
+      'organization.member_added',
+      'organization.member_role_changed',
+      'organization.member_removed',
+      'project.user_added',
+      'project.user_removed',
+      'project.user_profile_updated',
+    ] as const;
+
+    for (const type of slice3) {
+      expect(emitted.has(type), `expected service emit for "${type}"`).toBe(true);
+    }
+  });
 });

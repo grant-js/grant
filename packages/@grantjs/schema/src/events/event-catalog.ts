@@ -56,6 +56,12 @@ const IAM_ROLE_HOLDERS_OWNERS_WATCHERS: EventCatalogEntry = {
   audienceRule: { primitives: ['roleHolders', 'owners', 'watchers'], excludeActor: true },
 };
 
+const MEMBERSHIP_SUBJECT_OWNERS: EventCatalogEntry = {
+  category: 'membership',
+  deliveryClass: 'notification',
+  audienceRule: { primitives: ['subject', 'owners'], excludeActor: true },
+};
+
 export const EVENT_TYPES = [
   // IAM mutations (Phase 1 slice)
   'role.created',
@@ -87,6 +93,14 @@ export const EVENT_TYPES = [
   'user.role_revoked',
   // Lifecycle / membership / security (Phase 3 seed)
   'organization.invitation_sent',
+  'organization.invitation_accepted',
+  'organization.invitation_revoked',
+  'organization.member_added',
+  'organization.member_role_changed',
+  'organization.member_removed',
+  'project.user_added',
+  'project.user_removed',
+  'project.user_profile_updated',
   'user.email_verification_requested',
   'organization.mfa_enforcement_changed',
   // CDM / project sync job summaries (entity events suppressed during import)
@@ -141,6 +155,14 @@ export const EVENT_CATALOG: Readonly<Record<EventType, EventCatalogEntry>> = {
     deliveryClass: 'notification',
     audienceRule: { primitives: ['subject'], excludeActor: true },
   },
+  'organization.invitation_accepted': MEMBERSHIP_SUBJECT_OWNERS,
+  'organization.invitation_revoked': MEMBERSHIP_SUBJECT_OWNERS,
+  'organization.member_added': MEMBERSHIP_SUBJECT_OWNERS,
+  'organization.member_role_changed': MEMBERSHIP_SUBJECT_OWNERS,
+  'organization.member_removed': MEMBERSHIP_SUBJECT_OWNERS,
+  'project.user_added': MEMBERSHIP_SUBJECT_OWNERS,
+  'project.user_removed': MEMBERSHIP_SUBJECT_OWNERS,
+  'project.user_profile_updated': MEMBERSHIP_SUBJECT_OWNERS,
   'user.email_verification_requested': {
     category: 'security',
     deliveryClass: 'transactional',

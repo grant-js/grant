@@ -141,4 +141,46 @@ describe('renderNotification', () => {
     expect(rendered.title).toBe('Group assigned');
     expect(rendered.body).toBe('A group was assigned to you by Alice Admin in Acme Corp.');
   });
+
+  it('renders organization.invitation_accepted', () => {
+    const rendered = renderNotification(
+      {
+        ...baseEvent,
+        type: 'organization.invitation_accepted',
+        category: 'membership',
+        aggregate: { kind: 'organizationInvitation', id: 'inv_1' },
+      },
+      { ...ctx, roleName: null }
+    );
+    expect(rendered.title).toBe('Invitation accepted — Acme Corp');
+    expect(rendered.body).toBe('An invitation to Acme Corp was accepted by Alice Admin.');
+  });
+
+  it('renders organization.member_removed', () => {
+    const rendered = renderNotification(
+      {
+        ...baseEvent,
+        type: 'organization.member_removed',
+        category: 'membership',
+        aggregate: { kind: 'organizationMember', id: 'org_1:user_subject' },
+      },
+      { ...ctx, roleName: null }
+    );
+    expect(rendered.title).toBe('Member removed');
+    expect(rendered.body).toBe('A member was removed by Alice Admin in Acme Corp.');
+  });
+
+  it('renders project.user_added', () => {
+    const rendered = renderNotification(
+      {
+        ...baseEvent,
+        type: 'project.user_added',
+        category: 'membership',
+        aggregate: { kind: 'projectUser', id: 'pu_1' },
+      },
+      { ...ctx, scopeName: 'Grant Demo', roleName: null }
+    );
+    expect(rendered.title).toBe('Project member added');
+    expect(rendered.body).toBe('A member was added to the project by Alice Admin in Grant Demo.');
+  });
 });

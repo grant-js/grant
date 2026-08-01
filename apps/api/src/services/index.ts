@@ -396,6 +396,7 @@ export function createServices(
       repositories.userRepository,
       repositories.projectUserRepository,
       audit(projectUserAuditLogs, 'projectUserId', user, db),
+      events,
       repositories.userAuthenticationMethodRepository
     ),
     projectUserPermissions: new ProjectUserPermissionService(
@@ -435,7 +436,8 @@ export function createServices(
       repositories.organizationRoleRepository,
       repositories.roleRepository,
       user,
-      audit(organizationAuditLogs, 'organizationId', user, db)
+      audit(organizationAuditLogs, 'organizationId', user, db),
+      events
     ),
     organizationRoles: new OrganizationRoleService(
       repositories.organizationRepository,
@@ -473,7 +475,8 @@ export function createServices(
       repositories.userRepository,
       repositories.organizationUserRepository,
       repositories.organizationRoleRepository,
-      audit(organizationUsersAuditLogs, 'organizationUserId', user, db)
+      audit(organizationUsersAuditLogs, 'organizationUserId', user, db),
+      events
     ),
     organizationProjects: new OrganizationProjectService(
       repositories.organizationRepository,

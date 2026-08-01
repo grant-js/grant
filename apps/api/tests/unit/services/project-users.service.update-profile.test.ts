@@ -26,7 +26,8 @@ describe('ProjectUserService.updateProjectUserProfile', () => {
       projectRepository as never,
       userRepository as never,
       projectUserRepository as never,
-      audit as never
+      audit as never,
+      { publish: vi.fn() } as never
     );
   }
 

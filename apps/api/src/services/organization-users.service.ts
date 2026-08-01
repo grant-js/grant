@@ -1,5 +1,6 @@
 import type {
   IAuditLogger,
+  IEventPublisher,
   IOrganizationRepository,
   IOrganizationRoleRepository,
   IOrganizationUserRepository,
@@ -10,6 +11,7 @@ import {
   AddOrganizationUserInput,
   OrganizationUser,
   RemoveOrganizationUserInput,
+  Tenant,
 } from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
@@ -30,7 +32,8 @@ export class OrganizationUserService implements IOrganizationUserService {
     private readonly userRepository: IUserRepository,
     private readonly organizationUserRepository: IOrganizationUserRepository,
     private readonly organizationRoleRepository: IOrganizationRoleRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   private async organizationExists(
@@ -149,6 +152,17 @@ export class OrganizationUserService implements IOrganizationUserService {
 
     await this.audit.logCreate(organizationUser.id, newValues, metadata, transaction);
 
+    await this.events.publish(
+      {
+        type: 'organization.member_added',
+        scope: { tenant: Tenant.Organization, id: organizationUser.organizationId },
+        subjectUserId: organizationUser.userId,
+        aggregate: { kind: 'organizationUser', id: organizationUser.id },
+        data: { after: newValues },
+      },
+      transaction
+    );
+
     return validateOutput(
       createDynamicSingleSchema(organizationUserSchema),
       organizationUser,
@@ -211,6 +225,17 @@ export class OrganizationUserService implements IOrganizationUserService {
         transaction
       );
     }
+
+    await this.events.publish(
+      {
+        type: 'organization.member_removed',
+        scope: { tenant: Tenant.Organization, id: organizationUser.organizationId },
+        subjectUserId: organizationUser.userId,
+        aggregate: { kind: 'organizationUser', id: organizationUser.id },
+        data: { before: oldValues },
+      },
+      transaction
+    );
 
     return validateOutput(
       createDynamicSingleSchema(organizationUserSchema),
