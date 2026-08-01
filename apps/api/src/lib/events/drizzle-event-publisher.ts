@@ -3,13 +3,22 @@ import { type DbSchema, eventLog, type NewEventLogModel } from '@grantjs/databas
 import { type DomainEventInput, getEventCatalogEntry, type Scope, Tenant } from '@grantjs/schema';
 
 import { config } from '@/config';
+import { EVENT_RELAY_JOB_ID } from '@/constants/event-relay.constants';
 import { isEventPublishingSuppressed } from '@/lib/events/event-suppression.lib';
+import { getJobAdapter } from '@/lib/jobs/initialize';
 import { createLogger } from '@/lib/logger';
 import type { Transaction } from '@/lib/transaction-manager.lib';
 
 const logger = createLogger('EventPublisher');
 
 const SYSTEM_SCOPE: Scope = { tenant: Tenant.System, id: 'system' };
+
+export type ScheduleAfterCommit = (fn: () => void | Promise<void>) => void;
+
+export interface DrizzleEventPublisherOptions {
+  /** When set, schedules a coalesced EVENT_RELAY enqueue after the surrounding TX commits. */
+  scheduleAfterCommit?: ScheduleAfterCommit;
+}
 
 /**
  * Drizzle-based implementation of IEventPublisher.
@@ -20,9 +29,12 @@ const SYSTEM_SCOPE: Scope = { tenant: Tenant.System, id: 'system' };
  * DrizzleAuditLogger) unless the caller overrides them on the event.
  */
 export class DrizzleEventPublisher implements IEventPublisher {
+  private relayEnqueueScheduled = false;
+
   constructor(
     private readonly user: GrantAuth | null,
-    private readonly db: DbSchema
+    private readonly db: DbSchema,
+    private readonly options: DrizzleEventPublisherOptions = {}
   ) {}
 
   private resolveActorId(event: DomainEventInput): string | null {
@@ -31,6 +43,26 @@ export class DrizzleEventPublisher implements IEventPublisher {
 
   private resolveScope(event: DomainEventInput): Scope {
     return event.scope ?? this.user?.scope ?? SYSTEM_SCOPE;
+  }
+
+  private scheduleRelayEnqueue(): void {
+    const scheduleAfterCommit = this.options.scheduleAfterCommit;
+    if (!scheduleAfterCommit || this.relayEnqueueScheduled) {
+      return;
+    }
+    this.relayEnqueueScheduled = true;
+    scheduleAfterCommit(() => {
+      const jobs = getJobAdapter();
+      if (!jobs?.enqueue) {
+        return;
+      }
+      void jobs.enqueue(EVENT_RELAY_JOB_ID).catch((err: unknown) => {
+        logger.error({
+          msg: 'Failed to enqueue event-relay after publish',
+          err,
+        });
+      });
+    });
   }
 
   async publish(event: DomainEventInput, transaction?: unknown): Promise<void> {
@@ -75,5 +107,7 @@ export class DrizzleEventPublisher implements IEventPublisher {
       });
       throw error;
     }
+
+    this.scheduleRelayEnqueue();
   }
 }

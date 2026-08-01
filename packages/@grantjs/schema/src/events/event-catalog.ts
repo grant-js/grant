@@ -38,10 +38,10 @@ export interface EventCatalogEntry {
   audienceRule: AudienceRule;
 }
 
-const IAM_OWNERS_WATCHERS: EventCatalogEntry = {
+const IAM_OWNERS: EventCatalogEntry = {
   category: 'iam',
   deliveryClass: 'notification',
-  audienceRule: { primitives: ['owners', 'watchers'], excludeActor: true },
+  audienceRule: { primitives: ['owners'], excludeActor: true },
 };
 
 const IAM_SUBJECT_OWNERS: EventCatalogEntry = {
@@ -50,16 +50,28 @@ const IAM_SUBJECT_OWNERS: EventCatalogEntry = {
   audienceRule: { primitives: ['subject', 'owners'], excludeActor: true },
 };
 
-const IAM_ROLE_HOLDERS_OWNERS_WATCHERS: EventCatalogEntry = {
+const IAM_ROLE_HOLDERS_OWNERS: EventCatalogEntry = {
   category: 'iam',
   deliveryClass: 'notification',
-  audienceRule: { primitives: ['roleHolders', 'owners', 'watchers'], excludeActor: true },
+  audienceRule: { primitives: ['roleHolders', 'owners'], excludeActor: true },
 };
 
 const MEMBERSHIP_SUBJECT_OWNERS: EventCatalogEntry = {
   category: 'membership',
   deliveryClass: 'notification',
   audienceRule: { primitives: ['subject', 'owners'], excludeActor: true },
+};
+
+const SECURITY_OWNERS: EventCatalogEntry = {
+  category: 'security',
+  deliveryClass: 'notification',
+  audienceRule: { primitives: ['owners'], excludeActor: true },
+};
+
+const INTEGRATIONS_OWNERS: EventCatalogEntry = {
+  category: 'integrations',
+  deliveryClass: 'notification',
+  audienceRule: { primitives: ['owners'], excludeActor: true },
 };
 
 export const EVENT_TYPES = [
@@ -111,43 +123,31 @@ export const EVENT_TYPES = [
 export type EventType = (typeof EVENT_TYPES)[number];
 
 export const EVENT_CATALOG: Readonly<Record<EventType, EventCatalogEntry>> = {
-  'role.created': IAM_ROLE_HOLDERS_OWNERS_WATCHERS,
-  'role.updated': IAM_OWNERS_WATCHERS,
-  'role.deleted': IAM_OWNERS_WATCHERS,
-  'permission.created': IAM_OWNERS_WATCHERS,
-  'permission.updated': IAM_ROLE_HOLDERS_OWNERS_WATCHERS,
-  'permission.deleted': IAM_OWNERS_WATCHERS,
-  'group.created': IAM_OWNERS_WATCHERS,
-  'group.updated': IAM_OWNERS_WATCHERS,
-  'group.deleted': IAM_OWNERS_WATCHERS,
-  'resource.created': IAM_OWNERS_WATCHERS,
-  'resource.updated': IAM_OWNERS_WATCHERS,
-  'resource.deleted': IAM_OWNERS_WATCHERS,
-  'role.permission_assigned': IAM_OWNERS_WATCHERS,
-  'role.permission_revoked': IAM_OWNERS_WATCHERS,
+  'role.created': IAM_ROLE_HOLDERS_OWNERS,
+  'role.updated': IAM_OWNERS,
+  'role.deleted': IAM_OWNERS,
+  'permission.created': IAM_OWNERS,
+  'permission.updated': IAM_ROLE_HOLDERS_OWNERS,
+  'permission.deleted': IAM_OWNERS,
+  'group.created': IAM_OWNERS,
+  'group.updated': IAM_OWNERS,
+  'group.deleted': IAM_OWNERS,
+  'resource.created': IAM_OWNERS,
+  'resource.updated': IAM_OWNERS,
+  'resource.deleted': IAM_OWNERS,
+  'role.permission_assigned': IAM_OWNERS,
+  'role.permission_revoked': IAM_OWNERS,
   'user.permission_assigned': IAM_SUBJECT_OWNERS,
   'user.permission_revoked': IAM_SUBJECT_OWNERS,
-  'group.permission_assigned': IAM_OWNERS_WATCHERS,
-  'group.permission_revoked': IAM_OWNERS_WATCHERS,
-  'role.group_assigned': IAM_OWNERS_WATCHERS,
-  'role.group_revoked': IAM_OWNERS_WATCHERS,
+  'group.permission_assigned': IAM_OWNERS,
+  'group.permission_revoked': IAM_OWNERS,
+  'role.group_assigned': IAM_OWNERS,
+  'role.group_revoked': IAM_OWNERS,
   'user.group_assigned': IAM_SUBJECT_OWNERS,
   'user.group_revoked': IAM_SUBJECT_OWNERS,
-  'api_key.created': {
-    category: 'security',
-    deliveryClass: 'notification',
-    audienceRule: { primitives: ['owners', 'watchers'], excludeActor: true },
-  },
-  'api_key.rotated': {
-    category: 'security',
-    deliveryClass: 'notification',
-    audienceRule: { primitives: ['owners', 'watchers'], excludeActor: true },
-  },
-  'api_key.revoked': {
-    category: 'security',
-    deliveryClass: 'notification',
-    audienceRule: { primitives: ['owners', 'watchers'], excludeActor: true },
-  },
+  'api_key.created': SECURITY_OWNERS,
+  'api_key.rotated': SECURITY_OWNERS,
+  'api_key.revoked': SECURITY_OWNERS,
   'user.role_assigned': IAM_SUBJECT_OWNERS,
   'user.role_revoked': IAM_SUBJECT_OWNERS,
   'organization.invitation_sent': {
@@ -173,16 +173,8 @@ export const EVENT_CATALOG: Readonly<Record<EventType, EventCatalogEntry>> = {
     deliveryClass: 'notification',
     audienceRule: { primitives: ['scopeMembers'], excludeActor: false },
   },
-  'project_sync.completed': {
-    category: 'integrations',
-    deliveryClass: 'notification',
-    audienceRule: { primitives: ['owners', 'watchers'], excludeActor: true },
-  },
-  'project_sync.failed': {
-    category: 'integrations',
-    deliveryClass: 'notification',
-    audienceRule: { primitives: ['owners', 'watchers'], excludeActor: true },
-  },
+  'project_sync.completed': INTEGRATIONS_OWNERS,
+  'project_sync.failed': INTEGRATIONS_OWNERS,
 };
 
 export function getEventCatalogEntry(type: EventType): EventCatalogEntry {

@@ -55,6 +55,15 @@ Payloads include ids and display-friendly fields for renderers. Never put secret
 
 User-facing assign/revoke events set `subjectUserId` so the notification audience can include the affected user.
 
+### Relay latency vs durability
+
+After a successful outbox insert, request-scoped publishers schedule a coalesced **`event-relay`** BullMQ job via `scheduleAfterCommit` so consumers run soon after commit. The scheduled **`event-relay-sweep`** job remains the durability guarantee if enqueue is lost or jobs are disabled. Background/`createAppContext` publishes without the hook rely on the sweep alone.
+
+### Integrator quirks (membership)
+
+- Accepting an organization invitation emits **two** events in one transaction: `organization.member_added` (membership write) then `organization.invitation_accepted` (invitation status transition). Filter by type if you only want one.
+- `organization.member_removed` can originate from admin remove (`OrganizationMemberService`) or cleanup paths (`OrganizationUserService`); both write sites emit the same type, never both in one call chain.
+
 ## CDM import suppression
 
 Bulk CDM import mutates many entities. Those entity-level events are **suppressed** for the duration of `importProjectCdm` (including replace teardown) via `runWithEventSuppression`, so imports do not flood webhooks or inboxes.
@@ -123,7 +132,7 @@ The notification generator:
 
 Users see the **notification center** and **preferences** in the dashboard; the header bell shows unread counts. Copy is rendered from event type + display context (actor, scope, entity names) — not from raw webhook envelopes.
 
-**Audience notes:** `owners` and `roleHolders` resolve to org/account administrative roles as implemented by the audience resolver. `watchers` is reserved in the catalog for a future subscribe model and currently contributes no recipients.
+**Audience notes:** `owners` and `roleHolders` resolve to org/account administrative roles as implemented by the audience resolver. The `watchers` primitive remains reserved for a future subscribe model and currently contributes no recipients; catalog `audienceRule`s do **not** list `watchers` until that model exists.
 
 ## Adding a new event type
 

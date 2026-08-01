@@ -57,7 +57,7 @@ import {
 
 import { DrizzleAuditLogger } from '@/lib/audit';
 import { IEntityCacheAdapter } from '@/lib/cache';
-import { DrizzleEventPublisher } from '@/lib/events';
+import { DrizzleEventPublisher, type ScheduleAfterCommit } from '@/lib/events';
 import {
   AudienceResolver,
   NotificationDisplayContextResolver,
@@ -141,14 +141,21 @@ function audit(table: any, entityIdField: string, user: GrantAuth | null, db: Db
   return new DrizzleAuditLogger(table, entityIdField, user, db);
 }
 
+export interface CreateServicesOptions {
+  scheduleAfterCommit?: ScheduleAfterCommit;
+}
+
 export function createServices(
   repositories: Repositories,
   user: GrantAuth | null,
   db: DbSchema,
   cache: IEntityCacheAdapter,
-  grant: Grant
+  grant: Grant,
+  options?: CreateServicesOptions
 ) {
-  const events = new DrizzleEventPublisher(user, db);
+  const events = new DrizzleEventPublisher(user, db, {
+    scheduleAfterCommit: options?.scheduleAfterCommit,
+  });
   const webhookDispatcher = new WebhookDispatcherConsumer(
     repositories.webhookSubscriptionRepository,
     repositories.webhookDeliveryRepository
@@ -395,6 +402,8 @@ export function createServices(
       repositories.projectRepository,
       repositories.userRepository,
       repositories.projectUserRepository,
+      repositories.organizationProjectRepository,
+      repositories.accountProjectRepository,
       audit(projectUserAuditLogs, 'projectUserId', user, db),
       events,
       repositories.userAuthenticationMethodRepository

@@ -1,5 +1,5 @@
 import type { DomainEvent } from '@grantjs/schema';
-import { Tenant } from '@grantjs/schema';
+import { EVENT_CATALOG, EVENT_TYPES, Tenant } from '@grantjs/schema';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AudienceResolver } from '@/lib/notifications/audience-resolver';
@@ -141,7 +141,16 @@ describe('AudienceResolver', () => {
     expect(ids).toEqual(['admin-1']);
   });
 
-  it('returns empty for watchers primitive', async () => {
+  it('does not claim watchers in catalog audience rules', () => {
+    for (const type of EVENT_TYPES) {
+      expect(
+        EVENT_CATALOG[type].audienceRule.primitives,
+        `catalog entry "${type}" should not list watchers until a subscribe model exists`
+      ).not.toContain('watchers');
+    }
+  });
+
+  it('returns empty recipients when owners and roleHolders resolve empty', async () => {
     organizationProjects.getFirstByProjectId.mockResolvedValue({
       organizationId: 'org-1',
     });

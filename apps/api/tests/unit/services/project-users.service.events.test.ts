@@ -1,10 +1,13 @@
 import type {
+  IAccountProjectRepository,
   IAuditLogger,
   IEventPublisher,
+  IOrganizationProjectRepository,
   IProjectRepository,
   IProjectUserRepository,
   IUserRepository,
 } from '@grantjs/core';
+import { Tenant } from '@grantjs/schema';
 import { describe, expect, it, vi } from 'vitest';
 
 import { ProjectUserService } from '@/services/project-users.service';
@@ -12,6 +15,7 @@ import { ProjectUserService } from '@/services/project-users.service';
 const projectId = '10000000-0000-4000-8000-000000000050';
 const userId = '10000000-0000-4000-8000-000000000051';
 const projectUserId = '10000000-0000-4000-8000-000000000052';
+const organizationId = '10000000-0000-4000-8000-000000000053';
 
 function buildService() {
   const projectRepository = {
@@ -46,6 +50,14 @@ function buildService() {
     updateProjectUserSearchDocument: vi.fn().mockResolvedValue(undefined),
   } as unknown as IProjectUserRepository;
 
+  const organizationProjectRepository = {
+    getFirstByProjectId: vi.fn().mockResolvedValue({ organizationId, projectId }),
+  } as unknown as IOrganizationProjectRepository;
+
+  const accountProjectRepository = {
+    getFirstByProjectId: vi.fn().mockResolvedValue(null),
+  } as unknown as IAccountProjectRepository;
+
   const audit = {
     logCreate: vi.fn(),
     logUpdate: vi.fn(),
@@ -62,6 +74,8 @@ function buildService() {
       projectRepository,
       userRepository,
       projectUserRepository,
+      organizationProjectRepository,
+      accountProjectRepository,
       audit,
       events
     ),
@@ -70,7 +84,7 @@ function buildService() {
 }
 
 describe('ProjectUserService membership events', () => {
-  it('publishes project.user_added after a successful add', async () => {
+  it('publishes project.user_added with explicit OrganizationProject scope', async () => {
     const { service, events } = buildService();
 
     await service.addProjectUser({ projectId, userId });
@@ -78,6 +92,10 @@ describe('ProjectUserService membership events', () => {
     expect(events.publish).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'project.user_added',
+        scope: {
+          tenant: Tenant.OrganizationProject,
+          id: `${organizationId}:${projectId}`,
+        },
         subjectUserId: userId,
         aggregate: { kind: 'projectUser', id: projectUserId },
         data: {

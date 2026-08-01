@@ -28,7 +28,8 @@ export const ORG_ROLE_HOLDER_ROLE_NAMES = [
  * declarative audience primitives from the event catalog.
  *
  * Implemented primitives: `actor`, `subject`, `scopeMembers`, `owners`,
- * `roleHolders`. `watchers` is deferred (no watch/subscribe model).
+ * `roleHolders`. `watchers` remains reserved (no watch/subscribe model) and
+ * is not listed in catalog audience rules until that model exists.
  */
 export class AudienceResolver {
   constructor(

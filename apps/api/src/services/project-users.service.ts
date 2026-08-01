@@ -1,13 +1,21 @@
 import type {
+  IAccountProjectRepository,
   IAuditLogger,
   IEventPublisher,
+  IOrganizationProjectRepository,
   IProjectRepository,
   IProjectUserRepository,
   IProjectUserService,
   IUserAuthenticationMethodRepository,
   IUserRepository,
 } from '@grantjs/core';
-import { AddProjectUserInput, ProjectUser, RemoveProjectUserInput } from '@grantjs/schema';
+import {
+  AddProjectUserInput,
+  type ProjectUser,
+  RemoveProjectUserInput,
+  type Scope,
+  Tenant,
+} from '@grantjs/schema';
 
 import { mergeCdmImporterMetadata } from '@/constants/cdm-import.constants';
 import {
@@ -36,10 +44,41 @@ export class ProjectUserService implements IProjectUserService {
     private readonly projectRepository: IProjectRepository,
     private readonly userRepository: IUserRepository,
     private readonly projectUserRepository: IProjectUserRepository,
+    private readonly organizationProjectRepository: IOrganizationProjectRepository,
+    private readonly accountProjectRepository: IAccountProjectRepository,
     private readonly audit: IAuditLogger,
     private readonly events: IEventPublisher,
     private readonly userAuthenticationMethods?: IUserAuthenticationMethodRepository
   ) {}
+
+  private async resolveProjectScope(
+    projectId: string,
+    transaction?: Transaction
+  ): Promise<Scope | undefined> {
+    const orgProject = await this.organizationProjectRepository.getFirstByProjectId(
+      projectId,
+      transaction
+    );
+    if (orgProject) {
+      return {
+        tenant: Tenant.OrganizationProject,
+        id: `${orgProject.organizationId}:${projectId}`,
+      };
+    }
+
+    const accountProject = await this.accountProjectRepository.getFirstByProjectId(
+      projectId,
+      transaction
+    );
+    if (accountProject) {
+      return {
+        tenant: Tenant.AccountProject,
+        id: `${accountProject.accountId}:${projectId}`,
+      };
+    }
+
+    return undefined;
+  }
 
   private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
     const projects = await this.projectRepository.getProjects(
@@ -137,9 +176,11 @@ export class ProjectUserService implements IProjectUserService {
 
     await this.audit.logCreate(projectUser.id, newValues, auditMetadata, transaction);
 
+    const scope = await this.resolveProjectScope(projectUser.projectId, transaction);
     await this.events.publish(
       {
         type: 'project.user_added',
+        ...(scope ? { scope } : {}),
         subjectUserId: projectUser.userId,
         aggregate: { kind: 'projectUser', id: projectUser.id },
         data: { after: newValues },
@@ -337,9 +378,11 @@ export class ProjectUserService implements IProjectUserService {
 
     await this.audit.logUpdate(projectUser.id, oldValues, newValues, { context }, transaction);
 
+    const scope = await this.resolveProjectScope(projectUser.projectId, transaction);
     await this.events.publish(
       {
         type: 'project.user_profile_updated',
+        ...(scope ? { scope } : {}),
         subjectUserId: projectUser.userId,
         aggregate: { kind: 'projectUser', id: projectUser.id },
         data: { before: oldValues, after: newValues, delta: buildDelta(oldValues, newValues) },
@@ -403,9 +446,11 @@ export class ProjectUserService implements IProjectUserService {
       await this.audit.logSoftDelete(projectUser.id, oldValues, newValues, metadata, transaction);
     }
 
+    const scope = await this.resolveProjectScope(projectUser.projectId, transaction);
     await this.events.publish(
       {
         type: 'project.user_removed',
+        ...(scope ? { scope } : {}),
         subjectUserId: projectUser.userId,
         aggregate: { kind: 'projectUser', id: projectUser.id },
         data: { before: oldValues },

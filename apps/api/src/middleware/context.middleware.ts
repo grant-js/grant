@@ -89,7 +89,9 @@ export function contextMiddleware(db: DbSchema, cache: IEntityCacheAdapter) {
 
         const scopedDb = tx as unknown as DbSchema;
         const scopedRepositories = createRepositories(scopedDb);
-        const services = createServices(scopedRepositories, user, scopedDb, cache, grant);
+        const services = createServices(scopedRepositories, user, scopedDb, cache, grant, {
+          scheduleAfterCommit,
+        });
         const txConnection = new DrizzleTransactionalConnection(scopedDb);
         const handlers = createHandlers(cache, services, txConnection, grant, {
           scheduleAfterCommit,
@@ -149,7 +151,9 @@ export function contextMiddleware(db: DbSchema, cache: IEntityCacheAdapter) {
         void Promise.resolve(fn());
       };
 
-      const services = createServices(repositories, user, db, cache, grant);
+      const services = createServices(repositories, user, db, cache, grant, {
+        scheduleAfterCommit,
+      });
       const txConnection = new DrizzleTransactionalConnection(db);
       const handlers = createHandlers(cache, services, txConnection, grant, {
         scheduleAfterCommit,
