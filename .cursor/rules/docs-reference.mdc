@@ -27,6 +27,7 @@ When working on a topic below, read the linked doc for detailed patterns, conven
 | Organization invitations, member management | `docs/core-concepts/organization-invitations.md` |
 | MFA recovery codes, challenge elevation, self-service MFA disable | `docs/core-concepts/mfa-recovery.md` |
 | CDM permission import/export, sync jobs, rollback snapshots | `docs/core-concepts/cdm-import-export.md` |
+| Domain events, webhooks, in-app notifications, event catalog | `docs/core-concepts/events-webhooks-notifications.md` |
 
 ## Implementation patterns
 

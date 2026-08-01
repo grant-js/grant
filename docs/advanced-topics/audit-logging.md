@@ -109,5 +109,6 @@ Audit logs accumulate over time. Consider archiving or purging entries older tha
 **Related:**
 
 - [Transaction Management](/advanced-topics/transactions) — Audit logs within transactions
+- [Events, Webhooks & Notifications](/core-concepts/events-webhooks-notifications) — Domain-event outbox for webhooks and in-app alerts (separate from audit)
 - [Privacy Settings](/advanced-topics/privacy-settings) — GDPR compliance features
 - [Multi-Tenancy](/architecture/multi-tenancy) — Tenant-scoped audit filtering
