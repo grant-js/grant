@@ -22,7 +22,7 @@
     "mailgun.js": "^13",
     "node-mailjet": "^6",
     "nodemailer": "^9.0.3",
-    "next": "16.2.10",
+    "next": "16.2.11",
     "postgres": "^3.4.9",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
