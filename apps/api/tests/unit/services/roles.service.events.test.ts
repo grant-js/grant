@@ -1,10 +1,12 @@
 import type { IAuditLogger, IEventPublisher, IRoleRepository } from '@grantjs/core';
 import type { Role } from '@grantjs/schema';
+import { Tenant } from '@grantjs/schema';
 import { describe, expect, it, vi } from 'vitest';
 
 import { RoleService } from '@/services/roles.service';
 
 const roleId = '10000000-0000-4000-8000-000000000010';
+const orgId = '10000000-0000-4000-8000-000000000011';
 
 function role(overrides: Partial<Role> = {}): Role {
   return {
@@ -71,7 +73,10 @@ describe('RoleService IAM events', () => {
   it('publishes role.updated after a successful update', async () => {
     const { service, events } = buildService();
 
-    await service.updateRole(roleId, { name: 'Senior Developer' });
+    await service.updateRole(roleId, {
+      scope: { tenant: Tenant.Organization, id: orgId },
+      name: 'Senior Developer',
+    });
 
     expect(events.publish).toHaveBeenCalledWith(
       expect.objectContaining({

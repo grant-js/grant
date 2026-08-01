@@ -262,17 +262,20 @@ export function createServices(
     userAuthenticationMethods: new UserAuthenticationMethodService(
       repositories.userAuthenticationMethodRepository,
       repositories.userSessionRepository,
-      audit(userAuthenticationMethodsAuditLogs, 'userAuthenticationMethodId', user, db)
+      audit(userAuthenticationMethodsAuditLogs, 'userAuthenticationMethodId', user, db),
+      events
     ),
     userMfa: new UserMfaService(
       repositories.userMfaFactorRepository,
       repositories.userMfaRecoveryCodeRepository,
-      audit(userMfaFactorAuditLogs, 'userMfaFactorId', user, db)
+      audit(userMfaFactorAuditLogs, 'userMfaFactorId', user, db),
+      events
     ),
     userSessions: new UserSessionService(
       repositories.userSessionRepository,
       audit(userSessionAuditLogs, 'userSessionId', user, db),
-      grant
+      grant,
+      events
     ),
     roles: new RoleService(
       repositories.roleRepository,
@@ -381,7 +384,8 @@ export function createServices(
     ),
     signingKeys: new SigningKeyService(
       repositories.signingKeyRepository,
-      audit(signingKeyAuditLogs, 'signingKeyId', user, db)
+      audit(signingKeyAuditLogs, 'signingKeyId', user, db),
+      events
     ),
     apiKeys: new ApiKeyService(
       repositories.accountProjectRepository,

@@ -68,6 +68,18 @@ const SECURITY_OWNERS: EventCatalogEntry = {
   audienceRule: { primitives: ['owners'], excludeActor: true },
 };
 
+const SECURITY_SUBJECT: EventCatalogEntry = {
+  category: 'security',
+  deliveryClass: 'notification',
+  audienceRule: { primitives: ['subject'], excludeActor: false },
+};
+
+const SECURITY_SUBJECT_EXCLUDE_ACTOR: EventCatalogEntry = {
+  category: 'security',
+  deliveryClass: 'notification',
+  audienceRule: { primitives: ['subject'], excludeActor: true },
+};
+
 const INTEGRATIONS_OWNERS: EventCatalogEntry = {
   category: 'integrations',
   deliveryClass: 'notification',
@@ -115,6 +127,14 @@ export const EVENT_TYPES = [
   'project.user_profile_updated',
   'user.email_verification_requested',
   'organization.mfa_enforcement_changed',
+  'signing_key.created',
+  'signing_key.rotated',
+  'user.mfa_enabled',
+  'user.mfa_disabled',
+  'user.mfa_recovery_codes_regenerated',
+  'user.session_revoked',
+  'user.sessions_revoked',
+  'user.password_changed',
   // CDM / project sync job summaries (entity events suppressed during import)
   'project_sync.completed',
   'project_sync.failed',
@@ -173,6 +193,14 @@ export const EVENT_CATALOG: Readonly<Record<EventType, EventCatalogEntry>> = {
     deliveryClass: 'notification',
     audienceRule: { primitives: ['scopeMembers'], excludeActor: false },
   },
+  'signing_key.created': SECURITY_OWNERS,
+  'signing_key.rotated': SECURITY_OWNERS,
+  'user.mfa_enabled': SECURITY_SUBJECT,
+  'user.mfa_disabled': SECURITY_SUBJECT,
+  'user.mfa_recovery_codes_regenerated': SECURITY_SUBJECT,
+  'user.session_revoked': SECURITY_SUBJECT_EXCLUDE_ACTOR,
+  'user.sessions_revoked': SECURITY_SUBJECT,
+  'user.password_changed': SECURITY_SUBJECT,
   'project_sync.completed': INTEGRATIONS_OWNERS,
   'project_sync.failed': INTEGRATIONS_OWNERS,
 };

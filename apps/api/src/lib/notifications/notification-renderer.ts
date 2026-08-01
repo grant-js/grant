@@ -139,6 +139,44 @@ const RENDERERS: Partial<Record<EventType, Renderer>> = {
       body: `${org} ${policy}${byActor(ctx)}.`,
     };
   },
+  'signing_key.created': (_e, ctx) => ({
+    title: 'Signing key created',
+    body: `A signing key was created${byActor(ctx)}${inScope(ctx)}.`,
+  }),
+  'signing_key.rotated': (_e, ctx) => ({
+    title: 'Signing key rotated',
+    body: `A signing key was rotated${byActor(ctx)}${inScope(ctx)}.`,
+  }),
+  'user.mfa_enabled': (_e, ctx) => ({
+    title: 'MFA enabled',
+    body: `Multi-factor authentication was enabled on your account${byActor(ctx)}.`,
+  }),
+  'user.mfa_disabled': (_e, ctx) => ({
+    title: 'MFA disabled',
+    body: `Multi-factor authentication was disabled on your account${byActor(ctx)}.`,
+  }),
+  'user.mfa_recovery_codes_regenerated': (_e, ctx) => ({
+    title: 'MFA recovery codes regenerated',
+    body: `Your MFA recovery codes were regenerated${byActor(ctx)}.`,
+  }),
+  'user.session_revoked': (_e, ctx) => ({
+    title: 'Session revoked',
+    body: `A session was revoked on your account${byActor(ctx)}.`,
+  }),
+  'user.sessions_revoked': (e, ctx) => {
+    const count = numberField(e.data.after, 'count');
+    return {
+      title: 'All sessions revoked',
+      body:
+        count != null
+          ? `${count} session${count === 1 ? '' : 's'} were revoked on your account${byActor(ctx)}.`
+          : `All sessions were revoked on your account${byActor(ctx)}.`,
+    };
+  },
+  'user.password_changed': (_e, ctx) => ({
+    title: 'Password changed',
+    body: `Your password was changed${byActor(ctx)}.`,
+  }),
   'project_sync.completed': (e, ctx) => {
     const operation = stringField(e.data.after, 'operation') ?? 'import';
     const where = inScope(ctx);
@@ -269,6 +307,14 @@ function booleanField(
 ): boolean | null {
   const value = record?.[key];
   return typeof value === 'boolean' ? value : null;
+}
+
+function numberField(
+  record: Record<string, unknown> | null | undefined,
+  key: string
+): number | null {
+  const value = record?.[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
 function humanizeType(type: string): string {

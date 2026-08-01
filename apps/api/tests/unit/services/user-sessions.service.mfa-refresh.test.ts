@@ -62,7 +62,9 @@ describe('UserSessionService refreshSessionByRefreshToken (MFA / AAL)', () => {
     mockRepo.getSessionByRefreshToken.mockResolvedValue(before);
     mockRepo.refreshUserSession.mockResolvedValue(after);
 
-    const service = new UserSessionService(mockRepo as never, mockAudit as never, mockGrant);
+    const service = new UserSessionService(mockRepo as never, mockAudit as never, mockGrant, {
+      publish: vi.fn(),
+    } as never);
 
     await service.refreshSessionByRefreshToken('old-rt');
 
@@ -83,7 +85,9 @@ describe('UserSessionService refreshSessionByRefreshToken (MFA / AAL)', () => {
     mockRepo.getSessionByRefreshToken.mockResolvedValue(before);
     mockRepo.refreshUserSession.mockResolvedValue(after);
 
-    const service = new UserSessionService(mockRepo as never, mockAudit as never, mockGrant);
+    const service = new UserSessionService(mockRepo as never, mockAudit as never, mockGrant, {
+      publish: vi.fn(),
+    } as never);
 
     await service.refreshSessionByRefreshToken('old-rt');
 

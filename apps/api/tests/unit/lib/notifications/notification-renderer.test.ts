@@ -183,4 +183,48 @@ describe('renderNotification', () => {
     expect(rendered.title).toBe('Project member added');
     expect(rendered.body).toBe('A member was added to the project by Alice Admin in Grant Demo.');
   });
+
+  it('renders user.mfa_enabled', () => {
+    const rendered = renderNotification(
+      {
+        ...baseEvent,
+        type: 'user.mfa_enabled',
+        category: 'security',
+        aggregate: { kind: 'userMfaFactor', id: 'factor_1' },
+      },
+      { ...ctx, roleName: null }
+    );
+    expect(rendered.title).toBe('MFA enabled');
+    expect(rendered.body).toBe(
+      'Multi-factor authentication was enabled on your account by Alice Admin.'
+    );
+  });
+
+  it('renders user.session_revoked', () => {
+    const rendered = renderNotification(
+      {
+        ...baseEvent,
+        type: 'user.session_revoked',
+        category: 'security',
+        aggregate: { kind: 'userSession', id: 'sess_1' },
+      },
+      { ...ctx, roleName: null }
+    );
+    expect(rendered.title).toBe('Session revoked');
+    expect(rendered.body).toBe('A session was revoked on your account by Alice Admin.');
+  });
+
+  it('renders user.password_changed', () => {
+    const rendered = renderNotification(
+      {
+        ...baseEvent,
+        type: 'user.password_changed',
+        category: 'security',
+        aggregate: { kind: 'userAuthenticationMethod', id: 'uam_1' },
+      },
+      { ...ctx, roleName: null }
+    );
+    expect(rendered.title).toBe('Password changed');
+    expect(rendered.body).toBe('Your password was changed by Alice Admin.');
+  });
 });

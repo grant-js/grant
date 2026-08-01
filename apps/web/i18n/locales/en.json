@@ -3773,12 +3773,22 @@
           "group_revoked": "Group revoked from user",
           "role_assigned": "Role assigned to user",
           "role_revoked": "Role revoked from user",
-          "email_verification_requested": "Email verification requested"
+          "email_verification_requested": "Email verification requested",
+          "mfa_enabled": "MFA enabled",
+          "mfa_disabled": "MFA disabled",
+          "mfa_recovery_codes_regenerated": "MFA recovery codes regenerated",
+          "session_revoked": "Session revoked",
+          "sessions_revoked": "All sessions revoked",
+          "password_changed": "Password changed"
         },
         "api_key": {
           "created": "API key created",
           "rotated": "API key rotated",
           "revoked": "API key revoked"
+        },
+        "signing_key": {
+          "created": "Signing key created",
+          "rotated": "Signing key rotated"
         },
         "organization": {
           "invitation_sent": "Organization invitation sent",

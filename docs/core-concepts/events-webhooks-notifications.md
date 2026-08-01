@@ -41,7 +41,7 @@ Every emitible type lives in `@grantjs/schema` (`EVENT_TYPES` / `EVENT_CATALOG`)
 
 A unit coverage test scans service sources for `events.publish({ type: '…' })` and asserts every emitted type is registered. New mutations should co-locate publish with the existing audit call.
 
-Coverage includes IAM CRUD/assignments, API key lifecycle, CDM sync summaries, and **membership lifecycle** (organization invitations, org members, project users).
+Coverage includes IAM CRUD/assignments, API key lifecycle, CDM sync summaries, **membership lifecycle** (organization invitations, org members, project users), and **security lifecycle** (signing keys, MFA enable/disable/recovery codes, session revoke, password changed). Password-reset **request** remains email-only (`sendPasswordReset`); only completed password changes emit `user.password_changed`.
 
 ## Publishing
 

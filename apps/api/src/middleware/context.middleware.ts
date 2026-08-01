@@ -10,6 +10,7 @@ import { getLocale } from '@/i18n';
 import { DrizzleAuditLogger } from '@/lib/audit';
 import { extractScopeFromRequest } from '@/lib/authorization/scope-extractor';
 import { IEntityCacheAdapter } from '@/lib/cache';
+import { DrizzleEventPublisher } from '@/lib/events';
 import {
   getAuthorizationToken,
   getClientIp,
@@ -49,9 +50,11 @@ export function contextMiddleware(db: DbSchema, cache: IEntityCacheAdapter) {
       SYSTEM_USER,
       db
     );
+    const bootstrapEvents = new DrizzleEventPublisher(SYSTEM_USER, db);
     const signingKeyService = new SigningKeyService(
       repositories.signingKeyRepository,
-      signingKeyAudit
+      signingKeyAudit,
+      bootstrapEvents
     );
 
     const grantService = new GrantService(cache, grantRepository, signingKeyService, {

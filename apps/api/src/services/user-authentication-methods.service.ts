@@ -1,5 +1,6 @@
 import type {
   IAuditLogger,
+  IEventPublisher,
   IUserAuthenticationMethodRepository,
   IUserAuthenticationMethodService,
   IUserSessionRepository,
@@ -51,7 +52,8 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
   constructor(
     private readonly userAuthenticationMethodRepository: IUserAuthenticationMethodRepository,
     private readonly userSessionRepository: IUserSessionRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   public async getUserAuthenticationMethod(
@@ -663,6 +665,16 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
       transaction
     );
 
+    await this.events.publish(
+      {
+        type: 'user.password_changed',
+        subjectUserId: targetUserId,
+        aggregate: { kind: 'userAuthenticationMethod', id: targetMethod.id },
+        data: { after: { userId: targetUserId, reason: 'reset' } },
+      },
+      transaction
+    );
+
     return targetUserId;
   }
 
@@ -677,6 +689,18 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
 
     for (const session of sessions.userSessions) {
       await this.userSessionRepository.softDeleteUserSession({ id: session.id }, transaction);
+    }
+
+    if (sessions.userSessions.length > 0) {
+      await this.events.publish(
+        {
+          type: 'user.sessions_revoked',
+          subjectUserId: userId,
+          aggregate: { kind: 'user', id: userId },
+          data: { after: { userId, count: sessions.userSessions.length } },
+        },
+        transaction
+      );
     }
   }
 
@@ -722,6 +746,16 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
       emailMethod.id,
       {
         providerData,
+      },
+      transaction
+    );
+
+    await this.events.publish(
+      {
+        type: 'user.password_changed',
+        subjectUserId: userId,
+        aggregate: { kind: 'userAuthenticationMethod', id: emailMethod.id },
+        data: { after: { userId, reason: 'change' } },
       },
       transaction
     );

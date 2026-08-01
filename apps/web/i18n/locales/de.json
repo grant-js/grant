@@ -3470,12 +3470,22 @@
           "group_revoked": "Gruppe dem Benutzer entzogen",
           "role_assigned": "Rolle dem Benutzer zugewiesen",
           "role_revoked": "Rolle dem Benutzer entzogen",
-          "email_verification_requested": "E-Mail-Verifizierung angefordert"
+          "email_verification_requested": "E-Mail-Verifizierung angefordert",
+          "mfa_enabled": "MFA aktiviert",
+          "mfa_disabled": "MFA deaktiviert",
+          "mfa_recovery_codes_regenerated": "MFA-Wiederherstellungscodes neu generiert",
+          "session_revoked": "Sitzung widerrufen",
+          "sessions_revoked": "Alle Sitzungen widerrufen",
+          "password_changed": "Passwort geändert"
         },
         "api_key": {
           "created": "API-Schlüssel erstellt",
           "rotated": "API-Schlüssel rotiert",
           "revoked": "API-Schlüssel widerrufen"
+        },
+        "signing_key": {
+          "created": "Signierschlüssel erstellt",
+          "rotated": "Signierschlüssel rotiert"
         },
         "organization": {
           "invitation_sent": "Organisationseinladung gesendet",

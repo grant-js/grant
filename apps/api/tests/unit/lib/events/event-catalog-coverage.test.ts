@@ -108,4 +108,22 @@ describe('event catalog coverage', () => {
       expect(emitted.has(type), `expected service emit for "${type}"`).toBe(true);
     }
   });
+
+  it('emits the security lifecycle slice events', () => {
+    const emitted = new Set(collectEmittedEventTypes());
+    const securitySlice = [
+      'signing_key.created',
+      'signing_key.rotated',
+      'user.mfa_enabled',
+      'user.mfa_disabled',
+      'user.mfa_recovery_codes_regenerated',
+      'user.session_revoked',
+      'user.sessions_revoked',
+      'user.password_changed',
+    ] as const;
+
+    for (const type of securitySlice) {
+      expect(emitted.has(type), `expected service emit for "${type}"`).toBe(true);
+    }
+  });
 });
