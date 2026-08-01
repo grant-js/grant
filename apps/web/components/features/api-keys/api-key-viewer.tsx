@@ -57,6 +57,7 @@ export function ApiKeyViewer({
   const search = useApiKeysStore((state) => state.search);
   const sort = useApiKeysStore((state) => state.sort);
   const secretDialogOpen = useApiKeysStore((state) => state.secretDialogOpen);
+  const secretDialogMode = useApiKeysStore((state) => state.secretDialogMode);
   const createdApiKey = useApiKeysStore((state) => state.createdApiKey);
   const setTotalCount = useApiKeysStore((state) => state.setTotalCount);
   const setRefetch = useApiKeysStore((state) => state.setRefetch);
@@ -308,6 +309,7 @@ export function ApiKeyViewer({
             clientId={createdApiKey.clientId}
             clientSecret={createdApiKey.clientSecret}
             scope={scope ? { tenant: scope.tenant, id: scope.id } : null}
+            mode={secretDialogMode}
           />
         )}
       </>
@@ -343,6 +345,7 @@ export function ApiKeyViewer({
           clientId={createdApiKey.clientId}
           clientSecret={createdApiKey.clientSecret}
           scope={scope ? { tenant: scope.tenant, id: scope.id } : null}
+          mode={secretDialogMode}
         />
       )}
     </>

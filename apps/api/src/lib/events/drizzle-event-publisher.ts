@@ -3,6 +3,7 @@ import { type DbSchema, eventLog, type NewEventLogModel } from '@grantjs/databas
 import { type DomainEventInput, getEventCatalogEntry, type Scope, Tenant } from '@grantjs/schema';
 
 import { config } from '@/config';
+import { isEventPublishingSuppressed } from '@/lib/events/event-suppression.lib';
 import { createLogger } from '@/lib/logger';
 import type { Transaction } from '@/lib/transaction-manager.lib';
 
@@ -33,6 +34,14 @@ export class DrizzleEventPublisher implements IEventPublisher {
   }
 
   async publish(event: DomainEventInput, transaction?: unknown): Promise<void> {
+    if (isEventPublishingSuppressed()) {
+      logger.debug({
+        msg: 'Skipping domain event publish (suppressed)',
+        type: event.type,
+      });
+      return;
+    }
+
     const dbInstance = (transaction as Transaction | undefined) ?? this.db;
     const scope = this.resolveScope(event);
     const entry = getEventCatalogEntry(event.type);

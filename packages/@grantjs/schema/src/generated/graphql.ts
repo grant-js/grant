@@ -107,6 +107,22 @@ export type RevokeApiKeyMutation = {
   };
 };
 
+export type RotateApiKeyMutationVariables = Exact<{
+  input: Types.RotateApiKeyInput;
+}>;
+
+export type RotateApiKeyMutation = {
+  rotateApiKey: {
+    id: string;
+    clientId: string;
+    clientSecret: string;
+    name: string | null;
+    description: string | null;
+    expiresAt: Date | null;
+    createdAt: Date;
+  };
+};
+
 export type LoginMutationVariables = Exact<{
   input: Types.LoginInput;
 }>;
@@ -2265,6 +2281,54 @@ export const RevokeApiKeyDocument = {
     },
   ],
 } as unknown as DocumentNode<RevokeApiKeyMutation, RevokeApiKeyMutationVariables>;
+export const RotateApiKeyDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'RotateApiKey' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'RotateApiKeyInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'rotateApiKey' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'clientId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'clientSecret' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'expiresAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<RotateApiKeyMutation, RotateApiKeyMutationVariables>;
 export const LoginDocument = {
   kind: 'Document',
   definitions: [

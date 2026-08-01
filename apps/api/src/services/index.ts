@@ -283,13 +283,15 @@ export function createServices(
       repositories.userRepository,
       repositories.permissionRepository,
       repositories.userPermissionRepository,
-      audit(userPermissionsAuditLogs, 'userPermissionId', user, db)
+      audit(userPermissionsAuditLogs, 'userPermissionId', user, db),
+      events
     ),
     userGroups: new UserGroupService(
       repositories.userRepository,
       repositories.groupRepository,
       repositories.userGroupRepository,
-      audit(userGroupsAuditLogs, 'userGroupId', user, db)
+      audit(userGroupsAuditLogs, 'userGroupId', user, db),
+      events
     ),
     userTags: new UserTagService(
       repositories.userRepository,
@@ -300,7 +302,8 @@ export function createServices(
     tags: new TagService(repositories.tagRepository, audit(tagAuditLogs, 'tagId', user, db)),
     groups: new GroupService(
       repositories.groupRepository,
-      audit(groupAuditLogs, 'groupId', user, db)
+      audit(groupAuditLogs, 'groupId', user, db),
+      events
     ),
     permissions: new PermissionService(
       repositories.permissionRepository,
@@ -309,7 +312,8 @@ export function createServices(
     ),
     resources: new ResourceService(
       repositories.resourceRepository,
-      audit(resourceAuditLogs, 'resourceId', user, db)
+      audit(resourceAuditLogs, 'resourceId', user, db),
+      events
     ),
     resourceTags: new ResourceTagService(
       repositories.resourceRepository,
@@ -461,7 +465,8 @@ export function createServices(
       repositories.groupRepository,
       repositories.permissionRepository,
       repositories.groupPermissionRepository,
-      audit(groupPermissionsAuditLogs, 'groupPermissionId', user, db)
+      audit(groupPermissionsAuditLogs, 'groupPermissionId', user, db),
+      events
     ),
     organizationUsers: new OrganizationUserService(
       repositories.organizationRepository,
@@ -487,13 +492,15 @@ export function createServices(
       repositories.roleRepository,
       repositories.groupRepository,
       repositories.roleGroupRepository,
-      audit(roleGroupsAuditLogs, 'roleGroupId', user, db)
+      audit(roleGroupsAuditLogs, 'roleGroupId', user, db),
+      events
     ),
     rolePermissions: new RolePermissionService(
       repositories.roleRepository,
       repositories.permissionRepository,
       repositories.rolePermissionRepository,
-      audit(rolePermissionsAuditLogs, 'rolePermissionId', user, db)
+      audit(rolePermissionsAuditLogs, 'rolePermissionId', user, db),
+      events
     ),
     organizationPermissions: new OrganizationPermissionService(
       repositories.organizationRepository,
@@ -595,7 +602,8 @@ export function createServices(
     ),
     projectSyncJobs: new ProjectSyncJobService(
       repositories.projectSyncJobRepository,
-      audit(projectSyncJobAuditLogs, 'projectSyncJobId', user, db)
+      audit(projectSyncJobAuditLogs, 'projectSyncJobId', user, db),
+      events
     ),
   };
 }

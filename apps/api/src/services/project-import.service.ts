@@ -55,6 +55,7 @@ import {
 } from '@/lib/cdm';
 import type { ExpandedCdmSyncPayload } from '@/lib/cdm/expand-cdm-sync-input.lib';
 import { ConflictError, ValidationError } from '@/lib/errors';
+import { runWithEventSuppression } from '@/lib/events';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { ProjectExportRepository } from '@/repositories/project-export.repository';
 import {
@@ -245,6 +246,17 @@ export class ProjectImportService implements IProjectImportService {
   }
 
   public async importProjectCdm(
+    params: {
+      projectId: string;
+      scope: Scope;
+      input: SyncProjectInput;
+    },
+    transaction: unknown
+  ): Promise<SyncProjectResult> {
+    return runWithEventSuppression(() => this.applyProjectCdmImport(params, transaction));
+  }
+
+  private async applyProjectCdmImport(
     params: {
       projectId: string;
       scope: Scope;

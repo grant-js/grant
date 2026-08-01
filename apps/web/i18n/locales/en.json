@@ -1030,6 +1030,7 @@
         "submitting": "Creating..."
       },
       "actions": {
+        "rotate": "Rotate",
         "revoke": "Revoke",
         "delete": "Delete"
       },
@@ -1039,6 +1040,12 @@
         "cancel": "Cancel",
         "confirm": "Revoke"
       },
+      "rotateDialog": {
+        "title": "Rotate API Key",
+        "description": "Rotate the secret for API key \"{name}\"? The client ID stays the same. The previous secret stops working immediately, and the new secret is shown only once.",
+        "cancel": "Cancel",
+        "confirm": "Rotate"
+      },
       "deleteDialog": {
         "title": "Delete API Key",
         "description": "Are you sure you want to delete the API key \"{name}\"? This action cannot be undone.",
@@ -1047,8 +1054,10 @@
       },
       "secretDialog": {
         "title": "API Key Created",
+        "titleRotated": "API Key Rotated",
         "description": "Save your API key credentials. This is the only time you'll be able to view the client secret.",
         "warning": "This is the last time you'll be able to view the client secret. Make sure to copy it now and store it securely.",
+        "warningRotated": "The previous secret no longer works. This is the last time you'll be able to view the new client secret. Copy it now and store it securely.",
         "clientId": "Client ID",
         "clientSecret": "Client Secret",
         "close": "I've Saved My Credentials",
@@ -3649,6 +3658,8 @@
       "deleteError": "Failed to delete API key",
       "revokeSuccess": "API key revoked",
       "revokeError": "Failed to revoke API key",
+      "rotateSuccess": "API key rotated",
+      "rotateError": "Failed to rotate API key",
       "exchangeError": "Failed to exchange API key"
     }
   },
@@ -3727,6 +3738,56 @@
       "table": {
         "name": "Name",
         "event": "Event"
+      },
+      "types": {
+        "role": {
+          "created": "Role created",
+          "updated": "Role updated",
+          "deleted": "Role deleted",
+          "permission_assigned": "Permission assigned to role",
+          "permission_revoked": "Permission revoked from role",
+          "group_assigned": "Group assigned to role",
+          "group_revoked": "Group revoked from role"
+        },
+        "permission": {
+          "created": "Permission created",
+          "updated": "Permission updated",
+          "deleted": "Permission deleted"
+        },
+        "group": {
+          "created": "Group created",
+          "updated": "Group updated",
+          "deleted": "Group deleted",
+          "permission_assigned": "Permission assigned to group",
+          "permission_revoked": "Permission revoked from group"
+        },
+        "resource": {
+          "created": "Resource created",
+          "updated": "Resource updated",
+          "deleted": "Resource deleted"
+        },
+        "user": {
+          "permission_assigned": "Permission assigned to user",
+          "permission_revoked": "Permission revoked from user",
+          "group_assigned": "Group assigned to user",
+          "group_revoked": "Group revoked from user",
+          "role_assigned": "Role assigned to user",
+          "role_revoked": "Role revoked from user",
+          "email_verification_requested": "Email verification requested"
+        },
+        "api_key": {
+          "created": "API key created",
+          "rotated": "API key rotated",
+          "revoked": "API key revoked"
+        },
+        "organization": {
+          "invitation_sent": "Organization invitation sent",
+          "mfa_enforcement_changed": "Organization MFA policy changed"
+        },
+        "project_sync": {
+          "completed": "Project sync completed",
+          "failed": "Project sync failed"
+        }
       }
     },
     "deleteDialog": {

@@ -23,9 +23,10 @@ import { toast } from '@/components/ui/toast';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useScopeFromParams } from '@/hooks/common';
 import { useWebhookSubscriptionMutations } from '@/hooks/webhooks';
+import { eventTypeLabelKey } from '@/lib/event-type-label.lib';
 import { useWebhooksStore } from '@/stores/webhooks.store';
 
-const SELECTABLE_EVENT_TYPES = EVENT_TYPES.filter((type) => type !== 'api_key.rotated');
+const SELECTABLE_EVENT_TYPES = EVENT_TYPES;
 
 interface WebhookCreateDialogProps {
   triggerAlwaysShowLabel?: boolean;
@@ -33,6 +34,7 @@ interface WebhookCreateDialogProps {
 
 export function WebhookCreateDialog({ triggerAlwaysShowLabel = false }: WebhookCreateDialogProps) {
   const t = useTranslations('webhooks');
+  const tEvents = useTranslations('webhooks.events');
   const scope = useScopeFromParams();
   const refetch = useWebhooksStore((state) => state.refetch);
   const handleSecretRevealed = useWebhooksStore((state) => state.handleSecretRevealed);
@@ -147,7 +149,10 @@ export function WebhookCreateDialog({ triggerAlwaysShowLabel = false }: WebhookC
                     checked={selectedTypes.includes(type)}
                     onCheckedChange={(checked) => toggleType(type, checked === true)}
                   />
-                  <span className="font-mono text-xs">{type}</span>
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="truncate">{tEvents(eventTypeLabelKey(type))}</span>
+                    <span className="truncate font-mono text-xs text-muted-foreground">{type}</span>
+                  </span>
                 </label>
               ))}
             </div>

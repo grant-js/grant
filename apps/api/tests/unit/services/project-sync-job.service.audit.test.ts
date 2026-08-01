@@ -1,7 +1,7 @@
 /**
  * Ensures project sync job lifecycle writes append-only audit rows.
  */
-import type { IAuditLogger } from '@grantjs/core';
+import type { IAuditLogger, IEventPublisher } from '@grantjs/core';
 import {
   CdmModeStrategy,
   ProjectSyncJobOperation,
@@ -47,6 +47,12 @@ function noopAudit(): IAuditLogger {
   };
 }
 
+function noopEvents(): IEventPublisher {
+  return {
+    publish: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
 describe('ProjectSyncJobService audit', () => {
   it('records CREATE after enqueue', async () => {
     const inserted = buildJob();
@@ -54,7 +60,7 @@ describe('ProjectSyncJobService audit', () => {
       insert: vi.fn().mockResolvedValue(inserted),
     };
     const audit = noopAudit();
-    const svc = new ProjectSyncJobService(repo as never, audit);
+    const svc = new ProjectSyncJobService(repo as never, audit, noopEvents());
 
     await svc.create({
       projectId,
@@ -100,7 +106,7 @@ describe('ProjectSyncJobService audit', () => {
       updateStatus: vi.fn().mockResolvedValue(running),
     };
     const audit = noopAudit();
-    const svc = new ProjectSyncJobService(repo as never, audit);
+    const svc = new ProjectSyncJobService(repo as never, audit, noopEvents());
 
     await svc.transitionToRunning({ jobId });
 
@@ -119,7 +125,7 @@ describe('ProjectSyncJobService audit', () => {
       updateStatus: vi.fn().mockResolvedValue(updated),
     };
     const audit = noopAudit();
-    const svc = new ProjectSyncJobService(repo as never, audit);
+    const svc = new ProjectSyncJobService(repo as never, audit, noopEvents());
 
     await svc.cancel({ projectId, jobId });
 

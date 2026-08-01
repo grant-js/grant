@@ -111,6 +111,15 @@ export class PermissionService implements IPermissionService {
 
     await this.audit.logCreate(permission.id, newValues, metadata, transaction);
 
+    await this.events.publish(
+      {
+        type: 'permission.created',
+        aggregate: { kind: 'permission', id: permission.id },
+        data: { after: newValues },
+      },
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(permissionSchema), permission, context);
   }
 
@@ -207,6 +216,15 @@ export class PermissionService implements IPermissionService {
         transaction
       );
     }
+
+    await this.events.publish(
+      {
+        type: 'permission.deleted',
+        aggregate: { kind: 'permission', id: deletedPermission.id },
+        data: { before: oldValues },
+      },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(permissionSchema), deletedPermission, context);
   }

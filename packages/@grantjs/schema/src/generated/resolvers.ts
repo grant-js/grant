@@ -1013,6 +1013,11 @@ export type Mutation = {
   revokeRolePermission: RolePermission;
   revokeUserPermission: UserPermission;
   /**
+   * Rotate an API key secret in place. Returns the new plaintext secret once.
+   * Keeps the same key id and clientId; rejects revoked keys.
+   */
+  rotateApiKey: CreateApiKeyResult;
+  /**
    * Rotate the signing key for the given scope: create a new active key and mark the previous one as rotated.
    * Allowed scopes: accountProject, organizationProject only.
    * Returns the new signing key (public info).
@@ -1260,6 +1265,10 @@ export type MutationRevokeRolePermissionArgs = {
 
 export type MutationRevokeUserPermissionArgs = {
   input: RevokeUserPermissionInput;
+};
+
+export type MutationRotateApiKeyArgs = {
+  input: RotateApiKeyInput;
 };
 
 export type MutationRotateSigningKeyArgs = {
@@ -2861,6 +2870,11 @@ export type RoleTagTagArgs = {
   scope: Scope;
 };
 
+export type RotateApiKeyInput = {
+  id: Scalars['ID']['input'];
+  scope: Scope;
+};
+
 export type Scope = {
   id: Scalars['ID']['input'];
   tenant: Tenant;
@@ -4010,6 +4024,7 @@ export type ResolversTypes = ResolversObject<{
   RoleSortInput: RoleSortInput;
   RoleSortableField: RoleSortableField;
   RoleTag: ResolverTypeWrapper<RoleTag>;
+  RotateApiKeyInput: RotateApiKeyInput;
   Scope: Scope;
   Searchable: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['Searchable']>;
   SessionExportData: ResolverTypeWrapper<SessionExportData>;
@@ -4346,6 +4361,7 @@ export type ResolversParentTypes = ResolversObject<{
   RolePermission: RolePermission;
   RoleSortInput: RoleSortInput;
   RoleTag: RoleTag;
+  RotateApiKeyInput: RotateApiKeyInput;
   Scope: Scope;
   Searchable: ResolversInterfaceTypes<ResolversParentTypes>['Searchable'];
   SessionExportData: SessionExportData;
@@ -5205,6 +5221,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationRevokeUserPermissionArgs, 'input'>
+  >;
+  rotateApiKey?: Resolver<
+    ResolversTypes['CreateApiKeyResult'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationRotateApiKeyArgs, 'input'>
   >;
   rotateSigningKey?: Resolver<
     ResolversTypes['SigningKey'],

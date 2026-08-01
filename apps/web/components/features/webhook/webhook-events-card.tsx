@@ -40,12 +40,13 @@ import {
 } from '@/hooks/common';
 import { useWebhookSubscriptionMutations } from '@/hooks/webhooks';
 import { type DetailAttachmentFilter, resolveDetailQueryIds } from '@/lib/detail-attachment-filter';
+import { eventTypeLabelKey } from '@/lib/event-type-label.lib';
 
 import { WebhookEventSearch } from './webhook-event-search';
 
 const EVENTS_PAGE_LIMIT = 10;
 
-const SELECTABLE_EVENT_TYPES = EVENT_TYPES.filter((type) => type !== 'api_key.rotated');
+const SELECTABLE_EVENT_TYPES = EVENT_TYPES;
 
 interface EventTypeRow {
   type: EventType;
@@ -93,6 +94,8 @@ export function WebhookEventsCard({
     []
   );
 
+  const eventLabel = useCallback((type: EventType) => t(eventTypeLabelKey(type)), [t]);
+
   const filteredEventRows = useMemo(() => {
     if (eventsAttachmentFilter === 'selected' && eventQueryTypes?.length === 0) {
       return [];
@@ -109,10 +112,13 @@ export function WebhookEventsCard({
         if (!normalizedSearch) {
           return true;
         }
-        return row.type.toLowerCase().includes(normalizedSearch);
+        const label = eventLabel(row.type).toLowerCase();
+        return (
+          row.type.toLowerCase().includes(normalizedSearch) || label.includes(normalizedSearch)
+        );
       })
-      .sort((left, right) => left.type.localeCompare(right.type));
-  }, [allEventRows, eventQueryTypes, eventsAttachmentFilter, search]);
+      .sort((left, right) => eventLabel(left.type).localeCompare(eventLabel(right.type)));
+  }, [allEventRows, eventLabel, eventQueryTypes, eventsAttachmentFilter, search]);
 
   const totalCount = filteredEventRows.length;
   const totalPages = Math.ceil(totalCount / EVENTS_PAGE_LIMIT);
@@ -217,7 +223,7 @@ export function WebhookEventsCard({
       width: '240px',
       ...DETAIL_TEXT_COLUMN,
       className: DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
-      render: (row) => <span className="text-sm font-medium">{row.type}</span>,
+      render: (row) => <span className="text-sm font-medium">{eventLabel(row.type)}</span>,
     },
     {
       key: 'event',

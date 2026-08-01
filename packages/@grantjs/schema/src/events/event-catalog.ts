@@ -14,7 +14,7 @@ export type EventCategory = (typeof EVENT_CATEGORIES)[number];
 export const EVENT_DELIVERY_CLASSES = ['transactional', 'notification'] as const;
 export type EventDeliveryClass = (typeof EVENT_DELIVERY_CLASSES)[number];
 
-/** Declarative audience primitives resolved by the notification generator. */
+/** Declarative audience primitives resolved by the notification audience resolver. */
 export const AUDIENCE_PRIMITIVES = [
   'actor',
   'subject',
@@ -38,10 +38,48 @@ export interface EventCatalogEntry {
   audienceRule: AudienceRule;
 }
 
+const IAM_OWNERS_WATCHERS: EventCatalogEntry = {
+  category: 'iam',
+  deliveryClass: 'notification',
+  audienceRule: { primitives: ['owners', 'watchers'], excludeActor: true },
+};
+
+const IAM_SUBJECT_OWNERS: EventCatalogEntry = {
+  category: 'iam',
+  deliveryClass: 'notification',
+  audienceRule: { primitives: ['subject', 'owners'], excludeActor: true },
+};
+
+const IAM_ROLE_HOLDERS_OWNERS_WATCHERS: EventCatalogEntry = {
+  category: 'iam',
+  deliveryClass: 'notification',
+  audienceRule: { primitives: ['roleHolders', 'owners', 'watchers'], excludeActor: true },
+};
+
 export const EVENT_TYPES = [
   // IAM mutations (Phase 1 slice)
   'role.created',
+  'role.updated',
+  'role.deleted',
+  'permission.created',
   'permission.updated',
+  'permission.deleted',
+  'group.created',
+  'group.updated',
+  'group.deleted',
+  'resource.created',
+  'resource.updated',
+  'resource.deleted',
+  'role.permission_assigned',
+  'role.permission_revoked',
+  'user.permission_assigned',
+  'user.permission_revoked',
+  'group.permission_assigned',
+  'group.permission_revoked',
+  'role.group_assigned',
+  'role.group_revoked',
+  'user.group_assigned',
+  'user.group_revoked',
   'api_key.created',
   'api_key.rotated',
   'api_key.revoked',
@@ -51,21 +89,36 @@ export const EVENT_TYPES = [
   'organization.invitation_sent',
   'user.email_verification_requested',
   'organization.mfa_enforcement_changed',
+  // CDM / project sync job summaries (entity events suppressed during import)
+  'project_sync.completed',
+  'project_sync.failed',
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];
 
 export const EVENT_CATALOG: Readonly<Record<EventType, EventCatalogEntry>> = {
-  'role.created': {
-    category: 'iam',
-    deliveryClass: 'notification',
-    audienceRule: { primitives: ['roleHolders', 'owners', 'watchers'], excludeActor: true },
-  },
-  'permission.updated': {
-    category: 'iam',
-    deliveryClass: 'notification',
-    audienceRule: { primitives: ['roleHolders', 'owners', 'watchers'], excludeActor: true },
-  },
+  'role.created': IAM_ROLE_HOLDERS_OWNERS_WATCHERS,
+  'role.updated': IAM_OWNERS_WATCHERS,
+  'role.deleted': IAM_OWNERS_WATCHERS,
+  'permission.created': IAM_OWNERS_WATCHERS,
+  'permission.updated': IAM_ROLE_HOLDERS_OWNERS_WATCHERS,
+  'permission.deleted': IAM_OWNERS_WATCHERS,
+  'group.created': IAM_OWNERS_WATCHERS,
+  'group.updated': IAM_OWNERS_WATCHERS,
+  'group.deleted': IAM_OWNERS_WATCHERS,
+  'resource.created': IAM_OWNERS_WATCHERS,
+  'resource.updated': IAM_OWNERS_WATCHERS,
+  'resource.deleted': IAM_OWNERS_WATCHERS,
+  'role.permission_assigned': IAM_OWNERS_WATCHERS,
+  'role.permission_revoked': IAM_OWNERS_WATCHERS,
+  'user.permission_assigned': IAM_SUBJECT_OWNERS,
+  'user.permission_revoked': IAM_SUBJECT_OWNERS,
+  'group.permission_assigned': IAM_OWNERS_WATCHERS,
+  'group.permission_revoked': IAM_OWNERS_WATCHERS,
+  'role.group_assigned': IAM_OWNERS_WATCHERS,
+  'role.group_revoked': IAM_OWNERS_WATCHERS,
+  'user.group_assigned': IAM_SUBJECT_OWNERS,
+  'user.group_revoked': IAM_SUBJECT_OWNERS,
   'api_key.created': {
     category: 'security',
     deliveryClass: 'notification',
@@ -81,16 +134,8 @@ export const EVENT_CATALOG: Readonly<Record<EventType, EventCatalogEntry>> = {
     deliveryClass: 'notification',
     audienceRule: { primitives: ['owners', 'watchers'], excludeActor: true },
   },
-  'user.role_assigned': {
-    category: 'iam',
-    deliveryClass: 'notification',
-    audienceRule: { primitives: ['subject', 'owners'], excludeActor: true },
-  },
-  'user.role_revoked': {
-    category: 'iam',
-    deliveryClass: 'notification',
-    audienceRule: { primitives: ['subject', 'owners'], excludeActor: true },
-  },
+  'user.role_assigned': IAM_SUBJECT_OWNERS,
+  'user.role_revoked': IAM_SUBJECT_OWNERS,
   'organization.invitation_sent': {
     category: 'membership',
     deliveryClass: 'notification',
@@ -105,6 +150,16 @@ export const EVENT_CATALOG: Readonly<Record<EventType, EventCatalogEntry>> = {
     category: 'security',
     deliveryClass: 'notification',
     audienceRule: { primitives: ['scopeMembers'], excludeActor: false },
+  },
+  'project_sync.completed': {
+    category: 'integrations',
+    deliveryClass: 'notification',
+    audienceRule: { primitives: ['owners', 'watchers'], excludeActor: true },
+  },
+  'project_sync.failed': {
+    category: 'integrations',
+    deliveryClass: 'notification',
+    audienceRule: { primitives: ['owners', 'watchers'], excludeActor: true },
   },
 };
 

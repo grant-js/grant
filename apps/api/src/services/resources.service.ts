@@ -1,4 +1,9 @@
-import type { IAuditLogger, IResourceRepository, IResourceService } from '@grantjs/core';
+import type {
+  IAuditLogger,
+  IEventPublisher,
+  IResourceRepository,
+  IResourceService,
+} from '@grantjs/core';
 import {
   CreateResourceInput,
   MutationDeleteResourceArgs,
@@ -10,6 +15,7 @@ import {
 } from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
+import { buildDelta } from '@/lib/events';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -30,7 +36,8 @@ import {
 export class ResourceService implements IResourceService {
   constructor(
     private readonly resourceRepository: IResourceRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   private async getResource(resourceId: string, transaction?: Transaction): Promise<Resource> {
@@ -103,6 +110,15 @@ export class ResourceService implements IResourceService {
 
     await this.audit.logCreate(resource.id, newValues, metadata, transaction);
 
+    await this.events.publish(
+      {
+        type: 'resource.created',
+        aggregate: { kind: 'resource', id: resource.id },
+        data: { after: newValues },
+      },
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(resourceSchema), resource, context);
   }
 
@@ -148,6 +164,15 @@ export class ResourceService implements IResourceService {
     };
 
     await this.audit.logUpdate(updatedResource.id, oldValues, newValues, metadata, transaction);
+
+    await this.events.publish(
+      {
+        type: 'resource.updated',
+        aggregate: { kind: 'resource', id: updatedResource.id },
+        data: { before: oldValues, after: newValues, delta: buildDelta(oldValues, newValues) },
+      },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(resourceSchema), updatedResource, context);
   }
@@ -229,6 +254,15 @@ export class ResourceService implements IResourceService {
         transaction
       );
     }
+
+    await this.events.publish(
+      {
+        type: 'resource.deleted',
+        aggregate: { kind: 'resource', id: deletedResource.id },
+        data: { before: oldValues },
+      },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(resourceSchema), deletedResource, context);
   }

@@ -50,6 +50,12 @@ export interface IApiKeyRepository {
     transaction?: unknown
   ): Promise<ApiKey>;
 
+  updateClientSecretHash(
+    id: string,
+    clientSecretHash: string,
+    transaction?: unknown
+  ): Promise<ApiKey>;
+
   updateLastUsedAt(id: string, lastUsedAt: Date, transaction?: unknown): Promise<ApiKey>;
 
   revokeApiKey(id: string, revokedBy: string, transaction?: unknown): Promise<ApiKey>;

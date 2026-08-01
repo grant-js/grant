@@ -43,6 +43,7 @@ function buildService(repositoryOverrides: Partial<IApiKeyRepository> = {}) {
     getClientSecretHash: vi.fn().mockResolvedValue(hashSecret(clientSecret)),
     createApiKey: vi.fn().mockImplementation(async (params) => apiKey(params)),
     updateLastUsedAt: vi.fn().mockImplementation(async (id) => apiKey({ id })),
+    updateClientSecretHash: vi.fn().mockImplementation(async (id) => apiKey({ id })),
     getApiKeys: vi.fn(),
     getApiKey: vi.fn(),
     revokeApiKey: vi.fn(),
@@ -169,5 +170,59 @@ describe('ApiKeyService scoped client ids', () => {
       expect.objectContaining({ clientId }),
       tx
     );
+  });
+});
+
+describe('ApiKeyService.rotateApiKey', () => {
+  it('rotates the secret in place, publishes api_key.rotated, and returns the new secret', async () => {
+    const existing = apiKey({ name: 'Prod key' });
+    const { service, apiKeyRepository, events } = buildService({
+      getApiKey: vi.fn().mockResolvedValue(existing),
+      updateClientSecretHash: vi.fn().mockResolvedValue(existing),
+    });
+
+    const result = await service.rotateApiKey({ id: apiKeyId });
+
+    expect(result.id).toBe(apiKeyId);
+    expect(result.clientId).toBe(clientId);
+    expect(result.clientSecret).toEqual(expect.any(String));
+    expect(result.clientSecret.length).toBeGreaterThanOrEqual(32);
+    expect(apiKeyRepository.updateClientSecretHash).toHaveBeenCalledWith(
+      apiKeyId,
+      expect.any(String),
+      undefined
+    );
+    expect(events.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'api_key.rotated',
+        aggregate: { kind: 'apiKey', id: apiKeyId },
+        data: {
+          before: expect.objectContaining({ id: apiKeyId, clientId, name: 'Prod key' }),
+          after: expect.objectContaining({ id: apiKeyId, clientId, name: 'Prod key' }),
+        },
+      }),
+      undefined
+    );
+  });
+
+  it('rejects rotating a revoked API key', async () => {
+    const { service, apiKeyRepository, events } = buildService({
+      getApiKey: vi.fn().mockResolvedValue(apiKey({ isRevoked: true })),
+    });
+
+    await expect(service.rotateApiKey({ id: apiKeyId })).rejects.toThrow(
+      'Cannot rotate a revoked API key'
+    );
+    expect(apiKeyRepository.updateClientSecretHash).not.toHaveBeenCalled();
+    expect(events.publish).not.toHaveBeenCalled();
+  });
+
+  it('rejects rotating a missing API key', async () => {
+    const { service, apiKeyRepository } = buildService({
+      getApiKey: vi.fn().mockResolvedValue(null),
+    });
+
+    await expect(service.rotateApiKey({ id: apiKeyId })).rejects.toThrow(/ApiKey/);
+    expect(apiKeyRepository.updateClientSecretHash).not.toHaveBeenCalled();
   });
 });

@@ -58,6 +58,11 @@ export const revokeApiKeyRequestSchema = z.object({
   scope: scopeSchema,
 });
 
+export const rotateApiKeyRequestSchema = z.object({
+  id: z.uuid('errors.validation.invalidApiKeyId'),
+  scope: scopeSchema,
+});
+
 export const deleteApiKeyRequestSchema = z.object({
   id: z.uuid('errors.validation.invalidApiKeyId'),
   scope: scopeSchema,

@@ -53,6 +53,10 @@ export const revokeApiKeyParamsSchema = z.object({
   id: idSchema,
 });
 
+export const rotateApiKeyParamsSchema = z.object({
+  id: idSchema,
+});
+
 export const deleteApiKeyParamsSchema = deleteSchema.extend({
   id: idSchema,
 });

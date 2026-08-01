@@ -1,0 +1,4 @@
+input RotateApiKeyInput {
+  id: ID!
+  scope: Scope!
+}

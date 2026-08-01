@@ -10,6 +10,7 @@ import {
 } from '@grantjs/schema';
 
 import { BadRequestError, NotFoundError } from '@/lib/errors';
+import { buildDelta } from '@/lib/events';
 import { buildSearchDocument } from '@/lib/search-document.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
@@ -196,6 +197,15 @@ export class RoleService implements IRoleService {
 
     await this.audit.logUpdate(updatedRole.id, oldValues, newValues, metadata, transaction);
 
+    await this.events.publish(
+      {
+        type: 'role.updated',
+        aggregate: { kind: 'role', id: roleWithSearch.id },
+        data: { before: oldValues, after: newValues, delta: buildDelta(oldValues, newValues) },
+      },
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(roleSchema), roleWithSearch, context);
   }
 
@@ -237,6 +247,15 @@ export class RoleService implements IRoleService {
 
       await this.audit.logSoftDelete(deletedRole.id, oldValues, newValues, metadata, transaction);
     }
+
+    await this.events.publish(
+      {
+        type: 'role.deleted',
+        aggregate: { kind: 'role', id: deletedRole.id },
+        data: { before: oldValues },
+      },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(roleSchema), deletedRole, context);
   }

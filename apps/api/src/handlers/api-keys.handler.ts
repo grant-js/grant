@@ -15,6 +15,7 @@ import {
   MutationDeleteApiKeyArgs,
   MutationExchangeApiKeyArgs,
   MutationRevokeApiKeyArgs,
+  MutationRotateApiKeyArgs,
   QueryApiKeysArgs,
   Role,
   Tenant,
@@ -252,6 +253,23 @@ export class ApiKeysHandler extends CacheHandler {
       }
       const apiKey = await this.apiKeys.revokeApiKey(input, tx);
       return apiKey;
+    });
+  }
+
+  public async rotateApiKey(params: MutationRotateApiKeyArgs): Promise<CreateApiKeyResult> {
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const { input } = params;
+      const { scope, id } = input;
+      if (scope.tenant === Tenant.OrganizationProject) {
+        const { organizationId, projectId } = this.extractOrganizationProjectFromScope(scope);
+        await this.organizationProjectApiKeys.validateCanManageOrganizationProjectApiKey(
+          organizationId,
+          projectId,
+          id,
+          tx
+        );
+      }
+      return await this.apiKeys.rotateApiKey({ id }, tx);
     });
   }
 

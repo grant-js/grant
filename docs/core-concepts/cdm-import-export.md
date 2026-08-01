@@ -52,6 +52,7 @@ sequenceDiagram
 
 - **`mode`** in the file sets **merge** (default) or **replace**; replace requires **`confirmDestructive`**.
 - Only **CDM-managed** rows are updated; other project data is untouched.
+- **Domain events:** entity-level events (`role.created`, `user.role_assigned`, …) are **suppressed** for the duration of `importProjectCdm` (including replace teardown) so imports do not flood webhooks or in-app notifications. When the async job finishes, Grant emits a single summary event — `project_sync.completed` or `project_sync.failed` — with job/project ids, operation (`import` \| `export`), and import counters or a short error message.
 
 ### Export
 

@@ -1,10 +1,12 @@
 import type {
   IAuditLogger,
+  IEventPublisher,
   IProjectSyncJobService,
   ProjectSyncJobExecutionData,
 } from '@grantjs/core';
 import {
   ProjectSyncJob,
+  ProjectSyncJobOperation,
   ProjectSyncJobPage,
   ProjectSyncJobSortInput,
   ProjectSyncJobStatus,
@@ -49,6 +51,30 @@ function compactResultSummary(result: SyncProjectResult): Record<string, unknown
   };
 }
 
+function projectSyncCompletedPayload(params: {
+  jobId: string;
+  projectId: string;
+  operation: ProjectSyncJobOperation;
+  warningCount: number;
+  result: SyncProjectResult | null;
+}): Record<string, unknown> {
+  const after: Record<string, unknown> = {
+    jobId: params.jobId,
+    projectId: params.projectId,
+    operation: operationLabel(params.operation),
+    warningCount: params.warningCount,
+  };
+  if (params.result) {
+    const { warningsCount: _ignored, ...counters } = compactResultSummary(params.result);
+    Object.assign(after, counters);
+  }
+  return after;
+}
+
+function operationLabel(operation: ProjectSyncJobOperation): 'import' | 'export' {
+  return operation === ProjectSyncJobOperation.Export ? 'export' : 'import';
+}
+
 /**
  * State-machine service for the asynchronous CDM project sync job tracking
  * row. Owns persistence + lifecycle transitions only; the actual import is
@@ -57,7 +83,8 @@ function compactResultSummary(result: SyncProjectResult): Record<string, unknown
 export class ProjectSyncJobService implements IProjectSyncJobService {
   constructor(
     private readonly repo: ProjectSyncJobRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   public async create(
@@ -247,10 +274,11 @@ export class ProjectSyncJobService implements IProjectSyncJobService {
     },
     transaction?: Transaction
   ): Promise<ProjectSyncJob> {
-    const current = await this.repo.getById(params.jobId, transaction);
-    if (!current) {
+    const full = await this.repo.getFullById(params.jobId, transaction);
+    if (!full) {
       throw new NotFoundError('ProjectSyncJob', params.jobId);
     }
+    const current = full.job;
     if (current.status !== ProjectSyncJobStatus.Running) {
       throw new ConflictError(
         `Cannot mark job ${params.jobId} COMPLETED from status ${current.status}`
@@ -276,6 +304,26 @@ export class ProjectSyncJobService implements IProjectSyncJobService {
       { transition: 'RUNNING_TO_COMPLETED' },
       transaction
     );
+
+    const scope: Scope = { tenant: full.scopeTenant as Tenant, id: full.scopeId };
+    await this.events.publish(
+      {
+        type: 'project_sync.completed',
+        scope,
+        aggregate: { kind: 'project', id: current.projectId },
+        data: {
+          after: projectSyncCompletedPayload({
+            jobId: params.jobId,
+            projectId: current.projectId,
+            operation: current.operation,
+            warningCount: params.warnings.length,
+            result: params.result,
+          }),
+        },
+      },
+      transaction
+    );
+
     return updated;
   }
 
@@ -283,10 +331,11 @@ export class ProjectSyncJobService implements IProjectSyncJobService {
     params: { jobId: string; errorMessage: string; errorDetails?: Record<string, unknown> | null },
     transaction?: Transaction
   ): Promise<ProjectSyncJob> {
-    const current = await this.repo.getById(params.jobId, transaction);
-    if (!current) {
+    const full = await this.repo.getFullById(params.jobId, transaction);
+    if (!full) {
       throw new NotFoundError('ProjectSyncJob', params.jobId);
     }
+    const current = full.job;
     if (
       current.status !== ProjectSyncJobStatus.Running &&
       current.status !== ProjectSyncJobStatus.Pending
@@ -305,19 +354,39 @@ export class ProjectSyncJobService implements IProjectSyncJobService {
       },
       transaction
     );
+    const truncatedError =
+      params.errorMessage.length > 400
+        ? `${params.errorMessage.slice(0, 397)}...`
+        : params.errorMessage;
     await this.audit.logUpdate(
       params.jobId,
       compactJobSummary(current),
       {
         ...compactJobSummary(updated),
-        errorMessage:
-          params.errorMessage.length > 400
-            ? `${params.errorMessage.slice(0, 397)}...`
-            : params.errorMessage,
+        errorMessage: truncatedError,
       },
       { transition: 'TO_FAILED' },
       transaction
     );
+
+    const scope: Scope = { tenant: full.scopeTenant as Tenant, id: full.scopeId };
+    await this.events.publish(
+      {
+        type: 'project_sync.failed',
+        scope,
+        aggregate: { kind: 'project', id: current.projectId },
+        data: {
+          after: {
+            jobId: params.jobId,
+            projectId: current.projectId,
+            operation: operationLabel(current.operation),
+            errorMessage: truncatedError,
+          },
+        },
+      },
+      transaction
+    );
+
     return updated;
   }
 

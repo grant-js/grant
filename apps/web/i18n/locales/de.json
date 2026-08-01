@@ -1007,6 +1007,7 @@
         "submitting": "Wird erstellt..."
       },
       "actions": {
+        "rotate": "Rotieren",
         "revoke": "Widerrufen",
         "delete": "Löschen"
       },
@@ -1016,6 +1017,12 @@
         "cancel": "Abbrechen",
         "confirm": "Widerrufen"
       },
+      "rotateDialog": {
+        "title": "API-Schlüssel rotieren",
+        "description": "Geheimnis für API-Schlüssel \"{name}\" rotieren? Die Client-ID bleibt gleich. Das bisherige Geheimnis funktioniert sofort nicht mehr, und das neue Geheimnis wird nur einmal angezeigt.",
+        "cancel": "Abbrechen",
+        "confirm": "Rotieren"
+      },
       "deleteDialog": {
         "title": "API-Schlüssel löschen",
         "description": "Sind Sie sicher, dass Sie den API-Schlüssel \"{name}\" löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
@@ -1024,8 +1031,10 @@
       },
       "secretDialog": {
         "title": "API-Schlüssel erstellt",
+        "titleRotated": "API-Schlüssel rotiert",
         "description": "Speichern Sie Ihre API-Schlüssel-Anmeldedaten. Dies ist das einzige Mal, dass Sie das Client-Geheimnis einsehen können.",
         "warning": "Dies ist das letzte Mal, dass Sie das Client-Geheimnis einsehen können. Stellen Sie sicher, dass Sie es jetzt kopieren und sicher aufbewahren.",
+        "warningRotated": "Das bisherige Geheimnis funktioniert nicht mehr. Dies ist das letzte Mal, dass Sie das neue Client-Geheimnis einsehen können. Kopieren Sie es jetzt und bewahren Sie es sicher auf.",
         "clientId": "Client-ID",
         "clientSecret": "Client-Geheimnis",
         "close": "Ich habe meine Anmeldedaten gespeichert",
@@ -3346,6 +3355,8 @@
       "deleteError": "Fehler beim Löschen des API-Schlüssels",
       "revokeSuccess": "API-Schlüssel widerrufen",
       "revokeError": "Fehler beim Widerrufen des API-Schlüssels",
+      "rotateSuccess": "API-Schlüssel rotiert",
+      "rotateError": "Fehler beim Rotieren des API-Schlüssels",
       "exchangeError": "Fehler beim Austauschen des API-Schlüssels"
     }
   },
@@ -3424,6 +3435,56 @@
       "table": {
         "name": "Name",
         "event": "Event"
+      },
+      "types": {
+        "role": {
+          "created": "Rolle erstellt",
+          "updated": "Rolle aktualisiert",
+          "deleted": "Rolle gelöscht",
+          "permission_assigned": "Berechtigung der Rolle zugewiesen",
+          "permission_revoked": "Berechtigung von der Rolle entzogen",
+          "group_assigned": "Gruppe der Rolle zugewiesen",
+          "group_revoked": "Gruppe von der Rolle entfernt"
+        },
+        "permission": {
+          "created": "Berechtigung erstellt",
+          "updated": "Berechtigung aktualisiert",
+          "deleted": "Berechtigung gelöscht"
+        },
+        "group": {
+          "created": "Gruppe erstellt",
+          "updated": "Gruppe aktualisiert",
+          "deleted": "Gruppe gelöscht",
+          "permission_assigned": "Berechtigung der Gruppe zugewiesen",
+          "permission_revoked": "Berechtigung von der Gruppe entzogen"
+        },
+        "resource": {
+          "created": "Ressource erstellt",
+          "updated": "Ressource aktualisiert",
+          "deleted": "Ressource gelöscht"
+        },
+        "user": {
+          "permission_assigned": "Berechtigung dem Benutzer zugewiesen",
+          "permission_revoked": "Berechtigung dem Benutzer entzogen",
+          "group_assigned": "Gruppe dem Benutzer zugewiesen",
+          "group_revoked": "Gruppe dem Benutzer entzogen",
+          "role_assigned": "Rolle dem Benutzer zugewiesen",
+          "role_revoked": "Rolle dem Benutzer entzogen",
+          "email_verification_requested": "E-Mail-Verifizierung angefordert"
+        },
+        "api_key": {
+          "created": "API-Schlüssel erstellt",
+          "rotated": "API-Schlüssel rotiert",
+          "revoked": "API-Schlüssel widerrufen"
+        },
+        "organization": {
+          "invitation_sent": "Organisationseinladung gesendet",
+          "mfa_enforcement_changed": "MFA-Richtlinie der Organisation geändert"
+        },
+        "project_sync": {
+          "completed": "Projektsynchronisierung abgeschlossen",
+          "failed": "Projektsynchronisierung fehlgeschlagen"
+        }
       }
     },
     "deleteDialog": {

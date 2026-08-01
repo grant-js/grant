@@ -1,5 +1,6 @@
 import type {
   IAuditLogger,
+  IEventPublisher,
   IPermissionRepository,
   IUserPermissionRepository,
   IUserPermissionService,
@@ -29,7 +30,8 @@ export class UserPermissionService implements IUserPermissionService {
     private readonly userRepository: IUserRepository,
     private readonly permissionRepository: IPermissionRepository,
     private readonly userPermissionRepository: IUserPermissionRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   private async userExists(userId: string, transaction?: Transaction): Promise<void> {
@@ -145,6 +147,16 @@ export class UserPermissionService implements IUserPermissionService {
 
     await this.audit.logCreate(userPermission.id, newValues, { context }, transaction);
 
+    await this.events.publish(
+      {
+        type: 'user.permission_assigned',
+        aggregate: { kind: 'userPermission', id: userPermission.id },
+        subjectUserId: userPermission.userId,
+        data: { after: newValues },
+      },
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(userPermissionSchema), userPermission, context);
   }
 
@@ -194,6 +206,16 @@ export class UserPermissionService implements IUserPermissionService {
         transaction
       );
     }
+
+    await this.events.publish(
+      {
+        type: 'user.permission_revoked',
+        aggregate: { kind: 'userPermission', id: userPermission.id },
+        subjectUserId: userPermission.userId,
+        data: { before: oldValues },
+      },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(userPermissionSchema), userPermission, context);
   }

@@ -14,6 +14,7 @@ import {
   exchangeApiKeyRequestSchema,
   getApiKeysQuerySchema,
   revokeApiKeyRequestSchema,
+  rotateApiKeyRequestSchema,
 } from '@/rest/schemas/api-keys.schemas';
 import { createSuccessResponseSchema } from '@/rest/schemas/common.schemas';
 
@@ -440,6 +441,73 @@ Revoke an API key, preventing it from being used to exchange for tokens.
       },
       400: {
         description: 'Invalid request parameters',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized - Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      404: {
+        description: 'API key not found',
+        content: {
+          'application/json': {
+            schema: notFoundErrorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * POST /api/api-keys/:id/rotate
+   */
+  registry.registerPath({
+    method: 'post',
+    path: '/api/api-keys/{id}/rotate',
+    tags: ['API Keys'],
+    summary: 'Rotate an API key secret',
+    description: `
+Rotate an API key secret in place. The key id and clientId stay the same; a new
+plaintext client secret is returned once. The previous secret stops working
+immediately. Revoked keys cannot be rotated.
+    `.trim(),
+    request: {
+      params: apiKeyIdParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: rotateApiKeyRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'API key rotated successfully; new secret returned once',
+        content: {
+          'application/json': {
+            schema: createSuccessResponseSchema(createApiKeyResponseSchema),
+          },
+        },
+      },
+      400: {
+        description: 'Invalid request or key is revoked',
         content: {
           'application/json': {
             schema: validationErrorResponseSchema,

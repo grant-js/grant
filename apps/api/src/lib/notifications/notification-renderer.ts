@@ -22,19 +22,31 @@ const EMPTY_CONTEXT: NotificationDisplayContext = {
 };
 
 const RENDERERS: Partial<Record<EventType, Renderer>> = {
-  'role.created': (e, ctx) => {
-    const name = ctx.entityName ?? roleNameFromPayload(e);
-    const where = inScope(ctx);
-    const by = byActor(ctx);
-    return {
-      title: name ? `Role "${name}" created` : 'New role created',
-      body: name ? `Role "${name}" was created${by}${where}.` : `A role was created${by}${where}.`,
-    };
-  },
-  'permission.updated': (_e, ctx) => ({
-    title: 'Permission updated',
-    body: `A permission was updated${byActor(ctx)}${inScope(ctx)}.`,
-  }),
+  'role.created': (e, ctx) => namedEntityMutation(e, ctx, 'Role', 'created'),
+  'role.updated': (e, ctx) => namedEntityMutation(e, ctx, 'Role', 'updated'),
+  'role.deleted': (e, ctx) => namedEntityMutation(e, ctx, 'Role', 'deleted', true),
+  'permission.created': (e, ctx) => namedEntityMutation(e, ctx, 'Permission', 'created'),
+  'permission.updated': (e, ctx) => namedEntityMutation(e, ctx, 'Permission', 'updated'),
+  'permission.deleted': (e, ctx) => namedEntityMutation(e, ctx, 'Permission', 'deleted', true),
+  'group.created': (e, ctx) => namedEntityMutation(e, ctx, 'Group', 'created'),
+  'group.updated': (e, ctx) => namedEntityMutation(e, ctx, 'Group', 'updated'),
+  'group.deleted': (e, ctx) => namedEntityMutation(e, ctx, 'Group', 'deleted', true),
+  'resource.created': (e, ctx) => namedEntityMutation(e, ctx, 'Resource', 'created'),
+  'resource.updated': (e, ctx) => namedEntityMutation(e, ctx, 'Resource', 'updated'),
+  'resource.deleted': (e, ctx) => namedEntityMutation(e, ctx, 'Resource', 'deleted', true),
+  'role.permission_assigned': (_e, ctx) =>
+    assignmentMutation(ctx, 'Permission', 'assigned', 'role'),
+  'role.permission_revoked': (_e, ctx) => assignmentMutation(ctx, 'Permission', 'revoked', 'role'),
+  'user.permission_assigned': (_e, ctx) => subjectAssignmentMutation(ctx, 'Permission', 'assigned'),
+  'user.permission_revoked': (_e, ctx) => subjectAssignmentMutation(ctx, 'Permission', 'revoked'),
+  'group.permission_assigned': (_e, ctx) =>
+    assignmentMutation(ctx, 'Permission', 'assigned', 'group'),
+  'group.permission_revoked': (_e, ctx) =>
+    assignmentMutation(ctx, 'Permission', 'revoked', 'group'),
+  'role.group_assigned': (_e, ctx) => assignmentMutation(ctx, 'Group', 'assigned', 'role'),
+  'role.group_revoked': (_e, ctx) => assignmentMutation(ctx, 'Group', 'revoked', 'role'),
+  'user.group_assigned': (_e, ctx) => subjectAssignmentMutation(ctx, 'Group', 'assigned'),
+  'user.group_revoked': (_e, ctx) => subjectAssignmentMutation(ctx, 'Group', 'revoked'),
   'api_key.created': (e, ctx) => {
     const name = ctx.entityName ?? stringField(e.data.after, 'name');
     return {
@@ -104,6 +116,28 @@ const RENDERERS: Partial<Record<EventType, Renderer>> = {
       body: `${org} ${policy}${byActor(ctx)}.`,
     };
   },
+  'project_sync.completed': (e, ctx) => {
+    const operation = stringField(e.data.after, 'operation') ?? 'import';
+    const where = inScope(ctx);
+    return {
+      title: operation === 'export' ? 'Project export completed' : 'Project sync completed',
+      body:
+        operation === 'export' ? `CDM export completed${where}.` : `CDM import completed${where}.`,
+    };
+  },
+  'project_sync.failed': (e, ctx) => {
+    const operation = stringField(e.data.after, 'operation') ?? 'import';
+    const where = inScope(ctx);
+    const errorMessage = stringField(e.data.after, 'errorMessage');
+    const detail = errorMessage ? `: ${errorMessage}` : '.';
+    return {
+      title: operation === 'export' ? 'Project export failed' : 'Project sync failed',
+      body:
+        operation === 'export'
+          ? `CDM export failed${where}${detail}`
+          : `CDM import failed${where}${detail}`,
+    };
+  },
 };
 
 export function renderNotification(
@@ -130,8 +164,59 @@ function inScope(ctx: NotificationDisplayContext): string {
   return ctx.scopeName ? ` in ${ctx.scopeName}` : '';
 }
 
-function roleNameFromPayload(event: DomainEvent): string | null {
-  return stringField(event.data.after, 'name') ?? stringField(event.data.before, 'name');
+function namedEntityMutation(
+  event: DomainEvent,
+  ctx: NotificationDisplayContext,
+  label: string,
+  verb: 'created' | 'updated' | 'deleted',
+  preferBefore = false
+): { title: string; body: string | null } {
+  const name =
+    ctx.entityName ??
+    (preferBefore
+      ? (stringField(event.data.before, 'name') ?? stringField(event.data.after, 'name'))
+      : (stringField(event.data.after, 'name') ?? stringField(event.data.before, 'name')));
+  const where = inScope(ctx);
+  const by = byActor(ctx);
+  const lower = label.toLowerCase();
+  return {
+    title: name ? `${label} "${name}" ${verb}` : `${label} ${verb}`,
+    body: name
+      ? `${label} "${name}" was ${verb}${by}${where}.`
+      : `A ${lower} was ${verb}${by}${where}.`,
+  };
+}
+
+function assignmentMutation(
+  ctx: NotificationDisplayContext,
+  entityLabel: string,
+  verb: 'assigned' | 'revoked',
+  target: 'role' | 'group'
+): { title: string; body: string | null } {
+  const where = inScope(ctx);
+  const by = byActor(ctx);
+  const targetLabel = target === 'role' ? 'a role' : 'a group';
+  return {
+    title: `${entityLabel} ${verb}`,
+    body: `A ${entityLabel.toLowerCase()} was ${verb} ${verb === 'assigned' ? 'to' : 'from'} ${targetLabel}${by}${where}.`,
+  };
+}
+
+function subjectAssignmentMutation(
+  ctx: NotificationDisplayContext,
+  entityLabel: string,
+  verb: 'assigned' | 'revoked'
+): { title: string; body: string | null } {
+  const where = inScope(ctx);
+  const by = byActor(ctx);
+  const lower = entityLabel.toLowerCase();
+  return {
+    title: `${entityLabel} ${verb}`,
+    body:
+      verb === 'assigned'
+        ? `A ${lower} was assigned to you${by}${where}.`
+        : `A ${lower} was revoked from you${by}${where}.`,
+  };
 }
 
 function stringField(

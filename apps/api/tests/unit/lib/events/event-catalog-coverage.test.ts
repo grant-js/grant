@@ -49,8 +49,45 @@ describe('event catalog coverage', () => {
     expect(emitted.has('role.created')).toBe(true);
     expect(emitted.has('permission.updated')).toBe(true);
     expect(emitted.has('api_key.created')).toBe(true);
+    expect(emitted.has('api_key.rotated')).toBe(true);
     expect(emitted.has('api_key.revoked')).toBe(true);
     expect(emitted.has('user.role_assigned')).toBe(true);
     expect(emitted.has('user.role_revoked')).toBe(true);
+  });
+
+  it('emits project sync summary events from the job service', () => {
+    const emitted = new Set(collectEmittedEventTypes());
+    expect(emitted.has('project_sync.completed')).toBe(true);
+    expect(emitted.has('project_sync.failed')).toBe(true);
+  });
+
+  it('emits the IAM transparency slice 2 CRUD and assignment events', () => {
+    const emitted = new Set(collectEmittedEventTypes());
+    const slice2 = [
+      'role.updated',
+      'role.deleted',
+      'permission.created',
+      'permission.deleted',
+      'group.created',
+      'group.updated',
+      'group.deleted',
+      'resource.created',
+      'resource.updated',
+      'resource.deleted',
+      'role.permission_assigned',
+      'role.permission_revoked',
+      'user.permission_assigned',
+      'user.permission_revoked',
+      'group.permission_assigned',
+      'group.permission_revoked',
+      'role.group_assigned',
+      'role.group_revoked',
+      'user.group_assigned',
+      'user.group_revoked',
+    ] as const;
+
+    for (const type of slice2) {
+      expect(emitted.has(type), `expected service emit for "${type}"`).toBe(true);
+    }
   });
 });
