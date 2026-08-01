@@ -1,7 +1,6 @@
 import { relations, sql } from 'drizzle-orm';
 import {
   boolean,
-  check,
   index,
   pgPolicy,
   pgTable,
@@ -13,9 +12,6 @@ import {
 
 import { projects } from './projects.schema';
 import { users } from './users.schema';
-
-export const webhookOrderingModes = ['best_effort', 'strict'] as const;
-export type WebhookOrderingMode = (typeof webhookOrderingModes)[number];
 
 /**
  * Per-project webhook subscription. Machine integrations register a URL + event
@@ -34,10 +30,6 @@ export const webhookSubscriptions = pgTable(
     url: varchar('url', { length: 2048 }).notNull(),
     secretRef: varchar('secret_ref', { length: 255 }).notNull(),
     eventTypes: text('event_types').array().notNull(),
-    orderingMode: varchar('ordering_mode', { length: 20 })
-      .$type<WebhookOrderingMode>()
-      .notNull()
-      .default('best_effort'),
     active: boolean('active').notNull().default(true),
     description: varchar('description', { length: 500 }),
     createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
@@ -46,10 +38,6 @@ export const webhookSubscriptions = pgTable(
     deletedAt: timestamp('deleted_at'),
   },
   (table) => [
-    check(
-      'webhook_subscriptions_ordering_mode_check',
-      sql`("ordering_mode" IN ('best_effort', 'strict'))`
-    ),
     index('webhook_subscriptions_project_id_idx').on(table.projectId),
     index('webhook_subscriptions_scope_idx').on(table.scopeTenant, table.scopeId),
     index('webhook_subscriptions_active_idx').on(table.active),

@@ -3,8 +3,11 @@ import type { NotificationPreferenceModel } from '@grantjs/database';
 import type {
   ListNotificationsInput,
   Notification,
+  NotificationChannel,
   NotificationPage,
   NotificationPreference,
+  NotificationPreferenceSource,
+  NotificationStatus,
   SetNotificationPreferenceInput,
 } from '@grantjs/schema';
 
@@ -24,14 +27,14 @@ function toNotificationDto(model: NotificationWithScope): Notification {
     eventId: model.eventId,
     category: model.category,
     type: model.type,
-    channel: model.channel,
+    channel: model.channel as NotificationChannel,
     title: model.title,
     body: model.body,
     refEntity: model.refEntity,
     refId: model.refId,
     scope:
       model.scopeTenant && model.scopeId ? { tenant: model.scopeTenant, id: model.scopeId } : null,
-    status: model.status,
+    status: model.status as NotificationStatus,
     seenAt: model.seenAt,
     readAt: model.readAt,
     createdAt: model.createdAt,
@@ -44,9 +47,9 @@ function toPreferenceDto(model: NotificationPreferenceModel): NotificationPrefer
     scopeTenant: model.scopeTenant,
     scopeId: model.scopeId,
     category: model.category,
-    channel: model.channel,
+    channel: model.channel as NotificationChannel,
     enabled: model.enabled,
-    source: model.source,
+    source: model.source as NotificationPreferenceSource,
   };
 }
 

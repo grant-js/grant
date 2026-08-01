@@ -235,7 +235,6 @@ export const envSchema = z.object({
   JOBS_EVENT_RELAY_SWEEP_SCHEDULE: optionalString('* * * * *'),
   JOBS_EVENT_RELAY_BATCH_SIZE: optionalNumber(100),
   JOBS_EVENT_RELAY_MAX_BATCHES: optionalNumber(50),
-  JOBS_EVENT_RELAY_CONCURRENCY: optionalNumber(1),
   JOBS_WEBHOOK_DELIVERY_ENABLED: optionalBoolean(true),
   JOBS_WEBHOOK_DELIVERY_SCHEDULE: optionalString('* * * * *'),
   JOBS_WEBHOOK_DELIVERY_BATCH_SIZE: optionalNumber(50),

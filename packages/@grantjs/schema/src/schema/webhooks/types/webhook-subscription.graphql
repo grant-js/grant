@@ -1,0 +1,58 @@
+enum WebhookDeliveryStatus {
+  pending
+  running
+  delivered
+  failed
+  dead
+}
+
+type WebhookSubscription {
+  id: ID!
+  projectId: ID!
+  url: String!
+  eventTypes: [String!]!
+  active: Boolean!
+  description: String
+  createdById: ID
+  createdAt: Date!
+  updatedAt: Date!
+}
+
+"""
+Returned only at creation or secret rotation. Store the secret immediately.
+"""
+type WebhookSubscriptionWithSecret {
+  id: ID!
+  projectId: ID!
+  url: String!
+  eventTypes: [String!]!
+  active: Boolean!
+  description: String
+  createdById: ID
+  createdAt: Date!
+  updatedAt: Date!
+  """
+  Plaintext signing secret. Shown once; never returned by list/get/update.
+  """
+  secret: String!
+}
+
+type WebhookDeliveryAttempt {
+  id: ID!
+  eventId: ID!
+  subscriptionId: ID!
+  status: WebhookDeliveryStatus!
+  attemptCount: Int!
+  nextRetryAt: Date
+  lastResponseStatus: Int
+  errorDetails: JSON
+  deliveredAt: Date
+  createdAt: Date!
+  updatedAt: Date!
+}
+
+type WebhookDeliveryPage {
+  items: [WebhookDeliveryAttempt!]!
+  totalCount: Int!
+  hasNextPage: Boolean!
+}

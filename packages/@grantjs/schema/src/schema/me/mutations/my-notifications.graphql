@@ -1,0 +1,5 @@
+extend type Mutation {
+  markMyNotificationRead(id: ID!): Boolean!
+  markAllMyNotificationsRead: MarkAllNotificationsReadResult!
+  setMyNotificationPreference(input: SetMyNotificationPreferenceInput!): NotificationPreference!
+}

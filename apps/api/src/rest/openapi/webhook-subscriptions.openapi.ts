@@ -16,7 +16,6 @@ const webhookSubscriptionSchema = z.object({
   projectId: z.string().uuid(),
   url: z.string().url(),
   eventTypes: z.array(z.string()),
-  orderingMode: z.string(),
   active: z.boolean(),
   description: z.string().nullable(),
   createdById: z.string().uuid().nullable(),

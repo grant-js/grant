@@ -15,7 +15,6 @@ export function toWebhookSubscription(row: WebhookSubscriptionModel): WebhookSub
     projectId: row.projectId,
     url: row.url,
     eventTypes: row.eventTypes,
-    orderingMode: row.orderingMode,
     active: row.active,
     description: row.description ?? null,
     createdById: row.createdById ?? null,

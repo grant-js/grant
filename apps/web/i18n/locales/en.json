@@ -3702,14 +3702,9 @@
       "notFound": "Webhook subscription not found",
       "info": {
         "generalTitle": "General",
-        "generalDescription": "URL, description, ordering mode, status, and audit information for this subscription.",
+        "generalDescription": "URL, description, status, and audit information for this subscription.",
         "descriptionPlaceholder": "Optional description for this webhook endpoint",
         "subscriptionId": "Subscription ID",
-        "orderingMode": "Ordering mode",
-        "orderingModes": {
-          "best_effort": "Best effort",
-          "strict": "Strict"
-        },
         "isActive": "Is Active",
         "created": "Created",
         "updated": "Updated",
@@ -3719,7 +3714,6 @@
       "general": {
         "title": "General",
         "description": "Endpoint configuration and event filters.",
-        "orderingMode": "Ordering mode",
         "updatedAt": "Updated"
       },
       "deliveries": {

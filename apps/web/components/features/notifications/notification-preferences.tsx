@@ -2,11 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import {
-  AccountType,
-  type NotificationChannel,
-  type NotificationPreference,
-} from '@grantjs/schema';
+import { AccountType, NotificationChannel, type NotificationPreference } from '@grantjs/schema';
 
 import { FieldInfoPopover } from '@/components/common';
 import { SettingCard } from '@/components/features/settings';
@@ -25,14 +21,14 @@ import { useNotificationPreferences } from '@/hooks/notifications';
 import { useAuthStore } from '@/stores/auth.store';
 
 const EDITABLE_CATEGORIES = ['iam', 'membership', 'integrations'] as const;
-const CHANNELS: NotificationChannel[] = ['in_app', 'email'];
+const CHANNELS: NotificationChannel[] = [NotificationChannel.InApp, NotificationChannel.Email];
 const PREFERENCE_ROW_COUNT = 1 + EDITABLE_CATEGORIES.length;
 
 const CATEGORY_DEFAULTS: Record<string, Record<NotificationChannel, boolean>> = {
-  security: { in_app: true, email: true },
-  iam: { in_app: true, email: false },
-  membership: { in_app: true, email: true },
-  integrations: { in_app: true, email: false },
+  security: { [NotificationChannel.InApp]: true, [NotificationChannel.Email]: true },
+  iam: { [NotificationChannel.InApp]: true, [NotificationChannel.Email]: false },
+  membership: { [NotificationChannel.InApp]: true, [NotificationChannel.Email]: true },
+  integrations: { [NotificationChannel.InApp]: true, [NotificationChannel.Email]: false },
 };
 
 type ScopeTenant = 'account' | 'organization';

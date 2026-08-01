@@ -49,7 +49,7 @@ Most operations are available in both transports. A few are REST-only due to the
 
 All CRUD operations for these resources are available in both REST and GraphQL:
 
-Organizations, Projects, Users, Roles, Groups, Permissions, Resources, Tags, API Keys, Organization Invitations, Organization Members.
+Organizations, Projects, Users, Roles, Groups, Permissions, Resources, Tags, API Keys, Organization Invitations, Organization Members, **Webhook Subscriptions** (project-scoped), and **Me notifications / preferences**.
 
 Authentication mutations (login, register, refresh, logout, verify email, password reset) are also available in both.
 
@@ -137,18 +137,19 @@ Schema introspection is enabled by default in non-production environments (`APOL
 
 ## GraphQL Operations
 
-The GraphQL API provides **19 queries** and **56 mutations**. Key operation groups:
+The GraphQL API provides queries and mutations covering the shared resources above (exact counts drift as the schema grows). Key operation groups:
 
-| Group          | Queries                                                             | Mutations                                                                  |
-| -------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Authentication | `me`, `isAuthorized`                                                | `login`, `register`, `refreshSession`, `verifyEmail`, `resetPassword`, ... |
-| Organizations  | `organizations`, `organizationMembers`, `organizationInvitations`   | `createOrganization`, `inviteMember`, `acceptInvitation`, ...              |
-| Projects       | `projects`                                                          | `createProject`, `updateProject`, `deleteProject`                          |
-| RBAC           | `roles`, `groups`, `permissions`, `resources`                       | CRUD for each                                                              |
-| Users          | `users`                                                             | `createUser`, `updateUser`, `deleteUser`                                   |
-| API Keys       | `apiKeys`, `signingKeys`                                            | `createApiKey`, `exchangeApiKey`, `rotateSigningKey`, ...                  |
-| Tags           | `tags`                                                              | `createTag`, `updateTag`, `deleteTag`                                      |
-| Me             | `myUserSessions`, `myUserAuthenticationMethods`, `myUserDataExport` | `changeMyPassword`, `uploadMyUserPicture`, ...                             |
+| Group          | Queries                                                             | Mutations                                                                              |
+| -------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Authentication | `me`, `isAuthorized`                                                | `login`, `register`, `refreshSession`, `verifyEmail`, `resetPassword`, ...             |
+| Organizations  | `organizations`, `organizationMembers`, `organizationInvitations`   | `createOrganization`, `inviteMember`, `acceptInvitation`, ...                          |
+| Projects       | `projects`                                                          | `createProject`, `updateProject`, `deleteProject`                                      |
+| RBAC           | `roles`, `groups`, `permissions`, `resources`                       | CRUD for each                                                                          |
+| Users          | `users`                                                             | `createUser`, `updateUser`, `deleteUser`                                               |
+| API Keys       | `apiKeys`, `signingKeys`                                            | `createApiKey`, `exchangeApiKey`, `rotateSigningKey`, ...                              |
+| Webhooks       | `webhookSubscriptions`, `webhookSubscription`, `webhookDeliveries`  | `createWebhookSubscription`, `updateWebhookSubscription`, `replayWebhookDelivery`, ... |
+| Tags           | `tags`                                                              | `createTag`, `updateTag`, `deleteTag`                                                  |
+| Me             | `myUserSessions`, `myNotifications`, `myNotificationPreferences`, … | `changeMyPassword`, `markMyNotificationRead`, `setMyNotificationPreference`, …         |
 
 The full schema is available via introspection or through the `@grantjs/schema` package.
 

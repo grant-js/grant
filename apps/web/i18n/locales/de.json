@@ -3399,14 +3399,9 @@
       "notFound": "Webhook-Abonnement nicht gefunden",
       "info": {
         "generalTitle": "Allgemein",
-        "generalDescription": "URL, Beschreibung, Reihenfolgemodus, Status und Audit-Informationen für dieses Abonnement.",
+        "generalDescription": "URL, Beschreibung, Status und Audit-Informationen für dieses Abonnement.",
         "descriptionPlaceholder": "Optionale Beschreibung für diesen Webhook-Endpunkt",
         "subscriptionId": "Abonnement-ID",
-        "orderingMode": "Reihenfolgemodus",
-        "orderingModes": {
-          "best_effort": "Best effort",
-          "strict": "Strikt"
-        },
         "isActive": "Aktiv",
         "created": "Erstellt",
         "updated": "Aktualisiert",
@@ -3416,7 +3411,6 @@
       "general": {
         "title": "Allgemein",
         "description": "Endpunkt-Konfiguration und Event-Filter.",
-        "orderingMode": "Reihenfolgemodus",
         "updatedAt": "Aktualisiert"
       },
       "deliveries": {

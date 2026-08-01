@@ -5,7 +5,10 @@ import {
   type WebhookDeliveryStatus,
   webhookSubscriptions,
 } from '@grantjs/database';
-import type { WebhookDeliveryAttempt } from '@grantjs/schema';
+import type {
+  WebhookDeliveryAttempt,
+  WebhookDeliveryStatus as GqlWebhookDeliveryStatus,
+} from '@grantjs/schema';
 import { and, desc, eq, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -15,7 +18,7 @@ export function toWebhookDeliveryAttempt(row: WebhookDeliveryAttemptModel): Webh
     id: row.id,
     eventId: row.eventId,
     subscriptionId: row.subscriptionId,
-    status: row.status,
+    status: row.status as GqlWebhookDeliveryStatus,
     attemptCount: row.attemptCount,
     nextRetryAt: row.nextRetryAt ?? null,
     lastResponseStatus: row.lastResponseStatus ?? null,

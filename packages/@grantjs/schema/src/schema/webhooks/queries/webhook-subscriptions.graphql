@@ -1,0 +1,22 @@
+extend type Query {
+  """
+  List webhook subscriptions for a project scope.
+  """
+  webhookSubscriptions(scope: Scope!): [WebhookSubscription!]!
+
+  """
+  Get a single webhook subscription by id.
+  """
+  webhookSubscription(scope: Scope!, id: ID!): WebhookSubscription!
+
+  """
+  List delivery attempts for a project (optionally filtered by subscription or status).
+  """
+  webhookDeliveries(
+    scope: Scope!
+    subscriptionId: ID
+    status: WebhookDeliveryStatus
+    page: Int
+    limit: Int
+  ): WebhookDeliveryPage!
+}

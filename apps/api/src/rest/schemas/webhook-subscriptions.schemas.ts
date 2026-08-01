@@ -1,11 +1,10 @@
-import { EVENT_TYPES, Tenant, WEBHOOK_ORDERING_MODES } from '@grantjs/schema';
+import { EVENT_TYPES, Tenant } from '@grantjs/schema';
 
 import { z } from '@/lib/zod-openapi.lib';
 import { scopeIdSchema, scopeSchema } from '@/rest/schemas/common.schemas';
 
 const tenantSchema = z.enum(Object.values(Tenant) as [Tenant, ...Tenant[]]);
 const eventTypeSchema = z.enum(EVENT_TYPES);
-const orderingModeSchema = z.enum(WEBHOOK_ORDERING_MODES);
 
 const limitQuery = z
   .union([z.string(), z.number()])
@@ -42,7 +41,6 @@ export const createWebhookSubscriptionRequestSchema = z.object({
   scope: scopeSchema,
   url: z.string().url().max(2048),
   eventTypes: z.array(eventTypeSchema).min(1),
-  orderingMode: orderingModeSchema.optional(),
   description: z.string().max(500).nullish(),
   active: z.boolean().optional(),
 });
@@ -51,7 +49,6 @@ export const updateWebhookSubscriptionRequestSchema = z.object({
   scope: scopeSchema,
   url: z.string().url().max(2048).optional(),
   eventTypes: z.array(eventTypeSchema).min(1).optional(),
-  orderingMode: orderingModeSchema.optional(),
   description: z.string().max(500).nullish(),
   active: z.boolean().optional(),
 });

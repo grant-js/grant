@@ -1,0 +1,13 @@
+mutation CreateWebhookSubscription($input: CreateWebhookSubscriptionMutationInput!) {
+  createWebhookSubscription(input: $input) {
+    id
+    projectId
+    url
+    eventTypes
+    active
+    description
+    secret
+    createdAt
+    updatedAt
+  }
+}

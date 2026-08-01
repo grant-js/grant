@@ -54,9 +54,9 @@ export function NotificationCenter() {
 
   const buildHref = (notification: (typeof notifications)[number]) =>
     buildNotificationHref({
-      refEntity: notification.refEntity,
-      refId: notification.refId,
-      scope: notification.scope,
+      refEntity: notification.refEntity ?? null,
+      refId: notification.refId ?? null,
+      scope: notification.scope ?? null,
     });
 
   const handleMarkRead = async (id: string) => {

@@ -1,0 +1,5 @@
+mutation MarkAllMyNotificationsRead {
+  markAllMyNotificationsRead {
+    updated
+  }
+}

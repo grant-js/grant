@@ -116,7 +116,6 @@ export class WebhookSubscriptionService implements IWebhookSubscriptionService {
         url: input.url,
         secretRef: secret,
         eventTypes: input.eventTypes,
-        orderingMode: input.orderingMode ?? 'best_effort',
         active: input.active ?? true,
         description: input.description ?? null,
         createdById: this.createdById,
@@ -124,7 +123,7 @@ export class WebhookSubscriptionService implements IWebhookSubscriptionService {
       transaction
     );
 
-    return { ...toWebhookSubscription(row), secret };
+    return { ...toWebhookSubscription(row), secret } as WebhookSubscriptionWithSecret;
   }
 
   async update(
@@ -153,7 +152,6 @@ export class WebhookSubscriptionService implements IWebhookSubscriptionService {
       {
         ...(input.url !== undefined ? { url: input.url } : {}),
         ...(input.eventTypes !== undefined ? { eventTypes: input.eventTypes } : {}),
-        ...(input.orderingMode !== undefined ? { orderingMode: input.orderingMode } : {}),
         ...(input.description !== undefined ? { description: input.description ?? null } : {}),
         ...(input.active !== undefined ? { active: input.active } : {}),
       },
@@ -180,7 +178,7 @@ export class WebhookSubscriptionService implements IWebhookSubscriptionService {
     if (!updated) {
       throw new NotFoundError(`Webhook subscription ${params.id} not found`);
     }
-    return { ...toWebhookSubscription(updated), secret };
+    return { ...toWebhookSubscription(updated), secret } as WebhookSubscriptionWithSecret;
   }
 
   async delete(

@@ -675,8 +675,6 @@ export const JOB_CONFIG = {
     batchSize: env.JOBS_EVENT_RELAY_BATCH_SIZE,
     /** Max batches processed per relay/sweep run before yielding */
     maxBatches: env.JOBS_EVENT_RELAY_MAX_BATCHES,
-    /** Per-consumer fan-out concurrency (reserved for later phases) */
-    concurrency: env.JOBS_EVENT_RELAY_CONCURRENCY,
   },
 
   /** Webhook delivery job (signs + POSTs queued delivery attempts) */

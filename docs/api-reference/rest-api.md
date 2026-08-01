@@ -85,21 +85,22 @@ curl -s -X POST http://localhost:4000/api/auth/refresh \
 
 Every endpoint is fully documented in the Swagger UI. The table below links to each tag for quick navigation:
 
-| Tag                                                                                    | Endpoints | Description                                                                  |
-| -------------------------------------------------------------------------------------- | --------- | ---------------------------------------------------------------------------- |
-| [Authentication](http://localhost:4000/api-docs#/Authentication)                       | 10        | Login, register, refresh, logout, OAuth, token exchange, authorization check |
-| [Me](http://localhost:4000/api-docs#/Me)                                               | 11        | Profile, sessions, password, auth methods, data export, picture upload       |
-| [Organizations](http://localhost:4000/api-docs#/Organizations)                         | 5         | CRUD for organizations                                                       |
-| [Organization Invitations](http://localhost:4000/api-docs#/Organization%20Invitations) | 7         | Invite, accept, resend, renew, revoke                                        |
-| [Organization Members](http://localhost:4000/api-docs#/Organization%20Members)         | 3         | List, update role, remove                                                    |
-| [Projects](http://localhost:4000/api-docs#/Projects)                                   | 4         | CRUD for projects                                                            |
-| [Users](http://localhost:4000/api-docs#/Users)                                         | 5         | CRUD for users within a scope                                                |
-| [Roles](http://localhost:4000/api-docs#/Roles)                                         | 4         | CRUD for roles                                                               |
-| [Groups](http://localhost:4000/api-docs#/Groups)                                       | 4         | CRUD for groups (permission bundles)                                         |
-| [Permissions](http://localhost:4000/api-docs#/Permissions)                             | 4         | CRUD for permissions                                                         |
-| [Resources](http://localhost:4000/api-docs#/Resources)                                 | 4         | CRUD for resources (RBAC targets)                                            |
-| [API Keys](http://localhost:4000/api-docs#/API%20Keys)                                 | 5         | Create, list, revoke, delete, token exchange                                 |
-| [Tags](http://localhost:4000/api-docs#/Tags)                                           | 4         | CRUD for tags                                                                |
+| Tag                                                                                    | Endpoints | Description                                                                        |
+| -------------------------------------------------------------------------------------- | --------- | ---------------------------------------------------------------------------------- |
+| [Authentication](http://localhost:4000/api-docs#/Authentication)                       | 10        | Login, register, refresh, logout, OAuth, token exchange, authorization check       |
+| [Me](http://localhost:4000/api-docs#/Me)                                               | 17        | Profile, sessions, password, auth methods, notifications, preferences, data export |
+| [Organizations](http://localhost:4000/api-docs#/Organizations)                         | 5         | CRUD for organizations                                                             |
+| [Organization Invitations](http://localhost:4000/api-docs#/Organization%20Invitations) | 7         | Invite, accept, resend, renew, revoke                                              |
+| [Organization Members](http://localhost:4000/api-docs#/Organization%20Members)         | 3         | List, update role, remove                                                          |
+| [Projects](http://localhost:4000/api-docs#/Projects)                                   | 4         | CRUD for projects                                                                  |
+| [Users](http://localhost:4000/api-docs#/Users)                                         | 5         | CRUD for users within a scope                                                      |
+| [Roles](http://localhost:4000/api-docs#/Roles)                                         | 4         | CRUD for roles                                                                     |
+| [Groups](http://localhost:4000/api-docs#/Groups)                                       | 4         | CRUD for groups (permission bundles)                                               |
+| [Permissions](http://localhost:4000/api-docs#/Permissions)                             | 4         | CRUD for permissions                                                               |
+| [Resources](http://localhost:4000/api-docs#/Resources)                                 | 4         | CRUD for resources (RBAC targets)                                                  |
+| [API Keys](http://localhost:4000/api-docs#/API%20Keys)                                 | 5         | Create, list, revoke, delete, token exchange                                       |
+| [Webhook Subscriptions](http://localhost:4000/api-docs#/Webhook%20Subscriptions)       | 8         | Project webhook CRUD, secret rotate, deliveries, replay                            |
+| [Tags](http://localhost:4000/api-docs#/Tags)                                           | 4         | CRUD for tags                                                                      |
 
 ::: info REST-Only Endpoints
 Some operations are only available via REST (not GraphQL):

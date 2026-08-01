@@ -4,11 +4,7 @@ import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
-import {
-  WEBHOOK_ORDERING_MODES,
-  type WebhookOrderingMode,
-  type WebhookSubscription,
-} from '@grantjs/schema';
+import type { WebhookSubscription } from '@grantjs/schema';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { LucideIcon } from 'lucide-react';
 import { Calendar, Fingerprint, ToggleRight, Webhook } from 'lucide-react';
@@ -31,13 +27,6 @@ import {
   TranslatedFormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useProjectGrantContext, useScopeFromParams } from '@/hooks/common';
@@ -47,7 +36,6 @@ import { cn, formatLocalizedDateTime } from '@/lib/utils';
 const webhookGeneralSchema = z.object({
   url: z.string().url().max(2048),
   description: z.string().max(500).optional(),
-  orderingMode: z.enum(WEBHOOK_ORDERING_MODES),
   active: z.boolean(),
 });
 
@@ -59,7 +47,6 @@ function getWebhookGeneralDefaultValues(
   return {
     url: subscription.url,
     description: subscription.description ?? '',
-    orderingMode: subscription.orderingMode,
     active: subscription.active,
   };
 }
@@ -147,7 +134,6 @@ export function WebhookGeneralCard({
       await update(subscription.id, {
         url: values.url.trim(),
         description: values.description?.trim() || null,
-        orderingMode: values.orderingMode,
         active: values.active,
       });
       await onAfterWebhookMutation?.();
@@ -232,34 +218,6 @@ export function WebhookGeneralCard({
                         className="font-mono"
                       />
                     </FormControl>
-                    <TranslatedFormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="orderingMode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('orderingMode')}</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={(value) => field.onChange(value as WebhookOrderingMode)}
-                      disabled={!canUpdate}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {WEBHOOK_ORDERING_MODES.map((mode) => (
-                          <SelectItem key={mode} value={mode}>
-                            {t(`orderingModes.${mode}`)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                     <TranslatedFormMessage />
                   </FormItem>
                 )}

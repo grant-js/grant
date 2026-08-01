@@ -117,9 +117,11 @@ Bodies follow CloudEvents 1.0 with Grant extensions:
 
 External `data` drops internal `before` snapshots and redacts keys matching secret/token patterns (replaced with `"[redacted]"`).
 
-Delivery is at-least-once with application-level retries (escalating delays, then dead). Endpoints should be **idempotent** on `id` / `Webhook-Id`. SSRF guards block private targets unless explicitly allowed in configuration (useful for local receivers).
+Delivery is **best-effort / at-least-once** with application-level retries (escalating delays, then dead). Grant does not guarantee per-subscription delivery ordering; endpoints should be **idempotent** on `id` / `Webhook-Id`. SSRF guards block private targets unless explicitly allowed in configuration (useful for local receivers).
 
 For local dogfooding, `node scripts/webhook-receiver.mjs` listens on `http://localhost:5000/webhooks/grant` and appends NDJSON. With Docker/local API, enable HTTP and private targets via the webhook SSRF env flags when needed.
+
+Operators manage subscriptions via the dashboard (**Project → Webhooks**) or the API (REST `/api/webhook-subscriptions` and GraphQL `webhookSubscriptions` / `createWebhookSubscription` / …). See [Transport Layers](/api-reference/transport-layers) and Swagger UI for the full surface.
 
 ## Notifications
 
@@ -132,7 +134,9 @@ The notification generator:
 
 Users see the **notification center** and **preferences** in the dashboard; the header bell shows unread counts. Copy is rendered from event type + display context (actor, scope, entity names) — not from raw webhook envelopes.
 
-**Audience notes:** `owners` and `roleHolders` resolve to org/account administrative roles as implemented by the audience resolver. The `watchers` primitive remains reserved for a future subscribe model and currently contributes no recipients; catalog `audienceRule`s do **not** list `watchers` until that model exists.
+**Audience notes:** `owners` and `roleHolders` resolve to org/account administrative roles as implemented by the audience resolver. The `watchers` primitive remains reserved for a future subscribe / follow model: it currently contributes no recipients, is not a user preference, and catalog `audienceRule`s do **not** list `watchers` until that model exists.
+
+Inbox and preference management are available under `/api/me/notifications*` (REST) and GraphQL `myNotifications` / `myNotificationPreferences` / … (authenticated me lane).
 
 ## Adding a new event type
 

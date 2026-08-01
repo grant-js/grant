@@ -1,4 +1,4 @@
-import type { NotificationScope } from '@grantjs/schema';
+import type { NotificationEventScope } from '@grantjs/schema';
 import { Tenant } from '@grantjs/schema';
 
 interface ParsedScopeIds {
@@ -8,7 +8,7 @@ interface ParsedScopeIds {
 }
 
 /** Parse composite scope ids into route segment ids. */
-export function parseNotificationScopeIds(scope: NotificationScope): ParsedScopeIds {
+export function parseNotificationScopeIds(scope: NotificationEventScope): ParsedScopeIds {
   const parts = scope.id.split(':');
 
   switch (scope.tenant) {
@@ -32,7 +32,7 @@ export function parseNotificationScopeIds(scope: NotificationScope): ParsedScope
 export function buildNotificationHref(params: {
   refEntity: string | null;
   refId: string | null;
-  scope?: NotificationScope | null;
+  scope?: NotificationEventScope | null;
 }): string | null {
   const { refEntity, refId, scope } = params;
   if (!refEntity) return null;

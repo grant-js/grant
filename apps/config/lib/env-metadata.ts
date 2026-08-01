@@ -1497,15 +1497,6 @@ const META: EnvVarMeta[] = [
     section: 'Jobs',
   },
   {
-    key: 'JOBS_EVENT_RELAY_CONCURRENCY',
-    category: 'main',
-    label: 'Event relay concurrency',
-    description: 'Per-consumer fan-out concurrency (default: 1).',
-    envFiles: ['.env'],
-    digitsOnly: true,
-    section: 'Jobs',
-  },
-  {
     key: 'JOBS_WEBHOOK_DELIVERY_ENABLED',
     category: 'main',
     label: 'Webhook delivery enabled',

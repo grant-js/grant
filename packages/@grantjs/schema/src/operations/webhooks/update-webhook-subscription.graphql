@@ -1,0 +1,10 @@
+mutation UpdateWebhookSubscription($id: ID!, $input: UpdateWebhookSubscriptionMutationInput!) {
+  updateWebhookSubscription(id: $id, input: $input) {
+    id
+    url
+    eventTypes
+    active
+    description
+    updatedAt
+  }
+}

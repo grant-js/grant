@@ -58,9 +58,9 @@ export function NotificationBell() {
 
   const buildHref = (notification: Notification) =>
     buildNotificationHref({
-      refEntity: notification.refEntity,
-      refId: notification.refId,
-      scope: notification.scope,
+      refEntity: notification.refEntity ?? null,
+      refId: notification.refId ?? null,
+      scope: notification.scope ?? null,
     });
 
   const handleItemClick = async (notification: Notification) => {

@@ -1,0 +1,33 @@
+input CreateWebhookSubscriptionMutationInput {
+  scope: Scope!
+  url: String!
+  """
+  Domain event type filters (must be known catalog types).
+  """
+  eventTypes: [String!]!
+  description: String
+  active: Boolean
+}
+
+input UpdateWebhookSubscriptionMutationInput {
+  scope: Scope!
+  url: String
+  eventTypes: [String!]
+  description: String
+  active: Boolean
+}
+
+input DeleteWebhookSubscriptionInput {
+  scope: Scope!
+  id: ID!
+}
+
+input RotateWebhookSubscriptionSecretInput {
+  scope: Scope!
+  id: ID!
+}
+
+input ReplayWebhookDeliveryInput {
+  scope: Scope!
+  deliveryId: ID!
+}

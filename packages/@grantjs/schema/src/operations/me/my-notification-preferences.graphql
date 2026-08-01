@@ -1,0 +1,11 @@
+query MyNotificationPreferences($scopeTenant: String!) {
+  myNotificationPreferences(scopeTenant: $scopeTenant) {
+    id
+    scopeTenant
+    scopeId
+    category
+    channel
+    enabled
+    source
+  }
+}

@@ -1,3 +1,8 @@
+export {
+  markAllMyNotificationsReadResolver as markAllMyNotificationsRead,
+  markMyNotificationReadResolver as markMyNotificationRead,
+  setMyNotificationPreferenceResolver as setMyNotificationPreference,
+} from '../notification.resolvers';
 export { changeMyPasswordResolver as changeMyPassword } from './change-my-password.resolver';
 export { createMyMfaEnrollmentResolver as createMyMfaEnrollment } from './create-my-mfa-enrollment.resolver';
 export { createMySecondaryAccountResolver as createMySecondaryAccount } from './create-my-secondary-account.resolver';

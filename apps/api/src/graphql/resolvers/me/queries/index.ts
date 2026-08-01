@@ -1,3 +1,8 @@
+export {
+  myNotificationPreferencesResolver as myNotificationPreferences,
+  myNotificationsResolver as myNotifications,
+  myUnreadNotificationCountResolver as myUnreadNotificationCount,
+} from '../notification.resolvers';
 export { meResolver as me } from './me.resolver';
 export { myMfaDevicesResolver as myMfaDevices } from './my-mfa-devices.resolver';
 export { myMfaRecoveryCodeStatus } from './my-mfa-recovery-code-status.resolver';

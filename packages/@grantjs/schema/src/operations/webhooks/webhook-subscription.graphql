@@ -1,0 +1,13 @@
+query WebhookSubscription($scope: Scope!, $id: ID!) {
+  webhookSubscription(scope: $scope, id: $id) {
+    id
+    projectId
+    url
+    eventTypes
+    active
+    description
+    createdById
+    createdAt
+    updatedAt
+  }
+}
