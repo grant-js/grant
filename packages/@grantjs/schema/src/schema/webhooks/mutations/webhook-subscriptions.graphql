@@ -1,0 +1,33 @@
+extend type Mutation {
+  """
+  Create a project webhook subscription. The signing secret is returned once.
+  """
+  createWebhookSubscription(
+    input: CreateWebhookSubscriptionMutationInput!
+  ): WebhookSubscriptionWithSecret!
+
+  """
+  Update a webhook subscription URL, event filters, description, or active flag.
+  """
+  updateWebhookSubscription(
+    id: ID!
+    input: UpdateWebhookSubscriptionMutationInput!
+  ): WebhookSubscription!
+
+  """
+  Soft-delete a webhook subscription.
+  """
+  deleteWebhookSubscription(input: DeleteWebhookSubscriptionInput!): Boolean!
+
+  """
+  Rotate the signing secret. The new secret is returned once.
+  """
+  rotateWebhookSubscriptionSecret(
+    input: RotateWebhookSubscriptionSecretInput!
+  ): WebhookSubscriptionWithSecret!
+
+  """
+  Re-queue a delivery attempt for another POST.
+  """
+  replayWebhookDelivery(input: ReplayWebhookDeliveryInput!): WebhookDeliveryAttempt!
+}

@@ -1,5 +1,5 @@
 import { GROUP_DEFINITIONS } from '@grantjs/constants';
-import type { IAuditLogger, IGroupRepository, IGroupService } from '@grantjs/core';
+import type { IAuditLogger, IEventPublisher, IGroupRepository, IGroupService } from '@grantjs/core';
 import {
   CreateGroupInput,
   Group,
@@ -10,6 +10,7 @@ import {
 } from '@grantjs/schema';
 
 import { BadRequestError, NotFoundError } from '@/lib/errors';
+import { buildDelta } from '@/lib/events';
 import { buildSearchDocument } from '@/lib/search-document.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
@@ -31,7 +32,8 @@ import {
 export class GroupService implements IGroupService {
   constructor(
     private readonly groupRepository: IGroupRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   private getCorePlatformGroupNames(): string[] {
@@ -126,6 +128,15 @@ export class GroupService implements IGroupService {
 
     await this.audit.logCreate(group.id, newValues, auditMetadata, transaction);
 
+    await this.events.publish(
+      {
+        type: 'group.created',
+        aggregate: { kind: 'group', id: group.id },
+        data: { after: newValues },
+      },
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(groupSchema), group, context);
   }
 
@@ -190,6 +201,15 @@ export class GroupService implements IGroupService {
       transaction
     );
 
+    await this.events.publish(
+      {
+        type: 'group.updated',
+        aggregate: { kind: 'group', id: groupWithSearch.id },
+        data: { before: oldValues, after: newValues, delta: buildDelta(oldValues, newValues) },
+      },
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(groupSchema), groupWithSearch, context);
   }
 
@@ -237,6 +257,15 @@ export class GroupService implements IGroupService {
         transaction
       );
     }
+
+    await this.events.publish(
+      {
+        type: 'group.deleted',
+        aggregate: { kind: 'group', id: deletedGroup.id },
+        data: { before: oldValues },
+      },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(groupSchema), deletedGroup, context);
   }

@@ -2,6 +2,7 @@ import { canAssignRole } from '@grantjs/constants';
 import {
   GrantAuth,
   type IAuditLogger,
+  type IEventPublisher,
   type IOrganizationMemberRepository,
   type IOrganizationMemberService,
   type IOrganizationRoleRepository,
@@ -18,6 +19,7 @@ import {
 } from '@grantjs/schema';
 
 import { AuthorizationError, BadRequestError, NotFoundError } from '@/lib/errors';
+import { buildDelta } from '@/lib/events';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { SelectedFields } from '@/types';
 
@@ -35,7 +37,8 @@ export class OrganizationMemberService implements IOrganizationMemberService {
     private readonly organizationRoleRepository: IOrganizationRoleRepository,
     private readonly roleRepository: IRoleRepository,
     readonly user: GrantAuth | null,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   private getCurrentUserId(): string {
@@ -200,11 +203,25 @@ export class OrganizationMemberService implements IOrganizationMemberService {
       throw new NotFoundError('User', userId);
     }
 
+    const before = { userId, previousRoleId };
+    const after = { userId, roleId };
+
     await this.audit.logUpdate(
       organizationId,
-      { userId, previousRoleId },
-      { userId, roleId },
+      before,
+      after,
       { context: 'OrganizationMemberService.updateOrganizationMember' },
+      transaction
+    );
+
+    await this.events.publish(
+      {
+        type: 'organization.member_role_changed',
+        scope: { tenant: Tenant.Organization, id: organizationId },
+        subjectUserId: userId,
+        aggregate: { kind: 'organizationMember', id: `${organizationId}:${userId}` },
+        data: { before, after, delta: buildDelta(before, after) },
+      },
       transaction
     );
 
@@ -245,11 +262,25 @@ export class OrganizationMemberService implements IOrganizationMemberService {
       transaction
     );
 
+    const before = { userId, roleId: memberToRemove.role?.id ?? null };
+    const after = { userId, removed: true };
+
     await this.audit.logSoftDelete(
       organizationId,
-      { userId, roleId: memberToRemove.role?.id ?? null },
-      { userId, removed: true },
+      before,
+      after,
       { context: 'OrganizationMemberService.removeOrganizationMember' },
+      transaction
+    );
+
+    await this.events.publish(
+      {
+        type: 'organization.member_removed',
+        scope: { tenant: Tenant.Organization, id: organizationId },
+        subjectUserId: userId,
+        aggregate: { kind: 'organizationMember', id: `${organizationId}:${userId}` },
+        data: { before },
+      },
       transaction
     );
 

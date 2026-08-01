@@ -660,6 +660,42 @@ export const JOB_CONFIG = {
     enabled: env.JOBS_SYSTEM_SIGNING_KEY_ROTATION_ENABLED,
   },
 
+  /** Domain-event relay (transactional outbox -> consumers) */
+  eventRelay: {
+    /** Enable the relay + sweep jobs */
+    enabled: env.JOBS_EVENT_RELAY_ENABLED,
+    /** Cron pattern for the durability sweep (default: every minute) */
+    sweepSchedule: env.JOBS_EVENT_RELAY_SWEEP_SCHEDULE,
+    /** Max pending events claimed per transaction/batch */
+    batchSize: env.JOBS_EVENT_RELAY_BATCH_SIZE,
+    /** Max batches processed per relay/sweep run before yielding */
+    maxBatches: env.JOBS_EVENT_RELAY_MAX_BATCHES,
+  },
+
+  /** Webhook delivery job (signs + POSTs queued delivery attempts) */
+  webhookDelivery: {
+    /** Enable the webhook delivery job */
+    enabled: env.JOBS_WEBHOOK_DELIVERY_ENABLED,
+    /** Cron pattern for the delivery sweep (default: every minute) */
+    schedule: env.JOBS_WEBHOOK_DELIVERY_SCHEDULE,
+    /** Max due deliveries claimed per batch */
+    batchSize: env.JOBS_WEBHOOK_DELIVERY_BATCH_SIZE,
+    /** Max batches processed per run before yielding */
+    maxBatches: env.JOBS_WEBHOOK_DELIVERY_MAX_BATCHES,
+  },
+
+  /** Notification email delivery job (sends pending email-channel notifications) */
+  notificationDelivery: {
+    /** Enable the notification email delivery job */
+    enabled: env.JOBS_NOTIFICATION_DELIVERY_ENABLED,
+    /** Cron pattern for the delivery sweep (default: every minute) */
+    schedule: env.JOBS_NOTIFICATION_DELIVERY_SCHEDULE,
+    /** Max due notifications claimed per batch */
+    batchSize: env.JOBS_NOTIFICATION_DELIVERY_BATCH_SIZE,
+    /** Max batches processed per run before yielding */
+    maxBatches: env.JOBS_NOTIFICATION_DELIVERY_MAX_BATCHES,
+  },
+
   /** BullMQ default job options */
   bullmq: {
     /** Number of retry attempts for failed jobs */
@@ -684,6 +720,62 @@ export const JOB_CONFIG = {
       /** Age in seconds to keep failed jobs (default: 30 days) */
       age: env.JOBS_BULLMQ_REMOVE_ON_FAIL_AGE,
     },
+  },
+} as const;
+
+// ============================================================================
+// Webhooks Configuration
+// ============================================================================
+
+function parseCsvList(raw: string): string[] {
+  return raw
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+}
+
+export const WEBHOOK_CONFIG = {
+  /** Per-delivery HTTP timeout (ms). */
+  deliveryTimeoutMs: env.WEBHOOKS_DELIVERY_TIMEOUT_MS,
+
+  /** SSRF guard settings for outbound delivery + create-time validation. */
+  ssrf: {
+    /** Allowed URL protocols (https only unless HTTP is explicitly enabled). */
+    allowedProtocols: env.WEBHOOKS_ALLOW_HTTP ? ['http:', 'https:'] : ['https:'],
+    /** Allow private/loopback targets (dev/test only). */
+    allowPrivateTargets: env.WEBHOOKS_SSRF_ALLOW_PRIVATE,
+    /** Hostnames that bypass SSRF checks. */
+    allowlist: parseCsvList(env.WEBHOOKS_SSRF_ALLOWLIST),
+    /** Hostnames that are always rejected. */
+    denylist: parseCsvList(env.WEBHOOKS_SSRF_DENYLIST),
+  },
+
+  /** Signing timestamp tolerance advertised to consumers (seconds). */
+  signatureTimestampToleranceSeconds: env.WEBHOOKS_SIGNATURE_TIMESTAMP_TOLERANCE_SECONDS,
+
+  /** Random bytes used to generate subscription signing secrets. */
+  secretBytes: env.WEBHOOKS_SECRET_BYTES,
+
+  /** App-level retry policy for failed deliveries. */
+  retry: {
+    maxAttempts: env.WEBHOOKS_RETRY_MAX_ATTEMPTS,
+    baseDelaySeconds: env.WEBHOOKS_RETRY_BASE_DELAY_SECONDS,
+    maxDelaySeconds: env.WEBHOOKS_RETRY_MAX_DELAY_SECONDS,
+    horizonHours: env.WEBHOOKS_RETRY_HORIZON_HOURS,
+  },
+} as const;
+
+// ============================================================================
+// Notifications Configuration
+// ============================================================================
+
+export const NOTIFICATION_CONFIG = {
+  /** App-level retry policy for the email notification channel. */
+  emailRetry: {
+    maxAttempts: env.NOTIFICATIONS_EMAIL_RETRY_MAX_ATTEMPTS,
+    baseDelaySeconds: env.NOTIFICATIONS_EMAIL_RETRY_BASE_DELAY_SECONDS,
+    maxDelaySeconds: env.NOTIFICATIONS_EMAIL_RETRY_MAX_DELAY_SECONDS,
+    horizonHours: env.NOTIFICATIONS_EMAIL_RETRY_HORIZON_HOURS,
   },
 } as const;
 
@@ -947,6 +1039,8 @@ export const config = {
   storage: STORAGE_CONFIG,
   privacy: PRIVACY_CONFIG,
   jobs: JOB_CONFIG,
+  webhooks: WEBHOOK_CONFIG,
+  notifications: NOTIFICATION_CONFIG,
   demoMode: DEMO_MODE_CONFIG,
   system: SYSTEM_CONSTANTS,
   cors: CORS_CONFIG,

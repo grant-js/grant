@@ -10,6 +10,7 @@ import { getLocale } from '@/i18n';
 import { DrizzleAuditLogger } from '@/lib/audit';
 import { extractScopeFromRequest } from '@/lib/authorization/scope-extractor';
 import { IEntityCacheAdapter } from '@/lib/cache';
+import { DrizzleEventPublisher } from '@/lib/events';
 import {
   getAuthorizationToken,
   getClientIp,
@@ -49,9 +50,11 @@ export function contextMiddleware(db: DbSchema, cache: IEntityCacheAdapter) {
       SYSTEM_USER,
       db
     );
+    const bootstrapEvents = new DrizzleEventPublisher(SYSTEM_USER, db);
     const signingKeyService = new SigningKeyService(
       repositories.signingKeyRepository,
-      signingKeyAudit
+      signingKeyAudit,
+      bootstrapEvents
     );
 
     const grantService = new GrantService(cache, grantRepository, signingKeyService, {
@@ -89,7 +92,9 @@ export function contextMiddleware(db: DbSchema, cache: IEntityCacheAdapter) {
 
         const scopedDb = tx as unknown as DbSchema;
         const scopedRepositories = createRepositories(scopedDb);
-        const services = createServices(scopedRepositories, user, scopedDb, cache, grant);
+        const services = createServices(scopedRepositories, user, scopedDb, cache, grant, {
+          scheduleAfterCommit,
+        });
         const txConnection = new DrizzleTransactionalConnection(scopedDb);
         const handlers = createHandlers(cache, services, txConnection, grant, {
           scheduleAfterCommit,
@@ -149,7 +154,9 @@ export function contextMiddleware(db: DbSchema, cache: IEntityCacheAdapter) {
         void Promise.resolve(fn());
       };
 
-      const services = createServices(repositories, user, db, cache, grant);
+      const services = createServices(repositories, user, db, cache, grant, {
+        scheduleAfterCommit,
+      });
       const txConnection = new DrizzleTransactionalConnection(db);
       const handlers = createHandlers(cache, services, txConnection, grant, {
         scheduleAfterCommit,

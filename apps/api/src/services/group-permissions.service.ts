@@ -1,5 +1,6 @@
 import type {
   IAuditLogger,
+  IEventPublisher,
   IGroupPermissionRepository,
   IGroupPermissionService,
   IGroupRepository,
@@ -29,7 +30,8 @@ export class GroupPermissionService implements IGroupPermissionService {
     private readonly groupRepository: IGroupRepository,
     private readonly permissionRepository: IPermissionRepository,
     private readonly groupPermissionRepository: IGroupPermissionRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   private async groupExists(groupId: string, transaction?: Transaction): Promise<void> {
@@ -144,6 +146,15 @@ export class GroupPermissionService implements IGroupPermissionService {
 
     await this.audit.logCreate(groupPermission.id, newValues, metadata, transaction);
 
+    await this.events.publish(
+      {
+        type: 'group.permission_assigned',
+        aggregate: { kind: 'groupPermission', id: groupPermission.id },
+        data: { after: newValues },
+      },
+      transaction
+    );
+
     return validateOutput(
       createDynamicSingleSchema(groupPermissionSchema),
       groupPermission,
@@ -203,6 +214,15 @@ export class GroupPermissionService implements IGroupPermissionService {
         transaction
       );
     }
+
+    await this.events.publish(
+      {
+        type: 'group.permission_revoked',
+        aggregate: { kind: 'groupPermission', id: groupPermission.id },
+        data: { before: oldValues },
+      },
+      transaction
+    );
 
     return validateOutput(
       createDynamicSingleSchema(groupPermissionSchema),

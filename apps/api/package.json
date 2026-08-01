@@ -39,6 +39,7 @@
     "@grantjs/schema": "workspace:*",
     "@grantjs/storage": "workspace:*",
     "@grantjs/telemetry": "workspace:*",
+    "@grantjs/webhooks": "workspace:*",
     "@graphql-tools/load-files": "^7.0.1",
     "@graphql-tools/schema": "^10.0.38",
     "@octokit/rest": "^22.0.1",

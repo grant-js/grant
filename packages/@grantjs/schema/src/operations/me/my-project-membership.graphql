@@ -1,0 +1,14 @@
+query MyProjectMembership($projectId: ID!) {
+  myProjectMembership(projectId: $projectId) {
+    projectId
+    projectName
+    displayName
+    pictureUrl
+    metadata
+    role
+    joinedAt
+    organizationId
+    organizationName
+    accountId
+  }
+}

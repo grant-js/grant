@@ -107,4 +107,5 @@ The exchange endpoint (`/auth/token`) is not permission-guarded — it authentic
 
 - [Security > JWKS and Signing Keys](/architecture/security#jwks-and-signing-keys) — Token verification and key rotation
 - [Resources](/core-concepts/resources) — API key resource actions
+- [Events, Webhooks & Notifications](/core-concepts/events-webhooks-notifications) — `api_key.created` / `rotated` / `revoked`
 - [RBAC System](/architecture/rbac) — Role-based permission evaluation

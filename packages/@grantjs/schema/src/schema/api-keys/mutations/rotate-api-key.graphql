@@ -1,0 +1,7 @@
+extend type Mutation {
+  """
+  Rotate an API key secret in place. Returns the new plaintext secret once.
+  Keeps the same key id and clientId; rejects revoked keys.
+  """
+  rotateApiKey(input: RotateApiKeyInput!): CreateApiKeyResult!
+}

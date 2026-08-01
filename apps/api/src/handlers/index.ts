@@ -22,6 +22,7 @@ import { RoleHandler } from './roles.handler';
 import { SigningKeysHandler } from './signing-keys.handler';
 import { TagHandler } from './tags.handler';
 import { UserHandler } from './users.handler';
+import { WebhookSubscriptionsHandler } from './webhook-subscriptions.handler';
 
 export type Handlers = ReturnType<typeof createHandlers>;
 
@@ -86,6 +87,8 @@ export function createHandlers(
       services.organizationUsers,
       services.projectUsers,
       services.auth,
+      services.notifications,
+      services.events,
       cache,
       services,
       db
@@ -101,6 +104,12 @@ export function createHandlers(
       db
     ),
     signingKeys: new SigningKeysHandler(services.signingKeys, cache, services, db),
+    webhookSubscriptions: new WebhookSubscriptionsHandler(
+      services.webhookSubscriptions,
+      cache,
+      services,
+      db
+    ),
     auth: authHandler,
     projectOAuth: new ProjectOAuthHandler(
       services.projectApps,

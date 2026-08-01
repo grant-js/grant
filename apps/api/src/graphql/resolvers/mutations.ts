@@ -23,6 +23,7 @@ import * as roleMutations from './roles/mutations';
 import * as signingKeyMutations from './signing-keys/mutations';
 import * as tagMutations from './tags/mutations';
 import * as userMutations from './users/mutations';
+import * as webhookSubscriptionMutations from './webhook-subscriptions/mutations';
 
 const ALLOW_PERSONAL_EMAIL: EmailVerificationGraphQLGuardOptions = { allowPersonalContext: true };
 const ALLOW_PERSONAL_MFA: MfaGraphQLGuardOptions = { allowPersonalContext: true };
@@ -66,6 +67,15 @@ export const Mutation = {
   generateMyMfaRecoveryCodes: authenticateGraphQLResolver(meMutations.generateMyMfaRecoveryCodes!),
   uploadMyUserPicture: authenticateGraphQLResolver(meMutations.uploadMyUserPicture!),
   updateMyUser: authenticateGraphQLResolver(meMutations.updateMyUser!),
+  updateMyProjectMembership: authenticateGraphQLResolver(meMutations.updateMyProjectMembership!),
+  uploadMyProjectMembershipPicture: authenticateGraphQLResolver(
+    meMutations.uploadMyProjectMembershipPicture!
+  ),
+  markMyNotificationRead: authenticateGraphQLResolver(meMutations.markMyNotificationRead!),
+  markAllMyNotificationsRead: authenticateGraphQLResolver(meMutations.markAllMyNotificationsRead!),
+  setMyNotificationPreference: authenticateGraphQLResolver(
+    meMutations.setMyNotificationPreference!
+  ),
 
   // Users (scoped - allow personal context)
   createUser: requireEmailThenMfaGraphQL(
@@ -447,6 +457,14 @@ export const Mutation = {
       apiKeyMutations.revokeApiKey!
     )
   ),
+  rotateApiKey: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      { resource: ResourceSlug.ApiKey, action: ResourceAction.Revoke },
+      apiKeyMutations.rotateApiKey!
+    )
+  ),
   deleteApiKey: requireEmailThenMfaGraphQL(
     ALLOW_PERSONAL_EMAIL,
     ALLOW_PERSONAL_MFA,
@@ -501,6 +519,64 @@ export const Mutation = {
         resourceResolver: 'projectApp',
       },
       projectAppMutations.deleteProjectApp!
+    )
+  ),
+
+  // Webhook subscriptions (project-scoped)
+  createWebhookSubscription: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      { resource: ResourceSlug.Project, action: ResourceAction.Create },
+      webhookSubscriptionMutations.createWebhookSubscription!
+    )
+  ),
+  updateWebhookSubscription: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      {
+        resource: ResourceSlug.Project,
+        action: ResourceAction.Update,
+        resourceResolver: 'projectApp',
+      },
+      webhookSubscriptionMutations.updateWebhookSubscription!
+    )
+  ),
+  deleteWebhookSubscription: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      {
+        resource: ResourceSlug.Project,
+        action: ResourceAction.Delete,
+        resourceResolver: 'projectApp',
+      },
+      webhookSubscriptionMutations.deleteWebhookSubscription!
+    )
+  ),
+  rotateWebhookSubscriptionSecret: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      {
+        resource: ResourceSlug.Project,
+        action: ResourceAction.Update,
+        resourceResolver: 'projectApp',
+      },
+      webhookSubscriptionMutations.rotateWebhookSubscriptionSecret!
+    )
+  ),
+  replayWebhookDelivery: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      {
+        resource: ResourceSlug.Project,
+        action: ResourceAction.Update,
+        resourceResolver: 'projectApp',
+      },
+      webhookSubscriptionMutations.replayWebhookDelivery!
     )
   ),
 } as const;

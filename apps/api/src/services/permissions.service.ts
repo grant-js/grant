@@ -1,4 +1,9 @@
-import type { IAuditLogger, IPermissionRepository, IPermissionService } from '@grantjs/core';
+import type {
+  IAuditLogger,
+  IEventPublisher,
+  IPermissionRepository,
+  IPermissionService,
+} from '@grantjs/core';
 import {
   CreatePermissionInput,
   MutationDeletePermissionArgs,
@@ -9,6 +14,7 @@ import {
 } from '@grantjs/schema';
 
 import { NotFoundError } from '@/lib/errors';
+import { buildDelta } from '@/lib/events';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -29,7 +35,8 @@ import {
 export class PermissionService implements IPermissionService {
   constructor(
     private readonly permissionRepository: IPermissionRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   private async getPermission(
@@ -104,6 +111,15 @@ export class PermissionService implements IPermissionService {
 
     await this.audit.logCreate(permission.id, newValues, metadata, transaction);
 
+    await this.events.publish(
+      {
+        type: 'permission.created',
+        aggregate: { kind: 'permission', id: permission.id },
+        data: { after: newValues },
+      },
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(permissionSchema), permission, context);
   }
 
@@ -142,6 +158,15 @@ export class PermissionService implements IPermissionService {
     };
 
     await this.audit.logUpdate(updatedPermission.id, oldValues, newValues, metadata, transaction);
+
+    await this.events.publish(
+      {
+        type: 'permission.updated',
+        aggregate: { kind: 'permission', id: updatedPermission.id },
+        data: { before: oldValues, after: newValues, delta: buildDelta(oldValues, newValues) },
+      },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(permissionSchema), updatedPermission, context);
   }
@@ -191,6 +216,15 @@ export class PermissionService implements IPermissionService {
         transaction
       );
     }
+
+    await this.events.publish(
+      {
+        type: 'permission.deleted',
+        aggregate: { kind: 'permission', id: deletedPermission.id },
+        data: { before: oldValues },
+      },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(permissionSchema), deletedPermission, context);
   }

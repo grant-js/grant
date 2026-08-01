@@ -1,12 +1,14 @@
-import type { EmailTemplates } from '../templates';
 import type {
   IEmailService,
   ILogger,
   SendInvitationParams,
+  SendNotificationEmailParams,
   SendOtpParams,
   SendPasswordResetParams,
   SendProjectOAuthMagicLinkParams,
 } from '@grantjs/core';
+
+import type { EmailTemplates } from '../templates';
 
 /**
  * Console email adapter for development
@@ -72,6 +74,17 @@ export class ConsoleEmailAdapter implements IEmailService {
       to: params.to,
       subject,
       text,
+    });
+  }
+
+  async sendNotification(params: SendNotificationEmailParams): Promise<void> {
+    this.logger.info({
+      msg: '📧 NOTIFICATION EMAIL (Console Adapter - Development Mode)',
+      emailType: 'notification',
+      from: this.from,
+      to: params.to,
+      subject: params.subject,
+      text: params.text,
     });
   }
 }

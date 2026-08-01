@@ -1,0 +1,63 @@
+enum NotificationChannel {
+  in_app
+  email
+}
+
+enum NotificationStatus {
+  pending
+  delivered
+  failed
+  dead
+}
+
+enum NotificationPreferenceSource {
+  user
+  org_enforced
+}
+
+type NotificationEventScope {
+  tenant: String!
+  id: ID!
+}
+
+type Notification {
+  id: ID!
+  eventId: ID!
+  category: String!
+  type: String!
+  channel: NotificationChannel!
+  title: String!
+  body: String
+  refEntity: String
+  refId: ID
+  scope: NotificationEventScope
+  status: NotificationStatus!
+  seenAt: Date
+  readAt: Date
+  createdAt: Date!
+}
+
+type NotificationPage {
+  notifications: [Notification!]!
+  totalCount: Int!
+  unreadCount: Int!
+  hasNextPage: Boolean!
+}
+
+type UnreadNotificationCount {
+  unreadCount: Int!
+}
+
+type NotificationPreference {
+  id: ID!
+  scopeTenant: String!
+  scopeId: String!
+  category: String!
+  channel: NotificationChannel!
+  enabled: Boolean!
+  source: NotificationPreferenceSource!
+}
+
+type MarkAllNotificationsReadResult {
+  updated: Int!
+}

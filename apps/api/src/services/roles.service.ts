@@ -1,5 +1,5 @@
 import { ROLES } from '@grantjs/constants';
-import type { IAuditLogger, IRoleRepository, IRoleService } from '@grantjs/core';
+import type { IAuditLogger, IEventPublisher, IRoleRepository, IRoleService } from '@grantjs/core';
 import {
   CreateRoleInput,
   MutationDeleteRoleArgs,
@@ -10,6 +10,7 @@ import {
 } from '@grantjs/schema';
 
 import { BadRequestError, NotFoundError } from '@/lib/errors';
+import { buildDelta } from '@/lib/events';
 import { buildSearchDocument } from '@/lib/search-document.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
@@ -31,7 +32,8 @@ import {
 export class RoleService implements IRoleService {
   constructor(
     private readonly roleRepository: IRoleRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   private getCorePlatformRoleNames(): string[] {
@@ -129,6 +131,15 @@ export class RoleService implements IRoleService {
 
     await this.audit.logCreate(role.id, newValues, metadata, transaction);
 
+    await this.events.publish(
+      {
+        type: 'role.created',
+        aggregate: { kind: 'role', id: role.id },
+        data: { after: newValues },
+      },
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(roleSchema), role, context);
   }
 
@@ -186,6 +197,15 @@ export class RoleService implements IRoleService {
 
     await this.audit.logUpdate(updatedRole.id, oldValues, newValues, metadata, transaction);
 
+    await this.events.publish(
+      {
+        type: 'role.updated',
+        aggregate: { kind: 'role', id: roleWithSearch.id },
+        data: { before: oldValues, after: newValues, delta: buildDelta(oldValues, newValues) },
+      },
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(roleSchema), roleWithSearch, context);
   }
 
@@ -227,6 +247,15 @@ export class RoleService implements IRoleService {
 
       await this.audit.logSoftDelete(deletedRole.id, oldValues, newValues, metadata, transaction);
     }
+
+    await this.events.publish(
+      {
+        type: 'role.deleted',
+        aggregate: { kind: 'role', id: deletedRole.id },
+        data: { before: oldValues },
+      },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(roleSchema), deletedRole, context);
   }

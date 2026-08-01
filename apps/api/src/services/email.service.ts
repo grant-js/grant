@@ -1,6 +1,7 @@
 import type {
   IEmailService,
   SendInvitationParams,
+  SendNotificationEmailParams,
   SendProjectOAuthMagicLinkParams,
 } from '@grantjs/core';
 import type { EmailTemplates } from '@grantjs/email';
@@ -137,5 +138,12 @@ export class EmailService implements IEmailService {
    */
   public async sendProjectOAuthMagicLink(params: SendProjectOAuthMagicLinkParams): Promise<void> {
     return this.emailAdapter.sendProjectOAuthMagicLink(params);
+  }
+
+  /**
+   * Send a generic notification email (notification email channel)
+   */
+  public async sendNotification(params: SendNotificationEmailParams): Promise<void> {
+    return this.emailAdapter.sendNotification(params);
   }
 }

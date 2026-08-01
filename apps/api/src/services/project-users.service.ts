@@ -1,11 +1,21 @@
 import type {
+  IAccountProjectRepository,
   IAuditLogger,
+  IEventPublisher,
+  IOrganizationProjectRepository,
   IProjectRepository,
   IProjectUserRepository,
   IProjectUserService,
+  IUserAuthenticationMethodRepository,
   IUserRepository,
 } from '@grantjs/core';
-import { AddProjectUserInput, ProjectUser, RemoveProjectUserInput } from '@grantjs/schema';
+import {
+  AddProjectUserInput,
+  type ProjectUser,
+  RemoveProjectUserInput,
+  type Scope,
+  Tenant,
+} from '@grantjs/schema';
 
 import { mergeCdmImporterMetadata } from '@/constants/cdm-import.constants';
 import {
@@ -13,6 +23,7 @@ import {
   toMetadataRecord,
 } from '@/lib/effective-project-user-metadata.lib';
 import { ConflictError, NotFoundError } from '@/lib/errors';
+import { buildDelta } from '@/lib/events';
 import { syncProjectUserSearchDocument } from '@/lib/sync-project-user-search-document.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams } from '@/types';
@@ -33,8 +44,41 @@ export class ProjectUserService implements IProjectUserService {
     private readonly projectRepository: IProjectRepository,
     private readonly userRepository: IUserRepository,
     private readonly projectUserRepository: IProjectUserRepository,
-    private readonly audit: IAuditLogger
+    private readonly organizationProjectRepository: IOrganizationProjectRepository,
+    private readonly accountProjectRepository: IAccountProjectRepository,
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher,
+    private readonly userAuthenticationMethods?: IUserAuthenticationMethodRepository
   ) {}
+
+  private async resolveProjectScope(
+    projectId: string,
+    transaction?: Transaction
+  ): Promise<Scope | undefined> {
+    const orgProject = await this.organizationProjectRepository.getFirstByProjectId(
+      projectId,
+      transaction
+    );
+    if (orgProject) {
+      return {
+        tenant: Tenant.OrganizationProject,
+        id: `${orgProject.organizationId}:${projectId}`,
+      };
+    }
+
+    const accountProject = await this.accountProjectRepository.getFirstByProjectId(
+      projectId,
+      transaction
+    );
+    if (accountProject) {
+      return {
+        tenant: Tenant.AccountProject,
+        id: `${accountProject.accountId}:${projectId}`,
+      };
+    }
+
+    return undefined;
+  }
 
   private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
     const projects = await this.projectRepository.getProjects(
@@ -115,6 +159,8 @@ export class ProjectUserService implements IProjectUserService {
       transaction
     );
 
+    await this.syncProjectUserSearchDocument({ projectId, userId }, transaction);
+
     const newValues = {
       id: projectUser.id,
       projectId: projectUser.projectId,
@@ -129,6 +175,18 @@ export class ProjectUserService implements IProjectUserService {
     };
 
     await this.audit.logCreate(projectUser.id, newValues, auditMetadata, transaction);
+
+    const scope = await this.resolveProjectScope(projectUser.projectId, transaction);
+    await this.events.publish(
+      {
+        type: 'project.user_added',
+        ...(scope ? { scope } : {}),
+        subjectUserId: projectUser.userId,
+        aggregate: { kind: 'projectUser', id: projectUser.id },
+        data: { after: newValues },
+      },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(projectUserSchema), projectUser, context);
   }
@@ -145,7 +203,8 @@ export class ProjectUserService implements IProjectUserService {
       this.projectUserRepository,
       this.userRepository,
       params,
-      transaction
+      transaction,
+      this.userAuthenticationMethods
     );
   }
 
@@ -319,6 +378,18 @@ export class ProjectUserService implements IProjectUserService {
 
     await this.audit.logUpdate(projectUser.id, oldValues, newValues, { context }, transaction);
 
+    const scope = await this.resolveProjectScope(projectUser.projectId, transaction);
+    await this.events.publish(
+      {
+        type: 'project.user_profile_updated',
+        ...(scope ? { scope } : {}),
+        subjectUserId: projectUser.userId,
+        aggregate: { kind: 'projectUser', id: projectUser.id },
+        data: { before: oldValues, after: newValues, delta: buildDelta(oldValues, newValues) },
+      },
+      transaction
+    );
+
     await this.syncProjectUserSearchDocument(
       {
         projectId: validatedParams.projectId,
@@ -375,6 +446,18 @@ export class ProjectUserService implements IProjectUserService {
       await this.audit.logSoftDelete(projectUser.id, oldValues, newValues, metadata, transaction);
     }
 
+    const scope = await this.resolveProjectScope(projectUser.projectId, transaction);
+    await this.events.publish(
+      {
+        type: 'project.user_removed',
+        ...(scope ? { scope } : {}),
+        subjectUserId: projectUser.userId,
+        aggregate: { kind: 'projectUser', id: projectUser.id },
+        data: { before: oldValues },
+      },
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(projectUserSchema), projectUser, context);
   }
 
@@ -385,8 +468,14 @@ export class ProjectUserService implements IProjectUserService {
     Array<{
       projectId: string;
       projectName: string;
-      role: string;
+      displayName: string | null;
+      pictureUrl: string | null;
+      metadata: Record<string, unknown>;
+      role: string | null;
       joinedAt: Date;
+      organizationId: string | null;
+      organizationName: string | null;
+      accountId: string | null;
     }>
   > {
     const memberships = await this.projectUserRepository.getProjectUserMemberships(
@@ -397,8 +486,14 @@ export class ProjectUserService implements IProjectUserService {
     return memberships.map((m) => ({
       projectId: m.projectId,
       projectName: m.projectName,
+      displayName: m.displayName,
+      pictureUrl: m.pictureUrl,
+      metadata: m.metadata,
       role: m.role,
       joinedAt: m.joinedAt instanceof Date ? m.joinedAt : new Date(m.joinedAt),
+      organizationId: m.organizationId,
+      organizationName: m.organizationName,
+      accountId: m.accountId,
     }));
   }
 }

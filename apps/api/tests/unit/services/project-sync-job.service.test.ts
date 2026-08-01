@@ -1,7 +1,7 @@
 /**
  * Unit tests for ProjectSyncJobService lifecycle transitions (non-audit).
  */
-import type { IAuditLogger } from '@grantjs/core';
+import type { IAuditLogger, IEventPublisher } from '@grantjs/core';
 import { ConflictError } from '@grantjs/core';
 import {
   CdmModeStrategy,
@@ -15,6 +15,8 @@ import { ProjectSyncJobService } from '@/services/project-sync-job.service';
 
 const jobId = '40000000-0000-4000-8000-000000000077';
 const projectId = '00000000-0000-4000-8000-000000000011';
+const scopeTenant = Tenant.AccountProject;
+const scopeId = `acct:${projectId}`;
 
 function buildJob(status: ProjectSyncJobStatus) {
   return {
@@ -48,11 +50,32 @@ function noopAudit(): IAuditLogger {
   };
 }
 
-function createService(repo: {
-  getById: ReturnType<typeof vi.fn>;
-  updateStatus: ReturnType<typeof vi.fn>;
-}) {
-  return new ProjectSyncJobService(repo as never, noopAudit());
+function noopEvents(): IEventPublisher {
+  return {
+    publish: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
+function fullRow(job: ReturnType<typeof buildJob>) {
+  return {
+    job,
+    payload: {},
+    scopeTenant,
+    scopeId,
+    cancelRequested: false,
+  };
+}
+
+function createService(
+  repo: {
+    getById?: ReturnType<typeof vi.fn>;
+    getFullById?: ReturnType<typeof vi.fn>;
+    updateStatus?: ReturnType<typeof vi.fn>;
+    insert?: ReturnType<typeof vi.fn>;
+  },
+  events: IEventPublisher = noopEvents()
+) {
+  return new ProjectSyncJobService(repo as never, noopAudit(), events);
 }
 
 describe('ProjectSyncJobService.cancel', () => {
@@ -148,10 +171,14 @@ describe('ProjectSyncJobService.markFailed', () => {
     const running = buildJob(ProjectSyncJobStatus.Running);
     const failed = buildJob(ProjectSyncJobStatus.Failed);
     const updateStatus = vi.fn().mockResolvedValue(failed);
-    const svc = createService({
-      getById: vi.fn().mockResolvedValue(running),
-      updateStatus,
-    });
+    const events = noopEvents();
+    const svc = createService(
+      {
+        getFullById: vi.fn().mockResolvedValue(fullRow(running)),
+        updateStatus,
+      },
+      events
+    );
 
     const result = await svc.markFailed({ jobId, errorMessage: 'sync exploded' });
 
@@ -163,37 +190,130 @@ describe('ProjectSyncJobService.markFailed', () => {
       }),
       undefined
     );
+    expect(events.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'project_sync.failed',
+        scope: { tenant: scopeTenant, id: scopeId },
+        aggregate: { kind: 'project', id: projectId },
+        data: {
+          after: expect.objectContaining({
+            jobId,
+            projectId,
+            operation: 'import',
+            errorMessage: 'sync exploded',
+          }),
+        },
+      }),
+      undefined
+    );
   });
 
   it('marks a PENDING job as FAILED', async () => {
     const pending = buildJob(ProjectSyncJobStatus.Pending);
     const failed = buildJob(ProjectSyncJobStatus.Failed);
-    const svc = createService({
-      getById: vi.fn().mockResolvedValue(pending),
-      updateStatus: vi.fn().mockResolvedValue(failed),
-    });
+    const events = noopEvents();
+    const svc = createService(
+      {
+        getFullById: vi.fn().mockResolvedValue(fullRow(pending)),
+        updateStatus: vi.fn().mockResolvedValue(failed),
+      },
+      events
+    );
 
     const result = await svc.markFailed({ jobId, errorMessage: 'never started' });
 
     expect(result.status).toBe(ProjectSyncJobStatus.Failed);
+    expect(events.publish).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'project_sync.failed' }),
+      undefined
+    );
   });
 
   it('throws ConflictError when marking COMPLETED job as FAILED', async () => {
     const completed = buildJob(ProjectSyncJobStatus.Completed);
-    const svc = createService({
-      getById: vi.fn().mockResolvedValue(completed),
-      updateStatus: vi.fn(),
-    });
+    const events = noopEvents();
+    const svc = createService(
+      {
+        getFullById: vi.fn().mockResolvedValue(fullRow(completed)),
+        updateStatus: vi.fn(),
+      },
+      events
+    );
 
     await expect(svc.markFailed({ jobId, errorMessage: 'too late' })).rejects.toBeInstanceOf(
       ConflictError
+    );
+    expect(events.publish).not.toHaveBeenCalled();
+  });
+});
+
+describe('ProjectSyncJobService.markCompleted', () => {
+  it('publishes project_sync.completed with import counters', async () => {
+    const running = buildJob(ProjectSyncJobStatus.Running);
+    const completed = buildJob(ProjectSyncJobStatus.Completed);
+    const events = noopEvents();
+    const result = {
+      projectId,
+      importId: null,
+      rolesCreated: 2,
+      groupsCreated: 1,
+      roleGroupsLinked: 0,
+      groupPermissionsLinked: 0,
+      projectRolesLinked: 0,
+      projectGroupsLinked: 0,
+      projectPermissionsLinked: 0,
+      projectResourcesLinked: 0,
+      projectUsersEnsured: 0,
+      usersCreated: 0,
+      userRolesAssigned: 3,
+      projectUserApiKeysCreated: 0,
+      resourcesCreated: 0,
+      permissionsCreated: 0,
+      tagsCreated: 0,
+      projectTagsLinked: 0,
+      roleTagsLinked: 0,
+      groupTagsLinked: 0,
+      userTagsLinked: 0,
+      warnings: ['soft warning'],
+    };
+    const svc = createService(
+      {
+        getFullById: vi.fn().mockResolvedValue(fullRow(running)),
+        updateStatus: vi.fn().mockResolvedValue(completed),
+      },
+      events
+    );
+
+    await svc.markCompleted({
+      jobId,
+      result,
+      warnings: result.warnings,
+    });
+
+    expect(events.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'project_sync.completed',
+        scope: { tenant: scopeTenant, id: scopeId },
+        aggregate: { kind: 'project', id: projectId },
+        data: {
+          after: expect.objectContaining({
+            jobId,
+            projectId,
+            operation: 'import',
+            rolesCreated: 2,
+            userRolesAssigned: 3,
+            warningCount: 1,
+          }),
+        },
+      }),
+      undefined
     );
   });
 });
 
 describe('ProjectSyncJobService.create validation', () => {
   it('rejects unsupported cdmVersion', async () => {
-    const svc = new ProjectSyncJobService({ insert: vi.fn() } as never, noopAudit());
+    const svc = createService({ insert: vi.fn() });
 
     await expect(
       svc.create({

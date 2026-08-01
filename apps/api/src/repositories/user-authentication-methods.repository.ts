@@ -9,6 +9,7 @@ import {
   UserAuthenticationMethod,
   UserAuthenticationMethodProvider,
 } from '@grantjs/schema';
+import { and, eq, inArray } from 'drizzle-orm';
 
 import { BadRequestError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -228,5 +229,35 @@ export class UserAuthenticationMethodRepository
     }
 
     return null;
+  }
+
+  /**
+   * Resolve primary email addresses for the given user ids (email provider's
+   * `providerId`). Users without an email auth method are omitted.
+   */
+  async getEmailsByUserIds(
+    userIds: string[],
+    transaction?: Transaction
+  ): Promise<Map<string, string>> {
+    if (userIds.length === 0) return new Map();
+    const dbInstance = transaction ?? this.db;
+    const rows = await dbInstance
+      .select({
+        userId: userAuthenticationMethods.userId,
+        providerId: userAuthenticationMethods.providerId,
+      })
+      .from(userAuthenticationMethods)
+      .where(
+        and(
+          eq(userAuthenticationMethods.provider, UserAuthenticationMethodProvider.Email),
+          inArray(userAuthenticationMethods.userId, userIds)
+        )
+      );
+
+    const emails = new Map<string, string>();
+    for (const row of rows) {
+      if (!emails.has(row.userId)) emails.set(row.userId, row.providerId);
+    }
+    return emails;
   }
 }

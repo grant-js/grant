@@ -106,6 +106,22 @@ export type RevokeApiKeyMutation = {
   };
 };
 
+export type RotateApiKeyMutationVariables = Exact<{
+  input: Types.RotateApiKeyInput;
+}>;
+
+export type RotateApiKeyMutation = {
+  rotateApiKey: {
+    id: string;
+    clientId: string;
+    clientSecret: string;
+    name: string | null;
+    description: string | null;
+    expiresAt: Date | null;
+    createdAt: Date;
+  };
+};
+
 export type LoginMutationVariables = Exact<{
   input: Types.LoginInput;
 }>;
@@ -402,6 +418,18 @@ export type LogoutMyUserMutationVariables = Exact<{ [key: string]: never }>;
 
 export type LogoutMyUserMutation = { logoutMyUser: { message: string } };
 
+export type MarkAllMyNotificationsReadMutationVariables = Exact<{ [key: string]: never }>;
+
+export type MarkAllMyNotificationsReadMutation = {
+  markAllMyNotificationsRead: { updated: number };
+};
+
+export type MarkMyNotificationReadMutationVariables = Exact<{
+  id: string | number;
+}>;
+
+export type MarkMyNotificationReadMutation = { markMyNotificationRead: boolean };
+
 export type MeQueryVariables = Exact<{ [key: string]: never }>;
 
 export type MeQuery = {
@@ -431,6 +459,90 @@ export type MeQuery = {
     }>;
   };
 };
+
+export type MyNotificationPreferencesQueryVariables = Exact<{
+  scopeTenant: string;
+}>;
+
+export type MyNotificationPreferencesQuery = {
+  myNotificationPreferences: Array<{
+    id: string;
+    scopeTenant: string;
+    scopeId: string;
+    category: string;
+    channel: Types.NotificationChannel;
+    enabled: boolean;
+    source: Types.NotificationPreferenceSource;
+  }>;
+};
+
+export type MyNotificationsQueryVariables = Exact<{
+  input?: Types.MyNotificationsInput | null | undefined;
+}>;
+
+export type MyNotificationsQuery = {
+  myNotifications: {
+    totalCount: number;
+    unreadCount: number;
+    hasNextPage: boolean;
+    notifications: Array<{
+      id: string;
+      eventId: string;
+      category: string;
+      type: string;
+      channel: Types.NotificationChannel;
+      title: string;
+      body: string | null;
+      refEntity: string | null;
+      refId: string | null;
+      status: Types.NotificationStatus;
+      seenAt: Date | null;
+      readAt: Date | null;
+      createdAt: Date;
+      scope: { tenant: string; id: string } | null;
+    }>;
+  };
+};
+
+export type MyProjectMembershipQueryVariables = Exact<{
+  projectId: string | number;
+}>;
+
+export type MyProjectMembershipQuery = {
+  myProjectMembership: {
+    projectId: string;
+    projectName: string;
+    displayName: string | null;
+    pictureUrl: string | null;
+    metadata: Record<string, unknown>;
+    role: string | null;
+    joinedAt: Date;
+    organizationId: string | null;
+    organizationName: string | null;
+    accountId: string | null;
+  } | null;
+};
+
+export type MyProjectMembershipsQueryVariables = Exact<{ [key: string]: never }>;
+
+export type MyProjectMembershipsQuery = {
+  myProjectMemberships: Array<{
+    projectId: string;
+    projectName: string;
+    displayName: string | null;
+    pictureUrl: string | null;
+    metadata: Record<string, unknown>;
+    role: string | null;
+    joinedAt: Date;
+    organizationId: string | null;
+    organizationName: string | null;
+    accountId: string | null;
+  }>;
+};
+
+export type MyUnreadNotificationCountQueryVariables = Exact<{ [key: string]: never }>;
+
+export type MyUnreadNotificationCountQuery = { myUnreadNotificationCount: { unreadCount: number } };
 
 export type MyUserAuthenticationMethodsQueryVariables = Exact<{ [key: string]: never }>;
 
@@ -544,6 +656,22 @@ export type RevokeMyUserSessionMutation = {
   revokeMyUserSession: { success: boolean; message: string };
 };
 
+export type SetMyNotificationPreferenceMutationVariables = Exact<{
+  input: Types.SetMyNotificationPreferenceInput;
+}>;
+
+export type SetMyNotificationPreferenceMutation = {
+  setMyNotificationPreference: {
+    id: string;
+    scopeTenant: string;
+    scopeId: string;
+    category: string;
+    channel: Types.NotificationChannel;
+    enabled: boolean;
+    source: Types.NotificationPreferenceSource;
+  };
+};
+
 export type SetMyPrimaryAuthenticationMethodMutationVariables = Exact<{
   id: string | number;
 }>;
@@ -570,6 +698,25 @@ export type SetMyPrimaryMfaDeviceMutation = {
   setMyPrimaryMfaDevice: { id: string; isPrimary: boolean };
 };
 
+export type UpdateMyProjectMembershipMutationVariables = Exact<{
+  input: Types.UpdateMyProjectMembershipInput;
+}>;
+
+export type UpdateMyProjectMembershipMutation = {
+  updateMyProjectMembership: {
+    projectId: string;
+    projectName: string;
+    displayName: string | null;
+    pictureUrl: string | null;
+    metadata: Record<string, unknown>;
+    role: string | null;
+    joinedAt: Date;
+    organizationId: string | null;
+    organizationName: string | null;
+    accountId: string | null;
+  };
+};
+
 export type UpdateMyUserMutationVariables = Exact<{
   input: Types.UpdateMyUserInput;
 }>;
@@ -582,6 +729,14 @@ export type UpdateMyUserMutation = {
     createdAt: Date;
     updatedAt: Date;
   };
+};
+
+export type UploadMyProjectMembershipPictureMutationVariables = Exact<{
+  input: Types.UploadMyProjectMembershipPictureInput;
+}>;
+
+export type UploadMyProjectMembershipPictureMutation = {
+  uploadMyProjectMembershipPicture: { url: string; path: string };
 };
 
 export type UploadMyUserPictureMutationVariables = Exact<{
@@ -1829,6 +1984,135 @@ export type UploadUserPictureMutationVariables = Exact<{
 
 export type UploadUserPictureMutation = { uploadUserPicture: { url: string; path: string } };
 
+export type CreateWebhookSubscriptionMutationVariables = Exact<{
+  input: Types.CreateWebhookSubscriptionMutationInput;
+}>;
+
+export type CreateWebhookSubscriptionMutation = {
+  createWebhookSubscription: {
+    id: string;
+    projectId: string;
+    url: string;
+    eventTypes: Array<string>;
+    active: boolean;
+    description: string | null;
+    secret: string;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+};
+
+export type DeleteWebhookSubscriptionMutationVariables = Exact<{
+  input: Types.DeleteWebhookSubscriptionInput;
+}>;
+
+export type DeleteWebhookSubscriptionMutation = { deleteWebhookSubscription: boolean };
+
+export type ReplayWebhookDeliveryMutationVariables = Exact<{
+  input: Types.ReplayWebhookDeliveryInput;
+}>;
+
+export type ReplayWebhookDeliveryMutation = {
+  replayWebhookDelivery: {
+    id: string;
+    eventId: string;
+    subscriptionId: string;
+    status: Types.WebhookDeliveryStatus;
+    attemptCount: number;
+    nextRetryAt: Date | null;
+    updatedAt: Date;
+  };
+};
+
+export type RotateWebhookSubscriptionSecretMutationVariables = Exact<{
+  input: Types.RotateWebhookSubscriptionSecretInput;
+}>;
+
+export type RotateWebhookSubscriptionSecretMutation = {
+  rotateWebhookSubscriptionSecret: { id: string; secret: string; updatedAt: Date };
+};
+
+export type UpdateWebhookSubscriptionMutationVariables = Exact<{
+  id: string | number;
+  input: Types.UpdateWebhookSubscriptionMutationInput;
+}>;
+
+export type UpdateWebhookSubscriptionMutation = {
+  updateWebhookSubscription: {
+    id: string;
+    url: string;
+    eventTypes: Array<string>;
+    active: boolean;
+    description: string | null;
+    updatedAt: Date;
+  };
+};
+
+export type WebhookDeliveriesQueryVariables = Exact<{
+  scope: Types.Scope;
+  subscriptionId?: string | number | null | undefined;
+  status?: Types.WebhookDeliveryStatus | null | undefined;
+  page?: number | null | undefined;
+  limit?: number | null | undefined;
+}>;
+
+export type WebhookDeliveriesQuery = {
+  webhookDeliveries: {
+    totalCount: number;
+    hasNextPage: boolean;
+    items: Array<{
+      id: string;
+      eventId: string;
+      subscriptionId: string;
+      status: Types.WebhookDeliveryStatus;
+      attemptCount: number;
+      nextRetryAt: Date | null;
+      lastResponseStatus: number | null;
+      errorDetails: Record<string, unknown> | null;
+      deliveredAt: Date | null;
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
+  };
+};
+
+export type WebhookSubscriptionQueryVariables = Exact<{
+  scope: Types.Scope;
+  id: string | number;
+}>;
+
+export type WebhookSubscriptionQuery = {
+  webhookSubscription: {
+    id: string;
+    projectId: string;
+    url: string;
+    eventTypes: Array<string>;
+    active: boolean;
+    description: string | null;
+    createdById: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+};
+
+export type WebhookSubscriptionsQueryVariables = Exact<{
+  scope: Types.Scope;
+}>;
+
+export type WebhookSubscriptionsQuery = {
+  webhookSubscriptions: Array<{
+    id: string;
+    projectId: string;
+    url: string;
+    eventTypes: Array<string>;
+    active: boolean;
+    description: string | null;
+    createdById: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }>;
+};
+
 export const CreateApiKeyDocument = {
   kind: 'Document',
   definitions: [
@@ -2184,6 +2468,54 @@ export const RevokeApiKeyDocument = {
     },
   ],
 } as unknown as DocumentNode<RevokeApiKeyMutation, RevokeApiKeyMutationVariables>;
+export const RotateApiKeyDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'RotateApiKey' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'RotateApiKeyInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'rotateApiKey' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'clientId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'clientSecret' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'expiresAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<RotateApiKeyMutation, RotateApiKeyMutationVariables>;
 export const LoginDocument = {
   kind: 'Document',
   definitions: [
@@ -3500,6 +3832,71 @@ export const LogoutMyUserDocument = {
     },
   ],
 } as unknown as DocumentNode<LogoutMyUserMutation, LogoutMyUserMutationVariables>;
+export const MarkAllMyNotificationsReadDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'MarkAllMyNotificationsRead' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'markAllMyNotificationsRead' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'updated' } }],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  MarkAllMyNotificationsReadMutation,
+  MarkAllMyNotificationsReadMutationVariables
+>;
+export const MarkMyNotificationReadDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'MarkMyNotificationRead' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'markMyNotificationRead' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'id' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+              },
+            ],
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  MarkMyNotificationReadMutation,
+  MarkMyNotificationReadMutationVariables
+>;
 export const MeDocument = {
   kind: 'Document',
   definitions: [
@@ -3564,6 +3961,242 @@ export const MeDocument = {
     },
   ],
 } as unknown as DocumentNode<MeQuery, MeQueryVariables>;
+export const MyNotificationPreferencesDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'MyNotificationPreferences' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'scopeTenant' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'myNotificationPreferences' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scopeTenant' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'scopeTenant' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'scopeTenant' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'scopeId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'channel' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'enabled' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'source' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  MyNotificationPreferencesQuery,
+  MyNotificationPreferencesQueryVariables
+>;
+export const MyNotificationsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'MyNotifications' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'MyNotificationsInput' } },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'myNotifications' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'notifications' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'eventId' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'type' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'channel' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'body' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'refEntity' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'refId' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'scope' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'tenant' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                          ],
+                        },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'seenAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'readAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'totalCount' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'unreadCount' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'hasNextPage' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<MyNotificationsQuery, MyNotificationsQueryVariables>;
+export const MyProjectMembershipDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'MyProjectMembership' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'myProjectMembership' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'projectId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'projectName' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'displayName' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'metadata' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'role' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'joinedAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'organizationId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'organizationName' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'accountId' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<MyProjectMembershipQuery, MyProjectMembershipQueryVariables>;
+export const MyProjectMembershipsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'MyProjectMemberships' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'myProjectMemberships' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'projectName' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'displayName' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'metadata' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'role' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'joinedAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'organizationId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'organizationName' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'accountId' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<MyProjectMembershipsQuery, MyProjectMembershipsQueryVariables>;
+export const MyUnreadNotificationCountDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'MyUnreadNotificationCount' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'myUnreadNotificationCount' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'unreadCount' } }],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  MyUnreadNotificationCountQuery,
+  MyUnreadNotificationCountQueryVariables
+>;
 export const MyUserAuthenticationMethodsDocument = {
   kind: 'Document',
   definitions: [
@@ -3921,6 +4554,60 @@ export const RevokeMyUserSessionDocument = {
     },
   ],
 } as unknown as DocumentNode<RevokeMyUserSessionMutation, RevokeMyUserSessionMutationVariables>;
+export const SetMyNotificationPreferenceDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'SetMyNotificationPreference' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'SetMyNotificationPreferenceInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'setMyNotificationPreference' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'scopeTenant' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'scopeId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'channel' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'enabled' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'source' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  SetMyNotificationPreferenceMutation,
+  SetMyNotificationPreferenceMutationVariables
+>;
 export const SetMyPrimaryAuthenticationMethodDocument = {
   kind: 'Document',
   definitions: [
@@ -4020,6 +4707,63 @@ export const SetMyPrimaryMfaDeviceDocument = {
     },
   ],
 } as unknown as DocumentNode<SetMyPrimaryMfaDeviceMutation, SetMyPrimaryMfaDeviceMutationVariables>;
+export const UpdateMyProjectMembershipDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'UpdateMyProjectMembership' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'UpdateMyProjectMembershipInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'updateMyProjectMembership' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'projectName' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'displayName' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'metadata' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'role' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'joinedAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'organizationId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'organizationName' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'accountId' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UpdateMyProjectMembershipMutation,
+  UpdateMyProjectMembershipMutationVariables
+>;
 export const UpdateMyUserDocument = {
   kind: 'Document',
   definitions: [
@@ -4066,6 +4810,55 @@ export const UpdateMyUserDocument = {
     },
   ],
 } as unknown as DocumentNode<UpdateMyUserMutation, UpdateMyUserMutationVariables>;
+export const UploadMyProjectMembershipPictureDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'UploadMyProjectMembershipPicture' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'UploadMyProjectMembershipPictureInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'uploadMyProjectMembershipPicture' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'path' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UploadMyProjectMembershipPictureMutation,
+  UploadMyProjectMembershipPictureMutationVariables
+>;
 export const UploadMyUserPictureDocument = {
   kind: 'Document',
   definitions: [
@@ -9367,3 +10160,484 @@ export const UploadUserPictureDocument = {
     },
   ],
 } as unknown as DocumentNode<UploadUserPictureMutation, UploadUserPictureMutationVariables>;
+export const CreateWebhookSubscriptionDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'CreateWebhookSubscription' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'CreateWebhookSubscriptionMutationInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'createWebhookSubscription' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'eventTypes' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'active' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'secret' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  CreateWebhookSubscriptionMutation,
+  CreateWebhookSubscriptionMutationVariables
+>;
+export const DeleteWebhookSubscriptionDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'DeleteWebhookSubscription' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'DeleteWebhookSubscriptionInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'deleteWebhookSubscription' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  DeleteWebhookSubscriptionMutation,
+  DeleteWebhookSubscriptionMutationVariables
+>;
+export const ReplayWebhookDeliveryDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ReplayWebhookDelivery' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'ReplayWebhookDeliveryInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'replayWebhookDelivery' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'eventId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'subscriptionId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'attemptCount' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'nextRetryAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<ReplayWebhookDeliveryMutation, ReplayWebhookDeliveryMutationVariables>;
+export const RotateWebhookSubscriptionSecretDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'RotateWebhookSubscriptionSecret' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'RotateWebhookSubscriptionSecretInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'rotateWebhookSubscriptionSecret' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'secret' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  RotateWebhookSubscriptionSecretMutation,
+  RotateWebhookSubscriptionSecretMutationVariables
+>;
+export const UpdateWebhookSubscriptionDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'UpdateWebhookSubscription' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'UpdateWebhookSubscriptionMutationInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'updateWebhookSubscription' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'id' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'eventTypes' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'active' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UpdateWebhookSubscriptionMutation,
+  UpdateWebhookSubscriptionMutationVariables
+>;
+export const WebhookDeliveriesDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'WebhookDeliveries' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Scope' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'subscriptionId' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'status' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'WebhookDeliveryStatus' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'webhookDeliveries' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scope' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'subscriptionId' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'subscriptionId' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'status' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'status' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'page' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'limit' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'items' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'eventId' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'subscriptionId' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'attemptCount' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'nextRetryAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'lastResponseStatus' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'errorDetails' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'deliveredAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'totalCount' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'hasNextPage' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<WebhookDeliveriesQuery, WebhookDeliveriesQueryVariables>;
+export const WebhookSubscriptionDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'WebhookSubscription' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Scope' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'webhookSubscription' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scope' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'id' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'eventTypes' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'active' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdById' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<WebhookSubscriptionQuery, WebhookSubscriptionQueryVariables>;
+export const WebhookSubscriptionsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'WebhookSubscriptions' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Scope' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'webhookSubscriptions' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scope' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'eventTypes' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'active' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdById' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<WebhookSubscriptionsQuery, WebhookSubscriptionsQueryVariables>;

@@ -26,7 +26,10 @@ describe('ProjectUserService.updateProjectUserProfile', () => {
       projectRepository as never,
       userRepository as never,
       projectUserRepository as never,
-      audit as never
+      { getFirstByProjectId: vi.fn().mockResolvedValue(null) } as never,
+      { getFirstByProjectId: vi.fn().mockResolvedValue(null) } as never,
+      audit as never,
+      { publish: vi.fn() } as never
     );
   }
 

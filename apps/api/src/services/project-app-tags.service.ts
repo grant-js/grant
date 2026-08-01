@@ -168,8 +168,14 @@ export class ProjectAppTagService implements IProjectAppTagService {
     const validatedParams = validateInput(removeProjectAppTagInputSchema, params, context);
     const { projectAppId, tagId, hardDelete } = validatedParams;
 
-    const hasTag = await this.projectAppHasTag(projectAppId, tagId, transaction);
-    if (!hasTag) {
+    // Do not require the tag row to be live: CDM/delete can soft-delete tags while
+    // leaving project_app_tags pivots, and tag sync must still be able to detach them.
+    await this.projectAppExists(projectAppId, transaction);
+    const existing = await this.projectAppTagRepository.getProjectAppTags(
+      { projectAppId, tagId },
+      transaction
+    );
+    if (existing.length === 0) {
       throw new NotFoundError('ProjectAppTag');
     }
 

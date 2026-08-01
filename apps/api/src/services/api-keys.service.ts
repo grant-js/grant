@@ -4,6 +4,7 @@ import type {
   IApiKeyRepository,
   IApiKeyService,
   IAuditLogger,
+  IEventPublisher,
   IOrganizationProjectRepository,
 } from '@grantjs/core';
 import { Grant, GrantAuth, NoSessionSigningKeyError } from '@grantjs/core';
@@ -37,6 +38,7 @@ import {
   exchangeApiKeyResponseSchema,
   queryApiKeysArgsSchema,
   revokeApiKeyParamsSchema,
+  rotateApiKeyParamsSchema,
 } from './api-keys.schemas';
 
 interface ExchangeTokenResult {
@@ -62,7 +64,8 @@ export class ApiKeyService implements IApiKeyService {
     private readonly apiKeyRepository: IApiKeyRepository,
     private readonly user: GrantAuth | null,
     private readonly audit: IAuditLogger,
-    private readonly grant: Grant
+    private readonly grant: Grant,
+    private readonly events: IEventPublisher
   ) {}
 
   private getPerformedBy(): string {
@@ -294,6 +297,15 @@ export class ApiKeyService implements IApiKeyService {
 
     await this.audit.logCreate(apiKey.id, newValues, { action: 'CREATE_API_KEY' }, transaction);
 
+    await this.events.publish(
+      {
+        type: 'api_key.created',
+        aggregate: { kind: 'apiKey', id: apiKey.id },
+        data: { after: newValues },
+      },
+      transaction
+    );
+
     const response: CreateApiKeyResult = {
       id: apiKey.id,
       clientId: apiKey.clientId,
@@ -493,7 +505,84 @@ export class ApiKeyService implements IApiKeyService {
 
     await this.audit.logUpdate(id, oldValues, newValues, { action: 'REVOKE_API_KEY' }, transaction);
 
+    await this.events.publish(
+      {
+        type: 'api_key.revoked',
+        aggregate: { kind: 'apiKey', id: revokedKey.id },
+        data: { before: oldValues, after: newValues },
+      },
+      transaction
+    );
+
     return revokedKey;
+  }
+
+  public async rotateApiKey(
+    params: { id: string },
+    transaction?: Transaction
+  ): Promise<CreateApiKeyResult> {
+    const context = 'ApiKeyService.rotateApiKey';
+    const validatedParams = validateInput(rotateApiKeyParamsSchema, params, context);
+
+    const { id } = validatedParams;
+
+    const apiKey = await this.apiKeyRepository.getApiKey(id, transaction);
+
+    if (!apiKey) {
+      throw new NotFoundError('ApiKey');
+    }
+
+    if (apiKey.isRevoked) {
+      throw new BadRequestError('Cannot rotate a revoked API key');
+    }
+
+    const clientSecret = generateRandomBytes(32).toString('base64url');
+    const clientSecretHash = hashSecret(clientSecret);
+
+    const before = {
+      id: apiKey.id,
+      clientId: apiKey.clientId,
+      name: apiKey.name,
+      description: apiKey.description,
+      expiresAt: apiKey.expiresAt,
+    };
+
+    const rotatedKey = await this.apiKeyRepository.updateClientSecretHash(
+      id,
+      clientSecretHash,
+      transaction
+    );
+
+    const after = {
+      id: rotatedKey.id,
+      clientId: rotatedKey.clientId,
+      name: rotatedKey.name,
+      description: rotatedKey.description,
+      expiresAt: rotatedKey.expiresAt,
+    };
+
+    await this.audit.logUpdate(id, before, after, { action: 'ROTATE_API_KEY' }, transaction);
+
+    await this.events.publish(
+      {
+        type: 'api_key.rotated',
+        aggregate: { kind: 'apiKey', id: rotatedKey.id },
+        data: { before, after },
+      },
+      transaction
+    );
+
+    const response: CreateApiKeyResult = {
+      id: rotatedKey.id,
+      clientId: rotatedKey.clientId,
+      clientSecret,
+      name: rotatedKey.name,
+      description: rotatedKey.description,
+      expiresAt: rotatedKey.expiresAt,
+      createdAt: rotatedKey.createdAt,
+    };
+
+    return validateOutput(createApiKeyResponseSchema, response, context) as CreateApiKeyResult;
   }
 
   public async deleteApiKey(

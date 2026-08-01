@@ -13,11 +13,16 @@ import {
   DeleteMyAccountsInput,
   DeleteMyUserAuthenticationMethodDocument,
   LogoutMyUserDocument,
+  MyProjectMembership,
   RevokeMyUserSessionDocument,
   RevokeMyUserSessionResult,
   SetMyPrimaryAuthenticationMethodDocument,
+  UpdateMyProjectMembershipDocument,
+  UpdateMyProjectMembershipInput,
   UpdateMyUserDocument,
   UpdateMyUserInput,
+  UploadMyProjectMembershipPictureDocument,
+  UploadMyProjectMembershipPictureInput,
   UploadMyUserPictureDocument,
   UploadMyUserPictureInput,
   UploadUserPictureResult,
@@ -59,6 +64,18 @@ export function useMyMutations() {
   );
 
   const [updateMyUser] = useMutation<{ updateMyUser: User }>(UpdateMyUserDocument, {
+    update,
+  });
+
+  const [updateMyProjectMembership] = useMutation<{
+    updateMyProjectMembership: MyProjectMembership;
+  }>(UpdateMyProjectMembershipDocument, {
+    update,
+  });
+
+  const [uploadMyProjectMembershipPicture] = useMutation<{
+    uploadMyProjectMembershipPicture: UploadUserPictureResult;
+  }>(UploadMyProjectMembershipPictureDocument, {
     update,
   });
 
@@ -164,6 +181,40 @@ export function useMyMutations() {
     } catch (error) {
       console.error('Error updating user:', error);
       toast.error(t('profile.notifications.updateError'), {
+        description: error instanceof Error ? error.message : tErrors('common.unknownError'),
+      });
+      throw error;
+    }
+  };
+
+  const handleUpdateMyProjectMembership = async (input: UpdateMyProjectMembershipInput) => {
+    try {
+      const result = await updateMyProjectMembership({
+        variables: { input },
+      });
+      toast.success(t('projectMemberships.notifications.updateSuccess'));
+      return result.data?.updateMyProjectMembership;
+    } catch (error) {
+      console.error('Error updating project membership:', error);
+      toast.error(t('projectMemberships.notifications.updateError'), {
+        description: error instanceof Error ? error.message : tErrors('common.unknownError'),
+      });
+      throw error;
+    }
+  };
+
+  const handleUploadMyProjectMembershipPicture = async (
+    input: UploadMyProjectMembershipPictureInput
+  ) => {
+    try {
+      const result = await uploadMyProjectMembershipPicture({
+        variables: { input },
+      });
+      toast.success(t('projectMemberships.notifications.uploadPictureSuccess'));
+      return result.data?.uploadMyProjectMembershipPicture;
+    } catch (error) {
+      console.error('Error uploading project membership picture:', error);
+      toast.error(t('projectMemberships.notifications.uploadPictureError'), {
         description: error instanceof Error ? error.message : tErrors('common.unknownError'),
       });
       throw error;
@@ -283,6 +334,8 @@ export function useMyMutations() {
     deleteMyAccounts: handleDeleteMyAccounts,
     uploadMyUserPicture: handleUploadMyUserPicture,
     updateMyUser: handleUpdateMyUser,
+    updateMyProjectMembership: handleUpdateMyProjectMembership,
+    uploadMyProjectMembershipPicture: handleUploadMyProjectMembershipPicture,
     changeMyPassword: handleChangeMyPassword,
     revokeMyUserSession: handleRevokeMyUserSession,
     createMyUserAuthenticationMethod: handleCreateMyUserAuthenticationMethod,

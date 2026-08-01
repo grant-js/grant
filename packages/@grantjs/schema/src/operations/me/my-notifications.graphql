@@ -1,0 +1,26 @@
+query MyNotifications($input: MyNotificationsInput) {
+  myNotifications(input: $input) {
+    notifications {
+      id
+      eventId
+      category
+      type
+      channel
+      title
+      body
+      refEntity
+      refId
+      scope {
+        tenant
+        id
+      }
+      status
+      seenAt
+      readAt
+      createdAt
+    }
+    totalCount
+    unreadCount
+    hasNextPage
+  }
+}

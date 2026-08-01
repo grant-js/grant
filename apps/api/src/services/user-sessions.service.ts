@@ -2,6 +2,7 @@ import { MILLISECONDS_PER_DAY, MILLISECONDS_PER_MINUTE } from '@grantjs/constant
 import {
   Grant,
   type IAuditLogger,
+  type IEventPublisher,
   type IUserSessionRepository,
   type IUserSessionService,
   type SessionSignOptions,
@@ -38,7 +39,8 @@ export class UserSessionService implements IUserSessionService {
   constructor(
     private readonly userSessionRepository: IUserSessionRepository,
     private readonly audit: IAuditLogger,
-    private readonly grant: Grant
+    private readonly grant: Grant,
+    private readonly events: IEventPublisher
   ) {}
 
   private generateRefreshToken(): string {
@@ -228,6 +230,20 @@ export class UserSessionService implements IUserSessionService {
   public async revokeSession(id: string, transaction?: Transaction): Promise<UserSession> {
     const revokedSession = await this.userSessionRepository.softDeleteUserSession(
       { id },
+      transaction
+    );
+    await this.events.publish(
+      {
+        type: 'user.session_revoked',
+        subjectUserId: revokedSession.userId,
+        aggregate: { kind: 'userSession', id: revokedSession.id },
+        data: {
+          before: {
+            id: revokedSession.id,
+            userId: revokedSession.userId,
+          },
+        },
+      },
       transaction
     );
     return revokedSession;

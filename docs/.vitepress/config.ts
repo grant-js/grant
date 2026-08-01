@@ -106,6 +106,10 @@ export default withMermaid({
               text: 'CDM Import & Export',
               link: '/core-concepts/cdm-import-export',
             },
+            {
+              text: 'Events, Webhooks & Notifications',
+              link: '/core-concepts/events-webhooks-notifications',
+            },
           ],
         },
         {

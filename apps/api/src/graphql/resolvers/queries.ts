@@ -17,6 +17,7 @@ import * as roleQueries from './roles/queries';
 import * as signingKeyQueries from './signing-keys/queries';
 import * as tagQueries from './tags/queries';
 import * as userQueries from './users/queries';
+import * as webhookSubscriptionQueries from './webhook-subscriptions/queries';
 
 function isDetailFetch(args: Record<string, unknown>): boolean {
   const ids = args.ids;
@@ -39,6 +40,11 @@ export const Query = {
   myMfaRecoveryCodeStatus: authenticateGraphQLResolver(meQueries.myMfaRecoveryCodeStatus!),
   myUserDataExport: authenticateGraphQLResolver(meQueries.myUserDataExport!),
   myUserSessions: authenticateGraphQLResolver(meQueries.myUserSessions!),
+  myProjectMemberships: authenticateGraphQLResolver(meQueries.myProjectMemberships!),
+  myProjectMembership: authenticateGraphQLResolver(meQueries.myProjectMembership!),
+  myNotifications: authenticateGraphQLResolver(meQueries.myNotifications!),
+  myUnreadNotificationCount: authenticateGraphQLResolver(meQueries.myUnreadNotificationCount!),
+  myNotificationPreferences: authenticateGraphQLResolver(meQueries.myNotificationPreferences!),
   // Organization (scoped)
   organizationInvitations: authorizeGraphQLResolver(
     {
@@ -141,5 +147,18 @@ export const Query = {
   tags: authorizeGraphQLResolver(
     { resource: ResourceSlug.Tag, action: ResourceAction.Query },
     tagQueries.getTags!
+  ),
+  // Webhook subscriptions (project-scoped)
+  webhookSubscriptions: authorizeGraphQLResolver(
+    { resource: ResourceSlug.Project, action: ResourceAction.Query },
+    webhookSubscriptionQueries.webhookSubscriptions!
+  ),
+  webhookSubscription: authorizeGraphQLResolver(
+    { resource: ResourceSlug.Project, action: ResourceAction.Query },
+    webhookSubscriptionQueries.webhookSubscription!
+  ),
+  webhookDeliveries: authorizeGraphQLResolver(
+    { resource: ResourceSlug.Project, action: ResourceAction.Query },
+    webhookSubscriptionQueries.webhookDeliveries!
   ),
 } as const;

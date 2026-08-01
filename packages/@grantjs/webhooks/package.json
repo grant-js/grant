@@ -1,0 +1,29 @@
+{
+  "name": "@grantjs/webhooks",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Webhook signing and HTTP delivery (with SSRF guard) for Grant",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src/**/*"
+  ],
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@grantjs/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "typescript": "^6"
+  },
+  "license": "MIT"
+}

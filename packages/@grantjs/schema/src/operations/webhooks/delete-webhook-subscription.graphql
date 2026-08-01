@@ -1,0 +1,3 @@
+mutation DeleteWebhookSubscription($input: DeleteWebhookSubscriptionInput!) {
+  deleteWebhookSubscription(input: $input)
+}

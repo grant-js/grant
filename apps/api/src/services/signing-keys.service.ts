@@ -1,6 +1,11 @@
 import crypto from 'node:crypto';
 
-import type { IAuditLogger, ISigningKeyRepository, ISigningKeyService } from '@grantjs/core';
+import type {
+  IAuditLogger,
+  IEventPublisher,
+  ISigningKeyRepository,
+  ISigningKeyService,
+} from '@grantjs/core';
 import { ConfigurationError } from '@grantjs/core';
 import { type Scope, SigningKey, Tenant } from '@grantjs/schema';
 
@@ -24,7 +29,8 @@ interface SigningKeyWithPrivate extends SigningKey {
 export class SigningKeyService implements ISigningKeyService {
   constructor(
     private readonly signingKeyRepository: ISigningKeyRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   private kidPrefix(tenant: Tenant): string {
@@ -82,10 +88,21 @@ export class SigningKeyService implements ISigningKeyService {
       transaction
     );
 
+    const after = this.auditSafeKeyFields(newKey);
     await this.audit.logCreate(
       newKey.id,
-      this.auditSafeKeyFields(newKey),
+      after,
       { scopeTenant: scope.tenant, scopeId: scope.id },
+      transaction
+    );
+
+    await this.events.publish(
+      {
+        type: 'signing_key.created',
+        scope,
+        aggregate: { kind: 'signingKey', id: newKey.id },
+        data: { after },
+      },
       transaction
     );
 
@@ -192,6 +209,19 @@ export class SigningKeyService implements ISigningKeyService {
     if (!key) {
       throw new ConfigurationError('Failed to create new signing key during rotation');
     }
+
+    await this.events.publish(
+      {
+        type: 'signing_key.rotated',
+        scope,
+        aggregate: { kind: 'signingKey', id: key.id },
+        data: {
+          before: current ? { kid: current.kid, active: current.active } : null,
+          after: { kid: key.kid, active: key.active, previousKid: current?.kid ?? null },
+        },
+      },
+      transaction
+    );
 
     return key;
   }

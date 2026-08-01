@@ -1,0 +1,11 @@
+mutation ReplayWebhookDelivery($input: ReplayWebhookDeliveryInput!) {
+  replayWebhookDelivery(input: $input) {
+    id
+    eventId
+    subscriptionId
+    status
+    attemptCount
+    nextRetryAt
+    updatedAt
+  }
+}

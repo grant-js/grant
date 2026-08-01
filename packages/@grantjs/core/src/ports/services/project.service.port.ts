@@ -150,8 +150,14 @@ export interface IProjectUserService {
     Array<{
       projectId: string;
       projectName: string;
-      role: string;
+      displayName: string | null;
+      pictureUrl: string | null;
+      metadata: Record<string, unknown>;
+      role: string | null;
       joinedAt: Date;
+      organizationId: string | null;
+      organizationName: string | null;
+      accountId: string | null;
     }>
   >;
 }

@@ -6,7 +6,7 @@ import { useGrant, type UseGrantResult } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { canAssignRole } from '@grantjs/constants';
 import { ApiKey, Scope, Tenant } from '@grantjs/schema';
-import { Ban, Trash2 } from 'lucide-react';
+import { Ban, RefreshCw, Trash2 } from 'lucide-react';
 
 import { type ActionItem, Actions } from '@/components/common';
 import { useRequiresEmailVerificationForMutation } from '@/hooks/auth';
@@ -15,6 +15,7 @@ import { useAuthStore } from '@/stores/auth.store';
 
 import { ApiKeyDeleteDialog } from './api-key-delete-dialog';
 import { ApiKeyRevokeDialog } from './api-key-revoke-dialog';
+import { ApiKeyRotateDialog } from './api-key-rotate-dialog';
 
 export interface ApiKeyActionsProps {
   apiKey: ApiKey;
@@ -24,6 +25,7 @@ export interface ApiKeyActionsProps {
 export function ApiKeyActions({ apiKey, scope }: ApiKeyActionsProps) {
   const t = useTranslations('user.apiKeys.actions');
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
+  const [rotateDialogOpen, setRotateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const [hasBeenOpened, setHasBeenOpened] = useState(false);
@@ -82,6 +84,11 @@ export function ApiKeyActions({ apiKey, scope }: ApiKeyActionsProps) {
     setRevokeDialogOpen(true);
   };
 
+  const handleRotateClick = () => {
+    if (apiKey.isRevoked) return;
+    setRotateDialogOpen(true);
+  };
+
   const handleDeleteClick = () => {
     setDeleteDialogOpen(true);
   };
@@ -89,6 +96,12 @@ export function ApiKeyActions({ apiKey, scope }: ApiKeyActionsProps) {
   const actions: ActionItem<ApiKey>[] = [];
 
   if (!apiKey.isRevoked && canRevoke && canManageApiKey) {
+    actions.push({
+      key: 'rotate',
+      label: t('rotate'),
+      icon: <RefreshCw className="mr-2 h-4 w-4" />,
+      onClick: handleRotateClick,
+    });
     actions.push({
       key: 'revoke',
       label: t('revoke'),
@@ -119,12 +132,20 @@ export function ApiKeyActions({ apiKey, scope }: ApiKeyActionsProps) {
         isLoading={isLoading}
       />
       {!apiKey.isRevoked && canRevoke && canManageApiKey && (
-        <ApiKeyRevokeDialog
-          apiKey={apiKey}
-          scope={scope}
-          open={revokeDialogOpen}
-          onOpenChange={setRevokeDialogOpen}
-        />
+        <>
+          <ApiKeyRotateDialog
+            apiKey={apiKey}
+            scope={scope}
+            open={rotateDialogOpen}
+            onOpenChange={setRotateDialogOpen}
+          />
+          <ApiKeyRevokeDialog
+            apiKey={apiKey}
+            scope={scope}
+            open={revokeDialogOpen}
+            onOpenChange={setRevokeDialogOpen}
+          />
+        </>
       )}
       {canDelete && canManageApiKey && (
         <ApiKeyDeleteDialog

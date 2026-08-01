@@ -206,7 +206,9 @@
       "signingKeys": "Signierungsschlüssel",
       "projectApps": "Apps",
       "testApp": "App testen",
-      "projectSyncJobs": "Import/Export"
+      "projectSyncJobs": "Import/Export",
+      "webhooks": "Webhooks",
+      "notifications": "Benachrichtigungen"
     }
   },
   "theme": {
@@ -1005,6 +1007,7 @@
         "submitting": "Wird erstellt..."
       },
       "actions": {
+        "rotate": "Rotieren",
         "revoke": "Widerrufen",
         "delete": "Löschen"
       },
@@ -1014,6 +1017,12 @@
         "cancel": "Abbrechen",
         "confirm": "Widerrufen"
       },
+      "rotateDialog": {
+        "title": "API-Schlüssel rotieren",
+        "description": "Geheimnis für API-Schlüssel \"{name}\" rotieren? Die Client-ID bleibt gleich. Das bisherige Geheimnis funktioniert sofort nicht mehr, und das neue Geheimnis wird nur einmal angezeigt.",
+        "cancel": "Abbrechen",
+        "confirm": "Rotieren"
+      },
       "deleteDialog": {
         "title": "API-Schlüssel löschen",
         "description": "Sind Sie sicher, dass Sie den API-Schlüssel \"{name}\" löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
@@ -1022,8 +1031,10 @@
       },
       "secretDialog": {
         "title": "API-Schlüssel erstellt",
+        "titleRotated": "API-Schlüssel rotiert",
         "description": "Speichern Sie Ihre API-Schlüssel-Anmeldedaten. Dies ist das einzige Mal, dass Sie das Client-Geheimnis einsehen können.",
         "warning": "Dies ist das letzte Mal, dass Sie das Client-Geheimnis einsehen können. Stellen Sie sicher, dass Sie es jetzt kopieren und sicher aufbewahren.",
+        "warningRotated": "Das bisherige Geheimnis funktioniert nicht mehr. Dies ist das letzte Mal, dass Sie das neue Client-Geheimnis einsehen können. Kopieren Sie es jetzt und bewahren Sie es sicher auf.",
         "clientId": "Client-ID",
         "clientSecret": "Client-Geheimnis",
         "close": "Ich habe meine Anmeldedaten gespeichert",
@@ -2816,7 +2827,9 @@
       "profile": "Profil",
       "security": "Sicherheit",
       "preferences": "Einstellungen",
-      "privacy": "Datenschutz"
+      "privacy": "Datenschutz",
+      "notifications": "Benachrichtigungen",
+      "projectMemberships": "Projektmitgliedschaften"
     },
     "account": {
       "title": "Kontoinformationen",
@@ -3123,9 +3136,7 @@
       },
       "notifications": {
         "title": "Benachrichtigungen",
-        "description": "Verwalten Sie Ihre Benachrichtigungseinstellungen",
-        "comingSoon": "Benachrichtigungseinstellungen kommen bald!",
-        "comingSoonDescription": "Sie können E-Mail-Benachrichtigungen, In-App-Benachrichtigungen und Benachrichtigungshäufigkeit anpassen."
+        "description": "Verwalten Sie Ihre Benachrichtigungseinstellungen"
       }
     },
     "privacy": {
@@ -3215,6 +3226,62 @@
     "notifications": {
       "logoutSuccess": "Sie wurden abgemeldet",
       "logoutError": "Abmeldung fehlgeschlagen"
+    },
+    "projectMemberships": {
+      "title": "Projektmitgliedschaften",
+      "description": "Verwalten Sie Ihre Projektmitgliedschaftsprofile",
+      "goToYourMemberships": "Zu Ihren Projektmitgliedschaften",
+      "list": {
+        "title": "Ihre Projekte",
+        "description": "Projekte, in denen Sie als Projektbenutzer Mitglied sind",
+        "personalProject": "Persönliches Projekt"
+      },
+      "empty": {
+        "title": "Keine Projektmitgliedschaften",
+        "description": "Sie gehören noch keinem Projekt als Projektbenutzer an."
+      },
+      "detail": {
+        "loading": "Mitgliedschaft wird geladen…",
+        "notFound": "Diese Projektmitgliedschaft wurde nicht gefunden.",
+        "overview": {
+          "title": "Projekt",
+          "description": "Details zu dieser Projektmitgliedschaft",
+          "project": "Projektname",
+          "scope": "Bereich",
+          "role": "Rolle",
+          "tableField": "Feld",
+          "tableValue": "Wert",
+          "projectId": "Projekt-ID",
+          "joined": "Beigetreten"
+        },
+        "profile": {
+          "title": "Mitgliedschaftsprofil",
+          "description": "Anzeigename für dieses Projekt aktualisieren",
+          "fields": {
+            "displayName": {
+              "label": "Anzeigename",
+              "placeholder": "Ihren Anzeigenamen eingeben",
+              "description": "So erscheinen Sie in diesem Projekt."
+            }
+          }
+        },
+        "avatar": {
+          "title": "Profilbild",
+          "description": "Bild für Ihre Mitgliedschaft in diesem Projekt",
+          "uploadButton": "Bild hochladen",
+          "changeButton": "Bild ändern"
+        },
+        "metadata": {
+          "title": "Metadaten",
+          "description": "Schreibgeschützte Metadaten für diese Mitgliedschaft"
+        }
+      },
+      "notifications": {
+        "updateSuccess": "Mitgliedschaftsprofil aktualisiert",
+        "updateError": "Mitgliedschaftsprofil konnte nicht aktualisiert werden",
+        "uploadPictureSuccess": "Profilbild aktualisiert",
+        "uploadPictureError": "Profilbild konnte nicht hochgeladen werden"
+      }
     }
   },
   "invitations": {
@@ -3288,7 +3355,276 @@
       "deleteError": "Fehler beim Löschen des API-Schlüssels",
       "revokeSuccess": "API-Schlüssel widerrufen",
       "revokeError": "Fehler beim Widerrufen des API-Schlüssels",
+      "rotateSuccess": "API-Schlüssel rotiert",
+      "rotateError": "Fehler beim Rotieren des API-Schlüssels",
       "exchangeError": "Fehler beim Austauschen des API-Schlüssels"
+    }
+  },
+  "webhooks": {
+    "title": "Webhooks",
+    "search": {
+      "placeholder": "Nach URL, Beschreibung oder Event-Typ suchen…"
+    },
+    "sort": {
+      "label": "Sortieren",
+      "url": "URL",
+      "createdAt": "Erstellt",
+      "active": "Aktiv"
+    },
+    "limit": {
+      "label": "Pro Seite"
+    },
+    "view": {
+      "card": "Karten",
+      "table": "Tabelle"
+    },
+    "activeYes": "Aktiv",
+    "activeNo": "Inaktiv",
+    "eventCount": "{count, plural, =0 {Keine Events} one {# Event} other {# Events}}",
+    "table": {
+      "status": "Status",
+      "audit": "Audit"
+    },
+    "actions": {
+      "view": "Abonnement anzeigen"
+    },
+    "status": {
+      "active": "Aktiv",
+      "inactive": "Inaktiv"
+    },
+    "detail": {
+      "title": "Webhook-Abonnement",
+      "back": "Zurück zu Webhooks",
+      "open": "Abonnementdetails anzeigen",
+      "notFound": "Webhook-Abonnement nicht gefunden",
+      "info": {
+        "generalTitle": "Allgemein",
+        "generalDescription": "URL, Beschreibung, Status und Audit-Informationen für dieses Abonnement.",
+        "descriptionPlaceholder": "Optionale Beschreibung für diesen Webhook-Endpunkt",
+        "subscriptionId": "Abonnement-ID",
+        "isActive": "Aktiv",
+        "created": "Erstellt",
+        "updated": "Aktualisiert",
+        "tableField": "Feld",
+        "tableValue": "Wert"
+      },
+      "general": {
+        "title": "Allgemein",
+        "description": "Endpunkt-Konfiguration und Event-Filter.",
+        "updatedAt": "Aktualisiert"
+      },
+      "deliveries": {
+        "description": "Letzte Zustellversuche für dieses Abonnement."
+      }
+    },
+    "events": {
+      "title": "Events",
+      "description": "Wählen Sie aus, welche Domain-Events an diesen Endpunkt geliefert werden.",
+      "updateSuccess": "Webhook-Events aktualisiert",
+      "empty": "Keine Events ausgewählt",
+      "emptyDescription": "Keine Events entsprechen Ihrer Suche oder Ihrem Filter",
+      "search": {
+        "placeholder": "Events suchen..."
+      },
+      "table": {
+        "name": "Name",
+        "event": "Event"
+      },
+      "types": {
+        "role": {
+          "created": "Rolle erstellt",
+          "updated": "Rolle aktualisiert",
+          "deleted": "Rolle gelöscht",
+          "permission_assigned": "Berechtigung der Rolle zugewiesen",
+          "permission_revoked": "Berechtigung von der Rolle entzogen",
+          "group_assigned": "Gruppe der Rolle zugewiesen",
+          "group_revoked": "Gruppe von der Rolle entfernt"
+        },
+        "permission": {
+          "created": "Berechtigung erstellt",
+          "updated": "Berechtigung aktualisiert",
+          "deleted": "Berechtigung gelöscht"
+        },
+        "group": {
+          "created": "Gruppe erstellt",
+          "updated": "Gruppe aktualisiert",
+          "deleted": "Gruppe gelöscht",
+          "permission_assigned": "Berechtigung der Gruppe zugewiesen",
+          "permission_revoked": "Berechtigung von der Gruppe entzogen"
+        },
+        "resource": {
+          "created": "Ressource erstellt",
+          "updated": "Ressource aktualisiert",
+          "deleted": "Ressource gelöscht"
+        },
+        "user": {
+          "permission_assigned": "Berechtigung dem Benutzer zugewiesen",
+          "permission_revoked": "Berechtigung dem Benutzer entzogen",
+          "group_assigned": "Gruppe dem Benutzer zugewiesen",
+          "group_revoked": "Gruppe dem Benutzer entzogen",
+          "role_assigned": "Rolle dem Benutzer zugewiesen",
+          "role_revoked": "Rolle dem Benutzer entzogen",
+          "email_verification_requested": "E-Mail-Verifizierung angefordert",
+          "mfa_enabled": "MFA aktiviert",
+          "mfa_disabled": "MFA deaktiviert",
+          "mfa_recovery_codes_regenerated": "MFA-Wiederherstellungscodes neu generiert",
+          "session_revoked": "Sitzung widerrufen",
+          "sessions_revoked": "Alle Sitzungen widerrufen",
+          "password_changed": "Passwort geändert"
+        },
+        "api_key": {
+          "created": "API-Schlüssel erstellt",
+          "rotated": "API-Schlüssel rotiert",
+          "revoked": "API-Schlüssel widerrufen"
+        },
+        "signing_key": {
+          "created": "Signierschlüssel erstellt",
+          "rotated": "Signierschlüssel rotiert"
+        },
+        "organization": {
+          "invitation_sent": "Organisationseinladung gesendet",
+          "invitation_accepted": "Organisationseinladung angenommen",
+          "invitation_revoked": "Organisationseinladung widerrufen",
+          "member_added": "Organisationsmitglied hinzugefügt",
+          "member_role_changed": "Rolle des Organisationsmitglieds geändert",
+          "member_removed": "Organisationsmitglied entfernt",
+          "mfa_enforcement_changed": "MFA-Richtlinie der Organisation geändert"
+        },
+        "project": {
+          "user_added": "Projektmitglied hinzugefügt",
+          "user_removed": "Projektmitglied entfernt",
+          "user_profile_updated": "Projektmitgliedsprofil aktualisiert"
+        },
+        "project_sync": {
+          "completed": "Projektsynchronisierung abgeschlossen",
+          "failed": "Projektsynchronisierung fehlgeschlagen"
+        }
+      }
+    },
+    "deleteDialog": {
+      "title": "Webhook-Abonnement löschen",
+      "description": "{name} löschen? Dies kann nicht rückgängig gemacht werden.",
+      "cancel": "Abbrechen",
+      "confirm": "Löschen",
+      "deleting": "Wird gelöscht…"
+    },
+    "subscriptions": {
+      "title": "Webhook-Abonnements",
+      "description": "Signierte Domain-Events an externe Endpunkte senden (Slack, n8n usw.).",
+      "new": "Neues Abonnement",
+      "empty": "Noch keine Webhook-Abonnements.",
+      "emptyDescription": "Erstellen Sie ein Abonnement, um Projekt-Events an einen externen Endpunkt zu senden.",
+      "noDescription": "Keine Beschreibung",
+      "loadError": "Abonnements konnten nicht geladen werden",
+      "secretTitle": "Signaturgeheimnis (nur einmal angezeigt)",
+      "copy": "Kopieren",
+      "copied": "In die Zwischenablage kopiert",
+      "enabled": "Abonnement aktiviert",
+      "disabled": "Abonnement deaktiviert",
+      "updateSuccess": "Webhook-Abonnement aktualisiert",
+      "updateError": "Abonnement konnte nicht aktualisiert werden",
+      "rotateSuccess": "Signaturgeheimnis rotiert",
+      "rotateError": "Geheimnis konnte nicht rotiert werden",
+      "deleteSuccess": "Abonnement gelöscht",
+      "deleteError": "Abonnement konnte nicht gelöscht werden",
+      "createSuccess": "Abonnement erstellt",
+      "createError": "Abonnement konnte nicht erstellt werden",
+      "columns": {
+        "url": "URL",
+        "events": "Events",
+        "active": "Aktiv",
+        "actions": "Aktionen"
+      },
+      "rotateSecret": "Geheimnis rotieren",
+      "delete": "Löschen",
+      "deliveriesTitle": "Letzte Zustellungen"
+    },
+    "createDialog": {
+      "title": "Neues Webhook-Abonnement",
+      "description": "Das Signaturgeheimnis wird erzeugt und nach der Erstellung einmal angezeigt.",
+      "urlLabel": "Endpunkt-URL",
+      "urlPlaceholder": "https://example.com/webhooks/grant",
+      "descriptionLabel": "Beschreibung (optional)",
+      "eventTypesLabel": "Event-Typen",
+      "cancel": "Abbrechen",
+      "create": "Erstellen"
+    },
+    "deliveries": {
+      "empty": "Noch keine Zustellungen.",
+      "emptyHint": "Lösen Sie eine IAM-Änderung in diesem Projekt aus, um die Webhook-Zustellung zu testen.",
+      "status": {
+        "pending": "Ausstehend",
+        "running": "Läuft",
+        "delivered": "Zugestellt",
+        "failed": "Fehlgeschlagen",
+        "dead": "Beendet"
+      },
+      "columns": {
+        "status": "Status",
+        "attempts": "Versuche",
+        "lastResponse": "Letzte Antwort",
+        "nextRetry": "Nächster Versuch",
+        "createdAt": "Erstellt",
+        "actions": "Aktionen"
+      },
+      "replay": "Erneut senden",
+      "replaySuccess": "Zustellung erneut eingereiht",
+      "replayError": "Zustellung konnte nicht erneut gesendet werden"
+    }
+  },
+  "notifications": {
+    "title": "Benachrichtigungen",
+    "empty": "Noch keine Benachrichtigungen.",
+    "unreadBadge": "{count} ungelesen",
+    "markAllRead": "Alle als gelesen markieren",
+    "markAllSuccess": "Alle Benachrichtigungen als gelesen markiert",
+    "markRead": "Als gelesen markieren",
+    "loadMore": "Mehr laden",
+    "preferencesHint": "Verwalten Sie Ihre Benachrichtigungen unter",
+    "preferencesLink": "Benachrichtigungseinstellungen",
+    "errors": {
+      "markRead": "Als gelesen markieren fehlgeschlagen",
+      "markAllRead": "Alle als gelesen markieren fehlgeschlagen"
+    }
+  },
+  "notificationBell": {
+    "ariaLabel": "Benachrichtigungen",
+    "title": "Benachrichtigungen",
+    "empty": "Noch keine Benachrichtigungen.",
+    "viewAll": "Alle Benachrichtigungen anzeigen"
+  },
+  "notificationPreferences": {
+    "title": "Benachrichtigungseinstellungen",
+    "securityLockedHint": "Sicherheitsbenachrichtigungen sind immer aktiv und können nicht deaktiviert werden.",
+    "category": "Kategorie",
+    "inApp": "In-App",
+    "email": "E-Mail",
+    "cards": {
+      "account": {
+        "title": "Persönliches Konto",
+        "description": "Benachrichtigungen für Ereignisse in Ihrem persönlichen Konto-Workspace.",
+        "info": "Diese Einstellungen gelten, wenn Sie in Ihrem persönlichen Konto (nicht in einer Organisation) arbeiten. Sie steuern In-App- und E-Mail-Hinweise für Sicherheits-, IAM-, Mitgliedschafts- und Integrationsereignisse in diesem Konto.",
+        "infoAriaLabel": "Informationen zu Benachrichtigungen im persönlichen Konto"
+      },
+      "organization": {
+        "title": "Organisation",
+        "description": "Benachrichtigungen für Ereignisse in Ihrem aktuellen Organisations-Workspace.",
+        "info": "Diese Einstellungen gelten, wenn Sie in einer Organisation arbeiten. Sie steuern In-App- und E-Mail-Hinweise für Ereignisse in dieser Organisation. Organisationsadministratoren können einzelne Kategorien erzwingen, sodass sie nicht deaktiviert werden können.",
+        "infoAriaLabel": "Informationen zu Organisationsbenachrichtigungen"
+      }
+    },
+    "tenants": {
+      "account": "Konto",
+      "organization": "Organisation"
+    },
+    "categories": {
+      "security": "Sicherheit",
+      "iam": "IAM",
+      "membership": "Mitgliedschaft",
+      "integrations": "Integrationen"
+    },
+    "errors": {
+      "save": "Einstellung konnte nicht gespeichert werden"
     }
   },
   "signingKeys": {

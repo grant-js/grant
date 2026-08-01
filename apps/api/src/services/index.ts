@@ -57,6 +57,13 @@ import {
 
 import { DrizzleAuditLogger } from '@/lib/audit';
 import { IEntityCacheAdapter } from '@/lib/cache';
+import { DrizzleEventPublisher, type ScheduleAfterCommit } from '@/lib/events';
+import {
+  AudienceResolver,
+  NotificationDisplayContextResolver,
+  NotificationGeneratorConsumer,
+} from '@/lib/notifications';
+import { webhookAdapters, WebhookDispatcherConsumer } from '@/lib/webhooks';
 import { Repositories } from '@/repositories';
 
 import { AccountProjectApiKeyService } from './account-project-api-keys.service';
@@ -68,12 +75,15 @@ import { AccountService } from './accounts.service';
 import { ApiKeyService } from './api-keys.service';
 import { AuthService } from './auth.service';
 import { EmailService } from './email.service';
+import { EventRelayService } from './event-relay.service';
 import { FileStorageService } from './file-storage.service';
 import { GitHubOAuthService } from './github-oauth.service';
 import { GroupPermissionService } from './group-permissions.service';
 import { GroupTagService } from './group-tags.service';
 import { GroupService } from './groups.service';
 import { MeService } from './me.service';
+import { NotificationDeliveryService } from './notification-delivery.service';
+import { NotificationService } from './notifications.service';
 import { OAuthStateService } from './oauth-state.service';
 import { OrganizationGroupService } from './organization-groups.service';
 import { OrganizationInvitationService } from './organization-invitations.service';
@@ -120,6 +130,8 @@ import { UserRoleService } from './user-roles.service';
 import { UserSessionService } from './user-sessions.service';
 import { UserTagService } from './user-tags.service';
 import { UserService } from './users.service';
+import { WebhookDeliveryService } from './webhook-delivery.service';
+import { WebhookSubscriptionService } from './webhook-subscriptions.service';
 
 export type Services = ReturnType<typeof createServices>;
 
@@ -129,14 +141,47 @@ function audit(table: any, entityIdField: string, user: GrantAuth | null, db: Db
   return new DrizzleAuditLogger(table, entityIdField, user, db);
 }
 
+export interface CreateServicesOptions {
+  scheduleAfterCommit?: ScheduleAfterCommit;
+}
+
 export function createServices(
   repositories: Repositories,
   user: GrantAuth | null,
   db: DbSchema,
   cache: IEntityCacheAdapter,
-  grant: Grant
+  grant: Grant,
+  options?: CreateServicesOptions
 ) {
+  const events = new DrizzleEventPublisher(user, db, {
+    scheduleAfterCommit: options?.scheduleAfterCommit,
+  });
+  const webhookDispatcher = new WebhookDispatcherConsumer(
+    repositories.webhookSubscriptionRepository,
+    repositories.webhookDeliveryRepository
+  );
+  const notificationGenerator = new NotificationGeneratorConsumer(
+    new AudienceResolver(
+      repositories.projectUserRepository,
+      repositories.organizationUserRepository,
+      repositories.organizationProjectRepository,
+      repositories.accountProjectRepository,
+      repositories.accountRepository
+    ),
+    repositories.notificationPreferenceRepository,
+    repositories.notificationRepository,
+    new NotificationDisplayContextResolver(
+      repositories.userRepository,
+      repositories.organizationRepository,
+      repositories.accountRepository,
+      repositories.projectRepository,
+      repositories.roleRepository
+    ),
+    repositories.organizationUserRepository,
+    repositories.projectUserRepository
+  );
   const servicesBase = {
+    events,
     me: new MeService(repositories.userRepository, repositories.accountRepository, grant),
     accounts: new AccountService(
       repositories.accountRepository,
@@ -178,6 +223,34 @@ export function createServices(
     ),
     auth: new AuthService(grant),
     email: new EmailService(),
+    eventRelay: new EventRelayService(repositories.eventLogRepository, [
+      webhookDispatcher,
+      notificationGenerator,
+    ]),
+    notifications: new NotificationService(
+      repositories.notificationRepository,
+      repositories.notificationPreferenceRepository
+    ),
+    notificationDelivery: new NotificationDeliveryService(
+      repositories.notificationRepository,
+      repositories.userAuthenticationMethodRepository,
+      new EmailService(),
+      db
+    ),
+    webhookSubscriptions: new WebhookSubscriptionService(
+      repositories.webhookSubscriptionRepository,
+      repositories.webhookDeliveryRepository,
+      webhookAdapters.delivery,
+      user?.userId ?? null
+    ),
+    webhookDelivery: new WebhookDeliveryService(
+      repositories.webhookDeliveryRepository,
+      repositories.webhookSubscriptionRepository,
+      repositories.eventLogRepository,
+      webhookAdapters.signer,
+      webhookAdapters.delivery,
+      db
+    ),
     fileStorage: new FileStorageService(),
     githubOAuth: new GitHubOAuthService(),
     oauthState: new OAuthStateService(cache.oauth),
@@ -189,36 +262,46 @@ export function createServices(
     userAuthenticationMethods: new UserAuthenticationMethodService(
       repositories.userAuthenticationMethodRepository,
       repositories.userSessionRepository,
-      audit(userAuthenticationMethodsAuditLogs, 'userAuthenticationMethodId', user, db)
+      audit(userAuthenticationMethodsAuditLogs, 'userAuthenticationMethodId', user, db),
+      events
     ),
     userMfa: new UserMfaService(
       repositories.userMfaFactorRepository,
       repositories.userMfaRecoveryCodeRepository,
-      audit(userMfaFactorAuditLogs, 'userMfaFactorId', user, db)
+      audit(userMfaFactorAuditLogs, 'userMfaFactorId', user, db),
+      events
     ),
     userSessions: new UserSessionService(
       repositories.userSessionRepository,
       audit(userSessionAuditLogs, 'userSessionId', user, db),
-      grant
+      grant,
+      events
     ),
-    roles: new RoleService(repositories.roleRepository, audit(roleAuditLogs, 'roleId', user, db)),
+    roles: new RoleService(
+      repositories.roleRepository,
+      audit(roleAuditLogs, 'roleId', user, db),
+      events
+    ),
     userRoles: new UserRoleService(
       repositories.userRepository,
       repositories.roleRepository,
       repositories.userRoleRepository,
-      audit(userRolesAuditLogs, 'userRoleId', user, db)
+      audit(userRolesAuditLogs, 'userRoleId', user, db),
+      events
     ),
     userPermissions: new UserPermissionService(
       repositories.userRepository,
       repositories.permissionRepository,
       repositories.userPermissionRepository,
-      audit(userPermissionsAuditLogs, 'userPermissionId', user, db)
+      audit(userPermissionsAuditLogs, 'userPermissionId', user, db),
+      events
     ),
     userGroups: new UserGroupService(
       repositories.userRepository,
       repositories.groupRepository,
       repositories.userGroupRepository,
-      audit(userGroupsAuditLogs, 'userGroupId', user, db)
+      audit(userGroupsAuditLogs, 'userGroupId', user, db),
+      events
     ),
     userTags: new UserTagService(
       repositories.userRepository,
@@ -229,15 +312,18 @@ export function createServices(
     tags: new TagService(repositories.tagRepository, audit(tagAuditLogs, 'tagId', user, db)),
     groups: new GroupService(
       repositories.groupRepository,
-      audit(groupAuditLogs, 'groupId', user, db)
+      audit(groupAuditLogs, 'groupId', user, db),
+      events
     ),
     permissions: new PermissionService(
       repositories.permissionRepository,
-      audit(permissionAuditLogs, 'permissionId', user, db)
+      audit(permissionAuditLogs, 'permissionId', user, db),
+      events
     ),
     resources: new ResourceService(
       repositories.resourceRepository,
-      audit(resourceAuditLogs, 'resourceId', user, db)
+      audit(resourceAuditLogs, 'resourceId', user, db),
+      events
     ),
     resourceTags: new ResourceTagService(
       repositories.resourceRepository,
@@ -298,7 +384,8 @@ export function createServices(
     ),
     signingKeys: new SigningKeyService(
       repositories.signingKeyRepository,
-      audit(signingKeyAuditLogs, 'signingKeyId', user, db)
+      audit(signingKeyAuditLogs, 'signingKeyId', user, db),
+      events
     ),
     apiKeys: new ApiKeyService(
       repositories.accountProjectRepository,
@@ -306,7 +393,8 @@ export function createServices(
       repositories.apiKeyRepository,
       user,
       audit(apiKeyAuditLogs, 'apiKeyId', user, db),
-      grant
+      grant,
+      events
     ),
     projectUserApiKeys: new ProjectUserApiKeyService(
       repositories.projectRepository,
@@ -318,7 +406,11 @@ export function createServices(
       repositories.projectRepository,
       repositories.userRepository,
       repositories.projectUserRepository,
-      audit(projectUserAuditLogs, 'projectUserId', user, db)
+      repositories.organizationProjectRepository,
+      repositories.accountProjectRepository,
+      audit(projectUserAuditLogs, 'projectUserId', user, db),
+      events,
+      repositories.userAuthenticationMethodRepository
     ),
     projectUserPermissions: new ProjectUserPermissionService(
       repositories.projectRepository,
@@ -338,7 +430,8 @@ export function createServices(
       repositories.organizationRepository,
       repositories.organizationUserRepository,
       user,
-      audit(organizationAuditLogs, 'organizationId', user, db)
+      audit(organizationAuditLogs, 'organizationId', user, db),
+      events
     ),
     organizationInvitations: new OrganizationInvitationService(
       repositories.organizationMemberRepository,
@@ -346,7 +439,9 @@ export function createServices(
       repositories.organizationInvitationRepository,
       repositories.organizationUserRepository,
       user,
-      audit(organizationInvitationsAuditLogs, 'organizationInvitationId', user, db)
+      audit(organizationInvitationsAuditLogs, 'organizationInvitationId', user, db),
+      events,
+      repositories.userAuthenticationMethodRepository
     ),
     organizationMembers: new OrganizationMemberService(
       repositories.organizationMemberRepository,
@@ -354,7 +449,8 @@ export function createServices(
       repositories.organizationRoleRepository,
       repositories.roleRepository,
       user,
-      audit(organizationAuditLogs, 'organizationId', user, db)
+      audit(organizationAuditLogs, 'organizationId', user, db),
+      events
     ),
     organizationRoles: new OrganizationRoleService(
       repositories.organizationRepository,
@@ -384,14 +480,16 @@ export function createServices(
       repositories.groupRepository,
       repositories.permissionRepository,
       repositories.groupPermissionRepository,
-      audit(groupPermissionsAuditLogs, 'groupPermissionId', user, db)
+      audit(groupPermissionsAuditLogs, 'groupPermissionId', user, db),
+      events
     ),
     organizationUsers: new OrganizationUserService(
       repositories.organizationRepository,
       repositories.userRepository,
       repositories.organizationUserRepository,
       repositories.organizationRoleRepository,
-      audit(organizationUsersAuditLogs, 'organizationUserId', user, db)
+      audit(organizationUsersAuditLogs, 'organizationUserId', user, db),
+      events
     ),
     organizationProjects: new OrganizationProjectService(
       repositories.organizationRepository,
@@ -410,13 +508,15 @@ export function createServices(
       repositories.roleRepository,
       repositories.groupRepository,
       repositories.roleGroupRepository,
-      audit(roleGroupsAuditLogs, 'roleGroupId', user, db)
+      audit(roleGroupsAuditLogs, 'roleGroupId', user, db),
+      events
     ),
     rolePermissions: new RolePermissionService(
       repositories.roleRepository,
       repositories.permissionRepository,
       repositories.rolePermissionRepository,
-      audit(rolePermissionsAuditLogs, 'rolePermissionId', user, db)
+      audit(rolePermissionsAuditLogs, 'rolePermissionId', user, db),
+      events
     ),
     organizationPermissions: new OrganizationPermissionService(
       repositories.organizationRepository,
@@ -518,7 +618,8 @@ export function createServices(
     ),
     projectSyncJobs: new ProjectSyncJobService(
       repositories.projectSyncJobRepository,
-      audit(projectSyncJobAuditLogs, 'projectSyncJobId', user, db)
+      audit(projectSyncJobAuditLogs, 'projectSyncJobId', user, db),
+      events
     ),
   };
 }

@@ -18,13 +18,23 @@ import {
   deleteMyAccountsBodySchema,
   deleteMyAccountsResponseSchema,
   getMyMfaRecoveryCodeStatusResponseSchema,
+  getMyProjectMembershipResponseSchema,
+  getMyProjectMembershipsResponseSchema,
   getMyUserAuthenticationMethodsResponseSchema,
   getMyUserSessionsQuerySchema,
   getMyUserSessionsResponseSchema,
+  listMyNotificationPreferencesQuerySchema,
+  listMyNotificationsQuerySchema,
   logoutMyUserResponseSchema,
+  myNotificationParamsSchema,
+  myProjectMembershipParamsSchema,
+  myProjectMembershipSchema,
   myUserSessionSchema,
   revokeMyUserSessionParamsSchema,
   revokeMyUserSessionResponseSchema,
+  setMyNotificationPreferenceRequestSchema,
+  updateMyProjectMembershipRequestSchema,
+  updateMyProjectMembershipResponseSchema,
   uploadMyUserPictureRequestSchema,
   uploadMyUserPictureResponseSchema,
   userAuthenticationMethodSchema,
@@ -1025,6 +1035,279 @@ This endpoint automatically identifies and revokes the session associated with t
             schema: errorResponseSchema,
           },
         },
+      },
+    },
+  });
+
+  const notificationScopeSchema = z
+    .object({
+      tenant: z.string(),
+      id: z.string(),
+    })
+    .nullable()
+    .optional();
+
+  const notificationSchema = z.object({
+    id: z.string(),
+    eventId: z.string(),
+    category: z.string(),
+    type: z.string(),
+    channel: z.enum(['in_app', 'email']),
+    title: z.string(),
+    body: z.string().nullable(),
+    refEntity: z.string().nullable(),
+    refId: z.string().nullable(),
+    scope: notificationScopeSchema,
+    status: z.string(),
+    seenAt: z.string().nullable(),
+    readAt: z.string().nullable(),
+    createdAt: z.string(),
+  });
+
+  const notificationPreferenceSchema = z.object({
+    id: z.string(),
+    scopeTenant: z.string(),
+    scopeId: z.string(),
+    category: z.string(),
+    channel: z.enum(['in_app', 'email']),
+    enabled: z.boolean(),
+    source: z.enum(['user', 'org_enforced']),
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/api/me/notifications',
+    tags: ['Me'],
+    summary: 'List my in-app notifications',
+    request: { query: listMyNotificationsQuerySchema },
+    responses: {
+      200: {
+        description: 'Notifications page',
+        content: {
+          'application/json': {
+            schema: z.object({
+              success: z.literal(true),
+              data: z.object({
+                notifications: z.array(notificationSchema),
+                totalCount: z.number(),
+                unreadCount: z.number(),
+                hasNextPage: z.boolean(),
+              }),
+            }),
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/api/me/notifications/unread-count',
+    tags: ['Me'],
+    summary: 'Get my unread notification count',
+    request: {},
+    responses: {
+      200: {
+        description: 'Unread count',
+        content: {
+          'application/json': {
+            schema: z.object({
+              success: z.literal(true),
+              data: z.object({ unreadCount: z.number() }),
+            }),
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'post',
+    path: '/api/me/notifications/read-all',
+    tags: ['Me'],
+    summary: 'Mark all my notifications as read',
+    request: {},
+    responses: {
+      200: {
+        description: 'Count of notifications marked read',
+        content: {
+          'application/json': {
+            schema: z.object({
+              success: z.literal(true),
+              data: z.object({ updated: z.number() }),
+            }),
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'post',
+    path: '/api/me/notifications/{id}/read',
+    tags: ['Me'],
+    summary: 'Mark a notification as read',
+    request: { params: myNotificationParamsSchema },
+    responses: {
+      200: {
+        description: 'Marked read',
+        content: {
+          'application/json': {
+            schema: z.object({
+              success: z.literal(true),
+              data: z.object({ success: z.boolean() }),
+            }),
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+      404: {
+        description: 'Not found',
+        content: { 'application/json': { schema: notFoundErrorResponseSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/api/me/notification-preferences',
+    tags: ['Me'],
+    summary: 'List my notification preferences for a tenant',
+    request: { query: listMyNotificationPreferencesQuerySchema },
+    responses: {
+      200: {
+        description: 'Preferences',
+        content: {
+          'application/json': {
+            schema: z.object({
+              success: z.literal(true),
+              data: z.array(notificationPreferenceSchema),
+            }),
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'put',
+    path: '/api/me/notification-preferences',
+    tags: ['Me'],
+    summary: 'Set one of my notification preferences',
+    request: {
+      body: {
+        content: {
+          'application/json': { schema: setMyNotificationPreferenceRequestSchema },
+        },
+      },
+    },
+    responses: {
+      201: {
+        description: 'Preference saved',
+        content: {
+          'application/json': {
+            schema: z.object({ success: z.literal(true), data: notificationPreferenceSchema }),
+          },
+        },
+      },
+      400: {
+        description: 'Validation error',
+        content: { 'application/json': { schema: validationErrorResponseSchema } },
+      },
+      401: {
+        description: 'Unauthorized',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+    },
+  });
+
+  registry.register('MyProjectMembership', myProjectMembershipSchema);
+  registry.register('UpdateMyProjectMembershipRequest', updateMyProjectMembershipRequestSchema);
+  registry.register('GetMyProjectMembershipsResponse', getMyProjectMembershipsResponseSchema);
+  registry.register('GetMyProjectMembershipResponse', getMyProjectMembershipResponseSchema);
+  registry.register('UpdateMyProjectMembershipResponse', updateMyProjectMembershipResponseSchema);
+
+  registry.registerPath({
+    method: 'get',
+    path: '/api/me/project-memberships',
+    tags: ['Me'],
+    summary: 'List my project memberships',
+    responses: {
+      200: {
+        description: 'Project memberships',
+        content: { 'application/json': { schema: getMyProjectMembershipsResponseSchema } },
+      },
+      401: {
+        description: 'Unauthorized',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/api/me/project-memberships/{projectId}',
+    tags: ['Me'],
+    summary: 'Get one of my project memberships',
+    request: { params: myProjectMembershipParamsSchema },
+    responses: {
+      200: {
+        description: 'Project membership or null',
+        content: { 'application/json': { schema: getMyProjectMembershipResponseSchema } },
+      },
+      401: {
+        description: 'Unauthorized',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'patch',
+    path: '/api/me/project-memberships/{projectId}',
+    tags: ['Me'],
+    summary: 'Update my project membership profile',
+    request: {
+      params: myProjectMembershipParamsSchema,
+      body: {
+        content: { 'application/json': { schema: updateMyProjectMembershipRequestSchema } },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Updated membership',
+        content: { 'application/json': { schema: updateMyProjectMembershipResponseSchema } },
+      },
+      400: {
+        description: 'Validation error',
+        content: { 'application/json': { schema: validationErrorResponseSchema } },
+      },
+      401: {
+        description: 'Unauthorized',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+      404: {
+        description: 'Not found',
+        content: { 'application/json': { schema: notFoundErrorResponseSchema } },
       },
     },
   });

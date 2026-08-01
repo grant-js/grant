@@ -94,6 +94,7 @@ function buildProjectOAuthContext(
     getProjectUsers: vi
       .fn()
       .mockResolvedValue([{ userId: 'user-1', projectId: fixtureApp.projectId }]),
+    syncProjectUserSearchDocument: vi.fn().mockResolvedValue(undefined),
   };
   const userRoles = {
     addUserRole: vi.fn().mockResolvedValue(undefined),

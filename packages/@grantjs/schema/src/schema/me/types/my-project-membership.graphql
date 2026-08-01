@@ -1,0 +1,12 @@
+type MyProjectMembership {
+  projectId: ID!
+  projectName: String!
+  displayName: String
+  pictureUrl: String
+  metadata: JSON!
+  role: String
+  joinedAt: Date!
+  organizationId: ID
+  organizationName: String
+  accountId: ID
+}

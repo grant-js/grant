@@ -68,6 +68,8 @@ export interface IApiKeyService {
 
   revokeApiKey(params: { id: string }, transaction?: unknown): Promise<ApiKey>;
 
+  rotateApiKey(params: { id: string }, transaction?: unknown): Promise<CreateApiKeyResult>;
+
   deleteApiKey(
     params: { id: string; hardDelete?: boolean },
     transaction?: unknown

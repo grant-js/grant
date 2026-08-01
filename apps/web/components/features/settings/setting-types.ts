@@ -10,6 +10,7 @@ import {
   addEmailAuthMethodSchema,
   changePasswordSchema,
   profileSettingsSchema,
+  projectMembershipProfileSchema,
 } from './setting-schemas';
 
 export interface SettingAccountDetailsCardProps {
@@ -75,6 +76,10 @@ export type SettingEmailAuthMethodAddFormValues = z.infer<typeof addEmailAuthMet
 
 export type SettingProfileFormValues = z.infer<typeof profileSettingsSchema>;
 
+export type SettingProjectMembershipProfileFormValues = z.infer<
+  typeof projectMembershipProfileSchema
+>;
+
 export interface SettingEmailAuthMethodAddFormProps {
   onSubmit: (values: SettingEmailAuthMethodAddFormValues) => Promise<void>;
   onCancel?: () => void;
@@ -86,6 +91,8 @@ export interface ThemeToggleProps {
 
 export interface SettingCardProps {
   title: string;
+  /** Renders inline next to the title (e.g. info popover). */
+  titleAdornment?: ReactNode;
   description?: string;
   children: ReactNode;
   footer?: ReactNode;

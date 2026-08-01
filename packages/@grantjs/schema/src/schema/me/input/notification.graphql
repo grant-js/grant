@@ -1,0 +1,16 @@
+input MyNotificationsInput {
+  unreadOnly: Boolean
+  page: Int
+  limit: Int
+}
+
+input SetMyNotificationPreferenceInput {
+  scopeTenant: String!
+  scopeId: String
+  """
+  Notification preference category (security, iam, membership, integrations).
+  """
+  category: String!
+  channel: NotificationChannel!
+  enabled: Boolean!
+}

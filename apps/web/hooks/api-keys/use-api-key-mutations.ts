@@ -13,6 +13,8 @@ import {
   ExchangeApiKeyResult,
   RevokeApiKeyDocument,
   RevokeApiKeyInput,
+  RotateApiKeyDocument,
+  RotateApiKeyInput,
 } from '@grantjs/schema';
 import { toast } from 'sonner';
 
@@ -34,6 +36,10 @@ export function useApiKeyMutations() {
   });
 
   const [revokeApiKey] = useMutation<{ revokeApiKey: ApiKey }>(RevokeApiKeyDocument, {
+    update,
+  });
+
+  const [rotateApiKey] = useMutation<{ rotateApiKey: CreateApiKeyResult }>(RotateApiKeyDocument, {
     update,
   });
 
@@ -92,6 +98,23 @@ export function useApiKeyMutations() {
     }
   };
 
+  const handleRotateApiKey = async (input: RotateApiKeyInput) => {
+    try {
+      const result = await rotateApiKey({
+        variables: { input },
+      });
+
+      toast.success(t('notifications.rotateSuccess'));
+      return result.data?.rotateApiKey;
+    } catch (error) {
+      console.error('Error rotating API key:', error);
+      toast.error(t('notifications.rotateError'), {
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+      });
+      throw error;
+    }
+  };
+
   const handleExchangeApiKey = async (input: ExchangeApiKeyInput) => {
     try {
       const result = await exchangeApiKey({
@@ -112,6 +135,7 @@ export function useApiKeyMutations() {
     createApiKey: handleCreateApiKey,
     deleteApiKey: handleDeleteApiKey,
     revokeApiKey: handleRevokeApiKey,
+    rotateApiKey: handleRotateApiKey,
     exchangeApiKey: handleExchangeApiKey,
   };
 }

@@ -1,5 +1,6 @@
 import {
   IAuditLogger,
+  IEventPublisher,
   IUserMfaFactorRepository,
   IUserMfaRecoveryCodeRepository,
   IUserMfaService,
@@ -23,7 +24,8 @@ export class UserMfaService implements IUserMfaService {
   constructor(
     private readonly userMfaFactorRepository: IUserMfaFactorRepository,
     private readonly userMfaRecoveryCodeRepository: IUserMfaRecoveryCodeRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   public async listDevices(userId: string, transaction?: Transaction): Promise<MfaDeviceInfo[]> {
@@ -101,7 +103,8 @@ export class UserMfaService implements IUserMfaService {
     if (!isValid) {
       return { factorId: factor.id, verified: false };
     }
-    if (!factor.isEnabled) {
+    const wasEnabled = factor.isEnabled;
+    if (!wasEnabled) {
       await this.userMfaFactorRepository.enableFactor(factor.id, transaction);
     }
     await this.userMfaFactorRepository.touchFactorLastUsed(factor.id, transaction);
@@ -112,6 +115,17 @@ export class UserMfaService implements IUserMfaService {
       {},
       transaction
     );
+    if (!wasEnabled) {
+      await this.events.publish(
+        {
+          type: 'user.mfa_enabled',
+          subjectUserId: userId,
+          aggregate: { kind: 'userMfaFactor', id: factor.id },
+          data: { after: { userId, factorId: factor.id, type: factor.type } },
+        },
+        transaction
+      );
+    }
     return { factorId: factor.id, verified: true };
   }
 
@@ -153,6 +167,15 @@ export class UserMfaService implements IUserMfaService {
         },
         transaction
       );
+      await this.events.publish(
+        {
+          type: 'user.mfa_disabled',
+          subjectUserId: userId,
+          aggregate: { kind: 'user', id: userId },
+          data: { after: { userId, reason: 'last_factor_removed' } },
+        },
+        transaction
+      );
     }
   }
 
@@ -167,6 +190,15 @@ export class UserMfaService implements IUserMfaService {
     const hashes = codes.map((code) => hashSecret(code));
     await this.userMfaRecoveryCodeRepository.softDeleteAllCodes(userId, transaction);
     await this.userMfaRecoveryCodeRepository.createCodes(userId, hashes, factorId, transaction);
+    await this.events.publish(
+      {
+        type: 'user.mfa_recovery_codes_regenerated',
+        subjectUserId: userId,
+        aggregate: { kind: 'user', id: userId },
+        data: { after: { userId, codeCount: codes.length } },
+      },
+      transaction
+    );
     return codes;
   }
 

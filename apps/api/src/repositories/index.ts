@@ -7,9 +7,12 @@ import { AccountRoleRepository } from './account-roles.repository';
 import { AccountTagsRepository } from './account-tags.repository';
 import { AccountRepository } from './accounts.repository';
 import { ApiKeyRepository } from './api-keys.repository';
+import { EventLogRepository } from './event-log.repository';
 import { GroupPermissionRepository } from './group-permissions.repository';
 import { GroupTagRepository } from './group-tags.repository';
 import { GroupRepository } from './groups.repository';
+import { NotificationPreferenceRepository } from './notification-preferences.repository';
+import { NotificationRepository } from './notifications.repository';
 import { OrganizationGroupRepository } from './organization-groups.repository';
 import { OrganizationInvitationRepository } from './organization-invitations.repository';
 import { OrganizationMemberRepository } from './organization-members.repository';
@@ -56,6 +59,8 @@ import { UserRoleRepository } from './user-roles.repository';
 import { UserSessionRepository } from './user-sessions.repository';
 import { UserTagRepository } from './user-tags.repository';
 import { UserRepository } from './users.repository';
+import { WebhookDeliveryRepository } from './webhook-deliveries.repository';
+import { WebhookSubscriptionRepository } from './webhook-subscriptions.repository';
 
 export type Repositories = ReturnType<typeof createRepositories>;
 
@@ -68,9 +73,12 @@ export function createRepositories(db: DbSchema) {
     accountRepository: new AccountRepository(db),
     accountTagsRepository: new AccountTagsRepository(db),
     apiKeyRepository: new ApiKeyRepository(db),
+    eventLogRepository: new EventLogRepository(db),
     groupPermissionRepository: new GroupPermissionRepository(db),
     groupTagRepository: new GroupTagRepository(db),
     groupRepository: new GroupRepository(db),
+    notificationRepository: new NotificationRepository(db),
+    notificationPreferenceRepository: new NotificationPreferenceRepository(db),
     organizationGroupRepository: new OrganizationGroupRepository(db),
     organizationInvitationRepository: new OrganizationInvitationRepository(db),
     organizationMemberRepository: new OrganizationMemberRepository(db),
@@ -117,5 +125,7 @@ export function createRepositories(db: DbSchema) {
     userTagRepository: new UserTagRepository(db),
     userRepository: new UserRepository(db),
     userSessionRepository: new UserSessionRepository(db),
+    webhookSubscriptionRepository: new WebhookSubscriptionRepository(db),
+    webhookDeliveryRepository: new WebhookDeliveryRepository(db),
   };
 }

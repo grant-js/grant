@@ -5,6 +5,7 @@ import { devtools } from 'zustand/middleware';
 import type { DataTableColumnToggleItem } from '@/components/common/data-table-column-toggle';
 
 export type ApiKeyView = 'card' | 'table';
+export type ApiKeySecretDialogMode = 'created' | 'rotated';
 
 interface ApiKeysState {
   page: number;
@@ -15,6 +16,7 @@ interface ApiKeysState {
   view: ApiKeyView;
   apiKeys: ApiKey[];
   secretDialogOpen: boolean;
+  secretDialogMode: ApiKeySecretDialogMode;
   createdApiKey: { clientId: string; clientSecret: string } | null;
   loading: boolean;
   refetch: (() => void) | null;
@@ -31,6 +33,7 @@ interface ApiKeysState {
   setSecretDialogOpen: (open: boolean) => void;
   setCreatedApiKey: (apiKey: { clientId: string; clientSecret: string } | null) => void;
   handleApiKeyCreated: (apiKey: { clientId: string; clientSecret: string } | null) => void;
+  handleApiKeyRotated: (apiKey: { clientId: string; clientSecret: string } | null) => void;
   setLoading: (loading: boolean) => void;
   setRefetch: (refetch: (() => void) | null) => void;
   setColumnToggle: (
@@ -56,6 +59,7 @@ const initialState = {
   view: 'card' as ApiKeyView,
   apiKeys: [] as ApiKey[],
   secretDialogOpen: false,
+  secretDialogMode: 'created' as ApiKeySecretDialogMode,
   createdApiKey: null,
   loading: false,
   refetch: null as (() => void) | null,
@@ -79,7 +83,12 @@ export const useApiKeysStore = create<ApiKeysState>()(
       setCreatedApiKey: (apiKey) => set({ createdApiKey: apiKey }),
       handleApiKeyCreated: (apiKey) => {
         if (apiKey) {
-          set({ createdApiKey: apiKey, secretDialogOpen: true });
+          set({ createdApiKey: apiKey, secretDialogOpen: true, secretDialogMode: 'created' });
+        }
+      },
+      handleApiKeyRotated: (apiKey) => {
+        if (apiKey) {
+          set({ createdApiKey: apiKey, secretDialogOpen: true, secretDialogMode: 'rotated' });
         }
       },
       setLoading: (loading) => set({ loading }),

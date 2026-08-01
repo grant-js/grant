@@ -208,7 +208,9 @@
       "signingKeys": "Signing Keys",
       "projectApps": "Apps",
       "testApp": "Test App",
-      "projectSyncJobs": "Import/Export"
+      "projectSyncJobs": "Import/Export",
+      "webhooks": "Webhooks",
+      "notifications": "Notifications"
     }
   },
   "theme": {
@@ -1028,6 +1030,7 @@
         "submitting": "Creating..."
       },
       "actions": {
+        "rotate": "Rotate",
         "revoke": "Revoke",
         "delete": "Delete"
       },
@@ -1037,6 +1040,12 @@
         "cancel": "Cancel",
         "confirm": "Revoke"
       },
+      "rotateDialog": {
+        "title": "Rotate API Key",
+        "description": "Rotate the secret for API key \"{name}\"? The client ID stays the same. The previous secret stops working immediately, and the new secret is shown only once.",
+        "cancel": "Cancel",
+        "confirm": "Rotate"
+      },
       "deleteDialog": {
         "title": "Delete API Key",
         "description": "Are you sure you want to delete the API key \"{name}\"? This action cannot be undone.",
@@ -1045,8 +1054,10 @@
       },
       "secretDialog": {
         "title": "API Key Created",
+        "titleRotated": "API Key Rotated",
         "description": "Save your API key credentials. This is the only time you'll be able to view the client secret.",
         "warning": "This is the last time you'll be able to view the client secret. Make sure to copy it now and store it securely.",
+        "warningRotated": "The previous secret no longer works. This is the last time you'll be able to view the new client secret. Copy it now and store it securely.",
         "clientId": "Client ID",
         "clientSecret": "Client Secret",
         "close": "I've Saved My Credentials",
@@ -3118,7 +3129,9 @@
       "profile": "Profile",
       "security": "Security",
       "preferences": "Preferences",
-      "privacy": "Privacy"
+      "privacy": "Privacy",
+      "notifications": "Notifications",
+      "projectMemberships": "Project memberships"
     },
     "account": {
       "title": "Account Information",
@@ -3426,9 +3439,7 @@
       },
       "notifications": {
         "title": "Notifications",
-        "description": "Manage your notification preferences",
-        "comingSoon": "Notification preferences are coming soon!",
-        "comingSoonDescription": "You'll be able to customize email notifications, in-app alerts, and notification frequency."
+        "description": "Manage your notification preferences"
       }
     },
     "privacy": {
@@ -3518,6 +3529,62 @@
     "notifications": {
       "logoutSuccess": "You have been logged out",
       "logoutError": "Failed to logout"
+    },
+    "projectMemberships": {
+      "title": "Project memberships",
+      "description": "Manage your project membership profiles",
+      "goToYourMemberships": "Go to your project memberships",
+      "list": {
+        "title": "Your projects",
+        "description": "Projects where you are a project user member",
+        "personalProject": "Personal project"
+      },
+      "empty": {
+        "title": "No project memberships",
+        "description": "You are not a project user on any projects yet."
+      },
+      "detail": {
+        "loading": "Loading membership…",
+        "notFound": "This project membership was not found.",
+        "overview": {
+          "title": "Project",
+          "description": "Details about this project membership",
+          "project": "Project name",
+          "scope": "Scope",
+          "role": "Role",
+          "tableField": "Field",
+          "tableValue": "Value",
+          "projectId": "Project ID",
+          "joined": "Joined"
+        },
+        "profile": {
+          "title": "Membership profile",
+          "description": "Update your display name for this project",
+          "fields": {
+            "displayName": {
+              "label": "Display name",
+              "placeholder": "Enter your display name",
+              "description": "How you appear in this project."
+            }
+          }
+        },
+        "avatar": {
+          "title": "Profile picture",
+          "description": "Picture for your membership in this project",
+          "uploadButton": "Upload picture",
+          "changeButton": "Change picture"
+        },
+        "metadata": {
+          "title": "Metadata",
+          "description": "Read-only metadata for this membership"
+        }
+      },
+      "notifications": {
+        "updateSuccess": "Membership profile updated",
+        "updateError": "Failed to update membership profile",
+        "uploadPictureSuccess": "Profile picture updated",
+        "uploadPictureError": "Failed to upload profile picture"
+      }
     }
   },
   "invitations": {
@@ -3591,7 +3658,276 @@
       "deleteError": "Failed to delete API key",
       "revokeSuccess": "API key revoked",
       "revokeError": "Failed to revoke API key",
+      "rotateSuccess": "API key rotated",
+      "rotateError": "Failed to rotate API key",
       "exchangeError": "Failed to exchange API key"
+    }
+  },
+  "webhooks": {
+    "title": "Webhooks",
+    "search": {
+      "placeholder": "Search by URL, description, or event type…"
+    },
+    "sort": {
+      "label": "Sort",
+      "url": "URL",
+      "createdAt": "Created",
+      "active": "Active"
+    },
+    "limit": {
+      "label": "Per page"
+    },
+    "view": {
+      "card": "Cards",
+      "table": "Table"
+    },
+    "activeYes": "Active",
+    "activeNo": "Inactive",
+    "eventCount": "{count, plural, =0 {No events} one {# event} other {# events}}",
+    "table": {
+      "status": "Status",
+      "audit": "Audit"
+    },
+    "actions": {
+      "view": "View subscription"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "detail": {
+      "title": "Webhook subscription",
+      "back": "Back to webhooks",
+      "open": "View subscription details",
+      "notFound": "Webhook subscription not found",
+      "info": {
+        "generalTitle": "General",
+        "generalDescription": "URL, description, status, and audit information for this subscription.",
+        "descriptionPlaceholder": "Optional description for this webhook endpoint",
+        "subscriptionId": "Subscription ID",
+        "isActive": "Is Active",
+        "created": "Created",
+        "updated": "Updated",
+        "tableField": "Field",
+        "tableValue": "Value"
+      },
+      "general": {
+        "title": "General",
+        "description": "Endpoint configuration and event filters.",
+        "updatedAt": "Updated"
+      },
+      "deliveries": {
+        "description": "Recent delivery attempts for this subscription."
+      }
+    },
+    "events": {
+      "title": "Events",
+      "description": "Select which domain events are delivered to this endpoint.",
+      "updateSuccess": "Webhook events updated",
+      "empty": "No events selected",
+      "emptyDescription": "No events match your search or filter",
+      "search": {
+        "placeholder": "Search events..."
+      },
+      "table": {
+        "name": "Name",
+        "event": "Event"
+      },
+      "types": {
+        "role": {
+          "created": "Role created",
+          "updated": "Role updated",
+          "deleted": "Role deleted",
+          "permission_assigned": "Permission assigned to role",
+          "permission_revoked": "Permission revoked from role",
+          "group_assigned": "Group assigned to role",
+          "group_revoked": "Group revoked from role"
+        },
+        "permission": {
+          "created": "Permission created",
+          "updated": "Permission updated",
+          "deleted": "Permission deleted"
+        },
+        "group": {
+          "created": "Group created",
+          "updated": "Group updated",
+          "deleted": "Group deleted",
+          "permission_assigned": "Permission assigned to group",
+          "permission_revoked": "Permission revoked from group"
+        },
+        "resource": {
+          "created": "Resource created",
+          "updated": "Resource updated",
+          "deleted": "Resource deleted"
+        },
+        "user": {
+          "permission_assigned": "Permission assigned to user",
+          "permission_revoked": "Permission revoked from user",
+          "group_assigned": "Group assigned to user",
+          "group_revoked": "Group revoked from user",
+          "role_assigned": "Role assigned to user",
+          "role_revoked": "Role revoked from user",
+          "email_verification_requested": "Email verification requested",
+          "mfa_enabled": "MFA enabled",
+          "mfa_disabled": "MFA disabled",
+          "mfa_recovery_codes_regenerated": "MFA recovery codes regenerated",
+          "session_revoked": "Session revoked",
+          "sessions_revoked": "All sessions revoked",
+          "password_changed": "Password changed"
+        },
+        "api_key": {
+          "created": "API key created",
+          "rotated": "API key rotated",
+          "revoked": "API key revoked"
+        },
+        "signing_key": {
+          "created": "Signing key created",
+          "rotated": "Signing key rotated"
+        },
+        "organization": {
+          "invitation_sent": "Organization invitation sent",
+          "invitation_accepted": "Organization invitation accepted",
+          "invitation_revoked": "Organization invitation revoked",
+          "member_added": "Organization member added",
+          "member_role_changed": "Organization member role changed",
+          "member_removed": "Organization member removed",
+          "mfa_enforcement_changed": "Organization MFA policy changed"
+        },
+        "project": {
+          "user_added": "Project member added",
+          "user_removed": "Project member removed",
+          "user_profile_updated": "Project member profile updated"
+        },
+        "project_sync": {
+          "completed": "Project sync completed",
+          "failed": "Project sync failed"
+        }
+      }
+    },
+    "deleteDialog": {
+      "title": "Delete webhook subscription",
+      "description": "Delete {name}? This cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "deleting": "Deleting…"
+    },
+    "subscriptions": {
+      "title": "Webhook subscriptions",
+      "description": "Send signed domain events to external endpoints (Slack, n8n, etc.).",
+      "new": "New subscription",
+      "empty": "No webhook subscriptions yet.",
+      "emptyDescription": "Create a subscription to deliver project events to an external endpoint.",
+      "noDescription": "No description",
+      "loadError": "Failed to load subscriptions",
+      "secretTitle": "Signing secret (shown once)",
+      "copy": "Copy",
+      "copied": "Copied to clipboard",
+      "enabled": "Subscription enabled",
+      "disabled": "Subscription disabled",
+      "updateSuccess": "Webhook subscription updated",
+      "updateError": "Failed to update subscription",
+      "rotateSuccess": "Signing secret rotated",
+      "rotateError": "Failed to rotate secret",
+      "deleteSuccess": "Subscription deleted",
+      "deleteError": "Failed to delete subscription",
+      "createSuccess": "Subscription created",
+      "createError": "Failed to create subscription",
+      "columns": {
+        "url": "URL",
+        "events": "Events",
+        "active": "Active",
+        "actions": "Actions"
+      },
+      "rotateSecret": "Rotate secret",
+      "delete": "Delete",
+      "deliveriesTitle": "Recent deliveries"
+    },
+    "createDialog": {
+      "title": "New webhook subscription",
+      "description": "The signing secret is generated and shown once after creation.",
+      "urlLabel": "Endpoint URL",
+      "urlPlaceholder": "https://example.com/webhooks/grant",
+      "descriptionLabel": "Description (optional)",
+      "eventTypesLabel": "Event types",
+      "cancel": "Cancel",
+      "create": "Create"
+    },
+    "deliveries": {
+      "empty": "No deliveries yet.",
+      "emptyHint": "Trigger an IAM change in this project to test webhook delivery.",
+      "status": {
+        "pending": "Pending",
+        "running": "Running",
+        "delivered": "Delivered",
+        "failed": "Failed",
+        "dead": "Dead"
+      },
+      "columns": {
+        "status": "Status",
+        "attempts": "Attempts",
+        "lastResponse": "Last response",
+        "nextRetry": "Next retry",
+        "createdAt": "Created",
+        "actions": "Actions"
+      },
+      "replay": "Replay",
+      "replaySuccess": "Delivery re-queued",
+      "replayError": "Failed to replay delivery"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet.",
+    "unreadBadge": "{count} unread",
+    "markAllRead": "Mark all read",
+    "markAllSuccess": "All notifications marked as read",
+    "markRead": "Mark as read",
+    "loadMore": "Load more",
+    "preferencesHint": "Manage how you receive alerts in",
+    "preferencesLink": "notification preferences",
+    "errors": {
+      "markRead": "Failed to mark as read",
+      "markAllRead": "Failed to mark all as read"
+    }
+  },
+  "notificationBell": {
+    "ariaLabel": "Notifications",
+    "title": "Notifications",
+    "empty": "No notifications yet.",
+    "viewAll": "View all notifications"
+  },
+  "notificationPreferences": {
+    "title": "Notification Preferences",
+    "securityLockedHint": "Security notifications are always on and cannot be disabled.",
+    "category": "Category",
+    "inApp": "In-app",
+    "email": "Email",
+    "cards": {
+      "account": {
+        "title": "Personal account",
+        "description": "Notifications for events in your personal account workspace.",
+        "info": "These preferences apply when you are working in your personal account (not an organization). They control in-app and email alerts for security, IAM, membership, and integrations events scoped to that account.",
+        "infoAriaLabel": "About personal account notifications"
+      },
+      "organization": {
+        "title": "Organization",
+        "description": "Notifications for events in your current organization workspace.",
+        "info": "These preferences apply when you are working in an organization. They control in-app and email alerts for events in that organization. Organization administrators may enforce some categories so they cannot be turned off.",
+        "infoAriaLabel": "About organization notifications"
+      }
+    },
+    "tenants": {
+      "account": "Account",
+      "organization": "Organization"
+    },
+    "categories": {
+      "security": "Security",
+      "iam": "IAM",
+      "membership": "Membership",
+      "integrations": "Integrations"
+    },
+    "errors": {
+      "save": "Failed to save preference"
     }
   },
   "signingKeys": {

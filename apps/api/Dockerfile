@@ -31,6 +31,7 @@ COPY packages/@grantjs/database/package.json packages/@grantjs/database/package.
 COPY packages/@grantjs/env/package.json packages/@grantjs/env/package.json
 COPY packages/@grantjs/schema/package.json packages/@grantjs/schema/package.json
 COPY packages/@grantjs/core/package.json packages/@grantjs/core/package.json
+COPY packages/@grantjs/webhooks/package.json packages/@grantjs/webhooks/package.json
 COPY packages/@grantjs/constants/package.json packages/@grantjs/constants/package.json
 COPY packages/@grantjs/i18n/package.json packages/@grantjs/i18n/package.json
 COPY packages/@grantjs/logger/package.json packages/@grantjs/logger/package.json
@@ -50,6 +51,7 @@ COPY packages/@grantjs/i18n packages/@grantjs/i18n
 COPY packages/@grantjs/database packages/@grantjs/database
 COPY packages/@grantjs/env packages/@grantjs/env
 COPY packages/@grantjs/core packages/@grantjs/core
+COPY packages/@grantjs/webhooks packages/@grantjs/webhooks
 COPY packages/@grantjs/schema packages/@grantjs/schema
 COPY packages/@grantjs/logger packages/@grantjs/logger
 COPY packages/@grantjs/errors packages/@grantjs/errors

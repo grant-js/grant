@@ -1,6 +1,7 @@
 import {
   GrantAuth,
   type IAuditLogger,
+  type IEventPublisher,
   type IOrganizationRepository,
   type IOrganizationService,
   type IOrganizationUserRepository,
@@ -12,6 +13,7 @@ import {
   Organization,
   OrganizationPage,
   QueryOrganizationsArgs,
+  Tenant,
 } from '@grantjs/schema';
 
 import { BadRequestError, NotFoundError } from '@/lib/errors';
@@ -39,7 +41,8 @@ export class OrganizationService implements IOrganizationService {
     private readonly organizationRepository: IOrganizationRepository,
     private readonly organizationUserRepository: IOrganizationUserRepository,
     readonly user: GrantAuth | null,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   private async getOrganization(
@@ -175,6 +178,32 @@ export class OrganizationService implements IOrganizationService {
     };
 
     await this.audit.logUpdate(updatedOrganization.id, oldValues, newValues, metadata, transaction);
+
+    if (
+      oldOrganization.requireMfaForSensitiveActions !==
+      updatedOrganization.requireMfaForSensitiveActions
+    ) {
+      await this.events.publish(
+        {
+          type: 'organization.mfa_enforcement_changed',
+          scope: { tenant: Tenant.Organization, id: updatedOrganization.id },
+          aggregate: { kind: 'organization', id: updatedOrganization.id },
+          data: {
+            after: {
+              name: updatedOrganization.name,
+              requireMfaForSensitiveActions: updatedOrganization.requireMfaForSensitiveActions,
+            },
+            delta: {
+              requireMfaForSensitiveActions: {
+                from: oldOrganization.requireMfaForSensitiveActions,
+                to: updatedOrganization.requireMfaForSensitiveActions,
+              },
+            },
+          },
+        },
+        transaction
+      );
+    }
 
     return validateOutput(
       createDynamicSingleSchema(organizationSchema),

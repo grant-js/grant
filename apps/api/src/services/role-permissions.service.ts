@@ -1,5 +1,6 @@
 import type {
   IAuditLogger,
+  IEventPublisher,
   IPermissionRepository,
   IRolePermissionRepository,
   IRolePermissionService,
@@ -29,7 +30,8 @@ export class RolePermissionService implements IRolePermissionService {
     private readonly roleRepository: IRoleRepository,
     private readonly permissionRepository: IPermissionRepository,
     private readonly rolePermissionRepository: IRolePermissionRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   private async roleExists(roleId: string, transaction?: Transaction): Promise<void> {
@@ -132,6 +134,15 @@ export class RolePermissionService implements IRolePermissionService {
 
     await this.audit.logCreate(rolePermission.id, newValues, { context }, transaction);
 
+    await this.events.publish(
+      {
+        type: 'role.permission_assigned',
+        aggregate: { kind: 'rolePermission', id: rolePermission.id },
+        data: { after: newValues },
+      },
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(rolePermissionSchema), rolePermission, context);
   }
 
@@ -181,6 +192,15 @@ export class RolePermissionService implements IRolePermissionService {
         transaction
       );
     }
+
+    await this.events.publish(
+      {
+        type: 'role.permission_revoked',
+        aggregate: { kind: 'rolePermission', id: rolePermission.id },
+        data: { before: oldValues },
+      },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(rolePermissionSchema), rolePermission, context);
   }

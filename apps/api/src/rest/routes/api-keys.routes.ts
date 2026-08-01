@@ -10,6 +10,7 @@ import {
   deleteApiKeyRequestSchema,
   getApiKeysQuerySchema,
   revokeApiKeyRequestSchema,
+  rotateApiKeyRequestSchema,
 } from '@/rest/schemas/api-keys.schemas';
 import { TypedRequest } from '@/rest/types';
 import { queryListCommons } from '@/rest/utils/list-query';
@@ -97,6 +98,32 @@ export function createApiKeysRoutes(context: RequestContext) {
       });
 
       sendSuccessResponse(res, apiKey);
+    }
+  );
+
+  router.post(
+    '/:id/rotate',
+    validate({ params: apiKeyIdParamsSchema, body: rotateApiKeyRequestSchema }),
+    requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
+    authorizeRestRoute({
+      resource: ResourceSlug.ApiKey,
+      action: ResourceAction.Revoke,
+    }),
+    async (
+      req: TypedRequest<{
+        params: typeof apiKeyIdParamsSchema;
+        body: typeof rotateApiKeyRequestSchema;
+      }>,
+      res: Response
+    ) => {
+      const { id } = req.params;
+      const { scope } = req.body;
+
+      const result = await context.handlers.apiKeys.rotateApiKey({
+        input: { id, scope },
+      });
+
+      sendSuccessResponse(res, result);
     }
   );
 

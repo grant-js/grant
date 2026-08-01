@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { BookOpen, FileJson, Globe, Menu, Moon, Network, Sun, X } from 'lucide-react';
 
 import { DemoModeDialogProvider, DemoModeDialogTrigger, Logo } from '@/components/common';
+import { NotificationBell } from '@/components/features/notifications';
 import { LanguageSwitcher, ThemeToggle } from '@/components/features/settings';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
@@ -110,6 +111,7 @@ export function Header() {
                 <Network className="h-[1rem] w-[1rem] shrink-0" />
                 {t('navigation.graphqlPlayground')}
               </a>
+              {isAuthenticated() ? <NotificationBell /> : null}
               <ThemeToggle ref={themeToggleRef} trigger={desktopThemeTrigger} />
               <LanguageSwitcher ref={languageSwitcherRef} trigger={desktopLanguageTrigger} />
             </div>
@@ -162,6 +164,11 @@ export function Header() {
                   <Network className="h-[1rem] w-[1rem] shrink-0" />
                   {t('navigation.graphqlPlayground')}
                 </a>
+                {isAuthenticated() ? (
+                  <div className="py-2 -mx-2">
+                    <NotificationBell />
+                  </div>
+                ) : null}
               </div>
               <div className="h-px bg-border" />
               <div className="flex flex-col space-y-2">

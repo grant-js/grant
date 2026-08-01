@@ -15,6 +15,7 @@ export interface ApiKeySecretDialogProps {
   clientSecret: string;
   /** Scope for server-side integration (tenant + id). When set, included in downloaded credentials. */
   scope?: { tenant: string; id: string } | null;
+  mode?: 'created' | 'rotated';
 }
 
 export function ApiKeySecretDialog({
@@ -23,6 +24,7 @@ export function ApiKeySecretDialog({
   clientId,
   clientSecret,
   scope,
+  mode = 'created',
 }: ApiKeySecretDialogProps) {
   const t = useTranslations('user.apiKeys.secretDialog');
 
@@ -64,14 +66,14 @@ export function ApiKeySecretDialog({
         onEscapeKeyDown={handleEscapeKeyDown}
       >
         <DialogHeader>
-          <DialogTitle>{t('title')}</DialogTitle>
+          <DialogTitle>{mode === 'rotated' ? t('titleRotated') : t('title')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="rounded-lg bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 p-4 flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
               <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                {t('warning')}
+                {mode === 'rotated' ? t('warningRotated') : t('warning')}
               </p>
             </div>
           </div>

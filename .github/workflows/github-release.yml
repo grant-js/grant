@@ -1,4 +1,7 @@
-# Creates a GitHub Release when a v* tag is pushed (agent or maintainer).
+# Creates a GitHub Release when a v* tag is pushed by a human or a
+# non-GITHUB_TOKEN actor. Automated publishes create the release in
+# release.yml (release-git-tag) because GITHUB_TOKEN tag pushes do not
+# trigger this workflow.
 name: GitHub Release
 
 on:
@@ -13,6 +16,8 @@ jobs:
   release:
     name: Publish GitHub Release
     runs-on: ubuntu-latest
+    # Skip when the Release workflow already created the release for this tag.
+    # softprops is idempotent, but avoid a race / duplicate run noise on publish.
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -21,27 +26,33 @@ jobs:
         id: version
         run: echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
 
-      - name: Extract release notes from CHANGELOG
-        id: notes
+      - name: Skip if release already exists
+        id: existing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          VERSION="${{ steps.version.outputs.version }}"
-          NOTES_FILE="${RUNNER_TEMP}/release-notes.md"
-          if [ ! -f CHANGELOG.md ]; then
-            echo "No CHANGELOG.md; using tag message only." > "$NOTES_FILE"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Release ${TAG} already exists; skipping."
           else
-            awk -v ver="$VERSION" '
-              $0 ~ "^## " ver "$" { found=1; next }
-              found && /^## / { exit }
-              found { print }
-            ' CHANGELOG.md > "$NOTES_FILE" || true
-            if [ ! -s "$NOTES_FILE" ]; then
-              echo "Release v${VERSION}" > "$NOTES_FILE"
-            fi
+            echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Extract release notes
+        id: notes
+        if: steps.existing.outputs.exists != 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          NOTES_FILE="${RUNNER_TEMP}/release-notes.md"
+          ./scripts/extract-release-notes.sh "$VERSION" "$NOTES_FILE"
           echo "path=$NOTES_FILE" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
+        if: steps.existing.outputs.exists != 'true'
         uses: softprops/action-gh-release@v3.0.1
         with:
           tag_name: ${{ github.ref_name }}

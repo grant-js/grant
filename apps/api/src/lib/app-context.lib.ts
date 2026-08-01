@@ -4,6 +4,7 @@ import { DbSchema, signingKeyAuditLogs } from '@grantjs/database';
 import { config } from '@/config';
 import { SYSTEM_USER } from '@/constants/system.constants';
 import { DrizzleAuditLogger } from '@/lib/audit';
+import { DrizzleEventPublisher } from '@/lib/events';
 import { JwtTokenProvider } from '@/lib/token';
 import { createRepositories } from '@/repositories';
 import { GrantRepository } from '@/repositories/grant.repository';
@@ -25,9 +26,11 @@ export function createAppContext(db: DbSchema, cache: IEntityCacheAdapter): AppC
     SYSTEM_USER,
     db
   );
+  const bootstrapEvents = new DrizzleEventPublisher(SYSTEM_USER, db);
   const globalSigningKeyService = new SigningKeyService(
     repositories.signingKeyRepository,
-    signingKeyAudit
+    signingKeyAudit,
+    bootstrapEvents
   );
   const grantService = new GrantService(cache, grantRepository, globalSigningKeyService, {
     cacheTtlSeconds: config.jwt.systemSigningKeyCacheTtlSeconds,

@@ -1,5 +1,6 @@
 import type {
   IAuditLogger,
+  IEventPublisher,
   IGroupRepository,
   IUserGroupRepository,
   IUserGroupService,
@@ -29,7 +30,8 @@ export class UserGroupService implements IUserGroupService {
     private readonly userRepository: IUserRepository,
     private readonly groupRepository: IGroupRepository,
     private readonly userGroupRepository: IUserGroupRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   private async userExists(userId: string, transaction?: Transaction): Promise<void> {
@@ -116,6 +118,16 @@ export class UserGroupService implements IUserGroupService {
 
     await this.audit.logCreate(userGroup.id, newValues, { context }, transaction);
 
+    await this.events.publish(
+      {
+        type: 'user.group_assigned',
+        aggregate: { kind: 'userGroup', id: userGroup.id },
+        subjectUserId: userGroup.userId,
+        data: { after: newValues },
+      },
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(userGroupSchema), userGroup, context);
   }
 
@@ -159,6 +171,16 @@ export class UserGroupService implements IUserGroupService {
     } else {
       await this.audit.logSoftDelete(userGroup.id, oldValues, newValues, metadata, transaction);
     }
+
+    await this.events.publish(
+      {
+        type: 'user.group_revoked',
+        aggregate: { kind: 'userGroup', id: userGroup.id },
+        subjectUserId: userGroup.userId,
+        data: { before: oldValues },
+      },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(userGroupSchema), userGroup, context);
   }

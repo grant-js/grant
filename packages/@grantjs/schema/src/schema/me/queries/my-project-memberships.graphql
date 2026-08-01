@@ -1,0 +1,6 @@
+extend type Query {
+  """
+  Project memberships for the authenticated user (project_users pivots).
+  """
+  myProjectMemberships: [MyProjectMembership!]!
+}

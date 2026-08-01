@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useMyProjectMembership } from '@/hooks/me';
 import { Link, usePathname } from '@/i18n/navigation';
 import { useGroupsStore } from '@/stores/groups.store';
 import { useOrganizationsStore } from '@/stores/organizations.store';
@@ -29,6 +30,7 @@ import { useProjectsStore } from '@/stores/projects.store';
 import { useResourcesStore } from '@/stores/resources.store';
 import { useRolesStore } from '@/stores/roles.store';
 import { useUsersStore } from '@/stores/users.store';
+import { useWebhooksStore } from '@/stores/webhooks.store';
 
 export interface BreadCrumbItem {
   label: string;
@@ -49,6 +51,7 @@ const DASHBOARD_SEGMENT_LABEL_KEYS: Record<string, string> = {
   'api-keys': 'apiKeys',
   'signing-keys': 'signingKeys',
   'import-export': 'projectSyncJobs',
+  webhooks: 'webhooks',
 };
 
 function getProjectBasePath(params: ReturnType<typeof useParams>): string {
@@ -60,8 +63,14 @@ function getProjectBasePath(params: ReturnType<typeof useParams>): string {
 export function Breadcrumb() {
   const t = useTranslations('common');
   const dashboardT = useTranslations('dashboard.navigation');
+  const settingsNavT = useTranslations('settings.navigation');
   const pathname = usePathname();
   const params = useParams();
+
+  const isSettingsPath = pathname.startsWith('/dashboard/settings');
+  const settingsMembershipProjectId =
+    isSettingsPath && typeof params.projectId === 'string' ? params.projectId : null;
+  const { membership: settingsMembership } = useMyProjectMembership(settingsMembershipProjectId);
 
   const currentOrganization = useOrganizationsStore((state) => state.currentOrganization);
   const currentProject = useProjectsStore((state) => state.currentProject);
@@ -72,6 +81,7 @@ export function Breadcrumb() {
   const currentProjectApp = useProjectAppsStore((state) => state.currentProjectApp);
   const currentSyncJob = useProjectSyncJobsStore((state) => state.currentSyncJob);
   const currentResource = useResourcesStore((state) => state.currentResource);
+  const currentSubscription = useWebhooksStore((state) => state.currentSubscription);
 
   if (pathname === '/' || pathname.startsWith('/auth')) {
     return null;
@@ -115,6 +125,27 @@ export function Breadcrumb() {
         breadcrumbs.push({
           label: orgLabel,
           href: `/dashboard/organizations/${segment}`,
+        });
+        return;
+      }
+
+      // Settings project memberships: /dashboard/settings/projects[/:projectId]
+      if (isSettingsPath && segment === 'projects') {
+        breadcrumbs.push({
+          label: settingsNavT('projectMemberships'),
+          href: '/dashboard/settings/projects',
+        });
+        return;
+      }
+
+      if (
+        isSettingsPath &&
+        settingsMembershipProjectId &&
+        segment === settingsMembershipProjectId
+      ) {
+        breadcrumbs.push({
+          label: settingsMembership?.projectName || t('loading'),
+          href: `/dashboard/settings/projects/${segment}`,
         });
         return;
       }
@@ -335,6 +366,30 @@ export function Breadcrumb() {
           t('loading');
         breadcrumbs.push({
           label: jobLabel,
+        });
+        return;
+      }
+
+      if (params.subscriptionId && segment === params.subscriptionId) {
+        const basePath = getProjectBasePath(params);
+        const hasWebhooksBreadcrumb = breadcrumbs.some(
+          (crumb) => crumb.label === dashboardT('webhooks')
+        );
+        if (!hasWebhooksBreadcrumb) {
+          breadcrumbs.push({
+            label: dashboardT('webhooks'),
+            href: `${basePath}/projects/${params.projectId}/webhooks`,
+          });
+        }
+
+        const subscriptionLabel =
+          currentSubscription?.description ||
+          currentSubscription?.url ||
+          params.subscriptionId ||
+          t('loading');
+        breadcrumbs.push({
+          label: subscriptionLabel,
+          href: `${basePath}/projects/${params.projectId}/webhooks/${segment}`,
         });
         return;
       }

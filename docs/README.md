@@ -33,7 +33,7 @@ docs/
 │   └── config.ts          # VitePress configuration
 ├── getting-started/       # Introduction, quick start, configuration
 ├── architecture/          # System design, multi-tenancy, RBAC, security
-├── core-concepts/         # Resources, API keys, invitations, tags
+├── core-concepts/         # Resources, API keys, events/webhooks, invitations, tags
 ├── development/           # Dev guide, SDKs, CLI, REST API, testing
 ├── deployment/            # Overview, Docker (Compose), Kubernetes (Helm), environment
 ├── api-reference/         # REST API, error handling

@@ -95,6 +95,7 @@ Get up and running with Grant in minutes:
 
 - **[RBAC System](/architecture/rbac)** - Understanding the permission model
 - **[API Keys](/core-concepts/api-keys)** - User-scoped and project-level API keys, scopes, exchange
+- **[Events, Webhooks & Notifications](/core-concepts/events-webhooks-notifications)** - Domain-event outbox, signed webhooks, in-app alerts
 - **[Integration Guide](/integration/guide)** - Interactive tutorial with instant results
 - **[Server SDK](/integration/server-sdk)** - Protect routes with @grantjs/server
 - **[Client SDK](/integration/client-sdk)** - Permission-based UI with @grantjs/client

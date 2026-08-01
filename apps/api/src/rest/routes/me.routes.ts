@@ -14,7 +14,13 @@ import {
   createMyUserAuthenticationMethodRequestSchema,
   deleteMyAccountsBodySchema,
   getMyUserSessionsQuerySchema,
+  listMyNotificationPreferencesQuerySchema,
+  listMyNotificationsQuerySchema,
+  myNotificationParamsSchema,
+  myProjectMembershipParamsSchema,
   revokeMyUserSessionParamsSchema,
+  setMyNotificationPreferenceRequestSchema,
+  updateMyProjectMembershipRequestSchema,
   uploadMyUserPictureRequestSchema,
 } from '../schemas/me.schemas';
 
@@ -146,6 +152,106 @@ export function createMeRouter(context: RequestContext): Router {
         success: true,
         message: t(req, 'common.success.sessionRevoked'),
       });
+    }
+  );
+
+  router.get(
+    '/notifications',
+    validate({ query: listMyNotificationsQuerySchema }),
+    authenticateRestRoute,
+    async (req: TypedRequest<{ query: typeof listMyNotificationsQuerySchema }>, res: Response) => {
+      const result = await context.handlers.me.myNotifications({
+        unreadOnly: req.query.unreadOnly,
+        page: req.query.page,
+        limit: req.query.limit,
+      });
+      sendSuccessResponse(res, result);
+    }
+  );
+
+  router.get('/notifications/unread-count', authenticateRestRoute, async (req, res) => {
+    const result = await context.handlers.me.myUnreadNotificationCount();
+    sendSuccessResponse(res, result);
+  });
+
+  router.post('/notifications/read-all', authenticateRestRoute, async (req, res) => {
+    const result = await context.handlers.me.markAllMyNotificationsRead();
+    sendSuccessResponse(res, result);
+  });
+
+  router.post(
+    '/notifications/:id/read',
+    validate({ params: myNotificationParamsSchema }),
+    authenticateRestRoute,
+    async (req: TypedRequest<{ params: typeof myNotificationParamsSchema }>, res: Response) => {
+      await context.handlers.me.markMyNotificationRead(req.params.id);
+      sendSuccessResponse(res, { success: true });
+    }
+  );
+
+  router.get(
+    '/notification-preferences',
+    validate({ query: listMyNotificationPreferencesQuerySchema }),
+    authenticateRestRoute,
+    async (
+      req: TypedRequest<{ query: typeof listMyNotificationPreferencesQuerySchema }>,
+      res: Response
+    ) => {
+      const result = await context.handlers.me.myNotificationPreferences(req.query.scopeTenant);
+      sendSuccessResponse(res, result);
+    }
+  );
+
+  router.put(
+    '/notification-preferences',
+    validate({ body: setMyNotificationPreferenceRequestSchema }),
+    authenticateRestRoute,
+    async (
+      req: TypedRequest<{ body: typeof setMyNotificationPreferenceRequestSchema }>,
+      res: Response
+    ) => {
+      const result = await context.handlers.me.setMyNotificationPreference(req.body);
+      sendSuccessResponse(res, result, 201);
+    }
+  );
+
+  router.get('/project-memberships', authenticateRestRoute, async (_req, res) => {
+    const result = await context.handlers.me.myProjectMemberships();
+    sendSuccessResponse(res, result);
+  });
+
+  router.get(
+    '/project-memberships/:projectId',
+    validate({ params: myProjectMembershipParamsSchema }),
+    authenticateRestRoute,
+    async (
+      req: TypedRequest<{ params: typeof myProjectMembershipParamsSchema }>,
+      res: Response
+    ) => {
+      const result = await context.handlers.me.myProjectMembership(req.params.projectId);
+      sendSuccessResponse(res, { membership: result });
+    }
+  );
+
+  router.patch(
+    '/project-memberships/:projectId',
+    validate({
+      params: myProjectMembershipParamsSchema,
+      body: updateMyProjectMembershipRequestSchema,
+    }),
+    authenticateRestRoute,
+    async (
+      req: TypedRequest<{
+        params: typeof myProjectMembershipParamsSchema;
+        body: typeof updateMyProjectMembershipRequestSchema;
+      }>,
+      res: Response
+    ) => {
+      const result = await context.handlers.me.updateMyProjectMembership({
+        projectId: req.params.projectId,
+        ...req.body,
+      });
+      sendSuccessResponse(res, result);
     }
   );
 

@@ -1,5 +1,8 @@
 import type { IProjectUserRepository } from '@grantjs/core';
 import {
+  accountProjects,
+  organizationProjects,
+  organizations,
   projectRoles,
   projects,
   ProjectUserModel,
@@ -19,6 +22,19 @@ import { mergeCdmImporterMetadata } from '@/constants/cdm-import.constants';
 import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';
+
+export type ProjectUserMembershipRow = {
+  projectId: string;
+  projectName: string;
+  displayName: string | null;
+  pictureUrl: string | null;
+  metadata: Record<string, unknown>;
+  role: string | null;
+  joinedAt: Date;
+  organizationId: string | null;
+  organizationName: string | null;
+  accountId: string | null;
+};
 
 export class ProjectUserRepository
   extends PivotRepository<ProjectUserModel, ProjectUser>
@@ -183,25 +199,46 @@ export class ProjectUserRepository
   public async getProjectUserMemberships(
     userId: string,
     transaction?: Transaction
-  ): Promise<
-    Array<{
-      projectId: string;
-      projectName: string;
-      role: string;
-      joinedAt: Date;
-    }>
-  > {
+  ): Promise<ProjectUserMembershipRow[]> {
     const dbInstance = transaction || this.db;
 
     const membershipsData = await dbInstance
       .select({
         projectId: projects.id,
         projectName: projects.name,
+        displayName: projectUsers.displayName,
+        pictureUrl: projectUsers.pictureUrl,
+        metadata: projectUsers.metadata,
         roleName: roles.name,
         joinedAt: projectUsers.createdAt,
+        organizationId: organizationProjects.organizationId,
+        organizationName: organizations.name,
+        accountId: accountProjects.accountId,
+        hasProjectRole: projectRoles.id,
       })
       .from(projectUsers)
       .innerJoin(projects, eq(projectUsers.projectId, projects.id))
+      .leftJoin(
+        organizationProjects,
+        and(
+          eq(organizationProjects.projectId, projectUsers.projectId),
+          isNull(organizationProjects.deletedAt)
+        )
+      )
+      .leftJoin(
+        organizations,
+        and(
+          eq(organizations.id, organizationProjects.organizationId),
+          isNull(organizations.deletedAt)
+        )
+      )
+      .leftJoin(
+        accountProjects,
+        and(
+          eq(accountProjects.projectId, projectUsers.projectId),
+          isNull(accountProjects.deletedAt)
+        )
+      )
       .leftJoin(userRoles, and(eq(userRoles.userId, userId), isNull(userRoles.deletedAt)))
       .leftJoin(roles, eq(userRoles.roleId, roles.id))
       .leftJoin(
@@ -220,20 +257,33 @@ export class ProjectUserRepository
         )
       );
 
-    const membershipMap = new Map<
-      string,
-      { projectId: string; projectName: string; role: string; joinedAt: Date }
-    >();
+    const membershipMap = new Map<string, ProjectUserMembershipRow>();
 
-    for (const membership of membershipsData) {
-      const roleName = membership.roleName;
-      if (roleName && !membershipMap.has(membership.projectId)) {
-        membershipMap.set(membership.projectId, {
-          projectId: membership.projectId,
-          projectName: membership.projectName,
-          role: roleName,
-          joinedAt: membership.joinedAt,
+    for (const row of membershipsData) {
+      const existing = membershipMap.get(row.projectId);
+      const metadata =
+        row.metadata != null && typeof row.metadata === 'object' && !Array.isArray(row.metadata)
+          ? (row.metadata as Record<string, unknown>)
+          : {};
+
+      if (!existing) {
+        membershipMap.set(row.projectId, {
+          projectId: row.projectId,
+          projectName: row.projectName,
+          displayName: row.displayName ?? null,
+          pictureUrl: row.pictureUrl ?? null,
+          metadata,
+          role: row.hasProjectRole && row.roleName ? row.roleName : null,
+          joinedAt: row.joinedAt,
+          organizationId: row.organizationId ?? null,
+          organizationName: row.organizationName ?? null,
+          accountId: row.accountId ?? null,
         });
+        continue;
+      }
+
+      if (!existing.role && row.hasProjectRole && row.roleName) {
+        existing.role = row.roleName;
       }
     }
 

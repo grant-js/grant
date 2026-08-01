@@ -272,6 +272,21 @@ export class ApiKeyRepository
     return this.create(params, transaction);
   }
 
+  public async updateClientSecretHash(
+    id: string,
+    clientSecretHash: string,
+    transaction?: Transaction
+  ): Promise<ApiKey> {
+    const baseUpdateArgs: BaseUpdateArgs = {
+      id,
+      input: {
+        clientSecretHash,
+      },
+    };
+
+    return this.update(baseUpdateArgs, transaction);
+  }
+
   public async updateLastUsedAt(
     id: string,
     lastUsedAt: Date,

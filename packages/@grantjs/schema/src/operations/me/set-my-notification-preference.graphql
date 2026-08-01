@@ -1,0 +1,11 @@
+mutation SetMyNotificationPreference($input: SetMyNotificationPreferenceInput!) {
+  setMyNotificationPreference(input: $input) {
+    id
+    scopeTenant
+    scopeId
+    category
+    channel
+    enabled
+    source
+  }
+}

@@ -688,6 +688,15 @@ export type CreateUserSessionInput = {
   userId: Scalars['ID']['input'];
 };
 
+export type CreateWebhookSubscriptionMutationInput = {
+  active?: InputMaybe<Scalars['Boolean']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** Domain event type filters (must be known catalog types). */
+  eventTypes: Array<Scalars['String']['input']>;
+  scope: Scope;
+  url: Scalars['String']['input'];
+};
+
 export type DeleteApiKeyInput = {
   hardDelete?: InputMaybe<Scalars['Boolean']['input']>;
   id: Scalars['ID']['input'];
@@ -704,6 +713,11 @@ export type DeleteUserAuthenticationMethodInput = {
 
 export type DeleteUserSessionInput = {
   id: Scalars['ID']['input'];
+};
+
+export type DeleteWebhookSubscriptionInput = {
+  id: Scalars['ID']['input'];
+  scope: Scope;
 };
 
 export type EmailVerificationProofInput = {
@@ -897,6 +911,11 @@ export type LogoutMyUserResponse = {
   message: Scalars['String']['output'];
 };
 
+export type MarkAllNotificationsReadResult = {
+  __typename?: 'MarkAllNotificationsReadResult';
+  updated: Scalars['Int']['output'];
+};
+
 export type MeResponse = {
   __typename?: 'MeResponse';
   accounts: Array<Account>;
@@ -981,6 +1000,8 @@ export type Mutation = {
   createRole: Role;
   createTag: Tag;
   createUser: User;
+  /** Create a project webhook subscription. The signing secret is returned once. */
+  createWebhookSubscription: WebhookSubscriptionWithSecret;
   deleteApiKey: ApiKey;
   deleteGroup: Group;
   deleteMyAccounts: User;
@@ -993,16 +1014,22 @@ export type Mutation = {
   deleteRole: Role;
   deleteTag: Tag;
   deleteUser: User;
+  /** Soft-delete a webhook subscription. */
+  deleteWebhookSubscription: Scalars['Boolean']['output'];
   exchangeApiKey: ExchangeApiKeyResult;
   generateMyMfaRecoveryCodes: Array<Scalars['String']['output']>;
   inviteMember: OrganizationInvitation;
   login: LoginResponse;
   logoutMyUser: LogoutMyUserResponse;
+  markAllMyNotificationsRead: MarkAllNotificationsReadResult;
+  markMyNotificationRead: Scalars['Boolean']['output'];
   refreshSession: RefreshSessionResponse;
   register: CreateAccountResult;
   removeMyMfaDevice: MfaVerifyResult;
   removeOrganizationMember: OrganizationMember;
   renewInvitation: OrganizationInvitation;
+  /** Re-queue a delivery attempt for another POST. */
+  replayWebhookDelivery: WebhookDeliveryAttempt;
   requestPasswordReset: RequestPasswordResetResponse;
   resendInvitationEmail: OrganizationInvitation;
   resendVerification: ResendVerificationResponse;
@@ -1013,11 +1040,19 @@ export type Mutation = {
   revokeRolePermission: RolePermission;
   revokeUserPermission: UserPermission;
   /**
+   * Rotate an API key secret in place. Returns the new plaintext secret once.
+   * Keeps the same key id and clientId; rejects revoked keys.
+   */
+  rotateApiKey: CreateApiKeyResult;
+  /**
    * Rotate the signing key for the given scope: create a new active key and mark the previous one as rotated.
    * Allowed scopes: accountProject, organizationProject only.
    * Returns the new signing key (public info).
    */
   rotateSigningKey: SigningKey;
+  /** Rotate the signing secret. The new secret is returned once. */
+  rotateWebhookSubscriptionSecret: WebhookSubscriptionWithSecret;
+  setMyNotificationPreference: NotificationPreference;
   setMyPrimaryAuthenticationMethod: UserAuthenticationMethod;
   setMyPrimaryMfaDevice: MfaDevice;
   setupMfa: MfaSetupResponse;
@@ -1045,6 +1080,8 @@ export type Mutation = {
    */
   startProjectSync: ProjectSyncJob;
   updateGroup: Group;
+  /** Update the authenticated user's project membership profile (display name / picture). */
+  updateMyProjectMembership: MyProjectMembership;
   updateMyUser: User;
   updateOrganization: Organization;
   updateOrganizationMember: OrganizationMember;
@@ -1056,6 +1093,9 @@ export type Mutation = {
   updateRole: Role;
   updateTag: Tag;
   updateUser: User;
+  /** Update a webhook subscription URL, event filters, description, or active flag. */
+  updateWebhookSubscription: WebhookSubscription;
+  uploadMyProjectMembershipPicture: UploadUserPictureResult;
   uploadMyUserPicture: UploadUserPictureResult;
   uploadUserPicture: UploadUserPictureResult;
   verifyEmail: VerifyEmailResponse;
@@ -1130,6 +1170,10 @@ export type MutationCreateUserArgs = {
   input: CreateUserInput;
 };
 
+export type MutationCreateWebhookSubscriptionArgs = {
+  input: CreateWebhookSubscriptionMutationInput;
+};
+
 export type MutationDeleteApiKeyArgs = {
   input: DeleteApiKeyInput;
 };
@@ -1187,6 +1231,10 @@ export type MutationDeleteUserArgs = {
   scope: Scope;
 };
 
+export type MutationDeleteWebhookSubscriptionArgs = {
+  input: DeleteWebhookSubscriptionInput;
+};
+
 export type MutationExchangeApiKeyArgs = {
   input: ExchangeApiKeyInput;
 };
@@ -1201,6 +1249,10 @@ export type MutationInviteMemberArgs = {
 
 export type MutationLoginArgs = {
   input: LoginInput;
+};
+
+export type MutationMarkMyNotificationReadArgs = {
+  id: Scalars['ID']['input'];
 };
 
 export type MutationRegisterArgs = {
@@ -1219,6 +1271,10 @@ export type MutationRemoveOrganizationMemberArgs = {
 export type MutationRenewInvitationArgs = {
   id: Scalars['ID']['input'];
   scope: Scope;
+};
+
+export type MutationReplayWebhookDeliveryArgs = {
+  input: ReplayWebhookDeliveryInput;
 };
 
 export type MutationRequestPasswordResetArgs = {
@@ -1259,8 +1315,20 @@ export type MutationRevokeUserPermissionArgs = {
   input: RevokeUserPermissionInput;
 };
 
+export type MutationRotateApiKeyArgs = {
+  input: RotateApiKeyInput;
+};
+
 export type MutationRotateSigningKeyArgs = {
   scope: Scope;
+};
+
+export type MutationRotateWebhookSubscriptionSecretArgs = {
+  input: RotateWebhookSubscriptionSecretInput;
+};
+
+export type MutationSetMyNotificationPreferenceArgs = {
+  input: SetMyNotificationPreferenceInput;
 };
 
 export type MutationSetMyPrimaryAuthenticationMethodArgs = {
@@ -1286,6 +1354,10 @@ export type MutationStartProjectSyncArgs = {
 export type MutationUpdateGroupArgs = {
   id: Scalars['ID']['input'];
   input: UpdateGroupInput;
+};
+
+export type MutationUpdateMyProjectMembershipArgs = {
+  input: UpdateMyProjectMembershipInput;
 };
 
 export type MutationUpdateMyUserArgs = {
@@ -1337,6 +1409,15 @@ export type MutationUpdateUserArgs = {
   input: UpdateUserInput;
 };
 
+export type MutationUpdateWebhookSubscriptionArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateWebhookSubscriptionMutationInput;
+};
+
+export type MutationUploadMyProjectMembershipPictureArgs = {
+  input: UploadMyProjectMembershipPictureInput;
+};
+
 export type MutationUploadMyUserPictureArgs = {
   input: UploadMyUserPictureInput;
 };
@@ -1361,12 +1442,92 @@ export type MutationVerifyMyMfaEnrollmentArgs = {
   input: VerifyMyMfaEnrollmentInput;
 };
 
+export type MyNotificationsInput = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  unreadOnly?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+export type MyProjectMembership = {
+  __typename?: 'MyProjectMembership';
+  accountId?: Maybe<Scalars['ID']['output']>;
+  displayName?: Maybe<Scalars['String']['output']>;
+  joinedAt: Scalars['Date']['output'];
+  metadata: Scalars['JSON']['output'];
+  organizationId?: Maybe<Scalars['ID']['output']>;
+  organizationName?: Maybe<Scalars['String']['output']>;
+  pictureUrl?: Maybe<Scalars['String']['output']>;
+  projectId: Scalars['ID']['output'];
+  projectName: Scalars['String']['output'];
+  role?: Maybe<Scalars['String']['output']>;
+};
+
 export type MyUserSessionsInput = {
   audience?: InputMaybe<Scalars['String']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
   page?: InputMaybe<Scalars['Int']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
 };
+
+export type Notification = {
+  __typename?: 'Notification';
+  body?: Maybe<Scalars['String']['output']>;
+  category: Scalars['String']['output'];
+  channel: NotificationChannel;
+  createdAt: Scalars['Date']['output'];
+  eventId: Scalars['ID']['output'];
+  id: Scalars['ID']['output'];
+  readAt?: Maybe<Scalars['Date']['output']>;
+  refEntity?: Maybe<Scalars['String']['output']>;
+  refId?: Maybe<Scalars['ID']['output']>;
+  scope?: Maybe<NotificationEventScope>;
+  seenAt?: Maybe<Scalars['Date']['output']>;
+  status: NotificationStatus;
+  title: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+};
+
+export enum NotificationChannel {
+  Email = 'email',
+  InApp = 'in_app',
+}
+
+export type NotificationEventScope = {
+  __typename?: 'NotificationEventScope';
+  id: Scalars['ID']['output'];
+  tenant: Scalars['String']['output'];
+};
+
+export type NotificationPage = {
+  __typename?: 'NotificationPage';
+  hasNextPage: Scalars['Boolean']['output'];
+  notifications: Array<Notification>;
+  totalCount: Scalars['Int']['output'];
+  unreadCount: Scalars['Int']['output'];
+};
+
+export type NotificationPreference = {
+  __typename?: 'NotificationPreference';
+  category: Scalars['String']['output'];
+  channel: NotificationChannel;
+  enabled: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  scopeId: Scalars['String']['output'];
+  scopeTenant: Scalars['String']['output'];
+  source: NotificationPreferenceSource;
+};
+
+export enum NotificationPreferenceSource {
+  OrgEnforced = 'org_enforced',
+  User = 'user',
+}
+
+export enum NotificationStatus {
+  Dead = 'dead',
+  Delivered = 'delivered',
+  Failed = 'failed',
+  Pending = 'pending',
+}
 
 export type Organization = Auditable & {
   __typename?: 'Organization';
@@ -2011,6 +2172,13 @@ export type Query = {
   me: MeResponse;
   myMfaDevices: Array<MfaDevice>;
   myMfaRecoveryCodeStatus: MfaRecoveryCodeStatus;
+  myNotificationPreferences: Array<NotificationPreference>;
+  myNotifications: NotificationPage;
+  /** A single project membership for the authenticated user. */
+  myProjectMembership?: Maybe<MyProjectMembership>;
+  /** Project memberships for the authenticated user (project_users pivots). */
+  myProjectMemberships: Array<MyProjectMembership>;
+  myUnreadNotificationCount: UnreadNotificationCount;
   myUserAuthenticationMethods: Array<UserAuthenticationMethod>;
   myUserDataExport: UserDataExport;
   myUserSessions: UserSessionPage;
@@ -2042,6 +2210,12 @@ export type Query = {
   signingKeys: Array<SigningKey>;
   tags: TagPage;
   users: UserPage;
+  /** List delivery attempts for a project (optionally filtered by subscription or status). */
+  webhookDeliveries: WebhookDeliveryPage;
+  /** Get a single webhook subscription by id. */
+  webhookSubscription: WebhookSubscription;
+  /** List webhook subscriptions for a project scope. */
+  webhookSubscriptions: Array<WebhookSubscription>;
 };
 
 export type QueryApiKeysArgs = {
@@ -2069,6 +2243,18 @@ export type QueryInvitationArgs = {
 
 export type QueryIsAuthorizedArgs = {
   input: IsAuthorizedInput;
+};
+
+export type QueryMyNotificationPreferencesArgs = {
+  scopeTenant: Scalars['String']['input'];
+};
+
+export type QueryMyNotificationsArgs = {
+  input?: InputMaybe<MyNotificationsInput>;
+};
+
+export type QueryMyProjectMembershipArgs = {
+  projectId: Scalars['ID']['input'];
 };
 
 export type QueryMyUserSessionsArgs = {
@@ -2191,6 +2377,23 @@ export type QueryUsersArgs = {
   search?: InputMaybe<Scalars['String']['input']>;
   sort?: InputMaybe<UserSortInput>;
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
+export type QueryWebhookDeliveriesArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  scope: Scope;
+  status?: InputMaybe<WebhookDeliveryStatus>;
+  subscriptionId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type QueryWebhookSubscriptionArgs = {
+  id: Scalars['ID']['input'];
+  scope: Scope;
+};
+
+export type QueryWebhookSubscriptionsArgs = {
+  scope: Scope;
 };
 
 export type QueryAccountProjectApiKeysInput = {
@@ -2574,6 +2777,11 @@ export type RemoveUserTagInput = {
   userId: Scalars['ID']['input'];
 };
 
+export type ReplayWebhookDeliveryInput = {
+  deliveryId: Scalars['ID']['input'];
+  scope: Scope;
+};
+
 export type RequestPasswordResetInput = {
   email: Scalars['String']['input'];
 };
@@ -2828,6 +3036,16 @@ export type RoleTagTagArgs = {
   scope: Scope;
 };
 
+export type RotateApiKeyInput = {
+  id: Scalars['ID']['input'];
+  scope: Scope;
+};
+
+export type RotateWebhookSubscriptionSecretInput = {
+  id: Scalars['ID']['input'];
+  scope: Scope;
+};
+
 export type Scope = {
   id: Scalars['ID']['input'];
   tenant: Tenant;
@@ -2847,6 +3065,15 @@ export type SessionExportData = {
   ipAddress?: Maybe<Scalars['String']['output']>;
   lastUsedAt?: Maybe<Scalars['Date']['output']>;
   userAgent?: Maybe<Scalars['String']['output']>;
+};
+
+export type SetMyNotificationPreferenceInput = {
+  /** Notification preference category (security, iam, membership, integrations). */
+  category: Scalars['String']['input'];
+  channel: NotificationChannel;
+  enabled: Scalars['Boolean']['input'];
+  scopeId?: InputMaybe<Scalars['String']['input']>;
+  scopeTenant: Scalars['String']['input'];
 };
 
 export type SetMyPrimaryMfaDeviceInput = {
@@ -3009,6 +3236,11 @@ export enum TokenType {
   System = 'system',
 }
 
+export type UnreadNotificationCount = {
+  __typename?: 'UnreadNotificationCount';
+  unreadCount: Scalars['Int']['output'];
+};
+
 export type UpdateAccountProjectTagInput = {
   accountId: Scalars['ID']['input'];
   isPrimary: Scalars['Boolean']['input'];
@@ -3036,6 +3268,12 @@ export type UpdateGroupTagInput = {
   groupId: Scalars['ID']['input'];
   isPrimary: Scalars['Boolean']['input'];
   tagId: Scalars['ID']['input'];
+};
+
+export type UpdateMyProjectMembershipInput = {
+  displayName?: InputMaybe<Scalars['String']['input']>;
+  pictureUrl?: InputMaybe<Scalars['String']['input']>;
+  projectId: Scalars['ID']['input'];
 };
 
 export type UpdateMyUserAuthenticationMethodInput = {
@@ -3211,6 +3449,21 @@ export type UpdateUserTagInput = {
   isPrimary: Scalars['Boolean']['input'];
   tagId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
+};
+
+export type UpdateWebhookSubscriptionMutationInput = {
+  active?: InputMaybe<Scalars['Boolean']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  eventTypes?: InputMaybe<Array<Scalars['String']['input']>>;
+  scope: Scope;
+  url?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UploadMyProjectMembershipPictureInput = {
+  contentType: Scalars['String']['input'];
+  file: Scalars['String']['input'];
+  filename: Scalars['String']['input'];
+  projectId: Scalars['ID']['input'];
 };
 
 export type UploadMyUserPictureInput = {
@@ -3501,6 +3754,65 @@ export type VerifyMyMfaEnrollmentInput = {
   code: Scalars['String']['input'];
 };
 
+export type WebhookDeliveryAttempt = {
+  __typename?: 'WebhookDeliveryAttempt';
+  attemptCount: Scalars['Int']['output'];
+  createdAt: Scalars['Date']['output'];
+  deliveredAt?: Maybe<Scalars['Date']['output']>;
+  errorDetails?: Maybe<Scalars['JSON']['output']>;
+  eventId: Scalars['ID']['output'];
+  id: Scalars['ID']['output'];
+  lastResponseStatus?: Maybe<Scalars['Int']['output']>;
+  nextRetryAt?: Maybe<Scalars['Date']['output']>;
+  status: WebhookDeliveryStatus;
+  subscriptionId: Scalars['ID']['output'];
+  updatedAt: Scalars['Date']['output'];
+};
+
+export type WebhookDeliveryPage = {
+  __typename?: 'WebhookDeliveryPage';
+  hasNextPage: Scalars['Boolean']['output'];
+  items: Array<WebhookDeliveryAttempt>;
+  totalCount: Scalars['Int']['output'];
+};
+
+export enum WebhookDeliveryStatus {
+  Dead = 'dead',
+  Delivered = 'delivered',
+  Failed = 'failed',
+  Pending = 'pending',
+  Running = 'running',
+}
+
+export type WebhookSubscription = {
+  __typename?: 'WebhookSubscription';
+  active: Scalars['Boolean']['output'];
+  createdAt: Scalars['Date']['output'];
+  createdById?: Maybe<Scalars['ID']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  eventTypes: Array<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  projectId: Scalars['ID']['output'];
+  updatedAt: Scalars['Date']['output'];
+  url: Scalars['String']['output'];
+};
+
+/** Returned only at creation or secret rotation. Store the secret immediately. */
+export type WebhookSubscriptionWithSecret = {
+  __typename?: 'WebhookSubscriptionWithSecret';
+  active: Scalars['Boolean']['output'];
+  createdAt: Scalars['Date']['output'];
+  createdById?: Maybe<Scalars['ID']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  eventTypes: Array<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  projectId: Scalars['ID']['output'];
+  /** Plaintext signing secret. Shown once; never returned by list/get/update. */
+  secret: Scalars['String']['output'];
+  updatedAt: Scalars['Date']['output'];
+  url: Scalars['String']['output'];
+};
+
 export type WithIndex<TObject> = TObject & Record<string, any>;
 export type ResolversObject<TObject> = WithIndex<TObject>;
 
@@ -3759,11 +4071,13 @@ export type ResolversTypes = ResolversObject<{
   CreateUserAuthenticationMethodInput: CreateUserAuthenticationMethodInput;
   CreateUserInput: CreateUserInput;
   CreateUserSessionInput: CreateUserSessionInput;
+  CreateWebhookSubscriptionMutationInput: CreateWebhookSubscriptionMutationInput;
   Date: ResolverTypeWrapper<Scalars['Date']['output']>;
   DeleteApiKeyInput: DeleteApiKeyInput;
   DeleteMyAccountsInput: DeleteMyAccountsInput;
   DeleteUserAuthenticationMethodInput: DeleteUserAuthenticationMethodInput;
   DeleteUserSessionInput: DeleteUserSessionInput;
+  DeleteWebhookSubscriptionInput: DeleteWebhookSubscriptionInput;
   EmailVerificationProofInput: EmailVerificationProofInput;
   EmailVerificationProofType: EmailVerificationProofType;
   ExchangeApiKeyInput: ExchangeApiKeyInput;
@@ -3789,6 +4103,7 @@ export type ResolversTypes = ResolversObject<{
   LoginInput: LoginInput;
   LoginResponse: ResolverTypeWrapper<LoginResponse>;
   LogoutMyUserResponse: ResolverTypeWrapper<LogoutMyUserResponse>;
+  MarkAllNotificationsReadResult: ResolverTypeWrapper<MarkAllNotificationsReadResult>;
   MeResponse: ResolverTypeWrapper<MeResponse>;
   MemberType: MemberType;
   MfaDevice: ResolverTypeWrapper<MfaDevice>;
@@ -3798,7 +4113,16 @@ export type ResolversTypes = ResolversObject<{
   MfaVerifyResponse: ResolverTypeWrapper<MfaVerifyResponse>;
   MfaVerifyResult: ResolverTypeWrapper<MfaVerifyResult>;
   Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
+  MyNotificationsInput: MyNotificationsInput;
+  MyProjectMembership: ResolverTypeWrapper<MyProjectMembership>;
   MyUserSessionsInput: MyUserSessionsInput;
+  Notification: ResolverTypeWrapper<Notification>;
+  NotificationChannel: NotificationChannel;
+  NotificationEventScope: ResolverTypeWrapper<NotificationEventScope>;
+  NotificationPage: ResolverTypeWrapper<NotificationPage>;
+  NotificationPreference: ResolverTypeWrapper<NotificationPreference>;
+  NotificationPreferenceSource: NotificationPreferenceSource;
+  NotificationStatus: NotificationStatus;
   Organization: ResolverTypeWrapper<Organization>;
   OrganizationGroup: ResolverTypeWrapper<OrganizationGroup>;
   OrganizationInvitation: ResolverTypeWrapper<OrganizationInvitation>;
@@ -3937,6 +4261,7 @@ export type ResolversTypes = ResolversObject<{
   RemoveUserGroupInput: RemoveUserGroupInput;
   RemoveUserRoleInput: RemoveUserRoleInput;
   RemoveUserTagInput: RemoveUserTagInput;
+  ReplayWebhookDeliveryInput: ReplayWebhookDeliveryInput;
   RequestPasswordResetInput: RequestPasswordResetInput;
   RequestPasswordResetResponse: ResolverTypeWrapper<RequestPasswordResetResponse>;
   ResendVerificationInput: ResendVerificationInput;
@@ -3963,9 +4288,12 @@ export type ResolversTypes = ResolversObject<{
   RoleSortInput: RoleSortInput;
   RoleSortableField: RoleSortableField;
   RoleTag: ResolverTypeWrapper<RoleTag>;
+  RotateApiKeyInput: RotateApiKeyInput;
+  RotateWebhookSubscriptionSecretInput: RotateWebhookSubscriptionSecretInput;
   Scope: Scope;
   Searchable: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['Searchable']>;
   SessionExportData: ResolverTypeWrapper<SessionExportData>;
+  SetMyNotificationPreferenceInput: SetMyNotificationPreferenceInput;
   SetMyPrimaryMfaDeviceInput: SetMyPrimaryMfaDeviceInput;
   SigningKey: ResolverTypeWrapper<SigningKey>;
   SortOrder: SortOrder;
@@ -3981,10 +4309,12 @@ export type ResolversTypes = ResolversObject<{
   TagSortInput: TagSortInput;
   Tenant: Tenant;
   TokenType: TokenType;
+  UnreadNotificationCount: ResolverTypeWrapper<UnreadNotificationCount>;
   UpdateAccountProjectTagInput: UpdateAccountProjectTagInput;
   UpdateAccountTagInput: UpdateAccountTagInput;
   UpdateGroupInput: UpdateGroupInput;
   UpdateGroupTagInput: UpdateGroupTagInput;
+  UpdateMyProjectMembershipInput: UpdateMyProjectMembershipInput;
   UpdateMyUserAuthenticationMethodInput: UpdateMyUserAuthenticationMethodInput;
   UpdateMyUserInput: UpdateMyUserInput;
   UpdateOrganizationInput: UpdateOrganizationInput;
@@ -4007,6 +4337,8 @@ export type ResolversTypes = ResolversObject<{
   UpdateUserInput: UpdateUserInput;
   UpdateUserSessionInput: UpdateUserSessionInput;
   UpdateUserTagInput: UpdateUserTagInput;
+  UpdateWebhookSubscriptionMutationInput: UpdateWebhookSubscriptionMutationInput;
+  UploadMyProjectMembershipPictureInput: UploadMyProjectMembershipPictureInput;
   UploadMyUserPictureInput: UploadMyUserPictureInput;
   UploadUserPictureInput: UploadUserPictureInput;
   UploadUserPictureResult: ResolverTypeWrapper<UploadUserPictureResult>;
@@ -4037,6 +4369,11 @@ export type ResolversTypes = ResolversObject<{
   VerifyMfaInput: VerifyMfaInput;
   VerifyMfaRecoveryCodeInput: VerifyMfaRecoveryCodeInput;
   VerifyMyMfaEnrollmentInput: VerifyMyMfaEnrollmentInput;
+  WebhookDeliveryAttempt: ResolverTypeWrapper<WebhookDeliveryAttempt>;
+  WebhookDeliveryPage: ResolverTypeWrapper<WebhookDeliveryPage>;
+  WebhookDeliveryStatus: WebhookDeliveryStatus;
+  WebhookSubscription: ResolverTypeWrapper<WebhookSubscription>;
+  WebhookSubscriptionWithSecret: ResolverTypeWrapper<WebhookSubscriptionWithSecret>;
 }>;
 
 /** Mapping between all available schema types and the resolvers parents */
@@ -4118,11 +4455,13 @@ export type ResolversParentTypes = ResolversObject<{
   CreateUserAuthenticationMethodInput: CreateUserAuthenticationMethodInput;
   CreateUserInput: CreateUserInput;
   CreateUserSessionInput: CreateUserSessionInput;
+  CreateWebhookSubscriptionMutationInput: CreateWebhookSubscriptionMutationInput;
   Date: Scalars['Date']['output'];
   DeleteApiKeyInput: DeleteApiKeyInput;
   DeleteMyAccountsInput: DeleteMyAccountsInput;
   DeleteUserAuthenticationMethodInput: DeleteUserAuthenticationMethodInput;
   DeleteUserSessionInput: DeleteUserSessionInput;
+  DeleteWebhookSubscriptionInput: DeleteWebhookSubscriptionInput;
   EmailVerificationProofInput: EmailVerificationProofInput;
   ExchangeApiKeyInput: ExchangeApiKeyInput;
   ExchangeApiKeyResult: ExchangeApiKeyResult;
@@ -4145,6 +4484,7 @@ export type ResolversParentTypes = ResolversObject<{
   LoginInput: LoginInput;
   LoginResponse: LoginResponse;
   LogoutMyUserResponse: LogoutMyUserResponse;
+  MarkAllNotificationsReadResult: MarkAllNotificationsReadResult;
   MeResponse: MeResponse;
   MfaDevice: MfaDevice;
   MfaEnrollment: MfaEnrollment;
@@ -4153,7 +4493,13 @@ export type ResolversParentTypes = ResolversObject<{
   MfaVerifyResponse: MfaVerifyResponse;
   MfaVerifyResult: MfaVerifyResult;
   Mutation: Record<PropertyKey, never>;
+  MyNotificationsInput: MyNotificationsInput;
+  MyProjectMembership: MyProjectMembership;
   MyUserSessionsInput: MyUserSessionsInput;
+  Notification: Notification;
+  NotificationEventScope: NotificationEventScope;
+  NotificationPage: NotificationPage;
+  NotificationPreference: NotificationPreference;
   Organization: Organization;
   OrganizationGroup: OrganizationGroup;
   OrganizationInvitation: OrganizationInvitation;
@@ -4274,6 +4620,7 @@ export type ResolversParentTypes = ResolversObject<{
   RemoveUserGroupInput: RemoveUserGroupInput;
   RemoveUserRoleInput: RemoveUserRoleInput;
   RemoveUserTagInput: RemoveUserTagInput;
+  ReplayWebhookDeliveryInput: ReplayWebhookDeliveryInput;
   RequestPasswordResetInput: RequestPasswordResetInput;
   RequestPasswordResetResponse: RequestPasswordResetResponse;
   ResendVerificationInput: ResendVerificationInput;
@@ -4296,9 +4643,12 @@ export type ResolversParentTypes = ResolversObject<{
   RolePermission: RolePermission;
   RoleSortInput: RoleSortInput;
   RoleTag: RoleTag;
+  RotateApiKeyInput: RotateApiKeyInput;
+  RotateWebhookSubscriptionSecretInput: RotateWebhookSubscriptionSecretInput;
   Scope: Scope;
   Searchable: ResolversInterfaceTypes<ResolversParentTypes>['Searchable'];
   SessionExportData: SessionExportData;
+  SetMyNotificationPreferenceInput: SetMyNotificationPreferenceInput;
   SetMyPrimaryMfaDeviceInput: SetMyPrimaryMfaDeviceInput;
   SigningKey: SigningKey;
   StartProjectExportInput: StartProjectExportInput;
@@ -4309,10 +4659,12 @@ export type ResolversParentTypes = ResolversObject<{
   TagCdmInput: TagCdmInput;
   TagPage: TagPage;
   TagSortInput: TagSortInput;
+  UnreadNotificationCount: UnreadNotificationCount;
   UpdateAccountProjectTagInput: UpdateAccountProjectTagInput;
   UpdateAccountTagInput: UpdateAccountTagInput;
   UpdateGroupInput: UpdateGroupInput;
   UpdateGroupTagInput: UpdateGroupTagInput;
+  UpdateMyProjectMembershipInput: UpdateMyProjectMembershipInput;
   UpdateMyUserAuthenticationMethodInput: UpdateMyUserAuthenticationMethodInput;
   UpdateMyUserInput: UpdateMyUserInput;
   UpdateOrganizationInput: UpdateOrganizationInput;
@@ -4335,6 +4687,8 @@ export type ResolversParentTypes = ResolversObject<{
   UpdateUserInput: UpdateUserInput;
   UpdateUserSessionInput: UpdateUserSessionInput;
   UpdateUserTagInput: UpdateUserTagInput;
+  UpdateWebhookSubscriptionMutationInput: UpdateWebhookSubscriptionMutationInput;
+  UploadMyProjectMembershipPictureInput: UploadMyProjectMembershipPictureInput;
   UploadMyUserPictureInput: UploadMyUserPictureInput;
   UploadUserPictureInput: UploadUserPictureInput;
   UploadUserPictureResult: UploadUserPictureResult;
@@ -4359,6 +4713,10 @@ export type ResolversParentTypes = ResolversObject<{
   VerifyMfaInput: VerifyMfaInput;
   VerifyMfaRecoveryCodeInput: VerifyMfaRecoveryCodeInput;
   VerifyMyMfaEnrollmentInput: VerifyMyMfaEnrollmentInput;
+  WebhookDeliveryAttempt: WebhookDeliveryAttempt;
+  WebhookDeliveryPage: WebhookDeliveryPage;
+  WebhookSubscription: WebhookSubscription;
+  WebhookSubscriptionWithSecret: WebhookSubscriptionWithSecret;
 }>;
 
 export type AcceptInvitationResultResolvers<
@@ -4802,6 +5160,14 @@ export type LogoutMyUserResponseResolvers<
   message?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
+export type MarkAllNotificationsReadResultResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['MarkAllNotificationsReadResult'] =
+    ResolversParentTypes['MarkAllNotificationsReadResult'],
+> = ResolversObject<{
+  updated?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+}>;
+
 export type MeResponseResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['MeResponse'] = ResolversParentTypes['MeResponse'],
@@ -4978,6 +5344,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationCreateUserArgs, 'input'>
   >;
+  createWebhookSubscription?: Resolver<
+    ResolversTypes['WebhookSubscriptionWithSecret'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateWebhookSubscriptionArgs, 'input'>
+  >;
   deleteApiKey?: Resolver<
     ResolversTypes['ApiKey'],
     ParentType,
@@ -5050,6 +5422,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationDeleteUserArgs, 'id' | 'scope'>
   >;
+  deleteWebhookSubscription?: Resolver<
+    ResolversTypes['Boolean'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteWebhookSubscriptionArgs, 'input'>
+  >;
   exchangeApiKey?: Resolver<
     ResolversTypes['ExchangeApiKeyResult'],
     ParentType,
@@ -5075,6 +5453,17 @@ export type MutationResolvers<
     RequireFields<MutationLoginArgs, 'input'>
   >;
   logoutMyUser?: Resolver<ResolversTypes['LogoutMyUserResponse'], ParentType, ContextType>;
+  markAllMyNotificationsRead?: Resolver<
+    ResolversTypes['MarkAllNotificationsReadResult'],
+    ParentType,
+    ContextType
+  >;
+  markMyNotificationRead?: Resolver<
+    ResolversTypes['Boolean'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationMarkMyNotificationReadArgs, 'id'>
+  >;
   refreshSession?: Resolver<ResolversTypes['RefreshSessionResponse'], ParentType, ContextType>;
   register?: Resolver<
     ResolversTypes['CreateAccountResult'],
@@ -5099,6 +5488,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationRenewInvitationArgs, 'id' | 'scope'>
+  >;
+  replayWebhookDelivery?: Resolver<
+    ResolversTypes['WebhookDeliveryAttempt'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationReplayWebhookDeliveryArgs, 'input'>
   >;
   requestPasswordReset?: Resolver<
     ResolversTypes['RequestPasswordResetResponse'],
@@ -5154,11 +5549,29 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationRevokeUserPermissionArgs, 'input'>
   >;
+  rotateApiKey?: Resolver<
+    ResolversTypes['CreateApiKeyResult'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationRotateApiKeyArgs, 'input'>
+  >;
   rotateSigningKey?: Resolver<
     ResolversTypes['SigningKey'],
     ParentType,
     ContextType,
     RequireFields<MutationRotateSigningKeyArgs, 'scope'>
+  >;
+  rotateWebhookSubscriptionSecret?: Resolver<
+    ResolversTypes['WebhookSubscriptionWithSecret'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationRotateWebhookSubscriptionSecretArgs, 'input'>
+  >;
+  setMyNotificationPreference?: Resolver<
+    ResolversTypes['NotificationPreference'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationSetMyNotificationPreferenceArgs, 'input'>
   >;
   setMyPrimaryAuthenticationMethod?: Resolver<
     ResolversTypes['UserAuthenticationMethod'],
@@ -5190,6 +5603,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationUpdateGroupArgs, 'id' | 'input'>
+  >;
+  updateMyProjectMembership?: Resolver<
+    ResolversTypes['MyProjectMembership'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateMyProjectMembershipArgs, 'input'>
   >;
   updateMyUser?: Resolver<
     ResolversTypes['User'],
@@ -5251,6 +5670,18 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationUpdateUserArgs, 'id' | 'input'>
   >;
+  updateWebhookSubscription?: Resolver<
+    ResolversTypes['WebhookSubscription'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateWebhookSubscriptionArgs, 'id' | 'input'>
+  >;
+  uploadMyProjectMembershipPicture?: Resolver<
+    ResolversTypes['UploadUserPictureResult'],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUploadMyProjectMembershipPictureArgs, 'input'>
+  >;
   uploadMyUserPicture?: Resolver<
     ResolversTypes['UploadUserPictureResult'],
     ParentType,
@@ -5287,6 +5718,77 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationVerifyMyMfaEnrollmentArgs, 'input'>
   >;
+}>;
+
+export type MyProjectMembershipResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['MyProjectMembership'] =
+    ResolversParentTypes['MyProjectMembership'],
+> = ResolversObject<{
+  accountId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  displayName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  joinedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  metadata?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
+  organizationId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  organizationName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  pictureUrl?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  projectName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  role?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+}>;
+
+export type NotificationResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['Notification'] = ResolversParentTypes['Notification'],
+> = ResolversObject<{
+  body?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  category?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  channel?: Resolver<ResolversTypes['NotificationChannel'], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  eventId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  readAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  refEntity?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  refId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  scope?: Resolver<Maybe<ResolversTypes['NotificationEventScope']>, ParentType, ContextType>;
+  seenAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  status?: Resolver<ResolversTypes['NotificationStatus'], ParentType, ContextType>;
+  title?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+}>;
+
+export type NotificationEventScopeResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['NotificationEventScope'] =
+    ResolversParentTypes['NotificationEventScope'],
+> = ResolversObject<{
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  tenant?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+}>;
+
+export type NotificationPageResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['NotificationPage'] =
+    ResolversParentTypes['NotificationPage'],
+> = ResolversObject<{
+  hasNextPage?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  notifications?: Resolver<Array<ResolversTypes['Notification']>, ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  unreadCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+}>;
+
+export type NotificationPreferenceResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['NotificationPreference'] =
+    ResolversParentTypes['NotificationPreference'],
+> = ResolversObject<{
+  category?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  channel?: Resolver<ResolversTypes['NotificationChannel'], ParentType, ContextType>;
+  enabled?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  scopeId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  scopeTenant?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  source?: Resolver<ResolversTypes['NotificationPreferenceSource'], ParentType, ContextType>;
 }>;
 
 export type OrganizationResolvers<
@@ -5955,6 +6457,34 @@ export type QueryResolvers<
     ParentType,
     ContextType
   >;
+  myNotificationPreferences?: Resolver<
+    Array<ResolversTypes['NotificationPreference']>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryMyNotificationPreferencesArgs, 'scopeTenant'>
+  >;
+  myNotifications?: Resolver<
+    ResolversTypes['NotificationPage'],
+    ParentType,
+    ContextType,
+    Partial<QueryMyNotificationsArgs>
+  >;
+  myProjectMembership?: Resolver<
+    Maybe<ResolversTypes['MyProjectMembership']>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryMyProjectMembershipArgs, 'projectId'>
+  >;
+  myProjectMemberships?: Resolver<
+    Array<ResolversTypes['MyProjectMembership']>,
+    ParentType,
+    ContextType
+  >;
+  myUnreadNotificationCount?: Resolver<
+    ResolversTypes['UnreadNotificationCount'],
+    ParentType,
+    ContextType
+  >;
   myUserAuthenticationMethods?: Resolver<
     Array<ResolversTypes['UserAuthenticationMethod']>,
     ParentType,
@@ -6044,6 +6574,24 @@ export type QueryResolvers<
     ParentType,
     ContextType,
     RequireFields<QueryUsersArgs, 'scope'>
+  >;
+  webhookDeliveries?: Resolver<
+    ResolversTypes['WebhookDeliveryPage'],
+    ParentType,
+    ContextType,
+    RequireFields<QueryWebhookDeliveriesArgs, 'scope'>
+  >;
+  webhookSubscription?: Resolver<
+    ResolversTypes['WebhookSubscription'],
+    ParentType,
+    ContextType,
+    RequireFields<QueryWebhookSubscriptionArgs, 'id' | 'scope'>
+  >;
+  webhookSubscriptions?: Resolver<
+    Array<ResolversTypes['WebhookSubscription']>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryWebhookSubscriptionsArgs, 'scope'>
   >;
 }>;
 
@@ -6350,6 +6898,14 @@ export type TagPageResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type UnreadNotificationCountResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['UnreadNotificationCount'] =
+    ResolversParentTypes['UnreadNotificationCount'],
+> = ResolversObject<{
+  unreadCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+}>;
+
 export type UploadUserPictureResultResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['UploadUserPictureResult'] =
@@ -6608,6 +7164,67 @@ export type VerifyEmailResponseResolvers<
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
 }>;
 
+export type WebhookDeliveryAttemptResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['WebhookDeliveryAttempt'] =
+    ResolversParentTypes['WebhookDeliveryAttempt'],
+> = ResolversObject<{
+  attemptCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  deliveredAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  errorDetails?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
+  eventId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  lastResponseStatus?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  nextRetryAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  status?: Resolver<ResolversTypes['WebhookDeliveryStatus'], ParentType, ContextType>;
+  subscriptionId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+}>;
+
+export type WebhookDeliveryPageResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['WebhookDeliveryPage'] =
+    ResolversParentTypes['WebhookDeliveryPage'],
+> = ResolversObject<{
+  hasNextPage?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  items?: Resolver<Array<ResolversTypes['WebhookDeliveryAttempt']>, ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+}>;
+
+export type WebhookSubscriptionResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['WebhookSubscription'] =
+    ResolversParentTypes['WebhookSubscription'],
+> = ResolversObject<{
+  active?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  createdById?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  eventTypes?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  url?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+}>;
+
+export type WebhookSubscriptionWithSecretResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['WebhookSubscriptionWithSecret'] =
+    ResolversParentTypes['WebhookSubscriptionWithSecret'],
+> = ResolversObject<{
+  active?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  createdById?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  eventTypes?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  secret?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  url?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+}>;
+
 export type Resolvers<ContextType = any> = ResolversObject<{
   AcceptInvitationResult?: AcceptInvitationResultResolvers<ContextType>;
   Account?: AccountResolvers<ContextType>;
@@ -6638,6 +7255,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   JSON?: GraphQLScalarType;
   LoginResponse?: LoginResponseResolvers<ContextType>;
   LogoutMyUserResponse?: LogoutMyUserResponseResolvers<ContextType>;
+  MarkAllNotificationsReadResult?: MarkAllNotificationsReadResultResolvers<ContextType>;
   MeResponse?: MeResponseResolvers<ContextType>;
   MfaDevice?: MfaDeviceResolvers<ContextType>;
   MfaEnrollment?: MfaEnrollmentResolvers<ContextType>;
@@ -6646,6 +7264,11 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   MfaVerifyResponse?: MfaVerifyResponseResolvers<ContextType>;
   MfaVerifyResult?: MfaVerifyResultResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
+  MyProjectMembership?: MyProjectMembershipResolvers<ContextType>;
+  Notification?: NotificationResolvers<ContextType>;
+  NotificationEventScope?: NotificationEventScopeResolvers<ContextType>;
+  NotificationPage?: NotificationPageResolvers<ContextType>;
+  NotificationPreference?: NotificationPreferenceResolvers<ContextType>;
   Organization?: OrganizationResolvers<ContextType>;
   OrganizationGroup?: OrganizationGroupResolvers<ContextType>;
   OrganizationInvitation?: OrganizationInvitationResolvers<ContextType>;
@@ -6703,6 +7326,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   SyncProjectResult?: SyncProjectResultResolvers<ContextType>;
   Tag?: TagResolvers<ContextType>;
   TagPage?: TagPageResolvers<ContextType>;
+  UnreadNotificationCount?: UnreadNotificationCountResolvers<ContextType>;
   UploadUserPictureResult?: UploadUserPictureResultResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
   UserAuthenticationMethod?: UserAuthenticationMethodResolvers<ContextType>;
@@ -6716,4 +7340,8 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   UserSessionPage?: UserSessionPageResolvers<ContextType>;
   UserTag?: UserTagResolvers<ContextType>;
   VerifyEmailResponse?: VerifyEmailResponseResolvers<ContextType>;
+  WebhookDeliveryAttempt?: WebhookDeliveryAttemptResolvers<ContextType>;
+  WebhookDeliveryPage?: WebhookDeliveryPageResolvers<ContextType>;
+  WebhookSubscription?: WebhookSubscriptionResolvers<ContextType>;
+  WebhookSubscriptionWithSecret?: WebhookSubscriptionWithSecretResolvers<ContextType>;
 }>;

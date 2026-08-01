@@ -1,0 +1,6 @@
+input UploadMyProjectMembershipPictureInput {
+  projectId: ID!
+  file: String!
+  filename: String!
+  contentType: String!
+}

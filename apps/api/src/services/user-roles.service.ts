@@ -1,5 +1,6 @@
 import type {
   IAuditLogger,
+  IEventPublisher,
   IRoleRepository,
   IUserRepository,
   IUserRoleRepository,
@@ -29,8 +30,17 @@ export class UserRoleService implements IUserRoleService {
     private readonly userRepository: IUserRepository,
     private readonly roleRepository: IRoleRepository,
     private readonly userRoleRepository: IUserRoleRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
+
+  private async getRoleName(
+    roleId: string,
+    transaction?: Transaction
+  ): Promise<string | undefined> {
+    const { roles } = await this.roleRepository.getRoles({ ids: [roleId], limit: 1 }, transaction);
+    return roles[0]?.name;
+  }
 
   private async userExists(userId: string, transaction?: Transaction): Promise<void> {
     const users = await this.userRepository.getUsers({ ids: [userId], limit: 1 }, transaction);
@@ -122,10 +132,13 @@ export class UserRoleService implements IUserRoleService {
 
     const userRole = await this.userRoleRepository.addUserRole(validatedParams, transaction);
 
+    const roleName = await this.getRoleName(roleId, transaction);
+
     const newValues = {
       id: userRole.id,
       userId: userRole.userId,
       roleId: userRole.roleId,
+      roleName,
       createdAt: userRole.createdAt,
       updatedAt: userRole.updatedAt,
     };
@@ -135,6 +148,16 @@ export class UserRoleService implements IUserRoleService {
     };
 
     await this.audit.logCreate(userRole.id, newValues, metadata, transaction);
+
+    await this.events.publish(
+      {
+        type: 'user.role_assigned',
+        aggregate: { kind: 'userRole', id: userRole.id },
+        subjectUserId: userRole.userId,
+        data: { after: newValues },
+      },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(userRoleSchema), userRole, context);
   }
@@ -163,6 +186,7 @@ export class UserRoleService implements IUserRoleService {
       id: userRole.id,
       userId: userRole.userId,
       roleId: userRole.roleId,
+      roleName: await this.getRoleName(roleId, transaction),
       createdAt: userRole.createdAt,
       updatedAt: userRole.updatedAt,
     };
@@ -182,6 +206,16 @@ export class UserRoleService implements IUserRoleService {
     } else {
       await this.audit.logSoftDelete(userRole.id, oldValues, newValues, metadata, transaction);
     }
+
+    await this.events.publish(
+      {
+        type: 'user.role_revoked',
+        aggregate: { kind: 'userRole', id: userRole.id },
+        subjectUserId: userRole.userId,
+        data: { before: oldValues },
+      },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(userRoleSchema), userRole, context);
   }

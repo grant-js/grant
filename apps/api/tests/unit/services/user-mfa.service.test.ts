@@ -17,7 +17,12 @@ const mockAudit = {
 };
 
 function createService(): UserMfaService {
-  return new UserMfaService(mockFactorRepo as never, mockRecoveryRepo as never, mockAudit as never);
+  return new UserMfaService(
+    mockFactorRepo as never,
+    mockRecoveryRepo as never,
+    mockAudit as never,
+    { publish: vi.fn() } as never
+  );
 }
 
 describe('UserMfaService removeDevice', () => {

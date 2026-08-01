@@ -1,0 +1,31 @@
+query WebhookDeliveries(
+  $scope: Scope!
+  $subscriptionId: ID
+  $status: WebhookDeliveryStatus
+  $page: Int
+  $limit: Int
+) {
+  webhookDeliveries(
+    scope: $scope
+    subscriptionId: $subscriptionId
+    status: $status
+    page: $page
+    limit: $limit
+  ) {
+    items {
+      id
+      eventId
+      subscriptionId
+      status
+      attemptCount
+      nextRetryAt
+      lastResponseStatus
+      errorDetails
+      deliveredAt
+      createdAt
+      updatedAt
+    }
+    totalCount
+    hasNextPage
+  }
+}

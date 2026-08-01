@@ -1,5 +1,6 @@
 import type {
   IAuditLogger,
+  IEventPublisher,
   IGroupRepository,
   IRoleGroupRepository,
   IRoleGroupService,
@@ -29,7 +30,8 @@ export class RoleGroupService implements IRoleGroupService {
     private readonly roleRepository: IRoleRepository,
     private readonly groupRepository: IGroupRepository,
     private readonly roleGroupRepository: IRoleGroupRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   private async roleExists(roleId: string, transaction?: Transaction): Promise<void> {
@@ -128,6 +130,15 @@ export class RoleGroupService implements IRoleGroupService {
 
     await this.audit.logCreate(roleGroup.id, newValues, metadata, transaction);
 
+    await this.events.publish(
+      {
+        type: 'role.group_assigned',
+        aggregate: { kind: 'roleGroup', id: roleGroup.id },
+        data: { after: newValues },
+      },
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(roleGroupSchema), roleGroup, context);
   }
 
@@ -175,6 +186,15 @@ export class RoleGroupService implements IRoleGroupService {
     } else {
       await this.audit.logSoftDelete(roleGroup.id, oldValues, newValues, metadata, transaction);
     }
+
+    await this.events.publish(
+      {
+        type: 'role.group_revoked',
+        aggregate: { kind: 'roleGroup', id: roleGroup.id },
+        data: { before: oldValues },
+      },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(roleGroupSchema), roleGroup, context);
   }
