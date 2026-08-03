@@ -66,21 +66,21 @@
     "@eslint/js": "^10.0.1",
     "@iconify-json/fluent": "^1.2.53",
     "@iconify-json/fluent-color": "^1.2.21",
-    "@types/node": "^26.1.1",
+    "@types/node": "^26.1.2",
     "badge-maker": "^6.0.0",
-    "concurrently": "^10.0.3",
+    "concurrently": "^10.0.4",
     "dotenv-cli": "^11.0.0",
     "eslint": "^10.7.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-simple-import-sort": "^14.0.0",
     "eslint-plugin-unused-imports": "^4.2.0",
-    "graphql": "^16.14.2",
+    "graphql": "^17.0.2",
     "lint-staged": "^17.1.0",
     "prettier": "^3.9.5",
     "tsx": "^4.23.1",
     "turbo": "^2.10.5",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "typescript-eslint": "^8.64.0",
     "vitepress": "^1.6.4"
   },
@@ -126,8 +126,8 @@
       "devalue": "5.9.0",
       "react": "19.2.6",
       "react-dom": "19.2.6",
-      "graphql": "16.14.2",
-      "typescript": "6.0.3"
+      "graphql": "17.0.2",
+      "typescript": "7.0.2"
     }
   },
   "lint-staged": {
