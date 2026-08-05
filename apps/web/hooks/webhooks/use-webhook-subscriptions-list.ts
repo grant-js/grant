@@ -1,5 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { Scope, WebhookSubscription } from '@grantjs/schema';
+import { useMemo } from 'react';
+import { useQuery } from '@apollo/client/react';
+import {
+  Scope,
+  WebhookSubscription,
+  WebhookSubscriptionsDocument,
+  type WebhookSubscriptionsQuery,
+} from '@grantjs/schema';
 
 import type { WebhookSortInput } from '@/components/features/webhooks/webhook-types';
 import {
@@ -7,7 +13,6 @@ import {
   paginateItems,
   sortWebhookSubscriptions,
 } from '@/lib/webhook-subscriptions-list.lib';
-import { listWebhookSubscriptions } from '@/lib/webhooks-api.lib';
 
 interface UseWebhookSubscriptionsListParams {
   scope: Scope | null | undefined;
@@ -29,28 +34,25 @@ export function useWebhookSubscriptionsList(
   params: UseWebhookSubscriptionsListParams
 ): UseWebhookSubscriptionsListResult {
   const { scope, page, limit, search, sort } = params;
-  const [allSubscriptions, setAllSubscriptions] = useState<WebhookSubscription[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
 
-  const refetch = useCallback(async () => {
-    if (!scope?.id || !scope.tenant) {
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      setAllSubscriptions(await listWebhookSubscriptions(scope));
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      setLoading(false);
-    }
-  }, [scope]);
+  const skip = useMemo(() => !scope?.id || !scope?.tenant, [scope]);
 
-  useEffect(() => {
-    void refetch();
-  }, [refetch]);
+  const variables = useMemo(() => ({ scope: scope! }), [scope]);
+
+  const { data, loading, error, refetch } = useQuery<WebhookSubscriptionsQuery>(
+    WebhookSubscriptionsDocument,
+    {
+      variables,
+      skip,
+      fetchPolicy: 'cache-and-network',
+      notifyOnNetworkStatusChange: true,
+    }
+  );
+
+  const allSubscriptions = useMemo(
+    () => data?.webhookSubscriptions ?? [],
+    [data?.webhookSubscriptions]
+  );
 
   const filtered = useMemo(
     () => filterWebhookSubscriptions(allSubscriptions, search),
@@ -65,7 +67,10 @@ export function useWebhookSubscriptionsList(
     subscriptions,
     totalCount: sorted.length,
     loading,
-    error,
-    refetch,
+    error: error ?? null,
+    refetch: async () => {
+      if (skip) return;
+      await refetch(variables);
+    },
   };
 }

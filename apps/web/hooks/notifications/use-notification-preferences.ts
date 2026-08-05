@@ -1,10 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
-import type { NotificationPreference, SetNotificationPreferenceInput } from '@grantjs/schema';
-
+import { useCallback, useMemo } from 'react';
+import { useMutation, useQuery } from '@apollo/client/react';
 import {
-  listNotificationPreferences,
-  setNotificationPreference,
-} from '@/lib/notifications-api.lib';
+  MyNotificationPreferencesDocument,
+  type MyNotificationPreferencesQuery,
+  type NotificationPreference,
+  SetMyNotificationPreferenceDocument,
+  type SetMyNotificationPreferenceMutation,
+  type SetNotificationPreferenceInput,
+} from '@grantjs/schema';
+
+import { evictNotificationPreferencesCache } from './cache';
 
 interface UseNotificationPreferencesResult {
   preferences: NotificationPreference[];
@@ -17,39 +22,47 @@ interface UseNotificationPreferencesResult {
 export function useNotificationPreferences(
   scopeTenant: string | null | undefined
 ): UseNotificationPreferencesResult {
-  const [preferences, setPreferences] = useState<NotificationPreference[]>([]);
-  const [loading, setLoading] = useState(() => Boolean(scopeTenant));
-  const [error, setError] = useState<Error | null>(null);
+  const skip = !scopeTenant;
 
-  const refetch = useCallback(async () => {
-    if (!scopeTenant) {
-      setPreferences([]);
-      setLoading(false);
-      setError(null);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      setPreferences(await listNotificationPreferences(scopeTenant));
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      setLoading(false);
-    }
-  }, [scopeTenant]);
+  const variables = useMemo(() => ({ scopeTenant: scopeTenant! }), [scopeTenant]);
 
-  useEffect(() => {
-    void refetch();
-  }, [refetch]);
+  const { data, loading, error, refetch } = useQuery<MyNotificationPreferencesQuery>(
+    MyNotificationPreferencesDocument,
+    {
+      variables,
+      skip,
+      fetchPolicy: 'cache-and-network',
+      notifyOnNetworkStatusChange: true,
+    }
+  );
+
+  const [setPreferenceMutation] = useMutation<SetMyNotificationPreferenceMutation>(
+    SetMyNotificationPreferenceDocument,
+    {
+      update: (cache) => {
+        evictNotificationPreferencesCache(cache);
+      },
+    }
+  );
 
   const setPreference = useCallback(
     async (input: SetNotificationPreferenceInput) => {
-      await setNotificationPreference(input);
-      await refetch();
+      await setPreferenceMutation({ variables: { input } });
+      if (!skip) {
+        await refetch(variables);
+      }
     },
-    [refetch]
+    [setPreferenceMutation, refetch, skip, variables]
   );
 
-  return { preferences, loading, error, refetch, setPreference };
+  return {
+    preferences: data?.myNotificationPreferences ?? [],
+    loading: skip ? false : loading,
+    error: error ?? null,
+    refetch: async () => {
+      if (skip) return;
+      await refetch(variables);
+    },
+    setPreference,
+  };
 }

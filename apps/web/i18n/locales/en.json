@@ -7,6 +7,7 @@
       "invalidEmail": "Invalid email",
       "invalidUrl": "Must be a valid URL",
       "redirectUrisMinOne": "At least one redirect URI is required",
+      "eventTypesMinOne": "Select at least one event type",
       "nameTooLong": "Name too long",
       "signUpRoleRequired": "Sign-up role is required when allow sign-up is enabled."
     },
@@ -3720,6 +3721,11 @@
         "description": "Recent delivery attempts for this subscription."
       }
     },
+    "create": {
+      "title": "Create webhook subscription",
+      "generalDescription": "Endpoint URL and optional description for the new subscription.",
+      "eventsDescription": "Select which domain events should be delivered to this endpoint."
+    },
     "events": {
       "title": "Events",
       "description": "Select which domain events are delivered to this endpoint.",
@@ -3819,7 +3825,7 @@
       "emptyDescription": "Create a subscription to deliver project events to an external endpoint.",
       "noDescription": "No description",
       "loadError": "Failed to load subscriptions",
-      "secretTitle": "Signing secret (shown once)",
+      "secretTitle": "Signing secret",
       "copy": "Copy",
       "copied": "Copied to clipboard",
       "enabled": "Subscription enabled",
@@ -3842,15 +3848,23 @@
       "delete": "Delete",
       "deliveriesTitle": "Recent deliveries"
     },
+    "secretDialog": {
+      "title": "Signing secret",
+      "warningTitle": "Shown once",
+      "warning": "This is the only time the signing secret is shown. Copy or download it now and store it securely.",
+      "secretLabel": "Signing secret",
+      "downloadSecret": "Download secret"
+    },
     "createDialog": {
       "title": "New webhook subscription",
       "description": "The signing secret is generated and shown once after creation.",
+      "trigger": "New subscription",
       "urlLabel": "Endpoint URL",
       "urlPlaceholder": "https://example.com/webhooks/grant",
       "descriptionLabel": "Description (optional)",
       "eventTypesLabel": "Event types",
-      "cancel": "Cancel",
-      "create": "Create"
+      "confirm": "Create",
+      "submitting": "Creating..."
     },
     "deliveries": {
       "empty": "No deliveries yet.",

@@ -2,9 +2,15 @@
 
 import { useTranslations } from 'next-intl';
 import type { WebhookSubscription } from '@grantjs/schema';
-import { Activity, Link2, Webhook, Zap } from 'lucide-react';
+import { Activity, Link2, Plus, Webhook, Zap } from 'lucide-react';
 
-import { CardBody, CardGrid, CardHeader, CopyToClipboard } from '@/components/common';
+import {
+  CardBody,
+  CardGrid,
+  CardHeader,
+  CopyToClipboard,
+  EntityCreateNavigateButton,
+} from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { useScopeFromParams } from '@/hooks/common';
 import { useWebhooksStore } from '@/stores/webhooks.store';
@@ -12,12 +18,12 @@ import { useWebhooksStore } from '@/stores/webhooks.store';
 import { WebhookActiveStatusLabel } from './webhook-active-status-label';
 import { WebhookAudit } from './webhook-audit';
 import { WebhookCardSkeleton } from './webhook-card-skeleton';
-import { WebhookCreateDialog } from './webhook-create-dialog';
 import { WebhookNavigationButton } from './webhook-navigation-button';
 import { WebhookSubscriptionActions } from './webhook-subscription-actions';
 
 export function WebhookCards() {
   const t = useTranslations('webhooks');
+  const tCreate = useTranslations('webhooks.createDialog');
   const scope = useScopeFromParams();
   const subscriptions = useWebhooksStore((state) => state.subscriptions);
   const loading = useWebhooksStore((state) => state.loading);
@@ -38,7 +44,14 @@ export function WebhookCards() {
         icon: <Webhook />,
         title: t('subscriptions.empty'),
         description: hasActiveFilters ? '' : t('subscriptions.emptyDescription'),
-        action: hasActiveFilters ? undefined : <WebhookCreateDialog triggerAlwaysShowLabel />,
+        action: hasActiveFilters ? undefined : (
+          <EntityCreateNavigateButton
+            entitySegment="webhooks"
+            label={tCreate('trigger')}
+            icon={Plus}
+            alwaysShowLabel
+          />
+        ),
       }}
       skeleton={{
         component: <WebhookCardSkeleton />,

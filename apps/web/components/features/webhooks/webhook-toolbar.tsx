@@ -1,19 +1,26 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
+import { Plus } from 'lucide-react';
 
-import { RefreshButton, Toolbar, toolbarGrow } from '@/components/common';
+import {
+  EntityCreateNavigateButton,
+  RefreshButton,
+  Toolbar,
+  toolbarGrow,
+} from '@/components/common';
 import { useProjectGrantContext, useScopeFromParams } from '@/hooks/common';
 import { useWebhooksStore } from '@/stores/webhooks.store';
 
-import { WebhookCreateDialog } from './webhook-create-dialog';
 import { WebhookLimit } from './webhook-limit';
 import { WebhookSearch } from './webhook-search';
 import { WebhookSorter } from './webhook-sorter';
 import { WebhookViewSwitcher } from './webhook-view-switcher';
 
 export function WebhookToolbar() {
+  const t = useTranslations('webhooks.createDialog');
   const scope = useScopeFromParams();
   const projectGrantContext = useProjectGrantContext();
   const refetch = useWebhooksStore((state) => state.refetch);
@@ -31,7 +38,16 @@ export function WebhookToolbar() {
     totalCount > 0 && <WebhookSorter key="sorter" />,
     <WebhookLimit key="limit" />,
     <WebhookViewSwitcher key="view" />,
-    ...(canCreate ? [<WebhookCreateDialog key="create" />] : []),
+    ...(canCreate
+      ? [
+          <EntityCreateNavigateButton
+            key="create"
+            entitySegment="webhooks"
+            label={t('trigger')}
+            icon={Plus}
+          />,
+        ]
+      : []),
   ].filter(Boolean);
 
   return <Toolbar fullWidth items={toolbarItems} />;

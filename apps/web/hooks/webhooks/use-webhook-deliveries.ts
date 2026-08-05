@@ -1,7 +1,16 @@
-import { useCallback, useEffect, useState } from 'react';
-import type { Scope, WebhookDeliveryAttempt } from '@grantjs/schema';
+import { useCallback, useMemo } from 'react';
+import { useMutation, useQuery } from '@apollo/client/react';
+import {
+  ReplayWebhookDeliveryDocument,
+  type ReplayWebhookDeliveryMutation,
+  Scope,
+  WebhookDeliveriesDocument,
+  type WebhookDeliveriesQuery,
+  type WebhookDeliveryAttempt,
+  WebhookDeliveryStatus,
+} from '@grantjs/schema';
 
-import { listWebhookDeliveries, replayWebhookDelivery } from '@/lib/webhooks-api.lib';
+import { evictWebhooksCache } from './cache';
 
 interface UseWebhookDeliveriesParams {
   scope: Scope | null | undefined;
@@ -21,44 +30,74 @@ interface UseWebhookDeliveriesResult {
   replay: (deliveryId: string) => Promise<void>;
 }
 
+function toDeliveryStatus(status?: string): WebhookDeliveryStatus | undefined {
+  if (!status) return undefined;
+  const values = Object.values(WebhookDeliveryStatus) as string[];
+  return values.includes(status) ? (status as WebhookDeliveryStatus) : undefined;
+}
+
 export function useWebhookDeliveries(
   params: UseWebhookDeliveriesParams
 ): UseWebhookDeliveriesResult {
   const { scope, subscriptionId, status, page, limit } = params;
-  const [deliveries, setDeliveries] = useState<WebhookDeliveryAttempt[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [hasNextPage, setHasNextPage] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
 
-  const refetch = useCallback(async () => {
-    if (!scope?.id || !scope.tenant) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await listWebhookDeliveries(scope, { subscriptionId, status, page, limit });
-      setDeliveries(result.items);
-      setTotalCount(result.totalCount);
-      setHasNextPage(result.hasNextPage);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      setLoading(false);
+  const skip = useMemo(() => !scope?.id || !scope?.tenant, [scope]);
+
+  const variables = useMemo(
+    () => ({
+      scope: scope!,
+      subscriptionId,
+      status: toDeliveryStatus(status),
+      page,
+      limit,
+    }),
+    [scope, subscriptionId, status, page, limit]
+  );
+
+  const { data, loading, error, refetch } = useQuery<WebhookDeliveriesQuery>(
+    WebhookDeliveriesDocument,
+    {
+      variables,
+      skip,
+      fetchPolicy: 'cache-and-network',
+      notifyOnNetworkStatusChange: true,
     }
-  }, [scope, subscriptionId, status, page, limit]);
+  );
 
-  useEffect(() => {
-    void refetch();
-  }, [refetch]);
+  const [replayMutation] = useMutation<ReplayWebhookDeliveryMutation>(
+    ReplayWebhookDeliveryDocument,
+    {
+      update: (cache) => {
+        evictWebhooksCache(cache);
+      },
+    }
+  );
 
   const replay = useCallback(
     async (deliveryId: string) => {
       if (!scope) throw new Error('Scope is required');
-      await replayWebhookDelivery(scope, deliveryId);
-      await refetch();
+      await replayMutation({
+        variables: {
+          input: { deliveryId, scope },
+        },
+      });
+      if (!skip) {
+        await refetch(variables);
+      }
     },
-    [scope, refetch]
+    [scope, replayMutation, refetch, skip, variables]
   );
 
-  return { deliveries, totalCount, hasNextPage, loading, error, refetch, replay };
+  return {
+    deliveries: data?.webhookDeliveries?.items ?? [],
+    totalCount: data?.webhookDeliveries?.totalCount ?? 0,
+    hasNextPage: data?.webhookDeliveries?.hasNextPage ?? false,
+    loading,
+    error: error ?? null,
+    refetch: async () => {
+      if (skip) return;
+      await refetch(variables);
+    },
+    replay,
+  };
 }

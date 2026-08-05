@@ -2,7 +2,7 @@ interface EntityDetailUrlParams {
   organizationId?: string;
   accountId?: string;
   projectId?: string;
-  entitySegment: 'roles' | 'groups' | 'permissions' | 'users' | 'resources' | 'apps';
+  entitySegment: 'roles' | 'groups' | 'permissions' | 'users' | 'resources' | 'apps' | 'webhooks';
   entityId: string;
 }
 
@@ -33,7 +33,7 @@ interface EntityCreateUrlParams {
   organizationId?: string;
   accountId?: string;
   projectId?: string;
-  entitySegment: 'roles' | 'groups' | 'permissions' | 'users' | 'resources' | 'apps';
+  entitySegment: 'roles' | 'groups' | 'permissions' | 'users' | 'resources' | 'apps' | 'webhooks';
 }
 
 export function getEntityCreateUrl({
