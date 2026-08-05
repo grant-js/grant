@@ -3,12 +3,13 @@
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import type { WebhookSubscription } from '@grantjs/schema';
-import { Webhook } from 'lucide-react';
+import { Plus, Webhook } from 'lucide-react';
 
 import {
   CopyToClipboard,
   DataTable,
   type DataTableColumnConfig,
+  EntityCreateNavigateButton,
   type TableSkeletonColumnConfig,
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
@@ -17,12 +18,12 @@ import { useWebhooksStore } from '@/stores/webhooks.store';
 
 import { WebhookActiveStatusLabel } from './webhook-active-status-label';
 import { WebhookAudit } from './webhook-audit';
-import { WebhookCreateDialog } from './webhook-create-dialog';
 import { WebhookNavigationButton } from './webhook-navigation-button';
 import { WebhookSubscriptionActions } from './webhook-subscription-actions';
 
 export function WebhookTable() {
   const t = useTranslations('webhooks');
+  const tCreate = useTranslations('webhooks.createDialog');
   const scope = useScopeFromParams();
   const subscriptions = useWebhooksStore((state) => state.subscriptions);
   const loading = useWebhooksStore((state) => state.loading);
@@ -119,7 +120,14 @@ export function WebhookTable() {
         icon: <Webhook />,
         title: t('subscriptions.empty'),
         description: t('subscriptions.emptyDescription'),
-        action: <WebhookCreateDialog triggerAlwaysShowLabel />,
+        action: (
+          <EntityCreateNavigateButton
+            entitySegment="webhooks"
+            label={tCreate('trigger')}
+            icon={Plus}
+            alwaysShowLabel
+          />
+        ),
       }}
       actionsColumn={{
         render: (subscription) => (

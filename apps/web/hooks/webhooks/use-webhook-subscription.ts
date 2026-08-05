@@ -1,7 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
-import type { Scope, WebhookSubscription } from '@grantjs/schema';
-
-import { getWebhookSubscription } from '@/lib/webhooks-api.lib';
+import { useMemo } from 'react';
+import { useQuery } from '@apollo/client/react';
+import {
+  Scope,
+  WebhookSubscription,
+  WebhookSubscriptionDocument,
+  type WebhookSubscriptionQuery,
+} from '@grantjs/schema';
 
 interface UseWebhookSubscriptionParams {
   scope: Scope | null | undefined;
@@ -19,29 +23,37 @@ export function useWebhookSubscription(
   params: UseWebhookSubscriptionParams
 ): UseWebhookSubscriptionResult {
   const { scope, subscriptionId } = params;
-  const [subscription, setSubscription] = useState<WebhookSubscription | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
 
-  const refetch = useCallback(async () => {
-    if (!scope?.id || !scope.tenant || !subscriptionId) {
-      setSubscription(null);
-      return;
+  const skip = useMemo(
+    () => !scope?.id || !scope?.tenant || !subscriptionId,
+    [scope, subscriptionId]
+  );
+
+  const variables = useMemo(
+    () => ({
+      scope: scope!,
+      id: subscriptionId!,
+    }),
+    [scope, subscriptionId]
+  );
+
+  const { data, loading, error, refetch } = useQuery<WebhookSubscriptionQuery>(
+    WebhookSubscriptionDocument,
+    {
+      variables,
+      skip,
+      fetchPolicy: 'cache-and-network',
+      notifyOnNetworkStatusChange: true,
     }
-    setLoading(true);
-    setError(null);
-    try {
-      setSubscription(await getWebhookSubscription(scope, subscriptionId));
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      setLoading(false);
-    }
-  }, [scope, subscriptionId]);
+  );
 
-  useEffect(() => {
-    void refetch();
-  }, [refetch]);
-
-  return { subscription, loading, error, refetch };
+  return {
+    subscription: data?.webhookSubscription ?? null,
+    loading,
+    error: error ?? null,
+    refetch: async () => {
+      if (skip) return;
+      await refetch(variables);
+    },
+  };
 }

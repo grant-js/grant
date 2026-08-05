@@ -2,17 +2,24 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import type { Notification } from '@grantjs/schema';
+import { useApolloClient, useMutation } from '@apollo/client/react';
+import {
+  MarkMyNotificationReadDocument,
+  type MarkMyNotificationReadMutation,
+  MyNotificationsDocument,
+  type MyNotificationsQuery,
+  type Notification,
+} from '@grantjs/schema';
 import { Bell } from 'lucide-react';
 
 import { NotificationListItem } from '@/components/features/notifications/notification-list-item';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
+import { evictNotificationsCache } from '@/hooks/notifications/cache';
 import { useUnreadNotificationCount } from '@/hooks/notifications/use-unread-notification-count';
 import { Link, useRouter } from '@/i18n/navigation';
 import { buildNotificationHref } from '@/lib/notification-href.lib';
-import { listNotifications, markNotificationRead } from '@/lib/notifications-api.lib';
 
 const POLL_INTERVAL_MS = 30_000;
 const PREVIEW_LIMIT = 5;
@@ -37,20 +44,34 @@ function NotificationBellSkeleton() {
 export function NotificationBell() {
   const t = useTranslations('notificationBell');
   const router = useRouter();
+  const client = useApolloClient();
   const { unreadCount, refetch: refetchCount } = useUnreadNotificationCount(POLL_INTERVAL_MS);
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<Notification[]>([]);
   const [loadingPreview, setLoadingPreview] = useState(false);
 
+  const [markReadMutation] = useMutation<MarkMyNotificationReadMutation>(
+    MarkMyNotificationReadDocument,
+    {
+      update: (cache) => {
+        evictNotificationsCache(cache);
+      },
+    }
+  );
+
   const loadPreview = useCallback(async () => {
     setLoadingPreview(true);
     try {
-      const result = await listNotifications({ limit: PREVIEW_LIMIT });
-      setPreview(result.notifications);
+      const result = await client.query<MyNotificationsQuery>({
+        query: MyNotificationsDocument,
+        variables: { input: { limit: PREVIEW_LIMIT } },
+        fetchPolicy: 'network-only',
+      });
+      setPreview(result.data?.myNotifications?.notifications ?? []);
     } finally {
       setLoadingPreview(false);
     }
-  }, []);
+  }, [client]);
 
   useEffect(() => {
     if (open) void loadPreview();
@@ -65,7 +86,7 @@ export function NotificationBell() {
 
   const handleItemClick = async (notification: Notification) => {
     if (!notification.readAt) {
-      await markNotificationRead(notification.id);
+      await markReadMutation({ variables: { id: notification.id } });
       void refetchCount();
     }
     setOpen(false);

@@ -7,6 +7,7 @@
       "invalidEmail": "Ungültige E-Mail-Adresse",
       "invalidUrl": "Muss eine gültige URL sein",
       "redirectUrisMinOne": "Mindestens eine Weiterleitungs-URI ist erforderlich",
+      "eventTypesMinOne": "Wählen Sie mindestens einen Event-Typ aus",
       "nameTooLong": "Name ist zu lang",
       "signUpRoleRequired": "Rolle für neue Nutzer ist erforderlich, wenn Registrierung erlaubt ist."
     },
@@ -3417,6 +3418,11 @@
         "description": "Letzte Zustellversuche für dieses Abonnement."
       }
     },
+    "create": {
+      "title": "Webhook-Abonnement erstellen",
+      "generalDescription": "Endpunkt-URL und optionale Beschreibung für das neue Abonnement.",
+      "eventsDescription": "Wählen Sie, welche Domain-Events an diesen Endpunkt geliefert werden sollen."
+    },
     "events": {
       "title": "Events",
       "description": "Wählen Sie aus, welche Domain-Events an diesen Endpunkt geliefert werden.",
@@ -3516,7 +3522,7 @@
       "emptyDescription": "Erstellen Sie ein Abonnement, um Projekt-Events an einen externen Endpunkt zu senden.",
       "noDescription": "Keine Beschreibung",
       "loadError": "Abonnements konnten nicht geladen werden",
-      "secretTitle": "Signaturgeheimnis (nur einmal angezeigt)",
+      "secretTitle": "Signaturgeheimnis",
       "copy": "Kopieren",
       "copied": "In die Zwischenablage kopiert",
       "enabled": "Abonnement aktiviert",
@@ -3539,15 +3545,23 @@
       "delete": "Löschen",
       "deliveriesTitle": "Letzte Zustellungen"
     },
+    "secretDialog": {
+      "title": "Signaturgeheimnis",
+      "warningTitle": "Nur einmal angezeigt",
+      "warning": "Dies ist die einzige Gelegenheit, das Signaturgeheimnis zu sehen. Kopieren oder laden Sie es jetzt herunter und bewahren Sie es sicher auf.",
+      "secretLabel": "Signaturgeheimnis",
+      "downloadSecret": "Geheimnis herunterladen"
+    },
     "createDialog": {
       "title": "Neues Webhook-Abonnement",
       "description": "Das Signaturgeheimnis wird erzeugt und nach der Erstellung einmal angezeigt.",
+      "trigger": "Neues Abonnement",
       "urlLabel": "Endpunkt-URL",
       "urlPlaceholder": "https://example.com/webhooks/grant",
       "descriptionLabel": "Beschreibung (optional)",
       "eventTypesLabel": "Event-Typen",
-      "cancel": "Abbrechen",
-      "create": "Erstellen"
+      "confirm": "Erstellen",
+      "submitting": "Wird erstellt..."
     },
     "deliveries": {
       "empty": "Noch keine Zustellungen.",

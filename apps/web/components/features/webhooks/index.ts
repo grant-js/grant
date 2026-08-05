@@ -2,7 +2,7 @@ export * from './webhook-active-status-label';
 export * from './webhook-audit';
 export * from './webhook-card-skeleton';
 export * from './webhook-cards';
-export * from './webhook-create-dialog';
+export * from './webhook-create-viewer';
 export * from './webhook-delete-dialog';
 export * from './webhook-delivery-status-label';
 export * from './webhook-limit';

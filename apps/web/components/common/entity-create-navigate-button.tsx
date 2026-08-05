@@ -10,7 +10,8 @@ import { Link } from '@/i18n/navigation';
 import { getEntityCreateUrl } from '@/lib/entity-detail-url';
 import { cn } from '@/lib/utils';
 
-type EntitySegment = 'roles' | 'groups' | 'permissions' | 'users' | 'resources' | 'apps';
+type EntitySegment =
+  'roles' | 'groups' | 'permissions' | 'users' | 'resources' | 'apps' | 'webhooks';
 
 interface EntityCreateNavigateButtonProps {
   entitySegment: EntitySegment;
