@@ -1,5 +1,17 @@
 # grant-web
 
+## 1.5.1
+
+### Patch Changes
+
+- a720d40: Align webhook create with full-page create viewers and route webhook/notification UI data through Apollo.
+
+  Replace the create dialog with a `/webhooks/new` create viewer (shared events DataTable for create and edit), polish the one-time signing-secret dialog, and migrate webhooks and notifications hooks off REST so idle 401s refresh via Apollo like the rest of the dashboard.
+  - @grantjs/schema@1.5.1
+  - @grantjs/client@1.5.1
+  - @grantjs/core@1.0.0
+  - @grantjs/constants@1.0.0
+
 ## 1.5.0
 
 ### Minor Changes
