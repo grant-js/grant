@@ -3,6 +3,20 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.5.1
+
+### Platform
+
+**Docker images:** tagged `:1.5.1` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.5.1** (fixed group with apps).
+
+### Patch Changes
+
+- a720d40: Align webhook create with full-page create viewers and route webhook/notification UI data through Apollo.
+
+  Replace the create dialog with a `/webhooks/new` create viewer (shared events DataTable for create and edit), polish the one-time signing-secret dialog, and migrate webhooks and notifications hooks off REST so idle 401s refresh via Apollo like the rest of the dashboard.
+
 ## 1.5.0
 
 ### Platform
