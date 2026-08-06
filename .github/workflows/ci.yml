@@ -15,7 +15,10 @@ concurrency:
 jobs:
   changes:
     name: Detect relevant changes
-    runs-on: ubuntu-latest
+    # Self-hosted, matching build-test below. This gate is checkout + paths-filter, but
+    # every downstream job `needs` it — on a hosted runner it becomes a single point of
+    # failure that strands the whole pipeline while the self-hosted runner sits idle.
+    runs-on: self-hosted
     permissions:
       contents: read
       pull-requests: read
