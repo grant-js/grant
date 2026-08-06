@@ -36,6 +36,19 @@ Only list roles that will run for this story:
 
 Prefer layer order: **db → schema → api → web**. Adjust if the story is narrower.
 
+## Stack setup
+
+Root the stack on the story trunk — never the default branch, or slices target `main` and skip gate 4:
+
+```sh
+git switch -c feat/<slug> main && git push -u origin feat/<slug>
+gh stack init --base feat/<slug> feat/<slug>-db feat/<slug>-schema feat/<slug>-api
+gh stack submit     # opens the linked PRs
+gh stack sync       # restack after an upstream slice merges
+```
+
+See [Agentic SDLC § GitHub stacking](../agentic-sdlc.md#github-stacking). If a story predates `gh stack`, adopt its existing PRs with `gh stack link <pr> <pr> …` rather than restructuring branches mid-flight.
+
 ## Dependencies / notes
 
 -
