@@ -103,16 +103,23 @@ See [Adding REST Endpoints](/contributing/rest-api) for the full step-by-step gu
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch from `main`
-3. Follow the layer boundaries and code style
-4. Ensure `pnpm build` and `pnpm test` pass
-5. Open a pull request
+Prefer the [Agentic SDLC](/contributing/agentic-sdlc) for non-trivial work: story trunk, stacked human-reviewable PRs, then one final PR to `main`. Avoid month-long single branches and mega-PRs.
+
+1. Fork the repository (external contributors)
+2. Open or approve a **story brief**, then a **stack plan** (see templates under `docs/contributing/templates/`)
+3. Create the story trunk `feat/<slug>` from `main` (use a **git worktree** if another story is already in flight)
+4. Land stacked slice PRs into the trunk (db → schema → api → web as needed); keep each PR reviewable
+5. Follow layer boundaries and code style
+6. Ensure checks pass (`pnpm build`, `pnpm test`, Verifier for touched packages)
+7. Open the **final** pull request: story trunk → `main` (deep review); release pipeline ships complete features from `main`
+
+Tiny fixes may use a single short-lived branch and PR directly to `main`.
 
 ---
 
 **Related:**
 
+- [Agentic SDLC](/contributing/agentic-sdlc) — Agent roster, stacked PRs, gates, worktrees
 - [Architecture Overview](/architecture/overview) — System design and package graph
 - [Adding REST Endpoints](/contributing/rest-api) — REST development guide
 - [Testing](/contributing/testing) — Test setup and patterns

@@ -112,7 +112,7 @@ Code Review (bar: light | deep | security-full):
 - Tenant scoping and permission checks present where required.
 - No secrets in code; auth/MFA/AAL elevation respected.
 - Fail closed on missing authorization.
-- Prefer pairing with `.cursor/agents/senior-security.md`.
+- Prefer pairing with the `senior-security` subagent (`.claude/agents/senior-security.md`).
 
 ## Feedback format
 

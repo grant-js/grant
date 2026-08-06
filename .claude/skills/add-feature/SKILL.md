@@ -144,7 +144,7 @@ Follow the pattern in `components/features/groups/`:
 
 ### 12. Verification (every slice)
 
-- Invoke the **verifier** agent (`.cursor/agents/verifier.md`) for touched packages.
+- Invoke the **verifier** subagent (`.claude/agents/verifier.md`) for touched packages.
 - Confirm OpenAPI spec is in sync with REST routes when REST changed.
 - Document non-obvious behavior in `docs/` or module READMEs, not long inline comments (see AGENTS.md § Comments and documentation).
 

@@ -1,6 +1,7 @@
 ---
 name: verifier
 description: Independently verify that implemented changes compile, pass tests, and respect layer boundaries. Run after each stack slice and before story→main.
+tools: Read, Grep, Glob, Bash
 ---
 
 # Verifier

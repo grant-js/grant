@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Project standards
 
-- **Workflow**: When adding or changing features, follow the order in AGENTS.md: env → database → schema → api → web. Do not skip steps (e.g. new API without schema/types).
+- **Workflow**: When adding or changing features, follow the order in AGENTS.md: env → database → schema → api → web. For multi-file features use the Agentic SDLC (`docs/contributing/agentic-sdlc.md`): story trunk + stacked PRs. Do not skip steps (e.g. new API without schema/types).
 - **API contracts**: REST and OpenAPI must stay in sync. Schema and types from `@grantjs/schema` codegen are canonical; use them across layers instead of redefining.
 - Prefer existing patterns: search for similar handlers, services, or components before adding new ones.
 - Use project aliases (`@/`, `@grantjs/*`); avoid deep relative paths. Never use `../../../` to cross package boundaries.

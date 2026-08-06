@@ -70,6 +70,8 @@ apps/api/storage/
 .cursor/mcp.json
 # Cursor IDE — local planning drafts (not versioned; see docs/architecture/security.md for MFA)
 .cursor/plans/
+# Local git worktrees (prefer sibling dirs; if using in-repo path, keep untracked)
+.worktrees/
 
 # Local vitest debug / capture output (do not commit)
 apps/api/vit-err.txt
