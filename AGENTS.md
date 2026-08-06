@@ -82,6 +82,8 @@ Transport (GraphQL resolvers, REST routes)
 
 When adding or changing features, follow this order. Each step may produce outputs used by the next.
 
+For multi-file features, use the **Agentic SDLC** (story trunk + stacked PRs) — see below and `docs/contributing/agentic-sdlc.md`. Do not accumulate a month of work on one branch for a single mega-PR.
+
 1. **Development environment**
    - Ensure containers are up: see `docker-compose.yml`; start with `docker compose up -d` if needed.
    - Install/update deps: `pnpm install`.
@@ -103,6 +105,21 @@ When adding or changing features, follow this order. Each step may produce outpu
 
 5. **Web** – `apps/web`
    - Add or update hooks (from operation documents) and feature components. See `.cursor/rules/react-and-web.mdc` when editing web code.
+
+## Agentic SDLC
+
+**SDLC** = Software Development Life Cycle. Grant coordinates work with a standing agent roster; only roles listed on the stack plan are active.
+
+- **Orchestration**: Project Manager (brief, acceptance, gates) + Principal Engineer (stack order, integration, worktrees). Specialists on demand.
+- **Merge topology**: Story trunk `feat/<slug>` ← stacked slice PRs → final PR `feat/<slug>` → `main` → release pipeline.
+- **Human gates**: (1) story brief, (2) stack plan, (3) stack PRs into trunk, (4) story→main. Agents never self-merge.
+- **Review bars**: light (typical stack→trunk), deep (story→main), security-full (auth/tenancy/permissions).
+- **Plans**: Multi-file work requires a **stack plan** (ordered reviewable PRs), not a mega-diff plan. Templates: `docs/contributing/templates/`. Active artifacts: `plans/YYYY-MM-DD-<slug>-{brief,stack}.md`.
+- **Worktrees**: One git worktree per story when multiple stories run in parallel. Principal Engineer owns create/cleanup. Never two writers in one working tree.
+- **Full workflow**: `docs/contributing/agentic-sdlc.md` (includes agents vs skills, multi-vendor skill paths, and optional Cursor packs)
+- **Role prompts**: `.cursor/agents/` (Cursor) and `.claude/agents/` (Claude Code subagents) — same roster, kept in sync manually; other harnesses may read either or the SDLC doc.
+- **Project skills (required for Grant workflows)**: `add-feature`, `code-review` — same `SKILL.md` content under `.cursor/skills/` and `.claude/skills/` (and Codex’s skills path when used). Skills are verbs, not one-per-role.
+- **Plugin packs (optional)**: Compound Engineering and similar Cursor/local packs accelerate brainstorm/plan/work but are **not** in this repo and **not** required to merge. Without them, use templates in `docs/contributing/templates/` + `plans/`. See `docs/contributing/agentic-sdlc.md` § Skills and multi-vendor tooling.
 
 ## Testing
 
@@ -156,3 +173,4 @@ Contributor docs for CDM: `apps/api/src/lib/cdm/README.md`, `docs/core-concepts/
 | Adapter packages | `packages/@grantjs/{cache,storage,email,jobs,logger,errors}` | —                   |
 | API app          | `apps/api`                                                   | `api.mdc`           |
 | Web app          | `apps/web`                                                   | `react-and-web.mdc` |
+| Agentic SDLC     | `docs/contributing/agentic-sdlc.md`, `.cursor/agents/`       | —                   |

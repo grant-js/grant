@@ -52,6 +52,7 @@ When working on a topic below, read the linked doc for detailed patterns, conven
 | Topic | Doc |
 |-------|-----|
 | Project structure, GraphQL/UI patterns | `docs/contributing/guide.md` |
+| Agentic SDLC, agent roster, stacked PRs, worktrees, multi-vendor skills | `docs/contributing/agentic-sdlc.md` |
 | Adding REST endpoints with OpenAPI | `docs/contributing/rest-api.md` |
 | Testing (Vitest, unit/integration) | `docs/contributing/testing.md` |
 | Error handling, HTTP codes, localization | `docs/api-reference/error-handling.md` |

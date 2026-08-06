@@ -126,6 +126,7 @@ export default withMermaid({
           collapsed: true,
           items: [
             { text: 'Development Guide', link: '/contributing/guide' },
+            { text: 'Agentic SDLC', link: '/contributing/agentic-sdlc' },
             { text: 'Versioning and Release', link: '/contributing/versioning' },
             { text: 'Adding REST Endpoints', link: '/contributing/rest-api' },
             { text: 'Testing', link: '/contributing/testing' },
