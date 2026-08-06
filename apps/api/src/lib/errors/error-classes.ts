@@ -7,7 +7,11 @@ export {
   ConflictError,
   GrantException,
   InvalidOrUsedVerificationTokenError,
+  NoSessionSigningKeyError,
   NotFoundError,
+  TokenExpiredError,
+  TokenInvalidError,
+  TokenValidationError,
   ValidationError,
 } from '@grantjs/core';
 

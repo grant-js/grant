@@ -143,7 +143,7 @@ export class WebhookDeliveryRepository {
     projectId: string,
     options: { subscriptionId?: string; status?: string; offset: number; limit: number },
     transaction?: Transaction
-  ): Promise<{ rows: WebhookDeliveryAttemptModel[]; totalCount: number }> {
+  ): Promise<{ rows: WebhookDeliveryAttemptModel[]; totalCount: number; hasNextPage: boolean }> {
     const dbInstance = transaction ?? this.db;
     const conditions = [eq(webhookSubscriptions.projectId, projectId)];
     if (options.subscriptionId) {
@@ -177,11 +177,14 @@ export class WebhookDeliveryRepository {
         .where(whereClause),
     ]);
 
+    // Over-fetching one row is the authoritative next-page signal: it reflects the
+    // same snapshot as the page itself, unlike comparing against a separate count(*).
     const hasNextPage = rows.length > options.limit;
     const trimmed = hasNextPage ? rows.slice(0, options.limit) : rows;
     return {
       rows: trimmed.map((row) => row.delivery),
       totalCount: countRows[0]?.count ?? 0,
+      hasNextPage,
     };
   }
 

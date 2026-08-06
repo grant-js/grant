@@ -7,7 +7,7 @@ import type {
   IEventPublisher,
   IOrganizationProjectRepository,
 } from '@grantjs/core';
-import { Grant, GrantAuth, NoSessionSigningKeyError } from '@grantjs/core';
+import { Grant, GrantAuth } from '@grantjs/core';
 import {
   ApiKey,
   ApiKeyPage,
@@ -21,7 +21,13 @@ import {
 import { sql } from 'drizzle-orm';
 
 import { config } from '@/config';
-import { AuthenticationError, BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
+import {
+  AuthenticationError,
+  BadRequestError,
+  ConflictError,
+  NoSessionSigningKeyError,
+  NotFoundError,
+} from '@/lib/errors';
 import { buildJwksIssuerUrl } from '@/lib/jwks.lib';
 import { generateRandomBytes, generateUUID, hashSecret, verifySecret } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
