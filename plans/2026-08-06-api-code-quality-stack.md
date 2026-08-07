@@ -213,13 +213,29 @@ Config: `CDM_MAX_JSON_BYTES` (64 KiB) and `CDM_MAX_JSON_DEPTH` (16), env-overrid
 
 **Verification.** 858 unit tests (29 new: 12 pagination, 17 CDM JSON), 189 e2e passing with 2 skipped — unchanged from slice 7, which is the signal the plan asked for: the new validator does not reject documents Grant's own export path produces. `knip` caught two dead exports of mine before CI, again.
 
-### 9 — Coverage
+### 9 — Coverage — **Done** (PR pending)
 
-`CacheHandler` coverage moved to slice 4a, where it blocks the refactor. What remains, by lines at risk and blast radius:
+`CacheHandler` coverage moved to slice 4a, where it blocked the refactor. What remained, by lines at risk and blast radius:
 
-1. `repositories/common/` (742 L, inherited by 52 repositories)
-2. `rest/routes/` (3,458 L, zero unit tests)
-3. `config/env.config.ts` (1,051 L)
+| Target                                                        | Covered by                                                                                                             | Tests |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ----- |
+| `repositories/common/` (746 L, inherited by ~52 repositories) | `entity-repository.filters.test.ts`, `pivot-repository.test.ts`                                                        | 40    |
+| `rest/routes/` (3,458 L)                                      | `crud-router.test.ts` — the slice-7 factory, which is now the whole route body for `groups`, `roles` and `permissions` | 15    |
+| `config/env.config.ts` (1,051 L)                              | `validate-config.test.ts`                                                                                              | 11    |
+
+The tests are characterization, not aspiration: several pin behaviour that is arguably wrong, with the reason stated inline. Three are worth naming.
+
+**Silent widening in `EntityRepository`.** An unrecognised filter operator or an unknown column makes `buildFilterCondition` return `undefined`, and `where()` then omits the condition entirely. A typo'd filter does not fail — it returns a _larger_ result set. `where()` always appends `isNull(deletedAt)`, so soft-deleted rows stay hidden, which is the one thing that saves this from being a data-exposure bug.
+
+**`PivotRepository.countActive({})` counts the whole table.** `whereUnique` returns `undefined` when the caller supplies none of the unique-index fields, and `countActive` falls back to the soft-delete guard alone. A caller that forgets a field gets a plausible number rather than an error.
+
+**`validateConfig`'s `DB_URL is required` branch is unreachable.** `DB_CONFIG.url` comes from `resolveDatabaseUrl`, which falls back to a `postgresql://…` template built from the `POSTGRES_*` vars; that string is never empty even when every part is undefined. An operator who omits the database configuration gets a runtime connection failure instead of the startup error this check exists to produce. Pinned as-is — the fix is a decision about what a valid database configuration means.
+
+Also characterized: `orderBy`'s default path emits a bare column with no direction, unlike the explicit path which always wraps in `asc()`/`desc()`. The two agree only because Postgres defaults a bare `ORDER BY` term to ascending.
+
+**Verification.** Mutation-tested rather than merely passing: swapping `authorizeRestRoute` ahead of the MFA guard turns the router suite red (2 failures), and removing the soft-delete guard from `where()` turns the repository suites red (6 failures). A suite that passes proves nothing.
+
+**Not covered:** the other 20 files in `rest/routes/`. `crud-router.ts` was chosen because slice 7 made it the actual body of three routers, so it is the highest-density target; `auth.routes.ts` and `me.routes.ts` carry more risk per line and deserve their own slice rather than a thin pass here.
 
 ## Follow-ups
 
