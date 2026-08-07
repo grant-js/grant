@@ -18,6 +18,7 @@ import {
 
 import { config } from '@/config';
 import { BadRequestError, ConflictError, NotFoundError, ValidationError } from '@/lib/errors';
+import { hasNextPageByCount } from '@/lib/pagination.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { ProjectSyncJobRepository } from '@/repositories/project-sync-job.repository';
 
@@ -180,7 +181,7 @@ export class ProjectSyncJobService implements IProjectSyncJobService {
       transaction
     );
 
-    const hasNextPage = limit > 0 ? totalCount > page * limit : false;
+    const hasNextPage = hasNextPageByCount({ page, limit, totalCount });
 
     return {
       jobs: items,

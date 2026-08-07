@@ -70,7 +70,7 @@ export class NotificationService implements INotificationService {
     const page = Math.max(params.page ?? 1, 1);
     const offset = (page - 1) * limit;
 
-    const [{ rows, totalCount }, unreadCount] = await Promise.all([
+    const [{ rows, totalCount, hasNextPage }, unreadCount] = await Promise.all([
       this.notifications.listForRecipient(recipientUserId, {
         unreadOnly: params.unreadOnly,
         offset,
@@ -83,7 +83,7 @@ export class NotificationService implements INotificationService {
       notifications: rows.map(toNotificationDto),
       totalCount,
       unreadCount,
-      hasNextPage: offset + rows.length < totalCount,
+      hasNextPage,
     };
   }
 

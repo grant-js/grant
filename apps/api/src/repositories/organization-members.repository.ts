@@ -24,6 +24,7 @@ import { and, eq, ilike, isNull, or, sql } from 'drizzle-orm';
 import { config } from '@/config';
 import { BadRequestError, NotFoundError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
+import { hasNextPageByCount } from '@/lib/pagination.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 export class OrganizationMemberRepository implements IOrganizationMemberRepository {
@@ -286,7 +287,11 @@ export class OrganizationMemberRepository implements IOrganizationMemberReposito
         })
       );
 
-      const hasNextPage = paginationLimit ? safePage * paginationLimit < totalCount : false;
+      const hasNextPage = hasNextPageByCount({
+        page: safePage,
+        limit: paginationLimit,
+        totalCount,
+      });
 
       return {
         members,

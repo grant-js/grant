@@ -11,6 +11,7 @@ import type {
 } from '@grantjs/schema';
 import { and, desc, eq, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 
+import { takePage } from '@/lib/pagination.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 export function toWebhookDeliveryAttempt(row: WebhookDeliveryAttemptModel): WebhookDeliveryAttempt {
@@ -177,14 +178,11 @@ export class WebhookDeliveryRepository {
         .where(whereClause),
     ]);
 
-    // Over-fetching one row is the authoritative next-page signal: it reflects the
-    // same snapshot as the page itself, unlike comparing against a separate count(*).
-    const hasNextPage = rows.length > options.limit;
-    const trimmed = hasNextPage ? rows.slice(0, options.limit) : rows;
+    const page = takePage(rows, options.limit);
     return {
-      rows: trimmed.map((row) => row.delivery),
+      rows: page.rows.map((row) => row.delivery),
       totalCount: countRows[0]?.count ?? 0,
-      hasNextPage,
+      hasNextPage: page.hasNextPage,
     };
   }
 

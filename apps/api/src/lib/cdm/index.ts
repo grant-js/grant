@@ -1,4 +1,5 @@
 export { assembleExportedSyncProjectInput } from './cdm-export-assemble.lib';
+export { validateCdmJsonFields } from './cdm-json.schemas';
 export { PermissionCdmEntity } from './entities/permission.cdm-entity';
 export { ResourceCdmEntity } from './entities/resource.cdm-entity';
 export { RoleTemplateCdmEntity } from './entities/role-template.cdm-entity';

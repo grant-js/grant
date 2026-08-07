@@ -103,6 +103,12 @@ export const envSchema = z.object({
   PAGINATION_DEFAULT_PAGE_SIZE: optionalNumber(50),
   PAGINATION_MAX_PAGE_SIZE: optionalNumber(100),
 
+  // CDM document limits. These bound the `JSON` scalar fields of a sync
+  // document, which GraphQL accepts without inspecting. Defaults are generous
+  // on purpose — they exist to stop unbounded writes, not to shape payloads.
+  CDM_MAX_JSON_BYTES: optionalNumber(64 * 1024),
+  CDM_MAX_JSON_DEPTH: optionalNumber(16),
+
   // Cache / Redis
   CACHE_STRATEGY: z.enum(['memory', 'redis']).optional().default('memory'),
   CACHE_DEFAULT_TTL: optionalNumber(3600),
