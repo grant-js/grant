@@ -23,6 +23,7 @@ import {
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError, NotFoundError, ValidationError } from '@/lib/errors';
 import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
+import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { SelectedFields } from '@/types';
 
@@ -65,9 +66,7 @@ export class ProjectAppsHandler extends CacheHandler {
       projectAppIds = [...new Set(projectAppIds)];
     }
 
-    if (ids && ids.length > 0) {
-      projectAppIds = ids.filter((id) => projectAppIds.includes(id));
-    }
+    projectAppIds = intersectScopedIds(projectAppIds, ids);
 
     if (projectAppIds.length === 0) {
       return {

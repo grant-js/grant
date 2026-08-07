@@ -21,6 +21,7 @@ import {
 } from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
+import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -49,9 +50,7 @@ export class TagHandler extends CacheHandler {
 
     let tagIds = await this.getScopedTagIds(scope);
 
-    if (ids && ids.length > 0) {
-      tagIds = ids.filter((tagId) => tagIds.includes(tagId));
-    }
+    tagIds = intersectScopedIds(tagIds, ids);
 
     if (tagIds.length === 0) {
       return {

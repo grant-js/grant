@@ -46,7 +46,7 @@ import {
 import { AuthorizationError, BadRequestError, NotFoundError } from '@/lib/errors';
 import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
 import { assertProjectPivotMetadataMutationAllowed } from '@/lib/project-pivot-metadata-auth.lib';
-import { tryProjectIdFromScope } from '@/lib/scope.lib';
+import { intersectScopedIds, tryProjectIdFromScope } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -104,9 +104,7 @@ export class UserHandler extends CacheHandler {
         .map(({ userId }) => userId);
     }
 
-    if (ids && ids.length > 0) {
-      userIds = ids.filter((userId) => userIds.includes(userId));
-    }
+    userIds = intersectScopedIds(userIds, ids);
 
     if (userIds.length === 0) {
       return {

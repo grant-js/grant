@@ -24,6 +24,28 @@ import { BadRequestError } from '@/lib/errors';
  * applicable" rather than as an error.
  */
 
+/**
+ * Narrows a caller's scope-permitted id set by an optional explicit id filter.
+ *
+ * The asymmetry matters and is the reason this is named rather than inlined:
+ *
+ *   - `requested` absent or empty means **no filter** — the caller gets every
+ *     id their scope allows. It does not mean "nothing allowed".
+ *   - a non-empty `requested` is intersected, so ids outside the scope are
+ *     dropped. A caller can never widen their visibility by naming ids.
+ *
+ * The result preserves `requested` order, matching the previous inline form.
+ * An empty result means the caller may see nothing and the query should be
+ * short-circuited — callers keep that early return, since the empty page shape
+ * differs per entity.
+ */
+export function intersectScopedIds(scoped: string[], requested?: string[] | null): string[] {
+  if (!requested || requested.length === 0) {
+    return scoped;
+  }
+  return requested.filter((id) => scoped.includes(id));
+}
+
 const PROJECT_TENANTS = [
   Tenant.AccountProject,
   Tenant.OrganizationProject,
