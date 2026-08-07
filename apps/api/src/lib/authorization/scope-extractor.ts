@@ -1,7 +1,34 @@
 import { Scope, Tenant } from '@grantjs/schema';
 import { Request } from 'express';
 
+const KNOWN_TENANTS: ReadonlySet<string> = new Set(Object.values(Tenant));
+
+/**
+ * Rejects a scope whose tenant is not a `Tenant` enum member.
+ *
+ * Every extraction path below casts `tenant` out of a header, query param, or
+ * request body with `as Tenant` and no check, so until this ran the value on
+ * `context.user.scope` was whatever the caller sent. Downstream that value
+ * indexes the `CacheHandler` scoped-id dispatch, where an unrecognised key used
+ * to reach `Object.prototype` and resolve instead of being rejected.
+ *
+ * The dispatch is now hardened independently. This is the other half: an
+ * unknown tenant should never have been admitted to a request context in the
+ * first place, and treating it as absent makes the caller fail authorization
+ * rather than fail some deeper invariant.
+ */
+function validated(scope: Scope | null): Scope | null {
+  if (!scope || typeof scope.tenant !== 'string' || !KNOWN_TENANTS.has(scope.tenant)) {
+    return null;
+  }
+  return scope;
+}
+
 export function extractScopeFromRequest(req: Request): Scope | null {
+  return validated(readScopeFromRequest(req));
+}
+
+function readScopeFromRequest(req: Request): Scope | null {
   const tenantHeader = req.headers['x-scope-tenant'];
   const idHeader = req.headers['x-scope-id'];
 

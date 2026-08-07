@@ -80,11 +80,35 @@ type ScopedIdKind =
 type ScopeResolver = (scope: Scope) => Promise<string[]>;
 
 type ScopedIdDescriptor = {
-  namespace: ScopedIdKind;
-  /** A tenant absent from this map is rejected, never silently empty. */
+  /**
+   * A tenant absent from this map is rejected, never silently empty.
+   *
+   * Built with a null prototype. `scope.tenant` is attacker-controlled — every
+   * path in `scope-extractor.ts` casts it out of a header, query param or body
+   * without checking it against the enum — so a plain object literal would
+   * resolve `toString` and friends off `Object.prototype`, skip the rejection
+   * below, and call them. See `assertResolvable`.
+   */
   byTenant: Partial<Record<Tenant, ScopeResolver>>;
   unsupportedMessage?: (tenant: Tenant) => string;
 };
+
+/**
+ * Own-property lookup for a tenant resolver.
+ *
+ * The `Object.hasOwn` guard and the null-prototype maps are belt and braces on
+ * purpose: either alone closes the hole, and this dispatch decides which entity
+ * ids a caller may see, so it does not get to depend on one of them staying
+ * correct through a later edit.
+ */
+const resolverFor = (
+  byTenant: Partial<Record<Tenant, ScopeResolver>>,
+  tenant: Tenant
+): ScopeResolver | undefined => (Object.hasOwn(byTenant, tenant) ? byTenant[tenant] : undefined);
+
+const tenantMap = (
+  entries: Partial<Record<Tenant, ScopeResolver>>
+): Partial<Record<Tenant, ScopeResolver>> => Object.assign(Object.create(null), entries);
 
 /** The four tenants whose scope id embeds a projectId at index 1. */
 const PROJECT_SCOPED_TENANTS = [
@@ -105,7 +129,7 @@ const forTenants = (
   tenants: readonly Tenant[],
   resolve: ScopeResolver
 ): Partial<Record<Tenant, ScopeResolver>> =>
-  Object.fromEntries(tenants.map((tenant) => [tenant, resolve]));
+  Object.assign(Object.create(null), Object.fromEntries(tenants.map((t) => [t, resolve])));
 
 export class CacheHandler implements IScopedIdProvider {
   private readonly scopedIdDescriptors: Record<ScopedIdKind, ScopedIdDescriptor>;
@@ -165,8 +189,12 @@ export class CacheHandler implements IScopedIdProvider {
    * `adapter` is optional-chained because `cache.apiKeys` may be absent; for
    * every other namespace it is always present.
    */
-  private async resolveScopedIds(descriptor: ScopedIdDescriptor, scope: Scope): Promise<string[]> {
-    const adapter: ICacheAdapter | undefined = this.cache[descriptor.namespace];
+  private async resolveScopedIds(kind: ScopedIdKind, scope: Scope): Promise<string[]> {
+    const descriptor = this.scopedIdDescriptors[kind];
+    // The record key *is* the cache namespace. It used to be repeated as a
+    // `namespace` field with nothing tying the two together, so a descriptor
+    // could read and write another entity's id set under the same cache key.
+    const adapter: ICacheAdapter | undefined = this.cache[kind];
     const cacheKey = this.createCacheKey(scope);
 
     const cached = await adapter?.get(cacheKey);
@@ -174,7 +202,7 @@ export class CacheHandler implements IScopedIdProvider {
       return Array.from(cached.values());
     }
 
-    const resolve = descriptor.byTenant[scope.tenant];
+    const resolve = resolverFor(descriptor.byTenant, scope.tenant);
     if (!resolve) {
       throw new BadRequestError(
         descriptor.unsupportedMessage?.(scope.tenant) ?? `Unsupported tenant type: ${scope.tenant}`
@@ -210,8 +238,7 @@ export class CacheHandler implements IScopedIdProvider {
 
     return {
       projects: {
-        namespace: 'projects',
-        byTenant: {
+        byTenant: tenantMap({
           [Tenant.Account]: async (scope) =>
             (await s.accountProjects.getAccountProjects({ accountId: scope.id })).map(
               (ap) => ap.projectId
@@ -234,12 +261,11 @@ export class CacheHandler implements IScopedIdProvider {
                 organizationId: organizationProjectFromScopeOrThrow(scope).organizationId,
               })
             ).map((op) => op.projectId),
-        },
+        }),
       },
 
       roles: {
-        namespace: 'roles',
-        byTenant: {
+        byTenant: tenantMap({
           [Tenant.Account]: noneAtAccountLevel,
           [Tenant.Organization]: async (scope) =>
             (await s.organizationRoles.getOrganizationRoles({ organizationId: scope.id })).map(
@@ -264,12 +290,11 @@ export class CacheHandler implements IScopedIdProvider {
             const userRoleIds = new Set(userRoles.map((ur) => ur.roleId));
             return projectRoles.map((pr) => pr.roleId).filter((roleId) => userRoleIds.has(roleId));
           },
-        },
+        }),
       },
 
       users: {
-        namespace: 'users',
-        byTenant: {
+        byTenant: tenantMap({
           [Tenant.Account]: noneAtAccountLevel,
           [Tenant.Organization]: async (scope) =>
             (await s.organizationUsers.getOrganizationUsers({ organizationId: scope.id })).map(
@@ -282,12 +307,11 @@ export class CacheHandler implements IScopedIdProvider {
               (pu) => pu.userId
             )
           ),
-        },
+        }),
       },
 
       groups: {
-        namespace: 'groups',
-        byTenant: {
+        byTenant: tenantMap({
           [Tenant.Account]: noneAtAccountLevel,
           [Tenant.Organization]: async (scope) =>
             (await s.organizationGroups.getOrganizationGroups({ organizationId: scope.id })).map(
@@ -300,12 +324,11 @@ export class CacheHandler implements IScopedIdProvider {
               (pg) => pg.groupId
             )
           ),
-        },
+        }),
       },
 
       permissions: {
-        namespace: 'permissions',
-        byTenant: {
+        byTenant: tenantMap({
           [Tenant.Account]: noneAtAccountLevel,
           [Tenant.Organization]: async (scope) =>
             (
@@ -320,11 +343,10 @@ export class CacheHandler implements IScopedIdProvider {
               (pp) => pp.permissionId
             )
           ),
-        },
+        }),
       },
 
       resources: {
-        namespace: 'resources',
         unsupportedMessage: (tenant) =>
           `Unsupported tenant type: ${tenant}. Resources are only supported at the project level.`,
         byTenant: forTenants(
@@ -339,8 +361,7 @@ export class CacheHandler implements IScopedIdProvider {
       // Unlike roles/users/groups/permissions, an Account scope resolves to real
       // tags — personal accounts do carry account-level tags.
       tags: {
-        namespace: 'tags',
-        byTenant: {
+        byTenant: tenantMap({
           [Tenant.Account]: async (scope) =>
             (await s.accountTags.getAccountTags({ accountId: scope.id })).map((at) => at.tagId),
           [Tenant.Organization]: async (scope) =>
@@ -354,12 +375,11 @@ export class CacheHandler implements IScopedIdProvider {
               (pt) => pt.tagId
             )
           ),
-        },
+        }),
       },
 
       apiKeys: {
-        namespace: 'apiKeys',
-        byTenant: {
+        byTenant: tenantMap({
           ...forTenants(PROJECT_USER_TENANTS, async (scope) => {
             const { projectId, userId } = projectUserFromScopeOrThrow(scope);
             return (await s.projectUserApiKeys.getProjectUserApiKeys({ projectId, userId })).map(
@@ -381,41 +401,41 @@ export class CacheHandler implements IScopedIdProvider {
               })
             ).map((pivot) => pivot.apiKeyId);
           },
-        },
+        }),
       },
     };
   }
 
   getScopedProjectIds(scope: Scope): Promise<string[]> {
-    return this.resolveScopedIds(this.scopedIdDescriptors.projects, scope);
+    return this.resolveScopedIds('projects', scope);
   }
 
   getScopedRoleIds(scope: Scope): Promise<string[]> {
-    return this.resolveScopedIds(this.scopedIdDescriptors.roles, scope);
+    return this.resolveScopedIds('roles', scope);
   }
 
   getScopedUserIds(scope: Scope): Promise<string[]> {
-    return this.resolveScopedIds(this.scopedIdDescriptors.users, scope);
+    return this.resolveScopedIds('users', scope);
   }
 
   getScopedGroupIds(scope: Scope): Promise<string[]> {
-    return this.resolveScopedIds(this.scopedIdDescriptors.groups, scope);
+    return this.resolveScopedIds('groups', scope);
   }
 
   getScopedPermissionIds(scope: Scope): Promise<string[]> {
-    return this.resolveScopedIds(this.scopedIdDescriptors.permissions, scope);
+    return this.resolveScopedIds('permissions', scope);
   }
 
   getScopedResourceIds(scope: Scope): Promise<string[]> {
-    return this.resolveScopedIds(this.scopedIdDescriptors.resources, scope);
+    return this.resolveScopedIds('resources', scope);
   }
 
   getScopedTagIds(scope: Scope): Promise<string[]> {
-    return this.resolveScopedIds(this.scopedIdDescriptors.tags, scope);
+    return this.resolveScopedIds('tags', scope);
   }
 
   getScopedApiKeyIds(scope: Scope): Promise<string[]> {
-    return this.resolveScopedIds(this.scopedIdDescriptors.apiKeys, scope);
+    return this.resolveScopedIds('apiKeys', scope);
   }
 
   async getScopedProjectAppIds(scope: Scope): Promise<string[]> {
