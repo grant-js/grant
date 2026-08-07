@@ -113,6 +113,24 @@ Characterize **current** behaviour, bugs included. Do not fix anything here:
 
 These tests are the correctness check for slice 5: write them against the current 9 methods, refactor, and they must pass **untouched**. If a test needs editing to go green, the refactor changed behaviour — stop and review why.
 
+**Done.** 160 tests in `tests/unit/handlers/base/`, over a file that is now 812 lines after slice 4:
+
+- `cache-handler.scoped-ids.test.ts` (92) — an 8×8 tenant dispatch matrix, cache hit/miss semantics per namespace, the `ProjectUser` intersection, and the `getScopedProjectAppIds` guard.
+- `cache-handler.mutations.test.ts` (68) — the 18 add/remove wrappers, the invalidators, and the authorization cache key.
+- `cache-handler.fixtures.ts` — in-memory cache namespaces rather than stubs, because several behaviours are about what ends up _in_ the cache.
+
+Verified by mutation testing rather than by passing: **8 of 8 planted behaviour changes are caught**, including the two that matter most — dropping the `ProjectUser` role filter (privilege escalation) and dropping `grantedScopes` from the authorization cache key (two OAuth grants sharing one result). A suite that passes proves nothing; one that fails on the right mutations is the actual gate for slice 5.
+
+Asymmetries recorded as current behaviour, deliberately not fixed here:
+
+| Behaviour                                                                                           | Note                                                          |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `getScopedTagIds` returns real tags for an `Account` scope                                          | roles/users/groups/permissions return `[]` for the same scope |
+| `getScopedUserIds`/`GroupIds`/`PermissionIds` reject `ProjectUser`                                  | `getScopedRoleIds` accepts it                                 |
+| `getScopedProjectIds` on an `OrganizationProject` scope returns **every** project of the owning org | not just the one named in the scope id                        |
+| `getScopedProjectAppIds` does not cache its empty result                                            | the guard re-runs on every call                               |
+| `invalidateSigningKeysCacheForScope` prefix is not delimiter-anchored                               | `organization:org-1*` also matches `organization:org-10`      |
+
 ### 5 — `CacheHandler` + scope helpers · security-full
 
 The highest-risk slice. `CacheHandler` decides what every caller may see; a mistake here is a tenancy leak.

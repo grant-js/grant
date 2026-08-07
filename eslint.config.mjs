@@ -119,6 +119,22 @@ export default defineConfig(
     },
   },
 
+  // Standalone Node scripts inside a workspace (tooling, not app code). Without
+  // this they trip no-undef on console/process, which the TS configs supply via
+  // @types/node but a bare .mjs does not.
+  {
+    files: ['**/*.mjs'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        URL: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+      },
+    },
+  },
+
   // Forbid direct process.env in API app source; allow in config/, scripts/, tests/
   {
     files: ['apps/api/src/**/*.ts'],
