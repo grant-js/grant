@@ -138,5 +138,147 @@ export default defineConfig(
     rules: {
       'no-restricted-syntax': 'off',
     },
+  },
+
+  // ---------------------------------------------------------------------------
+  // Grant guardrails — encode the rules in AGENTS.md so they cannot silently regress.
+  // See docs/contributing/code-quality/README.md § Enforcement.
+  // ---------------------------------------------------------------------------
+
+  // Un-awaited promises. A floating cache write inside a transaction let the
+  // transaction commit before the write landed, and turned a rejection into an
+  // unhandled rejection (audit Tier 0.1, plus 12 more of the same shape).
+  {
+    files: ['apps/api/src/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'error',
+    },
+  },
+
+  // Import discipline — the symbol/source table in AGENTS.md.
+  {
+    files: ['apps/api/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@grantjs/logger',
+              message: 'Import createLogger/Logger from @/lib/logger instead.',
+            },
+            {
+              name: '@grantjs/errors',
+              message: 'Import HttpException/mapDomainToHttp from @/lib/errors instead.',
+            },
+            {
+              name: '@grantjs/core',
+              importNames: [
+                'AuthenticationError',
+                'AuthorizationError',
+                'BadRequestError',
+                'ConfigurationError',
+                'ConflictError',
+                'GrantException',
+                'InvalidOrUsedVerificationTokenError',
+                'NoSessionSigningKeyError',
+                'NotFoundError',
+                'TokenExpiredError',
+                'TokenInvalidError',
+                'TokenValidationError',
+                'ValidationError',
+              ],
+              message: 'Import domain errors from @/lib/errors, which re-exports them.',
+            },
+            {
+              name: '@/services/common',
+              importNames: ['DeleteParams', 'SelectedFields', 'Otp'],
+              message: 'Import these from @/types instead.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['**/common/PivotRepository', '**/common/EntityRepository'],
+              message: 'Import repository base classes from @/repositories/common.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  // The re-export layers are the one place allowed to reach the underlying packages.
+  {
+    files: ['apps/api/src/lib/logger/**/*.ts', 'apps/api/src/lib/errors/**/*.ts'],
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
+
+  // Layer boundaries: Transport -> Handlers -> Services -> Repositories -> Database.
+  // Currently 100% clean; these rules lock that in.
+  {
+    files: ['apps/api/src/handlers/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/repositories', '@/repositories/*'],
+              message: 'Handlers must not import repositories — go through a service.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/api/src/rest/**/*.ts', 'apps/api/src/graphql/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/repositories', '@/repositories/*', '@/services', '@/services/*'],
+              message: 'Transport must call handlers only (context.handlers).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/api/src/repositories/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/services', '@/services/*', '@/handlers', '@/handlers/*'],
+              message: 'Repositories are database access only.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/api/src/services/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/handlers', '@/handlers/*'],
+              message: 'Services must not import handlers.',
+            },
+          ],
+        },
+      ],
+    },
   }
 );

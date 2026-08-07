@@ -45,6 +45,10 @@ jobs:
               - 'turbo.json'
               - 'tsconfig*.json'
               - '.github/actions/**'
+              # Workflow edits change how everything else is verified, so they must
+              # be verified themselves — without this, a CI change merges untested.
+              - '.github/workflows/**'
+              - 'eslint.config.*'
               - '.eslintrc*'
               - 'vitest.config.*'
 

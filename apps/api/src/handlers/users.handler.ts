@@ -359,7 +359,7 @@ export class UserHandler extends CacheHandler {
         await this.invalidatePermissionsCacheForAllScopes();
       }
 
-      this.addUserIdToScopeCache(scope, userId);
+      await this.addUserIdToScopeCache(scope, userId);
 
       if (invalidatePivotAuth) {
         await this.invalidateAuthorizationResultsForUser(userId);

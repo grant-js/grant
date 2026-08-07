@@ -1,0 +1,19 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    "apps/api": {
+      "entry": ["src/server.ts", "src/jobs/**/*.job.ts", "tests/**/*.test.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "apps/web": {
+      "entry": ["app/**/*.{ts,tsx}", "middleware.ts"],
+      "project": ["**/*.{ts,tsx}"]
+    },
+    "packages/@grantjs/*": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"]
+    }
+  },
+  "ignore": ["**/generated/**", "**/dist/**", "docs/**"],
+  "ignoreDependencies": ["@types/*"]
+}

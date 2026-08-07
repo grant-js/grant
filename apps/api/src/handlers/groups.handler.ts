@@ -147,7 +147,7 @@ export class GroupHandler extends CacheHandler {
         );
       }
 
-      this.addGroupIdToScopeCache(scope, groupId);
+      await this.addGroupIdToScopeCache(scope, groupId);
 
       return group;
     });
@@ -267,7 +267,7 @@ export class GroupHandler extends CacheHandler {
         ),
       ]);
 
-      this.removeGroupIdFromScopeCache(scope, groupId);
+      await this.removeGroupIdFromScopeCache(scope, groupId);
 
       return await this.groups.deleteGroup(params, tx);
     });

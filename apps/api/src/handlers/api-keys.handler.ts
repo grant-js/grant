@@ -156,7 +156,7 @@ export class ApiKeysHandler extends CacheHandler {
             tx
           );
 
-          this.addApiKeyIdToScopeCache(scope, apiKey.id);
+          await this.addApiKeyIdToScopeCache(scope, apiKey.id);
           return apiKey;
         }
 
@@ -185,7 +185,7 @@ export class ApiKeysHandler extends CacheHandler {
             },
             tx
           );
-          this.addApiKeyIdToScopeCache(scope, apiKey.id);
+          await this.addApiKeyIdToScopeCache(scope, apiKey.id);
           return apiKey;
         }
 
@@ -218,7 +218,7 @@ export class ApiKeysHandler extends CacheHandler {
             },
             tx
           );
-          this.addApiKeyIdToScopeCache(scope, apiKey.id);
+          await this.addApiKeyIdToScopeCache(scope, apiKey.id);
           return apiKey;
         }
 

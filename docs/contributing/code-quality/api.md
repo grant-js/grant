@@ -39,9 +39,11 @@ this.addTagIdToScopeCache(scope, tagId); // :99  — async, not awaited
 this.removeTagIdFromScopeCache(scope, tagId); // :142 — async, not awaited
 ```
 
-Both methods are `async` ([`cache-handler.ts:679`](https://github.com/grant-js/grant/blob/main/apps/api/src/handlers/base/cache-handler.ts), [`:683`](https://github.com/grant-js/grant/blob/main/apps/api/src/handlers/base/cache-handler.ts)). Every other cache mutation in the codebase is awaited. The calls sit inside a `withTransaction` block, so the transaction can commit before the cache write resolves — and a rejection becomes an unhandled promise rejection rather than a failed request.
+Both methods are `async` ([`cache-handler.ts:679`](https://github.com/grant-js/grant/blob/main/apps/api/src/handlers/base/cache-handler.ts), [`:683`](https://github.com/grant-js/grant/blob/main/apps/api/src/handlers/base/cache-handler.ts)). The calls sit inside a `withTransaction` block, so the transaction can commit before the cache write resolves — and a rejection becomes an unhandled promise rejection rather than a failed request.
 
-`@typescript-eslint/no-floating-promises` would catch this class of bug repo-wide.
+> **Correction (slice 3).** This entry originally claimed _"Every other cache mutation in the codebase is awaited."_ **That was false.** Enabling `@typescript-eslint/no-floating-promises` found **12 more instances of the identical defect** across `api-keys` (×3), `roles` (×2), `permissions` (×2), `projects` (×2), `groups` (×2) and `users` (×1) handlers, plus two unrelated floating promises in `oauth-state.service.ts` (a `setInterval` whose rejection would be process-fatal) and `email-then-mfa-compose.ts` (an async auth guard bypassing Express error handling).
+>
+> The lens that found one instance by reading was reported as a complete result. **Grep found the instance; only the type-aware rule found the pattern.** Where a lint rule exists for a finding, run it before stating a count.
 
 ### 0.2 `hasNextPage` computed, discarded, then recomputed differently
 
@@ -372,6 +374,28 @@ The base classes are the priority: `EntityRepository`, `PivotRepository` and `Ca
 63 repositories share 4 test files. Service unit tests skew toward event emission (8 `*.events.test.ts`) over CRUD and validation paths; the ~50 pivot services have no unit tests at all. REST routes are exercised only indirectly through integration and e2e suites.
 
 ---
+
+## Corrections
+
+Errors in this document found while acting on it. Recorded rather than silently edited, because the pattern in them is the useful part.
+
+| #   | Original claim                                                         | Reality                                                                                                            | Found in |
+| --- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------- |
+| 1   | One un-awaited cache mutation; "every other cache mutation is awaited" | **13 total**, across 7 handlers, plus 2 unrelated floating promises                                                | slice 3  |
+| 2   | 9 raw `throw new Error(`                                               | **10** — the grep missed `const err = new Error(...)` in `project-sync.job.ts`                                     | slice 2  |
+| 3   | 9 raw throws are all violations                                        | **5 are a deliberate sentinel protocol** that `lib/cdm/permission-ref.lib.ts` maps to domain errors, with tests    | slice 2  |
+| 4   | 3 dead logger fields                                                   | **1** — the other two use the compliant `(requestLogger ?? this.logger)` fallback                                  | slice 2  |
+| 5   | `IEmailService` is a service port in the wrong directory               | It is an **adapter port** (`MailgunEmailAdapter implements IEmailService`); `ports/email.port.ts` is correct       | slice 2  |
+| 6   | `AUDIT_VALUE_MAX_LENGTH` should move to config                         | It mirrors `varchar(1000)` on the audit tables; env-tunable would let config exceed the column                     | slice 2  |
+| 7   | `handlers/index.ts` is a third composition site                        | It is a layer factory, identical in shape to `services/index.ts` and `repositories/index.ts`, which went unflagged | slice 2  |
+| 8   | Default page size: "10 vs 50"                                          | **Five** values (10, 20, 25, 50) plus a dead `defaultPageSize: 20` in config that nothing read                     | slice 2  |
+| 9   | Repository ports are a mechanical fix                                  | ~12 return types are declared **inside** the repositories; the ports require migrating them into core first        | slice 2  |
+
+Three lessons, folded into [the rubric](./README.md):
+
+1. **Run the tool before stating the count.** Corrections 1 and 2 are both grep under-counting what a type-aware rule or a parser finds exactly.
+2. **A rule violation is not automatically a defect.** Corrections 3, 5, 6 and 7 are all cases where the code was right and the rule — or my reading of it — was wrong. Check for an intentional design before filing.
+3. **"Mechanical" is a claim that needs testing.** Correction 9 was sized as an import fix and is actually a question about what the domain owns.
 
 ## Recommended enforcement
 
