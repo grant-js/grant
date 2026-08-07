@@ -3,9 +3,9 @@ import { Response, Router } from 'express';
 import { t } from '@/i18n';
 import { authenticateRestRoute } from '@/lib/authorization';
 import { getRefreshTokenFromCookie } from '@/lib/headers.lib';
+import { clearRefreshTokenCookie } from '@/lib/refresh-cookie.lib';
 import { validate } from '@/middleware/validation.middleware';
 import { TypedRequest } from '@/rest/types';
-import { clearRefreshTokenCookie } from '@/rest/utils/refresh-cookie';
 import { sendSuccessResponse } from '@/rest/utils/response';
 import { RequestContext } from '@/types';
 

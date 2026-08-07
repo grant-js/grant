@@ -21,6 +21,7 @@ import {
 } from '@grantjs/schema';
 import { and, eq, ilike, isNull, or, sql } from 'drizzle-orm';
 
+import { config } from '@/config';
 import { BadRequestError, NotFoundError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -35,10 +36,10 @@ export class OrganizationMemberRepository implements IOrganizationMemberReposito
     tx?: Transaction
   ): Promise<OrganizationMemberPage> {
     const dbInstance = tx ?? this.db;
-    const { scope, page = 1, limit = 50, search, sort, status } = params;
+    const { scope, page = 1, limit, search, sort, status } = params;
     const { id: organizationId } = scope;
     const safePage = page ?? 1;
-    const safeLimit = limit ?? 50;
+    const safeLimit = limit ?? config.system.defaultPageSize;
 
     try {
       // Fetch members (users)

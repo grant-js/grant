@@ -1,4 +1,4 @@
-import type { IEventConsumer } from '@grantjs/core';
+import type { IEventConsumer, IEventRelayService } from '@grantjs/core';
 
 import { mapEventLogToDomainEvent } from '@/lib/events';
 import { createLogger } from '@/lib/logger';
@@ -13,7 +13,7 @@ const logger = createLogger('EventRelayService');
  * idempotently; a consumer failure aborts the batch transaction so the events
  * stay `pending` and are retried (at-least-once).
  */
-export class EventRelayService {
+export class EventRelayService implements IEventRelayService<Transaction> {
   constructor(
     private readonly eventLogRepository: EventLogRepository,
     private readonly consumers: readonly IEventConsumer[]

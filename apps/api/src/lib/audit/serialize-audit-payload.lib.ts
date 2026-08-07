@@ -1,4 +1,9 @@
-/** Matches `varchar(1000)` on all entity audit log tables. */
+/**
+ * Matches `varchar(1000)` on all entity audit log tables.
+ *
+ * Deliberately NOT env-configurable: it mirrors a database column constraint,
+ * so raising it here without a migration would fail the insert.
+ */
 export const AUDIT_VALUE_MAX_LENGTH = 1000;
 
 const COMPACT_SAMPLE_SIZE = 5;

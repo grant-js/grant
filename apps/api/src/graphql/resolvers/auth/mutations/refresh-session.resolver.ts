@@ -3,7 +3,7 @@ import { MutationResolvers } from '@grantjs/schema';
 import { GraphqlContext } from '@/graphql/types';
 import { AuthenticationError } from '@/lib/errors';
 import { getRefreshTokenFromCookie } from '@/lib/headers.lib';
-import { clearRefreshTokenCookie, setRefreshTokenCookie } from '@/rest/utils/refresh-cookie';
+import { clearRefreshTokenCookie, setRefreshTokenCookie } from '@/lib/refresh-cookie.lib';
 
 /**
  * Cookie-based refresh only (aligns with REST POST /api/auth/refresh).

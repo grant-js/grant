@@ -7,6 +7,7 @@ import { t } from '@/i18n';
 import { authenticateRestRoute } from '@/lib/authorization';
 import { AuthenticationError } from '@/lib/errors';
 import { getRefreshTokenFromCookie } from '@/lib/headers.lib';
+import { clearRefreshTokenCookie, setRefreshTokenCookie } from '@/lib/refresh-cookie.lib';
 import { validate, validateBody, validateQuery } from '@/middleware/validation.middleware';
 import {
   cliCallbackRequestSchema,
@@ -41,7 +42,6 @@ import {
   isCliRedirectUrl,
   validateRedirectUrl,
 } from '@/rest/utils/auth';
-import { clearRefreshTokenCookie, setRefreshTokenCookie } from '@/rest/utils/refresh-cookie';
 import { sendSuccessResponse } from '@/rest/utils/response';
 import { RequestContext } from '@/types';
 

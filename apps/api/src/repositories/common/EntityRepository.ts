@@ -17,6 +17,7 @@ import {
   sql,
 } from 'drizzle-orm';
 
+import { config } from '@/config';
 import { NotFoundError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -310,7 +311,7 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
 
     const { ids, search, sort } = params;
     const page = params.page ?? 1;
-    const safeLimit = params.limit ?? 50;
+    const safeLimit = params.limit ?? config.system.defaultPageSize;
     const limit = safeLimit > -1 ? safeLimit : undefined;
     const offset = limit ? (page - 1) * limit : undefined;
 

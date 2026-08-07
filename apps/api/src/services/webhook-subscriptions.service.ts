@@ -37,7 +37,7 @@ import {
 } from './webhook-subscriptions.schemas';
 
 const DEFAULT_DELIVERY_PAGE_SIZE = 25;
-const MAX_DELIVERY_PAGE_SIZE = 100;
+const MAX_DELIVERY_PAGE_SIZE = config.system.maxPageSize;
 
 export class WebhookSubscriptionService implements IWebhookSubscriptionService {
   constructor(

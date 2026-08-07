@@ -95,6 +95,13 @@ export const envSchema = z.object({
   OAUTH_CLI_CALLBACK_TTL_SECONDS: optionalNumber(60),
   PROJECT_OAUTH_EMAIL_ENTRY_URL: optionalString(''),
   PROJECT_OAUTH_CONSENT_URL: optionalString(''),
+  PROJECT_OAUTH_STATE_TTL_SECONDS: optionalNumber(600),
+  PROJECT_OAUTH_EMAIL_TOKEN_TTL_SECONDS: optionalNumber(600),
+  PROJECT_OAUTH_CONSENT_TTL_SECONDS: optionalNumber(600),
+
+  // Pagination
+  PAGINATION_DEFAULT_PAGE_SIZE: optionalNumber(50),
+  PAGINATION_MAX_PAGE_SIZE: optionalNumber(100),
 
   // Cache / Redis
   CACHE_STRATEGY: z.enum(['memory', 'redis']).optional().default('memory'),

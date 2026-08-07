@@ -1,5 +1,6 @@
 import { Tenant } from '@grantjs/schema';
 
+import { config } from '@/config';
 import { z } from '@/lib/zod-openapi.lib';
 
 export const tenantSchema = z.enum(Object.values(Tenant) as [Tenant, ...Tenant[]]);
@@ -31,7 +32,7 @@ export const paginationQuerySchema = z.object({
     .union([z.string(), z.number()])
     .optional()
     .transform((val) => {
-      if (val === undefined || val === '') return 50;
+      if (val === undefined || val === '') return config.system.defaultPageSize;
       return typeof val === 'string' ? parseInt(val, 10) : val;
     })
     .pipe(z.number().int().min(-1)),

@@ -188,7 +188,9 @@ export default class ProjectSyncJob extends Job {
     const { enqueueScope, jobRecordId, execData, jobService, projectExport } = params;
     const raw = execData.payload as ProjectSyncJobExportPayload;
     if (raw == null || typeof raw !== 'object' || typeof raw.version !== 'number') {
-      const err = new Error('Invalid export job payload: expected { version: number, ... }');
+      const err = new ValidationError(
+        'Invalid export job payload: expected { version: number, ... }'
+      );
       await this.markJobFailedSafe(enqueueScope, jobRecordId, jobService, err);
       throw err;
     }
