@@ -45,8 +45,8 @@ import {
 } from '@/lib/effective-project-user-metadata.lib';
 import { AuthorizationError, BadRequestError, NotFoundError } from '@/lib/errors';
 import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
-import { tryProjectIdFromScope } from '@/lib/project-id-from-scope.lib';
 import { assertProjectPivotMetadataMutationAllowed } from '@/lib/project-pivot-metadata-auth.lib';
+import { tryProjectIdFromScope } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 

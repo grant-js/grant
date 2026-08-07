@@ -2,7 +2,7 @@ import type { IEventConsumer } from '@grantjs/core';
 import type { DomainEvent } from '@grantjs/schema';
 
 import { createLogger } from '@/lib/logger';
-import { tryProjectIdFromScope } from '@/lib/project-id-from-scope.lib';
+import { tryProjectIdFromScope } from '@/lib/scope.lib';
 import type { Transaction } from '@/lib/transaction-manager.lib';
 import type { WebhookDeliveryRepository } from '@/repositories/webhook-deliveries.repository';
 import type { WebhookSubscriptionRepository } from '@/repositories/webhook-subscriptions.repository';

@@ -19,7 +19,7 @@ import { SsrfBlockedError } from '@grantjs/webhooks';
 
 import { config } from '@/config';
 import { NotFoundError, ValidationError } from '@/lib/errors';
-import { tryProjectIdFromScope } from '@/lib/project-id-from-scope.lib';
+import { tryProjectIdFromScope } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import {
   toWebhookDeliveryAttempt,
