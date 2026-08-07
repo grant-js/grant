@@ -17,6 +17,7 @@ import {
   createDynamicSingleSchema,
   validateInput,
   validateOutput,
+  validatePage,
 } from './common';
 import {
   createTagInputSchema,
@@ -51,15 +52,10 @@ export class TagService implements ITagService {
 
     const result = await this.tagRepository.getTags(params, transaction);
 
-    const transformedResult = {
-      items: result.tags,
-      totalCount: result.totalCount,
-      hasNextPage: result.hasNextPage,
-    };
-
-    validateOutput(
+    validatePage(
       createDynamicPaginatedSchema(tagSchema, params.requestedFields),
-      transformedResult,
+      result.tags,
+      result,
       context
     );
 

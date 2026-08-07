@@ -30,6 +30,7 @@ import {
   createDynamicSingleSchema,
   validateInput,
   validateOutput,
+  validatePage,
 } from './common';
 import {
   checkPendingInvitationParamsSchema,
@@ -225,15 +226,10 @@ export class OrganizationInvitationService implements IOrganizationInvitationSer
       transaction
     );
 
-    const transformedResult = {
-      items: result.invitations,
-      totalCount: result.totalCount,
-      hasNextPage: result.hasNextPage,
-    };
-
-    validateOutput(
+    validatePage(
       createDynamicPaginatedSchema(organizationInvitationSchema, params.requestedFields),
-      transformedResult,
+      result.invitations,
+      result,
       context
     );
 

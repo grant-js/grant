@@ -31,6 +31,7 @@ import { defaultLocale, getFixedT } from '@/i18n/config';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError, NotFoundError } from '@/lib/errors';
 import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
+import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -76,9 +77,7 @@ export class ResourceHandler extends CacheHandler {
         .map(({ resourceId }) => resourceId);
     }
 
-    if (ids && ids.length > 0) {
-      resourceIds = ids.filter((resourceId) => resourceIds.includes(resourceId));
-    }
+    resourceIds = intersectScopedIds(resourceIds, ids);
 
     if (resourceIds.length === 0) {
       return {

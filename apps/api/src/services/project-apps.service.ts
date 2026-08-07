@@ -19,6 +19,7 @@ import {
   createDynamicSingleSchema,
   validateInput,
   validateOutput,
+  validatePage,
 } from './common';
 import {
   createProjectAppParamsSchema,
@@ -46,14 +47,10 @@ export class ProjectAppService implements IProjectAppService {
 
     const result = await this.projectAppRepository.getProjectApps(params, transaction);
 
-    const transformedResult = {
-      items: result.projectApps,
-      totalCount: result.totalCount,
-      hasNextPage: result.hasNextPage,
-    };
-    validateOutput(
+    validatePage(
       createDynamicPaginatedSchema(projectAppSchema, params.requestedFields),
-      transformedResult,
+      result.projectApps,
+      result,
       context
     );
 

@@ -20,6 +20,7 @@ import {
   createDynamicSingleSchema,
   validateInput,
   validateOutput,
+  validatePage,
 } from './common';
 import {
   createRoleInputSchema,
@@ -77,15 +78,10 @@ export class RoleService implements IRoleService {
     validateInput(getRolesParamsSchema, params, context);
     const result = await this.roleRepository.getRoles(params);
 
-    const transformedResult = {
-      items: result.roles,
-      totalCount: result.totalCount,
-      hasNextPage: result.hasNextPage,
-    };
-
-    validateOutput(
+    validatePage(
       createDynamicPaginatedSchema(roleSchema, params.requestedFields),
-      transformedResult,
+      result.roles,
+      result,
       context
     );
 

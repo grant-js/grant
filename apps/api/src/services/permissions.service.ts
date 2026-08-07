@@ -23,6 +23,7 @@ import {
   createDynamicSingleSchema,
   validateInput,
   validateOutput,
+  validatePage,
 } from './common';
 import {
   createPermissionParamsSchema,
@@ -63,15 +64,10 @@ export class PermissionService implements IPermissionService {
 
     const result = await this.permissionRepository.getPermissions(params);
 
-    const transformedResult = {
-      items: result.permissions,
-      totalCount: result.totalCount,
-      hasNextPage: result.hasNextPage,
-    };
-
-    validateOutput(
+    validatePage(
       createDynamicPaginatedSchema(permissionSchema, params.requestedFields),
-      transformedResult,
+      result.permissions,
+      result,
       context
     );
 

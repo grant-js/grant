@@ -26,6 +26,7 @@ import {
   createDynamicSingleSchema,
   validateInput,
   validateOutput,
+  validatePage,
 } from './common';
 import {
   createOrganizationInputSchema,
@@ -97,15 +98,10 @@ export class OrganizationService implements IOrganizationService {
       transaction
     );
 
-    const transformedResult = {
-      items: result.organizations,
-      totalCount: result.totalCount,
-      hasNextPage: result.hasNextPage,
-    };
-
-    validateOutput(
+    validatePage(
       createDynamicPaginatedSchema(organizationSchema, params.requestedFields),
-      transformedResult,
+      result.organizations,
+      result,
       context
     );
 

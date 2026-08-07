@@ -31,7 +31,12 @@ import {
 import { buildJwksIssuerUrl } from '@/lib/jwks.lib';
 import { generateRandomBytes, generateUUID, hashSecret, verifySecret } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { createDynamicPaginatedSchema, validateInput, validateOutput } from '@/services/common';
+import {
+  createDynamicPaginatedSchema,
+  validateInput,
+  validateOutput,
+  validatePage,
+} from '@/services/common';
 import { SelectedFields } from '@/types';
 
 import {
@@ -400,15 +405,10 @@ export class ApiKeyService implements IApiKeyService {
     validateInput(queryApiKeysArgsSchema, params, context);
     const result = await this.apiKeyRepository.getApiKeys(params, transaction);
 
-    const transformedResult = {
-      items: result.apiKeys,
-      totalCount: result.totalCount,
-      hasNextPage: result.hasNextPage,
-    };
-
-    validateOutput(
+    validatePage(
       createDynamicPaginatedSchema(apiKeySchema, params.requestedFields),
-      transformedResult,
+      result.apiKeys,
+      result,
       context
     );
 

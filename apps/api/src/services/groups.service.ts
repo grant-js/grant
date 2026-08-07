@@ -20,6 +20,7 @@ import {
   createDynamicSingleSchema,
   validateInput,
   validateOutput,
+  validatePage,
 } from './common';
 import {
   createGroupParamsSchema,
@@ -70,15 +71,10 @@ export class GroupService implements IGroupService {
     validateInput(getGroupsParamsSchema, params, context);
     const result = await this.groupRepository.getGroups(params, transaction);
 
-    const transformedResult = {
-      items: result.groups,
-      totalCount: result.totalCount,
-      hasNextPage: result.hasNextPage,
-    };
-
-    validateOutput(
+    validatePage(
       createDynamicPaginatedSchema(groupSchema, params.requestedFields),
-      transformedResult,
+      result.groups,
+      result,
       context
     );
 

@@ -27,6 +27,7 @@ import {
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
 import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
+import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -68,9 +69,7 @@ export class PermissionHandler extends CacheHandler {
         .map(({ permissionId }) => permissionId);
     }
 
-    if (ids && ids.length > 0) {
-      permissionIds = ids.filter((permissionId) => permissionIds.includes(permissionId));
-    }
+    permissionIds = intersectScopedIds(permissionIds, ids);
 
     if (permissionIds.length === 0) {
       return {
