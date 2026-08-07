@@ -1,7 +1,5 @@
-import type { ILogger } from '@grantjs/core';
 import {
   configureLogger,
-  createContextLogger,
   createLogger,
   getLogger,
   getRawPinoLogger,
@@ -56,5 +54,4 @@ export const loggerFactory = new PinoLoggerFactory();
 export const createModuleLogger = createLogger;
 
 // Re-export shared utilities (createModuleLogger is already exported above as const)
-export { createContextLogger, createLogger };
-export type { ILogger as Logger };
+export { createLogger };

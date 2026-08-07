@@ -1,26 +1,8 @@
 // Re-export from @grantjs/jobs — canonical adapter implementations live there
-export {
-  Job as BaseJob,
-  BullMQJobAdapter,
-  JobFactory,
-  jobRegistry,
-  NodeCronJobAdapter,
-  type TenantJobPayload,
-  validateTenantJobContext,
-} from '@grantjs/jobs';
-
-// API-specific Job base class (extends @grantjs/jobs Job with AppContext)
-export { Job } from './base/job';
+export { validateTenantJobContext } from '@grantjs/jobs';
 
 // Re-export types from @grantjs/core
-export type {
-  EnqueueJobData,
-  IJobAdapter,
-  JobExecutionContext,
-  JobHandler,
-  JobResult,
-  ScheduledJob,
-} from '@grantjs/core';
+export type { JobExecutionContext, JobResult, ScheduledJob } from '@grantjs/core';
 
 // Tenant job validation (stays in API — depends on @grantjs/database)
 export * from './tenant-job.validation';

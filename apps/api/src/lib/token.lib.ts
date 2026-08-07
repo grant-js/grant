@@ -9,8 +9,6 @@ export interface Token {
   validUntil: number;
 }
 
-export type { Token as SecureToken };
-
 export function generateUUID(): string {
   return randomUUID();
 }
