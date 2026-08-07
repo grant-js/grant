@@ -180,6 +180,21 @@ The rejected pair is the same shape as slice 5's add/remove wrappers: the audit 
 
 OpenAPI registration must stay in sync — `rest/openapi/` is generated separately from the routes, so verify the emitted spec is byte-identical before and after.
 
+**Done for three of the five.** Measured similarity after normalizing the entity name out:
+
+| Pair                     | Identical                                         |
+| ------------------------ | ------------------------------------------------- |
+| `roles` vs `permissions` | **100%**                                          |
+| `groups` vs either       | **99%** — one line, an import ordering difference |
+| `tags` vs the group      | 79%                                               |
+| `resources` vs the group | 81%                                               |
+
+So the audit was right about the three it named specifically, and the "5 files of ~158 L each" framing was optimistic. `tags` and `resources` are excluded on purpose: `tags` deletes via a **body** schema rather than a query schema and exposes no `requestedFields`; `resources` adds an `isActive` filter, hardcodes `requestedFields` to `[]`, and passes `context.locale` into create. Folding either in means options only one caller ever sets — the failure mode slice 6 rejected `resolveDelete()` for.
+
+**474 lines of route definitions become 56.** The middleware order is preserved exactly and documented at the factory, including why GET is the one route without the MFA guard.
+
+Spec check done as specified: `/api-docs.json` captured from the e2e stack before and after is **byte-identical** — same md5, 1,771,662 bytes, 87 paths. That was expected rather than hoped for, since `rest/openapi/` has zero imports from `rest/routes/`, but the plan asked for the empirical check and it is cheap.
+
 ### 8 — Pagination + CDM validation · security-full
 
 - Pick one `hasNextPage` implementation, put it in one place, migrate the other four. Document offset-vs-keyset in [`CONCEPTS.md`](../CONCEPTS.md).
