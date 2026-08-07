@@ -22,7 +22,11 @@ export class OAuthStateService implements IOAuthStateService {
   constructor(cache: ICacheAdapter) {
     this.cache = cache;
     this.cleanupInterval = setInterval(() => {
-      this.cleanupExpiredStates();
+      // Timer callbacks cannot await; an unhandled rejection here would be fatal
+      // to the process, so failures are logged and the next tick retries.
+      void this.cleanupExpiredStates().catch((err) => {
+        this.logger.error({ err, msg: 'Failed to clean up expired OAuth states' });
+      });
     }, 5 * MILLISECONDS_PER_MINUTE);
   }
 

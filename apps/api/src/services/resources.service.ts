@@ -24,6 +24,7 @@ import {
   createDynamicSingleSchema,
   validateInput,
   validateOutput,
+  validatePage,
 } from './common';
 import {
   createResourceParamsSchema,
@@ -69,15 +70,10 @@ export class ResourceService implements IResourceService {
 
     const result = await this.resourceRepository.getResources(params);
 
-    const transformedResult = {
-      items: result.resources,
-      totalCount: result.totalCount,
-      hasNextPage: result.hasNextPage,
-    };
-
-    validateOutput(
+    validatePage(
       createDynamicPaginatedSchema(resourceSchema, params.requestedFields),
-      transformedResult,
+      result.resources,
+      result,
       context
     );
 

@@ -42,6 +42,7 @@ import { assertValidCdmExportSections } from '@/constants/cdm-export.constants';
 import { PROJECT_SYNC_JOB_ID } from '@/constants/project-sync.constants';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError, ConfigurationError, NotFoundError, ValidationError } from '@/lib/errors';
+import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -115,9 +116,7 @@ export class ProjectHandler extends CacheHandler {
       }
     }
 
-    if (ids && ids.length > 0) {
-      projectIds = ids.filter((projectId) => projectIds.includes(projectId));
-    }
+    projectIds = intersectScopedIds(projectIds, ids);
 
     if (projectIds.length === 0) {
       return {
@@ -488,7 +487,7 @@ export class ProjectHandler extends CacheHandler {
         );
       }
 
-      this.addProjectIdToScopeCache(scope, projectId);
+      await this.addProjectIdToScopeCache(scope, projectId);
 
       return project;
     });
@@ -690,7 +689,7 @@ export class ProjectHandler extends CacheHandler {
         await this.projectUsers.removeProjectUser({ projectId, userId }, tx);
       }
 
-      this.removeProjectIdFromScopeCache(scope, projectId);
+      await this.removeProjectIdFromScopeCache(scope, projectId);
 
       return await this.projects.deleteProject(params, tx);
     });

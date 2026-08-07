@@ -45,9 +45,8 @@ import {
 } from '@/lib/effective-project-user-metadata.lib';
 import { AuthorizationError, BadRequestError, NotFoundError } from '@/lib/errors';
 import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
-import { createLogger } from '@/lib/logger';
-import { tryProjectIdFromScope } from '@/lib/project-id-from-scope.lib';
 import { assertProjectPivotMetadataMutationAllowed } from '@/lib/project-pivot-metadata-auth.lib';
+import { intersectScopedIds, tryProjectIdFromScope } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -58,8 +57,6 @@ export type UpdateUserHandlerParams = MutationUpdateUserArgs & { actorUserId: st
 export type UploadUserPictureHandlerParams = UploadUserPictureInput & { actorUserId: string };
 
 export class UserHandler extends CacheHandler {
-  protected readonly logger = createLogger('UserHandler');
-
   constructor(
     private readonly userTags: IUserTagService,
     private readonly users: IUserService,
@@ -107,9 +104,7 @@ export class UserHandler extends CacheHandler {
         .map(({ userId }) => userId);
     }
 
-    if (ids && ids.length > 0) {
-      userIds = ids.filter((userId) => userIds.includes(userId));
-    }
+    userIds = intersectScopedIds(userIds, ids);
 
     if (userIds.length === 0) {
       return {
@@ -362,7 +357,7 @@ export class UserHandler extends CacheHandler {
         await this.invalidatePermissionsCacheForAllScopes();
       }
 
-      this.addUserIdToScopeCache(scope, userId);
+      await this.addUserIdToScopeCache(scope, userId);
 
       if (invalidatePivotAuth) {
         await this.invalidateAuthorizationResultsForUser(userId);

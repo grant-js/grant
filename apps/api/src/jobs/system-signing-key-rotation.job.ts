@@ -1,6 +1,5 @@
-import { ConfigurationError } from '@grantjs/core';
-
 import { config } from '@/config';
+import { ConfigurationError } from '@/lib/errors';
 import { JobExecutionContext, JobResult, ScheduledJob } from '@/lib/jobs';
 import { Job } from '@/lib/jobs/base/job';
 import { DrizzleTransactionalConnection } from '@/lib/transaction-manager.lib';

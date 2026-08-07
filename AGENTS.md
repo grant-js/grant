@@ -43,13 +43,15 @@ Transport (GraphQL resolvers, REST routes)
 - Handlers never import repositories; they go through services.
 - Repositories never import services or handlers.
 - REST/GraphQL resolvers never import repositories; they call handlers only.
-- Middleware (`context.middleware.ts`, `lib/app-context.lib.ts`) is the **composition root** — the only place where handlers, services, and repositories are wired together.
+- Middleware (`context.middleware.ts`, `lib/app-context.lib.ts`) is the **composition root** — the only place where the full object graph is assembled and given to a request or job.
+- Each layer exposes a factory the root calls: `createRepositories(db)`, `createServices(repositories, …)`, `createHandlers(services, …)`. A factory may depend on the layer directly beneath it; that is wiring, not a second composition root. Do not construct handlers, services, or repositories anywhere else.
 
 ### Import discipline (within `apps/api/src/`)
 
 | Symbol                                     | Import from                     | NOT from                                  |
 | ------------------------------------------ | ------------------------------- | ----------------------------------------- |
-| `createLogger`, `Logger`                   | `@/lib/logger`                  | `@grantjs/logger`                         |
+| `createLogger`, `logger`, `loggerFactory`  | `@/lib/logger`                  | `@grantjs/logger`                         |
+| `ILogger` (the logger _type_)              | `@grantjs/core`                 | `@/lib/logger`                            |
 | `HttpException`, `mapDomainToHttp`         | `@/lib/errors`                  | `@grantjs/errors`                         |
 | Domain errors (`NotFoundError`, etc.)      | `@/lib/errors`                  | (already re-exports from `@grantjs/core`) |
 | `DeleteParams`, `SelectedFields`, `Otp`    | `@/types`                       | `@/services/common`                       |

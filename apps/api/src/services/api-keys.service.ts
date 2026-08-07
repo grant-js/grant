@@ -7,7 +7,7 @@ import type {
   IEventPublisher,
   IOrganizationProjectRepository,
 } from '@grantjs/core';
-import { Grant, GrantAuth, NoSessionSigningKeyError } from '@grantjs/core';
+import { Grant, GrantAuth } from '@grantjs/core';
 import {
   ApiKey,
   ApiKeyPage,
@@ -21,11 +21,22 @@ import {
 import { sql } from 'drizzle-orm';
 
 import { config } from '@/config';
-import { AuthenticationError, BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
+import {
+  AuthenticationError,
+  BadRequestError,
+  ConflictError,
+  NoSessionSigningKeyError,
+  NotFoundError,
+} from '@/lib/errors';
 import { buildJwksIssuerUrl } from '@/lib/jwks.lib';
 import { generateRandomBytes, generateUUID, hashSecret, verifySecret } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { createDynamicPaginatedSchema, validateInput, validateOutput } from '@/services/common';
+import {
+  createDynamicPaginatedSchema,
+  validateInput,
+  validateOutput,
+  validatePage,
+} from '@/services/common';
 import { SelectedFields } from '@/types';
 
 import {
@@ -394,15 +405,10 @@ export class ApiKeyService implements IApiKeyService {
     validateInput(queryApiKeysArgsSchema, params, context);
     const result = await this.apiKeyRepository.getApiKeys(params, transaction);
 
-    const transformedResult = {
-      items: result.apiKeys,
-      totalCount: result.totalCount,
-      hasNextPage: result.hasNextPage,
-    };
-
-    validateOutput(
+    validatePage(
       createDynamicPaginatedSchema(apiKeySchema, params.requestedFields),
-      transformedResult,
+      result.apiKeys,
+      result,
       context
     );
 

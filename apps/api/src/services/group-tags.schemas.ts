@@ -45,14 +45,6 @@ export const removeGroupTagsInputSchema = deleteSchema.extend({
   tagId: idSchema,
 });
 
-export const addGroupTagArgsSchema = z.object({
-  input: addGroupTagInputSchema,
-});
-
-export const removeGroupTagArgsSchema = z.object({
-  input: removeGroupTagInputSchema,
-});
-
 export const groupTagSchema = z.object({
   id: idSchema,
   groupId: idSchema,

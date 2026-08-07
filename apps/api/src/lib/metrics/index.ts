@@ -1,7 +1,1 @@
-export {
-  httpRequestDuration,
-  httpRequestTotal,
-  metricsHandler,
-  metricsMiddleware,
-  register,
-} from './metrics';
+export { metricsHandler, metricsMiddleware } from './metrics';

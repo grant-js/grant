@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger';
 import { getTelemetryAdapter } from '@/lib/telemetry';
 import { ContextRequest } from '@/types';
 
-export interface RequestWithLogger extends Request {
+interface RequestWithLogger extends Request {
   requestId: string;
   logger: ILogger;
 }
@@ -113,8 +113,4 @@ export function requestLoggingMiddleware(req: Request, res: Response, next: Next
 
 export function getRequestLogger(req: Request): ILogger {
   return (req as RequestWithLogger).logger || logger;
-}
-
-export function getRequestId(req: Request): string {
-  return (req as RequestWithLogger).requestId || 'unknown';
 }

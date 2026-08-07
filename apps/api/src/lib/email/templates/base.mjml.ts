@@ -5,7 +5,7 @@ import { config } from '@/config';
 import { translateStatic } from '@/i18n';
 import { ConfigurationError } from '@/lib/errors';
 
-export interface EmailTemplateParams {
+interface EmailTemplateParams {
   locale: SupportedLocale;
   primaryColor?: string;
   logoUrl?: string;

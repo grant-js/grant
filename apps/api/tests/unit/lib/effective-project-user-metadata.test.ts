@@ -10,7 +10,7 @@ import {
   mergeEffectiveUserProfileForProject,
   mergeProjectUserMetadataApplyUpdate,
 } from '@/lib/effective-project-user-metadata.lib';
-import { tryProjectIdFromScope } from '@/lib/project-id-from-scope.lib';
+import { tryProjectIdFromScope } from '@/lib/scope.lib';
 
 describe('mergeEffectiveUserMetadataForProject', () => {
   it('overrides global keys with pivot', () => {

@@ -1,6 +1,7 @@
 import type {
   ILogger,
   IWebhookDeliveryAdapter,
+  IWebhookDeliveryService,
   IWebhookSigner,
   WebhookDeliveryResult,
 } from '@grantjs/core';
@@ -35,7 +36,7 @@ const MS_PER_HOUR = 60 * 60 * MS_PER_SECOND;
  * marks attempts `running`, then delivery runs unlocked, then results are
  * persisted. This avoids holding row locks across network calls.
  */
-export class WebhookDeliveryService {
+export class WebhookDeliveryService implements IWebhookDeliveryService {
   constructor(
     private readonly deliveries: WebhookDeliveryRepository,
     private readonly subscriptions: WebhookSubscriptionRepository,

@@ -7,7 +7,7 @@ import { t } from '@/i18n';
 import { authenticateRestRoute } from '@/lib/authorization';
 import { AuthenticationError } from '@/lib/errors';
 import { getRefreshTokenFromCookie } from '@/lib/headers.lib';
-import { createLogger } from '@/lib/logger';
+import { clearRefreshTokenCookie, setRefreshTokenCookie } from '@/lib/refresh-cookie.lib';
 import { validate, validateBody, validateQuery } from '@/middleware/validation.middleware';
 import {
   cliCallbackRequestSchema,
@@ -42,11 +42,8 @@ import {
   isCliRedirectUrl,
   validateRedirectUrl,
 } from '@/rest/utils/auth';
-import { clearRefreshTokenCookie, setRefreshTokenCookie } from '@/rest/utils/refresh-cookie';
 import { sendSuccessResponse } from '@/rest/utils/response';
 import { RequestContext } from '@/types';
-
-const logger = createLogger('AuthRoutes');
 
 export function createAuthRoutes(context: RequestContext) {
   const router = Router();
@@ -298,7 +295,7 @@ export function createAuthRoutes(context: RequestContext) {
 
       // Validate redirect URL if provided
       if (redirect && !validateRedirectUrl(redirect)) {
-        logger.warn({
+        context.requestLogger.warn({
           msg: 'OAuth initiate - invalid redirect URL',
           redirectUrl: redirect,
           expectedOrigin: new URL(config.security.frontendUrl).origin,
@@ -339,7 +336,7 @@ export function createAuthRoutes(context: RequestContext) {
             return;
           }
         }
-        handleGithubOAuthError(res, error, error_description, locale);
+        handleGithubOAuthError(context.requestLogger, res, error, error_description, locale);
         return;
       }
 
@@ -368,11 +365,14 @@ export function createAuthRoutes(context: RequestContext) {
 
         // CLI flow: redirect to CLI localhost (different origin from frontend) with one-time code
         if (oauthResult.redirectUrl && isCli) {
-          const oneTimeCode = await context.handlers.oauth.storeCliCallbackPayload({
-            accessToken: loginResult.accessToken,
-            refreshToken: loginResult.refreshToken,
-            accounts: loginResult.accounts,
-          });
+          const oneTimeCode = await context.handlers.oauth.storeCliCallbackPayload(
+            {
+              accessToken: loginResult.accessToken,
+              refreshToken: loginResult.refreshToken,
+              accounts: loginResult.accounts,
+            },
+            context.requestLogger
+          );
           const url = new URL(oauthResult.redirectUrl);
           url.searchParams.set('code', oneTimeCode);
           res.redirect(url.toString());
@@ -393,7 +393,7 @@ export function createAuthRoutes(context: RequestContext) {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         const errorCode = determineErrorCode(err);
-        logger.error({
+        context.requestLogger.error({
           msg: 'Error handling GitHub OAuth callback',
           err,
           errorMessage,
@@ -418,7 +418,10 @@ export function createAuthRoutes(context: RequestContext) {
     validateBody(cliCallbackRequestSchema),
     async (req: TypedRequest<{ body: typeof cliCallbackRequestSchema }>, res: Response) => {
       const { code } = req.body;
-      const payload = await context.handlers.oauth.consumeCliCallbackCode(code);
+      const payload = await context.handlers.oauth.consumeCliCallbackCode(
+        code,
+        context.requestLogger
+      );
       if (!payload) {
         res.status(400).json({
           success: false,
@@ -591,7 +594,10 @@ export function createAuthRoutes(context: RequestContext) {
     validateQuery(projectConsentInfoQuerySchema),
     async (req: TypedRequest<{ query: typeof projectConsentInfoQuerySchema }>, res: Response) => {
       const { consent_token } = req.query;
-      const info = await context.handlers.projectOAuth.getProjectConsentInfo(consent_token);
+      const info = await context.handlers.projectOAuth.getProjectConsentInfo(
+        consent_token,
+        context.requestLogger
+      );
       sendSuccessResponse(res, info);
     }
   );

@@ -1,15 +1,15 @@
 import crypto from 'node:crypto';
 
-import { ValidationError } from '@grantjs/core';
 import { Scope, Tenant } from '@grantjs/schema';
 
 import { config } from '@/config';
+import { ValidationError } from '@/lib/errors';
 
 /**
  * JWK (JSON Web Key) for RSA public key in JWKS.
  * @see RFC 7517
  */
-export interface RsaJwk {
+interface RsaJwk {
   kty: 'RSA';
   use: 'sig';
   alg: string;
@@ -22,10 +22,7 @@ export interface RsaJwk {
  * Convert an RSA public key PEM to a JWK suitable for JWKS.
  * Adds kid, use, and alg to the exported key material.
  */
-export function publicKeyPemToJwk(
-  publicKeyPem: string,
-  options: { kid: string; alg?: string }
-): RsaJwk {
+function publicKeyPemToJwk(publicKeyPem: string, options: { kid: string; alg?: string }): RsaJwk {
   const keyObject = crypto.createPublicKey({
     key: publicKeyPem,
     format: 'pem',

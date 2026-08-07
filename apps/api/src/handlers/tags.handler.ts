@@ -21,6 +21,7 @@ import {
 } from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
+import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -49,9 +50,7 @@ export class TagHandler extends CacheHandler {
 
     let tagIds = await this.getScopedTagIds(scope);
 
-    if (ids && ids.length > 0) {
-      tagIds = ids.filter((tagId) => tagIds.includes(tagId));
-    }
+    tagIds = intersectScopedIds(tagIds, ids);
 
     if (tagIds.length === 0) {
       return {
@@ -96,7 +95,7 @@ export class TagHandler extends CacheHandler {
         }
       }
 
-      this.addTagIdToScopeCache(scope, tagId);
+      await this.addTagIdToScopeCache(scope, tagId);
 
       return tag;
     });
@@ -139,7 +138,7 @@ export class TagHandler extends CacheHandler {
         this.resourceTags.removeResourceTags({ tagId, hardDelete }, tx),
       ]);
 
-      this.removeTagIdFromScopeCache(scope, tagId);
+      await this.removeTagIdFromScopeCache(scope, tagId);
 
       return await this.tags.deleteTag(params, tx);
     });

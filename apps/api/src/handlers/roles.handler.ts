@@ -30,6 +30,7 @@ import { type RoleListHydrationContext, roleListHydrators } from '@/hydrators/ro
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
 import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
+import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -69,9 +70,7 @@ export class RoleHandler extends CacheHandler {
         .map(({ roleId }) => roleId);
     }
 
-    if (ids && ids.length > 0) {
-      roleIds = ids.filter((roleId) => roleIds.includes(roleId));
-    }
+    roleIds = intersectScopedIds(roleIds, ids);
 
     if (roleIds.length === 0) {
       return {
@@ -181,7 +180,7 @@ export class RoleHandler extends CacheHandler {
         );
       }
 
-      this.addRoleIdToScopeCache(scope, roleId);
+      await this.addRoleIdToScopeCache(scope, roleId);
 
       return role;
     });
@@ -299,7 +298,7 @@ export class RoleHandler extends CacheHandler {
         ),
       ]);
 
-      this.removeRoleIdFromScopeCache(scope, roleId);
+      await this.removeRoleIdFromScopeCache(scope, roleId);
 
       return await this.roles.deleteRole(params, tx);
     });

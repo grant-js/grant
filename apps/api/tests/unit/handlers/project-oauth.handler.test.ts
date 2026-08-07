@@ -20,6 +20,9 @@ const { mockConfig } = vi.hoisted(() => ({
     projectOAuth: {
       emailEntryUrl: 'https://app.example.com/auth/project/email',
       consentUrl: 'https://app.example.com/auth/project/consent',
+      stateTtlSeconds: 600,
+      emailTokenTtlSeconds: 600,
+      consentTtlSeconds: 600,
     },
     app: {
       url: 'https://api.example.com',

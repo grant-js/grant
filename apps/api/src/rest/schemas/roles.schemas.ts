@@ -28,8 +28,8 @@ export const roleWithRelationsSchema = roleSchema.extend({
   tagCount: z.number().optional(),
 });
 
-export const roleFieldsEnum = z.enum(['groupCount', 'permissionCount', 'primaryTag', 'tagCount']);
-export const roleRelationsEnum = z.enum(['groups', 'tags']);
+const roleFieldsEnum = z.enum(['groupCount', 'permissionCount', 'primaryTag', 'tagCount']);
+const roleRelationsEnum = z.enum(['groups', 'tags']);
 
 export const getRolesQuerySchema = listQuerySchema.omit({ relations: true }).extend({
   scopeId: z.uuid('errors.validation.invalidScopeId'),

@@ -2,12 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import { z, ZodError } from 'zod';
 
 import { isTranslationKey, t, translateMessage } from '@/i18n';
-import { createLogger } from '@/lib/logger';
-
-/**
- * Validation target - where to extract data from the request
- */
-export type ValidationType = 'body' | 'query' | 'params' | 'all';
+import { getRequestLogger } from '@/middleware/request-logging.middleware';
 
 /**
  * Validation schemas for different parts of the request
@@ -60,10 +55,10 @@ function formatZodError(req: Request, error: ZodError) {
  * // Validate query parameters
  * router.get('/users', validate({ query: getUsersQuerySchema }), handler);
  */
-const logger = createLogger('ValidationMiddleware');
-
 export function validate(schemas: ValidationSchemas) {
   return async (req: Request, res: Response, next: NextFunction) => {
+    // Request-scoped so validation logs carry requestId, per AGENTS.md.
+    const logger = getRequestLogger(req);
     try {
       // Validate body if schema provided
       if (schemas.body) {
@@ -145,14 +140,4 @@ export function validateBody(schema: z.ZodSchema) {
  */
 export function validateQuery(schema: z.ZodSchema) {
   return validate({ query: schema });
-}
-
-/**
- * Simpler validation middleware for params-only validation
- *
- * @example
- * router.get('/users/:id', validateParams(idParamsSchema), handler);
- */
-export function validateParams(schema: z.ZodSchema) {
-  return validate({ params: schema });
 }

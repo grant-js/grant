@@ -2,7 +2,7 @@ import { MutationResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
 import { AuthenticationError } from '@/lib/errors';
-import { setRefreshTokenCookie } from '@/rest/utils/refresh-cookie';
+import { setRefreshTokenCookie } from '@/lib/refresh-cookie.lib';
 
 export const verifyMfa: MutationResolvers<GraphqlContext>['verifyMfa'] = async (
   _,

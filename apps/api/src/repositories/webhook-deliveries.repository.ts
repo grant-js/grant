@@ -11,6 +11,7 @@ import type {
 } from '@grantjs/schema';
 import { and, desc, eq, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 
+import { takePage } from '@/lib/pagination.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 export function toWebhookDeliveryAttempt(row: WebhookDeliveryAttemptModel): WebhookDeliveryAttempt {
@@ -143,7 +144,7 @@ export class WebhookDeliveryRepository {
     projectId: string,
     options: { subscriptionId?: string; status?: string; offset: number; limit: number },
     transaction?: Transaction
-  ): Promise<{ rows: WebhookDeliveryAttemptModel[]; totalCount: number }> {
+  ): Promise<{ rows: WebhookDeliveryAttemptModel[]; totalCount: number; hasNextPage: boolean }> {
     const dbInstance = transaction ?? this.db;
     const conditions = [eq(webhookSubscriptions.projectId, projectId)];
     if (options.subscriptionId) {
@@ -177,11 +178,11 @@ export class WebhookDeliveryRepository {
         .where(whereClause),
     ]);
 
-    const hasNextPage = rows.length > options.limit;
-    const trimmed = hasNextPage ? rows.slice(0, options.limit) : rows;
+    const page = takePage(rows, options.limit);
     return {
-      rows: trimmed.map((row) => row.delivery),
+      rows: page.rows.map((row) => row.delivery),
       totalCount: countRows[0]?.count ?? 0,
+      hasNextPage: page.hasNextPage,
     };
   }
 

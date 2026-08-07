@@ -14,7 +14,7 @@ const projectAppScopeTenantSchema = z.enum([Tenant.AccountProject, Tenant.Organi
 ]);
 
 /** Scope for project-app operations (id + tenant restricted to project scopes). */
-export const projectAppScopeSchema = scopeSchema.extend({
+const projectAppScopeSchema = scopeSchema.extend({
   tenant: projectAppScopeTenantSchema,
 });
 
@@ -98,8 +98,5 @@ export const createProjectAppResponseSchema = z.object({
 });
 
 export const getProjectAppsResponseSchema = createSuccessResponseSchema(projectAppPageSchema);
-export const createProjectAppResponseWrapperSchema = createSuccessResponseSchema(
-  createProjectAppResponseSchema
-);
 export const updateProjectAppResponseSchema = createSuccessResponseSchema(projectAppSchema);
 export const deleteProjectAppResponseSchema = createSuccessResponseSchema(projectAppSchema);

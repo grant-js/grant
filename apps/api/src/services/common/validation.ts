@@ -90,6 +90,31 @@ export function validateInput<T>(schema: z.ZodSchema<T>, data: unknown, context:
   return result.data;
 }
 
+/**
+ * Validates a list result against a paginated schema.
+ *
+ * Repositories return `{ <entityPlural>, totalCount, hasNextPage }` while the
+ * paginated schemas expect `items`, so every list method used to build a
+ * throwaway object purely to hand it to `validateOutput` and then return the
+ * original. That reshaping is the only reason the object exists, so it belongs
+ * here rather than repeated at each call site.
+ *
+ * Returns nothing: callers return the repository result, not the validated
+ * projection.
+ */
+export function validatePage(
+  schema: z.ZodSchema<unknown>,
+  items: readonly unknown[],
+  page: { totalCount: number; hasNextPage: boolean },
+  context: string
+): void {
+  validateOutput(
+    schema,
+    { items, totalCount: page.totalCount, hasNextPage: page.hasNextPage },
+    context
+  );
+}
+
 export function validateOutput<T>(schema: z.ZodSchema<T>, data: unknown, context: string): T {
   const result = schema.safeParse(data);
 
@@ -105,36 +130,4 @@ export function validateOutput<T>(schema: z.ZodSchema<T>, data: unknown, context
   }
 
   return result.data;
-}
-
-export function safeValidateInput<T>(
-  schema: z.ZodSchema<T>,
-  data: unknown,
-  context: string
-): { success: true; data: T } | { success: false; error: ApiValidationError } {
-  try {
-    const validData = validateInput(schema, data, context);
-    return { success: true, data: validData };
-  } catch (error) {
-    if (error instanceof ApiValidationError) {
-      return { success: false, error };
-    }
-    throw error;
-  }
-}
-
-export function safeValidateOutput<T>(
-  schema: z.ZodSchema<T>,
-  data: unknown,
-  context: string
-): { success: true; data: T } | { success: false; error: ApiValidationError } {
-  try {
-    const validData = validateOutput(schema, data, context);
-    return { success: true, data: validData };
-  } catch (error) {
-    if (error instanceof ApiValidationError) {
-      return { success: false, error };
-    }
-    throw error;
-  }
 }

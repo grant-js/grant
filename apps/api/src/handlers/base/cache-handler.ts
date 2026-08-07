@@ -21,12 +21,18 @@ import type {
   ITagService,
   IUserRoleService,
 } from '@grantjs/core';
-import { AccountTag, AuthorizationResult, Scope, Tag, Tenant } from '@grantjs/schema';
+import { AuthorizationResult, Scope, Tag, Tenant } from '@grantjs/schema';
 import { createHash } from 'crypto';
 
 import { AUTH_RESULT_CACHE_KEY_PREFIX } from '@/constants/cache.constants';
 import { CacheKey, ICacheAdapter, IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
+import {
+  accountProjectFromScopeOrThrow,
+  organizationProjectFromScopeOrThrow,
+  projectIdFromScopeOrThrow,
+  projectUserFromScopeOrThrow,
+} from '@/lib/scope.lib';
 
 /**
  * Narrow subset of Services used by CacheHandler for scope-resolution.
@@ -67,122 +73,80 @@ type ScopedTagHydration = {
   tagCountByOwnerId: Map<string, number>;
 };
 
+/** Cache namespaces that hold a scope -> id-set mapping. */
+type ScopedIdKind =
+  'projects' | 'roles' | 'users' | 'groups' | 'permissions' | 'resources' | 'tags' | 'apiKeys';
+
+type ScopeResolver = (scope: Scope) => Promise<string[]>;
+
+type ScopedIdDescriptor = {
+  /**
+   * A tenant absent from this map is rejected, never silently empty.
+   *
+   * Built with a null prototype. `scope.tenant` is attacker-controlled — every
+   * path in `scope-extractor.ts` casts it out of a header, query param or body
+   * without checking it against the enum — so a plain object literal would
+   * resolve `toString` and friends off `Object.prototype`, skip the rejection
+   * below, and call them. See `assertResolvable`.
+   */
+  byTenant: Partial<Record<Tenant, ScopeResolver>>;
+  unsupportedMessage?: (tenant: Tenant) => string;
+};
+
+/**
+ * Own-property lookup for a tenant resolver.
+ *
+ * The `Object.hasOwn` guard and the null-prototype maps are belt and braces on
+ * purpose: either alone closes the hole, and this dispatch decides which entity
+ * ids a caller may see, so it does not get to depend on one of them staying
+ * correct through a later edit.
+ */
+const resolverFor = (
+  byTenant: Partial<Record<Tenant, ScopeResolver>>,
+  tenant: Tenant
+): ScopeResolver | undefined => (Object.hasOwn(byTenant, tenant) ? byTenant[tenant] : undefined);
+
+const tenantMap = (
+  entries: Partial<Record<Tenant, ScopeResolver>>
+): Partial<Record<Tenant, ScopeResolver>> => Object.assign(Object.create(null), entries);
+
+/** The four tenants whose scope id embeds a projectId at index 1. */
+const PROJECT_SCOPED_TENANTS = [
+  Tenant.OrganizationProject,
+  Tenant.AccountProject,
+  Tenant.OrganizationProjectUser,
+  Tenant.AccountProjectUser,
+] as const;
+
+/** The three tenants whose scope id embeds both a projectId and a userId. */
+const PROJECT_USER_TENANTS = [
+  Tenant.ProjectUser,
+  Tenant.AccountProjectUser,
+  Tenant.OrganizationProjectUser,
+] as const;
+
+const forTenants = (
+  tenants: readonly Tenant[],
+  resolve: ScopeResolver
+): Partial<Record<Tenant, ScopeResolver>> =>
+  Object.assign(Object.create(null), Object.fromEntries(tenants.map((t) => [t, resolve])));
+
 export class CacheHandler implements IScopedIdProvider {
+  private readonly scopedIdDescriptors: Record<ScopedIdKind, ScopedIdDescriptor>;
+
   constructor(
     protected cache: IEntityCacheAdapter,
     protected readonly scopeServices: ScopeServices
-  ) {}
-
-  protected hasRequestedField<TField extends PropertyKey>(
-    requestedFields: TField[] | null | undefined,
-    field: TField
-  ): boolean {
-    return requestedFields?.includes(field) ?? false;
+  ) {
+    this.scopedIdDescriptors = this.buildScopedIdDescriptors();
   }
 
-  protected withoutRequestedFields<TField extends PropertyKey>(
-    requestedFields: TField[] | null | undefined,
-    fieldsToRemove: TField[]
-  ): TField[] | undefined {
-    if (!requestedFields) {
-      return undefined;
-    }
-
-    return requestedFields.filter((field) => !fieldsToRemove.includes(field));
-  }
-
-  /**
-   * Extracts the projectId from a composite scope.id
-   * For OrganizationProject: scope.id = "organizationId:projectId"
-   * For AccountProject: scope.id = "accountId:projectId"
-   * For OrganizationProjectUser: scope.id = "organizationId:projectId:userId"
-   * For AccountProjectUser: scope.id = "accountId:projectId:userId"
-   */
-  protected extractProjectIdFromScope(scope: Scope): string {
-    const validTenants = [
-      Tenant.OrganizationProject,
-      Tenant.AccountProject,
-      Tenant.OrganizationProjectUser,
-      Tenant.AccountProjectUser,
-    ];
-
-    if (!validTenants.includes(scope.tenant)) {
-      throw new BadRequestError(`Cannot extract projectId from tenant type: ${scope.tenant}`);
-    }
-
-    const parts = scope.id.split(':');
-    // For 2-part format (accountId:projectId), projectId is at index 1
-    // For 3-part format (accountId:projectId:userId), projectId is also at index 1
-    const projectId = parts[1];
-
-    if (!projectId) {
-      throw new BadRequestError(
-        'Invalid scope: id must be in format "accountId:projectId" or "accountId:projectId:userId"'
-      );
-    }
-
-    return projectId;
-  }
-
-  protected extractProjectUserFromScope(scope: Scope): { projectId: string; userId: string } {
-    const parts = scope.id.split(':');
-
-    let projectId: string | undefined;
-    let userId: string | undefined;
-
-    switch (scope.tenant) {
-      case Tenant.ProjectUser:
-        projectId = parts[0];
-        userId = parts[1];
-        break;
-      case Tenant.OrganizationProjectUser:
-      case Tenant.AccountProjectUser:
-        projectId = parts[1];
-        userId = parts[2];
-        break;
-      default:
-        throw new BadRequestError(
-          `Cannot extract projectId and userId from tenant type: ${scope.tenant}`
-        );
-    }
-
-    if (!projectId || !userId) {
-      throw new BadRequestError('Invalid scope: id must contain both projectId and userId');
-    }
-
-    return { projectId, userId };
-  }
-
-  protected extractAccountProjectFromScope(scope: Scope): { accountId: string; projectId: string } {
-    if (scope.tenant !== Tenant.AccountProject) {
-      throw new BadRequestError(`Cannot extract accountProject from tenant type: ${scope.tenant}`);
-    }
-    const parts = scope.id.split(':');
-    const accountId = parts[0];
-    const projectId = parts[1];
-    if (!accountId || !projectId) {
-      throw new BadRequestError('Invalid scope: id must be in format "accountId:projectId"');
-    }
-    return { accountId, projectId };
-  }
-
-  protected extractOrganizationProjectFromScope(scope: Scope): {
-    organizationId: string;
-    projectId: string;
-  } {
-    if (scope.tenant !== Tenant.OrganizationProject) {
-      throw new BadRequestError(
-        `Cannot extract organizationProject from tenant type: ${scope.tenant}`
-      );
-    }
-    const parts = scope.id.split(':');
-    const organizationId = parts[0];
-    const projectId = parts[1];
-    if (!organizationId || !projectId) {
-      throw new BadRequestError('Invalid scope: id must be in format "organizationId:projectId"');
-    }
-    return { organizationId, projectId };
-  }
+  // Scope-id parsing lives in @/lib/scope.lib; these stay as protected members
+  // because subclasses call them.
+  protected extractProjectIdFromScope = projectIdFromScopeOrThrow;
+  protected extractProjectUserFromScope = projectUserFromScopeOrThrow;
+  protected extractAccountProjectFromScope = accountProjectFromScopeOrThrow;
+  protected extractOrganizationProjectFromScope = organizationProjectFromScopeOrThrow;
 
   private createCacheKey(scope: Scope): CacheKey {
     return `${scope.tenant}:${scope.id}`;
@@ -218,287 +182,260 @@ export class CacheHandler implements IScopedIdProvider {
     }
   }
 
-  async getScopedProjectIds(scope: Scope): Promise<string[]> {
+  /**
+   * Reads one scoped-id set: cache hit wins, otherwise the tenant's resolver
+   * computes the set and the result is written back.
+   *
+   * `adapter` is optional-chained because `cache.apiKeys` may be absent; for
+   * every other namespace it is always present.
+   */
+  private async resolveScopedIds(kind: ScopedIdKind, scope: Scope): Promise<string[]> {
+    const descriptor = this.scopedIdDescriptors[kind];
+    // The record key *is* the cache namespace. It used to be repeated as a
+    // `namespace` field with nothing tying the two together, so a descriptor
+    // could read and write another entity's id set under the same cache key.
+    const adapter: ICacheAdapter | undefined = this.cache[kind];
     const cacheKey = this.createCacheKey(scope);
 
-    const cachedProjects = await this.cache.projects.get(cacheKey);
-    if (cachedProjects) {
-      return Array.from(cachedProjects.values());
+    const cached = await adapter?.get(cacheKey);
+    if (cached) {
+      return Array.from(cached.values());
     }
 
-    let projectIds: string[];
-    switch (scope.tenant) {
-      case Tenant.Account: {
-        const accountProjects = await this.scopeServices.accountProjects.getAccountProjects({
-          accountId: scope.id,
-        });
-        projectIds = accountProjects.map((ap) => ap.projectId);
-        break;
-      }
-      case Tenant.Organization: {
-        const organizationProjects =
-          await this.scopeServices.organizationProjects.getOrganizationProjects({
-            organizationId: scope.id,
-          });
-        projectIds = organizationProjects.map((op) => op.projectId);
-        break;
-      }
-      case Tenant.OrganizationProject: {
-        const { organizationId } = this.extractOrganizationProjectFromScope(scope);
-        const organizationProjects =
-          await this.scopeServices.organizationProjects.getOrganizationProjects({
-            organizationId,
-          });
-        projectIds = organizationProjects.map((op) => op.projectId);
-        break;
-      }
-      case Tenant.AccountProject: {
-        const { accountId } = this.extractAccountProjectFromScope(scope);
-        const accountProjects = await this.scopeServices.accountProjects.getAccountProjects({
-          accountId,
-        });
-        projectIds = accountProjects.map((ap) => ap.projectId);
-        break;
-      }
-      default:
-        throw new BadRequestError(`Unsupported tenant type: ${scope.tenant}`);
+    const resolve = resolverFor(descriptor.byTenant, scope.tenant);
+    if (!resolve) {
+      throw new BadRequestError(
+        descriptor.unsupportedMessage?.(scope.tenant) ?? `Unsupported tenant type: ${scope.tenant}`
+      );
     }
-    await this.cache.projects.set(cacheKey, new Set(projectIds));
-    return projectIds;
+
+    const ids = await resolve(scope);
+    await adapter?.set(cacheKey, new Set(ids));
+    return ids;
   }
 
-  async getScopedRoleIds(scope: Scope): Promise<string[]> {
-    const cacheKey = this.createCacheKey(scope);
+  /**
+   * One entry per scoped-id kind. Built in the constructor because the resolvers
+   * close over `scopeServices`.
+   *
+   * Read this table as the authorization surface it is: for a given entity and
+   * tenant, which service decides the visible id set. A tenant absent from a
+   * `byTenant` map is rejected, not silently empty — except where a resolver
+   * explicitly returns `[]`, which is a deliberate "this tenancy level has none
+   * of these" and is marked as such.
+   */
+  private buildScopedIdDescriptors(): Record<ScopedIdKind, ScopedIdDescriptor> {
+    const s = this.scopeServices;
 
-    const cachedRoles = await this.cache.roles.get(cacheKey);
-    if (cachedRoles) {
-      return Array.from(cachedRoles.values());
-    }
+    // Personal accounts have no account-level roles, users, groups or
+    // permissions; those exist only at project level.
+    const noneAtAccountLevel = async () => [];
 
-    let roleIds: string[];
-    switch (scope.tenant) {
-      case Tenant.Account: {
-        // Personal accounts don't have account-level roles, users, groups, permissions, or tags
-        // These entities exist only at the project level for personal accounts
-        roleIds = [];
-        break;
-      }
+    const projectScoped =
+      <T>(fetch: (projectId: string) => Promise<T[]>, pick: (row: T) => string): ScopeResolver =>
+      async (scope) =>
+        (await fetch(projectIdFromScopeOrThrow(scope))).map(pick);
 
-      case Tenant.Organization: {
-        const organizationRoles = await this.scopeServices.organizationRoles.getOrganizationRoles({
-          organizationId: scope.id,
-        });
-        roleIds = organizationRoles.map((or) => or.roleId);
-        break;
-      }
+    return {
+      projects: {
+        byTenant: tenantMap({
+          [Tenant.Account]: async (scope) =>
+            (await s.accountProjects.getAccountProjects({ accountId: scope.id })).map(
+              (ap) => ap.projectId
+            ),
+          [Tenant.Organization]: async (scope) =>
+            (
+              await s.organizationProjects.getOrganizationProjects({ organizationId: scope.id })
+            ).map((op) => op.projectId),
+          // A project-level scope resolves to every project of the owning
+          // account/organization, not only the one named in the scope id.
+          [Tenant.AccountProject]: async (scope) =>
+            (
+              await s.accountProjects.getAccountProjects({
+                accountId: accountProjectFromScopeOrThrow(scope).accountId,
+              })
+            ).map((ap) => ap.projectId),
+          [Tenant.OrganizationProject]: async (scope) =>
+            (
+              await s.organizationProjects.getOrganizationProjects({
+                organizationId: organizationProjectFromScopeOrThrow(scope).organizationId,
+              })
+            ).map((op) => op.projectId),
+        }),
+      },
 
-      case Tenant.OrganizationProject:
-      case Tenant.AccountProject:
-      case Tenant.OrganizationProjectUser:
-      case Tenant.AccountProjectUser: {
-        const projectId = this.extractProjectIdFromScope(scope);
-        const projectRoles = await this.scopeServices.projectRoles.getProjectRoles({
-          projectId,
-        });
-        roleIds = projectRoles.map((pr) => pr.roleId);
-        break;
-      }
+      roles: {
+        byTenant: tenantMap({
+          [Tenant.Account]: noneAtAccountLevel,
+          [Tenant.Organization]: async (scope) =>
+            (await s.organizationRoles.getOrganizationRoles({ organizationId: scope.id })).map(
+              (or) => or.roleId
+            ),
+          ...forTenants(
+            PROJECT_SCOPED_TENANTS,
+            projectScoped(
+              (projectId) => s.projectRoles.getProjectRoles({ projectId }),
+              (pr) => pr.roleId
+            )
+          ),
+          // Roles the user holds AND the project offers. Order follows the
+          // project list. Dropping either side of this filter is a privilege
+          // escalation, so it stays explicit rather than folded into a helper.
+          [Tenant.ProjectUser]: async (scope) => {
+            const { projectId, userId } = projectUserFromScopeOrThrow(scope);
+            const [userRoles, projectRoles] = await Promise.all([
+              s.userRoles.getUserRoles({ userId }),
+              s.projectRoles.getProjectRoles({ projectId }),
+            ]);
+            const userRoleIds = new Set(userRoles.map((ur) => ur.roleId));
+            return projectRoles.map((pr) => pr.roleId).filter((roleId) => userRoleIds.has(roleId));
+          },
+        }),
+      },
 
-      case Tenant.ProjectUser: {
-        const { projectId, userId } = this.extractProjectUserFromScope(scope);
+      users: {
+        byTenant: tenantMap({
+          [Tenant.Account]: noneAtAccountLevel,
+          [Tenant.Organization]: async (scope) =>
+            (await s.organizationUsers.getOrganizationUsers({ organizationId: scope.id })).map(
+              (ou) => ou.userId
+            ),
+          ...forTenants(
+            PROJECT_SCOPED_TENANTS,
+            projectScoped(
+              (projectId) => s.projectUsers.getProjectUsers({ projectId }),
+              (pu) => pu.userId
+            )
+          ),
+        }),
+      },
 
-        // Get user roles and project roles, then find intersection
-        const [userRoles, projectRoles] = await Promise.all([
-          this.scopeServices.userRoles.getUserRoles({ userId }),
-          this.scopeServices.projectRoles.getProjectRoles({ projectId }),
-        ]);
+      groups: {
+        byTenant: tenantMap({
+          [Tenant.Account]: noneAtAccountLevel,
+          [Tenant.Organization]: async (scope) =>
+            (await s.organizationGroups.getOrganizationGroups({ organizationId: scope.id })).map(
+              (og) => og.groupId
+            ),
+          ...forTenants(
+            PROJECT_SCOPED_TENANTS,
+            projectScoped(
+              (projectId) => s.projectGroups.getProjectGroups({ projectId }),
+              (pg) => pg.groupId
+            )
+          ),
+        }),
+      },
 
-        const userRoleIds = new Set(userRoles.map((ur) => ur.roleId));
-        const projectRoleIds = projectRoles.map((pr) => pr.roleId);
+      permissions: {
+        byTenant: tenantMap({
+          [Tenant.Account]: noneAtAccountLevel,
+          [Tenant.Organization]: async (scope) =>
+            (
+              await s.organizationPermissions.getOrganizationPermissions({
+                organizationId: scope.id,
+              })
+            ).map((op) => op.permissionId),
+          ...forTenants(
+            PROJECT_SCOPED_TENANTS,
+            projectScoped(
+              (projectId) => s.projectPermissions.getProjectPermissions({ projectId }),
+              (pp) => pp.permissionId
+            )
+          ),
+        }),
+      },
 
-        // Return roles that are both assigned to the user AND available in the project
-        // Note: We filter project roles by user roles to ensure we only return roles
-        // that the user actually has, and that exist in the project
-        roleIds = projectRoleIds.filter((roleId) => userRoleIds.has(roleId));
-        break;
-      }
+      resources: {
+        unsupportedMessage: (tenant) =>
+          `Unsupported tenant type: ${tenant}. Resources are only supported at the project level.`,
+        byTenant: forTenants(
+          PROJECT_SCOPED_TENANTS,
+          projectScoped(
+            (projectId) => s.projectResources.getProjectResources({ projectId }),
+            (pr) => pr.resourceId
+          )
+        ),
+      },
 
-      default:
-        throw new BadRequestError(`Unsupported tenant type: ${scope.tenant}`);
-    }
+      // Unlike roles/users/groups/permissions, an Account scope resolves to real
+      // tags — personal accounts do carry account-level tags.
+      tags: {
+        byTenant: tenantMap({
+          [Tenant.Account]: async (scope) =>
+            (await s.accountTags.getAccountTags({ accountId: scope.id })).map((at) => at.tagId),
+          [Tenant.Organization]: async (scope) =>
+            (await s.organizationTags.getOrganizationTags({ organizationId: scope.id })).map(
+              (ot) => ot.tagId
+            ),
+          ...forTenants(
+            PROJECT_SCOPED_TENANTS,
+            projectScoped(
+              (projectId) => s.projectTags.getProjectTags({ projectId }),
+              (pt) => pt.tagId
+            )
+          ),
+        }),
+      },
 
-    await this.cache.roles.set(cacheKey, new Set(roleIds));
-    return roleIds;
+      apiKeys: {
+        byTenant: tenantMap({
+          ...forTenants(PROJECT_USER_TENANTS, async (scope) => {
+            const { projectId, userId } = projectUserFromScopeOrThrow(scope);
+            return (await s.projectUserApiKeys.getProjectUserApiKeys({ projectId, userId })).map(
+              (pivot) => pivot.apiKeyId
+            );
+          }),
+          [Tenant.AccountProject]: async (scope) => {
+            const { accountId, projectId } = accountProjectFromScopeOrThrow(scope);
+            return (
+              await s.accountProjectApiKeys.getAccountProjectApiKeys({ accountId, projectId })
+            ).map((pivot) => pivot.apiKeyId);
+          },
+          [Tenant.OrganizationProject]: async (scope) => {
+            const { organizationId, projectId } = organizationProjectFromScopeOrThrow(scope);
+            return (
+              await s.organizationProjectApiKeys.getOrganizationProjectApiKeys({
+                organizationId,
+                projectId,
+              })
+            ).map((pivot) => pivot.apiKeyId);
+          },
+        }),
+      },
+    };
   }
 
-  async getScopedUserIds(scope: Scope): Promise<string[]> {
-    const cacheKey = this.createCacheKey(scope);
-
-    const cachedUsers = await this.cache.users.get(cacheKey);
-    if (cachedUsers) {
-      return Array.from(cachedUsers.values());
-    }
-
-    let userIds: string[];
-    switch (scope.tenant) {
-      case Tenant.Account: {
-        // Personal accounts don't have account-level users
-        // Users exist only at the project level for personal accounts
-        userIds = [];
-        break;
-      }
-
-      case Tenant.Organization: {
-        const organizationUsers = await this.scopeServices.organizationUsers.getOrganizationUsers({
-          organizationId: scope.id,
-        });
-        userIds = organizationUsers.map((ou) => ou.userId);
-        break;
-      }
-
-      case Tenant.OrganizationProject:
-      case Tenant.AccountProject:
-      case Tenant.OrganizationProjectUser:
-      case Tenant.AccountProjectUser: {
-        const projectId = this.extractProjectIdFromScope(scope);
-        const projectUsers = await this.scopeServices.projectUsers.getProjectUsers({
-          projectId,
-        });
-        userIds = projectUsers.map((pu) => pu.userId);
-        break;
-      }
-
-      default:
-        throw new BadRequestError(`Unsupported tenant type: ${scope.tenant}`);
-    }
-
-    await this.cache.users.set(cacheKey, new Set(userIds));
-    return userIds;
+  getScopedProjectIds(scope: Scope): Promise<string[]> {
+    return this.resolveScopedIds('projects', scope);
   }
 
-  async getScopedGroupIds(scope: Scope): Promise<string[]> {
-    const cacheKey = this.createCacheKey(scope);
-
-    const cachedGroups = await this.cache.groups.get(cacheKey);
-    if (cachedGroups) {
-      return Array.from(cachedGroups.values());
-    }
-
-    let groupIds: string[];
-    switch (scope.tenant) {
-      case Tenant.Account: {
-        // Personal accounts don't have account-level groups
-        // Groups exist only at the project level for personal accounts
-        groupIds = [];
-        break;
-      }
-
-      case Tenant.Organization: {
-        const organizationGroups =
-          await this.scopeServices.organizationGroups.getOrganizationGroups({
-            organizationId: scope.id,
-          });
-        groupIds = organizationGroups.map((og) => og.groupId);
-        break;
-      }
-
-      case Tenant.OrganizationProject:
-      case Tenant.AccountProject:
-      case Tenant.OrganizationProjectUser:
-      case Tenant.AccountProjectUser: {
-        const projectId = this.extractProjectIdFromScope(scope);
-        const projectGroups = await this.scopeServices.projectGroups.getProjectGroups({
-          projectId,
-        });
-        groupIds = projectGroups.map((pg) => pg.groupId);
-        break;
-      }
-
-      default:
-        throw new BadRequestError(`Unsupported tenant type: ${scope.tenant}`);
-    }
-
-    await this.cache.groups.set(cacheKey, new Set(groupIds));
-    return groupIds;
+  getScopedRoleIds(scope: Scope): Promise<string[]> {
+    return this.resolveScopedIds('roles', scope);
   }
 
-  async getScopedPermissionIds(scope: Scope): Promise<string[]> {
-    const cacheKey = this.createCacheKey(scope);
-
-    const cachedPermissions = await this.cache.permissions.get(cacheKey);
-    if (cachedPermissions) {
-      return Array.from(cachedPermissions.values());
-    }
-
-    let permissionIds: string[];
-    switch (scope.tenant) {
-      case Tenant.Account: {
-        // Personal accounts don't have account-level permissions
-        // Permissions exist only at the project level for personal accounts
-        permissionIds = [];
-        break;
-      }
-
-      case Tenant.Organization: {
-        const organizationPermissions =
-          await this.scopeServices.organizationPermissions.getOrganizationPermissions({
-            organizationId: scope.id,
-          });
-        permissionIds = organizationPermissions.map((op) => op.permissionId);
-        break;
-      }
-
-      case Tenant.OrganizationProject:
-      case Tenant.AccountProject:
-      case Tenant.OrganizationProjectUser:
-      case Tenant.AccountProjectUser: {
-        const projectId = this.extractProjectIdFromScope(scope);
-        const projectPermissions =
-          await this.scopeServices.projectPermissions.getProjectPermissions({
-            projectId,
-          });
-        permissionIds = projectPermissions.map((pp) => pp.permissionId);
-        break;
-      }
-
-      default:
-        throw new BadRequestError(`Unsupported tenant type: ${scope.tenant}`);
-    }
-
-    await this.cache.permissions.set(cacheKey, new Set(permissionIds));
-    return permissionIds;
+  getScopedUserIds(scope: Scope): Promise<string[]> {
+    return this.resolveScopedIds('users', scope);
   }
 
-  async getScopedResourceIds(scope: Scope): Promise<string[]> {
-    const cacheKey = this.createCacheKey(scope);
+  getScopedGroupIds(scope: Scope): Promise<string[]> {
+    return this.resolveScopedIds('groups', scope);
+  }
 
-    const cachedResources = await this.cache.resources.get(cacheKey);
-    if (cachedResources) {
-      return Array.from(cachedResources.values());
-    }
+  getScopedPermissionIds(scope: Scope): Promise<string[]> {
+    return this.resolveScopedIds('permissions', scope);
+  }
 
-    let resourceIds: string[];
-    switch (scope.tenant) {
-      case Tenant.OrganizationProject:
-      case Tenant.AccountProject:
-      case Tenant.OrganizationProjectUser:
-      case Tenant.AccountProjectUser: {
-        const projectId = this.extractProjectIdFromScope(scope);
-        const projectResources = await this.scopeServices.projectResources.getProjectResources({
-          projectId,
-        });
-        resourceIds = projectResources.map((pr) => pr.resourceId);
-        break;
-      }
+  getScopedResourceIds(scope: Scope): Promise<string[]> {
+    return this.resolveScopedIds('resources', scope);
+  }
 
-      default:
-        throw new BadRequestError(
-          `Unsupported tenant type: ${scope.tenant}. Resources are only supported at the project level.`
-        );
-    }
+  getScopedTagIds(scope: Scope): Promise<string[]> {
+    return this.resolveScopedIds('tags', scope);
+  }
 
-    await this.cache.resources.set(cacheKey, new Set(resourceIds));
-    return resourceIds;
+  getScopedApiKeyIds(scope: Scope): Promise<string[]> {
+    return this.resolveScopedIds('apiKeys', scope);
   }
 
   async getScopedProjectAppIds(scope: Scope): Promise<string[]> {
@@ -525,157 +462,10 @@ export class CacheHandler implements IScopedIdProvider {
     return projectAppIds;
   }
 
-  async getScopedTagIds(scope: Scope): Promise<string[]> {
-    const cacheKey = this.createCacheKey(scope);
-
-    const cachedTags = await this.cache.tags.get(cacheKey);
-    if (cachedTags) {
-      return Array.from(cachedTags.values());
-    }
-
-    let tagIds: string[];
-    switch (scope.tenant) {
-      case Tenant.Account: {
-        const accountTags = await this.scopeServices.accountTags.getAccountTags({
-          accountId: scope.id,
-        });
-        tagIds = accountTags.map((at: AccountTag) => at.tagId);
-        break;
-      }
-
-      case Tenant.Organization: {
-        const organizationTags = await this.scopeServices.organizationTags.getOrganizationTags({
-          organizationId: scope.id,
-        });
-        tagIds = organizationTags.map((ot) => ot.tagId);
-        break;
-      }
-
-      case Tenant.OrganizationProject:
-      case Tenant.AccountProject:
-      case Tenant.OrganizationProjectUser:
-      case Tenant.AccountProjectUser: {
-        const projectId = this.extractProjectIdFromScope(scope);
-        const projectTags = await this.scopeServices.projectTags.getProjectTags({
-          projectId,
-        });
-        tagIds = projectTags.map((pt) => pt.tagId);
-        break;
-      }
-
-      default:
-        throw new BadRequestError(`Unsupported tenant type: ${scope.tenant}`);
-    }
-
-    await this.cache.tags.set(cacheKey, new Set(tagIds));
-    return tagIds;
-  }
-
-  protected async hydrateScopedTagsForOwners<TPivot extends ScopedTagPivot>(params: {
-    scope: Scope;
-    ownerIds: string[];
-    pivots: TPivot[];
-    getOwnerId: (pivot: TPivot) => string;
-  }): Promise<ScopedTagHydration> {
-    const { scope, ownerIds, pivots, getOwnerId } = params;
-    const tagsByOwnerId = new Map<string, Tag[]>(ownerIds.map((ownerId) => [ownerId, []]));
-    const primaryTagByOwnerId = new Map<string, Tag | null>(
-      ownerIds.map((ownerId) => [ownerId, null])
-    );
-    const tagCountByOwnerId = new Map<string, number>(ownerIds.map((ownerId) => [ownerId, 0]));
-
-    if (ownerIds.length === 0 || pivots.length === 0) {
-      return { tagsByOwnerId, primaryTagByOwnerId, tagCountByOwnerId };
-    }
-
-    const ownerIdSet = new Set(ownerIds);
-    const scopedTagIds = new Set(await this.getScopedTagIds(scope));
-    const scopedPivots = pivots.filter((pivot) => {
-      return ownerIdSet.has(getOwnerId(pivot)) && scopedTagIds.has(pivot.tagId);
-    });
-
-    if (scopedPivots.length === 0) {
-      return { tagsByOwnerId, primaryTagByOwnerId, tagCountByOwnerId };
-    }
-
-    const tagIds = [...new Set(scopedPivots.map((pivot) => pivot.tagId))];
-    const { tags } = await this.scopeServices.tags.getTags({ ids: tagIds, limit: -1 });
-    const tagsById = new Map(tags.map((tag) => [tag.id, tag]));
-
-    for (const pivot of scopedPivots) {
-      const ownerId = getOwnerId(pivot);
-      const tag = tagsById.get(pivot.tagId);
-      if (!tag) {
-        continue;
-      }
-
-      const hydratedTag = { ...tag, isPrimary: pivot.isPrimary ?? false };
-      tagsByOwnerId.get(ownerId)?.push(hydratedTag);
-      tagCountByOwnerId.set(ownerId, (tagCountByOwnerId.get(ownerId) ?? 0) + 1);
-
-      if (hydratedTag.isPrimary && !primaryTagByOwnerId.get(ownerId)) {
-        primaryTagByOwnerId.set(ownerId, hydratedTag);
-      }
-    }
-
-    return { tagsByOwnerId, primaryTagByOwnerId, tagCountByOwnerId };
-  }
-
-  async getScopedApiKeyIds(scope: Scope): Promise<string[]> {
-    const cacheKey = this.createCacheKey(scope);
-
-    const cachedApiKeys = await this.cache.apiKeys?.get(cacheKey);
-    if (cachedApiKeys) {
-      return Array.from(cachedApiKeys.values());
-    }
-
-    let apiKeyIds: string[];
-    switch (scope.tenant) {
-      case Tenant.ProjectUser:
-      case Tenant.AccountProjectUser:
-      case Tenant.OrganizationProjectUser: {
-        const { projectId, userId } = this.extractProjectUserFromScope(scope);
-        const projectUserApiKeys =
-          await this.scopeServices.projectUserApiKeys.getProjectUserApiKeys({
-            projectId,
-            userId,
-          });
-        apiKeyIds = projectUserApiKeys.map((pivot) => pivot.apiKeyId);
-        break;
-      }
-
-      case Tenant.AccountProject: {
-        const { accountId, projectId } = this.extractAccountProjectFromScope(scope);
-        const accountProjectApiKeys =
-          await this.scopeServices.accountProjectApiKeys.getAccountProjectApiKeys({
-            accountId,
-            projectId,
-          });
-        apiKeyIds = accountProjectApiKeys.map((pivot) => pivot.apiKeyId);
-        break;
-      }
-
-      case Tenant.OrganizationProject: {
-        const { organizationId, projectId } = this.extractOrganizationProjectFromScope(scope);
-        const organizationProjectApiKeys =
-          await this.scopeServices.organizationProjectApiKeys.getOrganizationProjectApiKeys({
-            organizationId,
-            projectId,
-          });
-        apiKeyIds = organizationProjectApiKeys.map((pivot) => pivot.apiKeyId);
-        break;
-      }
-
-      default:
-        throw new BadRequestError(`Unsupported tenant type: ${scope.tenant}`);
-    }
-
-    if (this.cache.apiKeys) {
-      await this.cache.apiKeys.set(cacheKey, new Set(apiKeyIds));
-    }
-    return apiKeyIds;
-  }
-
+  // Incremental scope-cache maintenance. Both underlying helpers are no-ops when
+  // the scope has no cached set: there is nothing to keep in sync, and the next
+  // read recomputes from the services. Writing a singleton set here would
+  // present a partial set as authoritative.
   async addTagIdToScopeCache(scope: Scope, tagId: string): Promise<void> {
     await this.addIdToCache(this.cache.tags, scope, tagId);
   }
@@ -748,16 +538,58 @@ export class CacheHandler implements IScopedIdProvider {
     await this.removeIdFromCache(this.cache.apiKeys, scope, apiKeyId);
   }
 
+  protected async hydrateScopedTagsForOwners<TPivot extends ScopedTagPivot>(params: {
+    scope: Scope;
+    ownerIds: string[];
+    pivots: TPivot[];
+    getOwnerId: (pivot: TPivot) => string;
+  }): Promise<ScopedTagHydration> {
+    const { scope, ownerIds, pivots, getOwnerId } = params;
+    const tagsByOwnerId = new Map<string, Tag[]>(ownerIds.map((ownerId) => [ownerId, []]));
+    const primaryTagByOwnerId = new Map<string, Tag | null>(
+      ownerIds.map((ownerId) => [ownerId, null])
+    );
+    const tagCountByOwnerId = new Map<string, number>(ownerIds.map((ownerId) => [ownerId, 0]));
+
+    if (ownerIds.length === 0 || pivots.length === 0) {
+      return { tagsByOwnerId, primaryTagByOwnerId, tagCountByOwnerId };
+    }
+
+    const ownerIdSet = new Set(ownerIds);
+    const scopedTagIds = new Set(await this.getScopedTagIds(scope));
+    const scopedPivots = pivots.filter((pivot) => {
+      return ownerIdSet.has(getOwnerId(pivot)) && scopedTagIds.has(pivot.tagId);
+    });
+
+    if (scopedPivots.length === 0) {
+      return { tagsByOwnerId, primaryTagByOwnerId, tagCountByOwnerId };
+    }
+
+    const tagIds = [...new Set(scopedPivots.map((pivot) => pivot.tagId))];
+    const { tags } = await this.scopeServices.tags.getTags({ ids: tagIds, limit: -1 });
+    const tagsById = new Map(tags.map((tag) => [tag.id, tag]));
+
+    for (const pivot of scopedPivots) {
+      const ownerId = getOwnerId(pivot);
+      const tag = tagsById.get(pivot.tagId);
+      if (!tag) {
+        continue;
+      }
+
+      const hydratedTag = { ...tag, isPrimary: pivot.isPrimary ?? false };
+      tagsByOwnerId.get(ownerId)?.push(hydratedTag);
+      tagCountByOwnerId.set(ownerId, (tagCountByOwnerId.get(ownerId) ?? 0) + 1);
+
+      if (hydratedTag.isPrimary && !primaryTagByOwnerId.get(ownerId)) {
+        primaryTagByOwnerId.set(ownerId, hydratedTag);
+      }
+    }
+
+    return { tagsByOwnerId, primaryTagByOwnerId, tagCountByOwnerId };
+  }
+
   async invalidatePermissionsCacheForAllScopes(): Promise<void> {
     await this.cache.permissions.clear();
-  }
-
-  async invalidateRolesCacheForAllScopes(): Promise<void> {
-    await this.cache.roles.clear();
-  }
-
-  async invalidateGroupsCacheForAllScopes(): Promise<void> {
-    await this.cache.groups.clear();
   }
 
   /**
@@ -814,21 +646,6 @@ export class CacheHandler implements IScopedIdProvider {
     await this.cache.roles.delete(cacheKey);
   }
 
-  async invalidateUsersCacheForScope(scope: Scope): Promise<void> {
-    const cacheKey = this.createCacheKey(scope);
-    await this.cache.users.delete(cacheKey);
-  }
-
-  async invalidateGroupsCacheForScope(scope: Scope): Promise<void> {
-    const cacheKey = this.createCacheKey(scope);
-    await this.cache.groups.delete(cacheKey);
-  }
-
-  async invalidatePermissionsCacheForScope(scope: Scope): Promise<void> {
-    const cacheKey = this.createCacheKey(scope);
-    await this.cache.permissions.delete(cacheKey);
-  }
-
   /**
    * Clears cached authorization results for a user (prefix match). Call when
    * inputs that affect permission condition evaluation change (e.g. project
@@ -842,47 +659,17 @@ export class CacheHandler implements IScopedIdProvider {
     }
   }
 
-  async invalidateResourcesCacheForScope(scope: Scope): Promise<void> {
-    const cacheKey = this.createCacheKey(scope);
-    await this.cache.resources.delete(cacheKey);
-  }
-
-  async invalidateTagsCacheForScope(scope: Scope): Promise<void> {
-    const cacheKey = this.createCacheKey(scope);
-    await this.cache.tags.delete(cacheKey);
-  }
-
-  async invalidateProjectsCacheForScope(scope: Scope): Promise<void> {
-    const cacheKey = this.createCacheKey(scope);
-    await this.cache.projects.delete(cacheKey);
-  }
-
-  async invalidateProjectAppsCacheForScope(scope: Scope): Promise<void> {
-    const cacheKey = this.createCacheKey(scope);
-    await this.cache.projectApps.delete(cacheKey);
-  }
-
-  async invalidateApiKeysCacheForScope(scope: Scope): Promise<void> {
-    const cacheKey = this.createCacheKey(scope);
-    if (this.cache.apiKeys) {
-      await this.cache.apiKeys.delete(cacheKey);
-    }
-  }
-
+  /**
+   * Signing keys are stored per-kid under the scope key, so this clears by
+   * prefix. The prefix is not delimiter-anchored: `organization:org-1*` also
+   * matches `organization:org-10`. That over-invalidates across organizations,
+   * which costs a recompute rather than leaking anything, and is characterized
+   * as current behaviour — narrowing it is a behaviour change, not a refactor.
+   */
   async invalidateSigningKeysCacheForScope(scope: Scope): Promise<void> {
-    const prefix = `${scope.tenant}:${scope.id}`;
-    const keysToDelete = await this.cache.signingKeys.keys(`${prefix}*`);
+    const keysToDelete = await this.cache.signingKeys.keys(`${this.createCacheKey(scope)}*`);
     for (const key of keysToDelete) {
       await this.cache.signingKeys.delete(key);
-    }
-  }
-
-  async invalidateAuthorizationCacheForUser(userId: string): Promise<void> {
-    const pattern = `${AUTH_RESULT_CACHE_KEY_PREFIX}${userId}:*`;
-    const keys = await this.cache.permissions.keys(pattern);
-
-    for (const key of keys) {
-      await this.cache.permissions.delete(key);
     }
   }
 }

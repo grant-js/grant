@@ -22,19 +22,20 @@
 
 ## Ordered slices (PRs)
 
-| #     | Branch                              | Base                    | Concern                               | Owner role | Review bar        | PR  |
-| ----- | ----------------------------------- | ----------------------- | ------------------------------------- | ---------- | ----------------- | --- |
-| 1     | `feat/api-code-quality-bugs`        | `feat/api-code-quality` | Tier 0 bugs + error re-exports        | Backend    | light             |     |
-| 2     | `feat/api-code-quality-guardrails`  | trunk                   | Tier 1 mechanical fixes               | Backend    | light             |     |
-| 3     | `feat/api-code-quality-lint`        | slice 2                 | Lint enforcement                      | Backend    | light             |     |
-| 4     | `feat/api-code-quality-deadcode`    | trunk                   | Dead surface removal                  | Backend    | light             |     |
-| 4a    | `feat/api-code-quality-cache-tests` | slice 4                 | `CacheHandler` characterization tests | QA         | light             |     |
-| 5     | `feat/api-code-quality-cache`       | slice 4a                | `CacheHandler` + scope helpers        | Backend    | **security-full** |     |
-| 6     | `feat/api-code-quality-services`    | slice 4                 | Service helpers                       | Backend    | light             |     |
-| 7     | `feat/api-code-quality-routes`      | slice 4                 | REST CRUD router factory              | Backend    | light             |     |
-| 8     | `feat/api-code-quality-validation`  | slice 6                 | Pagination + CDM zod boundary         | Backend    | **security-full** |     |
-| 9     | `feat/api-code-quality-tests`       | slice 5                 | Base-class + route coverage           | QA         | light             |     |
-| final | `feat/api-code-quality`             | `main`                  | integration                           | Principal  | deep              |     |
+| #      | Branch                              | Base                    | Concern                                                                            | Owner role | Review bar        | PR  |
+| ------ | ----------------------------------- | ----------------------- | ---------------------------------------------------------------------------------- | ---------- | ----------------- | --- |
+| 1      | `feat/api-code-quality-bugs`        | `feat/api-code-quality` | Tier 0 bugs + error re-exports                                                     | Backend    | light             |     |
+| 2      | `feat/api-code-quality-guardrails`  | trunk                   | Tier 1 mechanical fixes                                                            | Backend    | light             |     |
+| 3      | `feat/api-code-quality-lint`        | slice 2                 | Lint enforcement                                                                   | Backend    | light             |     |
+| ~~2a~~ | —                                   | —                       | ~~ProjectImport/Export repository ports~~ — **dropped from this story**, see below | —          | —                 | —   |
+| 4      | `feat/api-code-quality-deadcode`    | trunk                   | Dead surface removal                                                               | Backend    | light             |     |
+| 4a     | `feat/api-code-quality-cache-tests` | slice 4                 | `CacheHandler` characterization tests                                              | QA         | light             |     |
+| 5      | `feat/api-code-quality-cache`       | slice 4a                | `CacheHandler` + scope helpers                                                     | Backend    | **security-full** |     |
+| 6      | `feat/api-code-quality-services`    | slice 4                 | Service helpers                                                                    | Backend    | light             |     |
+| 7      | `feat/api-code-quality-routes`      | slice 4                 | REST CRUD router factory                                                           | Backend    | light             |     |
+| 8      | `feat/api-code-quality-validation`  | trunk                   | Pagination + CDM JSON boundary                                                     | Backend    | **security-full** |     |
+| 9      | `feat/api-code-quality-tests`       | slice 5                 | Base-class + route coverage                                                        | QA         | light             |     |
+| final  | `feat/api-code-quality`             | `main`                  | integration                                                                        | Principal  | deep              |     |
 
 Slices 1, 2 and 4 are independent and could run in parallel with multiple agents in separate worktrees. **With a single reviewer, run them serially** — parallel slices compete for review attention and create rebase churn for no gain.
 
@@ -60,6 +61,16 @@ Config extraction: `server.ts:161-164` → `config.app.url`; the three OAuth TTL
 
 Move `rest/utils/refresh-cookie.ts` to `lib/` and update the 6 GraphQL importers. Decide whether `handlers/index.ts` is a legitimate third composition site and either amend `AGENTS.md:46` or move the wiring.
 
+### 2a — CDM repository ports — **dropped from this story** (2026-08-07, Ale Heredia)
+
+Ports for `ProjectImportRepository` (15 public methods) and `ProjectExportRepository` (18).
+
+Split out of slice 2 because it is not a mechanical guardrail fix. Every return type — `ProjectRoleWithPermissions`, `ProjectUserWithRoleIds`, `ProjectTagDefinitionRow`, `GrantGroupExportRow`, `ResolvedCdmPermission`, and ~8 more — is declared **inside the repository files in `apps/api`**. Writing the ports means first migrating those declarations into `@grantjs/core`, which changes what the domain package owns (CDM export row shapes become domain types) and touches every importer.
+
+**Dropped rather than deferred again.** It was skipped in favour of every other slice five times running, and correctly so: it is a decision about domain ownership, not a code-quality fix, and it does not share a review bar, a risk profile, or a verification method with anything else in this stack. Folding it in would have made the story→`main` review answer two unrelated questions at once.
+
+It needs its own story brief. Tracked as follow-up **B3**.
+
 ### 3 — Lint enforcement
 
 Encode slice 2's rules so they cannot regress:
@@ -73,11 +84,21 @@ Expect the first full-repo run to surface violations in `apps/web` and `packages
 
 ### 4 — Dead surface removal
 
-~115 exports, the 2 never-called `CacheHandler` methods, and the duplicate auth-cache invalidator (keep one of `invalidateAuthorizationResultsForUser` / `invalidateAuthorizationCacheForUser`).
+**Done.** The estimate of "~115 exports" was low and, more importantly, conflated three edits. `knip` reports **361**:
 
-Orphaned REST schemas need a decision per group, not bulk deletion: `uploadUserPicture*` has a live GraphQL mutation and no REST route — either wire the route or delete the schemas. Same question for `deleteAccount*`, `changePassword*`, and the session/auth-method sets.
+| Class                 | Count | Edit                                            |
+| --------------------- | ----- | ----------------------------------------------- |
+| Dead barrel re-export | 90    | delete the barrel line; implementation lives on |
+| Module-private        | 149   | drop the `export` keyword; no code moves        |
+| Genuinely dead        | 124   | delete the declaration (~870 lines)             |
 
-Run `knip` from slice 3 to confirm the list before deleting.
+Plus 7 unused dependencies and **13** dead `CacheHandler` methods — not the 2 estimated; knip does not analyse class members, so that took a separate AST scan. `CacheHandler` is down to 812 lines before slice 5 touches it.
+
+The per-group decision on orphaned REST schemas turned out not to exist: every one has a live `my*`-prefixed counterpart already wired into `me.routes.ts` and `me.openapi.ts`. They are superseded duplicates from the `me`-scoped rewrite, not abandoned endpoints.
+
+Two `duplicates` findings remain deliberately unresolved — `jsonSchema`/`metadataSchema` and `webhookScopeQuerySchema`/`listWebhookSubscriptionsQuerySchema`. Both names are live in each pair, so settling them is a rename, which this story scoped out. Recorded in [`CONCEPTS.md`](../CONCEPTS.md) and excluded in `knip.json`.
+
+Enforcement is on: `dead-code:api` runs in CI and in the pre-push hook, verified against a planted violation.
 
 ### 4a — `CacheHandler` characterization tests
 
@@ -94,6 +115,24 @@ Characterize **current** behaviour, bugs included. Do not fix anything here:
 
 These tests are the correctness check for slice 5: write them against the current 9 methods, refactor, and they must pass **untouched**. If a test needs editing to go green, the refactor changed behaviour — stop and review why.
 
+**Done.** 160 tests in `tests/unit/handlers/base/`, over a file that is now 812 lines after slice 4:
+
+- `cache-handler.scoped-ids.test.ts` (92) — an 8×8 tenant dispatch matrix, cache hit/miss semantics per namespace, the `ProjectUser` intersection, and the `getScopedProjectAppIds` guard.
+- `cache-handler.mutations.test.ts` (68) — the 18 add/remove wrappers, the invalidators, and the authorization cache key.
+- `cache-handler.fixtures.ts` — in-memory cache namespaces rather than stubs, because several behaviours are about what ends up _in_ the cache.
+
+Verified by mutation testing rather than by passing: **8 of 8 planted behaviour changes are caught**, including the two that matter most — dropping the `ProjectUser` role filter (privilege escalation) and dropping `grantedScopes` from the authorization cache key (two OAuth grants sharing one result). A suite that passes proves nothing; one that fails on the right mutations is the actual gate for slice 5.
+
+Asymmetries recorded as current behaviour, deliberately not fixed here:
+
+| Behaviour                                                                                           | Note                                                          |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `getScopedTagIds` returns real tags for an `Account` scope                                          | roles/users/groups/permissions return `[]` for the same scope |
+| `getScopedUserIds`/`GroupIds`/`PermissionIds` reject `ProjectUser`                                  | `getScopedRoleIds` accepts it                                 |
+| `getScopedProjectIds` on an `OrganizationProject` scope returns **every** project of the owning org | not just the one named in the scope id                        |
+| `getScopedProjectAppIds` does not cache its empty result                                            | the guard re-runs on every call                               |
+| `invalidateSigningKeysCacheForScope` prefix is not delimiter-anchored                               | `organization:org-1*` also matches `organization:org-10`      |
+
 ### 5 — `CacheHandler` + scope helpers · security-full
 
 The highest-risk slice. `CacheHandler` decides what every caller may see; a mistake here is a tenancy leak.
@@ -105,6 +144,20 @@ The highest-risk slice. `CacheHandler` decides what every caller may see; a mist
 
 Slice 4a's tests must be green on this branch before the refactor begins, and must still pass unmodified when it ends.
 
+**Done**, with two items of the plan corrected:
+
+| Planned                                           | Actual                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Collapse 9 `getScopedXIds`                        | Done — descriptor table + one generic. ~350 lines of switch statements become a table read as an authorization matrix.                                                                                                                                                                                                                                                                  |
+| Collapse 22 add/remove wrappers                   | **Not done, and should not be.** There are 18, and each is already a 3-line delegate. Any "collapse" either changes the public API — which this slice forbids — or swaps a direct `this.cache.roles` reference for a string key, which is indirection, not simplification.                                                                                                              |
+| Collapse 8 `invalidateXCacheForScope`             | Moot: slice 4 deleted 8 of the 10 as dead. Two remain and share nothing.                                                                                                                                                                                                                                                                                                                |
+| Extract `lib/scope.lib.ts`, 8 `.split(':')` sites | There are **26**. Grew the existing `project-id-from-scope.lib.ts` into `scope.lib.ts` — its JSDoc already admitted it "mirrors `CacheHandler.extractProjectIdFromScope` without throwing" — and migrated CacheHandler's 4. The other 22 are left to a follow-up: widening a security-full diff to touch 22 unrelated call sites makes the tenancy change harder to review, not easier. |
+| Fix `invalidateSigningKeysCacheForScope`          | Done. Note this is a de-duplication only: the inline `${scope.tenant}:${scope.id}` was already byte-identical to `createCacheKey`.                                                                                                                                                                                                                                                      |
+
+Verified by re-running `mutation-check.mjs` against the collapsed shape: **10/10 killed**, including two new mutations for failure modes the descriptor table introduces (a wrong `namespace`, a tenant entry moved to the wrong key). The write-back mutation now fails 9 tests where it failed 2, which is the evidence that the nine methods really do share one path.
+
+The 160 characterization tests pass **byte-identical** — verified by md5 against a baseline taken before the first edit.
+
 ### 6 — Service helpers
 
 - `resolveDelete()` for the delete+audit+event block — 43 services.
@@ -112,7 +165,16 @@ Slice 4a's tests must be green on this branch before the refactor begins, and mu
 - `intersectScopedIds()` for the empty-scope early return — 9 handlers.
 - Normalize `metadata` vs `auditMetadata`.
 
-Migrate services in batches by domain so each commit stays reviewable. Behaviour must not change: the audit and event payloads are consumed downstream.
+**Done — two of the four items were rejected on inspection.**
+
+| Item                          | Outcome                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `validatePage()`              | **Done.** 12 sites, 89 lines removed. The clearest win in the slice: the throwaway object existed only to reshape `{ <entityPlural>, totalCount, hasNextPage }` into `{ items, … }` for the schema.                                                                                                                                                                                                                                                                                                        |
+| `intersectScopedIds()`        | **Done**, 9 handlers — but for the naming, not the 18 lines. The helper documents an authorization rule that inline code did not: an absent id filter means _everything the scope allows_, never _nothing_, and a caller can never widen visibility by naming ids. Covered by tests.                                                                                                                                                                                                                       |
+| `resolveDelete()`             | **Rejected.** The audit's "43 services share a 30-line block" counts the whole delete method — repository call, `oldValues`, metadata, audit, event, `validateOutput` — not an extractable unit. Normalized, the 43 audit branches collapse to 3 semantic variants, and the dominant one (32 of 43) is already **5 lines**. A helper taking `{ isHardDelete, entityId, oldValues, newValues, metadata }` plus `audit` and `transaction` would be 7–8 lines at the call site. That is not a simplification. |
+| `metadata` vs `auditMetadata` | **Rejected — the divergence is load-bearing.** `groups.service.ts` binds `metadata` from `validatedParams` because a Group _has_ a metadata field; `auditMetadata` disambiguates. Renaming produced `TS2451: Cannot redeclare block-scoped variable`. Recorded as [correction 13](../docs/contributing/code-quality/api.md#corrections).                                                                                                                                                                   |
+
+The rejected pair is the same shape as slice 5's add/remove wrappers: the audit counted repeated _shapes_ and assumed each implied an extractable helper. Where the repeated block is already minimal, a helper relocates complexity into a parameter object instead of removing it.
 
 ### 7 — REST CRUD router factory
 
@@ -120,20 +182,138 @@ Migrate services in batches by domain so each commit stays reviewable. Behaviour
 
 OpenAPI registration must stay in sync — `rest/openapi/` is generated separately from the routes, so verify the emitted spec is byte-identical before and after.
 
-### 8 — Pagination + CDM validation · security-full
+**Done for three of the five.** Measured similarity after normalizing the entity name out:
 
-- Pick one `hasNextPage` implementation, put it in one place, migrate the other four. Document offset-vs-keyset in [`CONCEPTS.md`](../CONCEPTS.md).
-- Add zod input validation to `project-import.service.ts` and `project-sync-job.service.ts` — externally-supplied CDM payloads currently cross the service boundary unvalidated.
+| Pair                     | Identical                                         |
+| ------------------------ | ------------------------------------------------- |
+| `roles` vs `permissions` | **100%**                                          |
+| `groups` vs either       | **99%** — one line, an import ordering difference |
+| `tags` vs the group      | 79%                                               |
+| `resources` vs the group | 81%                                               |
 
-Security review is blocking: this slice changes what payloads are accepted. Expect the CDM round-trip integration test and the `project-sync-*` e2e scenarios to be the real signal.
+So the audit was right about the three it named specifically, and the "5 files of ~158 L each" framing was optimistic. `tags` and `resources` are excluded on purpose: `tags` deletes via a **body** schema rather than a query schema and exposes no `requestedFields`; `resources` adds an `isActive` filter, hardcodes `requestedFields` to `[]`, and passes `context.locale` into create. Folding either in means options only one caller ever sets — the failure mode slice 6 rejected `resolveDelete()` for.
 
-### 9 — Coverage
+**474 lines of route definitions become 56.** The middleware order is preserved exactly and documented at the factory, including why GET is the one route without the MFA guard.
 
-`CacheHandler` coverage moved to slice 4a, where it blocks the refactor. What remains, by lines at risk and blast radius:
+Spec check done as specified: `/api-docs.json` captured from the e2e stack before and after is **byte-identical** — same md5, 1,771,662 bytes, 87 paths. That was expected rather than hoped for, since `rest/openapi/` has zero imports from `rest/routes/`, but the plan asked for the empirical check and it is cheap.
 
-1. `repositories/common/` (742 L, inherited by 52 repositories)
-2. `rest/routes/` (3,458 L, zero unit tests)
-3. `config/env.config.ts` (1,051 L)
+### 8 — Pagination + CDM validation · security-full — **Done** (PR pending)
+
+Both halves as planned turned out to be wrong on inspection, in opposite directions: the pagination half asked for one strategy where two are correct, and the CDM half described a gap that is smaller and sharper than "unvalidated".
+
+| Planned                                                                                                                      | Outcome                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pick one `hasNextPage`, migrate the other four                                                                               | **Two strategies kept, both named.** Three sites (`EntityRepository`, organization members, sync jobs) spelled one count-based comparison three ways and were collapsed onto `hasNextPageByCount`. The over-fetch sites were **not** migrated: `webhook-deliveries.repository.ts:180` already carried a comment from slice 1 explaining that a surplus row is the authoritative signal because it shares the page's snapshot. Migrating it to the count formula would have been a regression dressed as consistency. Extracted as `takePage` instead.   |
+| Add zod to `project-import.service.ts` and `project-sync-job.service.ts` — payloads "cross the service boundary unvalidated" | **Not accurate.** CDM sync is GraphQL-only (`startProjectSync(id, scope, input: SyncProjectInput!)`) — no REST route — so the execution layer already enforces field presence, scalar types, nested input shapes, and unknown-field rejection. Seven `*.cdm-entity.ts` classes add hand-rolled `validateInput` on top, plus `expandCdmSyncInput` and `validateCdmUserReferences`. Re-encoding that graph in zod would duplicate a check that already fires.                                                                                             |
+| —                                                                                                                            | **The real gap: 12 `JSON` scalar fields.** `JSON` asserts nothing, and three of them (`condition`, `metadata`, `searchable`) are read back through `as Record<string, unknown>` — see [`permission.cdm-entity.ts:116`](../apps/api/src/lib/cdm/entities/permission.cdm-entity.ts:116). `condition: 42` and `condition: [1, 2]` both pass GraphQL and both make that cast a lie all the way to persistence. `validateCdmJsonFields` closes it, with depth and size caps because the document is stored whole in the job row and replayed on every retry. |
+
+**Second instance of the slice-1 Tier-0 bug, missed by the audit.** [`notifications.repository.ts`](../apps/api/src/repositories/notifications.repository.ts) over-fetched `limit + 1`, computed `hasExtra`, used it only to trim, and **discarded it** — then `notifications.service.ts:86` recomputed next-page with a third formula (`offset + rows.length < totalCount`) from the already-trimmed rows. Identical in shape to the webhook-deliveries defect fixed in slice 1. The repository now returns the signal it computes.
+
+**Deferred, deliberately:** `project-sync-job.repository.ts:364` treats `limit: -1` as "return nothing" (empty `items`, real `totalCount`, `hasNextPage: false`) where `EntityRepository` treats it as "return everything". That is a genuine defect, but fixing it changes a public response shape and belongs to its own decision, not to a slice already carrying a security bar. Recorded in [`CONCEPTS.md § Pagination`](../CONCEPTS.md#pagination).
+
+Config: `CDM_MAX_JSON_BYTES` (64 KiB) and `CDM_MAX_JSON_DEPTH` (16), env-overridable, deliberately generous — they bound unbounded writes rather than shape payloads.
+
+**Verification.** 858 unit tests (29 new: 12 pagination, 17 CDM JSON), 189 e2e passing with 2 skipped — unchanged from slice 7, which is the signal the plan asked for: the new validator does not reject documents Grant's own export path produces. `knip` caught two dead exports of mine before CI, again.
+
+### 9 — Coverage — **Done** (PR pending)
+
+`CacheHandler` coverage moved to slice 4a, where it blocked the refactor. What remained, by lines at risk and blast radius:
+
+| Target                                                        | Covered by                                                                                                             | Tests |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ----- |
+| `repositories/common/` (746 L, inherited by ~52 repositories) | `entity-repository.filters.test.ts`, `pivot-repository.test.ts`                                                        | 40    |
+| `rest/routes/` (3,458 L)                                      | `crud-router.test.ts` — the slice-7 factory, which is now the whole route body for `groups`, `roles` and `permissions` | 15    |
+| `config/env.config.ts` (1,051 L)                              | `validate-config.test.ts`                                                                                              | 11    |
+
+The tests are characterization, not aspiration: several pin behaviour that is arguably wrong, with the reason stated inline. Three are worth naming.
+
+**Silent widening in `EntityRepository`.** An unrecognised filter operator or an unknown column makes `buildFilterCondition` return `undefined`, and `where()` then omits the condition entirely. A typo'd filter does not fail — it returns a _larger_ result set. `where()` always appends `isNull(deletedAt)`, so soft-deleted rows stay hidden, which is the one thing that saves this from being a data-exposure bug.
+
+**`PivotRepository.countActive({})` counts the whole table.** `whereUnique` returns `undefined` when the caller supplies none of the unique-index fields, and `countActive` falls back to the soft-delete guard alone. A caller that forgets a field gets a plausible number rather than an error.
+
+**`validateConfig`'s `DB_URL is required` branch is unreachable.** `DB_CONFIG.url` comes from `resolveDatabaseUrl`, which falls back to a `postgresql://…` template built from the `POSTGRES_*` vars; that string is never empty even when every part is undefined. An operator who omits the database configuration gets a runtime connection failure instead of the startup error this check exists to produce. Pinned as-is — the fix is a decision about what a valid database configuration means.
+
+Also characterized: `orderBy`'s default path emits a bare column with no direction, unlike the explicit path which always wraps in `asc()`/`desc()`. The two agree only because Postgres defaults a bare `ORDER BY` term to ascending.
+
+**Verification.** Mutation-tested rather than merely passing: swapping `authorizeRestRoute` ahead of the MFA guard turns the router suite red (2 failures), and removing the soft-delete guard from `where()` turns the repository suites red (6 failures). A suite that passes proves nothing.
+
+**Not covered:** the other 20 files in `rest/routes/`. `crud-router.ts` was chosen because slice 7 made it the actual body of three routers, so it is the highest-density target; `auth.routes.ts` and `me.routes.ts` carry more risk per line and deserve their own slice rather than a thin pass here.
+
+### 10 — Scope-tenant dispatch hardening · security-full — **Done** (PR pending)
+
+Not a planned slice. Opened because the independent Senior Security pass on slice 5 (follow-up A1) returned **BLOCK**.
+
+**The finding.** Slice 5 replaced a per-method `switch (scope.tenant)` with a lookup on `descriptor.byTenant`, an object literal. `byTenant['toString']` is truthy and callable off `Object.prototype`, so the `if (!resolve) throw` gate was skipped: eight of the nine scoped-id methods **returned** `'[object Undefined]'` where the switch had thrown, and cached it. Seven other prototype names turned a clean 400 into an uncaught `TypeError`.
+
+Reachable because `scope-extractor.ts` casts `tenant` out of a header, query param, or body with `as Tenant` and no enum check, on all six paths.
+
+Confirmed by execution, differentially against `f2da1635^`: **720/720 identical** for the eight real tenants — slice 5's own claim held exactly — and **64 of 72 divergent** for prototype keys. The dispatch _mechanism_ had a hole the `switch` did not, which is precisely what an author checking their own intent does not look for.
+
+| Fix                                                                                                                                                                                      | Where                                 |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Null-prototype `byTenant` maps **and** an `Object.hasOwn` guard — either alone closes it; this dispatch does not get to depend on one surviving a later edit                             | `cache-handler.ts`                    |
+| Validate `tenant` against `Object.values(Tenant)` at the boundary. An unknown tenant reads as _no scope_, so the caller fails authorization without learning which tenant names are real | `scope-extractor.ts`                  |
+| Dropped the redundant `namespace` field — the record key is now the only source of the cache namespace, so `roles: { namespace: 'users' }` is unrepresentable                            | `cache-handler.ts`                    |
+| `git rm --cached apps/api/.openmono/agent.lock` + gitignore                                                                                                                              | tooling artifact committed by slice 5 |
+
+**Verification.** 37 new tests. Both fixes mutation-checked **independently**: reverting the dispatch hardening fails 10 of 17; reverting the boundary validation fails 16 of 20. 961 unit, 189 e2e — the enum check breaks no real client path.
+
+Non-blocking findings from the same review became follow-ups **C9**, **C10**, **C11**.
+
+**Method note.** Slice 5's evidence was weaker than presented: `mutation-check.mjs` was rewritten inside the commit it attests, so "10/10 killed" was not an independent measurement. Correction 19.
+
+---
+
+## Follow-ups
+
+Everything deferred across slices 1–8, ordered. Nothing here blocks a slice PR; group A blocks gate 4.
+
+### A — Settle before story→main
+
+| #   | Item                                                                                                                                                                                                                                                                                                                                                                      | Why it is here                                                                                                                                                                                                                  |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A1  | ~~Slice 5's security-full review was performed by its own author.~~ **Done.** Independent Senior Security pass run 2026-08-07: verdict **BLOCK**, one High fail-open confirmed by execution. Fixed in slice 10                                                                                                                                                            | The bar is about who reviews, not how much evidence the author gathers — see correction 19                                                                                                                                      |
+| A2  | ~~Decide whether `handlers/index.ts` is a legitimate third composition site.~~ **Done — and it was already done.** Slice 2 (`d8b8a0a0`) settled it by amending the rule: `AGENTS.md:47` now reads "A factory may depend on the layer directly beneath it; that is wiring, not a second composition root." `createHandlers` is that factory. Carried forward here in error | Recorded as [correction 7](../docs/contributing/code-quality/api.md#corrections) five slices ago. The follow-up list was trusted instead of re-read — the same failure the rubric's rule 1 warns about, applied to my own notes |
+| A3  | Re-run the pass-1 lenses and update `api.md` with resolved counts                                                                                                                                                                                                                                                                                                         | Already on the cleanup checklist; listed here so it is not missed                                                                                                                                                               |
+
+### B — Contract decisions (each changes a public response or URL)
+
+| #   | Item                                                                                                                           | Evidence                                                                              |
+| --- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| B1  | `limit: -1` means "return nothing" in `project-sync-job.repository.ts:364` and "return everything" in `EntityRepository`       | Deferred out of slice 8 — see [`CONCEPTS.md § Pagination`](../CONCEPTS.md#pagination) |
+| B2  | The Tier 5 renames: `member`/`user` over one table, `org`/`prj` baked into the public JWKS URL, `Tenant` naming a scope _kind_ | Glossary is written; the renames are versioning decisions, not refactors              |
+
+### C — Code, ordered by risk × value
+
+| #   | Item                                                                                                                                                                                                                                             | Size      |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| C1  | Zod input validation for the 12 services that have none. `project-sync-job.service.ts` (494 L) and `signing-keys.service.ts` (228 L) are the security-relevant two                                                                               | 12 files  |
+| C2  | Migrate the remaining `scope.id.split(':')` sites onto `scope.lib.ts` — slice 5 moved only `CacheHandler`'s four                                                                                                                                 | ~24 sites |
+| C3  | `EntityRepository.buildFilterCondition` — two duplicated operator `switch` blocks differing only in operand. Tier 2 item 7; **no slice picked it up**                                                                                            | 1 file    |
+| C4  | Transactions: three styles, raw `db.transaction` bypassing the port at `jobs/project-sync.job.ts:277`, and `project-oauth.handler.ts` (815 L of mutating OAuth/membership flows) using none                                                      | broad     |
+| C5  | 14 services audit nothing, including mutating ones (`project-import`, `project-export`, `webhook-subscriptions`, `notifications`)                                                                                                                | 14 files  |
+| C6  | Domain events: 22 of 67 services publish. `TagService` is not injected with `events` while the line-identical `GroupService` is (`services/index.ts:312`)                                                                                        | 45 files  |
+| C7  | `webhook-subscriptions.repository.ts:148` soft-deletes _and_ flips `active: false` — a side effect no other soft delete has                                                                                                                      | 1 file    |
+| C8  | `validateConfig`'s `DB_URL is required` branch is unreachable — `resolveDatabaseUrl` never returns an empty string. Decide what a valid database configuration means, then make the check enforce it                                             | 1 file    |
+| C9  | `tryProjectIdFromScope` returns `""` not `null` for an empty middle segment, and `scope.lib.ts:21-24` documents the opposite. `grant.repository.ts:530,596` branch `if (projectId)` and otherwise take the **global, un-project-narrowed** query | 2 files   |
+| C10 | No arity check in `scope.lib.ts` — `'acc:proj:extra:more'` silently yields `'proj'`. A canonical parser should reject arity it does not understand                                                                                               | 1 file    |
+| C11 | Two dispatch paths for the same parse: the descriptor table calls the module functions directly, `getScopedProjectAppIds` calls `this.extractProjectIdFromScope`                                                                                 | 1 file    |
+
+### D — Method
+
+| #   | Item                                                                                                                                                                                                                                                                                                                                                          |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | ~~Rubric rule: size a helper against the block it replaces at the call site.~~ **Done** — rubric rule 6                                                                                                                                                                                                                                                       |
+| D2  | ~~Rubric rule: deleting a validator is not dead-code removal.~~ **Done** — rubric rule 7, plus a cross-check command in lens 5. Sharpened in the writing: an unused validator is _ambiguous_, not automatically an unwired check. Pass 1 held both readings at once — two genuinely dead helpers, correctly deleted, alongside 12 services validating nothing |
+| D3  | ~~`agentic-sdlc.md` presents fan-out and serial execution as equal options.~~ **Done** — new [Fan-out section](../docs/contributing/agentic-sdlc.md#fan-out-parallelism) separating the two axes. The root cause was narrower than "no stated default": worktrees were treated as the cost of _all_ parallelism, when review and verification roles need none |
+
+### E — Repo hygiene, unrelated to this story
+
+| #   | Item                                                                                                    |
+| --- | ------------------------------------------------------------------------------------------------------- |
+| E1  | `release.yml` and `deploy.yml` still carry the hosted-runner gate pattern that `ci.yml` moved away from |
+| E2  | `pnpm/action-setup@v4.1.0` emits a Node 20 deprecation warning                                          |
+| E3  | PR #211's merged commit message carries a false attribution                                             |
 
 ## Dependencies / notes
 
@@ -146,7 +326,10 @@ Security review is blocking: this slice changes what payloads are accepted. Expe
 ## Human gates
 
 - [x] Gate 2: Stack plan approved — 2026-08-06. Implementation may begin.
-- [ ] Gate 3: Stack PRs merged into trunk (light, with security-full on slices 5 and 8).
+- [x] Gate 3: Stack PRs merged into trunk — 1, 2, 3, 4, 4a, 5, 6, 7, 8, 9. Slice 2a dropped (see above).
+  - Slice 5 security-full: author-reviewed at merge. Independent pass 2026-08-07 returned **BLOCK**; remediated by **slice 10**, which must merge before gate 4.
+  - Slice 8 security-full: reviewed at merge.
+  - Slice 5 security-full: the review was performed by the commit's own author. An **independent pass is running before gate 4** — see follow-up A1, now in progress rather than deferred.
 - [ ] Gate 4: Story → `main` deep review complete.
 
 ## Cleanup

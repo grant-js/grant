@@ -19,7 +19,7 @@ import { SsrfBlockedError } from '@grantjs/webhooks';
 
 import { config } from '@/config';
 import { NotFoundError, ValidationError } from '@/lib/errors';
-import { tryProjectIdFromScope } from '@/lib/project-id-from-scope.lib';
+import { tryProjectIdFromScope } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import {
   toWebhookDeliveryAttempt,
@@ -37,7 +37,7 @@ import {
 } from './webhook-subscriptions.schemas';
 
 const DEFAULT_DELIVERY_PAGE_SIZE = 25;
-const MAX_DELIVERY_PAGE_SIZE = 100;
+const MAX_DELIVERY_PAGE_SIZE = config.system.maxPageSize;
 
 export class WebhookSubscriptionService implements IWebhookSubscriptionService {
   constructor(
@@ -201,7 +201,7 @@ export class WebhookSubscriptionService implements IWebhookSubscriptionService {
     const page = Math.max(params.page ?? 1, 1);
     const offset = (page - 1) * limit;
 
-    const { rows, totalCount } = await this.deliveries.listForProject(
+    const { rows, totalCount, hasNextPage } = await this.deliveries.listForProject(
       projectId,
       { subscriptionId: params.subscriptionId, status: params.status, offset, limit },
       transaction
@@ -210,7 +210,7 @@ export class WebhookSubscriptionService implements IWebhookSubscriptionService {
     return {
       items: rows.map(toWebhookDeliveryAttempt),
       totalCount,
-      hasNextPage: offset + rows.length < totalCount,
+      hasNextPage,
     };
   }
 

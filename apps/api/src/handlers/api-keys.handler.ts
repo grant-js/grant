@@ -23,6 +23,7 @@ import {
 
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
+import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { SelectedFields } from '@/types';
 
@@ -47,9 +48,7 @@ export class ApiKeysHandler extends CacheHandler {
 
     let apiKeyIds = await this.getScopedApiKeyIds(scope);
 
-    if (ids && ids.length > 0) {
-      apiKeyIds = ids.filter((apiKeyId) => apiKeyIds.includes(apiKeyId));
-    }
+    apiKeyIds = intersectScopedIds(apiKeyIds, ids);
 
     if (apiKeyIds.length === 0) {
       return {
@@ -156,7 +155,7 @@ export class ApiKeysHandler extends CacheHandler {
             tx
           );
 
-          this.addApiKeyIdToScopeCache(scope, apiKey.id);
+          await this.addApiKeyIdToScopeCache(scope, apiKey.id);
           return apiKey;
         }
 
@@ -185,7 +184,7 @@ export class ApiKeysHandler extends CacheHandler {
             },
             tx
           );
-          this.addApiKeyIdToScopeCache(scope, apiKey.id);
+          await this.addApiKeyIdToScopeCache(scope, apiKey.id);
           return apiKey;
         }
 
@@ -218,7 +217,7 @@ export class ApiKeysHandler extends CacheHandler {
             },
             tx
           );
-          this.addApiKeyIdToScopeCache(scope, apiKey.id);
+          await this.addApiKeyIdToScopeCache(scope, apiKey.id);
           return apiKey;
         }
 

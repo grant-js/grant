@@ -6,7 +6,7 @@ import {
   Tenant,
 } from '@grantjs/schema';
 
-import { tryProjectIdFromScope } from '@/lib/project-id-from-scope.lib';
+import { tryProjectIdFromScope } from '@/lib/scope.lib';
 import type { Transaction } from '@/lib/transaction-manager.lib';
 import type { AccountProjectRepository } from '@/repositories/account-projects.repository';
 import type { AccountRepository } from '@/repositories/accounts.repository';
@@ -15,9 +15,9 @@ import type { OrganizationUserRepository } from '@/repositories/organization-use
 import type { ProjectUserRepository } from '@/repositories/project-users.repository';
 
 /** Seeded organization role names used for owner vs IAM-manager audience resolution. */
-export const ORG_OWNER_ROLE_NAMES = ['Organization Owner', 'Organization Admin'] as const;
+const ORG_OWNER_ROLE_NAMES = ['Organization Owner', 'Organization Admin'] as const;
 
-export const ORG_ROLE_HOLDER_ROLE_NAMES = [
+const ORG_ROLE_HOLDER_ROLE_NAMES = [
   'Organization Owner',
   'Organization Admin',
   'Organization Dev',

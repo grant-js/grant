@@ -10,8 +10,6 @@ import ProjectSyncJob from './project-sync.job';
 import SystemSigningKeyRotationJob from './system-signing-key-rotation.job';
 import WebhookDeliveryJob from './webhook-delivery.job';
 
-export type Jobs = ReturnType<typeof createJobs>;
-
 export function createJobs(appContext: AppContext): Job[] {
   return [
     new DataRetentionCleanupJob(appContext),

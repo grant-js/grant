@@ -3,7 +3,7 @@ import { MutationResolvers } from '@grantjs/schema';
 import { GraphqlContext } from '@/graphql/types';
 import { t } from '@/i18n';
 import { getRefreshTokenFromCookie } from '@/lib/headers.lib';
-import { clearRefreshTokenCookie } from '@/rest/utils/refresh-cookie';
+import { clearRefreshTokenCookie } from '@/lib/refresh-cookie.lib';
 
 /**
  * Cookie-based logout only. Revokes session by refresh token from cookie and clears cookie.

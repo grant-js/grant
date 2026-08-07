@@ -11,7 +11,7 @@ import { Tenant } from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
-import { tryProjectIdFromScope } from '@/lib/project-id-from-scope.lib';
+import { tryProjectIdFromScope } from '@/lib/scope.lib';
 import type { Transaction } from '@/lib/transaction-manager.lib';
 
 import { CacheHandler, type ScopeServices } from './base/cache-handler';

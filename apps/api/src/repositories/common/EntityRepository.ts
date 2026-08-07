@@ -17,8 +17,10 @@ import {
   sql,
 } from 'drizzle-orm';
 
+import { config } from '@/config';
 import { NotFoundError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
+import { hasNextPageByCount } from '@/lib/pagination.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 interface BaseEntity extends Auditable {
@@ -31,7 +33,7 @@ interface BaseSortable<TModel> {
 }
 
 // New filter types
-export type FilterOperator = 'eq' | 'gte' | 'lte' | 'in' | 'ilike' | 'isNull';
+type FilterOperator = 'eq' | 'gte' | 'lte' | 'in' | 'ilike' | 'isNull';
 
 export interface FilterCondition<TModel> {
   field: keyof TModel;
@@ -39,7 +41,7 @@ export interface FilterCondition<TModel> {
   value?: any;
 }
 
-export interface FilterGroup<TModel> {
+interface FilterGroup<TModel> {
   conditions: (FilterCondition<TModel> | FilterGroup<TModel>)[];
   logic: 'AND' | 'OR';
 }
@@ -310,7 +312,7 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
 
     const { ids, search, sort } = params;
     const page = params.page ?? 1;
-    const safeLimit = params.limit ?? 50;
+    const safeLimit = params.limit ?? config.system.defaultPageSize;
     const limit = safeLimit > -1 ? safeLimit : undefined;
     const offset = limit ? (page - 1) * limit : undefined;
 
@@ -320,7 +322,7 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
       const orderBy = this.orderBy(sort);
       const hasRelations = withRelations && Object.keys(withRelations).length > 0;
       const totalCount = await this.getTotalCount(where, transaction);
-      const hasNextPage = limit ? page * limit < totalCount : false;
+      const hasNextPage = hasNextPageByCount({ page, limit, totalCount });
       const filter = {
         where,
         orderBy,

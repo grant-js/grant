@@ -24,6 +24,7 @@ import { type GroupListHydrationContext, groupListHydrators } from '@/hydrators/
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
 import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
+import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -59,9 +60,7 @@ export class GroupHandler extends CacheHandler {
         .map(({ groupId }) => groupId);
     }
 
-    if (ids && ids.length > 0) {
-      groupIds = ids.filter((groupId) => groupIds.includes(groupId));
-    }
+    groupIds = intersectScopedIds(groupIds, ids);
 
     if (groupIds.length === 0) {
       return {
@@ -147,7 +146,7 @@ export class GroupHandler extends CacheHandler {
         );
       }
 
-      this.addGroupIdToScopeCache(scope, groupId);
+      await this.addGroupIdToScopeCache(scope, groupId);
 
       return group;
     });
@@ -267,7 +266,7 @@ export class GroupHandler extends CacheHandler {
         ),
       ]);
 
-      this.removeGroupIdFromScopeCache(scope, groupId);
+      await this.removeGroupIdFromScopeCache(scope, groupId);
 
       return await this.groups.deleteGroup(params, tx);
     });

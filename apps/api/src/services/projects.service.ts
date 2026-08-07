@@ -17,6 +17,7 @@ import {
   createDynamicSingleSchema,
   validateInput,
   validateOutput,
+  validatePage,
 } from './common';
 import {
   createProjectParamsSchema,
@@ -52,15 +53,10 @@ export class ProjectService implements IProjectService {
     validateInput(getProjectsParamsSchema, params, validationContext);
     const result = await this.projectRepository.getProjects(params);
 
-    const transformedResult = {
-      items: result.projects,
-      totalCount: result.totalCount,
-      hasNextPage: result.hasNextPage,
-    };
-
-    validateOutput(
+    validatePage(
       createDynamicPaginatedSchema(projectSchema),
-      transformedResult,
+      result.projects,
+      result,
       validationContext
     );
 

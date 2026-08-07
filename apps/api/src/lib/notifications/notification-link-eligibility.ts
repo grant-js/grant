@@ -1,6 +1,6 @@
 import { type Scope, Tenant } from '@grantjs/schema';
 
-import { tryProjectIdFromScope } from '@/lib/project-id-from-scope.lib';
+import { tryProjectIdFromScope } from '@/lib/scope.lib';
 
 /** Where a notification deep-link should send a given recipient. */
 export type NotificationLinkKind = 'org_dashboard' | 'project_membership' | 'none';

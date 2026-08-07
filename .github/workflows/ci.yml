@@ -45,7 +45,12 @@ jobs:
               - 'turbo.json'
               - 'tsconfig*.json'
               - '.github/actions/**'
+              # Workflow edits change how everything else is verified, so they must
+              # be verified themselves — without this, a CI change merges untested.
+              - '.github/workflows/**'
+              - 'eslint.config.*'
               - '.eslintrc*'
+              - 'knip.json'
               - 'vitest.config.*'
 
   build-test:
@@ -92,6 +97,12 @@ jobs:
 
       - name: Lint
         run: pnpm run lint
+
+      # apps/api only. The other workspaces still report findings; widening this
+      # belongs to their own code-quality pass, not to a gate that would go red
+      # on work nobody has scheduled yet.
+      - name: Dead code (apps/api)
+        run: pnpm run dead-code:api
 
       - name: Type check
         run: pnpm run type-check

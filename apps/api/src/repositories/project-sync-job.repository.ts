@@ -34,6 +34,7 @@ import {
 } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
 
+import { config } from '@/config';
 import { NotFoundError, ValidationError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
@@ -318,7 +319,7 @@ export class ProjectSyncJobRepository implements IProjectSyncJobRepository {
     const dbInstance = transaction ?? this.db;
 
     const page = Math.max(1, params.page ?? 1);
-    const requestedLimit = params.limit ?? 50;
+    const requestedLimit = params.limit ?? config.system.defaultPageSize;
     const limit = requestedLimit < 0 ? 0 : Math.min(requestedLimit, 200);
     const offset = limit > 0 ? (page - 1) * limit : 0;
 

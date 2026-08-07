@@ -1,5 +1,6 @@
 import { Tenant } from '@grantjs/schema';
 
+import { config } from '@/config';
 import { z } from '@/lib/zod-openapi.lib';
 
 export const tenantSchema = z.enum(Object.values(Tenant) as [Tenant, ...Tenant[]]);
@@ -18,7 +19,7 @@ export const scopeSchema = z.object({
   tenant: tenantSchema,
 });
 
-export const paginationQuerySchema = z.object({
+const paginationQuerySchema = z.object({
   page: z
     .union([z.string(), z.number()])
     .optional()
@@ -31,22 +32,22 @@ export const paginationQuerySchema = z.object({
     .union([z.string(), z.number()])
     .optional()
     .transform((val) => {
-      if (val === undefined || val === '') return 50;
+      if (val === undefined || val === '') return config.system.defaultPageSize;
       return typeof val === 'string' ? parseInt(val, 10) : val;
     })
     .pipe(z.number().int().min(-1)),
 });
 
-export const searchQuerySchema = z.object({
+const searchQuerySchema = z.object({
   search: z.string().optional(),
 });
 
-export const sortQuerySchema = z.object({
+const sortQuerySchema = z.object({
   sortField: z.string().optional(),
   sortOrder: z.enum(['ASC', 'DESC']).optional(),
 });
 
-export const relationsQuerySchema = z.object({
+const relationsQuerySchema = z.object({
   relations: z
     .union([z.string(), z.array(z.string())])
     .transform((val) => {
@@ -68,7 +69,7 @@ export const createStringArrayQuerySchema = <TItem extends z.ZodTypeAny>(itemSch
       .map((v) => itemSchema.parse(v));
   });
 
-export const idsQuerySchema = z.object({
+const idsQuerySchema = z.object({
   ids: z
     .union([z.string(), z.array(z.string())])
     .transform((val) => {
@@ -102,7 +103,7 @@ export const errorResponseSchema = z.object({
   stack: z.string().optional(),
 });
 
-export const validationErrorDetailSchema = z.object({
+const validationErrorDetailSchema = z.object({
   field: z.string(),
   message: z.string(),
   code: z.string(),

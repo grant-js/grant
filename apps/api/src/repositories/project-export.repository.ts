@@ -45,7 +45,7 @@ export interface ProjectRoleWithPermissions {
   permissions: ProjectRolePermission[];
 }
 
-export interface ProjectRolePermission {
+interface ProjectRolePermission {
   permissionId: string;
   resourceSlug: string;
   action: string;

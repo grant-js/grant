@@ -2,6 +2,7 @@ import type {
   IAccountProjectService,
   IAccountService,
   IEmailService,
+  ILogger,
   IOrganizationProjectService,
   IOrganizationUserService,
   IProjectAppService,
@@ -25,11 +26,8 @@ import { config } from '@/config';
 import { PROJECT_OAUTH_PROVIDERS, type ProjectOAuthProvider } from '@/config/env.config';
 import {
   PROJECT_OAUTH_CONSENT_KEY_PREFIX,
-  PROJECT_OAUTH_CONSENT_TTL_SECONDS,
   PROJECT_OAUTH_EMAIL_TOKEN_KEY_PREFIX,
-  PROJECT_OAUTH_EMAIL_TOKEN_TTL_SECONDS,
   PROJECT_OAUTH_STATE_KEY_PREFIX,
-  PROJECT_OAUTH_STATE_TTL_SECONDS,
 } from '@/constants/cache.constants';
 import { CacheKey, IEntityCacheAdapter } from '@/lib/cache';
 import {
@@ -50,7 +48,7 @@ export interface IUsersScopeCacheUpdater {
   addUserIdToScopeCache(scope: Scope, userId: string): Promise<void>;
 }
 
-export interface ProjectOAuthState {
+interface ProjectOAuthState {
   projectAppId: string;
   redirectUri: string;
   clientState?: string;
@@ -61,7 +59,7 @@ export interface ProjectOAuthState {
   locale?: string;
 }
 
-export interface ProjectOAuthEmailTokenPayload {
+interface ProjectOAuthEmailTokenPayload {
   projectAppId: string;
   redirectUri: string;
   stateId: string;
@@ -89,7 +87,7 @@ export interface HandleProjectCallbackConsentRedirectResult {
   consentUrl: string;
 }
 
-export interface ProjectOAuthConsentPayload {
+interface ProjectOAuthConsentPayload {
   projectAppId: string;
   redirectUri: string;
   clientState?: string;
@@ -234,7 +232,7 @@ export class ProjectOAuthHandler {
         : undefined;
 
     const stateToken = generateSecureToken(
-      Math.max(1, Math.floor(PROJECT_OAUTH_STATE_TTL_SECONDS / 60)),
+      Math.max(1, Math.floor(config.projectOAuth.stateTtlSeconds / 60)),
       32
     );
     const stateId = stateToken.token;
@@ -247,7 +245,7 @@ export class ProjectOAuthHandler {
       ...(locale?.trim() ? { locale: locale.trim() } : {}),
     };
     const key = `${PROJECT_OAUTH_STATE_KEY_PREFIX}${stateId}` as CacheKey;
-    await this.cache.oauth.set(key, statePayload, PROJECT_OAUTH_STATE_TTL_SECONDS);
+    await this.cache.oauth.set(key, statePayload, config.projectOAuth.stateTtlSeconds);
 
     const providerImpl = this.getProviderRegistry()[provider];
     const authorizationUrl = providerImpl.getAuthorizeUrl({
@@ -332,7 +330,7 @@ export class ProjectOAuthHandler {
     let effectiveStateId = stateId?.trim();
     if (!effectiveStateId) {
       const stateToken = generateSecureToken(
-        Math.max(1, Math.floor(PROJECT_OAUTH_STATE_TTL_SECONDS / 60)),
+        Math.max(1, Math.floor(config.projectOAuth.stateTtlSeconds / 60)),
         32
       );
       effectiveStateId = stateToken.token;
@@ -341,11 +339,11 @@ export class ProjectOAuthHandler {
         redirectUri,
       };
       const stateKey = `${PROJECT_OAUTH_STATE_KEY_PREFIX}${effectiveStateId}` as CacheKey;
-      await this.cache.oauth.set(stateKey, statePayload, PROJECT_OAUTH_STATE_TTL_SECONDS);
+      await this.cache.oauth.set(stateKey, statePayload, config.projectOAuth.stateTtlSeconds);
     }
 
     const oneTimeToken = generateSecureToken(
-      Math.max(1, Math.floor(PROJECT_OAUTH_EMAIL_TOKEN_TTL_SECONDS / 60)),
+      Math.max(1, Math.floor(config.projectOAuth.emailTokenTtlSeconds / 60)),
       32
     );
     const effectiveLocale = locale?.trim() || undefined;
@@ -359,7 +357,7 @@ export class ProjectOAuthHandler {
       ...(effectiveLocale ? { locale: effectiveLocale } : {}),
     };
     const key = `${PROJECT_OAUTH_EMAIL_TOKEN_KEY_PREFIX}${oneTimeToken.token}` as CacheKey;
-    await this.cache.oauth.set(key, payload, PROJECT_OAUTH_EMAIL_TOKEN_TTL_SECONDS);
+    await this.cache.oauth.set(key, payload, config.projectOAuth.emailTokenTtlSeconds);
 
     const baseUrl = (requestBaseUrl ?? config.app.url).replace(/\/$/, '');
     const callbackUrl = `${baseUrl}/api/auth/project/callback?token=${encodeURIComponent(oneTimeToken.token)}&state=${encodeURIComponent(effectiveStateId)}&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}`;
@@ -551,7 +549,7 @@ export class ProjectOAuthHandler {
         : { tenant: Tenant.OrganizationProject, id: scope.id.split(':').slice(0, 2).join(':') };
 
     const consentToken = generateSecureToken(
-      Math.max(1, Math.floor(PROJECT_OAUTH_CONSENT_TTL_SECONDS / 60)),
+      Math.max(1, Math.floor(config.projectOAuth.consentTtlSeconds / 60)),
       32
     ).token;
     const consentPayload: ProjectOAuthConsentPayload = {
@@ -564,7 +562,7 @@ export class ProjectOAuthHandler {
       ...(requestedScopeSlugs?.length ? { requestedScopeSlugs } : {}),
     };
     const consentKey = `${PROJECT_OAUTH_CONSENT_KEY_PREFIX}${consentToken}` as CacheKey;
-    await this.cache.oauth.set(consentKey, consentPayload, PROJECT_OAUTH_CONSENT_TTL_SECONDS);
+    await this.cache.oauth.set(consentKey, consentPayload, config.projectOAuth.consentTtlSeconds);
 
     const consentBase = this.buildFrontendUrlWithLocale(
       config.projectOAuth.consentUrl,
@@ -581,7 +579,10 @@ export class ProjectOAuthHandler {
    * permissions and the requested/app scopes (same set that ends up in the access token).
    * Includes user display (name, email, pictureUrl) so the consent screen shows which account is consenting.
    */
-  async getProjectConsentInfo(consentToken: string): Promise<ProjectConsentInfo> {
+  async getProjectConsentInfo(
+    consentToken: string,
+    requestLogger?: ILogger
+  ): Promise<ProjectConsentInfo> {
     const key = `${PROJECT_OAUTH_CONSENT_KEY_PREFIX}${consentToken}` as CacheKey;
     const payload = await this.cache.oauth.get<ProjectOAuthConsentPayload>(key);
     if (!payload) {
@@ -650,7 +651,7 @@ export class ProjectOAuthHandler {
         };
       }
     } catch (e) {
-      this.logger.warn(
+      (requestLogger ?? this.logger).warn(
         { err: e, userId: payload.userId },
         'Failed to resolve user display for consent'
       );

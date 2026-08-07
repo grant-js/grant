@@ -6,9 +6,9 @@ import type {
   ISigningKeyRepository,
   ISigningKeyService,
 } from '@grantjs/core';
-import { ConfigurationError } from '@grantjs/core';
 import { type Scope, SigningKey, Tenant } from '@grantjs/schema';
 
+import { ConfigurationError } from '@/lib/errors';
 import { generateUUID } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 

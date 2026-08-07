@@ -20,10 +20,6 @@ export const addProjectResourceInputSchema = z.object({
   resourceId: idSchema,
 });
 
-export const addProjectResourceParamsSchema = z.object({
-  input: addProjectResourceInputSchema,
-});
-
 export const removeProjectResourceInputSchema = deleteSchema.extend({
   projectId: idSchema,
   resourceId: idSchema,

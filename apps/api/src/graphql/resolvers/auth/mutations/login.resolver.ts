@@ -1,7 +1,7 @@
 import { MutationResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
-import { setRefreshTokenCookie } from '@/rest/utils/refresh-cookie';
+import { setRefreshTokenCookie } from '@/lib/refresh-cookie.lib';
 
 export const login: MutationResolvers<GraphqlContext>['login'] = async (req, args, context) => {
   const result = await context.handlers.auth.login(

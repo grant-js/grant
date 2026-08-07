@@ -7,7 +7,7 @@ import { config } from '@/config';
  * Prometheus registry. Default labels and optional default metrics (CPU, memory)
  * are applied at module load when config.metrics.enabled is true.
  */
-export const register = new promClient.Registry();
+const register = new promClient.Registry();
 
 if (config.metrics.enabled) {
   register.setDefaultLabels(config.metrics.defaultLabels);
@@ -20,7 +20,7 @@ if (config.metrics.enabled) {
 // HTTP metrics (low cardinality: method, route, status_code)
 // ---------------------------------------------------------------------------
 
-export const httpRequestDuration = new promClient.Histogram({
+const httpRequestDuration = new promClient.Histogram({
   name: 'http_request_duration_seconds',
   help: 'Duration of HTTP requests in seconds',
   labelNames: ['method', 'route', 'status_code'],
@@ -28,7 +28,7 @@ export const httpRequestDuration = new promClient.Histogram({
   registers: [register],
 });
 
-export const httpRequestTotal = new promClient.Counter({
+const httpRequestTotal = new promClient.Counter({
   name: 'http_requests_total',
   help: 'Total number of HTTP requests',
   labelNames: ['method', 'route', 'status_code'],
