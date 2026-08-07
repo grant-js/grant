@@ -1,7 +1,12 @@
 import { Scope } from '@grantjs/schema';
 import { describe, expect, it } from 'vitest';
 
-import { cacheKeyFor, createCacheHandler, scopes } from './cache-handler.fixtures';
+import {
+  cacheKeyFor,
+  createCacheHandler,
+  scopes,
+  totalServiceCalls,
+} from './cache-handler.fixtures';
 
 /**
  * Characterization tests for the nine `getScopedXIds` methods.
@@ -189,11 +194,7 @@ describe('CacheHandler cache semantics', () => {
       cache[ns as keyof typeof cache].store.set(cacheKeyFor(scope), new Set(['cached-id']));
 
       await expect(handler[method](scope)).resolves.toEqual(['cached-id']);
-
-      const calls = Object.values(scopeServices)
-        .flatMap((svc) => Object.values(svc as Record<string, { mock: { calls: unknown[] } }>))
-        .reduce((sum, fn) => sum + fn.mock.calls.length, 0);
-      expect(calls).toBe(0);
+      expect(totalServiceCalls(scopeServices)).toBe(0);
     });
   }
 });

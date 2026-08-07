@@ -1,6 +1,16 @@
-// Mutation-tests the CacheHandler characterization suite: apply a behaviour
-// change, confirm the suite goes red, revert. A suite that survives a mutation
-// would not catch the same mistake during the slice-5 refactor.
+/**
+ * Mutation-tests the CacheHandler characterization suite: apply a behaviour
+ * change, confirm the suite goes red, revert. A suite that survives a mutation
+ * would not catch the same mistake during the slice-5 refactor.
+ *
+ * Run from the repo root:
+ *   node apps/api/tests/unit/handlers/base/mutation-check.mjs
+ *
+ * Exits non-zero if any mutation survives. Not wired into CI — it rewrites a
+ * source file while it runs, so it is a deliberate local check, not a gate.
+ * Re-run it after slice 5 to confirm the collapsed implementation is still
+ * covered: same 8 mutations, expressed against the new shape.
+ */
 import fs from 'node:fs';
 import { execSync } from 'node:child_process';
 
