@@ -43,7 +43,7 @@ export const projectWithRelationsSchema = projectSchema.extend({
   tags: z.array(z.unknown()).optional(),
 });
 
-export const projectRelationsEnum = z.enum(['roles', 'groups', 'permissions', 'users', 'tags']);
+const projectRelationsEnum = z.enum(['roles', 'groups', 'permissions', 'users', 'tags']);
 
 export const getProjectsQuerySchema = listQuerySchema.omit({ relations: true }).extend({
   scopeId: z.uuid('errors.validation.invalidScopeId'),
@@ -471,15 +471,9 @@ const syncProjectResultSchema = z.object({
   warnings: z.array(z.string()),
 });
 
-export const projectSyncJobStatusEnum = z.enum([
-  'PENDING',
-  'RUNNING',
-  'COMPLETED',
-  'FAILED',
-  'CANCELLED',
-]);
+const projectSyncJobStatusEnum = z.enum(['PENDING', 'RUNNING', 'COMPLETED', 'FAILED', 'CANCELLED']);
 
-export const projectSyncJobOperationEnum = z.enum(['IMPORT', 'EXPORT']);
+const projectSyncJobOperationEnum = z.enum(['IMPORT', 'EXPORT']);
 
 export const projectSyncJobSchema = z.object({
   id: z.string(),

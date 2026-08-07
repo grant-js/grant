@@ -103,16 +103,3 @@ export async function setRlsContext(tx: Transaction, ctx: RlsContext): Promise<v
   await tx.execute(sql`SELECT set_config('app.current_project_id', ${projectVal}, true)`);
   await tx.execute(sql`SELECT set_config('app.current_account_id', ${accountVal}, true)`);
 }
-
-/**
- * Set only app.current_project_id in the current transaction (SET LOCAL).
- * Use when a single operation must see rows for a specific project while
- * the request scope is account/org (e.g. deleteProject must update
- * project_permissions for the project being deleted).
- */
-export async function setProjectIdInTransaction(
-  tx: Transaction,
-  projectId: string | ''
-): Promise<void> {
-  await tx.execute(sql`SELECT set_config('app.current_project_id', ${projectId}, true)`);
-}

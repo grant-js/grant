@@ -26,7 +26,7 @@ export const organizationWithRelationsSchema = organizationSchema.extend({
   tags: z.array(z.unknown()).optional(),
 });
 
-export const organizationRelationsEnum = z.enum([
+const organizationRelationsEnum = z.enum([
   'projects',
   'roles',
   'groups',

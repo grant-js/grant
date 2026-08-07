@@ -9,8 +9,6 @@ export interface Token {
   validUntil: number;
 }
 
-export type { Token as SecureToken };
-
 export function generateUUID(): string {
   return randomUUID();
 }
@@ -39,10 +37,6 @@ export function generateSecureTokenMs(
 
 export function isTokenValid(token: Token): boolean {
   return Date.now() < token.validUntil;
-}
-
-export function getTokenRemainingTime(token: Token): number {
-  return token.validUntil - Date.now();
 }
 
 export function hashSecret(value: string, rounds: number = config.token.bcryptRounds): string {

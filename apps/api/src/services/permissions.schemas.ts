@@ -12,21 +12,20 @@ import {
   nonEmptyNameSchema,
   nonEmptyStringMessage,
   nonEmptyStringRefinement,
-  paginatedResponseSchema,
   queryParamsSchema,
   sortOrderSchema,
 } from './common/schemas';
 import { resourceSchema } from './resources.schemas';
 import { tagSchema } from './tags.schemas';
 
-export const permissionSortableFieldSchema = z.enum([
+const permissionSortableFieldSchema = z.enum([
   'name',
   'description',
   'action',
   'createdAt',
   'updatedAt',
 ]);
-export const permissionSortInputSchema = z.object({
+const permissionSortInputSchema = z.object({
   field: permissionSortableFieldSchema,
   order: sortOrderSchema,
 });
@@ -85,9 +84,3 @@ export const permissionSchema = baseEntitySchema.extend({
   metadata: z.record(z.string(), z.unknown()),
   tags: z.array(tagSchema).optional(),
 });
-
-export const permissionPageSchema = paginatedResponseSchema(permissionSchema).transform((data) => ({
-  permissions: data.items,
-  totalCount: data.totalCount,
-  hasNextPage: data.hasNextPage,
-}));

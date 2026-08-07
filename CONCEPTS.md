@@ -117,6 +117,20 @@ Lists return `{ items, totalCount, hasNextPage }`. Paging is **offset-based** �
 
 > **Known divergences — internal.** Handler classes split singular/plural (`TagHandler` vs `ApiKeysHandler`); `repositories/common/EntityRepository.ts` and `PivotRepository.ts` are the only PascalCase filenames in `src/`; two files use `.schema.ts` against 45 using `.schemas.ts`; router factories split `create*Router` vs `create*Routes`; `lib/` mixes `.lib.ts` with bare filenames.
 
+### One schema, two exported names
+
+Two zod schemas are exported under a second name that adds no meaning. Both names are live, so this is a rename, not dead code — it is recorded here rather than fixed, per the pass-1 decision to settle vocabulary before renaming.
+
+| Concept                        | Competing spellings                                                                                                    | Split                                                                       |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Arbitrary JSON metadata column | `jsonSchema` and `metadataSchema` ([`services/common/schemas.ts:164,166`][json])                                       | REST schemas say `jsonSchema`; service schemas say `metadataSchema`         |
+| Webhook list query             | `webhookScopeQuerySchema` and `listWebhookSubscriptionsQuerySchema` ([`webhook-subscriptions.schemas.ts:25,30`][hook]) | The alias is used by the list route; the base name by the two detail routes |
+
+[json]: https://github.com/grant-js/grant/blob/main/apps/api/src/services/common/schemas.ts
+[hook]: https://github.com/grant-js/grant/blob/main/apps/api/src/rest/schemas/webhook-subscriptions.schemas.ts
+
+Because both are naming decisions rather than defects, `knip` runs with `duplicates` excluded — see [`knip.json`](https://github.com/grant-js/grant/blob/main/knip.json). Re-enable that check when the names are settled.
+
 ---
 
 ## Adding a term

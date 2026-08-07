@@ -8,13 +8,12 @@ import {
   metadataSchema,
   nameSchema,
   nonEmptyNameSchema,
-  paginatedResponseSchema,
   sortableParamsSchema,
   sortOrderSchema,
 } from './common/schemas';
 
-export const groupSortableFieldSchema = z.enum(['name', 'description', 'createdAt', 'updatedAt']);
-export const groupSortInputSchema = z.object({
+const groupSortableFieldSchema = z.enum(['name', 'description', 'createdAt', 'updatedAt']);
+const groupSortInputSchema = z.object({
   field: groupSortableFieldSchema,
   order: sortOrderSchema,
 });
@@ -47,9 +46,3 @@ export const groupSchema = baseEntitySchema.extend({
   description: descriptionSchema.nullable(),
   metadata: metadataSchema,
 });
-
-export const groupPageSchema = paginatedResponseSchema(groupSchema).transform((data) => ({
-  groups: data.items,
-  totalCount: data.totalCount,
-  hasNextPage: data.hasNextPage,
-}));

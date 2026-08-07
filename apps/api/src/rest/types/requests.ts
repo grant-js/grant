@@ -2,17 +2,10 @@ import { Request } from 'express';
 import { z } from 'zod';
 
 /**
- * Utility type to infer types from Zod schemas
- */
-export type InferBody<T extends z.ZodTypeAny> = z.infer<T>;
-export type InferQuery<T extends z.ZodTypeAny> = z.infer<T>;
-export type InferParams<T extends z.ZodTypeAny> = z.infer<T>;
-
-/**
  * Generic typed request configuration
  * Allows typing any combination of request properties
  */
-export interface TypedRequestConfig<Body = unknown, Params = unknown, Query = unknown> {
+interface TypedRequestConfig<Body = unknown, Params = unknown, Query = unknown> {
   body?: Body;
   params?: Params;
   query?: Query;
@@ -65,71 +58,4 @@ export interface TypedRequest<
   query: Config['query'] extends z.ZodTypeAny
     ? z.infer<Config['query']> & Record<string, string | string[]>
     : Config['query'] & Record<string, string | string[]>;
-}
-
-/**
- * Typed request with only body validation
- */
-export interface TypedRequestBody<T extends z.ZodTypeAny> extends Request {
-  body: z.infer<T>;
-}
-
-/**
- * Typed request with only params validation
- */
-export interface TypedRequestParams<T extends z.ZodTypeAny> extends Request {
-  params: z.infer<T> & Record<string, string>;
-}
-
-/**
- * Typed request with only query validation
- */
-export interface TypedRequestQuery<T extends z.ZodTypeAny> extends Request {
-  query: z.infer<T> & Record<string, string | string[]>;
-}
-
-/**
- * Typed request with body and params validation
- */
-export interface TypedRequestBodyParams<
-  BodySchema extends z.ZodTypeAny,
-  ParamsSchema extends z.ZodTypeAny,
-> extends Request {
-  body: z.infer<BodySchema>;
-  params: z.infer<ParamsSchema> & Record<string, string>;
-}
-
-/**
- * Typed request with body and query validation
- */
-export interface TypedRequestBodyQuery<
-  BodySchema extends z.ZodTypeAny,
-  QuerySchema extends z.ZodTypeAny,
-> extends Request {
-  body: z.infer<BodySchema>;
-  query: z.infer<QuerySchema> & Record<string, string | string[]>;
-}
-
-/**
- * Typed request with params and query validation
- */
-export interface TypedRequestParamsQuery<
-  ParamsSchema extends z.ZodTypeAny,
-  QuerySchema extends z.ZodTypeAny,
-> extends Request {
-  params: z.infer<ParamsSchema> & Record<string, string>;
-  query: z.infer<QuerySchema> & Record<string, string | string[]>;
-}
-
-/**
- * Typed request with all three validations (body, params, query)
- */
-export interface TypedRequestAll<
-  BodySchema extends z.ZodTypeAny,
-  ParamsSchema extends z.ZodTypeAny,
-  QuerySchema extends z.ZodTypeAny,
-> extends Request {
-  body: z.infer<BodySchema>;
-  params: z.infer<ParamsSchema> & Record<string, string>;
-  query: z.infer<QuerySchema> & Record<string, string | string[]>;
 }

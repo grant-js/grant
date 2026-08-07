@@ -6,7 +6,6 @@ import {
   deleteSchema,
   idSchema,
   nameSchema,
-  paginatedResponseSchema,
   queryParamsSchema,
   sortOrderSchema,
 } from './common/schemas';
@@ -16,20 +15,20 @@ const redirectUriSchema = z
   .min(1, 'errors.validation.redirectUriRequired')
   .url('errors.validation.redirectUriInvalid');
 
-export const redirectUrisCreateSchema = z
+const redirectUrisCreateSchema = z
   .array(redirectUriSchema)
   .min(1, 'errors.validation.redirectUrisMinOne');
 
-export const redirectUrisUpdateSchema = z
+const redirectUrisUpdateSchema = z
   .array(redirectUriSchema)
   .min(1, 'errors.validation.redirectUrisMinOne')
   .optional();
 
-export const projectAppSortableFieldSchema = z.enum(
+const projectAppSortableFieldSchema = z.enum(
   Object.values(ProjectAppSortableField) as [ProjectAppSortableField, ...ProjectAppSortableField[]]
 );
 
-export const projectAppSortInputSchema = z.object({
+const projectAppSortInputSchema = z.object({
   field: projectAppSortableFieldSchema,
   order: sortOrderSchema,
 });
@@ -93,9 +92,3 @@ export const createProjectAppResultSchema = z.object({
   signUpRoleId: z.string().nullable().optional(),
   createdAt: z.date(),
 });
-
-export const projectAppPageSchema = paginatedResponseSchema(projectAppSchema).transform((data) => ({
-  projectApps: data.items,
-  totalCount: data.totalCount,
-  hasNextPage: data.hasNextPage,
-}));

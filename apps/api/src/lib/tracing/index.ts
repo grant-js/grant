@@ -3,7 +3,6 @@
  * starts before any instrumented modules (http, express, ioredis) are loaded.
  */
 
-import { trace } from '@opentelemetry/api';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
@@ -108,13 +107,6 @@ export async function shutdownTracing(): Promise<void> {
     sdk = null;
     logger.info({ msg: 'OpenTelemetry tracing shut down' });
   }
-}
-
-/**
- * Get the active tracer for custom spans. Use after tracing is initialized.
- */
-export function getTracer() {
-  return trace.getTracer(config.tracing.serviceName, config.app.version);
 }
 
 // Side-effect: initialize when this module is loaded (first import in server.ts)

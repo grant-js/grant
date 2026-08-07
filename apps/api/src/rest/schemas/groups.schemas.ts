@@ -27,8 +27,8 @@ export const groupWithRelationsSchema = groupSchema.extend({
   tagCount: z.number().optional(),
 });
 
-export const groupFieldsEnum = z.enum(['permissionCount', 'primaryTag', 'tagCount']);
-export const groupRelationsEnum = z.enum(['permissions', 'tags']);
+const groupFieldsEnum = z.enum(['permissionCount', 'primaryTag', 'tagCount']);
+const groupRelationsEnum = z.enum(['permissions', 'tags']);
 
 export const getGroupsQuerySchema = listQuerySchema.omit({ relations: true }).extend({
   scopeId: z.uuid('errors.validation.invalidScopeId'),

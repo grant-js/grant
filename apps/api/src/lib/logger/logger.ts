@@ -1,12 +1,4 @@
-import type { ILogger } from '@grantjs/core';
-import {
-  configureLogger,
-  createContextLogger,
-  createLogger,
-  getLogger,
-  getRawPinoLogger,
-  PinoLoggerFactory,
-} from '@grantjs/logger';
+import { configureLogger, createLogger, getLogger, PinoLoggerFactory } from '@grantjs/logger';
 
 import { config } from '@/config';
 
@@ -43,18 +35,8 @@ configureLogger({
 /** Root logger instance for the API */
 export const logger = getLogger();
 
-/**
- * Raw pino logger for API middleware that requires the concrete type
- * (e.g. pino-http, request logging middleware).
- */
-export const rawPinoLogger = getRawPinoLogger();
-
 /** Shared logger factory instance for injecting into adapter packages */
 export const loggerFactory = new PinoLoggerFactory();
 
-/** Alias for createLogger: creates a child logger scoped to a module name (used in docs). */
-export const createModuleLogger = createLogger;
-
 // Re-export shared utilities (createModuleLogger is already exported above as const)
-export { createContextLogger, createLogger };
-export type { ILogger as Logger };
+export { createLogger };

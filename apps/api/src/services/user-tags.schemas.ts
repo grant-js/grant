@@ -27,14 +27,6 @@ export const removeUsersTagsInputSchema = deleteSchema.extend({
   tagId: idSchema.refine((tagId) => tagId.trim().length > 0, 'Tag ID is required'),
 });
 
-export const addUserTagArgsSchema = z.object({
-  input: addUserTagInputSchema,
-});
-
-export const removeUserTagArgsSchema = z.object({
-  input: removeUserTagInputSchema,
-});
-
 export const getUserTagIntersectionInputSchema = z.object({
   userIds: idSchema.array().refine((userIds) => userIds.length > 0, 'User IDs are required'),
   tagIds: idSchema.array().refine((tagIds) => tagIds.length > 0, 'Tag IDs are required'),

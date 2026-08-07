@@ -3,7 +3,7 @@ import { CDM_IMPORT_METADATA_KEY, CDM_SOURCE_METADATA_KEY } from '@/constants/cd
 /** Importer-owned searchable payload key (also stored under cdmSource). */
 export const CDM_SEARCHABLE_METADATA_KEY = 'searchable' as const;
 
-export type SearchDocumentEntityKind = 'user' | 'role' | 'group';
+type SearchDocumentEntityKind = 'user' | 'role' | 'group';
 
 const DENYLISTED_METADATA_KEYS = new Set([
   'passwordHash',

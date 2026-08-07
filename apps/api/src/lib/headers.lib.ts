@@ -10,7 +10,7 @@ export interface ContextHeaders {
   authorization: string | null;
 }
 
-export function getClientIpFromHeaders(headers: IncomingHttpHeaders): string | null {
+function getClientIpFromHeaders(headers: IncomingHttpHeaders): string | null {
   const forwardedFor = headers['x-forwarded-for'];
   if (forwardedFor) {
     const ips = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
@@ -42,15 +42,15 @@ export function getClientIp(req: Request): string | null {
   return null;
 }
 
-export function getOrigin(headers: IncomingHttpHeaders): string {
+function getOrigin(headers: IncomingHttpHeaders): string {
   return headers['origin'] || headers['host'] || 'unknown';
 }
 
-export function getUserAgent(headers: IncomingHttpHeaders): string | null {
+function getUserAgent(headers: IncomingHttpHeaders): string | null {
   return headers['user-agent'] || null;
 }
 
-export function getAuthorization(headers: IncomingHttpHeaders): string | null {
+function getAuthorization(headers: IncomingHttpHeaders): string | null {
   return headers['authorization'] || null;
 }
 
@@ -67,7 +67,7 @@ function parseCookieHeader(cookieHeader: string): Record<string, string> {
   );
 }
 
-export function getAuthorizationFromCookie(req: Request): string | null {
+function getAuthorizationFromCookie(req: Request): string | null {
   if (req.cookies?.[AUTH_ACCESS_TOKEN_KEY]) {
     return req.cookies[AUTH_ACCESS_TOKEN_KEY];
   }

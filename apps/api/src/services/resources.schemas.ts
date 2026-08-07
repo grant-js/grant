@@ -10,17 +10,16 @@ import {
   idSchema,
   nameSchema,
   nonEmptyNameSchema,
-  paginatedResponseSchema,
   queryParamsSchema,
   scopeSchema,
   slugSchema,
   sortOrderSchema,
 } from './common/schemas';
 
-export const resourceSortableFieldSchema = z.enum(
+const resourceSortableFieldSchema = z.enum(
   Object.values(ResourceSortableField) as [ResourceSortableField, ...ResourceSortableField[]]
 );
-export const resourceSortInputSchema = z.object({
+const resourceSortInputSchema = z.object({
   field: resourceSortableFieldSchema,
   order: sortOrderSchema,
 });
@@ -61,7 +60,7 @@ export const deleteResourceParamsSchema = deleteSchema.extend({
 });
 
 /** Permission row embedded on Resource (no nested `resource` — avoids circular zod with permissionSchema). */
-export const resourcePermissionSchema = baseEntitySchema.extend({
+const resourcePermissionSchema = baseEntitySchema.extend({
   name: nameSchema,
   description: descriptionSchema.nullable(),
   action: actionSchema,
@@ -79,9 +78,3 @@ export const resourceSchema = baseEntitySchema.extend({
   metadata: z.record(z.string(), z.unknown()),
   permissions: z.array(resourcePermissionSchema).optional(),
 });
-
-export const resourcePageSchema = paginatedResponseSchema(resourceSchema).transform((data) => ({
-  resources: data.items,
-  totalCount: data.totalCount,
-  hasNextPage: data.hasNextPage,
-}));

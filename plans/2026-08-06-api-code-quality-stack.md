@@ -82,11 +82,21 @@ Expect the first full-repo run to surface violations in `apps/web` and `packages
 
 ### 4 — Dead surface removal
 
-~115 exports, the 2 never-called `CacheHandler` methods, and the duplicate auth-cache invalidator (keep one of `invalidateAuthorizationResultsForUser` / `invalidateAuthorizationCacheForUser`).
+**Done.** The estimate of "~115 exports" was low and, more importantly, conflated three edits. `knip` reports **361**:
 
-Orphaned REST schemas need a decision per group, not bulk deletion: `uploadUserPicture*` has a live GraphQL mutation and no REST route — either wire the route or delete the schemas. Same question for `deleteAccount*`, `changePassword*`, and the session/auth-method sets.
+| Class                 | Count | Edit                                            |
+| --------------------- | ----- | ----------------------------------------------- |
+| Dead barrel re-export | 90    | delete the barrel line; implementation lives on |
+| Module-private        | 149   | drop the `export` keyword; no code moves        |
+| Genuinely dead        | 124   | delete the declaration (~870 lines)             |
 
-Run `knip` from slice 3 to confirm the list before deleting.
+Plus 7 unused dependencies and **13** dead `CacheHandler` methods — not the 2 estimated; knip does not analyse class members, so that took a separate AST scan. `CacheHandler` is down to 812 lines before slice 5 touches it.
+
+The per-group decision on orphaned REST schemas turned out not to exist: every one has a live `my*`-prefixed counterpart already wired into `me.routes.ts` and `me.openapi.ts`. They are superseded duplicates from the `me`-scoped rewrite, not abandoned endpoints.
+
+Two `duplicates` findings remain deliberately unresolved — `jsonSchema`/`metadataSchema` and `webhookScopeQuerySchema`/`listWebhookSubscriptionsQuerySchema`. Both names are live in each pair, so settling them is a rename, which this story scoped out. Recorded in [`CONCEPTS.md`](../CONCEPTS.md) and excluded in `knip.json`.
+
+Enforcement is on: `dead-code:api` runs in CI and in the pre-push hook, verified against a planted violation.
 
 ### 4a — `CacheHandler` characterization tests
 

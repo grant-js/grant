@@ -11,26 +11,6 @@ import { HandleGithubCallbackResult } from '@/handlers/oauth.handler';
 import { RequestContext } from '@/types';
 
 /**
- * Builds the OAuth callback redirect URL with tokens in the fragment.
- * The frontend /auth/callback page reads the fragment, stores tokens, then redirects to nextUrl.
- */
-export function buildOAuthCallbackRedirectUrl(
-  locale: string,
-  nextUrl: string,
-  accessToken: string,
-  refreshToken: string
-): string {
-  const frontendUrl = config.security.frontendUrl;
-  const callbackPath = `${frontendUrl}/${locale}/auth/callback`;
-  const fragment = [
-    `access_token=${encodeURIComponent(accessToken)}`,
-    `refresh_token=${encodeURIComponent(refreshToken)}`,
-    `next=${encodeURIComponent(nextUrl)}`,
-  ].join('&');
-  return `${callbackPath}#${fragment}`;
-}
-
-/**
  * Validates that a redirect URL is from the same origin as the frontend,
  * or is a localhost URL (for CLI OAuth callback).
  */
@@ -41,17 +21,6 @@ export function validateRedirectUrl(redirectUrl: string): boolean {
     if (url.origin === frontendUrl.origin) return true;
     if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return true;
     return false;
-  } catch {
-    return false;
-  }
-}
-
-/** Returns true if the redirect URL is a localhost URL (for CLI or dev frontend). */
-export function isLocalhostRedirectUrl(redirectUrl: string | undefined): boolean {
-  if (!redirectUrl) return false;
-  try {
-    const url = new URL(redirectUrl);
-    return url.hostname === 'localhost' || url.hostname === '127.0.0.1';
   } catch {
     return false;
   }
@@ -77,7 +46,7 @@ export function isCliRedirectUrl(redirectUrl: string | undefined, frontendUrl: s
 /**
  * Builds provider data object from GitHub user information
  */
-export function buildGithubProviderData(
+function buildGithubProviderData(
   githubUser: HandleGithubCallbackResult['githubUser'],
   accessToken: string,
   includeUsername = false
@@ -117,7 +86,7 @@ export async function handleGithubConnectFlow(
 /**
  * Handles connecting GitHub account to an existing user
  */
-export async function connectGithubToUser(
+async function connectGithubToUser(
   context: RequestContext,
   oauthResult: HandleGithubCallbackResult
 ): Promise<void> {
@@ -136,7 +105,7 @@ export async function connectGithubToUser(
 /**
  * Builds redirect URL for GitHub connect flow
  */
-export function buildConnectRedirectUrl(
+function buildConnectRedirectUrl(
   oauthResult: HandleGithubCallbackResult,
   success: boolean,
   error?: string

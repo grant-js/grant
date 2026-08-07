@@ -27,14 +27,6 @@ export const removeRoleGroupInputSchema = deleteSchema.extend({
   ),
 });
 
-export const addRoleGroupArgsSchema = z.object({
-  input: addRoleGroupInputSchema,
-});
-
-export const removeRoleGroupArgsSchema = z.object({
-  input: removeRoleGroupInputSchema,
-});
-
 export const roleGroupSchema = z.object({
   id: idSchema,
   roleId: idSchema,

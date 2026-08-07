@@ -18,6 +18,3 @@ export const updateWebhookSubscriptionSchema = z
     active: z.boolean(),
   })
   .partial();
-
-export type CreateWebhookSubscriptionSchema = z.infer<typeof createWebhookSubscriptionSchema>;
-export type UpdateWebhookSubscriptionSchema = z.infer<typeof updateWebhookSubscriptionSchema>;

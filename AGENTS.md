@@ -50,7 +50,8 @@ Transport (GraphQL resolvers, REST routes)
 
 | Symbol                                     | Import from                     | NOT from                                  |
 | ------------------------------------------ | ------------------------------- | ----------------------------------------- |
-| `createLogger`, `Logger`                   | `@/lib/logger`                  | `@grantjs/logger`                         |
+| `createLogger`, `logger`, `loggerFactory`  | `@/lib/logger`                  | `@grantjs/logger`                         |
+| `ILogger` (the logger _type_)              | `@grantjs/core`                 | `@/lib/logger`                            |
 | `HttpException`, `mapDomainToHttp`         | `@/lib/errors`                  | `@grantjs/errors`                         |
 | Domain errors (`NotFoundError`, etc.)      | `@/lib/errors`                  | (already re-exports from `@grantjs/core`) |
 | `DeleteParams`, `SelectedFields`, `Otp`    | `@/types`                       | `@/services/common`                       |

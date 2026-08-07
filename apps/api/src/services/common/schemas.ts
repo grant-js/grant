@@ -16,7 +16,7 @@ export const descriptionSchema = z
   .max(1000, 'errors.validation.descriptionTooLong')
   .nullable()
   .optional();
-export const limitSchema = z
+const limitSchema = z
   .union([z.string(), z.number(), z.null()])
   .optional()
   .transform((val) => {
@@ -25,7 +25,7 @@ export const limitSchema = z
   })
   .pipe(z.number().int().min(-1).max(100, 'errors.validation.limitRange').optional());
 
-export const pageSchema = z
+const pageSchema = z
   .union([z.string(), z.number(), z.null()])
   .optional()
   .transform((val) => {
@@ -33,7 +33,7 @@ export const pageSchema = z
     return typeof val === 'string' ? parseInt(val, 10) : val;
   })
   .pipe(z.number().int().min(1, 'errors.validation.pageMin1').optional());
-export const searchSchema = z
+const searchSchema = z
   .string()
   .nullable()
   .optional()
@@ -52,7 +52,7 @@ export const actionSchema = z
   .transform((val) => val.trim().toLowerCase())
   .pipe(z.string().regex(ACTION_SLUG_REGEX, 'errors.validation.actionInvalidFormat'));
 
-export const tenantSchema = z.enum(Object.values(Tenant) as [Tenant, ...Tenant[]]);
+const tenantSchema = z.enum(Object.values(Tenant) as [Tenant, ...Tenant[]]);
 
 export const scopeSchema = z.object({
   id: idSchema,
@@ -70,41 +70,13 @@ export const slugSchema = z
   .max(255, 'errors.validation.slugTooLong')
   .regex(/^[a-z0-9-]+$/, 'errors.validation.slugInvalidFormat');
 
-export const createdAtSchema = z.date();
-export const updatedAtSchema = z.date();
-export const deletedAtSchema = z.date().nullable().optional();
+const createdAtSchema = z.date();
+const updatedAtSchema = z.date();
+const deletedAtSchema = z.date().nullable().optional();
 
-export const entityIdSchema = z.object({
-  id: idSchema,
-});
-
-export const paginationSchema = z.object({
-  limit: limitSchema.optional(),
-  page: pageSchema,
-});
-
-export const searchFilterSchema = z.object({
-  search: searchSchema,
-  limit: limitSchema.optional(),
-  page: pageSchema,
-});
-
-export const sortSchema = z.object({
+const sortSchema = z.object({
   field: z.string().min(1, 'errors.validation.sortFieldRequired'),
   order: sortOrderSchema,
-});
-
-export const createInputSchema = z.object({
-  input: z.record(z.string(), z.unknown()),
-});
-
-export const updateInputSchema = z.object({
-  id: idSchema,
-  input: z.record(z.string(), z.unknown()),
-});
-
-export const deleteInputSchema = z.object({
-  id: idSchema,
 });
 
 export const baseEntitySchema = z.object({
@@ -114,21 +86,9 @@ export const baseEntitySchema = z.object({
   deletedAt: deletedAtSchema,
 });
 
-export const namedEntitySchema = baseEntitySchema.extend({
-  name: nameSchema,
-  description: descriptionSchema,
-});
-
 export const deleteSchema = z.object({
   hardDelete: z.boolean().optional(),
 });
-
-export const paginatedResponseSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
-  z.object({
-    items: z.array(itemSchema),
-    totalCount: z.number().int().min(0),
-    hasNextPage: z.boolean(),
-  });
 
 export const requestedFieldsSchema = z.array(z.string()).nullable().optional();
 
@@ -149,10 +109,6 @@ export const nonEmptyStringRefinement = (value: string) => value.trim().length >
 export const nonEmptyStringMessage = 'errors.validation.fieldCannotBeEmpty';
 
 export const nonEmptyNameSchema = nameSchema.refine(
-  nonEmptyStringRefinement,
-  nonEmptyStringMessage
-);
-export const nonEmptyEmailSchema = emailSchema.refine(
   nonEmptyStringRefinement,
   nonEmptyStringMessage
 );

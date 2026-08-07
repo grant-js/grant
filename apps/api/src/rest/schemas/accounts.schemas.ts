@@ -16,42 +16,6 @@ export const accountSchema = z.object({
   deletedAt: z.string().nullable(),
 });
 
-export const deleteAccountBodySchema = z.object({
-  hardDelete: z.boolean().optional().default(false),
-});
-
-export const createAccountRequestSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'errors.validation.nameRequired')
-    .max(255, 'errors.validation.nameTooLong'),
-  username: z.string().optional(),
-  type: accountTypeSchema,
-  ownerId: z.string().optional(),
-});
-
-export const createAccountResponseSchema = createSuccessResponseSchema(
-  accountSchema,
-  'Successfully created account'
-);
-
-export const deleteAccountQuerySchema = z.object({
-  hardDelete: z
-    .string()
-    .optional()
-    .transform((val) => val === 'true'),
-});
-
-export const deleteAccountRequestSchema = z.object({
-  userId: z.uuid('errors.validation.invalidUserId'),
-  hardDelete: z.boolean().optional().default(false),
-});
-
-export const deleteAccountResponseSchema = createSuccessResponseSchema(
-  accountSchema,
-  'Successfully deleted account'
-);
-
 export const createComplementaryAccountResponseSchema = createSuccessResponseSchema(
   z.object({
     account: accountSchema,

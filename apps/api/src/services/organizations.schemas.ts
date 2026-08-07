@@ -6,15 +6,14 @@ import {
   idSchema,
   nameSchema,
   nonEmptyNameSchema,
-  paginatedResponseSchema,
   queryParamsSchema,
   scopeSchema,
   slugSchema,
   sortOrderSchema,
 } from './common/schemas';
 
-export const organizationSortableFieldSchema = z.enum(['name', 'slug', 'createdAt', 'updatedAt']);
-export const organizationSortInputSchema = z.object({
+const organizationSortableFieldSchema = z.enum(['name', 'slug', 'createdAt', 'updatedAt']);
+const organizationSortInputSchema = z.object({
   field: organizationSortableFieldSchema,
   order: sortOrderSchema,
 });
@@ -45,11 +44,3 @@ export const organizationSchema = baseEntitySchema.extend({
   slug: slugSchema,
   requireMfaForSensitiveActions: z.boolean(),
 });
-
-export const organizationPageSchema = paginatedResponseSchema(organizationSchema).transform(
-  (data) => ({
-    organizations: data.items,
-    totalCount: data.totalCount,
-    hasNextPage: data.hasNextPage,
-  })
-);

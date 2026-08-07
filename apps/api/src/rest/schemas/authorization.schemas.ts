@@ -8,11 +8,11 @@ import {
   scopeSchema,
 } from '@/rest/schemas/common.schemas';
 
-export const authorizationReasonEnum = z.enum(
+const authorizationReasonEnum = z.enum(
   Object.values(AuthorizationReason) as [AuthorizationReason, ...AuthorizationReason[]]
 );
 
-export const authorizationResultSchema = z.object({
+const authorizationResultSchema = z.object({
   authorized: z.boolean(),
   reason: authorizationReasonEnum.nullable().optional(),
   matchedPermission: z.unknown().nullable().optional(),

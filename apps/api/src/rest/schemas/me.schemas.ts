@@ -59,7 +59,7 @@ export const getMyUserAuthenticationMethodsResponseSchema = createSuccessRespons
   'Successfully retrieved user authentication methods'
 );
 
-export const providerDataSchema = z.record(z.string(), z.unknown());
+const providerDataSchema = z.record(z.string(), z.unknown());
 
 export const createMyUserAuthenticationMethodRequestSchema = z.object({
   provider: z
@@ -262,7 +262,7 @@ export const logoutMyUserResponseSchema = createSuccessResponseSchema(
   'Successfully logged out'
 );
 
-export const mfaRecoveryCodeStatusSchema = z.object({
+const mfaRecoveryCodeStatusSchema = z.object({
   activeCount: z.number().int().min(0).openapi({
     description: 'Number of unused recovery codes not soft-deleted',
     example: 8,

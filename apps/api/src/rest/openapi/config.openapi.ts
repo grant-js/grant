@@ -37,7 +37,7 @@ import { registerWebhookSubscriptionsOpenApi } from './webhook-subscriptions.ope
  * OpenAPI registry for the REST API
  * Defines all endpoints, request/response schemas, and metadata
  */
-export const registry = new OpenAPIRegistry();
+const registry = new OpenAPIRegistry();
 
 /**
  * Register common component schemas that can be reused across endpoints
@@ -84,7 +84,7 @@ function registerAllEndpoints() {
 /**
  * Initialize the OpenAPI registry with all schemas and endpoints
  */
-export function initializeOpenApiRegistry() {
+function initializeOpenApiRegistry() {
   registerCommonSchemas();
   registerAllEndpoints();
   return registry;
