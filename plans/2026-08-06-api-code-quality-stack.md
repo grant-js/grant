@@ -221,6 +221,53 @@ Config: `CDM_MAX_JSON_BYTES` (64 KiB) and `CDM_MAX_JSON_DEPTH` (16), env-overrid
 2. `rest/routes/` (3,458 L, zero unit tests)
 3. `config/env.config.ts` (1,051 L)
 
+## Follow-ups
+
+Everything deferred across slices 1–8, ordered. Nothing here blocks a slice PR; group A blocks gate 4.
+
+### A — Settle before story→main
+
+| #   | Item                                                                                                                                                    | Why it is here                                                                                                                                                                                                                    |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A1  | **Slice 5's security-full review was performed by its own author.** Decide: an independent pass before gate 4, or absorb it into the gate-4 deep review | The bar says "Senior Security + human", and the diff changed tenant→id resolution. Mutation testing (8/8 planted changes killed) and the pre-written characterization suite are real evidence, but neither is an adversarial read |
+| A2  | Decide whether `handlers/index.ts` is a legitimate third composition site, then either amend `AGENTS.md:46` or move the wiring                          | Slice 2 raised it and left it open. The rule currently says two sites; the code has three                                                                                                                                         |
+| A3  | Re-run the pass-1 lenses and update `api.md` with resolved counts                                                                                       | Already on the cleanup checklist; listed here so it is not missed                                                                                                                                                                 |
+
+### B — Contract decisions (each changes a public response or URL)
+
+| #   | Item                                                                                                                           | Evidence                                                                              |
+| --- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| B1  | `limit: -1` means "return nothing" in `project-sync-job.repository.ts:364` and "return everything" in `EntityRepository`       | Deferred out of slice 8 — see [`CONCEPTS.md § Pagination`](../CONCEPTS.md#pagination) |
+| B2  | The Tier 5 renames: `member`/`user` over one table, `org`/`prj` baked into the public JWKS URL, `Tenant` naming a scope _kind_ | Glossary is written; the renames are versioning decisions, not refactors              |
+
+### C — Code, ordered by risk × value
+
+| #   | Item                                                                                                                                                                                        | Size      |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| C1  | Zod input validation for the 12 services that have none. `project-sync-job.service.ts` (494 L) and `signing-keys.service.ts` (228 L) are the security-relevant two                          | 12 files  |
+| C2  | Migrate the remaining `scope.id.split(':')` sites onto `scope.lib.ts` — slice 5 moved only `CacheHandler`'s four                                                                            | ~24 sites |
+| C3  | `EntityRepository.buildFilterCondition` — two duplicated operator `switch` blocks differing only in operand. Tier 2 item 7; **no slice picked it up**                                       | 1 file    |
+| C4  | Transactions: three styles, raw `db.transaction` bypassing the port at `jobs/project-sync.job.ts:277`, and `project-oauth.handler.ts` (815 L of mutating OAuth/membership flows) using none | broad     |
+| C5  | 14 services audit nothing, including mutating ones (`project-import`, `project-export`, `webhook-subscriptions`, `notifications`)                                                           | 14 files  |
+| C6  | Domain events: 22 of 67 services publish. `TagService` is not injected with `events` while the line-identical `GroupService` is (`services/index.ts:312`)                                   | 45 files  |
+| C7  | `webhook-subscriptions.repository.ts:148` soft-deletes _and_ flips `active: false` — a side effect no other soft delete has                                                                 | 1 file    |
+
+### D — Method
+
+| #   | Item                                                                                                                                                                                                                                                        |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | Rubric rule: **size a helper against the block it replaces at the call site**, not against the total line count. Slices 5 and 6 both rejected extractions that looked large in aggregate and were 3–5 lines each in place                                   |
+| D2  | Rubric rule: **deleting a validator is not dead-code removal.** An unreferenced schema may be an unwired check rather than dead surface                                                                                                                     |
+| D3  | [`agentic-sdlc.md:159`](../docs/contributing/agentic-sdlc.md) presents per-slice worktree fan-out and serial execution as equal options, so "run it serially" reads as compliant. If fan-out is the intended default for large plans, the doc has to say so |
+
+### E — Repo hygiene, unrelated to this story
+
+| #   | Item                                                                                                    |
+| --- | ------------------------------------------------------------------------------------------------------- |
+| E1  | `release.yml` and `deploy.yml` still carry the hosted-runner gate pattern that `ci.yml` moved away from |
+| E2  | `pnpm/action-setup@v4.1.0` emits a Node 20 deprecation warning                                          |
+| E3  | PR #211's merged commit message carries a false attribution                                             |
+
 ## Dependencies / notes
 
 - **This story runs on the v1 manual stacking flow**, not `gh stack`. It was planned and slice 1 opened before the tooling was adopted; restructuring live branches mid-story buys nothing. Branch from the correct base and set PR bases by hand, as the slice table specifies. `gh stack` applies from the next story — see [Agentic SDLC § GitHub stacking](../docs/contributing/agentic-sdlc.md#github-stacking).
