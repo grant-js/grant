@@ -1,9 +1,9 @@
 import crypto from 'node:crypto';
 
-import { ValidationError } from '@grantjs/core';
 import { Scope, Tenant } from '@grantjs/schema';
 
 import { config } from '@/config';
+import { ValidationError } from '@/lib/errors';
 
 /**
  * JWK (JSON Web Key) for RSA public key in JWKS.

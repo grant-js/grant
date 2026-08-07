@@ -54,7 +54,7 @@ import {
   resolveAllPermissionRefs,
 } from '@/lib/cdm';
 import type { ExpandedCdmSyncPayload } from '@/lib/cdm/expand-cdm-sync-input.lib';
-import { ConflictError, ValidationError } from '@/lib/errors';
+import { ConfigurationError, ConflictError, ValidationError } from '@/lib/errors';
 import { runWithEventSuppression } from '@/lib/events';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { ProjectExportRepository } from '@/repositories/project-export.repository';
@@ -540,7 +540,7 @@ export class ProjectImportService implements IProjectImportService {
  */
 function createUnboundExportRepo(): ProjectExportRepository {
   const fail = () => {
-    throw new Error(
+    throw new ConfigurationError(
       'ProjectExportRepository was not provided to ProjectImportService; export(...) is unavailable in this configuration.'
     );
   };

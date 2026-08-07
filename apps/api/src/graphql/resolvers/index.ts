@@ -7,6 +7,7 @@ import { makeExecutableSchema } from '@graphql-tools/schema';
 import { Mutation } from '@/graphql/resolvers/mutations';
 import { Query } from '@/graphql/resolvers/queries';
 import { resolvers as scalarResolvers } from '@/graphql/resolvers/scalars';
+import { ConfigurationError } from '@/lib/errors';
 
 import { groupResolver as Group } from './groups/fields';
 import { permissionResolver as Permission } from './permissions/fields';
@@ -27,7 +28,7 @@ function resolveGraphqlSchemaDir(): string {
       return dir;
     }
   }
-  throw new Error(
+  throw new ConfigurationError(
     'GraphQL schema directory not found (expected packages/@grantjs/schema/dist/schema or src/schema)'
   );
 }

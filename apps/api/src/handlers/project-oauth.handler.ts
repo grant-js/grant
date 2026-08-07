@@ -2,6 +2,7 @@ import type {
   IAccountProjectService,
   IAccountService,
   IEmailService,
+  ILogger,
   IOrganizationProjectService,
   IOrganizationUserService,
   IProjectAppService,
@@ -581,7 +582,10 @@ export class ProjectOAuthHandler {
    * permissions and the requested/app scopes (same set that ends up in the access token).
    * Includes user display (name, email, pictureUrl) so the consent screen shows which account is consenting.
    */
-  async getProjectConsentInfo(consentToken: string): Promise<ProjectConsentInfo> {
+  async getProjectConsentInfo(
+    consentToken: string,
+    requestLogger?: ILogger
+  ): Promise<ProjectConsentInfo> {
     const key = `${PROJECT_OAUTH_CONSENT_KEY_PREFIX}${consentToken}` as CacheKey;
     const payload = await this.cache.oauth.get<ProjectOAuthConsentPayload>(key);
     if (!payload) {
@@ -650,7 +654,7 @@ export class ProjectOAuthHandler {
         };
       }
     } catch (e) {
-      this.logger.warn(
+      (requestLogger ?? this.logger).warn(
         { err: e, userId: payload.userId },
         'Failed to resolve user display for consent'
       );
