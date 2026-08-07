@@ -33,7 +33,7 @@
 | 5     | `feat/api-code-quality-cache`       | slice 4a                | `CacheHandler` + scope helpers        | Backend    | **security-full** |     |
 | 6     | `feat/api-code-quality-services`    | slice 4                 | Service helpers                       | Backend    | light             |     |
 | 7     | `feat/api-code-quality-routes`      | slice 4                 | REST CRUD router factory              | Backend    | light             |     |
-| 8     | `feat/api-code-quality-validation`  | slice 6                 | Pagination + CDM zod boundary         | Backend    | **security-full** |     |
+| 8     | `feat/api-code-quality-validation`  | trunk                   | Pagination + CDM JSON boundary        | Backend    | **security-full** |     |
 | 9     | `feat/api-code-quality-tests`       | slice 5                 | Base-class + route coverage           | QA         | light             |     |
 | final | `feat/api-code-quality`             | `main`                  | integration                           | Principal  | deep              |     |
 
@@ -195,12 +195,23 @@ So the audit was right about the three it named specifically, and the "5 files o
 
 Spec check done as specified: `/api-docs.json` captured from the e2e stack before and after is **byte-identical** — same md5, 1,771,662 bytes, 87 paths. That was expected rather than hoped for, since `rest/openapi/` has zero imports from `rest/routes/`, but the plan asked for the empirical check and it is cheap.
 
-### 8 — Pagination + CDM validation · security-full
+### 8 — Pagination + CDM validation · security-full — **Done** (PR pending)
 
-- Pick one `hasNextPage` implementation, put it in one place, migrate the other four. Document offset-vs-keyset in [`CONCEPTS.md`](../CONCEPTS.md).
-- Add zod input validation to `project-import.service.ts` and `project-sync-job.service.ts` — externally-supplied CDM payloads currently cross the service boundary unvalidated.
+Both halves as planned turned out to be wrong on inspection, in opposite directions: the pagination half asked for one strategy where two are correct, and the CDM half described a gap that is smaller and sharper than "unvalidated".
 
-Security review is blocking: this slice changes what payloads are accepted. Expect the CDM round-trip integration test and the `project-sync-*` e2e scenarios to be the real signal.
+| Planned                                                                                                                      | Outcome                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pick one `hasNextPage`, migrate the other four                                                                               | **Two strategies kept, both named.** Three sites (`EntityRepository`, organization members, sync jobs) spelled one count-based comparison three ways and were collapsed onto `hasNextPageByCount`. The over-fetch sites were **not** migrated: `webhook-deliveries.repository.ts:180` already carried a comment from slice 1 explaining that a surplus row is the authoritative signal because it shares the page's snapshot. Migrating it to the count formula would have been a regression dressed as consistency. Extracted as `takePage` instead.   |
+| Add zod to `project-import.service.ts` and `project-sync-job.service.ts` — payloads "cross the service boundary unvalidated" | **Not accurate.** CDM sync is GraphQL-only (`startProjectSync(id, scope, input: SyncProjectInput!)`) — no REST route — so the execution layer already enforces field presence, scalar types, nested input shapes, and unknown-field rejection. Seven `*.cdm-entity.ts` classes add hand-rolled `validateInput` on top, plus `expandCdmSyncInput` and `validateCdmUserReferences`. Re-encoding that graph in zod would duplicate a check that already fires.                                                                                             |
+| —                                                                                                                            | **The real gap: 12 `JSON` scalar fields.** `JSON` asserts nothing, and three of them (`condition`, `metadata`, `searchable`) are read back through `as Record<string, unknown>` — see [`permission.cdm-entity.ts:116`](../apps/api/src/lib/cdm/entities/permission.cdm-entity.ts:116). `condition: 42` and `condition: [1, 2]` both pass GraphQL and both make that cast a lie all the way to persistence. `validateCdmJsonFields` closes it, with depth and size caps because the document is stored whole in the job row and replayed on every retry. |
+
+**Second instance of the slice-1 Tier-0 bug, missed by the audit.** [`notifications.repository.ts`](../apps/api/src/repositories/notifications.repository.ts) over-fetched `limit + 1`, computed `hasExtra`, used it only to trim, and **discarded it** — then `notifications.service.ts:86` recomputed next-page with a third formula (`offset + rows.length < totalCount`) from the already-trimmed rows. Identical in shape to the webhook-deliveries defect fixed in slice 1. The repository now returns the signal it computes.
+
+**Deferred, deliberately:** `project-sync-job.repository.ts:364` treats `limit: -1` as "return nothing" (empty `items`, real `totalCount`, `hasNextPage: false`) where `EntityRepository` treats it as "return everything". That is a genuine defect, but fixing it changes a public response shape and belongs to its own decision, not to a slice already carrying a security bar. Recorded in [`CONCEPTS.md § Pagination`](../CONCEPTS.md#pagination).
+
+Config: `CDM_MAX_JSON_BYTES` (64 KiB) and `CDM_MAX_JSON_DEPTH` (16), env-overridable, deliberately generous — they bound unbounded writes rather than shape payloads.
+
+**Verification.** 858 unit tests (29 new: 12 pagination, 17 CDM JSON), 189 e2e passing with 2 skipped — unchanged from slice 7, which is the signal the plan asked for: the new validator does not reject documents Grant's own export path produces. `knip` caught two dead exports of mine before CI, again.
 
 ### 9 — Coverage
 

@@ -8,6 +8,7 @@ import {
 } from '@grantjs/database';
 import { and, count, desc, eq, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 
+import { takePage } from '@/lib/pagination.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 export interface NotificationWithScope extends NotificationModel {
@@ -40,7 +41,7 @@ export class NotificationRepository {
     recipientUserId: string,
     options: { unreadOnly?: boolean; offset: number; limit: number },
     transaction?: Transaction
-  ): Promise<{ rows: NotificationWithScope[]; totalCount: number }> {
+  ): Promise<{ rows: NotificationWithScope[]; totalCount: number; hasNextPage: boolean }> {
     const dbInstance = transaction ?? this.db;
     const conditions = [
       eq(notifications.recipientUserId, recipientUserId),
@@ -84,10 +85,11 @@ export class NotificationRepository {
       dbInstance.select({ value: count() }).from(notifications).where(whereClause),
     ]);
 
-    const hasExtra = rows.length > options.limit;
+    const page = takePage(rows, options.limit);
     return {
-      rows: hasExtra ? rows.slice(0, options.limit) : rows,
+      rows: page.rows,
       totalCount: countRows[0]?.value ?? 0,
+      hasNextPage: page.hasNextPage,
     };
   }
 

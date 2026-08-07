@@ -52,6 +52,7 @@ import {
   expandCdmSyncInput,
   refDedupKey,
   resolveAllPermissionRefs,
+  validateCdmJsonFields,
 } from '@/lib/cdm';
 import type { ExpandedCdmSyncPayload } from '@/lib/cdm/expand-cdm-sync-input.lib';
 import { ConfigurationError, ConflictError, ValidationError } from '@/lib/errors';
@@ -277,6 +278,10 @@ export class ProjectImportService implements IProjectImportService {
     if (expanded.version !== 1) {
       throw new ValidationError('Unsupported version; only 1 is allowed');
     }
+
+    // Before the per-entity handlers: they read `condition`/`metadata` through
+    // `as Record<string, unknown>`, which only holds once this has run.
+    validateCdmJsonFields(expanded);
 
     for (const handler of this.handlers) {
       const slice = this.sliceForHandler(expanded, handler);

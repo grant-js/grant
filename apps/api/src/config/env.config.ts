@@ -822,6 +822,23 @@ const SYSTEM_CONSTANTS = {
 } as const;
 
 // ============================================================================
+// CDM Document Limits
+// ============================================================================
+
+/**
+ * Bounds for the `JSON` scalar fields of a CDM sync document. GraphQL types the
+ * rest of `SyncProjectInput` but asserts nothing about a `JSON` scalar, and the
+ * document is persisted whole into the job row and replayed on every retry.
+ */
+const CDM_CONFIG = {
+  /** Maximum serialized size of a single `metadata` / `condition` / `searchable` value. */
+  maxJsonBytes: env.CDM_MAX_JSON_BYTES,
+
+  /** Maximum nesting depth of a single `JSON` scalar value. */
+  maxJsonDepth: env.CDM_MAX_JSON_DEPTH,
+} as const;
+
+// ============================================================================
 // Validation & Export
 // ============================================================================
 
@@ -1055,6 +1072,7 @@ export const config = {
   notifications: NOTIFICATION_CONFIG,
   demoMode: DEMO_MODE_CONFIG,
   system: SYSTEM_CONSTANTS,
+  cdm: CDM_CONFIG,
   cors: CORS_CONFIG,
   helmet: HELMET_CONFIG,
 } as const;

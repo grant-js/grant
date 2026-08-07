@@ -20,6 +20,7 @@ import {
 import { config } from '@/config';
 import { NotFoundError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
+import { hasNextPageByCount } from '@/lib/pagination.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 interface BaseEntity extends Auditable {
@@ -321,7 +322,7 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
       const orderBy = this.orderBy(sort);
       const hasRelations = withRelations && Object.keys(withRelations).length > 0;
       const totalCount = await this.getTotalCount(where, transaction);
-      const hasNextPage = limit ? page * limit < totalCount : false;
+      const hasNextPage = hasNextPageByCount({ page, limit, totalCount });
       const filter = {
         where,
         orderBy,

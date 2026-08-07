@@ -97,9 +97,18 @@ Import and export are invoked by the worker, not directly by transport handlers.
 
 ## Pagination
 
-Lists return `{ items, totalCount, hasNextPage }`. Paging is **offset-based** — `page` and `limit`, not cursors.
+Lists return `{ items, totalCount, hasNextPage }`. Paging is **offset-based** — `page` and `limit`, not cursors. `hasNextPage` keeps its Relay-flavoured name because it is already on the public GraphQL and REST contracts; nothing behind it is keyset, and `cursor` appears nowhere in `apps/api`.
 
-> **Known divergence — internal.** `hasNextPage` is computed five different ways across the codebase, and `cursor` appears nowhere despite the Relay-style field name. See [api.md §3.1](./docs/contributing/code-quality/api.md#tier-3-divergent-styles).
+Two strategies compute it, both in [`pagination.lib.ts`](./apps/api/src/lib/pagination.lib.ts). Pick by whether the list mutates under the reader:
+
+| Strategy                                                                  | Helper               | Cost                                       | Used by                                                                                |
+| ------------------------------------------------------------------------- | -------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------- |
+| **Count-based** — compare the page window to a separate `count(*)`        | `hasNextPageByCount` | free (the count is on the contract anyway) | `EntityRepository` and everything built on it, organization members, project sync jobs |
+| **Over-fetch** — request `limit + 1`, treat the surplus row as the signal | `takePage`           | one extra row                              | webhook delivery attempts, notifications                                               |
+
+Count-based reads two snapshots — the page and the count — so a concurrent insert or delete between them can announce a next page that is not there. Over-fetch draws the answer from the same snapshot as the page, so it cannot disagree with the rows the caller just received. That is why the two append-heavy lists use it and the CRUD entity lists do not.
+
+> **Known divergence — internal.** `project-sync-job.repository.ts` treats `limit: -1` as "return nothing" (`items: []` with a real `totalCount`), while `EntityRepository` treats it as "return everything". Neither `hasNextPage` helper hides this — the sync-job list simply reports `hasNextPage: false` over an empty page. Changing it alters a public response, so it is tracked separately rather than folded into the pagination cleanup.
 
 ---
 
