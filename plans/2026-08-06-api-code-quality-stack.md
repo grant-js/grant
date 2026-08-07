@@ -22,20 +22,20 @@
 
 ## Ordered slices (PRs)
 
-| #     | Branch                              | Base                    | Concern                               | Owner role | Review bar        | PR  |
-| ----- | ----------------------------------- | ----------------------- | ------------------------------------- | ---------- | ----------------- | --- |
-| 1     | `feat/api-code-quality-bugs`        | `feat/api-code-quality` | Tier 0 bugs + error re-exports        | Backend    | light             |     |
-| 2     | `feat/api-code-quality-guardrails`  | trunk                   | Tier 1 mechanical fixes               | Backend    | light             |     |
-| 3     | `feat/api-code-quality-lint`        | slice 2                 | Lint enforcement                      | Backend    | light             |     |
-| 2a    | `feat/api-code-quality-cdm-ports`   | trunk                   | ProjectImport/Export repository ports | Backend    | light             |     |
-| 4     | `feat/api-code-quality-deadcode`    | trunk                   | Dead surface removal                  | Backend    | light             |     |
-| 4a    | `feat/api-code-quality-cache-tests` | slice 4                 | `CacheHandler` characterization tests | QA         | light             |     |
-| 5     | `feat/api-code-quality-cache`       | slice 4a                | `CacheHandler` + scope helpers        | Backend    | **security-full** |     |
-| 6     | `feat/api-code-quality-services`    | slice 4                 | Service helpers                       | Backend    | light             |     |
-| 7     | `feat/api-code-quality-routes`      | slice 4                 | REST CRUD router factory              | Backend    | light             |     |
-| 8     | `feat/api-code-quality-validation`  | trunk                   | Pagination + CDM JSON boundary        | Backend    | **security-full** |     |
-| 9     | `feat/api-code-quality-tests`       | slice 5                 | Base-class + route coverage           | QA         | light             |     |
-| final | `feat/api-code-quality`             | `main`                  | integration                           | Principal  | deep              |     |
+| #      | Branch                              | Base                    | Concern                                                                            | Owner role | Review bar        | PR  |
+| ------ | ----------------------------------- | ----------------------- | ---------------------------------------------------------------------------------- | ---------- | ----------------- | --- |
+| 1      | `feat/api-code-quality-bugs`        | `feat/api-code-quality` | Tier 0 bugs + error re-exports                                                     | Backend    | light             |     |
+| 2      | `feat/api-code-quality-guardrails`  | trunk                   | Tier 1 mechanical fixes                                                            | Backend    | light             |     |
+| 3      | `feat/api-code-quality-lint`        | slice 2                 | Lint enforcement                                                                   | Backend    | light             |     |
+| ~~2a~~ | —                                   | —                       | ~~ProjectImport/Export repository ports~~ — **dropped from this story**, see below | —          | —                 | —   |
+| 4      | `feat/api-code-quality-deadcode`    | trunk                   | Dead surface removal                                                               | Backend    | light             |     |
+| 4a     | `feat/api-code-quality-cache-tests` | slice 4                 | `CacheHandler` characterization tests                                              | QA         | light             |     |
+| 5      | `feat/api-code-quality-cache`       | slice 4a                | `CacheHandler` + scope helpers                                                     | Backend    | **security-full** |     |
+| 6      | `feat/api-code-quality-services`    | slice 4                 | Service helpers                                                                    | Backend    | light             |     |
+| 7      | `feat/api-code-quality-routes`      | slice 4                 | REST CRUD router factory                                                           | Backend    | light             |     |
+| 8      | `feat/api-code-quality-validation`  | trunk                   | Pagination + CDM JSON boundary                                                     | Backend    | **security-full** |     |
+| 9      | `feat/api-code-quality-tests`       | slice 5                 | Base-class + route coverage                                                        | QA         | light             |     |
+| final  | `feat/api-code-quality`             | `main`                  | integration                                                                        | Principal  | deep              |     |
 
 Slices 1, 2 and 4 are independent and could run in parallel with multiple agents in separate worktrees. **With a single reviewer, run them serially** — parallel slices compete for review attention and create rebase churn for no gain.
 
@@ -61,13 +61,15 @@ Config extraction: `server.ts:161-164` → `config.app.url`; the three OAuth TTL
 
 Move `rest/utils/refresh-cookie.ts` to `lib/` and update the 6 GraphQL importers. Decide whether `handlers/index.ts` is a legitimate third composition site and either amend `AGENTS.md:46` or move the wiring.
 
-### 2a — CDM repository ports (split out of slice 2)
+### 2a — CDM repository ports — **dropped from this story** (2026-08-07, Ale Heredia)
 
 Ports for `ProjectImportRepository` (15 public methods) and `ProjectExportRepository` (18).
 
-Split out because this is **not** a mechanical guardrail fix, as slice 2 assumed. Every return type — `ProjectRoleWithPermissions`, `ProjectUserWithRoleIds`, `ProjectTagDefinitionRow`, `GrantGroupExportRow`, `ResolvedCdmPermission`, and ~8 more — is declared **inside the repository files in `apps/api`**. Writing the ports means first migrating those declarations into `@grantjs/core`, which changes what core owns (CDM export row shapes become domain types) and touches every importer.
+Split out of slice 2 because it is not a mechanical guardrail fix. Every return type — `ProjectRoleWithPermissions`, `ProjectUserWithRoleIds`, `ProjectTagDefinitionRow`, `GrantGroupExportRow`, `ResolvedCdmPermission`, and ~8 more — is declared **inside the repository files in `apps/api`**. Writing the ports means first migrating those declarations into `@grantjs/core`, which changes what the domain package owns (CDM export row shapes become domain types) and touches every importer.
 
-That is a design decision about domain ownership, not an import fix, and it deserves its own review. Follow the existing convention: `transaction?: unknown` in repository ports.
+**Dropped rather than deferred again.** It was skipped in favour of every other slice five times running, and correctly so: it is a decision about domain ownership, not a code-quality fix, and it does not share a review bar, a risk profile, or a verification method with anything else in this stack. Folding it in would have made the story→`main` review answer two unrelated questions at once.
+
+It needs its own story brief. Tracked as follow-up **B3**.
 
 ### 3 — Lint enforcement
 
@@ -295,7 +297,9 @@ Everything deferred across slices 1–8, ordered. Nothing here blocks a slice PR
 ## Human gates
 
 - [x] Gate 2: Stack plan approved — 2026-08-06. Implementation may begin.
-- [ ] Gate 3: Stack PRs merged into trunk (light, with security-full on slices 5 and 8).
+- [x] Gate 3: Stack PRs merged into trunk — 1, 2, 3, 4, 4a, 5, 6, 7, 8, 9. Slice 2a dropped (see above).
+  - Slice 8 security-full: reviewed at merge.
+  - Slice 5 security-full: the review was performed by the commit's own author. An **independent pass is running before gate 4** — see follow-up A1, now in progress rather than deferred.
 - [ ] Gate 4: Story → `main` deep review complete.
 
 ## Cleanup
