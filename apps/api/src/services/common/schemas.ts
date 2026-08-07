@@ -90,13 +90,6 @@ export const deleteSchema = z.object({
   hardDelete: z.boolean().optional(),
 });
 
-export const paginatedResponseSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
-  z.object({
-    items: z.array(itemSchema),
-    totalCount: z.number().int().min(0),
-    hasNextPage: z.boolean(),
-  });
-
 export const requestedFieldsSchema = z.array(z.string()).nullable().optional();
 
 export const queryParamsSchema = z.object({

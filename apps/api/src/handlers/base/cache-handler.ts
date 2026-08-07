@@ -73,24 +73,6 @@ export class CacheHandler implements IScopedIdProvider {
     protected readonly scopeServices: ScopeServices
   ) {}
 
-  protected hasRequestedField<TField extends PropertyKey>(
-    requestedFields: TField[] | null | undefined,
-    field: TField
-  ): boolean {
-    return requestedFields?.includes(field) ?? false;
-  }
-
-  protected withoutRequestedFields<TField extends PropertyKey>(
-    requestedFields: TField[] | null | undefined,
-    fieldsToRemove: TField[]
-  ): TField[] | undefined {
-    if (!requestedFields) {
-      return undefined;
-    }
-
-    return requestedFields.filter((field) => !fieldsToRemove.includes(field));
-  }
-
   /**
    * Extracts the projectId from a composite scope.id
    * For OrganizationProject: scope.id = "organizationId:projectId"
@@ -752,14 +734,6 @@ export class CacheHandler implements IScopedIdProvider {
     await this.cache.permissions.clear();
   }
 
-  async invalidateRolesCacheForAllScopes(): Promise<void> {
-    await this.cache.roles.clear();
-  }
-
-  async invalidateGroupsCacheForAllScopes(): Promise<void> {
-    await this.cache.groups.clear();
-  }
-
   /**
    * Builds cache key for authorization results. For project-app tokens, include a signature of
    * grantedScopes so different OAuth grants (different consented scopes) do not share cache entries.
@@ -814,21 +788,6 @@ export class CacheHandler implements IScopedIdProvider {
     await this.cache.roles.delete(cacheKey);
   }
 
-  async invalidateUsersCacheForScope(scope: Scope): Promise<void> {
-    const cacheKey = this.createCacheKey(scope);
-    await this.cache.users.delete(cacheKey);
-  }
-
-  async invalidateGroupsCacheForScope(scope: Scope): Promise<void> {
-    const cacheKey = this.createCacheKey(scope);
-    await this.cache.groups.delete(cacheKey);
-  }
-
-  async invalidatePermissionsCacheForScope(scope: Scope): Promise<void> {
-    const cacheKey = this.createCacheKey(scope);
-    await this.cache.permissions.delete(cacheKey);
-  }
-
   /**
    * Clears cached authorization results for a user (prefix match). Call when
    * inputs that affect permission condition evaluation change (e.g. project
@@ -842,47 +801,11 @@ export class CacheHandler implements IScopedIdProvider {
     }
   }
 
-  async invalidateResourcesCacheForScope(scope: Scope): Promise<void> {
-    const cacheKey = this.createCacheKey(scope);
-    await this.cache.resources.delete(cacheKey);
-  }
-
-  async invalidateTagsCacheForScope(scope: Scope): Promise<void> {
-    const cacheKey = this.createCacheKey(scope);
-    await this.cache.tags.delete(cacheKey);
-  }
-
-  async invalidateProjectsCacheForScope(scope: Scope): Promise<void> {
-    const cacheKey = this.createCacheKey(scope);
-    await this.cache.projects.delete(cacheKey);
-  }
-
-  async invalidateProjectAppsCacheForScope(scope: Scope): Promise<void> {
-    const cacheKey = this.createCacheKey(scope);
-    await this.cache.projectApps.delete(cacheKey);
-  }
-
-  async invalidateApiKeysCacheForScope(scope: Scope): Promise<void> {
-    const cacheKey = this.createCacheKey(scope);
-    if (this.cache.apiKeys) {
-      await this.cache.apiKeys.delete(cacheKey);
-    }
-  }
-
   async invalidateSigningKeysCacheForScope(scope: Scope): Promise<void> {
     const prefix = `${scope.tenant}:${scope.id}`;
     const keysToDelete = await this.cache.signingKeys.keys(`${prefix}*`);
     for (const key of keysToDelete) {
       await this.cache.signingKeys.delete(key);
-    }
-  }
-
-  async invalidateAuthorizationCacheForUser(userId: string): Promise<void> {
-    const pattern = `${AUTH_RESULT_CACHE_KEY_PREFIX}${userId}:*`;
-    const keys = await this.cache.permissions.keys(pattern);
-
-    for (const key of keys) {
-      await this.cache.permissions.delete(key);
     }
   }
 }

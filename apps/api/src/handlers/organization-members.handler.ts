@@ -37,7 +37,7 @@ export class OrganizationMembersHandler extends CacheHandler {
       return await this.organizationMembers.updateOrganizationMember(userId, input, tx);
     });
 
-    await this.invalidateAuthorizationCacheForUser(userId);
+    await this.invalidateAuthorizationResultsForUser(userId);
 
     return result;
   }
@@ -51,7 +51,7 @@ export class OrganizationMembersHandler extends CacheHandler {
       return await this.organizationMembers.removeOrganizationMember(userId, input, tx);
     });
 
-    await this.invalidateAuthorizationCacheForUser(userId);
+    await this.invalidateAuthorizationResultsForUser(userId);
 
     return result;
   }

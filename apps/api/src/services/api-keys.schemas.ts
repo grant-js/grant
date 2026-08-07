@@ -14,7 +14,7 @@ import {
   sortOrderSchema,
 } from './common/schemas';
 
-export const clientIdSchema = z.uuid('errors.validation.invalidClientId');
+const clientIdSchema = z.uuid('errors.validation.invalidClientId');
 
 export const clientSecretSchema = z.string().min(32, 'errors.validation.clientSecretMin32');
 

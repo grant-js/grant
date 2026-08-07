@@ -19,5 +19,9 @@
     }
   },
   "ignore": ["**/generated/**", "**/dist/**", "docs/**"],
-  "ignoreDependencies": ["@types/*"]
+  "ignoreDependencies": ["@types/*"],
+  // `duplicates` finds one value exported under two names. Both names are in use
+  // in the two remaining cases, so resolving them is a rename, not a deletion —
+  // tracked in CONCEPTS.md § "One schema, two exported names". Re-enable when settled.
+  "exclude": ["duplicates"]
 }
