@@ -201,7 +201,7 @@ export class WebhookSubscriptionService implements IWebhookSubscriptionService {
     const page = Math.max(params.page ?? 1, 1);
     const offset = (page - 1) * limit;
 
-    const { rows, totalCount } = await this.deliveries.listForProject(
+    const { rows, totalCount, hasNextPage } = await this.deliveries.listForProject(
       projectId,
       { subscriptionId: params.subscriptionId, status: params.status, offset, limit },
       transaction
@@ -210,7 +210,7 @@ export class WebhookSubscriptionService implements IWebhookSubscriptionService {
     return {
       items: rows.map(toWebhookDeliveryAttempt),
       totalCount,
-      hasNextPage: offset + rows.length < totalCount,
+      hasNextPage,
     };
   }
 

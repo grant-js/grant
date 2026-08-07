@@ -96,7 +96,7 @@ export class TagHandler extends CacheHandler {
         }
       }
 
-      this.addTagIdToScopeCache(scope, tagId);
+      await this.addTagIdToScopeCache(scope, tagId);
 
       return tag;
     });
@@ -139,7 +139,7 @@ export class TagHandler extends CacheHandler {
         this.resourceTags.removeResourceTags({ tagId, hardDelete }, tx),
       ]);
 
-      this.removeTagIdFromScopeCache(scope, tagId);
+      await this.removeTagIdFromScopeCache(scope, tagId);
 
       return await this.tags.deleteTag(params, tx);
     });
