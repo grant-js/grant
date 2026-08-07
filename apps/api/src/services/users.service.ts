@@ -24,6 +24,7 @@ import {
   deleteSchema,
   validateInput,
   validateOutput,
+  validatePage,
 } from './common';
 import {
   createUserInputSchema,
@@ -61,15 +62,10 @@ export class UserService implements IUserService {
     validateInput(queryUsersArgsSchema, params, context);
     const result = await this.userRepository.getUsers(params, transaction);
 
-    const transformedResult = {
-      items: result.users,
-      totalCount: result.totalCount,
-      hasNextPage: result.hasNextPage,
-    };
-
-    validateOutput(
+    validatePage(
       createDynamicPaginatedSchema(userSchema, params.requestedFields),
-      transformedResult,
+      result.users,
+      result,
       context
     );
 

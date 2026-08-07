@@ -23,6 +23,7 @@ import {
   createDynamicSingleSchema,
   validateInput,
   validateOutput,
+  validatePage,
 } from './common';
 
 export class AccountService implements IAccountService {
@@ -58,15 +59,10 @@ export class AccountService implements IAccountService {
 
     const result = await this.accountRepository.getAccounts(params, transaction);
 
-    const transformedResult = {
-      items: result.accounts,
-      totalCount: result.totalCount,
-      hasNextPage: result.hasNextPage,
-    };
-
-    validateOutput(
+    validatePage(
       createDynamicPaginatedSchema(accountSchema, params.requestedFields),
-      transformedResult,
+      result.accounts,
+      result,
       context
     );
 
