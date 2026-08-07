@@ -10,11 +10,15 @@ One unit per pass. Each pass produces a findings document in this directory name
 
 Findings are **evidence-first**. Every claim cites `file:line`. A finding without a citation is an opinion and does not belong in the document.
 
-Three rules learned the hard way on pass 1 (see [its corrections table](./api.md#corrections)):
+Five rules learned the hard way on pass 1 (see [its corrections table](./api.md#corrections)):
 
-1. **Run the tool before stating a count.** Grep finds instances; a type-aware lint rule finds the pattern. Pass 1 reported one un-awaited promise and there were thirteen. If a rule exists for the finding, run it — and prefer reporting "the rule reports N" over "I found N".
-2. **A rule violation is not automatically a defect.** Before filing, check for an intentional design: a sentinel protocol with a mapping layer, a constant mirroring a database constraint, an adapter port that only looks misfiled. Four of pass 1's findings were correct code and an incorrect reading.
+1. **Run the tool before stating a count.** Grep finds instances; a type-aware lint rule finds the pattern. Pass 1 reported one un-awaited promise and there were thirteen, and ~115 dead exports where there were 361. If a rule exists for the finding, run it — and prefer reporting "the rule reports N" over "I found N".
+2. **A rule violation is not automatically a defect.** Before filing, check for an intentional design: a sentinel protocol with a mapping layer, a constant mirroring a database constraint, an adapter port that only looks misfiled. Five of pass 1's findings were correct code and an incorrect reading.
 3. **"Mechanical" is a claim to test, not assume.** Size the work by opening the hardest instance, not the easiest. One pass-1 item scoped as an import fix turned out to require moving type ownership between packages.
+4. **Count findings by the edit they imply, not by the tool's issue type.** knip's "unused export" covers three edits with different risk: deleting a barrel line whose implementation is alive, dropping an `export` keyword from a symbol its own file still uses, and deleting a declaration. Only the last removes behaviour. Reported as one number, a slice looks far more dangerous than it is — and the safest, largest group (encapsulation) disappears into it.
+5. **State the tool's blind spots next to its output.** knip reads module exports, so it sees neither class members nor string-resolved references. Both bit pass 1: 13 dead methods it never looked at, and a dependency (`pino-pretty`, named only as a pino transport target) that it called unused and that nothing but a runtime smoke test would have caught.
+
+A corollary to 1: **verify the tool ran at all.** A helper that shelled out to `rg` silently returned zero matches for every symbol, because `rg` is a shell function in this environment and does not exist for child processes. A checker that finds nothing looks identical to a clean codebase. Prove the check fires by planting a violation before trusting a green result.
 
 Findings are **tiered by decision type**, not by severity alone — this is what makes a pass actionable:
 

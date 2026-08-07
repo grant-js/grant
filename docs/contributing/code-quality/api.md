@@ -277,6 +277,8 @@ Cosmetic but telling: the same object is named `metadata` at `roles.service.ts:1
 
 Roughly **115 exports** occur exactly once — at their own definition — cross-checked against `apps/api`, `apps/api/tests`, `apps/web/src`, and `packages/`.
 
+> **Resolved in slice 4 — and the count was wrong three times over.** `knip` reports **361** findings, not 115, and they split into three edits of very different risk: 90 dead barrel re-exports (the implementation lives on), 149 module-private symbols (drop the `export` keyword, nothing moves), and 124 genuine deletions. A further 13 dead methods on `CacheHandler` were invisible to knip, which does not analyse class members. See [corrections 10–12](#corrections). `apps/api` is now clean and [CI enforces it](https://github.com/grant-js/grant/blob/main/.github/workflows/ci.yml).
+
 Whole unused families:
 
 | Surface                                  | Detail                                                                                                                                                                                                                                                  |
@@ -289,6 +291,8 @@ Whole unused families:
 | Misc                                     | `lib/errors/grant-error-mapper.ts:14`, `lib/rls/rls-context.ts:113`, `middleware/request-logging.middleware.ts:118`, `lib/token.lib.ts:44`, `rest/utils/auth.ts:19` and `:52`                                                                           |
 
 **Orphaned REST contracts** — schemas defined for endpoints that were never built or were removed. These are worth separating from ordinary clutter because they signal abandoned work:
+
+> **Wrong — see [correction 12](#corrections).** They signal nothing of the sort. Every one has a live `my*`-prefixed counterpart already wired into both `me.routes.ts` and `me.openapi.ts`: `changePasswordRequestSchema` → `changeMyPasswordRequestSchema`, `deleteAccountBodySchema` → `deleteMyAccountsBodySchema`, `getUserSessionsQuerySchema` → `getMyUserSessionsQuerySchema`, and so on. The endpoints ship and work; the `me`-scoped rewrite left the originals behind. Superseded duplicates, deleted in slice 4.
 
 - `uploadUserPictureRequestSchema` / `ResponseSchema` ([`rest/schemas/users.schemas.ts:202,217`](https://github.com/grant-js/grant/blob/main/apps/api/src/rest/schemas/users.schemas.ts)) — no route registers them, though the GraphQL mutation exists
 - The `deleteAccount*` and `createAccount*` sets in `rest/schemas/accounts.schemas.ts`
@@ -379,23 +383,38 @@ The base classes are the priority: `EntityRepository`, `PivotRepository` and `Ca
 
 Errors in this document found while acting on it. Recorded rather than silently edited, because the pattern in them is the useful part.
 
-| #   | Original claim                                                         | Reality                                                                                                            | Found in |
-| --- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------- |
-| 1   | One un-awaited cache mutation; "every other cache mutation is awaited" | **13 total**, across 7 handlers, plus 2 unrelated floating promises                                                | slice 3  |
-| 2   | 9 raw `throw new Error(`                                               | **10** — the grep missed `const err = new Error(...)` in `project-sync.job.ts`                                     | slice 2  |
-| 3   | 9 raw throws are all violations                                        | **5 are a deliberate sentinel protocol** that `lib/cdm/permission-ref.lib.ts` maps to domain errors, with tests    | slice 2  |
-| 4   | 3 dead logger fields                                                   | **1** — the other two use the compliant `(requestLogger ?? this.logger)` fallback                                  | slice 2  |
-| 5   | `IEmailService` is a service port in the wrong directory               | It is an **adapter port** (`MailgunEmailAdapter implements IEmailService`); `ports/email.port.ts` is correct       | slice 2  |
-| 6   | `AUDIT_VALUE_MAX_LENGTH` should move to config                         | It mirrors `varchar(1000)` on the audit tables; env-tunable would let config exceed the column                     | slice 2  |
-| 7   | `handlers/index.ts` is a third composition site                        | It is a layer factory, identical in shape to `services/index.ts` and `repositories/index.ts`, which went unflagged | slice 2  |
-| 8   | Default page size: "10 vs 50"                                          | **Five** values (10, 20, 25, 50) plus a dead `defaultPageSize: 20` in config that nothing read                     | slice 2  |
-| 9   | Repository ports are a mechanical fix                                  | ~12 return types are declared **inside** the repositories; the ports require migrating them into core first        | slice 2  |
+| #   | Original claim                                                                                                                                     | Reality                                                                                                                                                                                          | Found in |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| 1   | One un-awaited cache mutation; "every other cache mutation is awaited"                                                                             | **13 total**, across 7 handlers, plus 2 unrelated floating promises                                                                                                                              | slice 3  |
+| 2   | 9 raw `throw new Error(`                                                                                                                           | **10** — the grep missed `const err = new Error(...)` in `project-sync.job.ts`                                                                                                                   | slice 2  |
+| 3   | 9 raw throws are all violations                                                                                                                    | **5 are a deliberate sentinel protocol** that `lib/cdm/permission-ref.lib.ts` maps to domain errors, with tests                                                                                  | slice 2  |
+| 4   | 3 dead logger fields                                                                                                                               | **1** — the other two use the compliant `(requestLogger ?? this.logger)` fallback                                                                                                                | slice 2  |
+| 5   | `IEmailService` is a service port in the wrong directory                                                                                           | It is an **adapter port** (`MailgunEmailAdapter implements IEmailService`); `ports/email.port.ts` is correct                                                                                     | slice 2  |
+| 6   | `AUDIT_VALUE_MAX_LENGTH` should move to config                                                                                                     | It mirrors `varchar(1000)` on the audit tables; env-tunable would let config exceed the column                                                                                                   | slice 2  |
+| 7   | `handlers/index.ts` is a third composition site                                                                                                    | It is a layer factory, identical in shape to `services/index.ts` and `repositories/index.ts`, which went unflagged                                                                               | slice 2  |
+| 8   | Default page size: "10 vs 50"                                                                                                                      | **Five** values (10, 20, 25, 50) plus a dead `defaultPageSize: 20` in config that nothing read                                                                                                   | slice 2  |
+| 9   | Repository ports are a mechanical fix                                                                                                              | ~12 return types are declared **inside** the repositories; the ports require migrating them into core first                                                                                      | slice 2  |
+| 10  | ~115 dead exports                                                                                                                                  | **361** findings, and they are three different edits — see below                                                                                                                                 | slice 4  |
+| 11  | 2 never-called `CacheHandler` methods                                                                                                              | **13** — knip does not analyse class members, so this needed a separate AST scan                                                                                                                 | slice 4  |
+| 12  | Orphaned `uploadUserPicture*` / `deleteAccount*` / `changePassword*` schemas signal "an abandoned feature" needing a wire-it-or-delete-it decision | Every one has a live `my*`-prefixed counterpart already wired into `me.routes.ts` **and** `me.openapi.ts`. The endpoints ship. They are superseded duplicates, and there was no decision to make | slice 4  |
 
-Three lessons, folded into [the rubric](./README.md):
+Correction 10 is the most useful of the set. "~115 dead exports" was one number covering three edits with different risk:
 
-1. **Run the tool before stating the count.** Corrections 1 and 2 are both grep under-counting what a type-aware rule or a parser finds exactly.
-2. **A rule violation is not automatically a defect.** Corrections 3, 5, 6 and 7 are all cases where the code was right and the rule — or my reading of it — was wrong. Check for an intentional design before filing.
+| Class                 | Count | Edit                                            |
+| --------------------- | ----- | ----------------------------------------------- |
+| Dead barrel re-export | 90    | delete the barrel line; implementation lives on |
+| Module-private        | 149   | drop the `export` keyword; no code moves        |
+| Genuinely dead        | 124   | delete the declaration                          |
+
+Only the third is a deletion. Reporting them as one number would have made the slice look four times more dangerous than it was, and would have hidden that the largest group is an encapsulation fix rather than a removal.
+
+Five lessons, folded into [the rubric](./README.md):
+
+1. **Run the tool before stating the count.** Corrections 1, 2, 10 and 11 are all grep under-counting what a type-aware rule or a parser finds exactly.
+2. **A rule violation is not automatically a defect.** Corrections 3, 5, 6, 7 and 12 are all cases where the code was right and the rule — or my reading of it — was wrong. Check for an intentional design before filing.
 3. **"Mechanical" is a claim that needs testing.** Correction 9 was sized as an import fix and is actually a question about what the domain owns.
+4. **Count findings by the edit they imply, not by the tool's issue type.** Correction 10.
+5. **A tool has a scope; state it.** knip reads module exports, not class members (correction 11) and cannot see string-resolved references — `pino-pretty` is named only as a pino transport target, so it reads as an unused dependency and removing it would break dev logging with no build error.
 
 ## Recommended enforcement
 
