@@ -239,17 +239,42 @@ Also characterized: `orderBy`'s default path emits a bare column with no directi
 
 **Not covered:** the other 20 files in `rest/routes/`. `crud-router.ts` was chosen because slice 7 made it the actual body of three routers, so it is the highest-density target; `auth.routes.ts` and `me.routes.ts` carry more risk per line and deserve their own slice rather than a thin pass here.
 
+### 10 — Scope-tenant dispatch hardening · security-full — **Done** (PR pending)
+
+Not a planned slice. Opened because the independent Senior Security pass on slice 5 (follow-up A1) returned **BLOCK**.
+
+**The finding.** Slice 5 replaced a per-method `switch (scope.tenant)` with a lookup on `descriptor.byTenant`, an object literal. `byTenant['toString']` is truthy and callable off `Object.prototype`, so the `if (!resolve) throw` gate was skipped: eight of the nine scoped-id methods **returned** `'[object Undefined]'` where the switch had thrown, and cached it. Seven other prototype names turned a clean 400 into an uncaught `TypeError`.
+
+Reachable because `scope-extractor.ts` casts `tenant` out of a header, query param, or body with `as Tenant` and no enum check, on all six paths.
+
+Confirmed by execution, differentially against `f2da1635^`: **720/720 identical** for the eight real tenants — slice 5's own claim held exactly — and **64 of 72 divergent** for prototype keys. The dispatch _mechanism_ had a hole the `switch` did not, which is precisely what an author checking their own intent does not look for.
+
+| Fix                                                                                                                                                                                      | Where                                 |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Null-prototype `byTenant` maps **and** an `Object.hasOwn` guard — either alone closes it; this dispatch does not get to depend on one surviving a later edit                             | `cache-handler.ts`                    |
+| Validate `tenant` against `Object.values(Tenant)` at the boundary. An unknown tenant reads as _no scope_, so the caller fails authorization without learning which tenant names are real | `scope-extractor.ts`                  |
+| Dropped the redundant `namespace` field — the record key is now the only source of the cache namespace, so `roles: { namespace: 'users' }` is unrepresentable                            | `cache-handler.ts`                    |
+| `git rm --cached apps/api/.openmono/agent.lock` + gitignore                                                                                                                              | tooling artifact committed by slice 5 |
+
+**Verification.** 37 new tests. Both fixes mutation-checked **independently**: reverting the dispatch hardening fails 10 of 17; reverting the boundary validation fails 16 of 20. 961 unit, 189 e2e — the enum check breaks no real client path.
+
+Non-blocking findings from the same review became follow-ups **C9**, **C10**, **C11**.
+
+**Method note.** Slice 5's evidence was weaker than presented: `mutation-check.mjs` was rewritten inside the commit it attests, so "10/10 killed" was not an independent measurement. Correction 19.
+
+---
+
 ## Follow-ups
 
 Everything deferred across slices 1–8, ordered. Nothing here blocks a slice PR; group A blocks gate 4.
 
 ### A — Settle before story→main
 
-| #   | Item                                                                                                                                                    | Why it is here                                                                                                                                                                                                                    |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A1  | **Slice 5's security-full review was performed by its own author.** Decide: an independent pass before gate 4, or absorb it into the gate-4 deep review | The bar says "Senior Security + human", and the diff changed tenant→id resolution. Mutation testing (8/8 planted changes killed) and the pre-written characterization suite are real evidence, but neither is an adversarial read |
-| A2  | Decide whether `handlers/index.ts` is a legitimate third composition site, then either amend `AGENTS.md:46` or move the wiring                          | Slice 2 raised it and left it open. The rule currently says two sites; the code has three                                                                                                                                         |
-| A3  | Re-run the pass-1 lenses and update `api.md` with resolved counts                                                                                       | Already on the cleanup checklist; listed here so it is not missed                                                                                                                                                                 |
+| #   | Item                                                                                                                                                                                                           | Why it is here                                                                             |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| A1  | ~~Slice 5's security-full review was performed by its own author.~~ **Done.** Independent Senior Security pass run 2026-08-07: verdict **BLOCK**, one High fail-open confirmed by execution. Fixed in slice 10 | The bar is about who reviews, not how much evidence the author gathers — see correction 19 |
+| A2  | Decide whether `handlers/index.ts` is a legitimate third composition site, then either amend `AGENTS.md:46` or move the wiring                                                                                 | Slice 2 raised it and left it open. The rule currently says two sites; the code has three  |
+| A3  | Re-run the pass-1 lenses and update `api.md` with resolved counts                                                                                                                                              | Already on the cleanup checklist; listed here so it is not missed                          |
 
 ### B — Contract decisions (each changes a public response or URL)
 
@@ -260,15 +285,19 @@ Everything deferred across slices 1–8, ordered. Nothing here blocks a slice PR
 
 ### C — Code, ordered by risk × value
 
-| #   | Item                                                                                                                                                                                        | Size      |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| C1  | Zod input validation for the 12 services that have none. `project-sync-job.service.ts` (494 L) and `signing-keys.service.ts` (228 L) are the security-relevant two                          | 12 files  |
-| C2  | Migrate the remaining `scope.id.split(':')` sites onto `scope.lib.ts` — slice 5 moved only `CacheHandler`'s four                                                                            | ~24 sites |
-| C3  | `EntityRepository.buildFilterCondition` — two duplicated operator `switch` blocks differing only in operand. Tier 2 item 7; **no slice picked it up**                                       | 1 file    |
-| C4  | Transactions: three styles, raw `db.transaction` bypassing the port at `jobs/project-sync.job.ts:277`, and `project-oauth.handler.ts` (815 L of mutating OAuth/membership flows) using none | broad     |
-| C5  | 14 services audit nothing, including mutating ones (`project-import`, `project-export`, `webhook-subscriptions`, `notifications`)                                                           | 14 files  |
-| C6  | Domain events: 22 of 67 services publish. `TagService` is not injected with `events` while the line-identical `GroupService` is (`services/index.ts:312`)                                   | 45 files  |
-| C7  | `webhook-subscriptions.repository.ts:148` soft-deletes _and_ flips `active: false` — a side effect no other soft delete has                                                                 | 1 file    |
+| #   | Item                                                                                                                                                                                                                                             | Size      |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| C1  | Zod input validation for the 12 services that have none. `project-sync-job.service.ts` (494 L) and `signing-keys.service.ts` (228 L) are the security-relevant two                                                                               | 12 files  |
+| C2  | Migrate the remaining `scope.id.split(':')` sites onto `scope.lib.ts` — slice 5 moved only `CacheHandler`'s four                                                                                                                                 | ~24 sites |
+| C3  | `EntityRepository.buildFilterCondition` — two duplicated operator `switch` blocks differing only in operand. Tier 2 item 7; **no slice picked it up**                                                                                            | 1 file    |
+| C4  | Transactions: three styles, raw `db.transaction` bypassing the port at `jobs/project-sync.job.ts:277`, and `project-oauth.handler.ts` (815 L of mutating OAuth/membership flows) using none                                                      | broad     |
+| C5  | 14 services audit nothing, including mutating ones (`project-import`, `project-export`, `webhook-subscriptions`, `notifications`)                                                                                                                | 14 files  |
+| C6  | Domain events: 22 of 67 services publish. `TagService` is not injected with `events` while the line-identical `GroupService` is (`services/index.ts:312`)                                                                                        | 45 files  |
+| C7  | `webhook-subscriptions.repository.ts:148` soft-deletes _and_ flips `active: false` — a side effect no other soft delete has                                                                                                                      | 1 file    |
+| C8  | `validateConfig`'s `DB_URL is required` branch is unreachable — `resolveDatabaseUrl` never returns an empty string. Decide what a valid database configuration means, then make the check enforce it                                             | 1 file    |
+| C9  | `tryProjectIdFromScope` returns `""` not `null` for an empty middle segment, and `scope.lib.ts:21-24` documents the opposite. `grant.repository.ts:530,596` branch `if (projectId)` and otherwise take the **global, un-project-narrowed** query | 2 files   |
+| C10 | No arity check in `scope.lib.ts` — `'acc:proj:extra:more'` silently yields `'proj'`. A canonical parser should reject arity it does not understand                                                                                               | 1 file    |
+| C11 | Two dispatch paths for the same parse: the descriptor table calls the module functions directly, `getScopedProjectAppIds` calls `this.extractProjectIdFromScope`                                                                                 | 1 file    |
 
 ### D — Method
 
@@ -298,6 +327,7 @@ Everything deferred across slices 1–8, ordered. Nothing here blocks a slice PR
 
 - [x] Gate 2: Stack plan approved — 2026-08-06. Implementation may begin.
 - [x] Gate 3: Stack PRs merged into trunk — 1, 2, 3, 4, 4a, 5, 6, 7, 8, 9. Slice 2a dropped (see above).
+  - Slice 5 security-full: author-reviewed at merge. Independent pass 2026-08-07 returned **BLOCK**; remediated by **slice 10**, which must merge before gate 4.
   - Slice 8 security-full: reviewed at merge.
   - Slice 5 security-full: the review was performed by the commit's own author. An **independent pass is running before gate 4** — see follow-up A1, now in progress rather than deferred.
 - [ ] Gate 4: Story → `main` deep review complete.
