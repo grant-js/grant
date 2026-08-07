@@ -404,6 +404,8 @@ Errors in this document found while acting on it. Recorded rather than silently 
 | 17  | Tier 0 bug 1.2 (repository computes a next-page signal, discards it, service recomputes) is one occurrence                                         | **Two.** `notifications.repository.ts` has the identical defect and the audit missed it — found only by reading every pagination site while consolidating them. A grep for the symptom would not have found it; the discarded variable is named differently                                                                                                      | slice 8  |
 | 18  | `repositories/common/` and `config/env.config.ts` are untested surface needing coverage                                                            | True, and writing the coverage surfaced three latent defects the audit never saw: filters widen silently on a typo, `PivotRepository.countActive({})` counts the whole table, and `validateConfig`'s `DB_URL` branch is unreachable. Coverage is a **detector**, not just a safety net — it belongs earlier in the rubric than "tests"                           | slice 9  |
 
+| 19 | Slice 5's security-full bar was satisfied by the author's own review, backed by "10/10 mutations killed" | The mutation harness was **rewritten inside the commit it attests**, so that number was not an independent measurement. An independent pass found a fail-open in the same code: unknown tenants resolved off `Object.prototype` instead of being rejected. **A security bar is about who reviews, not how much evidence the author gathers** | slice 10 |
+
 Correction 10 is the most useful of the set. "~115 dead exports" was one number covering three edits with different risk:
 
 | Class                 | Count | Edit                                            |
@@ -414,13 +416,16 @@ Correction 10 is the most useful of the set. "~115 dead exports" was one number 
 
 Only the third is a deletion. Reporting them as one number would have made the slice look four times more dangerous than it was, and would have hidden that the largest group is an encapsulation fix rather than a removal.
 
-Five lessons, folded into [the rubric](./README.md):
+Eight lessons, folded into [the rubric](./README.md):
 
 1. **Run the tool before stating the count.** Corrections 1, 2, 10 and 11 are all grep under-counting what a type-aware rule or a parser finds exactly.
 2. **A rule violation is not automatically a defect.** Corrections 3, 5, 6, 7 and 12 are all cases where the code was right and the rule — or my reading of it — was wrong. Check for an intentional design before filing.
 3. **"Mechanical" is a claim that needs testing.** Correction 9 was sized as an import fix and is actually a question about what the domain owns.
 4. **Count findings by the edit they imply, not by the tool's issue type.** Correction 10.
 5. **A tool has a scope; state it.** knip reads module exports, not class members (correction 11) and cannot see string-resolved references — `pino-pretty` is named only as a pino transport target, so it reads as an unused dependency and removing it would break dev logging with no build error.
+6. **Size a helper against the block it replaces at the call site, not against the total line count.** Corrections 14 and 15, plus two more extractions rejected on inspection. "43 services × 30 lines" is not 1,290 lines of savings if the repeated 30 lines are a whole method and the varying part is already five lines — the helper call would be longer than the code it replaces.
+7. **A validator with no callers is ambiguous evidence.** knip flagged `safeValidateInput` / `safeValidateOutput` as dead and they were, correctly, deleted in slice 4. But this app also has **12 services that never call `validateInput` at all** — an under-validation gap that presents to the tool as nothing whatsoever. Deleting an unused validator on the tool's say-so is right only after checking that the validation is superseded rather than simply absent.
+8. **Coverage is a detector, not just a safety net.** Correction 18. The three defects slice 9 found were all in code earlier lenses had scored clean, and none was reachable by grep.
 
 ## Recommended enforcement
 
@@ -468,6 +473,4 @@ Re-run of the measurable lenses after slices 1–9 merged into `feat/api-code-qu
 
 Nothing new, which is the point of running it. But two of the "unchanged" rows are worth reading as findings rather than as omissions: **C1** and **C2** are both cases where a slice deliberately stopped short of a round number because finishing would have widened a diff that carried a security bar. That is the correct trade, and it is only visible because the counts were re-measured instead of assumed closed.
 
-The rubric's own correction list grew to **18 entries** over this pass — see above. The single most repeated error was counting occurrences of a _shape_ and assuming each implied an extractable helper; four separate proposals were rejected on inspection, and three defects were found only by reading code the audit had already scored as clean.
-
-| 19 | Slice 5's security-full bar was satisfied by the author's own review, backed by "10/10 mutations killed" | The mutation harness was **rewritten inside the commit it attests**, so that number was not an independent measurement. An independent pass found a fail-open in the same code: unknown tenants resolved off `Object.prototype` instead of being rejected. **A security bar is about who reviews, not how much evidence the author gathers** | slice 10 |
+The rubric's own correction list grew to **19 entries** over this pass — see above. The single most repeated error was counting occurrences of a _shape_ and assuming each implied an extractable helper; four separate proposals were rejected on inspection, and three defects were found only by reading code the audit had already scored as clean.

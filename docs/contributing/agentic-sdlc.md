@@ -156,6 +156,24 @@ What does **not** change: story briefs, stack plans, human gates, review bars, t
 
 GitHub also publishes an agent skill for the extension at [`skills/gh-stack/SKILL.md`](https://github.com/github/gh-stack/tree/main/skills/gh-stack). Its documented installer (`gh skill install github/gh-stack`) requires a `gh` version that ships the `skill` command — not available as of `gh` 2.88.1. Until then, read it upstream rather than vendoring a copy that will drift.
 
+## Fan-out (parallelism)
+
+Fan-out has **two independent axes**, and conflating them is what makes teams default to serial work:
+
+| Axis               | Question                                             | Needs a worktree?                                        |
+| ------------------ | ---------------------------------------------------- | -------------------------------------------------------- |
+| **Across slices**  | Can slices 3 and 4 be built at the same time?        | Yes — two writers, two branches                          |
+| **Within a slice** | Can a reviewer, a verifier, or QA work on one slice? | **No** — they read the same tree; only the author writes |
+
+The second axis is the one that gets skipped. A security review, an independent verification, or a test-strategy pass on an already-written slice is pure fan-out at zero git cost, because those roles do not write source.
+
+**The stack plan must state the fan-out decision per slice**, not leave it implied. A plan that lists dependencies but never says who runs a slice defaults to serial, and the default goes unexamined — as it did on the `apps/api` code-quality story, where every slice ran serially because the plan's recommendation said so and nothing prompted a re-read.
+
+Two rules from that story:
+
+- **A `security-full` bar requires a reviewer who is not the author.** Evidence the author gathers about their own change — however thorough — does not satisfy it. On slice 5 the author's own review reported 10/10 mutations killed; an independent pass on the same commit found a reachable fail-open. See [code-quality/api.md correction 19](./code-quality/api.md#corrections).
+- **Schedule the independent pass before the gate, not as part of it.** Folding it into the story→main review means a BLOCK verdict arrives when the whole stack is already assembled.
+
 ## Git worktrees (parallel stories)
 
 | Situation                                     | Worktree?                                                                             |
