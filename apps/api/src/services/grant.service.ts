@@ -15,7 +15,7 @@ import {
 } from '@/constants/cache.constants';
 import { SYSTEM_SCOPE } from '@/constants/system.constants';
 import type { IEntityCacheAdapter } from '@/lib/cache';
-import { tryProjectIdFromScope } from '@/lib/project-id-from-scope.lib';
+import { tryProjectIdFromScope } from '@/lib/scope.lib';
 import type { Transaction } from '@/lib/transaction-manager.lib';
 
 import type { SigningKeyService } from './signing-keys.service';

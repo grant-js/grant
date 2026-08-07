@@ -39,7 +39,7 @@ import {
 } from '@/lib/effective-project-user-metadata.lib';
 import { NotFoundError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
-import { tryProjectIdFromScope } from '@/lib/project-id-from-scope.lib';
+import { tryProjectIdFromScope } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 export class GrantRepository implements IGrantRepository {

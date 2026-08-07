@@ -142,6 +142,20 @@ The highest-risk slice. `CacheHandler` decides what every caller may see; a mist
 
 Slice 4a's tests must be green on this branch before the refactor begins, and must still pass unmodified when it ends.
 
+**Done**, with two items of the plan corrected:
+
+| Planned                                           | Actual                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Collapse 9 `getScopedXIds`                        | Done — descriptor table + one generic. ~350 lines of switch statements become a table read as an authorization matrix.                                                                                                                                                                                                                                                                  |
+| Collapse 22 add/remove wrappers                   | **Not done, and should not be.** There are 18, and each is already a 3-line delegate. Any "collapse" either changes the public API — which this slice forbids — or swaps a direct `this.cache.roles` reference for a string key, which is indirection, not simplification.                                                                                                              |
+| Collapse 8 `invalidateXCacheForScope`             | Moot: slice 4 deleted 8 of the 10 as dead. Two remain and share nothing.                                                                                                                                                                                                                                                                                                                |
+| Extract `lib/scope.lib.ts`, 8 `.split(':')` sites | There are **26**. Grew the existing `project-id-from-scope.lib.ts` into `scope.lib.ts` — its JSDoc already admitted it "mirrors `CacheHandler.extractProjectIdFromScope` without throwing" — and migrated CacheHandler's 4. The other 22 are left to a follow-up: widening a security-full diff to touch 22 unrelated call sites makes the tenancy change harder to review, not easier. |
+| Fix `invalidateSigningKeysCacheForScope`          | Done. Note this is a de-duplication only: the inline `${scope.tenant}:${scope.id}` was already byte-identical to `createCacheKey`.                                                                                                                                                                                                                                                      |
+
+Verified by re-running `mutation-check.mjs` against the collapsed shape: **10/10 killed**, including two new mutations for failure modes the descriptor table introduces (a wrong `namespace`, a tenant entry moved to the wrong key). The write-back mutation now fails 9 tests where it failed 2, which is the evidence that the nine methods really do share one path.
+
+The 160 characterization tests pass **byte-identical** — verified by md5 against a baseline taken before the first edit.
+
 ### 6 — Service helpers
 
 - `resolveDelete()` for the delete+audit+event block — 43 services.

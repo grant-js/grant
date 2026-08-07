@@ -27,24 +27,17 @@ const mutations = [
   },
   {
     name: 'privilege escalation: ProjectUser returns all project roles unfiltered',
-    from: `        roleIds = projectRoleIds.filter((roleId) => userRoleIds.has(roleId));`,
-    to: `        roleIds = projectRoleIds;`,
+    from: `            return projectRoles.map((pr) => pr.roleId).filter((roleId) => userRoleIds.has(roleId));`,
+    to: `            return projectRoles.map((pr) => pr.roleId);`,
   },
   {
+    // Replaces the first occurrence, which is the `roles` descriptor.
     name: 'Account scope returns organization roles instead of []',
-    from: `      case Tenant.Account: {
-        // Personal accounts don't have account-level roles, users, groups, permissions, or tags
-        // These entities exist only at the project level for personal accounts
-        roleIds = [];
-        break;
-      }`,
-    to: `      case Tenant.Account: {
-        const r = await this.scopeServices.organizationRoles.getOrganizationRoles({
-          organizationId: scope.id,
-        });
-        roleIds = r.map((x) => x.roleId);
-        break;
-      }`,
+    from: `          [Tenant.Account]: noneAtAccountLevel,`,
+    to: `          [Tenant.Account]: async (scope) =>
+            (await s.organizationRoles.getOrganizationRoles({ organizationId: scope.id })).map(
+              (or) => or.roleId
+            ),`,
   },
   {
     name: 'projectApps guard caches its empty result',
@@ -83,15 +76,35 @@ const mutations = [
       false && grantedScopes && grantedScopes.length > 0`,
   },
   {
-    name: 'cache miss no longer writes the computed set back (roles)',
-    from: `    await this.cache.roles.set(cacheKey, new Set(roleIds));
-    return roleIds;`,
-    to: `    return roleIds;`,
+    // Now one shared write-back, so this should fail far more tests than the
+    // per-method version it replaced.
+    name: 'cache miss no longer writes the computed set back (all namespaces)',
+    from: `    await adapter?.set(cacheKey, new Set(ids));
+    return ids;`,
+    to: `    return ids;`,
   },
   {
     name: 'signing-key invalidation becomes an exact-key delete',
-    from: `    const keysToDelete = await this.cache.signingKeys.keys(\`\${prefix}*\`);`,
-    to: `    const keysToDelete = await this.cache.signingKeys.keys(prefix);`,
+    from: `    const keysToDelete = await this.cache.signingKeys.keys(\`\${this.createCacheKey(scope)}*\`);`,
+    to: `    const keysToDelete = await this.cache.signingKeys.keys(this.createCacheKey(scope));`,
+  },
+  {
+    // New with the descriptor table: a wrong namespace on one entry silently
+    // serves another entity's id set. This shape did not exist before.
+    name: 'descriptor namespace swap: roles descriptor points at users',
+    from: `      roles: {
+        namespace: 'roles',`,
+    to: `      roles: {
+        namespace: 'users',`,
+  },
+  {
+    // The table's other new failure mode: dropping a tenant entry turns a
+    // supported scope into a BadRequestError.
+    name: 'descriptor moves the ProjectUser entry to the wrong tenant',
+    from: `          [Tenant.ProjectUser]: async (scope) => {
+            const { projectId, userId } = projectUserFromScopeOrThrow(scope);`,
+    to: `          [Tenant.System]: async (scope) => {
+            const { projectId, userId } = projectUserFromScopeOrThrow(scope);`,
   },
 ];
 

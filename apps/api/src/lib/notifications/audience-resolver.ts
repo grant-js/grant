@@ -6,7 +6,7 @@ import {
   Tenant,
 } from '@grantjs/schema';
 
-import { tryProjectIdFromScope } from '@/lib/project-id-from-scope.lib';
+import { tryProjectIdFromScope } from '@/lib/scope.lib';
 import type { Transaction } from '@/lib/transaction-manager.lib';
 import type { AccountProjectRepository } from '@/repositories/account-projects.repository';
 import type { AccountRepository } from '@/repositories/accounts.repository';
