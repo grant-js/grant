@@ -15,9 +15,9 @@ import type { OrganizationUserRepository } from '@/repositories/organization-use
 import type { ProjectUserRepository } from '@/repositories/project-users.repository';
 
 /** Seeded organization role names used for owner vs IAM-manager audience resolution. */
-export const ORG_OWNER_ROLE_NAMES = ['Organization Owner', 'Organization Admin'] as const;
+const ORG_OWNER_ROLE_NAMES = ['Organization Owner', 'Organization Admin'] as const;
 
-export const ORG_ROLE_HOLDER_ROLE_NAMES = [
+const ORG_ROLE_HOLDER_ROLE_NAMES = [
   'Organization Owner',
   'Organization Admin',
   'Organization Dev',

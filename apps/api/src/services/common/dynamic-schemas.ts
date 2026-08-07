@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export function createDynamicEntitySchema<T extends z.ZodObject<any>>(
+function createDynamicEntitySchema<T extends z.ZodObject<any>>(
   baseSchema: T,
   requestedFields?: string[]
 ): z.ZodType<any> {

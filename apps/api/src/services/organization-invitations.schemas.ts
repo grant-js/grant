@@ -34,14 +34,14 @@ export const getInvitationByTokenParamsSchema = z.object({
   requestedFields: requestedFieldsSchema,
 });
 
-export const organizationInvitationSortableFieldSchema = z.enum(
+const organizationInvitationSortableFieldSchema = z.enum(
   Object.values(OrganizationInvitationSortableField) as [
     OrganizationInvitationSortableField,
     ...OrganizationInvitationSortableField[],
   ]
 );
 
-export const organizationInvitationSortInputSchema = z.object({
+const organizationInvitationSortInputSchema = z.object({
   field: organizationInvitationSortableFieldSchema,
   order: sortOrderSchema,
 });

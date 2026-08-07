@@ -14,7 +14,7 @@ const projectAppScopeTenantSchema = z.enum([Tenant.AccountProject, Tenant.Organi
 ]);
 
 /** Scope for project-app operations (id + tenant restricted to project scopes). */
-export const projectAppScopeSchema = scopeSchema.extend({
+const projectAppScopeSchema = scopeSchema.extend({
   tenant: projectAppScopeTenantSchema,
 });
 

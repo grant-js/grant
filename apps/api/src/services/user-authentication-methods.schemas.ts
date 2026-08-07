@@ -12,14 +12,14 @@ import {
   requestedFieldsSchema,
 } from './common/schemas';
 
-export const userAuthenticationMethodProviderSchema = z.enum(
+const userAuthenticationMethodProviderSchema = z.enum(
   Object.values(UserAuthenticationMethodProvider) as [
     UserAuthenticationMethodProvider,
     ...UserAuthenticationMethodProvider[],
   ]
 );
 
-export const providerDataSchema = z.record(z.string(), z.unknown());
+const providerDataSchema = z.record(z.string(), z.unknown());
 
 export const createUserAuthenticationMethodInputSchema = z.object({
   userId: idSchema,
@@ -92,7 +92,7 @@ export const parseProviderDataSchema = z.object({
 });
 
 // Password Policy Configuration
-export const passwordPolicyConfig = {
+const passwordPolicyConfig = {
   minLength: 8,
   maxLength: 128,
   requireUppercase: true,

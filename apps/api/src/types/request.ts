@@ -8,7 +8,7 @@ export interface ScopeRequest extends Request {
   requestScope: Scope | null;
 }
 
-export interface AuthenticatedRequest extends Request {
+interface AuthenticatedRequest extends Request {
   user?: GrantAuth | null;
   audience?: string;
 }

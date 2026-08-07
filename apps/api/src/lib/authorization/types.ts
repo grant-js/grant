@@ -12,7 +12,7 @@ export interface ResourceResolverParams {
   [key: string]: unknown;
 }
 
-export type ResourceResolverResult<T = Record<string, unknown>> = T | null;
+type ResourceResolverResult<T = Record<string, unknown>> = T | null;
 
 export type ResourceResolver<TResult = Record<string, unknown>> = (
   params: ResourceResolverParams

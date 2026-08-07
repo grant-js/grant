@@ -113,7 +113,7 @@ export async function shutdownTracing(): Promise<void> {
 /**
  * Get the active tracer for custom spans. Use after tracing is initialized.
  */
-export function getTracer() {
+function getTracer() {
   return trace.getTracer(config.tracing.serviceName, config.app.version);
 }
 

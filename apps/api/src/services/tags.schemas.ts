@@ -35,8 +35,8 @@ export const tagQuerySchema = sortableParamsSchema.extend({
     .optional(),
 });
 
-export const tagSortableFieldSchema = z.enum(['name', 'color', 'createdAt', 'updatedAt']);
-export const tagSortInputSchema = z.object({
+const tagSortableFieldSchema = z.enum(['name', 'color', 'createdAt', 'updatedAt']);
+const tagSortInputSchema = z.object({
   field: tagSortableFieldSchema,
   order: sortOrderSchema,
 });
@@ -47,7 +47,7 @@ export const createTagInputSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
-export const updateTagInputSchema = z.object({
+const updateTagInputSchema = z.object({
   name: nonEmptyNameSchema.nullable().optional(),
   color: colorSchema.nullable().optional(),
   metadata: z.record(z.string(), z.unknown()).nullable().optional(),

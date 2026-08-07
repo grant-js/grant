@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger';
 import { getTelemetryAdapter } from '@/lib/telemetry';
 import { ContextRequest } from '@/types';
 
-export interface RequestWithLogger extends Request {
+interface RequestWithLogger extends Request {
   requestId: string;
   logger: ILogger;
 }

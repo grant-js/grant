@@ -16,10 +16,10 @@ import {
 import { groupSchema } from './groups.schemas';
 import { tagSchema } from './tags.schemas';
 
-export const roleSortableFieldSchema = z.enum(
+const roleSortableFieldSchema = z.enum(
   Object.values(RoleSortableField) as [RoleSortableField, ...RoleSortableField[]]
 );
-export const roleSortInputSchema = z.object({
+const roleSortInputSchema = z.object({
   field: roleSortableFieldSchema,
   order: sortOrderSchema,
 });
@@ -30,7 +30,7 @@ export const createRoleInputSchema = z.object({
   metadata: metadataSchema.nullable().optional(),
 });
 
-export const updateRoleInputSchema = z.object({
+const updateRoleInputSchema = z.object({
   name: nonEmptyNameSchema.nullable().optional(),
   description: descriptionSchema.nullable().optional(),
   metadata: metadataSchema.nullable().optional(),

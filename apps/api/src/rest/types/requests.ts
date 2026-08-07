@@ -12,7 +12,7 @@ export type InferParams<T extends z.ZodTypeAny> = z.infer<T>;
  * Generic typed request configuration
  * Allows typing any combination of request properties
  */
-export interface TypedRequestConfig<Body = unknown, Params = unknown, Query = unknown> {
+interface TypedRequestConfig<Body = unknown, Params = unknown, Query = unknown> {
   body?: Body;
   params?: Params;
   query?: Query;

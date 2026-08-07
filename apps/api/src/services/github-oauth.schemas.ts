@@ -18,7 +18,7 @@ export const redirectUrlSchema = z
 
 export const githubAccessTokenSchema = z.string().min(1, 'errors.validation.accessTokenRequired');
 
-export const githubUserIdSchema = z.number().int().positive('GitHub user ID must be positive');
+const githubUserIdSchema = z.number().int().positive('GitHub user ID must be positive');
 
 export const githubUserInfoSchema = z.object({
   id: githubUserIdSchema,

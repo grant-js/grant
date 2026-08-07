@@ -9,7 +9,7 @@ import { z } from '@/lib/zod-openapi.lib';
 import { accountSchema, accountTypeSchema } from '@/rest/schemas/accounts.schemas';
 import { createSuccessResponseSchema } from '@/rest/schemas/common.schemas';
 
-export const userAuthenticationMethodProviderSchema = z.enum(
+const userAuthenticationMethodProviderSchema = z.enum(
   Object.values(UserAuthenticationMethodProvider) as [
     UserAuthenticationMethodProvider,
     ...UserAuthenticationMethodProvider[],
@@ -33,7 +33,7 @@ export const loginResultSchema = z.object({
   email: z.string().nullable().optional(),
 });
 
-export const registerResultSchema = z.object({
+const registerResultSchema = z.object({
   account: accountSchema,
   accessToken: z.string(),
   refreshToken: z.string(),
@@ -163,7 +163,7 @@ export const verifyEmailRequestSchema = z.object({
   }),
 });
 
-export const verifyEmailResultSchema = z.object({
+const verifyEmailResultSchema = z.object({
   success: z.boolean(),
   message: z.string(),
 });
@@ -180,7 +180,7 @@ export const resendVerificationRequestSchema = z.object({
   }),
 });
 
-export const resendVerificationResultSchema = z.object({
+const resendVerificationResultSchema = z.object({
   success: z.boolean(),
   message: z.string(),
 });
@@ -197,7 +197,7 @@ export const requestPasswordResetRequestSchema = z.object({
   }),
 });
 
-export const requestPasswordResetResultSchema = z.object({
+const requestPasswordResetResultSchema = z.object({
   success: z.boolean(),
   message: z.string(),
   messageKey: z.string(),
@@ -219,7 +219,7 @@ export const resetPasswordRequestSchema = z.object({
   }),
 });
 
-export const resetPasswordResultSchema = z.object({
+const resetPasswordResultSchema = z.object({
   success: z.boolean(),
   message: z.string(),
   messageKey: z.string(),
@@ -230,7 +230,7 @@ export const resetPasswordResponseSchema = createSuccessResponseSchema(
   'Successfully reset password'
 );
 
-export const setupMfaResultSchema = z.object({
+const setupMfaResultSchema = z.object({
   factorId: z.string().uuid(),
   secret: z.string(),
   otpAuthUrl: z.string(),
@@ -245,7 +245,7 @@ export const verifyMfaRequestSchema = z.object({
   code: z.string().min(6).max(8),
 });
 
-export const verifyMfaResultSchema = z.object({
+const verifyMfaResultSchema = z.object({
   accessToken: z.string(),
   refreshToken: z.string(),
   mfaVerified: z.boolean(),
@@ -266,7 +266,7 @@ export const verifyMfaRecoveryCodeResponseSchema = createSuccessResponseSchema(
   'Successfully verified MFA challenge with a recovery code'
 );
 
-export const userAuthenticationEmailProviderActionSchema = z.enum(
+const userAuthenticationEmailProviderActionSchema = z.enum(
   Object.values(UserAuthenticationEmailProviderAction) as [
     UserAuthenticationEmailProviderAction,
     ...UserAuthenticationEmailProviderAction[],
@@ -325,7 +325,7 @@ export const cliCallbackResultSchema = z.object({
 });
 
 /** Project OAuth provider: subset of UserAuthenticationMethodProvider (from schema) supported in project-app authorize flow. */
-export const projectOAuthProviderSchema = z.enum(
+const projectOAuthProviderSchema = z.enum(
   PROJECT_OAUTH_PROVIDERS as unknown as [string, ...string[]]
 );
 
@@ -381,7 +381,7 @@ export const projectAppInfoQuerySchema = z.object({
 });
 
 /** Scope with labels for consent screen. */
-export const projectAppInfoScopeSchema = z.object({
+const projectAppInfoScopeSchema = z.object({
   slug: z.string(),
   name: z.string(),
   description: z.string().nullable(),
@@ -409,7 +409,7 @@ export const projectConsentInfoQuerySchema = z.object({
 });
 
 /** User display for consent page (who is consenting). */
-export const projectConsentInfoUserSchema = z.object({
+const projectConsentInfoUserSchema = z.object({
   displayName: z.string(),
   email: z.string().nullable(),
   pictureUrl: z.string().url().nullable(),

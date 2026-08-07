@@ -10,11 +10,11 @@ import {
   sortOrderSchema,
 } from './common/schemas';
 
-export const accountSortableFieldSchema = z.enum(
+const accountSortableFieldSchema = z.enum(
   Object.values(AccountSortableField) as [AccountSortableField, ...AccountSortableField[]]
 );
 
-export const accountSortInputSchema = z.object({
+const accountSortInputSchema = z.object({
   field: accountSortableFieldSchema,
   order: sortOrderSchema,
 });
@@ -23,9 +23,7 @@ export const getAccountsParamsSchema = queryParamsSchema.extend({
   sort: accountSortInputSchema.nullable().optional(),
 });
 
-export const accountTypeSchema = z.enum(
-  Object.values(AccountType) as [AccountType, ...AccountType[]]
-);
+const accountTypeSchema = z.enum(Object.values(AccountType) as [AccountType, ...AccountType[]]);
 
 export const createAccountInputSchema = z.object({
   type: accountTypeSchema,

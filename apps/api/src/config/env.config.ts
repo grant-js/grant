@@ -23,7 +23,7 @@ function resolveMinAalAtLogin(): 'aal1' | 'aal2' {
 // Application Configuration
 // ============================================================================
 
-export const APP_CONFIG = {
+const APP_CONFIG = {
   /** Application name */
   name: 'Grant API',
 
@@ -64,7 +64,7 @@ export const APP_CONFIG = {
 // Database Configuration
 // ============================================================================
 
-export const DB_CONFIG = {
+const DB_CONFIG = {
   /** PostgreSQL connection string */
   url: resolveDatabaseUrl(env),
 
@@ -91,7 +91,7 @@ export const DB_CONFIG = {
 // JWT Configuration
 // ============================================================================
 
-export const JWT_CONFIG = {
+const JWT_CONFIG = {
   /** Access token expiration in minutes */
   accessTokenExpirationMinutes: env.JWT_ACCESS_TOKEN_EXPIRATION_MINUTES,
 
@@ -109,7 +109,7 @@ export const JWT_CONFIG = {
 // Authentication Configuration
 // ============================================================================
 
-export const AUTH_CONFIG = {
+const AUTH_CONFIG = {
   /** Provider verification token expiration in days */
   providerVerificationExpirationDays: env.AUTH_PROVIDER_VERIFICATION_EXPIRATION_DAYS,
 
@@ -164,7 +164,7 @@ export const AUTH_CONFIG = {
 // Token Generation Configuration
 // ============================================================================
 
-export const TOKEN_CONFIG = {
+const TOKEN_CONFIG = {
   /** Default validity period in minutes for secure tokens (e.g. OTP, verification) */
   defaultValidityMinutes: env.TOKEN_DEFAULT_VALIDITY_MINUTES,
 
@@ -179,7 +179,7 @@ export const TOKEN_CONFIG = {
 // GitHub OAuth Configuration
 // ============================================================================
 
-export const GITHUB_OAUTH_CONFIG = {
+const GITHUB_OAUTH_CONFIG = {
   /** GitHub OAuth Client ID */
   clientId: env.GITHUB_CLIENT_ID,
 
@@ -224,7 +224,7 @@ export const PROJECT_OAUTH_PROVIDERS = [
 ] as const;
 export type ProjectOAuthProvider = (typeof PROJECT_OAUTH_PROVIDERS)[number];
 
-export const PROJECT_OAUTH_CONFIG = {
+const PROJECT_OAUTH_CONFIG = {
   /**
    * URL for project-scoped email auth entry (provider=email).
    * Tenant app or frontend hosts the "enter email" page; user is redirected here with client_id, redirect_uri, state.
@@ -259,7 +259,7 @@ export const PROJECT_OAUTH_CONFIG = {
 // Cache Configuration
 // ============================================================================
 
-export const CACHE_CONFIG = {
+const CACHE_CONFIG = {
   /** Cache strategy: 'memory' for single instance, 'redis' for distributed */
   strategy: env.CACHE_STRATEGY,
 
@@ -274,7 +274,7 @@ export const CACHE_CONFIG = {
 // Redis Configuration
 // ============================================================================
 
-export const REDIS_CONFIG = {
+const REDIS_CONFIG = {
   /** Redis server hostname */
   host: env.REDIS_HOST,
 
@@ -301,7 +301,7 @@ export const REDIS_CONFIG = {
 // Security Configuration
 // ============================================================================
 
-export const SECURITY_CONFIG = {
+const SECURITY_CONFIG = {
   /** Frontend URL for CORS */
   frontendUrl: env.SECURITY_FRONTEND_URL,
 
@@ -353,7 +353,7 @@ export const SECURITY_CONFIG = {
 // Apollo/GraphQL Configuration
 // ============================================================================
 
-export const APOLLO_CONFIG = {
+const APOLLO_CONFIG = {
   /** Enable GraphQL introspection (default: false in production) */
   introspection: env.APOLLO_INTROSPECTION ?? !APP_CONFIG.isProduction,
 
@@ -368,7 +368,7 @@ export const APOLLO_CONFIG = {
 // Swagger/OpenAPI Configuration
 // ============================================================================
 
-export const SWAGGER_CONFIG = {
+const SWAGGER_CONFIG = {
   /** Enable Swagger UI documentation */
   enabled: env.SWAGGER_ENABLED,
 
@@ -419,7 +419,7 @@ export const SWAGGER_CONFIG = {
 // i18n Configuration
 // ============================================================================
 
-export const I18N_CONFIG = {
+const I18N_CONFIG = {
   /** Supported locales */
   supportedLocales: SUPPORTED_LOCALES,
 
@@ -434,7 +434,7 @@ export const I18N_CONFIG = {
 // Email Configuration
 // ============================================================================
 
-export const EMAIL_CONFIG = {
+const EMAIL_CONFIG = {
   /** Email provider */
   provider: env.EMAIL_PROVIDER,
 
@@ -478,7 +478,7 @@ export const EMAIL_CONFIG = {
 // ============================================================================
 // Level is applied at logger bootstrap (apps/api/src/lib/logger) and affects all modules using the shared logger.
 
-export const LOGGING_CONFIG = {
+const LOGGING_CONFIG = {
   /** Log level: trace, debug, info, warn, error, fatal (default: info in production when not set) */
   level: (env.LOG_LEVEL ?? (APP_CONFIG.isProduction ? 'info' : 'debug')) as
     'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace',
@@ -492,7 +492,7 @@ export const LOGGING_CONFIG = {
 // ============================================================================
 // When enabled, GET /metrics is served and HTTP request metrics are collected. See docs/advanced-topics/metrics.md.
 
-export const METRICS_CONFIG = {
+const METRICS_CONFIG = {
   /** Enable metrics collection and expose GET /metrics */
   enabled: env.METRICS_ENABLED,
 
@@ -514,7 +514,7 @@ export const METRICS_CONFIG = {
 // Telemetry Configuration (log shipping / tracing adapter)
 // ============================================================================
 
-export const TELEMETRY_CONFIG = {
+const TELEMETRY_CONFIG = {
   /** Telemetry provider: none (noop) | cloudwatch */
   provider: env.TELEMETRY_PROVIDER,
 
@@ -530,7 +530,7 @@ export const TELEMETRY_CONFIG = {
 // Analytics Configuration (optional event tracking via port + adapters)
 // ============================================================================
 
-export const ANALYTICS_CONFIG = {
+const ANALYTICS_CONFIG = {
   /** Enable analytics (when provider is not 'none') */
   enabled: env.ANALYTICS_ENABLED,
 
@@ -549,7 +549,7 @@ export const ANALYTICS_CONFIG = {
 // Tracing Configuration (OpenTelemetry distributed tracing)
 // ============================================================================
 
-export const TRACING_CONFIG = {
+const TRACING_CONFIG = {
   /** Enable distributed tracing */
   enabled: env.TRACING_ENABLED,
 
@@ -573,7 +573,7 @@ export const TRACING_CONFIG = {
 // File Storage Configuration
 // ============================================================================
 
-export const STORAGE_CONFIG = {
+const STORAGE_CONFIG = {
   /** Storage provider: 'local' | 's3' */
   provider: env.STORAGE_PROVIDER,
 
@@ -624,7 +624,7 @@ export const STORAGE_CONFIG = {
 // Privacy & Data Retention Configuration
 // ============================================================================
 
-export const PRIVACY_CONFIG = {
+const PRIVACY_CONFIG = {
   /** Data retention period in days for deleted accounts (default: 30) */
   accountDeletionRetentionDays: env.PRIVACY_ACCOUNT_DELETION_RETENTION_DAYS,
 
@@ -636,7 +636,7 @@ export const PRIVACY_CONFIG = {
 // Job Scheduling Configuration
 // ============================================================================
 
-export const JOB_CONFIG = {
+const JOB_CONFIG = {
   /** Enable job scheduling */
   enabled: env.JOBS_ENABLED,
 
@@ -743,7 +743,7 @@ function parseCsvList(raw: string): string[] {
     .filter((item) => item.length > 0);
 }
 
-export const WEBHOOK_CONFIG = {
+const WEBHOOK_CONFIG = {
   /** Per-delivery HTTP timeout (ms). */
   deliveryTimeoutMs: env.WEBHOOKS_DELIVERY_TIMEOUT_MS,
 
@@ -778,7 +778,7 @@ export const WEBHOOK_CONFIG = {
 // Notifications Configuration
 // ============================================================================
 
-export const NOTIFICATION_CONFIG = {
+const NOTIFICATION_CONFIG = {
   /** App-level retry policy for the email notification channel. */
   emailRetry: {
     maxAttempts: env.NOTIFICATIONS_EMAIL_RETRY_MAX_ATTEMPTS,
@@ -792,7 +792,7 @@ export const NOTIFICATION_CONFIG = {
 // Demo Mode Configuration
 // ============================================================================
 
-export const DEMO_MODE_CONFIG = {
+const DEMO_MODE_CONFIG = {
   /** Enable demo mode for limited-usage deployments */
   enabled: env.DEMO_MODE_ENABLED,
 
@@ -807,7 +807,7 @@ export const DEMO_MODE_CONFIG = {
 // System Constants
 // ============================================================================
 
-export const SYSTEM_CONSTANTS = {
+const SYSTEM_CONSTANTS = {
   /** System user ID for internal operations (configurable via SYSTEM_USER_ID env var) */
   systemUserId: env.SYSTEM_USER_ID,
 

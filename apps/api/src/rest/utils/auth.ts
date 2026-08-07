@@ -77,7 +77,7 @@ export function isCliRedirectUrl(redirectUrl: string | undefined, frontendUrl: s
 /**
  * Builds provider data object from GitHub user information
  */
-export function buildGithubProviderData(
+function buildGithubProviderData(
   githubUser: HandleGithubCallbackResult['githubUser'],
   accessToken: string,
   includeUsername = false
@@ -117,7 +117,7 @@ export async function handleGithubConnectFlow(
 /**
  * Handles connecting GitHub account to an existing user
  */
-export async function connectGithubToUser(
+async function connectGithubToUser(
   context: RequestContext,
   oauthResult: HandleGithubCallbackResult
 ): Promise<void> {
@@ -136,7 +136,7 @@ export async function connectGithubToUser(
 /**
  * Builds redirect URL for GitHub connect flow
  */
-export function buildConnectRedirectUrl(
+function buildConnectRedirectUrl(
   oauthResult: HandleGithubCallbackResult,
   success: boolean,
   error?: string

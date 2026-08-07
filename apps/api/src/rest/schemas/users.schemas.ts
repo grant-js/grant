@@ -30,14 +30,14 @@ export const userWithRelationsSchema = userSchema.extend({
   tagCount: z.number().optional(),
 });
 
-export const userFieldsEnum = z.enum([
+const userFieldsEnum = z.enum([
   'permissionCount',
   'primaryTag',
   'projectUserApiKeyCount',
   'roleCount',
   'tagCount',
 ]);
-export const userRelationsEnum = z.enum(['roles', 'tags', 'accounts', 'authenticationMethods']);
+const userRelationsEnum = z.enum(['roles', 'tags', 'accounts', 'authenticationMethods']);
 
 export const getUsersQuerySchema = listQuerySchema.omit({ relations: true }).extend({
   scopeId: z.uuid('errors.validation.invalidScopeId'),
@@ -358,7 +358,7 @@ export const getUserSessionsQuerySchema = z.object({
   }),
 });
 
-export const userSessionSchema = z.object({
+const userSessionSchema = z.object({
   id: z.string().openapi({
     description: 'Session ID',
     example: '123e4567-e89b-12d3-a456-426614174001',

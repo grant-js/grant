@@ -15,11 +15,11 @@ import {
   sortOrderSchema,
 } from './common/schemas';
 
-export const projectSortableFieldSchema = z.enum(
+const projectSortableFieldSchema = z.enum(
   Object.values(ProjectSortableField) as [ProjectSortableField, ...ProjectSortableField[]]
 );
 
-export const projectSortInputSchema = z.object({
+const projectSortInputSchema = z.object({
   field: projectSortableFieldSchema,
   order: sortOrderSchema,
 });

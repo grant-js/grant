@@ -48,7 +48,7 @@ export interface IUsersScopeCacheUpdater {
   addUserIdToScopeCache(scope: Scope, userId: string): Promise<void>;
 }
 
-export interface ProjectOAuthState {
+interface ProjectOAuthState {
   projectAppId: string;
   redirectUri: string;
   clientState?: string;
@@ -59,7 +59,7 @@ export interface ProjectOAuthState {
   locale?: string;
 }
 
-export interface ProjectOAuthEmailTokenPayload {
+interface ProjectOAuthEmailTokenPayload {
   projectAppId: string;
   redirectUri: string;
   stateId: string;
@@ -87,7 +87,7 @@ export interface HandleProjectCallbackConsentRedirectResult {
   consentUrl: string;
 }
 
-export interface ProjectOAuthConsentPayload {
+interface ProjectOAuthConsentPayload {
   projectAppId: string;
   redirectUri: string;
   clientState?: string;

@@ -18,11 +18,11 @@ export const clientIdSchema = z.uuid('errors.validation.invalidClientId');
 
 export const clientSecretSchema = z.string().min(32, 'errors.validation.clientSecretMin32');
 
-export const apiKeySortableFieldSchema = z.enum(
+const apiKeySortableFieldSchema = z.enum(
   Object.values(ApiKeySortableField) as [ApiKeySortableField, ...ApiKeySortableField[]]
 );
 
-export const apiKeySortInputSchema = z.object({
+const apiKeySortInputSchema = z.object({
   field: apiKeySortableFieldSchema,
   order: sortOrderSchema,
 });

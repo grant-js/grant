@@ -9,7 +9,7 @@ import {
   requestedFieldsSchema,
 } from './common/schemas';
 
-export const sessionScopeSchema = z.enum(Object.values(Tenant) as [string, ...string[]]);
+const sessionScopeSchema = z.enum(Object.values(Tenant) as [string, ...string[]]);
 
 export const createUserSessionInputSchema = z.object({
   userId: idSchema,
@@ -21,7 +21,7 @@ export const createUserSessionInputSchema = z.object({
   ipAddress: z.string().max(45, 'errors.validation.ipAddressTooLong').nullable().optional(),
 });
 
-export const updateUserSessionInputSchema = z.object({
+const updateUserSessionInputSchema = z.object({
   lastUsedAt: z.date().nullable().optional(),
   userAgent: z.string().max(500, 'errors.validation.userAgentTooLong').nullable().optional(),
   ipAddress: z.string().max(45, 'errors.validation.ipAddressTooLong').nullable().optional(),

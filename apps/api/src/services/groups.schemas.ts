@@ -13,8 +13,8 @@ import {
   sortOrderSchema,
 } from './common/schemas';
 
-export const groupSortableFieldSchema = z.enum(['name', 'description', 'createdAt', 'updatedAt']);
-export const groupSortInputSchema = z.object({
+const groupSortableFieldSchema = z.enum(['name', 'description', 'createdAt', 'updatedAt']);
+const groupSortInputSchema = z.object({
   field: groupSortableFieldSchema,
   order: sortOrderSchema,
 });

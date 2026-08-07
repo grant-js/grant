@@ -32,7 +32,7 @@ interface BaseSortable<TModel> {
 }
 
 // New filter types
-export type FilterOperator = 'eq' | 'gte' | 'lte' | 'in' | 'ilike' | 'isNull';
+type FilterOperator = 'eq' | 'gte' | 'lte' | 'in' | 'ilike' | 'isNull';
 
 export interface FilterCondition<TModel> {
   field: keyof TModel;
@@ -40,7 +40,7 @@ export interface FilterCondition<TModel> {
   value?: any;
 }
 
-export interface FilterGroup<TModel> {
+interface FilterGroup<TModel> {
   conditions: (FilterCondition<TModel> | FilterGroup<TModel>)[];
   logic: 'AND' | 'OR';
 }

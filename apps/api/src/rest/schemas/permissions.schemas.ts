@@ -28,8 +28,8 @@ export const permissionWithRelationsSchema = permissionSchema.extend({
   tagCount: z.number().optional(),
 });
 
-export const permissionFieldsEnum = z.enum(['primaryTag', 'tagCount']);
-export const permissionRelationsEnum = z.enum(['tags']);
+const permissionFieldsEnum = z.enum(['primaryTag', 'tagCount']);
+const permissionRelationsEnum = z.enum(['tags']);
 
 export const getPermissionsQuerySchema = listQuerySchema.omit({ relations: true }).extend({
   scopeId: scopeIdSchema,

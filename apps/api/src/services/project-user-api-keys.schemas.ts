@@ -47,7 +47,7 @@ export const removeProjectUserApiKeyParamsSchema = deleteSchema.extend({
   apiKeyId: idSchema,
 });
 
-export const projectUserApiKeySchema = baseEntitySchema.extend({
+const projectUserApiKeySchema = baseEntitySchema.extend({
   projectId: idSchema,
   userId: idSchema,
   clientId: clientIdSchema,
@@ -62,7 +62,7 @@ export const projectUserApiKeySchema = baseEntitySchema.extend({
   createdBy: idSchema,
 });
 
-export const projectUserApiKeyResponseSchema = projectUserApiKeySchema.omit({
+const projectUserApiKeyResponseSchema = projectUserApiKeySchema.omit({
   clientSecretHash: true,
 });
 
