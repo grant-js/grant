@@ -2,8 +2,12 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     "apps/api": {
-      "entry": ["src/server.ts", "src/jobs/**/*.job.ts", "tests/**/*.test.ts"],
-      "project": ["src/**/*.ts"]
+      "entry": ["src/jobs/**/*.job.ts", "tests/**/*.test.ts"],
+      "project": ["src/**/*.ts"],
+      // pino-pretty is never imported: @grantjs/logger names it as a string transport
+      // target (`target: 'pino-pretty'`), which knip cannot follow. Removing it breaks
+      // pretty dev logging at runtime with no build or type error.
+      "ignoreDependencies": ["pino-pretty"]
     },
     "apps/web": {
       "entry": ["app/**/*.{ts,tsx}", "middleware.ts"],
