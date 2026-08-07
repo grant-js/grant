@@ -438,3 +438,34 @@ The layer-boundary rule is the highest-value item on this list precisely _becaus
 ## Backlog
 
 See [`plans/2026-08-06-api-code-quality-stack.md`](https://github.com/grant-js/grant/blob/main/plans/2026-08-06-api-code-quality-stack.md).
+
+---
+
+## Pass-1 close-out — resolved counts (2026-08-07)
+
+Re-run of the measurable lenses after slices 1–9 merged into `feat/api-code-quality`. "Now" is measured, not asserted; where a number did not reach zero the reason and the follow-up id are given.
+
+| Lens                                          | Audit              | Now                    | Note                                                                                                                                                                                                         |
+| --------------------------------------------- | ------------------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **L1** Layer-boundary violations              | 0                  | **0**                  | Handlers→repositories, repositories→services, transport→repositories all still zero                                                                                                                          |
+| **L2** Domain errors from `@grantjs/core`     | 7                  | **0**                  | The 2 remaining importers are `lib/errors/*` — the sanctioned re-export layer                                                                                                                                |
+| **L2** `@grantjs/errors` outside `lib/errors` | —                  | **0**                  | Both importers are inside `lib/errors/`                                                                                                                                                                      |
+| **L2** `createLogger` from `@grantjs/logger`  | 14 sites / 4 files | **0**                  | The 1 remaining importer is `lib/logger/logger.ts`, the re-export layer                                                                                                                                      |
+| **L2** Relative `./common/PivotRepository`    | 7                  | **0**                  |                                                                                                                                                                                                              |
+| **L2** Raw `throw new Error(`                 | 9                  | **5**                  | All five are deliberate sentinels in `project-import.repository.ts`, documented at `:166` and caught in `lib/cdm/permission-ref.lib.ts:77`. Not a violation — a control-flow signal that predates the rule   |
+| **L2** `console.*`                            | 0                  | **0**                  |                                                                                                                                                                                                              |
+| **L2** Deep relative imports                  | 0                  | **0**                  |                                                                                                                                                                                                              |
+| **L2** `*Handler` outside `handlers/`         | 0                  | **0**                  |                                                                                                                                                                                                              |
+| **L5** Dead exports (knip)                    | 361                | **0**                  | Gated in CI and pre-push since slice 4, verified against a planted violation                                                                                                                                 |
+| **L5** Dead `CacheHandler` methods            | 13                 | **0**                  |                                                                                                                                                                                                              |
+| **L3** `cache-handler.ts` lines               | 888                | **655**                | −26%, public method names unchanged                                                                                                                                                                          |
+| **L4** `hasNextPage` implementations          | 5 formulas         | **2 named strategies** | `hasNextPageByCount` and `takePage`, with the choice rule in `CONCEPTS.md`                                                                                                                                   |
+| **L3** `scope.id.split(':')` outside the lib  | 26                 | **24**                 | Slice 5 migrated `CacheHandler`'s four only — widening a security-full diff to 22 unrelated call sites would have made it harder to review. Follow-up **C2**                                                 |
+| **L4** Services with zero `validateInput`     | 12                 | **12**                 | Slice 8 closed the CDM `JSON`-scalar gap, which is a different defect. Follow-up **C1**                                                                                                                      |
+| **L7** Unit tests                             | —                  | **924**                | This story added `cache-handler.scoped-ids`, `cache-handler.mutations`, `scope.lib`, `pagination.lib`, `cdm-json.schemas`, `entity-repository.filters`, `pivot-repository`, `crud-router`, `validate-config` |
+
+### What the close-out itself surfaced
+
+Nothing new, which is the point of running it. But two of the "unchanged" rows are worth reading as findings rather than as omissions: **C1** and **C2** are both cases where a slice deliberately stopped short of a round number because finishing would have widened a diff that carried a security bar. That is the correct trade, and it is only visible because the counts were re-measured instead of assumed closed.
+
+The rubric's own correction list grew to **18 entries** over this pass — see above. The single most repeated error was counting occurrences of a _shape_ and assuming each implied an extractable helper; four separate proposals were rejected on inspection, and three defects were found only by reading code the audit had already scored as clean.
