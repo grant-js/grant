@@ -488,7 +488,7 @@ export class ProjectHandler extends CacheHandler {
         );
       }
 
-      this.addProjectIdToScopeCache(scope, projectId);
+      await this.addProjectIdToScopeCache(scope, projectId);
 
       return project;
     });
@@ -690,7 +690,7 @@ export class ProjectHandler extends CacheHandler {
         await this.projectUsers.removeProjectUser({ projectId, userId }, tx);
       }
 
-      this.removeProjectIdFromScopeCache(scope, projectId);
+      await this.removeProjectIdFromScopeCache(scope, projectId);
 
       return await this.projects.deleteProject(params, tx);
     });

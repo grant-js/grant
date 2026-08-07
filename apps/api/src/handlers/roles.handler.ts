@@ -181,7 +181,7 @@ export class RoleHandler extends CacheHandler {
         );
       }
 
-      this.addRoleIdToScopeCache(scope, roleId);
+      await this.addRoleIdToScopeCache(scope, roleId);
 
       return role;
     });
@@ -299,7 +299,7 @@ export class RoleHandler extends CacheHandler {
         ),
       ]);
 
-      this.removeRoleIdFromScopeCache(scope, roleId);
+      await this.removeRoleIdFromScopeCache(scope, roleId);
 
       return await this.roles.deleteRole(params, tx);
     });

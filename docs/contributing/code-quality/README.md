@@ -10,6 +10,12 @@ One unit per pass. Each pass produces a findings document in this directory name
 
 Findings are **evidence-first**. Every claim cites `file:line`. A finding without a citation is an opinion and does not belong in the document.
 
+Three rules learned the hard way on pass 1 (see [its corrections table](./api.md#corrections)):
+
+1. **Run the tool before stating a count.** Grep finds instances; a type-aware lint rule finds the pattern. Pass 1 reported one un-awaited promise and there were thirteen. If a rule exists for the finding, run it — and prefer reporting "the rule reports N" over "I found N".
+2. **A rule violation is not automatically a defect.** Before filing, check for an intentional design: a sentinel protocol with a mapping layer, a constant mirroring a database constraint, an adapter port that only looks misfiled. Four of pass 1's findings were correct code and an incorrect reading.
+3. **"Mechanical" is a claim to test, not assume.** Size the work by opening the hardest instance, not the easiest. One pass-1 item scoped as an import fix turned out to require moving type ownership between packages.
+
 Findings are **tiered by decision type**, not by severity alone — this is what makes a pass actionable:
 
 | Tier | Meaning                                            | Default disposition                     |

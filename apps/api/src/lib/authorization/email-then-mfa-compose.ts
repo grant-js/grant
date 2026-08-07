@@ -43,11 +43,15 @@ export function requireEmailThenMfaRest(
   const mfaGuard = requireMfaRest(mfaOptions);
 
   return (req: Request, res: Response, next: NextFunction) => {
-    emailGuard(req, res, (emailErr) => {
-      if (emailErr) {
-        return next(emailErr);
-      }
-      return mfaGuard(req, res, next);
-    });
+    // Both guards are async: without routing rejections to `next`, a throw inside
+    // an auth guard escapes Express error handling entirely.
+    void Promise.resolve(
+      emailGuard(req, res, (emailErr) => {
+        if (emailErr) {
+          return next(emailErr);
+        }
+        return void Promise.resolve(mfaGuard(req, res, next)).catch(next);
+      })
+    ).catch(next);
   };
 }

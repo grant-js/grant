@@ -159,7 +159,7 @@ export class PermissionHandler extends CacheHandler {
         );
       }
 
-      this.addPermissionIdToScopeCache(scope, permissionId);
+      await this.addPermissionIdToScopeCache(scope, permissionId);
 
       return permission;
     });
@@ -293,7 +293,7 @@ export class PermissionHandler extends CacheHandler {
         ),
       ]);
 
-      this.removePermissionIdFromScopeCache(scope, permissionId);
+      await this.removePermissionIdFromScopeCache(scope, permissionId);
 
       return await this.permissions.deletePermission(params, tx);
     });
