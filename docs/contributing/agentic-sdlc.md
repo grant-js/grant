@@ -57,6 +57,8 @@ main
   release pipeline ships from main
 ```
 
+Create and manage this shape with [`gh stack`](#github-stacking) rooted on the story trunk (`--base feat/<slug>`), not on `main`.
+
 Naming convention:
 
 - Story trunk: `feat/<story-slug>`
@@ -100,18 +102,59 @@ Store active story artifacts under repo-root `plans/`:
 
 Any agent runtime can resume from those files.
 
-## Manual GitHub stacking (v1)
+## GitHub stacking (v2 — `gh stack`) {#github-stacking}
 
-No Graphite/git-spice required.
+Stacked PRs are now first-class on GitHub. The [`gh stack`](https://github.com/github/gh-stack) CLI extension automates the base-branch chaining, restacking, and cross-linking that v1 did by hand.
 
-1. Create and push story trunk from `main`: `feat/<slug>`.
-2. For each slice, branch from the correct base (trunk, or the previous slice branch if the slice depends on unmerged commits).
-3. Open a PR with **base** = story trunk (or previous slice branch for a strict linear stack).
-4. In the PR body, link the stack plan and note upstream/downstream PRs (e.g. “Depends on #123”).
-5. After CI + light review, merge into the trunk (or restack after upstream merges).
-6. When all slices are on the trunk and acceptance is met, open **final PR**: trunk → `main` (deep review).
+```sh
+gh extension install github/gh-stack
+```
 
-Optional later: evaluate `git-spice` or Graphite for rebase ergonomics. Not required for v1.
+**Grant roots every stack on the story trunk, not on `main`.** The stack's bottom branch bases on `feat/<slug>`, so the trunk → `main` deep review (gate 4) survives and `main` still takes one merge per story — which matters because `release.yml` runs on every push to `main`.
+
+```sh
+# 1. Create and push the story trunk from main
+git switch -c feat/<slug> main && git push -u origin feat/<slug>
+
+# 2. Root the stack on the trunk — NOT the default branch
+gh stack init --base feat/<slug> feat/<slug>-db feat/<slug>-schema feat/<slug>-api
+
+# 3. Work a slice, then add the next on top
+gh stack add feat/<slug>-web
+
+# 4. Open the whole stack as linked PRs (bases chained automatically)
+gh stack submit
+
+# 5. After an upstream slice merges, restack the rest
+gh stack sync
+```
+
+Then, as in v1: slices merge into the trunk under their review bar, and when acceptance is met the trunk opens the **final PR** → `main` for deep review.
+
+### What changes from v1
+
+| v1 (manual)                                   | v2 (`gh stack`)                                                          |
+| --------------------------------------------- | ------------------------------------------------------------------------ |
+| Branch each slice from the right base by hand | `gh stack add`                                                           |
+| Set PR base to trunk or prior slice           | `gh stack submit`                                                        |
+| Write “Depends on #123” in the PR body        | GitHub Stack object links them                                           |
+| Rebase each downstream branch after a merge   | `gh stack sync` (switches to `--onto` automatically when a PR is merged) |
+| Resolve the same conflict on every restack    | `git rerere`, enabled by `gh stack init`                                 |
+
+What does **not** change: story briefs, stack plans, human gates, review bars, the role roster, and worktrees. `gh stack` replaces the plumbing, not the planning.
+
+### Rules
+
+- **Always pass `--base feat/<slug>`.** Without it `gh stack init` roots on the default branch and slices target `main` directly, bypassing gate 4.
+- **`gh stack merge` is a human command.** It merges the stack up to a chosen PR atomically. Agents never self-merge — this does not become an exception. It cannot bypass branch protection ("Bypassing merge requirements is not supported for stacks"), but the gate is about who decides, not what is enforceable.
+- **Stack metadata is local and uncommitted** (`.git/gh-stack`). It does not survive a fresh clone or transfer between agents — the stack plan in `plans/` remains the durable artifact. Use `gh stack checkout <stack-or-pr-number>` to adopt a stack elsewhere.
+- **Adopting existing branches**: `gh stack link <pr> <pr> ...` builds the Stack on GitHub from PRs you already opened, without local tracking state. Useful for stories started before v2, and for jj / Sapling / git-town users.
+
+### Caveats
+
+`gh stack` is **v0.1.0** — early. Prefer it, but fall back to the v1 manual steps (still valid: branch from the correct base, set the PR base explicitly, note dependencies in the body) if it misbehaves, and don't let it block a story.
+
+GitHub also publishes an agent skill for the extension at [`skills/gh-stack/SKILL.md`](https://github.com/github/gh-stack/tree/main/skills/gh-stack). Its documented installer (`gh skill install github/gh-stack`) requires a `gh` version that ships the `skill` command — not available as of `gh` 2.88.1. Until then, read it upstream rather than vendoring a copy that will drift.
 
 ## Git worktrees (parallel stories)
 

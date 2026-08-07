@@ -112,6 +112,7 @@ For multi-file features, use the **Agentic SDLC** (story trunk + stacked PRs) �
 
 - **Orchestration**: Project Manager (brief, acceptance, gates) + Principal Engineer (stack order, integration, worktrees). Specialists on demand.
 - **Merge topology**: Story trunk `feat/<slug>` ← stacked slice PRs → final PR `feat/<slug>` → `main` → release pipeline.
+- **Stacking tool**: `gh stack` (`gh extension install github/gh-stack`). Always root the stack on the story trunk: `gh stack init --base feat/<slug> …`. Without `--base` it targets `main` directly and skips gate 4. `gh stack merge` is a human command.
 - **Human gates**: (1) story brief, (2) stack plan, (3) stack PRs into trunk, (4) story→main. Agents never self-merge.
 - **Review bars**: light (typical stack→trunk), deep (story→main), security-full (auth/tenancy/permissions).
 - **Plans**: Multi-file work requires a **stack plan** (ordered reviewable PRs), not a mega-diff plan. Templates: `docs/contributing/templates/`. Active artifacts: `plans/YYYY-MM-DD-<slug>-{brief,stack}.md`.
