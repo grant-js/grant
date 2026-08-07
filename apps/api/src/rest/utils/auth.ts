@@ -1,3 +1,4 @@
+import type { ILogger } from '@grantjs/core';
 import {
   AccountType,
   UserAuthenticationEmailProviderAction,
@@ -7,10 +8,7 @@ import { Response } from 'express';
 
 import { config } from '@/config';
 import { HandleGithubCallbackResult } from '@/handlers/oauth.handler';
-import { createLogger } from '@/lib/logger';
 import { RequestContext } from '@/types';
-
-const logger = createLogger('AuthUtils');
 
 /**
  * Builds the OAuth callback redirect URL with tokens in the fragment.
@@ -173,7 +171,7 @@ export async function handleGithubCallbackConnect(
     res.redirect(redirectUrl);
     return true;
   } catch (error) {
-    logger.error({
+    context.requestLogger.error({
       msg: 'Error connecting GitHub account',
       err: error,
     });
@@ -358,12 +356,13 @@ export function determineErrorCode(error: unknown): string {
  * Handles GitHub OAuth error and redirects to login page
  */
 export function handleGithubOAuthError(
+  requestLogger: ILogger,
   res: Response,
   error: string | undefined,
   errorDescription: string | undefined,
   locale: string
 ): void {
-  logger.warn({
+  requestLogger.warn({
     msg: 'GitHub OAuth error',
     error: error || 'unknown',
     description: errorDescription,

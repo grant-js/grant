@@ -1,8 +1,8 @@
-import { NotFoundError } from '@grantjs/core';
 import { accounts, type DbSchema, organizations, projects } from '@grantjs/database';
 import type { Scope } from '@grantjs/schema';
 import { and, eq, isNull } from 'drizzle-orm';
 
+import { NotFoundError } from '@/lib/errors';
 import { scopeToRlsContext } from '@/lib/rls';
 
 /**

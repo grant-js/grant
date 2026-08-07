@@ -27,6 +27,7 @@
 | 1     | `feat/api-code-quality-bugs`        | `feat/api-code-quality` | Tier 0 bugs + error re-exports        | Backend    | light             |     |
 | 2     | `feat/api-code-quality-guardrails`  | trunk                   | Tier 1 mechanical fixes               | Backend    | light             |     |
 | 3     | `feat/api-code-quality-lint`        | slice 2                 | Lint enforcement                      | Backend    | light             |     |
+| 2a    | `feat/api-code-quality-cdm-ports`   | trunk                   | ProjectImport/Export repository ports | Backend    | light             |     |
 | 4     | `feat/api-code-quality-deadcode`    | trunk                   | Dead surface removal                  | Backend    | light             |     |
 | 4a    | `feat/api-code-quality-cache-tests` | slice 4                 | `CacheHandler` characterization tests | QA         | light             |     |
 | 5     | `feat/api-code-quality-cache`       | slice 4a                | `CacheHandler` + scope helpers        | Backend    | **security-full** |     |
@@ -59,6 +60,14 @@ Mechanical, no behaviour change: 7 domain-error imports, 9 raw `Error` throws, 1
 Config extraction: `server.ts:161-164` → `config.app.url`; the three OAuth TTLs; page-size and audit-truncation literals. **Resolve the 10-vs-50 default page-size conflict explicitly** — it is a behaviour change either way, so state which one wins.
 
 Move `rest/utils/refresh-cookie.ts` to `lib/` and update the 6 GraphQL importers. Decide whether `handlers/index.ts` is a legitimate third composition site and either amend `AGENTS.md:46` or move the wiring.
+
+### 2a — CDM repository ports (split out of slice 2)
+
+Ports for `ProjectImportRepository` (15 public methods) and `ProjectExportRepository` (18).
+
+Split out because this is **not** a mechanical guardrail fix, as slice 2 assumed. Every return type — `ProjectRoleWithPermissions`, `ProjectUserWithRoleIds`, `ProjectTagDefinitionRow`, `GrantGroupExportRow`, `ResolvedCdmPermission`, and ~8 more — is declared **inside the repository files in `apps/api`**. Writing the ports means first migrating those declarations into `@grantjs/core`, which changes what core owns (CDM export row shapes become domain types) and touches every importer.
+
+That is a design decision about domain ownership, not an import fix, and it deserves its own review. Follow the existing convention: `transaction?: unknown` in repository ports.
 
 ### 3 — Lint enforcement
 

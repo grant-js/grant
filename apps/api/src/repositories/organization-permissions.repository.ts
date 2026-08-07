@@ -8,8 +8,7 @@ import {
 } from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-
-import { PivotRepository } from './common/PivotRepository';
+import { PivotRepository } from '@/repositories/common';
 
 export class OrganizationPermissionRepository
   extends PivotRepository<OrganizationPermissionModel, OrganizationPermission>

@@ -11,6 +11,7 @@ import type {
   SetNotificationPreferenceInput,
 } from '@grantjs/schema';
 
+import { config } from '@/config';
 import { NotFoundError } from '@/lib/errors';
 import type { NotificationPreferenceRepository } from '@/repositories/notification-preferences.repository';
 import type {
@@ -19,7 +20,7 @@ import type {
 } from '@/repositories/notifications.repository';
 
 const DEFAULT_LIMIT = 20;
-const MAX_LIMIT = 100;
+const MAX_LIMIT = config.system.maxPageSize;
 
 function toNotificationDto(model: NotificationWithScope): Notification {
   return {

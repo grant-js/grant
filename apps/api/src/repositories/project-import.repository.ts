@@ -162,6 +162,11 @@ export class ProjectImportRepository {
 
   /**
    * Resolve a permission by resource slug + action (case-insensitive) and optional condition / id.
+   *
+   * Throws bare sentinel `Error`s (`PERMISSION_NOT_FOUND`, `PERMISSION_REF_MISMATCH`,
+   * `PERMISSION_CONDITION_MISMATCH`, `PERMISSION_AMBIGUOUS`) rather than domain exceptions:
+   * `lib/cdm/permission-ref.lib.ts` catches them and re-throws domain errors carrying the
+   * caller's ref context. Keep the strings in sync with that mapper.
    */
   public async resolvePermission(
     params: {

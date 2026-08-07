@@ -1,4 +1,4 @@
-import type { ILogger } from '@grantjs/core';
+import type { ILogger, INotificationDeliveryService } from '@grantjs/core';
 import type { DbSchema, NotificationModel, NotificationStatus } from '@grantjs/database';
 
 import { config } from '@/config';
@@ -20,7 +20,7 @@ const MS_PER_HOUR = 60 * 60 * MS_PER_SECOND;
  * adapter, and advances each row's state (delivered / failed-with-backoff /
  * dead). Email I/O happens outside the claim transaction.
  */
-export class NotificationDeliveryService {
+export class NotificationDeliveryService implements INotificationDeliveryService {
   constructor(
     private readonly notifications: NotificationRepository,
     private readonly authMethods: UserAuthenticationMethodRepository,

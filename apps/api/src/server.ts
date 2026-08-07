@@ -155,13 +155,16 @@ async function startServer() {
     });
   }
 
+  // Derived from config so non-local deployments log reachable URLs, not localhost.
+  const baseUrl = config.app.url.replace(/\/$/, '');
+
   logger.info({
     msg: 'Server started successfully',
     port: config.app.port,
-    graphql: `http://localhost:${config.app.port}/graphql`,
-    restApi: `http://localhost:${config.app.port}/api`,
-    health: `http://localhost:${config.app.port}/health`,
-    swagger: config.swagger.enabled ? `http://localhost:${config.app.port}/api-docs` : undefined,
+    graphql: `${baseUrl}/graphql`,
+    restApi: `${baseUrl}/api`,
+    health: `${baseUrl}/health`,
+    swagger: config.swagger.enabled ? `${baseUrl}/api-docs` : undefined,
   });
 
   const isDevelopment = config.app.isDevelopment;

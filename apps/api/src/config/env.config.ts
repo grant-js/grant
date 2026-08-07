@@ -244,6 +244,15 @@ export const PROJECT_OAUTH_CONFIG = {
     (env.SECURITY_FRONTEND_URL
       ? `${env.SECURITY_FRONTEND_URL}/auth/project/consent`
       : 'http://localhost:3000/auth/project/consent'),
+
+  /** TTL in seconds for the project OAuth state token. */
+  stateTtlSeconds: env.PROJECT_OAUTH_STATE_TTL_SECONDS,
+
+  /** TTL in seconds for project OAuth email magic-link tokens. */
+  emailTokenTtlSeconds: env.PROJECT_OAUTH_EMAIL_TOKEN_TTL_SECONDS,
+
+  /** TTL in seconds for the post-auth consent token. */
+  consentTtlSeconds: env.PROJECT_OAUTH_CONSENT_TTL_SECONDS,
 } as const;
 
 // ============================================================================
@@ -802,11 +811,14 @@ export const SYSTEM_CONSTANTS = {
   /** System user ID for internal operations (configurable via SYSTEM_USER_ID env var) */
   systemUserId: env.SYSTEM_USER_ID,
 
-  /** Default page size for pagination */
-  defaultPageSize: 20,
+  /**
+   * Default page size for pagination. 50 matches the long-standing behaviour of
+   * `EntityRepository` and the REST query schema; both now read this value.
+   */
+  defaultPageSize: env.PAGINATION_DEFAULT_PAGE_SIZE,
 
   /** Maximum page size for pagination */
-  maxPageSize: 100,
+  maxPageSize: env.PAGINATION_MAX_PAGE_SIZE,
 } as const;
 
 // ============================================================================

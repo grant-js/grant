@@ -1,7 +1,7 @@
 import { MutationResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
-import { setRefreshTokenCookie } from '@/rest/utils/refresh-cookie';
+import { setRefreshTokenCookie } from '@/lib/refresh-cookie.lib';
 
 export const register: MutationResolvers<GraphqlContext>['register'] = async (_, args, context) => {
   const { type, provider, providerId, providerData, emailVerificationProof } = args.input;

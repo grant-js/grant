@@ -27,17 +27,12 @@ export const OAUTH_STATE_KEY_PREFIX = 'oauth:state:';
 /** Prefix for project OAuth flow state. Full key: oauth:project-state:{stateId} */
 export const PROJECT_OAUTH_STATE_KEY_PREFIX = 'oauth:project-state:';
 
-/** TTL in seconds for project OAuth state token (e.g. 10 min). */
-export const PROJECT_OAUTH_STATE_TTL_SECONDS = 600;
-
 /** Prefix for project OAuth email magic-link one-time tokens. Full key: oauth:project-email-token:{token} */
 export const PROJECT_OAUTH_EMAIL_TOKEN_KEY_PREFIX = 'oauth:project-email-token:';
-
-/** TTL in seconds for project OAuth email magic-link tokens (e.g. 10 min). */
-export const PROJECT_OAUTH_EMAIL_TOKEN_TTL_SECONDS = 600;
 
 /** Prefix for project OAuth consent token (post-auth consent screen). Full key: oauth:project-consent:{consentToken} */
 export const PROJECT_OAUTH_CONSENT_KEY_PREFIX = 'oauth:project-consent:';
 
-/** TTL in seconds for project OAuth consent token (e.g. 10 min). */
-export const PROJECT_OAUTH_CONSENT_TTL_SECONDS = 600;
+// TTLs for these flows live in `config.projectOAuth.*TtlSeconds`. This module is
+// imported transitively by most handlers, so it stays free of config reads —
+// evaluating config at module scope here crashes any consumer that mocks it partially.

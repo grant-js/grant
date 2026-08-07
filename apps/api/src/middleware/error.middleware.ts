@@ -1,9 +1,8 @@
-import { GrantException } from '@grantjs/core';
 import { NextFunction, Request, Response } from 'express';
 
 import { config } from '@/config';
 import { t, translateError } from '@/i18n';
-import { HttpException, mapDomainToHttp } from '@/lib/errors';
+import { GrantException, HttpException, mapDomainToHttp } from '@/lib/errors';
 import { getRequestLogger } from '@/middleware/request-logging.middleware';
 
 export function errorHandler(error: Error, req: Request, res: Response, _next: NextFunction): void {

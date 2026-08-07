@@ -16,6 +16,7 @@ import {
   Tenant,
 } from '@grantjs/schema';
 
+import { config } from '@/config';
 import { BadRequestError, ConflictError, NotFoundError, ValidationError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { ProjectSyncJobRepository } from '@/repositories/project-sync-job.repository';
@@ -162,7 +163,7 @@ export class ProjectSyncJobService implements IProjectSyncJobService {
     }
 
     const page = Math.max(1, params.page ?? 1);
-    const requestedLimit = params.limit ?? 50;
+    const requestedLimit = params.limit ?? config.system.defaultPageSize;
     const limit = requestedLimit < 0 ? 0 : Math.min(requestedLimit, 200);
 
     const { items, totalCount } = await this.repo.listByProject(

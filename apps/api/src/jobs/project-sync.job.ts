@@ -4,7 +4,6 @@ import type {
   ProjectSyncJobExecutionData,
   ProjectSyncJobExportPayload,
 } from '@grantjs/core';
-import { ConflictError } from '@grantjs/core';
 import {
   CdmFindBy,
   ProjectSyncJobOperation,
@@ -16,6 +15,7 @@ import {
 
 import { assertValidCdmExportSections } from '@/constants/cdm-export.constants';
 import { PROJECT_SYNC_JOB_ID } from '@/constants/project-sync.constants';
+import { ConflictError, ValidationError } from '@/lib/errors';
 import {
   assertTenantActive,
   type JobExecutionContext,
@@ -188,7 +188,9 @@ export default class ProjectSyncJob extends Job {
     const { enqueueScope, jobRecordId, execData, jobService, projectExport } = params;
     const raw = execData.payload as ProjectSyncJobExportPayload;
     if (raw == null || typeof raw !== 'object' || typeof raw.version !== 'number') {
-      const err = new Error('Invalid export job payload: expected { version: number, ... }');
+      const err = new ValidationError(
+        'Invalid export job payload: expected { version: number, ... }'
+      );
       await this.markJobFailedSafe(enqueueScope, jobRecordId, jobService, err);
       throw err;
     }
@@ -288,14 +290,16 @@ export default class ProjectSyncJob extends Job {
       typeof (payload as { jobRecordId: unknown }).jobRecordId !== 'string' ||
       (payload as { jobRecordId: string }).jobRecordId.trim() === ''
     ) {
-      throw new Error('project-sync job payload must include a non-empty jobRecordId string');
+      throw new ValidationError(
+        'project-sync job payload must include a non-empty jobRecordId string'
+      );
     }
     return (payload as { jobRecordId: string }).jobRecordId;
   }
 
   private assertScopesMatch(enqueueScope: Scope, persistedScope: Scope): void {
     if (enqueueScope.tenant !== persistedScope.tenant || enqueueScope.id !== persistedScope.id) {
-      throw new Error(
+      throw new ConflictError(
         `project-sync scope mismatch: enqueue=${enqueueScope.tenant}:${enqueueScope.id} persisted=${persistedScope.tenant}:${persistedScope.id}`
       );
     }

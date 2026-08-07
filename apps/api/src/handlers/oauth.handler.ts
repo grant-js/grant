@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import type {
   GitHubUserInfo,
   IGitHubOAuthService,
+  ILogger,
   IOAuthStateService,
   ITransactionalConnection,
   IUserAuthenticationMethodService,
@@ -171,21 +172,33 @@ export class OAuthHandler extends CacheHandler {
 
   private static readonly CALLBACK_TTL_SECONDS = config.githubOAuth.cliCallbackTtlSeconds;
 
-  async storeCliCallbackPayload(payload: CliCallbackPayload): Promise<string> {
+  async storeCliCallbackPayload(
+    payload: CliCallbackPayload,
+    requestLogger?: ILogger
+  ): Promise<string> {
     const code = crypto.randomBytes(16).toString('hex');
     const key = `${OAUTH_CLI_CALLBACK_KEY_PREFIX}${code}` as CacheKey;
     await this.cache.oauth.set(key, payload, OAuthHandler.CALLBACK_TTL_SECONDS);
-    this.logger.debug({ msg: 'Stored CLI callback payload', codePrefix: code.slice(0, 8) });
+    (requestLogger ?? this.logger).debug({
+      msg: 'Stored CLI callback payload',
+      codePrefix: code.slice(0, 8),
+    });
     return code;
   }
 
-  async consumeCliCallbackCode(code: string): Promise<CliCallbackPayload | null> {
+  async consumeCliCallbackCode(
+    code: string,
+    requestLogger?: ILogger
+  ): Promise<CliCallbackPayload | null> {
     if (!code?.trim()) return null;
     const key = `${OAUTH_CLI_CALLBACK_KEY_PREFIX}${code.trim()}` as CacheKey;
     const payload = await this.cache.oauth.get<CliCallbackPayload>(key);
     await this.cache.oauth.delete(key);
     if (!payload) return null;
-    this.logger.debug({ msg: 'Consumed CLI callback code', codePrefix: code.slice(0, 8) });
+    (requestLogger ?? this.logger).debug({
+      msg: 'Consumed CLI callback code',
+      codePrefix: code.slice(0, 8),
+    });
     return payload;
   }
 

@@ -45,7 +45,6 @@ import {
 } from '@/lib/effective-project-user-metadata.lib';
 import { AuthorizationError, BadRequestError, NotFoundError } from '@/lib/errors';
 import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
-import { createLogger } from '@/lib/logger';
 import { tryProjectIdFromScope } from '@/lib/project-id-from-scope.lib';
 import { assertProjectPivotMetadataMutationAllowed } from '@/lib/project-pivot-metadata-auth.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -58,8 +57,6 @@ export type UpdateUserHandlerParams = MutationUpdateUserArgs & { actorUserId: st
 export type UploadUserPictureHandlerParams = UploadUserPictureInput & { actorUserId: string };
 
 export class UserHandler extends CacheHandler {
-  protected readonly logger = createLogger('UserHandler');
-
   constructor(
     private readonly userTags: IUserTagService,
     private readonly users: IUserService,

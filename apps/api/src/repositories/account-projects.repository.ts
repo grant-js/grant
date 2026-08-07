@@ -10,8 +10,7 @@ import {
 import { and, eq, isNull } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-
-import { PivotRepository } from './common/PivotRepository';
+import { PivotRepository } from '@/repositories/common';
 
 export class AccountProjectRepository
   extends PivotRepository<AccountProjectModel, AccountProject>

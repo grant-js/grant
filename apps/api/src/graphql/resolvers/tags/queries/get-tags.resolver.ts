@@ -5,7 +5,9 @@ import { getDirectFieldSelection } from '@/lib/field-selection.lib';
 
 export const getTagsResolver: QueryResolvers<GraphqlContext>['tags'] = async (
   _parent,
-  { scope, page = 1, limit = 10, sort, search, ids },
+  // No `limit` default here: fall through to the system default applied by
+  // EntityRepository, so GraphQL and REST agree on page size.
+  { scope, page = 1, limit, sort, search, ids },
   context,
   info
 ) => {
