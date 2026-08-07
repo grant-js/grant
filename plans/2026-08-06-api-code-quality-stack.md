@@ -137,6 +137,7 @@ Security review is blocking: this slice changes what payloads are accepted. Expe
 
 ## Dependencies / notes
 
+- **This story runs on the v1 manual stacking flow**, not `gh stack`. It was planned and slice 1 opened before the tooling was adopted; restructuring live branches mid-story buys nothing. Branch from the correct base and set PR bases by hand, as the slice table specifies. `gh stack` applies from the next story — see [Agentic SDLC § GitHub stacking](../docs/contributing/agentic-sdlc.md#github-stacking).
 - Slices 5–7 rebase on slice 4. Do not start them until dead code is removed.
 - Slice 4a hard-blocks slice 5. If 4a slips, slice 5 waits — it does not proceed with tests written after the fact.
 - No database migrations, no `@grantjs/schema` codegen, no `apps/web` changes in this story.
