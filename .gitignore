@@ -80,3 +80,5 @@ apps/api/vitest-capture-out.txt
 apps/api/vitest-exit-code.txt
 apps/api/vitest-final.exit
 .vitest-exit.txt
+# Agent tooling scratch (contains container/agent ids)
+.openmono/
