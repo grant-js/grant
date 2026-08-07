@@ -20,10 +20,6 @@ export const addOrganizationRoleInputSchema = z.object({
   roleId: idSchema,
 });
 
-export const addOrganizationRoleParamsSchema = z.object({
-  input: addOrganizationRoleInputSchema,
-});
-
 export const removeOrganizationRoleInputSchema = deleteSchema.extend({
   organizationId: idSchema,
   roleId: idSchema,

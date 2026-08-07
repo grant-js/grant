@@ -74,37 +74,9 @@ const createdAtSchema = z.date();
 const updatedAtSchema = z.date();
 const deletedAtSchema = z.date().nullable().optional();
 
-export const entityIdSchema = z.object({
-  id: idSchema,
-});
-
-export const paginationSchema = z.object({
-  limit: limitSchema.optional(),
-  page: pageSchema,
-});
-
-export const searchFilterSchema = z.object({
-  search: searchSchema,
-  limit: limitSchema.optional(),
-  page: pageSchema,
-});
-
 const sortSchema = z.object({
   field: z.string().min(1, 'errors.validation.sortFieldRequired'),
   order: sortOrderSchema,
-});
-
-export const createInputSchema = z.object({
-  input: z.record(z.string(), z.unknown()),
-});
-
-export const updateInputSchema = z.object({
-  id: idSchema,
-  input: z.record(z.string(), z.unknown()),
-});
-
-export const deleteInputSchema = z.object({
-  id: idSchema,
 });
 
 export const baseEntitySchema = z.object({
@@ -112,11 +84,6 @@ export const baseEntitySchema = z.object({
   createdAt: createdAtSchema,
   updatedAt: updatedAtSchema,
   deletedAt: deletedAtSchema,
-});
-
-export const namedEntitySchema = baseEntitySchema.extend({
-  name: nameSchema,
-  description: descriptionSchema,
 });
 
 export const deleteSchema = z.object({
@@ -149,10 +116,6 @@ export const nonEmptyStringRefinement = (value: string) => value.trim().length >
 export const nonEmptyStringMessage = 'errors.validation.fieldCannotBeEmpty';
 
 export const nonEmptyNameSchema = nameSchema.refine(
-  nonEmptyStringRefinement,
-  nonEmptyStringMessage
-);
-export const nonEmptyEmailSchema = emailSchema.refine(
   nonEmptyStringRefinement,
   nonEmptyStringMessage
 );

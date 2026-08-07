@@ -96,13 +96,4 @@ export const deleteTagBodySchema = z.object({
   hardDelete: z.boolean().optional().default(false),
 });
 
-export const deleteTagQuerySchema = z.object({
-  scopeId: z.uuid('errors.validation.invalidScopeId'),
-  tenant: tenantSchema,
-  hardDelete: z
-    .string()
-    .optional()
-    .transform((val) => val === 'true'),
-});
-
 export const deleteTagResponseSchema = createSuccessResponseSchema(tagSchema);

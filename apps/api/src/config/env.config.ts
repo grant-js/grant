@@ -1058,6 +1058,3 @@ export const config = {
   cors: CORS_CONFIG,
   helmet: HELMET_CONFIG,
 } as const;
-
-// Export type for TypeScript consumers
-export type Config = typeof config;

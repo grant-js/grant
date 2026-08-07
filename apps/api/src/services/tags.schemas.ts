@@ -7,33 +7,9 @@ import {
   idSchema,
   nameSchema,
   nonEmptyNameSchema,
-  paginatedResponseSchema,
   queryParamsSchema,
-  sortableParamsSchema,
   sortOrderSchema,
 } from './common/schemas';
-
-export const createTagSchema = z.object({
-  name: nonEmptyNameSchema,
-  color: colorSchema,
-  metadata: z.record(z.string(), z.unknown()).optional(),
-});
-
-export const updateTagSchema = z.object({
-  name: nonEmptyNameSchema.optional(),
-  color: colorSchema,
-  metadata: z.record(z.string(), z.unknown()).optional(),
-});
-
-export const tagQuerySchema = sortableParamsSchema.extend({
-  ids: z.array(idSchema).optional(),
-  sort: z
-    .object({
-      field: z.enum(['name', 'createdAt', 'updatedAt']),
-      order: sortOrderSchema,
-    })
-    .optional(),
-});
 
 const tagSortableFieldSchema = z.enum(['name', 'color', 'createdAt', 'updatedAt']);
 const tagSortInputSchema = z.object({
@@ -71,9 +47,3 @@ export const tagSchema = baseEntitySchema.extend({
   color: colorSchema,
   metadata: z.record(z.string(), z.unknown()),
 });
-
-export const tagPageSchema = paginatedResponseSchema(tagSchema).transform((data) => ({
-  tags: data.items,
-  hasNextPage: data.hasNextPage,
-  totalCount: data.totalCount,
-}));

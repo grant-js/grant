@@ -5,11 +5,6 @@ import { isTranslationKey, t, translateMessage } from '@/i18n';
 import { getRequestLogger } from '@/middleware/request-logging.middleware';
 
 /**
- * Validation target - where to extract data from the request
- */
-export type ValidationType = 'body' | 'query' | 'params' | 'all';
-
-/**
  * Validation schemas for different parts of the request
  */
 export interface ValidationSchemas {
@@ -145,14 +140,4 @@ export function validateBody(schema: z.ZodSchema) {
  */
 export function validateQuery(schema: z.ZodSchema) {
   return validate({ query: schema });
-}
-
-/**
- * Simpler validation middleware for params-only validation
- *
- * @example
- * router.get('/users/:id', validateParams(idParamsSchema), handler);
- */
-export function validateParams(schema: z.ZodSchema) {
-  return validate({ params: schema });
 }

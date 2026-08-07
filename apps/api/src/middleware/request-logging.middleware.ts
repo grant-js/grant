@@ -114,7 +114,3 @@ export function requestLoggingMiddleware(req: Request, res: Response, next: Next
 export function getRequestLogger(req: Request): ILogger {
   return (req as RequestWithLogger).logger || logger;
 }
-
-export function getRequestId(req: Request): string {
-  return (req as RequestWithLogger).requestId || 'unknown';
-}

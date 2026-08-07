@@ -32,12 +32,6 @@ export const removeOrganizationProjectInputSchema = deleteSchema.extend({
   ),
 });
 
-export const addOrganizationProjectArgsSchema = addOrganizationProjectInputSchema;
-
-export const removeOrganizationProjectArgsSchema = z.object({
-  input: removeOrganizationProjectInputSchema,
-});
-
 export const organizationProjectSchema = z.object({
   id: idSchema,
   organizationId: idSchema,

@@ -8,7 +8,6 @@ import {
   metadataSchema,
   nameSchema,
   nonEmptyNameSchema,
-  paginatedResponseSchema,
   queryParamsSchema,
   sortOrderSchema,
 } from './common/schemas';
@@ -32,10 +31,6 @@ const updateUserInputSchema = z.object({
   metadata: metadataSchema.nullable().optional(),
 });
 
-export const createUserArgsSchema = z.object({
-  input: createUserInputSchema,
-});
-
 export const updateUserArgsSchema = z.object({
   id: idSchema,
   input: updateUserInputSchema,
@@ -55,9 +50,3 @@ export const userSchema = baseEntitySchema.extend({
   roles: z.array(z.any()).nullable().optional(),
   tags: z.array(z.any()).nullable().optional(),
 });
-
-export const userPageSchema = paginatedResponseSchema(userSchema).transform((data) => ({
-  users: data.items,
-  hasNextPage: data.hasNextPage,
-  totalCount: data.totalCount,
-}));

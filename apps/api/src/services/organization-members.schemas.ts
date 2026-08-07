@@ -28,24 +28,6 @@ export const getOrganizationMembersParamsSchema = queryParamsSchema.extend({
   sort: organizationMemberSortInputSchema.nullable().optional(),
 });
 
-const organizationMemberSchema = z.object({
-  id: idSchema,
-  name: z.string(),
-  email: z.string().nullable().optional(),
-  type: z.enum(['MEMBER', 'INVITATION']),
-  role: z.any().nullable().optional(),
-  status: z.string().nullable().optional(),
-  user: z.any().nullable().optional(),
-  invitation: z.any().nullable().optional(),
-  createdAt: z.date(),
-});
-
-export const organizationMemberPageSchema = z.object({
-  members: z.array(organizationMemberSchema),
-  totalCount: z.number(),
-  hasNextPage: z.boolean(),
-});
-
 export const updateOrganizationMemberInputSchema = z.object({
   scope: scopeSchema,
   roleId: idSchema,

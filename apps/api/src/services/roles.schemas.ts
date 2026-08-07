@@ -9,7 +9,6 @@ import {
   metadataSchema,
   nameSchema,
   nonEmptyNameSchema,
-  paginatedResponseSchema,
   queryParamsSchema,
   sortOrderSchema,
 } from './common/schemas';
@@ -36,10 +35,6 @@ const updateRoleInputSchema = z.object({
   metadata: metadataSchema.nullable().optional(),
 });
 
-export const createRoleArgsSchema = z.object({
-  input: createRoleInputSchema,
-});
-
 export const updateRoleArgsSchema = z.object({
   id: idSchema,
   input: updateRoleInputSchema,
@@ -56,12 +51,6 @@ export const roleSchema = baseEntitySchema.extend({
   groups: z.array(groupSchema).optional(),
   tags: z.array(tagSchema).optional(),
 });
-
-export const rolePageSchema = paginatedResponseSchema(roleSchema).transform((data) => ({
-  roles: data.items,
-  hasNextPage: data.hasNextPage,
-  totalCount: data.totalCount,
-}));
 
 export const getRolesParamsSchema = queryParamsSchema.extend({
   sort: roleSortInputSchema.nullable().optional(),

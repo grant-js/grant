@@ -98,8 +98,5 @@ export const createProjectAppResponseSchema = z.object({
 });
 
 export const getProjectAppsResponseSchema = createSuccessResponseSchema(projectAppPageSchema);
-export const createProjectAppResponseWrapperSchema = createSuccessResponseSchema(
-  createProjectAppResponseSchema
-);
 export const updateProjectAppResponseSchema = createSuccessResponseSchema(projectAppSchema);
 export const deleteProjectAppResponseSchema = createSuccessResponseSchema(projectAppSchema);

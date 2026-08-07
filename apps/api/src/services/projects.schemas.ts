@@ -8,7 +8,6 @@ import {
   idSchema,
   nameSchema,
   nonEmptyNameSchema,
-  paginatedResponseSchema,
   queryParamsSchema,
   scopeSchema,
   slugSchema,
@@ -52,9 +51,3 @@ export const projectSchema = baseEntitySchema.extend({
   description: descriptionSchema.nullable().optional(),
   tags: z.array(z.any()).nullable().optional(),
 });
-
-export const projectPageSchema = paginatedResponseSchema(projectSchema).transform((data) => ({
-  projects: data.items,
-  totalCount: data.totalCount,
-  hasNextPage: data.hasNextPage,
-}));

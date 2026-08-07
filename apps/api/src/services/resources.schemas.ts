@@ -10,7 +10,6 @@ import {
   idSchema,
   nameSchema,
   nonEmptyNameSchema,
-  paginatedResponseSchema,
   queryParamsSchema,
   scopeSchema,
   slugSchema,
@@ -79,9 +78,3 @@ export const resourceSchema = baseEntitySchema.extend({
   metadata: z.record(z.string(), z.unknown()),
   permissions: z.array(resourcePermissionSchema).optional(),
 });
-
-export const resourcePageSchema = paginatedResponseSchema(resourceSchema).transform((data) => ({
-  resources: data.items,
-  totalCount: data.totalCount,
-  hasNextPage: data.hasNextPage,
-}));

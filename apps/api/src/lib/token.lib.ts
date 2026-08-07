@@ -39,10 +39,6 @@ export function isTokenValid(token: Token): boolean {
   return Date.now() < token.validUntil;
 }
 
-export function getTokenRemainingTime(token: Token): number {
-  return token.validUntil - Date.now();
-}
-
 export function hashSecret(value: string, rounds: number = config.token.bcryptRounds): string {
   return hashSync(value, rounds);
 }

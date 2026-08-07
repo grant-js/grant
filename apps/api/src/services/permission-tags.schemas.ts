@@ -28,10 +28,6 @@ export const updatePermissionTagInputSchema = z.object({
   isPrimary: z.boolean(),
 });
 
-export const addPermissionTagParamsSchema = z.object({
-  input: addPermissionTagInputSchema,
-});
-
 export const removePermissionTagInputSchema = deleteSchema.extend({
   permissionId: idSchema,
   tagId: idSchema,
@@ -39,10 +35,6 @@ export const removePermissionTagInputSchema = deleteSchema.extend({
 
 export const removePermissionTagsInputSchema = deleteSchema.extend({
   tagId: idSchema,
-});
-
-export const removePermissionTagParamsSchema = z.object({
-  input: removePermissionTagInputSchema,
 });
 
 export const getPermissionTagIntersectionParamsSchema = z.object({

@@ -6,7 +6,6 @@ import {
   idSchema,
   nameSchema,
   nonEmptyNameSchema,
-  paginatedResponseSchema,
   queryParamsSchema,
   scopeSchema,
   slugSchema,
@@ -45,11 +44,3 @@ export const organizationSchema = baseEntitySchema.extend({
   slug: slugSchema,
   requireMfaForSensitiveActions: z.boolean(),
 });
-
-export const organizationPageSchema = paginatedResponseSchema(organizationSchema).transform(
-  (data) => ({
-    organizations: data.items,
-    totalCount: data.totalCount,
-    hasNextPage: data.hasNextPage,
-  })
-);

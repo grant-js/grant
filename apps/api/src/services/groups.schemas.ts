@@ -8,7 +8,6 @@ import {
   metadataSchema,
   nameSchema,
   nonEmptyNameSchema,
-  paginatedResponseSchema,
   sortableParamsSchema,
   sortOrderSchema,
 } from './common/schemas';
@@ -47,9 +46,3 @@ export const groupSchema = baseEntitySchema.extend({
   description: descriptionSchema.nullable(),
   metadata: metadataSchema,
 });
-
-export const groupPageSchema = paginatedResponseSchema(groupSchema).transform((data) => ({
-  groups: data.items,
-  totalCount: data.totalCount,
-  hasNextPage: data.hasNextPage,
-}));

@@ -28,10 +28,6 @@ export const updateResourceTagInputSchema = z.object({
   isPrimary: z.boolean(),
 });
 
-export const addResourceTagParamsSchema = z.object({
-  input: addResourceTagInputSchema,
-});
-
 export const removeResourceTagInputSchema = deleteSchema.extend({
   resourceId: idSchema,
   tagId: idSchema,

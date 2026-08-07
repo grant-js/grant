@@ -20,15 +20,7 @@ export const addOrganizationTagInputSchema = z.object({
   tagId: idSchema,
 });
 
-export const addOrganizationTagParamsSchema = z.object({
-  input: addOrganizationTagInputSchema,
-});
-
 export const removeOrganizationTagInputSchema = deleteSchema.extend({
   organizationId: idSchema,
   tagId: idSchema,
-});
-
-export const removeOrganizationTagParamsSchema = z.object({
-  input: removeOrganizationTagInputSchema,
 });

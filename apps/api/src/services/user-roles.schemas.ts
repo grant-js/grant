@@ -21,10 +21,6 @@ export const removeUserRoleInputSchema = deleteSchema.extend({
   userId: idSchema.refine((userId) => userId.trim().length > 0, 'errors.validation.userIdRequired'),
 });
 
-export const addUserRoleArgsSchema = z.object({
-  input: addUserRoleInputSchema,
-});
-
 export const userRoleSchema = z.object({
   id: idSchema,
   userId: idSchema,

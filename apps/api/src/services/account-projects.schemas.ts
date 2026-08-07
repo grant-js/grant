@@ -20,12 +20,6 @@ export const removeAccountProjectInputSchema = deleteSchema.extend({
   projectId: idSchema.refine((projectId) => projectId.trim().length > 0, 'Project ID is required'),
 });
 
-export const addAccountProjectArgsSchema = addAccountProjectInputSchema;
-
-export const removeAccountProjectArgsSchema = z.object({
-  input: removeAccountProjectInputSchema,
-});
-
 export const accountProjectSchema = z.object({
   id: idSchema,
   accountId: idSchema,

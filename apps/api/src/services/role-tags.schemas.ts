@@ -28,10 +28,6 @@ export const updateRoleTagInputSchema = z.object({
   isPrimary: z.boolean(),
 });
 
-export const addRoleTagParamsSchema = z.object({
-  input: addRoleTagInputSchema,
-});
-
 export const removeRoleTagInputSchema = deleteSchema.extend({
   roleId: idSchema,
   tagId: idSchema,

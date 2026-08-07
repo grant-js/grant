@@ -12,7 +12,6 @@ import {
   nonEmptyNameSchema,
   nonEmptyStringMessage,
   nonEmptyStringRefinement,
-  paginatedResponseSchema,
   queryParamsSchema,
   sortOrderSchema,
 } from './common/schemas';
@@ -85,9 +84,3 @@ export const permissionSchema = baseEntitySchema.extend({
   metadata: z.record(z.string(), z.unknown()),
   tags: z.array(tagSchema).optional(),
 });
-
-export const permissionPageSchema = paginatedResponseSchema(permissionSchema).transform((data) => ({
-  permissions: data.items,
-  totalCount: data.totalCount,
-  hasNextPage: data.hasNextPage,
-}));

@@ -28,14 +28,6 @@ export const removeOrganizationPermissionInputSchema = deleteSchema.extend({
   ),
 });
 
-export const addOrganizationPermissionArgsSchema = z.object({
-  input: addOrganizationPermissionInputSchema,
-});
-
-export const removeOrganizationPermissionArgsSchema = z.object({
-  input: removeOrganizationPermissionInputSchema,
-});
-
 export const organizationPermissionSchema = z.object({
   id: idSchema,
   organizationId: idSchema,

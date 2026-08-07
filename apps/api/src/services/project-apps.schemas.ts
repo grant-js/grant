@@ -6,7 +6,6 @@ import {
   deleteSchema,
   idSchema,
   nameSchema,
-  paginatedResponseSchema,
   queryParamsSchema,
   sortOrderSchema,
 } from './common/schemas';
@@ -93,9 +92,3 @@ export const createProjectAppResultSchema = z.object({
   signUpRoleId: z.string().nullable().optional(),
   createdAt: z.date(),
 });
-
-export const projectAppPageSchema = paginatedResponseSchema(projectAppSchema).transform((data) => ({
-  projectApps: data.items,
-  totalCount: data.totalCount,
-  hasNextPage: data.hasNextPage,
-}));

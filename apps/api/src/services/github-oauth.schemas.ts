@@ -46,16 +46,3 @@ export const oauthStateSchema = z.object({
     .optional(),
   createdAt: z.number().int().positive('Created timestamp must be positive'),
 });
-
-export const initiateGithubAuthInputSchema = z.object({
-  redirectUrl: redirectUrlSchema,
-});
-
-export const handleGithubCallbackInputSchema = z.object({
-  code: githubAuthorizationCodeSchema,
-  stateToken: oauthStateTokenSchema,
-  origin: z.string().min(1, 'errors.validation.originRequired').url('errors.validation.invalidUrl'),
-  locale: z.string().min(1, 'errors.validation.localeRequired'),
-  userAgent: z.string().nullable().optional(),
-  ipAddress: z.string().nullable().optional(),
-});

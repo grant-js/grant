@@ -106,35 +106,3 @@ export function validateOutput<T>(schema: z.ZodSchema<T>, data: unknown, context
 
   return result.data;
 }
-
-export function safeValidateInput<T>(
-  schema: z.ZodSchema<T>,
-  data: unknown,
-  context: string
-): { success: true; data: T } | { success: false; error: ApiValidationError } {
-  try {
-    const validData = validateInput(schema, data, context);
-    return { success: true, data: validData };
-  } catch (error) {
-    if (error instanceof ApiValidationError) {
-      return { success: false, error };
-    }
-    throw error;
-  }
-}
-
-export function safeValidateOutput<T>(
-  schema: z.ZodSchema<T>,
-  data: unknown,
-  context: string
-): { success: true; data: T } | { success: false; error: ApiValidationError } {
-  try {
-    const validData = validateOutput(schema, data, context);
-    return { success: true, data: validData };
-  } catch (error) {
-    if (error instanceof ApiValidationError) {
-      return { success: false, error };
-    }
-    throw error;
-  }
-}
