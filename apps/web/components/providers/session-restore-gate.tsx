@@ -37,6 +37,11 @@ export function SessionRestoreGate({ children }: SessionRestoreGateProps) {
   const redirectStoredRef = useRef(false);
   const redirectToLoginStartedRef = useRef(false);
   const prevPathnameRef = useRef<string | null>(null);
+  // Set once auth is ever true this mount. Distinguishes a cold boot (never
+  // authenticated yet, restoreStatus naturally starts 'idle') from an explicit
+  // clearAuth() during an existing session — accessToken is in-memory only, so
+  // clearAuth() is the only way auth can go true -> false without a remount.
+  const hadAuthRef = useRef(false);
 
   const auth = !!accessToken;
   const publicPath = isPublicPath(pathname);
@@ -57,17 +62,30 @@ export function SessionRestoreGate({ children }: SessionRestoreGateProps) {
 
   // Reset when auth is true so we can redirect to login again in future
   useEffect(() => {
-    if (auth) redirectToLoginStartedRef.current = false;
+    if (auth) {
+      redirectToLoginStartedRef.current = false;
+      hadAuthRef.current = true;
+    }
   }, [auth]);
 
-  // Reset stale 'done' when user logs out so we show login instead of loader
+  // Reset stale 'done' when auth goes away so we show login instead of loader.
+  // If we were previously authenticated this mount, this is an explicit logout
+  // (clearAuth() is the only way accessToken goes true -> false without a
+  // remount) — go straight to 'failed' rather than 'idle', so we do NOT re-arm
+  // the cold-boot cookie-restore effect below and silently re-authenticate the
+  // user off a refresh cookie nobody asked us to check again. 'failed' routes
+  // through the existing logout+redirect effect, which also revokes the cookie
+  // server-side regardless of whether the caller already did.
   useEffect(() => {
-    if (!auth && restoreStatus === 'done') queueMicrotask(() => setRestoreStatus('idle'));
+    if (auth || restoreStatus !== 'done') return;
+    queueMicrotask(() => setRestoreStatus(hadAuthRef.current ? 'failed' : 'idle'));
   }, [auth, restoreStatus]);
 
-  // One-time restore when not auth (any page, including /auth/login)
+  // One-time restore when not auth (any page, including /auth/login) — only
+  // ever attempted before this mount has seen a real auth state, i.e. cold boot.
   useEffect(() => {
     if (auth) return;
+    if (hadAuthRef.current) return;
     if (restoreStatus !== 'idle') return;
 
     queueMicrotask(() => setRestoreStatus('pending'));
@@ -124,8 +142,11 @@ export function SessionRestoreGate({ children }: SessionRestoreGateProps) {
     return <FullPageLoader />;
   }
 
-  // Restore done on protected path: render
-  if (restoreStatus === 'done' && !publicPath) return <>{children}</>;
+  // Restore done on protected path: render. Requires `auth` too so a render
+  // right after clearAuth() (accessToken already false, restoreStatus not yet
+  // reset by the effect above) falls through to the loader instead of keeping
+  // stale protected content on screen for a frame.
+  if (auth && restoreStatus === 'done' && !publicPath) return <>{children}</>;
 
   // Public path + not authenticated (restore failed or stale 'done' after logout): show login
   if (publicPath && !auth) return <>{children}</>;

@@ -13,9 +13,12 @@ import { SessionRestoreGate } from './session-restore-gate';
  * exists in this app, so `SessionRestoreGate` (wrapping the whole tree) is the only thing
  * deciding whether protected page content renders. It has zero prior test coverage and an
  * effect-driven state machine — the same shape (untested, high blast radius, state-machine
- * complexity) as pass 1's `CacheHandler` finding. These tests assert *current* behavior,
- * including a race identified while writing them (see the "stale restoreStatus" describe
- * block) — they do not fix it.
+ * complexity) as pass 1's `CacheHandler` finding.
+ *
+ * The "a bare clearAuth()" describe block originally characterized a real defect (silent
+ * re-authentication off a still-valid refresh cookie after `clearAuth()`, tracked as
+ * code-quality/web.md finding 0.1) and now asserts the fixed behavior instead — see that
+ * file's Tier 0 section and this component's `hadAuthRef` for the fix.
  *
  * Written with `React.createElement` instead of JSX: `apps/web/vitest.config.ts` has no
  * `@vitejs/plugin-react` (or jsx-transforming esbuild option), and the root `tsconfig.json`
@@ -182,18 +185,19 @@ describe('SessionRestoreGate', () => {
      * All real call sites of `clearAuth()` in this app (`sidebar-account-dropdown.tsx`,
      * `use-my-mutations.ts`, `security/page.tsx`, `use-privacy-settings.ts`) call a
      * session-revoking mutation first, so the refresh cookie is normally already dead by the
-     * time `clearAuth()` runs. The gate itself does not enforce that ordering, and cannot
-     * observe it — it decides purely from `restoreStatus`/`accessToken`. These two tests
-     * characterize what happens for each of the two ways the *next* cookie-restore attempt
-     * can resolve.
+     * time `clearAuth()` runs. The gate no longer relies on that ordering: once it has seen a
+     * real auth state this mount, an explicit `clearAuth()` goes straight to the login screen
+     * without attempting another cookie-based restore — regardless of whether the refresh
+     * cookie is actually still valid.
      */
 
-    it('DEFECT-SHAPED: silently re-authenticates the user if the refresh cookie is still valid when clearAuth() runs', async () => {
+    it('does not re-authenticate even if the refresh cookie is still valid when clearAuth() runs, and reaches the login screen', async () => {
       // Drive restoreStatus to 'done' via a successful cookie restore, as would happen on a
       // page reload while a valid refresh cookie exists. Kept succeeding on every call is the
       // point: it stands in for "the cookie was never actually revoked" (e.g. `clearAuth()`
       // called without a preceding logout mutation, or the mutation targeted a different
-      // session/device than the one the refresh cookie is bound to).
+      // session/device than the one the refresh cookie is bound to). Fixed behavior must not
+      // depend on this ever resolving `false` to reach login.
       refreshSessionViaCookie.mockImplementation(async () => {
         useAuthStore.getState().setAccessToken('restored-token');
         return true;
@@ -204,51 +208,53 @@ describe('SessionRestoreGate', () => {
       expect(refreshSessionViaCookie).toHaveBeenCalledTimes(1);
 
       // Simulate a bare `clearAuth()` (no server-side revoke) without a full page reload.
-      // `restoreStatus` is internal component state and was left at 'done' by the restore
-      // above; only a `useEffect` (queued via `queueMicrotask`) resets it, and until it does,
-      // render branch `restoreStatus === 'done' && !publicPath` does not also require `auth`.
       act(() => {
         useAuthStore.getState().clearAuth();
       });
 
-      // Immediately after the synchronous state flip: `auth` is false but `restoreStatus` is
-      // still stale 'done', so the gate keeps rendering the protected subtree for at least
-      // one pass instead of falling back to a loader.
-      expect(screen.getByText('protected content')).toBeInTheDocument();
-      expect(screen.queryByTestId('full-page-loader')).not.toBeInTheDocument();
+      // Immediately after the synchronous state flip: `auth` is false, and the render branch
+      // that used to key off stale `restoreStatus === 'done'` alone now also requires `auth`,
+      // so the gate falls back to the loader for this frame instead of keeping the protected
+      // subtree on screen.
+      expect(screen.getByTestId('full-page-loader')).toBeInTheDocument();
+      expect(screen.queryByText('protected content')).not.toBeInTheDocument();
 
-      // Flushing the queued microtask resets `restoreStatus` to 'idle'. That is itself a
-      // dependency of the restore-trigger effect, so it fires again — and because the mock
-      // keeps succeeding (cookie still valid), the gate re-authenticates the user with a new
-      // access token instead of ever reaching the login screen. `clearAuth()` did not "stick".
-      await waitFor(() => expect(refreshSessionViaCookie).toHaveBeenCalledTimes(2));
-      expect(screen.getByText('protected content')).toBeInTheDocument();
-      expect(useAuthStore.getState().accessToken).toBe('restored-token');
+      // No second restore attempt: `hadAuthRef` is set once auth was ever true this mount, so
+      // the reset-stale-'done' effect routes straight to 'failed' instead of re-arming the
+      // cold-boot restore effect. The gate reaches login without ever asking the (still valid,
+      // per the mock) cookie again.
+      await waitFor(() => expect(logoutSession).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(routerPush).toHaveBeenCalledWith('/auth/login'));
+      expect(refreshSessionViaCookie).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText('protected content')).not.toBeInTheDocument();
+      expect(useAuthStore.getState().accessToken).toBeNull();
     });
 
-    it('reaches the login screen when the refresh cookie has actually been revoked before clearAuth()', async () => {
-      let restoreCalls = 0;
+    it('a fresh mount after logout (e.g. next page load) still restores normally from a valid cookie', async () => {
+      // `hadAuthRef` is component-instance state, not module/global — a new mount (what a real
+      // page reload produces, since accessToken is in-memory-only anyway) must not carry over
+      // "already logged out once" and permanently disable cold-boot restore.
       refreshSessionViaCookie.mockImplementation(async () => {
-        restoreCalls += 1;
-        if (restoreCalls === 1) {
-          useAuthStore.getState().setAccessToken('restored-token');
-          return true;
-        }
-        // Second attempt (after the post-clearAuth() re-trigger): cookie was revoked server-side.
-        return false;
+        useAuthStore.getState().setAccessToken('restored-token');
+        return true;
       });
 
-      renderGate('protected content');
+      const { unmount } = renderGate('protected content');
       await waitFor(() => expect(screen.getByText('protected content')).toBeInTheDocument());
 
       act(() => {
         useAuthStore.getState().clearAuth();
       });
-
-      await waitFor(() => expect(refreshSessionViaCookie).toHaveBeenCalledTimes(2));
-      await waitFor(() => expect(logoutSession).toHaveBeenCalledTimes(1));
       await waitFor(() => expect(routerPush).toHaveBeenCalledWith('/auth/login'));
-      expect(screen.queryByText('protected content')).not.toBeInTheDocument();
+      unmount();
+
+      routerPush.mockClear();
+      refreshSessionViaCookie.mockClear();
+      renderGate('protected content');
+
+      await waitFor(() => expect(screen.getByText('protected content')).toBeInTheDocument());
+      expect(refreshSessionViaCookie).toHaveBeenCalledTimes(1);
+      expect(routerPush).not.toHaveBeenCalledWith('/auth/login');
     });
   });
 });
