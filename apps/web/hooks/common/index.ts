@@ -3,6 +3,7 @@ export * from './use-detail-table-column-visibility';
 export * from './use-infinite-scroll';
 export * from './use-mobile';
 export * from './use-page-title';
+export * from './use-pagination-props';
 export * from './use-project-grant-context';
 export * from './use-project-scope';
 export * from './use-project-tags';
