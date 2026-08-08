@@ -25,7 +25,7 @@ export function RoleViewer() {
   const setLoading = useRolesStore((state) => state.setLoading);
   const setRefetch = useRolesStore((state) => state.setRefetch);
 
-  const { roles, loading, totalCount, refetch } = useRolesList({
+  const { roles, loading, error, totalCount, refetch } = useRolesList({
     scope: scope!,
     page,
     limit,
@@ -63,6 +63,16 @@ export function RoleViewer() {
 
   if (!scope || !canQuery) {
     return null;
+  }
+
+  if (error) {
+    return (
+      <div className="p-4">
+        <div className="rounded-md border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive">
+          {error.message}
+        </div>
+      </div>
+    );
   }
 
   switch (view) {

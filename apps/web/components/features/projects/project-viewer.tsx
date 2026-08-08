@@ -25,7 +25,7 @@ export function ProjectViewer() {
   const setLoading = useProjectsStore((state) => state.setLoading);
   const setRefetch = useProjectsStore((state) => state.setRefetch);
 
-  const { projects, loading, totalCount, refetch } = useProjects({
+  const { projects, loading, error, totalCount, refetch } = useProjects({
     scope: scope!,
     page,
     limit,
@@ -63,6 +63,16 @@ export function ProjectViewer() {
 
   if (!scope || !canQuery) {
     return null;
+  }
+
+  if (error) {
+    return (
+      <div className="p-4">
+        <div className="rounded-md border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive">
+          {error.message}
+        </div>
+      </div>
+    );
   }
 
   switch (view) {

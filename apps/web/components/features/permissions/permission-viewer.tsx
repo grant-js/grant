@@ -25,7 +25,7 @@ export function PermissionViewer() {
   const setLoading = usePermissionsStore((state) => state.setLoading);
   const setRefetch = usePermissionsStore((state) => state.setRefetch);
 
-  const { permissions, loading, totalCount, refetch } = usePermissionsList({
+  const { permissions, loading, error, totalCount, refetch } = usePermissionsList({
     scope: scope!,
     page,
     limit,
@@ -63,6 +63,16 @@ export function PermissionViewer() {
 
   if (!scope || !canQuery) {
     return null;
+  }
+
+  if (error) {
+    return (
+      <div className="p-4">
+        <div className="rounded-md border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive">
+          {error.message}
+        </div>
+      </div>
+    );
   }
 
   switch (view) {
