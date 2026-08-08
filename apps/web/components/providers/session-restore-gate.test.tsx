@@ -230,6 +230,57 @@ describe('SessionRestoreGate', () => {
       expect(useAuthStore.getState().accessToken).toBeNull();
     });
 
+    it('discards a cookie restore that resolves after the user authenticated another way and then logged out', async () => {
+      // Independent security review of the first version of this fix (see
+      // code-quality/web.md finding 0.1) found a narrower race the sequential
+      // fix above did not close: a cold-boot restore already in flight when the
+      // user authenticates via a different path (e.g. the MFA page's direct
+      // setAccessToken()) is never cancelled, and unconditionally applies its
+      // result -- including the accessToken side effect inside
+      // refreshSessionViaCookie() itself -- whenever it eventually resolves,
+      // even after an explicit clearAuth() since.
+      let resolveRestore: (restored: boolean) => void = () => {};
+      refreshSessionViaCookie.mockImplementation(
+        () =>
+          new Promise<boolean>((resolve) => {
+            resolveRestore = (restored) => {
+              // Mirrors the real implementation: setAccessToken is a side effect
+              // of the promise resolving, before the caller's `.then` runs.
+              if (restored) useAuthStore.getState().setAccessToken('stale-cookie-token');
+              resolve(restored);
+            };
+          })
+      );
+
+      renderGate('protected content');
+      expect(refreshSessionViaCookie).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId('full-page-loader')).toBeInTheDocument();
+
+      // Authenticates through an unrelated path while the restore above is still pending.
+      act(() => {
+        useAuthStore.getState().setAccessToken('other-path-token');
+      });
+      expect(screen.getByText('protected content')).toBeInTheDocument();
+
+      // ...then explicitly logs out before the stale restore call resolves.
+      act(() => {
+        useAuthStore.getState().clearAuth();
+      });
+      expect(screen.queryByText('protected content')).not.toBeInTheDocument();
+
+      // The stale restore now resolves successfully. It must not win.
+      await act(async () => {
+        resolveRestore(true);
+        await Promise.resolve();
+      });
+
+      await waitFor(() => expect(useAuthStore.getState().accessToken).toBeNull());
+      await waitFor(() => expect(routerPush).toHaveBeenCalledWith('/auth/login'));
+      expect(screen.queryByText('protected content')).not.toBeInTheDocument();
+      // Only the one (now-superseded) restore call was ever made.
+      expect(refreshSessionViaCookie).toHaveBeenCalledTimes(1);
+    });
+
     it('a fresh mount after logout (e.g. next page load) still restores normally from a valid cookie', async () => {
       // `hadAuthRef` is component-instance state, not module/global — a new mount (what a real
       // page reload produces, since accessToken is in-memory-only anyway) must not carry over
