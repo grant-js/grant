@@ -156,8 +156,26 @@ Keep it scannable. Tables over prose for anything countable. Lead with what hold
 
 State counts precisely (`7 violations`, not `several`). Where a rule is violated in one file but followed in another file for the same concern, cite both — internal inconsistency is stronger evidence than an absolute count.
 
-## Completed passes
+## Passes
 
-| Unit       | Pass | Document           |
-| ---------- | ---- | ------------------ |
-| `apps/api` | 1    | [api.md](./api.md) |
+| Pass | Unit                                                                       | Status      | Document           |
+| ---- | -------------------------------------------------------------------------- | ----------- | ------------------ |
+| 1    | `apps/api`                                                                 | Done        | [api.md](./api.md) |
+| 2    | `apps/web`                                                                 | Not started | —                  |
+| 3    | `packages/@grantjs/core`                                                   | Not started | —                  |
+| 4    | `packages/@grantjs/database`                                               | Not started | —                  |
+| 5    | `packages/@grantjs/schema`                                                 | Not started | —                  |
+| 6    | Adapter packages (`cache`, `storage`, `email`, `jobs`, `logger`, `errors`) | Not started | —                  |
+
+Order is not fixed. `apps/web` is next because the rubric's central claim — that the method transfers to another unit — is untested until a second pass runs it, and that is cheapest to find out while pass 1 is fresh.
+
+### Inputs carried into later passes
+
+A pass that scopes its own fixes narrowly leaves work for the unit that comes next. Record it here when it happens, or it survives only in a closed story's slice detail.
+
+| From   | Owed to                    | What                                                                                                                                                                                                                                                                                                                |
+| ------ | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pass 1 | Pass 2 and every later one | **The guardrails stop at `apps/api`.** 11 rule blocks in `eslint.config.mjs` are scoped to `apps/api/**`, and `dead-code:api` is `knip --workspace apps/api`. Pass 1 scoped them deliberately — a full-repo run would have surfaced violations it had no mandate to fix. Each unit's own pass widens them to itself |
+| Pass 1 | Pass 2                     | The lens-5 validator cross-check and the lens-7 detector instruction are written against `apps/api` paths. They are the two lenses whose commands need rewriting per unit                                                                                                                                           |
+
+Widening a guardrail is the **first** slice of a pass, not the last. Running it early tells you the true size of the unit before you write a finding; running it late means auditing by hand what a rule would have counted exactly — rule 1, applied to the pass's own schedule.
