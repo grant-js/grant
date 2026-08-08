@@ -3,18 +3,13 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useMutation } from '@apollo/client/react';
-import {
-  SetupMfaDocument,
-  VerifyMfaDocument,
-  VerifyMfaRecoveryCodeDocument,
-} from '@grantjs/schema';
 
 import { MfaOtpInput } from '@/components/features/auth/mfa-otp-input';
 import { MfaQrPanel } from '@/components/features/auth/mfa-qr-panel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useMfaChallengeMutations } from '@/hooks/mfa';
 import { useRouter } from '@/i18n/navigation';
 import { getAuthRedirectUrl } from '@/lib/redirect';
 import { useAuthStore } from '@/stores/auth.store';
@@ -32,11 +27,8 @@ export default function MfaPage() {
   const [setupUrl, setSetupUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { setAccessToken, setMfaVerified } = useAuthStore();
-  const [setupMfa, { loading: settingUp }] = useMutation(SetupMfaDocument);
-  const [verifyMfa, { loading: verifying }] = useMutation(VerifyMfaDocument);
-  const [verifyRecoveryCode, { loading: verifyingRecovery }] = useMutation(
-    VerifyMfaRecoveryCodeDocument
-  );
+  const { setupMfa, settingUp, verifyMfa, verifying, verifyRecoveryCode, verifyingRecovery } =
+    useMfaChallengeMutations();
 
   const handleSetup = async () => {
     setError(null);

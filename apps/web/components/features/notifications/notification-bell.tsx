@@ -2,10 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useApolloClient, useMutation } from '@apollo/client/react';
+import { useApolloClient } from '@apollo/client/react';
 import {
-  MarkMyNotificationReadDocument,
-  type MarkMyNotificationReadMutation,
   MyNotificationsDocument,
   type MyNotificationsQuery,
   type Notification,
@@ -16,7 +14,7 @@ import { NotificationListItem } from '@/components/features/notifications/notifi
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
-import { evictNotificationsCache } from '@/hooks/notifications/cache';
+import { useMarkNotificationRead } from '@/hooks/notifications/use-mark-notification-read';
 import { useUnreadNotificationCount } from '@/hooks/notifications/use-unread-notification-count';
 import { Link, useRouter } from '@/i18n/navigation';
 import { buildNotificationHref } from '@/lib/notification-href.lib';
@@ -50,14 +48,7 @@ export function NotificationBell() {
   const [preview, setPreview] = useState<Notification[]>([]);
   const [loadingPreview, setLoadingPreview] = useState(false);
 
-  const [markReadMutation] = useMutation<MarkMyNotificationReadMutation>(
-    MarkMyNotificationReadDocument,
-    {
-      update: (cache) => {
-        evictNotificationsCache(cache);
-      },
-    }
-  );
+  const markReadMutation = useMarkNotificationRead();
 
   const loadPreview = useCallback(async () => {
     setLoadingPreview(true);
