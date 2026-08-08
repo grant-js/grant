@@ -42,24 +42,6 @@ export function SessionRestoreGate({ children }: SessionRestoreGateProps) {
   // clearAuth() during an existing session — accessToken is in-memory only, so
   // clearAuth() is the only way auth can go true -> false without a remount.
   const hadAuthRef = useRef(false);
-  // Invalidates a cold-boot restore call that is still in flight when the user
-  // logs out after having authenticated through some other path in the
-  // meantime (e.g. a direct setAccessToken() on an MFA/login page, which also
-  // fires this same "any page" restore effect below). Without this, that stale
-  // call can resolve *after* the logout, and because refreshSessionViaCookie()
-  // sets accessToken as a side effect before its promise even resolves, it
-  // would silently re-authenticate the user regardless of the hadAuthRef guard
-  // below (which only stops *new* restore attempts, not ones already in
-  // progress). Bumped only on a true -> false auth transition (see the effect
-  // below) -- NOT on false -> true -- so a restore call's own success does not
-  // invalidate itself: refreshSessionViaCookie()'s accessToken side effect
-  // flips `auth` true before this call's own `.then()` runs, so bumping on
-  // every auth-true transition would make every successful restore look stale
-  // to itself.
-  const restoreAttemptIdRef = useRef(0);
-  // Previous `auth` value, so the effect below can tell a true -> false
-  // transition (a real logout) apart from auth simply still being false.
-  const wasAuthRef = useRef(false);
 
   const auth = !!accessToken;
   const publicPath = isPublicPath(pathname);
@@ -78,17 +60,12 @@ export function SessionRestoreGate({ children }: SessionRestoreGateProps) {
     }
   }, [publicPath, searchParams]);
 
-  // Reset when auth is true so we can redirect to login again in future.
-  // Also detects a real logout (auth true -> false) to retire any cold-boot
-  // restore call still in flight from before this mount's first auth.
+  // Reset when auth is true so we can redirect to login again in future
   useEffect(() => {
     if (auth) {
       redirectToLoginStartedRef.current = false;
       hadAuthRef.current = true;
-    } else if (wasAuthRef.current) {
-      restoreAttemptIdRef.current += 1;
     }
-    wasAuthRef.current = auth;
   }, [auth]);
 
   // Reset stale 'done' when auth goes away so we show login instead of loader.
@@ -111,21 +88,35 @@ export function SessionRestoreGate({ children }: SessionRestoreGateProps) {
     if (hadAuthRef.current) return;
     if (restoreStatus !== 'idle') return;
 
-    const attemptId = ++restoreAttemptIdRef.current;
+    // Captured so the .then() below can detect whether anything else touched
+    // auth state while this call was in flight -- a boolean "are we
+    // authenticated" check can't: setAccessToken('other-token') while already
+    // authenticated doesn't change that boolean at all, so a stale restore
+    // could silently overwrite a *different*, more current token with no
+    // observable auth-state transition anywhere. tokenVersion changes on
+    // every accessToken-affecting store action, so it does not have that gap.
+    const versionBeforeCall = useAuthStore.getState().tokenVersion;
     queueMicrotask(() => setRestoreStatus('pending'));
     refreshSessionViaCookie().then((restored) => {
-      if (attemptId !== restoreAttemptIdRef.current) {
-        // Superseded: the user authenticated through another path while this
-        // call was in flight. refreshSessionViaCookie() already wrote
-        // accessToken as a side effect before resolving -- undo it rather than
-        // silently keeping whatever it just restored, since this attempt no
-        // longer reflects current intent (e.g. an explicit logout since).
-        // Always advance to 'failed' too: if the current auth state is still
-        // false, this unblocks the gate (nothing else would ever move a
-        // permanently 'pending' status forward); if auth is currently true
-        // (the other path is still authenticated), the render/redirect logic
-        // below ignores restoreStatus entirely while auth is true, so this is
-        // a no-op in that case.
+      // If this call restored a token, refreshSessionViaCookie() already
+      // bumped tokenVersion by 1 as part of that (its own setAccessToken
+      // side effect). A failed restore touches nothing, so no bump. Anything
+      // beyond that expected delta means some other action -- a login via a
+      // different path, an explicit logout, another restore -- also touched
+      // auth state while this call was in flight, so this result no longer
+      // reflects current intent.
+      const expectedVersion = versionBeforeCall + (restored ? 1 : 0);
+      if (useAuthStore.getState().tokenVersion !== expectedVersion) {
+        // Superseded. If this call's own restore succeeded, it already
+        // clobbered whatever the current, more-current token was as an
+        // unavoidable side effect (refreshSessionViaCookie() has no way to
+        // conditionally skip that write) -- there's no way to recover what
+        // that token was, so fail closed rather than leave a wrong token in
+        // place: clear auth and let the gate redirect to login. If auth is
+        // still true at that point because the intervening action is the one
+        // that's current, this clearAuth() is what does the damage here (a
+        // forced re-login), not the stale restore -- an accepted, rare
+        // trade-off given the alternative is a silent session substitution.
         if (restored) clearAuth();
         setRestoreStatus('failed');
         return;

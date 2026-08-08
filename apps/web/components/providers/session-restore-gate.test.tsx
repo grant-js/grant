@@ -18,7 +18,10 @@ import { SessionRestoreGate } from './session-restore-gate';
  * The "a bare clearAuth()" describe block originally characterized a real defect (silent
  * re-authentication off a still-valid refresh cookie after `clearAuth()`, tracked as
  * code-quality/web.md finding 0.1) and now asserts the fixed behavior instead — see that
- * file's Tier 0 section and this component's `hadAuthRef` for the fix.
+ * file's Tier 0 section and this component's `hadAuthRef` (blocks new restore attempts once
+ * auth has been true) and the `tokenVersion` check in the restore effect's `.then()` (detects
+ * an in-flight restore superseded by something else touching auth state, including a token
+ * *swap* that never flips the `auth` boolean at all) for the fix.
  *
  * Written with `React.createElement` instead of JSX: `apps/web/vitest.config.ts` has no
  * `@vitejs/plugin-react` (or jsx-transforming esbuild option), and the root `tsconfig.json`
@@ -66,6 +69,7 @@ function resetAuthStore() {
       currentAccountId: null,
       isSwitchingAccounts: false,
       accessToken: null,
+      tokenVersion: 0,
       email: null,
       mfaVerified: false,
       requiresEmailVerification: false,
@@ -230,7 +234,7 @@ describe('SessionRestoreGate', () => {
       expect(useAuthStore.getState().accessToken).toBeNull();
     });
 
-    it('discards a cookie restore that resolves after the user authenticated another way and then logged out', async () => {
+    it('discards a stale in-flight cookie restore that resolves after a different-path login and then a logout', async () => {
       // Independent security review of the first version of this fix (see
       // code-quality/web.md finding 0.1) found a narrower race the sequential
       // fix above did not close: a cold-boot restore already in flight when the
@@ -279,6 +283,51 @@ describe('SessionRestoreGate', () => {
       expect(screen.queryByText('protected content')).not.toBeInTheDocument();
       // Only the one (now-superseded) restore call was ever made.
       expect(refreshSessionViaCookie).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not let a stale in-flight cookie restore silently overwrite a token from a still-active different-path login', async () => {
+      // A second, independent security review found this one: no clearAuth() at
+      // all here, which is exactly what makes it more dangerous than the test
+      // above. The `auth` boolean (`!!accessToken`) never goes false at any
+      // point in this sequence, so nothing keyed on that boolean transitioning
+      // can ever detect it -- the stale restore's accessToken side effect
+      // silently *swaps* an already-authenticated, MFA-verified token for an
+      // older cookie-restored one, with no observable auth-state change.
+      let resolveRestore: (restored: boolean) => void = () => {};
+      refreshSessionViaCookie.mockImplementation(
+        () =>
+          new Promise<boolean>((resolve) => {
+            resolveRestore = (restored) => {
+              if (restored) useAuthStore.getState().setAccessToken('stale-cookie-token');
+              resolve(restored);
+            };
+          })
+      );
+
+      renderGate('protected content');
+      expect(refreshSessionViaCookie).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId('full-page-loader')).toBeInTheDocument();
+
+      // A different path (e.g. MFA verification) authenticates while the
+      // cold-boot restore above is still pending. No logout happens after this.
+      act(() => {
+        useAuthStore.getState().setAccessToken('mfa-verified-token');
+      });
+      expect(screen.getByText('protected content')).toBeInTheDocument();
+
+      // The stale restore now resolves successfully, well after the real login.
+      await act(async () => {
+        resolveRestore(true);
+        await Promise.resolve();
+      });
+
+      // It must not win. The gate has no way to know "mfa-verified-token" was
+      // the correct one to keep once its own restore call already overwrote it
+      // as a side effect -- the accepted, fail-closed outcome is a forced
+      // logout, not silently keeping either token.
+      await waitFor(() => expect(useAuthStore.getState().accessToken).toBeNull());
+      await waitFor(() => expect(routerPush).toHaveBeenCalledWith('/auth/login'));
+      expect(useAuthStore.getState().accessToken).not.toBe('stale-cookie-token');
     });
 
     it('a fresh mount after logout (e.g. next page load) still restores normally from a valid cookie', async () => {
