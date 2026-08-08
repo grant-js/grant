@@ -23,22 +23,6 @@ export function isAuthOnlyPath(pathname: string): boolean {
   );
 }
 
-export interface WindowWithGrantFlag extends Window {
-  __grantRedirectInProgress?: boolean;
-}
-
-export function isRedirectInProgress(): boolean {
-  if (typeof window === 'undefined') return false;
-  if (window.location.pathname.includes('/auth/login')) return true;
-  return (window as WindowWithGrantFlag).__grantRedirectInProgress === true;
-}
-
-export function setRedirectInProgress(value: boolean): void {
-  if (typeof window !== 'undefined') {
-    (window as WindowWithGrantFlag).__grantRedirectInProgress = value;
-  }
-}
-
 interface JWTPayload {
   exp: number;
   sub: string;
@@ -46,16 +30,6 @@ interface JWTPayload {
   jti?: string;
   aud?: string;
   iat?: number;
-}
-
-export function isTokenValid(token: string): boolean {
-  try {
-    const decoded = jwtDecode<JWTPayload>(token);
-    const currentTime = Math.floor(Date.now() / 1000);
-    return decoded.exp > currentTime;
-  } catch {
-    return false;
-  }
 }
 
 export function getRedirectPath(accountType: AccountType, accountId: string): string {

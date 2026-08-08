@@ -9,7 +9,7 @@ import { FeatureDetailLayout } from './feature-detail-layout';
 
 type FeatureDetailSkeletonCardVariant = 'form' | 'table' | 'json';
 
-export interface FeatureDetailSkeletonCard {
+interface FeatureDetailSkeletonCard {
   variant?: FeatureDetailSkeletonCardVariant;
   rows?: number;
   showAvatar?: boolean;

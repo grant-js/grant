@@ -38,9 +38,9 @@ import { cn } from '@/lib/utils';
 
 import { EntityTagSearch } from './entity-tag-search';
 
-export const ENTITY_CREATE_TAGS_PAGE_LIMIT = 10;
+const ENTITY_CREATE_TAGS_PAGE_LIMIT = 10;
 
-export type EntityCreateTagsNamespace =
+type EntityCreateTagsNamespace =
   | 'role.tags'
   | 'group.tags'
   | 'permission.tags'

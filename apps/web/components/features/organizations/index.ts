@@ -12,7 +12,6 @@ export * from './organization-search';
 export * from './organization-sorter';
 export * from './organization-switcher';
 export * from './organization-table';
-export * from './organization-tag-selector';
 export * from './organization-toolbar';
 export * from './organization-types';
 export * from './organization-view-switcher';

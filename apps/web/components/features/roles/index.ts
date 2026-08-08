@@ -8,7 +8,6 @@ export * from './role-edit-dialog';
 export * from './role-limit';
 export * from './role-navigation-button';
 export * from './role-pagination';
-export * from './role-permissions-panel';
 export * from './role-search';
 export * from './role-sorter';
 export * from './role-table';

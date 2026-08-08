@@ -20,7 +20,7 @@ export interface SortInput<T extends string> {
   order: SortOrder;
 }
 
-export interface SortableFieldConfig<T extends string> {
+interface SortableFieldConfig<T extends string> {
   value: T;
   label: string;
 }

@@ -5,12 +5,12 @@ export interface CropArea {
   height: number;
 }
 
-export interface ImageDimensions {
+interface ImageDimensions {
   width: number;
   height: number;
 }
 
-export async function createImage(url: string): Promise<HTMLImageElement> {
+async function createImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.addEventListener('load', () => resolve(image));
@@ -19,11 +19,11 @@ export async function createImage(url: string): Promise<HTMLImageElement> {
   });
 }
 
-export function getRadianAngle(degreeValue: number): number {
+function getRadianAngle(degreeValue: number): number {
   return (degreeValue * Math.PI) / 180;
 }
 
-export function rotateSize(width: number, height: number, rotation: number): ImageDimensions {
+function rotateSize(width: number, height: number, rotation: number): ImageDimensions {
   const rotRad = getRadianAngle(rotation);
   return {
     width: Math.abs(Math.cos(rotRad) * width) + Math.abs(Math.sin(rotRad) * height),

@@ -6,7 +6,6 @@ export * from './project-app-general-card';
 export * from './project-app-oauth-card';
 export * from './project-app-scopes';
 export * from './project-app-tag-search';
-export * from './project-app-tag-sorter';
 export * from './project-app-tags';
 export * from './project-app-test-oauth-card';
 export * from './project-app-test-scopes';

@@ -64,7 +64,7 @@ let clearingSession = false;
 /** Optional getter for localized session-expired toast messages (set by ApolloProvider). */
 let getSessionExpiredMessages: (() => { title: string; description: string }) | null = null;
 
-export function setSessionExpiredMessages(
+function setSessionExpiredMessages(
   getter: (() => { title: string; description: string }) | null
 ): void {
   getSessionExpiredMessages = getter;

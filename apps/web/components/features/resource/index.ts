@@ -5,5 +5,4 @@ export * from './resource-create-tags';
 export * from './resource-detail-viewer';
 export * from './resource-general-card';
 export * from './resource-tag-search';
-export * from './resource-tag-sorter';
 export * from './resource-tags';

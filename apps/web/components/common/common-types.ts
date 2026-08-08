@@ -22,7 +22,7 @@ export interface SkeletonConfig {
   count: number;
 }
 
-export type DialogFieldType =
+type DialogFieldType =
   | 'text'
   | 'email'
   | 'textarea'

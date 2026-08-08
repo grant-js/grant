@@ -10,7 +10,7 @@ export type ToolbarItemConfig = {
 
 export type ToolbarItem = ReactNode | ToolbarItemConfig;
 
-export function isToolbarItemConfig(item: ToolbarItem): item is ToolbarItemConfig {
+function isToolbarItemConfig(item: ToolbarItem): item is ToolbarItemConfig {
   return (
     item !== null &&
     item !== undefined &&

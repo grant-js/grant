@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { createJSONStorage, devtools, persist } from 'zustand/middleware';
 
 /** Used for devtools display name. */
-export const AUTH_STORE_STORAGE_KEY = 'grant-auth-store';
+const AUTH_STORE_STORAGE_KEY = 'grant-auth-store';
 
 /** Storage key for persisted currentAccountId only (last workspace). */
 const AUTH_PREFERENCES_STORAGE_KEY = 'grant-auth-preferences';

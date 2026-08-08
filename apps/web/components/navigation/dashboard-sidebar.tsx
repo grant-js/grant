@@ -21,7 +21,7 @@ import { usePathname } from '@/i18n/navigation';
 
 import { NavLink } from './nav-link';
 
-export interface NavItem {
+interface NavItem {
   title: string;
   url: string;
   icon: LucideIcon;

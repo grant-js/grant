@@ -2,7 +2,6 @@ import { UserAuthenticationMethodProvider } from '@grantjs/schema';
 import { z } from 'zod';
 
 export enum ProjectAppView {
-  CARD = 'card',
   TABLE = 'table',
 }
 

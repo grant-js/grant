@@ -30,7 +30,7 @@ interface ProjectAppState {
 
 const defaultTagsSort = { field: TagSortField.Name, order: SortOrder.Asc };
 
-export const PROJECT_APP_TAGS_PAGE_LIMIT = 10;
+const PROJECT_APP_TAGS_PAGE_LIMIT = 10;
 
 export const useProjectAppStore = create<ProjectAppState>()(
   devtools(

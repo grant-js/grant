@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-export interface ChipProps
+interface ChipProps
   extends Omit<React.ComponentProps<'div'>, 'onClick'>, VariantProps<typeof chipVariants> {
   label: string;
   onDelete?: () => void;
@@ -61,4 +61,4 @@ function Chip({
   );
 }
 
-export { Chip, chipVariants };
+export { Chip };

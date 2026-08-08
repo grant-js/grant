@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 const rootDir =
   typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
-/** Design tokens (mirrors styles/tokens.ts for config load contexts where that path does not resolve) */
+/** Design tokens (Tailwind/PostCSS config load contexts need a plain object literal, not a module import). */
 const tokens = {
   colors: {
     primary: {

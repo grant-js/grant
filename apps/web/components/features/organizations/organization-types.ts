@@ -1,13 +1,4 @@
-import { Organization } from '@grantjs/schema';
 import { z } from 'zod';
-
-export interface OrganizationsQueryResult {
-  organizations: {
-    organizations: Organization[];
-    totalCount: number;
-    hasNextPage: boolean;
-  };
-}
 
 export const createOrganizationSchema = z.object({
   name: z.string().min(1, 'errors.validation.organizationNameRequired'),
