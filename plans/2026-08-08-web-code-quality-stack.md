@@ -5,7 +5,7 @@
 - **Slug**: `web-code-quality`
 - **Story brief**: [`plans/2026-08-08-web-code-quality-brief.md`](./2026-08-08-web-code-quality-brief.md)
 - **Findings**: [`docs/contributing/code-quality/web.md`](../docs/contributing/code-quality/web.md)
-- **Status**: approved (2026-08-08, Ale Heredia)
+- **Status**: merged-to-main (2026-08-09, Ale Heredia — [#237](https://github.com/grant-js/grant/pull/237))
 - **Story trunk**: `feat/web-code-quality`
 - **worktree_path**: not required — no other story is in flight (`git worktree list` shows only the main checkout, on `main`, clean apart from the two files this story must land — see [Dependencies / notes](#dependencies--notes)). All slices in this stack are run serially in the main checkout; see [Fan-out](#fan-out) for the per-slice decision.
 
@@ -181,13 +181,13 @@ Flagging these for the human reviewer before implementation starts — none cont
 - [x] Gate 2: Stack plan approved — 2026-08-08, Ale Heredia. All 5 judgment calls accepted as written. Implementation may begin.
 - [x] Gate 3: Stack PRs merged into trunk — 1 (security-full, independent review required before merge), 2, 3, 4, 5, 6, 7 (light). **All 7 merged** 2026-08-09, Ale Heredia: [#229](https://github.com/grant-js/grant/pull/229), [#230](https://github.com/grant-js/grant/pull/230), [#232](https://github.com/grant-js/grant/pull/232), [#233](https://github.com/grant-js/grant/pull/233), [#234](https://github.com/grant-js/grant/pull/234), [#235](https://github.com/grant-js/grant/pull/235), [#236](https://github.com/grant-js/grant/pull/236).
   - Full verification re-run on the merged trunk (not just per-slice): `pnpm --filter grant-web exec tsc --noEmit`, `vitest run` (47/47), `lint` (0 errors, 19 pre-existing warnings), `build`, `dead-code:web`, `dead-code:api`, `format:check` — all clean.
-- [ ] Gate 4: Story → `main` deep review complete.
+- [x] Gate 4: Story → `main` deep review complete. [#237](https://github.com/grant-js/grant/pull/237) merged 2026-08-09, Ale Heredia. `main` published without a release (no changeset — expected for a refactor-only story): https://github.com/grant-js/grant/actions/runs/31308820936.
 
 ## Cleanup
 
-- [ ] `git worktree remove` — not applicable; this story runs in the main checkout
-- [ ] Local slice branches deleted — deferred to after gate 4 (final story→`main` merge), consistent with pass 1
-- [ ] Stack plan status → `merged-to-main` — deferred to after gate 4
+- [x] `git worktree remove` — not applicable; this story runs in the main checkout
+- [x] Local and remote slice branches deleted (all 7 slice branches + the `feat/web-code-quality` trunk) — 2026-08-09, after all 8 PRs confirmed `MERGED` via `gh pr list`.
+- [x] Stack plan status → `merged-to-main`
 - [x] Update [`web.md`](../docs/contributing/code-quality/web.md) with resolved counts/decisions, and record this pass in the [rubric's passes table](../docs/contributing/code-quality/README.md#passes) — done, see web.md § Pass-2 close-out
 
 ## Follow-ups (not blocking this story)
