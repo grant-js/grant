@@ -350,5 +350,56 @@ export default defineConfig(
       'no-restricted-imports': 'off',
       'no-restricted-syntax': 'off',
     },
+  },
+
+  // @grantjs/core sits at the bottom of the package DAG — it must never import
+  // adapter packages or @grantjs/database. Currently 100% clean; this locks it in.
+  // Scoped to core only; each later package pass widens the guardrail to itself.
+  {
+    files: ['packages/@grantjs/core/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@grantjs/cache',
+              message:
+                '@grantjs/core must not import adapter packages — see AGENTS.md § Package dependency graph.',
+            },
+            {
+              name: '@grantjs/storage',
+              message:
+                '@grantjs/core must not import adapter packages — see AGENTS.md § Package dependency graph.',
+            },
+            {
+              name: '@grantjs/email',
+              message:
+                '@grantjs/core must not import adapter packages — see AGENTS.md § Package dependency graph.',
+            },
+            {
+              name: '@grantjs/jobs',
+              message:
+                '@grantjs/core must not import adapter packages — see AGENTS.md § Package dependency graph.',
+            },
+            {
+              name: '@grantjs/logger',
+              message:
+                '@grantjs/core must not import adapter packages — see AGENTS.md § Package dependency graph.',
+            },
+            {
+              name: '@grantjs/errors',
+              message:
+                '@grantjs/core must not import adapter packages — see AGENTS.md § Package dependency graph.',
+            },
+            {
+              name: '@grantjs/database',
+              message:
+                '@grantjs/core must not import @grantjs/database — see AGENTS.md § Package dependency graph.',
+            },
+          ],
+        },
+      ],
+    },
   }
 );

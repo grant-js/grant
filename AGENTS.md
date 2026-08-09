@@ -26,7 +26,7 @@ The project follows hexagonal architecture (ports and adapters). Understand and 
             └── @grantjs/jobs      (node-cron/BullMQ adapters)
 ```
 
-- **`@grantjs/core`** defines domain ports (`ILogger`, `ILoggerFactory`, `ICacheAdapter`, `IStorageAdapter`, `IEmailAdapter`, `IJobAdapter`) and a rich exception hierarchy (`GrantException` → `NotFoundError`, `BadRequestError`, `AuthenticationError`, `AuthorizationError`, `ConflictError`, `ConfigurationError`, `ValidationError`).
+- **`@grantjs/core`** defines domain ports (`ILogger`, `ILoggerFactory`, `ICacheAdapter`, `IFileStorageService`, `IEmailService`, `IJobAdapter`) and a rich exception hierarchy (`GrantException` → `NotFoundError`, `BadRequestError`, `AuthenticationError`, `AuthorizationError`, `ConflictError`, `ConfigurationError`, `ValidationError`).
 - **Adapter packages** (`cache`, `storage`, `email`, `jobs`, `logger`, `errors`) implement core ports. They accept `ILogger` (or `ILoggerFactory`) via constructor injection or factory — they must **never** import `@grantjs/logger` directly.
 - **`@grantjs/database`** accepts an optional `ILogger` via `DatabaseConfig.logger`.
 - Packages must use `@grantjs/*` aliases for cross-package imports (never relative `../../../` paths).
@@ -122,7 +122,7 @@ For multi-file features, use the **Agentic SDLC** (story trunk + stacked PRs) �
 
 4. **API** – `apps/api`
    - Add or update GraphQL resolvers and REST routes; both use types from `@grantjs/schema` and map to handlers. See `.cursor/rules/api.mdc` when editing API code.
-   - **Service ports in `@grantjs/core`**: For each new service in `apps/api`, add a matching `I*Service` interface in `packages/@grantjs/core/src/ports/services/` (grouped by domain, e.g. `project.service.port.ts`). Export it from `packages/@grantjs/core/src/ports/services/index.ts`, and if the interface is listed in `packages/@grantjs/core/src/ports/service.port.ts` (backward-compatible barrel), add it there too. Implement the interface on the concrete class; handlers inject the **port** type, not the implementation class.
+   - **Service ports in `@grantjs/core`**: For each new service in `apps/api`, add a matching `I*Service` interface in `packages/@grantjs/core/src/ports/services/` (grouped by domain, e.g. `project.service.port.ts`). Export it from `packages/@grantjs/core/src/ports/services/index.ts`. Implement the interface on the concrete class; handlers inject the **port** type, not the implementation class.
 
 5. **Web** – `apps/web`
    - Add or update hooks (from operation documents) and feature components. See `.cursor/rules/react-and-web.mdc` when editing web code.

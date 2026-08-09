@@ -12,7 +12,7 @@ export class GrantException extends Error {
 
   constructor(message: string, code: string, originalError?: Error) {
     super(message);
-    this.name = 'GrantException';
+    this.name = new.target.name;
     this.code = code;
     this.originalError = originalError;
 
@@ -35,11 +35,10 @@ export class NotFoundError extends GrantException {
 
   constructor(resource: string, id?: string, originalError?: Error) {
     super(
-      id ? `${resource} '${id}' not found` : `${resource} not found`,
+      id !== undefined ? `${resource} '${id}' not found` : `${resource} not found`,
       'NOT_FOUND',
       originalError
     );
-    this.name = 'NotFoundError';
     this.resource = resource;
     this.resourceId = id;
   }
@@ -53,7 +52,6 @@ export class ValidationError extends GrantException {
 
   constructor(message: string, violations: string[] = [], originalError?: Error) {
     super(message, 'VALIDATION_ERROR', originalError);
-    this.name = 'ValidationError';
     this.violations = violations;
   }
 }
@@ -64,7 +62,6 @@ export class ValidationError extends GrantException {
 export class BadRequestError extends GrantException {
   constructor(message: string, originalError?: Error) {
     super(message, 'BAD_REQUEST', originalError);
-    this.name = 'BadRequestError';
   }
 }
 
@@ -78,7 +75,6 @@ export class InvalidOrUsedVerificationTokenError extends GrantException {
     originalError?: Error
   ) {
     super(message, 'BAD_REQUEST', originalError);
-    this.name = 'InvalidOrUsedVerificationTokenError';
   }
 }
 
@@ -88,7 +84,6 @@ export class InvalidOrUsedVerificationTokenError extends GrantException {
 export class AuthenticationError extends GrantException {
   constructor(message: string = 'Authentication required', originalError?: Error) {
     super(message, 'UNAUTHENTICATED', originalError);
-    this.name = 'AuthenticationError';
   }
 }
 
@@ -102,11 +97,10 @@ export class AuthorizationError extends GrantException {
   constructor(
     message: string = 'Forbidden',
     reason?: string,
-    originalError?: Error,
-    metadata?: Record<string, unknown>
+    metadata?: Record<string, unknown>,
+    originalError?: Error
   ) {
     super(message, 'FORBIDDEN', originalError);
-    this.name = 'AuthorizationError';
     this.reason = reason;
     this.metadata = metadata;
   }
@@ -121,7 +115,6 @@ export class ConflictError extends GrantException {
 
   constructor(message: string, resource?: string, field?: string, originalError?: Error) {
     super(message, 'CONFLICT', originalError);
-    this.name = 'ConflictError';
     this.resource = resource;
     this.field = field;
   }
@@ -133,7 +126,6 @@ export class ConflictError extends GrantException {
 export class ConfigurationError extends GrantException {
   constructor(message: string, originalError?: Error) {
     super(message, 'CONFIGURATION_ERROR', originalError);
-    this.name = 'ConfigurationError';
   }
 }
 
@@ -149,7 +141,6 @@ export class TokenExpiredError extends GrantException {
 
   constructor(message: string = 'Token has expired', expiredAt?: Date, originalError?: Error) {
     super(message, 'TOKEN_EXPIRED', originalError);
-    this.name = 'TokenExpiredError';
     this.expiredAt = expiredAt;
   }
 }
@@ -160,7 +151,6 @@ export class TokenExpiredError extends GrantException {
 export class TokenInvalidError extends GrantException {
   constructor(message: string = 'Invalid token', originalError?: Error) {
     super(message, 'TOKEN_INVALID', originalError);
-    this.name = 'TokenInvalidError';
   }
 }
 
@@ -170,7 +160,6 @@ export class TokenInvalidError extends GrantException {
 export class TokenValidationError extends GrantException {
   constructor(message: string = 'Token validation failed', originalError?: Error) {
     super(message, 'TOKEN_VALIDATION_FAILED', originalError);
-    this.name = 'TokenValidationError';
   }
 }
 
@@ -180,6 +169,5 @@ export class TokenValidationError extends GrantException {
 export class NoSessionSigningKeyError extends GrantException {
   constructor(message: string = 'No session signing key found', originalError?: Error) {
     super(message, 'NO_SESSION_SIGNING_KEY_FOUND', originalError);
-    this.name = 'NoSessionSigningKeyError';
   }
 }

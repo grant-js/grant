@@ -5,7 +5,7 @@
 export type Aal = 'aal1' | 'aal2' | 'aal3';
 
 /** Canonical total order: aal1 < aal2 < aal3 */
-export const AAL_RANK: Record<Aal, number> = {
+const AAL_RANK: Record<Aal, number> = {
   aal1: 1,
   aal2: 2,
   aal3: 3,

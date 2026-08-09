@@ -5,7 +5,7 @@
 - **Slug**: `core-code-quality`
 - **Story brief**: [`plans/2026-08-09-core-code-quality-brief.md`](./2026-08-09-core-code-quality-brief.md)
 - **Findings**: [`docs/contributing/code-quality/core.md`](../docs/contributing/code-quality/core.md)
-- **Status**: pending approval
+- **Status**: approved (2026-08-09, Ale Heredia)
 - **Story trunk**: `feat/core-code-quality`
 - **worktree_path**: not required — `git worktree list` shows only the main checkout, on `main`. The one other branch currently open (`fix/notification-role-i18n-key`, PR #238) touches `apps/api/src/lib/notifications/` and `packages/@grantjs/i18n/locales/` only — zero file overlap with this story. All slices run serially in the main checkout; see [Fan-out](#fan-out).
 
@@ -126,16 +126,20 @@ Flagging these for the human reviewer before implementation starts — none cont
 
 ## Human gates
 
-- [ ] Gate 2: Stack plan approval pending.
-- [ ] Gate 3: Stack PRs merged into trunk.
-- [ ] Gate 4: Story → `main` deep review complete.
+- [x] Gate 2: Stack plan approved — 2026-08-09, Ale Heredia. Implementation may proceed.
+- [x] Gate 3: Stack PRs merged into trunk — 1 (light), 2 (security-full), 3, 4, 5, 6 (light). **All 6 merged** 2026-08-09: [#240](https://github.com/grant-js/grant/pull/240), [#241](https://github.com/grant-js/grant/pull/241), [#242](https://github.com/grant-js/grant/pull/242), [#243](https://github.com/grant-js/grant/pull/243), [#244](https://github.com/grant-js/grant/pull/244), [#245](https://github.com/grant-js/grant/pull/245).
+- [ ] Gate 4: Story → `main` deep review complete. Integration verification done on the assembled trunk (see below); awaiting human review.
+  - `main` merged into the trunk first (it had moved ahead by the v1.5.2 release commit #239) — clean, no file overlap.
+  - Re-run on the merged trunk, not per-slice: `@grantjs/core` `tsc --noEmit` + `vitest run` (**186/186, 7 files**), `grant-api` `tsc --noEmit` + `vitest run` (**965/965, 117 files** — the cross-package check that matters, since core's exception/port changes ripple into `apps/api`), full `lint` (**18/18 tasks, 0 errors**), `dead-code:core`/`:api`/`:web` (all exit 0), `format:check`, full `build` (exit 0).
+  - **Guardrail proven to fire, not just pass**: planted a real `@grantjs/logger` import in `core/aal.ts` and confirmed the new DAG rule errors on it with the intended message, then restored. Per the rubric's "prove the check fires" corollary.
+  - **All 28 `new AuthorizationError(...)` call sites audited repo-wide** for the argument reorder — only 3 pass 3+ positional args, all correctly updated; the remaining 25 pass 1–2 args and are structurally unaffected.
 
 ## Cleanup
 
-- [ ] `git worktree remove` — not applicable; this story runs in the main checkout
+- [x] `git worktree remove` — not applicable; this story runs in the main checkout
 - [ ] Local and remote slice branches deleted — after gate 4
 - [ ] Stack plan status → `merged-to-main`
-- [ ] Update [`core.md`](../docs/contributing/code-quality/core.md) with resolved counts, and record this pass as `Done` in the [rubric's passes table](../docs/contributing/code-quality/README.md#passes)
+- [x] Update [`core.md`](../docs/contributing/code-quality/core.md) with resolved counts, and record this pass as `Done` in the [rubric's passes table](../docs/contributing/code-quality/README.md#passes) — done, see core.md § Pass-3 close-out
 
 ## Follow-ups (not blocking this story)
 

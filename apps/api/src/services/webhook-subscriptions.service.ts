@@ -5,13 +5,13 @@ import type {
   IWebhookSubscriptionService,
   ListWebhookDeliveriesParams,
   ListWebhookSubscriptionsParams,
-  WebhookDeliveryPage,
 } from '@grantjs/core';
 import type {
   CreateWebhookSubscriptionInput,
   Scope,
   UpdateWebhookSubscriptionInput,
   WebhookDeliveryAttempt,
+  WebhookDeliveryPage,
   WebhookSubscription,
   WebhookSubscriptionWithSecret,
 } from '@grantjs/schema';

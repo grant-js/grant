@@ -6,8 +6,9 @@ import {
   TokenInvalidError,
   TokenValidationError,
 } from '../errors/grant-exception';
+import type { IGrantService } from '../ports/services/grant.service.port';
 import type { ITokenProvider } from '../ports/token.port';
-import type { ApiKeyTokenPayload, GrantService, SessionSigningKey, TokenClaims } from '../types';
+import type { ApiKeyTokenPayload, SessionSigningKey, TokenClaims } from '../types';
 
 export interface VerifyOptions {
   /** If true, do not reject expired tokens (e.g. for refresh flow) */
@@ -21,14 +22,14 @@ export interface SignApiKeyTokenOptions {
 
 /**
  * Single entry point for JWT operations: parse (kid, verify, validate), sign (session, API key),
- * and verifyToken (resolve key by kid, verify, validate). Resolves keys via GrantService.
+ * and verifyToken (resolve key by kid, verify, validate). Resolves keys via IGrantService.
  *
  * Delegates raw JWT codec operations (decode / verify / sign) to an injected ITokenProvider,
  * keeping the core free of any concrete JWT library dependency.
  */
 export class TokenManager {
   constructor(
-    private readonly grantService: GrantService,
+    private readonly grantService: IGrantService,
     private readonly tokenProvider: ITokenProvider
   ) {}
 

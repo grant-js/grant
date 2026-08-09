@@ -2,8 +2,8 @@ import {
   type ExecutionContextGroup,
   type ExecutionContextRole,
   type ExecutionContextUser,
-  GrantService as IGrantService,
   type IGrantRepository,
+  type IGrantService,
   type SessionSigningKey,
 } from '@grantjs/core';
 import { Permission, Scope, TokenType } from '@grantjs/schema';

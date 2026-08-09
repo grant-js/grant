@@ -62,7 +62,7 @@ export function requireMfaGraphQL<
     if (!requiresMfa || user!.mfaVerified) {
       return resolverFn(parent, args, context, info);
     }
-    throw new AuthorizationError('MFA required', 'MFA_REQUIRED', undefined, {
+    throw new AuthorizationError('MFA required', 'MFA_REQUIRED', {
       hasActiveEnrollment: userRequiresMfa,
     });
   };

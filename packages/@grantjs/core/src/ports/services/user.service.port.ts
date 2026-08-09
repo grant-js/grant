@@ -37,16 +37,7 @@ import type {
   UserTag,
 } from '@grantjs/schema';
 
-import type { SelectedFields } from '../repositories/common';
-
-// ---------------------------------------------------------------------------
-// Shared
-// ---------------------------------------------------------------------------
-
-/** Common deletion flags (soft vs hard delete) */
-export interface DeleteParams {
-  hardDelete?: boolean | null;
-}
+import type { DeleteParams, SelectedFields } from '../repositories/common';
 
 // ---------------------------------------------------------------------------
 // IUserService

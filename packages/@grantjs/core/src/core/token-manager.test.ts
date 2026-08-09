@@ -9,13 +9,13 @@ import {
   TokenExpiredError,
   TokenInvalidError,
 } from '../errors/grant-exception';
+import type { IGrantService } from '../ports/services/grant.service.port';
 import type {
   ITokenProvider,
   TokenDecodeResult,
   TokenSignOptions,
   TokenVerifyOptions,
 } from '../ports/token.port';
-import type { GrantService } from '../types';
 import { TokenClaims } from '../types';
 import { TokenManager } from './token-manager';
 
@@ -56,7 +56,7 @@ function createRs256Token(payload: Record<string, unknown>, kid: string = TEST_K
   return jwt.sign(payload, privateKeyPem, { algorithm: 'RS256', keyid: kid });
 }
 
-function createMockGrantService(overrides?: Partial<GrantService>): GrantService {
+function createMockGrantService(overrides?: Partial<IGrantService>): IGrantService {
   return {
     getUserPermissions: vi.fn(),
     getUserRoles: vi.fn(),
@@ -335,7 +335,7 @@ describe('TokenManager', () => {
   });
 
   describe('signSessionToken', () => {
-    it('should sign with session key from GrantService', async () => {
+    it('should sign with session key from IGrantService', async () => {
       const mockService = createMockGrantService();
       const manager = new TokenManager(mockService, jwtTokenProvider);
       const payload = {
@@ -369,7 +369,7 @@ describe('TokenManager', () => {
   });
 
   describe('signApiKeyToken', () => {
-    it('should sign with scope key from GrantService', async () => {
+    it('should sign with scope key from IGrantService', async () => {
       const mockService = createMockGrantService();
       const manager = new TokenManager(mockService, jwtTokenProvider);
       const scope = { tenant: Tenant.Organization, id: 'org-1' };
