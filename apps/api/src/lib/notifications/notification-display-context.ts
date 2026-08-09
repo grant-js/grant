@@ -1,3 +1,4 @@
+import { isRoleI18nKey } from '@grantjs/constants';
 import type {
   IAccountRepository,
   IOrganizationRepository,
@@ -7,6 +8,7 @@ import type {
 } from '@grantjs/core';
 import { type DomainEvent, type Scope, Tenant } from '@grantjs/schema';
 
+import { translateStatic } from '@/i18n';
 import type { Transaction } from '@/lib/transaction-manager.lib';
 
 /** Resolved display labels used when composing notification title/body. */
@@ -112,19 +114,30 @@ export class NotificationDisplayContextResolver {
   private async resolveRoleName(event: DomainEvent, tx?: Transaction): Promise<string | null> {
     const fromPayload =
       stringField(event.data.after, 'roleName') ?? stringField(event.data.before, 'roleName');
-    if (fromPayload) return fromPayload;
+    if (fromPayload) return displayRoleName(fromPayload);
 
     const roleId =
       stringField(event.data.after, 'roleId') ?? stringField(event.data.before, 'roleId');
     if (!roleId) return null;
 
     const { roles } = await this.roles.getRoles({ ids: [roleId], limit: 1 }, tx);
-    return roles[0]?.name ?? null;
+    const name = roles[0]?.name ?? null;
+    return name ? displayRoleName(name) : null;
   }
 }
 
 function entityNameFromPayload(event: DomainEvent): string | null {
   return stringField(event.data.after, 'name') ?? stringField(event.data.before, 'name');
+}
+
+/**
+ * System roles store an i18n key as their `name` (see `@grantjs/constants`
+ * `getNameKey`); custom roles store a literal name. Notification text is
+ * English-only (no per-recipient locale here), so resolve system roles to
+ * their default-locale label rather than splicing the raw key into copy.
+ */
+function displayRoleName(name: string): string {
+  return isRoleI18nKey(name) ? translateStatic(`common.${name}`) : name;
 }
 
 function stringField(
