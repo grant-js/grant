@@ -296,5 +296,59 @@ export default defineConfig(
         },
       ],
     },
+  },
+
+  // apps/web layer boundary: hooks/** is the only place Apollo operations and
+  // *Document imports from @grantjs/schema get wired — see AGENTS.md § Web app
+  // layer boundaries. Scoped to app/** and components/**; hooks/**, lib/**, and
+  // stores/** fall outside these globs and are unaffected. @grantjs/core is
+  // deliberately not restricted here — apps/web may reach it directly for zod
+  // schemas that aren't GraphQL-codegen'd (see AGENTS.md).
+  {
+    files: ['apps/web/app/**/*.{ts,tsx}', 'apps/web/components/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@apollo/client',
+              importNames: ['useQuery', 'useMutation', 'useLazyQuery', 'useSubscription'],
+              message:
+                'Apollo operations must be wired in hooks/** — see AGENTS.md § Web app layer boundaries.',
+            },
+            {
+              name: '@apollo/client/react',
+              importNames: ['useQuery', 'useMutation', 'useLazyQuery', 'useSubscription'],
+              message:
+                'Apollo operations must be wired in hooks/** — see AGENTS.md § Web app layer boundaries.',
+            },
+          ],
+        },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "ImportDeclaration[source.value='@grantjs/schema'] > ImportSpecifier[imported.name=/Document$/]",
+          message:
+            '*Document imports must be wired in hooks/** — see AGENTS.md § Web app layer boundaries.',
+        },
+      ],
+    },
+  },
+
+  // Named, justified exceptions to the boundary above — see AGENTS.md § Web app
+  // layer boundaries for the rationale on each. This list is the record of the
+  // decision, not a silent eslint-disable.
+  {
+    files: [
+      'apps/web/components/features/auth/mfa-step-up-dialog.tsx',
+      'apps/web/components/features/notifications/notification-bell.tsx',
+    ],
+    rules: {
+      'no-restricted-imports': 'off',
+      'no-restricted-syntax': 'off',
+    },
   }
 );

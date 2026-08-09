@@ -119,3 +119,41 @@ export async function denyProjectConsent(
   }
   return (data.success && data.data ? data.data : data) as ProjectConsentRedirectResult;
 }
+
+export interface ProjectEmailLinkRequestInput {
+  clientId: string;
+  redirectUri: string;
+  email: string;
+  locale: string;
+  state?: string | null;
+  clientState?: string | null;
+  scope?: string | null;
+}
+
+/** Requests a project-scoped magic-link email for the OAuth email-first login flow. */
+export async function requestProjectEmailLink(input: ProjectEmailLinkRequestInput): Promise<void> {
+  const apiBase = getApiBaseUrl();
+  const trimmedState = input.state?.trim();
+  const trimmedScope = input.scope?.trim();
+  const res = await fetch(`${apiBase}/api/auth/project/email/request`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_id: input.clientId,
+      redirect_uri: input.redirectUri,
+      ...(trimmedState && { state: trimmedState }),
+      email: input.email,
+      ...(input.clientState && { client_state: input.clientState }),
+      ...(trimmedScope && { scope: trimmedScope }),
+      locale: input.locale,
+    }),
+  });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as ProjectOAuthApiErrorBody;
+    throw new ProjectOAuthApiError(
+      data.details ?? data.error ?? data.message ?? 'Request failed',
+      res.status,
+      data
+    );
+  }
+}

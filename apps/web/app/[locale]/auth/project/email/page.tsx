@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Link } from '@/i18n/navigation';
-import { getApiBaseUrl } from '@/lib/constants';
+import { requestProjectEmailLink } from '@/lib/project-oauth-api';
 
 type FormValues = { email: string };
 
@@ -56,29 +56,15 @@ export default function ProjectOAuthEmailPage() {
     }
     setError(null);
     try {
-      const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/api/auth/project/email/request`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          client_id: clientId,
-          redirect_uri: redirectUri,
-          ...(state?.trim() && { state: state.trim() }),
-          email: values.email,
-          ...(clientState && { client_state: clientState }),
-          ...(scopeParam?.trim() && { scope: scopeParam.trim() }),
-          locale,
-        }),
+      await requestProjectEmailLink({
+        clientId,
+        redirectUri,
+        email: values.email,
+        locale,
+        state,
+        clientState,
+        scope: scopeParam,
       });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as {
-          error?: string;
-          details?: string;
-          message?: string;
-        };
-        const message = data.details ?? data.error ?? data.message ?? t('requestFailed');
-        throw new Error(message);
-      }
       setSubmitted(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : t('somethingWentWrong'));
