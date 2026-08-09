@@ -1,0 +1,187 @@
+# Code quality: `packages/@grantjs/core`
+
+**Pass 3** · 2026-08-09 · commit `40cc5452` · 67 files, ~9,524 lines (`src/`)
+
+Method and lens definitions: [Code quality passes](./README.md). Findings below were gathered by three agents in parallel (Architect: lenses 1, 6; Senior Backend: lenses 3, 4, 5; Senior QA: lens 7) plus a direct mechanical pass for lens 2 — legitimate fan-out per [`agentic-sdlc.md` § Fan-out](../agentic-sdlc.md#fan-out-parallelism), since none of this reads-and-reports work writes to the same file concurrently.
+
+`packages/@grantjs/core` sits lowest in the package DAG (`@grantjs/schema → @grantjs/core → adapters`) — everything else in the monorepo depends on it, directly or transitively, so findings here carry the widest blast radius of any pass so far. Two items inherited unchanged from pass 2's ["Inputs carried into later passes"](./README.md#inputs-carried-into-later-passes) table, confirmed still true: the guardrails (`eslint.config.mjs`'s rule blocks, `dead-code:api`/`dead-code:web`) stop at `apps/api/**` and `apps/web/**` — `packages/@grantjs/*` has neither — and this pass's own condensed slice estimates should be sized against a slice's actual diff once implemented, not trusted as a ceiling.
+
+## Summary
+
+**The one property this whole audit exists to protect — the package DAG — is completely clean, and completely unguarded.** Every `@grantjs/*` import inside `packages/@grantjs/core/src` targets `@grantjs/schema` only; zero reach adapter packages (`cache`, `storage`, `email`, `jobs`, `logger`, `errors`, `database`). `package.json` has exactly two runtime dependencies (`@grantjs/schema`, `zod`); its one infra-shaped devDependency (`jsonwebtoken`) is a documented test fixture, not a shipped dependency. Nothing in `eslint.config.mjs` or `knip` currently prevents this from drifting — the boundary is real today only because no one has broken it yet, which is exactly the condition the rubric calls out as cheapest to lock in.
+
+**Port naming is internally consistent, and the DAG boundary at the exception hierarchy holds too.** All 79 service-port and 55 repository-port interfaces use singular entity nouns with mirrored service/repository names; all 12 `GrantException` subclasses are actively thrown across `apps/api`, and `packages/@grantjs/errors`' mapper `instanceof`-checks all 12 by name with zero renaming at that boundary. `AGENTS.md` itself has drifted from the code it documents in two places, both one-directional (the doc is stale, not the code) and both cheap to fix.
+
+**What drifted is smaller and more scattered than pass 1 or pass 2's findings — no single copy-pasted block dominates.** The clearest repetition (`I*TagRepository` × 5) can't be collapsed without renaming ~200 call sites across `apps/api`, so it's a real Tier 2 judgment call rather than a clean win; the actually-mechanical extraction (`GrantException`'s repeated `this.name = 'X'`) is 12 lines, not hundreds. A "backward-compatible" port barrel `AGENTS.md` instructs contributors to maintain has zero importers and has been silently falling further out of sync (missing 21 of 79 interfaces) because nothing reads it.
+
+**One correctness bug surfaced, from characterizing previously-untested code** — the same pattern pass 1 and pass 2 both found: `src/errors/grant-exception.ts` (185 lines, 12 exception classes with real constructor logic) had zero test coverage before this pass. Writing characterization tests for it surfaced a latent defect in `NotFoundError` and brought the file from 0% to 100% line coverage.
+
+| Lens                                                                                | Result                                                                                              |
+| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `packages/@grantjs/core` → adapter-package imports (reverse-DAG)                    | 0                                                                                                   |
+| `package.json` runtime deps outside `@grantjs/schema`/`zod`                         | 0                                                                                                   |
+| Zero-implementer ports (hand-swept `implements` count)                              | 0 — see [Tier 4](#tier-4-dead-surface) for the tool-run caveat                                      |
+| `GrantException` subclasses with no `new` call site                                 | 0 / 12                                                                                              |
+| `transaction?: unknown` spelling consistency                                        | 626/626 identical spelling; 7/626 (1.1%) non-final parameter position; 1 method missing it entirely |
+| Pagination return-type declaration                                                  | 14/15 import a codegen'd `@grantjs/schema` `*Page` type; 1 hand-rolled duplicate of the same shape  |
+| `DeleteParams` declared inside `core`                                               | 2 (one under a comment labeled "Shared" in the wrong domain file, imported cross-domain by 9 files) |
+| `ports/service.port.ts` legacy barrel importers                                     | 0 (also unresolvable via `package.json`'s `exports` map — not just unused, unreachable)             |
+| `get*By*` vs `find*By*` for the identical semantic operation (secondary-key lookup) | 54 vs 11                                                                                            |
+| Coverage — `src/core/*.ts` (pre-existing)                                           | 987 source lines, 2,214 test lines, 76–95% line coverage per file                                   |
+| Coverage — `src/errors/grant-exception.ts` (before this pass)                       | 0% — zero test files                                                                                |
+| Coverage — `src/ports/**` (49 files)                                                | N/A — pure interface declarations, 5,218 lines, correctly untested                                  |
+
+---
+
+## Tier 0 — Correctness bugs {#tier-0-correctness-bugs}
+
+### 0.1 `NotFoundError` silently drops an empty-string `id` from its message
+
+[`src/errors/grant-exception.ts:36-45`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/errors/grant-exception.ts)
+
+The constructor builds its message with `id ? "${resource} '${id}' not found" : "${resource} not found"`. Passing `id = ''` — falsy, but a real, distinct-from-"no id" value, e.g. an unparsed empty route param — produces the identical message to passing no id at all, while `resourceId` is still stored as `''` on the instance. Anyone reading `.message` (logs, error responses) cannot distinguish "no id was ever known" from "an empty-string id was explicitly passed."
+
+**Checked before filing:** every current `new NotFoundError(...)` call site in `apps/api` (`rg "new NotFoundError\("`) passes either a real non-empty id, `undefined`, or `x ?? undefined` — so this is latent, not currently triggered by any caller. Filed as Tier 0 rather than dismissed because the constructor's own type (`id?: string`) invites a future caller to pass `''` and get silently swallowed error context, and because the fix is a one-line, low-risk change (`id !== undefined` instead of the truthy check) with no call-site impact today.
+
+Characterized in [`src/errors/grant-exception.test.ts:69`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/errors/grant-exception.test.ts) (new, this pass), named `'DEFECT CANDIDATE: an empty-string id is dropped from the message even though resourceId still records it'` — pins the current behavior rather than changing it. **Decision needed, not fixed here:** switch to `id !== undefined` (both are defensible; not authorized to change a public exception constructor's behavior inside an audit pass).
+
+---
+
+## Tier 1 — Guardrail gaps {#tier-1-guardrail-gaps}
+
+### Guardrails do not reach `packages/` at all
+
+Carried forward from pass 2's ["Inputs carried into later passes"](./README.md#inputs-carried-into-later-passes) table, confirmed still true: `eslint.config.mjs` has zero `files:` block scoped to `packages/@grantjs/**`, and `package.json`'s `dead-code` scripts expose only `dead-code:api`/`dead-code:web` — no `dead-code:core` or equivalent, even though `knip.json` already has a `packages/@grantjs/*` workspace entry configured (`entry: ["src/index.ts"]`) that nothing invokes in CI or the pre-push hook. Unlike pass 1 and pass 2, there is currently **nothing to fix** behind this guardrail for the DAG-boundary check specifically — the boundary is 100% clean today, which is exactly the condition the rubric's Enforcement section calls the highest-value moment to lock a rule in ("locking in a lens that currently passes costs nothing"). Widening `eslint.config.mjs` and wiring a `dead-code:core` script are both config-only changes with no code migration required.
+
+### `AGENTS.md` names two ports that don't exist in the code
+
+[`AGENTS.md:29`](https://github.com/grant-js/grant/blob/main/AGENTS.md) states `@grantjs/core` defines `ILogger`, `ILoggerFactory`, `ICacheAdapter`, `IStorageAdapter`, `IEmailAdapter`, `IJobAdapter`. Four of six match; the other two don't:
+
+| `AGENTS.md` name  | Actual port                                                                                                           |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `IStorageAdapter` | [`IFileStorageService`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/storage.port.ts) |
+| `IEmailAdapter`   | [`IEmailService`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/email.port.ts)         |
+
+The drift is one-directional — the doc is the stale side. Every downstream consumer already uses the real names consistently: all storage adapters (`S3StorageAdapter`, `LocalStorageAdapter`) and all five email adapters (`console`, `smtp`, `mailjet`, `ses`, `mailgun`) `implements` the actual port name; `IStorageAdapter`/`IEmailAdapter` have zero occurrences anywhere in the repo outside `AGENTS.md` itself. A two-line doc edit, not a code rename.
+
+Adjacent, worth deciding alongside the same edit rather than filing separately: [`ports/services/file-storage.service.port.ts:12`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/services/file-storage.service.port.ts) defines `IFileStorageServicePort extends IFileStorageService` — an application-level port layered on top of the adapter port. The `...ServicePort` suffix is the only place in `core` where "Service" and "Port" both appear in one interface name, which reads as the same underlying naming confusion as the `AGENTS.md` drift rather than an independent issue.
+
+### `AGENTS.md`'s workflow step 4 describes a barrel file that nothing can import
+
+[`AGENTS.md`](https://github.com/grant-js/grant/blob/main/AGENTS.md), the API workflow section, step 4: _"if the interface is listed in `packages/@grantjs/core/src/ports/service.port.ts` (backward-compatible barrel), add it there too."_ That file has zero importers anywhere in the repo and is not even resolvable from outside the package — see [4.1](#41-portsserviceportts-is-entirely-unreachable) for the full evidence. The instruction currently describes maintaining a file nothing reads. Disposition: delete the file (Tier 4) and drop this sentence from `AGENTS.md` in the same edit — a doc correction, not a design decision.
+
+---
+
+## Tier 2 — Abstraction opportunities {#tier-2-abstraction-opportunities}
+
+Sized against the call site per rule 6, not against total pattern size.
+
+### 2.1 Five `I*TagRepository` interfaces are byte-identical once the entity name is normalized out — but collapsing them ripples into ~200 call sites
+
+[`IRoleTagRepository`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/repositories/role.repository.port.ts) (`:86-99`), `IGroupTagRepository` ([`group.repository.port.ts:75-88`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/repositories/group.repository.port.ts)), `IPermissionTagRepository` ([`permission.repository.port.ts:50-78`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/repositories/permission.repository.port.ts)), `IResourceTagRepository` ([`resource.repository.port.ts:51-73`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/repositories/resource.repository.port.ts)), and `IUserTagRepository` ([`user.repository.port.ts:123-136`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/repositories/user.repository.port.ts)) all declare the same 8 methods — `getXTags`, `getXTagsByXIds`, `getXTag`, `getXTagIntersection`, `addXTag`, `updateXTag`, `softDeleteXTag`, `hardDeleteXTag` — verified by diffing all 5 pairwise with the entity name substituted out: 0 remaining diff for all 5 files.
+
+The size of the actual saving depends entirely on whether an extraction can avoid renaming the entity-specific methods. Those method names (`getRoleTag`, `getRoleTags`, etc.) are called by name across the service layer — ~200+ call sites across the 5 entities combined. A base interface that keeps named methods per entity saves nothing at the call site (each file still writes out all 8 method names). A generic interface that also genericizes method names (via TS template-literal mapped types) would be a first precedent in this codebase — nothing in `ports/` uses that pattern today. **Net: real duplication, but the only extraction that doesn't ripple into `apps/api` is a new pattern for this codebase — human decision on appetite, not a mechanical fix.**
+
+Three related interfaces have **drifted away** from the 8-method shape rather than being independently designed — checked via method-name diff, not shape-eyeballing:
+
+| Interface                                                                                                                                                              | Methods present                                                           | Missing vs. the 5-file shape                                                                                                                                                          |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`IAccountTagRepository`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/repositories/account.repository.port.ts) (`:119-129`)           | 5: get, add, update, softDelete, hardDelete                               | `getXTagsByXIds`, `getXTag` (singular), `getXTagIntersection`                                                                                                                         |
+| [`IOrganizationTagRepository`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/repositories/organization.repository.port.ts) (`:280-305`) | 5 (same set as Account)                                                   | same 3 as Account                                                                                                                                                                     |
+| [`IProjectTagRepository`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/repositories/project.repository.port.ts) (`:330-344`)           | 7: get, getSingular, getIntersection, add, update, softDelete, hardDelete | `getXTagsByXIds`; `getProjectTagIntersection` also has no `transaction?` parameter at all — see [3.4](#34-transaction-parameter-position-drifts-in-7626-and-is-missing-entirely-in-1) |
+
+This reads as incremental drift — methods added to newer domains, not backported to older ones — not intentional per-domain design.
+
+### 2.2 `GrantException` subclasses repeat `this.name = 'X'` in all 12 constructors — the mechanical contrast case to 2.1
+
+[`src/errors/grant-exception.ts`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/errors/grant-exception.ts), lines 15, 42, 56, 67, 81, 91, 109, 124, 136, 152, 163, 173, 183 — every subclass's constructor ends with a hand-written `this.name = 'ExactClassName';`, duplicating a value the runtime already knows. `Error.captureStackTrace(this, this.constructor)` one line above the base class's own copy already uses the correct dynamic pattern — the file mixes a dynamic idiom and a hand-copied one for two adjacent concerns. At the call site: the base constructor gains one line (`this.name = new.target.name;`), each of the 12 subclasses loses one line. A real, low-risk, single-file, 12-line net reduction with no cross-package blast radius — unlike 2.1, this is genuinely mechanical.
+
+### 2.3 `GrantService` (`types/index.ts`) duplicates `IGrantService` (`ports/services/grant.service.port.ts`) under a second name
+
+[`src/types/index.ts:197-236`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/types/index.ts) declares `GrantService`, 11 methods; [`ports/services/grant.service.port.ts:18-58`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/services/grant.service.port.ts) declares `IGrantService`, the same 11 methods, identical signatures, different order. `apps/api/src/services/grant.service.ts`'s `GrantService` class satisfies both structurally and is passed as the `GrantService`-typed constructor dependency to core's own domain classes ([`core/grant.ts:14,30`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/core/grant.ts), `token-manager.ts:10,31`, `permission-checker.ts:12,21`) — this is the same interface, declared twice, one copy living outside `ports/` entirely despite being service-port-shaped, which contradicts `AGENTS.md`'s own instruction that new service interfaces belong in `ports/services/`.
+
+At the call site: `core/grant.ts`, `token-manager.ts`, and `permission-checker.ts` (plus their 3 `.test.ts` files, which also reference `GrantService`) import `IGrantService` from `../ports/services/grant.service.port` instead of `GrantService` from `../types` — a 6-file, same-package, low-risk rename.
+
+---
+
+## Tier 3 — Divergent styles {#tier-3-divergent-styles}
+
+### 3.1 A hand-rolled `WebhookDeliveryPage` duplicates a codegen'd type of the identical name and shape
+
+[`ports/services/webhook-subscription.service.port.ts:23-27`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/services/webhook-subscription.service.port.ts) declares `WebhookDeliveryPage { items: WebhookDeliveryAttempt[]; totalCount: number; hasNextPage: boolean; }` locally, instead of importing the already-codegen'd `WebhookDeliveryPage` from `@grantjs/schema`, which has the identical field set under the identical name. Two types with the same name and shape now exist in two packages — one hand-written, one generated — matching today only by coincidence; a future schema change to `WebhookDeliveryAttempt`'s fields would silently stop matching with no build error, since both are structurally compatible types. Every other pagination-shaped return type in `core` (14 of 15) imports the schema's codegen'd `*Page` type directly. Fix: 4-line import swap, delete the local declaration.
+
+### 3.2 `DeleteParams` is independently declared twice inside `core` itself, one copy mislabeled "Shared"
+
+[`ports/repositories/common.ts:5-7`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/repositories/common.ts) declares `interface DeleteParams { hardDelete?: boolean | null; }`, imported by 1 file. A byte-identical second declaration lives in [`ports/services/user.service.port.ts:47-49`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/services/user.service.port.ts) under a comment header literally labeled `// Shared` — imported cross-domain by 9 other service-port files with nothing to do with users (`group`, `tag`, `role`, `resource`, `project-app`, `project`, `permission`, `account`, `organization`). `SelectedFields<T>`, sitting next to `DeleteParams` in the same `common.ts` file, does **not** have this problem — all 11 files that use it import the correct copy. `DeleteParams` is the one type in that file whose "shared" copy lives in the wrong domain file. A third, structurally-identical `DeleteParams` also exists in `apps/api/src/types/common.ts:8-10` — out of this pass's scope, flagged for whoever picks up a future `apps/api` re-audit rather than actioned here. Fix inside `core`: delete `user.service.port.ts:47-49`, re-point its 9 external importers plus 8 internal usages at `../repositories/common`.
+
+### 3.3 Two one-off positional deviations from the `SelectedFields<T>` convention
+
+The dominant pattern folds requested fields into the query-params object via `SelectedFields<T>` (54 hits across 22 files). Two call sites hand-roll a positional trailing parameter instead: [`account.repository.port.ts:41-45`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/repositories/account.repository.port.ts) (`getAccountsByOwnerId`, positional `requestedFields?: Array<keyof Account>`, and places `transaction` _before_ it — see 3.4) and [`user.service.port.ts:284-286`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/services/user.service.port.ts) (`getUserAuthenticationMethodByProvider`, positional `requestedFields?: string[]` — the loosest of the three variants, losing the `keyof T` type safety the other two provide). Only 2 instances against 54 — not worth a rule change, but both also violate 3.4's transaction-last convention, suggesting they were written together, ad hoc.
+
+### 3.4 `transaction?` parameter position drifts in 7/626, and is missing entirely in 1
+
+All 626 occurrences of the transaction parameter spell it identically (`transaction?: unknown`) — effectively single-style. Two smaller deviations: **1 method has no `transaction?` at all where its 4 siblings do** — `getProjectTagIntersection` ([`project.repository.port.ts:335`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/repositories/project.repository.port.ts), see 2.1's table) — and **7 of 626 (1.1%) place `transaction?` before another optional parameter instead of last**: `exchangeApiKeyForToken` ([`api-key.service.port.ts:65`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/services/api-key.service.port.ts)), `createSession`/`refreshSessionByRefreshToken` ([`user.service.port.ts:226,232`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/services/user.service.port.ts)), `getAccountsByOwnerId` ([`account.repository.port.ts:44`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/repositories/account.repository.port.ts)), and `getUserRoles`/`getUserGroups`/`getUserRoleIdsInScope` ([`grant.repository.port.ts:26,33,40`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/repositories/grant.repository.port.ts)). Reads like organic growth — a param bolted on after `transaction` was already last — rather than a second convention; 98.9% consistency isn't worth restructuring, but worth documenting so the next new method appends before `transaction`, not after.
+
+### 3.5 `GrantException` subclass constructors: 6 distinct positional shapes, and one breaks the "originalError is last" convention at real call sites
+
+Reading all 13 constructors in [`grant-exception.ts`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/errors/grant-exception.ts): 12 of 13 keep `originalError` as the final positional parameter regardless of how many domain-specific fields precede it (0–2 fields vary; the position rule holds). `AuthorizationError` alone breaks it by appending `metadata?: Record<string, unknown>` after `originalError?: Error` (`:98-107`). This isn't theoretical — two live call sites already pass `undefined` explicitly to reach the 4th argument: [`apps/api/src/lib/authorization/mfa-graphql-guard.ts:65`](https://github.com/grant-js/grant/blob/main/apps/api/src/lib/authorization/mfa-graphql-guard.ts) and [`min-aal-at-login.ts:91,198`](https://github.com/grant-js/grant/blob/main/apps/api/src/lib/authorization/min-aal-at-login.ts), all `new AuthorizationError('MFA required', 'MFA_REQUIRED', undefined, { ...metadata })`. Reordering to `(message?, reason?, metadata?, originalError?)` would restore the convention and remove the `undefined` placeholder at all 3 call sites — small, but touches a public exception constructor signature, so it's a decide-then-fix item, not mechanical.
+
+---
+
+## Tier 4 — Dead surface {#tier-4-dead-surface}
+
+**What holds:** zero zero-implementer ports found. All 55 repository-port and 66 service-port interfaces have at least one `implements` site in `apps/api/src` (2 initial false negatives from an unanchored regex — `IFileStorageServicePort` and `IScopedIdProvider` — were caught and re-verified per rule 1). All 12 `GrantException` subclasses have ≥4 `new` call sites each. This sweep was hand-grepped, not tool-run — `packages/@grantjs/*` has no `knip` config yet (see [Tier 1](#guardrails-do-not-reach-packages-at-all)) — so a class-member-blind, string-resolution-blind tool run is still owed before trusting this "0 dead" result at the same confidence level pass 1 and pass 2 reached with `knip` directly.
+
+### 4.1 `ports/service.port.ts` is entirely unreachable
+
+[`ports/service.port.ts`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/service.port.ts) (77 lines) re-exports 12 `services/*.service.port.ts` modules under a comment claiming it exists "so existing consumers are not broken." But `ports/index.ts` exports `./repositories` and `./services` (plural), never `./service.port` (singular); `src/index.ts` doesn't reach it either; `package.json`'s `exports` map only declares the `"."` subpath, so `@grantjs/core/ports/service.port` isn't resolvable by Node/TS module resolution from outside the package at all — not merely unused, unreachable. A repo-wide search for any reference outside its own directory returns nothing but a stale `.tsbuildinfo` artifact.
+
+The file is also stale on its own terms even setting reachability aside: it lists 12 of 20 service-port modules, missing `group`, `notification`, `notification-delivery`, `webhook-delivery`, `webhook-subscription`, `event-relay`, `file-storage`, and `cdm-entity-handler` entirely, and of the 79 interfaces/types in the modules it does list, 21 are absent from the barrel (full gaps in `event-relay`, `file-storage`, `group`, `notification`, `notification-delivery`, `webhook-delivery`, `webhook-subscription`; partial gaps in `project` and `user`). Nobody has kept it current because nothing reads it. **Disposition: delete the file** (verified zero importers via grep and unreachable via the package's own `exports` map, so removal is behavior-neutral) **and drop the `AGENTS.md` sentence pointing at it** — see [Tier 1](#agentsmd-workflow-step-4-describes-a-barrel-file-that-nothing-can-import).
+
+### 4.2 `AAL_RANK` is exported but used only within its own file
+
+[`core/aal.ts:8-12`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/core/aal.ts) exports `const AAL_RANK`, consumed only by `compareAal` in the same file. Zero importers outside `aal.ts` anywhere in the repo. Per rule 4's category distinction, this is the safe edit — dropping the `export` keyword, not deleting a declaration; the file's other exports (`compareAal`, `satisfiesMinAal`, `getAalFromTokenClaims`, `downgradeAalIfMfaStale`) are all separately verified live with 2–12 external references each. One-line, zero-risk.
+
+### Checked and clean — recorded so the next pass doesn't re-check by hand
+
+`WebhookDeliveryErrorType` ([`webhook.port.ts:25`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/webhook.port.ts)) and `AuditLogActionParams` ([`audit.port.ts:5`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/audit.port.ts)) both look unused on a naive `grep -c` (zero _name_ references outside their own file), but both are consumed **structurally** — object literals and call-site arguments that satisfy the type shape without importing its name (`apps/api/src/services/webhook-delivery.service.ts:89,135`; ~50 `this.audit.logAction(...)` call sites across `apps/api/src/services/*.ts`). A symbol with zero name references but nonzero structural consumers is not dead — a future tool run that only reads import names would misreport these.
+
+---
+
+## Tier 5 — Ubiquitous language {#tier-5-ubiquitous-language}
+
+### The `member`/`user` fork CONCEPTS.md already documents reaches the ports layer too — not just services/repositories/handlers
+
+[CONCEPTS.md § Organization member](https://github.com/grant-js/grant/blob/main/CONCEPTS.md) records this divergence with citations confined to `apps/api`'s services/repositories/handlers/routes. The same fork exists one layer down, in `core`'s own ports: `IOrganizationUserService` ([`organization.service.port.ts:88`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/services/organization.service.port.ts)) vs. `IOrganizationMemberService` (`:315`), and `IOrganizationUserRepository` ([`organization.repository.port.ts:85`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/repositories/organization.repository.port.ts)) vs. `IOrganizationMemberRepository` (`:307`) — each pair importing distinct schema types (`OrganizationUser`/`OrganizationMember`) with non-overlapping method sets. This isn't a naming accident at the port level — it's the domain layer defining two full contracts for one relationship, which is the root the `apps/api` fork implements against. CONCEPTS.md's existing **canonical: `member`** decision and **contract** tag apply unchanged; recorded here as additive evidence so the next reader knows the fork starts in `core`, not `apps/api`.
+
+### `get*By*` vs `find*By*` for the identical semantic operation — one convention, mostly unfollowed
+
+Across all service and repository ports, 54 methods use `get<Entity>By<Field>(...)` for a nullable/list lookup by a non-primary-key field; 11 use `find...By...` for the same operation shape. The sharpest citation is same-file: [`api-key.repository.port.ts`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/repositories/api-key.repository.port.ts) defines `IApiKeyRepository` with `findByClientId`/`findActiveByClientId` (`:23,25`) immediately followed by `ISigningKeyRepository`'s `getByScope`/`getPublicKeyPemByKid`/`getPublicKeysForJwksByScope` (`:75,81,87`) — the identical operation shape, split 2-vs-3 on verb inside one file. There's a real, mostly-followed convention (`get` = primary-key/canonical/list, `find` = secondary-key/nullable) that 54 methods don't observe in favor of `get*By*` instead — an 83%/17% split reads as an unenforced idea, not two competing intentional designs. `CONCEPTS.md`'s [Naming conventions](https://github.com/grant-js/grant/blob/main/CONCEPTS.md) table doesn't yet cover verb choice for repository/service methods. **Disposition: glossary-first** — record the `get`=primary/`find`=secondary distinction in CONCEPTS.md before any renaming; 54 call sites across `apps/api` implement these interfaces, so a rename is not a same-pass action.
+
+### What holds — no new drift on `Tenant`/`Scope`, `Project sync`, or the exception hierarchy's naming
+
+`Tenant`/`Scope`: 0 occurrences of `tenantId` inside `core` (matching CONCEPTS.md's existing finding that `tenantId` doesn't exist anywhere), and 0 occurrences of `.split(':')` composite-id parsing (CONCEPTS.md counts 8 elsewhere, all outside `core`) — `Tenant` is used exactly as a discriminator, e.g. ``CacheKey = `${Tenant}:${string}` | string`` ([`cache.port.ts:4`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/ports/cache.port.ts)), never as an entity or field name. `Project sync` vocabulary (`IProjectSyncJobService`, `ProjectSyncJobExportPayload`, etc.) is used without deviation. The domain exception hierarchy is consumed verbatim at its nearest boundary — `packages/@grantjs/errors`' mapper and `apps/api/src/lib/errors/error-classes.ts` both reference all 12 exception names unchanged.
+
+One naming collision worth knowing about but not filed as a finding against `core`: `packages/@grantjs/server` — a standalone published SDK with no dependency on `@grantjs/core` — independently defines its own `AuthenticationError`/`AuthorizationError`/`BadRequestError`/`NotFoundError` classes under a local `GrantServerError` base, using identical names to four of `core`'s exceptions. Outside this pass's DAG scope; flagged only in case `@grantjs/server` enters a future pass.
+
+---
+
+## Tier 6 — Coverage {#tier-6-coverage}
+
+### Fixed in-pass: `grant-exception.ts` 0% → 100%
+
+`src/ports/**` (49 files, 5,218 lines) and `src/types/index.ts` (255 lines: interfaces plus two trivial string enums) are correctly untested — pure type declarations, nothing an interpreter can misbehave on, confirmed by grep for `function`/`class`/arrow-with-body/`z.*` returning zero matches in `ports/`. `src/core/*.ts` (6 files, 987 source lines) was already well-characterized before this pass: 2,214 test lines, 76–95% line coverage per file.
+
+The one real gap was [`src/errors/grant-exception.ts`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/errors/grant-exception.ts) — 185 lines, `GrantException` plus 12 subclasses, 12 with real constructor logic (message formatting, defaults, field assembly) — 0% coverage, zero test files, despite backing every domain error thrown across `apps/api` (`NotFoundError` alone has ~30+ call sites). Added [`src/errors/grant-exception.test.ts`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/core/src/errors/grant-exception.test.ts) (new, this pass) — 22 tests characterizing every class's defaults, `originalError` passthrough, `AuthorizationError`'s 4-arg shape, optional-field handling, and the `instanceof Error`/`instanceof GrantException` chain for all 12 subclasses. Coverage: 100% lines, 100% functions, 91.66% branches (the one uncovered branch is `if (Error.captureStackTrace)`'s false path — a defensive V8-portability check, not worth mocking away the engine to cover). This characterization is what surfaced [0.1](#01-notfounderror-silently-drops-an-empty-string-id-from-its-message).
+
+`src/errors/grant-exception.test.ts` is currently uncommitted, alongside this findings document — for review before landing, likely as this pass's first slice alongside the guardrail-widening work.
+
+### Remaining gap, not blocking this pass
+
+`grant.ts` (77.55% line / 71.92% branch) and `token-manager.ts` (79.68% line / 70.37% branch) already have dedicated test suites and are not the "zero coverage" class this lens targets — their below-100% branch coverage is a residual gap worth a follow-up pass, flagged for the record rather than expanded into this pass's scope.
+
+---
+
+## Backlog
+
+Story brief and stack plan: pending Gate 1/2 approval.
