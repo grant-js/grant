@@ -160,7 +160,12 @@ describe('requireMfaGraphQL', () => {
     } as GraphqlContext;
     await expect(
       callGuardedResolver(wrapped, {}, { input: { scope: orgProjectScope } }, ctx, minimalInfo())
-    ).rejects.toMatchObject({ code: 'FORBIDDEN', reason: 'MFA_REQUIRED' });
+    ).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+      reason: 'MFA_REQUIRED',
+      metadata: { hasActiveEnrollment: false },
+      originalError: undefined,
+    });
     expect(inner).not.toHaveBeenCalled();
   });
 
@@ -173,7 +178,12 @@ describe('requireMfaGraphQL', () => {
     } as GraphqlContext;
     await expect(
       callGuardedResolver(wrapped, {}, { input: { scope: orgProjectScope } }, ctx, minimalInfo())
-    ).rejects.toMatchObject({ code: 'FORBIDDEN', reason: 'MFA_REQUIRED' });
+    ).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+      reason: 'MFA_REQUIRED',
+      metadata: { hasActiveEnrollment: true },
+      originalError: undefined,
+    });
   });
 
   it('runs resolver when mfaVerified', async () => {

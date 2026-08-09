@@ -88,7 +88,7 @@ export async function assertMinAalAtLoginGraphql(
   if (SAFE_AAL1_GRAPHQL_OPERATION_NAMES.has(operationName)) {
     return;
   }
-  throw new AuthorizationError('MFA required', 'MFA_REQUIRED', undefined, {
+  throw new AuthorizationError('MFA required', 'MFA_REQUIRED', {
     hasActiveEnrollment: true,
   });
 }
@@ -195,7 +195,7 @@ export function minAalAtLoginRestMiddleware(
     if (SAFE_AAL1_REST_FULL_PATHS.has(normalized)) {
       return;
     }
-    throw new AuthorizationError('MFA required', 'MFA_REQUIRED', undefined, {
+    throw new AuthorizationError('MFA required', 'MFA_REQUIRED', {
       hasActiveEnrollment: true,
     });
   };
