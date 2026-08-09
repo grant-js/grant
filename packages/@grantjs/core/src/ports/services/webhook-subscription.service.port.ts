@@ -3,6 +3,7 @@ import type {
   Scope,
   UpdateWebhookSubscriptionInput,
   WebhookDeliveryAttempt,
+  WebhookDeliveryPage,
   WebhookSubscription,
   WebhookSubscriptionWithSecret,
 } from '@grantjs/schema';
@@ -19,12 +20,6 @@ export interface ListWebhookDeliveriesParams {
   status?: string;
   page?: number;
   limit?: number;
-}
-
-export interface WebhookDeliveryPage {
-  items: WebhookDeliveryAttempt[];
-  totalCount: number;
-  hasNextPage: boolean;
 }
 
 /**
