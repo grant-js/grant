@@ -5,7 +5,7 @@
 - **Slug**: `core-code-quality`
 - **Story brief**: [`plans/2026-08-09-core-code-quality-brief.md`](./2026-08-09-core-code-quality-brief.md)
 - **Findings**: [`docs/contributing/code-quality/core.md`](../docs/contributing/code-quality/core.md)
-- **Status**: pending approval
+- **Status**: approved (2026-08-09, Ale Heredia)
 - **Story trunk**: `feat/core-code-quality`
 - **worktree_path**: not required — `git worktree list` shows only the main checkout, on `main`. The one other branch currently open (`fix/notification-role-i18n-key`, PR #238) touches `apps/api/src/lib/notifications/` and `packages/@grantjs/i18n/locales/` only — zero file overlap with this story. All slices run serially in the main checkout; see [Fan-out](#fan-out).
 
@@ -126,7 +126,7 @@ Flagging these for the human reviewer before implementation starts — none cont
 
 ## Human gates
 
-- [ ] Gate 2: Stack plan approval pending.
+- [x] Gate 2: Stack plan approved — 2026-08-09, Ale Heredia. Implementation may proceed.
 - [ ] Gate 3: Stack PRs merged into trunk.
 - [ ] Gate 4: Story → `main` deep review complete.
 
