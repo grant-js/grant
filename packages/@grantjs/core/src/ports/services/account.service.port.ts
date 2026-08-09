@@ -28,7 +28,7 @@ import type {
 } from '@grantjs/schema';
 
 import type { SelectedFields } from '../repositories/common';
-import type { DeleteParams } from './user.service.port';
+import type { DeleteParams } from '../repositories/common';
 
 // ---------------------------------------------------------------------------
 // IAccountService
