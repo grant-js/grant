@@ -191,50 +191,6 @@ export interface ApiKeyTokenPayload {
   scope: Scope;
 }
 
-/**
- * Grant service abstraction (DIP). All token signing and verification key resolution goes through this interface.
- */
-export interface GrantService {
-  getUserPermissions(
-    userId: string,
-    scope: Scope,
-    resourceSlug: string,
-    action: string,
-    tokenType?: TokenType
-  ): Promise<Permission[]>;
-
-  getGrantedScopeSlugs(userId: string, scope: Scope, candidateSlugs: string[]): Promise<string[]>;
-
-  getUserRoles(
-    userId: string,
-    scope: Scope,
-    tokenType?: TokenType
-  ): Promise<ExecutionContextRole[]>;
-
-  getUserGroups(
-    userId: string,
-    scope: Scope,
-    tokenType?: TokenType
-  ): Promise<ExecutionContextGroup[]>;
-
-  getUser(userId: string, scope?: Scope): Promise<ExecutionContextUser>;
-
-  getSessionSigningKey(): Promise<SessionSigningKey | null>;
-
-  getVerificationKey(kid: string): Promise<string | null>;
-
-  getPublicKeysForJwks(
-    scope: Scope | null,
-    retentionCutoff: Date
-  ): Promise<Array<{ kid: string; publicKeyPem: string }>>;
-
-  invalidateSessionSigningKeyCache(): Promise<void>;
-
-  rotateSystemSigningKey(transaction?: unknown): Promise<{ kid: string; createdAt: Date }>;
-
-  getSigningKeyForScope(scope: Scope, transaction?: unknown): Promise<SessionSigningKey | null>;
-}
-
 export interface GrantAuth {
   userId: string;
   tokenId: string;

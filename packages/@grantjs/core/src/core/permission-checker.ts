@@ -1,6 +1,7 @@
 import type { Permission } from '@grantjs/schema';
 import { AuthorizationReason } from '@grantjs/schema';
 
+import type { IGrantService } from '../ports/services/grant.service.port';
 import type {
   AuthorizationResult,
   CheckPermissionParams,
@@ -9,7 +10,6 @@ import type {
   ExecutionContext,
   ExecutionContextGroup,
   ExecutionContextRole,
-  GrantService,
   PermissionConditionEvaluationResult,
   RoleGroupCombination,
 } from '../types';
@@ -18,7 +18,7 @@ import { ConditionEvaluator } from './condition-evaluator';
 export class PermissionChecker {
   constructor(
     private conditionEvaluator: ConditionEvaluator,
-    private authorizationService: GrantService
+    private authorizationService: IGrantService
   ) {}
 
   private getRoleGroupCombinations(
