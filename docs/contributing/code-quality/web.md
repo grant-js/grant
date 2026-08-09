@@ -276,7 +276,7 @@ Before this pass, test coverage in `apps/web` was carried almost entirely by a h
 
 ## Backlog
 
-Story brief and stack plan: [`plans/2026-08-08-web-code-quality-brief.md`](../../plans/2026-08-08-web-code-quality-brief.md), [`plans/2026-08-08-web-code-quality-stack.md`](../../plans/2026-08-08-web-code-quality-stack.md).
+Story brief and stack plan: [`plans/2026-08-08-web-code-quality-brief.md`](https://github.com/grant-js/grant/blob/main/plans/2026-08-08-web-code-quality-brief.md), [`plans/2026-08-08-web-code-quality-stack.md`](https://github.com/grant-js/grant/blob/main/plans/2026-08-08-web-code-quality-stack.md).
 
 ---
 
