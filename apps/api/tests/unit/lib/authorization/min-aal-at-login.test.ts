@@ -109,6 +109,8 @@ describe('assertMinAalAtLoginGraphql', () => {
     await expect(assertMinAalAtLoginGraphql(ctx, 'CreateProject')).rejects.toMatchObject({
       code: 'FORBIDDEN',
       reason: 'MFA_REQUIRED',
+      metadata: { hasActiveEnrollment: true },
+      originalError: undefined,
     });
   });
 
@@ -195,6 +197,8 @@ describe('minAalAtLoginRestMiddleware', () => {
     expect(err).toBeInstanceOf(AuthorizationError);
     expect((err as AuthorizationError).code).toBe('FORBIDDEN');
     expect((err as AuthorizationError).reason).toBe('MFA_REQUIRED');
+    expect((err as AuthorizationError).metadata).toEqual({ hasActiveEnrollment: true });
+    expect((err as AuthorizationError).originalError).toBeUndefined();
   });
 
   it('calls next with no error when not enrolled', async () => {
