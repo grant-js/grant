@@ -4,6 +4,20 @@ import { devtools } from 'zustand/middleware';
 
 import { TagView } from '@/components/features/tags/tag-types';
 
+// Investigation (2026-08-08, web-code-quality slice 6): opened as the hardest instance of the
+// ~13-store list family to decide whether a `createListStore()` factory could absorb the
+// field-shape variance. Decision: no factory. Diffed against groups.store.ts/roles.store.ts
+// with the entity name normalized out, this file's real variance is ~25 of 145 lines (missing
+// `selectedTagIds`/`hideSyntheticEntities`/`current<Entity>` that groups/roles/permissions/users
+// have, an extra `isCreateDialogOpen` they don't, no `devtools` name option) — but nearly every
+// one of those lines is a *field/action key name* (`tagToDelete`, `currentGroup`, ...) that each
+// entity's own `components/features/<entity>/*` already selects on directly, e.g.
+// `useGroupsStore((s) => s.groupToDelete)`. A factory generic enough to keep those call sites
+// unchanged needs mapped/conditional generics (per-key literal types, an optional
+// extension-slice merge) whose own definition outsizes the ~25-line variance it would replace;
+// a factory that renames the keys instead pushes an equivalent-sized diff onto every consuming
+// component instead of removing it. Full call-site comparison in the slice 6 commit message.
+
 interface TagsState {
   // State
   page: number;
@@ -102,16 +116,25 @@ export const useTagsStore = create<TagsState>()(
         return;
       }
 
-      const page = parseInt(params.get('page') || '1');
-      const limit = parseInt(params.get('limit') || '50');
+      // Aligned to `Number(...) || default` (2026-08-08, slice 6) to match every other
+      // URL-synced store (see groups.store.ts). This file previously used `parseInt(...)` with
+      // `isNaN` guards, which silently accepts a malformed value with a
+      // numeric prefix (`parseInt('12abc')` -> `12`) instead of falling back to the default the
+      // way `Number('12abc')` (-> `NaN` -> `1`) does. No comment or evidence of intent was found
+      // at this file's original commit (f013dd21, tags store added after groups.store.ts already
+      // established the `Number(...) || default` convention) — for a `?page=`/`?limit=` query
+      // param, silently coercing garbage input into a specific page number is the more
+      // surprising behavior, so this was treated as a bug, not a deliberate divergence.
+      const page = Number(params.get('page')) || 1;
+      const limit = Number(params.get('limit')) || 50;
       const search = params.get('search') || '';
       const sortField = params.get('sortField') as TagSortField;
       const sortOrder = params.get('sortOrder') as SortOrder;
       const view = params.get('view') as TagView;
 
       set({
-        page: isNaN(page) ? 1 : page,
-        limit: isNaN(limit) ? 50 : limit,
+        page,
+        limit,
         search,
         sort: sortField && sortOrder ? { field: sortField, order: sortOrder } : defaultSort,
         view: view || TagView.CARD,
