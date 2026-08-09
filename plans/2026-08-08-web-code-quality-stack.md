@@ -151,6 +151,11 @@ Each gets an explicit, recorded decision — the acceptance criterion is met by 
 - **Raw errors / `console.*`**: `AGENTS.md`'s bans are scoped to API source and runtime adapter code today, not `apps/web`. **Decision: status quo affirmed, not resolved.** Introducing a structured client-side error type or a Sentry-style logging sink is a bigger design conversation than this story (the brief's non-goals already exclude a formal domain-exception hierarchy for the same reason) — record that `apps/web` continues using raw `Error`/`console.*` pending a future decision, rather than silently leaving the question open.
 - **"Workspace" UI term**: doc note only, per the brief's non-goals — one line in `CONCEPTS.md` or `AGENTS.md` noting `Account`/`AccountType.Personal | Organization` is the contract term and "workspace" is a UI-only synonym introduced in `workspace-switcher.tsx` and 4 sidebar i18n labels, 0 occurrences in `@grantjs/schema`. No rename.
 
+**Done.** All three decisions recorded, no production code changed — this slice is documentation-only, which the plan flagged as an acceptable outcome up front:
+
+- Pagination deferral and the raw-error/`console.*` status quo are recorded above, in this plan, which is itself the durable artifact for a decision that isn't a vocabulary divergence and has no more natural home. The pagination follow-up is separately tracked in the [Follow-ups](#follow-ups-not-blocking-this-story) table.
+- "Workspace" **is** a vocabulary divergence, so it went where the rest of this story's language findings live: [`CONCEPTS.md` § Web UI vocabulary](../CONCEPTS.md#web-ui-vocabulary).
+
 ---
 
 ## Judgment calls for gate 2 {#judgment-calls}

@@ -142,6 +142,16 @@ Because both are naming decisions rather than defects, `knip` runs with `duplica
 
 ---
 
+## Web UI vocabulary
+
+### "Workspace"
+
+`apps/web` introduces **workspace** as a UI-facing synonym for `Account` (`AccountType.Personal | Organization` on the GraphQL contract) — the personal or organizational thing the caller is currently acting as. Used in [`components/common/workspace-switcher.tsx`](./apps/web/components/common/workspace-switcher.tsx) (`WorkspaceSwitcherProps`, `currentWorkspace`) and the `t('workspace')` i18n label in four sidebar components (`project-sidebar.tsx`, `organization-sidebar.tsx`, `organization-workspace-sidebar.tsx`, `personal-workspace-sidebar.tsx`).
+
+> **Known divergence — internal, not a rename candidate.** 39 occurrences of "workspace" exist in `apps/web`, none in `@grantjs/schema` or any REST/GraphQL contract surface — it never crosses into the wire format. **Canonical: `Account`** for anything that touches the contract, database, or cross-package code; `workspace` stays as the UI's own vocabulary for presenting an account to a human, the way "workspace" reads more naturally than "account" in a switcher menu. Recorded here so a future contributor doesn't wonder whether it's a queryable field — it is not. See [code-quality/web.md § Tier 5](./docs/contributing/code-quality/web.md#workspace--a-deliberate-ui-only-synonym-for-account).
+
+---
+
 ## Adding a term
 
 Add an entry when a concept has (a) more than one plausible name, or (b) a name that already appears with two spellings in the codebase. Cite at least one `file:line` for each competing spelling — an undocumented divergence gets rediscovered by the next audit pass.
