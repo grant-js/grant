@@ -27,12 +27,16 @@
   },
   "roles": {
     "names": {
+      "personalAccountOwner": "Personal Account Owner",
+      "organizationAccountOwner": "Organization Account Owner",
       "organizationOwner": "Organization Owner",
       "organizationAdmin": "Organization Admin",
       "organizationDev": "Organization Developer",
       "organizationViewer": "Organization Viewer"
     },
     "descriptions": {
+      "personalAccountOwner": "Full control over the personal account, including the ability to delete it",
+      "organizationAccountOwner": "Full control over the organization account, including the ability to delete it",
       "organizationOwner": "Full control over organization and all resources within it",
       "organizationAdmin": "Administrative access to manage organization settings and members",
       "organizationDev": "Developer access to manage projects and resources",

@@ -27,12 +27,16 @@
   },
   "roles": {
     "names": {
+      "personalAccountOwner": "Privatkonto-Eigentümer",
+      "organizationAccountOwner": "Organisationskonto-Eigentümer",
       "organizationOwner": "Organisations-Eigentümer",
       "organizationAdmin": "Organisations-Administrator",
       "organizationDev": "Organisations-Entwickler",
       "organizationViewer": "Organisations-Betrachter"
     },
     "descriptions": {
+      "personalAccountOwner": "Vollständige Kontrolle über das persönliche Konto, einschließlich der Möglichkeit, es zu löschen",
+      "organizationAccountOwner": "Vollständige Kontrolle über das Organisationskonto, einschließlich der Möglichkeit, es zu löschen",
       "organizationOwner": "Vollständige Kontrolle über die Organisation und alle Ressourcen darin",
       "organizationAdmin": "Administrativer Zugriff zur Verwaltung von Organisationseinstellungen und Mitgliedern",
       "organizationDev": "Entwicklerzugriff zur Verwaltung von Projekten und Ressourcen",
