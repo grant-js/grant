@@ -84,8 +84,16 @@ Agents never self-merge.
 | Bar               | When                                                           | Expectation                                                          |
 | ----------------- | -------------------------------------------------------------- | -------------------------------------------------------------------- |
 | **Light**         | Typical stack PR → trunk                                       | Human skim/async approve; CI green; Verifier clean                   |
-| **Deep**          | Story trunk → `main`                                           | Full human review of integration, docs, acceptance                   |
+| **Deep**          | Story trunk → `main`                                           | Confirm the assembled result, not re-review the diff                 |
 | **Security-full** | Auth, MFA, sessions, API keys, tenancy, RLS, permissions, GDPR | Blocking security review (Senior Security + human); never light-only |
+
+**Gate 4 is not a second code review.** Every line in the trunk → `main` diff was already reviewed once, on its own slice PR — re-reading it is redundant with the light-bar review each slice already got. What gate 4 actually buys, and what it should be spent on:
+
+- **Integration verification on the assembled trunk** — re-run the full check suite (typecheck, tests, lint, build, dead-code) against the merged trunk, not just per-slice. Slices can each pass in isolation and still combine badly; this is where that surfaces.
+- **A story-level review pass an author of any single slice couldn't do** — a vulnerability or design issue that only exists in the combination of slices, not in any one of them. This is not hypothetical: pass 1's slice 10 finding was exactly this — a security review of the assembled trunk caught something no individual slice's reviewer had grounds to flag.
+- **Release-pipeline batching** — `release.yml` runs on every push to `main`; the trunk turns however many slices a story took into one push, one release-pipeline run, one point of truth for "is this story out."
+
+If a story is small enough that none of the above adds anything over what the slice reviews already covered, that's a signal the story didn't need multiple slices — not a reason to skip the trunk on a story that does.
 
 ## Artifacts and templates
 
