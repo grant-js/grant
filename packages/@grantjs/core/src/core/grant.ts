@@ -6,14 +6,9 @@ import {
   TokenType,
 } from '@grantjs/schema';
 
+import type { IGrantService } from '../ports/services/grant.service.port';
 import type { ITokenProvider } from '../ports/token.port';
-import type {
-  ApiKeyTokenPayload,
-  AuthorizationResult,
-  GrantAuth,
-  GrantService,
-  TokenClaims,
-} from '../types';
+import type { ApiKeyTokenPayload, AuthorizationResult, GrantAuth, TokenClaims } from '../types';
 import { getAalFromTokenClaims } from './aal';
 import { ConditionEvaluator } from './condition-evaluator';
 import { PermissionChecker } from './permission-checker';
@@ -27,7 +22,7 @@ export class Grant {
   public auth: GrantAuth | null = null;
 
   constructor(
-    private readonly grantService: GrantService,
+    private readonly grantService: IGrantService,
     tokenProvider: ITokenProvider
   ) {
     this.conditionEvaluator = new ConditionEvaluator();

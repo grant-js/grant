@@ -38,10 +38,10 @@ This package is designed to be used internally by `grant-api`. Here's how it wou
 
 ```typescript
 import { Grant } from '@grantjs/core';
-import type { GrantService } from '@grantjs/core';
+import type { IGrantService } from '@grantjs/core';
 
-// Implement GrantService (permissions, user/role/group lookup, session signing key, verification key)
-const grantService: GrantService = { ... };
+// Implement IGrantService (permissions, user/role/group lookup, session signing key, verification key)
+const grantService: IGrantService = { ... };
 
 // Initialize Grant with the service
 const grant = new Grant(grantService);

@@ -1,7 +1,7 @@
 import { AuthorizationReason, Permission, Tenant } from '@grantjs/schema';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { GrantService } from '../types';
+import type { IGrantService } from '../ports/services/grant.service.port';
 import { ComparisonOperator, type ConditionExpression, LogicalOperator } from '../types';
 import { ConditionEvaluator } from './condition-evaluator';
 import { PermissionChecker } from './permission-checker';
@@ -9,7 +9,7 @@ import { PermissionChecker } from './permission-checker';
 describe('PermissionChecker', () => {
   const conditionEvaluator = new ConditionEvaluator();
 
-  const createMockGrantService = (): GrantService => ({
+  const createMockGrantService = (): IGrantService => ({
     getUserPermissions: vi.fn(),
     getUserRoles: vi.fn(),
     getUserGroups: vi.fn(),
