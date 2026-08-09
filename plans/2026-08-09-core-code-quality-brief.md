@@ -5,7 +5,7 @@
 - **Slug**: `core-code-quality`
 - **Date**: 2026-08-09
 - **Author**: PM agent (audit pass 3)
-- **Status**: pending approval
+- **Status**: approved (2026-08-09, Ale Heredia)
 - **Findings**: [`docs/contributing/code-quality/core.md`](../docs/contributing/code-quality/core.md)
 
 ## Objective
@@ -61,4 +61,4 @@ No Frontend: `apps/web` does not depend on `@grantjs/core` for anything this pas
 
 ## Human gate
 
-- [ ] Gate 1: Story brief approval pending.
+- [x] Gate 1: Story brief approved — 2026-08-09, Ale Heredia. Stack planning may proceed.
