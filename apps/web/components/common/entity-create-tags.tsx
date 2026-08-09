@@ -66,7 +66,10 @@ export function EntityCreateTags({ tagsNamespace }: EntityCreateTagsProps) {
   const [search, setSearch] = useState('');
   const [tagsAttachmentFilter, setTagsAttachmentFilter] = useState<DetailAttachmentFilter>('all');
 
-  const selectedTagIds = form.watch('tagIds') ?? [];
+  const watchedTagIds = form.watch('tagIds');
+  // Memoized so the `?? []` fallback doesn't hand useMemo/useCallback below a
+  // fresh array reference every render when the field is unset.
+  const selectedTagIds = useMemo(() => watchedTagIds ?? [], [watchedTagIds]);
   const primaryTagId = form.watch('primaryTagId');
 
   const tagQueryIds = useMemo(
