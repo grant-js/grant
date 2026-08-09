@@ -36,11 +36,12 @@ A user's membership in an organization. Stored in the `organization_users` table
 
 > **Known divergence — contract.** Two full stacks serve this one table:
 >
-> | "user"                                          | "member"                                                                                 |
-> | ----------------------------------------------- | ---------------------------------------------------------------------------------------- |
-> | `services/organization-users.service.ts`        | `services/organization-members.service.ts`                                               |
-> | `repositories/organization-users.repository.ts` | `repositories/organization-members.repository.ts`                                        |
-> | —                                               | `handlers/organization-members.handler.ts`, `rest/routes/organization-members.routes.ts` |
+> | "user"                                                                             | "member"                                                                                 |
+> | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+> | `services/organization-users.service.ts`                                           | `services/organization-members.service.ts`                                               |
+> | `repositories/organization-users.repository.ts`                                    | `repositories/organization-members.repository.ts`                                        |
+> | `IOrganizationUserService` / `IOrganizationUserRepository` (`@grantjs/core` ports) | `IOrganizationMemberService` / `IOrganizationMemberRepository` (`@grantjs/core` ports)   |
+> | —                                                                                  | `handlers/organization-members.handler.ts`, `rest/routes/organization-members.routes.ts` |
 >
 > GraphQL and REST expose _member_ (`organizationMembers`, `updateOrganizationMember`). The database, ports, and half the services say _user_. `repositories/organization-users.repository.ts:104` uses both terms in one comment.
 >
@@ -121,10 +122,14 @@ Count-based reads two snapshots — the page and the count — so a concurrent i
 | Classes               | PascalCase, layer suffix       | `GroupService`, `GroupRepository`, `GroupHandler`  |
 | Ports                 | `I` + entity + layer           | `IGroupService`, `IGroupRepository`                |
 | Entity nouns          | **singular** in class names    | `TagService`, not `TagsService`                    |
+| Lookup by primary key | `get<Entity>By<Field>`         | `getUserById`, `getOrganizationBySlug`             |
+| Lookup by secondary   | `find<Entity>By<Field>`        | `findUserByEmail` (nullable / non-canonical key)   |
 | GraphQL resolvers     | one file per operation         | `create-group.resolver.ts` → `createGroupResolver` |
 | REST router factories | `create<Entity>Router`         | `createGroupsRouter`                               |
 
 > **Known divergences — internal.** Handler classes split singular/plural (`TagHandler` vs `ApiKeysHandler`); `repositories/common/EntityRepository.ts` and `PivotRepository.ts` are the only PascalCase filenames in `src/`; two files use `.schema.ts` against 45 using `.schemas.ts`; router factories split `create*Router` vs `create*Routes`; `lib/` mixes `.lib.ts` with bare filenames.
+>
+> **`get` vs `find`:** intended distinction is primary-key/canonical/list (`get`) vs secondary-key/nullable (`find`). About 83% of `@grantjs/core` port methods follow it (54 `get*By*` vs 11 `find*By*` for the same semantic shape) — see [code-quality/core.md § Tier 5](./docs/contributing/code-quality/core.md#getbyx-vs-findbyx-for-the-identical-semantic-operation--one-convention-mostly-unfollowed). New methods should follow the convention; renaming the existing outliers is a separate story.
 
 ### One schema, two exported names
 
