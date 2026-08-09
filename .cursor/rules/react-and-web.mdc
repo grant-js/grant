@@ -35,7 +35,7 @@ Some modules differ but stay consistent (e.g. `components/features/settings`, `c
 ## Localization and styling
 
 - All user-facing text via **next-intl**; translations in `apps/web/i18n`. API responses may be already localized or use translation keys.
-- **Tokens**: palette and Tailwind tokens in `apps/web/styles/tokens.ts` and `packages/@grantjs/constants/src/colors.ts`.
+- **Tokens**: palette and Tailwind tokens are defined inline in `apps/web/tailwind.config.ts` (the source of truth — Tailwind/PostCSS config load contexts need a plain object, not a module import) and `packages/@grantjs/constants/src/colors.ts`.
 
 ## General
 

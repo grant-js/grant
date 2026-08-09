@@ -3,7 +3,7 @@
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
-export interface InfoRow {
+interface InfoRow {
   label: string;
   value: React.ReactNode;
 }

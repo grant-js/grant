@@ -1,13 +1,4 @@
-import { Project } from '@grantjs/schema';
 import { z } from 'zod';
-
-export interface ProjectsQueryResult {
-  projects: {
-    projects: Project[];
-    totalCount: number;
-    hasNextPage: boolean;
-  };
-}
 
 export const createProjectSchema = z.object({
   name: z.string().min(1, 'errors.validation.nameRequired'),

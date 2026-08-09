@@ -22,7 +22,7 @@ import {
 import { detailTableColumnStyle } from '@/lib/detail-table-column-width';
 import { cn } from '@/lib/utils';
 
-export interface EntityDetailInfoRow {
+interface EntityDetailInfoRow {
   id: string;
   icon: ReactNode;
   label: string;

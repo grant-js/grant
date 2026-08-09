@@ -61,10 +61,6 @@ export interface SettingProfileInformationFormProps {
   currentPictureUpdatedAt?: string;
 }
 
-export interface SettingLanguageSwitcherProps {
-  trigger?: ReactNode;
-}
-
 export interface SettingImageUploadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -83,10 +79,6 @@ export type SettingProjectMembershipProfileFormValues = z.infer<
 export interface SettingEmailAuthMethodAddFormProps {
   onSubmit: (values: SettingEmailAuthMethodAddFormValues) => Promise<void>;
   onCancel?: () => void;
-}
-
-export interface ThemeToggleProps {
-  trigger?: ReactNode;
 }
 
 export interface SettingCardProps {

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Shared Password Policy Configuration
 // This should be kept in sync between frontend and backend
-export const passwordPolicyConfig = {
+const passwordPolicyConfig = {
   minLength: 8,
   maxLength: 128,
   requireUppercase: true,

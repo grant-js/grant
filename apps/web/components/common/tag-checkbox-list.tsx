@@ -8,7 +8,7 @@ import { Control, FieldPathByValue, FieldValues } from 'react-hook-form';
 import { FormField, FormItem, FormLabel, TranslatedFormMessage } from '@/components/ui/form';
 import { cn } from '@/lib/utils';
 
-export type TagCheckboxListVariant = 'dot' | 'labeled';
+type TagCheckboxListVariant = 'dot' | 'labeled';
 
 export interface TagCheckboxListProps<TFieldValues extends FieldValues = FieldValues> {
   control: Control<TFieldValues>;

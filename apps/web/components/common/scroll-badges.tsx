@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 /** Outline badge with transparent fill — used for auth methods, roles, tags, sync job operation, etc. */
 export const valueBadgeClassName = 'bg-transparent border-2';
 
-export interface BadgeItem {
+interface BadgeItem {
   id: string;
   label: string;
   /** Optional tooltip (e.g. native `title` attribute); when not set, falls back to label. */

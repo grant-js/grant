@@ -4,7 +4,6 @@ export * from './user-card-skeleton';
 export * from './user-cards';
 export * from './user-create-viewer';
 export * from './user-delete-dialog';
-export * from './user-direct-permissions-panel';
 export * from './user-edit-dialog';
 export * from './user-limit';
 export * from './user-navigation-button';

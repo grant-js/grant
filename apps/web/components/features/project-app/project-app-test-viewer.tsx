@@ -23,7 +23,6 @@ import {
 } from './project-app-test-types';
 
 export type { ProjectAppTestFormValues } from './project-app-test-types';
-export { PROJECT_APP_TEST_FORM_ID } from './project-app-test-types';
 
 function generateState(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {

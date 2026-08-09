@@ -38,9 +38,9 @@ import { cn } from '@/lib/utils';
 
 import { EntityTagSearch } from './entity-tag-search';
 
-export const ENTITY_CREATE_TAGS_PAGE_LIMIT = 10;
+const ENTITY_CREATE_TAGS_PAGE_LIMIT = 10;
 
-export type EntityCreateTagsNamespace =
+type EntityCreateTagsNamespace =
   | 'role.tags'
   | 'group.tags'
   | 'permission.tags'
@@ -66,7 +66,10 @@ export function EntityCreateTags({ tagsNamespace }: EntityCreateTagsProps) {
   const [search, setSearch] = useState('');
   const [tagsAttachmentFilter, setTagsAttachmentFilter] = useState<DetailAttachmentFilter>('all');
 
-  const selectedTagIds = form.watch('tagIds') ?? [];
+  const watchedTagIds = form.watch('tagIds');
+  // Memoized so the `?? []` fallback doesn't hand useMemo/useCallback below a
+  // fresh array reference every render when the field is unset.
+  const selectedTagIds = useMemo(() => watchedTagIds ?? [], [watchedTagIds]);
   const primaryTagId = form.watch('primaryTagId');
 
   const tagQueryIds = useMemo(

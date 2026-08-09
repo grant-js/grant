@@ -14,7 +14,7 @@ import { useProjectSyncJobsStore } from '@/stores/project-sync-jobs.store';
 
 type ActionTriggerLayout = 'empty' | 'toolbar';
 
-export type ProjectSyncJobActionVariant = 'import' | 'export';
+type ProjectSyncJobActionVariant = 'import' | 'export';
 
 const VARIANT_CONFIG: Record<
   ProjectSyncJobActionVariant,

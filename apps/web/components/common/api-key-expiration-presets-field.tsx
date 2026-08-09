@@ -16,8 +16,7 @@ import {
 } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 
-export const API_KEY_EXPIRATION_PRESETS = ['7d', '30d', '60d', '90d', 'custom', 'none'] as const;
-export type ApiKeyExpirationPreset = (typeof API_KEY_EXPIRATION_PRESETS)[number];
+export type ApiKeyExpirationPreset = '7d' | '30d' | '60d' | '90d' | 'custom' | 'none';
 
 const PRESET_DAY_OFFSET: Record<'7d' | '30d' | '60d' | '90d', number> = {
   '7d': 7,

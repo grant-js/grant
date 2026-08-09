@@ -75,7 +75,7 @@ export const DETAIL_ICON_SKELETON = {
   columnWidthMode: DETAIL_ICON_COLUMN.columnWidthMode,
 };
 
-export const DETAIL_ICON_ONLY_SKELETON = {
+const DETAIL_ICON_ONLY_SKELETON = {
   key: 'icon',
   type: 'avatar-only' as const,
   width: DETAIL_ICON_ONLY_COLUMN.width,

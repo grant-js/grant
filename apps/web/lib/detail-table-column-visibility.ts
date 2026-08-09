@@ -1,6 +1,6 @@
 import type { DataTableColumnConfig } from '@/components/common/data-table';
 
-export const DETAIL_TABLE_STRUCTURAL_COLUMN_KEYS = new Set(['checkbox', 'icon', 'loading']);
+const DETAIL_TABLE_STRUCTURAL_COLUMN_KEYS = new Set(['checkbox', 'icon', 'loading']);
 
 /** Hidden by default across RBAC detail tables (roles, groups, permissions, tags). */
 export const DETAIL_TABLE_DEFAULT_HIDDEN_COLUMN_KEYS = new Set([

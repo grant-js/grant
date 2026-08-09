@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 // Generic types for the dialog
-export interface DeleteDialogEntity {
+interface DeleteDialogEntity {
   id: string;
   name: string;
 }

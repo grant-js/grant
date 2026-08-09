@@ -1,6 +1,6 @@
-export type RelationshipSourceKind = 'direct' | 'inherited';
+type RelationshipSourceKind = 'direct' | 'inherited';
 
-export type RelationshipSource = {
+type RelationshipSource = {
   kind: RelationshipSourceKind;
   label: string;
 };

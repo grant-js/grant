@@ -10,7 +10,7 @@ import { getApiBaseUrl } from '@/lib/constants';
 export type { ProjectAppPublicInfo, ProjectConsentInfo } from '@grantjs/schema';
 
 /** Response body shape from project OAuth API error responses. */
-export interface ProjectOAuthApiErrorBody {
+interface ProjectOAuthApiErrorBody {
   code?: string;
   details?: string;
   error?: string;
@@ -21,7 +21,7 @@ export interface ProjectOAuthApiErrorBody {
  * Error thrown by project OAuth API calls (app-info, consent-info, approve, deny).
  * Carries status and body so the web layer can map HTTP status/codes to user-facing messages.
  */
-export class ProjectOAuthApiError extends Error {
+class ProjectOAuthApiError extends Error {
   constructor(
     message: string,
     public readonly status: number,
