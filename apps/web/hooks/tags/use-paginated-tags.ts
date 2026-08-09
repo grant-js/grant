@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Scope, Tag } from '@grantjs/schema';
 
 import { useTags } from './use-tags';
@@ -22,7 +22,7 @@ export function usePaginatedTags({ scope, search, pageSize = PAGE_SIZE }: UsePag
     setAccumulatedTags([]);
   }, [search, scope.id, scope.tenant]);
 
-  const { tags, loading, totalCount } = useTags({
+  const { tags, loading, totalCount, hasNextPage } = useTags({
     scope,
     page,
     limit: pageSize,
@@ -43,8 +43,6 @@ export function usePaginatedTags({ scope, search, pageSize = PAGE_SIZE }: UsePag
       return nextTags.length > 0 ? [...previous, ...nextTags] : previous;
     });
   }, [tags, page]);
-
-  const hasNextPage = useMemo(() => page * pageSize < totalCount, [page, pageSize, totalCount]);
 
   const loadNextPage = useCallback(() => {
     if (!hasNextPage || loading) {
