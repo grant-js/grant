@@ -179,15 +179,16 @@ Flagging these for the human reviewer before implementation starts — none cont
 ## Human gates
 
 - [x] Gate 2: Stack plan approved — 2026-08-08, Ale Heredia. All 5 judgment calls accepted as written. Implementation may begin.
-- [ ] Gate 3: Stack PRs merged into trunk — 1 (security-full, independent review required before merge), 2, 3, 4, 5, 6, 7 (light). **All 7 open** as of 2026-08-08: [#229](https://github.com/grant-js/grant/pull/229), [#230](https://github.com/grant-js/grant/pull/230), [#232](https://github.com/grant-js/grant/pull/232), [#233](https://github.com/grant-js/grant/pull/233), [#234](https://github.com/grant-js/grant/pull/234), [#235](https://github.com/grant-js/grant/pull/235), [#236](https://github.com/grant-js/grant/pull/236) — stacked via `gh stack` (stack #231), awaiting human review/merge.
+- [x] Gate 3: Stack PRs merged into trunk — 1 (security-full, independent review required before merge), 2, 3, 4, 5, 6, 7 (light). **All 7 merged** 2026-08-09, Ale Heredia: [#229](https://github.com/grant-js/grant/pull/229), [#230](https://github.com/grant-js/grant/pull/230), [#232](https://github.com/grant-js/grant/pull/232), [#233](https://github.com/grant-js/grant/pull/233), [#234](https://github.com/grant-js/grant/pull/234), [#235](https://github.com/grant-js/grant/pull/235), [#236](https://github.com/grant-js/grant/pull/236).
+  - Full verification re-run on the merged trunk (not just per-slice): `pnpm --filter grant-web exec tsc --noEmit`, `vitest run` (47/47), `lint` (0 errors, 19 pre-existing warnings), `build`, `dead-code:web`, `dead-code:api`, `format:check` — all clean.
 - [ ] Gate 4: Story → `main` deep review complete.
 
 ## Cleanup
 
 - [ ] `git worktree remove` — not applicable; this story runs in the main checkout
-- [ ] Local slice branches deleted (check PR merge state on GitHub, not `git log main..<branch>` — squash-merged branches report as unmerged by ancestry)
-- [ ] Stack plan status → `merged-to-main`
-- [ ] Update [`web.md`](../docs/contributing/code-quality/web.md) with resolved counts/decisions, and record this pass in the [rubric's passes table](../docs/contributing/code-quality/README.md#passes)
+- [ ] Local slice branches deleted — deferred to after gate 4 (final story→`main` merge), consistent with pass 1
+- [ ] Stack plan status → `merged-to-main` — deferred to after gate 4
+- [x] Update [`web.md`](../docs/contributing/code-quality/web.md) with resolved counts/decisions, and record this pass in the [rubric's passes table](../docs/contributing/code-quality/README.md#passes) — done, see web.md § Pass-2 close-out
 
 ## Follow-ups (not blocking this story)
 
