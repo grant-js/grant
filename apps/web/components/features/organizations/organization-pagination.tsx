@@ -1,12 +1,7 @@
 import { Pagination } from '@/components/common';
+import { usePaginationProps } from '@/hooks';
 import { useOrganizationsStore } from '@/stores/organizations.store';
 
 export function OrganizationPagination() {
-  const page = useOrganizationsStore((state) => state.page);
-  const limit = useOrganizationsStore((state) => state.limit);
-  const totalCount = useOrganizationsStore((state) => state.totalCount);
-  const setPage = useOrganizationsStore((state) => state.setPage);
-  const totalPages = Math.ceil(totalCount / limit);
-
-  return <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />;
+  return <Pagination {...usePaginationProps(useOrganizationsStore)} />;
 }
