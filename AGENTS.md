@@ -26,7 +26,7 @@ The project follows hexagonal architecture (ports and adapters). Understand and 
             └── @grantjs/jobs      (node-cron/BullMQ adapters)
 ```
 
-- **`@grantjs/core`** defines domain ports (`ILogger`, `ILoggerFactory`, `ICacheAdapter`, `IStorageAdapter`, `IEmailAdapter`, `IJobAdapter`) and a rich exception hierarchy (`GrantException` → `NotFoundError`, `BadRequestError`, `AuthenticationError`, `AuthorizationError`, `ConflictError`, `ConfigurationError`, `ValidationError`).
+- **`@grantjs/core`** defines domain ports (`ILogger`, `ILoggerFactory`, `ICacheAdapter`, `IFileStorageService`, `IEmailService`, `IJobAdapter`) and a rich exception hierarchy (`GrantException` → `NotFoundError`, `BadRequestError`, `AuthenticationError`, `AuthorizationError`, `ConflictError`, `ConfigurationError`, `ValidationError`).
 - **Adapter packages** (`cache`, `storage`, `email`, `jobs`, `logger`, `errors`) implement core ports. They accept `ILogger` (or `ILoggerFactory`) via constructor injection or factory — they must **never** import `@grantjs/logger` directly.
 - **`@grantjs/database`** accepts an optional `ILogger` via `DatabaseConfig.logger`.
 - Packages must use `@grantjs/*` aliases for cross-package imports (never relative `../../../` paths).
