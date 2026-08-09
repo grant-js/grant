@@ -18,8 +18,3 @@ export function detailTableColWidth(width?: string): CSSProperties | undefined {
   if (!width) return undefined;
   return { width };
 }
-
-/** @deprecated Prefer {@link detailTableColumnStyle} with an explicit mode. */
-export function detailTableFixedColumnStyle(width?: string): CSSProperties | undefined {
-  return detailTableColumnStyle(width, 'fixed');
-}

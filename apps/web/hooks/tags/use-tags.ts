@@ -9,6 +9,7 @@ interface UseTagsResult {
   loading: boolean;
   error: Error | undefined;
   totalCount: number;
+  hasNextPage: boolean;
   refetch: (
     variables?: Partial<QueryTagsArgs>
   ) => Promise<ApolloClient.QueryResult<{ tags: TagPage }>>;
@@ -41,7 +42,7 @@ export function useTags(params: QueryTagsArgs): UseTagsResult {
     notifyOnNetworkStatusChange: true,
   });
 
-  const { tags, totalCount } = useMemo(() => {
+  const { tags, totalCount, hasNextPage } = useMemo(() => {
     const rawTags = data?.tags?.tags || [];
     const limit = params.limit;
     const cappedTags =
@@ -50,6 +51,7 @@ export function useTags(params: QueryTagsArgs): UseTagsResult {
     return {
       tags: cappedTags,
       totalCount: data?.tags?.totalCount || 0,
+      hasNextPage: data?.tags?.hasNextPage ?? false,
     };
   }, [data, params.limit]);
 
@@ -58,6 +60,7 @@ export function useTags(params: QueryTagsArgs): UseTagsResult {
     loading,
     error,
     totalCount,
+    hasNextPage,
     refetch,
   };
 }

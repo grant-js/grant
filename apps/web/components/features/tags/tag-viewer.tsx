@@ -24,7 +24,7 @@ export function TagViewer() {
   const setLoading = useTagsStore((state) => state.setLoading);
   const setRefetch = useTagsStore((state) => state.setRefetch);
 
-  const { tags, loading, totalCount, refetch } = useTags({
+  const { tags, loading, error, totalCount, refetch } = useTags({
     scope: scope!,
     page,
     limit,
@@ -61,6 +61,16 @@ export function TagViewer() {
 
   if (!scope || !canQuery) {
     return null;
+  }
+
+  if (error) {
+    return (
+      <div className="p-4">
+        <div className="rounded-md border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive">
+          {error.message}
+        </div>
+      </div>
+    );
   }
 
   switch (view) {

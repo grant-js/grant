@@ -58,6 +58,25 @@ Transport (GraphQL resolvers, REST routes)
 | `validateInput`, `validateOutput`, schemas | `./common` (within services)    | —                                         |
 | `jsonSchema` (REST layer)                  | `@/rest/schemas/common.schemas` | `@/services/common`                       |
 
+### Web app layer boundaries (`apps/web`)
+
+```
+app/ , components/
+    → hooks/  → @apollo/client (useQuery/useMutation/useLazyQuery/useSubscription)
+              → *Document operations from @grantjs/schema
+```
+
+**Hard rule:** `hooks/` is the only place Apollo operations (`useQuery`, `useMutation`, `useLazyQuery`, `useSubscription`) and `*Document` imports from `@grantjs/schema` get wired. `app/` and `components/` consume `hooks/` — they do not call Apollo directly. Enforced by the `no-restricted-imports`/`no-restricted-syntax` blocks in `eslint.config.mjs` scoped to `apps/web/app/**` and `apps/web/components/**`.
+
+`lib/apollo-client.ts`, `lib/apollo-temp-client.ts`, and `lib/refresh-session.ts` are the client-setup/infrastructure layer the rule does not reach (they live under `lib/`, not `app/`/`components/`) — the same way `apps/api/src/lib/logger` and `lib/errors` are the re-export layers allowed to touch the underlying package directly. `useApolloClient()` itself (e.g. for `.cache` eviction, as in `app/[locale]/dashboard/settings/profile/page.tsx`) is also not restricted — the boundary is about wiring GraphQL _operations_, not obtaining a client handle.
+
+**Named exceptions** (the exception list itself is the recorded decision — not a silent `eslint-disable`):
+
+- `components/features/auth/mfa-step-up-dialog.tsx` — uses a second, uncached Apollo client (`lib/apollo-temp-client.ts`) instead of a hook, so step-up re-authentication does not recurse through the shared client's auth-refresh interceptor.
+- `components/features/notifications/notification-bell.tsx` — uses `useApolloClient()` for an on-demand imperative preview query (`client.query(MyNotificationsDocument, ...)`); a popover preview refetched on open is not a natural fit for a subscribed `useQuery` hook. Its mark-as-read mutation is **not** part of this exception — it goes through `useMarkNotificationRead()` like everything else.
+
+**`@grantjs/core` reach-through, stated as policy, not a one-off exception:** `apps/web` may import directly from `@grantjs/core` for zod validation schemas that are not part of GraphQL codegen (e.g. `permissionConditionSchema`, used by `components/features/permissions/permission-types.ts` — `@grantjs/schema` does not re-export it). All codegen'd types and operation documents still come from `@grantjs/schema` only.
+
 ### Configuration
 
 - All magic numbers and external URLs live in `apps/api/src/config/env.config.ts`, env-overridable with sensible defaults.

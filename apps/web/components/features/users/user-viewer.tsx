@@ -25,7 +25,7 @@ export function UserViewer() {
   const setLoading = useUsersStore((state) => state.setLoading);
   const setRefetch = useUsersStore((state) => state.setRefetch);
 
-  const { users, loading, totalCount, refetch } = useUsersList({
+  const { users, loading, error, totalCount, refetch } = useUsersList({
     scope: scope!,
     page,
     limit,
@@ -63,6 +63,16 @@ export function UserViewer() {
 
   if (!scope || !canQuery) {
     return null;
+  }
+
+  if (error) {
+    return (
+      <div className="p-4">
+        <div className="rounded-md border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive">
+          {error.message}
+        </div>
+      </div>
+    );
   }
 
   switch (view) {

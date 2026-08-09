@@ -4,7 +4,5 @@ export * from './permission-create-general-card';
 export * from './permission-create-tags';
 export * from './permission-detail-viewer';
 export * from './permission-general-card';
-export * from './permission-info';
 export * from './permission-tag-search';
-export * from './permission-tag-sorter';
 export * from './permission-tags';

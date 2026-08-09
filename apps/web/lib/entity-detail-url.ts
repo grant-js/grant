@@ -137,17 +137,3 @@ export function getWebhookDetailUrl({
   }
   throw new Error('Invalid scope for webhook detail URL');
 }
-
-export function getWebhookListUrl({
-  organizationId,
-  accountId,
-  projectId,
-}: Omit<WebhookDetailUrlParams, 'subscriptionId'>): string {
-  if (organizationId) {
-    return `/dashboard/organizations/${organizationId}/projects/${projectId}/webhooks`;
-  }
-  if (accountId) {
-    return `/dashboard/accounts/${accountId}/projects/${projectId}/webhooks`;
-  }
-  throw new Error('Invalid scope for webhook list URL');
-}

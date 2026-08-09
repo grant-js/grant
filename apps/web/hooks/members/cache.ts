@@ -3,7 +3,7 @@ import { ApolloCache } from '@apollo/client';
 /**
  * Evict organization invitations cache
  */
-export function evictInvitationsCache(cache: ApolloCache) {
+function evictInvitationsCache(cache: ApolloCache) {
   cache.evict({ fieldName: 'organizationInvitations' });
   cache.gc();
 }
@@ -11,7 +11,7 @@ export function evictInvitationsCache(cache: ApolloCache) {
 /**
  * Evict organization members cache
  */
-export function evictMembersCache(cache: ApolloCache) {
+function evictMembersCache(cache: ApolloCache) {
   cache.evict({ fieldName: 'organizationMembers' });
   cache.gc();
 }

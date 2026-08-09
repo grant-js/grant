@@ -11,7 +11,23 @@
     },
     "apps/web": {
       "entry": ["app/**/*.{ts,tsx}", "middleware.ts"],
-      "project": ["**/*.{ts,tsx}"]
+      "project": ["**/*.{ts,tsx}"],
+      // shadcn/ui generates a component's full API (e.g. AlertDialogPortal, SheetFooter,
+      // SidebarMenuBadge) so consumers can compose freely; unused parts are normal for a
+      // primitive library. See docs/contributing/code-quality/web.md § Tier 4.
+      "ignoreIssues": { "components/ui/**": ["exports", "types"] },
+      "ignoreDependencies": [
+        // Imported via `@import 'tw-animate-css'` in app/globals.css; knip's config hints
+        // confirm .css imports aren't followed for this project. Removing it breaks the build.
+        "tw-animate-css",
+        // Declared here for workspace-local tooling/IDE resolution but only consumed by the
+        // root eslint.config.mjs, which declares the same 4 packages itself — duplicate
+        // declarations, not phantom ones.
+        "@eslint/eslintrc",
+        "@eslint/js",
+        "eslint-plugin-react-hooks",
+        "typescript-eslint"
+      ]
     },
     "packages/@grantjs/*": {
       "entry": ["src/index.ts"],

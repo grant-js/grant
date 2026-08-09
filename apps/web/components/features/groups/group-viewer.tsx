@@ -25,7 +25,7 @@ export function GroupViewer() {
   const setLoading = useGroupsStore((state) => state.setLoading);
   const setRefetch = useGroupsStore((state) => state.setRefetch);
 
-  const { groups, loading, totalCount, refetch } = useGroupsList({
+  const { groups, loading, error, totalCount, refetch } = useGroupsList({
     scope: scope!,
     page,
     limit,
@@ -63,6 +63,16 @@ export function GroupViewer() {
 
   if (!scope || !canQuery) {
     return null;
+  }
+
+  if (error) {
+    return (
+      <div className="p-4">
+        <div className="rounded-md border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive">
+          {error.message}
+        </div>
+      </div>
+    );
   }
 
   switch (view) {

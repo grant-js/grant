@@ -12,7 +12,7 @@ export interface ScopeSlugOption {
   description: string | null;
 }
 
-export interface ProjectRoleOption {
+interface ProjectRoleOption {
   id: string;
   name: string;
 }

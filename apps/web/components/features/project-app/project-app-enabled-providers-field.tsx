@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
 
-export interface OAuthProviderOption {
+interface OAuthProviderOption {
   id: string;
   name: string;
 }

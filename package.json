@@ -19,6 +19,7 @@
     "lint": "turbo lint",
     "dead-code": "knip",
     "dead-code:api": "knip --workspace apps/api",
+    "dead-code:web": "knip --workspace apps/web",
     "lint:fix": "turbo lint:fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,graphql}\" --ignore-path .gitignore",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,graphql}\" --ignore-path .gitignore",

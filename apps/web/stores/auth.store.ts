@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { createJSONStorage, devtools, persist } from 'zustand/middleware';
 
 /** Used for devtools display name. */
-export const AUTH_STORE_STORAGE_KEY = 'grant-auth-store';
+const AUTH_STORE_STORAGE_KEY = 'grant-auth-store';
 
 /** Storage key for persisted currentAccountId only (last workspace). */
 const AUTH_PREFERENCES_STORAGE_KEY = 'grant-auth-preferences';
@@ -17,6 +17,14 @@ interface AuthState {
   currentAccountId: string | null;
   isSwitchingAccounts: boolean;
   accessToken: string | null;
+  /**
+   * Bumped by every accessToken-affecting action (setAccessToken, clearAuth,
+   * setAuthData). Lets an async caller that started before some of those
+   * actions detect, when it resolves, whether another action already
+   * superseded it — a boolean "authenticated?" check can't: a token can be
+   * replaced by a different one without the boolean ever changing.
+   */
+  tokenVersion: number;
 
   // Email verification state
   email: string | null;
@@ -73,6 +81,7 @@ export const useAuthStore = create<AuthState>()(
         currentAccountId: null,
         isSwitchingAccounts: false,
         accessToken: null,
+        tokenVersion: 0,
 
         // Email verification state
         email: null,
@@ -86,11 +95,11 @@ export const useAuthStore = create<AuthState>()(
         setCurrentAccount: (accountId) => set({ currentAccountId: accountId }),
         setSwitchingAccounts: (value) => set({ isSwitchingAccounts: value }),
         setAccessToken: (accessToken) => {
-          set({ accessToken });
+          set((state) => ({ accessToken, tokenVersion: state.tokenVersion + 1 }));
         },
 
         clearAuth: () => {
-          set({
+          set((state) => ({
             accounts: [],
             currentAccountId: null,
             isSwitchingAccounts: false,
@@ -99,7 +108,8 @@ export const useAuthStore = create<AuthState>()(
             mfaVerified: false,
             requiresEmailVerification: false,
             verificationExpiry: null,
-          });
+            tokenVersion: state.tokenVersion + 1,
+          }));
         },
         switchAccount: (accountId) => {
           const state = get();
@@ -145,7 +155,7 @@ export const useAuthStore = create<AuthState>()(
                 accounts[0]?.id ||
                 null;
 
-          set({
+          set((state) => ({
             accounts,
             currentAccountId: targetAccountId,
             accessToken,
@@ -153,7 +163,8 @@ export const useAuthStore = create<AuthState>()(
             mfaVerified: mfaVerified ?? false,
             requiresEmailVerification: requiresEmailVerification ?? false,
             verificationExpiry: verificationExpiry ?? null,
-          });
+            tokenVersion: state.tokenVersion + 1,
+          }));
         },
 
         getCurrentAccount: () => {

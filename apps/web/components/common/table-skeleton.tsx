@@ -15,7 +15,7 @@ import {
 } from '@/lib/detail-table-column-width';
 import { cn } from '@/lib/utils';
 
-export type TableSkeletonColumnType =
+type TableSkeletonColumnType =
   'avatar' | 'avatar-only' | 'text' | 'button' | 'list' | 'badge' | 'actions' | 'audit' | 'icon';
 
 export interface TableSkeletonColumnConfig {
