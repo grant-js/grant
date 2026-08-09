@@ -98,14 +98,16 @@ jobs:
       - name: Lint
         run: pnpm run lint
 
-      # apps/api and apps/web only. packages/ still reports findings; widening
-      # this belongs to its own code-quality pass, not to a gate that would go
-      # red on work nobody has scheduled yet.
+      # apps/api, apps/web, and @grantjs/core. Sibling packages/ still report
+      # findings; each package's own code-quality pass widens this gate.
       - name: Dead code (apps/api)
         run: pnpm run dead-code:api
 
       - name: Dead code (apps/web)
         run: pnpm run dead-code:web
+
+      - name: Dead code (@grantjs/core)
+        run: pnpm run dead-code:core
 
       - name: Type check
         run: pnpm run type-check
