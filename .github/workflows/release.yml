@@ -205,7 +205,7 @@ jobs:
           rm -rf build-artifacts
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6.0.8
+        uses: pnpm/action-setup@v6.0.10
         with:
           version: '8.15.0'
 
