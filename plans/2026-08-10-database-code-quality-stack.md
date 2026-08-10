@@ -5,7 +5,7 @@
 - **Slug**: `database-code-quality`
 - **Story brief**: [`plans/2026-08-10-database-code-quality-brief.md`](./2026-08-10-database-code-quality-brief.md)
 - **Findings**: [`docs/contributing/code-quality/database.md`](../docs/contributing/code-quality/database.md)
-- **Status**: pending approval
+- **Status**: approved (2026-08-10, Ale Heredia)
 - **Story trunk**: `feat/database-code-quality`
 - **worktree_path**: not required — no other story is in flight; `git worktree list` shows only the main checkout. All slices run serially in the main checkout; see [Fan-out](#fan-out).
 
@@ -129,7 +129,7 @@ Then either delete it, or make it delegate to `resolveDatabaseUrl`. **Do not lea
 
 ## Human gates
 
-- [ ] Gate 2: Stack plan approval pending.
+- [x] Gate 2: Stack plan approved — 2026-08-10, Ale Heredia. Implementation may proceed.
 - [ ] Gate 3: Stack PRs merged into trunk.
 - [ ] Gate 4: Story → `main` — integration verification on the assembled trunk, then human review.
 
