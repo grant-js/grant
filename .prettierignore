@@ -16,3 +16,8 @@ graphql/generated/**/*
 
 # Helm chart templates (Go template + YAML; Prettier YAML cannot parse)
 charts/**/templates/**/*.yaml
+
+# pnpm owns this file's formatting. lint-staged's `*.{...,yml,yaml}` glob matched it
+# while `format:check`'s glob (ts,tsx,js,jsx,json,md,graphql) does not, so every commit
+# staging the lockfile rewrote all ~13k lines and the next `pnpm install` reverted them.
+pnpm-lock.yaml
