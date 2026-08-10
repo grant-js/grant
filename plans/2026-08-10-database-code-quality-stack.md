@@ -90,6 +90,8 @@ The lens that found a Tier 0 bug in all three prior passes, run properly. In ris
 
 **Characterize, don't fix.** Assert current behavior including anything that looks wrong; report defects for a human decision. If a Tier 0 lands, raise the bar (see footnote 1) rather than absorbing it.
 
+**Added mid-story (2026-08-10, approved): make the seed's condition collision loud.** `seedPermissionsData` de-duplicates by `${resource}:${action}` and keeps the first-iterated mapping, discarding any other group's declared `condition` with no warning (`seed-permissions.ts:256-264`). Six pairs collide today: `ApiKey:Delete`, `ApiKey:Revoke`, `Project:Delete`, `Project:Update`, `Tag:Delete`, `Tag:Update`. The permission model cannot represent a per-group condition — `group_permissions` is a bare join table — so the seed should **say so** rather than silently picking one. Warn (do not throw: every environment runs this) and cover it with a test. This is the guardrail that would have surfaced the collision without needing a characterization test to find it.
+
 Prefer no-live-database tests throughout — `fake-db.ts` from slice 2 exists for this. If something genuinely requires Postgres, scope it out with a reason rather than wiring testcontainers mid-story.
 
 ### 4 — Resolve the drizzle-config divergence · security-full
@@ -119,6 +121,29 @@ Then either delete it, or make it delegate to `resolveDatabaseUrl`. **Do not lea
 4. **Migration SQL (2,772 lines, 30% of the unit) is out of scope.** No lens reads it; inventing one mid-story would be scope creep. Recorded as owed to a future pass, possibly as a new lens.
 5. **Slice 1's allowed-import set differs from pass 3's**, because this package legitimately depends on `env` and `constants`. Copying core's rule verbatim would break the build — calling it out because it's the obvious mistake to make.
 
+## The permission-condition collision {#condition-collision}
+
+Surfaced by slice 2's seed characterization. Recorded here because two of its three arms leave this story as follow-ups, and the reasoning is what makes them safe to defer.
+
+**The mechanism.** `seedPermissionsData` collapses every `${resource}:${action}` to one shared `permissions` row, keeping the first-iterated group's `condition`. It has to: `group_permissions` is a bare join table (`groupId`, `permissionId`, timestamps) with **no `condition` column**, so a per-group condition has nowhere to live. Six pairs collide today.
+
+**It was reported first as a fail-open privilege escalation. That was wrong.** The corrected finding, in the order the evidence arrived:
+
+1. **Nothing is more recent.** `git blame` returns one SHA — `b410d0f5` (2026-01-25, PR #7 _feat/resource-access-control_) — for all 35 lines of the `ApiKey*` mapping block and all 24 lines of the group block. `ApiKeyOwner`, `ApiKeyAdmin` and `ApiKeyDev` were written together. The condition has never been persisted, so there is no regression.
+2. **The group-definition layer contradicts the condition.** The three `ApiKey*` groups declare an identical `[Create, Delete, Revoke]`, differing only in `assignedRoles`. Where the tiers actually diverge is member management: `OrganizationMemberOwner`/`Admin` hold `[Update, Remove]` while `OrganizationMemberDev` holds `[]` with no assigned roles. The hierarchy is about who you can invite and manage, not which resources you can touch.
+3. **`resource.createdBy` is an outlier.** It appears exactly twice in the whole model, both in `ApiKeyDev`. Every other ownership restriction uses `resource.userId` (4 sites) or `resource.id` (2); scope restrictions use `In: { 'resource.id': '{{resource.scope.*}}' }` (4).
+4. **For `ApiKey` the condition is unevaluable, so persisting it would deny everything.** The ApiKey mutations pass no `resourceResolver` (`mutations.ts:452-475`) and no ApiKey resolver exists — only `common`, `project`, `tag`, `user`. So `resolvedResource` stays null and `ConditionEvaluator.getFieldValue` short-circuits to `undefined` (`condition-evaluator.ts:51-55`); `StringEquals(undefined, userId)` never matches → denied. Had the seed persisted the condition, `OrganizationDev` could delete and revoke **nothing, not even their own keys**.
+
+**Conclusion**: `ApiKeyDev`'s condition is dead configuration that contradicts the layer above it — not a security defect. It is still a latent trap: registering an ApiKey resource resolver later would activate it and silently break `OrganizationDev`.
+
+**Where each arm goes:**
+
+| Arm                                                         | Disposition                                                                                                                                            |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Seed drops conflicting conditions silently                  | **Slice 3** — warn, and test the warning                                                                                                               |
+| `ApiKeyDev`'s two dead conditions                           | Follow-up — `@grantjs/constants`, changes nothing at runtime today                                                                                     |
+| Project/Tag inherit `AccountProjectOwner`'s scope condition | Follow-up — Project and Tag **do** register resolvers, so this arm is live; severity unknown until `resource.scope.projects` is traced for an org role |
+
 ## Dependencies / notes
 
 - Slice 3 **blocks on** slice 2's harness. Every other pair is file-disjoint.
@@ -142,10 +167,12 @@ Then either delete it, or make it delegate to `resolveDatabaseUrl`. **Do not lea
 
 ## Follow-ups (not blocking this story)
 
-| Item                                                                                 | Why deferred                                                                                                                           |
-| ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Audit-log table factory (Tier 2.1) — 53 tables × 18 lines, 0 diff entity-normalized  | Needs a `drizzle-kit db:generate` spike first; see [judgment call 2](#judgment-calls)                                                  |
-| Auditing the 79 migration files / 2,772 lines of SQL                                 | No lens covers migration DDL; likely needs a new lens rather than folding into an existing one                                         |
-| Determining whether any of the 110 tables is genuinely unread                        | `knip` can't see Drizzle relations or SQL-string references; needs cross-referencing `apps/api` repositories against the schema barrel |
-| Widening guardrails to `@grantjs/schema` and the adapter packages                    | Each is that pass's own first slice                                                                                                    |
-| The rubric's lens commands assume `.ts` and under-measure SQL-heavy units by a third | Recorded in `database.md`; belongs in the rubric's own method section, not a database story                                            |
+| Item                                                                                    | Why deferred                                                                                                                                     |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Remove `APIKeyDev`'s two dead `resource.createdBy` conditions from `@grantjs/constants` | Different package, and it changes nothing at runtime today — see [Condition collision](#condition-collision). Wants its own diff and reviewer    |
+| Trace how `resource.scope.projects` resolves for an organization role                   | The one **live** arm of the same collision, and its severity is genuinely unknown until traced — see [Condition collision](#condition-collision) |
+| Audit-log table factory (Tier 2.1) — 53 tables × 18 lines, 0 diff entity-normalized     | Needs a `drizzle-kit db:generate` spike first; see [judgment call 2](#judgment-calls)                                                            |
+| Auditing the 79 migration files / 2,772 lines of SQL                                    | No lens covers migration DDL; likely needs a new lens rather than folding into an existing one                                                   |
+| Determining whether any of the 110 tables is genuinely unread                           | `knip` can't see Drizzle relations or SQL-string references; needs cross-referencing `apps/api` repositories against the schema barrel           |
+| Widening guardrails to `@grantjs/schema` and the adapter packages                       | Each is that pass's own first slice                                                                                                              |
+| The rubric's lens commands assume `.ts` and under-measure SQL-heavy units by a third    | Recorded in `database.md`; belongs in the rubric's own method section, not a database story                                                      |
