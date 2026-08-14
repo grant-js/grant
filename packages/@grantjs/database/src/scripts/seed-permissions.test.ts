@@ -236,14 +236,9 @@ describe('seedAll — permission de-duplication across groups', () => {
       ([, entries]) => new Set(entries.map((e) => e.condition)).size > 1
     );
 
-    // Pinned: remaining collisions after ApiKeyDev's dead conditions were
-    // removed. The seed still cannot represent a per-group condition.
-    expect(conflicting.map(([key]) => key).sort()).toEqual([
-      'Project:Delete',
-      'Project:Update',
-      'Tag:Delete',
-      'Tag:Update',
-    ]);
+    // Pinned: with Project*/Tag* Update+Delete aligned to AccountProjectOwner's
+    // scope condition, no resource:action declarations disagree on condition.
+    expect(conflicting.map(([key]) => key).sort()).toEqual([]);
 
     await seedAll(db as unknown as SeedDb);
 
@@ -290,7 +285,7 @@ describe('seedAll — permission de-duplication across groups', () => {
     expect(devDeclared?.condition ?? null).toBeNull();
   });
 
-  it('CHARACTERIZATION: Project/Tag Update+Delete resolve to the SCOPED AccountProjectOwner condition, which then applies to ProjectOwner/TagOwner too', async () => {
+  it('Project/Tag Update+Delete keep the scoped AccountProjectOwner condition for every sharing group', async () => {
     await seedAll(db as unknown as SeedDb);
 
     const projectResource = db.rows(resources).find((r) => r.slug === 'Project') as Record<
@@ -312,12 +307,12 @@ describe('seedAll — permission de-duplication across groups', () => {
       });
     }
 
-    // ProjectOwner declared no condition for the same action.
     const ownerDeclared = PERMISSION_MAPPINGS['ProjectOwner']?.find(
       (p) => p.resource === 'Project' && p.action === 'Update'
     );
-    expect(ownerDeclared).toBeDefined();
-    expect(ownerDeclared?.condition ?? null).toBeNull();
+    expect(ownerDeclared?.condition).toEqual({
+      In: { 'resource.id': '{{resource.scope.projects}}' },
+    });
   });
 });
 
@@ -354,7 +349,7 @@ describe('seedAll — groups with no permission mappings', () => {
 });
 
 describe('seedAll — conflicting conditions are reported, not swallowed', () => {
-  it('warns once per resource:action whose declared conditions disagree between groups', async () => {
+  it('emits no conflicting-condition warnings for the constants shipped today', async () => {
     await seedAll(db as unknown as SeedDb);
 
     const conflicts = vi
@@ -362,26 +357,36 @@ describe('seedAll — conflicting conditions are reported, not swallowed', () =>
       .mock.calls.map((c) => String(c[0]))
       .filter((w) => w.includes('Conflicting conditions'));
 
-    expect(conflicts).toHaveLength(4);
-    for (const key of ['Project:Delete', 'Project:Update', 'Tag:Delete', 'Tag:Update']) {
-      expect(conflicts.some((w) => w.includes(`Conflicting conditions for ${key}:`))).toBe(true);
-    }
+    expect(conflicts).toEqual([]);
   });
 
-  it('names the group whose condition was kept and every group whose condition was dropped', async () => {
-    await seedAll(db as unknown as SeedDb);
+  it('still warns with keeper/discarded detail when declarations disagree (guardrail remains live)', async () => {
+    // The production mappings no longer collide; plant one disagreement to prove
+    // the warning path still fires for a future regression.
+    const original = PERMISSION_MAPPINGS['ProjectOwner'];
+    PERMISSION_MAPPINGS['ProjectOwner'] = [
+      {
+        action: 'Update' as never,
+        resource: 'Project' as never,
+        condition: null,
+        groupName: 'ProjectOwner',
+      },
+    ];
 
-    const projectDelete = vi
+    try {
+      await seedAll(db as unknown as SeedDb);
+    } finally {
+      PERMISSION_MAPPINGS['ProjectOwner'] = original;
+    }
+
+    const projectUpdate = vi
       .mocked(console.warn)
       .mock.calls.map((c) => String(c[0]))
-      .find((w) => w.includes('Conflicting conditions for Project:Delete:'));
+      .find((w) => w.includes('Conflicting conditions for Project:Update:'));
 
-    // AccountProjectOwner is declared first and wins with the scoped condition;
-    // later ProjectOwner/Admin/Dev declare null and are listed as discarded.
-    expect(projectDelete).toContain('kept AccountProjectOwner');
-    expect(projectDelete).toContain('discarded');
-    expect(projectDelete).toContain('ProjectOwner');
-    expect(projectDelete).toContain('group_permissions has no condition column');
+    expect(projectUpdate).toContain('kept AccountProjectOwner');
+    expect(projectUpdate).toContain('discarded ProjectOwner');
+    expect(projectUpdate).toContain('group_permissions has no condition column');
   });
 
   it('stays silent for a resource:action every group declares identically', async () => {
