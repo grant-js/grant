@@ -32,6 +32,12 @@
     "packages/@grantjs/*": {
       "entry": ["src/index.ts"],
       "project": ["src/**/*.ts"]
+    },
+    "packages/@grantjs/database": {
+      // Tests and their support module are entry points, not dead files: vitest
+      // discovers them by glob, which knip cannot follow.
+      "entry": ["src/index.ts", "src/**/*.test.ts", "src/test-support/**/*.ts"],
+      "project": ["src/**/*.ts"]
     }
   },
   "ignore": ["**/generated/**", "**/dist/**", "docs/**"],

@@ -14,10 +14,11 @@ The project follows hexagonal architecture (ports and adapters). Understand and 
 ### Package dependency graph (DAG — no cycles allowed)
 
 ```
+@grantjs/env             (env parsing, no deps)
 @grantjs/schema          (codegen types, no deps)
     └── @grantjs/core    (domain ports, interfaces, exceptions)
             ├── @grantjs/constants
-            ├── @grantjs/database
+            ├── @grantjs/database  → also @grantjs/env, @grantjs/constants
             ├── @grantjs/logger    (Pino adapter)
             ├── @grantjs/errors    (HTTP adapter)
             ├── @grantjs/cache     (Redis/memory adapters)
@@ -28,7 +29,7 @@ The project follows hexagonal architecture (ports and adapters). Understand and 
 
 - **`@grantjs/core`** defines domain ports (`ILogger`, `ILoggerFactory`, `ICacheAdapter`, `IFileStorageService`, `IEmailService`, `IJobAdapter`) and a rich exception hierarchy (`GrantException` → `NotFoundError`, `BadRequestError`, `AuthenticationError`, `AuthorizationError`, `ConflictError`, `ConfigurationError`, `ValidationError`).
 - **Adapter packages** (`cache`, `storage`, `email`, `jobs`, `logger`, `errors`) implement core ports. They accept `ILogger` (or `ILoggerFactory`) via constructor injection or factory — they must **never** import `@grantjs/logger` directly.
-- **`@grantjs/database`** accepts an optional `ILogger` via `DatabaseConfig.logger`.
+- **`@grantjs/database`** accepts an optional `ILogger` via `DatabaseConfig.logger`. It is the only graphed package that depends on `@grantjs/env`; `apps/api` and `apps/config` depend on it too. Enforced by the `packages/@grantjs/database/src/**` block in `eslint.config.mjs`, whose allowed set is deliberately wider than core's — copying core's rule verbatim here would break the build.
 - Packages must use `@grantjs/*` aliases for cross-package imports (never relative `../../../` paths).
 
 ### API app layer boundaries (`apps/api`)
