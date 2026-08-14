@@ -38,7 +38,9 @@ function listVersions(markdown) {
 }
 
 function hasVersion(markdown, version) {
-  return new RegExp(`^## ${version.replaceAll('.', '\\.')}$`, 'm').test(markdown);
+  // Match headings via the fixed VERSION_RE only — never interpolate CLI/file
+  // input into a RegExp (CodeQL js/regex-injection).
+  return listVersions(markdown).includes(version);
 }
 
 function compareSemverDesc(a, b) {
