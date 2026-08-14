@@ -45,7 +45,9 @@ A user's membership in an organization. Stored in the `organization_users` table
 >
 > GraphQL and REST expose _member_ (`organizationMembers`, `updateOrganizationMember`). The database, ports, and half the services say _user_. `repositories/organization-users.repository.ts:104` uses both terms in one comment.
 >
-> **Canonical: `member`** for the relationship, `user` for the person. A user _is_ a person; a member _is_ that person's membership in an organization. New code should use `member` when it means the relationship. Unifying the existing stacks is a contract change.
+> The fork reaches the physical layer too: the table is `organization_users` (`packages/@grantjs/database/src/schemas/organization-users.schema.ts:17`), and every index, foreign key, and audit-log table built on it carries the `organization_users` prefix. With the divergence now cited at the API layer (pass 1), the port layer (pass 3), and the table layer (pass 4), reconciling it is no longer a rename — it is a migration **plus** a contract change.
+>
+> **Canonical: `member`** for the relationship, `user` for the person. A user _is_ a person; a member _is_ that person's membership in an organization. New code should use `member` when it means the relationship. **No rename is planned**; the cost above is the reason.
 
 ### `organization`, not `org`
 
