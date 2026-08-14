@@ -47,7 +47,7 @@ gh stack submit     # opens the linked PRs
 gh stack sync       # restack after an upstream slice merges
 ```
 
-See [Agentic SDLC § GitHub stacking](../agentic-sdlc.md#github-stacking). If a story predates `gh stack`, adopt its existing PRs with `gh stack link <pr> <pr> …` rather than restructuring branches mid-flight.
+See [Agentic SDLC § GitHub stacking](../agentic-sdlc.md#github-stacking). If a story predates `gh stack`, adopt its existing PRs with `gh stack link --base feat/<slug> <pr> <pr> …` (bottom to top) rather than restructuring branches mid-flight. **`--base` is not optional on `link` either** — omitted, it re-points the bottom PR at `main` and the whole stack merges past gate 4.
 
 ## Dependencies / notes
 
