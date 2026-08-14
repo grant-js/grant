@@ -1,12 +1,9 @@
 /**
- * Characterization tests for the connection module.
+ * Tests for the connection module.
  *
  * `connection` is a module-level singleton, so each test re-imports the module
  * through `vi.resetModules()` to get a fresh one. `postgres` and `drizzle` are
  * mocked — nothing here opens a socket.
- *
- * Assertions describe what the code does *today*. Anything surprising is
- * labelled CHARACTERIZATION and reported rather than fixed here.
  */
 import type { ILogger } from '@grantjs/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -90,21 +87,13 @@ describe('initializeDBConnection — first call', () => {
     expect(() => initializeDBConnection({ connectionString: '' })).toThrow(
       'Database connection string is required'
     );
-    expect(postgresFactory).not.toHaveBeenCalled();
-  });
-
-  it('CHARACTERIZATION: that rejection is a bare Error, not a ConfigurationError', async () => {
-    const { initializeDBConnection } = await freshModule();
-
-    // @grantjs/core exports ConfigurationError and this module already imports
-    // ILogger from it, so the domain error is available — see AGENTS.md
-    // § Error handling, "always use domain-specific errors".
     try {
       initializeDBConnection({ connectionString: '' });
       expect.unreachable('should have thrown');
     } catch (error) {
-      expect((error as Error).constructor.name).toBe('Error');
+      expect((error as { code?: string }).code).toBe('CONFIGURATION_ERROR');
     }
+    expect(postgresFactory).not.toHaveBeenCalled();
   });
 
   it('logs initialization when a logger is supplied, and is silent without one', async () => {
@@ -123,7 +112,7 @@ describe('initializeDBConnection — first call', () => {
 });
 
 describe('initializeDBConnection — the module-level singleton', () => {
-  it('returns the existing connection on a second call', async () => {
+  it('returns the existing connection on a second call with the same string', async () => {
     const { initializeDBConnection } = await freshModule();
 
     const first = initializeDBConnection({ connectionString: 'postgresql://u:p@h:5432/d' });
@@ -133,43 +122,43 @@ describe('initializeDBConnection — the module-level singleton', () => {
     expect(postgresFactory).toHaveBeenCalledOnce();
   });
 
-  it('CHARACTERIZATION: a second call with a DIFFERENT connection string is ignored, and the caller is handed the first database', async () => {
+  it('throws when a second call uses a different connection string', async () => {
     const { initializeDBConnection } = await freshModule();
     const logger = fakeLogger();
 
-    const first = initializeDBConnection({ connectionString: 'postgresql://u:p@primary:5432/d' });
-    const second = initializeDBConnection({
-      connectionString: 'postgresql://u:p@replica:5432/other',
-      logger,
-    });
+    initializeDBConnection({ connectionString: 'postgresql://u:p@primary:5432/d', logger });
 
-    // Same object: the caller believes it is talking to `replica/other`.
-    expect(second).toBe(first);
+    expect(() =>
+      initializeDBConnection({
+        connectionString: 'postgresql://u:p@replica:5432/other',
+        logger,
+      })
+    ).toThrow(/different connection string/);
+
     expect(postgresFactory).toHaveBeenCalledOnce();
     expect(postgresFactory).toHaveBeenCalledWith(
       'postgresql://u:p@primary:5432/d',
       expect.anything()
     );
-    // The only signal is a warning, which is dropped entirely when no logger
-    // is passed — the default in every script in this package.
-    expect(logger.warn).toHaveBeenCalledWith(
-      'Database connection already initialized. Returning existing connection.'
-    );
   });
 
-  it('CHARACTERIZATION: max/timeout overrides on a second call are silently discarded too', async () => {
+  it('warns on a same-string re-init and keeps the original pool options', async () => {
     const { initializeDBConnection } = await freshModule();
+    const logger = fakeLogger();
 
-    initializeDBConnection({ connectionString: 'postgresql://u:p@h:5432/d', max: 10 });
-    initializeDBConnection({ connectionString: 'postgresql://u:p@h:5432/d', max: 1 });
+    initializeDBConnection({ connectionString: 'postgresql://u:p@h:5432/d', max: 10, logger });
+    initializeDBConnection({ connectionString: 'postgresql://u:p@h:5432/d', max: 1, logger });
 
     expect(postgresFactory).toHaveBeenCalledExactlyOnceWith(
       'postgresql://u:p@h:5432/d',
       expect.objectContaining({ max: 10 })
     );
+    expect(logger.warn).toHaveBeenCalledWith(
+      'Database connection already initialized. Returning existing connection.'
+    );
   });
 
-  it('CHARACTERIZATION: moduleLogger is reassigned before the guard, so a later caller re-targets logging for a connection it did not create', async () => {
+  it('does not reassign the module logger on a no-op same-string re-init', async () => {
     const { initializeDBConnection, closeDatabase } = await freshModule();
     const first = fakeLogger();
     const second = fakeLogger();
@@ -178,12 +167,11 @@ describe('initializeDBConnection — the module-level singleton', () => {
     initializeDBConnection({ connectionString: 'postgresql://u:p@h:5432/d', logger: second });
     await closeDatabase();
 
-    // The close belongs to the connection `first` opened, but is logged to `second`.
-    expect(second.info).toHaveBeenCalledWith('Database connection closed');
-    expect(first.info).not.toHaveBeenCalledWith('Database connection closed');
+    expect(first.info).toHaveBeenCalledWith('Database connection closed');
+    expect(second.info).not.toHaveBeenCalledWith('Database connection closed');
   });
 
-  it('CHARACTERIZATION: passing no logger on the second call blanks logging entirely', async () => {
+  it('keeps the original logger when a same-string re-init omits logger', async () => {
     const { initializeDBConnection, closeDatabase } = await freshModule();
     const logger = fakeLogger();
 
@@ -191,7 +179,7 @@ describe('initializeDBConnection — the module-level singleton', () => {
     initializeDBConnection({ connectionString: 'postgresql://u:p@h:5432/d' });
     await closeDatabase();
 
-    expect(logger.info).not.toHaveBeenCalledWith('Database connection closed');
+    expect(logger.info).toHaveBeenCalledWith('Database connection closed');
   });
 });
 
@@ -200,20 +188,12 @@ describe('getDatabase / isDatabaseInitialized', () => {
     const { initializeDBConnection, getDatabase, isDatabaseInitialized } = await freshModule();
 
     expect(isDatabaseInitialized()).toBe(false);
-    expect(() => getDatabase()).toThrow('Database not initialized');
+    expect(() => getDatabase()).toThrow(/Call initializeDBConnection\(\) first/);
 
     const db = initializeDBConnection({ connectionString: 'postgresql://u:p@h:5432/d' });
 
     expect(isDatabaseInitialized()).toBe(true);
     expect(getDatabase()).toBe(db);
-  });
-
-  it('CHARACTERIZATION: the error names initializeDatabase(), a function this package does not export', async () => {
-    const module = await freshModule();
-
-    expect(() => module.getDatabase()).toThrow(/Call initializeDatabase\(\) first/);
-    expect('initializeDatabase' in module).toBe(false);
-    expect('initializeDBConnection' in module).toBe(true);
   });
 });
 
@@ -249,14 +229,14 @@ describe('closeDatabase', () => {
     );
   });
 
-  it('CHARACTERIZATION: when client.end() rejects, the singleton is left populated, so the process still believes it holds a live connection', async () => {
+  it('clears the singleton even when client.end() rejects, so retry can open a new pool', async () => {
     const { initializeDBConnection, closeDatabase, isDatabaseInitialized, getDatabase } =
       await freshModule();
     const logger = fakeLogger();
     const failure = new Error('end failed');
     end.mockRejectedValue(failure);
 
-    const db = initializeDBConnection({ connectionString: 'postgresql://u:p@h:5432/d', logger });
+    initializeDBConnection({ connectionString: 'postgresql://u:p@h:5432/d', logger });
 
     await expect(closeDatabase()).rejects.toBe(failure);
     expect(logger.error).toHaveBeenCalledWith(
@@ -264,21 +244,12 @@ describe('closeDatabase', () => {
       'Error closing database connection'
     );
 
-    // `connection = null` sits after the await inside try, so it never runs.
-    expect(isDatabaseInitialized()).toBe(true);
-    expect(getDatabase()).toBe(db);
-  });
+    expect(isDatabaseInitialized()).toBe(false);
+    expect(() => getDatabase()).toThrow(/Call initializeDBConnection\(\) first/);
 
-  it('CHARACTERIZATION: a failed close also blocks re-initialization — the retry silently returns the dead connection', async () => {
-    const { initializeDBConnection, closeDatabase } = await freshModule();
-    end.mockRejectedValue(new Error('end failed'));
-
-    const db = initializeDBConnection({ connectionString: 'postgresql://u:p@h:5432/d' });
-    await expect(closeDatabase()).rejects.toThrow();
-
+    end.mockResolvedValue(undefined);
     const retry = initializeDBConnection({ connectionString: 'postgresql://u:p@h:5432/d' });
-
-    expect(retry).toBe(db);
-    expect(postgresFactory).toHaveBeenCalledOnce();
+    expect(retry).toBeDefined();
+    expect(postgresFactory).toHaveBeenCalledTimes(2);
   });
 });
