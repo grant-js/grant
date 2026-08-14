@@ -247,7 +247,7 @@ describe('runDemoRefresh', () => {
     expect(seedAll).not.toHaveBeenCalled();
   });
 
-  it('CHARACTERIZATION: unlike bootstrap, the reset and re-seed are NOT wrapped in a transaction, so a mid-run failure leaves the database truncated and unseeded', async () => {
+  it('wraps reset and re-seed in a transaction so a mid-run failure rolls back the truncate', async () => {
     seedAll.mockRejectedValue(new Error('seed failed'));
 
     await expect(runDemoRefresh(db as unknown as Db, SYSTEM_USER_ID)).rejects.toThrow(
@@ -255,6 +255,6 @@ describe('runDemoRefresh', () => {
     );
 
     expect(reset).toHaveBeenCalledOnce();
-    expect(db.order).not.toContain('tx:BEGIN');
+    expect(db.order).toContain('tx:BEGIN');
   });
 });
