@@ -216,7 +216,7 @@ What disproved the escalation:
 - `resource.createdBy` appears **exactly twice** in the entire model, both in `APIKeyDev`, matching no convention.
 - ApiKey mutations register **no `resourceResolver`**. `condition-evaluator.ts:51-55` returns `undefined` for `resource.*` when `resolvedResource` is null, so had the condition ever been persisted it would have **denied** — `OrganizationDev` could delete or revoke _nothing_.
 
-**Disposition: dead configuration plus a latent trap, not a live defect.** Slice 3 added a startup warning naming the losing group and the discarded condition, so the next collision is announced instead of silent. Both remaining arms were closed by the [follow-up story](../../../plans/2026-08-14-database-cq-followups-stack.md): `ApiKeyDev`'s conditions were removed, and Project/Tag declarations were aligned to the scoped condition already persisted (trace: safe / fail-closed).
+**Disposition: dead configuration plus a latent trap, not a live defect.** Slice 3 added a startup warning naming the losing group and the discarded condition, so the next collision is announced instead of silent. Both remaining arms were closed by the [follow-up story](https://github.com/grant-js/grant/blob/main/plans/2026-08-14-database-cq-followups-stack.md): `ApiKeyDev`'s conditions were removed, and Project/Tag declarations were aligned to the scoped condition already persisted (trace: safe / fail-closed).
 
 ---
 
@@ -267,7 +267,7 @@ Soft delete exists here to keep tenant-owned records recoverable and to preserve
 
 Story brief and stack plan (pass 4): [`plans/2026-08-10-database-code-quality-brief.md`](https://github.com/grant-js/grant/blob/main/plans/2026-08-10-database-code-quality-brief.md), [`plans/2026-08-10-database-code-quality-stack.md`](https://github.com/grant-js/grant/blob/main/plans/2026-08-10-database-code-quality-stack.md).
 
-Follow-up story (closes the actionable backlog below): [`plans/2026-08-14-database-cq-followups-brief.md`](../../../plans/2026-08-14-database-cq-followups-brief.md), [`plans/2026-08-14-database-cq-followups-stack.md`](../../../plans/2026-08-14-database-cq-followups-stack.md).
+Follow-up story (closes the actionable backlog below): [`plans/2026-08-14-database-cq-followups-brief.md`](https://github.com/grant-js/grant/blob/main/plans/2026-08-14-database-cq-followups-brief.md), [`plans/2026-08-14-database-cq-followups-stack.md`](https://github.com/grant-js/grant/blob/main/plans/2026-08-14-database-cq-followups-stack.md).
 
 **Resolved by the follow-up story** (see stack PRs on `feat/database-cq-followups`):
 
