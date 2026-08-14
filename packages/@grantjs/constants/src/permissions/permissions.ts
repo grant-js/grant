@@ -1060,20 +1060,12 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
     {
       action: ResourceAction.Delete,
       resource: ResourceSlug.ApiKey,
-      condition: {
-        [ComparisonOperator.StringEquals]: {
-          'resource.createdBy': '{{user.id}}',
-        },
-      },
+      condition: null,
     },
     {
       action: ResourceAction.Revoke,
       resource: ResourceSlug.ApiKey,
-      condition: {
-        [ComparisonOperator.StringEquals]: {
-          'resource.createdBy': '{{user.id}}',
-        },
-      },
+      condition: null,
     },
   ],
 
