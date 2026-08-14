@@ -29,6 +29,13 @@ const { runDemoRefresh } = await import('./demo-refresh');
 
 const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000001';
 
+/**
+ * Minimal stand-in recording the raw SQL issued and whether it went through a
+ * transaction. Drizzle splits a `sql` template into `queryChunks`: literal SQL
+ * arrives as a `StringChunk` whose `value` is a string array, interpolated
+ * values as parameter objects. Both are kept — the parameters carry the lock
+ * names, which is how the two advisory locks are told apart.
+ */
 function sqlText(query: unknown): string {
   const chunks = (query as { queryChunks?: unknown[] }).queryChunks ?? [];
   return chunks
@@ -60,7 +67,10 @@ class SqlRecorder {
     const statements: string[] = [];
     const release = this.release;
     const reservedFn = (async (strings: TemplateStringsArray, ...values: unknown[]) => {
-      const text = strings.reduce((acc, part, i) => acc + part + (i < values.length ? '?' : ''), '');
+      const text = strings.reduce(
+        (acc, part, i) => acc + part + (i < values.length ? '?' : ''),
+        ''
+      );
       statements.push(text.replace(/\s+/g, ' ').trim());
       return [];
     }) as unknown as ReservedSql;
@@ -145,6 +155,9 @@ describe('bootstrapDatabase', () => {
   it('CHARACTERIZATION: the RLS grant is called with no arguments, so it falls back to getEnv() inside an otherwise fully-injected function', async () => {
     await bootstrapDatabase(db as unknown as Db, SYSTEM_USER_ID);
 
+    // bootstrapDatabase receives `db` and `systemUserId` by injection, but this
+    // step reads the environment directly. Contrast connection.ts, which reads
+    // no env at all. Tier 3 in the pass-4 brief.
     expect(ensureRlsRestrictedRoleMembership).toHaveBeenCalledWith(undefined);
   });
 
@@ -184,6 +197,9 @@ describe('runDemoRefresh', () => {
     );
   });
 
+  // The lock *name* ('grant-demo-refresh' vs 'grant-db-bootstrap') is a source
+  // constant interpolated as a bound parameter, so asserting it here would test
+  // drizzle's chunk representation rather than this package's behavior.
   it('takes a session-pinned advisory lock first and unlocks on the same reserved connection', async () => {
     await runDemoRefresh(db as unknown as Db, SYSTEM_USER_ID);
 
@@ -210,6 +226,10 @@ describe('runDemoRefresh', () => {
     await runDemoRefresh(db as unknown as Db, SYSTEM_USER_ID);
 
     const terminate = db.statements.find((s) => s.includes('pg_terminate_backend'));
+    // pg_stat_activity is cluster-wide. The filter excludes only the caller's
+    // own backend (`pid <> pg_backend_pid()`) and idle-in-transaction sessions
+    // older than the threshold — it does not filter on datname. Safe today
+    // because the job is double-gated on demo mode (see demo-db-refresh.job.ts).
     expect(terminate).toContain('pg_stat_activity');
     expect(terminate).toContain('pid <> pg_backend_pid()');
     expect(terminate).not.toContain('datname');

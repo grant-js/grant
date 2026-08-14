@@ -13,7 +13,7 @@ import {
 import { getEnv, resolveDatabaseUrl } from '@grantjs/env';
 import { and, eq, isNull } from 'drizzle-orm';
 
-import { closeDatabase, initializeDBConnection } from '../connection';
+import { closeDatabase, type DbSchema, initializeDBConnection } from '../connection';
 import { groupPermissions, groups, permissions, resources, roleGroups, roles } from '../schemas';
 
 /**
@@ -141,7 +141,7 @@ export async function seedPermissions(options?: SeedOptions) {
   }
 }
 
-export async function seedAll(db: ReturnType<typeof initializeDBConnection>): Promise<SeedResult> {
+export async function seedAll(db: DbSchema): Promise<SeedResult> {
   const result: SeedResult = {
     resources: { created: 0, updated: 0, skipped: 0 },
     permissions: { created: 0, updated: 0, skipped: 0 },
@@ -178,7 +178,7 @@ export async function seedAll(db: ReturnType<typeof initializeDBConnection>): Pr
   return result;
 }
 
-async function seedResources(db: ReturnType<typeof initializeDBConnection>): Promise<{
+async function seedResources(db: DbSchema): Promise<{
   map: Map<ResourceSlug, typeof resources.$inferSelect>;
   stats: SeedResult['resources'];
 }> {
@@ -242,7 +242,7 @@ async function seedResources(db: ReturnType<typeof initializeDBConnection>): Pro
 }
 
 async function seedPermissionsData(
-  db: ReturnType<typeof initializeDBConnection>,
+  db: DbSchema,
   resourceMap: Map<ResourceSlug, typeof resources.$inferSelect>
 ): Promise<{
   map: Map<string, typeof permissions.$inferSelect>;
@@ -378,7 +378,7 @@ async function seedPermissionsData(
   return { map, stats };
 }
 
-async function seedGroups(db: ReturnType<typeof initializeDBConnection>): Promise<{
+async function seedGroups(db: DbSchema): Promise<{
   map: Map<string, typeof groups.$inferSelect>;
   stats: SeedResult['groups'];
 }> {
@@ -435,7 +435,7 @@ async function seedGroups(db: ReturnType<typeof initializeDBConnection>): Promis
   return { map, stats };
 }
 
-async function seedRoles(db: ReturnType<typeof initializeDBConnection>): Promise<{
+async function seedRoles(db: DbSchema): Promise<{
   map: Map<RoleKey, typeof roles.$inferSelect>;
   stats: SeedResult['roles'];
 }> {
@@ -492,7 +492,7 @@ async function seedRoles(db: ReturnType<typeof initializeDBConnection>): Promise
 }
 
 async function seedRoleGroups(
-  db: ReturnType<typeof initializeDBConnection>,
+  db: DbSchema,
   roleMap: Map<RoleKey, typeof roles.$inferSelect>,
   groupMap: Map<string, typeof groups.$inferSelect>
 ): Promise<{ created: number; skipped: number }> {
@@ -544,7 +544,7 @@ async function seedRoleGroups(
 }
 
 async function seedGroupPermissions(
-  db: ReturnType<typeof initializeDBConnection>,
+  db: DbSchema,
   groupMap: Map<string, typeof groups.$inferSelect>,
   permissionMap: Map<string, typeof permissions.$inferSelect>
 ): Promise<{ created: number; skipped: number }> {

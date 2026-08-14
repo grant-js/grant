@@ -6,8 +6,18 @@ import { schema } from '../schemas';
 
 export type DbSchema = PostgresJsDatabase<typeof schema>;
 
+/**
+ * The pooled database, with its postgres.js client attached.
+ *
+ * A transaction satisfies `DbSchema` but is never a `PooledDatabase` — it has no
+ * `$client`. Anything that needs a dedicated backend session (advisory locks)
+ * must ask for this type, or the requirement is unenforced and fails at runtime
+ * with `Cannot read properties of undefined (reading 'reserve')`.
+ */
+export type PooledDatabase = DbSchema & { $client: Sql };
+
 interface DatabaseConnection {
-  db: DbSchema;
+  db: PooledDatabase;
   client: Sql;
 }
 
@@ -25,7 +35,7 @@ export interface DatabaseConfig {
   logger?: ILogger;
 }
 
-export function initializeDBConnection(config: DatabaseConfig): DbSchema {
+export function initializeDBConnection(config: DatabaseConfig): PooledDatabase {
   moduleLogger = config.logger;
 
   if (connection) {
@@ -71,7 +81,7 @@ export async function closeDatabase(): Promise<void> {
   }
 }
 
-export function getDatabase(): DbSchema {
+export function getDatabase(): PooledDatabase {
   if (!connection) {
     throw new Error('Database not initialized. Call initializeDatabase() first.');
   }

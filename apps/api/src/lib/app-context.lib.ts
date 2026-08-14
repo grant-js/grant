@@ -1,5 +1,5 @@
 import { Grant } from '@grantjs/core';
-import { DbSchema, signingKeyAuditLogs } from '@grantjs/database';
+import { PooledDatabase, signingKeyAuditLogs } from '@grantjs/database';
 
 import { config } from '@/config';
 import { SYSTEM_USER } from '@/constants/system.constants';
@@ -17,7 +17,7 @@ import { IEntityCacheAdapter } from './cache';
 
 const tokenProvider = new JwtTokenProvider();
 
-export function createAppContext(db: DbSchema, cache: IEntityCacheAdapter): AppContext {
+export function createAppContext(db: PooledDatabase, cache: IEntityCacheAdapter): AppContext {
   const repositories = createRepositories(db);
   const grantRepository = new GrantRepository(db);
   const signingKeyAudit = new DrizzleAuditLogger(

@@ -39,9 +39,7 @@ describe('withSessionAdvisoryLock', () => {
     const db = makeDb(reserved);
     const work = vi.fn(async () => 'ok');
 
-    await expect(
-      withSessionAdvisoryLock(db as never, 'grant-test-lock', work)
-    ).resolves.toBe('ok');
+    await expect(withSessionAdvisoryLock(db as never, 'grant-test-lock', work)).resolves.toBe('ok');
 
     expect(db.$client.reserve).toHaveBeenCalledOnce();
     expect(reserved.statements[0]).toMatch(/pg_advisory_lock/);
@@ -76,6 +74,22 @@ describe('withSessionAdvisoryLock', () => {
       })
     ).rejects.toBe(workError);
 
+    expect(reserved.release).toHaveBeenCalledOnce();
+  });
+
+  it('propagates a falsy thrown value instead of swallowing it', async () => {
+    // `throw undefined` is legal. A sentinel of `workError !== undefined` would
+    // treat this as success and return the unassigned result.
+    const reserved = makeReserved();
+    const db = makeDb(reserved);
+
+    await expect(
+      withSessionAdvisoryLock(db as never, 'grant-test-lock', async () => {
+        throw undefined;
+      })
+    ).rejects.toBeUndefined();
+
+    expect(reserved.statements.some((s) => s.includes('unlock'))).toBe(true);
     expect(reserved.release).toHaveBeenCalledOnce();
   });
 

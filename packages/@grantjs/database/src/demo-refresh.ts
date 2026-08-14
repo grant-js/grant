@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { reset } from 'drizzle-seed';
 
-import type { DbSchema } from './connection';
+import type { DbSchema, PooledDatabase } from './connection';
 import { resetTables } from './scripts/reset-db';
 import { seedAll } from './scripts/seed-permissions';
 import { ensureSystemUserAndSigningKey } from './seed-core';
@@ -33,7 +33,7 @@ async function terminateIdleTransactions(db: DbSchema, thresholdMinutes = 5): Pr
  * - Ensures the system user and signing key exist.
  * - Reseeds the permission model.
  */
-export async function runDemoRefresh(db: DbSchema, systemUserId: string): Promise<void> {
+export async function runDemoRefresh(db: PooledDatabase, systemUserId: string): Promise<void> {
   await withSessionAdvisoryLock(db, LOCK_NAME_DEMO_REFRESH, async () => {
     const terminated = await terminateIdleTransactions(db);
     if (terminated > 0) {
