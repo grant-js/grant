@@ -20,15 +20,15 @@
 
 ## Ordered slices (PRs)
 
-| #     | Branch                                           | Base                         | Concern                                                                                         | Owner    | Review bar        | PR                                                 |
-| ----- | ------------------------------------------------ | ---------------------------- | ----------------------------------------------------------------------------------------------- | -------- | ----------------- | -------------------------------------------------- |
-| 1     | `feat/database-cq-followups-apikey-dead-conds`   | `feat/database-cq-followups` | Remove `ApiKeyDev` dead `resource.createdBy` conditions                                         | Backend  | light             | [#258](https://github.com/grant-js/grant/pull/258) |
-| 2     | `feat/database-cq-followups-advisory-locks`      | slice 1                      | Session-pin advisory locks in `bootstrap` + `demo-refresh`                                      | Backend  | **security-full** | [#259](https://github.com/grant-js/grant/pull/259) |
-| 3     | `feat/database-cq-followups-connection`          | slice 2                      | `ConfigurationError`, correct `getDatabase` message, throw on config mismatch, close hygiene    | Backend  | light             | [#260](https://github.com/grant-js/grant/pull/260) |
-| 4     | `feat/database-cq-followups-demo-seed`           | slice 3                      | `demo-refresh` truncate+reseed in a transaction; restore soft-deleted system user               | Backend  | light             | [#261](https://github.com/grant-js/grant/pull/261) |
-| 5     | `feat/database-cq-followups-scope-collision`     | slice 4                      | Trace Project/Tag `resource.scope.*` collision; fix or record decision                          | Backend  | **security-full** | [#262](https://github.com/grant-js/grant/pull/262) |
-| 6     | `feat/database-cq-followups-docs`                | slice 5                      | Close backlog items in `database.md`; note follow-up story in closed plan                       | Backend  | light             |                                                    |
-| final | `feat/database-cq-followups`                     | `main`                       | integration                                                                                     | Principal| deep              |                                                    |
+| #     | Branch                                         | Base                         | Concern                                                                                      | Owner     | Review bar        | PR                                                 |
+| ----- | ---------------------------------------------- | ---------------------------- | -------------------------------------------------------------------------------------------- | --------- | ----------------- | -------------------------------------------------- |
+| 1     | `feat/database-cq-followups-apikey-dead-conds` | `feat/database-cq-followups` | Remove `ApiKeyDev` dead `resource.createdBy` conditions                                      | Backend   | light             | [#258](https://github.com/grant-js/grant/pull/258) |
+| 2     | `feat/database-cq-followups-advisory-locks`    | slice 1                      | Session-pin advisory locks in `bootstrap` + `demo-refresh`                                   | Backend   | **security-full** | [#259](https://github.com/grant-js/grant/pull/259) |
+| 3     | `feat/database-cq-followups-connection`        | slice 2                      | `ConfigurationError`, correct `getDatabase` message, throw on config mismatch, close hygiene | Backend   | light             | [#260](https://github.com/grant-js/grant/pull/260) |
+| 4     | `feat/database-cq-followups-demo-seed`         | slice 3                      | `demo-refresh` truncate+reseed in a transaction; restore soft-deleted system user            | Backend   | light             | [#261](https://github.com/grant-js/grant/pull/261) |
+| 5     | `feat/database-cq-followups-scope-collision`   | slice 4                      | Trace Project/Tag `resource.scope.*` collision; fix or record decision                       | Backend   | **security-full** | [#262](https://github.com/grant-js/grant/pull/262) |
+| 6     | `feat/database-cq-followups-docs`              | slice 5                      | Close backlog items in `database.md`; note follow-up story in closed plan                    | Backend   | light             | [#263](https://github.com/grant-js/grant/pull/263) |
+| final | `feat/database-cq-followups`                   | `main`                       | integration                                                                                  | Principal | deep              |                                                    |
 
 ### Fan-out
 
