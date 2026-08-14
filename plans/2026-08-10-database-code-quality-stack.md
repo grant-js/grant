@@ -173,14 +173,4 @@ No changeset — `@grantjs/database` is in `.changeset/config.json`'s `ignore` l
 
 ## Follow-ups (not blocking this story)
 
-**Now consolidated in [`database.md` § Backlog](../docs/contributing/code-quality/database.md#backlog)**, which is the durable home — this plan is closed. That backlog also carries the five behaviors slice 3 **characterized but did not fix**, which did not exist when this table was written; the sharpest is `bootstrap.ts`'s advisory lock not being session-pinned (lock and unlock are separate pool statements, so the unlock can hit a different backend and leave the lock held on every API start).
-
-| Item                                                                                    | Why deferred                                                                                                                                     |
-| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Remove `APIKeyDev`'s two dead `resource.createdBy` conditions from `@grantjs/constants` | Different package, and it changes nothing at runtime today — see [Condition collision](#condition-collision). Wants its own diff and reviewer    |
-| Trace how `resource.scope.projects` resolves for an organization role                   | The one **live** arm of the same collision, and its severity is genuinely unknown until traced — see [Condition collision](#condition-collision) |
-| Audit-log table factory (Tier 2.1) — 53 tables × 18 lines, 0 diff entity-normalized     | Needs a `drizzle-kit db:generate` spike first; see [judgment call 2](#judgment-calls)                                                            |
-| Auditing the 79 migration files / 2,772 lines of SQL                                    | No lens covers migration DDL; likely needs a new lens rather than folding into an existing one                                                   |
-| Determining whether any of the 110 tables is genuinely unread                           | `knip` can't see Drizzle relations or SQL-string references; needs cross-referencing `apps/api` repositories against the schema barrel           |
-| Widening guardrails to `@grantjs/schema` and the adapter packages                       | Each is that pass's own first slice                                                                                                              |
-| The rubric's lens commands assume `.ts` and under-measure SQL-heavy units by a third    | Recorded in `database.md`; belongs in the rubric's own method section, not a database story                                                      |
+**Closed by [`plans/2026-08-14-database-cq-followups-stack.md`](./2026-08-14-database-cq-followups-stack.md)** — actionable backlog from [`database.md` § Backlog](../docs/contributing/code-quality/database.md#backlog). Remaining items there are owed to later passes (migration SQL lens, audit-log factory spike, unread-table method, guardrail widening, rubric SQL under-count).
