@@ -1,5 +1,5 @@
 /**
- * Characterization tests for the two destructive orchestrators:
+ * Tests for the two destructive orchestrators:
  * `bootstrapDatabase` (runs on every API start) and `runDemoRefresh` (truncates).
  *
  * Everything they call is mocked, so no migration runs and no table is touched.
@@ -29,13 +29,6 @@ const { runDemoRefresh } = await import('./demo-refresh');
 
 const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000001';
 
-/**
- * Minimal stand-in recording the raw SQL issued and whether it went through a
- * transaction. Drizzle splits a `sql` template into `queryChunks`: literal SQL
- * arrives as a `StringChunk` whose `value` is a string array, interpolated
- * values as parameter objects. Both are kept — the parameters carry the lock
- * names, which is how the two advisory locks are told apart.
- */
 function sqlText(query: unknown): string {
   const chunks = (query as { queryChunks?: unknown[] }).queryChunks ?? [];
   return chunks
@@ -50,11 +43,31 @@ function sqlText(query: unknown): string {
     .trim();
 }
 
+type ReservedSql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown[]>) & {
+  release: () => void;
+  statements: string[];
+};
+
 class SqlRecorder {
   readonly statements: string[] = [];
   readonly order: string[] = [];
   executeResults: unknown[][] = [];
   inTransaction = false;
+  reserved: ReservedSql;
+  release = vi.fn();
+
+  constructor() {
+    const statements: string[] = [];
+    const release = this.release;
+    const reservedFn = (async (strings: TemplateStringsArray, ...values: unknown[]) => {
+      const text = strings.reduce((acc, part, i) => acc + part + (i < values.length ? '?' : ''), '');
+      statements.push(text.replace(/\s+/g, ' ').trim());
+      return [];
+    }) as unknown as ReservedSql;
+    reservedFn.release = () => release();
+    reservedFn.statements = statements;
+    this.reserved = reservedFn;
+  }
 
   async execute(query: unknown): Promise<unknown[]> {
     const text = sqlText(query);
@@ -72,6 +85,12 @@ class SqlRecorder {
       this.order.push('tx:COMMIT');
       this.inTransaction = false;
     }
+  }
+
+  get $client() {
+    return {
+      reserve: async () => this.reserved,
+    };
   }
 }
 
@@ -101,63 +120,52 @@ describe('bootstrapDatabase', () => {
     expect(db.order).toContain('tx:COMMIT');
   });
 
-  it('takes an advisory lock first and releases it last', async () => {
+  it('takes a session-pinned advisory lock before work and unlocks on the same reserved connection', async () => {
     await bootstrapDatabase(db as unknown as Db, SYSTEM_USER_ID);
 
-    expect(db.statements[0]).toContain('pg_advisory_lock');
-    expect(db.statements[db.statements.length - 1]).toContain('pg_advisory_unlock');
+    expect(db.reserved.statements[0]).toMatch(/pg_advisory_lock/);
+    expect(db.reserved.statements.at(-1)).toMatch(/pg_advisory_unlock/);
+    expect(db.release).toHaveBeenCalledOnce();
+    // Lock statements never go through the pool.
+    expect(db.statements.some((s) => s.includes('pg_advisory'))).toBe(false);
   });
 
-  it('releases the lock even when migrate throws', async () => {
+  it('releases the reserved connection even when migrate throws', async () => {
     migrate.mockRejectedValue(new Error('migration failed'));
 
     await expect(bootstrapDatabase(db as unknown as Db, SYSTEM_USER_ID)).rejects.toThrow(
       'migration failed'
     );
 
-    expect(db.statements.some((s) => s.includes('pg_advisory_unlock'))).toBe(true);
+    expect(db.reserved.statements.some((s) => s.includes('pg_advisory_unlock'))).toBe(true);
+    expect(db.release).toHaveBeenCalledOnce();
     expect(seedAll).not.toHaveBeenCalled();
-  });
-
-  it('CHARACTERIZATION: lock and unlock are two independent pool statements, not pinned to one session', async () => {
-    await bootstrapDatabase(db as unknown as Db, SYSTEM_USER_ID);
-
-    // pg_advisory_lock is *session*-scoped. Both statements go out via
-    // `db.execute` on the pooled drizzle instance with nothing reserving a
-    // single connection — no `transaction`, no reserved client. Under a pool
-    // (default max: 10) the unlock can be served by a different backend than
-    // the one holding the lock, in which case pg_advisory_unlock returns false
-    // and the lock stays held until that backend's session ends.
-    const locks = db.order.filter((s) => s.includes('pg_advisory'));
-    expect(locks).toEqual([
-      expect.stringMatching(/^pool:.*pg_advisory_lock/),
-      expect.stringMatching(/^pool:.*pg_advisory_unlock/),
-    ]);
-    // Neither is inside the transaction that would pin them together.
-    expect(locks.every((s) => s.startsWith('pool:'))).toBe(true);
   });
 
   it('CHARACTERIZATION: the RLS grant is called with no arguments, so it falls back to getEnv() inside an otherwise fully-injected function', async () => {
     await bootstrapDatabase(db as unknown as Db, SYSTEM_USER_ID);
 
-    // bootstrapDatabase receives `db` and `systemUserId` by injection, but this
-    // step reads the environment directly. Contrast connection.ts, which reads
-    // no env at all. Tier 3 in the pass-4 brief.
     expect(ensureRlsRestrictedRoleMembership).toHaveBeenCalledWith(undefined);
   });
 
-  it('CHARACTERIZATION: a failed unlock masks the original error, because finally awaits without catching', async () => {
+  it('prefers the original work error when unlock fails', async () => {
     migrate.mockRejectedValue(new Error('migration failed'));
-    const recorder = new SqlRecorder();
     const unlockFailure = new Error('unlock failed');
-    recorder.execute = vi.fn(async (query: unknown) => {
-      if (sqlText(query).includes('unlock')) throw unlockFailure;
+    const statements: string[] = [];
+    const reservedFn = (async (strings: TemplateStringsArray) => {
+      const text = strings.join('?').replace(/\s+/g, ' ').trim();
+      statements.push(text);
+      if (text.includes('unlock')) throw unlockFailure;
       return [];
-    }) as SqlRecorder['execute'];
+    }) as unknown as ReservedSql;
+    reservedFn.release = () => db.release();
+    reservedFn.statements = statements;
+    db.reserved = reservedFn;
 
-    await expect(bootstrapDatabase(recorder as unknown as Db, SYSTEM_USER_ID)).rejects.toBe(
-      unlockFailure
+    await expect(bootstrapDatabase(db as unknown as Db, SYSTEM_USER_ID)).rejects.toThrow(
+      'migration failed'
     );
+    expect(db.release).toHaveBeenCalledOnce();
   });
 });
 
@@ -176,14 +184,12 @@ describe('runDemoRefresh', () => {
     );
   });
 
-  // The lock *name* ('grant-demo-refresh' vs 'grant-db-bootstrap') is a source
-  // constant interpolated as a bound parameter, so asserting it here would test
-  // drizzle's chunk representation rather than this package's behavior.
-  it('takes an advisory lock first and releases it last', async () => {
+  it('takes a session-pinned advisory lock first and unlocks on the same reserved connection', async () => {
     await runDemoRefresh(db as unknown as Db, SYSTEM_USER_ID);
 
-    expect(db.statements[0]).toContain('pg_advisory_lock');
-    expect(db.statements[db.statements.length - 1]).toContain('pg_advisory_unlock');
+    expect(db.reserved.statements[0]).toMatch(/pg_advisory_lock/);
+    expect(db.reserved.statements.at(-1)).toMatch(/pg_advisory_unlock/);
+    expect(db.release).toHaveBeenCalledOnce();
   });
 
   it('does not sleep when no idle-in-transaction backend was terminated', async () => {
@@ -193,8 +199,7 @@ describe('runDemoRefresh', () => {
   });
 
   it('sleeps once after terminating stale backends', async () => {
-    // lock -> terminate (2 rows) -> sleep
-    db.executeResults = [[], [{ pid: 1 }, { pid: 2 }]];
+    db.executeResults = [[{ pid: 1 }, { pid: 2 }]];
 
     await runDemoRefresh(db as unknown as Db, SYSTEM_USER_ID);
 
@@ -205,23 +210,20 @@ describe('runDemoRefresh', () => {
     await runDemoRefresh(db as unknown as Db, SYSTEM_USER_ID);
 
     const terminate = db.statements.find((s) => s.includes('pg_terminate_backend'));
-    // pg_stat_activity is cluster-wide. The filter excludes only the caller's
-    // own backend (`pid <> pg_backend_pid()`) and idle-in-transaction sessions
-    // older than the threshold — it does not filter on datname. Safe today
-    // because the job is double-gated on demo mode (see demo-db-refresh.job.ts).
     expect(terminate).toContain('pg_stat_activity');
     expect(terminate).toContain('pid <> pg_backend_pid()');
     expect(terminate).not.toContain('datname');
   });
 
-  it('releases the lock even when reset throws', async () => {
+  it('releases the reserved connection even when reset throws', async () => {
     reset.mockRejectedValue(new Error('truncate failed'));
 
     await expect(runDemoRefresh(db as unknown as Db, SYSTEM_USER_ID)).rejects.toThrow(
       'truncate failed'
     );
 
-    expect(db.statements.some((s) => s.includes('pg_advisory_unlock'))).toBe(true);
+    expect(db.reserved.statements.some((s) => s.includes('pg_advisory_unlock'))).toBe(true);
+    expect(db.release).toHaveBeenCalledOnce();
     expect(seedAll).not.toHaveBeenCalled();
   });
 
