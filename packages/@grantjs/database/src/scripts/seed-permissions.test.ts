@@ -43,6 +43,10 @@ let db: FakeDb;
 
 beforeEach(() => {
   db = new FakeDb();
+  // clearAllMocks matters: vi.spyOn on an already-spied method returns the
+  // existing spy, so without this every console.warn assertion would see the
+  // calls of every test that ran before it in this file.
+  vi.clearAllMocks();
   vi.spyOn(console, 'warn').mockImplementation(() => {});
 });
 
@@ -360,9 +364,67 @@ describe('seedAll — groups with no permission mappings', () => {
     }
   });
 
-  it('emits no warnings for the constants shipped today', async () => {
+  it('emits no "Resource not found" warning for the constants shipped today', async () => {
     await seedAll(db as unknown as SeedDb);
 
-    expect(console.warn).not.toHaveBeenCalled();
+    const warnings = vi.mocked(console.warn).mock.calls.map((c) => String(c[0]));
+    expect(warnings.filter((w) => w.includes('Resource not found'))).toEqual([]);
+  });
+});
+
+describe('seedAll — conflicting conditions are reported, not swallowed', () => {
+  it('warns once per resource:action whose declared conditions disagree between groups', async () => {
+    await seedAll(db as unknown as SeedDb);
+
+    const conflicts = vi
+      .mocked(console.warn)
+      .mock.calls.map((c) => String(c[0]))
+      .filter((w) => w.includes('Conflicting conditions'));
+
+    expect(conflicts).toHaveLength(6);
+    for (const key of [
+      'ApiKey:Delete',
+      'ApiKey:Revoke',
+      'Project:Delete',
+      'Project:Update',
+      'Tag:Delete',
+      'Tag:Update',
+    ]) {
+      expect(conflicts.some((w) => w.includes(`Conflicting conditions for ${key}:`))).toBe(true);
+    }
+  });
+
+  it('names the group whose condition was kept and every group whose condition was dropped', async () => {
+    await seedAll(db as unknown as SeedDb);
+
+    const apiKeyDelete = vi
+      .mocked(console.warn)
+      .mock.calls.map((c) => String(c[0]))
+      .find((w) => w.includes('Conflicting conditions for ApiKey:Delete:'));
+
+    // The winner is AccountProjectApiKeyOwner — it is declared before every
+    // other group mapping ApiKey:Delete — and its condition is null, which is
+    // why the persisted row is unconditional. ApiKeyOwner/ApiKeyAdmin also
+    // declare null, so they agree with the winner and are not listed as losers.
+    expect(apiKeyDelete).toContain('kept AccountProjectApiKeyOwner');
+    expect(apiKeyDelete).toContain('discarded APIKeyDev');
+    expect(apiKeyDelete).not.toContain('ApiKeyOwner,');
+    expect(apiKeyDelete).toContain('group_permissions has no condition column');
+  });
+
+  it('stays silent for a resource:action every group declares identically', async () => {
+    await seedAll(db as unknown as SeedDb);
+
+    const conflicts = vi
+      .mocked(console.warn)
+      .mock.calls.map((c) => String(c[0]))
+      .filter((w) => w.includes('Conflicting conditions'));
+
+    // ApiKey:Create is declared by four groups, all with condition: null.
+    expect(conflicts.some((w) => w.includes('ApiKey:Create'))).toBe(false);
+  });
+
+  it('warns rather than throws — every environment runs this seed', async () => {
+    await expect(seedAll(db as unknown as SeedDb)).resolves.toBeDefined();
   });
 });

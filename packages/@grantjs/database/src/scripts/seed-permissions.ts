@@ -252,15 +252,41 @@ async function seedPermissionsData(
   const stats = { created: 0, updated: 0, skipped: 0 };
   const now = new Date();
 
-  // Collect all unique permissions from all groups
+  // Collect all unique permissions from all groups. One row per resource:action,
+  // shared by every group that declares it — `group_permissions` has no `condition`
+  // column, so a per-group condition cannot be represented.
   const allPermissions = new Map<string, (typeof PERMISSION_MAPPINGS)[string][number]>();
-  for (const [_groupName, permissions] of Object.entries(PERMISSION_MAPPINGS)) {
+  const winningGroup = new Map<string, string>();
+  const droppedConditions = new Map<string, string[]>();
+
+  for (const [groupName, permissions] of Object.entries(PERMISSION_MAPPINGS)) {
     for (const permission of permissions) {
       const key = `${permission.resource}:${permission.action}`;
-      if (!allPermissions.has(key)) {
+      const existing = allPermissions.get(key);
+
+      if (!existing) {
         allPermissions.set(key, permission);
+        winningGroup.set(key, groupName);
+        continue;
+      }
+
+      // Same key declared again. Identical conditions collapse harmlessly; a
+      // different one is silently discarded, so say which group loses what.
+      if (
+        JSON.stringify(permission.condition ?? null) !== JSON.stringify(existing.condition ?? null)
+      ) {
+        const bucket = droppedConditions.get(key);
+        if (bucket) bucket.push(groupName);
+        else droppedConditions.set(key, [groupName]);
       }
     }
+  }
+
+  for (const [key, losers] of droppedConditions) {
+    console.warn(
+      `⚠️  Conflicting conditions for ${key}: kept ${winningGroup.get(key)}'s, discarded ${losers.join(', ')}'s. ` +
+        'The permission model stores one condition per resource:action; group_permissions has no condition column.'
+    );
   }
 
   for (const [key, permissionMapping] of allPermissions) {
