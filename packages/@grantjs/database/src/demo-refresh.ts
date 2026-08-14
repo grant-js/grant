@@ -40,8 +40,10 @@ export async function runDemoRefresh(db: PooledDatabase, systemUserId: string): 
       await db.execute(sql`SELECT pg_sleep(1)`);
     }
 
-    await reset(db, resetTables);
-    await ensureSystemUserAndSigningKey(db, systemUserId);
-    await seedAll(db);
+    await db.transaction(async (tx) => {
+      await reset(tx, resetTables);
+      await ensureSystemUserAndSigningKey(tx, systemUserId);
+      await seedAll(tx);
+    });
   });
 }
