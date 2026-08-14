@@ -216,7 +216,7 @@ What disproved the escalation:
 - `resource.createdBy` appears **exactly twice** in the entire model, both in `APIKeyDev`, matching no convention.
 - ApiKey mutations register **no `resourceResolver`**. `condition-evaluator.ts:51-55` returns `undefined` for `resource.*` when `resolvedResource` is null, so had the condition ever been persisted it would have **denied** — `OrganizationDev` could delete or revoke _nothing_.
 
-**Disposition: dead configuration plus a latent trap, not a live defect.** Slice 3 added a startup warning naming the losing group and the discarded condition, so the next collision is announced instead of silent. The two remaining arms are in [Backlog](#backlog) — the dead conditions live in a different package, and the Project/Tag arm _does_ register resolvers, so it is genuinely live and unmeasured.
+**Disposition: dead configuration plus a latent trap, not a live defect.** Slice 3 added a startup warning naming the losing group and the discarded condition, so the next collision is announced instead of silent. Both remaining arms were closed by the [follow-up story](https://github.com/grant-js/grant/blob/main/plans/2026-08-14-database-cq-followups-stack.md): `ApiKeyDev`'s conditions were removed, and Project/Tag declarations were aligned to the scoped condition already persisted (trace: safe / fail-closed).
 
 ---
 
@@ -265,22 +265,19 @@ Soft delete exists here to keep tenant-owned records recoverable and to preserve
 
 ## Backlog
 
-Story brief and stack plan: [`plans/2026-08-10-database-code-quality-brief.md`](https://github.com/grant-js/grant/blob/main/plans/2026-08-10-database-code-quality-brief.md), [`plans/2026-08-10-database-code-quality-stack.md`](https://github.com/grant-js/grant/blob/main/plans/2026-08-10-database-code-quality-stack.md).
+Story brief and stack plan (pass 4): [`plans/2026-08-10-database-code-quality-brief.md`](https://github.com/grant-js/grant/blob/main/plans/2026-08-10-database-code-quality-brief.md), [`plans/2026-08-10-database-code-quality-stack.md`](https://github.com/grant-js/grant/blob/main/plans/2026-08-10-database-code-quality-stack.md).
 
-Open after #256. Each was deferred on the record, not dropped:
+Follow-up story (closes the actionable backlog below): [`plans/2026-08-14-database-cq-followups-brief.md`](https://github.com/grant-js/grant/blob/main/plans/2026-08-14-database-cq-followups-brief.md), [`plans/2026-08-14-database-cq-followups-stack.md`](https://github.com/grant-js/grant/blob/main/plans/2026-08-14-database-cq-followups-stack.md).
 
-**Characterized, not fixed.** Slice 3's tests pin the current behavior of all five; changing any of them is a behavior change that wants its own diff and reviewer.
+**Resolved by the follow-up story** (see stack PRs on `feat/database-cq-followups`):
 
-- **`bootstrap.ts`'s advisory lock is not session-pinned** — the sharpest of the five. `pg_advisory_lock` and `pg_advisory_unlock` are issued as two independent pool statements, and the lock is _session_-scoped, so the unlock can land on a different backend and leave the lock held on every subsequent API start. Needs a dedicated connection held across both, or a transaction-scoped `pg_advisory_xact_lock`.
-- **The connection singleton silently ignores a different config** — re-initializing with a _different_ connection string returns the existing pool with a warning. Reasonable as a guard, dangerous as a silent one.
-- **`demo-refresh.ts` truncates and reseeds outside a transaction** — an interrupted run leaves the database empty.
-- **`getDatabase()`'s error names `initializeDatabase()`**, a function that does not exist, and throws bare `Error` rather than `ConfigurationError`.
-- **`seed-core.ts` does not filter `deletedAt`** on lookup, where `seed-permissions.ts` does. One of the two is wrong; which one is a domain question.
-
-**The other two arms of the [condition collision](#the-permission-condition-collision).**
-
-- Remove `APIKeyDev`'s two dead `resource.createdBy` conditions from `@grantjs/constants` — different package, zero runtime effect today.
-- **Trace how `resource.scope.projects` resolves for an organization role.** This is the one _live_ arm — Project and Tag **do** register resolvers, so the collision's outcome there is real and its severity is unknown until traced. Highest-value item in this list.
+- ~~`bootstrap.ts`'s advisory lock is not session-pinned~~ — `withSessionAdvisoryLock` reserves one postgres.js connection for lock/unlock.
+- ~~The connection singleton silently ignores a different config~~ — different connection string throws `ConfigurationError`; same-string re-init keeps the first logger; failed close clears the singleton.
+- ~~`demo-refresh.ts` truncates and reseeds outside a transaction~~ — truncate + reseed run in `db.transaction`.
+- ~~`getDatabase()`'s error names `initializeDatabase()`~~ — names `initializeDBConnection()` and throws `ConfigurationError`.
+- ~~`seed-core.ts` does not filter `deletedAt`~~ — soft-deleted system user is restored (`deletedAt` cleared); fixed id cannot be re-inserted.
+- ~~Remove `APIKeyDev`'s two dead `resource.createdBy` conditions~~ — set to `null` like Owner/Admin.
+- ~~Trace `resource.scope.projects` / `resource.scope.tags`~~ — **safe / fail-closed**. The persisted row already carried `AccountProjectOwner`'s scoped `In` condition; Project/Tag resolvers populate `resource.scope.*` via `getScoped*Ids`. Declarations in `Project*` / `Tag*` / `AccountProjectTagOwner` were aligned to that condition so the seed no longer discards disagreeing nulls. Runtime condition unchanged.
 
 **Owed to a later pass.**
 

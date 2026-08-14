@@ -236,17 +236,9 @@ describe('seedAll — permission de-duplication across groups', () => {
       ([, entries]) => new Set(entries.map((e) => e.condition)).size > 1
     );
 
-    // Pinned: this is the count of resource:action pairs whose declared
-    // conditions disagree between groups. See findings — the seed cannot
-    // represent a per-group condition.
-    expect(conflicting.map(([key]) => key).sort()).toEqual([
-      'ApiKey:Delete',
-      'ApiKey:Revoke',
-      'Project:Delete',
-      'Project:Update',
-      'Tag:Delete',
-      'Tag:Update',
-    ]);
+    // Pinned: with Project*/Tag* Update+Delete aligned to AccountProjectOwner's
+    // scope condition, no resource:action declarations disagree on condition.
+    expect(conflicting.map(([key]) => key).sort()).toEqual([]);
 
     await seedAll(db as unknown as SeedDb);
 
@@ -267,7 +259,7 @@ describe('seedAll — permission de-duplication across groups', () => {
     }
   });
 
-  it('CHARACTERIZATION: ApiKey:Delete/Revoke resolve to the UNCONDITIONAL row, so the APIKeyDev condition (own keys only) is not persisted', async () => {
+  it('ApiKey:Delete/Revoke stay unconditional — ApiKeyDev agrees with Owner/Admin (null)', async () => {
     await seedAll(db as unknown as SeedDb);
 
     const apiKeyResource = db.rows(resources).find((r) => r.slug === 'ApiKey') as Record<
@@ -287,29 +279,13 @@ describe('seedAll — permission de-duplication across groups', () => {
       expect(row.values.condition ?? null).toBeNull();
     }
 
-    // The APIKeyDev group nevertheless declares a restricting condition...
     const devDeclared = PERMISSION_MAPPINGS['APIKeyDev']?.find(
       (p) => p.resource === 'ApiKey' && p.action === 'Delete'
     );
-    expect(devDeclared?.condition).toEqual({
-      StringEquals: { 'resource.createdBy': '{{user.id}}' },
-    });
-    // ...and the APIKeyDev group is still linked to the unconditional row, which is
-    // what makes the dropped condition reachable rather than merely cosmetic.
-    const devGroup = db.rows(groups).find((g) => g.name === GROUP_DEFINITIONS['APIKeyDev']?.name);
-    const deleteRow = db
-      .rows(permissions)
-      .find((p) => p.resourceId === apiKeyResource.id && p.action === 'Delete');
-    const link = db
-      .insertsFor(groupPermissions)
-      .filter((i) => i.values.groupId === devGroup?.id && i.values.permissionId === deleteRow?.id);
-
-    expect(devGroup).toBeDefined();
-    expect(deleteRow?.condition ?? null).toBeNull();
-    expect(link).toHaveLength(1);
+    expect(devDeclared?.condition ?? null).toBeNull();
   });
 
-  it('CHARACTERIZATION: Project/Tag Update+Delete resolve to the SCOPED AccountProjectOwner condition, which then applies to ProjectOwner/TagOwner too', async () => {
+  it('Project/Tag Update+Delete keep the scoped AccountProjectOwner condition for every sharing group', async () => {
     await seedAll(db as unknown as SeedDb);
 
     const projectResource = db.rows(resources).find((r) => r.slug === 'Project') as Record<
@@ -331,12 +307,12 @@ describe('seedAll — permission de-duplication across groups', () => {
       });
     }
 
-    // ProjectOwner declared no condition for the same action.
     const ownerDeclared = PERMISSION_MAPPINGS['ProjectOwner']?.find(
       (p) => p.resource === 'Project' && p.action === 'Update'
     );
-    expect(ownerDeclared).toBeDefined();
-    expect(ownerDeclared?.condition ?? null).toBeNull();
+    expect(ownerDeclared?.condition).toEqual({
+      In: { 'resource.id': '{{resource.scope.projects}}' },
+    });
   });
 });
 
@@ -373,7 +349,7 @@ describe('seedAll — groups with no permission mappings', () => {
 });
 
 describe('seedAll — conflicting conditions are reported, not swallowed', () => {
-  it('warns once per resource:action whose declared conditions disagree between groups', async () => {
+  it('emits no conflicting-condition warnings for the constants shipped today', async () => {
     await seedAll(db as unknown as SeedDb);
 
     const conflicts = vi
@@ -381,35 +357,36 @@ describe('seedAll — conflicting conditions are reported, not swallowed', () =>
       .mock.calls.map((c) => String(c[0]))
       .filter((w) => w.includes('Conflicting conditions'));
 
-    expect(conflicts).toHaveLength(6);
-    for (const key of [
-      'ApiKey:Delete',
-      'ApiKey:Revoke',
-      'Project:Delete',
-      'Project:Update',
-      'Tag:Delete',
-      'Tag:Update',
-    ]) {
-      expect(conflicts.some((w) => w.includes(`Conflicting conditions for ${key}:`))).toBe(true);
-    }
+    expect(conflicts).toEqual([]);
   });
 
-  it('names the group whose condition was kept and every group whose condition was dropped', async () => {
-    await seedAll(db as unknown as SeedDb);
+  it('still warns with keeper/discarded detail when declarations disagree (guardrail remains live)', async () => {
+    // The production mappings no longer collide; plant one disagreement to prove
+    // the warning path still fires for a future regression.
+    const original = PERMISSION_MAPPINGS['ProjectOwner'];
+    PERMISSION_MAPPINGS['ProjectOwner'] = [
+      {
+        action: 'Update' as never,
+        resource: 'Project' as never,
+        condition: null,
+        groupName: 'ProjectOwner',
+      },
+    ];
 
-    const apiKeyDelete = vi
+    try {
+      await seedAll(db as unknown as SeedDb);
+    } finally {
+      PERMISSION_MAPPINGS['ProjectOwner'] = original;
+    }
+
+    const projectUpdate = vi
       .mocked(console.warn)
       .mock.calls.map((c) => String(c[0]))
-      .find((w) => w.includes('Conflicting conditions for ApiKey:Delete:'));
+      .find((w) => w.includes('Conflicting conditions for Project:Update:'));
 
-    // The winner is AccountProjectApiKeyOwner — it is declared before every
-    // other group mapping ApiKey:Delete — and its condition is null, which is
-    // why the persisted row is unconditional. ApiKeyOwner/ApiKeyAdmin also
-    // declare null, so they agree with the winner and are not listed as losers.
-    expect(apiKeyDelete).toContain('kept AccountProjectApiKeyOwner');
-    expect(apiKeyDelete).toContain('discarded APIKeyDev');
-    expect(apiKeyDelete).not.toContain('ApiKeyOwner,');
-    expect(apiKeyDelete).toContain('group_permissions has no condition column');
+    expect(projectUpdate).toContain('kept AccountProjectOwner');
+    expect(projectUpdate).toContain('discarded ProjectOwner');
+    expect(projectUpdate).toContain('group_permissions has no condition column');
   });
 
   it('stays silent for a resource:action every group declares identically', async () => {

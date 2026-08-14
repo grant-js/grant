@@ -282,12 +282,20 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
     {
       action: ResourceAction.Update,
       resource: ResourceSlug.Tag,
-      condition: null,
+      condition: {
+        [ComparisonOperator.In]: {
+          'resource.id': '{{resource.scope.tags}}',
+        },
+      },
     },
     {
       action: ResourceAction.Delete,
       resource: ResourceSlug.Tag,
-      condition: null,
+      condition: {
+        [ComparisonOperator.In]: {
+          'resource.id': '{{resource.scope.tags}}',
+        },
+      },
     },
   ],
   [GroupKey.AccountProjectApiKeyOwner]: [
@@ -592,12 +600,20 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
     {
       action: ResourceAction.Update,
       resource: ResourceSlug.Project,
-      condition: null,
+      condition: {
+        [ComparisonOperator.In]: {
+          'resource.id': '{{resource.scope.projects}}',
+        },
+      },
     },
     {
       action: ResourceAction.Delete,
       resource: ResourceSlug.Project,
-      condition: null,
+      condition: {
+        [ComparisonOperator.In]: {
+          'resource.id': '{{resource.scope.projects}}',
+        },
+      },
     },
   ],
 
@@ -610,12 +626,20 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
     {
       action: ResourceAction.Update,
       resource: ResourceSlug.Project,
-      condition: null,
+      condition: {
+        [ComparisonOperator.In]: {
+          'resource.id': '{{resource.scope.projects}}',
+        },
+      },
     },
     {
       action: ResourceAction.Delete,
       resource: ResourceSlug.Project,
-      condition: null,
+      condition: {
+        [ComparisonOperator.In]: {
+          'resource.id': '{{resource.scope.projects}}',
+        },
+      },
     },
   ],
 
@@ -628,12 +652,20 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
     {
       action: ResourceAction.Update,
       resource: ResourceSlug.Project,
-      condition: null,
+      condition: {
+        [ComparisonOperator.In]: {
+          'resource.id': '{{resource.scope.projects}}',
+        },
+      },
     },
     {
       action: ResourceAction.Delete,
       resource: ResourceSlug.Project,
-      condition: null,
+      condition: {
+        [ComparisonOperator.In]: {
+          'resource.id': '{{resource.scope.projects}}',
+        },
+      },
     },
   ],
 
@@ -970,12 +1002,20 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
     {
       action: ResourceAction.Update,
       resource: ResourceSlug.Tag,
-      condition: null,
+      condition: {
+        [ComparisonOperator.In]: {
+          'resource.id': '{{resource.scope.tags}}',
+        },
+      },
     },
     {
       action: ResourceAction.Delete,
       resource: ResourceSlug.Tag,
-      condition: null,
+      condition: {
+        [ComparisonOperator.In]: {
+          'resource.id': '{{resource.scope.tags}}',
+        },
+      },
     },
   ],
 
@@ -988,12 +1028,20 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
     {
       action: ResourceAction.Update,
       resource: ResourceSlug.Tag,
-      condition: null,
+      condition: {
+        [ComparisonOperator.In]: {
+          'resource.id': '{{resource.scope.tags}}',
+        },
+      },
     },
     {
       action: ResourceAction.Delete,
       resource: ResourceSlug.Tag,
-      condition: null,
+      condition: {
+        [ComparisonOperator.In]: {
+          'resource.id': '{{resource.scope.tags}}',
+        },
+      },
     },
   ],
 
@@ -1006,12 +1054,20 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
     {
       action: ResourceAction.Update,
       resource: ResourceSlug.Tag,
-      condition: null,
+      condition: {
+        [ComparisonOperator.In]: {
+          'resource.id': '{{resource.scope.tags}}',
+        },
+      },
     },
     {
       action: ResourceAction.Delete,
       resource: ResourceSlug.Tag,
-      condition: null,
+      condition: {
+        [ComparisonOperator.In]: {
+          'resource.id': '{{resource.scope.tags}}',
+        },
+      },
     },
   ],
 
@@ -1060,20 +1116,12 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
     {
       action: ResourceAction.Delete,
       resource: ResourceSlug.ApiKey,
-      condition: {
-        [ComparisonOperator.StringEquals]: {
-          'resource.createdBy': '{{user.id}}',
-        },
-      },
+      condition: null,
     },
     {
       action: ResourceAction.Revoke,
       resource: ResourceSlug.ApiKey,
-      condition: {
-        [ComparisonOperator.StringEquals]: {
-          'resource.createdBy': '{{user.id}}',
-        },
-      },
+      condition: null,
     },
   ],
 

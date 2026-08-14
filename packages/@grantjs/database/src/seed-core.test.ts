@@ -48,7 +48,7 @@ describe('ensureSystemUser', () => {
     expect(db.insertsFor(users)).toHaveLength(0);
   });
 
-  it('CHARACTERIZATION: the lookup does not filter on deletedAt, so a soft-deleted system user is treated as present and never restored', async () => {
+  it('restores a soft-deleted system user instead of treating it as present', async () => {
     await ensureSystemUser(db as unknown as Db, SYSTEM_USER_ID);
     db.rows(users)[0].deletedAt = new Date();
     db.beginReplay();
@@ -56,10 +56,10 @@ describe('ensureSystemUser', () => {
 
     await ensureSystemUser(db as unknown as Db, SYSTEM_USER_ID);
 
-    // Contrast seed-permissions, whose lookups do filter `isNull(deletedAt)`
-    // and therefore re-create. Neither is obviously wrong; they disagree.
+    // Fixed system id cannot be re-inserted; clear deletedAt instead.
     expect(db.insertsFor(users)).toHaveLength(0);
-    expect(db.updatesFor(users)).toHaveLength(0);
+    expect(db.updatesFor(users)).toHaveLength(1);
+    expect(db.updatesFor(users)[0].set).toMatchObject({ deletedAt: null });
   });
 });
 
@@ -110,9 +110,8 @@ describe('ensureSystemSigningKey', () => {
     const b = new FakeDb();
 
     // Both see an empty table, as two replicas would between the SELECT and
-    // the INSERT. bootstrapDatabase's advisory lock is the only thing
-    // serializing this, and that lock is not pinned to one session
-    // (see bootstrap.test.ts).
+    // the INSERT. bootstrapDatabase's session-pinned advisory lock serializes
+    // this on the production path.
     await Promise.all([
       ensureSystemSigningKey(a as unknown as Db, SYSTEM_USER_ID),
       ensureSystemSigningKey(b as unknown as Db, SYSTEM_USER_ID),

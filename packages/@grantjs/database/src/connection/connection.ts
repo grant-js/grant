@@ -1,4 +1,4 @@
-import type { ILogger } from '@grantjs/core';
+import { ConfigurationError, type ILogger } from '@grantjs/core';
 import { drizzle, PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import postgres, { Sql } from 'postgres';
 
@@ -6,9 +6,20 @@ import { schema } from '../schemas';
 
 export type DbSchema = PostgresJsDatabase<typeof schema>;
 
+/**
+ * The pooled database, with its postgres.js client attached.
+ *
+ * A transaction satisfies `DbSchema` but is never a `PooledDatabase` — it has no
+ * `$client`. Anything that needs a dedicated backend session (advisory locks)
+ * must ask for this type, or the requirement is unenforced and fails at runtime
+ * with `Cannot read properties of undefined (reading 'reserve')`.
+ */
+export type PooledDatabase = DbSchema & { $client: Sql };
+
 interface DatabaseConnection {
-  db: DbSchema;
+  db: PooledDatabase;
   client: Sql;
+  connectionString: string;
 }
 
 let connection: DatabaseConnection | null = null;
@@ -25,17 +36,22 @@ export interface DatabaseConfig {
   logger?: ILogger;
 }
 
-export function initializeDBConnection(config: DatabaseConfig): DbSchema {
-  moduleLogger = config.logger;
-
+export function initializeDBConnection(config: DatabaseConfig): PooledDatabase {
   if (connection) {
+    if (config.connectionString !== connection.connectionString) {
+      throw new ConfigurationError(
+        'Database connection already initialized with a different connection string. Call closeDatabase() first.'
+      );
+    }
     moduleLogger?.warn('Database connection already initialized. Returning existing connection.');
     return connection.db;
   }
 
   if (!config.connectionString) {
-    throw new Error('Database connection string is required');
+    throw new ConfigurationError('Database connection string is required');
   }
+
+  moduleLogger = config.logger;
 
   const connectionString = config.connectionString;
 
@@ -48,7 +64,7 @@ export function initializeDBConnection(config: DatabaseConfig): DbSchema {
 
   const db = drizzle(client, { schema });
 
-  connection = { db, client };
+  connection = { db, client, connectionString };
 
   moduleLogger?.info('Database connection initialized');
 
@@ -61,9 +77,11 @@ export async function closeDatabase(): Promise<void> {
     return;
   }
 
+  const current = connection;
+  connection = null;
+
   try {
-    await connection.client.end();
-    connection = null;
+    await current.client.end();
     moduleLogger?.info('Database connection closed');
   } catch (error) {
     moduleLogger?.error({ err: error }, 'Error closing database connection');
@@ -71,9 +89,9 @@ export async function closeDatabase(): Promise<void> {
   }
 }
 
-export function getDatabase(): DbSchema {
+export function getDatabase(): PooledDatabase {
   if (!connection) {
-    throw new Error('Database not initialized. Call initializeDatabase() first.');
+    throw new ConfigurationError('Database not initialized. Call initializeDBConnection() first.');
   }
   return connection.db;
 }

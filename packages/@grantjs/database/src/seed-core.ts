@@ -13,7 +13,17 @@ export async function ensureSystemUser(db: DbSchema, systemUserId: string): Prom
     .from(users)
     .where(eq(users.id, systemUserId))
     .limit(1);
-  if (existingSystemUser.length > 0) return;
+
+  if (existingSystemUser.length > 0) {
+    const row = existingSystemUser[0]!;
+    if (row.deletedAt != null) {
+      await db
+        .update(users)
+        .set({ deletedAt: null, updatedAt: new Date() })
+        .where(eq(users.id, systemUserId));
+    }
+    return;
+  }
 
   const now = new Date();
   await db.insert(users).values({

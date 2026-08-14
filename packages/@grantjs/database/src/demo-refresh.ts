@@ -1,10 +1,11 @@
 import { sql } from 'drizzle-orm';
 import { reset } from 'drizzle-seed';
 
-import type { DbSchema } from './connection';
+import type { DbSchema, PooledDatabase } from './connection';
 import { resetTables } from './scripts/reset-db';
 import { seedAll } from './scripts/seed-permissions';
 import { ensureSystemUserAndSigningKey } from './seed-core';
+import { withSessionAdvisoryLock } from './with-session-advisory-lock.lib';
 
 const LOCK_NAME_DEMO_REFRESH = 'grant-demo-refresh';
 
@@ -32,20 +33,17 @@ async function terminateIdleTransactions(db: DbSchema, thresholdMinutes = 5): Pr
  * - Ensures the system user and signing key exist.
  * - Reseeds the permission model.
  */
-export async function runDemoRefresh(db: DbSchema, systemUserId: string): Promise<void> {
-  // Prevent overlapping demo resets across replicas / rolling updates.
-  await db.execute(sql`SELECT pg_advisory_lock(hashtext(${LOCK_NAME_DEMO_REFRESH}));`);
-
-  try {
+export async function runDemoRefresh(db: PooledDatabase, systemUserId: string): Promise<void> {
+  await withSessionAdvisoryLock(db, LOCK_NAME_DEMO_REFRESH, async () => {
     const terminated = await terminateIdleTransactions(db);
     if (terminated > 0) {
       await db.execute(sql`SELECT pg_sleep(1)`);
     }
 
-    await reset(db, resetTables);
-    await ensureSystemUserAndSigningKey(db, systemUserId);
-    await seedAll(db);
-  } finally {
-    await db.execute(sql`SELECT pg_advisory_unlock(hashtext(${LOCK_NAME_DEMO_REFRESH}));`);
-  }
+    await db.transaction(async (tx) => {
+      await reset(tx, resetTables);
+      await ensureSystemUserAndSigningKey(tx, systemUserId);
+      await seedAll(tx);
+    });
+  });
 }

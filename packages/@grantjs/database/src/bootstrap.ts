@@ -1,13 +1,13 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { sql } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 
-import type { DbSchema } from './connection';
+import type { PooledDatabase } from './connection';
 import { ensureRlsRestrictedRoleMembership } from './grant-rls-login-role.lib';
 import { seedAll } from './scripts/seed-permissions';
 import { ensureSystemUserAndSigningKey } from './seed-core';
+import { withSessionAdvisoryLock } from './with-session-advisory-lock.lib';
 
 const LOCK_NAME_BOOTSTRAP = 'grant-db-bootstrap';
 
@@ -21,14 +21,11 @@ function resolveMigrationsFolder(): string {
  * Bootstrap database schema + core platform seed data.
  *
  * - Safe to run on every container start (idempotent via Drizzle migration history + idempotent seeding).
- * - Coordinated across replicas using PostgreSQL advisory lock.
+ * - Coordinated across replicas using a session-pinned PostgreSQL advisory lock.
  * - After migrations, grants `SECURITY_RLS_ROLE` to the DB login user (same as CLI `db:grant-rls-role`).
  */
-export async function bootstrapDatabase(db: DbSchema, systemUserId: string): Promise<void> {
-  // Ensure all replicas serialize migrations + core seed.
-  await db.execute(sql`SELECT pg_advisory_lock(hashtext(${LOCK_NAME_BOOTSTRAP}));`);
-
-  try {
+export async function bootstrapDatabase(db: PooledDatabase, systemUserId: string): Promise<void> {
+  await withSessionAdvisoryLock(db, LOCK_NAME_BOOTSTRAP, async () => {
     const migrationsFolder = resolveMigrationsFolder();
 
     // Apply any pending migrations (migration history table prevents re-applying).
@@ -42,7 +39,5 @@ export async function bootstrapDatabase(db: DbSchema, systemUserId: string): Pro
       await ensureSystemUserAndSigningKey(tx, systemUserId);
       await seedAll(tx);
     });
-  } finally {
-    await db.execute(sql`SELECT pg_advisory_unlock(hashtext(${LOCK_NAME_BOOTSTRAP}));`);
-  }
+  });
 }
