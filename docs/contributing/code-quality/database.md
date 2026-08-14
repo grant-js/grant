@@ -4,6 +4,16 @@
 
 Method and lens definitions: [Code quality passes](./README.md). Prior passes: 1 = [`apps/api`](./api.md), 2 = [`apps/web`](./web.md), 3 = [`@grantjs/core`](./core.md).
 
+**Status: remediated and merged** — [#256](https://github.com/grant-js/grant/pull/256), 2026-08-14, five slices, 20 files, +1,697 −61, **zero schema, column, or migration changes**. This document is the audit as written on 2026-08-10; findings resolved by the story are marked **Resolved** in place, with the counts re-measured after the merge rather than copied from the plan. What remains open is in [Backlog](#backlog).
+
+|                               | At audit          | After #256             |
+| ----------------------------- | ----------------- | ---------------------- |
+| Test files / tests            | **0** / 0         | 5 / **89**             |
+| `drizzle-kit` configs         | 2, non-equivalent | 1                      |
+| `knip` unused dependencies    | 1 (`zod`)         | 0                      |
+| Packages with a DAG guardrail | 1 (`core`)        | 2 (`core`, `database`) |
+| `dead-code:*` gates in CI     | 3                 | 4                      |
+
 **Process note — this pass was run differently.** Passes 2 and 3 fanned the lenses out across three subagents. That fan-out was attempted here and **all three agents terminated early on a session limit**, so lenses 1–6 were re-run inline by the orchestrator and only lens 7's partial output survived (a working test harness plus 46 passing tests — see [Tier 6](#tier-6-coverage)). Recorded because it is a reusable operational lesson, not a one-off: fan-out is a throughput optimization, not a correctness requirement, and a pass that loses its agents should fall back to running the lenses directly rather than stalling. See [What this pass's method surfaced](#what-this-passs-method-surfaced).
 
 **Scoping correction, made mid-pass.** The unit was initially measured at 6,342 lines by counting `.ts` files only. `src/migrations/` holds **79 SQL files totalling 2,772 lines** — a third of the package, invisible to a TypeScript-only count and not covered by any lens command written for prior passes. The lens agents were briefed with the understated figure. Corrected here; the real unit is ~9,100 lines.
@@ -18,36 +28,42 @@ Method and lens definitions: [Code quality passes](./README.md). Prior passes: 1
 
 **No Tier 0 correctness bug was confirmed.** Lens 7 is the lens that has produced one in every prior pass, and it was the lens most disrupted by the agent failures — its work here is genuinely partial. The absence of a Tier 0 finding in this document should be read as _"not yet found"_, not _"not present"_; see [Tier 6](#tier-6-coverage) for exactly which surfaces remain uncharacterized.
 
-| Lens                                                      | Result                                                                         |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Reverse-DAG / boundary violations from `apps/web`         | 0                                                                              |
-| Direct `@grantjs/logger` import (the rule adapters break) | 0                                                                              |
-| Deep relative imports (3+ levels)                         | 0                                                                              |
-| `connection.ts` env reads                                 | 0 — pure config injection via `DatabaseConfig`                                 |
-| Tables                                                    | 110 (53 append-only audit/event tables, 57 entity/pivot tables)                |
-| Soft-delete representation                                | 1 style (`deletedAt`); 0 boolean `isDeleted` variants                          |
-| Tables missing `createdAt`                                | 0 / 110                                                                        |
-| Non-audit tables missing `updatedAt`                      | **0** (raw count of 57 vs 111 is entirely explained by append-only tables)     |
-| Non-audit tables missing `deletedAt`                      | 3 (`notifications`, `notification_preferences`, `webhook_delivery_attempts`)   |
-| Foreign keys declaring `onDelete`                         | **166 / 166** (110 `cascade`, 56 `set null`) — zero unset                      |
-| `tenantId` columns                                        | 0 — `CONCEPTS.md`'s claim confirmed; discriminator is `scopeTenant` (113 uses) |
-| `orgId` abbreviations                                     | 0 (vs 29 `organizationId`)                                                     |
-| Audit-log table repetition                                | 53 tables × 18 lines; two instances diff to **0 lines** entity-normalized      |
-| `drizzle-kit` configs                                     | **2**, with non-equivalent URL resolution                                      |
-| `knip` unused dependencies                                | 1 (`zod`)                                                                      |
-| Test files (before this pass)                             | **0**                                                                          |
+> **Update after #256: still no Tier 0, and the caveat is now retired for everything but the migration SQL.** Slice 3 finished the lens — 89 tests across all five files — and found no correctness bug, but did pin five behaviors worth changing later ([Backlog](#backlog)). Separately, a Tier 0 fail-open **was** filed during the pass and then **withdrawn**: see [the permission-condition collision](#the-permission-condition-collision).
+
+| Lens                                                      | Result                                                                                                                             |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Reverse-DAG / boundary violations from `apps/web`         | 0                                                                                                                                  |
+| Direct `@grantjs/logger` import (the rule adapters break) | 0                                                                                                                                  |
+| Deep relative imports (3+ levels)                         | 0                                                                                                                                  |
+| `connection.ts` env reads                                 | 0 — pure config injection via `DatabaseConfig`                                                                                     |
+| Tables                                                    | 110 (53 append-only audit/event tables, 57 entity/pivot tables)                                                                    |
+| Soft-delete representation                                | 1 style (`deletedAt`); 0 boolean `isDeleted` variants                                                                              |
+| Tables missing `createdAt`                                | 0 / 110                                                                                                                            |
+| Non-audit tables missing `updatedAt`                      | **0** (raw count of 57 vs 111 is entirely explained by append-only tables)                                                         |
+| Non-audit tables missing `deletedAt`                      | 3 (`notifications`, `notification_preferences`, `webhook_delivery_attempts`)                                                       |
+| Foreign keys declaring `onDelete`                         | **166 / 166** (110 `cascade`, 56 `set null`) — zero unset                                                                          |
+| `tenantId` columns                                        | 0 — `CONCEPTS.md`'s claim confirmed; discriminator is `scopeTenant` (113 uses)                                                     |
+| `orgId` abbreviations                                     | 0 (vs 29 `organizationId`)                                                                                                         |
+| Audit-log table repetition                                | 53 tables × 18 lines; two instances diff to **0 lines** entity-normalized                                                          |
+| `drizzle-kit` configs                                     | **2**, with non-equivalent URL resolution — now 1 ([3.1](#31-two-drizzle-kit-configs-with-non-equivalent-database-url-resolution)) |
+| `knip` unused dependencies                                | 1 (`zod`) — now 0                                                                                                                  |
+| Test files (before this pass)                             | **0** — now 5 files / 89 tests ([Tier 6](#tier-6-coverage))                                                                        |
 
 ---
 
 ## Tier 1 — Guardrail gaps {#tier-1-guardrail-gaps}
 
-### Guardrails reach `@grantjs/core` and stop there
+### Guardrails reach `@grantjs/core` and stop there — **Resolved** (slice 1)
+
+> `eslint.config.mjs` now carries a `packages/@grantjs/database/src/**` DAG block, `package.json` a `dead-code:database` script, and both CI and `.husky/pre-push` run it. **Proved by planting** a `@grantjs/logger` import in `src/index.ts` and confirming the rule errored, per pass 3's corollary. The rule's allowed set is deliberately wider than core's — copying core's verbatim broke the build, because `database` really does depend on `@grantjs/env` and `@grantjs/constants`. `zod` was dropped from `dependencies`.
 
 Carried forward from pass 3's ["Inputs carried into later passes"](./README.md#inputs-carried-into-later-passes) entry, confirmed still true. `eslint.config.mjs:359`'s `no-restricted-imports` DAG rule names `packages/@grantjs/core/src/**` explicitly; `package.json` has `dead-code:core` but no `dead-code:database`. Pass 3 deliberately scoped its rule to itself and wrote the widening as this pass's first slice — that is the template to copy, including **planting a violation to prove the new rule fires** rather than trusting a green run.
 
 Unlike core, there is a real (if small) finding behind this guardrail: `knip` reports `zod` as an unused dependency ([`package.json:36`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/database/package.json)), which nothing currently catches.
 
-### `AGENTS.md`'s package dependency graph omits a package this unit depends on
+### `AGENTS.md`'s package dependency graph omits a package this unit depends on — **Resolved** (slice 5)
+
+> The graph now shows `@grantjs/env` as a root and annotates `database → also @grantjs/env, @grantjs/constants`, with a note that its allowed import set is intentionally wider than core's.
 
 [`AGENTS.md`](https://github.com/grant-js/grant/blob/main/AGENTS.md) documents the DAG as `@grantjs/schema → @grantjs/core → {constants, database, logger, errors, cache, storage, email, jobs}`. Two edges this package actually has are absent from it:
 
@@ -94,6 +110,10 @@ It composes a URL from `POSTGRES_*` parts when `DB_URL` is unset — a supported
 
 **Disposition:** delete it, or — if a JS-only runtime context genuinely needs it — have it delegate to `resolveDatabaseUrl` instead of duplicating a weaker version. Either way the divergence should not survive, because it sits on a destructive operation.
 
+> **Resolved (slice 4): deleted.** The blind-spot caveat above was the right call to make, and the answer came from reading drizzle-kit 0.31.10's own resolver rather than from "nothing references it": **`.cjs` is not a candidate extension at any position, and `.ts` is checked first regardless.** The file was unreachable, not merely unreferenced. Confirmed empirically — `drizzle-kit generate` prints `No config path provided, using default 'drizzle.config.ts'`, with **79 migrations before and after**.
+>
+> The runtime migrator was checked separately, because a config file that drizzle-_kit_ ignores could still be read by something on the startup path. It is not: `drizzle-orm/postgres-js/migrator.js` reads no config file at all — `readMigrationFiles` only does `fs` reads under `config.migrationsFolder`. There is no `umzug` in `src/` or in the lockfile. `drizzle.config.*` is drizzle-kit-only.
+
 ### 3.2 Config injection vs. env fallback — two patterns inside one package
 
 [`connection/connection.ts`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/database/src/connection/connection.ts) is exemplary: `DatabaseConfig` carries `connectionString` and an optional `ILogger`, and the file reads **zero** environment variables — exactly what `AGENTS.md` requires ("Adapter packages receive config via constructor/factory params — they never read env vars directly").
@@ -102,15 +122,21 @@ It composes a URL from `POSTGRES_*` parts when `DB_URL` is unset — a supported
 
 **Decide, don't assume:** either the fallback is the intended convenience for lib-level helpers (record it), or lib code should take config strictly and let scripts resolve env (change one call site). Cheap either way.
 
+> **Resolved (slice 5): recorded, no code change** — see [Env fallback in libs](#recorded-decisions).
+
 ### 3.3 Three non-audit tables opt out of soft delete
 
 `notifications`, `notification_preferences`, and `webhook_delivery_attempts` are the only non-append-only tables without a `deletedAt`. All three are plausibly intentional — high-volume rows subject to retention/pruning rather than user-facing soft delete. **Worth a recorded decision rather than a change**: if `notifications` is hard-deleted while every other user-facing entity is soft-deleted, that is a deliberate retention policy that should be written down, not an accident to discover during an incident.
+
+> **Resolved (slice 5): recorded, no column added** — see [Three tables without `deletedAt`](#recorded-decisions).
 
 ---
 
 ## Tier 4 — Dead surface {#tier-4-dead-surface}
 
 `knip --workspace packages/@grantjs/database` runs clean and reports exactly one item: **`zod` is an unused dependency** ([`package.json:36`](https://github.com/grant-js/grant/blob/main/packages/@grantjs/database/package.json)). Verified independently — `zod` appears in no `src/` import.
+
+> **Resolved (slices 1–2): `zod` removed; the workspace now reports 0.** Slice 2 also had to teach `knip` about the tests it was adding — `knip.json` names `src/**/*.test.ts` and `src/test-support/**` as entry points, because vitest discovers them by glob and `knip` cannot follow a glob. Left implicit, the coverage lens's own output would have been reported as dead files by the dead-surface lens.
 
 **State the tool's blind spots next to its output** (rule 5). For this package `knip` cannot see: the `drizzle.config.cjs` discovery path ([3.1](#31-two-drizzle-kit-configs-with-non-equivalent-database-url-resolution)); table definitions referenced only through Drizzle relations resolved at runtime; and anything named only inside the 2,772 lines of raw SQL in `src/migrations/`. A "0 dead tables" conclusion is **not** supported by this tool run and is not claimed here — see [Backlog](#backlog).
 
@@ -156,31 +182,57 @@ A test harness plus 46 passing tests across 2 files, all currently **uncommitted
 
 Verified by re-running after recovering the work: **46/46 passing**. Adding the harness is a legitimate in-pass fix on the same precedent as pass 2's `vitest.config.ts` JSX fix — it unblocks all future testing of this package and was a prerequisite for the lens, not scope creep.
 
+> **One of those 46 was vacuous, and slices 2–3 found it.** A `group_permissions` assertion filtered an array (always an array) on `values.id`, a field a recorded insert does not carry — it could not fail, and it pinned nothing. Rewritten to assert the group, the permission row, and exactly one link. The generalized rule is now carried forward in the rubric: **mutate the code and confirm the test goes red before counting it.** A second instance of the same class turned up in the same file — `vi.spyOn` on an already-spied method returns the existing spy, so without `vi.clearAllMocks()` the warning assertions were reading 150 accumulated calls where 6 were expected.
+
 One hypothesis was tested and **cleanly refuted**: a scratch probe checked `PERMISSION_MAPPINGS` for duplicate `(resource, action)` pairs within a group — **180 pairs, 0 intra-group duplicates**. Recorded so a future pass does not re-investigate. (The scratch file itself, `probe.tmp.ts`, must be deleted before any of this is committed.)
 
-### Not reached — and this is the honest gap in this pass
+### Not reached at audit time — **closed by slice 3**
 
-The lens that has produced a Tier 0 finding in **every** prior pass is the one that got cut short here. Untested, in rough risk order:
+The lens that has produced a Tier 0 finding in **every** prior pass is the one that got cut short here. It was completed as its own slice rather than left owed to a later pass. Final state, 89 tests across 5 files:
 
-| Surface                                 | Lines      | Why it matters                                                                                                                                                                                             |
-| --------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/scripts/` (remaining 3 of 5 files) | ~905 total | Seed scripts every environment runs. **Idempotency on a second run is uncharacterized** — whether re-running duplicates rows, throws, or no-ops is exactly the kind of question this lens exists to answer |
-| `src/bootstrap.ts`                      | 48         | Runs on API startup (per `feat/auto-bootstrap-and-deployment-portability`), so its failure modes are production-facing                                                                                     |
-| `src/connection/`                       | 85         | Pool construction, config defaulting, the `ILogger` injection point, and the module-level singleton (`let connection`) whose re-initialization path returns the _existing_ connection with a warning       |
-| `src/demo-refresh.ts`                   | 51         | Destructive by name; unexamined                                                                                                                                                                            |
-| `src/migrations/`                       | 2,772 SQL  | No lens command in the rubric currently reads migration SQL at all — see [Backlog](#backlog)                                                                                                               |
+| Surface                       | Tests | What the characterization pinned                                                                                                                                                                                                                                                         |
+| ----------------------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `grant-rls-login-role.lib.ts` | 28    | The RLS login-role logic — the highest-risk file in the package. Reviewed independently by Security, per the plan's one load-bearing fan-out                                                                                                                                             |
+| `scripts/seed-permissions.ts` | 22    | The permission seed, plus the new conflicting-condition warning ([below](#the-permission-condition-collision))                                                                                                                                                                           |
+| `connection/connection.ts`    | 17    | Re-init with a **different** connection string is ignored; `moduleLogger` is assigned before the guard; a failed `closeDatabase()` leaves the singleton populated; `getDatabase()`'s error names a non-existent `initializeDatabase()` and throws bare `Error`, not `ConfigurationError` |
+| `bootstrap.ts`                | 13    | Advisory lock and unlock are **two independent pool statements**; the RLS grant is called with no arguments (env fallback); a failed unlock masks the original error; demo-refresh truncate+reseed is not in a transaction                                                               |
+| `seed-core.ts`                | 9     | Idempotency **confirmed** — the open question from the audit. Also: the lookup does not filter `deletedAt` (unlike seed-permissions), the signing-key check requires `active = true`, and there is no concurrency guard                                                                  |
+| `src/migrations/`             | —     | Still 2,772 lines of unaudited SQL. No lens reads it — see [Backlog](#backlog)                                                                                                                                                                                                           |
+
+**No Tier 0 was found, and the "not yet found" caveat above can now be retired** for everything except the migration SQL. What the lens did produce is a set of characterized-but-unfixed behaviors, deliberately pinned by a test rather than changed under a code-quality story; the sharpest is `bootstrap.ts`'s advisory lock not being session-pinned, which is in [Backlog](#backlog).
+
+**One operational lesson, recorded because it will recur in pass 5.** `connection.test.ts` uses `vi.resetModules()` + dynamic import to get a fresh module singleton per test, and `./connection` pulls the 110-table schema barrel. Unmocked, that barrel is re-evaluated once per test; the file took 7,695 ms and the first cold import blew vitest's 5 s default **in CI only**. `vi.mock('../schemas', …)` took it to 175 ms. `drizzle` is mocked in that file, so the real schema is never needed. Raising the timeout would have hidden the cost rather than removed it.
+
+### The permission-condition collision {#the-permission-condition-collision}
+
+Filed during the pass as a Tier 0 fail-open privilege escalation. **It is not one**, and the correction is worth keeping because of how it was reached: the reviewer asked which of the two colliding rules was more recent and whether any intent was documented — neither question is answerable by the greps that produced the finding.
+
+`PERMISSION_MAPPINGS` lets several groups declare the same `resource:action`, but `permissions` has one row per pair and `group_permissions` has **no `condition` column**, so only the first-declared condition survives. `PermissionChecker` treats `condition == null` as an unconditional grant that beats a conditional one. That much is real.
+
+What disproved the escalation:
+
+- `git blame` puts every ApiKey mapping and group definition in **one commit** (`b410d0f5`, PR #7). Neither declaration is newer; the condition has **never** been persisted.
+- The three ApiKey groups have **identical** permissions and differ only in `assignedRoles` — the tiers differ on _member management_, not on resource access, which matches the documented intent.
+- `resource.createdBy` appears **exactly twice** in the entire model, both in `APIKeyDev`, matching no convention.
+- ApiKey mutations register **no `resourceResolver`**. `condition-evaluator.ts:51-55` returns `undefined` for `resource.*` when `resolvedResource` is null, so had the condition ever been persisted it would have **denied** — `OrganizationDev` could delete or revoke _nothing_.
+
+**Disposition: dead configuration plus a latent trap, not a live defect.** Slice 3 added a startup warning naming the losing group and the discarded condition, so the next collision is announced instead of silent. The two remaining arms are in [Backlog](#backlog) — the dead conditions live in a different package, and the Project/Tag arm _does_ register resolvers, so it is genuinely live and unmeasured.
 
 ---
 
 ## What this pass's method surfaced {#what-this-passs-method-surfaced}
 
-Three process findings, all reusable:
+Five process findings, all reusable — the first three from the audit, the last two from remediation:
 
 **Fan-out is an optimization, not a correctness requirement.** All three lens agents died on a session limit mid-pass. Lenses 1–6 were then re-run inline and produced the findings above, including the two sharpest ones (the drizzle-config divergence and the audit-table repetition sizing). What was genuinely lost was _depth on lens 7_ — the one lens whose value comes from executing code rather than reading it, and therefore the one least substitutable by a fast inline re-run. **If agents are lost mid-pass, re-run the reading lenses inline and protect the budget for lens 7.**
 
 **A TypeScript-only line count under-measures a database package by a third.** `src/migrations/` is 2,772 lines of SQL — 30% of this unit — and every lens command inherited from passes 1–3 is written against `.ts`. The rubric's lens commands need a per-unit review before the pass starts, not after.
 
 **Greps fail in both directions.** The rubric's rule-1 corollary warns about a checker that silently finds nothing. This pass hit the mirror image twice in one lens: a substring match that confidently found 52 non-existent `tenantId` columns, and a line-anchored pattern that confidently found 0 of a table that does exist. Both would have become filed findings without verification. **Verify a grep's hits, not just its zeroes.**
+
+**A test can pass without testing anything, and the coverage number will not tell you.** Rule 1's corollary — "prove the check fires by planting a violation" — was written for guardrails. This pass found it applies just as hard to tests: an inherited assertion could not fail, and it was still counted toward the coverage lens's result. **Mutate the code and confirm red before counting a characterization test.** The generalization is now carried into the rubric.
+
+**The reviewer's question was the finding.** The pass's only Tier 0 candidate was withdrawn after a single question — _which of the colliding rules is newer, and is the intent documented anywhere?_ Neither is answerable by grep, and both turned out to be decisive: `git blame` put both declarations in one commit, and reading the group definitions showed the tiers were never meant to differ on resource access. **When a finding rests on two rules disagreeing, date them and look for intent before filing severity.**
 
 ---
 
@@ -215,7 +267,25 @@ Soft delete exists here to keep tenant-owned records recoverable and to preserve
 
 Story brief and stack plan: [`plans/2026-08-10-database-code-quality-brief.md`](https://github.com/grant-js/grant/blob/main/plans/2026-08-10-database-code-quality-brief.md), [`plans/2026-08-10-database-code-quality-stack.md`](https://github.com/grant-js/grant/blob/main/plans/2026-08-10-database-code-quality-stack.md).
 
-Owed to a later pass, not this one:
+Open after #256. Each was deferred on the record, not dropped:
+
+**Characterized, not fixed.** Slice 3's tests pin the current behavior of all five; changing any of them is a behavior change that wants its own diff and reviewer.
+
+- **`bootstrap.ts`'s advisory lock is not session-pinned** — the sharpest of the five. `pg_advisory_lock` and `pg_advisory_unlock` are issued as two independent pool statements, and the lock is _session_-scoped, so the unlock can land on a different backend and leave the lock held on every subsequent API start. Needs a dedicated connection held across both, or a transaction-scoped `pg_advisory_xact_lock`.
+- **The connection singleton silently ignores a different config** — re-initializing with a _different_ connection string returns the existing pool with a warning. Reasonable as a guard, dangerous as a silent one.
+- **`demo-refresh.ts` truncates and reseeds outside a transaction** — an interrupted run leaves the database empty.
+- **`getDatabase()`'s error names `initializeDatabase()`**, a function that does not exist, and throws bare `Error` rather than `ConfigurationError`.
+- **`seed-core.ts` does not filter `deletedAt`** on lookup, where `seed-permissions.ts` does. One of the two is wrong; which one is a domain question.
+
+**The other two arms of the [condition collision](#the-permission-condition-collision).**
+
+- Remove `APIKeyDev`'s two dead `resource.createdBy` conditions from `@grantjs/constants` — different package, zero runtime effect today.
+- **Trace how `resource.scope.projects` resolves for an organization role.** This is the one _live_ arm — Project and Tag **do** register resolvers, so the collision's outcome there is real and its severity is unknown until traced. Highest-value item in this list.
+
+**Owed to a later pass.**
 
 - **Migration SQL is unaudited by any lens.** 79 files, 2,772 lines, containing the actual DDL — index coverage, constraint naming, and whether any migration is destructive-without-guard are all questions no current lens asks. This likely deserves its own lens rather than being folded into an existing one.
 - **A "0 dead tables" claim is not supported.** `knip` cannot see Drizzle relation references or SQL-string references ([Tier 4](#tier-4-dead-surface)). Determining whether any of the 110 tables is genuinely unread needs a different method — cross-referencing `apps/api`'s repositories against the schema barrel.
+- **The audit-log table factory** ([2.1](#tier-2-abstraction-opportunities)) — 53 tables × 18 lines, two of which diff to 0 entity-normalized. Deferred because it needs a `db:generate` diff spike first: the extraction is only safe if it provably emits identical DDL.
+- **Widening the guardrails to `@grantjs/schema` and the adapter packages** — each is that pass's own first slice, per the standing rule.
+- **The rubric's lens commands assume `.ts`** and under-measure an SQL-heavy unit by a third. Belongs in the rubric's method section, not in a database story.

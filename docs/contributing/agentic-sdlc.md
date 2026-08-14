@@ -157,6 +157,7 @@ What does **not** change: story briefs, stack plans, human gates, review bars, t
 - **`gh stack merge` is a human command.** It merges the stack up to a chosen PR atomically. Agents never self-merge — this does not become an exception. It cannot bypass branch protection ("Bypassing merge requirements is not supported for stacks"), but the gate is about who decides, not what is enforceable.
 - **Stack metadata is local and uncommitted** (`.git/gh-stack`). It does not survive a fresh clone or transfer between agents — the stack plan in `plans/` remains the durable artifact. Use `gh stack checkout <stack-or-pr-number>` to adopt a stack elsewhere.
 - **Adopting existing branches**: `gh stack link <pr> <pr> ...` builds the Stack on GitHub from PRs you already opened, without local tracking state. Useful for stories started before v2, and for jj / Sapling / git-town users.
+- **Merging the slices one at a time does not fill the trunk.** Each slice PR's base is the slice below it, so merging bottom-up lands every slice's content in its own base and stops — the content accumulates on the **topmost** slice branch, and the trunk still points at slice 1. Pass 4 hit this: five PRs merged, gate 3 looked complete, and the trunk held one slice out of five. Either merge the stack atomically with `gh stack merge` (a human command), or merge the top slice branch into the trunk explicitly before opening the gate-4 PR. **Confirm the trunk contains every slice before running gate-4 verification** — otherwise a green run is green for the wrong reason.
 
 ### Caveats
 

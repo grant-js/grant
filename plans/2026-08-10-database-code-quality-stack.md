@@ -5,7 +5,7 @@
 - **Slug**: `database-code-quality`
 - **Story brief**: [`plans/2026-08-10-database-code-quality-brief.md`](./2026-08-10-database-code-quality-brief.md)
 - **Findings**: [`docs/contributing/code-quality/database.md`](../docs/contributing/code-quality/database.md)
-- **Status**: approved (2026-08-10, Ale Heredia)
+- **Status**: merged-to-main (2026-08-14) — [#256](https://github.com/grant-js/grant/pull/256), 20 files, +1,697 −61, zero schema/column/migration changes
 - **Story trunk**: `feat/database-code-quality`
 - **worktree_path**: not required — no other story is in flight; `git worktree list` shows only the main checkout. All slices run serially in the main checkout; see [Fan-out](#fan-out).
 
@@ -22,14 +22,14 @@
 
 ## Ordered slices (PRs)
 
-| #     | Branch                                      | Base                         | Concern                                                              | Owner     | Review bar        | PR  |
-| ----- | ------------------------------------------- | ---------------------------- | -------------------------------------------------------------------- | --------- | ----------------- | --- |
-| 1     | `feat/database-code-quality-guardrails`     | `feat/database-code-quality` | DAG ESLint rule + `dead-code:database` + drop `zod`                  | Backend   | light             |     |
-| 2     | `feat/database-code-quality-test-harness`   | slice 1                      | Land the audit's harness + RLS/seed characterization tests           | QA        | **security-full** |     |
-| 3     | `feat/database-code-quality-coverage`       | slice 2                      | Complete the coverage lens — seed idempotency, bootstrap, connection | QA        | light¹            |     |
-| 4     | `feat/database-code-quality-drizzle-config` | slice 3                      | Resolve the two-config divergence                                    | Backend   | **security-full** |     |
-| 5     | `feat/database-code-quality-docs`           | slice 4                      | `AGENTS.md` DAG, `CONCEPTS.md` citation, Tier 3 decisions            | Architect | light             |     |
-| final | `feat/database-code-quality`                | `main`                       | integration                                                          | Principal | deep              |     |
+| #     | Branch                                      | Base                         | Concern                                                              | Owner     | Review bar        | PR                                                 |
+| ----- | ------------------------------------------- | ---------------------------- | -------------------------------------------------------------------- | --------- | ----------------- | -------------------------------------------------- |
+| 1     | `feat/database-code-quality-guardrails`     | `feat/database-code-quality` | DAG ESLint rule + `dead-code:database` + drop `zod`                  | Backend   | light             | [#251](https://github.com/grant-js/grant/pull/251) |
+| 2     | `feat/database-code-quality-test-harness`   | slice 1                      | Land the audit's harness + RLS/seed characterization tests           | QA        | **security-full** | [#252](https://github.com/grant-js/grant/pull/252) |
+| 3     | `feat/database-code-quality-coverage`       | slice 2                      | Complete the coverage lens — seed idempotency, bootstrap, connection | QA        | light¹            | [#253](https://github.com/grant-js/grant/pull/253) |
+| 4     | `feat/database-code-quality-drizzle-config` | slice 3                      | Resolve the two-config divergence                                    | Backend   | **security-full** | [#254](https://github.com/grant-js/grant/pull/254) |
+| 5     | `feat/database-code-quality-docs`           | slice 4                      | `AGENTS.md` DAG, `CONCEPTS.md` citation, Tier 3 decisions            | Architect | light             | [#255](https://github.com/grant-js/grant/pull/255) |
+| final | `feat/database-code-quality`                | `main`                       | integration                                                          | Principal | deep              | [#256](https://github.com/grant-js/grant/pull/256) |
 
 ¹ **Escalates to `security-full` if slice 3 surfaces a Tier 0 finding** — likeliest in seed idempotency. Decide the bar when the finding lands, don't pre-commit to `light`.
 
@@ -155,17 +155,25 @@ Surfaced by slice 2's seed characterization. Recorded here because two of its th
 ## Human gates
 
 - [x] Gate 2: Stack plan approved — 2026-08-10, Ale Heredia. Implementation may proceed.
-- [ ] Gate 3: Stack PRs merged into trunk.
-- [ ] Gate 4: Story → `main` — integration verification on the assembled trunk, then human review.
+- [x] Gate 3: Stack PRs merged into trunk — #251–#255. See the merge-topology note below.
+- [x] Gate 4: Story → `main` — [#256](https://github.com/grant-js/grant/pull/256), merged 2026-08-14 (`39c792ba`).
+
+**Merge-topology note, worth carrying to the next stacked story.** All five slice PRs merged, but only slice 1 reached the trunk. `gh stack` merges land content in each PR's own **base**, and bases do not cascade downward — so slices 2–5 accumulated on `feat/database-code-quality-drizzle-config` while the trunk still pointed at slice 1. Fixed by merging that tip into the trunk explicitly (`--no-ff`) before opening #256. **Verify the trunk actually contains every slice before gate 4**; a green gate-4 run on a trunk missing four slices would have been green for the wrong reason.
+
+Gate-4 integration verification, on the assembled trunk with `main` merged in: `type-check` 0 errors · `lint` 0 · `build` 11/11 · `CI=1 pnpm test` 10/10 · `format:check` 0 · `dead-code:{api,web,core,database}` all 0. Plus two checks only meaningful once assembled: the new DAG rule still errors on a planted `@grantjs/logger` import, and `drizzle-kit generate` resolves `drizzle.config.ts` with **79 migrations before and after** the `.cjs` deletion.
+
+No changeset — `@grantjs/database` is in `.changeset/config.json`'s `ignore` list and nothing else in this story is a published package.
 
 ## Cleanup
 
-- [ ] `git worktree remove` — not applicable
-- [ ] Local and remote slice branches deleted — after gate 4
-- [ ] Stack plan status → `merged-to-main`
-- [ ] Update [`database.md`](../docs/contributing/code-quality/database.md) with resolved counts and record pass 4 as `Done` in the [rubric's passes table](../docs/contributing/code-quality/README.md#passes)
+- [x] `git worktree remove` — not applicable
+- [x] Local and remote slice branches deleted — 2026-08-14
+- [x] Stack plan status → `merged-to-main`
+- [x] Update [`database.md`](../docs/contributing/code-quality/database.md) with resolved counts and record pass 4 as `Done` in the [rubric's passes table](../docs/contributing/code-quality/README.md#passes)
 
 ## Follow-ups (not blocking this story)
+
+**Now consolidated in [`database.md` § Backlog](../docs/contributing/code-quality/database.md#backlog)**, which is the durable home — this plan is closed. That backlog also carries the five behaviors slice 3 **characterized but did not fix**, which did not exist when this table was written; the sharpest is `bootstrap.ts`'s advisory lock not being session-pinned (lock and unlock are separate pool statements, so the unlock can hit a different backend and leave the lock held on every API start).
 
 | Item                                                                                    | Why deferred                                                                                                                                     |
 | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
