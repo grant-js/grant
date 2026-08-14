@@ -1,2 +1,2 @@
 # CI=1 disables Vitest watch mode so tests run once and exit
-pnpm run format:check && pnpm run lint && pnpm run dead-code:api && pnpm run dead-code:web && pnpm run dead-code:core && pnpm run type-check && pnpm run build && CI=1 pnpm test && pnpm run secret-scan:protect
+pnpm run format:check && pnpm run lint && pnpm run dead-code:api && pnpm run dead-code:web && pnpm run dead-code:core && pnpm run dead-code:database && pnpm run type-check && pnpm run build && CI=1 pnpm test && pnpm run secret-scan:protect

@@ -98,8 +98,8 @@ jobs:
       - name: Lint
         run: pnpm run lint
 
-      # apps/api, apps/web, and @grantjs/core. Sibling packages/ still report
-      # findings; each package's own code-quality pass widens this gate.
+      # apps/api, apps/web, @grantjs/core, and @grantjs/database. Sibling packages/
+      # still report findings; each package's own code-quality pass widens this gate.
       - name: Dead code (apps/api)
         run: pnpm run dead-code:api
 
@@ -108,6 +108,9 @@ jobs:
 
       - name: Dead code (@grantjs/core)
         run: pnpm run dead-code:core
+
+      - name: Dead code (@grantjs/database)
+        run: pnpm run dead-code:database
 
       - name: Type check
         run: pnpm run type-check

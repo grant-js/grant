@@ -10,6 +10,25 @@ import tseslint from 'typescript-eslint';
 // in @eslint/eslintrc when loading next config. Base config + react-hooks + typescript
 // cover lint for apps/web; add next-specific rules here if needed.
 
+// Adapter packages implement @grantjs/core's ports. Nothing at or below core in the
+// package DAG may import them, or the DAG acquires a cycle at runtime even though
+// each package type-checks alone. Shared by the per-package boundary rules below;
+// each package's own code-quality pass adds its scope.
+const ADAPTER_PACKAGES = [
+  '@grantjs/cache',
+  '@grantjs/storage',
+  '@grantjs/email',
+  '@grantjs/jobs',
+  '@grantjs/logger',
+  '@grantjs/errors',
+];
+
+const noAdapterImports = (pkg) =>
+  ADAPTER_PACKAGES.map((name) => ({
+    name,
+    message: `${pkg} must not import adapter packages — see AGENTS.md § Package dependency graph.`,
+  }));
+
 export default defineConfig(
   // Ignore patterns
   {
@@ -362,36 +381,7 @@ export default defineConfig(
         'error',
         {
           paths: [
-            {
-              name: '@grantjs/cache',
-              message:
-                '@grantjs/core must not import adapter packages — see AGENTS.md § Package dependency graph.',
-            },
-            {
-              name: '@grantjs/storage',
-              message:
-                '@grantjs/core must not import adapter packages — see AGENTS.md § Package dependency graph.',
-            },
-            {
-              name: '@grantjs/email',
-              message:
-                '@grantjs/core must not import adapter packages — see AGENTS.md § Package dependency graph.',
-            },
-            {
-              name: '@grantjs/jobs',
-              message:
-                '@grantjs/core must not import adapter packages — see AGENTS.md § Package dependency graph.',
-            },
-            {
-              name: '@grantjs/logger',
-              message:
-                '@grantjs/core must not import adapter packages — see AGENTS.md § Package dependency graph.',
-            },
-            {
-              name: '@grantjs/errors',
-              message:
-                '@grantjs/core must not import adapter packages — see AGENTS.md § Package dependency graph.',
-            },
+            ...noAdapterImports('@grantjs/core'),
             {
               name: '@grantjs/database',
               message:
@@ -400,6 +390,17 @@ export default defineConfig(
           ],
         },
       ],
+    },
+  },
+
+  // @grantjs/database sits beside the adapter packages, not above them: it may reach
+  // down to @grantjs/core, @grantjs/env, and @grantjs/constants (all three are real
+  // dependencies) but never sideways into a sibling adapter. Note the allowed set is
+  // wider than core's — copying core's rule verbatim here would break the build.
+  {
+    files: ['packages/@grantjs/database/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': ['error', { paths: noAdapterImports('@grantjs/database') }],
     },
   }
 );

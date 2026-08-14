@@ -21,6 +21,8 @@
     "db:reset": "tsx src/scripts/reset-db.ts",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
@@ -30,8 +32,7 @@
     "@grantjs/env": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "drizzle-seed": "^0.3.1",
-    "postgres": "^3.4.9",
-    "zod": "^4.4.3"
+    "postgres": "^3.4.9"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
@@ -39,7 +40,8 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^10.7.0",
     "tsx": "^4.23.1",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
   },
   "peerDependencies": {
     "drizzle-orm": "^0.45.2"
