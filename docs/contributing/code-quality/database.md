@@ -184,6 +184,33 @@ Three process findings, all reusable:
 
 ---
 
+## Recorded decisions {#recorded-decisions}
+
+The two Tier 3 questions this story was asked to settle. Both are decided; neither required a code change.
+
+### Env fallback in libs: `options.env ?? getEnv()` stays, but it is the exception
+
+`grant-rls-login-role.lib.ts` accepts an optional `env` and falls back to `getEnv()`. `connection.ts` takes config strictly and reads no env at all. That looked like drift.
+
+**Decision: both are correct as written, and the difference is meaningful.** `connection.ts` is a library the composition root configures — an env read there would be a layering violation, since adapter packages must not read env directly. `grant-rls-login-role.lib.ts` is the shared body of a **CLI entry point** (`db:grant-rls-role`, and the second half of `db:migrate`), where the caller is a shell, not a composition root. The optional parameter is what makes it testable — [`grant-rls-login-role.lib.test.ts`](https://github.com/grant-js/grant/blob/main/packages/%40grantjs/database/src/grant-rls-login-role.lib.test.ts) injects `env` at 23 call sites across its 28 tests and exercises the fallback in exactly one.
+
+**The rule going forward:** env fallback is allowed only in the body of a CLI entry point, and only as `options.env ?? getEnv()` so that callers can inject. Anything the composition root wires takes config strictly.
+
+One consequence is worth flagging: `bootstrapDatabase` calls `ensureRlsRestrictedRoleMembership()` with no arguments, so a function that receives `db` and `systemUserId` by injection reaches for the environment mid-body. That is the fallback leaking out of CLI context into server startup. Not changed here — it is correct today because the API server's env is the same env — but it is the first place to look if bootstrap ever needs to target a database other than the one its own env names.
+
+### Three tables without `deletedAt`: deliberate, not drift
+
+`notifications`, `notification_preferences`, and `webhook_delivery_attempts` are the only tables of 110 with no soft-delete column (verified: zero `deletedAt` references in each schema file).
+
+**Decision: deliberate, and consistent with what each table is.** All three are **append-mostly operational records**, not domain entities a tenant owns and expects to recover:
+
+- `webhook_delivery_attempts` is a delivery log. A retained "deleted" attempt is a contradiction — the attempt either happened or it did not.
+- `notifications` and `notification_preferences` are per-user ephemera. A soft-deleted notification would still have to be filtered out of every unread count and every list query, buying nothing over a hard delete.
+
+Soft delete exists here to keep tenant-owned records recoverable and to preserve referential integrity for audit trails. None of these three carries either obligation. **No column is being added.** If any of them later becomes subject to a retention or GDPR-export requirement, that is the trigger to revisit — not the inconsistency itself.
+
+---
+
 ## Backlog
 
 Story brief and stack plan: [`plans/2026-08-10-database-code-quality-brief.md`](https://github.com/grant-js/grant/blob/main/plans/2026-08-10-database-code-quality-brief.md), [`plans/2026-08-10-database-code-quality-stack.md`](https://github.com/grant-js/grant/blob/main/plans/2026-08-10-database-code-quality-stack.md).
