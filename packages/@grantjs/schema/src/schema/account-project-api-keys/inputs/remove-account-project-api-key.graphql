@@ -1,5 +1,0 @@
-input RemoveAccountProjectApiKeyInput {
-  accountId: ID!
-  projectId: ID!
-  apiKeyId: ID!
-}

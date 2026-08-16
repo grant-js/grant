@@ -152,7 +152,6 @@ export type ResolversInterfaceTypes<_RefType extends Record<string, unknown>> = 
     | Types.UserRole
     | Types.UserSession
     | Types.UserTag;
-  Creatable: never;
   PaginatedResults:
     | Types.AccountPage
     | Types.ApiKeyPage
@@ -181,7 +180,6 @@ export type ResolversTypes = ResolversObject<{
   AccountProjectApiKey: ResolverTypeWrapper<Types.AccountProjectApiKey>;
   AccountProjectTag: ResolverTypeWrapper<Types.AccountProjectTag>;
   AccountRole: ResolverTypeWrapper<Types.AccountRole>;
-  AccountSearchableField: Types.AccountSearchableField;
   AccountSortInput: Types.AccountSortInput;
   AccountSortableField: Types.AccountSortableField;
   AccountTag: ResolverTypeWrapper<Types.AccountTag>;
@@ -239,7 +237,6 @@ export type ResolversTypes = ResolversObject<{
   CdmOnConflict: Types.CdmOnConflict;
   ChangeMyPasswordInput: Types.ChangeMyPasswordInput;
   ChangeMyPasswordResult: ResolverTypeWrapper<Types.ChangeMyPasswordResult>;
-  Creatable: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['Creatable']>;
   CreateAccountInput: Types.CreateAccountInput;
   CreateAccountResult: ResolverTypeWrapper<Types.CreateAccountResult>;
   CreateApiKeyInput: Types.CreateApiKeyInput;
@@ -321,7 +318,6 @@ export type ResolversTypes = ResolversObject<{
   OrganizationInvitationStatus: Types.OrganizationInvitationStatus;
   OrganizationMember: ResolverTypeWrapper<Types.OrganizationMember>;
   OrganizationMemberPage: ResolverTypeWrapper<Types.OrganizationMemberPage>;
-  OrganizationMemberSearchableField: Types.OrganizationMemberSearchableField;
   OrganizationMemberSortInput: Types.OrganizationMemberSortInput;
   OrganizationMemberSortableField: Types.OrganizationMemberSortableField;
   OrganizationMembershipExportData: ResolverTypeWrapper<Types.OrganizationMembershipExportData>;
@@ -414,7 +410,6 @@ export type ResolversTypes = ResolversObject<{
   QueryUserTagsInput: Types.QueryUserTagsInput;
   RefreshSessionResponse: ResolverTypeWrapper<Types.RefreshSessionResponse>;
   RegisterInput: Types.RegisterInput;
-  RemoveAccountProjectApiKeyInput: Types.RemoveAccountProjectApiKeyInput;
   RemoveAccountProjectInput: Types.RemoveAccountProjectInput;
   RemoveAccountProjectTagInput: Types.RemoveAccountProjectTagInput;
   RemoveAccountRoleInput: Types.RemoveAccountRoleInput;
@@ -425,7 +420,6 @@ export type ResolversTypes = ResolversObject<{
   RemoveOrganizationGroupInput: Types.RemoveOrganizationGroupInput;
   RemoveOrganizationMemberInput: Types.RemoveOrganizationMemberInput;
   RemoveOrganizationPermissionInput: Types.RemoveOrganizationPermissionInput;
-  RemoveOrganizationProjectApiKeyInput: Types.RemoveOrganizationProjectApiKeyInput;
   RemoveOrganizationProjectInput: Types.RemoveOrganizationProjectInput;
   RemoveOrganizationProjectTagInput: Types.RemoveOrganizationProjectTagInput;
   RemoveOrganizationRoleInput: Types.RemoveOrganizationRoleInput;
@@ -503,7 +497,6 @@ export type ResolversTypes = ResolversObject<{
   UpdateGroupInput: Types.UpdateGroupInput;
   UpdateGroupTagInput: Types.UpdateGroupTagInput;
   UpdateMyProjectMembershipInput: Types.UpdateMyProjectMembershipInput;
-  UpdateMyUserAuthenticationMethodInput: Types.UpdateMyUserAuthenticationMethodInput;
   UpdateMyUserInput: Types.UpdateMyUserInput;
   UpdateOrganizationInput: Types.UpdateOrganizationInput;
   UpdateOrganizationInvitationInput: Types.UpdateOrganizationInvitationInput;
@@ -623,7 +616,6 @@ export type ResolversParentTypes = ResolversObject<{
   CdmModeInput: Types.CdmModeInput;
   ChangeMyPasswordInput: Types.ChangeMyPasswordInput;
   ChangeMyPasswordResult: Types.ChangeMyPasswordResult;
-  Creatable: ResolversInterfaceTypes<ResolversParentTypes>['Creatable'];
   CreateAccountInput: Types.CreateAccountInput;
   CreateAccountResult: Types.CreateAccountResult;
   CreateApiKeyInput: Types.CreateApiKeyInput;
@@ -773,7 +765,6 @@ export type ResolversParentTypes = ResolversObject<{
   QueryUserTagsInput: Types.QueryUserTagsInput;
   RefreshSessionResponse: Types.RefreshSessionResponse;
   RegisterInput: Types.RegisterInput;
-  RemoveAccountProjectApiKeyInput: Types.RemoveAccountProjectApiKeyInput;
   RemoveAccountProjectInput: Types.RemoveAccountProjectInput;
   RemoveAccountProjectTagInput: Types.RemoveAccountProjectTagInput;
   RemoveAccountRoleInput: Types.RemoveAccountRoleInput;
@@ -784,7 +775,6 @@ export type ResolversParentTypes = ResolversObject<{
   RemoveOrganizationGroupInput: Types.RemoveOrganizationGroupInput;
   RemoveOrganizationMemberInput: Types.RemoveOrganizationMemberInput;
   RemoveOrganizationPermissionInput: Types.RemoveOrganizationPermissionInput;
-  RemoveOrganizationProjectApiKeyInput: Types.RemoveOrganizationProjectApiKeyInput;
   RemoveOrganizationProjectInput: Types.RemoveOrganizationProjectInput;
   RemoveOrganizationProjectTagInput: Types.RemoveOrganizationProjectTagInput;
   RemoveOrganizationRoleInput: Types.RemoveOrganizationRoleInput;
@@ -853,7 +843,6 @@ export type ResolversParentTypes = ResolversObject<{
   UpdateGroupInput: Types.UpdateGroupInput;
   UpdateGroupTagInput: Types.UpdateGroupTagInput;
   UpdateMyProjectMembershipInput: Types.UpdateMyProjectMembershipInput;
-  UpdateMyUserAuthenticationMethodInput: Types.UpdateMyUserAuthenticationMethodInput;
   UpdateMyUserInput: Types.UpdateMyUserInput;
   UpdateOrganizationInput: Types.UpdateOrganizationInput;
   UpdateOrganizationInvitationInput: Types.UpdateOrganizationInvitationInput;
@@ -1171,13 +1160,6 @@ export type ChangeMyPasswordResultResolvers<
 > = ResolversObject<{
   message?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-}>;
-
-export type CreatableResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['Creatable'] = ResolversParentTypes['Creatable'],
-> = ResolversObject<{
-  __resolveType: TypeResolveFn<null, ParentType, ContextType>;
 }>;
 
 export type CreateAccountResultResolvers<
@@ -3461,7 +3443,6 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   AuthenticationMethodExportData?: AuthenticationMethodExportDataResolvers<ContextType>;
   AuthorizationResult?: AuthorizationResultResolvers<ContextType>;
   ChangeMyPasswordResult?: ChangeMyPasswordResultResolvers<ContextType>;
-  Creatable?: CreatableResolvers<ContextType>;
   CreateAccountResult?: CreateAccountResultResolvers<ContextType>;
   CreateApiKeyResult?: CreateApiKeyResultResolvers<ContextType>;
   CreateMySecondaryAccountResult?: CreateMySecondaryAccountResultResolvers<ContextType>;

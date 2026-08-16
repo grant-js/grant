@@ -15,11 +15,6 @@ interface Auditable {
   deletedAt: Date
 }
 
-interface Creatable {
-  createdAt: String!
-  updatedAt: String!
-}
-
 interface PaginatedResults {
   totalCount: Int!
   hasNextPage: Boolean!
