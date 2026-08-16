@@ -40,6 +40,12 @@
     // construction. Dead surface in this package has to be measured by
     // cross-referencing consumers — see docs/contributing/code-quality/schema.md.
     "packages/@grantjs/schema": {
+      // Tests and their support module are entry points, not dead files: vitest
+      // discovers them by glob, which knip cannot follow.
+      // knip infers src/index.ts from package.json `main`; naming it again is a
+      // redundant-entry hint. Tests and their support module it cannot infer —
+      // vitest discovers them by glob.
+      "entry": ["src/**/*.test.ts", "src/test-support/**/*.ts"],
       "project": ["src/**/*.ts"]
     },
     "packages/@grantjs/database": {
