@@ -1,6 +1,9 @@
 {
   "extends": "../../../tsconfig.json",
   "compilerOptions": {
+    // The test-support fixture reads the SDL off disk, so this package now needs
+    // node builtins — same declaration @grantjs/database carries for the same reason.
+    "types": ["node"],
     "outDir": "dist",
     "rootDir": "src",
     "declaration": true,
