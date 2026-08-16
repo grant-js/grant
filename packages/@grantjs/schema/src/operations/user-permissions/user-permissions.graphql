@@ -16,24 +16,3 @@ mutation RevokeUserPermission($input: RevokeUserPermissionInput!) {
     deletedAt
   }
 }
-
-query GetUserDirectPermissions($scope: Scope!, $userId: ID!) {
-  users(scope: $scope, ids: [$userId], limit: 1) {
-    users {
-      id
-      permissionCount
-      userPermissions {
-        id
-        permissionId
-        permission(scope: $scope) {
-          id
-          name
-          action
-          resource {
-            slug
-          }
-        }
-      }
-    }
-  }
-}

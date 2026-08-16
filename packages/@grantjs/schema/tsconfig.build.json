@@ -4,5 +4,11 @@
     "rootDir": "src",
     "outDir": "dist"
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  // Restates the parent's patterns rather than adding to them: a child `exclude`
+  // replaces the inherited one outright, so omitting *.test.ts here would compile
+  // the tests into the image. src/test-support/ is the addition — it holds plain
+  // modules the tests import, which the parent's *.test.ts pattern does not catch.
+  // Read by scripts/docker/build-api-production.mjs, not by `pnpm build`.
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts", "src/test-support/**"]
 }

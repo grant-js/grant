@@ -38,8 +38,11 @@ describe('operation documents', () => {
   const schema = buildMergedSchema();
   const files = operationFiles();
 
+  // Pinned, not a floor: pass 5 slice 5 removed one file and two query operations
+  // that were superseded by list queries, and a floor would have absorbed that
+  // silently. 116 before that slice.
   it('finds every document under src/operations', () => {
-    expect(files.length).toBeGreaterThanOrEqual(116);
+    expect(files).toHaveLength(115);
   });
 
   it.each(files.map((f) => [relative(process.cwd(), f), f]))('%s validates', (_label, file) => {
