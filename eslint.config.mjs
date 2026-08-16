@@ -402,5 +402,30 @@ export default defineConfig(
     rules: {
       'no-restricted-imports': ['error', { paths: noAdapterImports('@grantjs/database') }],
     },
+  },
+
+  // @grantjs/schema sits at the very bottom of the DAG, below core: it is codegen
+  // output plus hand-written contract types and depends on nothing in the workspace
+  // (its only runtime dependency is @graphql-typed-document-node/core). So the rule
+  // here is not "no adapters" like core's and database's — it is "no @grantjs/* at
+  // all", expressed as a pattern so a new workspace package is covered on the day it
+  // is created. Verified clean when written; this locks it in. Generated output is
+  // already excluded by the global `**/generated/**` ignore.
+  {
+    files: ['packages/@grantjs/schema/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@grantjs/*'],
+              message:
+                '@grantjs/schema must not import any workspace package — it sits below core in the DAG. See AGENTS.md § Package dependency graph.',
+            },
+          ],
+        },
+      ],
+    },
   }
 );
