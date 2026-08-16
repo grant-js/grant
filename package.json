@@ -22,6 +22,8 @@
     "dead-code:web": "knip --workspace apps/web",
     "dead-code:core": "knip --workspace packages/@grantjs/core",
     "dead-code:database": "knip --workspace packages/@grantjs/database",
+    "dead-code:schema": "knip --workspace packages/@grantjs/schema",
+    "codegen:check": "pnpm --filter @grantjs/schema generate && git diff --exit-code -- packages/@grantjs/schema/src/generated",
     "lint:fix": "turbo lint:fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,graphql}\" --ignore-path .gitignore",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,graphql}\" --ignore-path .gitignore",

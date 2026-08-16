@@ -98,8 +98,9 @@ jobs:
       - name: Lint
         run: pnpm run lint
 
-      # apps/api, apps/web, @grantjs/core, and @grantjs/database. Sibling packages/
-      # still report findings; each package's own code-quality pass widens this gate.
+      # apps/api, apps/web, @grantjs/core, @grantjs/database, and @grantjs/schema.
+      # Sibling packages/ still report findings; each package's own code-quality
+      # pass widens this gate.
       - name: Dead code (apps/api)
         run: pnpm run dead-code:api
 
@@ -111,6 +112,16 @@ jobs:
 
       - name: Dead code (@grantjs/database)
         run: pnpm run dead-code:database
+
+      - name: Dead code (@grantjs/schema)
+        run: pnpm run dead-code:schema
+
+      # @grantjs/schema's generated types are committed. Regenerate and fail on any
+      # diff, so an edited .graphql file can never ship with a stale type. Scoped to
+      # src/generated because codegen's afterAllFileWrite hook reformats the whole
+      # package, which is format:check's job, not this gate's.
+      - name: Codegen drift (@grantjs/schema)
+        run: pnpm run codegen:check
 
       - name: Type check
         run: pnpm run type-check

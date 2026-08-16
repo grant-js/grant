@@ -33,6 +33,15 @@
       "entry": ["src/index.ts"],
       "project": ["src/**/*.ts"]
     },
+    // knip infers this entry from package.json `main`, so restating it is redundant
+    // (knip's own config hint). Declared explicitly anyway to record the blind spot
+    // it creates: with src/index.ts as the entry, every re-export from a library
+    // package counts as "used", so knip reports no unused exports here by
+    // construction. Dead surface in this package has to be measured by
+    // cross-referencing consumers — see docs/contributing/code-quality/schema.md.
+    "packages/@grantjs/schema": {
+      "project": ["src/**/*.ts"]
+    },
     "packages/@grantjs/database": {
       // Tests and their support module are entry points, not dead files: vitest
       // discovers them by glob, which knip cannot follow.
