@@ -133,7 +133,45 @@ Two claims in this pass's own planning documents were disproved by implementing 
 
 ## Recorded decisions {#recorded-decisions}
 
-### D1 — SDL as an internal declaration language: **open, Architect-owned**
+Decided 2026-08-16 by Ale Heredia. Numbering is theirs. Four of the five ratify what the pass already did, turning a one-off fix into a standing rule; D1 is the only one that schedules new work.
+
+### D1 — GraphQL filenames: **kebab-case**
+
+`src/operations/` is 62 camelCase / 53 kebab-case; all 425 files under `src/schema/` are already kebab-case, and `CONCEPTS.md` § Naming conventions already says kebab-case for files.
+
+**Decision: kebab-case everywhere.** New operation documents take it immediately. The 62 existing renames are **a follow-up story, not a slice of this pass** — mechanical, but they touch every consumer import, so they want a diff a reviewer can read as "renames only," ideally with a lint rule landing alongside to hold it.
+
+### D2 — Generated type ownership: **`schema-types.ts` is canonical**
+
+**Decision: one generated file owns each type name; other generated outputs import rather than re-emit.** Implemented in slice 3 — `resolvers.ts` now opens with `import type * as Types from './schema-types'` instead of declaring a second copy of all 464 names, matching what the operations output already did via `importSchemaTypesFrom`.
+
+As a standing rule this constrains `codegen.ts`: **adding the `typescript` plugin to an output that is not `schema-types.ts` is a defect**, not a configuration choice. `pnpm codegen:check` will not catch a violation — it only detects drift between sources and committed output — so this one is held by review and by the rule being written down here.
+
+### D3 — Generated exports: **no collision-driven curated lists**
+
+**Decision: expose generated types normally; a curated export list must be a policy, never a workaround.** Implemented in slice 3 — `src/index.ts`'s hand-curated 23-name resolver allowlist existed only to dodge the duplicate-emission collision, and became `export * from './generated/resolvers'` once D2 removed the collision. The exported surface is now 115 `*Resolvers` types.
+
+If a narrow surface is ever wanted again, it gets an explicit rationale next to the list.
+
+### D4 — Status ownership: **one canonical definition per status set**
+
+**Decision: `@grantjs/database` owns status value lists; nothing re-declares them.** The database schema declares them and backs them with SQL `CHECK` constraints, which makes it the only definition that can be enforced.
+
+Slice 5 removed the schema-layer copies (`NOTIFICATION_STATUSES`, `NOTIFICATION_PREFERENCE_SOURCES`, `WEBHOOK_DELIVERY_STATUSES`) — the middle of three copies, with zero importers. **The third copy remains**: `apps/api` inlines the same literals at `rest/schemas/webhook-subscriptions.schemas.ts:62` and `lib/notifications/notification-generator.consumer.ts:25`. Eliminating it is adopted as intent and belongs to an `apps/api` slice; see [Backlog](#backlog).
+
+Note the constraint this decision operates under: `@grantjs/schema` **cannot** import `@grantjs/database` — that inverts the DAG, and slice 1's ESLint rule blocks it. So "one canonical definition" is reachable for `apps/api` (which depends on both) but not by making schema re-export database's lists.
+
+### D5 — SDL documentation: **semantic need, not coverage percentage**
+
+**Decision: require a description where the name does not carry the meaning; do not measure or target a percentage.** The 35-of-425 figure (8.2%) is recorded as an observation, not a gap: it is what a judgement standard produces when most type names are self-describing (`UserSessionPage`, `AddGroupTagInput`).
+
+`.cursor/rules/schema.mdc`'s existing tiers stand as written. No backfill.
+
+### Not covered by the five — **still open**
+
+The largest Tier 3 item in this pass did not receive a decision: **SDL as an internal declaration language**, below. It is left open deliberately rather than closed by omission.
+
+### D0 — SDL as an internal declaration language: **open, Architect-owned**
 
 The 175 unreachable declarations are one decision, not 175. Options:
 
@@ -146,20 +184,12 @@ The 175 unreachable declarations are one decision, not 175. Options:
 
 **Recommendation: option 2, as its own story, not now.** It gets the served-schema benefit without touching the generated TypeScript that 776 files depend on. Option 1 is a legitimate choice if the introspection default is considered sufficient — but it should be _chosen_, not inherited.
 
-### D2 — Operation file naming: **open**
-
-62 camelCase vs 53 kebab-case; `src/schema/` is 100% kebab-case.
-
-**Recommendation: adopt kebab-case, in its own PR, not in this pass.** The convention already exists and only `src/operations/` departs from it. The rename is mechanical but touches every consumer import, so it wants a dedicated diff a reviewer can read as "renames only." A lint rule can then hold it.
-
-### D3 — GraphQL description policy: **open**
-
-35 of 425 files carry any description.
-
-**Recommendation: keep the tiered rule as written and do not backfill.** `schema.mdc`'s tiers are a judgement standard, and 8% is what a judgement standard produces when most type names are self-describing (`UserSessionPage`, `AddGroupTagInput`). The useful change is narrower: require a description on any _new_ type whose name does not carry its meaning, and leave the existing 390 alone. Backfilling 400 files under a code-quality banner would produce noise, not documentation.
+`src/sdl-contract.test.ts` pins the count at 175, so whichever way this goes, the number moves deliberately.
 
 ## Backlog
 
 - **`apps/api`'s third copy of the notification/webhook status literals** — `rest/schemas/webhook-subscriptions.schemas.ts:62` and `lib/notifications/notification-generator.consumer.ts:25` inline what `@grantjs/database` already declares. Out of scope here; belongs to an `apps/api` slice.
 - **`packages/@grantjs/database` leaks its test-support module into the production image.** `scripts/docker/build-api-production.mjs` compiles `src/**/*` per package; the shared `packages/@grantjs/tsconfig.build.json` excludes `*.test.ts` but not `src/test-support/`, which holds plain modules. Pass 5 fixed schema's copy in its own `tsconfig.build.json`; `database` has the identical shape and was left alone as out of scope. The durable fix is one pattern in the shared parent.
-- **D1, D2, D3** above, each its own story if adopted.
+- **D1's 62 renames** — `src/operations/*.graphql` to kebab-case, plus a lint rule to hold it. Decided, not scheduled.
+- **D4's third copy** — remove the inlined status literals from `apps/api` so `@grantjs/database` is the only definition. Decided as intent, belongs to an `apps/api` slice.
+- **D0** — the open decision above; its own story if adopted.

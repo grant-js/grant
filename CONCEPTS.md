@@ -137,7 +137,7 @@ Count-based reads two snapshots — the page and the count — so a concurrent i
 
 `packages/@grantjs/schema/src/operations/` is split **62 camelCase / 53 kebab-case** (`updateRole.graphql` vs `update-webhook-subscription.graphql`), while all 425 files under `src/schema/` are kebab-case. So the repo convention in the table above already covers this; only `src/operations/` departs from it.
 
-Recorded, not fixed — see [code-quality/schema.md § D2](./docs/contributing/code-quality/schema.md#recorded-decisions). The rename is mechanical but touches every consumer import, so it wants a dedicated diff a reviewer can read as "renames only." New operation documents should be kebab-case.
+**Decided 2026-08-16: kebab-case** ([code-quality/schema.md § D1](./docs/contributing/code-quality/schema.md#recorded-decisions)). New operation documents take it now; the 62 existing renames are a follow-up story, because they touch every consumer import and want a diff a reviewer can read as "renames only."
 
 ### One schema, two exported names
 
