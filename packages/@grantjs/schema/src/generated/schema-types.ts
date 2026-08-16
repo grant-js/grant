@@ -108,10 +108,6 @@ export type AccountRole = Auditable & {
   updatedAt: Scalars['Date']['output'];
 };
 
-export enum AccountSearchableField {
-  Type = 'type',
-}
-
 export type AccountSortInput = {
   field: AccountSortableField;
   order: SortOrder;
@@ -484,11 +480,6 @@ export type ChangeMyPasswordResult = {
   __typename?: 'ChangeMyPasswordResult';
   message: Scalars['String']['output'];
   success: Scalars['Boolean']['output'];
-};
-
-export type Creatable = {
-  createdAt: Scalars['String']['output'];
-  updatedAt: Scalars['String']['output'];
 };
 
 export type CreateAccountInput = {
@@ -1626,11 +1617,6 @@ export type OrganizationMemberPage = {
   totalCount: Scalars['Int']['output'];
 };
 
-export enum OrganizationMemberSearchableField {
-  Email = 'email',
-  Name = 'name',
-}
-
 export type OrganizationMemberSortInput = {
   field: OrganizationMemberSortableField;
   order: SortOrder;
@@ -2594,12 +2580,6 @@ export type RegisterInput = {
   type: AccountType;
 };
 
-export type RemoveAccountProjectApiKeyInput = {
-  accountId: Scalars['ID']['input'];
-  apiKeyId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-};
-
 export type RemoveAccountProjectInput = {
   accountId: Scalars['ID']['input'];
   projectId: Scalars['ID']['input'];
@@ -2647,12 +2627,6 @@ export type RemoveOrganizationMemberInput = {
 export type RemoveOrganizationPermissionInput = {
   organizationId: Scalars['ID']['input'];
   permissionId: Scalars['ID']['input'];
-};
-
-export type RemoveOrganizationProjectApiKeyInput = {
-  apiKeyId: Scalars['ID']['input'];
-  organizationId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
 };
 
 export type RemoveOrganizationProjectInput = {
@@ -3272,14 +3246,6 @@ export type UpdateMyProjectMembershipInput = {
   displayName?: InputMaybe<Scalars['String']['input']>;
   pictureUrl?: InputMaybe<Scalars['String']['input']>;
   projectId: Scalars['ID']['input'];
-};
-
-export type UpdateMyUserAuthenticationMethodInput = {
-  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
-  isVerified?: InputMaybe<Scalars['Boolean']['input']>;
-  provider?: InputMaybe<UserAuthenticationMethodProvider>;
-  providerData?: InputMaybe<Scalars['JSON']['input']>;
-  providerId?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateMyUserInput = {

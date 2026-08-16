@@ -52,17 +52,21 @@ describe('graph reachability', () => {
   const schema = buildMergedSchema();
 
   /**
-   * 181 of 388 declared types cannot be reached from Query or Mutation. They are
-   * not dead: 171 are consumed as generated TypeScript by apps/api, and the
+   * 175 of 382 declared types cannot be reached from Query or Mutation. They are
+   * not dead: most are consumed as generated TypeScript by apps/api, and the
    * *SearchableField enums are runtime search configuration. But every one of them
    * ships in the schema `makeExecutableSchema` serves.
    *
    * This number is the input to the Tier 3 decision in
    * docs/contributing/code-quality/schema.md — pinned so it moves visibly.
-   * Deleting unreachable SDL (pass 5 slice 4 removes 6) lowers it; adding a type
-   * with no query or mutation raises it. Either way, update it deliberately.
+   * Deleting unreachable SDL lowers it; adding a type with no query or mutation
+   * raises it. Either way, update it deliberately.
+   *
+   * Was 181 of 388 before pass 5 slice 4 removed six declarations that were
+   * unreferenced in SDL and in all TypeScript. The reachable count did not change
+   * (207 before and after), which is what makes those six safe to have deleted.
    */
-  const UNREACHABLE_FROM_ROOT = 181;
+  const UNREACHABLE_FROM_ROOT = 175;
 
   it('pins the count of types unreachable from Query/Mutation', () => {
     const reachable = reachableTypeNames(schema);
