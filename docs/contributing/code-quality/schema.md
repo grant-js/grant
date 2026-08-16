@@ -13,9 +13,9 @@ It is also the first unit where the architecture is sound and the _generator con
 
 |                                         | Before                      | After                                               |
 | --------------------------------------- | --------------------------- | --------------------------------------------------- |
-| `src/generated/resolvers.ts`            | 7,347 lines                 | 3,567                                               |
-| Exported type declarations in it        | 599                         | 135                                                 |
-| Resolver types reachable via the barrel | 23 (hand-curated allowlist) | 116 (`export *`)                                    |
+| `src/generated/resolvers.ts`            | 7,347 lines                 | 3,548                                               |
+| Exported type declarations in it        | 599                         | 138                                                 |
+| Resolver types reachable via the barrel | 23 (hand-curated allowlist) | 115 (`export *`)                                    |
 | SDL files                               | 430                         | 425                                                 |
 | Declared GraphQL types                  | 388                         | 382                                                 |
 | Unreachable from `Query`/`Mutation`     | 181                         | 175                                                 |

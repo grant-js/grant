@@ -5,7 +5,7 @@
 - **Slug**: `schema-code-quality`
 - **Story brief**: [`plans/2026-08-16-schema-code-quality-brief.md`](./2026-08-16-schema-code-quality-brief.md) — approved 2026-08-16, Ale Heredia
 - **Findings**: [`docs/contributing/code-quality/schema.md`](../docs/contributing/code-quality/schema.md) — written by slice 6
-- **Status**: in-progress — all six slices submitted (#268, #269, #271, #272, #273, #274); awaiting gate 3
+- **Status**: integrated — all six slices merged to trunk (#268, #269, #271, #272, #273, #274). Gate 3 cleared 2026-08-16; awaiting gate 4 (story → `main`)
 - **Story trunk**: `feat/schema-code-quality`
 - **worktree_path**: **not required** — no other story is in flight. All three prior worktrees were pruned on 2026-08-16 after confirming each branch's PR merged (#249, #250, #267); `git worktree list` now shows only the main checkout and `git branch` only `main`. Slices run serially in the main checkout, as in pass 4. Add a worktree only if a second story opens mid-stack.
 - **Base**: `main` at `0b2b80aa` (pulled 2026-08-16). `packages/@grantjs/schema` is untouched by anything merged since the assessment, and every `file:line` citation in this plan and the brief re-verifies against this commit.
@@ -224,7 +224,7 @@ The `vite.config.ts` hits made the truncated list look self-explanatory, which i
 ## Human gates
 
 - [x] Gate 2: Stack plan approved — 2026-08-16, Ale Heredia. Implementation may proceed, slice 1 first.
-- [ ] Gate 3: Stack PRs merged into trunk (light / security-full as listed; slice 2's bar set when its finding lands).
+- [x] Gate 3: Stack PRs merged into trunk — 2026-08-16, all six green including e2e.
 - [ ] Gate 4: Story → `main` deep review complete.
 
 ## Cleanup
