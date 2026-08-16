@@ -11,28 +11,25 @@
 export const EVENT_CATEGORIES = ['security', 'iam', 'membership', 'integrations'] as const;
 export type EventCategory = (typeof EVENT_CATEGORIES)[number];
 
-export const EVENT_DELIVERY_CLASSES = ['transactional', 'notification'] as const;
-export type EventDeliveryClass = (typeof EVENT_DELIVERY_CLASSES)[number];
+export type EventDeliveryClass = 'transactional' | 'notification';
 
-/** Declarative audience primitives resolved by the notification audience resolver. */
-export const AUDIENCE_PRIMITIVES = [
-  'actor',
-  'subject',
-  'scopeMembers',
-  'roleHolders',
-  'owners',
-  'watchers',
-] as const;
-export type AudiencePrimitive = (typeof AUDIENCE_PRIMITIVES)[number];
+/**
+ * Declarative audience primitives resolved by the notification audience resolver.
+ * A union rather than an `as const` array: nothing enumerates these at runtime, so
+ * the array was shipped dead weight. Re-introduce the array if a caller ever needs
+ * to iterate them.
+ */
+export type AudiencePrimitive =
+  'actor' | 'subject' | 'scopeMembers' | 'roleHolders' | 'owners' | 'watchers';
 
-export interface AudienceRule {
+interface AudienceRule {
   /** Primitives whose resolved users are unioned to form the candidate set. */
   primitives: readonly AudiencePrimitive[];
   /** Exclude the acting user from the resolved audience (default true). */
   excludeActor?: boolean;
 }
 
-export interface EventCatalogEntry {
+interface EventCatalogEntry {
   category: EventCategory;
   deliveryClass: EventDeliveryClass;
   audienceRule: AudienceRule;

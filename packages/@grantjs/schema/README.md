@@ -74,8 +74,22 @@ const resolvers: Resolvers = {
 pnpm generate
 
 # Watch for changes and regenerate
-pnpm generate:watch
+pnpm dev
 ```
+
+Generated output under `src/generated/` is committed and must stay in sync with its
+sources. CI runs `pnpm codegen:check` (regenerate, fail on any diff), so edit the
+`.graphql` files or `codegen.ts` — never `src/generated/` directly.
+
+### Test
+
+```bash
+pnpm test
+```
+
+Structural assertions on the merged SDL: it builds, every operation document
+validates against it, and the count of types unreachable from `Query`/`Mutation`
+is pinned. See `src/sdl-contract.test.ts`.
 
 ### Build Package
 
@@ -87,21 +101,24 @@ pnpm build
 
 ```
 src/
-├── schema/                    # GraphQL schema definitions
-│   ├── permissions/          # Permission-related types and operations
-│   ├── users/               # User-related types and operations
-│   ├── roles/               # Role-related types and operations
-│   ├── groups/              # Group-related types and operations
-│   ├── organizations/       # Organization-related types and operations
-│   ├── projects/            # Project-related types and operations
-│   └── tags/                # Tag-related types and operations
-├── generated/                # Generated TypeScript files
-│   ├── types.ts             # Generated types
-│   ├── operations.ts        # Generated operations
-│   └── resolvers.ts         # Generated resolvers
-└── types/                   # Additional TypeScript types
-    └── index.ts             # Context and additional types
+├── schema/                   # GraphQL SDL — one directory per domain, each with
+│   │                         # inputs/, types/ and (where the domain is on the graph)
+│   │                         # queries/ and mutations/
+│   ├── base.graphql          # Scalars, shared interfaces, Tenant/SortOrder, Scope
+│   └── root.graphql          # Query/Mutation roots the domains extend
+├── operations/               # Client operation documents, one directory per domain
+├── generated/                # Codegen output — committed, never hand-edited
+│   ├── schema-types.ts       # Schema types (owns every type name)
+│   ├── graphql.ts            # Operation types + typed document nodes
+│   └── resolvers.ts          # Resolver types; imports from schema-types
+├── events/                   # Event catalog and envelope types
+├── cdm/, notifications/,     # Hand-written contract types that are not codegen'd
+│   webhooks/
+└── index.ts                  # Public barrel
 ```
+
+`apps/api` loads every file under `src/schema/` into `makeExecutableSchema`, so
+anything declared there ships in the served schema whether or not a query reaches it.
 
 ## Contributing
 

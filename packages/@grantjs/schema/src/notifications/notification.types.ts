@@ -2,10 +2,6 @@ import type { EventCategory } from '../events/event-catalog';
 
 export const NOTIFICATION_CHANNELS = ['in_app', 'email'] as const;
 
-export const NOTIFICATION_STATUSES = ['pending', 'delivered', 'failed', 'dead'] as const;
-
-export const NOTIFICATION_PREFERENCE_SOURCES = ['user', 'org_enforced'] as const;
-
 export interface ListNotificationsInput {
   unreadOnly?: boolean;
   page?: number;
