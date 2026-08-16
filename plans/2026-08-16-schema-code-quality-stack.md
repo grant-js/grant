@@ -4,8 +4,8 @@
 
 - **Slug**: `schema-code-quality`
 - **Story brief**: [`plans/2026-08-16-schema-code-quality-brief.md`](./2026-08-16-schema-code-quality-brief.md) — approved 2026-08-16, Ale Heredia
-- **Findings**: `docs/contributing/code-quality/schema.md` — written by slice 6 (see [judgment call 1](#judgment-calls))
-- **Status**: in-progress — slice 1 submitted as [#268](https://github.com/grant-js/grant/pull/268)
+- **Findings**: [`docs/contributing/code-quality/schema.md`](../docs/contributing/code-quality/schema.md) — written by slice 6
+- **Status**: in-progress — all six slices submitted (#268, #269, #271, #272, #273, #274); awaiting gate 3
 - **Story trunk**: `feat/schema-code-quality`
 - **worktree_path**: **not required** — no other story is in flight. All three prior worktrees were pruned on 2026-08-16 after confirming each branch's PR merged (#249, #250, #267); `git worktree list` now shows only the main checkout and `git branch` only `main`. Slices run serially in the main checkout, as in pass 4. Add a worktree only if a second story opens mid-stack.
 - **Base**: `main` at `0b2b80aa` (pulled 2026-08-16). `packages/@grantjs/schema` is untouched by anything merged since the assessment, and every `file:line` citation in this plan and the brief re-verifies against this commit.
@@ -27,10 +27,10 @@
 | ----- | ------------------------------------------- | -------------------------- | -------------------------------------------------------------------- | ------------------ | ----------------- | -------------------------------------------------- |
 | 1     | `feat/schema-code-quality-guardrails`       | `feat/schema-code-quality` | ESLint DAG rule + `dead-code:schema` + codegen dep fix + drift check | Backend            | light             | [#268](https://github.com/grant-js/grant/pull/268) |
 | 2     | `feat/schema-code-quality-structural-tests` | slice 1                    | The coverage lens in this unit's shape — schema-level assertions     | QA                 | light¹            | [#269](https://github.com/grant-js/grant/pull/269) |
-| 3     | `feat/schema-code-quality-codegen-dedup`    | slice 2                    | Collapse the 463-type duplicate emission **in `codegen.ts`**         | Backend            | light             |                                                    |
-| 4     | `feat/schema-code-quality-sdl`              | slice 3                    | `me/input` → `me/inputs`; 6 dead SDL declarations                    | Backend            | **security-full** |                                                    |
-| 5     | `feat/schema-code-quality-dead-surface`     | slice 4                    | Hand-written dead exports, duplicate constants, stale config/README  | Backend + Frontend | light             |                                                    |
-| 6     | `feat/schema-code-quality-docs`             | slice 5                    | `schema.md`, Tier 3 decisions, pass table, `CONCEPTS.md`             | Architect + PM     | light             |                                                    |
+| 3     | `feat/schema-code-quality-codegen-dedup`    | slice 2                    | Collapse the 463-type duplicate emission **in `codegen.ts`**         | Backend            | light             | [#271](https://github.com/grant-js/grant/pull/271) |
+| 4     | `feat/schema-code-quality-sdl`              | slice 3                    | `me/input` → `me/inputs`; 6 dead SDL declarations                    | Backend            | **security-full** | [#272](https://github.com/grant-js/grant/pull/272) |
+| 5     | `feat/schema-code-quality-dead-surface`     | slice 4                    | Hand-written dead exports, duplicate constants, stale config/README  | Backend + Frontend | light             | [#273](https://github.com/grant-js/grant/pull/273) |
+| 6     | `feat/schema-code-quality-docs`             | slice 5                    | `schema.md`, Tier 3 decisions, pass table, `CONCEPTS.md`             | Architect + PM     | light             | [#274](https://github.com/grant-js/grant/pull/274) |
 | final | `feat/schema-code-quality`                  | `main`                     | integration                                                          | Principal          | **deep**          |                                                    |
 
 ¹ ~~Escalates to `security-full` if slice 2's enum↔field check finds a mismatch.~~ **Withdrawn — the mismatch it guarded against cannot occur.** `tsc` already enforces it; see [correction C1](#corrections). Slice 2's bar is plain `light`.
@@ -206,6 +206,20 @@ groups.repository.ts(25,13): error TS2322: Type 'GroupSearchableField[]' is not 
 ### C2 — SDL reachability is 181, not 177 (slice 2)
 
 The brief's 177 came from grepping SDL cross-references and was labelled a lower bound. Graph traversal from `Query`/`Mutation` gives **181 of 388 declared types** (46.6%). 181 is now pinned by `src/sdl-contract.test.ts`; 177 should not be cited again.
+
+### C3 — `tsconfig.build.json` was not dead config, and deleting it broke e2e (slice 5)
+
+**Claimed**: unreferenced, since `build` is plain `tsc` reading `tsconfig.json`, and the only in-repo references were `@grantjs/server` and `@grantjs/cli` pointing at their own from `vite.config.ts`.
+
+**Actual**: `scripts/docker/build-api-production.mjs:66` composes the path dynamically — `join(absDir, 'tsconfig.build.json')` — and **throws** if it is absent, for each of the 15 packages in `WORKSPACE_PACKAGES`. `@grantjs/schema` is the first entry. CI failed at the E2E stage with `Error: Missing tsconfig.build.json for packages/@grantjs/schema`.
+
+**Why it was wrong — and it is not the reason it looks like.** The plan quoted pass 4's `drizzle.config.cjs` lesson verbatim ("no references is weak evidence for a config file") and the search was actually run with the right patterns, including `*.mjs`. It was piped through `head`, and `scripts/docker/build-api-production.mjs` sat below the cut. **A truncated result read as a complete one.** That is rule 1's corollary — prove the check fires — applied one level up: verifying the tool ran is not the same as verifying you saw all of its output. Never pipe an existence check through `head`.
+
+The `vite.config.ts` hits made the truncated list look self-explanatory, which is what stopped the search. A partial answer that forms a coherent story is more dangerous than no answer.
+
+**Disposition**: file restored, plus an `exclude` for `src/test-support/` — the same investigation showed slice 2's fixture module was compiling into the production image. Note the child `exclude` **replaces** the inherited one rather than merging, so the parent's `*.test.ts` patterns had to be restated; the first attempt at the fix made the leak worse and was caught by checking `dist/` rather than assuming.
+
+**A second claim fell with it.** `schema.md`'s backlog said `apps/api/src/graphql/resolvers/index.ts`'s `dist/schema` candidate "can never exist, `tsc` does not copy `.graphql`". It does exist in the production image: schema is registered as `{ dir: 'packages/@grantjs/schema', assets: ['src/schema'] }` and the script's `copyAssets` copies the SDL to `dist/schema`. That fallback chain is correct, not brittle. Backlog entry replaced.
 
 ## Human gates
 
