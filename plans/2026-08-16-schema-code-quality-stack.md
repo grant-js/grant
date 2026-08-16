@@ -5,7 +5,7 @@
 - **Slug**: `schema-code-quality`
 - **Story brief**: [`plans/2026-08-16-schema-code-quality-brief.md`](./2026-08-16-schema-code-quality-brief.md) — approved 2026-08-16, Ale Heredia
 - **Findings**: `docs/contributing/code-quality/schema.md` — written by slice 6 (see [judgment call 1](#judgment-calls))
-- **Status**: approved (2026-08-16, Ale Heredia)
+- **Status**: in-progress — slice 1 submitted as [#268](https://github.com/grant-js/grant/pull/268)
 - **Story trunk**: `feat/schema-code-quality`
 - **worktree_path**: **not required** — no other story is in flight. All three prior worktrees were pruned on 2026-08-16 after confirming each branch's PR merged (#249, #250, #267); `git worktree list` now shows only the main checkout and `git branch` only `main`. Slices run serially in the main checkout, as in pass 4. Add a worktree only if a second story opens mid-stack.
 - **Base**: `main` at `0b2b80aa` (pulled 2026-08-16). `packages/@grantjs/schema` is untouched by anything merged since the assessment, and every `file:line` citation in this plan and the brief re-verifies against this commit.
@@ -23,15 +23,15 @@
 
 ## Ordered slices (PRs)
 
-| #     | Branch                                      | Base                       | Concern                                                              | Owner              | Review bar        | PR  |
-| ----- | ------------------------------------------- | -------------------------- | -------------------------------------------------------------------- | ------------------ | ----------------- | --- |
-| 1     | `feat/schema-code-quality-guardrails`       | `feat/schema-code-quality` | ESLint DAG rule + `dead-code:schema` + codegen dep fix + drift check | Backend            | light             |     |
-| 2     | `feat/schema-code-quality-structural-tests` | slice 1                    | The coverage lens in this unit's shape — schema-level assertions     | QA                 | light¹            |     |
-| 3     | `feat/schema-code-quality-codegen-dedup`    | slice 2                    | Collapse the 463-type duplicate emission **in `codegen.ts`**         | Backend            | light             |     |
-| 4     | `feat/schema-code-quality-sdl`              | slice 3                    | `me/input` → `me/inputs`; 6 dead SDL declarations                    | Backend            | **security-full** |     |
-| 5     | `feat/schema-code-quality-dead-surface`     | slice 4                    | Hand-written dead exports, duplicate constants, stale config/README  | Backend + Frontend | light             |     |
-| 6     | `feat/schema-code-quality-docs`             | slice 5                    | `schema.md`, Tier 3 decisions, pass table, `CONCEPTS.md`             | Architect + PM     | light             |     |
-| final | `feat/schema-code-quality`                  | `main`                     | integration                                                          | Principal          | **deep**          |     |
+| #     | Branch                                      | Base                       | Concern                                                              | Owner              | Review bar        | PR                                                 |
+| ----- | ------------------------------------------- | -------------------------- | -------------------------------------------------------------------- | ------------------ | ----------------- | -------------------------------------------------- |
+| 1     | `feat/schema-code-quality-guardrails`       | `feat/schema-code-quality` | ESLint DAG rule + `dead-code:schema` + codegen dep fix + drift check | Backend            | light             | [#268](https://github.com/grant-js/grant/pull/268) |
+| 2     | `feat/schema-code-quality-structural-tests` | slice 1                    | The coverage lens in this unit's shape — schema-level assertions     | QA                 | light¹            |                                                    |
+| 3     | `feat/schema-code-quality-codegen-dedup`    | slice 2                    | Collapse the 463-type duplicate emission **in `codegen.ts`**         | Backend            | light             |                                                    |
+| 4     | `feat/schema-code-quality-sdl`              | slice 3                    | `me/input` → `me/inputs`; 6 dead SDL declarations                    | Backend            | **security-full** |                                                    |
+| 5     | `feat/schema-code-quality-dead-surface`     | slice 4                    | Hand-written dead exports, duplicate constants, stale config/README  | Backend + Frontend | light             |                                                    |
+| 6     | `feat/schema-code-quality-docs`             | slice 5                    | `schema.md`, Tier 3 decisions, pass table, `CONCEPTS.md`             | Architect + PM     | light             |                                                    |
+| final | `feat/schema-code-quality`                  | `main`                     | integration                                                          | Principal          | **deep**          |                                                    |
 
 ¹ **Escalates to `security-full` if slice 2's enum↔field check finds a mismatch.** That check is the one plausible live defect in the package (see slice 2). Set the bar when the finding lands; don't pre-commit to `light`.
 
