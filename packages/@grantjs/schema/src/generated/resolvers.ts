@@ -1,3818 +1,6 @@
+import type * as Types from './schema-types';
 import { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
-export type Maybe<T> = T | null;
-export type InputMaybe<T> = Maybe<T>;
 export type RequireFields<T, K extends keyof T> = Omit<T, K> & { [P in K]-?: NonNullable<T[P]> };
-/** All built-in and custom scalars, mapped to their actual values */
-export type Scalars = {
-  ID: { input: string; output: string };
-  String: { input: string; output: string };
-  Boolean: { input: boolean; output: boolean };
-  Int: { input: number; output: number };
-  Float: { input: number; output: number };
-  Date: { input: Date; output: Date };
-  JSON: { input: Record<string, unknown>; output: Record<string, unknown> };
-};
-
-export type AcceptInvitationInput = {
-  token: Scalars['String']['input'];
-  userData?: InputMaybe<UserRegistrationData>;
-};
-
-export type AcceptInvitationResult = {
-  __typename?: 'AcceptInvitationResult';
-  accounts: Array<Account>;
-  invitation?: Maybe<OrganizationInvitation>;
-  isNewUser?: Maybe<Scalars['Boolean']['output']>;
-  requiresRegistration: Scalars['Boolean']['output'];
-  user?: Maybe<User>;
-};
-
-export type Account = Auditable & {
-  __typename?: 'Account';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  owner: User;
-  ownerId: Scalars['ID']['output'];
-  projects?: Maybe<Array<Project>>;
-  tags?: Maybe<Array<Tag>>;
-  type: AccountType;
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type AccountExportData = {
-  __typename?: 'AccountExportData';
-  createdAt: Scalars['Date']['output'];
-  id: Scalars['ID']['output'];
-  type: AccountType;
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type AccountPage = PaginatedResults & {
-  __typename?: 'AccountPage';
-  accounts: Array<Account>;
-  hasNextPage: Scalars['Boolean']['output'];
-  totalCount: Scalars['Int']['output'];
-};
-
-export type AccountProject = Auditable & {
-  __typename?: 'AccountProject';
-  account?: Maybe<Account>;
-  accountId: Scalars['ID']['output'];
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  project?: Maybe<Project>;
-  projectId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type AccountProjectApiKey = Auditable & {
-  __typename?: 'AccountProjectApiKey';
-  account?: Maybe<Account>;
-  accountId: Scalars['ID']['output'];
-  accountRoleId: Scalars['ID']['output'];
-  apiKey?: Maybe<ApiKey>;
-  apiKeyId: Scalars['ID']['output'];
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  project?: Maybe<Project>;
-  projectId: Scalars['ID']['output'];
-  role?: Maybe<Role>;
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type AccountProjectTag = Auditable & {
-  __typename?: 'AccountProjectTag';
-  account?: Maybe<Account>;
-  accountId: Scalars['ID']['output'];
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  isPrimary: Scalars['Boolean']['output'];
-  project?: Maybe<Project>;
-  projectId: Scalars['ID']['output'];
-  tag?: Maybe<Tag>;
-  tagId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type AccountRole = Auditable & {
-  __typename?: 'AccountRole';
-  account?: Maybe<Account>;
-  accountId: Scalars['ID']['output'];
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  role?: Maybe<Role>;
-  roleId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export enum AccountSearchableField {
-  Type = 'type',
-}
-
-export type AccountSortInput = {
-  field: AccountSortableField;
-  order: SortOrder;
-};
-
-export enum AccountSortableField {
-  CreatedAt = 'createdAt',
-  Type = 'type',
-  UpdatedAt = 'updatedAt',
-}
-
-export type AccountTag = Auditable & {
-  __typename?: 'AccountTag';
-  account?: Maybe<Account>;
-  accountId: Scalars['ID']['output'];
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  isPrimary: Scalars['Boolean']['output'];
-  tag?: Maybe<Tag>;
-  tagId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export enum AccountType {
-  Organization = 'organization',
-  Personal = 'personal',
-}
-
-export type AddAccountProjectApiKeyInput = {
-  accountId: Scalars['ID']['input'];
-  accountRoleId: Scalars['ID']['input'];
-  apiKeyId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-};
-
-export type AddAccountProjectInput = {
-  accountId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-};
-
-export type AddAccountProjectTagInput = {
-  accountId: Scalars['ID']['input'];
-  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
-  projectId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type AddAccountRoleInput = {
-  accountId: Scalars['ID']['input'];
-  roleId: Scalars['ID']['input'];
-};
-
-export type AddAccountTagInput = {
-  accountId: Scalars['ID']['input'];
-  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
-  tagId: Scalars['ID']['input'];
-};
-
-export type AddGroupPermissionInput = {
-  groupId: Scalars['ID']['input'];
-  permissionId: Scalars['ID']['input'];
-};
-
-export type AddGroupTagInput = {
-  groupId: Scalars['ID']['input'];
-  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
-  tagId: Scalars['ID']['input'];
-};
-
-export type AddOrganizationGroupInput = {
-  groupId: Scalars['ID']['input'];
-  organizationId: Scalars['ID']['input'];
-};
-
-export type AddOrganizationPermissionInput = {
-  organizationId: Scalars['ID']['input'];
-  permissionId: Scalars['ID']['input'];
-};
-
-export type AddOrganizationProjectApiKeyInput = {
-  apiKeyId: Scalars['ID']['input'];
-  organizationId: Scalars['ID']['input'];
-  organizationRoleId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-};
-
-export type AddOrganizationProjectInput = {
-  organizationId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-};
-
-export type AddOrganizationProjectTagInput = {
-  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
-  organizationId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type AddOrganizationRoleInput = {
-  organizationId: Scalars['ID']['input'];
-  roleId: Scalars['ID']['input'];
-};
-
-export type AddOrganizationTagInput = {
-  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
-  organizationId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type AddOrganizationUserInput = {
-  organizationId: Scalars['ID']['input'];
-  roleId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-export type AddPermissionTagInput = {
-  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
-  permissionId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type AddProjectAppTagInput = {
-  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
-  projectAppId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type AddProjectGroupInput = {
-  groupId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-};
-
-export type AddProjectPermissionInput = {
-  permissionId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-};
-
-export type AddProjectResourceInput = {
-  projectId: Scalars['ID']['input'];
-  resourceId: Scalars['ID']['input'];
-};
-
-export type AddProjectRoleInput = {
-  projectId: Scalars['ID']['input'];
-  roleId: Scalars['ID']['input'];
-};
-
-export type AddProjectRolePermissionInput = {
-  permissionId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-  roleId: Scalars['ID']['input'];
-};
-
-export type AddProjectTagInput = {
-  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
-  projectId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type AddProjectUserApiKeyInput = {
-  apiKeyId: Scalars['ID']['input'];
-  /** Optional pivot metadata (e.g. CDM `cdmImport` / `cdmSource`); omit for normal API creates. */
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  projectId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-export type AddProjectUserGroupInput = {
-  groupId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-export type AddProjectUserInput = {
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  projectId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-export type AddProjectUserPermissionInput = {
-  permissionId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-export type AddResourceTagInput = {
-  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
-  resourceId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type AddRoleGroupInput = {
-  groupId: Scalars['ID']['input'];
-  roleId: Scalars['ID']['input'];
-};
-
-export type AddRoleTagInput = {
-  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
-  roleId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type AddUserGroupInput = {
-  groupId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-export type AddUserRoleInput = {
-  roleId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-export type AddUserTagInput = {
-  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
-  tagId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-export type ApiKey = Auditable & {
-  __typename?: 'ApiKey';
-  clientId: Scalars['String']['output'];
-  createdAt: Scalars['Date']['output'];
-  createdBy: Scalars['ID']['output'];
-  createdByUser?: Maybe<User>;
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  description?: Maybe<Scalars['String']['output']>;
-  expiresAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  isRevoked: Scalars['Boolean']['output'];
-  lastUsedAt?: Maybe<Scalars['Date']['output']>;
-  name?: Maybe<Scalars['String']['output']>;
-  revokedAt?: Maybe<Scalars['Date']['output']>;
-  revokedBy?: Maybe<Scalars['ID']['output']>;
-  revokedByUser?: Maybe<User>;
-  /** Role bound to this API key (project-level keys only). Null for user-scoped keys. */
-  role?: Maybe<Role>;
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type ApiKeyPage = PaginatedResults & {
-  __typename?: 'ApiKeyPage';
-  apiKeys: Array<ApiKey>;
-  hasNextPage: Scalars['Boolean']['output'];
-  totalCount: Scalars['Int']['output'];
-};
-
-export enum ApiKeySearchableField {
-  ClientId = 'clientId',
-  Description = 'description',
-  Name = 'name',
-}
-
-export type ApiKeySortInput = {
-  field: ApiKeySortableField;
-  order: SortOrder;
-};
-
-export enum ApiKeySortableField {
-  CreatedAt = 'createdAt',
-  ExpiresAt = 'expiresAt',
-  LastUsedAt = 'lastUsedAt',
-  Name = 'name',
-}
-
-export type AssignRolePermissionInput = {
-  permissionId: Scalars['ID']['input'];
-  roleId: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type AssignUserPermissionInput = {
-  permissionId: Scalars['ID']['input'];
-  scope: Scope;
-  userId: Scalars['ID']['input'];
-};
-
-export type Auditable = {
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type AuthenticationMethodExportData = {
-  __typename?: 'AuthenticationMethodExportData';
-  createdAt: Scalars['Date']['output'];
-  isPrimary: Scalars['Boolean']['output'];
-  isVerified: Scalars['Boolean']['output'];
-  lastUsedAt?: Maybe<Scalars['Date']['output']>;
-  provider: Scalars['String']['output'];
-  providerId: Scalars['String']['output'];
-};
-
-export enum AuthorizationReason {
-  InvalidAuthenticationState = 'INVALID_AUTHENTICATION_STATE',
-  InvalidScope = 'INVALID_SCOPE',
-  NotAuthenticated = 'NOT_AUTHENTICATED',
-  NoMatchingPermissionFound = 'NO_MATCHING_PERMISSION_FOUND',
-  PermissionFoundConditionNotMet = 'PERMISSION_FOUND_CONDITION_NOT_MET',
-  PermissionGrantedConditionMet = 'PERMISSION_GRANTED_CONDITION_MET',
-  PermissionGrantedNoCondition = 'PERMISSION_GRANTED_NO_CONDITION',
-  ScopeNotGranted = 'SCOPE_NOT_GRANTED',
-}
-
-export type AuthorizationResult = {
-  __typename?: 'AuthorizationResult';
-  authorized: Scalars['Boolean']['output'];
-  evaluatedContext?: Maybe<Scalars['JSON']['output']>;
-  matchedCondition?: Maybe<Scalars['JSON']['output']>;
-  matchedPermission?: Maybe<Permission>;
-  reason?: Maybe<AuthorizationReason>;
-};
-
-export enum CdmFindBy {
-  Email = 'email',
-  Id = 'id',
-  Key = 'key',
-  Name = 'name',
-  Slug = 'slug',
-}
-
-export enum CdmIfMissing {
-  CreateNew = 'createNew',
-  Fail = 'fail',
-  Skip = 'skip',
-}
-
-export type CdmKeyResolverInput = {
-  /**
-   * `id` references an existing Grant user id. `email` resolves or creates a
-   * global passwordless email authentication method. Other values are treated as
-   * CDM-local external keys for project import/export.
-   */
-  findBy?: InputMaybe<CdmFindBy>;
-  ifMissing?: InputMaybe<CdmIfMissing>;
-  /**
-   * Identifier value. For `findBy: email`, Grant normalizes this to lowercase
-   * and resolves it against the global email authentication method catalog.
-   * Imported email authentication methods start unverified until a later inbox
-   * proof flow, such as project OAuth email magic link, verifies them.
-   */
-  value: Scalars['String']['input'];
-};
-
-export type CdmModeInput = {
-  confirmDestructive?: InputMaybe<Scalars['Boolean']['input']>;
-  onConflict?: InputMaybe<CdmOnConflict>;
-  strategy: CdmModeStrategy;
-};
-
-export enum CdmModeStrategy {
-  Merge = 'merge',
-  Replace = 'replace',
-}
-
-export enum CdmOnConflict {
-  Fail = 'fail',
-  Skip = 'skip',
-  Update = 'update',
-}
-
-export type ChangeMyPasswordInput = {
-  confirmPassword: Scalars['String']['input'];
-  currentPassword: Scalars['String']['input'];
-  newPassword: Scalars['String']['input'];
-};
-
-export type ChangeMyPasswordResult = {
-  __typename?: 'ChangeMyPasswordResult';
-  message: Scalars['String']['output'];
-  success: Scalars['Boolean']['output'];
-};
-
-export type Creatable = {
-  createdAt: Scalars['String']['output'];
-  updatedAt: Scalars['String']['output'];
-};
-
-export type CreateAccountInput = {
-  ownerId: Scalars['String']['input'];
-  provider: UserAuthenticationMethodProvider;
-  providerData: Scalars['JSON']['input'];
-  providerId: Scalars['String']['input'];
-  type: AccountType;
-};
-
-export type CreateAccountResult = {
-  __typename?: 'CreateAccountResult';
-  accessToken: Scalars['String']['output'];
-  account: Account;
-  email?: Maybe<Scalars['String']['output']>;
-  refreshToken: Scalars['String']['output'];
-  requiresEmailVerification?: Maybe<Scalars['Boolean']['output']>;
-  verificationExpiry?: Maybe<Scalars['Date']['output']>;
-};
-
-export type CreateApiKeyInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  expiresAt?: InputMaybe<Scalars['Date']['input']>;
-  name?: InputMaybe<Scalars['String']['input']>;
-  /** Required when scope.tenant is accountProject or organizationProject: the parent-tenant role the key impersonates. */
-  roleId?: InputMaybe<Scalars['ID']['input']>;
-  scope: Scope;
-};
-
-export type CreateApiKeyResult = {
-  __typename?: 'CreateApiKeyResult';
-  clientId: Scalars['String']['output'];
-  clientSecret: Scalars['String']['output'];
-  createdAt: Scalars['Date']['output'];
-  description?: Maybe<Scalars['String']['output']>;
-  expiresAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  name?: Maybe<Scalars['String']['output']>;
-};
-
-export type CreateGroupInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  name: Scalars['String']['input'];
-  permissionIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
-  scope: Scope;
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type CreateMySecondaryAccountResult = {
-  __typename?: 'CreateMySecondaryAccountResult';
-  account: Account;
-  accounts: Array<Account>;
-};
-
-export type CreateMyUserAuthenticationMethodInput = {
-  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
-  isVerified?: InputMaybe<Scalars['Boolean']['input']>;
-  provider: UserAuthenticationMethodProvider;
-  providerData: Scalars['JSON']['input'];
-  providerId: Scalars['String']['input'];
-};
-
-export type CreateOrganizationInput = {
-  name: Scalars['String']['input'];
-  scope: Scope;
-};
-
-export type CreateOrganizationInvitationInput = {
-  email: Scalars['String']['input'];
-  emailVerificationProofTokenHash?: InputMaybe<Scalars['String']['input']>;
-  expiresAt: Scalars['Date']['input'];
-  invitedAt?: InputMaybe<Scalars['Date']['input']>;
-  invitedBy: Scalars['ID']['input'];
-  organizationId: Scalars['ID']['input'];
-  roleId: Scalars['ID']['input'];
-  status?: InputMaybe<OrganizationInvitationStatus>;
-  token: Scalars['String']['input'];
-};
-
-export type CreatePermissionInput = {
-  action: Scalars['String']['input'];
-  condition?: InputMaybe<Scalars['JSON']['input']>;
-  description?: InputMaybe<Scalars['String']['input']>;
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  name: Scalars['String']['input'];
-  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
-  resourceId?: InputMaybe<Scalars['ID']['input']>;
-  scope: Scope;
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type CreateProjectAppInput = {
-  /** Allow new users to sign up when authenticating via this app. Default true. */
-  allowSignUp?: InputMaybe<Scalars['Boolean']['input']>;
-  /** Auth providers enabled for this app (e.g. github, email). Empty/null = all configured providers. */
-  enabledProviders?: InputMaybe<Array<Scalars['String']['input']>>;
-  name?: InputMaybe<Scalars['String']['input']>;
-  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
-  /** Allowed redirect URIs for OAuth callback. At least one required. */
-  redirectUris: Array<Scalars['String']['input']>;
-  scope: Scope;
-  /** Optional OAuth scopes the app may request. */
-  scopes?: InputMaybe<Array<Scalars['String']['input']>>;
-  /** Role to assign to users who sign up via this app. Required when allowSignUp is true; must be a role in the project. */
-  signUpRoleId?: InputMaybe<Scalars['ID']['input']>;
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type CreateProjectAppResult = {
-  __typename?: 'CreateProjectAppResult';
-  /** Whether new users can sign up when authenticating via this app. */
-  allowSignUp?: Maybe<Scalars['Boolean']['output']>;
-  clientId: Scalars['String']['output'];
-  /** Shown only once at creation. Null for public clients. */
-  clientSecret?: Maybe<Scalars['String']['output']>;
-  createdAt: Scalars['Date']['output'];
-  /** Auth providers enabled for this app (e.g. github, email). Empty/null = all configured providers. */
-  enabledProviders?: Maybe<Array<Scalars['String']['output']>>;
-  id: Scalars['ID']['output'];
-  name?: Maybe<Scalars['String']['output']>;
-  redirectUris: Array<Scalars['String']['output']>;
-  /** Role assigned to users who sign up via this app. */
-  signUpRoleId?: Maybe<Scalars['ID']['output']>;
-};
-
-export type CreateProjectInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  name: Scalars['String']['input'];
-  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
-  scope: Scope;
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type CreateResourceInput = {
-  actions?: InputMaybe<Array<Scalars['String']['input']>>;
-  createPermissions?: InputMaybe<Scalars['Boolean']['input']>;
-  description?: InputMaybe<Scalars['String']['input']>;
-  isActive?: InputMaybe<Scalars['Boolean']['input']>;
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  name: Scalars['String']['input'];
-  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
-  scope: Scope;
-  slug: Scalars['String']['input'];
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type CreateRoleInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  groupIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  name: Scalars['String']['input'];
-  permissionIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
-  scope: Scope;
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type CreateTagInput = {
-  color: Scalars['String']['input'];
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  name: Scalars['String']['input'];
-  scope: Scope;
-};
-
-export type CreateUserAuthenticationMethodInput = {
-  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
-  isVerified?: InputMaybe<Scalars['Boolean']['input']>;
-  provider: UserAuthenticationMethodProvider;
-  providerData: Scalars['JSON']['input'];
-  providerId: Scalars['String']['input'];
-  userId: Scalars['String']['input'];
-};
-
-export type CreateUserInput = {
-  groupIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  name: Scalars['String']['input'];
-  permissionIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-  pictureUrl?: InputMaybe<Scalars['String']['input']>;
-  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
-  roleIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-  scope: Scope;
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type CreateUserSessionInput = {
-  expiresAt: Scalars['Date']['input'];
-  ipAddress?: InputMaybe<Scalars['String']['input']>;
-  lastUsedAt: Scalars['Date']['input'];
-  token: Scalars['String']['input'];
-  userAgent?: InputMaybe<Scalars['String']['input']>;
-  userAuthenticationMethodId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-export type CreateWebhookSubscriptionMutationInput = {
-  active?: InputMaybe<Scalars['Boolean']['input']>;
-  description?: InputMaybe<Scalars['String']['input']>;
-  /** Domain event type filters (must be known catalog types). */
-  eventTypes: Array<Scalars['String']['input']>;
-  scope: Scope;
-  url: Scalars['String']['input'];
-};
-
-export type DeleteApiKeyInput = {
-  hardDelete?: InputMaybe<Scalars['Boolean']['input']>;
-  id: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type DeleteMyAccountsInput = {
-  hardDelete?: InputMaybe<Scalars['Boolean']['input']>;
-};
-
-export type DeleteUserAuthenticationMethodInput = {
-  id: Scalars['ID']['input'];
-};
-
-export type DeleteUserSessionInput = {
-  id: Scalars['ID']['input'];
-};
-
-export type DeleteWebhookSubscriptionInput = {
-  id: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type EmailVerificationProofInput = {
-  emailProofToken: Scalars['String']['input'];
-  token: Scalars['String']['input'];
-  type: EmailVerificationProofType;
-};
-
-export enum EmailVerificationProofType {
-  OrganizationInvitation = 'ORGANIZATION_INVITATION',
-}
-
-export type ExchangeApiKeyInput = {
-  clientId: Scalars['String']['input'];
-  clientSecret: Scalars['String']['input'];
-  scope: Scope;
-};
-
-export type ExchangeApiKeyResult = {
-  __typename?: 'ExchangeApiKeyResult';
-  accessToken: Scalars['String']['output'];
-  expiresIn: Scalars['Int']['output'];
-};
-
-export type GenerateMyMfaRecoveryCodesInput = {
-  factorId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type GetUserAuthenticationMethodsInput = {
-  provider?: InputMaybe<UserAuthenticationMethodProvider>;
-  userId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type GetUserSessionsInput = {
-  audience?: InputMaybe<Scalars['String']['input']>;
-  expiresAtMin?: InputMaybe<Scalars['Date']['input']>;
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  ipAddress?: InputMaybe<Scalars['String']['input']>;
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  page?: InputMaybe<Scalars['Int']['input']>;
-  requestedFields?: InputMaybe<Array<Scalars['String']['input']>>;
-  search?: InputMaybe<Scalars['String']['input']>;
-  sort?: InputMaybe<UserSessionSortInput>;
-  userAgent?: InputMaybe<Scalars['String']['input']>;
-  userId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type Group = Auditable & {
-  __typename?: 'Group';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  description?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  metadata: Scalars['JSON']['output'];
-  name: Scalars['String']['output'];
-  permissionCount: Scalars['Int']['output'];
-  permissions?: Maybe<Array<Permission>>;
-  primaryTag?: Maybe<Tag>;
-  tagCount: Scalars['Int']['output'];
-  tags?: Maybe<Array<Tag>>;
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type GroupCdmInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  key: Scalars['String']['input'];
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  name: Scalars['String']['input'];
-  permissions?: InputMaybe<Array<Scalars['String']['input']>>;
-  primaryTag?: InputMaybe<Scalars['String']['input']>;
-  /**
-   * Denormalized search tokens for list views (email, legacy ids, etc.).
-   * Also persisted under metadata.cdmSource.searchable on import.
-   */
-  searchable?: InputMaybe<Scalars['JSON']['input']>;
-  tags?: InputMaybe<Array<Scalars['String']['input']>>;
-};
-
-export type GroupPage = PaginatedResults & {
-  __typename?: 'GroupPage';
-  groups: Array<Group>;
-  hasNextPage: Scalars['Boolean']['output'];
-  totalCount: Scalars['Int']['output'];
-};
-
-export type GroupPermission = Auditable & {
-  __typename?: 'GroupPermission';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  group?: Maybe<Group>;
-  groupId: Scalars['ID']['output'];
-  id: Scalars['ID']['output'];
-  permission?: Maybe<Permission>;
-  permissionId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type GroupPermissionGroupArgs = {
-  scope: Scope;
-};
-
-export type GroupPermissionPermissionArgs = {
-  scope: Scope;
-};
-
-export enum GroupSearchableField {
-  Description = 'description',
-  Name = 'name',
-  SearchDocument = 'searchDocument',
-}
-
-export type GroupSortInput = {
-  field: GroupSortableField;
-  order: SortOrder;
-};
-
-export enum GroupSortableField {
-  Name = 'name',
-}
-
-export type GroupTag = Auditable & {
-  __typename?: 'GroupTag';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  group?: Maybe<Group>;
-  groupId: Scalars['ID']['output'];
-  id: Scalars['ID']['output'];
-  isPrimary: Scalars['Boolean']['output'];
-  tag?: Maybe<Tag>;
-  tagId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type GroupTagGroupArgs = {
-  scope: Scope;
-};
-
-export type GroupTagTagArgs = {
-  scope: Scope;
-};
-
-export type InviteMemberInput = {
-  email: Scalars['String']['input'];
-  roleId: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type IsAuthorizedContextInput = {
-  resource?: InputMaybe<Scalars['JSON']['input']>;
-};
-
-/**
- * Check whether the authenticated principal may perform an action on a resource.
- *
- * Unions Role → Group → Permission, User → Group → Permission, Role → Permission,
- * and User → Permission before matching the requested resource and action.
- * Conditional permissions are evaluated against role/group/user execution context.
- */
-export type IsAuthorizedInput = {
-  context: IsAuthorizedContextInput;
-  permission: IsAuthorizedPermissionInput;
-};
-
-export type IsAuthorizedPermissionInput = {
-  action: Scalars['String']['input'];
-  resource: Scalars['String']['input'];
-};
-
-export type LoginInput = {
-  emailVerificationProof?: InputMaybe<EmailVerificationProofInput>;
-  provider: UserAuthenticationMethodProvider;
-  providerData: Scalars['JSON']['input'];
-  providerId: Scalars['String']['input'];
-};
-
-export type LoginResponse = {
-  __typename?: 'LoginResponse';
-  accessToken: Scalars['String']['output'];
-  accounts: Array<Account>;
-  email?: Maybe<Scalars['String']['output']>;
-  mfaVerified?: Maybe<Scalars['Boolean']['output']>;
-  refreshToken: Scalars['String']['output'];
-  requiresEmailVerification?: Maybe<Scalars['Boolean']['output']>;
-  /** When true, the client should complete MFA before expecting full API access (see AUTH_MIN_AAL_AT_LOGIN). */
-  requiresMfaStepUp?: Maybe<Scalars['Boolean']['output']>;
-  verificationExpiry?: Maybe<Scalars['Date']['output']>;
-};
-
-export type LogoutMyUserResponse = {
-  __typename?: 'LogoutMyUserResponse';
-  message: Scalars['String']['output'];
-};
-
-export type MarkAllNotificationsReadResult = {
-  __typename?: 'MarkAllNotificationsReadResult';
-  updated: Scalars['Int']['output'];
-};
-
-export type MeResponse = {
-  __typename?: 'MeResponse';
-  accounts: Array<Account>;
-  email?: Maybe<Scalars['String']['output']>;
-  mfaVerified?: Maybe<Scalars['Boolean']['output']>;
-  requiresEmailVerification?: Maybe<Scalars['Boolean']['output']>;
-  verificationExpiry?: Maybe<Scalars['Date']['output']>;
-};
-
-export enum MemberType {
-  Invitation = 'invitation',
-  Member = 'member',
-}
-
-export type MfaDevice = {
-  __typename?: 'MfaDevice';
-  createdAt: Scalars['Date']['output'];
-  id: Scalars['ID']['output'];
-  isEnabled: Scalars['Boolean']['output'];
-  isPrimary: Scalars['Boolean']['output'];
-  lastUsedAt?: Maybe<Scalars['Date']['output']>;
-  name: Scalars['String']['output'];
-};
-
-export type MfaEnrollment = {
-  __typename?: 'MfaEnrollment';
-  factorId: Scalars['ID']['output'];
-  otpAuthUrl: Scalars['String']['output'];
-  secret: Scalars['String']['output'];
-};
-
-export type MfaRecoveryCodeStatus = {
-  __typename?: 'MfaRecoveryCodeStatus';
-  activeCount: Scalars['Int']['output'];
-  lastGeneratedAt?: Maybe<Scalars['Date']['output']>;
-};
-
-export type MfaSetupResponse = {
-  __typename?: 'MfaSetupResponse';
-  factorId: Scalars['ID']['output'];
-  otpAuthUrl: Scalars['String']['output'];
-  secret: Scalars['String']['output'];
-};
-
-export type MfaVerifyResponse = {
-  __typename?: 'MfaVerifyResponse';
-  accessToken: Scalars['String']['output'];
-  mfaVerified: Scalars['Boolean']['output'];
-  refreshToken: Scalars['String']['output'];
-};
-
-export type MfaVerifyResult = {
-  __typename?: 'MfaVerifyResult';
-  success: Scalars['Boolean']['output'];
-};
-
-export type Mutation = {
-  __typename?: 'Mutation';
-  _empty?: Maybe<Scalars['String']['output']>;
-  acceptInvitation: AcceptInvitationResult;
-  assignRolePermission: RolePermission;
-  assignUserPermission: UserPermission;
-  /**
-   * Cancel a pending or running project CDM sync job. Cancellation is
-   * immediate when the job is still PENDING; if the job is already RUNNING, the
-   * cancellation is recorded and the worker stops at the next checkpoint
-   * (best-effort).
-   */
-  cancelProjectSync: ProjectSyncJob;
-  changeMyPassword: ChangeMyPasswordResult;
-  createApiKey: CreateApiKeyResult;
-  createGroup: Group;
-  createMyMfaEnrollment: MfaEnrollment;
-  createMySecondaryAccount: CreateMySecondaryAccountResult;
-  createMyUserAuthenticationMethod: UserAuthenticationMethod;
-  createOrganization: Organization;
-  createPermission: Permission;
-  createProject: Project;
-  /** Create an OAuth app for a project. Allows project users to sign in with providers (e.g. GitHub) and receive tokens scoped to the project. */
-  createProjectApp: CreateProjectAppResult;
-  createResource: Resource;
-  createRole: Role;
-  createTag: Tag;
-  createUser: User;
-  /** Create a project webhook subscription. The signing secret is returned once. */
-  createWebhookSubscription: WebhookSubscriptionWithSecret;
-  deleteApiKey: ApiKey;
-  deleteGroup: Group;
-  deleteMyAccounts: User;
-  deleteMyUserAuthenticationMethod: UserAuthenticationMethod;
-  deleteOrganization: Organization;
-  deletePermission: Permission;
-  deleteProject: Project;
-  deleteProjectApp: ProjectApp;
-  deleteResource: Resource;
-  deleteRole: Role;
-  deleteTag: Tag;
-  deleteUser: User;
-  /** Soft-delete a webhook subscription. */
-  deleteWebhookSubscription: Scalars['Boolean']['output'];
-  exchangeApiKey: ExchangeApiKeyResult;
-  generateMyMfaRecoveryCodes: Array<Scalars['String']['output']>;
-  inviteMember: OrganizationInvitation;
-  login: LoginResponse;
-  logoutMyUser: LogoutMyUserResponse;
-  markAllMyNotificationsRead: MarkAllNotificationsReadResult;
-  markMyNotificationRead: Scalars['Boolean']['output'];
-  refreshSession: RefreshSessionResponse;
-  register: CreateAccountResult;
-  removeMyMfaDevice: MfaVerifyResult;
-  removeOrganizationMember: OrganizationMember;
-  renewInvitation: OrganizationInvitation;
-  /** Re-queue a delivery attempt for another POST. */
-  replayWebhookDelivery: WebhookDeliveryAttempt;
-  requestPasswordReset: RequestPasswordResetResponse;
-  resendInvitationEmail: OrganizationInvitation;
-  resendVerification: ResendVerificationResponse;
-  resetPassword: ResetPasswordResponse;
-  revokeApiKey: ApiKey;
-  revokeInvitation: OrganizationInvitation;
-  revokeMyUserSession: RevokeMyUserSessionResult;
-  revokeRolePermission: RolePermission;
-  revokeUserPermission: UserPermission;
-  /**
-   * Rotate an API key secret in place. Returns the new plaintext secret once.
-   * Keeps the same key id and clientId; rejects revoked keys.
-   */
-  rotateApiKey: CreateApiKeyResult;
-  /**
-   * Rotate the signing key for the given scope: create a new active key and mark the previous one as rotated.
-   * Allowed scopes: accountProject, organizationProject only.
-   * Returns the new signing key (public info).
-   */
-  rotateSigningKey: SigningKey;
-  /** Rotate the signing secret. The new secret is returned once. */
-  rotateWebhookSubscriptionSecret: WebhookSubscriptionWithSecret;
-  setMyNotificationPreference: NotificationPreference;
-  setMyPrimaryAuthenticationMethod: UserAuthenticationMethod;
-  setMyPrimaryMfaDevice: MfaDevice;
-  setupMfa: MfaSetupResponse;
-  /**
-   * Enqueue an asynchronous CDM **export** job for the given project. The worker
-   * snapshots current permission state into a replay-ready `SyncProjectInput` and
-   * stores it on the job row (`snapshot`); poll `projectSyncJob` for status.
-   *
-   * Requires Project:update in the given project scope (same as starting import jobs).
-   *
-   * Pass optional `input.jobName` for idempotency with the same rules as import `input.id`.
-   */
-  startProjectExport: ProjectSyncJob;
-  /**
-   * Enqueue an asynchronous project CDM import job for the given project.
-   * Applies a canonical data model document: roles, groups, resources, permissions,
-   * tags, project pivots, and user assignments scoped to the project.
-   * Requires Project:update in the given project scope.
-   *
-   * Returns immediately with a job descriptor in the PENDING status; the actual
-   * import runs in the background. Poll `projectSyncJob` for status.
-   * Pass optional `input.id` as a stable **job name** for idempotency: if an active job
-   * already exists for the same `(project, operation=IMPORT, jobName)`, that job is
-   * returned instead of creating a new one.
-   */
-  startProjectSync: ProjectSyncJob;
-  updateGroup: Group;
-  /** Update the authenticated user's project membership profile (display name / picture). */
-  updateMyProjectMembership: MyProjectMembership;
-  updateMyUser: User;
-  updateOrganization: Organization;
-  updateOrganizationMember: OrganizationMember;
-  updatePermission: Permission;
-  updateProject: Project;
-  /** Update an existing project app (name, redirect URIs, scopes). */
-  updateProjectApp: ProjectApp;
-  updateResource: Resource;
-  updateRole: Role;
-  updateTag: Tag;
-  updateUser: User;
-  /** Update a webhook subscription URL, event filters, description, or active flag. */
-  updateWebhookSubscription: WebhookSubscription;
-  uploadMyProjectMembershipPicture: UploadUserPictureResult;
-  uploadMyUserPicture: UploadUserPictureResult;
-  uploadUserPicture: UploadUserPictureResult;
-  verifyEmail: VerifyEmailResponse;
-  verifyMfa: MfaVerifyResponse;
-  verifyMfaRecoveryCode: MfaVerifyResponse;
-  verifyMyMfaEnrollment: MfaVerifyResult;
-};
-
-export type MutationAcceptInvitationArgs = {
-  input: AcceptInvitationInput;
-};
-
-export type MutationAssignRolePermissionArgs = {
-  input: AssignRolePermissionInput;
-};
-
-export type MutationAssignUserPermissionArgs = {
-  input: AssignUserPermissionInput;
-};
-
-export type MutationCancelProjectSyncArgs = {
-  id: Scalars['ID']['input'];
-  jobId: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type MutationChangeMyPasswordArgs = {
-  input: ChangeMyPasswordInput;
-};
-
-export type MutationCreateApiKeyArgs = {
-  input: CreateApiKeyInput;
-};
-
-export type MutationCreateGroupArgs = {
-  input: CreateGroupInput;
-};
-
-export type MutationCreateMyUserAuthenticationMethodArgs = {
-  input: CreateMyUserAuthenticationMethodInput;
-};
-
-export type MutationCreateOrganizationArgs = {
-  input: CreateOrganizationInput;
-};
-
-export type MutationCreatePermissionArgs = {
-  input: CreatePermissionInput;
-};
-
-export type MutationCreateProjectArgs = {
-  input: CreateProjectInput;
-};
-
-export type MutationCreateProjectAppArgs = {
-  input: CreateProjectAppInput;
-};
-
-export type MutationCreateResourceArgs = {
-  input: CreateResourceInput;
-};
-
-export type MutationCreateRoleArgs = {
-  input: CreateRoleInput;
-};
-
-export type MutationCreateTagArgs = {
-  input: CreateTagInput;
-};
-
-export type MutationCreateUserArgs = {
-  input: CreateUserInput;
-};
-
-export type MutationCreateWebhookSubscriptionArgs = {
-  input: CreateWebhookSubscriptionMutationInput;
-};
-
-export type MutationDeleteApiKeyArgs = {
-  input: DeleteApiKeyInput;
-};
-
-export type MutationDeleteGroupArgs = {
-  id: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type MutationDeleteMyAccountsArgs = {
-  input: DeleteMyAccountsInput;
-};
-
-export type MutationDeleteMyUserAuthenticationMethodArgs = {
-  id: Scalars['ID']['input'];
-};
-
-export type MutationDeleteOrganizationArgs = {
-  id: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type MutationDeletePermissionArgs = {
-  id: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type MutationDeleteProjectArgs = {
-  id: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type MutationDeleteProjectAppArgs = {
-  id: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type MutationDeleteResourceArgs = {
-  id: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type MutationDeleteRoleArgs = {
-  id: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type MutationDeleteTagArgs = {
-  id: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type MutationDeleteUserArgs = {
-  id: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type MutationDeleteWebhookSubscriptionArgs = {
-  input: DeleteWebhookSubscriptionInput;
-};
-
-export type MutationExchangeApiKeyArgs = {
-  input: ExchangeApiKeyInput;
-};
-
-export type MutationGenerateMyMfaRecoveryCodesArgs = {
-  input?: InputMaybe<GenerateMyMfaRecoveryCodesInput>;
-};
-
-export type MutationInviteMemberArgs = {
-  input: InviteMemberInput;
-};
-
-export type MutationLoginArgs = {
-  input: LoginInput;
-};
-
-export type MutationMarkMyNotificationReadArgs = {
-  id: Scalars['ID']['input'];
-};
-
-export type MutationRegisterArgs = {
-  input: RegisterInput;
-};
-
-export type MutationRemoveMyMfaDeviceArgs = {
-  input: RemoveMyMfaDeviceInput;
-};
-
-export type MutationRemoveOrganizationMemberArgs = {
-  input: RemoveOrganizationMemberInput;
-  userId: Scalars['ID']['input'];
-};
-
-export type MutationRenewInvitationArgs = {
-  id: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type MutationReplayWebhookDeliveryArgs = {
-  input: ReplayWebhookDeliveryInput;
-};
-
-export type MutationRequestPasswordResetArgs = {
-  input: RequestPasswordResetInput;
-};
-
-export type MutationResendInvitationEmailArgs = {
-  id: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type MutationResendVerificationArgs = {
-  input: ResendVerificationInput;
-};
-
-export type MutationResetPasswordArgs = {
-  input: ResetPasswordInput;
-};
-
-export type MutationRevokeApiKeyArgs = {
-  input: RevokeApiKeyInput;
-};
-
-export type MutationRevokeInvitationArgs = {
-  id: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type MutationRevokeMyUserSessionArgs = {
-  id: Scalars['ID']['input'];
-};
-
-export type MutationRevokeRolePermissionArgs = {
-  input: RevokeRolePermissionInput;
-};
-
-export type MutationRevokeUserPermissionArgs = {
-  input: RevokeUserPermissionInput;
-};
-
-export type MutationRotateApiKeyArgs = {
-  input: RotateApiKeyInput;
-};
-
-export type MutationRotateSigningKeyArgs = {
-  scope: Scope;
-};
-
-export type MutationRotateWebhookSubscriptionSecretArgs = {
-  input: RotateWebhookSubscriptionSecretInput;
-};
-
-export type MutationSetMyNotificationPreferenceArgs = {
-  input: SetMyNotificationPreferenceInput;
-};
-
-export type MutationSetMyPrimaryAuthenticationMethodArgs = {
-  id: Scalars['ID']['input'];
-};
-
-export type MutationSetMyPrimaryMfaDeviceArgs = {
-  input: SetMyPrimaryMfaDeviceInput;
-};
-
-export type MutationStartProjectExportArgs = {
-  id: Scalars['ID']['input'];
-  input: StartProjectExportInput;
-  scope: Scope;
-};
-
-export type MutationStartProjectSyncArgs = {
-  id: Scalars['ID']['input'];
-  input: SyncProjectInput;
-  scope: Scope;
-};
-
-export type MutationUpdateGroupArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdateGroupInput;
-};
-
-export type MutationUpdateMyProjectMembershipArgs = {
-  input: UpdateMyProjectMembershipInput;
-};
-
-export type MutationUpdateMyUserArgs = {
-  input: UpdateMyUserInput;
-};
-
-export type MutationUpdateOrganizationArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdateOrganizationInput;
-};
-
-export type MutationUpdateOrganizationMemberArgs = {
-  input: UpdateOrganizationMemberInput;
-  userId: Scalars['ID']['input'];
-};
-
-export type MutationUpdatePermissionArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdatePermissionInput;
-};
-
-export type MutationUpdateProjectArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdateProjectInput;
-};
-
-export type MutationUpdateProjectAppArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdateProjectAppInput;
-};
-
-export type MutationUpdateResourceArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdateResourceInput;
-};
-
-export type MutationUpdateRoleArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdateRoleInput;
-};
-
-export type MutationUpdateTagArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdateTagInput;
-};
-
-export type MutationUpdateUserArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdateUserInput;
-};
-
-export type MutationUpdateWebhookSubscriptionArgs = {
-  id: Scalars['ID']['input'];
-  input: UpdateWebhookSubscriptionMutationInput;
-};
-
-export type MutationUploadMyProjectMembershipPictureArgs = {
-  input: UploadMyProjectMembershipPictureInput;
-};
-
-export type MutationUploadMyUserPictureArgs = {
-  input: UploadMyUserPictureInput;
-};
-
-export type MutationUploadUserPictureArgs = {
-  input: UploadUserPictureInput;
-};
-
-export type MutationVerifyEmailArgs = {
-  input: VerifyEmailInput;
-};
-
-export type MutationVerifyMfaArgs = {
-  input: VerifyMfaInput;
-};
-
-export type MutationVerifyMfaRecoveryCodeArgs = {
-  input: VerifyMfaRecoveryCodeInput;
-};
-
-export type MutationVerifyMyMfaEnrollmentArgs = {
-  input: VerifyMyMfaEnrollmentInput;
-};
-
-export type MyNotificationsInput = {
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  page?: InputMaybe<Scalars['Int']['input']>;
-  unreadOnly?: InputMaybe<Scalars['Boolean']['input']>;
-};
-
-export type MyProjectMembership = {
-  __typename?: 'MyProjectMembership';
-  accountId?: Maybe<Scalars['ID']['output']>;
-  displayName?: Maybe<Scalars['String']['output']>;
-  joinedAt: Scalars['Date']['output'];
-  metadata: Scalars['JSON']['output'];
-  organizationId?: Maybe<Scalars['ID']['output']>;
-  organizationName?: Maybe<Scalars['String']['output']>;
-  pictureUrl?: Maybe<Scalars['String']['output']>;
-  projectId: Scalars['ID']['output'];
-  projectName: Scalars['String']['output'];
-  role?: Maybe<Scalars['String']['output']>;
-};
-
-export type MyUserSessionsInput = {
-  audience?: InputMaybe<Scalars['String']['input']>;
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  page?: InputMaybe<Scalars['Int']['input']>;
-  search?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type Notification = {
-  __typename?: 'Notification';
-  body?: Maybe<Scalars['String']['output']>;
-  category: Scalars['String']['output'];
-  channel: NotificationChannel;
-  createdAt: Scalars['Date']['output'];
-  eventId: Scalars['ID']['output'];
-  id: Scalars['ID']['output'];
-  readAt?: Maybe<Scalars['Date']['output']>;
-  refEntity?: Maybe<Scalars['String']['output']>;
-  refId?: Maybe<Scalars['ID']['output']>;
-  scope?: Maybe<NotificationEventScope>;
-  seenAt?: Maybe<Scalars['Date']['output']>;
-  status: NotificationStatus;
-  title: Scalars['String']['output'];
-  type: Scalars['String']['output'];
-};
-
-export enum NotificationChannel {
-  Email = 'email',
-  InApp = 'in_app',
-}
-
-export type NotificationEventScope = {
-  __typename?: 'NotificationEventScope';
-  id: Scalars['ID']['output'];
-  tenant: Scalars['String']['output'];
-};
-
-export type NotificationPage = {
-  __typename?: 'NotificationPage';
-  hasNextPage: Scalars['Boolean']['output'];
-  notifications: Array<Notification>;
-  totalCount: Scalars['Int']['output'];
-  unreadCount: Scalars['Int']['output'];
-};
-
-export type NotificationPreference = {
-  __typename?: 'NotificationPreference';
-  category: Scalars['String']['output'];
-  channel: NotificationChannel;
-  enabled: Scalars['Boolean']['output'];
-  id: Scalars['ID']['output'];
-  scopeId: Scalars['String']['output'];
-  scopeTenant: Scalars['String']['output'];
-  source: NotificationPreferenceSource;
-};
-
-export enum NotificationPreferenceSource {
-  OrgEnforced = 'org_enforced',
-  User = 'user',
-}
-
-export enum NotificationStatus {
-  Dead = 'dead',
-  Delivered = 'delivered',
-  Failed = 'failed',
-  Pending = 'pending',
-}
-
-export type Organization = Auditable & {
-  __typename?: 'Organization';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  groups?: Maybe<Array<Group>>;
-  id: Scalars['ID']['output'];
-  name: Scalars['String']['output'];
-  permissions?: Maybe<Array<Permission>>;
-  projects?: Maybe<Array<Project>>;
-  requireMfaForSensitiveActions: Scalars['Boolean']['output'];
-  roles?: Maybe<Array<Role>>;
-  slug: Scalars['String']['output'];
-  tags?: Maybe<Array<Tag>>;
-  updatedAt: Scalars['Date']['output'];
-  users?: Maybe<Array<User>>;
-};
-
-export type OrganizationGroup = Auditable & {
-  __typename?: 'OrganizationGroup';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  group?: Maybe<Group>;
-  groupId: Scalars['ID']['output'];
-  id: Scalars['ID']['output'];
-  organization?: Maybe<Organization>;
-  organizationId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type OrganizationInvitation = Auditable & {
-  __typename?: 'OrganizationInvitation';
-  acceptedAt?: Maybe<Scalars['Date']['output']>;
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  email: Scalars['String']['output'];
-  expiresAt: Scalars['Date']['output'];
-  id: Scalars['ID']['output'];
-  invitedAt: Scalars['Date']['output'];
-  invitedBy: Scalars['ID']['output'];
-  inviter: User;
-  organization: Organization;
-  organizationId: Scalars['ID']['output'];
-  role: Role;
-  roleId: Scalars['ID']['output'];
-  status: OrganizationInvitationStatus;
-  token: Scalars['String']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type OrganizationInvitationPage = {
-  __typename?: 'OrganizationInvitationPage';
-  hasNextPage: Scalars['Boolean']['output'];
-  invitations: Array<OrganizationInvitation>;
-  totalCount: Scalars['Int']['output'];
-};
-
-export enum OrganizationInvitationSearchableField {
-  Email = 'email',
-}
-
-export type OrganizationInvitationSortInput = {
-  field: OrganizationInvitationSortableField;
-  order: SortOrder;
-};
-
-export enum OrganizationInvitationSortableField {
-  CreatedAt = 'createdAt',
-  Email = 'email',
-  ExpiresAt = 'expiresAt',
-  Status = 'status',
-}
-
-export enum OrganizationInvitationStatus {
-  Accepted = 'accepted',
-  Expired = 'expired',
-  Pending = 'pending',
-  Revoked = 'revoked',
-}
-
-export type OrganizationMember = {
-  __typename?: 'OrganizationMember';
-  createdAt: Scalars['Date']['output'];
-  email?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  invitation?: Maybe<OrganizationInvitation>;
-  name: Scalars['String']['output'];
-  role: Role;
-  status?: Maybe<OrganizationInvitationStatus>;
-  type: MemberType;
-  user?: Maybe<User>;
-};
-
-export type OrganizationMemberPage = {
-  __typename?: 'OrganizationMemberPage';
-  hasNextPage: Scalars['Boolean']['output'];
-  members: Array<OrganizationMember>;
-  totalCount: Scalars['Int']['output'];
-};
-
-export enum OrganizationMemberSearchableField {
-  Email = 'email',
-  Name = 'name',
-}
-
-export type OrganizationMemberSortInput = {
-  field: OrganizationMemberSortableField;
-  order: SortOrder;
-};
-
-export enum OrganizationMemberSortableField {
-  CreatedAt = 'createdAt',
-  Email = 'email',
-  Name = 'name',
-  Role = 'role',
-}
-
-export type OrganizationMembershipExportData = {
-  __typename?: 'OrganizationMembershipExportData';
-  joinedAt: Scalars['Date']['output'];
-  organizationId: Scalars['ID']['output'];
-  organizationName: Scalars['String']['output'];
-  role: Scalars['String']['output'];
-};
-
-export type OrganizationPage = PaginatedResults & {
-  __typename?: 'OrganizationPage';
-  hasNextPage: Scalars['Boolean']['output'];
-  organizations: Array<Organization>;
-  totalCount: Scalars['Int']['output'];
-};
-
-export type OrganizationPermission = Auditable & {
-  __typename?: 'OrganizationPermission';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  organization?: Maybe<Organization>;
-  organizationId: Scalars['ID']['output'];
-  permission?: Maybe<Permission>;
-  permissionId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type OrganizationProject = Auditable & {
-  __typename?: 'OrganizationProject';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  organization?: Maybe<Organization>;
-  organizationId: Scalars['ID']['output'];
-  project?: Maybe<Project>;
-  projectId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type OrganizationProjectApiKey = Auditable & {
-  __typename?: 'OrganizationProjectApiKey';
-  apiKey?: Maybe<ApiKey>;
-  apiKeyId: Scalars['ID']['output'];
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  organization?: Maybe<Organization>;
-  organizationId: Scalars['ID']['output'];
-  organizationRoleId: Scalars['ID']['output'];
-  project?: Maybe<Project>;
-  projectId: Scalars['ID']['output'];
-  role?: Maybe<Role>;
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type OrganizationProjectTag = Auditable & {
-  __typename?: 'OrganizationProjectTag';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  isPrimary: Scalars['Boolean']['output'];
-  organization?: Maybe<Organization>;
-  organizationId: Scalars['ID']['output'];
-  project?: Maybe<Project>;
-  projectId: Scalars['ID']['output'];
-  tag?: Maybe<Tag>;
-  tagId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type OrganizationRole = Auditable & {
-  __typename?: 'OrganizationRole';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  organization?: Maybe<Organization>;
-  organizationId: Scalars['ID']['output'];
-  role?: Maybe<Role>;
-  roleId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export enum OrganizationSearchableField {
-  Name = 'name',
-  Slug = 'slug',
-}
-
-export type OrganizationSortInput = {
-  field: OrganizationSortableField;
-  order: SortOrder;
-};
-
-export enum OrganizationSortableField {
-  CreatedAt = 'createdAt',
-  Name = 'name',
-  UpdatedAt = 'updatedAt',
-}
-
-export type OrganizationTag = Auditable & {
-  __typename?: 'OrganizationTag';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  isPrimary: Scalars['Boolean']['output'];
-  organization?: Maybe<Organization>;
-  organizationId: Scalars['ID']['output'];
-  tag?: Maybe<Tag>;
-  tagId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type OrganizationUser = Auditable & {
-  __typename?: 'OrganizationUser';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  organization?: Maybe<Organization>;
-  organizationId: Scalars['ID']['output'];
-  roleId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-  user?: Maybe<User>;
-  userId: Scalars['ID']['output'];
-};
-
-export type PaginatedResults = {
-  hasNextPage: Scalars['Boolean']['output'];
-  totalCount: Scalars['Int']['output'];
-};
-
-export type Permission = Auditable & {
-  __typename?: 'Permission';
-  action: Scalars['String']['output'];
-  condition?: Maybe<Scalars['JSON']['output']>;
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  description?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  metadata: Scalars['JSON']['output'];
-  name: Scalars['String']['output'];
-  primaryTag?: Maybe<Tag>;
-  resource?: Maybe<Resource>;
-  resourceId?: Maybe<Scalars['ID']['output']>;
-  tagCount: Scalars['Int']['output'];
-  tags?: Maybe<Array<Tag>>;
-  updatedAt: Scalars['Date']['output'];
-};
-
-/** Custom permission for this project; `resource` is an opaque key in the same document. */
-export type PermissionCdmInput = {
-  action: Scalars['String']['input'];
-  condition?: InputMaybe<Scalars['JSON']['input']>;
-  description?: InputMaybe<Scalars['String']['input']>;
-  groups?: InputMaybe<Array<Scalars['String']['input']>>;
-  key: Scalars['String']['input'];
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  name: Scalars['String']['input'];
-  primaryTag?: InputMaybe<Scalars['String']['input']>;
-  resource: Scalars['String']['input'];
-  tags?: InputMaybe<Array<Scalars['String']['input']>>;
-};
-
-export type PermissionPage = PaginatedResults & {
-  __typename?: 'PermissionPage';
-  hasNextPage: Scalars['Boolean']['output'];
-  permissions: Array<Permission>;
-  totalCount: Scalars['Int']['output'];
-};
-
-export enum PermissionSearchableField {
-  Action = 'action',
-  Description = 'description',
-  Name = 'name',
-}
-
-export type PermissionSortInput = {
-  field: PermissionSortableField;
-  order: SortOrder;
-};
-
-export enum PermissionSortableField {
-  Action = 'action',
-  Name = 'name',
-}
-
-export type PermissionTag = Auditable & {
-  __typename?: 'PermissionTag';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  isPrimary: Scalars['Boolean']['output'];
-  permission?: Maybe<Permission>;
-  permissionId: Scalars['ID']['output'];
-  tag?: Maybe<Tag>;
-  tagId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type PermissionTagPermissionArgs = {
-  scope: Scope;
-};
-
-export type PermissionTagTagArgs = {
-  scope: Scope;
-};
-
-export type Project = Auditable & {
-  __typename?: 'Project';
-  accountTags?: Maybe<Array<Tag>>;
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  description?: Maybe<Scalars['String']['output']>;
-  groups?: Maybe<Array<Group>>;
-  id: Scalars['ID']['output'];
-  name: Scalars['String']['output'];
-  organizationTags?: Maybe<Array<Tag>>;
-  permissions?: Maybe<Array<Permission>>;
-  resources?: Maybe<Array<Resource>>;
-  roles?: Maybe<Array<Role>>;
-  slug: Scalars['String']['output'];
-  tags?: Maybe<Array<Tag>>;
-  updatedAt: Scalars['Date']['output'];
-  users?: Maybe<Array<User>>;
-};
-
-export type ProjectApp = Auditable & {
-  __typename?: 'ProjectApp';
-  /** Whether new users can sign up when authenticating via this app. Default true. */
-  allowSignUp?: Maybe<Scalars['Boolean']['output']>;
-  clientId: Scalars['String']['output'];
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  /** Auth providers enabled for this app (e.g. github, email). Empty/null = all configured providers. */
-  enabledProviders?: Maybe<Array<Scalars['String']['output']>>;
-  id: Scalars['ID']['output'];
-  name?: Maybe<Scalars['String']['output']>;
-  project?: Maybe<Project>;
-  projectId: Scalars['ID']['output'];
-  redirectUris: Array<Scalars['String']['output']>;
-  scopes?: Maybe<Array<Scalars['String']['output']>>;
-  /** Resolved role for signUpRoleId (for display). */
-  signUpRole?: Maybe<Role>;
-  /** Role assigned to users who sign up via this app. Required when allowSignUp is true. */
-  signUpRoleId?: Maybe<Scalars['ID']['output']>;
-  tags?: Maybe<Array<Tag>>;
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type ProjectAppPage = PaginatedResults & {
-  __typename?: 'ProjectAppPage';
-  hasNextPage: Scalars['Boolean']['output'];
-  projectApps: Array<ProjectApp>;
-  totalCount: Scalars['Int']['output'];
-};
-
-export enum ProjectAppSearchableField {
-  Name = 'name',
-}
-
-export type ProjectAppSortInput = {
-  field: ProjectAppSortableField;
-  order: SortOrder;
-};
-
-export enum ProjectAppSortableField {
-  CreatedAt = 'createdAt',
-  Name = 'name',
-}
-
-export type ProjectAppTag = Auditable & {
-  __typename?: 'ProjectAppTag';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  isPrimary: Scalars['Boolean']['output'];
-  projectAppId: Scalars['ID']['output'];
-  tagId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type ProjectGroup = Auditable & {
-  __typename?: 'ProjectGroup';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  group?: Maybe<Group>;
-  groupId: Scalars['ID']['output'];
-  id: Scalars['ID']['output'];
-  project?: Maybe<Project>;
-  projectId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type ProjectGroupProjectArgs = {
-  organizationId: Scalars['ID']['input'];
-};
-
-export type ProjectMembershipExportData = {
-  __typename?: 'ProjectMembershipExportData';
-  joinedAt: Scalars['Date']['output'];
-  projectId: Scalars['ID']['output'];
-  projectName: Scalars['String']['output'];
-  role: Scalars['String']['output'];
-};
-
-export type ProjectPage = PaginatedResults & {
-  __typename?: 'ProjectPage';
-  hasNextPage: Scalars['Boolean']['output'];
-  projects: Array<Project>;
-  totalCount: Scalars['Int']['output'];
-};
-
-export type ProjectPermission = Auditable & {
-  __typename?: 'ProjectPermission';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  permission?: Maybe<Permission>;
-  permissionId: Scalars['ID']['output'];
-  project?: Maybe<Project>;
-  projectId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type ProjectPermissionProjectArgs = {
-  organizationId: Scalars['ID']['input'];
-};
-
-export type ProjectResource = Auditable & {
-  __typename?: 'ProjectResource';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  project?: Maybe<Project>;
-  projectId: Scalars['ID']['output'];
-  resource?: Maybe<Resource>;
-  resourceId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type ProjectRole = Auditable & {
-  __typename?: 'ProjectRole';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  project?: Maybe<Project>;
-  projectId: Scalars['ID']['output'];
-  role?: Maybe<Role>;
-  roleId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type ProjectRoleProjectArgs = {
-  organizationId: Scalars['ID']['input'];
-};
-
-export type ProjectRolePermission = Auditable & {
-  __typename?: 'ProjectRolePermission';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  permissionId: Scalars['ID']['output'];
-  projectId: Scalars['ID']['output'];
-  roleId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export enum ProjectSearchableField {
-  Description = 'description',
-  Name = 'name',
-  Slug = 'slug',
-}
-
-export type ProjectSortInput = {
-  field: ProjectSortableField;
-  order: SortOrder;
-};
-
-export enum ProjectSortableField {
-  CreatedAt = 'createdAt',
-  Name = 'name',
-  UpdatedAt = 'updatedAt',
-}
-
-/** Asynchronous project CDM import or export job. */
-export type ProjectSyncJob = {
-  __typename?: 'ProjectSyncJob';
-  cancelledAt?: Maybe<Scalars['Date']['output']>;
-  cdmVersion: Scalars['Int']['output'];
-  completedAt?: Maybe<Scalars['Date']['output']>;
-  enqueuedAt: Scalars['Date']['output'];
-  errorMessage?: Maybe<Scalars['String']['output']>;
-  /** Rollback snapshot (import) or exported CDM (export); REST `.../snapshot`. */
-  hasSnapshot: Scalars['Boolean']['output'];
-  id: Scalars['ID']['output'];
-  /** Client idempotency key from `SyncProjectInput.id` on import. */
-  jobName?: Maybe<Scalars['String']['output']>;
-  /** Import merge/replace; null for export. */
-  modeStrategy?: Maybe<CdmModeStrategy>;
-  operation: ProjectSyncJobOperation;
-  projectId: Scalars['ID']['output'];
-  /** Import counters when completed; null for export (CDM in snapshot download). */
-  result?: Maybe<SyncProjectResult>;
-  snapshotSizeBytes?: Maybe<Scalars['Int']['output']>;
-  snapshotTakenAt?: Maybe<Scalars['Date']['output']>;
-  startedAt?: Maybe<Scalars['Date']['output']>;
-  status: ProjectSyncJobStatus;
-  warnings: Array<Scalars['String']['output']>;
-};
-
-/** CDM import or export work for a project (`project_sync_jobs`). */
-export enum ProjectSyncJobOperation {
-  Export = 'EXPORT',
-  Import = 'IMPORT',
-}
-
-/** Paginated list of project CDM sync jobs. */
-export type ProjectSyncJobPage = PaginatedResults & {
-  __typename?: 'ProjectSyncJobPage';
-  hasNextPage: Scalars['Boolean']['output'];
-  jobs: Array<ProjectSyncJob>;
-  totalCount: Scalars['Int']['output'];
-};
-
-export type ProjectSyncJobSortInput = {
-  field: ProjectSyncJobSortableField;
-  order: SortOrder;
-};
-
-export enum ProjectSyncJobSortableField {
-  CompletedAt = 'completedAt',
-  EnqueuedAt = 'enqueuedAt',
-  JobName = 'jobName',
-  StartedAt = 'startedAt',
-  Status = 'status',
-}
-
-/** Lifecycle status of an asynchronous project CDM sync job. */
-export enum ProjectSyncJobStatus {
-  Cancelled = 'CANCELLED',
-  Completed = 'COMPLETED',
-  Failed = 'FAILED',
-  Pending = 'PENDING',
-  Running = 'RUNNING',
-}
-
-export type ProjectTag = Auditable & {
-  __typename?: 'ProjectTag';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  isPrimary: Scalars['Boolean']['output'];
-  project?: Maybe<Project>;
-  projectId: Scalars['ID']['output'];
-  tag?: Maybe<Tag>;
-  tagId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type ProjectTagProjectArgs = {
-  organizationId: Scalars['ID']['input'];
-};
-
-export type ProjectUser = Auditable & {
-  __typename?: 'ProjectUser';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  displayName?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  metadata: Scalars['JSON']['output'];
-  pictureUrl?: Maybe<Scalars['String']['output']>;
-  project?: Maybe<Project>;
-  projectId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-  user?: Maybe<User>;
-  userId: Scalars['ID']['output'];
-};
-
-export type ProjectUserProjectArgs = {
-  organizationId: Scalars['ID']['input'];
-};
-
-export type ProjectUserApiKey = Auditable & {
-  __typename?: 'ProjectUserApiKey';
-  apiKey?: Maybe<ApiKey>;
-  apiKeyId: Scalars['ID']['output'];
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  project?: Maybe<Project>;
-  projectId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-  user?: Maybe<User>;
-  userId: Scalars['ID']['output'];
-};
-
-export type ProjectUserGroup = Auditable & {
-  __typename?: 'ProjectUserGroup';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  groupId: Scalars['ID']['output'];
-  id: Scalars['ID']['output'];
-  projectId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-  userId: Scalars['ID']['output'];
-};
-
-export type ProjectUserPermission = Auditable & {
-  __typename?: 'ProjectUserPermission';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  permissionId: Scalars['ID']['output'];
-  projectId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-  userId: Scalars['ID']['output'];
-};
-
-export type Query = {
-  __typename?: 'Query';
-  _empty?: Maybe<Scalars['String']['output']>;
-  apiKeys: ApiKeyPage;
-  groups: GroupPage;
-  invitation?: Maybe<OrganizationInvitation>;
-  /** Evaluate authorization for the current session or API key token. */
-  isAuthorized: AuthorizationResult;
-  me: MeResponse;
-  myMfaDevices: Array<MfaDevice>;
-  myMfaRecoveryCodeStatus: MfaRecoveryCodeStatus;
-  myNotificationPreferences: Array<NotificationPreference>;
-  myNotifications: NotificationPage;
-  /** A single project membership for the authenticated user. */
-  myProjectMembership?: Maybe<MyProjectMembership>;
-  /** Project memberships for the authenticated user (project_users pivots). */
-  myProjectMemberships: Array<MyProjectMembership>;
-  myUnreadNotificationCount: UnreadNotificationCount;
-  myUserAuthenticationMethods: Array<UserAuthenticationMethod>;
-  myUserDataExport: UserDataExport;
-  myUserSessions: UserSessionPage;
-  organizationInvitations: OrganizationInvitationPage;
-  organizationMembers: OrganizationMemberPage;
-  organizations: OrganizationPage;
-  permissions: PermissionPage;
-  /** List OAuth apps for the given project scope. Allowed scopes: accountProject, organizationProject. */
-  projectApps: ProjectAppPage;
-  /**
-   * Read the current state of a project CDM sync job. Use this to poll
-   * the lifecycle of a job started via `startProjectSync`.
-   */
-  projectSyncJob: ProjectSyncJob;
-  /**
-   * List project CDM sync jobs for a project, with optional pagination,
-   * search (matches jobName), status filter, and sort. Use this to populate the
-   * job history view. Use `projectSyncJob` to read a single job's
-   * current state for polling.
-   */
-  projectSyncJobs: ProjectSyncJobPage;
-  projects: ProjectPage;
-  resources: ResourcePage;
-  roles: RolePage;
-  /**
-   * List signing keys for the given scope (current + rotated).
-   * Allowed scopes: accountProject, organizationProject only.
-   */
-  signingKeys: Array<SigningKey>;
-  tags: TagPage;
-  users: UserPage;
-  /** List delivery attempts for a project (optionally filtered by subscription or status). */
-  webhookDeliveries: WebhookDeliveryPage;
-  /** Get a single webhook subscription by id. */
-  webhookSubscription: WebhookSubscription;
-  /** List webhook subscriptions for a project scope. */
-  webhookSubscriptions: Array<WebhookSubscription>;
-};
-
-export type QueryApiKeysArgs = {
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  page?: InputMaybe<Scalars['Int']['input']>;
-  scope: Scope;
-  search?: InputMaybe<Scalars['String']['input']>;
-  sort?: InputMaybe<ApiKeySortInput>;
-};
-
-export type QueryGroupsArgs = {
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  page?: InputMaybe<Scalars['Int']['input']>;
-  scope: Scope;
-  search?: InputMaybe<Scalars['String']['input']>;
-  sort?: InputMaybe<GroupSortInput>;
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type QueryInvitationArgs = {
-  token: Scalars['String']['input'];
-};
-
-export type QueryIsAuthorizedArgs = {
-  input: IsAuthorizedInput;
-};
-
-export type QueryMyNotificationPreferencesArgs = {
-  scopeTenant: Scalars['String']['input'];
-};
-
-export type QueryMyNotificationsArgs = {
-  input?: InputMaybe<MyNotificationsInput>;
-};
-
-export type QueryMyProjectMembershipArgs = {
-  projectId: Scalars['ID']['input'];
-};
-
-export type QueryMyUserSessionsArgs = {
-  input: MyUserSessionsInput;
-};
-
-export type QueryOrganizationInvitationsArgs = {
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  page?: InputMaybe<Scalars['Int']['input']>;
-  scope: Scope;
-  search?: InputMaybe<Scalars['String']['input']>;
-  sort?: InputMaybe<OrganizationInvitationSortInput>;
-  status?: InputMaybe<OrganizationInvitationStatus>;
-};
-
-export type QueryOrganizationMembersArgs = {
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  page?: InputMaybe<Scalars['Int']['input']>;
-  scope: Scope;
-  search?: InputMaybe<Scalars['String']['input']>;
-  sort?: InputMaybe<OrganizationMemberSortInput>;
-  status?: InputMaybe<OrganizationInvitationStatus>;
-};
-
-export type QueryOrganizationsArgs = {
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  page?: InputMaybe<Scalars['Int']['input']>;
-  scope: Scope;
-  search?: InputMaybe<Scalars['String']['input']>;
-  sort?: InputMaybe<OrganizationSortInput>;
-};
-
-export type QueryPermissionsArgs = {
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  page?: InputMaybe<Scalars['Int']['input']>;
-  scope: Scope;
-  search?: InputMaybe<Scalars['String']['input']>;
-  sort?: InputMaybe<PermissionSortInput>;
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type QueryProjectAppsArgs = {
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  page?: InputMaybe<Scalars['Int']['input']>;
-  scope: Scope;
-  search?: InputMaybe<Scalars['String']['input']>;
-  sort?: InputMaybe<ProjectAppSortInput>;
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type QueryProjectSyncJobArgs = {
-  id: Scalars['ID']['input'];
-  jobId: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type QueryProjectSyncJobsArgs = {
-  id: Scalars['ID']['input'];
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  page?: InputMaybe<Scalars['Int']['input']>;
-  scope: Scope;
-  search?: InputMaybe<Scalars['String']['input']>;
-  sort?: InputMaybe<ProjectSyncJobSortInput>;
-  status?: InputMaybe<ProjectSyncJobStatus>;
-};
-
-export type QueryProjectsArgs = {
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  page?: InputMaybe<Scalars['Int']['input']>;
-  scope: Scope;
-  search?: InputMaybe<Scalars['String']['input']>;
-  sort?: InputMaybe<ProjectSortInput>;
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type QueryResourcesArgs = {
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  isActive?: InputMaybe<Scalars['Boolean']['input']>;
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  page?: InputMaybe<Scalars['Int']['input']>;
-  scope: Scope;
-  search?: InputMaybe<Scalars['String']['input']>;
-  sort?: InputMaybe<ResourceSortInput>;
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type QueryRolesArgs = {
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  page?: InputMaybe<Scalars['Int']['input']>;
-  scope: Scope;
-  search?: InputMaybe<Scalars['String']['input']>;
-  sort?: InputMaybe<RoleSortInput>;
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type QuerySigningKeysArgs = {
-  scope: Scope;
-};
-
-export type QueryTagsArgs = {
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  page?: InputMaybe<Scalars['Int']['input']>;
-  scope: Scope;
-  search?: InputMaybe<Scalars['String']['input']>;
-  sort?: InputMaybe<TagSortInput>;
-};
-
-export type QueryUsersArgs = {
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  page?: InputMaybe<Scalars['Int']['input']>;
-  scope: Scope;
-  search?: InputMaybe<Scalars['String']['input']>;
-  sort?: InputMaybe<UserSortInput>;
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type QueryWebhookDeliveriesArgs = {
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  page?: InputMaybe<Scalars['Int']['input']>;
-  scope: Scope;
-  status?: InputMaybe<WebhookDeliveryStatus>;
-  subscriptionId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryWebhookSubscriptionArgs = {
-  id: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type QueryWebhookSubscriptionsArgs = {
-  scope: Scope;
-};
-
-export type QueryAccountProjectApiKeysInput = {
-  accountId?: InputMaybe<Scalars['ID']['input']>;
-  apiKeyId?: InputMaybe<Scalars['ID']['input']>;
-  projectId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryAccountProjectInput = {
-  projectId: Scalars['ID']['input'];
-};
-
-export type QueryAccountProjectTagInput = {
-  accountId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-  tagId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryAccountProjectsInput = {
-  accountId: Scalars['ID']['input'];
-};
-
-export type QueryAccountRolesInput = {
-  accountId: Scalars['ID']['input'];
-};
-
-export type QueryAccountTagsInput = {
-  accountId: Scalars['ID']['input'];
-};
-
-export type QueryAccountsInput = {
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  page?: InputMaybe<Scalars['Int']['input']>;
-  search?: InputMaybe<Scalars['String']['input']>;
-  sort?: InputMaybe<AccountSortInput>;
-};
-
-export type QueryGroupPermissionsInput = {
-  groupId?: InputMaybe<Scalars['ID']['input']>;
-  permissionId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryGroupTagsInput = {
-  groupId?: InputMaybe<Scalars['ID']['input']>;
-  tagId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryOrganizationGroupsInput = {
-  organizationId: Scalars['ID']['input'];
-};
-
-export type QueryOrganizationPermissionsInput = {
-  organizationId?: InputMaybe<Scalars['ID']['input']>;
-  permissionId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryOrganizationProjectApiKeysInput = {
-  apiKeyId?: InputMaybe<Scalars['ID']['input']>;
-  organizationId?: InputMaybe<Scalars['ID']['input']>;
-  projectId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryOrganizationProjectTagInput = {
-  organizationId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-  tagId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryOrganizationProjectsInput = {
-  organizationId?: InputMaybe<Scalars['ID']['input']>;
-  projectId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryOrganizationRolesInput = {
-  organizationId: Scalars['ID']['input'];
-};
-
-export type QueryOrganizationTagsInput = {
-  organizationId: Scalars['ID']['input'];
-};
-
-export type QueryOrganizationUsersInput = {
-  organizationId?: InputMaybe<Scalars['ID']['input']>;
-  userId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryPermissionTagsInput = {
-  permissionId?: InputMaybe<Scalars['ID']['input']>;
-  tagId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryProjectAppTagsInput = {
-  projectAppId?: InputMaybe<Scalars['ID']['input']>;
-  tagId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryProjectGroupsInput = {
-  projectId: Scalars['ID']['input'];
-};
-
-export type QueryProjectPermissionsInput = {
-  permissionId?: InputMaybe<Scalars['ID']['input']>;
-  projectId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryProjectResourcesInput = {
-  projectId?: InputMaybe<Scalars['ID']['input']>;
-  resourceId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryProjectRolePermissionsInput = {
-  permissionId?: InputMaybe<Scalars['ID']['input']>;
-  projectId?: InputMaybe<Scalars['ID']['input']>;
-  roleId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryProjectRolesInput = {
-  projectId: Scalars['ID']['input'];
-};
-
-export type QueryProjectTagsInput = {
-  projectId: Scalars['ID']['input'];
-  tagId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryProjectUserApiKeysInput = {
-  projectId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-export type QueryProjectUserGroupsInput = {
-  groupId?: InputMaybe<Scalars['ID']['input']>;
-  projectId?: InputMaybe<Scalars['ID']['input']>;
-  userId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryProjectUserPermissionsInput = {
-  permissionId?: InputMaybe<Scalars['ID']['input']>;
-  projectId?: InputMaybe<Scalars['ID']['input']>;
-  userId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryProjectUsersInput = {
-  projectId?: InputMaybe<Scalars['ID']['input']>;
-  userId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryResourceTagsInput = {
-  resourceId?: InputMaybe<Scalars['ID']['input']>;
-  tagId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryRoleGroupsInput = {
-  groupId?: InputMaybe<Scalars['ID']['input']>;
-  roleId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryRolePermissionsInput = {
-  permissionId?: InputMaybe<Scalars['ID']['input']>;
-  roleId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryRoleTagsInput = {
-  roleId?: InputMaybe<Scalars['ID']['input']>;
-  tagId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryUserGroupsInput = {
-  groupId?: InputMaybe<Scalars['ID']['input']>;
-  userId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryUserPermissionsInput = {
-  permissionId?: InputMaybe<Scalars['ID']['input']>;
-  userId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryUserRolesInput = {
-  roleId?: InputMaybe<Scalars['ID']['input']>;
-  userId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type QueryUserTagsInput = {
-  tagId?: InputMaybe<Scalars['ID']['input']>;
-  userId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type RefreshSessionResponse = {
-  __typename?: 'RefreshSessionResponse';
-  accessToken: Scalars['String']['output'];
-  refreshToken: Scalars['String']['output'];
-};
-
-export type RegisterInput = {
-  emailVerificationProof?: InputMaybe<EmailVerificationProofInput>;
-  provider: UserAuthenticationMethodProvider;
-  providerData: Scalars['JSON']['input'];
-  providerId: Scalars['String']['input'];
-  type: AccountType;
-};
-
-export type RemoveAccountProjectApiKeyInput = {
-  accountId: Scalars['ID']['input'];
-  apiKeyId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-};
-
-export type RemoveAccountProjectInput = {
-  accountId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-};
-
-export type RemoveAccountProjectTagInput = {
-  accountId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type RemoveAccountRoleInput = {
-  accountId: Scalars['ID']['input'];
-  roleId: Scalars['ID']['input'];
-};
-
-export type RemoveAccountTagInput = {
-  accountId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type RemoveGroupPermissionInput = {
-  groupId: Scalars['ID']['input'];
-  permissionId: Scalars['ID']['input'];
-};
-
-export type RemoveGroupTagInput = {
-  groupId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type RemoveMyMfaDeviceInput = {
-  factorId: Scalars['ID']['input'];
-};
-
-export type RemoveOrganizationGroupInput = {
-  groupId: Scalars['ID']['input'];
-  organizationId: Scalars['ID']['input'];
-};
-
-export type RemoveOrganizationMemberInput = {
-  scope: Scope;
-};
-
-export type RemoveOrganizationPermissionInput = {
-  organizationId: Scalars['ID']['input'];
-  permissionId: Scalars['ID']['input'];
-};
-
-export type RemoveOrganizationProjectApiKeyInput = {
-  apiKeyId: Scalars['ID']['input'];
-  organizationId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-};
-
-export type RemoveOrganizationProjectInput = {
-  organizationId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-};
-
-export type RemoveOrganizationProjectTagInput = {
-  organizationId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type RemoveOrganizationRoleInput = {
-  organizationId: Scalars['ID']['input'];
-  roleId: Scalars['ID']['input'];
-};
-
-export type RemoveOrganizationTagInput = {
-  organizationId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type RemoveOrganizationUserInput = {
-  organizationId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-export type RemovePermissionTagInput = {
-  permissionId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type RemoveProjectAppTagInput = {
-  projectAppId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type RemoveProjectGroupInput = {
-  groupId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-};
-
-export type RemoveProjectPermissionInput = {
-  permissionId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-};
-
-export type RemoveProjectResourceInput = {
-  projectId: Scalars['ID']['input'];
-  resourceId: Scalars['ID']['input'];
-};
-
-export type RemoveProjectRoleInput = {
-  projectId: Scalars['ID']['input'];
-  roleId: Scalars['ID']['input'];
-};
-
-export type RemoveProjectRolePermissionInput = {
-  permissionId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-  roleId: Scalars['ID']['input'];
-};
-
-export type RemoveProjectTagInput = {
-  projectId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type RemoveProjectUserApiKeyInput = {
-  apiKeyId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-export type RemoveProjectUserGroupInput = {
-  groupId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-export type RemoveProjectUserInput = {
-  projectId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-export type RemoveProjectUserPermissionInput = {
-  permissionId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-export type RemoveResourceTagInput = {
-  resourceId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type RemoveRoleGroupInput = {
-  groupId: Scalars['ID']['input'];
-  roleId: Scalars['ID']['input'];
-};
-
-export type RemoveRoleTagInput = {
-  roleId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type RemoveUserGroupInput = {
-  groupId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-export type RemoveUserRoleInput = {
-  roleId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-export type RemoveUserTagInput = {
-  tagId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-export type ReplayWebhookDeliveryInput = {
-  deliveryId: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type RequestPasswordResetInput = {
-  email: Scalars['String']['input'];
-};
-
-export type RequestPasswordResetResponse = {
-  __typename?: 'RequestPasswordResetResponse';
-  message: Scalars['String']['output'];
-  messageKey: Scalars['String']['output'];
-  success: Scalars['Boolean']['output'];
-};
-
-export type ResendVerificationInput = {
-  email: Scalars['String']['input'];
-};
-
-export type ResendVerificationResponse = {
-  __typename?: 'ResendVerificationResponse';
-  message: Scalars['String']['output'];
-  messageKey?: Maybe<Scalars['String']['output']>;
-  success: Scalars['Boolean']['output'];
-};
-
-export type ResetPasswordInput = {
-  newPassword: Scalars['String']['input'];
-  token: Scalars['String']['input'];
-};
-
-export type ResetPasswordResponse = {
-  __typename?: 'ResetPasswordResponse';
-  message: Scalars['String']['output'];
-  messageKey: Scalars['String']['output'];
-  success: Scalars['Boolean']['output'];
-};
-
-export type Resource = Auditable & {
-  __typename?: 'Resource';
-  actions: Array<Scalars['String']['output']>;
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  description?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  isActive: Scalars['Boolean']['output'];
-  metadata: Scalars['JSON']['output'];
-  name: Scalars['String']['output'];
-  permissions?: Maybe<Array<Permission>>;
-  slug: Scalars['String']['output'];
-  tags: Array<Tag>;
-  updatedAt: Scalars['Date']['output'];
-};
-
-/** Project resource row for CDM import/export. */
-export type ResourceCdmInput = {
-  actions: Array<Scalars['String']['input']>;
-  description?: InputMaybe<Scalars['String']['input']>;
-  key: Scalars['String']['input'];
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  name: Scalars['String']['input'];
-  primaryTag?: InputMaybe<Scalars['String']['input']>;
-  slug?: InputMaybe<Scalars['String']['input']>;
-  tags?: InputMaybe<Array<Scalars['String']['input']>>;
-};
-
-export type ResourcePage = PaginatedResults & {
-  __typename?: 'ResourcePage';
-  hasNextPage: Scalars['Boolean']['output'];
-  resources: Array<Resource>;
-  totalCount: Scalars['Int']['output'];
-};
-
-export enum ResourceSearchableField {
-  Description = 'description',
-  Name = 'name',
-  Slug = 'slug',
-}
-
-export type ResourceSortInput = {
-  field: ResourceSortableField;
-  order: SortOrder;
-};
-
-export enum ResourceSortableField {
-  CreatedAt = 'createdAt',
-  Name = 'name',
-  Slug = 'slug',
-  UpdatedAt = 'updatedAt',
-}
-
-export type ResourceTag = Auditable & {
-  __typename?: 'ResourceTag';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  isPrimary: Scalars['Boolean']['output'];
-  resource?: Maybe<Resource>;
-  resourceId: Scalars['ID']['output'];
-  tag?: Maybe<Tag>;
-  tagId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type ResourceTagResourceArgs = {
-  scope: Scope;
-};
-
-export type ResourceTagTagArgs = {
-  scope: Scope;
-};
-
-export type RevokeApiKeyInput = {
-  id: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type RevokeMyUserSessionResult = {
-  __typename?: 'RevokeMyUserSessionResult';
-  message: Scalars['String']['output'];
-  success: Scalars['Boolean']['output'];
-};
-
-export type RevokeRolePermissionInput = {
-  hardDelete?: InputMaybe<Scalars['Boolean']['input']>;
-  permissionId: Scalars['ID']['input'];
-  roleId: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type RevokeUserPermissionInput = {
-  hardDelete?: InputMaybe<Scalars['Boolean']['input']>;
-  permissionId: Scalars['ID']['input'];
-  scope: Scope;
-  userId: Scalars['ID']['input'];
-};
-
-export type Role = Auditable & {
-  __typename?: 'Role';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  description?: Maybe<Scalars['String']['output']>;
-  groupCount: Scalars['Int']['output'];
-  groups?: Maybe<Array<Group>>;
-  id: Scalars['ID']['output'];
-  metadata: Scalars['JSON']['output'];
-  name: Scalars['String']['output'];
-  permissionCount: Scalars['Int']['output'];
-  primaryTag?: Maybe<Tag>;
-  rolePermissions?: Maybe<Array<RolePermission>>;
-  tagCount: Scalars['Int']['output'];
-  tags?: Maybe<Array<Tag>>;
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type RoleCdmInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  /**
-   * Group keys from the `groups` section. When set, permissions are linked via
-   * Role → Group → Permission. Omit to use direct `permissions` on the role.
-   */
-  groups?: InputMaybe<Array<Scalars['String']['input']>>;
-  key: Scalars['String']['input'];
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  name: Scalars['String']['input'];
-  /**
-   * Permission document keys or catalog refs (`resourceSlug:action`). Used for
-   * direct Role → Permission when `groups` is empty.
-   */
-  permissions?: InputMaybe<Array<Scalars['String']['input']>>;
-  primaryTag?: InputMaybe<Scalars['String']['input']>;
-  searchable?: InputMaybe<Scalars['JSON']['input']>;
-  tags?: InputMaybe<Array<Scalars['String']['input']>>;
-};
-
-export type RoleGroup = Auditable & {
-  __typename?: 'RoleGroup';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  group?: Maybe<Group>;
-  groupId: Scalars['ID']['output'];
-  id: Scalars['ID']['output'];
-  role?: Maybe<Role>;
-  roleId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type RoleGroupGroupArgs = {
-  scope: Scope;
-};
-
-export type RoleGroupRoleArgs = {
-  scope: Scope;
-};
-
-export type RolePage = PaginatedResults & {
-  __typename?: 'RolePage';
-  hasNextPage: Scalars['Boolean']['output'];
-  roles: Array<Role>;
-  totalCount: Scalars['Int']['output'];
-};
-
-export type RolePermission = Auditable & {
-  __typename?: 'RolePermission';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  permission?: Maybe<Permission>;
-  permissionId: Scalars['ID']['output'];
-  role?: Maybe<Role>;
-  roleId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type RolePermissionPermissionArgs = {
-  scope: Scope;
-};
-
-export type RolePermissionRoleArgs = {
-  scope: Scope;
-};
-
-export enum RoleSearchableField {
-  Description = 'description',
-  Name = 'name',
-  SearchDocument = 'searchDocument',
-}
-
-export type RoleSortInput = {
-  field: RoleSortableField;
-  order: SortOrder;
-};
-
-export enum RoleSortableField {
-  Name = 'name',
-}
-
-export type RoleTag = Auditable & {
-  __typename?: 'RoleTag';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  isPrimary: Scalars['Boolean']['output'];
-  role?: Maybe<Role>;
-  roleId: Scalars['ID']['output'];
-  tag?: Maybe<Tag>;
-  tagId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type RoleTagRoleArgs = {
-  scope: Scope;
-};
-
-export type RoleTagTagArgs = {
-  scope: Scope;
-};
-
-export type RotateApiKeyInput = {
-  id: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type RotateWebhookSubscriptionSecretInput = {
-  id: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type Scope = {
-  id: Scalars['ID']['input'];
-  tenant: Tenant;
-};
-
-export type Searchable = {
-  ids?: Maybe<Array<Scalars['ID']['output']>>;
-  limit?: Maybe<Scalars['Int']['output']>;
-  page?: Maybe<Scalars['Int']['output']>;
-  search?: Maybe<Scalars['String']['output']>;
-};
-
-export type SessionExportData = {
-  __typename?: 'SessionExportData';
-  createdAt: Scalars['Date']['output'];
-  expiresAt: Scalars['Date']['output'];
-  ipAddress?: Maybe<Scalars['String']['output']>;
-  lastUsedAt?: Maybe<Scalars['Date']['output']>;
-  userAgent?: Maybe<Scalars['String']['output']>;
-};
-
-export type SetMyNotificationPreferenceInput = {
-  /** Notification preference category (security, iam, membership, integrations). */
-  category: Scalars['String']['input'];
-  channel: NotificationChannel;
-  enabled: Scalars['Boolean']['input'];
-  scopeId?: InputMaybe<Scalars['String']['input']>;
-  scopeTenant: Scalars['String']['input'];
-};
-
-export type SetMyPrimaryMfaDeviceInput = {
-  factorId: Scalars['ID']['input'];
-};
-
-/**
- * Signing key for a scope (e.g. project). Used for RS256 API key tokens; public key is exposed in JWKS.
- * Only project scopes (accountProject, organizationProject) have manageable keys; system key is internal.
- */
-export type SigningKey = Auditable & {
-  __typename?: 'SigningKey';
-  /** Whether this key is currently used for signing new tokens. */
-  active: Scalars['Boolean']['output'];
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  /** Key ID used in JWT header and JWKS. */
-  kid: Scalars['String']['output'];
-  /** Public key PEM for JWKS / verification (optional in response for display or copy). */
-  publicKeyPem?: Maybe<Scalars['String']['output']>;
-  /** Set when the key was rotated (replaced by a new key); key remains in JWKS until existing tokens expire. */
-  rotatedAt?: Maybe<Scalars['Date']['output']>;
-  updatedAt: Scalars['Date']['output'];
-};
-
-export enum SortOrder {
-  Asc = 'ASC',
-  Desc = 'DESC',
-}
-
-/**
- * Parameters for enqueueing an asynchronous CDM **export** job. The worker
- * materialises a `SyncProjectInput` document and stores it in the job `snapshot`
- * column; this input is persisted as the job `payload` (export options only).
- */
-export type StartProjectExportInput = {
-  /**
-   * When `users` are exported, whether to emit CDM-managed project user API key rows
-   * (identity only). Omit = default true (full export behaviour).
-   */
-  includeUserApiKeys?: InputMaybe<Scalars['Boolean']['input']>;
-  /**
-   * Optional stable idempotency / display name (same column as import `SyncProjectInput.id`).
-   * When set, an active job for the same `(project, operation=EXPORT, jobName)` is returned
-   * instead of creating a new one.
-   */
-  jobName?: InputMaybe<Scalars['String']['input']>;
-  /**
-   * Embedded in the exported CDM document `mode` block for re-import.
-   * Does not change export execution (snapshot is always read-only).
-   */
-  mode?: InputMaybe<CdmModeInput>;
-  /** Subset of CDM slices to export; omit or empty for a full project export. */
-  sections?: InputMaybe<Array<Scalars['String']['input']>>;
-  /** CDM document version (only `1` is supported). */
-  version: Scalars['Int']['input'];
-};
-
-/**
- * Versioned canonical project document (CDM) for export/import: roles, users,
- * resources, permissions, groups, and tags scoped to one project.
- */
-export type SyncProjectInput = {
-  groups?: InputMaybe<Array<GroupCdmInput>>;
-  id?: InputMaybe<Scalars['String']['input']>;
-  mode: CdmModeInput;
-  permissions?: InputMaybe<Array<PermissionCdmInput>>;
-  resources?: InputMaybe<Array<ResourceCdmInput>>;
-  roles: Array<RoleCdmInput>;
-  tags?: InputMaybe<Array<TagCdmInput>>;
-  users: Array<UserCdmInput>;
-  version: Scalars['Int']['input'];
-};
-
-/** Counters and warnings from a completed CDM import. */
-export type SyncProjectResult = {
-  __typename?: 'SyncProjectResult';
-  groupPermissionsLinked: Scalars['Int']['output'];
-  groupTagsLinked: Scalars['Int']['output'];
-  groupsCreated: Scalars['Int']['output'];
-  importId?: Maybe<Scalars['String']['output']>;
-  permissionsCreated: Scalars['Int']['output'];
-  projectGroupsLinked: Scalars['Int']['output'];
-  projectId: Scalars['ID']['output'];
-  projectPermissionsLinked: Scalars['Int']['output'];
-  projectResourcesLinked: Scalars['Int']['output'];
-  projectRolesLinked: Scalars['Int']['output'];
-  projectTagsLinked: Scalars['Int']['output'];
-  projectUserApiKeysCreated: Scalars['Int']['output'];
-  projectUsersEnsured: Scalars['Int']['output'];
-  resourcesCreated: Scalars['Int']['output'];
-  roleGroupsLinked: Scalars['Int']['output'];
-  roleTagsLinked: Scalars['Int']['output'];
-  rolesCreated: Scalars['Int']['output'];
-  tagsCreated: Scalars['Int']['output'];
-  userRolesAssigned: Scalars['Int']['output'];
-  userTagsLinked: Scalars['Int']['output'];
-  usersCreated: Scalars['Int']['output'];
-  warnings: Array<Scalars['String']['output']>;
-};
-
-export type Tag = Auditable & {
-  __typename?: 'Tag';
-  color: Scalars['String']['output'];
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  isPrimary?: Maybe<Scalars['Boolean']['output']>;
-  metadata: Scalars['JSON']['output'];
-  name: Scalars['String']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type TagCdmInput = {
-  color: Scalars['String']['input'];
-  key: Scalars['String']['input'];
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  name: Scalars['String']['input'];
-};
-
-export type TagPage = PaginatedResults & {
-  __typename?: 'TagPage';
-  hasNextPage: Scalars['Boolean']['output'];
-  tags: Array<Tag>;
-  totalCount: Scalars['Int']['output'];
-};
-
-export enum TagSearchableField {
-  Name = 'name',
-}
-
-export enum TagSortField {
-  Color = 'color',
-  CreatedAt = 'createdAt',
-  Name = 'name',
-  UpdatedAt = 'updatedAt',
-}
-
-export type TagSortInput = {
-  field: TagSortField;
-  order: SortOrder;
-};
-
-export enum Tenant {
-  Account = 'account',
-  AccountProject = 'accountProject',
-  AccountProjectUser = 'accountProjectUser',
-  Organization = 'organization',
-  OrganizationProject = 'organizationProject',
-  OrganizationProjectUser = 'organizationProjectUser',
-  ProjectUser = 'projectUser',
-  System = 'system',
-}
-
-export enum TokenType {
-  ApiKey = 'apiKey',
-  ProjectApp = 'projectApp',
-  Session = 'session',
-  System = 'system',
-}
-
-export type UnreadNotificationCount = {
-  __typename?: 'UnreadNotificationCount';
-  unreadCount: Scalars['Int']['output'];
-};
-
-export type UpdateAccountProjectTagInput = {
-  accountId: Scalars['ID']['input'];
-  isPrimary: Scalars['Boolean']['input'];
-  projectId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type UpdateAccountTagInput = {
-  accountId: Scalars['ID']['input'];
-  isPrimary: Scalars['Boolean']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type UpdateGroupInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  name?: InputMaybe<Scalars['String']['input']>;
-  permissionIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
-  scope: Scope;
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type UpdateGroupTagInput = {
-  groupId: Scalars['ID']['input'];
-  isPrimary: Scalars['Boolean']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type UpdateMyProjectMembershipInput = {
-  displayName?: InputMaybe<Scalars['String']['input']>;
-  pictureUrl?: InputMaybe<Scalars['String']['input']>;
-  projectId: Scalars['ID']['input'];
-};
-
-export type UpdateMyUserAuthenticationMethodInput = {
-  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
-  isVerified?: InputMaybe<Scalars['Boolean']['input']>;
-  provider?: InputMaybe<UserAuthenticationMethodProvider>;
-  providerData?: InputMaybe<Scalars['JSON']['input']>;
-  providerId?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type UpdateMyUserInput = {
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  name?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type UpdateOrganizationInput = {
-  name?: InputMaybe<Scalars['String']['input']>;
-  requireMfaForSensitiveActions?: InputMaybe<Scalars['Boolean']['input']>;
-  scope: Scope;
-};
-
-export type UpdateOrganizationInvitationInput = {
-  acceptedAt?: InputMaybe<Scalars['Date']['input']>;
-  emailVerificationProofTokenHash?: InputMaybe<Scalars['String']['input']>;
-  expiresAt?: InputMaybe<Scalars['Date']['input']>;
-  invitedAt?: InputMaybe<Scalars['Date']['input']>;
-  status?: InputMaybe<OrganizationInvitationStatus>;
-  token?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type UpdateOrganizationMemberInput = {
-  roleId: Scalars['ID']['input'];
-  scope: Scope;
-};
-
-export type UpdateOrganizationProjectTagInput = {
-  isPrimary: Scalars['Boolean']['input'];
-  organizationId: Scalars['ID']['input'];
-  projectId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type UpdateOrganizationTagInput = {
-  isPrimary: Scalars['Boolean']['input'];
-  organizationId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type UpdatePermissionInput = {
-  action?: InputMaybe<Scalars['String']['input']>;
-  condition?: InputMaybe<Scalars['JSON']['input']>;
-  description?: InputMaybe<Scalars['String']['input']>;
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  name?: InputMaybe<Scalars['String']['input']>;
-  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
-  resourceId?: InputMaybe<Scalars['ID']['input']>;
-  scope: Scope;
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type UpdatePermissionTagInput = {
-  isPrimary: Scalars['Boolean']['input'];
-  permissionId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type UpdateProjectAppInput = {
-  /** Allow new users to sign up when authenticating via this app. */
-  allowSignUp?: InputMaybe<Scalars['Boolean']['input']>;
-  /** Auth providers enabled for this app (e.g. github, email). Empty/null = all configured providers. */
-  enabledProviders?: InputMaybe<Array<Scalars['String']['input']>>;
-  /** Display name for the app. */
-  name?: InputMaybe<Scalars['String']['input']>;
-  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
-  /** Allowed redirect URIs for OAuth callback. If provided, at least one required. */
-  redirectUris?: InputMaybe<Array<Scalars['String']['input']>>;
-  scope: Scope;
-  /** Optional OAuth scopes the app may request. */
-  scopes?: InputMaybe<Array<Scalars['String']['input']>>;
-  /** Role to assign to users who sign up via this app. Required when allowSignUp is true; must be a role in the project. */
-  signUpRoleId?: InputMaybe<Scalars['ID']['input']>;
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type UpdateProjectAppTagInput = {
-  isPrimary: Scalars['Boolean']['input'];
-  projectAppId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type UpdateProjectInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  name?: InputMaybe<Scalars['String']['input']>;
-  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
-  scope: Scope;
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type UpdateProjectTagInput = {
-  isPrimary: Scalars['Boolean']['input'];
-  projectId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type UpdateResourceInput = {
-  actions?: InputMaybe<Array<Scalars['String']['input']>>;
-  description?: InputMaybe<Scalars['String']['input']>;
-  isActive?: InputMaybe<Scalars['Boolean']['input']>;
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  name?: InputMaybe<Scalars['String']['input']>;
-  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
-  scope: Scope;
-  slug?: InputMaybe<Scalars['String']['input']>;
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type UpdateResourceTagInput = {
-  isPrimary: Scalars['Boolean']['input'];
-  resourceId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type UpdateRoleInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  groupIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  name?: InputMaybe<Scalars['String']['input']>;
-  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
-  scope: Scope;
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type UpdateRoleTagInput = {
-  isPrimary: Scalars['Boolean']['input'];
-  roleId: Scalars['ID']['input'];
-  tagId: Scalars['ID']['input'];
-};
-
-export type UpdateTagInput = {
-  color?: InputMaybe<Scalars['String']['input']>;
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  name?: InputMaybe<Scalars['String']['input']>;
-  scope: Scope;
-};
-
-export type UpdateUserAuthenticationMethodInput = {
-  isPrimary?: InputMaybe<Scalars['Boolean']['input']>;
-  isVerified?: InputMaybe<Scalars['Boolean']['input']>;
-  provider?: InputMaybe<UserAuthenticationMethodProvider>;
-  providerData?: InputMaybe<Scalars['JSON']['input']>;
-  providerId?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type UpdateUserInput = {
-  groupIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  name?: InputMaybe<Scalars['String']['input']>;
-  pictureUrl?: InputMaybe<Scalars['String']['input']>;
-  primaryTagId?: InputMaybe<Scalars['ID']['input']>;
-  roleIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-  scope: Scope;
-  tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export type UpdateUserSessionInput = {
-  id: Scalars['ID']['input'];
-  ipAddress?: InputMaybe<Scalars['String']['input']>;
-  lastUsedAt?: InputMaybe<Scalars['Date']['input']>;
-  userAgent?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type UpdateUserTagInput = {
-  isPrimary: Scalars['Boolean']['input'];
-  tagId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-export type UpdateWebhookSubscriptionMutationInput = {
-  active?: InputMaybe<Scalars['Boolean']['input']>;
-  description?: InputMaybe<Scalars['String']['input']>;
-  eventTypes?: InputMaybe<Array<Scalars['String']['input']>>;
-  scope: Scope;
-  url?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type UploadMyProjectMembershipPictureInput = {
-  contentType: Scalars['String']['input'];
-  file: Scalars['String']['input'];
-  filename: Scalars['String']['input'];
-  projectId: Scalars['ID']['input'];
-};
-
-export type UploadMyUserPictureInput = {
-  contentType: Scalars['String']['input'];
-  file: Scalars['String']['input'];
-  filename: Scalars['String']['input'];
-};
-
-export type UploadUserPictureInput = {
-  contentType: Scalars['String']['input'];
-  file: Scalars['String']['input'];
-  filename: Scalars['String']['input'];
-  scope: Scope;
-  userId: Scalars['ID']['input'];
-};
-
-export type UploadUserPictureResult = {
-  __typename?: 'UploadUserPictureResult';
-  path: Scalars['String']['output'];
-  url: Scalars['String']['output'];
-};
-
-export type User = Auditable & {
-  __typename?: 'User';
-  accounts?: Maybe<Array<Account>>;
-  authenticationMethods?: Maybe<Array<UserAuthenticationMethod>>;
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  metadata: Scalars['JSON']['output'];
-  name: Scalars['String']['output'];
-  permissionCount: Scalars['Int']['output'];
-  pictureUrl?: Maybe<Scalars['String']['output']>;
-  primaryTag?: Maybe<Tag>;
-  projectUserApiKeyCount: Scalars['Int']['output'];
-  roleCount: Scalars['Int']['output'];
-  roles?: Maybe<Array<Role>>;
-  tagCount: Scalars['Int']['output'];
-  tags?: Maybe<Array<Tag>>;
-  updatedAt: Scalars['Date']['output'];
-  userGroups?: Maybe<Array<UserGroup>>;
-  userPermissions?: Maybe<Array<UserPermission>>;
-};
-
-export type UserApiKeyCdmInput = {
-  clientId?: InputMaybe<Scalars['String']['input']>;
-  clientSecret?: InputMaybe<Scalars['String']['input']>;
-  description?: InputMaybe<Scalars['String']['input']>;
-  expiresAt?: InputMaybe<Scalars['Date']['input']>;
-  key?: InputMaybe<Scalars['String']['input']>;
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  name?: InputMaybe<Scalars['String']['input']>;
-};
-
-export enum UserAuthenticationEmailProviderAction {
-  Connect = 'connect',
-  Login = 'login',
-  Register = 'register',
-}
-
-export type UserAuthenticationMethod = Auditable & {
-  __typename?: 'UserAuthenticationMethod';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  isPrimary: Scalars['Boolean']['output'];
-  isVerified: Scalars['Boolean']['output'];
-  lastUsedAt?: Maybe<Scalars['Date']['output']>;
-  provider: UserAuthenticationMethodProvider;
-  providerData: Scalars['JSON']['output'];
-  providerId: Scalars['String']['output'];
-  updatedAt: Scalars['Date']['output'];
-  user?: Maybe<User>;
-  userId: Scalars['ID']['output'];
-};
-
-export enum UserAuthenticationMethodProvider {
-  Email = 'email',
-  Github = 'github',
-  Google = 'google',
-}
-
-export type UserCdmInput = {
-  apiKeys?: InputMaybe<Array<UserApiKeyCdmInput>>;
-  /** Direct group assignment. Each key must appear in the document `groups` section. */
-  groups?: InputMaybe<Array<Scalars['String']['input']>>;
-  key: CdmKeyResolverInput;
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
-  name: Scalars['String']['input'];
-  /** Direct user → permission grants (document keys or catalog `resourceSlug:action` refs). */
-  permissions?: InputMaybe<Array<Scalars['String']['input']>>;
-  primaryTag?: InputMaybe<Scalars['String']['input']>;
-  /** Role template keys from the `roles` section. */
-  roles?: InputMaybe<Array<Scalars['String']['input']>>;
-  /** Denormalized search tokens for project-scoped user list views. */
-  searchable?: InputMaybe<Scalars['JSON']['input']>;
-  tags?: InputMaybe<Array<Scalars['String']['input']>>;
-};
-
-export type UserDataExport = {
-  __typename?: 'UserDataExport';
-  accounts: Array<AccountExportData>;
-  authenticationMethods: Array<AuthenticationMethodExportData>;
-  exportedAt: Scalars['Date']['output'];
-  organizationMemberships: Array<OrganizationMembershipExportData>;
-  projectMemberships: Array<ProjectMembershipExportData>;
-  sessions: Array<SessionExportData>;
-  user: UserExportData;
-};
-
-export type UserExportData = {
-  __typename?: 'UserExportData';
-  createdAt: Scalars['Date']['output'];
-  email?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  name: Scalars['String']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type UserGroup = Auditable & {
-  __typename?: 'UserGroup';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  group?: Maybe<Group>;
-  groupId: Scalars['ID']['output'];
-  id: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-  user?: Maybe<User>;
-  userId: Scalars['ID']['output'];
-};
-
-export type UserGroupGroupArgs = {
-  scope: Scope;
-};
-
-export type UserGroupUserArgs = {
-  scope: Scope;
-};
-
-export type UserPage = PaginatedResults & {
-  __typename?: 'UserPage';
-  hasNextPage: Scalars['Boolean']['output'];
-  totalCount: Scalars['Int']['output'];
-  users: Array<User>;
-};
-
-export type UserPermission = Auditable & {
-  __typename?: 'UserPermission';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  permission?: Maybe<Permission>;
-  permissionId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-  user?: Maybe<User>;
-  userId: Scalars['ID']['output'];
-};
-
-export type UserPermissionPermissionArgs = {
-  scope: Scope;
-};
-
-export type UserPermissionUserArgs = {
-  scope: Scope;
-};
-
-export type UserRegistrationData = {
-  name: Scalars['String']['input'];
-  password: Scalars['String']['input'];
-  username: Scalars['String']['input'];
-};
-
-export type UserRole = Auditable & {
-  __typename?: 'UserRole';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  role?: Maybe<Role>;
-  roleId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-  user?: Maybe<User>;
-  userId: Scalars['ID']['output'];
-};
-
-export type UserRoleRoleArgs = {
-  scope: Scope;
-};
-
-export type UserRoleUserArgs = {
-  scope: Scope;
-};
-
-export enum UserSearchableField {
-  Name = 'name',
-}
-
-export type UserSession = Auditable & {
-  __typename?: 'UserSession';
-  audience: Scalars['String']['output'];
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  expiresAt: Scalars['Date']['output'];
-  id: Scalars['ID']['output'];
-  ipAddress?: Maybe<Scalars['String']['output']>;
-  lastUsedAt?: Maybe<Scalars['Date']['output']>;
-  token: Scalars['String']['output'];
-  updatedAt: Scalars['Date']['output'];
-  user?: Maybe<User>;
-  userAgent?: Maybe<Scalars['String']['output']>;
-  userAuthenticationMethod?: Maybe<UserAuthenticationMethod>;
-  userAuthenticationMethodId: Scalars['ID']['output'];
-  userId: Scalars['ID']['output'];
-};
-
-export type UserSessionPage = PaginatedResults & {
-  __typename?: 'UserSessionPage';
-  hasNextPage: Scalars['Boolean']['output'];
-  totalCount: Scalars['Int']['output'];
-  userSessions: Array<UserSession>;
-};
-
-export enum UserSessionSearchableField {
-  Audience = 'audience',
-  IpAddress = 'ipAddress',
-  Token = 'token',
-  UserAgent = 'userAgent',
-}
-
-export type UserSessionSortInput = {
-  field: UserSessionSortableField;
-  order: SortOrder;
-};
-
-export enum UserSessionSortableField {
-  LastUsedAt = 'lastUsedAt',
-}
-
-export type UserSortInput = {
-  field: UserSortableField;
-  order: SortOrder;
-};
-
-export enum UserSortableField {
-  Name = 'name',
-}
-
-export type UserTag = Auditable & {
-  __typename?: 'UserTag';
-  createdAt: Scalars['Date']['output'];
-  deletedAt?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['ID']['output'];
-  isPrimary: Scalars['Boolean']['output'];
-  tag?: Maybe<Tag>;
-  tagId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-  user?: Maybe<User>;
-  userId: Scalars['ID']['output'];
-};
-
-export type UserTagTagArgs = {
-  scope: Scope;
-};
-
-export type UserTagUserArgs = {
-  scope: Scope;
-};
-
-export type VerifyEmailInput = {
-  token: Scalars['String']['input'];
-};
-
-export type VerifyEmailResponse = {
-  __typename?: 'VerifyEmailResponse';
-  message: Scalars['String']['output'];
-  messageKey?: Maybe<Scalars['String']['output']>;
-  success: Scalars['Boolean']['output'];
-};
-
-export type VerifyMfaInput = {
-  code: Scalars['String']['input'];
-};
-
-export type VerifyMfaRecoveryCodeInput = {
-  code: Scalars['String']['input'];
-};
-
-export type VerifyMyMfaEnrollmentInput = {
-  code: Scalars['String']['input'];
-};
-
-export type WebhookDeliveryAttempt = {
-  __typename?: 'WebhookDeliveryAttempt';
-  attemptCount: Scalars['Int']['output'];
-  createdAt: Scalars['Date']['output'];
-  deliveredAt?: Maybe<Scalars['Date']['output']>;
-  errorDetails?: Maybe<Scalars['JSON']['output']>;
-  eventId: Scalars['ID']['output'];
-  id: Scalars['ID']['output'];
-  lastResponseStatus?: Maybe<Scalars['Int']['output']>;
-  nextRetryAt?: Maybe<Scalars['Date']['output']>;
-  status: WebhookDeliveryStatus;
-  subscriptionId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type WebhookDeliveryPage = {
-  __typename?: 'WebhookDeliveryPage';
-  hasNextPage: Scalars['Boolean']['output'];
-  items: Array<WebhookDeliveryAttempt>;
-  totalCount: Scalars['Int']['output'];
-};
-
-export enum WebhookDeliveryStatus {
-  Dead = 'dead',
-  Delivered = 'delivered',
-  Failed = 'failed',
-  Pending = 'pending',
-  Running = 'running',
-}
-
-export type WebhookSubscription = {
-  __typename?: 'WebhookSubscription';
-  active: Scalars['Boolean']['output'];
-  createdAt: Scalars['Date']['output'];
-  createdById?: Maybe<Scalars['ID']['output']>;
-  description?: Maybe<Scalars['String']['output']>;
-  eventTypes: Array<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  projectId: Scalars['ID']['output'];
-  updatedAt: Scalars['Date']['output'];
-  url: Scalars['String']['output'];
-};
-
-/** Returned only at creation or secret rotation. Store the secret immediately. */
-export type WebhookSubscriptionWithSecret = {
-  __typename?: 'WebhookSubscriptionWithSecret';
-  active: Scalars['Boolean']['output'];
-  createdAt: Scalars['Date']['output'];
-  createdById?: Maybe<Scalars['ID']['output']>;
-  description?: Maybe<Scalars['String']['output']>;
-  eventTypes: Array<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  projectId: Scalars['ID']['output'];
-  /** Plaintext signing secret. Shown once; never returned by list/get/update. */
-  secret: Scalars['String']['output'];
-  updatedAt: Scalars['Date']['output'];
-  url: Scalars['String']['output'];
-};
-
 export type WithIndex<TObject> = TObject & Record<string, any>;
 export type ResolversObject<TObject> = WithIndex<TObject>;
 
@@ -3889,7 +77,7 @@ export type TypeResolveFn<
   parent: TParent,
   context: TContext,
   info: GraphQLResolveInfo
-) => Maybe<TTypes> | Promise<Maybe<TTypes>>;
+) => Types.Maybe<TTypes> | Promise<Types.Maybe<TTypes>>;
 
 export type IsTypeOfResolverFn<
   T = Record<PropertyKey, never>,
@@ -3914,809 +102,798 @@ export type DirectiveResolverFn<
 /** Mapping of interface types */
 export type ResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
   Auditable:
-    | Account
-    | AccountProject
-    | AccountProjectApiKey
-    | AccountProjectTag
-    | AccountRole
-    | AccountTag
-    | ApiKey
-    | Group
-    | GroupPermission
-    | GroupTag
-    | Organization
-    | OrganizationGroup
-    | OrganizationInvitation
-    | OrganizationPermission
-    | OrganizationProject
-    | OrganizationProjectApiKey
-    | OrganizationProjectTag
-    | OrganizationRole
-    | OrganizationTag
-    | OrganizationUser
-    | Permission
-    | PermissionTag
-    | Project
-    | ProjectApp
-    | ProjectAppTag
-    | ProjectGroup
-    | ProjectPermission
-    | ProjectResource
-    | ProjectRole
-    | ProjectRolePermission
-    | ProjectTag
-    | ProjectUser
-    | ProjectUserApiKey
-    | ProjectUserGroup
-    | ProjectUserPermission
-    | Resource
-    | ResourceTag
-    | Role
-    | RoleGroup
-    | RolePermission
-    | RoleTag
-    | SigningKey
-    | Tag
-    | User
-    | UserAuthenticationMethod
-    | UserGroup
-    | UserPermission
-    | UserRole
-    | UserSession
-    | UserTag;
-  Creatable: never;
+    | Types.Account
+    | Types.AccountProject
+    | Types.AccountProjectApiKey
+    | Types.AccountProjectTag
+    | Types.AccountRole
+    | Types.AccountTag
+    | Types.ApiKey
+    | Types.Group
+    | Types.GroupPermission
+    | Types.GroupTag
+    | Types.Organization
+    | Types.OrganizationGroup
+    | Types.OrganizationInvitation
+    | Types.OrganizationPermission
+    | Types.OrganizationProject
+    | Types.OrganizationProjectApiKey
+    | Types.OrganizationProjectTag
+    | Types.OrganizationRole
+    | Types.OrganizationTag
+    | Types.OrganizationUser
+    | Types.Permission
+    | Types.PermissionTag
+    | Types.Project
+    | Types.ProjectApp
+    | Types.ProjectAppTag
+    | Types.ProjectGroup
+    | Types.ProjectPermission
+    | Types.ProjectResource
+    | Types.ProjectRole
+    | Types.ProjectRolePermission
+    | Types.ProjectTag
+    | Types.ProjectUser
+    | Types.ProjectUserApiKey
+    | Types.ProjectUserGroup
+    | Types.ProjectUserPermission
+    | Types.Resource
+    | Types.ResourceTag
+    | Types.Role
+    | Types.RoleGroup
+    | Types.RolePermission
+    | Types.RoleTag
+    | Types.SigningKey
+    | Types.Tag
+    | Types.User
+    | Types.UserAuthenticationMethod
+    | Types.UserGroup
+    | Types.UserPermission
+    | Types.UserRole
+    | Types.UserSession
+    | Types.UserTag;
   PaginatedResults:
-    | AccountPage
-    | ApiKeyPage
-    | GroupPage
-    | OrganizationPage
-    | PermissionPage
-    | ProjectAppPage
-    | ProjectPage
-    | ProjectSyncJobPage
-    | ResourcePage
-    | RolePage
-    | TagPage
-    | UserPage
-    | UserSessionPage;
+    | Types.AccountPage
+    | Types.ApiKeyPage
+    | Types.GroupPage
+    | Types.OrganizationPage
+    | Types.PermissionPage
+    | Types.ProjectAppPage
+    | Types.ProjectPage
+    | Types.ProjectSyncJobPage
+    | Types.ResourcePage
+    | Types.RolePage
+    | Types.TagPage
+    | Types.UserPage
+    | Types.UserSessionPage;
   Searchable: never;
 }>;
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = ResolversObject<{
-  AcceptInvitationInput: AcceptInvitationInput;
-  AcceptInvitationResult: ResolverTypeWrapper<AcceptInvitationResult>;
-  Account: ResolverTypeWrapper<Account>;
-  AccountExportData: ResolverTypeWrapper<AccountExportData>;
-  AccountPage: ResolverTypeWrapper<AccountPage>;
-  AccountProject: ResolverTypeWrapper<AccountProject>;
-  AccountProjectApiKey: ResolverTypeWrapper<AccountProjectApiKey>;
-  AccountProjectTag: ResolverTypeWrapper<AccountProjectTag>;
-  AccountRole: ResolverTypeWrapper<AccountRole>;
-  AccountSearchableField: AccountSearchableField;
-  AccountSortInput: AccountSortInput;
-  AccountSortableField: AccountSortableField;
-  AccountTag: ResolverTypeWrapper<AccountTag>;
-  AccountType: AccountType;
-  AddAccountProjectApiKeyInput: AddAccountProjectApiKeyInput;
-  AddAccountProjectInput: AddAccountProjectInput;
-  AddAccountProjectTagInput: AddAccountProjectTagInput;
-  AddAccountRoleInput: AddAccountRoleInput;
-  AddAccountTagInput: AddAccountTagInput;
-  AddGroupPermissionInput: AddGroupPermissionInput;
-  AddGroupTagInput: AddGroupTagInput;
-  AddOrganizationGroupInput: AddOrganizationGroupInput;
-  AddOrganizationPermissionInput: AddOrganizationPermissionInput;
-  AddOrganizationProjectApiKeyInput: AddOrganizationProjectApiKeyInput;
-  AddOrganizationProjectInput: AddOrganizationProjectInput;
-  AddOrganizationProjectTagInput: AddOrganizationProjectTagInput;
-  AddOrganizationRoleInput: AddOrganizationRoleInput;
-  AddOrganizationTagInput: AddOrganizationTagInput;
-  AddOrganizationUserInput: AddOrganizationUserInput;
-  AddPermissionTagInput: AddPermissionTagInput;
-  AddProjectAppTagInput: AddProjectAppTagInput;
-  AddProjectGroupInput: AddProjectGroupInput;
-  AddProjectPermissionInput: AddProjectPermissionInput;
-  AddProjectResourceInput: AddProjectResourceInput;
-  AddProjectRoleInput: AddProjectRoleInput;
-  AddProjectRolePermissionInput: AddProjectRolePermissionInput;
-  AddProjectTagInput: AddProjectTagInput;
-  AddProjectUserApiKeyInput: AddProjectUserApiKeyInput;
-  AddProjectUserGroupInput: AddProjectUserGroupInput;
-  AddProjectUserInput: AddProjectUserInput;
-  AddProjectUserPermissionInput: AddProjectUserPermissionInput;
-  AddResourceTagInput: AddResourceTagInput;
-  AddRoleGroupInput: AddRoleGroupInput;
-  AddRoleTagInput: AddRoleTagInput;
-  AddUserGroupInput: AddUserGroupInput;
-  AddUserRoleInput: AddUserRoleInput;
-  AddUserTagInput: AddUserTagInput;
-  ApiKey: ResolverTypeWrapper<ApiKey>;
-  ApiKeyPage: ResolverTypeWrapper<ApiKeyPage>;
-  ApiKeySearchableField: ApiKeySearchableField;
-  ApiKeySortInput: ApiKeySortInput;
-  ApiKeySortableField: ApiKeySortableField;
-  AssignRolePermissionInput: AssignRolePermissionInput;
-  AssignUserPermissionInput: AssignUserPermissionInput;
+  AcceptInvitationInput: Types.AcceptInvitationInput;
+  AcceptInvitationResult: ResolverTypeWrapper<Types.AcceptInvitationResult>;
+  Account: ResolverTypeWrapper<Types.Account>;
+  AccountExportData: ResolverTypeWrapper<Types.AccountExportData>;
+  AccountPage: ResolverTypeWrapper<Types.AccountPage>;
+  AccountProject: ResolverTypeWrapper<Types.AccountProject>;
+  AccountProjectApiKey: ResolverTypeWrapper<Types.AccountProjectApiKey>;
+  AccountProjectTag: ResolverTypeWrapper<Types.AccountProjectTag>;
+  AccountRole: ResolverTypeWrapper<Types.AccountRole>;
+  AccountSortInput: Types.AccountSortInput;
+  AccountSortableField: Types.AccountSortableField;
+  AccountTag: ResolverTypeWrapper<Types.AccountTag>;
+  AccountType: Types.AccountType;
+  AddAccountProjectApiKeyInput: Types.AddAccountProjectApiKeyInput;
+  AddAccountProjectInput: Types.AddAccountProjectInput;
+  AddAccountProjectTagInput: Types.AddAccountProjectTagInput;
+  AddAccountRoleInput: Types.AddAccountRoleInput;
+  AddAccountTagInput: Types.AddAccountTagInput;
+  AddGroupPermissionInput: Types.AddGroupPermissionInput;
+  AddGroupTagInput: Types.AddGroupTagInput;
+  AddOrganizationGroupInput: Types.AddOrganizationGroupInput;
+  AddOrganizationPermissionInput: Types.AddOrganizationPermissionInput;
+  AddOrganizationProjectApiKeyInput: Types.AddOrganizationProjectApiKeyInput;
+  AddOrganizationProjectInput: Types.AddOrganizationProjectInput;
+  AddOrganizationProjectTagInput: Types.AddOrganizationProjectTagInput;
+  AddOrganizationRoleInput: Types.AddOrganizationRoleInput;
+  AddOrganizationTagInput: Types.AddOrganizationTagInput;
+  AddOrganizationUserInput: Types.AddOrganizationUserInput;
+  AddPermissionTagInput: Types.AddPermissionTagInput;
+  AddProjectAppTagInput: Types.AddProjectAppTagInput;
+  AddProjectGroupInput: Types.AddProjectGroupInput;
+  AddProjectPermissionInput: Types.AddProjectPermissionInput;
+  AddProjectResourceInput: Types.AddProjectResourceInput;
+  AddProjectRoleInput: Types.AddProjectRoleInput;
+  AddProjectRolePermissionInput: Types.AddProjectRolePermissionInput;
+  AddProjectTagInput: Types.AddProjectTagInput;
+  AddProjectUserApiKeyInput: Types.AddProjectUserApiKeyInput;
+  AddProjectUserGroupInput: Types.AddProjectUserGroupInput;
+  AddProjectUserInput: Types.AddProjectUserInput;
+  AddProjectUserPermissionInput: Types.AddProjectUserPermissionInput;
+  AddResourceTagInput: Types.AddResourceTagInput;
+  AddRoleGroupInput: Types.AddRoleGroupInput;
+  AddRoleTagInput: Types.AddRoleTagInput;
+  AddUserGroupInput: Types.AddUserGroupInput;
+  AddUserRoleInput: Types.AddUserRoleInput;
+  AddUserTagInput: Types.AddUserTagInput;
+  ApiKey: ResolverTypeWrapper<Types.ApiKey>;
+  ApiKeyPage: ResolverTypeWrapper<Types.ApiKeyPage>;
+  ApiKeySearchableField: Types.ApiKeySearchableField;
+  ApiKeySortInput: Types.ApiKeySortInput;
+  ApiKeySortableField: Types.ApiKeySortableField;
+  AssignRolePermissionInput: Types.AssignRolePermissionInput;
+  AssignUserPermissionInput: Types.AssignUserPermissionInput;
   Auditable: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['Auditable']>;
-  AuthenticationMethodExportData: ResolverTypeWrapper<AuthenticationMethodExportData>;
-  AuthorizationReason: AuthorizationReason;
-  AuthorizationResult: ResolverTypeWrapper<AuthorizationResult>;
-  Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
-  CdmFindBy: CdmFindBy;
-  CdmIfMissing: CdmIfMissing;
-  CdmKeyResolverInput: CdmKeyResolverInput;
-  CdmModeInput: CdmModeInput;
-  CdmModeStrategy: CdmModeStrategy;
-  CdmOnConflict: CdmOnConflict;
-  ChangeMyPasswordInput: ChangeMyPasswordInput;
-  ChangeMyPasswordResult: ResolverTypeWrapper<ChangeMyPasswordResult>;
-  Creatable: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['Creatable']>;
-  CreateAccountInput: CreateAccountInput;
-  CreateAccountResult: ResolverTypeWrapper<CreateAccountResult>;
-  CreateApiKeyInput: CreateApiKeyInput;
-  CreateApiKeyResult: ResolverTypeWrapper<CreateApiKeyResult>;
-  CreateGroupInput: CreateGroupInput;
-  CreateMySecondaryAccountResult: ResolverTypeWrapper<CreateMySecondaryAccountResult>;
-  CreateMyUserAuthenticationMethodInput: CreateMyUserAuthenticationMethodInput;
-  CreateOrganizationInput: CreateOrganizationInput;
-  CreateOrganizationInvitationInput: CreateOrganizationInvitationInput;
-  CreatePermissionInput: CreatePermissionInput;
-  CreateProjectAppInput: CreateProjectAppInput;
-  CreateProjectAppResult: ResolverTypeWrapper<CreateProjectAppResult>;
-  CreateProjectInput: CreateProjectInput;
-  CreateResourceInput: CreateResourceInput;
-  CreateRoleInput: CreateRoleInput;
-  CreateTagInput: CreateTagInput;
-  CreateUserAuthenticationMethodInput: CreateUserAuthenticationMethodInput;
-  CreateUserInput: CreateUserInput;
-  CreateUserSessionInput: CreateUserSessionInput;
-  CreateWebhookSubscriptionMutationInput: CreateWebhookSubscriptionMutationInput;
-  Date: ResolverTypeWrapper<Scalars['Date']['output']>;
-  DeleteApiKeyInput: DeleteApiKeyInput;
-  DeleteMyAccountsInput: DeleteMyAccountsInput;
-  DeleteUserAuthenticationMethodInput: DeleteUserAuthenticationMethodInput;
-  DeleteUserSessionInput: DeleteUserSessionInput;
-  DeleteWebhookSubscriptionInput: DeleteWebhookSubscriptionInput;
-  EmailVerificationProofInput: EmailVerificationProofInput;
-  EmailVerificationProofType: EmailVerificationProofType;
-  ExchangeApiKeyInput: ExchangeApiKeyInput;
-  ExchangeApiKeyResult: ResolverTypeWrapper<ExchangeApiKeyResult>;
-  GenerateMyMfaRecoveryCodesInput: GenerateMyMfaRecoveryCodesInput;
-  GetUserAuthenticationMethodsInput: GetUserAuthenticationMethodsInput;
-  GetUserSessionsInput: GetUserSessionsInput;
-  Group: ResolverTypeWrapper<Group>;
-  GroupCdmInput: GroupCdmInput;
-  GroupPage: ResolverTypeWrapper<GroupPage>;
-  GroupPermission: ResolverTypeWrapper<GroupPermission>;
-  GroupSearchableField: GroupSearchableField;
-  GroupSortInput: GroupSortInput;
-  GroupSortableField: GroupSortableField;
-  GroupTag: ResolverTypeWrapper<GroupTag>;
-  ID: ResolverTypeWrapper<Scalars['ID']['output']>;
-  Int: ResolverTypeWrapper<Scalars['Int']['output']>;
-  InviteMemberInput: InviteMemberInput;
-  IsAuthorizedContextInput: IsAuthorizedContextInput;
-  IsAuthorizedInput: IsAuthorizedInput;
-  IsAuthorizedPermissionInput: IsAuthorizedPermissionInput;
-  JSON: ResolverTypeWrapper<Scalars['JSON']['output']>;
-  LoginInput: LoginInput;
-  LoginResponse: ResolverTypeWrapper<LoginResponse>;
-  LogoutMyUserResponse: ResolverTypeWrapper<LogoutMyUserResponse>;
-  MarkAllNotificationsReadResult: ResolverTypeWrapper<MarkAllNotificationsReadResult>;
-  MeResponse: ResolverTypeWrapper<MeResponse>;
-  MemberType: MemberType;
-  MfaDevice: ResolverTypeWrapper<MfaDevice>;
-  MfaEnrollment: ResolverTypeWrapper<MfaEnrollment>;
-  MfaRecoveryCodeStatus: ResolverTypeWrapper<MfaRecoveryCodeStatus>;
-  MfaSetupResponse: ResolverTypeWrapper<MfaSetupResponse>;
-  MfaVerifyResponse: ResolverTypeWrapper<MfaVerifyResponse>;
-  MfaVerifyResult: ResolverTypeWrapper<MfaVerifyResult>;
+  AuthenticationMethodExportData: ResolverTypeWrapper<Types.AuthenticationMethodExportData>;
+  AuthorizationReason: Types.AuthorizationReason;
+  AuthorizationResult: ResolverTypeWrapper<Types.AuthorizationResult>;
+  Boolean: ResolverTypeWrapper<Types.Scalars['Boolean']['output']>;
+  CdmFindBy: Types.CdmFindBy;
+  CdmIfMissing: Types.CdmIfMissing;
+  CdmKeyResolverInput: Types.CdmKeyResolverInput;
+  CdmModeInput: Types.CdmModeInput;
+  CdmModeStrategy: Types.CdmModeStrategy;
+  CdmOnConflict: Types.CdmOnConflict;
+  ChangeMyPasswordInput: Types.ChangeMyPasswordInput;
+  ChangeMyPasswordResult: ResolverTypeWrapper<Types.ChangeMyPasswordResult>;
+  CreateAccountInput: Types.CreateAccountInput;
+  CreateAccountResult: ResolverTypeWrapper<Types.CreateAccountResult>;
+  CreateApiKeyInput: Types.CreateApiKeyInput;
+  CreateApiKeyResult: ResolverTypeWrapper<Types.CreateApiKeyResult>;
+  CreateGroupInput: Types.CreateGroupInput;
+  CreateMySecondaryAccountResult: ResolverTypeWrapper<Types.CreateMySecondaryAccountResult>;
+  CreateMyUserAuthenticationMethodInput: Types.CreateMyUserAuthenticationMethodInput;
+  CreateOrganizationInput: Types.CreateOrganizationInput;
+  CreateOrganizationInvitationInput: Types.CreateOrganizationInvitationInput;
+  CreatePermissionInput: Types.CreatePermissionInput;
+  CreateProjectAppInput: Types.CreateProjectAppInput;
+  CreateProjectAppResult: ResolverTypeWrapper<Types.CreateProjectAppResult>;
+  CreateProjectInput: Types.CreateProjectInput;
+  CreateResourceInput: Types.CreateResourceInput;
+  CreateRoleInput: Types.CreateRoleInput;
+  CreateTagInput: Types.CreateTagInput;
+  CreateUserAuthenticationMethodInput: Types.CreateUserAuthenticationMethodInput;
+  CreateUserInput: Types.CreateUserInput;
+  CreateUserSessionInput: Types.CreateUserSessionInput;
+  CreateWebhookSubscriptionMutationInput: Types.CreateWebhookSubscriptionMutationInput;
+  Date: ResolverTypeWrapper<Types.Scalars['Date']['output']>;
+  DeleteApiKeyInput: Types.DeleteApiKeyInput;
+  DeleteMyAccountsInput: Types.DeleteMyAccountsInput;
+  DeleteUserAuthenticationMethodInput: Types.DeleteUserAuthenticationMethodInput;
+  DeleteUserSessionInput: Types.DeleteUserSessionInput;
+  DeleteWebhookSubscriptionInput: Types.DeleteWebhookSubscriptionInput;
+  EmailVerificationProofInput: Types.EmailVerificationProofInput;
+  EmailVerificationProofType: Types.EmailVerificationProofType;
+  ExchangeApiKeyInput: Types.ExchangeApiKeyInput;
+  ExchangeApiKeyResult: ResolverTypeWrapper<Types.ExchangeApiKeyResult>;
+  GenerateMyMfaRecoveryCodesInput: Types.GenerateMyMfaRecoveryCodesInput;
+  GetUserAuthenticationMethodsInput: Types.GetUserAuthenticationMethodsInput;
+  GetUserSessionsInput: Types.GetUserSessionsInput;
+  Group: ResolverTypeWrapper<Types.Group>;
+  GroupCdmInput: Types.GroupCdmInput;
+  GroupPage: ResolverTypeWrapper<Types.GroupPage>;
+  GroupPermission: ResolverTypeWrapper<Types.GroupPermission>;
+  GroupSearchableField: Types.GroupSearchableField;
+  GroupSortInput: Types.GroupSortInput;
+  GroupSortableField: Types.GroupSortableField;
+  GroupTag: ResolverTypeWrapper<Types.GroupTag>;
+  ID: ResolverTypeWrapper<Types.Scalars['ID']['output']>;
+  Int: ResolverTypeWrapper<Types.Scalars['Int']['output']>;
+  InviteMemberInput: Types.InviteMemberInput;
+  IsAuthorizedContextInput: Types.IsAuthorizedContextInput;
+  IsAuthorizedInput: Types.IsAuthorizedInput;
+  IsAuthorizedPermissionInput: Types.IsAuthorizedPermissionInput;
+  JSON: ResolverTypeWrapper<Types.Scalars['JSON']['output']>;
+  LoginInput: Types.LoginInput;
+  LoginResponse: ResolverTypeWrapper<Types.LoginResponse>;
+  LogoutMyUserResponse: ResolverTypeWrapper<Types.LogoutMyUserResponse>;
+  MarkAllNotificationsReadResult: ResolverTypeWrapper<Types.MarkAllNotificationsReadResult>;
+  MeResponse: ResolverTypeWrapper<Types.MeResponse>;
+  MemberType: Types.MemberType;
+  MfaDevice: ResolverTypeWrapper<Types.MfaDevice>;
+  MfaEnrollment: ResolverTypeWrapper<Types.MfaEnrollment>;
+  MfaRecoveryCodeStatus: ResolverTypeWrapper<Types.MfaRecoveryCodeStatus>;
+  MfaSetupResponse: ResolverTypeWrapper<Types.MfaSetupResponse>;
+  MfaVerifyResponse: ResolverTypeWrapper<Types.MfaVerifyResponse>;
+  MfaVerifyResult: ResolverTypeWrapper<Types.MfaVerifyResult>;
   Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
-  MyNotificationsInput: MyNotificationsInput;
-  MyProjectMembership: ResolverTypeWrapper<MyProjectMembership>;
-  MyUserSessionsInput: MyUserSessionsInput;
-  Notification: ResolverTypeWrapper<Notification>;
-  NotificationChannel: NotificationChannel;
-  NotificationEventScope: ResolverTypeWrapper<NotificationEventScope>;
-  NotificationPage: ResolverTypeWrapper<NotificationPage>;
-  NotificationPreference: ResolverTypeWrapper<NotificationPreference>;
-  NotificationPreferenceSource: NotificationPreferenceSource;
-  NotificationStatus: NotificationStatus;
-  Organization: ResolverTypeWrapper<Organization>;
-  OrganizationGroup: ResolverTypeWrapper<OrganizationGroup>;
-  OrganizationInvitation: ResolverTypeWrapper<OrganizationInvitation>;
-  OrganizationInvitationPage: ResolverTypeWrapper<OrganizationInvitationPage>;
-  OrganizationInvitationSearchableField: OrganizationInvitationSearchableField;
-  OrganizationInvitationSortInput: OrganizationInvitationSortInput;
-  OrganizationInvitationSortableField: OrganizationInvitationSortableField;
-  OrganizationInvitationStatus: OrganizationInvitationStatus;
-  OrganizationMember: ResolverTypeWrapper<OrganizationMember>;
-  OrganizationMemberPage: ResolverTypeWrapper<OrganizationMemberPage>;
-  OrganizationMemberSearchableField: OrganizationMemberSearchableField;
-  OrganizationMemberSortInput: OrganizationMemberSortInput;
-  OrganizationMemberSortableField: OrganizationMemberSortableField;
-  OrganizationMembershipExportData: ResolverTypeWrapper<OrganizationMembershipExportData>;
-  OrganizationPage: ResolverTypeWrapper<OrganizationPage>;
-  OrganizationPermission: ResolverTypeWrapper<OrganizationPermission>;
-  OrganizationProject: ResolverTypeWrapper<OrganizationProject>;
-  OrganizationProjectApiKey: ResolverTypeWrapper<OrganizationProjectApiKey>;
-  OrganizationProjectTag: ResolverTypeWrapper<OrganizationProjectTag>;
-  OrganizationRole: ResolverTypeWrapper<OrganizationRole>;
-  OrganizationSearchableField: OrganizationSearchableField;
-  OrganizationSortInput: OrganizationSortInput;
-  OrganizationSortableField: OrganizationSortableField;
-  OrganizationTag: ResolverTypeWrapper<OrganizationTag>;
-  OrganizationUser: ResolverTypeWrapper<OrganizationUser>;
+  MyNotificationsInput: Types.MyNotificationsInput;
+  MyProjectMembership: ResolverTypeWrapper<Types.MyProjectMembership>;
+  MyUserSessionsInput: Types.MyUserSessionsInput;
+  Notification: ResolverTypeWrapper<Types.Notification>;
+  NotificationChannel: Types.NotificationChannel;
+  NotificationEventScope: ResolverTypeWrapper<Types.NotificationEventScope>;
+  NotificationPage: ResolverTypeWrapper<Types.NotificationPage>;
+  NotificationPreference: ResolverTypeWrapper<Types.NotificationPreference>;
+  NotificationPreferenceSource: Types.NotificationPreferenceSource;
+  NotificationStatus: Types.NotificationStatus;
+  Organization: ResolverTypeWrapper<Types.Organization>;
+  OrganizationGroup: ResolverTypeWrapper<Types.OrganizationGroup>;
+  OrganizationInvitation: ResolverTypeWrapper<Types.OrganizationInvitation>;
+  OrganizationInvitationPage: ResolverTypeWrapper<Types.OrganizationInvitationPage>;
+  OrganizationInvitationSearchableField: Types.OrganizationInvitationSearchableField;
+  OrganizationInvitationSortInput: Types.OrganizationInvitationSortInput;
+  OrganizationInvitationSortableField: Types.OrganizationInvitationSortableField;
+  OrganizationInvitationStatus: Types.OrganizationInvitationStatus;
+  OrganizationMember: ResolverTypeWrapper<Types.OrganizationMember>;
+  OrganizationMemberPage: ResolverTypeWrapper<Types.OrganizationMemberPage>;
+  OrganizationMemberSortInput: Types.OrganizationMemberSortInput;
+  OrganizationMemberSortableField: Types.OrganizationMemberSortableField;
+  OrganizationMembershipExportData: ResolverTypeWrapper<Types.OrganizationMembershipExportData>;
+  OrganizationPage: ResolverTypeWrapper<Types.OrganizationPage>;
+  OrganizationPermission: ResolverTypeWrapper<Types.OrganizationPermission>;
+  OrganizationProject: ResolverTypeWrapper<Types.OrganizationProject>;
+  OrganizationProjectApiKey: ResolverTypeWrapper<Types.OrganizationProjectApiKey>;
+  OrganizationProjectTag: ResolverTypeWrapper<Types.OrganizationProjectTag>;
+  OrganizationRole: ResolverTypeWrapper<Types.OrganizationRole>;
+  OrganizationSearchableField: Types.OrganizationSearchableField;
+  OrganizationSortInput: Types.OrganizationSortInput;
+  OrganizationSortableField: Types.OrganizationSortableField;
+  OrganizationTag: ResolverTypeWrapper<Types.OrganizationTag>;
+  OrganizationUser: ResolverTypeWrapper<Types.OrganizationUser>;
   PaginatedResults: ResolverTypeWrapper<
     ResolversInterfaceTypes<ResolversTypes>['PaginatedResults']
   >;
-  Permission: ResolverTypeWrapper<Permission>;
-  PermissionCdmInput: PermissionCdmInput;
-  PermissionPage: ResolverTypeWrapper<PermissionPage>;
-  PermissionSearchableField: PermissionSearchableField;
-  PermissionSortInput: PermissionSortInput;
-  PermissionSortableField: PermissionSortableField;
-  PermissionTag: ResolverTypeWrapper<PermissionTag>;
-  Project: ResolverTypeWrapper<Project>;
-  ProjectApp: ResolverTypeWrapper<ProjectApp>;
-  ProjectAppPage: ResolverTypeWrapper<ProjectAppPage>;
-  ProjectAppSearchableField: ProjectAppSearchableField;
-  ProjectAppSortInput: ProjectAppSortInput;
-  ProjectAppSortableField: ProjectAppSortableField;
-  ProjectAppTag: ResolverTypeWrapper<ProjectAppTag>;
-  ProjectGroup: ResolverTypeWrapper<ProjectGroup>;
-  ProjectMembershipExportData: ResolverTypeWrapper<ProjectMembershipExportData>;
-  ProjectPage: ResolverTypeWrapper<ProjectPage>;
-  ProjectPermission: ResolverTypeWrapper<ProjectPermission>;
-  ProjectResource: ResolverTypeWrapper<ProjectResource>;
-  ProjectRole: ResolverTypeWrapper<ProjectRole>;
-  ProjectRolePermission: ResolverTypeWrapper<ProjectRolePermission>;
-  ProjectSearchableField: ProjectSearchableField;
-  ProjectSortInput: ProjectSortInput;
-  ProjectSortableField: ProjectSortableField;
-  ProjectSyncJob: ResolverTypeWrapper<ProjectSyncJob>;
-  ProjectSyncJobOperation: ProjectSyncJobOperation;
-  ProjectSyncJobPage: ResolverTypeWrapper<ProjectSyncJobPage>;
-  ProjectSyncJobSortInput: ProjectSyncJobSortInput;
-  ProjectSyncJobSortableField: ProjectSyncJobSortableField;
-  ProjectSyncJobStatus: ProjectSyncJobStatus;
-  ProjectTag: ResolverTypeWrapper<ProjectTag>;
-  ProjectUser: ResolverTypeWrapper<ProjectUser>;
-  ProjectUserApiKey: ResolverTypeWrapper<ProjectUserApiKey>;
-  ProjectUserGroup: ResolverTypeWrapper<ProjectUserGroup>;
-  ProjectUserPermission: ResolverTypeWrapper<ProjectUserPermission>;
+  Permission: ResolverTypeWrapper<Types.Permission>;
+  PermissionCdmInput: Types.PermissionCdmInput;
+  PermissionPage: ResolverTypeWrapper<Types.PermissionPage>;
+  PermissionSearchableField: Types.PermissionSearchableField;
+  PermissionSortInput: Types.PermissionSortInput;
+  PermissionSortableField: Types.PermissionSortableField;
+  PermissionTag: ResolverTypeWrapper<Types.PermissionTag>;
+  Project: ResolverTypeWrapper<Types.Project>;
+  ProjectApp: ResolverTypeWrapper<Types.ProjectApp>;
+  ProjectAppPage: ResolverTypeWrapper<Types.ProjectAppPage>;
+  ProjectAppSearchableField: Types.ProjectAppSearchableField;
+  ProjectAppSortInput: Types.ProjectAppSortInput;
+  ProjectAppSortableField: Types.ProjectAppSortableField;
+  ProjectAppTag: ResolverTypeWrapper<Types.ProjectAppTag>;
+  ProjectGroup: ResolverTypeWrapper<Types.ProjectGroup>;
+  ProjectMembershipExportData: ResolverTypeWrapper<Types.ProjectMembershipExportData>;
+  ProjectPage: ResolverTypeWrapper<Types.ProjectPage>;
+  ProjectPermission: ResolverTypeWrapper<Types.ProjectPermission>;
+  ProjectResource: ResolverTypeWrapper<Types.ProjectResource>;
+  ProjectRole: ResolverTypeWrapper<Types.ProjectRole>;
+  ProjectRolePermission: ResolverTypeWrapper<Types.ProjectRolePermission>;
+  ProjectSearchableField: Types.ProjectSearchableField;
+  ProjectSortInput: Types.ProjectSortInput;
+  ProjectSortableField: Types.ProjectSortableField;
+  ProjectSyncJob: ResolverTypeWrapper<Types.ProjectSyncJob>;
+  ProjectSyncJobOperation: Types.ProjectSyncJobOperation;
+  ProjectSyncJobPage: ResolverTypeWrapper<Types.ProjectSyncJobPage>;
+  ProjectSyncJobSortInput: Types.ProjectSyncJobSortInput;
+  ProjectSyncJobSortableField: Types.ProjectSyncJobSortableField;
+  ProjectSyncJobStatus: Types.ProjectSyncJobStatus;
+  ProjectTag: ResolverTypeWrapper<Types.ProjectTag>;
+  ProjectUser: ResolverTypeWrapper<Types.ProjectUser>;
+  ProjectUserApiKey: ResolverTypeWrapper<Types.ProjectUserApiKey>;
+  ProjectUserGroup: ResolverTypeWrapper<Types.ProjectUserGroup>;
+  ProjectUserPermission: ResolverTypeWrapper<Types.ProjectUserPermission>;
   Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
-  QueryAccountProjectApiKeysInput: QueryAccountProjectApiKeysInput;
-  QueryAccountProjectInput: QueryAccountProjectInput;
-  QueryAccountProjectTagInput: QueryAccountProjectTagInput;
-  QueryAccountProjectsInput: QueryAccountProjectsInput;
-  QueryAccountRolesInput: QueryAccountRolesInput;
-  QueryAccountTagsInput: QueryAccountTagsInput;
-  QueryAccountsInput: QueryAccountsInput;
-  QueryGroupPermissionsInput: QueryGroupPermissionsInput;
-  QueryGroupTagsInput: QueryGroupTagsInput;
-  QueryOrganizationGroupsInput: QueryOrganizationGroupsInput;
-  QueryOrganizationPermissionsInput: QueryOrganizationPermissionsInput;
-  QueryOrganizationProjectApiKeysInput: QueryOrganizationProjectApiKeysInput;
-  QueryOrganizationProjectTagInput: QueryOrganizationProjectTagInput;
-  QueryOrganizationProjectsInput: QueryOrganizationProjectsInput;
-  QueryOrganizationRolesInput: QueryOrganizationRolesInput;
-  QueryOrganizationTagsInput: QueryOrganizationTagsInput;
-  QueryOrganizationUsersInput: QueryOrganizationUsersInput;
-  QueryPermissionTagsInput: QueryPermissionTagsInput;
-  QueryProjectAppTagsInput: QueryProjectAppTagsInput;
-  QueryProjectGroupsInput: QueryProjectGroupsInput;
-  QueryProjectPermissionsInput: QueryProjectPermissionsInput;
-  QueryProjectResourcesInput: QueryProjectResourcesInput;
-  QueryProjectRolePermissionsInput: QueryProjectRolePermissionsInput;
-  QueryProjectRolesInput: QueryProjectRolesInput;
-  QueryProjectTagsInput: QueryProjectTagsInput;
-  QueryProjectUserApiKeysInput: QueryProjectUserApiKeysInput;
-  QueryProjectUserGroupsInput: QueryProjectUserGroupsInput;
-  QueryProjectUserPermissionsInput: QueryProjectUserPermissionsInput;
-  QueryProjectUsersInput: QueryProjectUsersInput;
-  QueryResourceTagsInput: QueryResourceTagsInput;
-  QueryRoleGroupsInput: QueryRoleGroupsInput;
-  QueryRolePermissionsInput: QueryRolePermissionsInput;
-  QueryRoleTagsInput: QueryRoleTagsInput;
-  QueryUserGroupsInput: QueryUserGroupsInput;
-  QueryUserPermissionsInput: QueryUserPermissionsInput;
-  QueryUserRolesInput: QueryUserRolesInput;
-  QueryUserTagsInput: QueryUserTagsInput;
-  RefreshSessionResponse: ResolverTypeWrapper<RefreshSessionResponse>;
-  RegisterInput: RegisterInput;
-  RemoveAccountProjectApiKeyInput: RemoveAccountProjectApiKeyInput;
-  RemoveAccountProjectInput: RemoveAccountProjectInput;
-  RemoveAccountProjectTagInput: RemoveAccountProjectTagInput;
-  RemoveAccountRoleInput: RemoveAccountRoleInput;
-  RemoveAccountTagInput: RemoveAccountTagInput;
-  RemoveGroupPermissionInput: RemoveGroupPermissionInput;
-  RemoveGroupTagInput: RemoveGroupTagInput;
-  RemoveMyMfaDeviceInput: RemoveMyMfaDeviceInput;
-  RemoveOrganizationGroupInput: RemoveOrganizationGroupInput;
-  RemoveOrganizationMemberInput: RemoveOrganizationMemberInput;
-  RemoveOrganizationPermissionInput: RemoveOrganizationPermissionInput;
-  RemoveOrganizationProjectApiKeyInput: RemoveOrganizationProjectApiKeyInput;
-  RemoveOrganizationProjectInput: RemoveOrganizationProjectInput;
-  RemoveOrganizationProjectTagInput: RemoveOrganizationProjectTagInput;
-  RemoveOrganizationRoleInput: RemoveOrganizationRoleInput;
-  RemoveOrganizationTagInput: RemoveOrganizationTagInput;
-  RemoveOrganizationUserInput: RemoveOrganizationUserInput;
-  RemovePermissionTagInput: RemovePermissionTagInput;
-  RemoveProjectAppTagInput: RemoveProjectAppTagInput;
-  RemoveProjectGroupInput: RemoveProjectGroupInput;
-  RemoveProjectPermissionInput: RemoveProjectPermissionInput;
-  RemoveProjectResourceInput: RemoveProjectResourceInput;
-  RemoveProjectRoleInput: RemoveProjectRoleInput;
-  RemoveProjectRolePermissionInput: RemoveProjectRolePermissionInput;
-  RemoveProjectTagInput: RemoveProjectTagInput;
-  RemoveProjectUserApiKeyInput: RemoveProjectUserApiKeyInput;
-  RemoveProjectUserGroupInput: RemoveProjectUserGroupInput;
-  RemoveProjectUserInput: RemoveProjectUserInput;
-  RemoveProjectUserPermissionInput: RemoveProjectUserPermissionInput;
-  RemoveResourceTagInput: RemoveResourceTagInput;
-  RemoveRoleGroupInput: RemoveRoleGroupInput;
-  RemoveRoleTagInput: RemoveRoleTagInput;
-  RemoveUserGroupInput: RemoveUserGroupInput;
-  RemoveUserRoleInput: RemoveUserRoleInput;
-  RemoveUserTagInput: RemoveUserTagInput;
-  ReplayWebhookDeliveryInput: ReplayWebhookDeliveryInput;
-  RequestPasswordResetInput: RequestPasswordResetInput;
-  RequestPasswordResetResponse: ResolverTypeWrapper<RequestPasswordResetResponse>;
-  ResendVerificationInput: ResendVerificationInput;
-  ResendVerificationResponse: ResolverTypeWrapper<ResendVerificationResponse>;
-  ResetPasswordInput: ResetPasswordInput;
-  ResetPasswordResponse: ResolverTypeWrapper<ResetPasswordResponse>;
-  Resource: ResolverTypeWrapper<Resource>;
-  ResourceCdmInput: ResourceCdmInput;
-  ResourcePage: ResolverTypeWrapper<ResourcePage>;
-  ResourceSearchableField: ResourceSearchableField;
-  ResourceSortInput: ResourceSortInput;
-  ResourceSortableField: ResourceSortableField;
-  ResourceTag: ResolverTypeWrapper<ResourceTag>;
-  RevokeApiKeyInput: RevokeApiKeyInput;
-  RevokeMyUserSessionResult: ResolverTypeWrapper<RevokeMyUserSessionResult>;
-  RevokeRolePermissionInput: RevokeRolePermissionInput;
-  RevokeUserPermissionInput: RevokeUserPermissionInput;
-  Role: ResolverTypeWrapper<Role>;
-  RoleCdmInput: RoleCdmInput;
-  RoleGroup: ResolverTypeWrapper<RoleGroup>;
-  RolePage: ResolverTypeWrapper<RolePage>;
-  RolePermission: ResolverTypeWrapper<RolePermission>;
-  RoleSearchableField: RoleSearchableField;
-  RoleSortInput: RoleSortInput;
-  RoleSortableField: RoleSortableField;
-  RoleTag: ResolverTypeWrapper<RoleTag>;
-  RotateApiKeyInput: RotateApiKeyInput;
-  RotateWebhookSubscriptionSecretInput: RotateWebhookSubscriptionSecretInput;
-  Scope: Scope;
+  QueryAccountProjectApiKeysInput: Types.QueryAccountProjectApiKeysInput;
+  QueryAccountProjectInput: Types.QueryAccountProjectInput;
+  QueryAccountProjectTagInput: Types.QueryAccountProjectTagInput;
+  QueryAccountProjectsInput: Types.QueryAccountProjectsInput;
+  QueryAccountRolesInput: Types.QueryAccountRolesInput;
+  QueryAccountTagsInput: Types.QueryAccountTagsInput;
+  QueryAccountsInput: Types.QueryAccountsInput;
+  QueryGroupPermissionsInput: Types.QueryGroupPermissionsInput;
+  QueryGroupTagsInput: Types.QueryGroupTagsInput;
+  QueryOrganizationGroupsInput: Types.QueryOrganizationGroupsInput;
+  QueryOrganizationPermissionsInput: Types.QueryOrganizationPermissionsInput;
+  QueryOrganizationProjectApiKeysInput: Types.QueryOrganizationProjectApiKeysInput;
+  QueryOrganizationProjectTagInput: Types.QueryOrganizationProjectTagInput;
+  QueryOrganizationProjectsInput: Types.QueryOrganizationProjectsInput;
+  QueryOrganizationRolesInput: Types.QueryOrganizationRolesInput;
+  QueryOrganizationTagsInput: Types.QueryOrganizationTagsInput;
+  QueryOrganizationUsersInput: Types.QueryOrganizationUsersInput;
+  QueryPermissionTagsInput: Types.QueryPermissionTagsInput;
+  QueryProjectAppTagsInput: Types.QueryProjectAppTagsInput;
+  QueryProjectGroupsInput: Types.QueryProjectGroupsInput;
+  QueryProjectPermissionsInput: Types.QueryProjectPermissionsInput;
+  QueryProjectResourcesInput: Types.QueryProjectResourcesInput;
+  QueryProjectRolePermissionsInput: Types.QueryProjectRolePermissionsInput;
+  QueryProjectRolesInput: Types.QueryProjectRolesInput;
+  QueryProjectTagsInput: Types.QueryProjectTagsInput;
+  QueryProjectUserApiKeysInput: Types.QueryProjectUserApiKeysInput;
+  QueryProjectUserGroupsInput: Types.QueryProjectUserGroupsInput;
+  QueryProjectUserPermissionsInput: Types.QueryProjectUserPermissionsInput;
+  QueryProjectUsersInput: Types.QueryProjectUsersInput;
+  QueryResourceTagsInput: Types.QueryResourceTagsInput;
+  QueryRoleGroupsInput: Types.QueryRoleGroupsInput;
+  QueryRolePermissionsInput: Types.QueryRolePermissionsInput;
+  QueryRoleTagsInput: Types.QueryRoleTagsInput;
+  QueryUserGroupsInput: Types.QueryUserGroupsInput;
+  QueryUserPermissionsInput: Types.QueryUserPermissionsInput;
+  QueryUserRolesInput: Types.QueryUserRolesInput;
+  QueryUserTagsInput: Types.QueryUserTagsInput;
+  RefreshSessionResponse: ResolverTypeWrapper<Types.RefreshSessionResponse>;
+  RegisterInput: Types.RegisterInput;
+  RemoveAccountProjectInput: Types.RemoveAccountProjectInput;
+  RemoveAccountProjectTagInput: Types.RemoveAccountProjectTagInput;
+  RemoveAccountRoleInput: Types.RemoveAccountRoleInput;
+  RemoveAccountTagInput: Types.RemoveAccountTagInput;
+  RemoveGroupPermissionInput: Types.RemoveGroupPermissionInput;
+  RemoveGroupTagInput: Types.RemoveGroupTagInput;
+  RemoveMyMfaDeviceInput: Types.RemoveMyMfaDeviceInput;
+  RemoveOrganizationGroupInput: Types.RemoveOrganizationGroupInput;
+  RemoveOrganizationMemberInput: Types.RemoveOrganizationMemberInput;
+  RemoveOrganizationPermissionInput: Types.RemoveOrganizationPermissionInput;
+  RemoveOrganizationProjectInput: Types.RemoveOrganizationProjectInput;
+  RemoveOrganizationProjectTagInput: Types.RemoveOrganizationProjectTagInput;
+  RemoveOrganizationRoleInput: Types.RemoveOrganizationRoleInput;
+  RemoveOrganizationTagInput: Types.RemoveOrganizationTagInput;
+  RemoveOrganizationUserInput: Types.RemoveOrganizationUserInput;
+  RemovePermissionTagInput: Types.RemovePermissionTagInput;
+  RemoveProjectAppTagInput: Types.RemoveProjectAppTagInput;
+  RemoveProjectGroupInput: Types.RemoveProjectGroupInput;
+  RemoveProjectPermissionInput: Types.RemoveProjectPermissionInput;
+  RemoveProjectResourceInput: Types.RemoveProjectResourceInput;
+  RemoveProjectRoleInput: Types.RemoveProjectRoleInput;
+  RemoveProjectRolePermissionInput: Types.RemoveProjectRolePermissionInput;
+  RemoveProjectTagInput: Types.RemoveProjectTagInput;
+  RemoveProjectUserApiKeyInput: Types.RemoveProjectUserApiKeyInput;
+  RemoveProjectUserGroupInput: Types.RemoveProjectUserGroupInput;
+  RemoveProjectUserInput: Types.RemoveProjectUserInput;
+  RemoveProjectUserPermissionInput: Types.RemoveProjectUserPermissionInput;
+  RemoveResourceTagInput: Types.RemoveResourceTagInput;
+  RemoveRoleGroupInput: Types.RemoveRoleGroupInput;
+  RemoveRoleTagInput: Types.RemoveRoleTagInput;
+  RemoveUserGroupInput: Types.RemoveUserGroupInput;
+  RemoveUserRoleInput: Types.RemoveUserRoleInput;
+  RemoveUserTagInput: Types.RemoveUserTagInput;
+  ReplayWebhookDeliveryInput: Types.ReplayWebhookDeliveryInput;
+  RequestPasswordResetInput: Types.RequestPasswordResetInput;
+  RequestPasswordResetResponse: ResolverTypeWrapper<Types.RequestPasswordResetResponse>;
+  ResendVerificationInput: Types.ResendVerificationInput;
+  ResendVerificationResponse: ResolverTypeWrapper<Types.ResendVerificationResponse>;
+  ResetPasswordInput: Types.ResetPasswordInput;
+  ResetPasswordResponse: ResolverTypeWrapper<Types.ResetPasswordResponse>;
+  Resource: ResolverTypeWrapper<Types.Resource>;
+  ResourceCdmInput: Types.ResourceCdmInput;
+  ResourcePage: ResolverTypeWrapper<Types.ResourcePage>;
+  ResourceSearchableField: Types.ResourceSearchableField;
+  ResourceSortInput: Types.ResourceSortInput;
+  ResourceSortableField: Types.ResourceSortableField;
+  ResourceTag: ResolverTypeWrapper<Types.ResourceTag>;
+  RevokeApiKeyInput: Types.RevokeApiKeyInput;
+  RevokeMyUserSessionResult: ResolverTypeWrapper<Types.RevokeMyUserSessionResult>;
+  RevokeRolePermissionInput: Types.RevokeRolePermissionInput;
+  RevokeUserPermissionInput: Types.RevokeUserPermissionInput;
+  Role: ResolverTypeWrapper<Types.Role>;
+  RoleCdmInput: Types.RoleCdmInput;
+  RoleGroup: ResolverTypeWrapper<Types.RoleGroup>;
+  RolePage: ResolverTypeWrapper<Types.RolePage>;
+  RolePermission: ResolverTypeWrapper<Types.RolePermission>;
+  RoleSearchableField: Types.RoleSearchableField;
+  RoleSortInput: Types.RoleSortInput;
+  RoleSortableField: Types.RoleSortableField;
+  RoleTag: ResolverTypeWrapper<Types.RoleTag>;
+  RotateApiKeyInput: Types.RotateApiKeyInput;
+  RotateWebhookSubscriptionSecretInput: Types.RotateWebhookSubscriptionSecretInput;
+  Scope: Types.Scope;
   Searchable: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['Searchable']>;
-  SessionExportData: ResolverTypeWrapper<SessionExportData>;
-  SetMyNotificationPreferenceInput: SetMyNotificationPreferenceInput;
-  SetMyPrimaryMfaDeviceInput: SetMyPrimaryMfaDeviceInput;
-  SigningKey: ResolverTypeWrapper<SigningKey>;
-  SortOrder: SortOrder;
-  StartProjectExportInput: StartProjectExportInput;
-  String: ResolverTypeWrapper<Scalars['String']['output']>;
-  SyncProjectInput: SyncProjectInput;
-  SyncProjectResult: ResolverTypeWrapper<SyncProjectResult>;
-  Tag: ResolverTypeWrapper<Tag>;
-  TagCdmInput: TagCdmInput;
-  TagPage: ResolverTypeWrapper<TagPage>;
-  TagSearchableField: TagSearchableField;
-  TagSortField: TagSortField;
-  TagSortInput: TagSortInput;
-  Tenant: Tenant;
-  TokenType: TokenType;
-  UnreadNotificationCount: ResolverTypeWrapper<UnreadNotificationCount>;
-  UpdateAccountProjectTagInput: UpdateAccountProjectTagInput;
-  UpdateAccountTagInput: UpdateAccountTagInput;
-  UpdateGroupInput: UpdateGroupInput;
-  UpdateGroupTagInput: UpdateGroupTagInput;
-  UpdateMyProjectMembershipInput: UpdateMyProjectMembershipInput;
-  UpdateMyUserAuthenticationMethodInput: UpdateMyUserAuthenticationMethodInput;
-  UpdateMyUserInput: UpdateMyUserInput;
-  UpdateOrganizationInput: UpdateOrganizationInput;
-  UpdateOrganizationInvitationInput: UpdateOrganizationInvitationInput;
-  UpdateOrganizationMemberInput: UpdateOrganizationMemberInput;
-  UpdateOrganizationProjectTagInput: UpdateOrganizationProjectTagInput;
-  UpdateOrganizationTagInput: UpdateOrganizationTagInput;
-  UpdatePermissionInput: UpdatePermissionInput;
-  UpdatePermissionTagInput: UpdatePermissionTagInput;
-  UpdateProjectAppInput: UpdateProjectAppInput;
-  UpdateProjectAppTagInput: UpdateProjectAppTagInput;
-  UpdateProjectInput: UpdateProjectInput;
-  UpdateProjectTagInput: UpdateProjectTagInput;
-  UpdateResourceInput: UpdateResourceInput;
-  UpdateResourceTagInput: UpdateResourceTagInput;
-  UpdateRoleInput: UpdateRoleInput;
-  UpdateRoleTagInput: UpdateRoleTagInput;
-  UpdateTagInput: UpdateTagInput;
-  UpdateUserAuthenticationMethodInput: UpdateUserAuthenticationMethodInput;
-  UpdateUserInput: UpdateUserInput;
-  UpdateUserSessionInput: UpdateUserSessionInput;
-  UpdateUserTagInput: UpdateUserTagInput;
-  UpdateWebhookSubscriptionMutationInput: UpdateWebhookSubscriptionMutationInput;
-  UploadMyProjectMembershipPictureInput: UploadMyProjectMembershipPictureInput;
-  UploadMyUserPictureInput: UploadMyUserPictureInput;
-  UploadUserPictureInput: UploadUserPictureInput;
-  UploadUserPictureResult: ResolverTypeWrapper<UploadUserPictureResult>;
-  User: ResolverTypeWrapper<User>;
-  UserApiKeyCdmInput: UserApiKeyCdmInput;
-  UserAuthenticationEmailProviderAction: UserAuthenticationEmailProviderAction;
-  UserAuthenticationMethod: ResolverTypeWrapper<UserAuthenticationMethod>;
-  UserAuthenticationMethodProvider: UserAuthenticationMethodProvider;
-  UserCdmInput: UserCdmInput;
-  UserDataExport: ResolverTypeWrapper<UserDataExport>;
-  UserExportData: ResolverTypeWrapper<UserExportData>;
-  UserGroup: ResolverTypeWrapper<UserGroup>;
-  UserPage: ResolverTypeWrapper<UserPage>;
-  UserPermission: ResolverTypeWrapper<UserPermission>;
-  UserRegistrationData: UserRegistrationData;
-  UserRole: ResolverTypeWrapper<UserRole>;
-  UserSearchableField: UserSearchableField;
-  UserSession: ResolverTypeWrapper<UserSession>;
-  UserSessionPage: ResolverTypeWrapper<UserSessionPage>;
-  UserSessionSearchableField: UserSessionSearchableField;
-  UserSessionSortInput: UserSessionSortInput;
-  UserSessionSortableField: UserSessionSortableField;
-  UserSortInput: UserSortInput;
-  UserSortableField: UserSortableField;
-  UserTag: ResolverTypeWrapper<UserTag>;
-  VerifyEmailInput: VerifyEmailInput;
-  VerifyEmailResponse: ResolverTypeWrapper<VerifyEmailResponse>;
-  VerifyMfaInput: VerifyMfaInput;
-  VerifyMfaRecoveryCodeInput: VerifyMfaRecoveryCodeInput;
-  VerifyMyMfaEnrollmentInput: VerifyMyMfaEnrollmentInput;
-  WebhookDeliveryAttempt: ResolverTypeWrapper<WebhookDeliveryAttempt>;
-  WebhookDeliveryPage: ResolverTypeWrapper<WebhookDeliveryPage>;
-  WebhookDeliveryStatus: WebhookDeliveryStatus;
-  WebhookSubscription: ResolverTypeWrapper<WebhookSubscription>;
-  WebhookSubscriptionWithSecret: ResolverTypeWrapper<WebhookSubscriptionWithSecret>;
+  SessionExportData: ResolverTypeWrapper<Types.SessionExportData>;
+  SetMyNotificationPreferenceInput: Types.SetMyNotificationPreferenceInput;
+  SetMyPrimaryMfaDeviceInput: Types.SetMyPrimaryMfaDeviceInput;
+  SigningKey: ResolverTypeWrapper<Types.SigningKey>;
+  SortOrder: Types.SortOrder;
+  StartProjectExportInput: Types.StartProjectExportInput;
+  String: ResolverTypeWrapper<Types.Scalars['String']['output']>;
+  SyncProjectInput: Types.SyncProjectInput;
+  SyncProjectResult: ResolverTypeWrapper<Types.SyncProjectResult>;
+  Tag: ResolverTypeWrapper<Types.Tag>;
+  TagCdmInput: Types.TagCdmInput;
+  TagPage: ResolverTypeWrapper<Types.TagPage>;
+  TagSearchableField: Types.TagSearchableField;
+  TagSortField: Types.TagSortField;
+  TagSortInput: Types.TagSortInput;
+  Tenant: Types.Tenant;
+  TokenType: Types.TokenType;
+  UnreadNotificationCount: ResolverTypeWrapper<Types.UnreadNotificationCount>;
+  UpdateAccountProjectTagInput: Types.UpdateAccountProjectTagInput;
+  UpdateAccountTagInput: Types.UpdateAccountTagInput;
+  UpdateGroupInput: Types.UpdateGroupInput;
+  UpdateGroupTagInput: Types.UpdateGroupTagInput;
+  UpdateMyProjectMembershipInput: Types.UpdateMyProjectMembershipInput;
+  UpdateMyUserInput: Types.UpdateMyUserInput;
+  UpdateOrganizationInput: Types.UpdateOrganizationInput;
+  UpdateOrganizationInvitationInput: Types.UpdateOrganizationInvitationInput;
+  UpdateOrganizationMemberInput: Types.UpdateOrganizationMemberInput;
+  UpdateOrganizationProjectTagInput: Types.UpdateOrganizationProjectTagInput;
+  UpdateOrganizationTagInput: Types.UpdateOrganizationTagInput;
+  UpdatePermissionInput: Types.UpdatePermissionInput;
+  UpdatePermissionTagInput: Types.UpdatePermissionTagInput;
+  UpdateProjectAppInput: Types.UpdateProjectAppInput;
+  UpdateProjectAppTagInput: Types.UpdateProjectAppTagInput;
+  UpdateProjectInput: Types.UpdateProjectInput;
+  UpdateProjectTagInput: Types.UpdateProjectTagInput;
+  UpdateResourceInput: Types.UpdateResourceInput;
+  UpdateResourceTagInput: Types.UpdateResourceTagInput;
+  UpdateRoleInput: Types.UpdateRoleInput;
+  UpdateRoleTagInput: Types.UpdateRoleTagInput;
+  UpdateTagInput: Types.UpdateTagInput;
+  UpdateUserAuthenticationMethodInput: Types.UpdateUserAuthenticationMethodInput;
+  UpdateUserInput: Types.UpdateUserInput;
+  UpdateUserSessionInput: Types.UpdateUserSessionInput;
+  UpdateUserTagInput: Types.UpdateUserTagInput;
+  UpdateWebhookSubscriptionMutationInput: Types.UpdateWebhookSubscriptionMutationInput;
+  UploadMyProjectMembershipPictureInput: Types.UploadMyProjectMembershipPictureInput;
+  UploadMyUserPictureInput: Types.UploadMyUserPictureInput;
+  UploadUserPictureInput: Types.UploadUserPictureInput;
+  UploadUserPictureResult: ResolverTypeWrapper<Types.UploadUserPictureResult>;
+  User: ResolverTypeWrapper<Types.User>;
+  UserApiKeyCdmInput: Types.UserApiKeyCdmInput;
+  UserAuthenticationEmailProviderAction: Types.UserAuthenticationEmailProviderAction;
+  UserAuthenticationMethod: ResolverTypeWrapper<Types.UserAuthenticationMethod>;
+  UserAuthenticationMethodProvider: Types.UserAuthenticationMethodProvider;
+  UserCdmInput: Types.UserCdmInput;
+  UserDataExport: ResolverTypeWrapper<Types.UserDataExport>;
+  UserExportData: ResolverTypeWrapper<Types.UserExportData>;
+  UserGroup: ResolverTypeWrapper<Types.UserGroup>;
+  UserPage: ResolverTypeWrapper<Types.UserPage>;
+  UserPermission: ResolverTypeWrapper<Types.UserPermission>;
+  UserRegistrationData: Types.UserRegistrationData;
+  UserRole: ResolverTypeWrapper<Types.UserRole>;
+  UserSearchableField: Types.UserSearchableField;
+  UserSession: ResolverTypeWrapper<Types.UserSession>;
+  UserSessionPage: ResolverTypeWrapper<Types.UserSessionPage>;
+  UserSessionSearchableField: Types.UserSessionSearchableField;
+  UserSessionSortInput: Types.UserSessionSortInput;
+  UserSessionSortableField: Types.UserSessionSortableField;
+  UserSortInput: Types.UserSortInput;
+  UserSortableField: Types.UserSortableField;
+  UserTag: ResolverTypeWrapper<Types.UserTag>;
+  VerifyEmailInput: Types.VerifyEmailInput;
+  VerifyEmailResponse: ResolverTypeWrapper<Types.VerifyEmailResponse>;
+  VerifyMfaInput: Types.VerifyMfaInput;
+  VerifyMfaRecoveryCodeInput: Types.VerifyMfaRecoveryCodeInput;
+  VerifyMyMfaEnrollmentInput: Types.VerifyMyMfaEnrollmentInput;
+  WebhookDeliveryAttempt: ResolverTypeWrapper<Types.WebhookDeliveryAttempt>;
+  WebhookDeliveryPage: ResolverTypeWrapper<Types.WebhookDeliveryPage>;
+  WebhookDeliveryStatus: Types.WebhookDeliveryStatus;
+  WebhookSubscription: ResolverTypeWrapper<Types.WebhookSubscription>;
+  WebhookSubscriptionWithSecret: ResolverTypeWrapper<Types.WebhookSubscriptionWithSecret>;
 }>;
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = ResolversObject<{
-  AcceptInvitationInput: AcceptInvitationInput;
-  AcceptInvitationResult: AcceptInvitationResult;
-  Account: Account;
-  AccountExportData: AccountExportData;
-  AccountPage: AccountPage;
-  AccountProject: AccountProject;
-  AccountProjectApiKey: AccountProjectApiKey;
-  AccountProjectTag: AccountProjectTag;
-  AccountRole: AccountRole;
-  AccountSortInput: AccountSortInput;
-  AccountTag: AccountTag;
-  AddAccountProjectApiKeyInput: AddAccountProjectApiKeyInput;
-  AddAccountProjectInput: AddAccountProjectInput;
-  AddAccountProjectTagInput: AddAccountProjectTagInput;
-  AddAccountRoleInput: AddAccountRoleInput;
-  AddAccountTagInput: AddAccountTagInput;
-  AddGroupPermissionInput: AddGroupPermissionInput;
-  AddGroupTagInput: AddGroupTagInput;
-  AddOrganizationGroupInput: AddOrganizationGroupInput;
-  AddOrganizationPermissionInput: AddOrganizationPermissionInput;
-  AddOrganizationProjectApiKeyInput: AddOrganizationProjectApiKeyInput;
-  AddOrganizationProjectInput: AddOrganizationProjectInput;
-  AddOrganizationProjectTagInput: AddOrganizationProjectTagInput;
-  AddOrganizationRoleInput: AddOrganizationRoleInput;
-  AddOrganizationTagInput: AddOrganizationTagInput;
-  AddOrganizationUserInput: AddOrganizationUserInput;
-  AddPermissionTagInput: AddPermissionTagInput;
-  AddProjectAppTagInput: AddProjectAppTagInput;
-  AddProjectGroupInput: AddProjectGroupInput;
-  AddProjectPermissionInput: AddProjectPermissionInput;
-  AddProjectResourceInput: AddProjectResourceInput;
-  AddProjectRoleInput: AddProjectRoleInput;
-  AddProjectRolePermissionInput: AddProjectRolePermissionInput;
-  AddProjectTagInput: AddProjectTagInput;
-  AddProjectUserApiKeyInput: AddProjectUserApiKeyInput;
-  AddProjectUserGroupInput: AddProjectUserGroupInput;
-  AddProjectUserInput: AddProjectUserInput;
-  AddProjectUserPermissionInput: AddProjectUserPermissionInput;
-  AddResourceTagInput: AddResourceTagInput;
-  AddRoleGroupInput: AddRoleGroupInput;
-  AddRoleTagInput: AddRoleTagInput;
-  AddUserGroupInput: AddUserGroupInput;
-  AddUserRoleInput: AddUserRoleInput;
-  AddUserTagInput: AddUserTagInput;
-  ApiKey: ApiKey;
-  ApiKeyPage: ApiKeyPage;
-  ApiKeySortInput: ApiKeySortInput;
-  AssignRolePermissionInput: AssignRolePermissionInput;
-  AssignUserPermissionInput: AssignUserPermissionInput;
+  AcceptInvitationInput: Types.AcceptInvitationInput;
+  AcceptInvitationResult: Types.AcceptInvitationResult;
+  Account: Types.Account;
+  AccountExportData: Types.AccountExportData;
+  AccountPage: Types.AccountPage;
+  AccountProject: Types.AccountProject;
+  AccountProjectApiKey: Types.AccountProjectApiKey;
+  AccountProjectTag: Types.AccountProjectTag;
+  AccountRole: Types.AccountRole;
+  AccountSortInput: Types.AccountSortInput;
+  AccountTag: Types.AccountTag;
+  AddAccountProjectApiKeyInput: Types.AddAccountProjectApiKeyInput;
+  AddAccountProjectInput: Types.AddAccountProjectInput;
+  AddAccountProjectTagInput: Types.AddAccountProjectTagInput;
+  AddAccountRoleInput: Types.AddAccountRoleInput;
+  AddAccountTagInput: Types.AddAccountTagInput;
+  AddGroupPermissionInput: Types.AddGroupPermissionInput;
+  AddGroupTagInput: Types.AddGroupTagInput;
+  AddOrganizationGroupInput: Types.AddOrganizationGroupInput;
+  AddOrganizationPermissionInput: Types.AddOrganizationPermissionInput;
+  AddOrganizationProjectApiKeyInput: Types.AddOrganizationProjectApiKeyInput;
+  AddOrganizationProjectInput: Types.AddOrganizationProjectInput;
+  AddOrganizationProjectTagInput: Types.AddOrganizationProjectTagInput;
+  AddOrganizationRoleInput: Types.AddOrganizationRoleInput;
+  AddOrganizationTagInput: Types.AddOrganizationTagInput;
+  AddOrganizationUserInput: Types.AddOrganizationUserInput;
+  AddPermissionTagInput: Types.AddPermissionTagInput;
+  AddProjectAppTagInput: Types.AddProjectAppTagInput;
+  AddProjectGroupInput: Types.AddProjectGroupInput;
+  AddProjectPermissionInput: Types.AddProjectPermissionInput;
+  AddProjectResourceInput: Types.AddProjectResourceInput;
+  AddProjectRoleInput: Types.AddProjectRoleInput;
+  AddProjectRolePermissionInput: Types.AddProjectRolePermissionInput;
+  AddProjectTagInput: Types.AddProjectTagInput;
+  AddProjectUserApiKeyInput: Types.AddProjectUserApiKeyInput;
+  AddProjectUserGroupInput: Types.AddProjectUserGroupInput;
+  AddProjectUserInput: Types.AddProjectUserInput;
+  AddProjectUserPermissionInput: Types.AddProjectUserPermissionInput;
+  AddResourceTagInput: Types.AddResourceTagInput;
+  AddRoleGroupInput: Types.AddRoleGroupInput;
+  AddRoleTagInput: Types.AddRoleTagInput;
+  AddUserGroupInput: Types.AddUserGroupInput;
+  AddUserRoleInput: Types.AddUserRoleInput;
+  AddUserTagInput: Types.AddUserTagInput;
+  ApiKey: Types.ApiKey;
+  ApiKeyPage: Types.ApiKeyPage;
+  ApiKeySortInput: Types.ApiKeySortInput;
+  AssignRolePermissionInput: Types.AssignRolePermissionInput;
+  AssignUserPermissionInput: Types.AssignUserPermissionInput;
   Auditable: ResolversInterfaceTypes<ResolversParentTypes>['Auditable'];
-  AuthenticationMethodExportData: AuthenticationMethodExportData;
-  AuthorizationResult: AuthorizationResult;
-  Boolean: Scalars['Boolean']['output'];
-  CdmKeyResolverInput: CdmKeyResolverInput;
-  CdmModeInput: CdmModeInput;
-  ChangeMyPasswordInput: ChangeMyPasswordInput;
-  ChangeMyPasswordResult: ChangeMyPasswordResult;
-  Creatable: ResolversInterfaceTypes<ResolversParentTypes>['Creatable'];
-  CreateAccountInput: CreateAccountInput;
-  CreateAccountResult: CreateAccountResult;
-  CreateApiKeyInput: CreateApiKeyInput;
-  CreateApiKeyResult: CreateApiKeyResult;
-  CreateGroupInput: CreateGroupInput;
-  CreateMySecondaryAccountResult: CreateMySecondaryAccountResult;
-  CreateMyUserAuthenticationMethodInput: CreateMyUserAuthenticationMethodInput;
-  CreateOrganizationInput: CreateOrganizationInput;
-  CreateOrganizationInvitationInput: CreateOrganizationInvitationInput;
-  CreatePermissionInput: CreatePermissionInput;
-  CreateProjectAppInput: CreateProjectAppInput;
-  CreateProjectAppResult: CreateProjectAppResult;
-  CreateProjectInput: CreateProjectInput;
-  CreateResourceInput: CreateResourceInput;
-  CreateRoleInput: CreateRoleInput;
-  CreateTagInput: CreateTagInput;
-  CreateUserAuthenticationMethodInput: CreateUserAuthenticationMethodInput;
-  CreateUserInput: CreateUserInput;
-  CreateUserSessionInput: CreateUserSessionInput;
-  CreateWebhookSubscriptionMutationInput: CreateWebhookSubscriptionMutationInput;
-  Date: Scalars['Date']['output'];
-  DeleteApiKeyInput: DeleteApiKeyInput;
-  DeleteMyAccountsInput: DeleteMyAccountsInput;
-  DeleteUserAuthenticationMethodInput: DeleteUserAuthenticationMethodInput;
-  DeleteUserSessionInput: DeleteUserSessionInput;
-  DeleteWebhookSubscriptionInput: DeleteWebhookSubscriptionInput;
-  EmailVerificationProofInput: EmailVerificationProofInput;
-  ExchangeApiKeyInput: ExchangeApiKeyInput;
-  ExchangeApiKeyResult: ExchangeApiKeyResult;
-  GenerateMyMfaRecoveryCodesInput: GenerateMyMfaRecoveryCodesInput;
-  GetUserAuthenticationMethodsInput: GetUserAuthenticationMethodsInput;
-  GetUserSessionsInput: GetUserSessionsInput;
-  Group: Group;
-  GroupCdmInput: GroupCdmInput;
-  GroupPage: GroupPage;
-  GroupPermission: GroupPermission;
-  GroupSortInput: GroupSortInput;
-  GroupTag: GroupTag;
-  ID: Scalars['ID']['output'];
-  Int: Scalars['Int']['output'];
-  InviteMemberInput: InviteMemberInput;
-  IsAuthorizedContextInput: IsAuthorizedContextInput;
-  IsAuthorizedInput: IsAuthorizedInput;
-  IsAuthorizedPermissionInput: IsAuthorizedPermissionInput;
-  JSON: Scalars['JSON']['output'];
-  LoginInput: LoginInput;
-  LoginResponse: LoginResponse;
-  LogoutMyUserResponse: LogoutMyUserResponse;
-  MarkAllNotificationsReadResult: MarkAllNotificationsReadResult;
-  MeResponse: MeResponse;
-  MfaDevice: MfaDevice;
-  MfaEnrollment: MfaEnrollment;
-  MfaRecoveryCodeStatus: MfaRecoveryCodeStatus;
-  MfaSetupResponse: MfaSetupResponse;
-  MfaVerifyResponse: MfaVerifyResponse;
-  MfaVerifyResult: MfaVerifyResult;
+  AuthenticationMethodExportData: Types.AuthenticationMethodExportData;
+  AuthorizationResult: Types.AuthorizationResult;
+  Boolean: Types.Scalars['Boolean']['output'];
+  CdmKeyResolverInput: Types.CdmKeyResolverInput;
+  CdmModeInput: Types.CdmModeInput;
+  ChangeMyPasswordInput: Types.ChangeMyPasswordInput;
+  ChangeMyPasswordResult: Types.ChangeMyPasswordResult;
+  CreateAccountInput: Types.CreateAccountInput;
+  CreateAccountResult: Types.CreateAccountResult;
+  CreateApiKeyInput: Types.CreateApiKeyInput;
+  CreateApiKeyResult: Types.CreateApiKeyResult;
+  CreateGroupInput: Types.CreateGroupInput;
+  CreateMySecondaryAccountResult: Types.CreateMySecondaryAccountResult;
+  CreateMyUserAuthenticationMethodInput: Types.CreateMyUserAuthenticationMethodInput;
+  CreateOrganizationInput: Types.CreateOrganizationInput;
+  CreateOrganizationInvitationInput: Types.CreateOrganizationInvitationInput;
+  CreatePermissionInput: Types.CreatePermissionInput;
+  CreateProjectAppInput: Types.CreateProjectAppInput;
+  CreateProjectAppResult: Types.CreateProjectAppResult;
+  CreateProjectInput: Types.CreateProjectInput;
+  CreateResourceInput: Types.CreateResourceInput;
+  CreateRoleInput: Types.CreateRoleInput;
+  CreateTagInput: Types.CreateTagInput;
+  CreateUserAuthenticationMethodInput: Types.CreateUserAuthenticationMethodInput;
+  CreateUserInput: Types.CreateUserInput;
+  CreateUserSessionInput: Types.CreateUserSessionInput;
+  CreateWebhookSubscriptionMutationInput: Types.CreateWebhookSubscriptionMutationInput;
+  Date: Types.Scalars['Date']['output'];
+  DeleteApiKeyInput: Types.DeleteApiKeyInput;
+  DeleteMyAccountsInput: Types.DeleteMyAccountsInput;
+  DeleteUserAuthenticationMethodInput: Types.DeleteUserAuthenticationMethodInput;
+  DeleteUserSessionInput: Types.DeleteUserSessionInput;
+  DeleteWebhookSubscriptionInput: Types.DeleteWebhookSubscriptionInput;
+  EmailVerificationProofInput: Types.EmailVerificationProofInput;
+  ExchangeApiKeyInput: Types.ExchangeApiKeyInput;
+  ExchangeApiKeyResult: Types.ExchangeApiKeyResult;
+  GenerateMyMfaRecoveryCodesInput: Types.GenerateMyMfaRecoveryCodesInput;
+  GetUserAuthenticationMethodsInput: Types.GetUserAuthenticationMethodsInput;
+  GetUserSessionsInput: Types.GetUserSessionsInput;
+  Group: Types.Group;
+  GroupCdmInput: Types.GroupCdmInput;
+  GroupPage: Types.GroupPage;
+  GroupPermission: Types.GroupPermission;
+  GroupSortInput: Types.GroupSortInput;
+  GroupTag: Types.GroupTag;
+  ID: Types.Scalars['ID']['output'];
+  Int: Types.Scalars['Int']['output'];
+  InviteMemberInput: Types.InviteMemberInput;
+  IsAuthorizedContextInput: Types.IsAuthorizedContextInput;
+  IsAuthorizedInput: Types.IsAuthorizedInput;
+  IsAuthorizedPermissionInput: Types.IsAuthorizedPermissionInput;
+  JSON: Types.Scalars['JSON']['output'];
+  LoginInput: Types.LoginInput;
+  LoginResponse: Types.LoginResponse;
+  LogoutMyUserResponse: Types.LogoutMyUserResponse;
+  MarkAllNotificationsReadResult: Types.MarkAllNotificationsReadResult;
+  MeResponse: Types.MeResponse;
+  MfaDevice: Types.MfaDevice;
+  MfaEnrollment: Types.MfaEnrollment;
+  MfaRecoveryCodeStatus: Types.MfaRecoveryCodeStatus;
+  MfaSetupResponse: Types.MfaSetupResponse;
+  MfaVerifyResponse: Types.MfaVerifyResponse;
+  MfaVerifyResult: Types.MfaVerifyResult;
   Mutation: Record<PropertyKey, never>;
-  MyNotificationsInput: MyNotificationsInput;
-  MyProjectMembership: MyProjectMembership;
-  MyUserSessionsInput: MyUserSessionsInput;
-  Notification: Notification;
-  NotificationEventScope: NotificationEventScope;
-  NotificationPage: NotificationPage;
-  NotificationPreference: NotificationPreference;
-  Organization: Organization;
-  OrganizationGroup: OrganizationGroup;
-  OrganizationInvitation: OrganizationInvitation;
-  OrganizationInvitationPage: OrganizationInvitationPage;
-  OrganizationInvitationSortInput: OrganizationInvitationSortInput;
-  OrganizationMember: OrganizationMember;
-  OrganizationMemberPage: OrganizationMemberPage;
-  OrganizationMemberSortInput: OrganizationMemberSortInput;
-  OrganizationMembershipExportData: OrganizationMembershipExportData;
-  OrganizationPage: OrganizationPage;
-  OrganizationPermission: OrganizationPermission;
-  OrganizationProject: OrganizationProject;
-  OrganizationProjectApiKey: OrganizationProjectApiKey;
-  OrganizationProjectTag: OrganizationProjectTag;
-  OrganizationRole: OrganizationRole;
-  OrganizationSortInput: OrganizationSortInput;
-  OrganizationTag: OrganizationTag;
-  OrganizationUser: OrganizationUser;
+  MyNotificationsInput: Types.MyNotificationsInput;
+  MyProjectMembership: Types.MyProjectMembership;
+  MyUserSessionsInput: Types.MyUserSessionsInput;
+  Notification: Types.Notification;
+  NotificationEventScope: Types.NotificationEventScope;
+  NotificationPage: Types.NotificationPage;
+  NotificationPreference: Types.NotificationPreference;
+  Organization: Types.Organization;
+  OrganizationGroup: Types.OrganizationGroup;
+  OrganizationInvitation: Types.OrganizationInvitation;
+  OrganizationInvitationPage: Types.OrganizationInvitationPage;
+  OrganizationInvitationSortInput: Types.OrganizationInvitationSortInput;
+  OrganizationMember: Types.OrganizationMember;
+  OrganizationMemberPage: Types.OrganizationMemberPage;
+  OrganizationMemberSortInput: Types.OrganizationMemberSortInput;
+  OrganizationMembershipExportData: Types.OrganizationMembershipExportData;
+  OrganizationPage: Types.OrganizationPage;
+  OrganizationPermission: Types.OrganizationPermission;
+  OrganizationProject: Types.OrganizationProject;
+  OrganizationProjectApiKey: Types.OrganizationProjectApiKey;
+  OrganizationProjectTag: Types.OrganizationProjectTag;
+  OrganizationRole: Types.OrganizationRole;
+  OrganizationSortInput: Types.OrganizationSortInput;
+  OrganizationTag: Types.OrganizationTag;
+  OrganizationUser: Types.OrganizationUser;
   PaginatedResults: ResolversInterfaceTypes<ResolversParentTypes>['PaginatedResults'];
-  Permission: Permission;
-  PermissionCdmInput: PermissionCdmInput;
-  PermissionPage: PermissionPage;
-  PermissionSortInput: PermissionSortInput;
-  PermissionTag: PermissionTag;
-  Project: Project;
-  ProjectApp: ProjectApp;
-  ProjectAppPage: ProjectAppPage;
-  ProjectAppSortInput: ProjectAppSortInput;
-  ProjectAppTag: ProjectAppTag;
-  ProjectGroup: ProjectGroup;
-  ProjectMembershipExportData: ProjectMembershipExportData;
-  ProjectPage: ProjectPage;
-  ProjectPermission: ProjectPermission;
-  ProjectResource: ProjectResource;
-  ProjectRole: ProjectRole;
-  ProjectRolePermission: ProjectRolePermission;
-  ProjectSortInput: ProjectSortInput;
-  ProjectSyncJob: ProjectSyncJob;
-  ProjectSyncJobPage: ProjectSyncJobPage;
-  ProjectSyncJobSortInput: ProjectSyncJobSortInput;
-  ProjectTag: ProjectTag;
-  ProjectUser: ProjectUser;
-  ProjectUserApiKey: ProjectUserApiKey;
-  ProjectUserGroup: ProjectUserGroup;
-  ProjectUserPermission: ProjectUserPermission;
+  Permission: Types.Permission;
+  PermissionCdmInput: Types.PermissionCdmInput;
+  PermissionPage: Types.PermissionPage;
+  PermissionSortInput: Types.PermissionSortInput;
+  PermissionTag: Types.PermissionTag;
+  Project: Types.Project;
+  ProjectApp: Types.ProjectApp;
+  ProjectAppPage: Types.ProjectAppPage;
+  ProjectAppSortInput: Types.ProjectAppSortInput;
+  ProjectAppTag: Types.ProjectAppTag;
+  ProjectGroup: Types.ProjectGroup;
+  ProjectMembershipExportData: Types.ProjectMembershipExportData;
+  ProjectPage: Types.ProjectPage;
+  ProjectPermission: Types.ProjectPermission;
+  ProjectResource: Types.ProjectResource;
+  ProjectRole: Types.ProjectRole;
+  ProjectRolePermission: Types.ProjectRolePermission;
+  ProjectSortInput: Types.ProjectSortInput;
+  ProjectSyncJob: Types.ProjectSyncJob;
+  ProjectSyncJobPage: Types.ProjectSyncJobPage;
+  ProjectSyncJobSortInput: Types.ProjectSyncJobSortInput;
+  ProjectTag: Types.ProjectTag;
+  ProjectUser: Types.ProjectUser;
+  ProjectUserApiKey: Types.ProjectUserApiKey;
+  ProjectUserGroup: Types.ProjectUserGroup;
+  ProjectUserPermission: Types.ProjectUserPermission;
   Query: Record<PropertyKey, never>;
-  QueryAccountProjectApiKeysInput: QueryAccountProjectApiKeysInput;
-  QueryAccountProjectInput: QueryAccountProjectInput;
-  QueryAccountProjectTagInput: QueryAccountProjectTagInput;
-  QueryAccountProjectsInput: QueryAccountProjectsInput;
-  QueryAccountRolesInput: QueryAccountRolesInput;
-  QueryAccountTagsInput: QueryAccountTagsInput;
-  QueryAccountsInput: QueryAccountsInput;
-  QueryGroupPermissionsInput: QueryGroupPermissionsInput;
-  QueryGroupTagsInput: QueryGroupTagsInput;
-  QueryOrganizationGroupsInput: QueryOrganizationGroupsInput;
-  QueryOrganizationPermissionsInput: QueryOrganizationPermissionsInput;
-  QueryOrganizationProjectApiKeysInput: QueryOrganizationProjectApiKeysInput;
-  QueryOrganizationProjectTagInput: QueryOrganizationProjectTagInput;
-  QueryOrganizationProjectsInput: QueryOrganizationProjectsInput;
-  QueryOrganizationRolesInput: QueryOrganizationRolesInput;
-  QueryOrganizationTagsInput: QueryOrganizationTagsInput;
-  QueryOrganizationUsersInput: QueryOrganizationUsersInput;
-  QueryPermissionTagsInput: QueryPermissionTagsInput;
-  QueryProjectAppTagsInput: QueryProjectAppTagsInput;
-  QueryProjectGroupsInput: QueryProjectGroupsInput;
-  QueryProjectPermissionsInput: QueryProjectPermissionsInput;
-  QueryProjectResourcesInput: QueryProjectResourcesInput;
-  QueryProjectRolePermissionsInput: QueryProjectRolePermissionsInput;
-  QueryProjectRolesInput: QueryProjectRolesInput;
-  QueryProjectTagsInput: QueryProjectTagsInput;
-  QueryProjectUserApiKeysInput: QueryProjectUserApiKeysInput;
-  QueryProjectUserGroupsInput: QueryProjectUserGroupsInput;
-  QueryProjectUserPermissionsInput: QueryProjectUserPermissionsInput;
-  QueryProjectUsersInput: QueryProjectUsersInput;
-  QueryResourceTagsInput: QueryResourceTagsInput;
-  QueryRoleGroupsInput: QueryRoleGroupsInput;
-  QueryRolePermissionsInput: QueryRolePermissionsInput;
-  QueryRoleTagsInput: QueryRoleTagsInput;
-  QueryUserGroupsInput: QueryUserGroupsInput;
-  QueryUserPermissionsInput: QueryUserPermissionsInput;
-  QueryUserRolesInput: QueryUserRolesInput;
-  QueryUserTagsInput: QueryUserTagsInput;
-  RefreshSessionResponse: RefreshSessionResponse;
-  RegisterInput: RegisterInput;
-  RemoveAccountProjectApiKeyInput: RemoveAccountProjectApiKeyInput;
-  RemoveAccountProjectInput: RemoveAccountProjectInput;
-  RemoveAccountProjectTagInput: RemoveAccountProjectTagInput;
-  RemoveAccountRoleInput: RemoveAccountRoleInput;
-  RemoveAccountTagInput: RemoveAccountTagInput;
-  RemoveGroupPermissionInput: RemoveGroupPermissionInput;
-  RemoveGroupTagInput: RemoveGroupTagInput;
-  RemoveMyMfaDeviceInput: RemoveMyMfaDeviceInput;
-  RemoveOrganizationGroupInput: RemoveOrganizationGroupInput;
-  RemoveOrganizationMemberInput: RemoveOrganizationMemberInput;
-  RemoveOrganizationPermissionInput: RemoveOrganizationPermissionInput;
-  RemoveOrganizationProjectApiKeyInput: RemoveOrganizationProjectApiKeyInput;
-  RemoveOrganizationProjectInput: RemoveOrganizationProjectInput;
-  RemoveOrganizationProjectTagInput: RemoveOrganizationProjectTagInput;
-  RemoveOrganizationRoleInput: RemoveOrganizationRoleInput;
-  RemoveOrganizationTagInput: RemoveOrganizationTagInput;
-  RemoveOrganizationUserInput: RemoveOrganizationUserInput;
-  RemovePermissionTagInput: RemovePermissionTagInput;
-  RemoveProjectAppTagInput: RemoveProjectAppTagInput;
-  RemoveProjectGroupInput: RemoveProjectGroupInput;
-  RemoveProjectPermissionInput: RemoveProjectPermissionInput;
-  RemoveProjectResourceInput: RemoveProjectResourceInput;
-  RemoveProjectRoleInput: RemoveProjectRoleInput;
-  RemoveProjectRolePermissionInput: RemoveProjectRolePermissionInput;
-  RemoveProjectTagInput: RemoveProjectTagInput;
-  RemoveProjectUserApiKeyInput: RemoveProjectUserApiKeyInput;
-  RemoveProjectUserGroupInput: RemoveProjectUserGroupInput;
-  RemoveProjectUserInput: RemoveProjectUserInput;
-  RemoveProjectUserPermissionInput: RemoveProjectUserPermissionInput;
-  RemoveResourceTagInput: RemoveResourceTagInput;
-  RemoveRoleGroupInput: RemoveRoleGroupInput;
-  RemoveRoleTagInput: RemoveRoleTagInput;
-  RemoveUserGroupInput: RemoveUserGroupInput;
-  RemoveUserRoleInput: RemoveUserRoleInput;
-  RemoveUserTagInput: RemoveUserTagInput;
-  ReplayWebhookDeliveryInput: ReplayWebhookDeliveryInput;
-  RequestPasswordResetInput: RequestPasswordResetInput;
-  RequestPasswordResetResponse: RequestPasswordResetResponse;
-  ResendVerificationInput: ResendVerificationInput;
-  ResendVerificationResponse: ResendVerificationResponse;
-  ResetPasswordInput: ResetPasswordInput;
-  ResetPasswordResponse: ResetPasswordResponse;
-  Resource: Resource;
-  ResourceCdmInput: ResourceCdmInput;
-  ResourcePage: ResourcePage;
-  ResourceSortInput: ResourceSortInput;
-  ResourceTag: ResourceTag;
-  RevokeApiKeyInput: RevokeApiKeyInput;
-  RevokeMyUserSessionResult: RevokeMyUserSessionResult;
-  RevokeRolePermissionInput: RevokeRolePermissionInput;
-  RevokeUserPermissionInput: RevokeUserPermissionInput;
-  Role: Role;
-  RoleCdmInput: RoleCdmInput;
-  RoleGroup: RoleGroup;
-  RolePage: RolePage;
-  RolePermission: RolePermission;
-  RoleSortInput: RoleSortInput;
-  RoleTag: RoleTag;
-  RotateApiKeyInput: RotateApiKeyInput;
-  RotateWebhookSubscriptionSecretInput: RotateWebhookSubscriptionSecretInput;
-  Scope: Scope;
+  QueryAccountProjectApiKeysInput: Types.QueryAccountProjectApiKeysInput;
+  QueryAccountProjectInput: Types.QueryAccountProjectInput;
+  QueryAccountProjectTagInput: Types.QueryAccountProjectTagInput;
+  QueryAccountProjectsInput: Types.QueryAccountProjectsInput;
+  QueryAccountRolesInput: Types.QueryAccountRolesInput;
+  QueryAccountTagsInput: Types.QueryAccountTagsInput;
+  QueryAccountsInput: Types.QueryAccountsInput;
+  QueryGroupPermissionsInput: Types.QueryGroupPermissionsInput;
+  QueryGroupTagsInput: Types.QueryGroupTagsInput;
+  QueryOrganizationGroupsInput: Types.QueryOrganizationGroupsInput;
+  QueryOrganizationPermissionsInput: Types.QueryOrganizationPermissionsInput;
+  QueryOrganizationProjectApiKeysInput: Types.QueryOrganizationProjectApiKeysInput;
+  QueryOrganizationProjectTagInput: Types.QueryOrganizationProjectTagInput;
+  QueryOrganizationProjectsInput: Types.QueryOrganizationProjectsInput;
+  QueryOrganizationRolesInput: Types.QueryOrganizationRolesInput;
+  QueryOrganizationTagsInput: Types.QueryOrganizationTagsInput;
+  QueryOrganizationUsersInput: Types.QueryOrganizationUsersInput;
+  QueryPermissionTagsInput: Types.QueryPermissionTagsInput;
+  QueryProjectAppTagsInput: Types.QueryProjectAppTagsInput;
+  QueryProjectGroupsInput: Types.QueryProjectGroupsInput;
+  QueryProjectPermissionsInput: Types.QueryProjectPermissionsInput;
+  QueryProjectResourcesInput: Types.QueryProjectResourcesInput;
+  QueryProjectRolePermissionsInput: Types.QueryProjectRolePermissionsInput;
+  QueryProjectRolesInput: Types.QueryProjectRolesInput;
+  QueryProjectTagsInput: Types.QueryProjectTagsInput;
+  QueryProjectUserApiKeysInput: Types.QueryProjectUserApiKeysInput;
+  QueryProjectUserGroupsInput: Types.QueryProjectUserGroupsInput;
+  QueryProjectUserPermissionsInput: Types.QueryProjectUserPermissionsInput;
+  QueryProjectUsersInput: Types.QueryProjectUsersInput;
+  QueryResourceTagsInput: Types.QueryResourceTagsInput;
+  QueryRoleGroupsInput: Types.QueryRoleGroupsInput;
+  QueryRolePermissionsInput: Types.QueryRolePermissionsInput;
+  QueryRoleTagsInput: Types.QueryRoleTagsInput;
+  QueryUserGroupsInput: Types.QueryUserGroupsInput;
+  QueryUserPermissionsInput: Types.QueryUserPermissionsInput;
+  QueryUserRolesInput: Types.QueryUserRolesInput;
+  QueryUserTagsInput: Types.QueryUserTagsInput;
+  RefreshSessionResponse: Types.RefreshSessionResponse;
+  RegisterInput: Types.RegisterInput;
+  RemoveAccountProjectInput: Types.RemoveAccountProjectInput;
+  RemoveAccountProjectTagInput: Types.RemoveAccountProjectTagInput;
+  RemoveAccountRoleInput: Types.RemoveAccountRoleInput;
+  RemoveAccountTagInput: Types.RemoveAccountTagInput;
+  RemoveGroupPermissionInput: Types.RemoveGroupPermissionInput;
+  RemoveGroupTagInput: Types.RemoveGroupTagInput;
+  RemoveMyMfaDeviceInput: Types.RemoveMyMfaDeviceInput;
+  RemoveOrganizationGroupInput: Types.RemoveOrganizationGroupInput;
+  RemoveOrganizationMemberInput: Types.RemoveOrganizationMemberInput;
+  RemoveOrganizationPermissionInput: Types.RemoveOrganizationPermissionInput;
+  RemoveOrganizationProjectInput: Types.RemoveOrganizationProjectInput;
+  RemoveOrganizationProjectTagInput: Types.RemoveOrganizationProjectTagInput;
+  RemoveOrganizationRoleInput: Types.RemoveOrganizationRoleInput;
+  RemoveOrganizationTagInput: Types.RemoveOrganizationTagInput;
+  RemoveOrganizationUserInput: Types.RemoveOrganizationUserInput;
+  RemovePermissionTagInput: Types.RemovePermissionTagInput;
+  RemoveProjectAppTagInput: Types.RemoveProjectAppTagInput;
+  RemoveProjectGroupInput: Types.RemoveProjectGroupInput;
+  RemoveProjectPermissionInput: Types.RemoveProjectPermissionInput;
+  RemoveProjectResourceInput: Types.RemoveProjectResourceInput;
+  RemoveProjectRoleInput: Types.RemoveProjectRoleInput;
+  RemoveProjectRolePermissionInput: Types.RemoveProjectRolePermissionInput;
+  RemoveProjectTagInput: Types.RemoveProjectTagInput;
+  RemoveProjectUserApiKeyInput: Types.RemoveProjectUserApiKeyInput;
+  RemoveProjectUserGroupInput: Types.RemoveProjectUserGroupInput;
+  RemoveProjectUserInput: Types.RemoveProjectUserInput;
+  RemoveProjectUserPermissionInput: Types.RemoveProjectUserPermissionInput;
+  RemoveResourceTagInput: Types.RemoveResourceTagInput;
+  RemoveRoleGroupInput: Types.RemoveRoleGroupInput;
+  RemoveRoleTagInput: Types.RemoveRoleTagInput;
+  RemoveUserGroupInput: Types.RemoveUserGroupInput;
+  RemoveUserRoleInput: Types.RemoveUserRoleInput;
+  RemoveUserTagInput: Types.RemoveUserTagInput;
+  ReplayWebhookDeliveryInput: Types.ReplayWebhookDeliveryInput;
+  RequestPasswordResetInput: Types.RequestPasswordResetInput;
+  RequestPasswordResetResponse: Types.RequestPasswordResetResponse;
+  ResendVerificationInput: Types.ResendVerificationInput;
+  ResendVerificationResponse: Types.ResendVerificationResponse;
+  ResetPasswordInput: Types.ResetPasswordInput;
+  ResetPasswordResponse: Types.ResetPasswordResponse;
+  Resource: Types.Resource;
+  ResourceCdmInput: Types.ResourceCdmInput;
+  ResourcePage: Types.ResourcePage;
+  ResourceSortInput: Types.ResourceSortInput;
+  ResourceTag: Types.ResourceTag;
+  RevokeApiKeyInput: Types.RevokeApiKeyInput;
+  RevokeMyUserSessionResult: Types.RevokeMyUserSessionResult;
+  RevokeRolePermissionInput: Types.RevokeRolePermissionInput;
+  RevokeUserPermissionInput: Types.RevokeUserPermissionInput;
+  Role: Types.Role;
+  RoleCdmInput: Types.RoleCdmInput;
+  RoleGroup: Types.RoleGroup;
+  RolePage: Types.RolePage;
+  RolePermission: Types.RolePermission;
+  RoleSortInput: Types.RoleSortInput;
+  RoleTag: Types.RoleTag;
+  RotateApiKeyInput: Types.RotateApiKeyInput;
+  RotateWebhookSubscriptionSecretInput: Types.RotateWebhookSubscriptionSecretInput;
+  Scope: Types.Scope;
   Searchable: ResolversInterfaceTypes<ResolversParentTypes>['Searchable'];
-  SessionExportData: SessionExportData;
-  SetMyNotificationPreferenceInput: SetMyNotificationPreferenceInput;
-  SetMyPrimaryMfaDeviceInput: SetMyPrimaryMfaDeviceInput;
-  SigningKey: SigningKey;
-  StartProjectExportInput: StartProjectExportInput;
-  String: Scalars['String']['output'];
-  SyncProjectInput: SyncProjectInput;
-  SyncProjectResult: SyncProjectResult;
-  Tag: Tag;
-  TagCdmInput: TagCdmInput;
-  TagPage: TagPage;
-  TagSortInput: TagSortInput;
-  UnreadNotificationCount: UnreadNotificationCount;
-  UpdateAccountProjectTagInput: UpdateAccountProjectTagInput;
-  UpdateAccountTagInput: UpdateAccountTagInput;
-  UpdateGroupInput: UpdateGroupInput;
-  UpdateGroupTagInput: UpdateGroupTagInput;
-  UpdateMyProjectMembershipInput: UpdateMyProjectMembershipInput;
-  UpdateMyUserAuthenticationMethodInput: UpdateMyUserAuthenticationMethodInput;
-  UpdateMyUserInput: UpdateMyUserInput;
-  UpdateOrganizationInput: UpdateOrganizationInput;
-  UpdateOrganizationInvitationInput: UpdateOrganizationInvitationInput;
-  UpdateOrganizationMemberInput: UpdateOrganizationMemberInput;
-  UpdateOrganizationProjectTagInput: UpdateOrganizationProjectTagInput;
-  UpdateOrganizationTagInput: UpdateOrganizationTagInput;
-  UpdatePermissionInput: UpdatePermissionInput;
-  UpdatePermissionTagInput: UpdatePermissionTagInput;
-  UpdateProjectAppInput: UpdateProjectAppInput;
-  UpdateProjectAppTagInput: UpdateProjectAppTagInput;
-  UpdateProjectInput: UpdateProjectInput;
-  UpdateProjectTagInput: UpdateProjectTagInput;
-  UpdateResourceInput: UpdateResourceInput;
-  UpdateResourceTagInput: UpdateResourceTagInput;
-  UpdateRoleInput: UpdateRoleInput;
-  UpdateRoleTagInput: UpdateRoleTagInput;
-  UpdateTagInput: UpdateTagInput;
-  UpdateUserAuthenticationMethodInput: UpdateUserAuthenticationMethodInput;
-  UpdateUserInput: UpdateUserInput;
-  UpdateUserSessionInput: UpdateUserSessionInput;
-  UpdateUserTagInput: UpdateUserTagInput;
-  UpdateWebhookSubscriptionMutationInput: UpdateWebhookSubscriptionMutationInput;
-  UploadMyProjectMembershipPictureInput: UploadMyProjectMembershipPictureInput;
-  UploadMyUserPictureInput: UploadMyUserPictureInput;
-  UploadUserPictureInput: UploadUserPictureInput;
-  UploadUserPictureResult: UploadUserPictureResult;
-  User: User;
-  UserApiKeyCdmInput: UserApiKeyCdmInput;
-  UserAuthenticationMethod: UserAuthenticationMethod;
-  UserCdmInput: UserCdmInput;
-  UserDataExport: UserDataExport;
-  UserExportData: UserExportData;
-  UserGroup: UserGroup;
-  UserPage: UserPage;
-  UserPermission: UserPermission;
-  UserRegistrationData: UserRegistrationData;
-  UserRole: UserRole;
-  UserSession: UserSession;
-  UserSessionPage: UserSessionPage;
-  UserSessionSortInput: UserSessionSortInput;
-  UserSortInput: UserSortInput;
-  UserTag: UserTag;
-  VerifyEmailInput: VerifyEmailInput;
-  VerifyEmailResponse: VerifyEmailResponse;
-  VerifyMfaInput: VerifyMfaInput;
-  VerifyMfaRecoveryCodeInput: VerifyMfaRecoveryCodeInput;
-  VerifyMyMfaEnrollmentInput: VerifyMyMfaEnrollmentInput;
-  WebhookDeliveryAttempt: WebhookDeliveryAttempt;
-  WebhookDeliveryPage: WebhookDeliveryPage;
-  WebhookSubscription: WebhookSubscription;
-  WebhookSubscriptionWithSecret: WebhookSubscriptionWithSecret;
+  SessionExportData: Types.SessionExportData;
+  SetMyNotificationPreferenceInput: Types.SetMyNotificationPreferenceInput;
+  SetMyPrimaryMfaDeviceInput: Types.SetMyPrimaryMfaDeviceInput;
+  SigningKey: Types.SigningKey;
+  StartProjectExportInput: Types.StartProjectExportInput;
+  String: Types.Scalars['String']['output'];
+  SyncProjectInput: Types.SyncProjectInput;
+  SyncProjectResult: Types.SyncProjectResult;
+  Tag: Types.Tag;
+  TagCdmInput: Types.TagCdmInput;
+  TagPage: Types.TagPage;
+  TagSortInput: Types.TagSortInput;
+  UnreadNotificationCount: Types.UnreadNotificationCount;
+  UpdateAccountProjectTagInput: Types.UpdateAccountProjectTagInput;
+  UpdateAccountTagInput: Types.UpdateAccountTagInput;
+  UpdateGroupInput: Types.UpdateGroupInput;
+  UpdateGroupTagInput: Types.UpdateGroupTagInput;
+  UpdateMyProjectMembershipInput: Types.UpdateMyProjectMembershipInput;
+  UpdateMyUserInput: Types.UpdateMyUserInput;
+  UpdateOrganizationInput: Types.UpdateOrganizationInput;
+  UpdateOrganizationInvitationInput: Types.UpdateOrganizationInvitationInput;
+  UpdateOrganizationMemberInput: Types.UpdateOrganizationMemberInput;
+  UpdateOrganizationProjectTagInput: Types.UpdateOrganizationProjectTagInput;
+  UpdateOrganizationTagInput: Types.UpdateOrganizationTagInput;
+  UpdatePermissionInput: Types.UpdatePermissionInput;
+  UpdatePermissionTagInput: Types.UpdatePermissionTagInput;
+  UpdateProjectAppInput: Types.UpdateProjectAppInput;
+  UpdateProjectAppTagInput: Types.UpdateProjectAppTagInput;
+  UpdateProjectInput: Types.UpdateProjectInput;
+  UpdateProjectTagInput: Types.UpdateProjectTagInput;
+  UpdateResourceInput: Types.UpdateResourceInput;
+  UpdateResourceTagInput: Types.UpdateResourceTagInput;
+  UpdateRoleInput: Types.UpdateRoleInput;
+  UpdateRoleTagInput: Types.UpdateRoleTagInput;
+  UpdateTagInput: Types.UpdateTagInput;
+  UpdateUserAuthenticationMethodInput: Types.UpdateUserAuthenticationMethodInput;
+  UpdateUserInput: Types.UpdateUserInput;
+  UpdateUserSessionInput: Types.UpdateUserSessionInput;
+  UpdateUserTagInput: Types.UpdateUserTagInput;
+  UpdateWebhookSubscriptionMutationInput: Types.UpdateWebhookSubscriptionMutationInput;
+  UploadMyProjectMembershipPictureInput: Types.UploadMyProjectMembershipPictureInput;
+  UploadMyUserPictureInput: Types.UploadMyUserPictureInput;
+  UploadUserPictureInput: Types.UploadUserPictureInput;
+  UploadUserPictureResult: Types.UploadUserPictureResult;
+  User: Types.User;
+  UserApiKeyCdmInput: Types.UserApiKeyCdmInput;
+  UserAuthenticationMethod: Types.UserAuthenticationMethod;
+  UserCdmInput: Types.UserCdmInput;
+  UserDataExport: Types.UserDataExport;
+  UserExportData: Types.UserExportData;
+  UserGroup: Types.UserGroup;
+  UserPage: Types.UserPage;
+  UserPermission: Types.UserPermission;
+  UserRegistrationData: Types.UserRegistrationData;
+  UserRole: Types.UserRole;
+  UserSession: Types.UserSession;
+  UserSessionPage: Types.UserSessionPage;
+  UserSessionSortInput: Types.UserSessionSortInput;
+  UserSortInput: Types.UserSortInput;
+  UserTag: Types.UserTag;
+  VerifyEmailInput: Types.VerifyEmailInput;
+  VerifyEmailResponse: Types.VerifyEmailResponse;
+  VerifyMfaInput: Types.VerifyMfaInput;
+  VerifyMfaRecoveryCodeInput: Types.VerifyMfaRecoveryCodeInput;
+  VerifyMyMfaEnrollmentInput: Types.VerifyMyMfaEnrollmentInput;
+  WebhookDeliveryAttempt: Types.WebhookDeliveryAttempt;
+  WebhookDeliveryPage: Types.WebhookDeliveryPage;
+  WebhookSubscription: Types.WebhookSubscription;
+  WebhookSubscriptionWithSecret: Types.WebhookSubscriptionWithSecret;
 }>;
 
 export type AcceptInvitationResultResolvers<
@@ -4725,10 +902,14 @@ export type AcceptInvitationResultResolvers<
     ResolversParentTypes['AcceptInvitationResult'],
 > = ResolversObject<{
   accounts?: Resolver<Array<ResolversTypes['Account']>, ParentType, ContextType>;
-  invitation?: Resolver<Maybe<ResolversTypes['OrganizationInvitation']>, ParentType, ContextType>;
-  isNewUser?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
+  invitation?: Resolver<
+    Types.Maybe<ResolversTypes['OrganizationInvitation']>,
+    ParentType,
+    ContextType
+  >;
+  isNewUser?: Resolver<Types.Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   requiresRegistration?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
+  user?: Resolver<Types.Maybe<ResolversTypes['User']>, ParentType, ContextType>;
 }>;
 
 export type AccountResolvers<
@@ -4736,12 +917,12 @@ export type AccountResolvers<
   ParentType extends ResolversParentTypes['Account'] = ResolversParentTypes['Account'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   owner?: Resolver<ResolversTypes['User'], ParentType, ContextType>;
   ownerId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  projects?: Resolver<Maybe<Array<ResolversTypes['Project']>>, ParentType, ContextType>;
-  tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
+  projects?: Resolver<Types.Maybe<Array<ResolversTypes['Project']>>, ParentType, ContextType>;
+  tags?: Resolver<Types.Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
   type?: Resolver<ResolversTypes['AccountType'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -4773,12 +954,12 @@ export type AccountProjectResolvers<
   ParentType extends ResolversParentTypes['AccountProject'] =
     ResolversParentTypes['AccountProject'],
 > = ResolversObject<{
-  account?: Resolver<Maybe<ResolversTypes['Account']>, ParentType, ContextType>;
+  account?: Resolver<Types.Maybe<ResolversTypes['Account']>, ParentType, ContextType>;
   accountId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  project?: Resolver<Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
+  project?: Resolver<Types.Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -4789,17 +970,17 @@ export type AccountProjectApiKeyResolvers<
   ParentType extends ResolversParentTypes['AccountProjectApiKey'] =
     ResolversParentTypes['AccountProjectApiKey'],
 > = ResolversObject<{
-  account?: Resolver<Maybe<ResolversTypes['Account']>, ParentType, ContextType>;
+  account?: Resolver<Types.Maybe<ResolversTypes['Account']>, ParentType, ContextType>;
   accountId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   accountRoleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  apiKey?: Resolver<Maybe<ResolversTypes['ApiKey']>, ParentType, ContextType>;
+  apiKey?: Resolver<Types.Maybe<ResolversTypes['ApiKey']>, ParentType, ContextType>;
   apiKeyId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  project?: Resolver<Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
+  project?: Resolver<Types.Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  role?: Resolver<Maybe<ResolversTypes['Role']>, ParentType, ContextType>;
+  role?: Resolver<Types.Maybe<ResolversTypes['Role']>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -4809,15 +990,15 @@ export type AccountProjectTagResolvers<
   ParentType extends ResolversParentTypes['AccountProjectTag'] =
     ResolversParentTypes['AccountProjectTag'],
 > = ResolversObject<{
-  account?: Resolver<Maybe<ResolversTypes['Account']>, ParentType, ContextType>;
+  account?: Resolver<Types.Maybe<ResolversTypes['Account']>, ParentType, ContextType>;
   accountId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  project?: Resolver<Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
+  project?: Resolver<Types.Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  tag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
+  tag?: Resolver<Types.Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
   tagId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -4827,12 +1008,12 @@ export type AccountRoleResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['AccountRole'] = ResolversParentTypes['AccountRole'],
 > = ResolversObject<{
-  account?: Resolver<Maybe<ResolversTypes['Account']>, ParentType, ContextType>;
+  account?: Resolver<Types.Maybe<ResolversTypes['Account']>, ParentType, ContextType>;
   accountId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  role?: Resolver<Maybe<ResolversTypes['Role']>, ParentType, ContextType>;
+  role?: Resolver<Types.Maybe<ResolversTypes['Role']>, ParentType, ContextType>;
   roleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -4842,13 +1023,13 @@ export type AccountTagResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['AccountTag'] = ResolversParentTypes['AccountTag'],
 > = ResolversObject<{
-  account?: Resolver<Maybe<ResolversTypes['Account']>, ParentType, ContextType>;
+  account?: Resolver<Types.Maybe<ResolversTypes['Account']>, ParentType, ContextType>;
   accountId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  tag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
+  tag?: Resolver<Types.Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
   tagId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -4861,18 +1042,18 @@ export type ApiKeyResolvers<
   clientId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   createdBy?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  createdByUser?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
-  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  expiresAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  createdByUser?: Resolver<Types.Maybe<ResolversTypes['User']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  description?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  expiresAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isRevoked?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  lastUsedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
-  name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  revokedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
-  revokedBy?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
-  revokedByUser?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
-  role?: Resolver<Maybe<ResolversTypes['Role']>, ParentType, ContextType>;
+  lastUsedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  name?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  revokedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  revokedBy?: Resolver<Types.Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  revokedByUser?: Resolver<Types.Maybe<ResolversTypes['User']>, ParentType, ContextType>;
+  role?: Resolver<Types.Maybe<ResolversTypes['Role']>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -4955,7 +1136,7 @@ export type AuthenticationMethodExportDataResolvers<
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   isVerified?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  lastUsedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  lastUsedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   provider?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   providerId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
@@ -4966,10 +1147,10 @@ export type AuthorizationResultResolvers<
     ResolversParentTypes['AuthorizationResult'],
 > = ResolversObject<{
   authorized?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  evaluatedContext?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
-  matchedCondition?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
-  matchedPermission?: Resolver<Maybe<ResolversTypes['Permission']>, ParentType, ContextType>;
-  reason?: Resolver<Maybe<ResolversTypes['AuthorizationReason']>, ParentType, ContextType>;
+  evaluatedContext?: Resolver<Types.Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
+  matchedCondition?: Resolver<Types.Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
+  matchedPermission?: Resolver<Types.Maybe<ResolversTypes['Permission']>, ParentType, ContextType>;
+  reason?: Resolver<Types.Maybe<ResolversTypes['AuthorizationReason']>, ParentType, ContextType>;
 }>;
 
 export type ChangeMyPasswordResultResolvers<
@@ -4981,13 +1162,6 @@ export type ChangeMyPasswordResultResolvers<
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
 }>;
 
-export type CreatableResolvers<
-  ContextType = any,
-  ParentType extends ResolversParentTypes['Creatable'] = ResolversParentTypes['Creatable'],
-> = ResolversObject<{
-  __resolveType: TypeResolveFn<null, ParentType, ContextType>;
-}>;
-
 export type CreateAccountResultResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['CreateAccountResult'] =
@@ -4995,10 +1169,14 @@ export type CreateAccountResultResolvers<
 > = ResolversObject<{
   accessToken?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   account?: Resolver<ResolversTypes['Account'], ParentType, ContextType>;
-  email?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  email?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   refreshToken?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  requiresEmailVerification?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
-  verificationExpiry?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  requiresEmailVerification?: Resolver<
+    Types.Maybe<ResolversTypes['Boolean']>,
+    ParentType,
+    ContextType
+  >;
+  verificationExpiry?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
 }>;
 
 export type CreateApiKeyResultResolvers<
@@ -5009,10 +1187,10 @@ export type CreateApiKeyResultResolvers<
   clientId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   clientSecret?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  expiresAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  description?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  expiresAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  name?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
 }>;
 
 export type CreateMySecondaryAccountResultResolvers<
@@ -5029,15 +1207,19 @@ export type CreateProjectAppResultResolvers<
   ParentType extends ResolversParentTypes['CreateProjectAppResult'] =
     ResolversParentTypes['CreateProjectAppResult'],
 > = ResolversObject<{
-  allowSignUp?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
+  allowSignUp?: Resolver<Types.Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   clientId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  clientSecret?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  clientSecret?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  enabledProviders?: Resolver<Maybe<Array<ResolversTypes['String']>>, ParentType, ContextType>;
+  enabledProviders?: Resolver<
+    Types.Maybe<Array<ResolversTypes['String']>>,
+    ParentType,
+    ContextType
+  >;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  name?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   redirectUris?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
-  signUpRoleId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  signUpRoleId?: Resolver<Types.Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
 }>;
 
 export interface DateScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['Date'], any> {
@@ -5058,16 +1240,16 @@ export type GroupResolvers<
   ParentType extends ResolversParentTypes['Group'] = ResolversParentTypes['Group'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
-  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  description?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   metadata?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   permissionCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  permissions?: Resolver<Maybe<Array<ResolversTypes['Permission']>>, ParentType, ContextType>;
-  primaryTag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
+  permissions?: Resolver<Types.Maybe<Array<ResolversTypes['Permission']>>, ParentType, ContextType>;
+  primaryTag?: Resolver<Types.Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
   tagCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
+  tags?: Resolver<Types.Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -5088,20 +1270,20 @@ export type GroupPermissionResolvers<
     ResolversParentTypes['GroupPermission'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   group?: Resolver<
-    Maybe<ResolversTypes['Group']>,
+    Types.Maybe<ResolversTypes['Group']>,
     ParentType,
     ContextType,
-    RequireFields<GroupPermissionGroupArgs, 'scope'>
+    RequireFields<Types.GroupPermissionGroupArgs, 'scope'>
   >;
   groupId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   permission?: Resolver<
-    Maybe<ResolversTypes['Permission']>,
+    Types.Maybe<ResolversTypes['Permission']>,
     ParentType,
     ContextType,
-    RequireFields<GroupPermissionPermissionArgs, 'scope'>
+    RequireFields<Types.GroupPermissionPermissionArgs, 'scope'>
   >;
   permissionId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -5113,21 +1295,21 @@ export type GroupTagResolvers<
   ParentType extends ResolversParentTypes['GroupTag'] = ResolversParentTypes['GroupTag'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   group?: Resolver<
-    Maybe<ResolversTypes['Group']>,
+    Types.Maybe<ResolversTypes['Group']>,
     ParentType,
     ContextType,
-    RequireFields<GroupTagGroupArgs, 'scope'>
+    RequireFields<Types.GroupTagGroupArgs, 'scope'>
   >;
   groupId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   tag?: Resolver<
-    Maybe<ResolversTypes['Tag']>,
+    Types.Maybe<ResolversTypes['Tag']>,
     ParentType,
     ContextType,
-    RequireFields<GroupTagTagArgs, 'scope'>
+    RequireFields<Types.GroupTagTagArgs, 'scope'>
   >;
   tagId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -5144,12 +1326,16 @@ export type LoginResponseResolvers<
 > = ResolversObject<{
   accessToken?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   accounts?: Resolver<Array<ResolversTypes['Account']>, ParentType, ContextType>;
-  email?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  mfaVerified?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
+  email?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  mfaVerified?: Resolver<Types.Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   refreshToken?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  requiresEmailVerification?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
-  requiresMfaStepUp?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
-  verificationExpiry?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  requiresEmailVerification?: Resolver<
+    Types.Maybe<ResolversTypes['Boolean']>,
+    ParentType,
+    ContextType
+  >;
+  requiresMfaStepUp?: Resolver<Types.Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
+  verificationExpiry?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
 }>;
 
 export type LogoutMyUserResponseResolvers<
@@ -5173,10 +1359,14 @@ export type MeResponseResolvers<
   ParentType extends ResolversParentTypes['MeResponse'] = ResolversParentTypes['MeResponse'],
 > = ResolversObject<{
   accounts?: Resolver<Array<ResolversTypes['Account']>, ParentType, ContextType>;
-  email?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  mfaVerified?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
-  requiresEmailVerification?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
-  verificationExpiry?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  email?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  mfaVerified?: Resolver<Types.Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
+  requiresEmailVerification?: Resolver<
+    Types.Maybe<ResolversTypes['Boolean']>,
+    ParentType,
+    ContextType
+  >;
+  verificationExpiry?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
 }>;
 
 export type MfaDeviceResolvers<
@@ -5187,7 +1377,7 @@ export type MfaDeviceResolvers<
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isEnabled?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  lastUsedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  lastUsedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
@@ -5206,7 +1396,7 @@ export type MfaRecoveryCodeStatusResolvers<
     ResolversParentTypes['MfaRecoveryCodeStatus'],
 > = ResolversObject<{
   activeCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  lastGeneratedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  lastGeneratedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
 }>;
 
 export type MfaSetupResponseResolvers<
@@ -5241,48 +1431,48 @@ export type MutationResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation'],
 > = ResolversObject<{
-  _empty?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  _empty?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   acceptInvitation?: Resolver<
     ResolversTypes['AcceptInvitationResult'],
     ParentType,
     ContextType,
-    RequireFields<MutationAcceptInvitationArgs, 'input'>
+    RequireFields<Types.MutationAcceptInvitationArgs, 'input'>
   >;
   assignRolePermission?: Resolver<
     ResolversTypes['RolePermission'],
     ParentType,
     ContextType,
-    RequireFields<MutationAssignRolePermissionArgs, 'input'>
+    RequireFields<Types.MutationAssignRolePermissionArgs, 'input'>
   >;
   assignUserPermission?: Resolver<
     ResolversTypes['UserPermission'],
     ParentType,
     ContextType,
-    RequireFields<MutationAssignUserPermissionArgs, 'input'>
+    RequireFields<Types.MutationAssignUserPermissionArgs, 'input'>
   >;
   cancelProjectSync?: Resolver<
     ResolversTypes['ProjectSyncJob'],
     ParentType,
     ContextType,
-    RequireFields<MutationCancelProjectSyncArgs, 'id' | 'jobId' | 'scope'>
+    RequireFields<Types.MutationCancelProjectSyncArgs, 'id' | 'jobId' | 'scope'>
   >;
   changeMyPassword?: Resolver<
     ResolversTypes['ChangeMyPasswordResult'],
     ParentType,
     ContextType,
-    RequireFields<MutationChangeMyPasswordArgs, 'input'>
+    RequireFields<Types.MutationChangeMyPasswordArgs, 'input'>
   >;
   createApiKey?: Resolver<
     ResolversTypes['CreateApiKeyResult'],
     ParentType,
     ContextType,
-    RequireFields<MutationCreateApiKeyArgs, 'input'>
+    RequireFields<Types.MutationCreateApiKeyArgs, 'input'>
   >;
   createGroup?: Resolver<
     ResolversTypes['Group'],
     ParentType,
     ContextType,
-    RequireFields<MutationCreateGroupArgs, 'input'>
+    RequireFields<Types.MutationCreateGroupArgs, 'input'>
   >;
   createMyMfaEnrollment?: Resolver<ResolversTypes['MfaEnrollment'], ParentType, ContextType>;
   createMySecondaryAccount?: Resolver<
@@ -5294,163 +1484,163 @@ export type MutationResolvers<
     ResolversTypes['UserAuthenticationMethod'],
     ParentType,
     ContextType,
-    RequireFields<MutationCreateMyUserAuthenticationMethodArgs, 'input'>
+    RequireFields<Types.MutationCreateMyUserAuthenticationMethodArgs, 'input'>
   >;
   createOrganization?: Resolver<
     ResolversTypes['Organization'],
     ParentType,
     ContextType,
-    RequireFields<MutationCreateOrganizationArgs, 'input'>
+    RequireFields<Types.MutationCreateOrganizationArgs, 'input'>
   >;
   createPermission?: Resolver<
     ResolversTypes['Permission'],
     ParentType,
     ContextType,
-    RequireFields<MutationCreatePermissionArgs, 'input'>
+    RequireFields<Types.MutationCreatePermissionArgs, 'input'>
   >;
   createProject?: Resolver<
     ResolversTypes['Project'],
     ParentType,
     ContextType,
-    RequireFields<MutationCreateProjectArgs, 'input'>
+    RequireFields<Types.MutationCreateProjectArgs, 'input'>
   >;
   createProjectApp?: Resolver<
     ResolversTypes['CreateProjectAppResult'],
     ParentType,
     ContextType,
-    RequireFields<MutationCreateProjectAppArgs, 'input'>
+    RequireFields<Types.MutationCreateProjectAppArgs, 'input'>
   >;
   createResource?: Resolver<
     ResolversTypes['Resource'],
     ParentType,
     ContextType,
-    RequireFields<MutationCreateResourceArgs, 'input'>
+    RequireFields<Types.MutationCreateResourceArgs, 'input'>
   >;
   createRole?: Resolver<
     ResolversTypes['Role'],
     ParentType,
     ContextType,
-    RequireFields<MutationCreateRoleArgs, 'input'>
+    RequireFields<Types.MutationCreateRoleArgs, 'input'>
   >;
   createTag?: Resolver<
     ResolversTypes['Tag'],
     ParentType,
     ContextType,
-    RequireFields<MutationCreateTagArgs, 'input'>
+    RequireFields<Types.MutationCreateTagArgs, 'input'>
   >;
   createUser?: Resolver<
     ResolversTypes['User'],
     ParentType,
     ContextType,
-    RequireFields<MutationCreateUserArgs, 'input'>
+    RequireFields<Types.MutationCreateUserArgs, 'input'>
   >;
   createWebhookSubscription?: Resolver<
     ResolversTypes['WebhookSubscriptionWithSecret'],
     ParentType,
     ContextType,
-    RequireFields<MutationCreateWebhookSubscriptionArgs, 'input'>
+    RequireFields<Types.MutationCreateWebhookSubscriptionArgs, 'input'>
   >;
   deleteApiKey?: Resolver<
     ResolversTypes['ApiKey'],
     ParentType,
     ContextType,
-    RequireFields<MutationDeleteApiKeyArgs, 'input'>
+    RequireFields<Types.MutationDeleteApiKeyArgs, 'input'>
   >;
   deleteGroup?: Resolver<
     ResolversTypes['Group'],
     ParentType,
     ContextType,
-    RequireFields<MutationDeleteGroupArgs, 'id' | 'scope'>
+    RequireFields<Types.MutationDeleteGroupArgs, 'id' | 'scope'>
   >;
   deleteMyAccounts?: Resolver<
     ResolversTypes['User'],
     ParentType,
     ContextType,
-    RequireFields<MutationDeleteMyAccountsArgs, 'input'>
+    RequireFields<Types.MutationDeleteMyAccountsArgs, 'input'>
   >;
   deleteMyUserAuthenticationMethod?: Resolver<
     ResolversTypes['UserAuthenticationMethod'],
     ParentType,
     ContextType,
-    RequireFields<MutationDeleteMyUserAuthenticationMethodArgs, 'id'>
+    RequireFields<Types.MutationDeleteMyUserAuthenticationMethodArgs, 'id'>
   >;
   deleteOrganization?: Resolver<
     ResolversTypes['Organization'],
     ParentType,
     ContextType,
-    RequireFields<MutationDeleteOrganizationArgs, 'id' | 'scope'>
+    RequireFields<Types.MutationDeleteOrganizationArgs, 'id' | 'scope'>
   >;
   deletePermission?: Resolver<
     ResolversTypes['Permission'],
     ParentType,
     ContextType,
-    RequireFields<MutationDeletePermissionArgs, 'id' | 'scope'>
+    RequireFields<Types.MutationDeletePermissionArgs, 'id' | 'scope'>
   >;
   deleteProject?: Resolver<
     ResolversTypes['Project'],
     ParentType,
     ContextType,
-    RequireFields<MutationDeleteProjectArgs, 'id' | 'scope'>
+    RequireFields<Types.MutationDeleteProjectArgs, 'id' | 'scope'>
   >;
   deleteProjectApp?: Resolver<
     ResolversTypes['ProjectApp'],
     ParentType,
     ContextType,
-    RequireFields<MutationDeleteProjectAppArgs, 'id' | 'scope'>
+    RequireFields<Types.MutationDeleteProjectAppArgs, 'id' | 'scope'>
   >;
   deleteResource?: Resolver<
     ResolversTypes['Resource'],
     ParentType,
     ContextType,
-    RequireFields<MutationDeleteResourceArgs, 'id' | 'scope'>
+    RequireFields<Types.MutationDeleteResourceArgs, 'id' | 'scope'>
   >;
   deleteRole?: Resolver<
     ResolversTypes['Role'],
     ParentType,
     ContextType,
-    RequireFields<MutationDeleteRoleArgs, 'id' | 'scope'>
+    RequireFields<Types.MutationDeleteRoleArgs, 'id' | 'scope'>
   >;
   deleteTag?: Resolver<
     ResolversTypes['Tag'],
     ParentType,
     ContextType,
-    RequireFields<MutationDeleteTagArgs, 'id' | 'scope'>
+    RequireFields<Types.MutationDeleteTagArgs, 'id' | 'scope'>
   >;
   deleteUser?: Resolver<
     ResolversTypes['User'],
     ParentType,
     ContextType,
-    RequireFields<MutationDeleteUserArgs, 'id' | 'scope'>
+    RequireFields<Types.MutationDeleteUserArgs, 'id' | 'scope'>
   >;
   deleteWebhookSubscription?: Resolver<
     ResolversTypes['Boolean'],
     ParentType,
     ContextType,
-    RequireFields<MutationDeleteWebhookSubscriptionArgs, 'input'>
+    RequireFields<Types.MutationDeleteWebhookSubscriptionArgs, 'input'>
   >;
   exchangeApiKey?: Resolver<
     ResolversTypes['ExchangeApiKeyResult'],
     ParentType,
     ContextType,
-    RequireFields<MutationExchangeApiKeyArgs, 'input'>
+    RequireFields<Types.MutationExchangeApiKeyArgs, 'input'>
   >;
   generateMyMfaRecoveryCodes?: Resolver<
     Array<ResolversTypes['String']>,
     ParentType,
     ContextType,
-    Partial<MutationGenerateMyMfaRecoveryCodesArgs>
+    Partial<Types.MutationGenerateMyMfaRecoveryCodesArgs>
   >;
   inviteMember?: Resolver<
     ResolversTypes['OrganizationInvitation'],
     ParentType,
     ContextType,
-    RequireFields<MutationInviteMemberArgs, 'input'>
+    RequireFields<Types.MutationInviteMemberArgs, 'input'>
   >;
   login?: Resolver<
     ResolversTypes['LoginResponse'],
     ParentType,
     ContextType,
-    RequireFields<MutationLoginArgs, 'input'>
+    RequireFields<Types.MutationLoginArgs, 'input'>
   >;
   logoutMyUser?: Resolver<ResolversTypes['LogoutMyUserResponse'], ParentType, ContextType>;
   markAllMyNotificationsRead?: Resolver<
@@ -5462,261 +1652,261 @@ export type MutationResolvers<
     ResolversTypes['Boolean'],
     ParentType,
     ContextType,
-    RequireFields<MutationMarkMyNotificationReadArgs, 'id'>
+    RequireFields<Types.MutationMarkMyNotificationReadArgs, 'id'>
   >;
   refreshSession?: Resolver<ResolversTypes['RefreshSessionResponse'], ParentType, ContextType>;
   register?: Resolver<
     ResolversTypes['CreateAccountResult'],
     ParentType,
     ContextType,
-    RequireFields<MutationRegisterArgs, 'input'>
+    RequireFields<Types.MutationRegisterArgs, 'input'>
   >;
   removeMyMfaDevice?: Resolver<
     ResolversTypes['MfaVerifyResult'],
     ParentType,
     ContextType,
-    RequireFields<MutationRemoveMyMfaDeviceArgs, 'input'>
+    RequireFields<Types.MutationRemoveMyMfaDeviceArgs, 'input'>
   >;
   removeOrganizationMember?: Resolver<
     ResolversTypes['OrganizationMember'],
     ParentType,
     ContextType,
-    RequireFields<MutationRemoveOrganizationMemberArgs, 'input' | 'userId'>
+    RequireFields<Types.MutationRemoveOrganizationMemberArgs, 'input' | 'userId'>
   >;
   renewInvitation?: Resolver<
     ResolversTypes['OrganizationInvitation'],
     ParentType,
     ContextType,
-    RequireFields<MutationRenewInvitationArgs, 'id' | 'scope'>
+    RequireFields<Types.MutationRenewInvitationArgs, 'id' | 'scope'>
   >;
   replayWebhookDelivery?: Resolver<
     ResolversTypes['WebhookDeliveryAttempt'],
     ParentType,
     ContextType,
-    RequireFields<MutationReplayWebhookDeliveryArgs, 'input'>
+    RequireFields<Types.MutationReplayWebhookDeliveryArgs, 'input'>
   >;
   requestPasswordReset?: Resolver<
     ResolversTypes['RequestPasswordResetResponse'],
     ParentType,
     ContextType,
-    RequireFields<MutationRequestPasswordResetArgs, 'input'>
+    RequireFields<Types.MutationRequestPasswordResetArgs, 'input'>
   >;
   resendInvitationEmail?: Resolver<
     ResolversTypes['OrganizationInvitation'],
     ParentType,
     ContextType,
-    RequireFields<MutationResendInvitationEmailArgs, 'id' | 'scope'>
+    RequireFields<Types.MutationResendInvitationEmailArgs, 'id' | 'scope'>
   >;
   resendVerification?: Resolver<
     ResolversTypes['ResendVerificationResponse'],
     ParentType,
     ContextType,
-    RequireFields<MutationResendVerificationArgs, 'input'>
+    RequireFields<Types.MutationResendVerificationArgs, 'input'>
   >;
   resetPassword?: Resolver<
     ResolversTypes['ResetPasswordResponse'],
     ParentType,
     ContextType,
-    RequireFields<MutationResetPasswordArgs, 'input'>
+    RequireFields<Types.MutationResetPasswordArgs, 'input'>
   >;
   revokeApiKey?: Resolver<
     ResolversTypes['ApiKey'],
     ParentType,
     ContextType,
-    RequireFields<MutationRevokeApiKeyArgs, 'input'>
+    RequireFields<Types.MutationRevokeApiKeyArgs, 'input'>
   >;
   revokeInvitation?: Resolver<
     ResolversTypes['OrganizationInvitation'],
     ParentType,
     ContextType,
-    RequireFields<MutationRevokeInvitationArgs, 'id' | 'scope'>
+    RequireFields<Types.MutationRevokeInvitationArgs, 'id' | 'scope'>
   >;
   revokeMyUserSession?: Resolver<
     ResolversTypes['RevokeMyUserSessionResult'],
     ParentType,
     ContextType,
-    RequireFields<MutationRevokeMyUserSessionArgs, 'id'>
+    RequireFields<Types.MutationRevokeMyUserSessionArgs, 'id'>
   >;
   revokeRolePermission?: Resolver<
     ResolversTypes['RolePermission'],
     ParentType,
     ContextType,
-    RequireFields<MutationRevokeRolePermissionArgs, 'input'>
+    RequireFields<Types.MutationRevokeRolePermissionArgs, 'input'>
   >;
   revokeUserPermission?: Resolver<
     ResolversTypes['UserPermission'],
     ParentType,
     ContextType,
-    RequireFields<MutationRevokeUserPermissionArgs, 'input'>
+    RequireFields<Types.MutationRevokeUserPermissionArgs, 'input'>
   >;
   rotateApiKey?: Resolver<
     ResolversTypes['CreateApiKeyResult'],
     ParentType,
     ContextType,
-    RequireFields<MutationRotateApiKeyArgs, 'input'>
+    RequireFields<Types.MutationRotateApiKeyArgs, 'input'>
   >;
   rotateSigningKey?: Resolver<
     ResolversTypes['SigningKey'],
     ParentType,
     ContextType,
-    RequireFields<MutationRotateSigningKeyArgs, 'scope'>
+    RequireFields<Types.MutationRotateSigningKeyArgs, 'scope'>
   >;
   rotateWebhookSubscriptionSecret?: Resolver<
     ResolversTypes['WebhookSubscriptionWithSecret'],
     ParentType,
     ContextType,
-    RequireFields<MutationRotateWebhookSubscriptionSecretArgs, 'input'>
+    RequireFields<Types.MutationRotateWebhookSubscriptionSecretArgs, 'input'>
   >;
   setMyNotificationPreference?: Resolver<
     ResolversTypes['NotificationPreference'],
     ParentType,
     ContextType,
-    RequireFields<MutationSetMyNotificationPreferenceArgs, 'input'>
+    RequireFields<Types.MutationSetMyNotificationPreferenceArgs, 'input'>
   >;
   setMyPrimaryAuthenticationMethod?: Resolver<
     ResolversTypes['UserAuthenticationMethod'],
     ParentType,
     ContextType,
-    RequireFields<MutationSetMyPrimaryAuthenticationMethodArgs, 'id'>
+    RequireFields<Types.MutationSetMyPrimaryAuthenticationMethodArgs, 'id'>
   >;
   setMyPrimaryMfaDevice?: Resolver<
     ResolversTypes['MfaDevice'],
     ParentType,
     ContextType,
-    RequireFields<MutationSetMyPrimaryMfaDeviceArgs, 'input'>
+    RequireFields<Types.MutationSetMyPrimaryMfaDeviceArgs, 'input'>
   >;
   setupMfa?: Resolver<ResolversTypes['MfaSetupResponse'], ParentType, ContextType>;
   startProjectExport?: Resolver<
     ResolversTypes['ProjectSyncJob'],
     ParentType,
     ContextType,
-    RequireFields<MutationStartProjectExportArgs, 'id' | 'input' | 'scope'>
+    RequireFields<Types.MutationStartProjectExportArgs, 'id' | 'input' | 'scope'>
   >;
   startProjectSync?: Resolver<
     ResolversTypes['ProjectSyncJob'],
     ParentType,
     ContextType,
-    RequireFields<MutationStartProjectSyncArgs, 'id' | 'input' | 'scope'>
+    RequireFields<Types.MutationStartProjectSyncArgs, 'id' | 'input' | 'scope'>
   >;
   updateGroup?: Resolver<
     ResolversTypes['Group'],
     ParentType,
     ContextType,
-    RequireFields<MutationUpdateGroupArgs, 'id' | 'input'>
+    RequireFields<Types.MutationUpdateGroupArgs, 'id' | 'input'>
   >;
   updateMyProjectMembership?: Resolver<
     ResolversTypes['MyProjectMembership'],
     ParentType,
     ContextType,
-    RequireFields<MutationUpdateMyProjectMembershipArgs, 'input'>
+    RequireFields<Types.MutationUpdateMyProjectMembershipArgs, 'input'>
   >;
   updateMyUser?: Resolver<
     ResolversTypes['User'],
     ParentType,
     ContextType,
-    RequireFields<MutationUpdateMyUserArgs, 'input'>
+    RequireFields<Types.MutationUpdateMyUserArgs, 'input'>
   >;
   updateOrganization?: Resolver<
     ResolversTypes['Organization'],
     ParentType,
     ContextType,
-    RequireFields<MutationUpdateOrganizationArgs, 'id' | 'input'>
+    RequireFields<Types.MutationUpdateOrganizationArgs, 'id' | 'input'>
   >;
   updateOrganizationMember?: Resolver<
     ResolversTypes['OrganizationMember'],
     ParentType,
     ContextType,
-    RequireFields<MutationUpdateOrganizationMemberArgs, 'input' | 'userId'>
+    RequireFields<Types.MutationUpdateOrganizationMemberArgs, 'input' | 'userId'>
   >;
   updatePermission?: Resolver<
     ResolversTypes['Permission'],
     ParentType,
     ContextType,
-    RequireFields<MutationUpdatePermissionArgs, 'id' | 'input'>
+    RequireFields<Types.MutationUpdatePermissionArgs, 'id' | 'input'>
   >;
   updateProject?: Resolver<
     ResolversTypes['Project'],
     ParentType,
     ContextType,
-    RequireFields<MutationUpdateProjectArgs, 'id' | 'input'>
+    RequireFields<Types.MutationUpdateProjectArgs, 'id' | 'input'>
   >;
   updateProjectApp?: Resolver<
     ResolversTypes['ProjectApp'],
     ParentType,
     ContextType,
-    RequireFields<MutationUpdateProjectAppArgs, 'id' | 'input'>
+    RequireFields<Types.MutationUpdateProjectAppArgs, 'id' | 'input'>
   >;
   updateResource?: Resolver<
     ResolversTypes['Resource'],
     ParentType,
     ContextType,
-    RequireFields<MutationUpdateResourceArgs, 'id' | 'input'>
+    RequireFields<Types.MutationUpdateResourceArgs, 'id' | 'input'>
   >;
   updateRole?: Resolver<
     ResolversTypes['Role'],
     ParentType,
     ContextType,
-    RequireFields<MutationUpdateRoleArgs, 'id' | 'input'>
+    RequireFields<Types.MutationUpdateRoleArgs, 'id' | 'input'>
   >;
   updateTag?: Resolver<
     ResolversTypes['Tag'],
     ParentType,
     ContextType,
-    RequireFields<MutationUpdateTagArgs, 'id' | 'input'>
+    RequireFields<Types.MutationUpdateTagArgs, 'id' | 'input'>
   >;
   updateUser?: Resolver<
     ResolversTypes['User'],
     ParentType,
     ContextType,
-    RequireFields<MutationUpdateUserArgs, 'id' | 'input'>
+    RequireFields<Types.MutationUpdateUserArgs, 'id' | 'input'>
   >;
   updateWebhookSubscription?: Resolver<
     ResolversTypes['WebhookSubscription'],
     ParentType,
     ContextType,
-    RequireFields<MutationUpdateWebhookSubscriptionArgs, 'id' | 'input'>
+    RequireFields<Types.MutationUpdateWebhookSubscriptionArgs, 'id' | 'input'>
   >;
   uploadMyProjectMembershipPicture?: Resolver<
     ResolversTypes['UploadUserPictureResult'],
     ParentType,
     ContextType,
-    RequireFields<MutationUploadMyProjectMembershipPictureArgs, 'input'>
+    RequireFields<Types.MutationUploadMyProjectMembershipPictureArgs, 'input'>
   >;
   uploadMyUserPicture?: Resolver<
     ResolversTypes['UploadUserPictureResult'],
     ParentType,
     ContextType,
-    RequireFields<MutationUploadMyUserPictureArgs, 'input'>
+    RequireFields<Types.MutationUploadMyUserPictureArgs, 'input'>
   >;
   uploadUserPicture?: Resolver<
     ResolversTypes['UploadUserPictureResult'],
     ParentType,
     ContextType,
-    RequireFields<MutationUploadUserPictureArgs, 'input'>
+    RequireFields<Types.MutationUploadUserPictureArgs, 'input'>
   >;
   verifyEmail?: Resolver<
     ResolversTypes['VerifyEmailResponse'],
     ParentType,
     ContextType,
-    RequireFields<MutationVerifyEmailArgs, 'input'>
+    RequireFields<Types.MutationVerifyEmailArgs, 'input'>
   >;
   verifyMfa?: Resolver<
     ResolversTypes['MfaVerifyResponse'],
     ParentType,
     ContextType,
-    RequireFields<MutationVerifyMfaArgs, 'input'>
+    RequireFields<Types.MutationVerifyMfaArgs, 'input'>
   >;
   verifyMfaRecoveryCode?: Resolver<
     ResolversTypes['MfaVerifyResponse'],
     ParentType,
     ContextType,
-    RequireFields<MutationVerifyMfaRecoveryCodeArgs, 'input'>
+    RequireFields<Types.MutationVerifyMfaRecoveryCodeArgs, 'input'>
   >;
   verifyMyMfaEnrollment?: Resolver<
     ResolversTypes['MfaVerifyResult'],
     ParentType,
     ContextType,
-    RequireFields<MutationVerifyMyMfaEnrollmentArgs, 'input'>
+    RequireFields<Types.MutationVerifyMyMfaEnrollmentArgs, 'input'>
   >;
 }>;
 
@@ -5725,33 +1915,33 @@ export type MyProjectMembershipResolvers<
   ParentType extends ResolversParentTypes['MyProjectMembership'] =
     ResolversParentTypes['MyProjectMembership'],
 > = ResolversObject<{
-  accountId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
-  displayName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  accountId?: Resolver<Types.Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  displayName?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   joinedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   metadata?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
-  organizationId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
-  organizationName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  pictureUrl?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  organizationId?: Resolver<Types.Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  organizationName?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  pictureUrl?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   projectName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  role?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  role?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
 }>;
 
 export type NotificationResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['Notification'] = ResolversParentTypes['Notification'],
 > = ResolversObject<{
-  body?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  body?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   category?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   channel?: Resolver<ResolversTypes['NotificationChannel'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   eventId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  readAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
-  refEntity?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  refId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
-  scope?: Resolver<Maybe<ResolversTypes['NotificationEventScope']>, ParentType, ContextType>;
-  seenAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  readAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  refEntity?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  refId?: Resolver<Types.Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  scope?: Resolver<Types.Maybe<ResolversTypes['NotificationEventScope']>, ParentType, ContextType>;
+  seenAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   status?: Resolver<ResolversTypes['NotificationStatus'], ParentType, ContextType>;
   title?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -5796,18 +1986,18 @@ export type OrganizationResolvers<
   ParentType extends ResolversParentTypes['Organization'] = ResolversParentTypes['Organization'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
-  groups?: Resolver<Maybe<Array<ResolversTypes['Group']>>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  groups?: Resolver<Types.Maybe<Array<ResolversTypes['Group']>>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  permissions?: Resolver<Maybe<Array<ResolversTypes['Permission']>>, ParentType, ContextType>;
-  projects?: Resolver<Maybe<Array<ResolversTypes['Project']>>, ParentType, ContextType>;
+  permissions?: Resolver<Types.Maybe<Array<ResolversTypes['Permission']>>, ParentType, ContextType>;
+  projects?: Resolver<Types.Maybe<Array<ResolversTypes['Project']>>, ParentType, ContextType>;
   requireMfaForSensitiveActions?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  roles?: Resolver<Maybe<Array<ResolversTypes['Role']>>, ParentType, ContextType>;
+  roles?: Resolver<Types.Maybe<Array<ResolversTypes['Role']>>, ParentType, ContextType>;
   slug?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
+  tags?: Resolver<Types.Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  users?: Resolver<Maybe<Array<ResolversTypes['User']>>, ParentType, ContextType>;
+  users?: Resolver<Types.Maybe<Array<ResolversTypes['User']>>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -5817,11 +2007,11 @@ export type OrganizationGroupResolvers<
     ResolversParentTypes['OrganizationGroup'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
-  group?: Resolver<Maybe<ResolversTypes['Group']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  group?: Resolver<Types.Maybe<ResolversTypes['Group']>, ParentType, ContextType>;
   groupId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  organization?: Resolver<Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
+  organization?: Resolver<Types.Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
   organizationId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -5832,9 +2022,9 @@ export type OrganizationInvitationResolvers<
   ParentType extends ResolversParentTypes['OrganizationInvitation'] =
     ResolversParentTypes['OrganizationInvitation'],
 > = ResolversObject<{
-  acceptedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  acceptedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   email?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   expiresAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -5867,14 +2057,22 @@ export type OrganizationMemberResolvers<
     ResolversParentTypes['OrganizationMember'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  email?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  email?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  invitation?: Resolver<Maybe<ResolversTypes['OrganizationInvitation']>, ParentType, ContextType>;
+  invitation?: Resolver<
+    Types.Maybe<ResolversTypes['OrganizationInvitation']>,
+    ParentType,
+    ContextType
+  >;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   role?: Resolver<ResolversTypes['Role'], ParentType, ContextType>;
-  status?: Resolver<Maybe<ResolversTypes['OrganizationInvitationStatus']>, ParentType, ContextType>;
+  status?: Resolver<
+    Types.Maybe<ResolversTypes['OrganizationInvitationStatus']>,
+    ParentType,
+    ContextType
+  >;
   type?: Resolver<ResolversTypes['MemberType'], ParentType, ContextType>;
-  user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
+  user?: Resolver<Types.Maybe<ResolversTypes['User']>, ParentType, ContextType>;
 }>;
 
 export type OrganizationMemberPageResolvers<
@@ -5915,11 +2113,11 @@ export type OrganizationPermissionResolvers<
     ResolversParentTypes['OrganizationPermission'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  organization?: Resolver<Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
+  organization?: Resolver<Types.Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
   organizationId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  permission?: Resolver<Maybe<ResolversTypes['Permission']>, ParentType, ContextType>;
+  permission?: Resolver<Types.Maybe<ResolversTypes['Permission']>, ParentType, ContextType>;
   permissionId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -5931,11 +2129,11 @@ export type OrganizationProjectResolvers<
     ResolversParentTypes['OrganizationProject'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  organization?: Resolver<Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
+  organization?: Resolver<Types.Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
   organizationId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  project?: Resolver<Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
+  project?: Resolver<Types.Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -5946,17 +2144,17 @@ export type OrganizationProjectApiKeyResolvers<
   ParentType extends ResolversParentTypes['OrganizationProjectApiKey'] =
     ResolversParentTypes['OrganizationProjectApiKey'],
 > = ResolversObject<{
-  apiKey?: Resolver<Maybe<ResolversTypes['ApiKey']>, ParentType, ContextType>;
+  apiKey?: Resolver<Types.Maybe<ResolversTypes['ApiKey']>, ParentType, ContextType>;
   apiKeyId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  organization?: Resolver<Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
+  organization?: Resolver<Types.Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
   organizationId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   organizationRoleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  project?: Resolver<Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
+  project?: Resolver<Types.Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  role?: Resolver<Maybe<ResolversTypes['Role']>, ParentType, ContextType>;
+  role?: Resolver<Types.Maybe<ResolversTypes['Role']>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -5967,14 +2165,14 @@ export type OrganizationProjectTagResolvers<
     ResolversParentTypes['OrganizationProjectTag'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  organization?: Resolver<Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
+  organization?: Resolver<Types.Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
   organizationId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  project?: Resolver<Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
+  project?: Resolver<Types.Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  tag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
+  tag?: Resolver<Types.Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
   tagId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -5986,11 +2184,11 @@ export type OrganizationRoleResolvers<
     ResolversParentTypes['OrganizationRole'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  organization?: Resolver<Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
+  organization?: Resolver<Types.Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
   organizationId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  role?: Resolver<Maybe<ResolversTypes['Role']>, ParentType, ContextType>;
+  role?: Resolver<Types.Maybe<ResolversTypes['Role']>, ParentType, ContextType>;
   roleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -6002,12 +2200,12 @@ export type OrganizationTagResolvers<
     ResolversParentTypes['OrganizationTag'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  organization?: Resolver<Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
+  organization?: Resolver<Types.Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
   organizationId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  tag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
+  tag?: Resolver<Types.Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
   tagId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -6019,13 +2217,13 @@ export type OrganizationUserResolvers<
     ResolversParentTypes['OrganizationUser'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  organization?: Resolver<Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
+  organization?: Resolver<Types.Maybe<ResolversTypes['Organization']>, ParentType, ContextType>;
   organizationId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   roleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
+  user?: Resolver<Types.Maybe<ResolversTypes['User']>, ParentType, ContextType>;
   userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -6059,18 +2257,18 @@ export type PermissionResolvers<
   ParentType extends ResolversParentTypes['Permission'] = ResolversParentTypes['Permission'],
 > = ResolversObject<{
   action?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  condition?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
+  condition?: Resolver<Types.Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
-  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  description?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   metadata?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  primaryTag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
-  resource?: Resolver<Maybe<ResolversTypes['Resource']>, ParentType, ContextType>;
-  resourceId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  primaryTag?: Resolver<Types.Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
+  resource?: Resolver<Types.Maybe<ResolversTypes['Resource']>, ParentType, ContextType>;
+  resourceId?: Resolver<Types.Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
   tagCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
+  tags?: Resolver<Types.Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -6091,21 +2289,21 @@ export type PermissionTagResolvers<
   ParentType extends ResolversParentTypes['PermissionTag'] = ResolversParentTypes['PermissionTag'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   permission?: Resolver<
-    Maybe<ResolversTypes['Permission']>,
+    Types.Maybe<ResolversTypes['Permission']>,
     ParentType,
     ContextType,
-    RequireFields<PermissionTagPermissionArgs, 'scope'>
+    RequireFields<Types.PermissionTagPermissionArgs, 'scope'>
   >;
   permissionId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   tag?: Resolver<
-    Maybe<ResolversTypes['Tag']>,
+    Types.Maybe<ResolversTypes['Tag']>,
     ParentType,
     ContextType,
-    RequireFields<PermissionTagTagArgs, 'scope'>
+    RequireFields<Types.PermissionTagTagArgs, 'scope'>
   >;
   tagId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -6116,21 +2314,21 @@ export type ProjectResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['Project'] = ResolversParentTypes['Project'],
 > = ResolversObject<{
-  accountTags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
+  accountTags?: Resolver<Types.Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
-  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  groups?: Resolver<Maybe<Array<ResolversTypes['Group']>>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  description?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  groups?: Resolver<Types.Maybe<Array<ResolversTypes['Group']>>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  organizationTags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
-  permissions?: Resolver<Maybe<Array<ResolversTypes['Permission']>>, ParentType, ContextType>;
-  resources?: Resolver<Maybe<Array<ResolversTypes['Resource']>>, ParentType, ContextType>;
-  roles?: Resolver<Maybe<Array<ResolversTypes['Role']>>, ParentType, ContextType>;
+  organizationTags?: Resolver<Types.Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
+  permissions?: Resolver<Types.Maybe<Array<ResolversTypes['Permission']>>, ParentType, ContextType>;
+  resources?: Resolver<Types.Maybe<Array<ResolversTypes['Resource']>>, ParentType, ContextType>;
+  roles?: Resolver<Types.Maybe<Array<ResolversTypes['Role']>>, ParentType, ContextType>;
   slug?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
+  tags?: Resolver<Types.Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  users?: Resolver<Maybe<Array<ResolversTypes['User']>>, ParentType, ContextType>;
+  users?: Resolver<Types.Maybe<Array<ResolversTypes['User']>>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -6138,20 +2336,24 @@ export type ProjectAppResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['ProjectApp'] = ResolversParentTypes['ProjectApp'],
 > = ResolversObject<{
-  allowSignUp?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
+  allowSignUp?: Resolver<Types.Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   clientId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
-  enabledProviders?: Resolver<Maybe<Array<ResolversTypes['String']>>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  enabledProviders?: Resolver<
+    Types.Maybe<Array<ResolversTypes['String']>>,
+    ParentType,
+    ContextType
+  >;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  project?: Resolver<Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
+  name?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  project?: Resolver<Types.Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   redirectUris?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
-  scopes?: Resolver<Maybe<Array<ResolversTypes['String']>>, ParentType, ContextType>;
-  signUpRole?: Resolver<Maybe<ResolversTypes['Role']>, ParentType, ContextType>;
-  signUpRoleId?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
-  tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
+  scopes?: Resolver<Types.Maybe<Array<ResolversTypes['String']>>, ParentType, ContextType>;
+  signUpRole?: Resolver<Types.Maybe<ResolversTypes['Role']>, ParentType, ContextType>;
+  signUpRoleId?: Resolver<Types.Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  tags?: Resolver<Types.Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -6172,7 +2374,7 @@ export type ProjectAppTagResolvers<
   ParentType extends ResolversParentTypes['ProjectAppTag'] = ResolversParentTypes['ProjectAppTag'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   projectAppId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -6186,15 +2388,15 @@ export type ProjectGroupResolvers<
   ParentType extends ResolversParentTypes['ProjectGroup'] = ResolversParentTypes['ProjectGroup'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
-  group?: Resolver<Maybe<ResolversTypes['Group']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  group?: Resolver<Types.Maybe<ResolversTypes['Group']>, ParentType, ContextType>;
   groupId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   project?: Resolver<
-    Maybe<ResolversTypes['Project']>,
+    Types.Maybe<ResolversTypes['Project']>,
     ParentType,
     ContextType,
-    RequireFields<ProjectGroupProjectArgs, 'organizationId'>
+    RequireFields<Types.ProjectGroupProjectArgs, 'organizationId'>
   >;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -6228,15 +2430,15 @@ export type ProjectPermissionResolvers<
     ResolversParentTypes['ProjectPermission'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  permission?: Resolver<Maybe<ResolversTypes['Permission']>, ParentType, ContextType>;
+  permission?: Resolver<Types.Maybe<ResolversTypes['Permission']>, ParentType, ContextType>;
   permissionId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   project?: Resolver<
-    Maybe<ResolversTypes['Project']>,
+    Types.Maybe<ResolversTypes['Project']>,
     ParentType,
     ContextType,
-    RequireFields<ProjectPermissionProjectArgs, 'organizationId'>
+    RequireFields<Types.ProjectPermissionProjectArgs, 'organizationId'>
   >;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -6249,11 +2451,11 @@ export type ProjectResourceResolvers<
     ResolversParentTypes['ProjectResource'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  project?: Resolver<Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
+  project?: Resolver<Types.Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  resource?: Resolver<Maybe<ResolversTypes['Resource']>, ParentType, ContextType>;
+  resource?: Resolver<Types.Maybe<ResolversTypes['Resource']>, ParentType, ContextType>;
   resourceId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -6264,16 +2466,16 @@ export type ProjectRoleResolvers<
   ParentType extends ResolversParentTypes['ProjectRole'] = ResolversParentTypes['ProjectRole'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   project?: Resolver<
-    Maybe<ResolversTypes['Project']>,
+    Types.Maybe<ResolversTypes['Project']>,
     ParentType,
     ContextType,
-    RequireFields<ProjectRoleProjectArgs, 'organizationId'>
+    RequireFields<Types.ProjectRoleProjectArgs, 'organizationId'>
   >;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  role?: Resolver<Maybe<ResolversTypes['Role']>, ParentType, ContextType>;
+  role?: Resolver<Types.Maybe<ResolversTypes['Role']>, ParentType, ContextType>;
   roleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -6285,7 +2487,7 @@ export type ProjectRolePermissionResolvers<
     ResolversParentTypes['ProjectRolePermission'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   permissionId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -6299,21 +2501,21 @@ export type ProjectSyncJobResolvers<
   ParentType extends ResolversParentTypes['ProjectSyncJob'] =
     ResolversParentTypes['ProjectSyncJob'],
 > = ResolversObject<{
-  cancelledAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  cancelledAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   cdmVersion?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  completedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  completedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   enqueuedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  errorMessage?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  errorMessage?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   hasSnapshot?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  jobName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  modeStrategy?: Resolver<Maybe<ResolversTypes['CdmModeStrategy']>, ParentType, ContextType>;
+  jobName?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  modeStrategy?: Resolver<Types.Maybe<ResolversTypes['CdmModeStrategy']>, ParentType, ContextType>;
   operation?: Resolver<ResolversTypes['ProjectSyncJobOperation'], ParentType, ContextType>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  result?: Resolver<Maybe<ResolversTypes['SyncProjectResult']>, ParentType, ContextType>;
-  snapshotSizeBytes?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
-  snapshotTakenAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
-  startedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  result?: Resolver<Types.Maybe<ResolversTypes['SyncProjectResult']>, ParentType, ContextType>;
+  snapshotSizeBytes?: Resolver<Types.Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  snapshotTakenAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  startedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   status?: Resolver<ResolversTypes['ProjectSyncJobStatus'], ParentType, ContextType>;
   warnings?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
 }>;
@@ -6334,17 +2536,17 @@ export type ProjectTagResolvers<
   ParentType extends ResolversParentTypes['ProjectTag'] = ResolversParentTypes['ProjectTag'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   project?: Resolver<
-    Maybe<ResolversTypes['Project']>,
+    Types.Maybe<ResolversTypes['Project']>,
     ParentType,
     ContextType,
-    RequireFields<ProjectTagProjectArgs, 'organizationId'>
+    RequireFields<Types.ProjectTagProjectArgs, 'organizationId'>
   >;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  tag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
+  tag?: Resolver<Types.Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
   tagId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -6355,20 +2557,20 @@ export type ProjectUserResolvers<
   ParentType extends ResolversParentTypes['ProjectUser'] = ResolversParentTypes['ProjectUser'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
-  displayName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  displayName?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   metadata?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
-  pictureUrl?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  pictureUrl?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   project?: Resolver<
-    Maybe<ResolversTypes['Project']>,
+    Types.Maybe<ResolversTypes['Project']>,
     ParentType,
     ContextType,
-    RequireFields<ProjectUserProjectArgs, 'organizationId'>
+    RequireFields<Types.ProjectUserProjectArgs, 'organizationId'>
   >;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
+  user?: Resolver<Types.Maybe<ResolversTypes['User']>, ParentType, ContextType>;
   userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -6378,15 +2580,15 @@ export type ProjectUserApiKeyResolvers<
   ParentType extends ResolversParentTypes['ProjectUserApiKey'] =
     ResolversParentTypes['ProjectUserApiKey'],
 > = ResolversObject<{
-  apiKey?: Resolver<Maybe<ResolversTypes['ApiKey']>, ParentType, ContextType>;
+  apiKey?: Resolver<Types.Maybe<ResolversTypes['ApiKey']>, ParentType, ContextType>;
   apiKeyId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  project?: Resolver<Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
+  project?: Resolver<Types.Maybe<ResolversTypes['Project']>, ParentType, ContextType>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
+  user?: Resolver<Types.Maybe<ResolversTypes['User']>, ParentType, ContextType>;
   userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -6397,7 +2599,7 @@ export type ProjectUserGroupResolvers<
     ResolversParentTypes['ProjectUserGroup'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   groupId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -6412,7 +2614,7 @@ export type ProjectUserPermissionResolvers<
     ResolversParentTypes['ProjectUserPermission'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   permissionId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -6425,30 +2627,30 @@ export type QueryResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query'],
 > = ResolversObject<{
-  _empty?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  _empty?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   apiKeys?: Resolver<
     ResolversTypes['ApiKeyPage'],
     ParentType,
     ContextType,
-    RequireFields<QueryApiKeysArgs, 'scope'>
+    RequireFields<Types.QueryApiKeysArgs, 'scope'>
   >;
   groups?: Resolver<
     ResolversTypes['GroupPage'],
     ParentType,
     ContextType,
-    RequireFields<QueryGroupsArgs, 'scope'>
+    RequireFields<Types.QueryGroupsArgs, 'scope'>
   >;
   invitation?: Resolver<
-    Maybe<ResolversTypes['OrganizationInvitation']>,
+    Types.Maybe<ResolversTypes['OrganizationInvitation']>,
     ParentType,
     ContextType,
-    RequireFields<QueryInvitationArgs, 'token'>
+    RequireFields<Types.QueryInvitationArgs, 'token'>
   >;
   isAuthorized?: Resolver<
     ResolversTypes['AuthorizationResult'],
     ParentType,
     ContextType,
-    RequireFields<QueryIsAuthorizedArgs, 'input'>
+    RequireFields<Types.QueryIsAuthorizedArgs, 'input'>
   >;
   me?: Resolver<ResolversTypes['MeResponse'], ParentType, ContextType>;
   myMfaDevices?: Resolver<Array<ResolversTypes['MfaDevice']>, ParentType, ContextType>;
@@ -6461,19 +2663,19 @@ export type QueryResolvers<
     Array<ResolversTypes['NotificationPreference']>,
     ParentType,
     ContextType,
-    RequireFields<QueryMyNotificationPreferencesArgs, 'scopeTenant'>
+    RequireFields<Types.QueryMyNotificationPreferencesArgs, 'scopeTenant'>
   >;
   myNotifications?: Resolver<
     ResolversTypes['NotificationPage'],
     ParentType,
     ContextType,
-    Partial<QueryMyNotificationsArgs>
+    Partial<Types.QueryMyNotificationsArgs>
   >;
   myProjectMembership?: Resolver<
-    Maybe<ResolversTypes['MyProjectMembership']>,
+    Types.Maybe<ResolversTypes['MyProjectMembership']>,
     ParentType,
     ContextType,
-    RequireFields<QueryMyProjectMembershipArgs, 'projectId'>
+    RequireFields<Types.QueryMyProjectMembershipArgs, 'projectId'>
   >;
   myProjectMemberships?: Resolver<
     Array<ResolversTypes['MyProjectMembership']>,
@@ -6495,103 +2697,103 @@ export type QueryResolvers<
     ResolversTypes['UserSessionPage'],
     ParentType,
     ContextType,
-    RequireFields<QueryMyUserSessionsArgs, 'input'>
+    RequireFields<Types.QueryMyUserSessionsArgs, 'input'>
   >;
   organizationInvitations?: Resolver<
     ResolversTypes['OrganizationInvitationPage'],
     ParentType,
     ContextType,
-    RequireFields<QueryOrganizationInvitationsArgs, 'scope'>
+    RequireFields<Types.QueryOrganizationInvitationsArgs, 'scope'>
   >;
   organizationMembers?: Resolver<
     ResolversTypes['OrganizationMemberPage'],
     ParentType,
     ContextType,
-    RequireFields<QueryOrganizationMembersArgs, 'scope'>
+    RequireFields<Types.QueryOrganizationMembersArgs, 'scope'>
   >;
   organizations?: Resolver<
     ResolversTypes['OrganizationPage'],
     ParentType,
     ContextType,
-    RequireFields<QueryOrganizationsArgs, 'scope'>
+    RequireFields<Types.QueryOrganizationsArgs, 'scope'>
   >;
   permissions?: Resolver<
     ResolversTypes['PermissionPage'],
     ParentType,
     ContextType,
-    RequireFields<QueryPermissionsArgs, 'scope'>
+    RequireFields<Types.QueryPermissionsArgs, 'scope'>
   >;
   projectApps?: Resolver<
     ResolversTypes['ProjectAppPage'],
     ParentType,
     ContextType,
-    RequireFields<QueryProjectAppsArgs, 'scope'>
+    RequireFields<Types.QueryProjectAppsArgs, 'scope'>
   >;
   projectSyncJob?: Resolver<
     ResolversTypes['ProjectSyncJob'],
     ParentType,
     ContextType,
-    RequireFields<QueryProjectSyncJobArgs, 'id' | 'jobId' | 'scope'>
+    RequireFields<Types.QueryProjectSyncJobArgs, 'id' | 'jobId' | 'scope'>
   >;
   projectSyncJobs?: Resolver<
     ResolversTypes['ProjectSyncJobPage'],
     ParentType,
     ContextType,
-    RequireFields<QueryProjectSyncJobsArgs, 'id' | 'scope'>
+    RequireFields<Types.QueryProjectSyncJobsArgs, 'id' | 'scope'>
   >;
   projects?: Resolver<
     ResolversTypes['ProjectPage'],
     ParentType,
     ContextType,
-    RequireFields<QueryProjectsArgs, 'scope'>
+    RequireFields<Types.QueryProjectsArgs, 'scope'>
   >;
   resources?: Resolver<
     ResolversTypes['ResourcePage'],
     ParentType,
     ContextType,
-    RequireFields<QueryResourcesArgs, 'scope'>
+    RequireFields<Types.QueryResourcesArgs, 'scope'>
   >;
   roles?: Resolver<
     ResolversTypes['RolePage'],
     ParentType,
     ContextType,
-    RequireFields<QueryRolesArgs, 'scope'>
+    RequireFields<Types.QueryRolesArgs, 'scope'>
   >;
   signingKeys?: Resolver<
     Array<ResolversTypes['SigningKey']>,
     ParentType,
     ContextType,
-    RequireFields<QuerySigningKeysArgs, 'scope'>
+    RequireFields<Types.QuerySigningKeysArgs, 'scope'>
   >;
   tags?: Resolver<
     ResolversTypes['TagPage'],
     ParentType,
     ContextType,
-    RequireFields<QueryTagsArgs, 'scope'>
+    RequireFields<Types.QueryTagsArgs, 'scope'>
   >;
   users?: Resolver<
     ResolversTypes['UserPage'],
     ParentType,
     ContextType,
-    RequireFields<QueryUsersArgs, 'scope'>
+    RequireFields<Types.QueryUsersArgs, 'scope'>
   >;
   webhookDeliveries?: Resolver<
     ResolversTypes['WebhookDeliveryPage'],
     ParentType,
     ContextType,
-    RequireFields<QueryWebhookDeliveriesArgs, 'scope'>
+    RequireFields<Types.QueryWebhookDeliveriesArgs, 'scope'>
   >;
   webhookSubscription?: Resolver<
     ResolversTypes['WebhookSubscription'],
     ParentType,
     ContextType,
-    RequireFields<QueryWebhookSubscriptionArgs, 'id' | 'scope'>
+    RequireFields<Types.QueryWebhookSubscriptionArgs, 'id' | 'scope'>
   >;
   webhookSubscriptions?: Resolver<
     Array<ResolversTypes['WebhookSubscription']>,
     ParentType,
     ContextType,
-    RequireFields<QueryWebhookSubscriptionsArgs, 'scope'>
+    RequireFields<Types.QueryWebhookSubscriptionsArgs, 'scope'>
   >;
 }>;
 
@@ -6620,7 +2822,7 @@ export type ResendVerificationResponseResolvers<
     ResolversParentTypes['ResendVerificationResponse'],
 > = ResolversObject<{
   message?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  messageKey?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  messageKey?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
 }>;
 
@@ -6640,13 +2842,13 @@ export type ResourceResolvers<
 > = ResolversObject<{
   actions?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
-  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  description?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isActive?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   metadata?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  permissions?: Resolver<Maybe<Array<ResolversTypes['Permission']>>, ParentType, ContextType>;
+  permissions?: Resolver<Types.Maybe<Array<ResolversTypes['Permission']>>, ParentType, ContextType>;
   slug?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   tags?: Resolver<Array<ResolversTypes['Tag']>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -6668,21 +2870,21 @@ export type ResourceTagResolvers<
   ParentType extends ResolversParentTypes['ResourceTag'] = ResolversParentTypes['ResourceTag'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   resource?: Resolver<
-    Maybe<ResolversTypes['Resource']>,
+    Types.Maybe<ResolversTypes['Resource']>,
     ParentType,
     ContextType,
-    RequireFields<ResourceTagResourceArgs, 'scope'>
+    RequireFields<Types.ResourceTagResourceArgs, 'scope'>
   >;
   resourceId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   tag?: Resolver<
-    Maybe<ResolversTypes['Tag']>,
+    Types.Maybe<ResolversTypes['Tag']>,
     ParentType,
     ContextType,
-    RequireFields<ResourceTagTagArgs, 'scope'>
+    RequireFields<Types.ResourceTagTagArgs, 'scope'>
   >;
   tagId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -6703,22 +2905,22 @@ export type RoleResolvers<
   ParentType extends ResolversParentTypes['Role'] = ResolversParentTypes['Role'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
-  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  description?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   groupCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  groups?: Resolver<Maybe<Array<ResolversTypes['Group']>>, ParentType, ContextType>;
+  groups?: Resolver<Types.Maybe<Array<ResolversTypes['Group']>>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   metadata?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   permissionCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  primaryTag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
+  primaryTag?: Resolver<Types.Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
   rolePermissions?: Resolver<
-    Maybe<Array<ResolversTypes['RolePermission']>>,
+    Types.Maybe<Array<ResolversTypes['RolePermission']>>,
     ParentType,
     ContextType
   >;
   tagCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
+  tags?: Resolver<Types.Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -6728,20 +2930,20 @@ export type RoleGroupResolvers<
   ParentType extends ResolversParentTypes['RoleGroup'] = ResolversParentTypes['RoleGroup'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   group?: Resolver<
-    Maybe<ResolversTypes['Group']>,
+    Types.Maybe<ResolversTypes['Group']>,
     ParentType,
     ContextType,
-    RequireFields<RoleGroupGroupArgs, 'scope'>
+    RequireFields<Types.RoleGroupGroupArgs, 'scope'>
   >;
   groupId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   role?: Resolver<
-    Maybe<ResolversTypes['Role']>,
+    Types.Maybe<ResolversTypes['Role']>,
     ParentType,
     ContextType,
-    RequireFields<RoleGroupRoleArgs, 'scope'>
+    RequireFields<Types.RoleGroupRoleArgs, 'scope'>
   >;
   roleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -6764,20 +2966,20 @@ export type RolePermissionResolvers<
     ResolversParentTypes['RolePermission'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   permission?: Resolver<
-    Maybe<ResolversTypes['Permission']>,
+    Types.Maybe<ResolversTypes['Permission']>,
     ParentType,
     ContextType,
-    RequireFields<RolePermissionPermissionArgs, 'scope'>
+    RequireFields<Types.RolePermissionPermissionArgs, 'scope'>
   >;
   permissionId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   role?: Resolver<
-    Maybe<ResolversTypes['Role']>,
+    Types.Maybe<ResolversTypes['Role']>,
     ParentType,
     ContextType,
-    RequireFields<RolePermissionRoleArgs, 'scope'>
+    RequireFields<Types.RolePermissionRoleArgs, 'scope'>
   >;
   roleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -6789,21 +2991,21 @@ export type RoleTagResolvers<
   ParentType extends ResolversParentTypes['RoleTag'] = ResolversParentTypes['RoleTag'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   role?: Resolver<
-    Maybe<ResolversTypes['Role']>,
+    Types.Maybe<ResolversTypes['Role']>,
     ParentType,
     ContextType,
-    RequireFields<RoleTagRoleArgs, 'scope'>
+    RequireFields<Types.RoleTagRoleArgs, 'scope'>
   >;
   roleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   tag?: Resolver<
-    Maybe<ResolversTypes['Tag']>,
+    Types.Maybe<ResolversTypes['Tag']>,
     ParentType,
     ContextType,
-    RequireFields<RoleTagTagArgs, 'scope'>
+    RequireFields<Types.RoleTagTagArgs, 'scope'>
   >;
   tagId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -6824,9 +3026,9 @@ export type SessionExportDataResolvers<
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   expiresAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  ipAddress?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  lastUsedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
-  userAgent?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  ipAddress?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  lastUsedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  userAgent?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
 }>;
 
 export type SigningKeyResolvers<
@@ -6835,11 +3037,11 @@ export type SigningKeyResolvers<
 > = ResolversObject<{
   active?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   kid?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  publicKeyPem?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  rotatedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  publicKeyPem?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  rotatedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -6852,7 +3054,7 @@ export type SyncProjectResultResolvers<
   groupPermissionsLinked?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   groupTagsLinked?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   groupsCreated?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  importId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  importId?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   permissionsCreated?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   projectGroupsLinked?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -6879,9 +3081,9 @@ export type TagResolvers<
 > = ResolversObject<{
   color?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  isPrimary?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
+  isPrimary?: Resolver<Types.Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   metadata?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -6919,29 +3121,29 @@ export type UserResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['User'] = ResolversParentTypes['User'],
 > = ResolversObject<{
-  accounts?: Resolver<Maybe<Array<ResolversTypes['Account']>>, ParentType, ContextType>;
+  accounts?: Resolver<Types.Maybe<Array<ResolversTypes['Account']>>, ParentType, ContextType>;
   authenticationMethods?: Resolver<
-    Maybe<Array<ResolversTypes['UserAuthenticationMethod']>>,
+    Types.Maybe<Array<ResolversTypes['UserAuthenticationMethod']>>,
     ParentType,
     ContextType
   >;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   metadata?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   permissionCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  pictureUrl?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  primaryTag?: Resolver<Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
+  pictureUrl?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  primaryTag?: Resolver<Types.Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
   projectUserApiKeyCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   roleCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  roles?: Resolver<Maybe<Array<ResolversTypes['Role']>>, ParentType, ContextType>;
+  roles?: Resolver<Types.Maybe<Array<ResolversTypes['Role']>>, ParentType, ContextType>;
   tagCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  tags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
+  tags?: Resolver<Types.Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  userGroups?: Resolver<Maybe<Array<ResolversTypes['UserGroup']>>, ParentType, ContextType>;
+  userGroups?: Resolver<Types.Maybe<Array<ResolversTypes['UserGroup']>>, ParentType, ContextType>;
   userPermissions?: Resolver<
-    Maybe<Array<ResolversTypes['UserPermission']>>,
+    Types.Maybe<Array<ResolversTypes['UserPermission']>>,
     ParentType,
     ContextType
   >;
@@ -6954,16 +3156,16 @@ export type UserAuthenticationMethodResolvers<
     ResolversParentTypes['UserAuthenticationMethod'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   isVerified?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  lastUsedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  lastUsedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   provider?: Resolver<ResolversTypes['UserAuthenticationMethodProvider'], ParentType, ContextType>;
   providerData?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
   providerId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
+  user?: Resolver<Types.Maybe<ResolversTypes['User']>, ParentType, ContextType>;
   userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -7000,7 +3202,7 @@ export type UserExportDataResolvers<
     ResolversParentTypes['UserExportData'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  email?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  email?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -7011,21 +3213,21 @@ export type UserGroupResolvers<
   ParentType extends ResolversParentTypes['UserGroup'] = ResolversParentTypes['UserGroup'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   group?: Resolver<
-    Maybe<ResolversTypes['Group']>,
+    Types.Maybe<ResolversTypes['Group']>,
     ParentType,
     ContextType,
-    RequireFields<UserGroupGroupArgs, 'scope'>
+    RequireFields<Types.UserGroupGroupArgs, 'scope'>
   >;
   groupId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   user?: Resolver<
-    Maybe<ResolversTypes['User']>,
+    Types.Maybe<ResolversTypes['User']>,
     ParentType,
     ContextType,
-    RequireFields<UserGroupUserArgs, 'scope'>
+    RequireFields<Types.UserGroupUserArgs, 'scope'>
   >;
   userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -7047,21 +3249,21 @@ export type UserPermissionResolvers<
     ResolversParentTypes['UserPermission'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   permission?: Resolver<
-    Maybe<ResolversTypes['Permission']>,
+    Types.Maybe<ResolversTypes['Permission']>,
     ParentType,
     ContextType,
-    RequireFields<UserPermissionPermissionArgs, 'scope'>
+    RequireFields<Types.UserPermissionPermissionArgs, 'scope'>
   >;
   permissionId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   user?: Resolver<
-    Maybe<ResolversTypes['User']>,
+    Types.Maybe<ResolversTypes['User']>,
     ParentType,
     ContextType,
-    RequireFields<UserPermissionUserArgs, 'scope'>
+    RequireFields<Types.UserPermissionUserArgs, 'scope'>
   >;
   userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -7072,21 +3274,21 @@ export type UserRoleResolvers<
   ParentType extends ResolversParentTypes['UserRole'] = ResolversParentTypes['UserRole'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   role?: Resolver<
-    Maybe<ResolversTypes['Role']>,
+    Types.Maybe<ResolversTypes['Role']>,
     ParentType,
     ContextType,
-    RequireFields<UserRoleRoleArgs, 'scope'>
+    RequireFields<Types.UserRoleRoleArgs, 'scope'>
   >;
   roleId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   user?: Resolver<
-    Maybe<ResolversTypes['User']>,
+    Types.Maybe<ResolversTypes['User']>,
     ParentType,
     ContextType,
-    RequireFields<UserRoleUserArgs, 'scope'>
+    RequireFields<Types.UserRoleUserArgs, 'scope'>
   >;
   userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -7098,17 +3300,17 @@ export type UserSessionResolvers<
 > = ResolversObject<{
   audience?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   expiresAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  ipAddress?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
-  lastUsedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  ipAddress?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  lastUsedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   token?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
-  userAgent?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  user?: Resolver<Types.Maybe<ResolversTypes['User']>, ParentType, ContextType>;
+  userAgent?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   userAuthenticationMethod?: Resolver<
-    Maybe<ResolversTypes['UserAuthenticationMethod']>,
+    Types.Maybe<ResolversTypes['UserAuthenticationMethod']>,
     ParentType,
     ContextType
   >;
@@ -7133,22 +3335,22 @@ export type UserTagResolvers<
   ParentType extends ResolversParentTypes['UserTag'] = ResolversParentTypes['UserTag'],
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deletedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   tag?: Resolver<
-    Maybe<ResolversTypes['Tag']>,
+    Types.Maybe<ResolversTypes['Tag']>,
     ParentType,
     ContextType,
-    RequireFields<UserTagTagArgs, 'scope'>
+    RequireFields<Types.UserTagTagArgs, 'scope'>
   >;
   tagId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   user?: Resolver<
-    Maybe<ResolversTypes['User']>,
+    Types.Maybe<ResolversTypes['User']>,
     ParentType,
     ContextType,
-    RequireFields<UserTagUserArgs, 'scope'>
+    RequireFields<Types.UserTagUserArgs, 'scope'>
   >;
   userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -7160,7 +3362,7 @@ export type VerifyEmailResponseResolvers<
     ResolversParentTypes['VerifyEmailResponse'],
 > = ResolversObject<{
   message?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  messageKey?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  messageKey?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
 }>;
 
@@ -7171,12 +3373,12 @@ export type WebhookDeliveryAttemptResolvers<
 > = ResolversObject<{
   attemptCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  deliveredAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
-  errorDetails?: Resolver<Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
+  deliveredAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  errorDetails?: Resolver<Types.Maybe<ResolversTypes['JSON']>, ParentType, ContextType>;
   eventId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  lastResponseStatus?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
-  nextRetryAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  lastResponseStatus?: Resolver<Types.Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  nextRetryAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   status?: Resolver<ResolversTypes['WebhookDeliveryStatus'], ParentType, ContextType>;
   subscriptionId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -7199,8 +3401,8 @@ export type WebhookSubscriptionResolvers<
 > = ResolversObject<{
   active?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  createdById?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
-  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  createdById?: Resolver<Types.Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  description?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   eventTypes?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -7215,8 +3417,8 @@ export type WebhookSubscriptionWithSecretResolvers<
 > = ResolversObject<{
   active?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
-  createdById?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
-  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  createdById?: Resolver<Types.Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  description?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   eventTypes?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
@@ -7241,7 +3443,6 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   AuthenticationMethodExportData?: AuthenticationMethodExportDataResolvers<ContextType>;
   AuthorizationResult?: AuthorizationResultResolvers<ContextType>;
   ChangeMyPasswordResult?: ChangeMyPasswordResultResolvers<ContextType>;
-  Creatable?: CreatableResolvers<ContextType>;
   CreateAccountResult?: CreateAccountResultResolvers<ContextType>;
   CreateApiKeyResult?: CreateApiKeyResultResolvers<ContextType>;
   CreateMySecondaryAccountResult?: CreateMySecondaryAccountResultResolvers<ContextType>;

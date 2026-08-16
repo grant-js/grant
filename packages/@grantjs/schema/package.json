@@ -17,19 +17,25 @@
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@graphql-typed-document-node/core": "^3.2.0"
   },
   "devDependencies": {
+    "@graphql-codegen/add": "^7.1.0",
     "@graphql-codegen/cli": "^7.2.0",
-    "@graphql-codegen/client-preset": "^6.1.0",
+    "@graphql-codegen/typed-document-node": "^7.1.0",
     "@graphql-codegen/typescript": "^6.1.0",
+    "@graphql-codegen/typescript-operations": "^6.1.2",
     "@graphql-codegen/typescript-resolvers": "^6.1.0",
     "@parcel/watcher": "^2.6.0",
     "@types/node": "^26.1.1",
     "eslint": "^10.7.0",
-    "typescript": "^6.0.3"
+    "graphql": "^16.14.2",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
   }
 }

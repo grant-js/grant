@@ -1107,15 +1107,21 @@ importers:
         specifier: ^3.2.0
         version: 3.2.0(graphql@16.14.2)
     devDependencies:
+      '@graphql-codegen/add':
+        specifier: ^7.1.0
+        version: 7.1.0(graphql@16.14.2)
       '@graphql-codegen/cli':
         specifier: ^7.2.0
         version: 7.2.0(@parcel/watcher@2.6.0)(@types/node@26.1.2)(graphql@16.14.2)(typescript@6.0.3)
-      '@graphql-codegen/client-preset':
-        specifier: ^6.1.0
-        version: 6.1.0(graphql@16.14.2)
+      '@graphql-codegen/typed-document-node':
+        specifier: ^7.1.0
+        version: 7.1.0(graphql@16.14.2)
       '@graphql-codegen/typescript':
         specifier: ^6.1.0
         version: 6.1.0(graphql@16.14.2)
+      '@graphql-codegen/typescript-operations':
+        specifier: ^6.1.2
+        version: 6.1.2(graphql@16.14.2)
       '@graphql-codegen/typescript-resolvers':
         specifier: ^6.1.0
         version: 6.1.0(graphql@16.14.2)
@@ -1128,9 +1134,15 @@ importers:
       eslint:
         specifier: ^10.7.0
         version: 10.8.0
+      graphql:
+        specifier: 16.14.2
+        version: 16.14.2
       typescript:
         specifier: 6.0.3
         version: 6.0.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@29.1.1)(vite@8.2.0)
 
   packages/@grantjs/server:
     dependencies:

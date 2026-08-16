@@ -133,6 +133,12 @@ Count-based reads two snapshots — the page and the count — so a concurrent i
 >
 > **`get` vs `find`:** intended distinction is primary-key/canonical/list (`get`) vs secondary-key/nullable (`find`). About 83% of `@grantjs/core` port methods follow it (54 `get*By*` vs 11 `find*By*` for the same semantic shape) — see [code-quality/core.md § Tier 5](./docs/contributing/code-quality/core.md#getbyx-vs-findbyx-for-the-identical-semantic-operation--one-convention-mostly-unfollowed). New methods should follow the convention; renaming the existing outliers is a separate story.
 
+### GraphQL operation documents — two spellings
+
+`packages/@grantjs/schema/src/operations/` is split **62 camelCase / 53 kebab-case** (`updateRole.graphql` vs `update-webhook-subscription.graphql`), while all 425 files under `src/schema/` are kebab-case. So the repo convention in the table above already covers this; only `src/operations/` departs from it.
+
+**Decided 2026-08-16: kebab-case** ([code-quality/schema.md § D1](./docs/contributing/code-quality/schema.md#recorded-decisions)). New operation documents take it now; the 62 existing renames are a follow-up story, because they touch every consumer import and want a diff a reviewer can read as "renames only."
+
 ### One schema, two exported names
 
 Two zod schemas are exported under a second name that adds no meaning. Both names are live, so this is a rename, not dead code — it is recorded here rather than fixed, per the pass-1 decision to settle vocabulary before renaming.

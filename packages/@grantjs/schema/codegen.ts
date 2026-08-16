@@ -29,16 +29,21 @@ const config: CodegenConfig = {
         importSchemaTypesFrom: './src/generated/schema-types',
       },
     },
-    // Server-side resolver types (generic, no specific context)
+    // Server-side resolver types (generic, no specific context). Like the operations
+    // output above, this imports the schema types instead of re-emitting them —
+    // running `typescript` here too produced a second copy of all 464 type names and
+    // forced src/index.ts to re-export resolvers through a hand-curated allowlist to
+    // dodge the collision. `typescript-resolvers` has no `importSchemaTypesFrom` (that
+    // option belongs to the documents visitor), so the equivalent is
+    // `namespacedImportName` plus an `add` plugin supplying the import line.
     './src/generated/resolvers.ts': {
-      plugins: ['typescript', 'typescript-resolvers'],
+      plugins: [
+        { add: { content: "import type * as Types from './schema-types';" } },
+        'typescript-resolvers',
+      ],
       config: {
-        useIndexSignature: true,
-        enumsAsTypes: false,
-        scalars: {
-          Date: 'Date',
-          JSON: 'Record<string, unknown>',
-        },
+        ...schemaTypesConfig,
+        namespacedImportName: 'Types',
       },
     },
   },
