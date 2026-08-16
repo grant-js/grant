@@ -28,7 +28,7 @@ Both green results are cheap to make permanent and expensive to rediscover. Per 
 
 ### The large finding — SDL as an internal declaration language (Tier 3, decision only)
 
-**36 of 54 domain folders under `src/schema/` contain `inputs/` and `types/` but no `queries/` and no `mutations/`.** By declaration count, **177 of 382 GraphQL type declarations (46%) are never referenced by any other SDL file or operation document.**
+**36 of 54 domain folders under `src/schema/` contain `inputs/` and `types/` but no `queries/` and no `mutations/`.** By declaration count, 177 of 382 GraphQL type declarations are never referenced by any other SDL file or operation document — **and graph traversal, which slice 2 later measured, puts the real figure at 181 of 388 (46.6%)**. The grep below was a lower bound; cite 181 (stack plan correction C2).
 
 Applying rule 2 (_a rule violation is not automatically a defect_), those 177 split cleanly:
 
@@ -90,7 +90,7 @@ The detector for a codegen package is **structural**, not unit: build the merged
 - [ ] **Structural test suite for the package** (the coverage lens, done in the shape this unit actually takes). Requires adding `vitest` + a `test` script; keep `vi.mock` in reach for the generated barrels — pass 4's carried input on `vi.resetModules()` + large barrel imports applies here more than anywhere, this package _is_ barrel-shaped. Minimum:
   - the merged SDL from `src/schema/**` builds (`buildSchema` / `makeExecutableSchema`) — today this is only proven at API boot
   - all 116 documents under `src/operations/**` validate against it
-  - **every `*SortableField` and `*SearchableField` enum value is a real field on its entity type.** This is the live-defect detector: repositories cast `Object.values(XSearchableField)` to `keyof XModel`, so a stale enum value degrades search silently. If it can only be checked against DB models, file the cross-check as an `apps/api` test and say so
+  - ~~**every `*SortableField` and `*SearchableField` enum value is a real field on its entity type** — the live-defect detector~~ **Withdrawn during slice 2: `tsc` already enforces this.** `Array<keyof XModel> = Object.values(XSearchableField)` makes every value assignability-checked against the Drizzle model, and a planted bad value fails `pnpm --filter grant-api exec tsc --noEmit`. See correction C1 in the stack plan
   - a reachability report from `Query`/`Mutation` that pins the current unreachable count, so the Tier 3 decision below has a number that moves
   - **Mutation-check every test before counting it** — pass 4's carried input: a characterization test that has never failed characterizes nothing. Include `vi.clearAllMocks()` in `beforeEach` if any spy is used
 - [ ] `src/schema/me/input/` merged into `src/schema/me/inputs/` (10 files). **The merged schema must be byte-identical afterwards** — verify with the codegen drift check, not by inspection
@@ -128,7 +128,7 @@ The detector for a codegen package is **structural**, not unit: build the merged
 
 - Project Manager, Principal Engineer
 - **Senior Backend** — guardrails, codegen dependency fix, drift check, SDL moves and deletions, and the `codegen.ts` de-duplication. Sequence matters: the drift check lands _before_ the codegen change, so the regeneration is verified by a check that was already proven to fire rather than by the same slice that introduces it
-- **Senior QA — load-bearing again.** Owns the structural test suite. Note this is the first pass where lens 7 is _not_ a unit-test assignment; the value is in the schema-level assertions, especially the `*SearchableField` ↔ entity-field check, which is the one plausible live defect in the package
+- **Senior QA — load-bearing again.** Owns the structural test suite. Note this is the first pass where lens 7 is _not_ a unit-test assignment; the value is in the schema-level assertions — the merged SDL building, all 116 operation documents validating, and reachability pinned. ~~especially the `*SearchableField` ↔ entity-field check, which is the one plausible live defect in the package~~ — that claim was disproved in slice 2 (stack plan correction C1); the compiler already blocks it
 - **Architect** — owns Tier 3 decision 1 (SDL as internal declaration language). Also owns the `AGENTS.md` DAG gap flagged below
 - **Senior Frontend — advisory, blocking on one item.** Confirms the 3 unimported operation documents before deletion; `apps/web` is the primary consumer of `src/operations/**`
 - **Senior Security** — any slice deleting or moving SDL
@@ -149,7 +149,7 @@ Pass 5's lenses were run inline against `packages/@grantjs/schema` before writin
 Two rubric caveats are load-bearing here and should survive into `schema.md`:
 
 1. **`knip` is structurally blind on this package.** `entry: ["src/index.ts"]` makes every re-export "used." Its zero-unused-exports result means "not measurable this way," not "clean." The 8 findings above came from consumer cross-reference.
-2. **The 177 number is a lower bound and a misleading headline.** It counts declarations unreferenced by other SDL; true unreachability from `Query`/`Mutation` is at least that. But 171 of the 177 are live TypeScript, and 12 of the 14 `*SearchableField` enums are live runtime configuration. Reported flat, it reads as "delete half the schema," which would be wrong. The structural reachability test in AC 5 is what replaces the grep with a number that means something.
+2. **The 177 number is a lower bound and a misleading headline.** It counts declarations unreferenced by other SDL; true unreachability from `Query`/`Mutation` is at least that — **slice 2 measured it at 181 of 388**. But 171 are live TypeScript, and 12 of the 14 `*SearchableField` enums are live runtime configuration. Reported flat, it reads as "delete half the schema," which would be wrong. `src/sdl-contract.test.ts` now pins 181, replacing the grep with a number that means something and that has to move deliberately.
 
 ## Human gate
 

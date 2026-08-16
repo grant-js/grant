@@ -26,14 +26,14 @@
 | #     | Branch                                      | Base                       | Concern                                                              | Owner              | Review bar        | PR                                                 |
 | ----- | ------------------------------------------- | -------------------------- | -------------------------------------------------------------------- | ------------------ | ----------------- | -------------------------------------------------- |
 | 1     | `feat/schema-code-quality-guardrails`       | `feat/schema-code-quality` | ESLint DAG rule + `dead-code:schema` + codegen dep fix + drift check | Backend            | light             | [#268](https://github.com/grant-js/grant/pull/268) |
-| 2     | `feat/schema-code-quality-structural-tests` | slice 1                    | The coverage lens in this unit's shape — schema-level assertions     | QA                 | light¹            |                                                    |
+| 2     | `feat/schema-code-quality-structural-tests` | slice 1                    | The coverage lens in this unit's shape — schema-level assertions     | QA                 | light¹            | [#269](https://github.com/grant-js/grant/pull/269) |
 | 3     | `feat/schema-code-quality-codegen-dedup`    | slice 2                    | Collapse the 463-type duplicate emission **in `codegen.ts`**         | Backend            | light             |                                                    |
 | 4     | `feat/schema-code-quality-sdl`              | slice 3                    | `me/input` → `me/inputs`; 6 dead SDL declarations                    | Backend            | **security-full** |                                                    |
 | 5     | `feat/schema-code-quality-dead-surface`     | slice 4                    | Hand-written dead exports, duplicate constants, stale config/README  | Backend + Frontend | light             |                                                    |
 | 6     | `feat/schema-code-quality-docs`             | slice 5                    | `schema.md`, Tier 3 decisions, pass table, `CONCEPTS.md`             | Architect + PM     | light             |                                                    |
 | final | `feat/schema-code-quality`                  | `main`                     | integration                                                          | Principal          | **deep**          |                                                    |
 
-¹ **Escalates to `security-full` if slice 2's enum↔field check finds a mismatch.** That check is the one plausible live defect in the package (see slice 2). Set the bar when the finding lands; don't pre-commit to `light`.
+¹ ~~Escalates to `security-full` if slice 2's enum↔field check finds a mismatch.~~ **Withdrawn — the mismatch it guarded against cannot occur.** `tsc` already enforces it; see [correction C1](#corrections). Slice 2's bar is plain `light`.
 
 The story→main bar is `deep` on size alone: **776 files import `@grantjs/schema`**, more than any unit audited so far.
 
@@ -99,7 +99,7 @@ The detector for a codegen package is structural. Add `vitest` + a `test` script
 
 - **The merged SDL from `src/schema/**` builds.** Today this is only proven at API boot.
 - **All 116 documents under `src/operations/**` validate against it.**
-- **Every `*SortableField` and `*SearchableField` enum value is a real field on its entity type.** _This is the slice's reason to exist._ Repositories cast `Object.values(XSearchableField)` to `keyof XModel` (`apps/api/src/repositories/groups.repository.ts:25`, `resources.repository.ts:26`, `project-apps.repository.ts:53`, `users.repository.ts:32`), so a stale enum value degrades column search silently — no type error, no runtime error, just fewer rows matched. If the check can only be completed against Drizzle models, file the cross-check as an `apps/api` test and say so rather than dropping it.
+- ~~**Every `*SortableField` and `*SearchableField` enum value is a real field on its entity type.** This is the slice's reason to exist.~~ **Not built — the compiler already does it.** See [correction C1](#corrections). Repositories assign `Object.values(XSearchableField)` to `searchFields: Array<keyof XModel>`, and TypeScript rejects any enum value that is not a key of the Drizzle model. A test would have been a weaker copy of a check that already blocks CI.
 - **A reachability report from `Query`/`Mutation`** pinning the current unreachable count, so slice 6's Tier 3 decision has a number that moves. The audit's grep said 177 of 382 declarations; that is a **lower bound** measured against SDL cross-references, and the real figure from graph traversal will differ. Report what the traversal says, not what the brief said.
 
 **Two carried inputs bite hardest here.** `vi.resetModules()` plus a large barrel import is quadratic and fails first in CI — pass 4's `connection.test.ts` went from 7,695 ms to 175 ms once the barrel was `vi.mock`ed. This package _is_ barrel-shaped by construction (21,802 generated lines across three files). And **mutation-check every test before counting it**: a characterization test that has never failed characterizes nothing. Include `vi.clearAllMocks()` in `beforeEach` if any spy is used.
@@ -171,12 +171,41 @@ No file overlap remains: nothing merged since the assessment touches `packages/@
 ## Judgment calls for gate 2 {#judgment-calls}
 
 1. **`schema.md` is written last, in slice 6, not first.** The brief made it acceptance criterion 1, which reads as "write it first." I have put it last deliberately: its two headline numbers (SDL reachability, and whether the enum↔field check finds a mismatch) are _produced_ by slice 2, and its Tier 3 section records decisions that don't exist until slice 6. Writing it in slice 2 and amending it in slice 6 means two slices editing one large file in a stack. The cost of this call is that slices 1–5 run with the brief as their evidence base rather than a findings doc. Overrule me if you'd rather have the doc up front — it is a one-slice reorder, not a redesign.
-2. **Slice 2's bar is deliberately conditional.** Pre-declaring `light` on the only check likely to find a live defect would be optimistic; pre-declaring `security-full` would over-gate a slice that is mostly new test infrastructure. Set it when the finding lands.
+2. ~~**Slice 2's bar is deliberately conditional.**~~ **Resolved to plain `light`** once the check it hedged against turned out to be redundant — [correction C1](#corrections).
 3. **Slice 3 can legitimately close having changed nothing.** If codegen v7 cannot express the de-duplication, the correct outcome is a recorded negative result, not a hand-edit of generated files. I would rather the slice land empty-but-documented than have someone "fix" 3,800 lines in a way the next `pnpm generate` reverts. Calling it out because an empty slice looks like a failed slice at review time, and here it isn't.
 4. **The 171 SDL-unreachable-but-live-TypeScript declarations are untouched by every slice.** They are 46% of the SDL and the largest question in the package. Slice 6 decides; nothing executes. Deciding and acting in the same pass is exactly what Tier 3 exists to prevent — and here the acting would be a contract change across 776 importers.
 5. **No slice widens guardrails beyond `@grantjs/schema`**, even though slice 1 is touching `eslint.config.mjs` and `ci.yml` anyway and it would be cheap. Same rule passes 1–4 each wrote: a repo-wide widening surfaces violations this story has no mandate to fix. Pass 6's first slice.
 6. **Discovered out of scope, flagged for a human before pass 6 is planned**: `AGENTS.md`'s package dependency graph lists 11 packages; the repo has 19. Undocumented: `analytics` (2 importers), `cli` (0), `client` (**117**), `i18n` (17), `platform` (0), `server` (1), `telemetry` (2), `webhooks` (3). Consequently `docs/contributing/code-quality/README.md:168` under-scopes pass 6 — its adapter list omits eight packages, two of which (`cli`, `platform`) have zero importers and may be dead units rather than audit targets. This is the same class of correction pass 4 made for `env` and `constants`, and considerably larger. It does not belong in a `@grantjs/schema` story; it should be a short Architect-owned doc story of its own.
 7. **Resolved before approval, kept for the record**: this plan originally flagged a lockfile collision with `chore/deps-security-bumps` and recommended landing it first. That branch had already merged as #249; the collision never existed. See the method note under [Dependencies](#dependencies--notes) — squash merges make branch-ancestry checks unreliable, and that is what produced the false reading.
+
+## Corrections {#corrections}
+
+Claims in this plan or the brief that implementation disproved. Recorded in flight rather than at close-out, so a slice never runs against a premise a previous slice already killed. Carried into `schema.md` at slice 6.
+
+### C1 — the `*SearchableField` enum check was redundant (slice 2)
+
+**Claimed**: an enum value that is not a column degrades column search silently — "no type error, no runtime error, just fewer rows matched" — making this the one plausible live defect in the package, worth a test and a conditional `security-full` bar.
+
+**Actual**: `tsc` rejects it. Repositories write `protected searchFields: Array<keyof GroupModel> = Object.values(GroupSearchableField)`, and a string-enum member is not assignable to a `keyof` union it is not in. Planting `notAColumnAtAll` into `GroupSearchableField` and regenerating produces:
+
+```
+groups.repository.ts(25,13): error TS2322: Type 'GroupSearchableField[]' is not assignable to
+  type '("createdAt" | "updatedAt" | "description" | "name" | "id" | "searchDocument" | ...)[]'
+    Type 'GroupSearchableField.NotAColumnAtAll' is not assignable to ...
+```
+
+**Why it was wrong**: the claim assumed a positional/structural gap without checking assignability — the precise failure pass 3 recorded as a carried input and this plan quoted approvingly one slice earlier ("when the compiler can distinguish the change, the compiler is the review"). Quoting a rule is not applying it.
+
+**Two things the investigation surfaced that are worth keeping:**
+
+- The enums are contracts against the **Drizzle model, not the graph**. `GroupSearchableField.searchDocument` is a real column (`packages/@grantjs/database/src/schemas/groups.schema.ts:12`) and _not_ a field on the `Group` GraphQL type. An SDL-only version of this check would have failed on correct code.
+- The one consumption path that is not a `keyof` assignment — the sort switch at `apps/api/src/repositories/organization-members.repository.ts:178` — has a `default:` arm falling back to name-sort, so an unknown value degrades rather than breaks.
+
+**Disposition**: check not built; slice 2's bar is plain `light`; footnote 1 and judgment call 2 withdrawn. `AccountSearchableField` and `OrganizationMemberSearchableField` remain genuinely dead (no consumer at all, hence nothing for the compiler to check) and are still on slice 4's deletion list.
+
+### C2 — SDL reachability is 181, not 177 (slice 2)
+
+The brief's 177 came from grepping SDL cross-references and was labelled a lower bound. Graph traversal from `Query`/`Mutation` gives **181 of 388 declared types** (46.6%). 181 is now pinned by `src/sdl-contract.test.ts`; 177 should not be cited again.
 
 ## Human gates
 
