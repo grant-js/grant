@@ -5,7 +5,7 @@
 - **Slug**: `internal-packages-code-quality`
 - **Story brief**: [`plans/2026-08-16-internal-packages-code-quality-brief.md`](./2026-08-16-internal-packages-code-quality-brief.md) — approved 2026-08-16, Ale Heredia
 - **Findings**: `docs/contributing/code-quality/internal-packages.md` — written by slice 8
-- **Status**: draft — awaiting gate 2
+- **Status**: in-progress — gate 2 cleared 2026-08-16; slices land one at a time via `gh stack add` + `gh stack submit`
 - **Story trunk**: `feat/internal-packages-code-quality`
 - **worktree_path**: **not required** — no other story is in flight. `git worktree list` shows only the main checkout. Slices run serially in the main checkout, as in passes 4 and 5. Add a worktree only if a second story opens mid-stack.
 - **Base**: `main` at `178dd710` (pass 5, #275). Every `file:line` citation in this plan and the brief re-verifies against this commit.
@@ -249,7 +249,7 @@ The re-measurement parses `extends` textually and classifies every entry, failin
 ## Human gates
 
 - [x] Gate 1: Story brief approved — 2026-08-16, Ale Heredia.
-- [ ] Gate 2: Stack plan approved — implementation may proceed from slice 2.
+- [x] Gate 2: Stack plan approved — 2026-08-16, Ale Heredia. Implementation proceeds from slice 2, one slice at a time.
 - [ ] Gate 3: Stack PRs merged into trunk.
 - [ ] Gate 4: Story → `main` deep review complete.
 
