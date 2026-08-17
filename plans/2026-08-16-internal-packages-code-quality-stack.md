@@ -85,6 +85,23 @@ gh stack sync   # after any upstream merge or trunk-only commit
 
 Root on `feat/internal-packages-code-quality`, never `main` — omitting `--base` skips gate 4 and turns one release into eight. The same applies to `gh stack link` if PRs are adopted mid-flight.
 
+### `gh stack` v0.1.0 cannot grow a stack one slice at a time {#gh-stack-limitation}
+
+Discovered at slice 2 and worth carrying into `docs/contributing/agentic-sdlc.md`. This story builds each slice branch before the next exists, which is the natural shape for "work it slice by slice" — but neither command supports it:
+
+- **`gh stack add <branch>` creates a new branch.** It cannot adopt a branch that already exists with commits on it, which is exactly what a finished slice is.
+- **`gh stack init` refuses to re-run**, with either `current branch is already part of a stack` (from inside the stack) or `branch "…" already exists in a stack` (from outside it). So the stack cannot be re-declared to include a newly finished slice.
+
+`gh stack init` therefore only works if **every** slice branch exists up front — which for this story would mean eight empty branches created before any work, and empty branches produce empty PRs.
+
+**Fallback taken**, which the SDLC doc explicitly sanctions ("fall back to the v1 manual steps … don't let it block a story"): push each slice branch and open its PR with `--base <previous slice branch>` explicitly. **The PR chain is what gate 4 depends on, and it is correct**; the GitHub Stack object is a convenience that this story does without. Verify after every slice:
+
+```sh
+gh pr view <n> --json number,baseRefName,headRefName
+```
+
+The bottom PR's base must be the trunk. Nothing warns you if it is not.
+
 ---
 
 ## Slice detail
