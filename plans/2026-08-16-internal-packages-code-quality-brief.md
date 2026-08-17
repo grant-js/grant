@@ -68,7 +68,7 @@ Three lenses are clean across all 13 packages _today_. The rubric's rule is to l
 
 **3.2 Factory style: 6 static-class factories against 1 function.** `cache`, `storage`, `email`, `jobs`, `telemetry`, `analytics` each export `class XFactory` with static methods; `webhooks/src/factory.ts:38` exports `function createWebhookAdapters`. Note `AGENTS.md` describes adapters as receiving config "via constructor/factory params" without picking one. Decide and document; 6-vs-1 makes the cheaper direction obvious.
 
-**3.3 Two `tsconfig.build.json` dialects — carried in from pass 5, and larger than its backlog entry said.** Of the 19 packages carrying one, **11 extend the shared `packages/@grantjs/tsconfig.build.json`** and **6 extend their own `./tsconfig.json`** (`client`, `cli`, `core`, `database`, `env`, `server`). See [C4](./2026-08-16-schema-code-quality-stack.md#c4--the-test-support-leak-fix-does-not-live-in-the-shared-parent-close-out).
+**3.3 Two `tsconfig.build.json` dialects — carried in from pass 5, and larger than its backlog entry said.** Of the **18** packages carrying one, **12 extend the shared `packages/@grantjs/tsconfig.build.json`** and **6 extend their own `./tsconfig.json`** (`client`, `cli`, `core`, `database`, `env`, `server`). See [C4](./2026-08-16-schema-code-quality-stack.md#c4--the-test-support-leak-fix-does-not-live-in-the-shared-parent-close-out), and [C1](./2026-08-16-internal-packages-code-quality-stack.md#corrections) for why the first count of this was wrong.
 
 ### Tier 2 — repetition
 
