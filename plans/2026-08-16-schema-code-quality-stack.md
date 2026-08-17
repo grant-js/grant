@@ -250,7 +250,9 @@ Open at close-out, tracked in [`schema.md` § Backlog](../docs/contributing/code
 
 **Claimed** (`schema.md` § Backlog): "the shared `packages/@grantjs/tsconfig.build.json` excludes `*.test.ts` but not `src/test-support/` … the durable fix is one pattern in the shared parent."
 
-**Actual**: `packages/@grantjs/database/tsconfig.build.json:2` extends `./tsconfig.json`, **not** `../tsconfig.build.json`. Adding a pattern to the shared parent would not reach `database` at all — the one package the backlog entry was written about. Of the 19 packages carrying a `tsconfig.build.json`, **11 extend the shared parent and 6 extend their own** (`client`, `cli`, `core`, `database`, `env`, `server`; `schema` extends the parent and restates its patterns per C3).
+**Actual**: `packages/@grantjs/database/tsconfig.build.json:2` extends `./tsconfig.json`, **not** `../tsconfig.build.json`. Adding a pattern to the shared parent would not reach `database` at all — the one package the backlog entry was written about. Of the **18** packages carrying a `tsconfig.build.json`, **12 extend the shared parent and 6 extend their own** (`client`, `cli`, `core`, `database`, `env`, `server`; `schema` extends the parent and restates its patterns per C3).
+
+> **Amended.** This entry first said "19 packages … 11 extend the shared parent." Both numbers were wrong: 19 counted `packages/@grantjs/tsconfig.build.json`, the shared parent itself, as a package's config, and the uncounted 12th is `schema`. The measurement read each `extends` with `node -e "require(…).extends"`, which **threw** on `schema`'s file because C3 had just added a comment block to it — so the value printed blank and read as "no `extends`." `11 + 6 = 17` against a stated 19 was on the page and went unnoticed. Written up as [C1 of pass 6](./2026-08-16-internal-packages-code-quality-stack.md#corrections). The finding itself is unchanged.
 
 **Why it was wrong**: the entry was written from schema's vantage point — schema does extend the parent — and generalised without checking the other extends-chains. The same shape as C3: a claim true of the file in front of you, asserted about the set.
 
