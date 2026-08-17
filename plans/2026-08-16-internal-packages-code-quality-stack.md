@@ -5,7 +5,7 @@
 - **Slug**: `internal-packages-code-quality`
 - **Story brief**: [`plans/2026-08-16-internal-packages-code-quality-brief.md`](./2026-08-16-internal-packages-code-quality-brief.md) — approved 2026-08-16, Ale Heredia
 - **Findings**: `docs/contributing/code-quality/internal-packages.md` — written by slice 8
-- **Status**: in-progress — gate 2 cleared 2026-08-16; slices land one at a time via `gh stack add` + `gh stack submit`
+- **Status**: in-progress — gate 2 cleared 2026-08-16; slices land one at a time; all eight branches declared in one `gh stack init`, then `gh stack submit --auto` after each
 - **Story trunk**: `feat/internal-packages-code-quality`
 - **worktree_path**: **not required** — no other story is in flight. `git worktree list` shows only the main checkout. Slices run serially in the main checkout, as in passes 4 and 5. Add a worktree only if a second story opens mid-stack.
 - **Base**: `main` at `178dd710` (pass 5, #275). Every `file:line` citation in this plan and the brief re-verifies against this commit.
@@ -68,8 +68,8 @@ Slice 7 is file-disjoint from 2–6 and could fan out; it is kept serial because
 ## Stack setup
 
 ```sh
-# trunk and slice 1 already exist locally, unpushed
-git push -u origin feat/internal-packages-code-quality
+git switch -c feat/internal-packages-code-quality main && git push -u origin feat/internal-packages-code-quality
+# All eight named up front — init adopts what exists and creates the rest.
 gh stack init --base feat/internal-packages-code-quality \
   feat/internal-packages-cq-platform-removal \
   feat/internal-packages-cq-guardrails \
@@ -79,28 +79,28 @@ gh stack init --base feat/internal-packages-code-quality \
   feat/internal-packages-cq-dead-surface \
   feat/internal-packages-cq-build-config \
   feat/internal-packages-cq-docs
-gh stack submit
-gh stack sync   # after any upstream merge or trunk-only commit
+gh stack submit --auto   # after each slice; --auto is required in a non-TTY
+gh stack sync            # after any upstream merge or trunk-only commit
 ```
 
 Root on `feat/internal-packages-code-quality`, never `main` — omitting `--base` skips gate 4 and turns one release into eight. The same applies to `gh stack link` if PRs are adopted mid-flight.
 
-### `gh stack` v0.1.0 cannot grow a stack one slice at a time {#gh-stack-limitation}
+### Declare every slice branch in `gh stack init`, up front {#gh-stack-usage}
 
-Discovered at slice 2 and worth carrying into `docs/contributing/agentic-sdlc.md`. This story builds each slice branch before the next exists, which is the natural shape for "work it slice by slice" — but neither command supports it:
+`gh stack init` **adopts existing branches and creates missing ones** — that is why passes 1–5 list all slice branches in one `init`, before any of them exists. Do the same here. The stack is then complete from the start and each slice is worked in place.
 
-- **`gh stack add <branch>` creates a new branch.** It cannot adopt a branch that already exists with commits on it, which is exactly what a finished slice is.
-- **`gh stack init` refuses to re-run**, with either `current branch is already part of a stack` (from inside the stack) or `branch "…" already exists in a stack` (from outside it). So the stack cannot be re-declared to include a newly finished slice.
+**Two operational notes, learned by getting both wrong at slice 2:**
 
-`gh stack init` therefore only works if **every** slice branch exists up front — which for this story would mean eight empty branches created before any work, and empty branches produce empty PRs.
+- **`gh stack submit` is interactive by default.** It opens a single-screen editor and will simply hang in a non-TTY (an agent shell, CI). Use **`gh stack submit --auto`**, which skips the editor, creates new PRs as drafts, and **silently skips branches with no commits** — so submitting a partially-built stack is safe and is the normal thing to do after each slice.
+- **`gh stack add` is for a branch that does not exist yet.** It creates a branch on top of the current stack; it cannot adopt one you already built with `git switch -c`. If every branch was declared in `init`, `add` is not needed at all.
 
-**Fallback taken**, which the SDLC doc explicitly sanctions ("fall back to the v1 manual steps … don't let it block a story"): push each slice branch and open its PR with `--base <previous slice branch>` explicitly. **The PR chain is what gate 4 depends on, and it is correct**; the GitHub Stack object is a convenience that this story does without. Verify after every slice:
+Recovering a stack that was initialised with too few branches: `gh stack unstack` (drops local tracking, and the GitHub stack if one exists), then re-run `gh stack init --base <trunk>` with the **full** branch list. Existing branches and their open PRs are re-adopted; `gh stack submit --auto` then relinks them.
+
+Verify after every slice — the bottom PR's base is the only one that can be silently wrong, and nothing warns you:
 
 ```sh
 gh pr view <n> --json number,baseRefName,headRefName
 ```
-
-The bottom PR's base must be the trunk. Nothing warns you if it is not.
 
 ---
 
