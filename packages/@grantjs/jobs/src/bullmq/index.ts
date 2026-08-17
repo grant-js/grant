@@ -6,6 +6,7 @@ import type {
   JobResult,
   ScheduledJob,
 } from '@grantjs/core';
+import { ConflictError, NotFoundError } from '@grantjs/core';
 import type { Scope } from '@grantjs/schema';
 import { Job, JobSchedulerJson, Queue, Worker } from 'bullmq';
 
@@ -66,7 +67,7 @@ export class BullMQJobAdapter implements IJobAdapter {
 
   async schedule(job: ScheduledJob, handler: JobHandler): Promise<void> {
     if (this.handlers.has(job.id)) {
-      throw new Error(`Job ${job.id} is already scheduled`);
+      throw new ConflictError(`Job ${job.id} is already scheduled`, 'Job', 'id');
     }
 
     if (!job.enabled) {
@@ -175,7 +176,7 @@ export class BullMQJobAdapter implements IJobAdapter {
   async trigger(jobId: string): Promise<JobResult> {
     const handler = this.handlers.get(jobId);
     if (!handler) {
-      throw new Error(`Job ${jobId} not found`);
+      throw new NotFoundError('Job', jobId);
     }
 
     const context: JobExecutionContext = {
@@ -190,7 +191,7 @@ export class BullMQJobAdapter implements IJobAdapter {
   async enqueue(jobId: string, data?: { scope?: Scope; payload?: unknown }): Promise<void> {
     const handler = this.handlers.get(jobId);
     if (!handler) {
-      throw new Error(`Job ${jobId} not found`);
+      throw new NotFoundError('Job', jobId);
     }
     await this.queue.add(
       jobId,
