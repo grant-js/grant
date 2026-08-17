@@ -5,7 +5,7 @@
 - **Slug**: `internal-packages-code-quality`
 - **Story brief**: [`plans/2026-08-16-internal-packages-code-quality-brief.md`](./2026-08-16-internal-packages-code-quality-brief.md) — approved 2026-08-16, Ale Heredia
 - **Findings**: `docs/contributing/code-quality/internal-packages.md` — written by slice 8
-- **Status**: in-progress — gate 2 cleared 2026-08-16; slices land one at a time; all eight branches declared in one `gh stack init`, then `gh stack submit --auto` after each
+- **Status**: in-progress — gate 2 cleared 2026-08-16; slices land one at a time; all eight branches declared in one `gh stack init`, then `gh stack submit --auto` + `gh stack link` after each. GitHub stack: [#282](https://github.com/grant-js/grant/stacks/282)
 - **Story trunk**: `feat/internal-packages-code-quality`
 - **worktree_path**: **not required** — no other story is in flight. `git worktree list` shows only the main checkout. Slices run serially in the main checkout, as in passes 4 and 5. Add a worktree only if a second story opens mid-stack.
 - **Base**: `main` at `178dd710` (pass 5, #275). Every `file:line` citation in this plan and the brief re-verifies against this commit.
@@ -80,7 +80,16 @@ gh stack init --base feat/internal-packages-code-quality \
   feat/internal-packages-cq-build-config \
   feat/internal-packages-cq-docs
 gh stack submit --auto   # after each slice; --auto is required in a non-TTY
+# submit --auto does NOT create the GitHub stack when the PRs already exist.
+# link does, and is safe to re-run with the growing PR list after every slice:
+gh stack link --base feat/internal-packages-code-quality 279 281   # bottom to top
 gh stack sync            # after any upstream merge or trunk-only commit
+```
+
+Confirm the stack is actually on GitHub — `gh stack view` renders the local tree whether or not it exists remotely, so it is not the check:
+
+```sh
+gh pr view <bottom-pr> --json baseRefName   # must be the trunk
 ```
 
 Root on `feat/internal-packages-code-quality`, never `main` — omitting `--base` skips gate 4 and turns one release into eight. The same applies to `gh stack link` if PRs are adopted mid-flight.
@@ -89,12 +98,22 @@ Root on `feat/internal-packages-code-quality`, never `main` — omitting `--base
 
 `gh stack init` **adopts existing branches and creates missing ones** — that is why passes 1–5 list all slice branches in one `init`, before any of them exists. Do the same here. The stack is then complete from the start and each slice is worked in place.
 
-**Two operational notes, learned by getting both wrong at slice 2:**
+**Three operational notes, each learned by getting it wrong at slice 2:**
 
-- **`gh stack submit` is interactive by default.** It opens a single-screen editor and will simply hang in a non-TTY (an agent shell, CI). Use **`gh stack submit --auto`**, which skips the editor, creates new PRs as drafts, and **silently skips branches with no commits** — so submitting a partially-built stack is safe and is the normal thing to do after each slice.
+- **`gh stack submit` is interactive by default.** It opens a single-screen editor and will simply hang in a non-TTY (an agent shell, CI). Use **`gh stack submit --auto`**, which skips the editor, creates new PRs as drafts, and silently skips branches with no commits.
+- **`--auto` does _not_ create the GitHub Stack object when every PR already exists.** It reports `PR #N … is up to date` and exits 0 having done nothing — local tracking looks right, `gh stack view` renders the tree, and **`/pulls` shows no stacking at all**. Creating the stack from already-open PRs is the editor's `Ctrl+B` action, which `--auto` has no equivalent for. **Use `gh stack link` instead — it is the only non-interactive way to create or grow the stack on GitHub:**
+
+  ```sh
+  gh stack link --base feat/<slug> <pr> <pr> …   # bottom to top; --base is mandatory
+  ```
+
+  `link` needs no local tracking state, creates the stack if absent, and **adds to an existing stack without removing anything** — so it is the per-slice command: re-run it with the full PR list each time a slice opens its PR.
+
 - **`gh stack add` is for a branch that does not exist yet.** It creates a branch on top of the current stack; it cannot adopt one you already built with `git switch -c`. If every branch was declared in `init`, `add` is not needed at all.
 
-Recovering a stack that was initialised with too few branches: `gh stack unstack` (drops local tracking, and the GitHub stack if one exists), then re-run `gh stack init --base <trunk>` with the **full** branch list. Existing branches and their open PRs are re-adopted; `gh stack submit --auto` then relinks them.
+Recovering a stack that was initialised with too few branches: `gh stack unstack` (drops local tracking, and the GitHub stack if one exists), then re-run `gh stack init --base <trunk>` with the **full** branch list, then `gh stack link --base <trunk> <prs…>`.
+
+**`gh stack unstack` deletes the GitHub stack.** If it prints `Stack has no remote ID — skipping server-side unstack`, no stack existed there to begin with — which is itself the signal that a previous `submit` created PRs but never stacked them.
 
 Verify after every slice — the bottom PR's base is the only one that can be silently wrong, and nothing warns you:
 
