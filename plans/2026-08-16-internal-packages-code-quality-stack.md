@@ -307,6 +307,28 @@ The re-measurement parses `extends` textually and classifies every entry, failin
 
 **Disposition**: fixed in slice 2 under gate-1 direction, because enabling lint on `telemetry` is what exposed it and the guardrail could not land green otherwise. **Slice 3 owes this a regression test** — there is still no test asserting the adapter can load its client.
 
+### C4 — the C3 regression test cannot be written in vitest (slice 3)
+
+**Claimed**, by slice 2 and by this plan's slice-3 detail: slice 3 "owes a regression test" for the CloudWatch `require()` defect.
+
+**Actual**: no vitest test can catch it. Vitest runs sources through vite's transform, which supplies CJS interop — `typeof require` is `'function'` inside a test where it is `undefined` in the ESM output Node actually runs. Reverting `cloudwatch.ts` to `require()` and re-running the suite leaves it **green**. Verified by mutating and re-running, not reasoned.
+
+**Why it matters beyond this file**: the test runner does not reproduce the production module system, so **any** ESM/CJS defect in these packages is invisible to unit tests. That is a standing limit on what lens 7 can detect here, and it is the second time this pass that the thing being trusted had never been exercised.
+
+**Disposition**: the vacuous assertion was deleted rather than kept for the count. The defect is guarded by `@typescript-eslint/no-require-imports`, which slice 2 enabled on this package for the first time and which is proven to fire, plus executing `dist/`. A test pinning `typeof require === 'function'` is left in place so the day vitest changes its transform, someone is told.
+
+### C5 — IPv6 literals are never recognised as literal addresses (slice 3)
+
+**Found while characterizing** `webhooks/src/ssrf.ts`. `url.hostname` keeps the square brackets for an IPv6 literal (`https://[::1]/` → `[::1]`), and `isIP('[::1]')` is `0`. So the literal-IP branch at `ssrf.ts:107` never matches an IPv6 target: every one falls through to the DNS branch, where a bracketed string cannot resolve, and is rejected as `could not be resolved`.
+
+**Not an SSRF hole — it fails closed.** `[::1]`, `[::ffff:127.0.0.1]` and every other private IPv6 literal is blocked. Three consequences that are still real:
+
+1. `isPrivateIPv6` and the `::ffff:` unwrapping in `isPrivateAddress` are **dead code** on the literal path. They run only against DNS-resolved addresses, which come back unbracketed.
+2. The rejection message is wrong, which will cost someone an afternoon.
+3. **A public IPv6 literal cannot be configured as a webhook target at all** — `https://[2606:4700:4700::1111]/` is rejected. That is a functional bug, not a security one.
+
+**Disposition**: characterized as-is and pinned by `ssrf.test.ts`, per the rubric's rule that a Tier 0 candidate found by lens 7 is classified separately from being fixed. The fix is one line (strip brackets before `isIP`), but it **changes what the guard admits** — a public IPv6 literal starts being allowed — so it wants Security's eyes and its own slice, not a quiet edit inside a test PR.
+
 ## Human gates
 
 - [x] Gate 1: Story brief approved — 2026-08-16, Ale Heredia.
