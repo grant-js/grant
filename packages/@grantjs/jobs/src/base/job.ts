@@ -1,16 +1,5 @@
 import type { ILogger, JobExecutionContext, JobResult, ScheduledJob } from '@grantjs/core';
-
-/** Silent fallback when no logger is injected */
-const noop = () => {};
-const noopLogger: ILogger = {
-  trace: noop,
-  debug: noop,
-  info: noop,
-  warn: noop,
-  error: noop,
-  fatal: noop,
-  child: () => noopLogger,
-};
+import { noopLogger } from '@grantjs/core';
 
 export abstract class Job {
   abstract readonly config: ScheduledJob;

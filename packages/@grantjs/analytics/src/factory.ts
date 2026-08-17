@@ -1,5 +1,5 @@
 import type { IAnalyticsAdapter, ILoggerFactory } from '@grantjs/core';
-import { ConfigurationError } from '@grantjs/core';
+import { ConfigurationError, noopLogger } from '@grantjs/core';
 
 import { NoopAnalyticsAdapter } from './noop';
 import { UmamiAnalyticsAdapter } from './umami';
@@ -14,17 +14,6 @@ export interface AnalyticsFactoryConfig {
     hostname?: string;
   };
 }
-
-const noop = () => {};
-const noopLogger: import('@grantjs/core').ILogger = {
-  trace: noop,
-  debug: noop,
-  info: noop,
-  warn: noop,
-  error: noop,
-  fatal: noop,
-  child: () => noopLogger,
-};
 
 /**
  * Factory for creating analytics adapter instances.

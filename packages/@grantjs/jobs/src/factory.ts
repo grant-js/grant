@@ -1,24 +1,8 @@
-import {
-  ConfigurationError,
-  type IJobAdapter,
-  type ILogger,
-  type ILoggerFactory,
-} from '@grantjs/core';
+import { ConfigurationError, type IJobAdapter, type ILoggerFactory } from '@grantjs/core';
+import { noopLogger } from '@grantjs/core';
 
 import { BullMQJobAdapter } from './bullmq';
 import { NodeCronJobAdapter } from './node-cron';
-
-/** Silent fallback when no logger factory is provided */
-const noop = () => {};
-const noopLogger: ILogger = {
-  trace: noop,
-  debug: noop,
-  info: noop,
-  warn: noop,
-  error: noop,
-  fatal: noop,
-  child: () => noopLogger,
-};
 
 export type JobProvider = 'node-cron' | 'bullmq';
 
