@@ -28,17 +28,17 @@
 
 ## Ordered slices (PRs)
 
-| #     | Branch                                       | Base                                  | Concern                                                             | Owner          | Review bar         |
-| ----- | -------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------- | -------------- | ------------------ |
-| 1     | `feat/internal-packages-cq-platform-removal` | `feat/internal-packages-code-quality` | Delete `@grantjs/platform` whole — **done, committed `7865a712`**   | Backend        | light              |
-| 2     | `feat/internal-packages-cq-guardrails`       | slice 1                               | ESLint DAG rules ×12 + `dead-code` coverage + `AGENTS.md` graph     | Backend + Arch | light              |
-| 3     | `feat/internal-packages-cq-tests`            | slice 2                               | Lens 7 as detector — `webhooks` SSRF + signer first, then factories | **QA**         | light, escalating¹ |
-| 4     | `feat/internal-packages-cq-error-vocabulary` | slice 3                               | 14 raw `throw new Error` → domain errors; `env` exemption           | Backend        | light              |
-| 5     | `feat/internal-packages-cq-noop-logger`      | slice 4                               | One `noopLogger` export from `core`; 6 sites collapse               | Backend        | light              |
-| 6     | `feat/internal-packages-cq-dead-surface`     | slice 5                               | The 89, split by edit class; two rule-7 ambiguities resolved first  | Backend        | light              |
-| 7     | `feat/internal-packages-cq-build-config`     | slice 6                               | `tsconfig.build.json` dialects + the `database` test-support leak   | Backend        | light, artifact²   |
-| 8     | `feat/internal-packages-cq-docs`             | slice 7                               | `internal-packages.md`, pass table, carried inputs                  | Arch + PM      | light              |
-| final | `feat/internal-packages-code-quality`        | `main`                                | integration                                                         | Principal      | **deep**           |
+| #     | Branch                                       | Base                                  | Concern                                                                                              | Owner          | Review bar         |
+| ----- | -------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------- | -------------- | ------------------ |
+| 1     | `feat/internal-packages-cq-platform-removal` | `feat/internal-packages-code-quality` | Delete `@grantjs/platform` whole — **done, committed `7865a712`**                                    | Backend        | light              |
+| 2     | `feat/internal-packages-cq-guardrails`       | slice 1                               | ESLint DAG rules ×12 + **9 missing lint scripts** + `dead-code` + `AGENTS.md` graph + **one Tier 0** | Backend + Arch | light              |
+| 3     | `feat/internal-packages-cq-tests`            | slice 2                               | Lens 7 as detector — `webhooks` SSRF + signer first, then factories                                  | **QA**         | light, escalating¹ |
+| 4     | `feat/internal-packages-cq-error-vocabulary` | slice 3                               | 14 raw `throw new Error` → domain errors; `env` exemption                                            | Backend        | light              |
+| 5     | `feat/internal-packages-cq-noop-logger`      | slice 4                               | One `noopLogger` export from `core`; 6 sites collapse                                                | Backend        | light              |
+| 6     | `feat/internal-packages-cq-dead-surface`     | slice 5                               | The 89, split by edit class; two rule-7 ambiguities resolved first                                   | Backend        | light              |
+| 7     | `feat/internal-packages-cq-build-config`     | slice 6                               | `tsconfig.build.json` dialects + the `database` test-support leak                                    | Backend        | light, artifact²   |
+| 8     | `feat/internal-packages-cq-docs`             | slice 7                               | `internal-packages.md`, pass table, carried inputs                                                   | Arch + PM      | light              |
+| final | `feat/internal-packages-code-quality`        | `main`                                | integration                                                                                          | Principal      | **deep**           |
 
 ¹ **Escalates to `security-full` if the SSRF or signer tests find a bypass.** Unlike pass 5's withdrawn footnote — which hedged against something `tsc` already enforced — this one guards real untested code with no compiler check anywhere near it. Do not withdraw it without running the tests first.
 
@@ -132,6 +132,7 @@ The rubric's highest-value output, and the one slice whose result outlives every
 
 **Order within the slice matters. Security-weighted files first:**
 
+0. **`telemetry/src/cloudwatch.ts` — a regression test for [C3](#corrections), owed by slice 2.** Assert the adapter can obtain its client (i.e. the module loads under ESM) and that `sendLog` does not throw `ReferenceError`. This is the highest-value single test in the pass: the defect it pins shipped undetected through five code-quality passes because nothing linted, tested, or executed the package.
 1. **`webhooks/src/ssrf.ts`** — the SSRF guard. `ssrf.ts:123` already has an `addresses.length === 0` branch worth characterizing. Cover: literal IPs across every private range, DNS names resolving to private addresses, IPv6 and IPv4-mapped IPv6, redirects, and decimal/octal/hex IP encodings.
 2. **`webhooks/src/signer.ts`** — signature generation. Cover the scheme constant, payload canonicalization, and timing-safe comparison if one is claimed.
 3. **Provider-selection branches** of the 6 static factories + `createWebhookAdapters` — each `switch` arm and each `default`, which is where a misconfigured provider silently falls back.
@@ -245,6 +246,30 @@ Claims in this plan or the brief that implementation disproved. Recorded **in fl
 The re-measurement parses `extends` textually and classifies every entry, failing loudly on anything unclassified.
 
 **Disposition**: corrected here, in the brief, and in pass 5's C4 and `schema.md` on `docs/close-out-pass-5`. The finding itself is unaffected — `database` still extends `./tsconfig.json`, so the shared-parent fix still does not reach it, which was C4's actual point.
+
+### C2 — the guardrail gap was one level deeper than "no DAG rule" (slice 2)
+
+**Claimed**, in the brief's [What holds](./2026-08-16-internal-packages-code-quality-brief.md#what-holds): lenses 1 and 2 and logging discipline are "clean across all 13," and the gap is that no ESLint DAG rule or `dead-code` script reaches them.
+
+**Actual**: **nine of the twelve packages had no `lint` script at all**, so `turbo lint` skipped them entirely — `analytics`, `cache`, `email`, `errors`, `jobs`, `logger`, `storage`, `telemetry`, `webhooks`, which is the whole core-port adapter layer. `turbo lint --dry-run` reported **17** tasks where 23 should run. Adding the twelve DAG rules on their own would have produced nine rules that are syntactically valid, permanently green, and never executed.
+
+**Why it matters beyond this slice**: the brief's "clean" was true of the code and meaningless as evidence — no tool had ever looked. Enabling lint surfaced 14 errors immediately (12 autofixable import-sort, plus the two in C3 below). This is pass 3's carried input — _a guardrail that passes is not a guardrail that works_ — displaced one level: **check that the runner runs the rule, not just that the rule is correct.** `turbo <task> --dry-run=json` and filtering on `command !== '<NONEXISTENT>'` is the check.
+
+**Disposition**: lint scripts added to all nine; the 12 import-sort errors fixed; all twelve DAG rules then proven to fire in both directions (a planted `@grantjs/database` import errors in all twelve; `@grantjs/schema` is accepted in `jobs` and rejected in `cache`, confirming the allowlist is per-package and not a blanket ban).
+
+### C3 — Tier 0: CloudWatch telemetry could never have worked (slice 2)
+
+**Claimed**, implicitly, by every earlier pass: `@grantjs/telemetry` is a working adapter with a `cloudwatch` provider.
+
+**Actual**: `cloudwatch.ts:32,62` called `require()` inside a package declaring `"type": "module"`. `require` is not defined in ESM, so **every** `sendLog` threw `ReferenceError: require is not defined`. `TELEMETRY_PROVIDER=cloudwatch` is a validated enum value (`packages/@grantjs/env/src/schema.ts:211`) wired through `apps/api/src/config/env.config.ts:517-525`, so the provider was selectable and non-functional. Worse, the `catch` reported `CloudWatch Logs client not available; install @aws-sdk/client-cloudwatch-logs` — pointing an operator at a package that is already a declared peer and whose installation would not have helped.
+
+**Proven, not reasoned**: compiled the package with its own `tsconfig.build.json`, confirmed `require(...)` survives verbatim into ESM output, and executed both forms in the package's own resolution context — `require` throws `ReferenceError`, `await import` returns a working `CloudWatchLogsClient`.
+
+**A second defect was hiding behind the first.** `require()` returns `any`, so the hand-rolled `{ send: (cmd: unknown) => Promise<{ nextSequenceToken?: string }> }` client type never had to match the real `CloudWatchLogsClient` — and does not. Fixing the import made the type real and `tsc` rejected it immediately. Now typed through a **type-only** import, erased at compile time so the optional peer stays optional at runtime.
+
+**The single-style reading**: `email/ses/index.ts:1` and `storage/s3/index.ts:1` load the same class of optional AWS peer with plain static imports. `telemetry` was the only package using `require()`, and it was the only one that had never been linted. The two facts are the same fact.
+
+**Disposition**: fixed in slice 2 under gate-1 direction, because enabling lint on `telemetry` is what exposed it and the guardrail could not land green otherwise. **Slice 3 owes this a regression test** — there is still no test asserting the adapter can load its client.
 
 ## Human gates
 
