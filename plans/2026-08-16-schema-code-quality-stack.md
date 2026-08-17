@@ -5,7 +5,7 @@
 - **Slug**: `schema-code-quality`
 - **Story brief**: [`plans/2026-08-16-schema-code-quality-brief.md`](./2026-08-16-schema-code-quality-brief.md) — approved 2026-08-16, Ale Heredia
 - **Findings**: [`docs/contributing/code-quality/schema.md`](../docs/contributing/code-quality/schema.md) — written by slice 6
-- **Status**: integrated — all six slices merged to trunk (#268, #269, #271, #272, #273, #274). Gate 3 cleared 2026-08-16; awaiting gate 4 (story → `main`)
+- **Status**: `merged-to-main` — all six slices merged to trunk (#268, #269, #271, #272, #273, #274), then the trunk merged to `main` as [#275](https://github.com/grant-js/grant/pull/275) (`178dd710`, 2026-08-16). Both gates cleared.
 - **Story trunk**: `feat/schema-code-quality`
 - **worktree_path**: **not required** — no other story is in flight. All three prior worktrees were pruned on 2026-08-16 after confirming each branch's PR merged (#249, #250, #267); `git worktree list` now shows only the main checkout and `git branch` only `main`. Slices run serially in the main checkout, as in pass 4. Add a worktree only if a second story opens mid-stack.
 - **Base**: `main` at `0b2b80aa` (pulled 2026-08-16). `packages/@grantjs/schema` is untouched by anything merged since the assessment, and every `file:line` citation in this plan and the brief re-verifies against this commit.
@@ -225,10 +225,33 @@ The `vite.config.ts` hits made the truncated list look self-explanatory, which i
 
 - [x] Gate 2: Stack plan approved — 2026-08-16, Ale Heredia. Implementation may proceed, slice 1 first.
 - [x] Gate 3: Stack PRs merged into trunk — 2026-08-16, all six green including e2e.
-- [ ] Gate 4: Story → `main` deep review complete.
+- [x] Gate 4: Story → `main` deep review complete — merged as #275, 2026-08-16.
 
 ## Cleanup
 
-- [ ] Local slice branches deleted (verify merged state via `gh pr list --head <branch>`, not via ancestry)
-- [ ] Worktree removed, if one was added mid-stack
-- [ ] Stack plan status → `merged-to-main`
+- [x] Local slice branches deleted — none existed; slices ran serially in the main checkout, so `git branch` showed only `main` at close-out.
+- [x] Remote slice branches deleted — all 7 (`feat/schema-code-quality` + six slices), each confirmed `MERGED` via `gh pr list --head <branch> --state all` rather than by ancestry, per the method note under [Dependencies](#dependencies--notes).
+- [x] Worktree removed — none was added; `git worktree list` showed only the main checkout throughout.
+- [x] Stack plan status → `merged-to-main`
+
+## Carried out of this pass
+
+Open at close-out, tracked in [`schema.md` § Backlog](../docs/contributing/code-quality/schema.md#backlog):
+
+| Item                                                                    | Disposition                                                                             |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `@grantjs/database` leaks `src/test-support/` into the production image | **Adopted by pass 6** — and the backlog's stated fix is wrong; see the correction below |
+| Two `tsconfig.build.json` dialects across `packages/@grantjs/*`         | **Adopted by pass 6** (discovered at close-out, not during the pass)                    |
+| D1 — 62 `src/operations/*.graphql` renames to kebab-case + lint rule    | Own story. Explicitly **not** pass 6                                                    |
+| D4 — `apps/api`'s third copy of the status literals                     | Own `apps/api` slice. Explicitly **not** pass 6                                         |
+| D0 — SDL as an internal declaration language                            | Open, Architect-owned. Explicitly **not** pass 6                                        |
+
+### C4 — the `test-support` leak fix does not live in the shared parent (close-out)
+
+**Claimed** (`schema.md` § Backlog): "the shared `packages/@grantjs/tsconfig.build.json` excludes `*.test.ts` but not `src/test-support/` … the durable fix is one pattern in the shared parent."
+
+**Actual**: `packages/@grantjs/database/tsconfig.build.json:2` extends `./tsconfig.json`, **not** `../tsconfig.build.json`. Adding a pattern to the shared parent would not reach `database` at all — the one package the backlog entry was written about. Of the 19 packages carrying a `tsconfig.build.json`, **11 extend the shared parent and 6 extend their own** (`client`, `cli`, `core`, `database`, `env`, `server`; `schema` extends the parent and restates its patterns per C3).
+
+**Why it was wrong**: the entry was written from schema's vantage point — schema does extend the parent — and generalised without checking the other extends-chains. The same shape as C3: a claim true of the file in front of you, asserted about the set.
+
+**Disposition**: the leak is real and unfixed; the fix is two edits, not one, and the dialect split is itself a finding. Both handed to pass 6.
