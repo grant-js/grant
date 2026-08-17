@@ -13,22 +13,35 @@ The project follows hexagonal architecture (ports and adapters). Understand and 
 
 ### Package dependency graph (DAG — no cycles allowed)
 
+**18 packages, in three classes.** Every arrow below is a real `dependencies` entry in the package's own `package.json`, and each package's allowed set is enforced by its own block in `eslint.config.mjs`. The allowed sets differ — do not copy one package's rule to another.
+
 ```
-@grantjs/env             (env parsing, no deps)
-@grantjs/schema          (codegen types, no deps)
+@grantjs/env             (env parsing, no workspace deps)
+@grantjs/i18n            (locale message loading, no workspace deps)
+@grantjs/schema          (codegen types, no workspace deps)
     └── @grantjs/core    (domain ports, interfaces, exceptions)
-            ├── @grantjs/constants
-            ├── @grantjs/database  → also @grantjs/env, @grantjs/constants
-            ├── @grantjs/logger    (Pino adapter)
-            ├── @grantjs/errors    (HTTP adapter)
-            ├── @grantjs/cache     (Redis/memory adapters)
-            ├── @grantjs/storage   (S3/local adapters)
-            ├── @grantjs/email     (SMTP/SES/Mailgun/etc.)
-            └── @grantjs/jobs      (node-cron/BullMQ adapters)
+            ├── @grantjs/constants  (permissions, roles, colors, time)
+            ├── @grantjs/database   → also @grantjs/env, @grantjs/constants
+            ├── @grantjs/logger     (Pino adapter)
+            ├── @grantjs/errors     (HTTP adapter)
+            ├── @grantjs/cache      (Redis/memory adapters)
+            ├── @grantjs/storage    (S3/local adapters)
+            ├── @grantjs/email      (SMTP/SES/Mailgun/Mailjet/console)
+            ├── @grantjs/telemetry  (CloudWatch/no-op)
+            ├── @grantjs/analytics  (Umami/no-op)
+            ├── @grantjs/webhooks   (delivery, signing, SSRF guard)
+            └── @grantjs/jobs       → also @grantjs/schema (node-cron/BullMQ)
+
+published to npm — a contract surface, not internal:
+@grantjs/client          → @grantjs/schema   (React/TanStack Query SDK)
+@grantjs/server          → @grantjs/schema   (Express/Fastify/Nest/Next adapters)
+@grantjs/cli             (no workspace deps)
 ```
 
-- **`@grantjs/core`** defines domain ports (`ILogger`, `ILoggerFactory`, `ICacheAdapter`, `IFileStorageService`, `IEmailService`, `IJobAdapter`) and a rich exception hierarchy (`GrantException` → `NotFoundError`, `BadRequestError`, `AuthenticationError`, `AuthorizationError`, `ConflictError`, `ConfigurationError`, `ValidationError`).
-- **Adapter packages** (`cache`, `storage`, `email`, `jobs`, `logger`, `errors`) implement core ports. They accept `ILogger` (or `ILoggerFactory`) via constructor injection or factory — they must **never** import `@grantjs/logger` directly.
+- **`@grantjs/core`** defines domain ports (`ILogger`, `ILoggerFactory`, `ICacheAdapter`, `IFileStorageService`, `IEmailService`, `IJobAdapter`, `ITelemetryAdapter`, `IAnalyticsAdapter`) and a rich exception hierarchy (`GrantException` → `NotFoundError`, `BadRequestError`, `AuthenticationError`, `AuthorizationError`, `ConflictError`, `ConfigurationError`, `ValidationError`).
+- **Adapter packages** (`cache`, `storage`, `email`, `jobs`, `logger`, `errors`, `telemetry`, `analytics`, `webhooks`) implement core ports. They accept `ILogger` (or `ILoggerFactory`) via constructor injection or factory — they must **never** import `@grantjs/logger` directly.
+- **The published trio** (`client`, `server`, `cli`) is the only non-private set; `scripts/check-publishable-packages.mjs` enforces that list. Their exports are semver-public, so "unused export" there does not mean "deletable" — a downstream consumer may use it.
+- **`@grantjs/jobs` is the one adapter that also depends on `@grantjs/schema`**, for domain event types. Its ESLint rule allows `core` and `schema`; every other adapter allows `core` only.
 - **`@grantjs/database`** accepts an optional `ILogger` via `DatabaseConfig.logger`. It is the only graphed package that depends on `@grantjs/env`; `apps/api` and `apps/config` depend on it too. Enforced by the `packages/@grantjs/database/src/**` block in `eslint.config.mjs`, whose allowed set is deliberately wider than core's — copying core's rule verbatim here would break the build.
 - Packages must use `@grantjs/*` aliases for cross-package imports (never relative `../../../` paths).
 

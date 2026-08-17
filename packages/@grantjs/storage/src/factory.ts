@@ -1,9 +1,8 @@
+import type { IFileStorageService, ILogger, ILoggerFactory } from '@grantjs/core';
 import { ConfigurationError } from '@grantjs/core';
 
 import { LocalConfig, LocalStorageAdapter } from './local';
 import { S3Config, S3StorageAdapter } from './s3';
-
-import type { IFileStorageService, ILogger, ILoggerFactory } from '@grantjs/core';
 
 export type StorageProvider = 'local' | 's3';
 

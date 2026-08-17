@@ -29,6 +29,51 @@ const noAdapterImports = (pkg) =>
     message: `${pkg} must not import adapter packages — see AGENTS.md § Package dependency graph.`,
   }));
 
+// Every internal package below core in the DAG, mapped to the workspace packages it
+// actually declares in its own package.json. The map IS the DAG for these packages —
+// derive it from `dependencies`, never by copying a sibling's rule. Pass 4 copied
+// core's rule into database and broke the build, because database legitimately
+// depends on env and constants; the allowed set differs per package and always has.
+//
+// The published packages (client, server, cli) are deliberately absent: they are an
+// npm contract surface with a different review bar, audited in pass 7.
+const INTERNAL_PACKAGE_DEPS = {
+  analytics: ['@grantjs/core'],
+  cache: ['@grantjs/core'],
+  constants: ['@grantjs/core'],
+  email: ['@grantjs/core'],
+  env: [],
+  errors: ['@grantjs/core'],
+  i18n: [],
+  jobs: ['@grantjs/core', '@grantjs/schema'],
+  logger: ['@grantjs/core'],
+  storage: ['@grantjs/core'],
+  telemetry: ['@grantjs/core'],
+  webhooks: ['@grantjs/core'],
+};
+
+// Expressed as a negated pattern rather than a `paths` list of everything forbidden,
+// for the reason schema's rule already records: a pattern covers a new workspace
+// package on the day it is created, whereas a path list silently does not.
+const onlyDeclaredWorkspaceDeps = ([pkg, allowed]) => ({
+  files: [`packages/@grantjs/${pkg}/src/**/*.ts`],
+  rules: {
+    'no-restricted-imports': [
+      'error',
+      {
+        patterns: [
+          {
+            group: ['@grantjs/*', ...allowed.map((name) => `!${name}`)],
+            message: allowed.length
+              ? `@grantjs/${pkg} may import only ${allowed.join(' and ')} — see AGENTS.md § Package dependency graph.`
+              : `@grantjs/${pkg} must not import any workspace package — see AGENTS.md § Package dependency graph.`,
+          },
+        ],
+      },
+    ],
+  },
+});
+
 export default defineConfig(
   // Ignore patterns
   {
@@ -427,5 +472,13 @@ export default defineConfig(
         },
       ],
     },
-  }
+  },
+
+  // The remaining 12 internal packages — the adapters plus constants, env and i18n.
+  // Pass 6 widens the guardrail to every internal package, so a clean lens 1 stops
+  // being clean by review and starts being clean by rule. Each package's allowed set
+  // comes from INTERNAL_PACKAGE_DEPS above, which is derived from its own
+  // package.json. Every one of these rules was proven to fire by planting a real
+  // import and confirming the error before this landed.
+  ...Object.entries(INTERNAL_PACKAGE_DEPS).map(onlyDeclaredWorkspaceDeps)
 );
