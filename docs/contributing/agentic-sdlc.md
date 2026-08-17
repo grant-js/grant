@@ -136,9 +136,23 @@ gh stack link --base feat/<slug> <pr> <pr>   # bottom to top; creates/grows the 
 
 # 4. Verify — see "Prove the stack exists" below. Do not skip; nothing warns you.
 
-# 5. After an upstream slice merges, restack the rest
+# 5. Restack the rest after ANY history rewrite below them — a merge, but also
+#    every rebase and amend while landing a slice. Not just at merge time.
 gh stack sync
 ```
+
+### Declaring all branches up front has two consequences {#init-consequences}
+
+Both are cosmetic-looking and one is not:
+
+- **Empty slice branches get pushed to origin.** `gh stack submit --auto` and `gh stack sync` push _every_ branch in the stack, so branches for unwritten slices appear on the remote with zero commits. GitHub then shows a "Compare & pull request" banner for each recent push. **No PR can actually be created from them** — the compare view reports "there isn't anything to compare" — so the banner is noise, not a missing PR. It caps at three rows and expires on its own. Leave them; deleting fights the tool, which re-pushes on the next `submit` or `sync`.
+- **Rebasing a slice orphans every branch above it.** This one bites. `gh stack init` points all unwritten branches at the tip at creation time; rebasing slice N leaves slices N+1…M on the abandoned commit. They look fine — `git log` shows a real commit — and the next slice silently starts from a stale base carrying an orphaned copy of its predecessor. **Run `gh stack sync` after every rebase**, and check:
+
+  ```sh
+  git for-each-ref --format='%(refname:short) %(objectname:short)' refs/heads
+  ```
+
+  Every unworked slice branch should sit on the current tip of the last worked one. Pass 6 found four branches stranded on a pre-rebase commit this way, spotted only because GitHub's banner prompted a look at the remote.
 
 Then, as in v1: slices merge into the trunk under their review bar, and when acceptance is met the trunk opens the **final PR** → `main` for deep review.
 
