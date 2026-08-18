@@ -189,7 +189,10 @@ The 175 unreachable declarations are one decision, not 175. Options:
 ## Backlog
 
 - **`apps/api`'s third copy of the notification/webhook status literals** — `rest/schemas/webhook-subscriptions.schemas.ts:62` and `lib/notifications/notification-generator.consumer.ts:25` inline what `@grantjs/database` already declares. Out of scope here; belongs to an `apps/api` slice.
-- **`packages/@grantjs/database` leaks its test-support module into the production image.** `scripts/docker/build-api-production.mjs` compiles `src/**/*` per package; the shared `packages/@grantjs/tsconfig.build.json` excludes `*.test.ts` but not `src/test-support/`, which holds plain modules. Pass 5 fixed schema's copy in its own `tsconfig.build.json`; `database` has the identical shape and was left alone as out of scope. The durable fix is one pattern in the shared parent.
+- **`packages/@grantjs/database` leaks its test-support module into the production image.** `scripts/docker/build-api-production.mjs` compiles `src/**/*` per package; `packages/@grantjs/database/tsconfig.build.json:12-19` excludes `*.test.ts` and `*.spec.ts` but not `src/test-support/`, which holds plain modules. Pass 5 fixed schema's copy in its own `tsconfig.build.json`; `database` has the identical shape and was left alone as out of scope. **Adopted by pass 6.**
+
+  **Correction (close-out).** This entry originally said the durable fix was "one pattern in the shared parent." It is not: `database/tsconfig.build.json:2` extends `./tsconfig.json`, not `../tsconfig.build.json`, so a pattern added to the shared parent never reaches it. Of the **18** packages with a `tsconfig.build.json`, 12 extend the shared parent and 6 extend their own (`client`, `cli`, `core`, `database`, `env`, `server`). The dialect split is a second, larger finding — also handed to pass 6. Written up as [C4](https://github.com/grant-js/grant/blob/main/plans/2026-08-16-schema-code-quality-stack.md#c4--the-test-support-leak-fix-does-not-live-in-the-shared-parent-close-out).
+
 - **D1's 62 renames** — `src/operations/*.graphql` to kebab-case, plus a lint rule to hold it. Decided, not scheduled.
 - **D4's third copy** — remove the inlined status literals from `apps/api` so `@grantjs/database` is the only definition. Decided as intent, belongs to an `apps/api` slice.
 - **D0** — the open decision above; its own story if adopted.
