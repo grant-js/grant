@@ -9,12 +9,18 @@
     "declaration": false
   },
   "include": ["src/**/*"],
+  // A child `exclude` REPLACES the inherited one rather than merging, so every
+  // pattern this build needs is restated here in full. src/test-support/ is the
+  // addition: it holds plain modules the tests import, which the *.test.ts
+  // pattern does not catch, and which were shipping into the production API
+  // image. Read by scripts/docker/build-api-production.mjs, not by `pnpm build`.
   "exclude": [
     "node_modules",
     "dist",
     "src/seed/**/*",
     "src/scripts/**/*",
     "**/*.test.ts",
-    "**/*.spec.ts"
+    "**/*.spec.ts",
+    "src/test-support/**"
   ]
 }
