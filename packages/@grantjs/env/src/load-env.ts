@@ -21,6 +21,10 @@ export function findWorkspaceRoot(start: string): string {
     }
     dir = path.dirname(dir);
   }
+  // Raw Error by exemption, not oversight: @grantjs/env declares no workspace
+  // dependency (it parses the environment before the rest of the graph loads),
+  // so ConfigurationError from @grantjs/core is unreachable here and the DAG
+  // rule forbids the import. See AGENTS.md § Error handling.
   throw new Error('Workspace root not found');
 }
 

@@ -1,3 +1,5 @@
+import { NotFoundError } from '@grantjs/core';
+
 import { getDescriptionKey, getNameKey, I18nPrefix } from './i18n-helpers';
 
 export const ResourceAction = {
@@ -17,7 +19,7 @@ export const ResourceAction = {
 
 export type ResourceAction = (typeof ResourceAction)[keyof typeof ResourceAction];
 
-export interface ResourceDefinition {
+interface ResourceDefinition {
   name: string;
   slug: string;
   actions: readonly ResourceAction[];
@@ -172,14 +174,14 @@ const RESOURCES: Record<ResourceSlug, ResourceTemplate> = {
   },
 };
 
-export const RESOURCE_DEFINITIONS: Record<ResourceSlug, ResourceDefinition> = Object.keys(
+const RESOURCE_DEFINITIONS: Record<ResourceSlug, ResourceDefinition> = Object.keys(
   ResourceSlug
 ).reduce(
   (acc, resourceSlugProp) => {
     const resourceSlugValue = ResourceSlug[resourceSlugProp as keyof typeof ResourceSlug];
     const template = RESOURCES[resourceSlugValue];
     if (!template) {
-      throw new Error(`Resource template not found for slug: ${resourceSlugProp}`);
+      throw new NotFoundError('Resource template', String(resourceSlugProp));
     }
     return {
       ...acc,

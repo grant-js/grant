@@ -1,24 +1,12 @@
-import type { IEntityCacheAdapter, ILogger, ILoggerFactory } from '@grantjs/core';
-import { ConfigurationError } from '@grantjs/core';
+import type { IEntityCacheAdapter, ILoggerFactory } from '@grantjs/core';
+import { ConfigurationError, noopLogger } from '@grantjs/core';
 
 import { InMemoryCacheAdapter } from './memory';
 import { RedisCacheAdapter } from './redis';
 
-/** Silent fallback when no logger factory is provided */
-const noop = () => {};
-const noopLogger: ILogger = {
-  trace: noop,
-  debug: noop,
-  info: noop,
-  warn: noop,
-  error: noop,
-  fatal: noop,
-  child: () => noopLogger,
-};
+type CacheStrategy = 'memory' | 'redis';
 
-export type CacheStrategy = 'memory' | 'redis';
-
-export interface CacheConfig {
+interface CacheConfig {
   strategy: CacheStrategy;
   redis?: {
     host: string;

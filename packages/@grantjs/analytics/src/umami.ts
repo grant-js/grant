@@ -1,4 +1,4 @@
-import type { IAnalyticsAdapter, ILogger, AnalyticsEvent } from '@grantjs/core';
+import type { AnalyticsEvent, IAnalyticsAdapter, ILogger } from '@grantjs/core';
 
 export interface UmamiAnalyticsConfig {
   /** Umami API base URL (e.g. https://analytics.example.com or https://cloud.umami.is) */

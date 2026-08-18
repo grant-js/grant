@@ -1,9 +1,10 @@
 import type { ILogger, JobHandler, ScheduledJob } from '@grantjs/core';
+import { ConflictError } from '@grantjs/core';
 
 /**
  * Registered job definition
  */
-export interface RegisteredJob {
+interface RegisteredJob {
   /** Job configuration */
   job: ScheduledJob;
   /** Job handler function */
@@ -38,7 +39,11 @@ class JobRegistry {
    */
   register(registeredJob: RegisteredJob): void {
     if (this.jobs.has(registeredJob.job.id)) {
-      throw new Error(`Job with ID '${registeredJob.job.id}' is already registered`);
+      throw new ConflictError(
+        `Job with ID '${registeredJob.job.id}' is already registered`,
+        'Job',
+        'id'
+      );
     }
 
     this.jobs.set(registeredJob.job.id, registeredJob);

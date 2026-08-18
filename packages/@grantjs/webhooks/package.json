@@ -16,14 +16,19 @@
     "src/**/*"
   ],
   "scripts": {
-    "type-check": "tsc --noEmit"
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@grantjs/core": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^25.9.3",
-    "typescript": "^6"
+    "typescript": "^6",
+    "vitest": "^4.1.10"
   },
   "license": "MIT"
 }

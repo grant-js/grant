@@ -124,27 +124,71 @@ gh extension install github/gh-stack
 # 1. Create and push the story trunk from main
 git switch -c feat/<slug> main && git push -u origin feat/<slug>
 
-# 2. Root the stack on the trunk — NOT the default branch
-gh stack init --base feat/<slug> feat/<slug>-db feat/<slug>-schema feat/<slug>-api
+# 2. Declare EVERY slice branch from the stack plan, in order, in ONE init.
+#    `init` adopts branches that exist and creates the ones that don't, so run
+#    this before any slice is written. Root on the trunk — NOT the default branch.
+gh stack init --base feat/<slug> \
+  feat/<slug>-db feat/<slug>-schema feat/<slug>-api feat/<slug>-web
 
-# 3. Work a slice, then add the next on top
-gh stack add feat/<slug>-web
+# 3. Work a slice in its branch, commit, then publish. Both commands, every time:
+gh stack submit --auto                       # pushes; creates PRs for branches that have commits
+gh stack link --base feat/<slug> <pr> <pr>   # bottom to top; creates/grows the stack ON GitHub
 
-# 4. Open the whole stack as linked PRs (bases chained automatically)
-gh stack submit
+# 4. Verify — see "Prove the stack exists" below. Do not skip; nothing warns you.
 
-# 5. After an upstream slice merges, restack the rest
+# 5. Restack the rest after ANY history rewrite below them — a merge, but also
+#    every rebase and amend while landing a slice. Not just at merge time.
 gh stack sync
 ```
 
+### Declaring all branches up front has two consequences {#init-consequences}
+
+Both are cosmetic-looking and one is not:
+
+- **Empty slice branches get pushed to origin.** `gh stack submit --auto` and `gh stack sync` push _every_ branch in the stack, so branches for unwritten slices appear on the remote with zero commits. GitHub then shows a "Compare & pull request" banner for each recent push. **No PR can actually be created from them** — the compare view reports "there isn't anything to compare" — so the banner is noise, not a missing PR. It caps at three rows and expires on its own. Leave them; deleting fights the tool, which re-pushes on the next `submit` or `sync`.
+- **Rebasing a slice orphans every branch above it.** This one bites. `gh stack init` points all unwritten branches at the tip at creation time; rebasing slice N leaves slices N+1…M on the abandoned commit. They look fine — `git log` shows a real commit — and the next slice silently starts from a stale base carrying an orphaned copy of its predecessor. **Run `gh stack sync` after every rebase**, and check:
+
+  ```sh
+  git for-each-ref --format='%(refname:short) %(objectname:short)' refs/heads
+  ```
+
+  Every unworked slice branch should sit on the current tip of the last worked one. Pass 6 found four branches stranded on a pre-rebase commit this way, spotted only because GitHub's banner prompted a look at the remote.
+
 Then, as in v1: slices merge into the trunk under their review bar, and when acceptance is met the trunk opens the **final PR** → `main` for deep review.
+
+### Three commands that look interchangeable and are not {#three-commands}
+
+Pass 6 lost an afternoon to this, so it is spelled out rather than implied.
+
+| Command                     | What it actually does                                                                                                                             | When                                                    |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `gh stack init [branches…]` | Adopts existing branches **and creates missing ones**, bottom to top. Refuses to re-run once any named branch belongs to a stack.                 | **Once**, up front, with the full slice list            |
+| `gh stack add <branch>`     | Creates a **new** branch on top of the current stack. Cannot adopt a branch you already made with `git switch -c`.                                | Only for a slice discovered mid-story and not yet built |
+| `gh stack submit`           | Pushes branches, creates PRs for branches **that have commits**, chains bases. **Does not create the GitHub stack when every PR already exists.** | After every slice                                       |
+| `gh stack link`             | Creates or grows the stack **on GitHub** from PR numbers. No local state needed. Never removes PRs.                                               | After every slice, alongside `submit`                   |
+
+**`gh stack submit` needs `--auto` in any agent shell or CI job.** Without it the command opens a single-screen interactive editor and simply hangs until it is killed — there is no error and no prompt in the captured output. `--auto` skips the editor, creates new PRs as drafts, and silently skips branches with no commits, which is what makes it safe to run after every slice on a partially built stack.
+
+**`submit --auto` alone will leave you with no stack.** When each branch already has an open PR it prints `PR #N … is up to date` and exits 0 having created nothing on GitHub. Attaching already-open PRs to a stack is the interactive editor's `Ctrl+B` action, and `--auto` has no equivalent for it. `gh stack link` is the only non-interactive way to create or grow the stack, which is why step 3 runs both.
+
+### Prove the stack exists {#prove-the-stack}
+
+**`gh stack view` is not the check.** It renders the tree from local tracking state (`.git/gh-stack`) and looks identical whether or not a stack exists on GitHub. Pass 6 read a correct-looking tree from `gh stack view` while `/pulls` showed no stacking at all.
+
+```sh
+gh pr view <bottom-pr> --json baseRefName   # must be feat/<slug>, never main
+```
+
+Then open `/pulls` — or trust `gh stack link`'s own `✓ Created stack with N PRs (stack #NNN)`, which is the only output that confirms the remote object.
+
+One diagnostic worth knowing: if `gh stack unstack` prints `Stack has no remote ID — skipping server-side unstack`, **no GitHub stack ever existed** — an earlier `submit` created the PRs and never stacked them.
 
 ### What changes from v1
 
 | v1 (manual)                                   | v2 (`gh stack`)                                                          |
 | --------------------------------------------- | ------------------------------------------------------------------------ |
-| Branch each slice from the right base by hand | `gh stack add`                                                           |
-| Set PR base to trunk or prior slice           | `gh stack submit`                                                        |
+| Branch each slice from the right base by hand | `gh stack init`, with every slice branch named up front                  |
+| Set PR base to trunk or prior slice           | `gh stack submit --auto`                                                 |
 | Write “Depends on #123” in the PR body        | GitHub Stack object links them                                           |
 | Rebase each downstream branch after a merge   | `gh stack sync` (switches to `--onto` automatically when a PR is merged) |
 | Resolve the same conflict on every restack    | `git rerere`, enabled by `gh stack init`                                 |
@@ -157,7 +201,8 @@ What does **not** change: story briefs, stack plans, human gates, review bars, t
 - **Fixing a wrong root means unstacking first.** GitHub refuses a base change while a PR belongs to a stack — `Cannot change the base branch because the pull request is part of a stack` — so `gh pr edit --base` and a corrected `gh stack link` both fail with `HTTP 422: PullRequest.base is invalid` until the stack is gone. The recovery is `gh stack unstack <n>` → `gh pr edit <bottom-pr> --base feat/<slug>` → `gh stack link --base feat/<slug> …`, which creates a **new** stack number. Check the bottom PR's base after any `link`; it is the only one that can be wrong, and nothing else warns you.
 - **`gh stack merge` is a human command.** It merges the stack up to a chosen PR atomically. Agents never self-merge — this does not become an exception. It cannot bypass branch protection ("Bypassing merge requirements is not supported for stacks"), but the gate is about who decides, not what is enforceable.
 - **Stack metadata is local and uncommitted** (`.git/gh-stack`). It does not survive a fresh clone or transfer between agents — the stack plan in `plans/` remains the durable artifact. Use `gh stack checkout <stack-or-pr-number>` to adopt a stack elsewhere.
-- **Adopting existing branches**: `gh stack link --base feat/<slug> <pr> <pr> ...` builds the Stack on GitHub from PRs you already opened, without local tracking state. Useful for stories started before v2, for jj / Sapling / git-town users, and for turning a hand-rolled slice chain into one atomically mergeable stack. Arguments go bottom to top.
+- **`gh stack link` is routine, not a fallback.** `gh stack link --base feat/<slug> <pr> <pr> ...` builds the Stack on GitHub from PRs you already opened, without local tracking state, arguments bottom to top. It is **the** non-interactive way to create or grow the stack — run it after every slice, not only when adopting a story started before v2 or coming from jj / Sapling / git-town. Re-running it with the full PR list is safe: existing PRs are never removed.
+- **Read `--help` before concluding the tool cannot do something.** Pass 6 declared "`gh stack` cannot grow a stack one slice at a time" into a stack plan on the strength of two error messages, when `gh stack init --help` states plainly that it adopts existing branches and creates missing ones. Two refusals formed a coherent story and the story was wrong. `gh stack` is v0.1.0 and its help is more current than this document.
 - **Merging the slices one at a time does not fill the trunk.** Each slice PR's base is the slice below it, so merging bottom-up lands every slice's content in its own base and stops — the content accumulates on the **topmost** slice branch, and the trunk still points at slice 1. Pass 4 hit this: five PRs merged, gate 3 looked complete, and the trunk held one slice out of five. Either merge the stack atomically with `gh stack merge` (a human command), or merge the top slice branch into the trunk explicitly before opening the gate-4 PR. **Confirm the trunk contains every slice before running gate-4 verification** — otherwise a green run is green for the wrong reason.
 
 ### Caveats

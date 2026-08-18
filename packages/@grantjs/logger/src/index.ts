@@ -1,12 +1,11 @@
-import pino from 'pino';
-
 import type { ILogger, ILoggerFactory } from '@grantjs/core';
+import pino from 'pino';
 
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
 
-export interface LoggerConfig {
+interface LoggerConfig {
   level?: string;
   prettyPrint?: boolean;
   base?: Record<string, unknown>;
@@ -62,7 +61,7 @@ export function configureLogger(config: LoggerConfig): void {
 // PinoLoggerAdapter — implements ILogger by wrapping a pino.Logger
 // ---------------------------------------------------------------------------
 
-export class PinoLoggerAdapter implements ILogger {
+class PinoLoggerAdapter implements ILogger {
   constructor(private readonly pino: pino.Logger) {}
 
   trace(msgOrObj: string | Record<string, unknown>, msg?: string): void {
@@ -152,23 +151,8 @@ export function getLogger(): ILogger {
 }
 
 /**
- * Get the raw pino logger instance (for API-level use, e.g. pino-http).
- * Adapter packages should NOT use this — use `getLogger()` or `createLogger()` instead.
- */
-export function getRawPinoLogger(): pino.Logger {
-  return rootPino;
-}
-
-/**
  * Create a child logger scoped to a module name.
  */
 export function createLogger(name: string): ILogger {
   return new PinoLoggerAdapter(rootPino.child({ module: name }));
-}
-
-/**
- * Create a child logger with arbitrary context.
- */
-export function createContextLogger(context: Record<string, unknown>): ILogger {
-  return new PinoLoggerAdapter(rootPino.child(context));
 }

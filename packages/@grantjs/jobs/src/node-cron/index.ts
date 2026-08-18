@@ -7,6 +7,7 @@ import type {
   JobResult,
   ScheduledJob,
 } from '@grantjs/core';
+import { ConflictError, NotFoundError } from '@grantjs/core';
 import cron from 'node-cron';
 
 /** Task type returned by node-cron schedule() (v4 has no namespace export) */
@@ -25,7 +26,7 @@ export class NodeCronJobAdapter implements IJobAdapter {
 
   async schedule(job: ScheduledJob, handler: JobHandler): Promise<void> {
     if (this.handlers.has(job.id)) {
-      throw new Error(`Job ${job.id} is already scheduled`);
+      throw new ConflictError(`Job ${job.id} is already scheduled`, 'Job', 'id');
     }
 
     if (!job.enabled) {
@@ -91,7 +92,7 @@ export class NodeCronJobAdapter implements IJobAdapter {
   async trigger(jobId: string): Promise<JobResult> {
     const handler = this.handlers.get(jobId);
     if (!handler) {
-      throw new Error(`Job ${jobId} not found`);
+      throw new NotFoundError('Job', jobId);
     }
 
     const context: JobExecutionContext = {
@@ -106,7 +107,7 @@ export class NodeCronJobAdapter implements IJobAdapter {
   async enqueue(jobId: string, data?: EnqueueJobData): Promise<JobResult> {
     const handler = this.handlers.get(jobId);
     if (!handler) {
-      throw new Error(`Job ${jobId} not found`);
+      throw new NotFoundError('Job', jobId);
     }
     const context: JobExecutionContext = {
       jobId,

@@ -1,8 +1,10 @@
+import { NotFoundError } from '@grantjs/core';
+
 import { getDescriptionKey, getNameKey, I18nPrefix } from './i18n-helpers';
 import { ResourceAction, ResourceSlug } from './resources';
 import { ORGANIZATION_ROLES, ROLE_KEYS, RoleKey } from './roles';
 
-export interface GroupDefinition {
+interface GroupDefinition {
   name: string;
   description?: string;
   resource: ResourceSlug;
@@ -656,7 +658,7 @@ export const GROUP_DEFINITIONS: Record<GroupKey, GroupDefinition> = Object.keys(
     const groupKeyValue = GroupKey[groupKeyProp as keyof typeof GroupKey];
     const template = GROUPS[groupKeyValue];
     if (!template) {
-      throw new Error(`Group template not found for key: ${groupKeyProp}`);
+      throw new NotFoundError('Group template', String(groupKeyProp));
     }
     return {
       ...acc,

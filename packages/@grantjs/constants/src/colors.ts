@@ -89,41 +89,20 @@ export type TagColor = keyof typeof TAG_CONFIGURATION;
  * Legacy color names that are no longer offered for new tags but still resolve to gray for display
  * (backward compatibility for existing tags in the database).
  */
-export const DISPLAY_ALIASES_TO_GRAY = ['slate', 'zinc', 'neutral', 'stone'] as const;
-export type DisplayAliasColor = (typeof DISPLAY_ALIASES_TO_GRAY)[number];
+const DISPLAY_ALIASES_TO_GRAY = ['slate', 'zinc', 'neutral', 'stone'] as const;
+type DisplayAliasColor = (typeof DISPLAY_ALIASES_TO_GRAY)[number];
 
 const grayConfig = TAG_CONFIGURATION.gray;
-const backgroundAliases = Object.fromEntries(
-  DISPLAY_ALIASES_TO_GRAY.map((alias) => [alias, grayConfig.background])
-);
 const borderAliases = Object.fromEntries(
   DISPLAY_ALIASES_TO_GRAY.map((alias) => [alias, grayConfig.border])
 );
 
-export const TAG_BACKGROUND_CLASSES: Record<string, string> = {
-  ...Object.fromEntries(
-    Object.entries(TAG_CONFIGURATION).map(([color, config]) => [color, config.background])
-  ),
-  ...backgroundAliases,
-};
-
-export const TAG_BORDER_CLASSES: Record<string, string> = {
+const TAG_BORDER_CLASSES: Record<string, string> = {
   ...Object.fromEntries(
     Object.entries(TAG_CONFIGURATION).map(([color, config]) => [color, config.border])
   ),
   ...borderAliases,
 };
-
-export function isValidTagColor(color: string): color is TagColor {
-  return TAG_COLORS.includes(color as TagColor);
-}
-
-/**
- * True if the value is a canonical color or a legacy alias (for display only).
- */
-export function isDisplayableTagColor(color: string): color is TagColor | DisplayAliasColor {
-  return color in TAG_BACKGROUND_CLASSES;
-}
 
 export function getAvailableTagColors(): TagColor[] {
   return [...TAG_COLORS] as TagColor[];
@@ -137,11 +116,6 @@ export function normalizeTagColorForPicker(color: string): TagColor {
   if (TAG_COLORS.includes(color as TagColor)) return color as TagColor;
   if (DISPLAY_ALIASES_TO_GRAY.includes(color as DisplayAliasColor)) return 'gray';
   return 'gray';
-}
-
-/** Accepts canonical colors and legacy aliases (slate, zinc, neutral, stone); unknown values fall back to gray. */
-export function getTagBackgroundClasses(color: string): string {
-  return TAG_BACKGROUND_CLASSES[color] ?? TAG_CONFIGURATION.gray.background;
 }
 
 /** Accepts canonical colors and legacy aliases (slate, zinc, neutral, stone); unknown values fall back to gray. */

@@ -1,5 +1,5 @@
-import type { ITelemetryAdapter, ILoggerFactory } from '@grantjs/core';
-import { ConfigurationError } from '@grantjs/core';
+import type { ILoggerFactory, ITelemetryAdapter } from '@grantjs/core';
+import { ConfigurationError, noopLogger } from '@grantjs/core';
 
 import { CloudWatchTelemetryAdapter } from './cloudwatch';
 import { NoopTelemetryAdapter } from './noop';
@@ -14,18 +14,6 @@ export interface TelemetryFactoryConfig {
     logStreamPrefix?: string;
   };
 }
-
-/** Silent fallback when no logger factory is provided */
-const noop = () => {};
-const noopLogger: import('@grantjs/core').ILogger = {
-  trace: noop,
-  debug: noop,
-  info: noop,
-  warn: noop,
-  error: noop,
-  fatal: noop,
-  child: () => noopLogger,
-};
 
 /**
  * Factory for creating telemetry adapter instances based on configuration.

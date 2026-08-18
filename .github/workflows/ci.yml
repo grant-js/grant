@@ -98,9 +98,9 @@ jobs:
       - name: Lint
         run: pnpm run lint
 
-      # apps/api, apps/web, @grantjs/core, @grantjs/database, and @grantjs/schema.
-      # Sibling packages/ still report findings; each package's own code-quality
-      # pass widens this gate.
+      # apps/api, apps/web, @grantjs/core, @grantjs/database, @grantjs/schema, and
+      # the 12 internal packages. Only the published trio (client, server, cli) is
+      # still outside the gate; pass 7 widens it to them.
       - name: Dead code (apps/api)
         run: pnpm run dead-code:api
 
@@ -115,6 +115,13 @@ jobs:
 
       - name: Dead code (@grantjs/schema)
         run: pnpm run dead-code:schema
+
+      # The 12 internal packages in one step rather than 12: the adapters plus
+      # constants, env and i18n. Note knip's blind spot here — entry is src/index.ts,
+      # so every barrel re-export counts as used and unused *exports* are not
+      # measurable this way. What this does catch is unused files and dependencies.
+      - name: Dead code (internal @grantjs packages)
+        run: pnpm run dead-code:packages
 
       # @grantjs/schema's generated types are committed. Regenerate and fail on any
       # diff, so an edited .graphql file can never ship with a stale type. Scoped to

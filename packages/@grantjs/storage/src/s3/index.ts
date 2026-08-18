@@ -1,16 +1,14 @@
 import {
-  S3Client,
-  PutObjectCommand,
-  DeleteObjectCommand,
-  HeadObjectCommand,
   CopyObjectCommand,
+  DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+  S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-
-import { GrantException } from '@grantjs/core';
-
 import type { IFileStorageService, ILogger, UploadOptions, UploadResult } from '@grantjs/core';
+import { GrantException } from '@grantjs/core';
 
 export interface S3Config {
   bucket: string;
