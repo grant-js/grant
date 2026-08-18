@@ -1089,18 +1089,6 @@ importers:
         specifier: 6.0.3
         version: 6.0.3
 
-  packages/@grantjs/platform:
-    devDependencies:
-      '@types/node':
-        specifier: ^26.1.1
-        version: 26.1.2
-      eslint:
-        specifier: ^10.7.0
-        version: 10.8.0
-      typescript:
-        specifier: 6.0.3
-        version: 6.0.3
-
   packages/@grantjs/schema:
     dependencies:
       '@graphql-typed-document-node/core':
