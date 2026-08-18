@@ -16,6 +16,8 @@
     "src/**/*"
   ],
   "scripts": {
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

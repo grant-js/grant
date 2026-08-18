@@ -1,4 +1,8 @@
-import type { ITelemetryAdapter, ILogger, TelemetryLogEntry } from '@grantjs/core';
+// Type-only: erased at compile time, so the optional peer stays optional at runtime
+// while the client and its commands are still type-checked. The previous require()
+// returned `any`, which is why the hand-rolled client shape below never had to match.
+import type { CloudWatchLogsClient } from '@aws-sdk/client-cloudwatch-logs';
+import type { ILogger, ITelemetryAdapter, TelemetryLogEntry } from '@grantjs/core';
 import { ConfigurationError } from '@grantjs/core';
 
 export interface CloudWatchTelemetryConfig {
@@ -14,7 +18,7 @@ export interface CloudWatchTelemetryConfig {
 export class CloudWatchTelemetryAdapter implements ITelemetryAdapter {
   private readonly config: CloudWatchTelemetryConfig;
   private readonly logger: ILogger;
-  private client: { send: (cmd: unknown) => Promise<{ nextSequenceToken?: string }> } | null = null;
+  private client: CloudWatchLogsClient | null = null;
   private sequenceToken: string | undefined;
   private currentStreamDate: string | null = null;
 
@@ -26,10 +30,14 @@ export class CloudWatchTelemetryAdapter implements ITelemetryAdapter {
     this.logger = logger;
   }
 
-  private getClient(): { send: (cmd: unknown) => Promise<{ nextSequenceToken?: string }> } {
+  // Loaded lazily because @aws-sdk/client-cloudwatch-logs is an optional peer: the
+  // package must import cleanly for anyone running TELEMETRY_PROVIDER=none. `await
+  // import()` rather than `require()`, which is not defined in an ESM package and
+  // made every call here throw ReferenceError.
+  private async getClient(): Promise<CloudWatchLogsClient> {
     if (!this.client) {
       try {
-        const { CloudWatchLogsClient } = require('@aws-sdk/client-cloudwatch-logs');
+        const { CloudWatchLogsClient } = await import('@aws-sdk/client-cloudwatch-logs');
         this.client = new CloudWatchLogsClient({ region: this.config.region });
       } catch (err) {
         this.logger.error({
@@ -39,7 +47,7 @@ export class CloudWatchTelemetryAdapter implements ITelemetryAdapter {
         throw err;
       }
     }
-    return this.client as { send: (cmd: unknown) => Promise<{ nextSequenceToken?: string }> };
+    return this.client as CloudWatchLogsClient;
   }
 
   private getLogStreamName(): string {
@@ -54,12 +62,9 @@ export class CloudWatchTelemetryAdapter implements ITelemetryAdapter {
 
   async sendLog(entry: TelemetryLogEntry): Promise<void> {
     try {
-      const client = this.getClient();
-      const {
-        PutLogEventsCommand,
-        CreateLogStreamCommand,
-        DescribeLogStreamsCommand,
-      } = require('@aws-sdk/client-cloudwatch-logs');
+      const client = await this.getClient();
+      const { PutLogEventsCommand, CreateLogStreamCommand, DescribeLogStreamsCommand } =
+        await import('@aws-sdk/client-cloudwatch-logs');
       const logStreamName = this.getLogStreamName();
       const message = JSON.stringify({
         message: entry.message,

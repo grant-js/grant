@@ -1,9 +1,7 @@
+import type { IFileStorageService, ILogger, UploadOptions, UploadResult } from '@grantjs/core';
+import { GrantException } from '@grantjs/core';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-
-import { GrantException } from '@grantjs/core';
-
-import type { IFileStorageService, ILogger, UploadOptions, UploadResult } from '@grantjs/core';
 
 export interface LocalConfig {
   basePath: string;

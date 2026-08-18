@@ -33,6 +33,15 @@
       "entry": ["src/index.ts"],
       "project": ["src/**/*.ts"]
     },
+    // Same blind spot pass 1 recorded for apps/api, at its source: pino-pretty is
+    // never imported, it is named as a pino string transport target here
+    // (`target: 'pino-pretty'`, src/index.ts:26), which knip cannot follow. Removing
+    // it breaks pretty dev logging at runtime with no build or type error.
+    "packages/@grantjs/logger": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["pino-pretty"]
+    },
     // knip infers this entry from package.json `main`, so restating it is redundant
     // (knip's own config hint). Declared explicitly anyway to record the blind spot
     // it creates: with src/index.ts as the entry, every re-export from a library

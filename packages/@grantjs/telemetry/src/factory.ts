@@ -1,4 +1,4 @@
-import type { ITelemetryAdapter, ILoggerFactory } from '@grantjs/core';
+import type { ILoggerFactory, ITelemetryAdapter } from '@grantjs/core';
 import { ConfigurationError } from '@grantjs/core';
 
 import { CloudWatchTelemetryAdapter } from './cloudwatch';

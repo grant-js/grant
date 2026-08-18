@@ -1,6 +1,5 @@
-import pino from 'pino';
-
 import type { ILogger, ILoggerFactory } from '@grantjs/core';
+import pino from 'pino';
 
 // ---------------------------------------------------------------------------
 // Configuration

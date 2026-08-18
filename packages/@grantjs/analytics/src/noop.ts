@@ -1,4 +1,4 @@
-import type { IAnalyticsAdapter, AnalyticsEvent } from '@grantjs/core';
+import type { AnalyticsEvent, IAnalyticsAdapter } from '@grantjs/core';
 
 /**
  * No-op analytics adapter. Drops all events; used when provider is 'none' or disabled.
