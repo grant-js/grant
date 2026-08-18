@@ -5,7 +5,8 @@
 - **Slug**: `internal-packages-code-quality`
 - **Story brief**: [`plans/2026-08-16-internal-packages-code-quality-brief.md`](./2026-08-16-internal-packages-code-quality-brief.md) — approved 2026-08-16, Ale Heredia
 - **Findings**: `docs/contributing/code-quality/internal-packages.md` — written by slice 8
-- **Status**: in-progress — gate 2 cleared 2026-08-16; slices land one at a time; all eight branches declared in one `gh stack init`, then `gh stack submit --auto` + `gh stack link` after each. GitHub stack: [#282](https://github.com/grant-js/grant/stacks/282)
+- **Status**: `integrated` — all eight slices merged to trunk (#279, #281, #283, #284, #285, #286, #287, #288). Gate 3 pending human review; gate 4 after.
+- **Was**: in-progress — gate 2 cleared 2026-08-16; slices land one at a time; all eight branches declared in one `gh stack init`, then `gh stack submit --auto` + `gh stack link` after each. GitHub stack: [#282](https://github.com/grant-js/grant/stacks/282)
 - **Story trunk**: `feat/internal-packages-code-quality`
 - **worktree_path**: **not required** — no other story is in flight. `git worktree list` shows only the main checkout. Slices run serially in the main checkout, as in passes 4 and 5. Add a worktree only if a second story opens mid-stack.
 - **Base**: `main` at `178dd710` (pass 5, #275). Every `file:line` citation in this plan and the brief re-verifies against this commit.
@@ -329,11 +330,29 @@ The re-measurement parses `extends` textually and classifies every entry, failin
 
 **Disposition**: characterized as-is and pinned by `ssrf.test.ts`, per the rubric's rule that a Tier 0 candidate found by lens 7 is classified separately from being fixed. The fix is one line (strip brackets before `isIP`), but it **changes what the guard admits** — a public IPv6 literal starts being allowed — so it wants Security's eyes and its own slice, not a quiet edit inside a test PR.
 
+### C6 — the dead-export classifier must scope to the package, not `src/` (slice 6)
+
+**Claimed**, by the brief: 89 exports have no reference outside their own package, listed per package.
+
+**Actual**: the number was 82 by the time slice 6 ran (slices 4–5 moved it), and the first classifier was **wrong in a way that would have deleted live code**. It scanned `src/` only, so it reported `TAILWIND_SHADE_500_HEX` as dead when `packages/@grantjs/constants/scripts/check-palette-distance.ts` imports it — a package-local consumer outside `src/`. Re-scoping to the whole package plus `docs/` also rescued `getLocalesPath` and `jobRegistry`.
+
+**Disposition**: classifier rewritten; 75 symbols, split 28 / 40 / 7 by edit class. `jobRegistry`'s docs-only reference became its own finding — `docs/advanced-topics/job-scheduling.md:77` imports it from a path that does not exist.
+
+### C7 — both rule-7 ambiguities were false alarms (slice 6)
+
+**Claimed**, by the brief: `@grantjs/errors`' 8 `Http*` subclasses and `constants`' account-tier role vocabulary are ambiguous between "superseded" and "the call site is missing", and need a human decision before deletion.
+
+**Actual**: both are **alive**, and the brief's two options did not include the true one — _used inside the package, invisible to a cross-package reference count_. `mapDomainToHttp` constructs all eight `Http*` classes; `ACCOUNT_ROLES` feeds `ACCOUNT_ROLE_DEFINITIONS` feeds `ROLES`, which has four external importers.
+
+**Why it was wrong**: the brief reasoned from the reference _count_ (zero external) without opening the package to see what consumed them internally. Rule 2 — a rule violation is not automatically a defect — applied to a tool's output rather than to a lint rule.
+
+**Disposition**: no human decision was needed; neither was deleted. The two genuine rule-7 keeps are different symbols (`isDefaultResourceAction`, `TenantJobPayload`) and remain open.
+
 ## Human gates
 
 - [x] Gate 1: Story brief approved — 2026-08-16, Ale Heredia.
 - [x] Gate 2: Stack plan approved — 2026-08-16, Ale Heredia. Implementation proceeds from slice 2, one slice at a time.
-- [ ] Gate 3: Stack PRs merged into trunk.
+- [ ] Gate 3: Stack PRs merged into trunk — 8 PRs open on stack #282, awaiting light-bar review.
 - [ ] Gate 4: Story → `main` deep review complete.
 
 ## Cleanup
