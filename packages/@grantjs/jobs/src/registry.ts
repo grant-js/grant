@@ -4,7 +4,7 @@ import { ConflictError } from '@grantjs/core';
 /**
  * Registered job definition
  */
-export interface RegisteredJob {
+interface RegisteredJob {
   /** Job configuration */
   job: ScheduledJob;
   /** Job handler function */

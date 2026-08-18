@@ -7,7 +7,7 @@ import type {
 
 import { assertUrlAllowed, SsrfBlockedError, type SsrfGuardOptions } from './ssrf';
 
-export interface HttpWebhookDeliveryConfig {
+interface HttpWebhookDeliveryConfig {
   /** Default per-request timeout in milliseconds. */
   defaultTimeoutMs: number;
   /** SSRF guard configuration. */

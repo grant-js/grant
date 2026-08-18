@@ -31,7 +31,7 @@ export function getEnv(): Env {
  * Clear cached env so the next getEnv() re-parses process.env.
  * Use in tests after mutating process.env to pick up overrides.
  */
-export function resetEnv(): void {
+function resetEnv(): void {
   cachedEnv = null;
 }
 

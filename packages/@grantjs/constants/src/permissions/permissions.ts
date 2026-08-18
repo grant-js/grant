@@ -3,7 +3,7 @@ import { ComparisonOperator, type ConditionExpression } from '@grantjs/core';
 import { GroupKey } from './groups';
 import { ResourceAction, ResourceSlug, type ResourceSlug as ResourceSlugType } from './resources';
 
-export interface PermissionMapping {
+interface PermissionMapping {
   action: ResourceAction;
   resource: ResourceSlugType;
   condition: ConditionExpression | null;

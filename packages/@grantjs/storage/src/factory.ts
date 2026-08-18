@@ -4,9 +4,9 @@ import { ConfigurationError, noopLogger } from '@grantjs/core';
 import { LocalConfig, LocalStorageAdapter } from './local';
 import { S3Config, S3StorageAdapter } from './s3';
 
-export type StorageProvider = 'local' | 's3';
+type StorageProvider = 'local' | 's3';
 
-export interface StorageFactoryConfig {
+interface StorageFactoryConfig {
   provider: StorageProvider;
   local?: LocalConfig;
   s3?: S3Config;

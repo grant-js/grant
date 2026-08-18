@@ -4,7 +4,7 @@ import { getDescriptionKey, getNameKey, I18nPrefix } from './i18n-helpers';
 import { ResourceAction, ResourceSlug } from './resources';
 import { ORGANIZATION_ROLES, ROLE_KEYS, RoleKey } from './roles';
 
-export interface GroupDefinition {
+interface GroupDefinition {
   name: string;
   description?: string;
   resource: ResourceSlug;

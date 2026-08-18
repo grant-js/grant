@@ -8,9 +8,9 @@ import { SesConfig, SesEmailAdapter } from './ses';
 import { SmtpConfig, SmtpEmailAdapter } from './smtp';
 import type { EmailTemplates } from './templates';
 
-export type EmailProvider = 'console' | 'mailgun' | 'mailjet' | 'ses' | 'smtp';
+type EmailProvider = 'console' | 'mailgun' | 'mailjet' | 'ses' | 'smtp';
 
-export interface EmailFactoryConfig {
+interface EmailFactoryConfig {
   provider: EmailProvider;
   from: string;
   fromName?: string;

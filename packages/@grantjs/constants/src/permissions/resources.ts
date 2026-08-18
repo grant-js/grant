@@ -19,7 +19,7 @@ export const ResourceAction = {
 
 export type ResourceAction = (typeof ResourceAction)[keyof typeof ResourceAction];
 
-export interface ResourceDefinition {
+interface ResourceDefinition {
   name: string;
   slug: string;
   actions: readonly ResourceAction[];
@@ -174,7 +174,7 @@ const RESOURCES: Record<ResourceSlug, ResourceTemplate> = {
   },
 };
 
-export const RESOURCE_DEFINITIONS: Record<ResourceSlug, ResourceDefinition> = Object.keys(
+const RESOURCE_DEFINITIONS: Record<ResourceSlug, ResourceDefinition> = Object.keys(
   ResourceSlug
 ).reduce(
   (acc, resourceSlugProp) => {

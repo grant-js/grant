@@ -7,7 +7,7 @@
  * from domain `GrantException` subclasses at the API boundary.
  */
 
-export interface HttpExceptionOptions {
+interface HttpExceptionOptions {
   translationKey?: string;
   translationParams?: Record<string, unknown>;
   extensions?: Record<string, unknown>;
