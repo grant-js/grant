@@ -1,24 +1,9 @@
-import type {
-  ILogger,
-  ILoggerFactory,
-  IWebhookDeliveryAdapter,
-  IWebhookSigner,
-} from '@grantjs/core';
+import type { ILoggerFactory, IWebhookDeliveryAdapter, IWebhookSigner } from '@grantjs/core';
+import { noopLogger } from '@grantjs/core';
 
 import { HttpWebhookDeliveryAdapter } from './delivery';
 import { HmacWebhookSigner } from './signer';
 import type { SsrfGuardOptions } from './ssrf';
-
-const noop = () => {};
-const noopLogger: ILogger = {
-  trace: noop,
-  debug: noop,
-  info: noop,
-  warn: noop,
-  error: noop,
-  fatal: noop,
-  child: () => noopLogger,
-};
 
 export interface WebhookFactoryConfig {
   defaultTimeoutMs: number;

@@ -1,5 +1,5 @@
-import type { IEmailService, ILogger, ILoggerFactory } from '@grantjs/core';
-import { ConfigurationError } from '@grantjs/core';
+import type { IEmailService, ILoggerFactory } from '@grantjs/core';
+import { ConfigurationError, noopLogger } from '@grantjs/core';
 
 import { ConsoleEmailAdapter } from './console';
 import { MailgunConfig, MailgunEmailAdapter } from './mailgun';
@@ -7,18 +7,6 @@ import { MailjetConfig, MailjetEmailAdapter } from './mailjet';
 import { SesConfig, SesEmailAdapter } from './ses';
 import { SmtpConfig, SmtpEmailAdapter } from './smtp';
 import type { EmailTemplates } from './templates';
-
-/** Silent fallback when no logger factory is provided */
-const noop = () => {};
-const noopLogger: ILogger = {
-  trace: noop,
-  debug: noop,
-  info: noop,
-  warn: noop,
-  error: noop,
-  fatal: noop,
-  child: () => noopLogger,
-};
 
 export type EmailProvider = 'console' | 'mailgun' | 'mailjet' | 'ses' | 'smtp';
 

@@ -29,3 +29,28 @@ export interface ILogger {
 export interface ILoggerFactory {
   createLogger(name: string): ILogger;
 }
+
+const noop = () => {};
+
+/**
+ * Silent {@link ILogger} for adapters constructed without a logger factory.
+ *
+ * `AGENTS.md` § Logging already describes this fallback as the intended
+ * pattern; exporting it here makes the described pattern the actual one.
+ * Every adapter depends on core already, so this adds no edge to the DAG.
+ *
+ * Use as the right-hand side of the injection default:
+ *
+ * ```ts
+ * loggerFactory?.createLogger('MyAdapter') ?? noopLogger
+ * ```
+ */
+export const noopLogger: ILogger = {
+  trace: noop,
+  debug: noop,
+  info: noop,
+  warn: noop,
+  error: noop,
+  fatal: noop,
+  child: () => noopLogger,
+};
