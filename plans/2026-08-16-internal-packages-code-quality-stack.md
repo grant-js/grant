@@ -5,7 +5,7 @@
 - **Slug**: `internal-packages-code-quality`
 - **Story brief**: [`plans/2026-08-16-internal-packages-code-quality-brief.md`](./2026-08-16-internal-packages-code-quality-brief.md) — approved 2026-08-16, Ale Heredia
 - **Findings**: `docs/contributing/code-quality/internal-packages.md` — written by slice 8
-- **Status**: `integrated` — all eight slices merged to trunk (#279, #281, #283, #284, #285, #286, #287, #288). Gate 3 cleared 2026-08-18. Trunk merged up with `main` @ `4289160b` (pass-5 close-out #280 + release #276/`v1.5.3`), no conflicts. Awaiting gate 4.
+- **Status**: `merged-to-main` — all eight slices merged to trunk (#279, #281, #283, #284, #285, #286, #287, #288), then the trunk merged to `main` as [#289](https://github.com/grant-js/grant/pull/289) (`316b7a85`, 2026-08-18). Both gates cleared; pipeline green.
 - **Was**: in-progress — gate 2 cleared 2026-08-16; slices land one at a time; all eight branches declared in one `gh stack init`, then `gh stack submit --auto` + `gh stack link` after each. GitHub stack: [#282](https://github.com/grant-js/grant/stacks/282)
 - **Story trunk**: `feat/internal-packages-code-quality`
 - **worktree_path**: **not required** — no other story is in flight. `git worktree list` shows only the main checkout. Slices run serially in the main checkout, as in passes 4 and 5. Add a worktree only if a second story opens mid-stack.
@@ -356,7 +356,7 @@ The re-measurement parses `extends` textually and classifies every entry, failin
 
 **Trunk verified by content, not by commit messages.** Pass 4's failure mode is merging bottom-up and leaving the trunk holding one slice out of five, so each slice's artifact was checked on the assembled trunk: `platform` absent from the git tree, 12 entries in `INTERNAL_PACKAGE_DEPS`, 9 lint scripts present, 2 `await import` in `cloudwatch.ts`, 3 test files, 1 raw `throw new Error`, 1 `noopLogger` declaration, 0 `isValidTagColor`, `src/test-support` excluded, findings doc present.
 
-- [ ] Gate 4: Story → `main` deep review complete.
+- [x] Gate 4: Story → `main` deep review complete — merged as #289, 2026-08-18. Release pipeline clean.
 
 ## Gate 4 — integration verification {#gate-4-verification}
 
@@ -384,8 +384,26 @@ Run on the assembled trunk after merging `origin/main` in, 2026-08-18. Gate 4 is
 
 **One trap avoided**: `build-api-production.mjs` rewrites each package's `package.json` `main` to point at `dist/` as its last step. Those mutations were reverted before committing; they are build output, not a change.
 
+## Carried out of this pass {#carried-out}
+
+Open at close-out. The findings document's [Open items](../docs/contributing/code-quality/internal-packages.md#open) is the durable list; this records disposition.
+
+| Item                                                                                                                                                                                                                  | Disposition                                                                     |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| **IPv6 literals never recognised as literal addresses** (`webhooks/src/ssrf.ts:107`). Fails closed, so not an SSRF hole, but `isPrivateIPv6` is dead code on that path and a public IPv6 literal cannot be configured | **Own story, Security-owned.** The one-line fix changes what the guard _admits_ |
+| **`jobRegistry` documented at a path that does not exist** — `docs/advanced-topics/job-scheduling.md:77` imports from `@/lib/jobs/job-registry`; `apps/api` composes via `JobFactory` + `createJobs`                  | Either the doc or the registry is wrong. Small docs story                       |
+| **`isDefaultResourceAction`, `TenantJobPayload`** — the two rule-7 keeps                                                                                                                                              | Open. Neither is safe to sweep                                                  |
+| **The 40 cross-file exports** — whether the package _barrel_ should re-export each                                                                                                                                    | Unmade policy decision, not a defect                                            |
+| **Factory style**: 6 static classes vs 1 function                                                                                                                                                                     | Cheap Tier 3, unactioned                                                        |
+| **`tsconfig.build.json` dialects**: 12 shared parent vs 6 own                                                                                                                                                         | Recorded in slice 7; converging is its own story                                |
+| **Two ineffective excludes in `database`**: `src/seed/**/*` matches nothing; `src/scripts/**/*` cannot take effect                                                                                                    | Misleading, not wrong — the files should ship                                   |
+| **Pass 7** — published trio (`client`, `server`, `cli`)                                                                                                                                                               | A contract audit, not a consistency pass                                        |
+| **Pass 8** — `apps/config`, 4,839 lines                                                                                                                                                                               | Never audited by any pass                                                       |
+
+Explicitly **not** carried: pass 5's D0 (SDL split), D1 (62 operation renames) and D4 (`apps/api`'s third copy of the status literals). They remain on `schema.md`'s backlog as their own stories, untouched by this pass as planned.
+
 ## Cleanup
 
-- [ ] Local and remote slice branches deleted (verify merged state via `gh pr list --head <branch>`, not via ancestry)
-- [ ] Worktree removed, if one was added mid-stack
-- [ ] Stack plan status → `merged-to-main`
+- [x] Local and remote slice branches deleted — all 10 (8 slices + trunk + `docs/close-out-pass-5`) confirmed `MERGED` via `gh pr list --head <branch> --state all` before deletion, never by ancestry. `git branch` now shows only `main`; `git ls-remote` shows zero story branches.
+- [x] Worktree removed — none was added; `git worktree list` showed only the main checkout throughout.
+- [x] Stack plan status → `merged-to-main`
