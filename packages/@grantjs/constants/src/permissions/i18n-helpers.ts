@@ -1,3 +1,4 @@
+import { NotFoundError } from '@grantjs/core';
 export enum I18nPrefix {
   Roles = 'roles',
   Groups = 'groups',
@@ -22,7 +23,7 @@ function toCamelCase(identifier: string): string {
 function getKeyName<T extends Record<string, string>>(keyObj: T, value: T[keyof T]): string {
   const key = Object.keys(keyObj).find((k) => keyObj[k] === value);
   if (!key) {
-    throw new Error(`Key not found for value: ${value}`);
+    throw new NotFoundError('Key for value', String(value));
   }
   return key;
 }

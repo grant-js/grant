@@ -1,3 +1,4 @@
+import { ValidationError } from '@grantjs/core';
 import type { Scope } from '@grantjs/schema';
 
 /**
@@ -30,13 +31,13 @@ export function validateTenantJobContext(context: { scope?: Scope }, requireTena
 
   const { scope } = context;
   if (!scope || typeof scope !== 'object') {
-    throw new Error('Tenant-scoped job requires scope in context; missing or invalid.');
+    throw new ValidationError('Tenant-scoped job requires scope in context; missing or invalid.');
   }
   const tenant = scope.tenant as string | undefined;
   if (tenant == null || typeof scope.id !== 'string') {
-    throw new Error('Tenant-scoped job requires scope.tenant and scope.id.');
+    throw new ValidationError('Tenant-scoped job requires scope.tenant and scope.id.');
   }
   if (String(tenant).trim() === '' || scope.id.trim() === '') {
-    throw new Error('Tenant-scoped job scope.tenant and scope.id must be non-empty.');
+    throw new ValidationError('Tenant-scoped job scope.tenant and scope.id must be non-empty.');
   }
 }
