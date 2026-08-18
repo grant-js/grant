@@ -24,7 +24,7 @@ const NAMESPACES = ['errors', 'common', 'email'] as const;
  * Merged messages for a locale: { errors: {...}, common: {...}, email: {...} }.
  * Used by API (single-namespace i18next) and web (next-intl) with dot keys (e.g. errors.auth.tokenExpired).
  */
-export type MergedMessages = {
+type MergedMessages = {
   errors: Record<string, unknown>;
   common: Record<string, unknown>;
   email: Record<string, unknown>;

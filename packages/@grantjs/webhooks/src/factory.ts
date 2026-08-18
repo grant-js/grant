@@ -5,7 +5,7 @@ import { HttpWebhookDeliveryAdapter } from './delivery';
 import { HmacWebhookSigner } from './signer';
 import type { SsrfGuardOptions } from './ssrf';
 
-export interface WebhookFactoryConfig {
+interface WebhookFactoryConfig {
   defaultTimeoutMs: number;
   ssrf: SsrfGuardOptions;
 }

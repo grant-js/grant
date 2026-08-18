@@ -4,9 +4,9 @@ import { ConfigurationError, noopLogger } from '@grantjs/core';
 import { InMemoryCacheAdapter } from './memory';
 import { RedisCacheAdapter } from './redis';
 
-export type CacheStrategy = 'memory' | 'redis';
+type CacheStrategy = 'memory' | 'redis';
 
-export interface CacheConfig {
+interface CacheConfig {
   strategy: CacheStrategy;
   redis?: {
     host: string;

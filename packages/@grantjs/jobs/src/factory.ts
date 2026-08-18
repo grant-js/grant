@@ -4,9 +4,9 @@ import { noopLogger } from '@grantjs/core';
 import { BullMQJobAdapter } from './bullmq';
 import { NodeCronJobAdapter } from './node-cron';
 
-export type JobProvider = 'node-cron' | 'bullmq';
+type JobProvider = 'node-cron' | 'bullmq';
 
-export interface JobFactoryConfig {
+interface JobFactoryConfig {
   provider: JobProvider;
   redis?: {
     host: string;

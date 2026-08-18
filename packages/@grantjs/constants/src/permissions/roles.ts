@@ -1,6 +1,6 @@
 import { getDescriptionKey, getNameKey, I18nPrefix } from './i18n-helpers';
 
-export interface RoleDefinition {
+interface RoleDefinition {
   name: string;
   description: string;
   level?: number;
@@ -19,7 +19,7 @@ export type RoleKey = (typeof RoleKey)[keyof typeof RoleKey];
 
 export const ACCOUNT_ROLES = [RoleKey.PersonalAccountOwner, RoleKey.OrganizationAccountOwner];
 
-export const ACCOUNT_ROLE_DEFINITIONS: Record<RoleKey, RoleDefinition> = ACCOUNT_ROLES.reduce(
+const ACCOUNT_ROLE_DEFINITIONS: Record<RoleKey, RoleDefinition> = ACCOUNT_ROLES.reduce(
   (acc, role: RoleKey) => ({
     ...acc,
     [role]: {
@@ -57,7 +57,7 @@ export const ROLES: Record<RoleKey, RoleDefinition> = {
 
 export const ROLE_KEYS = Object.values(RoleKey) as RoleKey[];
 
-export function getRoleLevelByName(roleName: string): number | undefined {
+function getRoleLevelByName(roleName: string): number | undefined {
   const definition = Object.values(ORGANIZATION_ROLE_DEFINITIONS).find(
     (def) => def.name === roleName
   );
