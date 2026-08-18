@@ -5,7 +5,7 @@
 - **Slug**: `internal-packages-code-quality`
 - **Story brief**: [`plans/2026-08-16-internal-packages-code-quality-brief.md`](./2026-08-16-internal-packages-code-quality-brief.md) — approved 2026-08-16, Ale Heredia
 - **Findings**: `docs/contributing/code-quality/internal-packages.md` — written by slice 8
-- **Status**: `integrated` — all eight slices merged to trunk (#279, #281, #283, #284, #285, #286, #287, #288). Gate 3 pending human review; gate 4 after.
+- **Status**: `integrated` — all eight slices merged to trunk (#279, #281, #283, #284, #285, #286, #287, #288). Gate 3 cleared 2026-08-18. Trunk merged up with `main` @ `4289160b` (pass-5 close-out #280 + release #276/`v1.5.3`), no conflicts. Awaiting gate 4.
 - **Was**: in-progress — gate 2 cleared 2026-08-16; slices land one at a time; all eight branches declared in one `gh stack init`, then `gh stack submit --auto` + `gh stack link` after each. GitHub stack: [#282](https://github.com/grant-js/grant/stacks/282)
 - **Story trunk**: `feat/internal-packages-code-quality`
 - **worktree_path**: **not required** — no other story is in flight. `git worktree list` shows only the main checkout. Slices run serially in the main checkout, as in passes 4 and 5. Add a worktree only if a second story opens mid-stack.
@@ -352,8 +352,37 @@ The re-measurement parses `extends` textually and classifies every entry, failin
 
 - [x] Gate 1: Story brief approved — 2026-08-16, Ale Heredia.
 - [x] Gate 2: Stack plan approved — 2026-08-16, Ale Heredia. Implementation proceeds from slice 2, one slice at a time.
-- [ ] Gate 3: Stack PRs merged into trunk — 8 PRs open on stack #282, awaiting light-bar review.
+- [x] Gate 3: Stack PRs merged into trunk — 2026-08-18, Ale Heredia. All 8 merged via stack #282.
+
+**Trunk verified by content, not by commit messages.** Pass 4's failure mode is merging bottom-up and leaving the trunk holding one slice out of five, so each slice's artifact was checked on the assembled trunk: `platform` absent from the git tree, 12 entries in `INTERNAL_PACKAGE_DEPS`, 9 lint scripts present, 2 `await import` in `cloudwatch.ts`, 3 test files, 1 raw `throw new Error`, 1 `noopLogger` declaration, 0 `isValidTagColor`, `src/test-support` excluded, findings doc present.
+
 - [ ] Gate 4: Story → `main` deep review complete.
+
+## Gate 4 — integration verification {#gate-4-verification}
+
+Run on the assembled trunk after merging `origin/main` in, 2026-08-18. Gate 4 is integration verification, not a re-review of diffs each slice already had.
+
+| Check                                                      | Result                                                                            |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `format:check`                                             | pass                                                                              |
+| `lint`                                                     | 26/26                                                                             |
+| `type-check`                                               | 24/24                                                                             |
+| `test`                                                     | 13/13                                                                             |
+| `build`                                                    | 11/11                                                                             |
+| `dead-code:{api,web,core,database,schema,packages}`        | 6/6 pass                                                                          |
+| `codegen:check`                                            | pass                                                                              |
+| `tsc --noEmit` on `grant-api`, `grant-web`, `grant-config` | pass, run **directly** — turbo reports `FULL TURBO` cache hits that prove nothing |
+| `scripts/docker/build-api-production.mjs`                  | completes — the stage pass 5's C3 broke                                           |
+
+**Artifact checks, because a green build is not the deliverable:**
+
+- No `test-support` anywhere under any `dist/` — slice 7 holds in the real production build, not just in the isolated `tsc` run it was developed against.
+- No compiled `*.test.js` / `*.spec.js`.
+- Assets still copied: 79 database migrations, 425 schema SDL files. The fix removed what it should and nothing else.
+
+**No changeset needed.** `schema`, `client`, `server` and `cli` are byte-identical to `main` across this story — the only published packages. Pass 5 needed one because it changed `@grantjs/schema`; this story touches private packages only.
+
+**One trap avoided**: `build-api-production.mjs` rewrites each package's `package.json` `main` to point at `dist/` as its last step. Those mutations were reverted before committing; they are build output, not a change.
 
 ## Cleanup
 
