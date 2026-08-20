@@ -23,6 +23,7 @@
     "dead-code:core": "knip --workspace packages/@grantjs/core",
     "dead-code:database": "knip --workspace packages/@grantjs/database",
     "dead-code:schema": "knip --workspace packages/@grantjs/schema",
+    "dead-code:published": "knip --workspace packages/@grantjs/client --workspace packages/@grantjs/server --workspace packages/@grantjs/cli",
     "dead-code:packages": "knip --workspace packages/@grantjs/analytics --workspace packages/@grantjs/cache --workspace packages/@grantjs/constants --workspace packages/@grantjs/email --workspace packages/@grantjs/env --workspace packages/@grantjs/errors --workspace packages/@grantjs/i18n --workspace packages/@grantjs/jobs --workspace packages/@grantjs/logger --workspace packages/@grantjs/storage --workspace packages/@grantjs/telemetry --workspace packages/@grantjs/webhooks",
     "codegen:check": "pnpm --filter @grantjs/schema generate && git diff --exit-code -- packages/@grantjs/schema/src/generated",
     "lint:fix": "turbo lint:fix",

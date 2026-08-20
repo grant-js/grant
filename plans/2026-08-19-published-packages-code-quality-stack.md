@@ -394,3 +394,29 @@ This is the third time in two passes that the _first_ correction of a `gh stack`
 itself wrong. Pass 6 said the tool cannot grow a stack incrementally; the correction was
 "`init` adopts existing and creates missing," which is true and still left the wrong
 workflow in place. **Fixing the verdict is not the same as fixing the practice.**
+
+### C7 — editing `package.json` by hand skips the lockfile, and CI is the first to notice {#c7}
+
+Slice 7 removed an unused devDependency by rewriting `package.json` with a script. That is
+half the edit: `pnpm-lock.yaml` still carried the old specifier, and CI installs with
+`--frozen-lockfile`, so the job died in **Setup Node** before a single check ran —
+`ERR_PNPM_OUTDATED_LOCKFILE`.
+
+Nothing local caught it. `turbo type-check`, `lint`, `test` and `build` were all green,
+because a stale lockfile is invisible to every one of them: the `node_modules` on disk was
+already correct.
+
+**Any change to a dependency block must go through the package manager** (`pnpm remove
+<pkg> --filter <workspace>`), or be followed by `pnpm install` and the lockfile committed
+alongside. The cheap local proof is the command CI actually runs:
+
+```sh
+pnpm install --frozen-lockfile
+```
+
+Worth noting what the lockfile diff then showed, because it looked alarming and was not:
+`@tanstack/react-query` moved out of the importer's `devDependencies` block and flipped
+`dev: true` → `dev: false`. That is pnpm recording it as an **auto-installed peer** now
+that the devDependency is gone — `dependencies` in `package.json` is still `@grantjs/schema`
+alone, `peerDependencies` is untouched, and `npm pack` is unchanged at 27 files. Read the
+manifest, not the lockfile, to decide whether a published contract moved.

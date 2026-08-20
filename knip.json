@@ -57,6 +57,15 @@
       "entry": ["src/**/*.test.ts", "src/test-support/**/*.ts"],
       "project": ["src/**/*.ts"]
     },
+    // `grant start` opens the browser for the CLI OAuth callback by spawning the
+    // platform's opener. xdg-open is resolved from PATH at runtime on Linux, never
+    // imported, so knip cannot see it is intentional -- same class as pino-pretty
+    // above. It is not a dependency: it ships with the desktop environment.
+    "packages/@grantjs/cli": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"],
+      "ignoreBinaries": ["xdg-open"]
+    },
     "packages/@grantjs/database": {
       // Tests and their support module are entry points, not dead files: vitest
       // discovers them by glob, which knip cannot follow.

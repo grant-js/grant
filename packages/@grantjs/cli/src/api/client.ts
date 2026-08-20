@@ -3,7 +3,7 @@
  * Used by start (token exchange) and generate-types (resources/permissions).
  */
 
-export interface TokenExchangeScope {
+interface TokenExchangeScope {
   id: string;
   tenant: string;
 }
@@ -19,7 +19,7 @@ export interface TokenExchangeResponse {
   expiresIn: number;
 }
 
-export interface ApiErrorBody {
+interface ApiErrorBody {
   success?: false;
   error?: { code?: string; message?: string };
   reason?: string;

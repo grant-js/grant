@@ -70,7 +70,6 @@
     "@grantjs/schema": "workspace:*"
   },
   "devDependencies": {
-    "@tanstack/react-query": "^5.101.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.0.0",
     "@types/node": "^26.1.1",
