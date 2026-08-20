@@ -220,3 +220,30 @@ the removal was inert.
 step leaves the working tree modified in 14 packages the slice never intended to touch.
 Back up and restore around it, and clean the `dist/` directories it creates — leaving them
 is precisely the stale-artefact state this slice removes.
+
+### C3 — the `dead-code` gate cannot land in the guardrail slice {#c3}
+
+The plan put `dead-code:published` in slice 2 with the ESLint rules. Running `knip` on the
+trio first shows why that ordering does not work: it reports **22 findings**, and the gate
+would be red from slice 2 until slice 5.
+
+`knip` behaves better here than the brief predicted — it infers entry points from each
+package's `exports` map, so the subpath barrels (`client/react`, `server/{express,fastify,next,nest}`)
+are correctly treated as public and the `entry: ["src/index.ts"]` line is flagged redundant.
+The 22 are real. But they are **owned by later slices**:
+
+| Finding                                                  | Owner                                                                                                                                    |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `server`'s `Permission`, `Resource`, `ApiError`          | slice 5 — deleted when the SDKs adopt schema's types                                                                                     |
+| `extractTokenFromCookies`                                | slice 4                                                                                                                                  |
+| `cli`'s 4 unused barrel re-exports + 11 unused types     | dead-surface decisions; `config/index.ts` is alive (3 `commands/` files import it), so these are per-export edits, not a barrel deletion |
+| `xdg-open` unlisted binary (`cli/src/commands/start.ts`) | legitimate — a spawned system binary, needs `ignoreBinaries`                                                                             |
+
+Suppressing findings that three later slices are about to fix would make the gate lie, and
+landing it red would break the stack. **Moved to slice 6**, where the remaining set is small
+enough to action honestly. The ESLint DAG rules — the part that has no such dependency —
+land in slice 2 as planned.
+
+This is the rubric's own ordering rule (_widen the guardrail first_) meeting the same limit
+slice 1 hit: a gate is only worth adding once it can be **both** enabled and green, and
+here that depends on work the gate itself does not do.
