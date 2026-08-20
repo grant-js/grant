@@ -247,3 +247,29 @@ land in slice 2 as planned.
 This is the rubric's own ordering rule (_widen the guardrail first_) meeting the same limit
 slice 1 hit: a gate is only worth adding once it can be **both** enabled and green, and
 here that depends on work the gate itself does not do.
+
+### C4 — killing a `gh stack` command mid-push corrupts the working tree {#c4}
+
+`.husky/pre-push` runs a ~10-minute chain: `format:check`, `lint`, **seven** `dead-code:*`
+targets, `codegen:check`, `type-check`, `build`, the full test suite, and `secret-scan`.
+`codegen:check` runs `pnpm --filter @grantjs/schema generate`, which **rewrites the three
+committed files under `src/generated/`**.
+
+Running `gh stack submit --auto` under a 5-minute timeout SIGTERM'd that chain mid-codegen
+and left partially-regenerated output in the working tree — `graphql.ts` at **1,048 lines
+instead of 10,263**, all three files unformatted because codegen's `afterAllFileWrite`
+prettier hook never ran. Nothing reported an error; the next command to notice was
+`gh stack sync` refusing to rebase with "You have unstaged changes."
+
+Two things worth carrying:
+
+- **Give any command that pushes at least 15 minutes**, or the hook is a coin flip. This is
+  the reason the earlier `submit --auto` appeared to "hang" — it was not hanging, it was
+  running the pre-push chain, and pass 6's note about `submit` being interactive sent the
+  diagnosis the wrong way.
+- **A truncated generated file looks like a legitimate diff.** The recovery is
+  `git checkout -- src/generated/` then a _complete_ `generate` run plus
+  `git diff --exit-code`, which confirmed **no real drift** — the committed files were
+  correct the whole time. Never resolve a codegen diff by committing what is in the tree;
+  regenerate from a clean checkout first (pass 5's carried input: the fix is upstream, and
+  a hand-edited generated file is reverted by the next run).
