@@ -420,3 +420,70 @@ Worth noting what the lockfile diff then showed, because it looked alarming and 
 that the devDependency is gone — `dependencies` in `package.json` is still `@grantjs/schema`
 alone, `peerDependencies` is untouched, and `npm pack` is unchanged at 27 files. Read the
 manifest, not the lockfile, to decide whether a published contract moved.
+
+### Tier 3.2 resolved: the trio keeps its own dialect {#tier-32-resolved}
+
+Pass 6 left "12 packages extend the shared `tsconfig.build.json`, 6 extend their own" open,
+and this pass owns the three published ones. **Decision: they do not converge, and the
+reason is measured rather than argued.**
+
+Pointing `@grantjs/client` at `../tsconfig.build.json` and rebuilding fails immediately:
+
+```
+src/types.ts:110:17 - error TS2304: Cannot find name 'RequestCredentials'.
+```
+
+The shared parent is shaped for the production API image — `lib: ["ES2022"]`,
+`types: ["node"]`, `declaration: false`. The trio is the opposite case on both axes: two of
+the three are browser/edge SDKs that need DOM types, and all three **emit declarations**,
+which is the entire reason `vite-plugin-dts` reads this file. Converging would turn the
+`.d.ts` emit off in the only three packages that publish one.
+
+Recorded in `client/tsconfig.build.json` itself, where the next person to tidy it will see
+it before trying.
+
+**The other three divergent packages are not this pass's.** `core`, `database` and `env`
+extend their own tsconfig and then hand-restate `noEmit: false`, `module`, `moduleResolution`,
+`declaration: false`, `rootDir` and `outDir` — every one of which the shared parent already
+provides. That looks like real, unnecessary duplication, and unlike the trio there is no DOM
+or declaration requirement to justify it. It is internal-package territory (pass 6's), so it
+goes to the backlog rather than getting absorbed here.
+
+**Minor observation while testing this:** the TS2304 above was printed by `vite-plugin-dts`
+during `vite build` and `turbo` still reported `Tasks: 1 successful`. A declaration-emit type
+error does not fail the build on its own; `type-check` is what catches it, and CI runs both.
+Not a shipping risk, worth knowing when reading a green build log.
+
+### C8 — `lint-staged` runs prettier before eslint, so autofixes ship unformatted {#c8}
+
+Slice 9's push was rejected by the pre-push `format:check`:
+
+```
+[warn] packages/@grantjs/cli/vite.config.ts
+```
+
+on a line the slice never touched — `import { dirname,resolve } from 'node:path';`, missing
+one space. The commit had already run `lint-staged` and reported both tasks green.
+
+`lint-staged` was configured as `["prettier --write", "eslint --fix"]` for every `.ts`/`.tsx`
+path. So `prettier` formats, then `eslint --fix` runs `simple-import-sort`, which reorders
+the specifiers and **does not re-add the separating space**. Nothing formats the result.
+The commit succeeds, and the next `format:check` — pre-push or CI — fails on a file whose
+diff the author did not write.
+
+Reproduced both ways rather than assumed:
+
+| order                             | result                                              |
+| --------------------------------- | --------------------------------------------------- |
+| `prettier` → `eslint --fix` (old) | `import { dirname,resolve }` — fails `format:check` |
+| `eslint --fix` → `prettier` (new) | `import { dirname, resolve }` — clean               |
+
+Fixed by swapping the order for both `apps/**` and `packages/**`. Formatters run **last**;
+any fixer that rewrites syntax has to be re-formatted afterwards, and prettier is the only
+one of the two that is authoritative about whitespace.
+
+Worth noting how it presented: a pre-push failure pointing at an unrelated file, on a commit
+whose own hooks had passed. The instinct is to treat that as flaky tooling and re-run. The
+first `git commit` in this pass that touched a `.ts` file with unsorted imports would have
+produced it — it went unnoticed for eight slices because no earlier commit happened to hit
+one.

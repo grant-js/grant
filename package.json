@@ -152,12 +152,12 @@
   },
   "lint-staged": {
     "apps/**/*.{ts,tsx}": [
-      "prettier --write",
-      "eslint --fix"
+      "eslint --fix",
+      "prettier --write"
     ],
     "packages/**/*.{ts,tsx}": [
-      "prettier --write",
-      "eslint --fix"
+      "eslint --fix",
+      "prettier --write"
     ],
     "*.{js,jsx,json,md,graphql,yml,yaml}": [
       "prettier --write"

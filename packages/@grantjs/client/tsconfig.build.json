@@ -1,4 +1,10 @@
 {
+  // Extends this package's own tsconfig, NOT ../tsconfig.build.json, and that is
+  // deliberate. The shared parent targets the production API image: lib ["ES2022"],
+  // types ["node"], declaration false. This is a browser SDK that emits declarations --
+  // switching to the shared parent fails with TS2304 on DOM types (RequestCredentials
+  // in src/types.ts) and turns off the .d.ts emit that vite-plugin-dts reads this file
+  // for. Verified by trying it. Same reasoning for @grantjs/server and @grantjs/cli.
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "declaration": true,
