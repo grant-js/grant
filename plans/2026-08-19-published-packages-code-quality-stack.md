@@ -273,3 +273,38 @@ Two things worth carrying:
   correct the whole time. Never resolve a codegen diff by committing what is in the tree;
   regenerate from a clean checkout first (pass 5's carried input: the fix is upstream, and
   a hand-edited generated file is reverted by the next run).
+
+### C5 — `gh stack sync` reports success without restacking the unworked branches {#c5}
+
+`agentic-sdlc.md` § [Declaring all branches up front](../docs/contributing/agentic-sdlc.md#init-consequences)
+warns that rebasing a slice orphans everything above it, and prescribes `gh stack sync`.
+Pass 7 ran `sync` after every slice — it printed `✓ Pushed and synced 8 branches` — and
+slices 5–8 **stayed on slice 2's tip anyway**:
+
+```
+feat/...-cq-ci-release       5fbd77c0   (slice 3, correct)
+feat/...-cq-token-extractor  c1210368   (slice 4, correct)
+feat/...-cq-schema-types     137faf8c   <- slice 2's tip
+feat/...-cq-coverage         137faf8c   <- slice 2's tip
+feat/...-cq-build-config     137faf8c   <- slice 2's tip
+feat/...-cq-docs             137faf8c   <- slice 2's tip
+```
+
+`sync` advances branches that have PRs; branches with no commits are reported
+(`⚠ … has no PR`) and left where they are. So slice 5 was written against a base missing
+slices 3 and 4 — caught only because the test count came back **5 files / 31 tests**
+where slice 4 had just made it 6 / 61.
+
+**The check is the doc's, and it has to be run before writing each slice, not after:**
+
+```sh
+git for-each-ref --format='%(refname:short) %(objectname:short)' refs/heads
+```
+
+Recovery for a slice with no commits yet is a branch move, not a rebase:
+`git stash && git switch -C <slice-n> <slice-n-1> && git stash pop`.
+
+The transferable form is pass 6's _check that the runner runs the check_, one level over:
+**a tool reporting success is not the tool having done the thing.** `✓ Pushed and synced 8
+branches` is true — it pushed eight branches — and false about the eight being correctly
+based.
