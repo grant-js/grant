@@ -99,8 +99,9 @@ jobs:
         run: pnpm run lint
 
       # apps/api, apps/web, @grantjs/core, @grantjs/database, @grantjs/schema, and
-      # the 12 internal packages. Only the published trio (client, server, cli) is
-      # still outside the gate; pass 7 widens it to them.
+      # the 12 internal packages. The published trio (client, server, cli) joins in
+      # pass 7 slice 6 -- its findings are owned by the slices that precede it, so
+      # the gate lands once it can be both enabled and green.
       - name: Dead code (apps/api)
         run: pnpm run dead-code:api
 
@@ -129,6 +130,12 @@ jobs:
       # package, which is format:check's job, not this gate's.
       - name: Codegen drift (@grantjs/schema)
         run: pnpm run codegen:check
+
+      # The script that enforces exactly which packages may be published. It existed
+      # as `release:check` from the start and ran in no workflow, so the guardrail on
+      # the npm contract surface was a manual step nobody was required to take.
+      - name: Publishable packages (@grantjs/schema, client, server, cli)
+        run: pnpm run release:check
 
       - name: Type check
         run: pnpm run type-check
