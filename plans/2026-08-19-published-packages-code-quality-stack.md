@@ -270,12 +270,33 @@ instead of 10,263**, all three files unformatted because codegen's `afterAllFile
 prettier hook never ran. Nothing reported an error; the next command to notice was
 `gh stack sync` refusing to rebase with "You have unstaged changes."
 
+**Correction to this entry's own first draft.** It said the chain takes "~10 minutes."
+That was never measured. Measured cold (`--force`, so nothing is cached):
+
+| step              | cold |
+| ----------------- | ---- |
+| `build`           | 46s  |
+| `format:check`    | 20s  |
+| `test`            | 13s  |
+| 6 x `dead-code:*` | ~12s |
+| `codegen:check`   | 5s   |
+
+About **two minutes**, not ten. The five-minute timeout was blown by a multiplier the
+first diagnosis missed: **the hook fires once per branch pushed**, and `gh stack submit`
+pushes every branch in the stack. Instrumented and counted — one `submit --auto` of a
+six-branch stack produced **six** hook invocations; at the time of the failure the stack
+had eight. Two minutes each, serially, is what ran past the timeout.
+
+That makes the heavy hook and [C6](#c6)'s all-branches-up-front `init` the same bug seen
+twice: the cost of the hook is multiplied by the number of branches the stack pushes, so
+the fix for one reduces the other.
+
 Two things worth carrying:
 
 - **Give any command that pushes at least 15 minutes**, or the hook is a coin flip. This is
   the reason the earlier `submit --auto` appeared to "hang" — it was not hanging, it was
-  running the pre-push chain, and pass 6's note about `submit` being interactive sent the
-  diagnosis the wrong way.
+  running the pre-push chain once per branch, and pass 6's note about `submit` being
+  interactive sent the diagnosis the wrong way.
 - **A truncated generated file looks like a legitimate diff.** The recovery is
   `git checkout -- src/generated/` then a _complete_ `generate` run plus
   `git diff --exit-code`, which confirmed **no real drift** — the committed files were
