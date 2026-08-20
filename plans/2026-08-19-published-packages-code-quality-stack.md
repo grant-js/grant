@@ -259,10 +259,16 @@ here that depends on work the gate itself does not do.
 
 ### C4 — killing a `gh stack` command mid-push corrupts the working tree {#c4}
 
-`.husky/pre-push` runs a ~10-minute chain: `format:check`, `lint`, **seven** `dead-code:*`
-targets, `codegen:check`, `type-check`, `build`, the full test suite, and `secret-scan`.
-`codegen:check` runs `pnpm --filter @grantjs/schema generate`, which **rewrites the three
-committed files under `src/generated/`**.
+`.husky/pre-push` runs `format:check`, `lint`, **six** `dead-code:*` targets,
+`codegen:check`, `type-check`, `build`, the full test suite, and `secret-scan`.
+`codegen:check` runs `pnpm --filter @grantjs/schema generate`, which writes the three
+committed files under `src/generated/` before diffing them.
+
+**`graphql-codegen` is deterministic, and an earlier draft of this entry implied
+otherwise.** Two consecutive runs are byte-identical, and identical to what is committed —
+verified with `md5sum`. There is no drift risk and nothing wrong with the script. What
+follows is a **partial-write** hazard, which exists only while the process can be
+interrupted.
 
 Running `gh stack submit --auto` under a 5-minute timeout SIGTERM'd that chain mid-codegen
 and left partially-regenerated output in the working tree — `graphql.ts` at **1,048 lines
@@ -297,6 +303,11 @@ Two things worth carrying:
   the reason the earlier `submit --auto` appeared to "hang" — it was not hanging, it was
   running the pre-push chain once per branch, and pass 6's note about `submit` being
   interactive sent the diagnosis the wrong way.
+- **The interruption window is the only real cost, and it closes by not running the check
+  twice.** `codegen:check` is already a CI gate on every PR, so running it again in
+  pre-push — once per branch pushed — buys nothing. Dropping it from the hook removes the
+  hazard without changing a line of the script. A recommendation, not a defect: this entry
+  first called the script a footgun, and the determinism check disproved that.
 - **A truncated generated file looks like a legitimate diff.** The recovery is
   `git checkout -- src/generated/` then a _complete_ `generate` run plus
   `git diff --exit-code`, which confirmed **no real drift** — the committed files were
