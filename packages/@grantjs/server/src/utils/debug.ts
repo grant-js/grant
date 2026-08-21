@@ -1,7 +1,7 @@
 const DEBUG_GRANT_ENV = 'DEBUG_GRANT';
 
 /** Whether Grant debug logging is enabled (set DEBUG_GRANT=1 in development). */
-export function isDebugGrant(): boolean {
+function isDebugGrant(): boolean {
   return process.env[DEBUG_GRANT_ENV] === '1';
 }
 
@@ -11,6 +11,6 @@ export function isDebugGrant(): boolean {
  * Set DEBUG_GRANT=1 in .env or the environment to see resource, action, and outcome in development.
  */
 export function debugGrant(integration: string, data: Record<string, unknown>): void {
-  if (process.env[DEBUG_GRANT_ENV] !== '1') return;
+  if (!isDebugGrant()) return;
   console.debug(`[Grant ${integration}]`, data);
 }

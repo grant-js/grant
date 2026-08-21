@@ -9,7 +9,7 @@ import type {
 // `Resource` were previously hand-written here AND byte-identically in @grantjs/server;
 // both copies described the payload of POST /api/auth/is-authorized less accurately than
 // the SDL does. See AGENTS.md § API surface: do not redefine or duplicate codegen types.
-export type { AuthorizationReason, Permission, Resource, Scope, Tenant } from '@grantjs/schema';
+export type { Permission, Resource, Scope, Tenant } from '@grantjs/schema';
 
 /**
  * Result of an authorization check.

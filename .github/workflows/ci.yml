@@ -98,10 +98,9 @@ jobs:
       - name: Lint
         run: pnpm run lint
 
-      # apps/api, apps/web, @grantjs/core, @grantjs/database, @grantjs/schema, and
-      # the 12 internal packages. The published trio (client, server, cli) joins in
-      # pass 7 slice 6 -- its findings are owned by the slices that precede it, so
-      # the gate lands once it can be both enabled and green.
+      # apps/api, apps/web, @grantjs/core, @grantjs/database, @grantjs/schema, the
+      # 12 internal packages, and -- since pass 7 -- the published trio below.
+      # Every workspace is now behind a dead-code gate.
       - name: Dead code (apps/api)
         run: pnpm run dead-code:api
 
@@ -123,6 +122,16 @@ jobs:
       # measurable this way. What this does catch is unused files and dependencies.
       - name: Dead code (internal @grantjs packages)
         run: pnpm run dead-code:packages
+
+      # The published trio. Closes the last gap in the dead-code gate: before pass 7
+      # these three were the only workspaces outside it. Note knip measures something
+      # narrower here than the name suggests -- with entry points inferred from each
+      # package's `exports` map, a symbol re-exported from a public barrel counts as
+      # used by construction, and a genuinely unused one is still not deletable
+      # without a major. What this catches is unused files, unused dependencies, and
+      # exports that never reach a public entry point at all.
+      - name: Dead code (published @grantjs packages)
+        run: pnpm run dead-code:published
 
       # @grantjs/schema's generated types are committed. Regenerate and fail on any
       # diff, so an edited .graphql file can never ship with a stale type. Scoped to

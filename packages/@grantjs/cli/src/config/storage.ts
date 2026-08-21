@@ -13,7 +13,7 @@ const DEFAULT_PROFILE_NAME = 'default';
  * - Windows: %APPDATA%\grant
  * - Linux/macOS: $XDG_CONFIG_HOME/grant or ~/.config/grant
  */
-export function getConfigDir(): string {
+function getConfigDir(): string {
   if (platform() === 'win32') {
     const appData = process.env.APPDATA;
     if (!appData) {
@@ -115,17 +115,6 @@ export function listProfileNames(file: GrantConfigFile | null): string[] {
 
 /** Default profile name constant for use in prompts/help. */
 export { DEFAULT_PROFILE_NAME };
-
-/**
- * Load config file and return the default profile's config.
- * Convenience for callers that only need one profile (default). Returns null if no file or default profile missing.
- */
-export async function loadConfig(): Promise<GrantConfig | null> {
-  const file = await loadConfigFile();
-  if (!file) return null;
-  const name = resolveProfileName(file, undefined);
-  return getProfileConfig(file, name) ?? null;
-}
 
 /**
  * Load config file and return the resolved profile's config plus file and name.
