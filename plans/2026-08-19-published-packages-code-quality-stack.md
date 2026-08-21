@@ -5,7 +5,7 @@
 - **Slug**: `published-packages-code-quality`
 - **Story brief**: [`plans/2026-08-19-published-packages-code-quality-brief.md`](./2026-08-19-published-packages-code-quality-brief.md) — approved 2026-08-19, Ale Heredia
 - **Findings**: `docs/contributing/code-quality/published-packages.md` — written by slice 8
-- **Status**: **in-progress** — gate 2 cleared 2026-08-19, Ale Heredia. Slice 1 committed (`58edebd1`); slices land one at a time. Not yet pushed.
+- **Status**: **in-progress** — gate 2 cleared 2026-08-19, Ale Heredia. All ten slices committed and submitted; PRs #291, #292, #294–#300 plus the docs slice, GitHub stack [#293](https://github.com/grant-js/grant/stacks/293). Awaiting gate 3.
 - **Story trunk**: `feat/published-packages-code-quality`
 - **worktree_path**: **not required** — `git worktree list` shows only the main checkout and no other story is in flight. Slices run serially in the main checkout, as in passes 4–6. Add a worktree only if a second story opens mid-stack.
 - **Base**: `main` at `76e765d4` (pass 6 close-out, #290). Every `file:line` citation in this plan and the brief re-verifies against this commit.
@@ -24,17 +24,25 @@
 
 ## Ordered slices (PRs)
 
-| #     | Branch                                        | Base                                   | Concern                                                                             | Owner          | Review bar         |
-| ----- | --------------------------------------------- | -------------------------------------- | ----------------------------------------------------------------------------------- | -------------- | ------------------ |
-| 1     | `feat/published-packages-cq-publish-boundary` | `feat/published-packages-code-quality` | **0.2 (Tier 0)** the dead `paths`, + schema's build script and `files` metadata     | Backend + Arch | light, artifact¹   |
-| 2     | `feat/published-packages-cq-guardrails`       | slice 1                                | ESLint DAG ×3, `dead-code:published`, `AGENTS.md` trio correction                   | Backend + Arch | light              |
-| 3     | `feat/published-packages-cq-ci-release`       | slice 2                                | 5 examples into `lint` + `type-check`; `release:check` into CI; changeset gaps      | Backend + FE   | light              |
-| 4     | `feat/published-packages-cq-token-extractor`  | slice 3                                | **Lens 7 as detector** — `token-extractor.ts`, published auth surface               | **QA**         | light, escalating² |
-| 5     | `feat/published-packages-cq-schema-types`     | slice 4                                | **Tier 2.1–2.2** — adopt codegen'd types, delete `core`'s orphan                    | Backend + Arch | light, artifact³   |
-| 6     | `feat/published-packages-cq-coverage`         | slice 5                                | Remaining untested surface, weighted by lines                                       | **QA**         | light              |
-| 7     | `feat/published-packages-cq-build-config`     | slice 6                                | **Tier 3.2–3.3** — tsconfig dialects, the `dts` exclude divergence                  | Backend        | light, artifact¹   |
-| 8     | `feat/published-packages-cq-docs`             | slice 7                                | Findings doc + **backlog (2.4)**, pass table, carried inputs, `AGENTS.md` exemption | PM + Arch      | light              |
-| final | `feat/published-packages-code-quality`        | `main`                                 | integration                                                                         | Principal      | **deep**           |
+| #     | Branch                                        | Base    | Concern                                                                              | Owner          | Review bar         | PR   |
+| ----- | --------------------------------------------- | ------- | ------------------------------------------------------------------------------------ | -------------- | ------------------ | ---- |
+| 1     | `feat/published-packages-cq-publish-boundary` | trunk   | **0.2 (Tier 0)** the dead `paths`, + schema's build script and `files` metadata      | Backend + Arch | light, artifact¹   | #291 |
+| 2     | `feat/published-packages-cq-guardrails`       | slice 1 | ESLint DAG ×3 + `AGENTS.md` trio correction ([C3](#c3))                              | Backend + Arch | light              | #292 |
+| 3     | `feat/published-packages-cq-ci-release`       | slice 2 | 5 examples into `lint` + `type-check`; `release:check` into CI; changeset gaps       | Backend + FE   | light              | #294 |
+| 4     | `feat/published-packages-cq-token-extractor`  | slice 3 | **Lens 7 as detector** — `token-extractor.ts`, published auth surface                | **QA**         | light, escalating² | #295 |
+| 5     | `feat/published-packages-cq-schema-types`     | slice 4 | **Tier 2** — adopt codegen'd types, delete `core`'s orphan                           | Backend + Arch | light, artifact³   | #296 |
+| 6     | `feat/published-packages-cq-stack-workflow`   | slice 5 | **Inserted** — fix the stacking workflow itself ([C6](#c6))                          | Principal      | light              | #297 |
+| 7     | `feat/published-packages-cq-coverage`         | slice 6 | Dead surface + the `dead-code:published` gate ([C3](#c3))                            | Backend        | light              | #298 |
+| 8     | `feat/published-packages-cq-coverage-tests`   | slice 7 | Remaining untested surface, weighted by lines                                        | **QA**         | light              | #299 |
+| 9     | `feat/published-packages-cq-build-config`     | slice 8 | **Tier 3.2–3.3** — tsconfig dialects, `dts` exclude, `lint-staged` order ([C8](#c8)) | Backend        | light, artifact¹   | #300 |
+| 10    | `feat/published-packages-cq-docs`             | slice 9 | Findings doc + backlog, pass table, carried inputs, `AGENTS.md` exemption            | PM + Arch      | light              |      |
+| final | `feat/published-packages-code-quality`        | `main`  | integration                                                                          | Principal      | **deep**           |      |
+
+**Grew from 8 planned slices to 10.** Two changes, both recorded: the `dead-code` gate split
+from the coverage slice ([C3](#c3)) because its findings were owned by slices 4 and 5, and a
+slice was inserted to fix the stacking workflow ([C6](#c6)) after the PR list surfaced dead
+branch banners. Slice numbering below refers to the original plan where a correction predates
+the renumbering.
 
 ¹ Not a bar, a **blocking Verifier step**: clean-build and list `dist/`. Pass 5's C4 is the precedent — a green `tsc` hid a leak that only an artifact listing caught.
 
