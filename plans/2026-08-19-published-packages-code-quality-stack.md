@@ -5,7 +5,7 @@
 - **Slug**: `published-packages-code-quality`
 - **Story brief**: [`plans/2026-08-19-published-packages-code-quality-brief.md`](./2026-08-19-published-packages-code-quality-brief.md) — approved 2026-08-19, Ale Heredia
 - **Findings**: `docs/contributing/code-quality/published-packages.md` — written by slice 8
-- **Status**: **in-progress** — gate 2 cleared 2026-08-19, Ale Heredia. All ten slices committed and submitted; PRs #291, #292, #294–#300 plus the docs slice, GitHub stack [#293](https://github.com/grant-js/grant/stacks/293). Awaiting gate 3.
+- **Status**: `merged-to-main` — all ten slices merged to the trunk (#291, #292, #294–#301), then the trunk merged to `main` as [#302](https://github.com/grant-js/grant/pull/302) (`634efce3`, 2026-08-21). Gates 3 and 4 both cleared; pipeline green. GitHub stack [#293](https://github.com/grant-js/grant/stacks/293).
 - **Story trunk**: `feat/published-packages-code-quality`
 - **worktree_path**: **not required** — `git worktree list` shows only the main checkout and no other story is in flight. Slices run serially in the main checkout, as in passes 4–6. Add a worktree only if a second story opens mid-stack.
 - **Base**: `main` at `76e765d4` (pass 6 close-out, #290). Every `file:line` citation in this plan and the brief re-verifies against this commit.
@@ -200,15 +200,16 @@ Mark pass 7 done in the README table, leave pass 8 (`apps/config`) named, and wr
 
 ## Human gates
 
-- [ ] Gate 2: Stack plan approved — no implementation until a human confirms.
-- [ ] Gate 3: Stack PRs merged into trunk (light; slice 4 escalates to `security-full` if characterization finds a bypass).
-- [ ] Gate 4: Story → `main` **deep** review complete.
+- [x] Gate 2: Stack plan approved — 2026-08-19, Ale Heredia.
+- [x] Gate 3: Stack PRs merged into trunk — 2026-08-21. Slice 4 did **not** escalate: characterization found no bypass, every surprising behaviour fails closed.
+- [x] Gate 4: Story → `main` deep review complete — [#302](https://github.com/grant-js/grant/pull/302), merged 2026-08-21 as `634efce3`.
 
 ## Cleanup
 
-- [ ] `git worktree remove` (not used unless a second story opens)
-- [ ] Local slice branches deleted
-- [ ] Stack plan status → `merged-to-main`
+- [x] `git worktree remove` — the only worktree used was a throwaway for the gate-4 baseline build, removed
+- [x] Local **and remote** slice branches deleted — 11 of each. Verified safe first by `git diff origin/main <trunk>` returning empty, since #302 was a **squash** merge and the branches are therefore not ancestors of `main`; `git branch --merged` would have reported none of them
+- [x] Stale `.git/gh-stack` entry for stack #293 removed — it is local, uncommitted metadata that outlives the branches it names
+- [x] Stack plan status → `merged-to-main`
 
 ## Corrections
 

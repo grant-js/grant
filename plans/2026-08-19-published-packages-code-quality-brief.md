@@ -5,7 +5,7 @@
 - **Slug**: `published-packages-code-quality`
 - **Date**: 2026-08-19
 - **Author**: PM agent, from an assessment run against the pass 6 close-out, since merged as [#290](https://github.com/grant-js/grant/pull/290) — **`main` @ `76e765d4`**. Every `file:line` citation re-verified at that commit; #290 touched one plan file and no source.
-- **Status**: **ready-for-main** — gate 1 cleared 2026-08-19, Ale Heredia. All slices implemented; findings written to `docs/contributing/code-quality/published-packages.md`. Awaiting gates 3 and 4.
+- **Status**: **done** — merged to `main` as [#302](https://github.com/grant-js/grant/pull/302) (`634efce3`, 2026-08-21). Findings: `docs/contributing/code-quality/published-packages.md`.
 - **Pass**: 7 of the [code quality passes](../docs/contributing/code-quality/README.md)
 - **Findings document** (written by the last slice): `docs/contributing/code-quality/published-packages.md`
 
