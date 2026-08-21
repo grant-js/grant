@@ -85,22 +85,31 @@ Three rules for this stack specifically, each earned during the assessment:
 ## Stack setup
 
 ```sh
+# 1. Trunk
 git switch -c feat/published-packages-code-quality main && git push -u origin feat/published-packages-code-quality
-# All eight named up front — init adopts what exists and creates the rest.
-gh stack init --base feat/published-packages-code-quality \
-  feat/published-packages-cq-publish-boundary \
-  feat/published-packages-cq-guardrails \
-  feat/published-packages-cq-ci-release \
-  feat/published-packages-cq-token-extractor \
-  feat/published-packages-cq-schema-types \
-  feat/published-packages-cq-coverage \
-  feat/published-packages-cq-build-config \
-  feat/published-packages-cq-docs
-gh stack submit --auto   # after each slice; --auto is required in a non-TTY
-# submit --auto does NOT create the GitHub stack when the PRs already exist.
-# link does, and is safe to re-run with the growing PR list after every slice:
-gh stack link --base feat/published-packages-code-quality <pr> <pr>   # bottom to top
-gh stack sync            # after any upstream merge or trunk-only commit
+
+# 2. Init with the FIRST slice only -- NOT all eight. See C6: declaring every branch
+#    up front is what produced the orphaned branches and the dead PR banners.
+gh stack init --base feat/published-packages-code-quality feat/published-packages-cq-publish-boundary
+
+# 3. After each slice: commit, then both commands, every time.
+gh stack submit --auto                                                  # --auto required in a non-TTY
+gh stack link --base feat/published-packages-code-quality <pr> <pr>     # bottom to top; grows the stack ON GitHub
+
+# 4. Before the NEXT slice -- creates it on the current tip, pushes nothing:
+gh stack add feat/published-packages-cq-<next>
+
+# 5. After any merge/rebase/amend below a branch:
+gh stack sync
+```
+
+**Give anything that pushes at least 15 minutes** ([C4](#c4)) -- `.husky/pre-push` runs a
+~10-minute chain including `codegen:check`, and killing it mid-run corrupts `src/generated/`.
+
+**Check branch positions before writing a slice, not after** ([C5](#c5)):
+
+```sh
+git for-each-ref --format='%(refname:short) %(objectname:short)' refs/heads
 ```
 
 Root on `feat/published-packages-code-quality`, never `main` — omitting `--base` skips gate 4 and turns one release into eight. The same applies to `gh stack link` if PRs are adopted mid-flight.
@@ -250,10 +259,16 @@ here that depends on work the gate itself does not do.
 
 ### C4 — killing a `gh stack` command mid-push corrupts the working tree {#c4}
 
-`.husky/pre-push` runs a ~10-minute chain: `format:check`, `lint`, **seven** `dead-code:*`
-targets, `codegen:check`, `type-check`, `build`, the full test suite, and `secret-scan`.
-`codegen:check` runs `pnpm --filter @grantjs/schema generate`, which **rewrites the three
-committed files under `src/generated/`**.
+`.husky/pre-push` runs `format:check`, `lint`, **six** `dead-code:*` targets,
+`codegen:check`, `type-check`, `build`, the full test suite, and `secret-scan`.
+`codegen:check` runs `pnpm --filter @grantjs/schema generate`, which writes the three
+committed files under `src/generated/` before diffing them.
+
+**`graphql-codegen` is deterministic, and an earlier draft of this entry implied
+otherwise.** Two consecutive runs are byte-identical, and identical to what is committed —
+verified with `md5sum`. There is no drift risk and nothing wrong with the script. What
+follows is a **partial-write** hazard, which exists only while the process can be
+interrupted.
 
 Running `gh stack submit --auto` under a 5-minute timeout SIGTERM'd that chain mid-codegen
 and left partially-regenerated output in the working tree — `graphql.ts` at **1,048 lines
@@ -261,12 +276,38 @@ instead of 10,263**, all three files unformatted because codegen's `afterAllFile
 prettier hook never ran. Nothing reported an error; the next command to notice was
 `gh stack sync` refusing to rebase with "You have unstaged changes."
 
+**Correction to this entry's own first draft.** It said the chain takes "~10 minutes."
+That was never measured. Measured cold (`--force`, so nothing is cached):
+
+| step              | cold |
+| ----------------- | ---- |
+| `build`           | 46s  |
+| `format:check`    | 20s  |
+| `test`            | 13s  |
+| 6 x `dead-code:*` | ~12s |
+| `codegen:check`   | 5s   |
+
+About **two minutes**, not ten. The five-minute timeout was blown by a multiplier the
+first diagnosis missed: **the hook fires once per branch pushed**, and `gh stack submit`
+pushes every branch in the stack. Instrumented and counted — one `submit --auto` of a
+six-branch stack produced **six** hook invocations; at the time of the failure the stack
+had eight. Two minutes each, serially, is what ran past the timeout.
+
+That makes the heavy hook and [C6](#c6)'s all-branches-up-front `init` the same bug seen
+twice: the cost of the hook is multiplied by the number of branches the stack pushes, so
+the fix for one reduces the other.
+
 Two things worth carrying:
 
 - **Give any command that pushes at least 15 minutes**, or the hook is a coin flip. This is
   the reason the earlier `submit --auto` appeared to "hang" — it was not hanging, it was
-  running the pre-push chain, and pass 6's note about `submit` being interactive sent the
-  diagnosis the wrong way.
+  running the pre-push chain once per branch, and pass 6's note about `submit` being
+  interactive sent the diagnosis the wrong way.
+- **The interruption window is the only real cost, and it closes by not running the check
+  twice.** `codegen:check` is already a CI gate on every PR, so running it again in
+  pre-push — once per branch pushed — buys nothing. Dropping it from the hook removes the
+  hazard without changing a line of the script. A recommendation, not a defect: this entry
+  first called the script a footgun, and the determinism check disproved that.
 - **A truncated generated file looks like a legitimate diff.** The recovery is
   `git checkout -- src/generated/` then a _complete_ `generate` run plus
   `git diff --exit-code`, which confirmed **no real drift** — the committed files were
@@ -275,6 +316,10 @@ Two things worth carrying:
   a hand-edited generated file is reverted by the next run).
 
 ### C5 — `gh stack sync` reports success without restacking the unworked branches {#c5}
+
+**Remedied in slice 6** — `docs/contributing/agentic-sdlc.md` now prescribes `gh stack add`
+per slice instead of declaring every branch in one `init`. The rest of this entry is the
+diagnosis that produced that change.
 
 `agentic-sdlc.md` § [Declaring all branches up front](../docs/contributing/agentic-sdlc.md#init-consequences)
 warns that rebasing a slice orphans everything above it, and prescribes `gh stack sync`.
@@ -308,3 +353,44 @@ The transferable form is pass 6's _check that the runner runs the check_, one le
 **a tool reporting success is not the tool having done the thing.** `✓ Pushed and synced 8
 branches` is true — it pushed eight branches — and false about the eight being correctly
 based.
+
+### C6 — the stacking workflow itself was the defect, and this pass fixes it {#c6}
+
+Raised from the PR list: three "Compare & pull request" banners for `-coverage`,
+`-build-config` and `-docs`, branches with zero commits that `submit`/`sync` keep pushing.
+`agentic-sdlc.md` documented those banners as expected noise and told readers to leave
+them.
+
+They are not expected. They are a **consequence of declaring all slice branches up front**,
+which is also the direct cause of [C5](#c5). `gh stack --help`'s own example block states
+the intended model:
+
+```
+# Make changes and commit, then add a branch to the stack
+$ gh stack add branch4
+```
+
+`gh stack add` creates the branch on top of the **current** tip and checks it out, and
+**pushes nothing** — verified: after `add`, `git ls-remote` shows no such branch. Both
+failure modes disappear, because an unwritten slice has no branch at all: nothing to push,
+nothing to leave stranded, nothing to orphan.
+
+What this pass did:
+
+1. Removed the three unwritten branches from `.git/gh-stack`, then deleted them local and
+   remote. Confirmed `gh stack sync` then pushes **5 branches, not 8**, and does not
+   recreate them — deleting the remote branch alone would not have held, which is what the
+   old doc meant by "deleting fights the tool."
+2. Rewrote `agentic-sdlc.md` § GitHub stacking: `init` with the first slice only, then
+   `gh stack add` before each subsequent slice. The "two consequences" section is now "why
+   not declare all branches up front," with recovery steps for stacks already built that
+   way.
+3. Corrected the `add` row in the three-commands table — it was described as "only for a
+   slice discovered mid-story," a fallback. It is the normal path.
+4. Added a `sync` row recording that it silently skips branches without PRs **while
+   reporting success**.
+
+This is the third time in two passes that the _first_ correction of a `gh stack` belief was
+itself wrong. Pass 6 said the tool cannot grow a stack incrementally; the correction was
+"`init` adopts existing and creates missing," which is true and still left the wrong
+workflow in place. **Fixing the verdict is not the same as fixing the practice.**
