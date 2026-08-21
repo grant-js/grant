@@ -1,4 +1,5 @@
 import 'dotenv/config';
+
 import { GrantClient } from '@grantjs/server';
 import { grant } from '@grantjs/server/fastify';
 import Fastify from 'fastify';

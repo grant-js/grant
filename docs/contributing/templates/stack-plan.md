@@ -41,13 +41,35 @@ Prefer layer order: **db → schema → api → web**. Adjust if the story is na
 Root the stack on the story trunk — never the default branch, or slices target `main` and skip gate 4:
 
 ```sh
+# Trunk
 git switch -c feat/<slug> main && git push -u origin feat/<slug>
-gh stack init --base feat/<slug> feat/<slug>-db feat/<slug>-schema feat/<slug>-api
-gh stack submit     # opens the linked PRs
-gh stack sync       # restack after an upstream slice merges
+
+# Init with the FIRST slice branch only — never the whole list. Declaring unwritten
+# branches up front pushes empty branches to origin and leaves them stranded when
+# the slices below them move; `gh stack sync` skips branches with no PR and still
+# reports success. See § init-consequences.
+gh stack init --base feat/<slug> feat/<slug>-db
+
+# After each slice: commit, then BOTH of these, every time.
+gh stack submit --auto                       # --auto is required in an agent shell or CI
+gh stack link --base feat/<slug> <pr> <pr>   # bottom to top; creates/grows the stack ON GitHub
+
+# Before the NEXT slice — creates the branch on the current tip and pushes nothing:
+gh stack add feat/<slug>-schema
+
+# After any merge, rebase or amend below a branch:
+gh stack sync
+```
+
+Check positions **before** writing a slice, not after — the branch you are about to work on must sit on the current tip of the slice below it:
+
+```sh
+git for-each-ref --format='%(refname:short) %(objectname:short)' refs/heads
 ```
 
 See [Agentic SDLC § GitHub stacking](../agentic-sdlc.md#github-stacking). If a story predates `gh stack`, adopt its existing PRs with `gh stack link --base feat/<slug> <pr> <pr> …` (bottom to top) rather than restructuring branches mid-flight. **`--base` is not optional on `link` either** — omitted, it re-points the bottom PR at `main` and the whole stack merges past gate 4.
+
+`gh stack submit --auto` opens PRs as **drafts**. Mark them ready when the slice is ready for its gate-3 review — `gh pr ready <pr>` — or reviewers will not be requested.
 
 ## Dependencies / notes
 

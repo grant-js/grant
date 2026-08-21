@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { builtinModules } from 'node:module';
-import { resolve, dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { defineConfig } from 'vite';
@@ -18,6 +18,12 @@ export default defineConfig({
   plugins: [
     dts({
       include: ['src/**/*'],
+      // Matches @grantjs/client and @grantjs/server. Redundant today -- this package's
+      // tsconfig.build.json already excludes *.test.ts, and dist/ carries no test
+      // declarations without it -- but the guarantee then rests on which tsconfig the
+      // plugin happens to read. Stating it here makes the two mechanisms agree, so a
+      // new package copied from this config cannot ship its tests.
+      exclude: ['src/**/*.{test,spec}.ts'],
       tsconfigPath: './tsconfig.build.json',
     }),
   ],

@@ -1,5 +1,33 @@
-// Re-export schema types for convenience
+import type {
+  AuthorizationReason,
+  AuthorizationResult as SchemaAuthorizationResult,
+} from '@grantjs/schema';
+
+// Re-exported from @grantjs/schema, which is generated from the GraphQL SDL and is the
+// single source of truth for these shapes. `AuthorizationResult`, `Permission` and
+// `Resource` were previously hand-written here AND byte-identically in @grantjs/client;
+// both copies described the payload of POST /api/auth/is-authorized less accurately than
+// the SDL does. See AGENTS.md § API surface: do not redefine or duplicate codegen types.
 export type { Scope, Tenant } from '@grantjs/schema';
+
+/**
+ * Result of an authorization check.
+ *
+ * Derived from `@grantjs/schema`'s codegen'd type rather than redefined, so every field
+ * tracks the SDL automatically -- with one deliberate widening. The SDK reports its own
+ * transport failures through the same channel the server uses for `AuthorizationReason`:
+ * on a network error or a non-OK response it returns
+ * `{ authorized: false, reason: 'Unknown error' }`. So the SDK's `reason` is the wire
+ * enum OR a locally synthesised message, and the type has to say so.
+ *
+ * `(string & {})` keeps the union assignable in both directions -- consumers who treated
+ * `reason` as a plain `string` still compile -- while giving editors autocomplete on the
+ * eight `AuthorizationReason` members. Do not narrow it to the bare enum without a major:
+ * that would break every `reason === 'some literal'` comparison downstream.
+ */
+export type AuthorizationResult = Omit<SchemaAuthorizationResult, 'reason'> & {
+  reason?: AuthorizationReason | (string & {}) | null;
+};
 
 /**
  * Configuration for the Grant server client
@@ -36,18 +64,6 @@ export interface GrantServerConfig {
 }
 
 /**
- * Result of an authorization check
- */
-export interface AuthorizationResult {
-  /** Whether the action is authorized */
-  authorized: boolean;
-  /** Human-readable reason for the decision */
-  reason?: string;
-  /** The permission that matched (if authorized) */
-  matchedPermission?: Permission;
-}
-
-/**
  * Options for permission checks
  */
 export interface PermissionCheckOptions {
@@ -55,39 +71,6 @@ export interface PermissionCheckOptions {
   context?: {
     resource?: Record<string, unknown> | null;
   };
-}
-
-/**
- * Permission entity
- */
-export interface Permission {
-  id: string;
-  name: string;
-  description?: string | null;
-  action: string;
-  resourceId?: string | null;
-  resource?: Resource | null;
-  condition?: unknown;
-}
-
-/**
- * Resource entity
- */
-export interface Resource {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string | null;
-  actions: string[];
-}
-
-/**
- * Error response from the API
- */
-export interface ApiError {
-  error: string;
-  message?: string;
-  statusCode?: number;
 }
 
 /**

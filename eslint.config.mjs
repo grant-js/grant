@@ -35,8 +35,8 @@ const noAdapterImports = (pkg) =>
 // core's rule into database and broke the build, because database legitimately
 // depends on env and constants; the allowed set differs per package and always has.
 //
-// The published packages (client, server, cli) are deliberately absent: they are an
-// npm contract surface with a different review bar, audited in pass 7.
+// The published packages are NOT here -- they get their own map below, because the
+// distinction is a review bar, not a rule shape.
 const INTERNAL_PACKAGE_DEPS = {
   analytics: ['@grantjs/core'],
   cache: ['@grantjs/core'],
@@ -52,11 +52,23 @@ const INTERNAL_PACKAGE_DEPS = {
   webhooks: ['@grantjs/core'],
 };
 
+// The three packages published to npm. Same rule shape as the internal map above and
+// the same derivation -- each allowed set comes from that package's own package.json
+// `dependencies`, never from a sibling's rule. What differs is the consequence: these
+// are a semver contract surface, so an accidental workspace import here would ship a
+// private, unpublished package into a consumer's dependency graph. `cli` declares no
+// workspace dependency at all, so its allowed set is empty, exactly like `env`'s.
+const PUBLISHED_PACKAGE_DEPS = {
+  client: ['@grantjs/schema'],
+  server: ['@grantjs/schema'],
+  cli: [],
+};
+
 // Expressed as a negated pattern rather than a `paths` list of everything forbidden,
 // for the reason schema's rule already records: a pattern covers a new workspace
 // package on the day it is created, whereas a path list silently does not.
 const onlyDeclaredWorkspaceDeps = ([pkg, allowed]) => ({
-  files: [`packages/@grantjs/${pkg}/src/**/*.ts`],
+  files: [`packages/@grantjs/${pkg}/src/**/*.{ts,tsx}`],
   rules: {
     'no-restricted-imports': [
       'error',
@@ -480,5 +492,13 @@ export default defineConfig(
   // comes from INTERNAL_PACKAGE_DEPS above, which is derived from its own
   // package.json. Every one of these rules was proven to fire by planting a real
   // import and confirming the error before this landed.
-  ...Object.entries(INTERNAL_PACKAGE_DEPS).map(onlyDeclaredWorkspaceDeps)
+  ...Object.entries(INTERNAL_PACKAGE_DEPS).map(onlyDeclaredWorkspaceDeps),
+
+  // The published trio. Pass 7 closes the last gap in the DAG guardrail: before this,
+  // `client`, `server` and `cli` were the only packages whose dependency direction was
+  // enforced by review alone. Each rule was proven to fire in both directions -- a
+  // planted `@grantjs/database` import errors in all three, and `@grantjs/schema` is
+  // accepted in `client`/`server` while rejected in `cli`, which confirms the allowlist
+  // is genuinely per-package rather than a blanket ban that happens to be green.
+  ...Object.entries(PUBLISHED_PACKAGE_DEPS).map(onlyDeclaredWorkspaceDeps)
 );

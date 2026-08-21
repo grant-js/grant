@@ -2,10 +2,11 @@
   "name": "example-nextjs-client",
   "private": true,
   "scripts": {
-    "dev": "dotenv -e .env.development -- next dev",
     "build": "next build",
+    "dev": "dotenv -e .env.development -- next dev",
+    "lint": "eslint .",
     "start": "dotenv -e .env -- next start",
-    "lint": "eslint ."
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@grantjs/client": "workspace:*",

@@ -11,7 +11,7 @@ export interface GrantScope {
  * Session: only tokens are stored (no credentials like email/password).
  * Session auth does not auto-refresh; when the access token expires, run "grant start" again.
  */
-export interface SessionCredentials {
+interface SessionCredentials {
   token: string;
   refreshToken?: string;
   expiresAt?: string;
@@ -21,7 +21,7 @@ export interface SessionCredentials {
  * API key credentials (clientId + clientSecret, scope).
  * Token is obtained by exchanging at runtime; we store key material.
  */
-export interface ApiKeyCredentials {
+interface ApiKeyCredentials {
   clientId: string;
   clientSecret: string;
   scope: GrantScope;
@@ -45,7 +45,7 @@ export interface GrantConfig {
 }
 
 /** Name of a profile (key in profiles). */
-export type ProfileName = string;
+type ProfileName = string;
 
 /**
  * Config file: multiple profiles and a default.
