@@ -6,28 +6,32 @@ import { describe, expect, it } from 'vitest';
 import { runCacheAdapterConformance } from '../conformance-suite';
 import { RedisCacheAdapter } from './index';
 
-const HOST = process.env.REDIS_HOST ?? 'localhost';
-const PORT = Number(process.env.REDIS_PORT ?? 6379);
-// The dev compose Redis runs with --requirepass, so an unauthenticated probe gets
-// NOAUTH and looks indistinguishable from "not running". Default to the compose
-// password rather than silently skipping the whole suite on a healthy Redis.
-const PASSWORD = process.env.REDIS_PASSWORD || 'grant_redis_password';
+// Backed by the e2e stack's Redis (docker-compose.e2e.yml), not the development
+// stack. Started by scripts/e2e.sh, or directly:
+//   docker compose -f docker-compose.e2e.yml --env-file .env.test -p grant-e2e \
+//     up -d redis localstack
+const HOST = process.env.E2E_REDIS_HOST ?? 'localhost';
+const PORT = Number(process.env.E2E_REDIS_PORT ?? 6380);
+// That Redis runs with --requirepass, so an unauthenticated probe gets NOAUTH,
+// which is indistinguishable from "not running".
+const PASSWORD = process.env.E2E_REDIS_PASSWORD || 'grant_redis_password';
 
 /**
- * Reachability is probed once, before the suite is declared, so an unavailable
- * Redis skips cleanly instead of failing every test with a connection error.
+ * Reachability is probed once so an absent backend produces an actionable
+ * message rather than a wall of ioredis connection errors.
  *
- * Slice 2 (`feat/aws-adapters-localstack`) makes this unconditional in CI by
- * bringing the backing services into the compose stacks. Until then the Redis
- * conformance run is a local gate: `docker compose up -d redis`.
+ * There is deliberately no skip path. This file only runs in the integration
+ * lane, and invoking that lane asserts the stack is up — a suite that quietly
+ * skipped would be indistinguishable from one that passed, which is exactly the
+ * failure mode worth preventing here.
  */
-async function redisReachable(): Promise<boolean> {
+async function assertRedisReachable(): Promise<void> {
   const probe = new Redis({
     host: HOST,
     port: PORT,
     password: PASSWORD,
     lazyConnect: true,
-    connectTimeout: 1_000,
+    connectTimeout: 2_000,
     maxRetriesPerRequest: 1,
     retryStrategy: () => null,
   });
@@ -35,23 +39,21 @@ async function redisReachable(): Promise<boolean> {
   try {
     await probe.connect();
     await probe.ping();
-    return true;
-  } catch {
-    return false;
+  } catch (error) {
+    throw new Error(
+      `No Redis at ${HOST}:${PORT} for the adapter integration lane. Start it with: ` +
+        'docker compose -f docker-compose.e2e.yml --env-file .env.test -p grant-e2e ' +
+        'up -d redis localstack',
+      { cause: error }
+    );
   } finally {
     probe.disconnect();
   }
 }
 
-const available = await redisReachable();
+await assertRedisReachable();
 
-if (!available) {
-  describe.skip(`ICacheAdapter conformance: RedisCacheAdapter (no Redis at ${HOST}:${PORT})`, () => {
-    it('skipped', () => {
-      expect(true).toBe(true);
-    });
-  });
-} else {
+{
   // Unique prefix per run so a shared Redis cannot leak state between runs, and
   // so clear() (itself under test) only ever touches this run's keys.
   const prefix = `grant:conformance:${process.pid}:${Date.now()}:`;
