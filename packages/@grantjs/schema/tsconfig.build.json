@@ -9,6 +9,15 @@
   // replaces the inherited one outright, so omitting *.test.ts here would compile
   // the tests into the image. src/test-support/ is the addition — it holds plain
   // modules the tests import, which the parent's *.test.ts pattern does not catch.
-  // Read by scripts/docker/build-api-production.mjs, not by `pnpm build`.
+  // Read by scripts/docker/build-api-production.mjs, and by nothing else. This package
+  // has no `build` script on purpose: `main`/`types` point at src/, every workspace
+  // consumer resolves the TypeScript source, and 14 sibling packages are shaped the same
+  // way (turbo skips a missing task silently, so root `pnpm build` stays clean). The npm
+  // tarball is source-only too -- `files` lists src/** alone, matching what `npm pack`
+  // actually produces. The one consumer of compiled output is the production API image,
+  // which invokes this config directly and copies src/schema -> dist/schema for the SDL.
+  // Do not add a `build` script that emits here: it would leave an unused dist/ beside
+  // the one that script builds, which is the stale-artifact hazard that made
+  // @grantjs/client and @grantjs/server type-check non-deterministically (pass 7, 0.2).
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts", "src/test-support/**"]
 }

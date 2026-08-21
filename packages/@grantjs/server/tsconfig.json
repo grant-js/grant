@@ -9,9 +9,13 @@
     "moduleResolution": "bundler",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "paths": {
-      "@grantjs/schema": ["../schema/dist/index.d.ts"]
-    }
+    // Neutralises the root tsconfig's `@grantjs/*` -> ./packages/@grantjs/* mapping.
+    // A child `paths` REPLACES the inherited one, so this must be an explicit empty
+    // object: deleting the key entirely re-inherits the root mapping, which resolves
+    // @grantjs/schema to its .ts source and fails with TS6059 (source outside this
+    // package's inferred rootDir). Empty means "no mapping" -> normal node resolution
+    // through the workspace symlink, which is what actually works here.
+    "paths": {}
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
