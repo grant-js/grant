@@ -117,6 +117,7 @@ app/ , components/
 - `apps/api/src/lib/errors/` re-exports both and adds GraphQL error formatting.
 - Always use domain-specific errors (e.g. `NotFoundError`, `ValidationError`, `ConfigurationError`) instead of raw `throw new Error(...)`.
 - **`@grantjs/env` is exempt, and the exemption is structural, not an oversight.** The hierarchy lives in `@grantjs/core`, and `env` declares **no `@grantjs/*` dependency at all** — it parses the environment before anything else in the graph loads, and its ESLint rule (`eslint.config.mjs`, `INTERNAL_PACKAGE_DEPS.env = []`) forbids every workspace import. Complying would mean taking a dependency on `core` in the one package deliberately kept dependency-free, so `env/src/load-env.ts` keeps its raw `Error`. Any new throw in `env` does the same. This is the rubric's "unfollowable rule" case: recorded against the rule, not fixed in the code.
+- **The published trio is exempt for the same structural reason, one step further out.** `@grantjs/server` declares its own `GrantServerError` hierarchy (shadowing four of core's names), `client` throws 3 raw `Error`s and `cli` 18. Importing `@grantjs/core` to comply would add a **private, unpublished** workspace package to the npm dependency graph of packages consumers install. Complying is not possible, so the exemption is recorded here rather than worked around in the code. Pass 7, `docs/contributing/code-quality/published-packages.md` § Tier 3.1.
 
 ## Development workflow (order of work)
 
