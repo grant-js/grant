@@ -4,9 +4,12 @@
   "type": "module",
   "scripts": {
     "build": "nest build",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
     "start": "dotenv -e .env -- nest start",
     "start:dev": "dotenv -e .env -- nest start --watch",
-    "start:prod": "node dist/main"
+    "start:prod": "node dist/main",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@grantjs/server": "workspace:*",

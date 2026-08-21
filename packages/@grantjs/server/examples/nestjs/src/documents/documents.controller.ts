@@ -1,3 +1,4 @@
+import type { AuthorizedRequest } from '@grantjs/server/nest';
 import { Grant, GrantGuard } from '@grantjs/server/nest';
 import {
   Body,
@@ -16,8 +17,6 @@ import {
 } from '@nestjs/common';
 
 import { DocumentsService } from './documents.service.js';
-
-import type { AuthorizedRequest } from '@grantjs/server/nest';
 
 @Controller('documents')
 export class DocumentsController {

@@ -30,11 +30,13 @@
     "@grantjs/core",
     "@grantjs/database",
     "@grantjs/email",
+    "@grantjs/env",
     "@grantjs/errors",
     "@grantjs/i18n",
     "@grantjs/jobs",
     "@grantjs/logger",
     "@grantjs/storage",
-    "@grantjs/telemetry"
+    "@grantjs/telemetry",
+    "@grantjs/webhooks"
   ]
 }

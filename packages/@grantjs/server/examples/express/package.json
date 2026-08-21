@@ -3,7 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "pnpm exec tsx server.ts"
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "start": "pnpm exec tsx server.ts",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@grantjs/server": "workspace:*",
