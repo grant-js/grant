@@ -110,7 +110,7 @@ export const envSchema = z.object({
   CDM_MAX_JSON_DEPTH: optionalNumber(16),
 
   // Cache / Redis
-  CACHE_STRATEGY: z.enum(['memory', 'redis']).optional().default('memory'),
+  CACHE_STRATEGY: z.enum(['memory', 'redis', 'dynamodb']).optional().default('memory'),
   CACHE_DEFAULT_TTL: optionalNumber(3600),
   CACHE_MAX_SIZE: optionalNumber(100 * 1024 * 1024),
   REDIS_HOST: optionalString('localhost'),
@@ -120,6 +120,15 @@ export const envSchema = z.object({
   REDIS_KEY_PREFIX: optionalString('grant:'),
   REDIS_CONNECTION_TIMEOUT: optionalNumber(10000),
   REDIS_ENABLE_TLS: optionalBoolean(false),
+
+  // Cache / DynamoDB (CACHE_STRATEGY=dynamodb). Credentials are optional on
+  // purpose: leave them unset to use the default AWS credential chain, so a task
+  // or Lambda role supplies them and no secret is configured here.
+  CACHE_DYNAMODB_TABLE: optionalString('grant-cache'),
+  CACHE_DYNAMODB_REGION: optionalString('us-east-1'),
+  CACHE_DYNAMODB_ENDPOINT: optionalString(''),
+  CACHE_DYNAMODB_ACCESS_KEY_ID: optionalString(''),
+  CACHE_DYNAMODB_SECRET_ACCESS_KEY: optionalString(''),
 
   // Security
   SECURITY_FRONTEND_URL: optionalString('http://localhost:3000'),

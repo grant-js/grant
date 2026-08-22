@@ -1,10 +1,11 @@
 import type { IEntityCacheAdapter, ILoggerFactory } from '@grantjs/core';
 import { ConfigurationError, noopLogger } from '@grantjs/core';
 
+import { DynamoDbCacheAdapter, type DynamoDbCacheConfig } from './dynamodb';
 import { InMemoryCacheAdapter } from './memory';
 import { RedisCacheAdapter } from './redis';
 
-type CacheStrategy = 'memory' | 'redis';
+type CacheStrategy = 'memory' | 'redis' | 'dynamodb';
 
 interface CacheConfig {
   strategy: CacheStrategy;
@@ -16,6 +17,8 @@ interface CacheConfig {
     db?: number;
     prefix?: string;
   };
+  /** `namespace` is supplied per entity type by the factory, not by the caller. */
+  dynamodb?: Omit<DynamoDbCacheConfig, 'namespace'>;
 }
 
 const entityTypes = [
@@ -80,6 +83,22 @@ export class CacheFactory {
             prefix: namespace ? `grant:${namespace}:` : 'grant:cache:',
           },
           loggerFactory?.createLogger(`RedisCacheAdapter:${namespace ?? 'default'}`) ?? noopLogger
+        );
+
+      case 'dynamodb':
+        if (!config.dynamodb) {
+          throw new ConfigurationError(
+            'DynamoDB configuration is required when using dynamodb strategy'
+          );
+        }
+        return new DynamoDbCacheAdapter(
+          {
+            ...config.dynamodb,
+            // Mirrors the Redis prefix scheme: one partition per entity type.
+            namespace: namespace ? `grant:${namespace}` : 'grant:cache',
+          },
+          loggerFactory?.createLogger(`DynamoDbCacheAdapter:${namespace ?? 'default'}`) ??
+            noopLogger
         );
 
       case 'memory':
