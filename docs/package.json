@@ -14,13 +14,13 @@
   },
   "devDependencies": {
     "@braintree/sanitize-url": "^7.1.1",
-    "@iconify-json/fluent": "^1.2.53",
+    "@iconify-json/fluent": "^1.2.56",
     "@iconify-json/fluent-color": "^1.2.21",
     "@mermaid-js/mermaid-mindmap": "9.3.0",
-    "@types/node": "^26.1.1",
-    "cytoscape": "^3.34.0",
+    "@types/node": "^26.2.0",
+    "cytoscape": "^3.34.1",
     "cytoscape-cose-bilkent": "^4.1.0",
-    "dayjs": "^1.11.21",
+    "dayjs": "^1.11.23",
     "debug": "^4.4.0",
     "mermaid": "11.16.1",
     "typescript": "^6.0.3",
@@ -29,7 +29,7 @@
     "vitepress": "^1.6.4",
     "vitepress-plugin-codeblocks-fold": "^1.2.35",
     "vitepress-plugin-mermaid": "2.0.17",
-    "vue": "^3.5.40"
+    "vue": "^3.5.41"
   },
   "keywords": [
     "documentation",

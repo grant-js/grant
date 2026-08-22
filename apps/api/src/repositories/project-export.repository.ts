@@ -62,8 +62,15 @@ export interface ProjectUserWithRoleIds {
   metadata: Record<string, unknown>;
 }
 
+/** Public identity fields for deriving a CDM export key (no secrets). */
+export interface ProjectUserApiKeyExportIdentity {
+  clientId: string;
+  userId: string;
+}
+
 /** Join row for CDM export of `project_user_api_keys` + `api_keys` (no secrets). */
 export interface ProjectUserApiKeyCdmExportRow {
+  apiKeyId: string;
   userId: string;
   pivotMetadata: Record<string, unknown>;
   clientId: string;
@@ -487,6 +494,7 @@ export class ProjectExportRepository {
 
     const rows = await dbInstance
       .select({
+        apiKeyId: projectUserApiKeys.apiKeyId,
         userId: projectUserApiKeys.userId,
         pivotMetadata: projectUserApiKeys.metadata,
         clientId: apiKeys.clientId,
@@ -506,6 +514,7 @@ export class ProjectExportRepository {
       );
 
     return rows.map((r) => ({
+      apiKeyId: r.apiKeyId,
       userId: r.userId,
       pivotMetadata:
         r.pivotMetadata != null &&
@@ -518,6 +527,44 @@ export class ProjectExportRepository {
       description: r.description,
       expiresAt: r.expiresAt,
     }));
+  }
+
+  /**
+   * Resolve public identity fields for CDM export keys. Separate from
+   * {@link getProjectUserApiKeysForCdmExport} so export-key derivation does not
+   * reuse credential-tainted row objects in static analysis.
+   */
+  public async getProjectUserApiKeyExportIdentities(
+    projectId: string,
+    apiKeyIds: readonly string[],
+    transaction?: Transaction
+  ): Promise<Map<string, ProjectUserApiKeyExportIdentity>> {
+    if (apiKeyIds.length === 0) {
+      return new Map();
+    }
+
+    const dbInstance = transaction ?? this.db;
+    const rows = await dbInstance
+      .select({
+        apiKeyId: projectUserApiKeys.apiKeyId,
+        userId: projectUserApiKeys.userId,
+        clientId: apiKeys.clientId,
+      })
+      .from(projectUserApiKeys)
+      .innerJoin(apiKeys, eq(apiKeys.id, projectUserApiKeys.apiKeyId))
+      .where(
+        and(
+          eq(projectUserApiKeys.projectId, projectId),
+          inArray(projectUserApiKeys.apiKeyId, [...apiKeyIds]),
+          isNull(projectUserApiKeys.deletedAt),
+          isNull(apiKeys.deletedAt),
+          eq(apiKeys.isRevoked, false)
+        )
+      );
+
+    return new Map(
+      rows.map((row) => [row.apiKeyId, { clientId: row.clientId, userId: row.userId }])
+    );
   }
 
   /**

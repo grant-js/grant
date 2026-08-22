@@ -69,13 +69,13 @@
     }
   },
   "devDependencies": {
-    "mailgun.js": "^13.3.0",
+    "mailgun.js": "^14.0.0",
     "form-data": "^4.0.6",
     "node-mailjet": "^6.0.6",
-    "@aws-sdk/client-ses": "^3.1090.0",
-    "nodemailer": "^9.0.3",
+    "@aws-sdk/client-ses": "^3.1112.0",
+    "nodemailer": "^9.0.5",
     "@types/nodemailer": "^8.0.1",
-    "@types/node": "^26.1.1",
+    "@types/node": "^26.2.0",
     "typescript": "^6.0.3"
   },
   "license": "MIT"
