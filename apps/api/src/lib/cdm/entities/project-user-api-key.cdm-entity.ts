@@ -165,29 +165,31 @@ export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
       );
     }
 
-    return rows.map((r) => {
-      const cdm = r.pivotMetadata[CDM_IMPORT_METADATA_KEY] as CdmImportMetadataBlock | undefined;
+    return rows.map((row) => {
+      const { clientId, userId, name, description, expiresAt, pivotMetadata } = row;
+      const cdm = pivotMetadata[CDM_IMPORT_METADATA_KEY] as CdmImportMetadataBlock | undefined;
       const importerExternalKey =
         cdm?.externalKey != null && cdm.externalKey !== '' ? cdm.externalKey : null;
-      const externalKey = importerExternalKey ?? buildExternalKey('apikey', r.clientId, r.userId);
-      const userKey = provisionKeyByUserId.get(r.userId);
+      // codeql[js/insufficient-password-hash]: externalKey derives from clientId/userId only; export query never selects clientSecret.
+      const externalKey = importerExternalKey ?? buildExternalKey('apikey', clientId, userId);
+      const userKey = provisionKeyByUserId.get(userId);
       const base = {
-        clientId: r.clientId,
-        name: r.name ?? undefined,
-        description: r.description ?? undefined,
+        clientId,
+        name: name ?? undefined,
+        description: description ?? undefined,
         expiresAt:
-          r.expiresAt != null
-            ? r.expiresAt instanceof Date
-              ? r.expiresAt
-              : new Date(String(r.expiresAt))
+          expiresAt != null
+            ? expiresAt instanceof Date
+              ? expiresAt
+              : new Date(String(expiresAt))
             : undefined,
         externalKey,
-        metadata: extractProjectUserMetadataForCdmExport(r.pivotMetadata) ?? undefined,
+        metadata: extractProjectUserMetadataForCdmExport(pivotMetadata) ?? undefined,
       };
       if (userKey != null) {
         return { ...base, userKey, userId: undefined };
       }
-      return { ...base, userId: r.userId, userKey: undefined };
+      return { ...base, userId, userKey: undefined };
     });
   }
 }

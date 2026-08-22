@@ -34,7 +34,7 @@
   "peerDependencies": {
     "@aws-sdk/client-s3": "^3",
     "@aws-sdk/s3-request-presigner": "^3",
-    "typescript": "^7.0.2"
+    "typescript": "^6.0.3"
   },
   "peerDependenciesMeta": {
     "@aws-sdk/client-s3": {
@@ -48,7 +48,7 @@
     "@aws-sdk/client-s3": "^3.1112.0",
     "@aws-sdk/s3-request-presigner": "^3.1112.0",
     "@types/node": "^26.2.0",
-    "typescript": "^7.0.2"
+    "typescript": "^6.0.3"
   },
   "license": "MIT"
 }

@@ -33,7 +33,7 @@
   },
   "peerDependencies": {
     "ioredis": "^5",
-    "typescript": "^7.0.2"
+    "typescript": "^6.0.3"
   },
   "peerDependenciesMeta": {
     "ioredis": {
@@ -41,9 +41,9 @@
     }
   },
   "devDependencies": {
-    "ioredis": "^6.0.0",
+    "ioredis": "^5.11.1",
     "@types/node": "^26.2.0",
-    "typescript": "^7.0.2"
+    "typescript": "^6.0.3"
   },
   "license": "MIT"
 }

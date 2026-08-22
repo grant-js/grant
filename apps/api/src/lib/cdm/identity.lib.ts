@@ -23,10 +23,10 @@ import { createHash } from 'node:crypto';
  */
 export function stableHash(...inputs: ReadonlyArray<string>): string {
   const joined = inputs.map((s) => String(s ?? '')).join('\u001f');
-  // codeql[js/insufficient-password-hash]: Not password hashing — SHA-256 derives
-  // opaque CDM external keys from non-secret identity material (ids / labels).
-  // Password/secret storage uses bcrypt via hashSecret() in token.lib.ts.
-  return createHash('sha256').update(joined).digest('hex').slice(0, 16);
+  return (
+    // codeql[js/insufficient-password-hash]: Not password hashing — SHA-256 derives opaque CDM external keys from non-secret identity material.
+    createHash('sha256').update(joined).digest('hex').slice(0, 16)
+  );
 }
 
 /**

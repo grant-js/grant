@@ -23,7 +23,7 @@
     "dayjs": "^1.11.23",
     "debug": "^4.4.0",
     "mermaid": "11.16.1",
-    "typescript": "^7.0.2",
+    "typescript": "^6.0.3",
     "unplugin-icons": "^23.0.1",
     "unplugin-vue-components": "^32.1.0",
     "vitepress": "^1.6.4",
