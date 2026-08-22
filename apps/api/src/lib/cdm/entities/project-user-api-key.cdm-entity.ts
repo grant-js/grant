@@ -142,8 +142,8 @@ export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
    * Project current `project_user_api_keys` rows back to `ProjectUserApiKeyCdmInput[]`.
    *
    * Identity: prefer `metadata.cdmImport.externalKey` from the pivot (set on import);
-   * otherwise `externalKey = buildExternalKey('apikey', apiKeyId, userId)` so rows
-   * without importer identity still get a deterministic key from Grant row ids.
+   * otherwise `externalKey = buildExternalKey('apikey', clientId, userId)` using
+   * identity resolved by {@link ProjectExportRepository.getProjectUserApiKeyExportIdentities}.
    *
    * The Grant client id is preserved on the row itself (not as identity); the
    * importer-supplied `cdmSource` history is preserved via
@@ -165,12 +165,32 @@ export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
       );
     }
 
+    const derivedKeyApiKeyIds = rows
+      .filter((row) => {
+        const cdm = row.pivotMetadata[CDM_IMPORT_METADATA_KEY] as CdmImportMetadataBlock | undefined;
+        const importerExternalKey = cdm?.externalKey;
+        return importerExternalKey == null || importerExternalKey === '';
+      })
+      .map((row) => row.apiKeyId);
+    const exportIdentities = await this.exportRepo.getProjectUserApiKeyExportIdentities(
+      ctx.projectId,
+      derivedKeyApiKeyIds,
+      tx
+    );
+
     return rows.map((row) => {
       const { apiKeyId, clientId, userId, name, description, expiresAt, pivotMetadata } = row;
       const cdm = pivotMetadata[CDM_IMPORT_METADATA_KEY] as CdmImportMetadataBlock | undefined;
       const importerExternalKey =
         cdm?.externalKey != null && cdm.externalKey !== '' ? cdm.externalKey : null;
-      const externalKey = importerExternalKey ?? buildExternalKey('apikey', apiKeyId, userId);
+      const identity = exportIdentities.get(apiKeyId);
+      if (importerExternalKey == null && identity == null) {
+        throw new ValidationError(
+          `projectUserApiKeys: missing export identity for apiKeyId ${apiKeyId}`
+        );
+      }
+      const externalKey =
+        importerExternalKey ?? buildExternalKey('apikey', identity!.clientId, identity!.userId);
       const userKey = provisionKeyByUserId.get(userId);
       const base = {
         clientId,

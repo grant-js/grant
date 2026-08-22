@@ -45,6 +45,7 @@ function buildHandler(deps?: {
   importRepo?: { listCdmProjectUserApiKeyIdsForProject: ReturnType<typeof vi.fn> };
   exportRepo?: {
     getProjectUserApiKeysForCdmExport: ReturnType<typeof vi.fn>;
+    getProjectUserApiKeyExportIdentities: ReturnType<typeof vi.fn>;
     getProjectCdmProvisionedUsers: ReturnType<typeof vi.fn>;
   };
   apiKeys?: {
@@ -58,6 +59,7 @@ function buildHandler(deps?: {
   };
   const exportRepo = deps?.exportRepo ?? {
     getProjectUserApiKeysForCdmExport: vi.fn().mockResolvedValue([]),
+    getProjectUserApiKeyExportIdentities: vi.fn().mockResolvedValue(new Map()),
     getProjectCdmProvisionedUsers: vi.fn().mockResolvedValue([]),
   };
   const apiKeys = deps?.apiKeys ?? {
@@ -268,6 +270,7 @@ describe('ProjectUserApiKeyCdmEntity', () => {
     const { handler, exportRepo } = buildHandler({
       exportRepo: {
         getProjectUserApiKeysForCdmExport,
+        getProjectUserApiKeyExportIdentities: vi.fn().mockResolvedValue(new Map()),
         getProjectCdmProvisionedUsers: vi.fn().mockResolvedValue([]),
       },
     });
@@ -291,7 +294,7 @@ describe('ProjectUserApiKeyCdmEntity', () => {
     expect(out[0]).not.toHaveProperty('clientSecret');
   });
 
-  it('export derives externalKey from apiKeyId and userId when cdmImport key is absent', async () => {
+  it('export derives externalKey from export identity when cdmImport key is absent', async () => {
     const getProjectUserApiKeysForCdmExport = vi.fn().mockResolvedValue([
       {
         apiKeyId,
@@ -303,15 +306,24 @@ describe('ProjectUserApiKeyCdmEntity', () => {
         pivotMetadata: {},
       },
     ]);
-    const { handler } = buildHandler({
+    const getProjectUserApiKeyExportIdentities = vi.fn().mockResolvedValue(
+      new Map([[apiKeyId, { clientId: 'client-id-1', userId }]])
+    );
+    const { handler, exportRepo } = buildHandler({
       exportRepo: {
         getProjectUserApiKeysForCdmExport,
+        getProjectUserApiKeyExportIdentities,
         getProjectCdmProvisionedUsers: vi.fn().mockResolvedValue([]),
       },
     });
 
     const out = await handler.export({ projectId, scope });
 
-    expect(out[0]?.externalKey).toBe(buildExternalKey('apikey', apiKeyId, userId));
+    expect(exportRepo.getProjectUserApiKeyExportIdentities).toHaveBeenCalledWith(
+      projectId,
+      [apiKeyId],
+      undefined
+    );
+    expect(out[0]?.externalKey).toBe(buildExternalKey('apikey', 'client-id-1', userId));
   });
 });
