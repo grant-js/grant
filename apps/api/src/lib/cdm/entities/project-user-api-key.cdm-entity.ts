@@ -142,8 +142,8 @@ export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
    * Project current `project_user_api_keys` rows back to `ProjectUserApiKeyCdmInput[]`.
    *
    * Identity: prefer `metadata.cdmImport.externalKey` from the pivot (set on import);
-   * otherwise `externalKey = buildExternalKey('apikey', clientId, userId)` so rows
-   * without importer identity still get a deterministic key.
+   * otherwise `externalKey = buildExternalKey('apikey', apiKeyId, userId)` so rows
+   * without importer identity still get a deterministic key from Grant row ids.
    *
    * The Grant client id is preserved on the row itself (not as identity); the
    * importer-supplied `cdmSource` history is preserved via
@@ -166,12 +166,11 @@ export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
     }
 
     return rows.map((row) => {
-      const { clientId, userId, name, description, expiresAt, pivotMetadata } = row;
+      const { apiKeyId, clientId, userId, name, description, expiresAt, pivotMetadata } = row;
       const cdm = pivotMetadata[CDM_IMPORT_METADATA_KEY] as CdmImportMetadataBlock | undefined;
       const importerExternalKey =
         cdm?.externalKey != null && cdm.externalKey !== '' ? cdm.externalKey : null;
-      // codeql[js/insufficient-password-hash]: externalKey derives from clientId/userId only; export query never selects clientSecret.
-      const externalKey = importerExternalKey ?? buildExternalKey('apikey', clientId, userId);
+      const externalKey = importerExternalKey ?? buildExternalKey('apikey', apiKeyId, userId);
       const userKey = provisionKeyByUserId.get(userId);
       const base = {
         clientId,

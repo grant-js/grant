@@ -64,6 +64,7 @@ export interface ProjectUserWithRoleIds {
 
 /** Join row for CDM export of `project_user_api_keys` + `api_keys` (no secrets). */
 export interface ProjectUserApiKeyCdmExportRow {
+  apiKeyId: string;
   userId: string;
   pivotMetadata: Record<string, unknown>;
   clientId: string;
@@ -487,6 +488,7 @@ export class ProjectExportRepository {
 
     const rows = await dbInstance
       .select({
+        apiKeyId: projectUserApiKeys.apiKeyId,
         userId: projectUserApiKeys.userId,
         pivotMetadata: projectUserApiKeys.metadata,
         clientId: apiKeys.clientId,
@@ -506,6 +508,7 @@ export class ProjectExportRepository {
       );
 
     return rows.map((r) => ({
+      apiKeyId: r.apiKeyId,
       userId: r.userId,
       pivotMetadata:
         r.pivotMetadata != null &&

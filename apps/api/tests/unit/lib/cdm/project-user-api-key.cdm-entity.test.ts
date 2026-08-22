@@ -4,10 +4,12 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { CDM_IMPORT_METADATA_KEY } from '@/constants/cdm-import.constants';
 import { ProjectUserApiKeyCdmEntity } from '@/lib/cdm/entities/project-user-api-key.cdm-entity';
+import { buildExternalKey } from '@/lib/cdm/identity.lib';
 
 const projectId = '10000000-0000-4000-8000-000000000011';
 const accountId = '20000000-0000-4000-8000-000000000020';
 const userId = '30000000-0000-4000-8000-000000000099';
+const apiKeyId = '40000000-0000-4000-8000-000000000001';
 const scope: Scope = { tenant: Tenant.AccountProject, id: `${accountId}:${projectId}` };
 
 const BYOK_SECRET = 'x'.repeat(32);
@@ -247,6 +249,7 @@ describe('ProjectUserApiKeyCdmEntity', () => {
     const expires = new Date('2027-01-15T00:00:00.000Z');
     const getProjectUserApiKeysForCdmExport = vi.fn().mockResolvedValue([
       {
+        apiKeyId,
         userId,
         clientId: 'client-id-1',
         name: 'Key A',
@@ -286,5 +289,29 @@ describe('ProjectUserApiKeyCdmEntity', () => {
       })
     );
     expect(out[0]).not.toHaveProperty('clientSecret');
+  });
+
+  it('export derives externalKey from apiKeyId and userId when cdmImport key is absent', async () => {
+    const getProjectUserApiKeysForCdmExport = vi.fn().mockResolvedValue([
+      {
+        apiKeyId,
+        userId,
+        clientId: 'client-id-1',
+        name: 'Key A',
+        description: null,
+        expiresAt: null,
+        pivotMetadata: {},
+      },
+    ]);
+    const { handler } = buildHandler({
+      exportRepo: {
+        getProjectUserApiKeysForCdmExport,
+        getProjectCdmProvisionedUsers: vi.fn().mockResolvedValue([]),
+      },
+    });
+
+    const out = await handler.export({ projectId, scope });
+
+    expect(out[0]?.externalKey).toBe(buildExternalKey('apikey', apiKeyId, userId));
   });
 });
