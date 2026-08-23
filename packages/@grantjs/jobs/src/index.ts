@@ -1,3 +1,4 @@
+export * from './aws';
 export { Job } from './base/job';
 export * from './bullmq';
 export * from './factory';

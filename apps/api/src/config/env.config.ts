@@ -666,6 +666,19 @@ const JOB_CONFIG = {
         }
       : undefined,
 
+  /**
+   * AWS backing services (`JOBS_PROVIDER=aws`). SQS carries one-off jobs;
+   * recurring schedules are EventBridge rules owned by infrastructure, so the
+   * application registers handlers but never creates a schedule.
+   */
+  aws: {
+    region: env.JOBS_AWS_REGION,
+    queueUrl: env.JOBS_AWS_QUEUE_URL,
+    endpoint: env.JOBS_AWS_ENDPOINT || undefined,
+    accessKeyId: env.JOBS_AWS_ACCESS_KEY_ID || undefined,
+    secretAccessKey: env.JOBS_AWS_SECRET_ACCESS_KEY || undefined,
+  },
+
   /** Job-specific settings */
   dataRetention: {
     /** Cron pattern for data retention cleanup */

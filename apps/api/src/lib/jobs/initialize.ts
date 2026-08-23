@@ -30,6 +30,7 @@ export async function initializeJobs(appContext: AppContext): Promise<void> {
     {
       provider: config.jobs.provider,
       redis: config.jobs.redis,
+      aws: config.jobs.provider === 'aws' ? config.jobs.aws : undefined,
       bullmqJobOptions: config.jobs.bullmq,
     },
     loggerFactory

@@ -41,9 +41,21 @@ export interface EnqueueJobData {
  */
 export interface IJobAdapter {
   /**
-   * Schedule a recurring job
-   * @param job - Job configuration (id, name, schedule)
-   * @param handler - Function to execute when job runs
+   * Register a job's handler and, where the provider owns scheduling, start its
+   * recurrence.
+   *
+   * **Who owns recurrence is provider-dependent, and callers must not assume.**
+   * - Node-cron and BullMQ create the recurring timer here, from `job.schedule`.
+   * - Providers backed by external schedulers (e.g. EventBridge rules created by
+   *   infrastructure) only register the handler; `job.schedule` is documentation
+   *   and the recurrence is provisioned outside the application. Calling
+   *   `schedule()` on those does not, by itself, cause the job to ever run.
+   *
+   * Registration is the part every provider does, and is what makes `trigger()`
+   * and `enqueue()` able to find the handler.
+   *
+   * @param job - Job configuration (id, schedule, enabled, enqueueOnly)
+   * @param handler - Function to execute when the job runs
    */
   schedule(job: ScheduledJob, handler: JobHandler): Promise<void>;
 
@@ -76,10 +88,25 @@ export interface IJobAdapter {
   getScheduledJobs(): Promise<ScheduledJob[]>;
 
   /**
-   * Trigger a job manually (for testing/admin)
-   * @param jobId - Unique job identifier
+   * Run a registered job now, in this process, and return its result.
+   *
+   * This is the execution entry point for a job whose trigger arrived from
+   * outside the application — an external scheduler firing, or a queued message
+   * being consumed — as well as for manual admin and test invocations.
+   *
+   * `data` carries the tenant context and payload for those externally delivered
+   * executions. **Scope must originate from the enqueueing request's
+   * authenticated context**, never from client input; it survives transport as
+   * part of the message and is re-validated by the job via
+   * `validateTenantJobContext`.
+   *
+   * Contrast with `enqueue()`, which asks for the job to happen *eventually*,
+   * possibly in another process. `trigger()` runs it here and now.
+   *
+   * @param jobId - Registered job id
+   * @param data - Optional scope and payload for this execution
    */
-  trigger(jobId: string): Promise<JobResult>;
+  trigger(jobId: string, data?: EnqueueJobData): Promise<JobResult>;
 
   /**
    * Shutdown and cleanup job adapter
