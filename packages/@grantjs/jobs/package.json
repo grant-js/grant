@@ -57,10 +57,10 @@
     }
   },
   "devDependencies": {
-    "@aws-sdk/client-sqs": "^3.1090.0",
-    "@types/node": "^26.1.1",
+    "@aws-sdk/client-sqs": "^3.1113.0",
+    "@types/node": "^26.2.0",
     "@types/node-cron": "^3.0.11",
-    "bullmq": "^5.80.9",
+    "bullmq": "^5.81.3",
     "node-cron": "^4.6.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"

@@ -142,8 +142,8 @@ export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
    * Project current `project_user_api_keys` rows back to `ProjectUserApiKeyCdmInput[]`.
    *
    * Identity: prefer `metadata.cdmImport.externalKey` from the pivot (set on import);
-   * otherwise `externalKey = buildExternalKey('apikey', clientId, userId)` so rows
-   * without importer identity still get a deterministic key.
+   * otherwise `externalKey = buildExternalKey('apikey', clientId, userId)` using
+   * identity resolved by {@link ProjectExportRepository.getProjectUserApiKeyExportIdentities}.
    *
    * The Grant client id is preserved on the row itself (not as identity); the
    * importer-supplied `cdmSource` history is preserved via
@@ -165,29 +165,51 @@ export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
       );
     }
 
-    return rows.map((r) => {
-      const cdm = r.pivotMetadata[CDM_IMPORT_METADATA_KEY] as CdmImportMetadataBlock | undefined;
+    const derivedKeyApiKeyIds = rows
+      .filter((row) => {
+        const cdm = row.pivotMetadata[CDM_IMPORT_METADATA_KEY] as
+          CdmImportMetadataBlock | undefined;
+        const importerExternalKey = cdm?.externalKey;
+        return importerExternalKey == null || importerExternalKey === '';
+      })
+      .map((row) => row.apiKeyId);
+    const exportIdentities = await this.exportRepo.getProjectUserApiKeyExportIdentities(
+      ctx.projectId,
+      derivedKeyApiKeyIds,
+      tx
+    );
+
+    return rows.map((row) => {
+      const { apiKeyId, clientId, userId, name, description, expiresAt, pivotMetadata } = row;
+      const cdm = pivotMetadata[CDM_IMPORT_METADATA_KEY] as CdmImportMetadataBlock | undefined;
       const importerExternalKey =
         cdm?.externalKey != null && cdm.externalKey !== '' ? cdm.externalKey : null;
-      const externalKey = importerExternalKey ?? buildExternalKey('apikey', r.clientId, r.userId);
-      const userKey = provisionKeyByUserId.get(r.userId);
+      const identity = exportIdentities.get(apiKeyId);
+      if (importerExternalKey == null && identity == null) {
+        throw new ValidationError(
+          `projectUserApiKeys: missing export identity for apiKeyId ${apiKeyId}`
+        );
+      }
+      const externalKey =
+        importerExternalKey ?? buildExternalKey('apikey', identity!.clientId, identity!.userId);
+      const userKey = provisionKeyByUserId.get(userId);
       const base = {
-        clientId: r.clientId,
-        name: r.name ?? undefined,
-        description: r.description ?? undefined,
+        clientId,
+        name: name ?? undefined,
+        description: description ?? undefined,
         expiresAt:
-          r.expiresAt != null
-            ? r.expiresAt instanceof Date
-              ? r.expiresAt
-              : new Date(String(r.expiresAt))
+          expiresAt != null
+            ? expiresAt instanceof Date
+              ? expiresAt
+              : new Date(String(expiresAt))
             : undefined,
         externalKey,
-        metadata: extractProjectUserMetadataForCdmExport(r.pivotMetadata) ?? undefined,
+        metadata: extractProjectUserMetadataForCdmExport(pivotMetadata) ?? undefined,
       };
       if (userKey != null) {
         return { ...base, userKey, userId: undefined };
       }
-      return { ...base, userId: r.userId, userKey: undefined };
+      return { ...base, userId, userKey: undefined };
     });
   }
 }
