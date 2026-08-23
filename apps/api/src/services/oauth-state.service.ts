@@ -1,5 +1,3 @@
-import { MILLISECONDS_PER_MINUTE } from '@grantjs/constants';
-
 import { OAUTH_STATE_KEY_PREFIX } from '@/constants/cache.constants';
 import { CacheKey, ICacheAdapter } from '@/lib/cache';
 import { createLogger } from '@/lib/logger';
@@ -14,20 +12,20 @@ interface StoredState extends OAuthState {
 
 import type { IOAuthStateService } from '@grantjs/core';
 
+/**
+ * OAuth CSRF state storage.
+ *
+ * Expiry is owned by the cache adapter TTL (and a defensive expiresAt check on
+ * read). Do not add a process-wide cleanup timer here: createServices() runs
+ * per request, so a constructor setInterval would leak one timer per request
+ * and can saturate Redis with KEYS scans (observed on the demo stack).
+ */
 export class OAuthStateService implements IOAuthStateService {
   private readonly logger = createLogger('OAuthStateService');
   private readonly cache: ICacheAdapter;
-  private readonly cleanupInterval: NodeJS.Timeout;
 
   constructor(cache: ICacheAdapter) {
     this.cache = cache;
-    this.cleanupInterval = setInterval(() => {
-      // Timer callbacks cannot await; an unhandled rejection here would be fatal
-      // to the process, so failures are logged and the next tick retries.
-      void this.cleanupExpiredStates().catch((err) => {
-        this.logger.error({ err, msg: 'Failed to clean up expired OAuth states' });
-      });
-    }, 5 * MILLISECONDS_PER_MINUTE);
   }
 
   async storeState(state: OAuthState, ttlSeconds: number = 600): Promise<void> {
@@ -43,7 +41,7 @@ export class OAuthStateService implements IOAuthStateService {
 
     const cacheKey = this.getCacheKey(validatedState.state);
     const serializedState = JSON.stringify(storedState);
-    await this.cache.set(cacheKey, new Set([serializedState]));
+    await this.cache.set(cacheKey, new Set([serializedState]), ttlSeconds);
 
     this.logger.debug({
       msg: 'Stored OAuth state',
@@ -123,46 +121,10 @@ export class OAuthStateService implements IOAuthStateService {
     return true;
   }
 
-  private async cleanupExpiredStates(): Promise<void> {
-    const now = Date.now();
-    let cleaned = 0;
-
-    const keys = await this.cache.keys(`${OAUTH_STATE_KEY_PREFIX}*`);
-    for (const key of keys) {
-      const cachedValue = await this.cache.get(key);
-      if (cachedValue && cachedValue.size > 0) {
-        try {
-          const serializedState = Array.from(cachedValue)[0];
-          const storedState: StoredState = JSON.parse(serializedState);
-          if (now > storedState.expiresAt) {
-            await this.cache.delete(key);
-            cleaned++;
-          }
-        } catch (error) {
-          this.logger.warn({
-            msg: 'Failed to parse cached OAuth state during cleanup',
-            key,
-            err: error,
-          });
-          await this.cache.delete(key);
-          cleaned++;
-        }
-      }
-    }
-
-    if (cleaned > 0) {
-      this.logger.debug({
-        msg: 'Cleaned up expired OAuth states',
-        count: cleaned,
-      });
-    }
-  }
-
   private getCacheKey(stateToken: string): CacheKey {
     return `${OAUTH_STATE_KEY_PREFIX}${stateToken}` as CacheKey;
   }
 
-  destroy(): void {
-    clearInterval(this.cleanupInterval);
-  }
+  /** No-op; retained for {@link IOAuthStateService} compatibility. */
+  destroy(): void {}
 }
