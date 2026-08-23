@@ -33,8 +33,10 @@ organization.
 | **B** | `aws-lambda-runtime` | [brief](./2026-08-21-aws-lambda-runtime-brief.md)                                         | Lambda-capable entrypoint, secrets, image, telemetry    | CI proves no-regression; AWS behavior needs a deployed stack |
 | **C** | `aws-edge-infra`     | [brief](./2026-08-21-aws-edge-infra-brief.md)                                             | CDK app, config surface, CloudFront, OpenNext, docs     | Deployed AWS stack only                                      |
 
-**Phase A is approved through gate 2** (2026-08-21, Ale Heredia) and is the only
-story cleared to proceed. B and C are drafted now so the
+**Phase A is integrated** — all four slices merged to the story trunk on 2026-08-23
+(#305, #306, #309, #311); gate 4 (trunk → `main`) outstanding. Phase B takes its own
+gate 1 when queued, and its `file:line` citations need re-verifying first: they were
+written against `0592720c` and `main` has since moved. B and C are drafted now so the
 end state is visible and reviewable, not so they proceed. Each takes its own
 gate 1 when its turn comes.
 

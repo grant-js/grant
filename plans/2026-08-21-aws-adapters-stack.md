@@ -5,7 +5,9 @@
 - **Slug**: `aws-adapters`
 - **Story brief**: [`2026-08-21-aws-adapters-brief.md`](./2026-08-21-aws-adapters-brief.md) — approved 2026-08-21, Ale Heredia
 - **Program brief**: [`2026-08-21-aws-serverless-target-brief.md`](./2026-08-21-aws-serverless-target-brief.md) — phase **A** of three
-- **Status**: `approved` — gates 1 and 2 cleared 2026-08-21, Ale Heredia. No slice started.
+- **Status**: `integrated` — all four slices merged into the trunk (#305, #306, #309, #311)
+  on 2026-08-23. Gate 3 cleared. Gate 4 (trunk → `main`) outstanding.
+- **GitHub stack**: [#307](https://github.com/grant-js/grant/stacks/307)
 - **Story trunk**: `feat/aws-adapters`
 - **Base**: `main` at `0592720c` (pass 7 close-out, #303)
 - **worktree_path**: **not required** — `git worktree list` shows only the main
@@ -30,13 +32,15 @@ that cannot demonstrate that has failed regardless of what else it achieves.
 
 ## Ordered slices (PRs)
 
-| #     | Branch                                | Base    | Concern                                                         | Owner        | Review bar        | PR  |
-| ----- | ------------------------------------- | ------- | --------------------------------------------------------------- | ------------ | ----------------- | --- |
-| 1     | `feat/aws-adapters-cache-conformance` | trunk   | **Acceptance oracle.** Shared `ICacheAdapter` conformance suite | **QA**       | light             |     |
-| 2     | `feat/aws-adapters-localstack`        | slice 1 | LocalStack in dev + CI compose (DynamoDB, SQS, EventBridge)     | Backend      | light             |     |
-| 3     | `feat/aws-adapters-cache-dynamodb`    | slice 2 | `DynamoDbCacheAdapter` + `'dynamodb'` strategy                  | Backend      | **security-full** |     |
-| 4     | `feat/aws-adapters-jobs-aws`          | slice 3 | `AwsJobAdapter` + `'aws'` provider; port semantics documented   | Backend+Arch | **security-full** |     |
-| final | `feat/aws-adapters`                   | `main`  | integration                                                     | Principal    | **deep**          |     |
+| #     | Branch                                | Base    | Concern                                                         | Owner        | Review bar        | PR   |
+| ----- | ------------------------------------- | ------- | --------------------------------------------------------------- | ------------ | ----------------- | ---- |
+| 1     | `feat/aws-adapters-cache-conformance` | trunk   | **Acceptance oracle.** Shared `ICacheAdapter` conformance suite | **QA**       | light             | #305 |
+| 2     | `feat/aws-adapters-localstack`        | slice 1 | LocalStack + adapter integration lane, in the **e2e** stack¹    | Backend      | light             | #306 |
+| 3     | `feat/aws-adapters-cache-dynamodb`    | slice 2 | `DynamoDbCacheAdapter` + `'dynamodb'` strategy                  | Backend      | **security-full** | #309 |
+| 4     | `feat/aws-adapters-jobs-aws`          | slice 3 | `AwsJobAdapter` + `'aws'` provider; port semantics documented   | Backend+Arch | **security-full** | #311 |
+| final | `feat/aws-adapters`                   | `main`  | integration                                                     | Principal    | **deep**          |      |
+
+¹ Slice 2 shipped a different shape than planned — see [Deviations from plan](#deviations-from-plan).
 
 ## Ordering rationale
 
@@ -92,6 +96,36 @@ reopens, it does so with slice 3 already merged rather than blocking the story.
 - **Nothing in this story is AWS-deployable.** That is expected. Do not add a Lambda
   handler, CDK, or a Dockerfile stage here — phases B and C.
 
+## Deviations from plan
+
+Recorded rather than quietly absorbed.
+
+1. **Slice 2 changed shape entirely.** Planned as "LocalStack in dev + CI compose",
+   implemented first as a parallel `docker-compose.test-services.yml` with its own
+   CI bring-up/tear-down stages. That was wrong: infrastructure-dependent tests
+   belong in the lane this repo already has for them. `apps/api/vitest.config.ts`
+   excludes only `tests/e2e/**`, so unit _and_ integration tiers run under
+   `pnpm test`, and that integration tier mocks infrastructure throughout. The
+   parallel stack was reverted and the work landed as an integration lane served by
+   the existing e2e stack. **Net pipeline change: `package.json` +1 line,
+   `scripts/e2e.sh` +8/-2, `.github/workflows/ci.yml` untouched.**
+2. **Slice 4's port change was smaller than budgeted.** The plan allowed for slice 4
+   splitting into a port change plus an adapter if overloading `schedule()` was
+   rejected. It was not needed: `trigger()` gained one optional parameter, which
+   TypeScript treats existing one-parameter implementations as satisfying, so
+   node-cron and BullMQ were untouched. The rest was documentation on the port.
+3. **Slice 3 required a step the plan did not anticipate.** Every job/cache factory
+   imports its providers eagerly, so `apps/api` — the composition root — must declare
+   the concrete SDK for any provider it can select. Omitting it broke the e2e API
+   container with `ERR_MODULE_NOT_FOUND` before a strategy was ever chosen. Applied
+   pre-emptively in slice 4.
+4. **Plan risk 2 (no local AWS emulation) resolved**; LocalStack joined
+   `docker-compose.e2e.yml`.
+5. **Plan risk 3 (concurrent CI jobs colliding on fixed ports) was not real.** The
+   repository has exactly one registered self-hosted runner, which executes one job
+   at a time. The failure that did occur was CI colliding with the _development_
+   stack on the shared host, fixed by port separation.
+
 ## Stack setup
 
 ```sh
@@ -129,7 +163,10 @@ declaring every branch at `init` strands later slices while reporting success.
 
 - [x] Gate 1: **Story brief approved** — 2026-08-21, Ale Heredia.
 - [x] Gate 2: **Stack plan approved** — 2026-08-21, Ale Heredia. Implementation unblocked.
-- [ ] Gate 3: Stack PRs merged into trunk (light / security-full as listed).
+- [x] Gate 3: **Stack PRs merged into trunk** — 2026-08-23, Ale Heredia. Trunk verified
+      to contain all four slices (`30383a62`, `43318f11`, `1effd134`, `2acd4f02`), so the
+      bottom-up merge trap in [Agentic SDLC § stacking](../docs/contributing/agentic-sdlc.md)
+      did not bite.
 - [ ] Gate 4: Story → `main` deep review complete.
 
 ## Cleanup
