@@ -85,6 +85,7 @@ async function startServer() {
               db: config.redis.database,
             }
           : undefined,
+      dynamodb: config.cache.strategy === 'dynamodb' ? config.cache.dynamodb : undefined,
     },
     loggerFactory
   );

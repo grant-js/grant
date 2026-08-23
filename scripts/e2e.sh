@@ -66,7 +66,7 @@ start_stack() {
   wait_for_service "grant-e2e-redis"
 
   log "Waiting for LocalStack to be healthy..."
-  wait_for_service "grant-e2e-localstack"
+  wait_for_service "grant-e2e-localstack" 90
 
   log "Running database migrations..."
   NODE_ENV=test pnpm --filter @grantjs/database db:migrate
@@ -109,7 +109,8 @@ run_report() {
 
 wait_for_service() {
   local container_name="$1"
-  local retries=30
+  # LocalStack needs a larger budget than Postgres or Redis on a cold start.
+  local retries="${2:-30}"
   local i=0
   while [ $i -lt $retries ]; do
     local health
