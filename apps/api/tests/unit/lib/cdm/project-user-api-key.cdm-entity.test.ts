@@ -306,9 +306,9 @@ describe('ProjectUserApiKeyCdmEntity', () => {
         pivotMetadata: {},
       },
     ]);
-    const getProjectUserApiKeyExportIdentities = vi.fn().mockResolvedValue(
-      new Map([[apiKeyId, { clientId: 'client-id-1', userId }]])
-    );
+    const getProjectUserApiKeyExportIdentities = vi
+      .fn()
+      .mockResolvedValue(new Map([[apiKeyId, { clientId: 'client-id-1', userId }]]));
     const { handler, exportRepo } = buildHandler({
       exportRepo: {
         getProjectUserApiKeysForCdmExport,

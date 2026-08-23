@@ -260,8 +260,21 @@ const PROJECT_OAUTH_CONFIG = {
 // ============================================================================
 
 const CACHE_CONFIG = {
-  /** Cache strategy: 'memory' for single instance, 'redis' for distributed */
+  /** Cache strategy: 'memory' for single instance, 'redis' or 'dynamodb' for distributed */
   strategy: env.CACHE_STRATEGY,
+
+  /**
+   * DynamoDB backing store (`CACHE_STRATEGY=dynamodb`). Credentials stay
+   * undefined unless explicitly configured, so the AWS default credential chain
+   * applies and a task or Lambda role can supply them instead.
+   */
+  dynamodb: {
+    tableName: env.CACHE_DYNAMODB_TABLE,
+    region: env.CACHE_DYNAMODB_REGION,
+    endpoint: env.CACHE_DYNAMODB_ENDPOINT || undefined,
+    accessKeyId: env.CACHE_DYNAMODB_ACCESS_KEY_ID || undefined,
+    secretAccessKey: env.CACHE_DYNAMODB_SECRET_ACCESS_KEY || undefined,
+  },
 
   /** Default TTL (Time To Live) in seconds */
   defaultTtl: env.CACHE_DEFAULT_TTL,
@@ -652,6 +665,19 @@ const JOB_CONFIG = {
           password: REDIS_CONFIG.password,
         }
       : undefined,
+
+  /**
+   * AWS backing services (`JOBS_PROVIDER=aws`). SQS carries one-off jobs;
+   * recurring schedules are EventBridge rules owned by infrastructure, so the
+   * application registers handlers but never creates a schedule.
+   */
+  aws: {
+    region: env.JOBS_AWS_REGION,
+    queueUrl: env.JOBS_AWS_QUEUE_URL,
+    endpoint: env.JOBS_AWS_ENDPOINT || undefined,
+    accessKeyId: env.JOBS_AWS_ACCESS_KEY_ID || undefined,
+    secretAccessKey: env.JOBS_AWS_SECRET_ACCESS_KEY || undefined,
+  },
 
   /** Job-specific settings */
   dataRetention: {

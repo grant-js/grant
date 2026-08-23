@@ -167,7 +167,8 @@ export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
 
     const derivedKeyApiKeyIds = rows
       .filter((row) => {
-        const cdm = row.pivotMetadata[CDM_IMPORT_METADATA_KEY] as CdmImportMetadataBlock | undefined;
+        const cdm = row.pivotMetadata[CDM_IMPORT_METADATA_KEY] as
+          CdmImportMetadataBlock | undefined;
         const importerExternalKey = cdm?.externalKey;
         return importerExternalKey == null || importerExternalKey === '';
       })

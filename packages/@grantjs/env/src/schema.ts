@@ -110,7 +110,7 @@ export const envSchema = z.object({
   CDM_MAX_JSON_DEPTH: optionalNumber(16),
 
   // Cache / Redis
-  CACHE_STRATEGY: z.enum(['memory', 'redis']).optional().default('memory'),
+  CACHE_STRATEGY: z.enum(['memory', 'redis', 'dynamodb']).optional().default('memory'),
   CACHE_DEFAULT_TTL: optionalNumber(3600),
   CACHE_MAX_SIZE: optionalNumber(100 * 1024 * 1024),
   REDIS_HOST: optionalString('localhost'),
@@ -120,6 +120,15 @@ export const envSchema = z.object({
   REDIS_KEY_PREFIX: optionalString('grant:'),
   REDIS_CONNECTION_TIMEOUT: optionalNumber(10000),
   REDIS_ENABLE_TLS: optionalBoolean(false),
+
+  // Cache / DynamoDB (CACHE_STRATEGY=dynamodb). Credentials are optional on
+  // purpose: leave them unset to use the default AWS credential chain, so a task
+  // or Lambda role supplies them and no secret is configured here.
+  CACHE_DYNAMODB_TABLE: optionalString('grant-cache'),
+  CACHE_DYNAMODB_REGION: optionalString('us-east-1'),
+  CACHE_DYNAMODB_ENDPOINT: optionalString(''),
+  CACHE_DYNAMODB_ACCESS_KEY_ID: optionalString(''),
+  CACHE_DYNAMODB_SECRET_ACCESS_KEY: optionalString(''),
 
   // Security
   SECURITY_FRONTEND_URL: optionalString('http://localhost:3000'),
@@ -239,7 +248,7 @@ export const envSchema = z.object({
   PRIVACY_ACCOUNT_DELETION_RETENTION_DAYS: optionalNumber(30),
   PRIVACY_BACKUP_RETENTION_DAYS: optionalNumber(90),
   JOBS_ENABLED: optionalBoolean(true),
-  JOBS_PROVIDER: z.enum(['node-cron', 'bullmq']).optional().default('node-cron'),
+  JOBS_PROVIDER: z.enum(['node-cron', 'bullmq', 'aws']).optional().default('node-cron'),
   JOBS_DATA_RETENTION_SCHEDULE: optionalString('0 2 * * *'),
   JOBS_DATA_RETENTION_ENABLED: optionalBoolean(true),
   JOBS_SYSTEM_SIGNING_KEY_ROTATION_SCHEDULE: optionalString('0 0 1 * *'),
@@ -256,6 +265,15 @@ export const envSchema = z.object({
   JOBS_NOTIFICATION_DELIVERY_SCHEDULE: optionalString('* * * * *'),
   JOBS_NOTIFICATION_DELIVERY_BATCH_SIZE: optionalNumber(50),
   JOBS_NOTIFICATION_DELIVERY_MAX_BATCHES: optionalNumber(20),
+  // Jobs / AWS (JOBS_PROVIDER=aws). Credentials optional on purpose: leave unset
+  // to use the default AWS credential chain. Recurring schedules are owned by
+  // EventBridge rules created by infrastructure, not by this application.
+  JOBS_AWS_REGION: optionalString('us-east-1'),
+  JOBS_AWS_QUEUE_URL: optionalString(''),
+  JOBS_AWS_ENDPOINT: optionalString(''),
+  JOBS_AWS_ACCESS_KEY_ID: optionalString(''),
+  JOBS_AWS_SECRET_ACCESS_KEY: optionalString(''),
+
   JOBS_BULLMQ_ATTEMPTS: optionalNumber(3),
   JOBS_BULLMQ_BACKOFF_TYPE: z.enum(['exponential', 'fixed']).optional().default('exponential'),
   JOBS_BULLMQ_BACKOFF_DELAY: optionalNumber(2000),

@@ -2,7 +2,7 @@
   "name": "@grantjs/cache",
   "version": "1.0.0",
   "private": true,
-  "description": "Cache adapters for Grant (memory, Redis)",
+  "description": "Cache adapters for Grant (memory, Redis, DynamoDB)",
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
@@ -18,6 +18,10 @@
     "./redis": {
       "types": "./src/redis/index.ts",
       "default": "./src/redis/index.ts"
+    },
+    "./dynamodb": {
+      "types": "./src/dynamodb/index.ts",
+      "default": "./src/dynamodb/index.ts"
     }
   },
   "files": [
@@ -26,24 +30,33 @@
   "scripts": {
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.config.integration.ts",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@grantjs/core": "workspace:*"
   },
   "peerDependencies": {
     "ioredis": "^5",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "@aws-sdk/client-dynamodb": "^3"
   },
   "peerDependenciesMeta": {
     "ioredis": {
       "optional": true
+    },
+    "@aws-sdk/client-dynamodb": {
+      "optional": true
     }
   },
   "devDependencies": {
-    "ioredis": "^5.11.1",
+    "@aws-sdk/client-dynamodb": "^3.1113.0",
     "@types/node": "^26.2.0",
-    "typescript": "^6.0.3"
+    "ioredis": "^5.11.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
   },
   "license": "MIT"
 }

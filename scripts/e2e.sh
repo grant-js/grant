@@ -56,14 +56,17 @@ E2E_DB_URL="${E2E_DB_URL:-postgresql://grant_user:grant_password@localhost:5433/
 # ---------------------------------------------------------------------------
 
 start_stack() {
-  log "Starting E2E stack (postgres + redis)..."
-  docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" --env-file "$ENV_FILE" up -d postgres redis
+  log "Starting E2E stack (postgres + redis + localstack)..."
+  docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" --env-file "$ENV_FILE" up -d postgres redis localstack
 
   log "Waiting for Postgres to be healthy..."
   wait_for_service "grant-e2e-postgres"
 
   log "Waiting for Redis to be healthy..."
   wait_for_service "grant-e2e-redis"
+
+  log "Waiting for LocalStack to be healthy..."
+  wait_for_service "grant-e2e-localstack" 90
 
   log "Running database migrations..."
   NODE_ENV=test pnpm --filter @grantjs/database db:migrate
@@ -85,6 +88,9 @@ stop_stack() {
 }
 
 run_tests() {
+  log "Running adapter integration tests..."
+  pnpm turbo test:integration
+
   log "Running E2E tests..."
   E2E_API_BASE_URL="$E2E_API_BASE_URL" \
   E2E_DB_URL="$E2E_DB_URL" \
@@ -103,7 +109,8 @@ run_report() {
 
 wait_for_service() {
   local container_name="$1"
-  local retries=30
+  # LocalStack needs a larger budget than Postgres or Redis on a cold start.
+  local retries="${2:-30}"
   local i=0
   while [ $i -lt $retries ]; do
     local health
