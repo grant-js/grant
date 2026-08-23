@@ -95,7 +95,7 @@
     "next": "^16.3.1",
     "@nestjs/common": "^11.2.1",
     "@nestjs/core": "^11.2.1",
-    "typescript": "^7.0.2",
+    "typescript": "^6.0.3",
     "vite": "^8.2.1",
     "vite-plugin-dts": "^5.0.3",
     "vitest": "^4.1.11"
