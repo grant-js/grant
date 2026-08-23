@@ -17,7 +17,7 @@ describe('OAuthStateService', () => {
       clear: vi.fn().mockResolvedValue(undefined),
       keys: vi.fn().mockResolvedValue([]),
       disconnect: vi.fn().mockResolvedValue(undefined),
-    };
+    } as unknown as ICacheAdapter;
   });
 
   it('passes ttlSeconds through to cache.set so Redis/memory can expire keys', async () => {
