@@ -104,19 +104,36 @@ export class RedisCacheAdapter implements ICacheAdapter {
   }
 
   async clear(): Promise<void> {
-    const pattern = `${this.prefix}*`;
-    const keys = await this.client.keys(pattern);
-
-    if (keys.length > 0) {
-      await this.client.del(...keys);
+    const fullKeys = await this.scanFullKeys(`${this.prefix}*`);
+    if (fullKeys.length === 0) {
+      return;
+    }
+    // DEL is variadic; batch to avoid huge argument lists on large keyspaces.
+    const batchSize = 500;
+    for (let i = 0; i < fullKeys.length; i += batchSize) {
+      await this.client.del(...fullKeys.slice(i, i + batchSize));
     }
   }
 
   async keys(pattern?: string): Promise<CacheKey[]> {
     const searchPattern = pattern ? `${this.prefix}${pattern}` : `${this.prefix}*`;
-    const keys = await this.client.keys(searchPattern);
+    const fullKeys = await this.scanFullKeys(searchPattern);
+    return fullKeys.map((key: string) => key.replace(this.prefix, '') as CacheKey);
+  }
 
-    return keys.map((key: string) => key.replace(this.prefix, '') as CacheKey);
+  /**
+   * SCAN instead of KEYS: KEYS is O(N) and blocks the Redis event loop, which is
+   * catastrophic when callers poll patterns frequently (or leak timers that do).
+   */
+  private async scanFullKeys(match: string): Promise<string[]> {
+    const found: string[] = [];
+    let cursor = '0';
+    do {
+      const [nextCursor, keys] = await this.client.scan(cursor, 'MATCH', match, 'COUNT', 100);
+      cursor = nextCursor;
+      found.push(...keys);
+    } while (cursor !== '0');
+    return found;
   }
 
   async disconnect(): Promise<void> {
