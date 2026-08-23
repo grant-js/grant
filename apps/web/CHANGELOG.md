@@ -1,5 +1,15 @@
 # grant-web
 
+## 1.5.4
+
+### Patch Changes
+
+- 9caf929: Fix grant-web Docker startup by shipping @swc/helpers ESM in the Next standalone bundle (next 16.3.2).
+  - @grantjs/schema@1.5.4
+  - @grantjs/client@1.5.4
+  - @grantjs/core@1.0.0
+  - @grantjs/constants@1.0.0
+
 ## 1.5.3
 
 ### Patch Changes
