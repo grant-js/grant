@@ -89,7 +89,7 @@
     "lint-staged": "^17.1.0",
     "prettier": "^3.9.5",
     "tsx": "^4.23.12",
-    "turbo": "^2.10.10",
+    "turbo": "^2.10.11",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.67.0",
     "vitepress": "^1.6.4"
