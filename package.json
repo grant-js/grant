@@ -32,6 +32,7 @@
     "format:apps": "prettier --write \"apps/**/*.{ts,tsx,js,jsx,json,md,graphql}\"",
     "format:packages": "prettier --write \"packages/**/*.{ts,tsx,js,jsx,json,md,graphql}\"",
     "test": "turbo test",
+    "test:integration": "turbo test:integration",
     "test:ui": "turbo test:ui",
     "test:coverage": "turbo test:coverage",
     "test:e2e": "./scripts/e2e.sh",

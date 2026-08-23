@@ -9,6 +9,11 @@
 #   pnpm test:e2e
 #   docker compose -f docker-compose.e2e.yml --env-file .env.test down -v
 #
+# Adapter integration suites only (no API image build):
+#   docker compose -f docker-compose.e2e.yml --env-file .env.test -p grant-e2e \
+#     up -d redis localstack
+#   pnpm test:integration
+#
 # Interpolation (${VAR}) uses --env-file .env.test; copy from .env.test.example.
 # Defaults below allow the stack to run even if .env.test is missing or outdated.
 # =============================================================================
@@ -53,6 +58,36 @@ services:
       interval: 3s
       timeout: 3s
       retries: 10
+    networks:
+      - e2e-network
+
+  # Local AWS emulation for the adapter integration suites (@grantjs/cache,
+  # @grantjs/jobs). Only the services those adapters use are enabled, so the e2e
+  # stack does not get slower for everyone else. Extend SERVICES as adapters arrive.
+  localstack:
+    image: localstack/localstack:3.8
+    container_name: grant-e2e-localstack
+    ports:
+      - '4567:4566'
+    environment:
+      SERVICES: dynamodb,sqs,events
+      DEBUG: '0'
+      PERSISTENCE: '0'
+    # Every service must be available, not just dynamodb: a suite that starts
+    # while SQS is still coming up fails intermittently and is miserable to
+    # diagnose.
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          h=$$(curl -sf http://localhost:4566/_localstack/health) &&
+          echo "$$h" | grep -q '"dynamodb": "available"' &&
+          echo "$$h" | grep -q '"sqs": "available"' &&
+          echo "$$h" | grep -q '"events": "available"'
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
     networks:
       - e2e-network
 
