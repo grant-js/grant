@@ -1,10 +1,11 @@
 import { ConfigurationError, type IJobAdapter, type ILoggerFactory } from '@grantjs/core';
 import { noopLogger } from '@grantjs/core';
 
+import { AwsJobAdapter, type AwsJobConfig } from './aws';
 import { BullMQJobAdapter } from './bullmq';
 import { NodeCronJobAdapter } from './node-cron';
 
-type JobProvider = 'node-cron' | 'bullmq';
+type JobProvider = 'node-cron' | 'bullmq' | 'aws';
 
 interface JobFactoryConfig {
   provider: JobProvider;
@@ -13,6 +14,7 @@ interface JobFactoryConfig {
     port: number;
     password?: string;
   };
+  aws?: AwsJobConfig;
   bullmqJobOptions?: {
     attempts: number;
     backoff: {
@@ -52,6 +54,12 @@ export class JobFactory {
           config.bullmqJobOptions,
           mkLogger('BullMQJobAdapter')
         );
+
+      case 'aws':
+        if (!config.aws) {
+          throw new ConfigurationError('AWS configuration is required when using aws adapter');
+        }
+        return new AwsJobAdapter(config.aws, mkLogger('AwsJobAdapter'));
 
       default:
         throw new ConfigurationError(`Unknown job provider: ${config.provider}`);

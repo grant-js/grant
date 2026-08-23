@@ -2,7 +2,7 @@
   "name": "@grantjs/jobs",
   "version": "1.0.0",
   "private": true,
-  "description": "Job scheduling adapters for Grant (node-cron, BullMQ)",
+  "description": "Job scheduling adapters for Grant (node-cron, BullMQ, AWS)",
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
@@ -18,6 +18,10 @@
     "./bullmq": {
       "types": "./src/bullmq/index.ts",
       "default": "./src/bullmq/index.ts"
+    },
+    "./aws": {
+      "types": "./src/aws/index.ts",
+      "default": "./src/aws/index.ts"
     }
   },
   "files": [
@@ -26,7 +30,10 @@
   "scripts": {
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.config.integration.ts",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@grantjs/core": "workspace:*",
@@ -35,7 +42,8 @@
   "peerDependencies": {
     "node-cron": "^3",
     "bullmq": "^5",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "@aws-sdk/client-sqs": "^3"
   },
   "peerDependenciesMeta": {
     "node-cron": {
@@ -43,14 +51,19 @@
     },
     "bullmq": {
       "optional": true
+    },
+    "@aws-sdk/client-sqs": {
+      "optional": true
     }
   },
   "devDependencies": {
-    "node-cron": "^4.6.0",
-    "bullmq": "^5.80.9",
-    "@types/node-cron": "^3.0.11",
+    "@aws-sdk/client-sqs": "^3.1090.0",
     "@types/node": "^26.1.1",
-    "typescript": "^6.0.3"
+    "@types/node-cron": "^3.0.11",
+    "bullmq": "^5.80.9",
+    "node-cron": "^4.6.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
   },
   "license": "MIT"
 }
