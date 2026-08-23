@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   typedRoutes: true,
   transpilePackages: ['@grantjs/core', '@grantjs/schema'],
+  // NFT traces CJS @swc/helpers; Node 22 may require ESM at runtime (next#97358).
+  outputFileTracingIncludes: {
+    '/*': ['./node_modules/@swc/helpers/esm/**/*'],
+  },
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
