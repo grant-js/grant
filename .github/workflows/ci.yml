@@ -95,6 +95,13 @@ jobs:
       - name: Build
         run: pnpm run build
 
+      # The pre-push hook runs format:check, but only for people pushing from a
+      # terminal — anything merged through the GitHub UI bypasses it. Unformatted
+      # files reached main that way, and were only noticed when a later branch
+      # inherited them and could not be pushed.
+      - name: Format check
+        run: pnpm run format:check
+
       - name: Lint
         run: pnpm run lint
 

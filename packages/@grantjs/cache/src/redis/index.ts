@@ -124,16 +124,24 @@ export class RedisCacheAdapter implements ICacheAdapter {
   /**
    * SCAN instead of KEYS: KEYS is O(N) and blocks the Redis event loop, which is
    * catastrophic when callers poll patterns frequently (or leak timers that do).
+   *
+   * De-duplicated because SCAN guarantees only that every key present for the
+   * whole iteration is returned *at least* once — the same key can come back on
+   * more than one cursor page when the keyspace is resized mid-iteration. Callers
+   * treat the result as a set: `keys()` is compared for equality in tests, and
+   * `clear()` would otherwise issue redundant DELs.
    */
   private async scanFullKeys(match: string): Promise<string[]> {
-    const found: string[] = [];
+    const found = new Set<string>();
     let cursor = '0';
     do {
       const [nextCursor, keys] = await this.client.scan(cursor, 'MATCH', match, 'COUNT', 100);
       cursor = nextCursor;
-      found.push(...keys);
+      for (const key of keys) {
+        found.add(key);
+      }
     } while (cursor !== '0');
-    return found;
+    return Array.from(found);
   }
 
   async disconnect(): Promise<void> {
