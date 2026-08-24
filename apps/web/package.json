@@ -44,7 +44,7 @@
     "cmdk": "^1.1.1",
     "cronstrue": "^3.24.0",
     "date-fns": "^4.4.0",
-    "graphql": "^16.14.2",
+    "graphql": "^17.0.2",
     "input-otp": "^1.5.0",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^1.33.0",
@@ -55,7 +55,7 @@
     "react": "^19.2.8",
     "react-day-picker": "^10.0.1",
     "react-dom": "^19.2.8",
-    "react-dropzone": "^20.1.0",
+    "react-dropzone": "^20.1.1",
     "react-easy-crop": "^6.2.2",
     "react-hook-form": "^7.85.0",
     "rxjs": "^7.8.2",
@@ -84,7 +84,7 @@
     "jsdom": "^30.0.1",
     "postcss": "^8.5.26",
     "tailwindcss": "^4.3.3",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "typescript-eslint": "^8.67.0",
     "vitest": "^4.1.11"
   }
