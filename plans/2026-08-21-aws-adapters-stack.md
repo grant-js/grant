@@ -5,8 +5,9 @@
 - **Slug**: `aws-adapters`
 - **Story brief**: [`2026-08-21-aws-adapters-brief.md`](./2026-08-21-aws-adapters-brief.md) — approved 2026-08-21, Ale Heredia
 - **Program brief**: [`2026-08-21-aws-serverless-target-brief.md`](./2026-08-21-aws-serverless-target-brief.md) — phase **A** of three
-- **Status**: `integrated` — all four slices merged into the trunk (#305, #306, #309, #311)
-  on 2026-08-23. Gate 3 cleared. Gate 4 (trunk → `main`) outstanding.
+- **Status**: `merged-to-main` — four slices merged into the trunk (#305, #306, #309,
+  #311), then the trunk merged to `main` as [#313](https://github.com/grant-js/grant/pull/313)
+  (`39151c33`, 2026-08-24). Gates 3 and 4 both cleared.
 - **GitHub stack**: [#307](https://github.com/grant-js/grant/stacks/307)
 - **Story trunk**: `feat/aws-adapters`
 - **Base**: `main` at `0592720c` (pass 7 close-out, #303)
@@ -167,11 +168,31 @@ declaring every branch at `init` strands later slices while reporting success.
       to contain all four slices (`30383a62`, `43318f11`, `1effd134`, `2acd4f02`), so the
       bottom-up merge trap in [Agentic SDLC § stacking](../docs/contributing/agentic-sdlc.md)
       did not bite.
-- [ ] Gate 4: Story → `main` deep review complete.
+- [x] Gate 4: **Story → `main` deep review complete** — 2026-08-24, Ale Heredia. Merged
+      as #313 (squash), so the trunk is not an ancestor of `main`; content was verified
+      present instead.
 
 ## Cleanup
 
-- [ ] Local slice branches deleted
-- [ ] Stack plan status → `merged-to-main`
+- [x] Local slice branches deleted (all five, 2026-08-24)
+- [x] Stack plan status → `merged-to-main`
+- [ ] Remote slice branches — still on origin; not auto-deleted on merge
 - [ ] Phase B (`aws-lambda-runtime`) brief re-verified against the new `main` and
       submitted for its own gate 1
+
+### Post-merge verification
+
+`main` gained [#315](https://github.com/grant-js/grant/pull/315) between this story's
+last trunk update and its merge. That PR rewrote `RedisCacheAdapter.clear()` and
+`keys()` to use `SCAN` instead of `KEYS`, so **the conformance suite from slice 1 and
+the adapter change from #315 were never tested against each other before landing** —
+each was green against a tree that did not contain the other.
+
+Checked after the fact on `39151c33`: the integration lane passes, 48 cache and 7 jobs.
+
+**One latent issue left open, not introduced by this story.** Redis `SCAN` may return
+the same key more than once, and `scanFullKeys()` does not de-duplicate. The
+conformance suite asserts exact key sets, so a duplicate would fail
+`keys() with no pattern returns every key set` — non-deterministically, and only on a
+keyspace large enough to span multiple `SCAN` iterations or resized mid-iteration.
+Worth a `Set` in `scanFullKeys()`; belongs to whoever owns #315, not to this story.

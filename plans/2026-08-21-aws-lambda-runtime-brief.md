@@ -4,8 +4,13 @@
 
 - **Slug**: `aws-lambda-runtime`
 - **Date**: 2026-08-21
-- **Status**: **draft — not queued.** Phase **B** of three; do not begin until
-  phase A (`aws-adapters`) has merged to `main`.
+- **Status**: **draft — ready for gate 1.** Phase **B** of three. Its prerequisite,
+  phase A (`aws-adapters`), merged to `main` as #313 on 2026-08-24.
+- **Citations re-verified** against `main` at `39151c33` on 2026-08-24. One had
+  drifted: `bootstrapDatabase()` moved from `server.ts:59` to `:56`. Everything else
+  still holds — `env.config.ts:15`, `env/src/schema.ts:31`, `release.yml:282`,
+  `apps/api/Dockerfile:88,95-96`, `project-sync-jobs.schema.ts:45`,
+  `rls-context.ts:96-104`, and `body-parser/lib/read.js:190`.
 - **Program brief**: [`2026-08-21-aws-serverless-target-brief.md`](./2026-08-21-aws-serverless-target-brief.md)
 - **Depends on**: `aws-adapters`
 
@@ -24,7 +29,7 @@ a configuration-selected secrets path, and a push-based telemetry route.
 - [ ] A Lambda handler entrypoint exists over `create-app.ts`.
 - [ ] Boot-time `bootstrapDatabase()` becomes configuration-gated, defaulting to
       today's behavior. A standalone migrate/seed runner entrypoint exists.
-      **Requires an ADR** — this reverses a decision recorded at `server.ts:59`.
+      **Requires an ADR** — this reverses a decision recorded at `server.ts:56`.
 - [ ] Secrets resolve from Secrets Manager **once per cold start**, via the existing
       `GRANT_ENV_FILE` hook (`env/src/load-env.ts`): fetch → write `/tmp/.env` → set
       `GRANT_ENV_FILE` → `await import()` the app. Module-scope `getEnv()`
@@ -99,5 +104,5 @@ Senior Security, QA, Verifier.
 
 ## Human gate
 
-- [ ] Gate 1: not yet sought. Re-verify all `file:line` citations against `main`
-      before requesting it — this brief was drafted against `0592720c`.
+- [ ] Gate 1: not yet sought. Citations re-verified against `39151c33`; re-check if
+      `main` moves again before this story is queued.

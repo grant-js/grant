@@ -33,8 +33,8 @@ organization.
 | **B** | `aws-lambda-runtime` | [brief](./2026-08-21-aws-lambda-runtime-brief.md)                                         | Lambda-capable entrypoint, secrets, image, telemetry    | CI proves no-regression; AWS behavior needs a deployed stack |
 | **C** | `aws-edge-infra`     | [brief](./2026-08-21-aws-edge-infra-brief.md)                                             | CDK app, config surface, CloudFront, OpenNext, docs     | Deployed AWS stack only                                      |
 
-**Phase A is integrated** — all four slices merged to the story trunk on 2026-08-23
-(#305, #306, #309, #311); gate 4 (trunk → `main`) outstanding. Phase B takes its own
+**Phase A is merged to `main`** — #313 (`39151c33`, 2026-08-24), built from slices
+#305, #306, #309 and #311. Gates 1–4 all cleared. Phase B takes its own
 gate 1 when queued, and its `file:line` citations need re-verifying first: they were
 written against `0592720c` and `main` has since moved. B and C are drafted now so the
 end state is visible and reviewable, not so they proceed. Each takes its own
@@ -100,7 +100,7 @@ Indexed here; each is owned by the phase noted.
 
 | #   | Blocker                                                                                    | Owner phase             |
 | --- | ------------------------------------------------------------------------------------------ | ----------------------- |
-| 1   | `bootstrapDatabase()` at boot reverses a decision recorded at `server.ts:59`; needs an ADR | B                       |
+| 1   | `bootstrapDatabase()` at boot reverses a decision recorded at `server.ts:56`; needs an ADR | B                       |
 | 2   | CDM import payload vs. Lambda's 6 MB request cap; gzip ratio **unmeasured**                | B                       |
 | 3   | `project-sync` may exceed the 15-minute Lambda ceiling                                     | B (design) / C (wiring) |
 | 4   | Prometheus pull-scraping has no analogue on Lambda                                         | B                       |

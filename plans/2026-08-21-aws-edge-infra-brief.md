@@ -89,5 +89,6 @@ PM, Principal, Senior Backend, **Senior Frontend** (OpenNext), Senior Security
 
 ## Human gate
 
-- [ ] Gate 1: not yet sought. Re-verify all `file:line` citations against `main`
-      before requesting it — this brief was drafted against `0592720c`.
+- [ ] Gate 1: not yet sought, and blocked on phase B. Re-verify all `file:line`
+      citations against `main` before requesting it — this brief was drafted against
+      `0592720c` and has not been re-checked.
