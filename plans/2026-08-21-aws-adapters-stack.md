@@ -177,8 +177,8 @@ declaring every branch at `init` strands later slices while reporting success.
 - [x] Local slice branches deleted (all five, 2026-08-24)
 - [x] Stack plan status → `merged-to-main`
 - [ ] Remote slice branches — still on origin; not auto-deleted on merge
-- [ ] Phase B (`aws-lambda-runtime`) brief re-verified against the new `main` and
-      submitted for its own gate 1
+- [x] Phase B (`aws-lambda-runtime`) brief re-verified against the new `main` and
+      submitted for its own gate 1 — approved 2026-08-24; stack plan drafted
 
 ### Post-merge verification
 
