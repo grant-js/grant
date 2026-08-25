@@ -53,6 +53,14 @@ export const envSchema = z.object({
   DB_IDLE_TIMEOUT: optionalNumber(20),
   DB_QUERY_TIMEOUT: optionalNumber(60000),
   DB_LOG_QUERIES: optionalBoolean(true),
+  /**
+   * Run migrations and the core seed at API start. Default true — the long-running
+   * server's historical behavior. Set false where a separate migrate/seed step runs
+   * first (a Helm hook Job, an ECS one-off task, or `node dist/migrate.js`), which
+   * every serverless target needs: concurrent cold starts must not each try to
+   * migrate, and migrations do not fit a request-scoped invocation.
+   */
+  DB_BOOTSTRAP_ON_BOOT: optionalBoolean(true),
 
   // JWT / Auth / Token
   JWT_ACCESS_TOKEN_EXPIRATION_MINUTES: optionalNumber(15),

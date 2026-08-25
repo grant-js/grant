@@ -85,6 +85,9 @@ const DB_CONFIG = {
 
   /** Enable query logging */
   logQueries: env.DB_LOG_QUERIES,
+
+  /** Run migrations and the core seed at API start (`DB_BOOTSTRAP_ON_BOOT`). */
+  bootstrapOnBoot: env.DB_BOOTSTRAP_ON_BOOT,
 } as const;
 
 // ============================================================================

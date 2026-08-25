@@ -217,6 +217,38 @@ executes.
   3 establishes it. **Flagged for gate 2** — if a different home is wanted, say so
   before slice 3 rather than after two ADRs land.
 
+### Slice 3 — bootstrap gate — **delivered**
+
+- `DB_BOOTSTRAP_ON_BOOT`, default `true`. Verified both ways against the real image:
+  default boots with the drizzle migration exactly as before and the oracle passes
+  21/21; `false` logs the skip and serves normally.
+- `apps/api/src/migrate.ts` → `node dist/migrate.js`, confirmed present and exiting 0
+  inside the production container.
+- **The reason the standalone runner is necessary was confirmed, not assumed**:
+  `drizzle-kit` is absent from the production image (`ls node_modules/.bin/drizzle-kit`
+  → no such file), because it is a devDependency and the runner stage prunes to
+  production deps. `pnpm --filter @grantjs/database db:migrate` therefore cannot run
+  in a container. `bootstrapDatabase()` uses `drizzle-orm`'s migrator, which ships.
+- ADR directory established at `docs/architecture/decisions/` with a README defining
+  the convention, plus ADRs [0001](../docs/architecture/decisions/0001-configuration-gated-database-bootstrap.md)
+  and [0002](../docs/architecture/decisions/0002-long-running-cdm-sync-beyond-lambda.md).
+- Documented in `apps/api/.env.example` and the Helm configmap defaults, both of
+  which keep today's behavior.
+
+**ADR 0002 landed differently than the plan anticipated.** The plan framed the
+choice as "Step Functions or a Fargate escape hatch". Reading the code closed it:
+`ProjectImportService.applyProjectCdmImport` (`services/project-import.service.ts:255-268`)
+runs the whole import in a **single transaction**, so Step Functions is not an
+infrastructure choice at all — chunking means committing partial imports, which means
+abandoning that transaction and inventing a resumability protocol. A partially applied
+permission model is a security outcome. The decision is to move the workload to a
+runtime that fits the transaction, not to break the transaction to fit the runtime.
+
+**One quantity is still unmeasured and is now called out in ADR 0002**: how long a
+28,880-entity import actually takes against RDS. Until that exists, the size at which
+sync must leave Lambda is unknown. Slice 1's fixtures make it measurable and
+deterministic; phase C owns it.
+
 ### Slice 4 — handler
 
 - `config.tracing.backend` **already accepts `'xray'`** and maps it to the OTLP

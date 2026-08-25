@@ -19,10 +19,10 @@
  *     `http`/`express` load, which makes it the *entrypoint's* first import, not a
  *     dependency of this module.
  *
- * `bootstrapDatabase()` does run here, because an app without a migrated database
- * is not serve-ready and a second entrypoint that skipped it would diverge from the
- * server in a way nothing observes. Making that call configuration-gated is the
- * next slice's job; until then it behaves exactly as it did in `server.ts`.
+ * `bootstrapDatabase()` runs here rather than in the entrypoint, because an app
+ * without a migrated database is not serve-ready and a second entrypoint that
+ * skipped it would diverge from the server in a way nothing observes. It is gated on
+ * `DB_BOOTSTRAP_ON_BOOT`, which defaults to true.
  */
 
 import { ApolloServer } from '@apollo/server';
@@ -102,8 +102,18 @@ export async function createApp(): Promise<CreatedApp> {
     logger: loggerFactory.createLogger('DatabaseConnection'),
   });
 
-  // Sole migrate/seed path for Kubernetes (no Helm hook Job); PostgreSQL advisory lock is safe for multiple replicas.
-  await bootstrapDatabase(db, config.system.systemUserId);
+  // Default true, preserving the long-running server's historical behavior: this is
+  // the sole migrate/seed path for Kubernetes, and the advisory lock inside makes it
+  // safe across replicas. Serverless targets set DB_BOOTSTRAP_ON_BOOT=false and run
+  // `node dist/migrate.js` as a separate step — see
+  // docs/architecture/decisions/0001-configuration-gated-database-bootstrap.md.
+  if (config.db.bootstrapOnBoot) {
+    await bootstrapDatabase(db, config.system.systemUserId);
+  } else {
+    logger.info({
+      msg: 'Skipping database bootstrap at boot (DB_BOOTSTRAP_ON_BOOT=false)',
+    });
+  }
 
   const app = express();
   const httpServer = http.createServer(app);
