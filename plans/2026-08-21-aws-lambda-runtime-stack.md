@@ -157,6 +157,50 @@ Results in [`2026-08-21-aws-lambda-runtime-measurements.md`](./2026-08-21-aws-la
 - Shutdown is returned as handles, not registered as signal listeners, for the same
   reason.
 
+### Slice 2 — `create-app.ts` — **delivered**
+
+- App construction moved verbatim: the extracted block is **line-for-line identical**
+  to `server.ts:38-146` (diffed, ignoring blank lines). The shutdown sequence differs
+  in exactly four lines — `apolloServer.stop()` twice, `CacheFactory.disconnect`,
+  `closeDatabase` — each swapped for the matching handle, same order, same
+  error handling.
+- **The slice-1 oracle passed unmodified**, 21/21, route-table snapshot unchanged.
+  That was the acceptance condition and it needed no edits to meet.
+- `server.ts` 276 → 141 lines. All three named gaps verified by inspection: tracing
+  first import of the entrypoint and absent from `create-app.ts`, `initializeJobs()`
+  and both `process.on` handlers in `server.ts` only.
+- `bootstrapDatabase()` moved **into** `createApp()`. An app without a migrated
+  database is not serve-ready, and an entrypoint that skipped it would diverge from
+  the server in a way nothing observes. Slice 3 now has one call site to gate rather
+  than two paths to keep in step.
+
+### Slice 2 finding — graceful shutdown is broken on `main`
+
+Found by sending a real `SIGTERM` to the container, which the oracle cannot do (it
+would stop the API the rest of the e2e suite is using).
+
+`ApolloServerPluginDrainHttpServer` closes the HTTP server as part of
+`apolloServer.stop()`. `gracefulShutdown` then calls `httpServer.close()` on the
+already-closed server, which rejects with `ERR_SERVER_NOT_RUNNING`. The rejection
+escapes to the outer catch, so **the process exits 1 and never runs the remaining
+teardown**: `shutdownTracing()`, `shutdownJobs()`, cache disconnect, database close.
+
+**Pre-existing, and verified as such rather than assumed** — the pre-extraction
+`server.ts` was rebuilt and given the same signal, and fails identically with exit
+code 1. Slice 2 reproduces it exactly, which is the correct outcome for a no-op.
+
+Consequences on the current K8s target: every pod termination is a hard failure with
+no span flush, no job cleanup, and no clean database or cache disconnect.
+`GRACEFUL_SHUTDOWN_TIMEOUT_MS` never gets the chance to matter. It went unnoticed
+because nothing checks the container's exit code — `scripts/e2e.sh` tears the stack
+down with `down -v` regardless.
+
+**Not fixed here.** Fixing it is a behavior change and would destroy the no-op
+property this slice exists to demonstrate. It wants its own PR off `main` — the same
+shape as #315 — and it is worth doing before phase B goes further, because blocker 5
+(OTel spans lost on container freeze) assumes a shutdown path that currently never
+executes.
+
 ### Slice 3 — bootstrap gate
 
 - Two ADRs, both Architect-owned:
