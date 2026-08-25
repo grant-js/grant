@@ -195,11 +195,22 @@ no span flush, no job cleanup, and no clean database or cache disconnect.
 because nothing checks the container's exit code — `scripts/e2e.sh` tears the stack
 down with `down -v` regardless.
 
-**Not fixed here.** Fixing it is a behavior change and would destroy the no-op
-property this slice exists to demonstrate. It wants its own PR off `main` — the same
-shape as #315 — and it is worth doing before phase B goes further, because blocker 5
-(OTel spans lost on container freeze) assumes a shutdown path that currently never
-executes.
+**Not fixed in this slice** — fixing it is a behavior change and would have destroyed
+the no-op property slice 2 exists to demonstrate. It went out as its own PR off
+`main`, [#325](https://github.com/grant-js/grant/pull/325), merged `9c1aaeb4`
+2026-08-25: `closeHttpServer()` absorbs `ERR_SERVER_NOT_RUNNING` and only that code,
+so shutdown runs to completion and exits 0.
+
+**Resolved, and the resolution was re-verified through the extraction.** The trunk was
+rebased onto the new `main`; slice 2 conflicted in `server.ts` exactly as predicted,
+in the import block. Resolution kept `closeHttpServer` — `server.ts` still owns
+shutdown — and dropped the three imports that moved to `create-app.ts`. SIGTERM
+against the rebuilt container now exits 0 through the extracted `create-app` with the
+full sequence: HTTP server closed, job scheduling shut down, cache disconnected,
+database closed.
+
+This also clears the ground for blocker 5 (OTel spans lost on container freeze),
+which had been assuming a shutdown path that never executed.
 
 ### Slice 3 — bootstrap gate
 
