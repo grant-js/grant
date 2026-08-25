@@ -20,6 +20,7 @@ import { createAppContext } from '@/lib/app-context.lib';
 import { graphqlMinAalAtLoginMiddleware } from '@/lib/authorization/min-aal-at-login';
 import { CacheFactory } from '@/lib/cache';
 import { formatGraphQLError } from '@/lib/errors';
+import { closeHttpServer } from '@/lib/http-server.lib';
 import { initializeJobs, shutdownJobs } from '@/lib/jobs/initialize';
 import { logger, loggerFactory } from '@/lib/logger';
 import { metricsHandler, metricsMiddleware } from '@/lib/metrics';
@@ -186,9 +187,7 @@ async function startServer() {
         await apolloServer.stop().catch((err: unknown) => {
           logger.warn({ msg: 'Apollo stop during dev shutdown', err });
         });
-        await new Promise<void>((resolve) => {
-          httpServer.close(() => resolve());
-        });
+        await closeHttpServer(httpServer);
         finish();
         process.exit(0);
         return;
@@ -206,12 +205,7 @@ async function startServer() {
         });
       });
 
-      await new Promise<void>((resolve, reject) => {
-        httpServer.close((err) => {
-          if (err) reject(err);
-          else resolve();
-        });
-      });
+      await closeHttpServer(httpServer);
 
       logger.info({ msg: 'HTTP server closed' });
 
