@@ -1,5 +1,35 @@
 # grant-api
 
+## 1.5.5
+
+### Patch Changes
+
+- 9c1aaeb: Fix graceful shutdown aborting before it released any resources.
+
+  `ApolloServerPluginDrainHttpServer` closes the HTTP server during
+  `apolloServer.stop()`, so the subsequent `httpServer.close()` reported
+  `ERR_SERVER_NOT_RUNNING`. That rejection escaped the shutdown sequence, which meant
+  every step after it was skipped: OpenTelemetry spans were never flushed, job
+  schedules were never stopped, and the cache and database connections were never
+  closed. The process exited 1 on every SIGTERM, so each Kubernetes pod termination
+  was a hard failure.
+
+  Closing an already-closed server is now treated as success, since it is the outcome
+  the caller wanted. Shutdown runs to completion and exits 0.
+  - @grantjs/schema@1.5.5
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.5.4
 
 ### Patch Changes
