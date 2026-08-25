@@ -5,7 +5,7 @@
 - **Slug**: `aws-lambda-runtime`
 - **Story brief**: [`2026-08-21-aws-lambda-runtime-brief.md`](./2026-08-21-aws-lambda-runtime-brief.md) — approved 2026-08-24, Ale Heredia
 - **Program brief**: [`2026-08-21-aws-serverless-target-brief.md`](./2026-08-21-aws-serverless-target-brief.md) — phase **B** of three
-- **Status**: `in-progress` — gate 2 approved 2026-08-24; slice 1 in flight
+- **Status**: `in-progress` — gate 2 approved 2026-08-24; slice 1 open as #321
 - **Story trunk**: `feat/aws-lambda-runtime`
 - **Base**: `main` at `048341cb` (aws-adapters close-out, #318)
 - **worktree_path**: **not required** — `git worktree list` shows only the main
@@ -294,6 +294,12 @@ git for-each-ref --format='%(refname:short) %(objectname:short)' refs/heads
 
 `--base` is not optional on `init` or `link`; omitted, the bottom PR re-points at
 `main` and the stack merges past gate 4.
+
+**`gh stack link` cannot run after the first slice.** It requires at least two PR
+numbers (`requires at least 2 arg(s), only received 1`) — a stack of one is just a
+PR, and there is nothing to link. The template's "run BOTH, every time" applies from
+slice 2 onward. Verified on 2026-08-25 with `gh stack` v0.1.0: `init --base` alone
+set #321's base to the trunk correctly, so gate 4 is not at risk in the meantime.
 
 See [Agentic SDLC § GitHub stacking](../docs/contributing/agentic-sdlc.md#github-stacking)
 before running any of these — it carries three traps this condensed block omits:
