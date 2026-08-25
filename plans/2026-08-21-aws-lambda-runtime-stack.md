@@ -8,6 +8,7 @@
 - **Status**: `in-progress` — gate 2 approved 2026-08-24; slice 1 open as #321
 - **Story trunk**: `feat/aws-lambda-runtime`
 - **Base**: `main` at `048341cb` (aws-adapters close-out, #318)
+- **Measurements**: [`2026-08-21-aws-lambda-runtime-measurements.md`](./2026-08-21-aws-lambda-runtime-measurements.md) — slice 1 output
 - **worktree_path**: **not required** — `git worktree list` shows only the main
   checkout and no other story is in flight. Revisit if phase C is drafted in parallel.
 
@@ -122,16 +123,25 @@ stranding anything.
 Findings below were verified against `048341cb`'s tree during planning and are **not**
 in the brief. Recorded here so slices do not re-derive them.
 
-### Slice 1 — oracle
+### Slice 1 — oracle — **delivered**
 
-- Boot-parity snapshot over `server.ts`'s observable surface: the route table
-  (`/api`, `/graphql`, `/health`, `/api-docs`, `/api-docs.json`, `config.metrics.endpoint`,
-  JWKS), the middleware chain in order (`server.ts:93-106`), and `printConfigSummary()`
-  output. Must pass on the current tree before slice 2 exists.
-- Gzip measurement over real CDM export fixtures, at several tenant sizes. Deliverable
-  is a number and a documented practical ceiling, not a test.
-- **Do not** measure gzip against synthetic uniform data; the ratio on real CDM JSON
-  is the only one that matters.
+Results in [`2026-08-21-aws-lambda-runtime-measurements.md`](./2026-08-21-aws-lambda-runtime-measurements.md).
+
+- `tests/e2e/boot-parity.e2e.test.ts` — 21 assertions, green against the current tree
+  before slice 2 exists, and **proven to bite**: moving `i18nMiddleware` ahead of
+  `cors` in `server.ts` fails it while the other 211 e2e tests stay green.
+- **Response header order turned out to be the middleware execution order**, which
+  makes the chain at `server.ts:93-101` observable black-box. That was not obvious
+  when this plan was written and it is what makes the oracle survive slice 2 — no
+  assertion knows whether an app factory exists.
+- Three invariants HTTP cannot see are named in the file rather than papered over,
+  and go on **slice 2's review checklist**: tracing imported first, `initializeJobs()`
+  staying out of the factory, and `rateLimitMiddleware` being inert under
+  `SECURITY_ENABLE_RATE_LIMIT=false`.
+- Gzip measured at **17.7% mean, 22.8% worst case** over five profiles, the last of
+  which is a deliberate upper bound on incompressibility rather than a tenant.
+  Fixtures are validated against `startProjectSyncRequestSchema`, because a ceiling
+  measured from bytes the route would reject measures nothing.
 
 ### Slice 2 — `create-app.ts`
 
