@@ -216,3 +216,4 @@ Contributor docs for CDM: `apps/api/src/lib/cdm/README.md`, `docs/core-concepts/
 | API app          | `apps/api`                                                   | `api.mdc`           |
 | Web app          | `apps/web`                                                   | `react-and-web.mdc` |
 | Agentic SDLC     | `docs/contributing/agentic-sdlc.md`, `.cursor/agents/`       | —                   |
+| Decision records | `decisions/` (ADRs — see `decisions/README.md`)              | —                   |

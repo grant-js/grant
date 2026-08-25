@@ -213,7 +213,7 @@ executes.
      are safe because they yield via `maxBatches`.
 - **The repo has no ADR directory.** `docs/architecture/` holds topic documents
   (`overview.md`, `multi-tenancy.md`, `rbac.md`, `security.md`, `data-model.md`), not
-  decisions. This plan proposes `docs/architecture/decisions/NNNN-<slug>.md` and slice
+  decisions. This plan proposes `decisions/NNNN-<slug>.md` and slice
   3 establishes it. **Flagged for gate 2** — if a different home is wanted, say so
   before slice 3 rather than after two ADRs land.
 
@@ -229,9 +229,19 @@ executes.
   → no such file), because it is a devDependency and the runner stage prunes to
   production deps. `pnpm --filter @grantjs/database db:migrate` therefore cannot run
   in a container. `bootstrapDatabase()` uses `drizzle-orm`'s migrator, which ships.
-- ADR directory established at `docs/architecture/decisions/` with a README defining
-  the convention, plus ADRs [0001](../docs/architecture/decisions/0001-configuration-gated-database-bootstrap.md)
-  and [0002](../docs/architecture/decisions/0002-long-running-cdm-sync-beyond-lambda.md).
+- ADR directory established at **`decisions/`** (repo root, sibling to `plans/`) with a
+  README defining the convention, plus ADRs
+  [0001](../decisions/0001-configuration-gated-database-bootstrap.md) and
+  [0002](../decisions/0002-long-running-cdm-sync-beyond-lambda.md). Indexed from
+  AGENTS.md § Where to look.
+
+  **Not** `docs/architecture/decisions/`, which is where this plan originally proposed
+  them: `docs/` is a workspace package whose `build` script is `vitepress build`, so
+  every `.md` beneath it becomes a public page. ADRs cite `plans/`, phase numbers, and
+  blocker indices — engineering records for this repo, with `plans/`'s audience and
+  lifecycle. At the root they are unpublished by construction rather than by an
+  `srcExclude` entry someone has to remember.
+
 - Documented in `apps/api/.env.example` and the Helm configmap defaults, both of
   which keep today's behavior.
 

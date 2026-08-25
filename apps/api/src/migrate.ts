@@ -15,7 +15,7 @@
  *
  * Use it wherever `DB_BOOTSTRAP_ON_BOOT=false`: a Helm hook Job, an ECS one-off
  * task, or a CodeBuild step ahead of a Lambda deploy. See
- * `docs/architecture/decisions/0001-configuration-gated-database-bootstrap.md`.
+ * `decisions/0001-configuration-gated-database-bootstrap.md`.
  *
  * Exit codes: 0 on success, 1 on failure — so a Job or task fails loudly rather
  * than letting a deploy proceed against an unmigrated database.

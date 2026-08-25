@@ -106,7 +106,7 @@ export async function createApp(): Promise<CreatedApp> {
   // the sole migrate/seed path for Kubernetes, and the advisory lock inside makes it
   // safe across replicas. Serverless targets set DB_BOOTSTRAP_ON_BOOT=false and run
   // `node dist/migrate.js` as a separate step — see
-  // docs/architecture/decisions/0001-configuration-gated-database-bootstrap.md.
+  // decisions/0001-configuration-gated-database-bootstrap.md.
   if (config.db.bootstrapOnBoot) {
     await bootstrapDatabase(db, config.system.systemUserId);
   } else {
