@@ -383,31 +383,56 @@ Recorded in `decisions/0004-secret-resolution-through-a-port.md`.
     URL, so this is config-only: `DB_URL=...?sslmode=verify-full`. Belongs to the CDK
     slice.
 
-### Slice 6 — image and registry
+### Slice 6a — image (done)
 
-- **`findWorkspaceRoot()` will crash a slim Lambda image.** `env/src/load-env.ts:16-29`
-  walks up from `process.cwd()` for `pnpm-workspace.yaml` and throws
-  `Error('Workspace root not found')` if absent — on first import of `@grantjs/env`,
-  before any handler code runs. Today's runner stage survives only because it copies
-  the entire builder `/app` (`Dockerfile:81`), which includes the workspace file
-  (`Dockerfile:26`). A `runner-lambda` stage that copies only `dist` + `node_modules`
-  **fails at cold start with a bare error and no useful trace.** Either keep the file
-  in the image or set `GRANT_ENV_FILE`-adjacent config so the walk is never needed.
-  This is the single most likely way slice 6 burns a day.
-- New stage shares the existing builder. **The existing `runner` stage is not
-  modified** — `EXPOSE 4000`, `docker-entrypoint.sh`, `CMD node dist/server.js` all
-  stay exactly as they are.
+**Split from the original slice 6.** The image is locally verifiable; the registry and
+CI half is not. Shipping them together made one PR whose evidence was half-empty.
+
+- New `runner-lambda` stage in `apps/api/Dockerfile`, built with
+  `--target runner-lambda`. It is `FROM runner`, not a rebuild from `node:22-alpine`:
+  the Lambda image is the K8s image plus one binary, so image drift cannot be the
+  cause of a Lambda-only failure.
+- **The `findWorkspaceRoot()` trap is closed by that choice, not worked around.**
+  Extending `runner` inherits the whole builder `/app`, `pnpm-workspace.yaml` included.
+  Verified in the built image, not reasoned about. A slimmed stage would still fail at
+  cold start, so do not slim this one without re-checking.
+- `AWS_LWA_PORT=4000` (matches inherited `API_PORT`) and
+  `AWS_LWA_READINESS_CHECK_PATH=/health`.
+
+**Two findings, both caught by verification rather than review:**
+
+1. **ADR 0003 recorded a registry path that does not exist.**
+   `public.ecr.aws/awsguru/aws-lambda-web-adapter` is not a repository; the real one is
+   `awsguru/aws-lambda-adapter` — no `web`. Confirmed against the ECR Public API with a
+   known-good control (`lambda/nodejs` → 1000 tags; the wrong path → 0). Pinned at
+   **1.1.0**, which publishes both `linux/amd64` and `linux/arm64`. ADR 0003 amended in
+   place with a dated correction.
+2. **Appending a stage silently changed the default build target.** Docker builds the
+   last stage when `--target` is omitted, and _every_ consumer omits it —
+   `docker-compose{,.e2e,.demo}.yml` and `release.yml` (which passes only `file`).
+   Without a fix, `release.yml` would have published the Lambda image to GHCR as
+   `grant-api`. Closed by a trailing `FROM runner AS default` stage; new stages must be
+   added above it. Proven by inspecting both images: the bare build has no adapter and
+   no `AWS_LWA_*`, the targeted build has both.
+
+### Slice 6b — registry and architecture (not started)
+
+- ECR path: `release.yml:270-282` logs into GHCR and derives `BASE=ghcr.io/...`. Lambda
+  cannot pull from GHCR. Add an ECR login + push for the Lambda image; the GHCR path
+  for existing images is untouched.
 - **Arch recommendation: `linux/arm64` for the Lambda image only**, K8s runner stays
   amd64 and single-arch. Graviton is materially cheaper per GB-second and cold starts
   are competitive; SnapStart is unavailable for Node.js regardless, so image size and
   architecture are the only cold-start levers that do not reintroduce idle cost.
-  Building both arches for an image with one consumer is cost without a customer.
-  The build-push composite action currently declares no `platforms:`
-  (`.github/actions/docker-build-push/action.yml:11-20`) — it gains an optional input
-  rather than a fork.
-- ECR path: `release.yml:270-282` logs into GHCR and derives `BASE=ghcr.io/...`.
-  Lambda cannot pull from GHCR. Add an ECR login + push for the Lambda image; the
-  GHCR path for existing images is untouched.
+  Confirmed available: the pinned adapter tag is multi-arch.
+  The build-push composite action declares no `platforms:`
+  (`.github/actions/docker-build-push/action.yml`) — it gains an optional input rather
+  than a fork. It will also need a `target` input, which slice 6a did not add.
+- **Node 24 base image is a separate decision, deliberately not bundled here.** The
+  Dockerfile pins `node:22-alpine` for `base` and `runner`; CI runs Node 24
+  (`ci.yml:83`, `release.yml:148,215`) and root `engines` says `>=18.0.0`. Bumping the
+  base image changes the _existing_ K8s runner, not just the Lambda target, so it does
+  not belong in an additive slice.
 
 ### Slice 7 — telemetry
 

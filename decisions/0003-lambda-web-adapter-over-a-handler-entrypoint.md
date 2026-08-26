@@ -15,7 +15,8 @@ Two ways to put an Express application on Lambda:
    adapter (`serverless-http`, `@codegenie/serverless-express`) translating Lambda
    events into Express requests.
 2. **The AWS Lambda Web Adapter.** An AWS-maintained extension process, added to the
-   image with one `COPY` from a public ECR image. It registers with the Lambda Runtime
+   image with one `COPY` from a public ECR image (`awsguru/aws-lambda-adapter`, see
+   the correction below). It registers with the Lambda Runtime
    API, turns each invocation into an ordinary HTTP request to the app on loopback,
    and returns the response. The application stays a normal listening web server and
    knows nothing about Lambda.
@@ -117,8 +118,21 @@ Configuration only; no application code depends on them.
 The extension itself is added in the image, which is slice 6's work:
 
 ```dockerfile
-COPY --from=public.ecr.aws/awsguru/aws-lambda-web-adapter:<pinned> /lambda-adapter /opt/extensions/lambda-adapter
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:1.1.0 /lambda-adapter /opt/extensions/lambda-adapter
 ```
+
+> **Corrected 2026-08-26 (slice 6).** This line originally read
+> `public.ecr.aws/awsguru/aws-lambda-web-adapter:<pinned>`. **That repository does not
+> exist.** The published repository is `awsguru/aws-lambda-adapter` — no `web` — despite
+> the project being named the Lambda Web Adapter. Confirmed against the ECR Public API
+> with a known-good control on the same code path (`lambda/nodejs` returned 1000 tags,
+> `awsguru/aws-lambda-web-adapter` returned 0), and by building the image.
+>
+> The error survived review because this ADR was written from recall and slice 4 never
+> touched the Dockerfile, so no build ever executed the claim. Version pinned at 1.1.0,
+> which publishes both `linux/amd64` and `linux/arm64` — the plan's Graviton
+> recommendation is therefore available. Upstream also moved from `awslabs/` to
+> `aws/aws-lambda-web-adapter` on GitHub.
 
 ## Alternatives considered
 
