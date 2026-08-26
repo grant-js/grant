@@ -415,24 +415,45 @@ CI half is not. Shipping them together made one PR whose evidence was half-empty
    added above it. Proven by inspecting both images: the bare build has no adapter and
    no `AWS_LWA_*`, the targeted build has both.
 
-### Slice 6b — registry and architecture (not started)
+### Slice 6b — registry and architecture (done)
 
-- ECR path: `release.yml:270-282` logs into GHCR and derives `BASE=ghcr.io/...`. Lambda
-  cannot pull from GHCR. Add an ECR login + push for the Lambda image; the GHCR path
-  for existing images is untouched.
-- **Arch recommendation: `linux/arm64` for the Lambda image only**, K8s runner stays
-  amd64 and single-arch. Graviton is materially cheaper per GB-second and cold starts
-  are competitive; SnapStart is unavailable for Node.js regardless, so image size and
-  architecture are the only cold-start levers that do not reintroduce idle cost.
-  Confirmed available: the pinned adapter tag is multi-arch.
-  The build-push composite action declares no `platforms:`
-  (`.github/actions/docker-build-push/action.yml`) — it gains an optional input rather
-  than a fork. It will also need a `target` input, which slice 6a did not add.
-- **Node 24 base image is a separate decision, deliberately not bundled here.** The
-  Dockerfile pins `node:22-alpine` for `base` and `runner`; CI runs Node 24
-  (`ci.yml:83`, `release.yml:148,215`) and root `engines` says `>=18.0.0`. Bumping the
-  base image changes the _existing_ K8s runner, not just the Lambda target, so it does
-  not belong in an additive slice.
+- **Composite action gains two optional inputs**, `target` and `platforms`, both
+  defaulting to `''`. Empty `target` builds the Dockerfile's last stage and empty
+  `platforms` builds for the runner's architecture, so all four existing callers are
+  byte-identical. It gained inputs rather than a fork, as planned.
+- **New `docker-lambda` job**, separate from `docker` rather than a fifth matrix entry:
+  different registry, target and architecture make it a different build, and folding it
+  into the matrix would have pushed a Lambda image to GHCR. The existing `docker` job is
+  untouched (79 insertions, 0 deletions in `release.yml`).
+- **The job is inert until phase C.** It is gated on `vars.AWS_ECR_REGISTRY` _and_
+  `vars.AWS_OIDC_ROLE_ARN` both being non-empty. Neither exists yet — the repo has no
+  AWS plumbing in CI at all — so the job skips and cannot break a release today. Phase C
+  creates the OIDC role and ECR repository, sets the two variables, and the path
+  activates with no workflow change.
+- Auth is OIDC (`id-token: write`), not a stored access key.
+- **`linux/arm64` for the Lambda image only**; the GHCR images stay amd64 and
+  single-arch. The self-hosted runner is amd64, so the job sets up QEMU.
+- **`bcrypt` was the arm64 risk and it is not one.** It is a native module and the
+  Dockerfile installs with `--ignore-scripts`, which would normally leave no binding.
+  bcrypt 6.0.0 instead _bundles_ prebuilds for every platform, `linux-arm64` included,
+  and resolves at require time. Verified by listing `prebuilds/` in the built image and
+  by running a hash/compare round-trip inside it.
+
+**Two things are unverified in this slice, stated rather than glossed:**
+
+1. **The ECR login and push have never run.** They cannot be exercised without an AWS
+   role and an ECR repository. Verified instead: the job stays skipped without the two
+   variables, the YAML parses, and every pinned action tag resolves upstream
+   (`configure-aws-credentials@v4.0.2`, `amazon-ecr-login@v2.0.1`,
+   `setup-qemu-action@v3.6.0`).
+2. **The arm64 build has not been executed.** The dev machine has no `qemu-aarch64`
+   binfmt handler registered — `docker run --platform linux/arm64 alpine uname -m`
+   fails with `exec format error` — so a local attempt proves nothing either way. The
+   evidence that arm64 is viable is indirect but specific: `node:22-alpine` publishes
+   `linux/arm64`, the pinned adapter tag publishes `linux/arm64`, and the one native
+   dependency (`bcrypt`) bundles a `linux-arm64` prebuild. **First real proof will be
+   the first `docker-lambda` run in phase C.** If arm64 fails there, dropping
+   `platforms:` falls back to amd64 with no other change.
 
 ### Slice 7 — telemetry
 

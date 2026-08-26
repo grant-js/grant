@@ -310,6 +310,85 @@ jobs:
           tags: ${{ steps.tags.outputs.tags }}
           push: true
 
+  docker-lambda:
+    name: Build and push Lambda image to ECR
+    runs-on: self-hosted
+    needs: [prepare, changes, release, docker]
+    # Inert until the AWS side exists. `vars.AWS_ECR_REGISTRY` and
+    # `vars.AWS_OIDC_ROLE_ARN` are created by the CDK work in phase C; until both
+    # are set this job is skipped, so adding it cannot break a release today.
+    if: >-
+      always() &&
+      vars.AWS_ECR_REGISTRY != '' &&
+      vars.AWS_OIDC_ROLE_ARN != '' &&
+      needs.docker.result == 'success'
+    permissions:
+      contents: read
+      # Required for OIDC federation to AWS; no long-lived access key is stored.
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ vars.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2.0.1
+
+      - name: Set up QEMU
+        # The self-hosted runner is amd64; the Lambda image is arm64.
+        uses: docker/setup-qemu-action@v3.6.0
+        with:
+          platforms: arm64
+
+      - name: Resolve Lambda image tags
+        id: tags
+        env:
+          PUBLISHED: ${{ needs.release.outputs.published }}
+          REBUILD_RELEASE: ${{ inputs.rebuild_release_images }}
+        run: |
+          set -euo pipefail
+          BASE="${{ vars.AWS_ECR_REGISTRY }}/grant-api-lambda"
+          if [[ "$PUBLISHED" == "true" || "$REBUILD_RELEASE" == "true" ]]; then
+            VERSION="$(node -p "require('./apps/api/package.json').version")"
+            {
+              echo "tags<<EOF"
+              echo "${BASE}:${VERSION}"
+              echo "${BASE}:latest"
+              echo "${BASE}:sha-${{ github.sha }}"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo "tags<<EOF"
+              echo "${BASE}:sha-${{ github.sha }}"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and push grant-api-lambda
+        uses: ./.github/actions/docker-build-push
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          # Distinct from the grant-api scope: different target and architecture
+          # produce different layers, so sharing a scope would thrash the cache.
+          cache_scope: grant-api-lambda-${{ hashFiles('pnpm-lock.yaml', 'apps/api/Dockerfile') }}
+          image: grant-api-lambda
+          tags: ${{ steps.tags.outputs.tags }}
+          push: true
+          target: runner-lambda
+          # Graviton: materially cheaper per GB-second, and SnapStart is
+          # unavailable for Node.js regardless, so architecture and image size are
+          # the only cold-start levers that do not reintroduce idle cost.
+          platforms: linux/arm64
+
   release-git-tag:
     name: Create release git tag and GitHub Release
     runs-on: ubuntu-latest
