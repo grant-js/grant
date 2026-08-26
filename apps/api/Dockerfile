@@ -42,6 +42,7 @@ COPY packages/@grantjs/email/package.json packages/@grantjs/email/package.json
 COPY packages/@grantjs/jobs/package.json packages/@grantjs/jobs/package.json
 COPY packages/@grantjs/analytics/package.json packages/@grantjs/analytics/package.json
 COPY packages/@grantjs/telemetry/package.json packages/@grantjs/telemetry/package.json
+COPY packages/@grantjs/secrets/package.json packages/@grantjs/secrets/package.json
 
 RUN pnpm install --frozen-lockfile --ignore-scripts --shamefully-hoist --filter grant-api...
 
@@ -61,6 +62,7 @@ COPY packages/@grantjs/email packages/@grantjs/email
 COPY packages/@grantjs/jobs packages/@grantjs/jobs
 COPY packages/@grantjs/analytics packages/@grantjs/analytics
 COPY packages/@grantjs/telemetry packages/@grantjs/telemetry
+COPY packages/@grantjs/secrets packages/@grantjs/secrets
 COPY apps/api apps/api
 
 RUN node scripts/docker/build-api-production.mjs

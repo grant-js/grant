@@ -28,6 +28,7 @@ const WORKSPACE_PACKAGES = [
   { dir: 'packages/@grantjs/jobs' },
   { dir: 'packages/@grantjs/analytics' },
   { dir: 'packages/@grantjs/telemetry' },
+  { dir: 'packages/@grantjs/secrets' },
   { dir: 'packages/@grantjs/database', assets: ['src/migrations'] },
 ];
 
