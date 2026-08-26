@@ -270,13 +270,69 @@ runtime that fits the transaction, not to break the transaction to fit the runti
 sync must leave Lambda is unknown. Slice 1's fixtures make it measurable and
 deterministic; phase C owns it.
 
-### Slice 4 — handler
+### Slice 4 — Lambda runtime fit — **delivered, and not as planned**
 
-- `config.tracing.backend` **already accepts `'xray'`** and maps it to the OTLP
-  exporter (`lib/tracing/index.ts:26-29`). No new exporter is needed; the slice adds a
-  `forceFlush()` export alongside the existing `shutdownTracing()`
-  (`lib/tracing/index.ts:104`) and calls it before handler return. `BatchSpanProcessor`
-  (`:77`) is what loses spans on freeze.
+**The plan's shape for this slice was wrong and was replaced.** It assumed a handler
+entrypoint over `create-app.ts`. One was built, tested, and verified end to end — then
+discarded in favour of the **AWS Lambda Web Adapter**, which runs `dist/server.js`
+unmodified. Recorded in
+[ADR 0003](../decisions/0003-lambda-web-adapter-over-a-handler-entrypoint.md); it
+supersedes the brief's criterion "A Lambda handler entrypoint exists over
+`create-app.ts`".
+
+**What changed the decision.** The handler was defended on two grounds and both
+collapsed under challenge from the owner:
+
+1. _"LWA runs `server.ts`, whose cron timers die with a frozen container."_ False on
+   this target. `AwsJobAdapter.schedule()` creates no timers — it records a handler
+   and logs "recurrence is provisioned externally"
+   (`packages/@grantjs/jobs/src/aws/index.ts:109-127`). Recurrence is EventBridge,
+   dispatch is SQS. Timers exist only under `node-cron`.
+2. _"Only a handler has a return point to flush OTel spans at."_ True, and irrelevant.
+   `TRACING_ENABLED` defaults to `false` in **every** shipped configuration, so an
+   optional, disabled subsystem was being allowed to pick the entrypoint. And the
+   buffering is a strategy choice — `SimpleSpanProcessor` buffers nothing.
+
+**The evidence that settled it.** Excluding `initializeJobs()` from the handler — on
+reasoning 1 — left `getJobAdapter()` returning `null`, so `startProjectSync` and
+`startProjectExport` would have thrown "job adapter is not configured"
+(`handlers/projects.handler.ts:145,196`). **CDM sync would have been dead on arrival**,
+and nothing in the slice caught it. The point is not that the bug was hard to fix; it
+is that a parallel entrypoint fell out of step with `server.ts` within one slice,
+written with full context. Under LWA that defect is structurally impossible.
+
+**What shipped instead**, the whole runtime change being one config-selected strategy:
+
+- `TRACING_SPAN_PROCESSOR` (`batch` | `simple`), default `batch` — server behavior
+  unchanged. `simple` exports per span so nothing is buffered when a container freezes.
+- ADR 0003, including the operating requirements table (`AWS_LWA_PORT`,
+  `AWS_LWA_READINESS_CHECK_PATH`, `JOBS_PROVIDER=aws`, `DB_BOOTSTRAP_ON_BOOT=false`).
+- **No** `lambda.ts`, **no** `serverless-http`, no second entrypoint.
+
+**Verified against the built image** by booting unmodified `dist/server.js` under the
+full AWS-target configuration — `JOBS_PROVIDER=aws` against LocalStack SQS,
+`DB_BOOTSTRAP_ON_BOOT=false`, `TRACING_ENABLED=true`, `TRACING_SPAN_PROCESSOR=simple`:
+
+```
+OpenTelemetry tracing initialized
+Skipping database bootstrap at boot (DB_BOOTSTRAP_ON_BOOT=false)
+Recurring job registered with AWS adapter; recurrence is provisioned externally
+Enqueue-only job registered with AWS adapter
+Job scheduling initialized
+Server started successfully
+```
+
+**Consequence for slice 6**: the image gains the LWA extension via one `COPY` from
+public ECR rather than a Runtime Interface Client, and `CMD` stays `node dist/server.js`.
+
+**Consequence for slice 2**: `create-app.ts` was justified partly by "a second
+entrypoint needs app construction without the server's behavior", and that second HTTP
+entrypoint no longer exists. It keeps its place on its own merits — `server.ts` 276 →
+135 lines, `migrate.ts` as a real second entrypoint over the same code, and a provable
+no-op — but had ADR 0003 come first, slice 2 would have been argued differently.
+
+**Node 24**: the constraint that ruled out `@codegenie/serverless-express` is moot now
+that no event adapter is used at all. The base-image version is slice 6's call.
 
 ### Slice 5 — secrets (security-full)
 

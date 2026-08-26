@@ -9,7 +9,11 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 import { NodeSDK } from '@opentelemetry/sdk-node';
-import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
+import {
+  BatchSpanProcessor,
+  SimpleSpanProcessor,
+  type SpanProcessor,
+} from '@opentelemetry/sdk-trace-base';
 
 import { config } from '@/config';
 import { logger } from '@/lib/logger';
@@ -32,6 +36,30 @@ function createExporter(): JaegerExporter | OTLPTraceExporter {
         endpoint: config.tracing.jaegerEndpoint,
       });
   }
+}
+
+/**
+ * `batch` buffers spans and exports them on a timer, which is the right trade for a
+ * long-running server: fewer, larger exports.
+ *
+ * That trade inverts wherever the process can stop between requests without warning.
+ * On Lambda behind the Web Adapter the execution environment is frozen the instant a
+ * response is returned and may never thaw, so a buffered batch is not delayed — it is
+ * gone, and the spans lost are disproportionately those of the slowest requests. The
+ * application gets no invocation-ended signal it could flush on, so the export has to
+ * not be buffered in the first place.
+ *
+ * `simple` exports each span as it ends. It costs one export call per span, which is
+ * cheap against a collector on loopback and is what the ADOT layer expects.
+ */
+function createSpanProcessor(exporter: JaegerExporter | OTLPTraceExporter): SpanProcessor {
+  if (config.tracing.spanProcessor === 'simple') {
+    return new SimpleSpanProcessor(exporter);
+  }
+  return new BatchSpanProcessor(exporter, {
+    maxQueueSize: 2048,
+    scheduledDelayMillis: 5000,
+  });
 }
 
 /** Resource attribute names (OpenTelemetry semantic conventions) */
@@ -74,10 +102,7 @@ function initializeTracing(): void {
 
     sdk = new NodeSDK({
       resource,
-      spanProcessor: new BatchSpanProcessor(exporter, {
-        maxQueueSize: 2048,
-        scheduledDelayMillis: 5000,
-      }),
+      spanProcessor: createSpanProcessor(exporter),
       instrumentations: [autoInstrumentations, new IORedisInstrumentation()],
     });
 

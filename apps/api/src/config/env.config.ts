@@ -578,6 +578,9 @@ const TRACING_CONFIG = {
   /** OTLP trace endpoint (for TRACING_BACKEND=otlp or xray) */
   otlpEndpoint: env.OTLP_ENDPOINT,
 
+  /** Span export strategy: batch (buffered) | simple (per-span) */
+  spanProcessor: env.TRACING_SPAN_PROCESSOR,
+
   /** Sampling rate 0.0 to 1.0 */
   samplingRate: env.TRACING_SAMPLING_RATE,
 
