@@ -76,7 +76,7 @@ export interface IGitHubOAuthService {
 
   generateState(params: GenerateStateParams): OAuthState;
 
-  isConfigured(): boolean;
+  isConfigured(): Promise<boolean>;
 }
 
 // ---------------------------------------------------------------------------

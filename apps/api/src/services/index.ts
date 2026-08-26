@@ -1,4 +1,4 @@
-import { Grant, GrantAuth } from '@grantjs/core';
+import { Grant, GrantAuth, type ISecretResolver } from '@grantjs/core';
 import {
   accountAuditLogs,
   accountProjectApiKeyAuditLogs,
@@ -63,6 +63,7 @@ import {
   NotificationDisplayContextResolver,
   NotificationGeneratorConsumer,
 } from '@/lib/notifications';
+import { secretResolver } from '@/lib/secrets';
 import { webhookAdapters, WebhookDispatcherConsumer } from '@/lib/webhooks';
 import { Repositories } from '@/repositories';
 
@@ -143,6 +144,11 @@ function audit(table: any, entityIdField: string, user: GrantAuth | null, db: Db
 
 export interface CreateServicesOptions {
   scheduleAfterCommit?: ScheduleAfterCommit;
+  /**
+   * Overrides the process-wide resolver from `@/lib/secrets`. Present so tests can
+   * inject a fake; production callers leave it unset.
+   */
+  secrets?: ISecretResolver;
 }
 
 export function createServices(
@@ -153,6 +159,7 @@ export function createServices(
   grant: Grant,
   options?: CreateServicesOptions
 ) {
+  const secrets = options?.secrets ?? secretResolver;
   const events = new DrizzleEventPublisher(user, db, {
     scheduleAfterCommit: options?.scheduleAfterCommit,
   });
@@ -252,7 +259,7 @@ export function createServices(
       db
     ),
     fileStorage: new FileStorageService(),
-    githubOAuth: new GitHubOAuthService(),
+    githubOAuth: new GitHubOAuthService(secrets),
     oauthState: new OAuthStateService(cache.oauth),
     users: new UserService(
       repositories.userRepository,
@@ -269,7 +276,8 @@ export function createServices(
       repositories.userMfaFactorRepository,
       repositories.userMfaRecoveryCodeRepository,
       audit(userMfaFactorAuditLogs, 'userMfaFactorId', user, db),
-      events
+      events,
+      secrets
     ),
     userSessions: new UserSessionService(
       repositories.userSessionRepository,

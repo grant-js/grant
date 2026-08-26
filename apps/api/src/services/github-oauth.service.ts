@@ -42,18 +42,29 @@ export interface OAuthState {
   createdAt: number;
 }
 
-import type { IGitHubOAuthService } from '@grantjs/core';
+import type { IGitHubOAuthService, ISecretResolver } from '@grantjs/core';
 
 export class GitHubOAuthService implements IGitHubOAuthService {
   private readonly logger = createLogger('GitHubOAuthService');
-  private readonly octokit: Octokit | null = null;
 
-  constructor() {
-    if (config.githubOAuth.clientId && config.githubOAuth.clientSecret) {
-      this.octokit = new Octokit({
-        auth: config.githubOAuth.clientSecret,
-      });
-    }
+  constructor(private readonly secrets: ISecretResolver) {}
+
+  /**
+   * Resolved per use rather than read once at boot, so a rotated secret is picked
+   * up without a redeploy. The `env` resolver makes this a plain `process.env` read.
+   */
+  private resolveClientSecret(): Promise<string | undefined> {
+    return this.secrets.resolve('GITHUB_CLIENT_SECRET');
+  }
+
+  /**
+   * Same condition the constructor used to evaluate eagerly when it built an
+   * Octokit instance from the client secret. That instance was only ever read as
+   * a configured-ness flag — every GitHub call builds its own client from the
+   * user's access token — so the flag is now computed directly.
+   */
+  private async hasClientCredentials(): Promise<boolean> {
+    return Boolean(config.githubOAuth.clientId && (await this.resolveClientSecret()));
   }
 
   getAuthorizationUrl(state: string, redirectUrl?: string): string {
@@ -105,7 +116,7 @@ export class GitHubOAuthService implements IGitHubOAuthService {
 
     const validatedCode = validateInput(githubAuthorizationCodeSchema, code, context);
 
-    if (!config.githubOAuth.clientId || !config.githubOAuth.clientSecret) {
+    if (!(await this.hasClientCredentials())) {
       throw new ConfigurationError('GitHub OAuth is not configured');
     }
 
@@ -119,7 +130,8 @@ export class GitHubOAuthService implements IGitHubOAuthService {
   async exchangeCodeForTokenWithRedirect(code: string, redirectUri: string): Promise<string> {
     const context = 'GitHubOAuthService.exchangeCodeForTokenWithRedirect';
     const validatedCode = validateInput(githubAuthorizationCodeSchema, code, context);
-    if (!config.githubOAuth.clientId || !config.githubOAuth.clientSecret) {
+    const clientSecret = await this.resolveClientSecret();
+    if (!config.githubOAuth.clientId || !clientSecret) {
       throw new ConfigurationError('GitHub OAuth is not configured');
     }
 
@@ -132,7 +144,7 @@ export class GitHubOAuthService implements IGitHubOAuthService {
         },
         body: JSON.stringify({
           client_id: config.githubOAuth.clientId,
-          client_secret: config.githubOAuth.clientSecret,
+          client_secret: clientSecret,
           code: validatedCode,
           redirect_uri: redirectUri,
         }),
@@ -190,7 +202,7 @@ export class GitHubOAuthService implements IGitHubOAuthService {
 
     const validatedAccessToken = validateInput(githubAccessTokenSchema, accessToken, context);
 
-    if (!this.octokit) {
+    if (!(await this.hasClientCredentials())) {
       throw new ConfigurationError('GitHub OAuth is not configured');
     }
 
@@ -275,10 +287,10 @@ export class GitHubOAuthService implements IGitHubOAuthService {
     };
   }
 
-  isConfigured(): boolean {
+  async isConfigured(): Promise<boolean> {
     return !!(
       config.githubOAuth.clientId &&
-      config.githubOAuth.clientSecret &&
+      (await this.resolveClientSecret()) &&
       config.githubOAuth.callbackUrl
     );
   }
