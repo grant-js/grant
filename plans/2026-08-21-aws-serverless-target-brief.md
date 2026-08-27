@@ -33,12 +33,14 @@ organization.
 | **B** | `aws-lambda-runtime` | [brief](./2026-08-21-aws-lambda-runtime-brief.md)                                         | Lambda-capable entrypoint, secrets, image, telemetry    | CI proves no-regression; AWS behavior needs a deployed stack |
 | **C** | `aws-edge-infra`     | [brief](./2026-08-21-aws-edge-infra-brief.md)                                             | CDK app, config surface, CloudFront, OpenNext, docs     | Deployed AWS stack only                                      |
 
-**Phase A is merged to `main`** — #313 (`39151c33`, 2026-08-24), built from slices
-#305, #306, #309 and #311. Gates 1–4 all cleared. Phase B takes its own
-gate 1 when queued, and its `file:line` citations need re-verifying first: they were
-written against `0592720c` and `main` has since moved. B and C are drafted now so the
-end state is visible and reviewable, not so they proceed. Each takes its own
-gate 1 when its turn comes.
+**Phases A and B are merged to `main`** — #313 (`39151c33`, 2026-08-24) from slices
+#305, #306, #309 and #311, and #338 (`7a968149`, 2026-08-27) from eight slices, closed
+out by #339. Gates 1–4 cleared on both.
+
+**Phase C is revised and awaiting gate 1** (2026-08-27). Its `file:line` citations
+were re-verified against `dabc7339`; the draft was written against `0592720c`. Three
+open questions are recorded at the end of its brief and want answers before stack
+planning.
 
 **Phase A ships nothing deployable to AWS.** That is deliberate. It de-risks the two
 hardest adapters while the existing K8s deployment still provides a working reference
@@ -101,18 +103,18 @@ Recorded so later slices do not re-derive it:
 
 Indexed here; each is owned by the phase noted.
 
-| #   | Blocker                                                                                    | Owner phase             |
-| --- | ------------------------------------------------------------------------------------------ | ----------------------- |
-| 1   | `bootstrapDatabase()` at boot reverses a decision recorded at `server.ts:56`; needs an ADR | B                       |
-| 2   | CDM import payload vs. Lambda's 6 MB request cap; gzip ratio **unmeasured**                | B                       |
-| 3   | `project-sync` may exceed the 15-minute Lambda ceiling                                     | B (design) / C (wiring) |
-| 4   | Prometheus pull-scraping has no analogue on Lambda                                         | B                       |
-| 5   | OTel batch spans lost on container freeze                                                  | B                       |
-| 6   | Secret rotation vs. container-scoped `getEnv()` caching                                    | B                       |
-| 7   | **Lambda cannot pull images from GHCR**; release publishes GHCR-only (`release.yml:282`)   | B                       |
-| 8   | `apps/api/Dockerfile:95-96` is a server image, not a Lambda image; single-arch amd64       | B                       |
-| 9   | No `values.yaml`-equivalent config surface for the CDK app                                 | C                       |
-| 10  | No local AWS emulation in any compose file                                                 | **A**                   |
+| #   | Blocker                                                                                                                                         | Owner phase             |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| 1   | `bootstrapDatabase()` at boot reverses a decision recorded at `server.ts:56`; needs an ADR                                                      | B                       |
+| 2   | CDM import payload vs. Lambda's 6 MB request cap; gzip ratio **unmeasured**                                                                     | B                       |
+| 3   | `project-sync` may exceed the 15-minute Lambda ceiling                                                                                          | B (design) / C (wiring) |
+| 4   | Prometheus pull-scraping has no analogue on Lambda                                                                                              | B                       |
+| 5   | OTel batch spans lost on container freeze                                                                                                       | B                       |
+| 6   | Secret rotation vs. container-scoped `getEnv()` caching                                                                                         | B                       |
+| 7   | **Lambda cannot pull images from GHCR**; release publishes GHCR-only (`release.yml:282`)                                                        | B                       |
+| 8   | `apps/api/Dockerfile:95-96` is a server image, not a Lambda image; single-arch amd64                                                            | B                       |
+| 9   | No `values.yaml`-equivalent config surface for the CDK app — **resolved by [ADR 0005](../decisions/0005-aws-target-as-a-construct-library.md)** | C                       |
+| 10  | No local AWS emulation in any compose file                                                                                                      | **A**                   |
 
 Full statements of 1–6 live in the phase B brief; 9–10 in C and A respectively.
 
