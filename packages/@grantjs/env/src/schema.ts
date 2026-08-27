@@ -237,10 +237,22 @@ export const envSchema = z.object({
   METRICS_ENABLED: optionalBoolean(false),
   METRICS_ENDPOINT: optionalString('/metrics'),
   METRICS_COLLECT_DEFAULTS: optionalBoolean(true),
-  TELEMETRY_PROVIDER: z.enum(['none', 'cloudwatch']).optional().default('none'),
+  TELEMETRY_PROVIDER: z.enum(['none', 'cloudwatch', 'emf']).optional().default('none'),
   TELEMETRY_CLOUDWATCH_REGION: optionalString('us-east-1'),
   TELEMETRY_CLOUDWATCH_LOG_GROUP: optionalString(''),
   TELEMETRY_CLOUDWATCH_LOG_STREAM_PREFIX: optionalString('grant-api'),
+  /** CloudWatch custom metric namespace (TELEMETRY_PROVIDER=emf). */
+  TELEMETRY_EMF_NAMESPACE: optionalString('Grant/API'),
+  /**
+   * Comma-separated fields promoted to metric dimensions. Every distinct
+   * combination creates a billable CloudWatch metric, so keep this
+   * low-cardinality. Do NOT add `path`: request paths embed resource IDs and
+   * would create an unbounded number of metrics. Unbounded fields are still
+   * emitted as document properties and stay queryable in Logs Insights.
+   */
+  TELEMETRY_EMF_DIMENSIONS: optionalString('method,statusCode'),
+  /** Comma-separated `field:CloudWatchUnit` pairs extracted as metrics. */
+  TELEMETRY_EMF_METRICS: optionalString('duration:Milliseconds'),
   ANALYTICS_ENABLED: optionalBoolean(false),
   ANALYTICS_PROVIDER: z.enum(['none', 'umami']).optional().default('none'),
   ANALYTICS_UMAMI_API_URL: optionalString(''),
