@@ -549,7 +549,7 @@ const METRICS_CONFIG = {
 // ============================================================================
 
 const TELEMETRY_CONFIG = {
-  /** Telemetry provider: none (noop) | cloudwatch */
+  /** Telemetry provider: none (noop) | cloudwatch | emf */
   provider: env.TELEMETRY_PROVIDER,
 
   /** CloudWatch adapter (used when provider is cloudwatch) */
@@ -557,6 +557,21 @@ const TELEMETRY_CONFIG = {
     region: env.TELEMETRY_CLOUDWATCH_REGION,
     logGroupName: env.TELEMETRY_CLOUDWATCH_LOG_GROUP,
     logStreamPrefix: env.TELEMETRY_CLOUDWATCH_LOG_STREAM_PREFIX,
+  },
+
+  /** Embedded Metric Format adapter (used when provider is emf) */
+  emf: {
+    namespace: env.TELEMETRY_EMF_NAMESPACE,
+    dimensions: env.TELEMETRY_EMF_DIMENSIONS.split(',')
+      .map((s: string) => s.trim())
+      .filter(Boolean),
+    /** `field:Unit` pairs; a pair missing its unit is ignored rather than defaulted. */
+    metrics: Object.fromEntries(
+      env.TELEMETRY_EMF_METRICS.split(',')
+        .map((pair: string) => pair.split(':').map((part) => part.trim()))
+        .filter((parts: string[]) => parts.length === 2 && parts[0] && parts[1])
+        .map((parts: string[]) => [parts[0], parts[1]])
+    ) as Record<string, string>,
   },
 } as const;
 

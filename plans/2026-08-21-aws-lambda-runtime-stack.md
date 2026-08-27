@@ -455,27 +455,35 @@ CI half is not. Shipping them together made one PR whose evidence was half-empty
    the first `docker-lambda` run in phase C.** If arm64 fails there, dropping
    `platforms:` falls back to amd64 with no other change.
 
-### Slice 7 — telemetry
+### Slice 7 — telemetry (done)
 
-- **No `@grantjs/core` port change is required, and this was checked.**
-  `ITelemetryAdapter` exposes only `sendLog(entry)`. EMF is a _log format_, not a
-  separate API: an EMF document is a log line carrying an `_aws` block plus top-level
-  metric values. `CloudWatchTelemetryAdapter.sendLog()` spreads `entry.fields` into
-  the top level of the emitted JSON (`telemetry/src/cloudwatch.ts:69-75`), so an EMF
-  document passes through the existing port unchanged.
-- **Recommendation: a stdout EMF strategy, not EMF over the existing CloudWatch
-  adapter.** The existing adapter issues `PutLogEvents` per entry and threads a
-  `sequenceToken` across calls (`cloudwatch.ts:122-133`) — that token is meaningless
-  across frozen containers, and an API call per log line is the wrong shape for Lambda.
-  Writing EMF to stdout lets the Lambda runtime ship it and CloudWatch extract the
-  metrics, with no SDK, no sequence token, and no flush-on-freeze problem. It also
-  sidesteps that `apps/api` does not currently declare
-  `@aws-sdk/client-cloudwatch-logs` at all.
-- Additive third strategy on `TelemetryFactory` alongside `'none'` and `'cloudwatch'`
-  (`telemetry/src/factory.ts:7`), matching how phase A widened `CacheFactory`.
-- `/metrics`, `metricsMiddleware`, `lib/metrics/metrics.ts`, and `servicemonitor.yaml`
-  are **unchanged**. Nothing can scrape a frozen container; the two paths coexist,
-  config-selected. This is blocker 4's resolution, not a migration.
+- **No `@grantjs/core` port change was required, as the plan predicted.** `sendLog`
+  already spreads `entry.fields` into the top level, and EMF is a log _format_ — an
+  `_aws` block plus top-level metric values — so it passes through the existing port.
+- **New `emf` provider on `TelemetryFactory`**, alongside `'none'` and `'cloudwatch'`.
+  `none` stays the default and the CloudWatch adapter is untouched. Writing to stdout
+  needs no SDK, no sequence token, and nothing flushed before a freeze.
+- `/metrics`, `metricsMiddleware`, `lib/metrics/metrics.ts` and `servicemonitor.yaml`
+  are unchanged. Blocker 4's resolution is coexistence, not migration.
+- **The plan missed a cost trap, found by reading the one real call site.**
+  `request-logging.middleware.ts:80` sends `{ method, path, statusCode, duration }`.
+  In EMF, every distinct combination of _dimension_ values creates a separate billable
+  CloudWatch metric — and `path` embeds resource IDs, so promoting it would create an
+  unbounded number of them. `TELEMETRY_EMF_DIMENSIONS` therefore defaults to
+  `method,statusCode`, and `path` is emitted as a property, where it stays queryable in
+  Logs Insights without creating metric series. There is a test asserting `path` never
+  becomes a dimension, and it was shown to fail when the adapter auto-promotes fields.
+- **Correctness details that would otherwise surface as silently dropped records:**
+  dimension values are coerced to strings (`statusCode` arrives as a number); a
+  non-numeric configured metric is skipped rather than poisoning the document; and a
+  document with zero metrics or an unparseable timestamp omits `_aws` and degrades to
+  a plain structured log instead of being rejected wholesale.
+- **One documented exemption.** The adapter writes with `process.stdout.write` rather
+  than `ILogger`, which is the only place this package bypasses the injected logger. An
+  EMF document must arrive as a bare single-line JSON object; routing it through the
+  structured logger would subject it to level filtering and, with `LOG_PRETTY_PRINT`
+  on, to a formatter that destroys the JSON the metric extractor needs. The write
+  function is injectable so tests capture output rather than stdout.
 
 ## Dependencies and notes
 
