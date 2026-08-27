@@ -42,6 +42,10 @@ aggregate_human_entries() {
   awk '
     function flush_entry(   key) {
       if (entry == "") return
+      # The blank line that terminated the entry is part of `entry`. Trim it so the
+      # dedup key does not depend on whether the entry was last in its section, and
+      # so every join below contributes exactly one separator.
+      sub(/\n+$/, "", entry)
       key = entry
       sub(/^- [0-9a-f]+: /, "- ", key)
       if (seen[key]++) {
@@ -49,11 +53,10 @@ aggregate_human_entries() {
         return
       }
       if (!(heading in printed_heading)) {
-        if (nheadings++) out = out "\n"
         out = out heading "\n\n"
         printed_heading[heading] = 1
       }
-      out = out entry "\n"
+      out = out entry "\n\n"
       entry = ""
     }
 
