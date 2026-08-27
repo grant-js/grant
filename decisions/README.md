@@ -21,7 +21,8 @@ record _why_ it became that way.
 
 ## Index
 
-| ADR                                                      | Status   | Decision                                           |
-| -------------------------------------------------------- | -------- | -------------------------------------------------- |
-| [0001](./0001-configuration-gated-database-bootstrap.md) | Accepted | Boot-time migrate/seed becomes configuration-gated |
-| [0002](./0002-long-running-cdm-sync-beyond-lambda.md)    | Accepted | CDM sync jobs exceeding 15 minutes run off-Lambda  |
+| ADR                                                            | Status   | Decision                                                   |
+| -------------------------------------------------------------- | -------- | ---------------------------------------------------------- |
+| [0001](./0001-configuration-gated-database-bootstrap.md)       | Accepted | Boot-time migrate/seed becomes configuration-gated         |
+| [0002](./0002-long-running-cdm-sync-beyond-lambda.md)          | Accepted | CDM sync jobs exceeding 15 minutes run off-Lambda          |
+| [0003](./0003-lambda-web-adapter-over-a-handler-entrypoint.md) | Accepted | Lambda runs `server.js` behind the Web Adapter, no handler |

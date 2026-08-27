@@ -21,6 +21,8 @@ ANALYTICS_UMAMI_API_URL: ''
 ANALYTICS_UMAMI_WEBSITE_ID: ''
 ANALYTICS_UMAMI_HOSTNAME: grant-api
 TRACING_ENABLED: 'false'
+# Long-running pods buffer spans; 'simple' is for freezable runtimes (ADR 0003).
+TRACING_SPAN_PROCESSOR: 'batch'
 TRACING_BACKEND: jaeger
 JAEGER_ENDPOINT: ''
 OTLP_ENDPOINT: ''

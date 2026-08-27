@@ -238,6 +238,13 @@ export const envSchema = z.object({
   TRACING_BACKEND: z.enum(['jaeger', 'otlp', 'xray']).optional().default('jaeger'),
   JAEGER_ENDPOINT: optionalString('http://localhost:14268/api/traces'),
   OTLP_ENDPOINT: optionalString('http://localhost:4318/v1/traces'),
+  /**
+   * Span export strategy. `batch` buffers and exports on a timer — right for a
+   * long-running server. `simple` exports each span as it ends: required wherever the
+   * process can be frozen or killed between requests without warning, such as Lambda
+   * behind the Web Adapter, where a buffered batch is simply lost.
+   */
+  TRACING_SPAN_PROCESSOR: z.enum(['batch', 'simple']).optional().default('batch'),
   TRACING_SAMPLING_RATE: optionalNumber(1),
   TRACING_SERVICE_NAME: optionalString('grant-api'),
 
