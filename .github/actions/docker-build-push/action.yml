@@ -18,6 +18,11 @@ runs:
         cache-from: type=gha,scope=${{ inputs.cache_scope }}
         cache-to: type=gha,mode=max,scope=${{ inputs.cache_scope }}
         provenance: false
+        # Both default to '' so existing callers are byte-identical: an empty
+        # target builds the Dockerfile's last stage, and empty platforms builds
+        # for the runner's own architecture.
+        target: ${{ inputs.target }}
+        platforms: ${{ inputs.platforms }}
 
 inputs:
   context:
@@ -40,3 +45,11 @@ inputs:
     description: Whether to push to registry
     required: true
     default: true
+  target:
+    description: Dockerfile stage to build. Empty builds the last stage.
+    required: false
+    default: ''
+  platforms:
+    description: Target platforms (e.g. linux/arm64). Empty builds for the runner's architecture.
+    required: false
+    default: ''
