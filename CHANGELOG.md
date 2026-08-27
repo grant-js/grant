@@ -3,6 +3,66 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.6.0
+
+### Platform
+
+**Docker images:** tagged `:1.6.0` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.6.0** (fixed group with apps).
+
+### Minor Changes
+
+- 7a96814: Add an `emf` telemetry provider that writes CloudWatch Embedded Metric Format documents to stdout.
+
+  Selected with `TELEMETRY_PROVIDER=emf`; `none` remains the default and the `cloudwatch` provider is unchanged. EMF suits a frozen-container runtime where the existing CloudWatch adapter does not: it needs no SDK, no log-stream sequence token, and nothing flushed before a freeze.
+
+  `TELEMETRY_EMF_DIMENSIONS` defaults to `method,statusCode` and deliberately excludes `path` — request paths embed resource IDs, and every distinct dimension combination creates a billable CloudWatch metric. Unbounded fields are still emitted as document properties and stay queryable in Logs Insights.
+
+  `/metrics`, the Prometheus middleware, and the ServiceMonitor are untouched; the two paths coexist and are config-selected.
+
+- 7a96814: Add a `runner-lambda` Docker build target that layers the AWS Lambda Web Adapter onto the existing runner image.
+
+  Built only with `--target runner-lambda`; the default build is unchanged and still produces the Kubernetes/Compose image. The Lambda image is the existing runner plus one binary, so the two cannot drift apart.
+
+- 7a96814: Resolve deployment secrets through a new `ISecretResolver` port instead of reading them from configuration at module scope.
+
+  `SECRETS_PROVIDER` defaults to `env`, which reads `process.env` exactly as before — existing deployments are unaffected. Setting it to `aws-secrets-manager` resolves secrets from a single JSON secret per use, falling back to the environment for any key the payload omits, so secrets can move over one at a time.
+
+  Because resolution is now per-use rather than once at process start, a rotated secret is picked up within `SECRETS_CACHE_TTL_SECONDS` without a redeploy.
+
+  `IGitHubOAuthService.isConfigured()` now returns `Promise<boolean>`, since determining whether GitHub OAuth is configured requires resolving the client secret.
+
+### Patch Changes
+
+- 7a96814: Add `DB_BOOTSTRAP_ON_BOOT` and a standalone migrate entrypoint.
+
+  Migrations and the core seed still run at API start by default, so no existing
+  deployment changes behavior. Setting `DB_BOOTSTRAP_ON_BOOT=false` skips them, for
+  deployments that run migrations as a separate step — a Helm hook Job, an ECS one-off
+  task, or any serverless target where concurrent cold starts must not each attempt to
+  migrate.
+
+  `node dist/migrate.js` is that separate step. It runs the same idempotent,
+  advisory-locked bootstrap and exits 0 or 1. It exists because
+  `pnpm --filter @grantjs/database db:migrate` cannot run inside the production image:
+  that script invokes `drizzle-kit`, a devDependency the runner stage prunes away.
+
+  Setting the flag to `false` without running the migrate step will start the API
+  against an unmigrated database.
+
+- 7a96814: Add `TRACING_SPAN_PROCESSOR` to select how OpenTelemetry spans are exported.
+
+  `batch` (default) buffers spans and exports them on a timer, which is unchanged
+  behavior for the long-running server. `simple` exports each span as it ends.
+
+  Use `simple` on any runtime that can freeze or terminate the process between
+  requests — AWS Lambda behind the Web Adapter, for instance — where a buffered batch
+  is not delayed but lost, and the spans lost are disproportionately those of the
+  slowest requests.
+
+  Only applies when `TRACING_ENABLED=true`.
+
 ## 1.5.5
 
 ### Platform
