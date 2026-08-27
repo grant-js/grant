@@ -5,9 +5,11 @@
 - **Slug**: `aws-lambda-runtime`
 - **Story brief**: [`2026-08-21-aws-lambda-runtime-brief.md`](./2026-08-21-aws-lambda-runtime-brief.md) — approved 2026-08-24, Ale Heredia
 - **Program brief**: [`2026-08-21-aws-serverless-target-brief.md`](./2026-08-21-aws-serverless-target-brief.md) — phase **B** of three
-- **Status**: `in-progress` — gate 2 approved 2026-08-24; slice 1 open as #321
+- **Status**: `complete` — merged to `main` 2026-08-27 as `7a968149` (#338). Gates 1–4
+  all cleared. Slices: #321, #322, #324, #328, #330, #332, #334, #336. Slice 6 split
+  into 6a/6b during execution.
 - **Story trunk**: `feat/aws-lambda-runtime`
-- **Base**: `main` at `048341cb` (aws-adapters close-out, #318)
+- **Base**: `main` at `048341cb` (aws-adapters close-out, #318); merged `main` again at `b312ea6f` before the story PR
 - **Measurements**: [`2026-08-21-aws-lambda-runtime-measurements.md`](./2026-08-21-aws-lambda-runtime-measurements.md) — slice 1 output
 - **worktree_path**: **not required** — `git worktree list` shows only the main
   checkout and no other story is in flight. Revisit if phase C is drafted in parallel.
@@ -578,3 +580,55 @@ ready for its gate-3 review, or reviewers are never requested.
 - [ ] Stack plan status → `merged-to-main`
 - [ ] Phase C (`aws-edge-infra`) brief re-verified against the new `main` and
       submitted for its own gate 1
+
+## Close-out (2026-08-27)
+
+Merged as `7a968149` (#338). Phase C's citations re-verified against the new `main`;
+**all four hold** — `storage/src/s3/index.ts:129` (`getSignedUrl`), `apps/web` still has
+no `middleware.ts`, `next.config.ts` `rewrites()` at :21, and
+`charts/grant-platform/values.schema.json` exists.
+
+**Two upstream briefs carried stale claims and were corrected, not left to mislead
+phase C:**
+
+- The **program brief** said "the Lambda handler is an additional entrypoint." There is
+  no handler (ADR 0003). The guarantee it was making is now stronger — one entrypoint,
+  not two.
+- The **phase B brief** specified the `GRANT_ENV_FILE` → `await import()` secrets
+  preload. That mechanism assumed a handler; ADR 0004 replaced it with a port.
+
+Acceptance criteria are marked with outcomes rather than a blanket tick: `[x]` delivered,
+`[~]` superseded by an ADR, `[ ]` deferred to phase C with the groundwork recorded.
+
+### What phase C inherits unverified
+
+Neither can be exercised without an AWS account, and neither should be assumed working:
+
+1. **The ECR push has never run** — the `docker-lambda` job is gated off.
+2. **The arm64 build has never been executed** — no local `qemu-aarch64` handler. If it
+   fails, dropping `platforms:` falls back to amd64 with no other change.
+3. **RDS IAM auth is not started.** Needs an additive optional
+   `password?: () => Promise<string>` on `DatabaseConfig` (postgres.js already invokes a
+   password callback per connection) and `?sslmode=` on `DB_URL` — `@grantjs/database`
+   has no `ssl` option and postgres.js defaults `ssl: false`.
+
+### Findings logged, deliberately unfixed
+
+- `printConfigSummary()` logs `DB_CONFIG.url.split('@')[1]` (`env.config.ts:981`) — a
+  password containing a raw `@` leaks a fragment into the log.
+- `SECURITY_API_KEY` is declared in schema and config with **no runtime consumer**.
+- `contextMiddleware` authenticates before the rate limiter runs, so an unauthenticated
+  flood does JWT/DB work before being throttled. Pre-existing on `main` in exactly this
+  order; surfaced as CodeQL alert #170 on #338 and dismissed as a false positive (the
+  global limiter is one line later, and this rule has 49 prior dismissals here).
+- **Three manual registries must each be updated when a package is added**, and none is
+  covered by a test: the Dockerfile's per-package `COPY` list, the topological list in
+  `scripts/docker/build-api-production.mjs` (both broke CI in #330 and were fixed there),
+  and `dead-code:packages` in `package.json` — which silently omitted `@grantjs/secrets`,
+  so the new package was never dead-code checked. **Fixed in this close-out**, since it
+  is debt this story created. Registering it immediately surfaced a second latent
+  defect: `@grantjs/secrets` declared `@aws-sdk/client-secrets-manager` as an optional
+  peer but not as a devDependency, so its own type-check resolved the SDK only through
+  pnpm hoisting from `apps/api`. `@grantjs/cache` declares both for exactly this reason;
+  `secrets` now matches. A guard that diffs workspace members against all three
+  would prevent the next occurrence; not built here.

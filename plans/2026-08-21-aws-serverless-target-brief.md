@@ -56,8 +56,11 @@ Concretely:
 - `RedisCacheAdapter`, `BullMQJobAdapter`, and `NodeCronJobAdapter` are **not
   touched, deprecated, or removed**. `DynamoDbCacheAdapter` and `AwsJobAdapter`
   join them as additional `CacheFactory` / `JobFactory` strategies.
-- The long-running `server.ts` entrypoint remains the default. The Lambda handler
-  is an **additional** entrypoint over shared app-construction code.
+- The long-running `server.ts` entrypoint remains the default. **Corrected
+  2026-08-27 by phase B:** there is no Lambda handler. The AWS target runs the
+  _same_ `dist/server.js` behind the Lambda Web Adapter, so there is one entrypoint
+  rather than two — a stronger form of the guarantee this bullet was making. See
+  [ADR 0003](../decisions/0003-lambda-web-adapter-over-a-handler-entrypoint.md).
 - `bootstrapDatabase()` at boot stays the default behavior; the AWS target opts
   out via configuration, it is not deleted.
 - The Helm chart stays fully supported and is not modified except where a new

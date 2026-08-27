@@ -1158,13 +1158,13 @@ importers:
 
   packages/@grantjs/secrets:
     dependencies:
-      '@aws-sdk/client-secrets-manager':
-        specifier: ^3
-        version: 3.1118.0
       '@grantjs/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      '@aws-sdk/client-secrets-manager':
+        specifier: ^3.1113.0
+        version: 3.1118.0
       '@types/node':
         specifier: ^26.2.0
         version: 26.2.0
@@ -2028,7 +2028,6 @@ packages:
       '@smithy/node-http-handler': 4.11.3
       '@smithy/types': 4.17.2
       tslib: 2.8.1
-    dev: false
 
   /@aws-sdk/client-ses@3.1113.0:
     resolution: {integrity: sha512-qak5FM1tKWLUQsLcOoRG1tDhNkEdjVJbfxxbNykE2FM9WYcbi5cNVPQV/qWLPaEMMnHj+VQHSY/FyQ/9eics1w==}

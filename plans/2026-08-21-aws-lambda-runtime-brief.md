@@ -23,35 +23,53 @@ a configuration-selected secrets path, and a push-based telemetry route.
 
 ## Acceptance criteria
 
-- [ ] `create-app.ts` is extracted from `server.ts`, returning the configured Express
+- [x] `create-app.ts` is extracted from `server.ts`, returning the configured Express
       app and its shutdown handles. `server.ts` keeps listening and behaves
       identically — a **provable no-op**, demonstrated by comparing boot behavior and
-      an e2e run, not by reading the diff.
-- [ ] A Lambda handler entrypoint exists over `create-app.ts`.
-- [ ] Boot-time `bootstrapDatabase()` becomes configuration-gated, defaulting to
+      an e2e run, not by reading the diff. _(#322; oracle #321.)_
+- [~] ~~A Lambda handler entrypoint exists over `create-app.ts`.~~ **Superseded.**
+  Built, then rejected on evidence: the parallel entrypoint drifted immediately
+  and would have shipped CDM sync broken. The AWS target runs `dist/server.js`
+  unchanged behind the Lambda Web Adapter — no handler.
+  [ADR 0003](../decisions/0003-lambda-web-adapter-over-a-handler-entrypoint.md). _(#328.)_
+- [x] Boot-time `bootstrapDatabase()` becomes configuration-gated, defaulting to
       today's behavior. A standalone migrate/seed runner entrypoint exists.
-      **Requires an ADR** — this reverses a decision recorded at `server.ts:56`.
-- [ ] Secrets resolve from Secrets Manager **once per cold start**, via the existing
-      `GRANT_ENV_FILE` hook (`env/src/load-env.ts`): fetch → write `/tmp/.env` → set
-      `GRANT_ENV_FILE` → `await import()` the app. Module-scope `getEnv()`
-      (`config/env.config.ts:15`) then caches for the container's life at no cost.
+      `DB_BOOTSTRAP_ON_BOOT` + `node dist/migrate.js`;
+      [ADR 0001](../decisions/0001-configuration-gated-database-bootstrap.md). _(#324.)_
+- [~] Secrets resolve from Secrets Manager. **Mechanism superseded.** The
+  `GRANT_ENV_FILE` → `await import()` preload assumed a handler to stand between
+  process start and app load; ADR 0003 removed it. Secrets now resolve lazily
+  through an `ISecretResolver` port, which dissolves the ordering problem instead
+  of scheduling around it — and makes rotation a TTL rather than a container
+  lifetime. [ADR 0004](../decisions/0004-secret-resolution-through-a-port.md). _(#330.)_
 - [ ] The API holds no database password: RDS Proxy holds the credential, Lambda
-      authenticates via IAM. This also resolves rotation (blocker 6).
-- [ ] **An ECR publish path exists.** `release.yml:282` publishes to GHCR only, and
-      **Lambda cannot pull container images from GHCR**. Add an ECR push or mirror.
-- [ ] **A `runner-lambda` Dockerfile stage exists.** `apps/api/Dockerfile:95-96` is a
+      authenticates via IAM. **Deferred to phase C** — it needs CDK to exist. Groundwork
+      confirmed in phase B: postgres.js already invokes a `password` callback per
+      connection (`postgres/src/connection.js:750-752`), so this needs one additive
+      optional `password?: () => Promise<string>` on `DatabaseConfig`. Rotation
+      (blocker 6) was resolved separately by ADR 0004.
+- [x] **An ECR publish path exists.** Separate `docker-lambda` job, gated on two AWS
+      repo variables so it is inert until phase C sets them. GHCR path untouched.
+      **Never executed** — no AWS role or ECR repository exists yet. _(#334.)_
+- [x] **A `runner-lambda` Dockerfile stage exists.** _(#332.)_ `apps/api/Dockerfile:95-96` is a
       server image (`ENTRYPOINT docker-entrypoint.sh`, `CMD node dist/server.js`,
       `EXPOSE 4000`). A Lambda image needs the Runtime Interface Client or the Lambda
       Web Adapter. New stage sharing the existing builder — the existing runner stage
       is untouched.
-- [ ] Multi-arch (`linux/arm64`) build, or a documented decision to stay amd64. The
-      build-push step currently declares no `platforms:`.
-- [ ] CloudWatch EMF telemetry through the existing `ITelemetryAdapter`. `/metrics`
-      and `servicemonitor.yaml` are **unchanged** and remain the K8s path — nothing
-      can scrape a frozen Lambda container, so the two coexist, config-selected.
-- [ ] OTel spans force-flush before handler return, or the ADOT layer is adopted.
-      Batch spans are otherwise lost when the container freezes.
-- [ ] **Gzip compression ratio measured on real CDM export fixtures**, and the
+- [x] `linux/arm64` for the Lambda image only; GHCR images stay amd64 and single-arch.
+      The composite action gained optional `platforms` and `target` inputs rather than a
+      fork. **The arm64 build has never been executed** — the dev machine has no
+      `qemu-aarch64` binfmt handler. Indirect evidence only: `node:22-alpine` and the
+      pinned adapter both publish arm64, and `bcrypt` bundles a `linux-arm64` prebuild.
+      First real proof is phase C. _(#334.)_
+- [x] CloudWatch EMF telemetry through the existing `ITelemetryAdapter` — no port
+      change was needed. `/metrics` and `servicemonitor.yaml` are unchanged; the two
+      coexist, config-selected. _(#336.)_
+- [x] `TRACING_SPAN_PROCESSOR=simple` exports spans synchronously, defaulting to
+      `batch`. No handler exists to force-flush from, so the strategy is config-selected
+      instead. _(#328.)_
+- [x] **Gzip compression ratio measured on real CDM export fixtures** *(#321; see the
+      measurements artifact.)**, and the
       resulting practical payload ceiling documented. `body-parser` inflates
       `Content-Encoding: gzip` request bodies by default (`inflate` is opt-_out_,
       `body-parser/lib/read.js:190`) and applies `limit` to the **decompressed**
