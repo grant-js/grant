@@ -96,3 +96,51 @@ WORKDIR /app/apps/api
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "dist/server.js"]
+
+# ---------------------------------------------------------------------------
+# Stage 4 – runner-lambda: the runner above, plus the Lambda Web Adapter
+# ---------------------------------------------------------------------------
+# Built only for the AWS deployment target (`--target runner-lambda`). The
+# default build still stops at `runner`, so nothing about the Kubernetes or
+# Compose image changes.
+#
+# This stage extends `runner` rather than rebuilding from `node:22-alpine` on
+# purpose. Two consequences, both wanted:
+#   - The Lambda image is byte-identical to the K8s image plus one binary, so
+#     "works in staging, breaks on Lambda" cannot come from image drift.
+#   - It inherits the whole builder `/app`, which includes `pnpm-workspace.yaml`.
+#     `findWorkspaceRoot()` (@grantjs/env) walks up from the working directory
+#     for that file and throws `Error('Workspace root not found')` on first
+#     import if it is missing — before any application code runs, with no useful
+#     trace. A slimmed stage that copied only `dist` + `node_modules` would fail
+#     at cold start for that reason.
+#
+# The adapter is a Lambda *extension*: the runtime starts it from
+# /opt/extensions, it registers with the Runtime API, and it forwards each
+# invocation to the app over loopback as an ordinary HTTP request. The app stays
+# a normal listening server and knows nothing about Lambda — so CMD is unchanged.
+FROM runner AS runner-lambda
+
+# Repository is `aws-lambda-adapter` (no `web`), despite the project being named
+# the Lambda Web Adapter. Verified against the ECR API, not recalled.
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:1.1.0 /lambda-adapter /opt/extensions/lambda-adapter
+
+# The adapter probes the app on this port; it must match API_PORT from `runner`.
+ENV AWS_LWA_PORT=4000
+
+# Cold start is not complete until this returns 2xx, which keeps the first real
+# invocation from racing Apollo/DB initialization.
+ENV AWS_LWA_READINESS_CHECK_PATH=/health
+
+# ---------------------------------------------------------------------------
+# Stage 5 – default: keep `runner` the implicit build target
+# ---------------------------------------------------------------------------
+# Docker builds the LAST stage when `--target` is omitted, and every consumer
+# omits it: docker-compose.yml, docker-compose.e2e.yml, docker-compose.demo.yml
+# and release.yml (which passes only `file`). Without this stage, appending
+# runner-lambda above would silently redefine what `docker build` produces and
+# publish the Lambda image to GHCR as `grant-api`.
+#
+# Anything added below this line changes the default target again. Add new
+# stages ABOVE it.
+FROM runner AS default
