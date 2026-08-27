@@ -1,0 +1,241 @@
+# Stack plan — AWS edge and infrastructure
+
+## Metadata
+
+- **Slug**: `aws-edge-infra`
+- **Story brief**: [`2026-08-21-aws-edge-infra-brief.md`](./2026-08-21-aws-edge-infra-brief.md) — approved 2026-08-27, Ale Heredia
+- **Program brief**: [`2026-08-21-aws-serverless-target-brief.md`](./2026-08-21-aws-serverless-target-brief.md) — phase **C** of three
+- **Status**: `draft` — awaiting gate 2
+- **Story trunk**: `feat/aws-edge-infra`
+- **Base**: `main` at `440c322f`
+- **Measurements**: `plans/2026-08-21-aws-edge-infra-measurements.md` — created by slice 1, appended to by every deployed slice
+- **Governing ADR**: [0005](../decisions/0005-aws-target-as-a-construct-library.md)
+- **worktree_path**: **not required.** `git worktree list` shows the main checkout
+  plus two dependency-bump worktrees; no other story is in flight. Revisit if the
+  presigned-upload story (below) runs in parallel.
+
+## Citation re-verification
+
+`main` moved after gate 1 (`dabc7339` → `440c322f`: #341 version packages, #343
+changelog generator). All fourteen of the brief's citations re-verified against
+`440c322f`:
+
+| Citation                                             | Status |
+| ---------------------------------------------------- | ------ |
+| `apps/web/lib/apollo-client.ts:74` — bare `/graphql` | holds  |
+| `apps/api/src/create-app.ts:157` — storage gate      | holds  |
+| `storage/src/s3/index.ts:129` — presigned download   | holds  |
+| `storage/src/s3/index.ts:45` — server-side put       | holds  |
+| `apps/api/src/lib/rls/rls-context.ts:96`             | holds  |
+| `apps/api/src/lib/headers.lib.ts:28` — `getClientIp` | holds  |
+| `docs/.vitepress/config.ts:16` — `base: '/docs/'`    | holds  |
+| `deploy/gateway.conf.template:17` — `100M`           | holds  |
+| `deploy/gateway.conf.template:144` — docs rewrite    | holds  |
+| `env/src/schema.ts:31` — 10 MB body limit            | holds  |
+| `apps/web/next.config.ts:22` — dev-only comment      | holds  |
+| `apps/api/src/jobs/*.job.ts` — 6 scheduled jobs      | holds  |
+| `apps/web/middleware.ts` — absent                    | holds  |
+| `NEXT_PUBLIC_*` in `apps/web` — zero                 | holds  |
+
+## Gate 1 decisions
+
+The brief's three open questions, answered 2026-08-27. Recorded here because each
+determined a slice.
+
+1. **Routing source of truth → three copies plus a parity test.** Generating
+   `deploy/gateway.conf.template` would modify the K8s routing path the brief pins as
+   unchanged, giving a phase C bug a blast radius that reaches the existing
+   deployment. Instead slice 1 declares the table once and asserts the three agree.
+   Additive; `gateway.conf.template` is not touched.
+2. **Upload cap → documented, with a separate story for presigned-PUT.** The AWS
+   target is new and never had the gateway's `100M`, so this is an initial limitation
+   rather than a regression. Adding presigned-PUT means changing
+   `IFileStorageService` in `@grantjs/core`, both storage adapters, an API handler and
+   the web upload flow — a vertical feature that would be reviewed by the wrong eyes
+   inside a deploy slice, and one that benefits every target. It becomes its own story.
+3. **Bring-your-own VPC → in scope at the library layer, free.** ADR 0005 already has
+   constructs accept `IVpc`, so referencing an existing VPC costs one optional prop
+   and no toggle. The expense is only in the _reference app's_ green-field VPC
+   creation and its validation, which lands in slice 4 alongside the data tier that
+   needs it.
+
+## Governing constraint
+
+Inherited and unchanged: **additive and configuration-driven.** For phase C that has
+a sharper edge than for A or B, because phase C adds no configuration to existing
+targets at all — it adds a directory. The parity property is therefore:
+
+> With `deploy/aws/` present and never invoked, `charts/`, `docker-compose*.yml`,
+> `deploy/gateway.conf.template` and every application path behave identically to
+> `main`.
+
+The one file that could violate this is `deploy/gateway.conf.template`, and gate 1
+decision 1 keeps it read-only for the whole story. Any slice proposing to edit it has
+left the plan.
+
+## Verification model
+
+**Phase C cannot be CI-verified past slice 2**, so the evidence standard is different
+and has to be stated up front or it will be negotiated per slice.
+
+| Slice | Evidence                                                                 |
+| ----- | ------------------------------------------------------------------------ |
+| 1–2   | CI. Parity test and committed `cdk synth` run in `Lint, build, test`.    |
+| 3–7   | **A recorded deploy.** Appended to the measurements file, before review. |
+
+Every deployed slice records, in `plans/2026-08-21-aws-edge-infra-measurements.md`:
+
+- `cdk deploy` wall-clock time, per stage where separable
+- the resources created, from `cdk diff` output rather than from memory
+- the observable check performed against the live stack, with its output
+- **`cdk destroy` run to completion, and what it left behind.** An adopter's first
+  real action after evaluating is to tear down. If destroy strands resources, the
+  target is not adoptable, and that is only discoverable by doing it every time.
+
+Slices deploy **serially into one scratch account**. Two concurrent deploys make a
+failure unattributable, which is the whole reason for serializing.
+
+## Active roles
+
+- [x] Project Manager — gate decisions
+- [x] Principal Engineer — slice order, integration, scratch-account hygiene
+- [x] **Senior QA — slices 1 and 7.** The load-bearing role again: slice 1 is the
+      only drift oracle this story gets, and slice 7 is the only end-to-end check.
+- [x] Senior Backend — slices 2, 4, 6
+- [x] Senior Frontend — slice 5 (OpenNext)
+- [x] **Architect — slice 2** (props surface is an API per ADR 0005)
+- [x] **Senior Security — slice 4, blocking**, independent of the slice author
+- [x] Verifier — after every slice
+
+## Ordered slices (PRs)
+
+| #     | Branch                          | Base    | Concern                                                     | Owner             | Review bar        | PR  |
+| ----- | ------------------------------- | ------- | ----------------------------------------------------------- | ----------------- | ----------------- | --- |
+| 1     | `feat/aws-edge-infra-routing`   | trunk   | **Routing oracle.** One declaration + three-way parity test | **QA**            | light             |     |
+| 2     | `feat/aws-edge-infra-library`   | slice 1 | Construct library skeleton, props, validation, synth        | Backend + Arch    | light             |     |
+| 3     | `feat/aws-edge-infra-docs-site` | slice 2 | Docs on S3, CloudFront, cert, zone, Function                | Backend           | light             |     |
+| 4     | `feat/aws-edge-infra-api`       | slice 3 | Network, data tier, API Lambda, migrate one-shot            | Backend + **Sec** | **security-full** |     |
+| 5     | `feat/aws-edge-infra-web`       | slice 4 | OpenNext, `_next/static` from S3                            | **Frontend**      | light             |     |
+| 6     | `feat/aws-edge-infra-jobs`      | slice 5 | EventBridge rules generated from the job source             | Backend           | light             |     |
+| 7     | `feat/aws-edge-infra-guide`     | slice 6 | Smoke test, deployment guide, measured figures              | **QA**            | light             |     |
+| final | `feat/aws-edge-infra`           | `main`  | integration                                                 | Principal         | **deep**          |     |
+
+### Slice 1 — routing oracle
+
+**No CDK.** A test over files that already exist, so it lands and pays off even if the
+rest of the story stalls — it catches drift between the gateway and the dev rewrites
+today, which nothing currently does.
+
+- One declaration of the canonical path → target table.
+- A test asserting `deploy/gateway.conf.template` and `apps/web/next.config.ts`
+  rewrites both agree with it.
+- **An explicit intentional-divergence list**, each entry carrying its reason. Known
+  starting set: `/storage` (gateway only; `create-app.ts:157` mounts it for the local
+  provider), `/example` (gateway only), the root-level Swagger asset rewrites
+  (`next.config.ts` only, a dev quirk). Drift is then _an unlisted difference_, not
+  _any difference_ — otherwise the test is noise and gets deleted.
+- Seeds the measurements file.
+
+Written before the CloudFront behaviours exist, deliberately: an oracle written
+afterwards records whatever the implementation produced.
+
+### Slice 2 — construct library
+
+Per ADR 0005. Props take `IVpc` / `ICertificate` / `IBucket` / `IHostedZone`; the
+reference app takes scalars. Includes the `us-east-1` certificate-ARN assertion, the
+defaults file, schema validation at parity with `values.schema.json`, and the first
+committed `cdk synth`. No resources deploy. Architect co-owns because the exported
+props are an API from this point.
+
+### Slice 3 — docs site
+
+First deployed slice, and deliberately the smallest vertical that exercises the risky
+edge pieces — certificate, hosted zone, OAC, the `docs/` key prefix, the CloudFront
+Function for directory indexes and trailing-slash redirects — while risking only a
+static site. If cert or zone assumptions are wrong, this is where it surfaces, before
+a database exists.
+
+### Slice 4 — API and data tier
+
+The largest slice, and the only one at **security-full**: it lands VPC wiring, the
+data tier, secrets, the API Lambda and the migrate one-shot, and it is where auth
+paths first route through CloudFront (forwarded-header handling feeds `getClientIp`,
+`apps/api/src/lib/headers.lib.ts:28`, which the rate limiter keys on).
+
+**Expected to split** into 4a (network + data tier) and 4b (API Lambda + migrate) at
+execution time if it approaches the ~30-file review ceiling — the same call phase B
+made for slice 6. Flagged now rather than discovered mid-review.
+
+### Slice 5 — web
+
+OpenNext, `_next/static` to S3, the default CloudFront behaviour. Frontend-owned.
+Low-risk by construction: zero `NEXT_PUBLIC_*` and no `middleware.ts`, both
+re-verified above.
+
+### Slice 6 — scheduled jobs
+
+EventBridge rules generated from the same source the API reads. The committed `cdk
+synth` diff is the evidence, and it must show **exactly six** rules — five production
+plus one demo-gated. A different count is a failed slice even if the deploy works.
+
+### Slice 7 — smoke test and guide
+
+Smoke test covering **at least one path per CloudFront behaviour** — the routing table
+has no CI coverage anywhere, so this is its only end-to-end check. Plus
+`docs/deployment/aws-serverless.md` at the depth of `docs/deployment/kubernetes.md`,
+with the brief's timing and cost estimates **replaced by the measured figures**
+accumulated across slices 3–6.
+
+## Stack setup
+
+```sh
+# Trunk
+git switch -c feat/aws-edge-infra main && git push -u origin feat/aws-edge-infra
+
+# Init with the FIRST slice branch only.
+gh stack init --base feat/aws-edge-infra feat/aws-edge-infra-routing
+
+# After each slice: commit, then BOTH, every time.
+gh stack submit --auto
+gh stack link --base feat/aws-edge-infra <pr> <pr>   # bottom to top
+
+# Before the NEXT slice:
+gh stack add feat/aws-edge-infra-library
+
+# After any merge, rebase or amend below a branch:
+gh stack sync
+```
+
+`--base` is not optional on `init` or `link`; omitted, the bottom PR re-points at
+`main` and the stack merges past gate 4. `gh stack submit --auto` opens drafts — mark
+each ready with `gh pr ready <pr>` when it is ready for gate 3.
+
+## Dependencies / notes
+
+- **Scratch AWS account required from slice 3.** Principal owns its lifecycle. Bootstrap
+  once (`cdk bootstrap`); default qualifier is fine.
+- **A registrable domain and a hosted zone in that account** are prerequisites for
+  slice 3 and cannot be faked. Blocking on this at slice 3 rather than slice 1 is
+  deliberate — slices 1 and 2 need no AWS access at all.
+- **The container image has never been published.** Slice 4 uses
+  `DockerImageCode.fromImageAsset()` at host architecture, so it does not depend on
+  phase B's untested ECR path. Exercising that path is a slice 4 stretch goal, not a
+  prerequisite.
+- **Local e2e stack collides with CI** on the self-hosted runner. Tear it down before
+  pushing, as in phases A and B.
+- **Follow-on story, not part of this stack**: presigned-PUT in `IFileStorageService`,
+  removing the 6 MB upload cap for every target. Gate 1 decision 2.
+
+## Human gates
+
+- [ ] Gate 2: Stack plan approved — no implementation until a human confirms.
+- [ ] Gate 3: Stack PRs merged into trunk (light, except slice 4 security-full).
+- [ ] Gate 4: Story → `main` deep review complete.
+
+## Cleanup
+
+- [ ] Scratch account torn down; final `cdk destroy` recorded
+- [ ] `git worktree remove` (if one was created)
+- [ ] Local slice branches deleted
+- [ ] Stack plan status → `merged-to-main`
+- [ ] Program brief updated: phase C outcome, blockers 3 and 9 closed

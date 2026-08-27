@@ -5,8 +5,9 @@
 - **Slug**: `aws-edge-infra`
 - **Date**: 2026-08-21 (drafted) · **revised 2026-08-27** for gate 1
 - **Author**: Ale Heredia (human) / drafted with Claude
-- **Status**: **awaiting gate 1.** Phase **C** of three. Phase B merged to `main`
-  as #338 (`7a968149`, 2026-08-27); this story is unblocked.
+- **Status**: **approved** (gate 1, 2026-08-27, Ale Heredia). Phase **C** of three.
+  Phase B merged to `main` as #338 (`7a968149`, 2026-08-27).
+- **Stack plan**: [`2026-08-21-aws-edge-infra-stack.md`](./2026-08-21-aws-edge-infra-stack.md)
 - **Program brief**: [`2026-08-21-aws-serverless-target-brief.md`](./2026-08-21-aws-serverless-target-brief.md)
 - **Depends on**: `aws-lambda-runtime` (merged)
 - **Base**: `main` at `dabc7339`. Every `file:line` below was re-verified against
@@ -271,16 +272,20 @@ way that would have produced wrong evidence.
 - **Buffered Lambda responses cap at 6 MB.** CDM export artifacts are served as
   presigned S3 URLs rather than response bodies.
 
-## Open questions for gate 1
+## Open questions — answered at gate 1
 
-1. **Routing source of truth.** Generate CloudFront behaviors and
-   `gateway.conf.template` from one declaration, or accept three hand-maintained
-   copies? Generation is consistent with the EventBridge criterion; it also touches
-   the K8s target, which every other part of this story avoids.
-2. **The upload gap** (correction 2): add presigned-PUT, or document the regression?
-3. **Scope of bring-your-own VPC in phase C.** It is the highest-validation-cost
-   surface (subnet routing, security groups, NAT reachability) and could push a slice
-   past the ~30-file review ceiling on its own.
+Answered 2026-08-27; the reasoning and slice consequences are recorded in the
+[stack plan](./2026-08-21-aws-edge-infra-stack.md) § Gate 1 decisions.
+
+1. **Routing source of truth** → three copies plus a parity test. Generating
+   `gateway.conf.template` would modify the K8s routing path this brief pins as
+   unchanged. Slice 1 declares the table once and asserts all three agree.
+2. **The upload gap** → documented here; presigned-PUT becomes its own story. The
+   AWS target never had the gateway's `100M`, so this is an initial limitation of a
+   new target rather than a regression, and the fix benefits every target.
+3. **Bring-your-own VPC** → in scope, and free. ADR 0005 already has constructs
+   accept `IVpc`; the cost is only in the reference app's green-field VPC creation,
+   which lands with the data tier that needs it.
 
 ## Proposed slice order
 
@@ -318,6 +323,6 @@ Verifier.
 
 ## Human gate
 
-- [ ] Gate 1: story brief approved — stop here until a human confirms before stack
-      planning. All `file:line` citations re-verified against `dabc7339` on
-      2026-08-27. Three open questions above want answers first.
+- [x] Gate 1: story brief approved 2026-08-27 (Ale Heredia), with all three open
+      questions answered. Citations re-verified against `dabc7339` at gate 1 and
+      again against `440c322f` in the stack plan after `main` moved.
