@@ -47,6 +47,7 @@ const INTERNAL_PACKAGE_DEPS = {
   i18n: [],
   jobs: ['@grantjs/core', '@grantjs/schema'],
   logger: ['@grantjs/core'],
+  secrets: ['@grantjs/core'],
   storage: ['@grantjs/core'],
   telemetry: ['@grantjs/core'],
   webhooks: ['@grantjs/core'],

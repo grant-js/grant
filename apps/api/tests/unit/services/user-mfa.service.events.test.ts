@@ -62,7 +62,8 @@ function buildService() {
       userMfaFactorRepository,
       {} as IUserMfaRecoveryCodeRepository,
       audit,
-      events
+      events,
+      { resolve: () => Promise.resolve('0123456789abcdef0123456789abcdef') }
     ),
     events,
     userMfaFactorRepository,

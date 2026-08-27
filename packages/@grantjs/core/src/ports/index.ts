@@ -7,6 +7,7 @@ export * from './job.port';
 export * from './logger.port';
 export * from './repositories';
 export * from './scoped-id-provider.port';
+export * from './secret.port';
 export * from './services';
 export * from './storage.port';
 export * from './telemetry.port';

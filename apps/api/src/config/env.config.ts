@@ -317,6 +317,24 @@ const REDIS_CONFIG = {
 // Security Configuration
 // ============================================================================
 
+// ============================================================================
+// Secrets Configuration
+// ============================================================================
+
+/**
+ * Which resolver supplies deployment secrets. Default 'env' reads them from the
+ * process environment, which is what every deployment did before this existed.
+ */
+const SECRETS_CONFIG = {
+  provider: env.SECRETS_PROVIDER,
+  awsSecretsManager: {
+    secretId: env.SECRETS_AWS_SECRET_ID,
+    region: env.SECRETS_AWS_REGION,
+    endpoint: env.SECRETS_AWS_ENDPOINT || undefined,
+    cacheTtlSeconds: env.SECRETS_CACHE_TTL_SECONDS,
+  },
+} as const;
+
 const SECURITY_CONFIG = {
   /** Frontend URL for CORS */
   frontendUrl: env.SECURITY_FRONTEND_URL,
@@ -1086,6 +1104,7 @@ export const config = {
   projectOAuth: PROJECT_OAUTH_CONFIG,
   cache: CACHE_CONFIG,
   redis: REDIS_CONFIG,
+  secrets: SECRETS_CONFIG,
   security: SECURITY_CONFIG,
   apollo: APOLLO_CONFIG,
   swagger: SWAGGER_CONFIG,

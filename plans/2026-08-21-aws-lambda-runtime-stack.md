@@ -336,23 +336,52 @@ that no event adapter is used at all. The base-image version is slice 6's call.
 
 ### Slice 5 — secrets (security-full)
 
-- Uses the existing `GRANT_ENV_FILE` hook (`env/src/load-env.ts:50-57`), which already
-  applies `override: true` and `dotenv-expand`. No change to `@grantjs/env` is expected;
-  if one becomes necessary, note that its ESLint rule forbids **every** workspace
-  import (`INTERNAL_PACKAGE_DEPS.env = []`, AGENTS.md § Error handling) and any new
-  throw there keeps a raw `Error` by the recorded exemption.
-- `@aws-sdk/client-secrets-manager` follows the optional-peer pattern, and per phase A
-  deviation #3, **`apps/api` as composition root must also declare the concrete SDK**
-  if the import is eager.
-- Security review must confirm `/tmp/.env` mode, that the file is never logged, that
-  `printConfigSummary()` does not widen under the new path, and that no database
-  password exists anywhere in the API — RDS Proxy holds it, Lambda authenticates via
-  IAM. This is also the resolution of blocker 6 (rotation vs. container-scoped
-  `getEnv()` caching).
-- **Tenancy re-check, not a formality:** RDS Proxy stays multiplexed only because
-  `rls-context.ts:96` uses transaction-scoped `SET LOCAL ROLE`. Confirm no slice in
-  this story touches that file. Session-level `SET ROLE` would pin one proxy connection
-  per Lambda container and negate the proxy.
+**Shape replaced. Delivered as `ISecretResolver`, not the `GRANT_ENV_FILE` preload the
+brief described.** ADR 0003 removed the handler entrypoint, and with it the place to
+stand between "process starts" and "application loads". Rather than reintroduce that
+window with a `--import` preload, secret resolution moved to a port and became lazy.
+Recorded in `decisions/0004-secret-resolution-through-a-port.md`.
+
+- `ISecretResolver` in `@grantjs/core`; `EnvSecretResolver` (default) and
+  `AwsSecretsManagerResolver` in a new private `@grantjs/secrets` package, selected by
+  `SECRETS_PROVIDER` (default `env`). Package DAG entry added to `eslint.config.mjs`
+  (`secrets: ['@grantjs/core']`) and to the changeset `ignore` list.
+- `@aws-sdk/client-secrets-manager` is an optional peer of `@grantjs/secrets` and a
+  concrete dependency of `apps/api`, matching the DynamoDB cache precedent and phase A
+  deviation #3.
+- **Only two keys are read through the port**: `AUTH_MFA_SECRET_ENCRYPTION_KEY` and
+  `GITHUB_CLIENT_SECRET`. `STORAGE_S3_*`, `CACHE_DYNAMODB_*` and `JOBS_AWS_*` already
+  document themselves as intentionally blank so the execution role supplies them
+  (`env/src/schema.ts:132-134`), so they need nothing.
+- **Blocker 6 resolved** (rotation vs. container-scoped `getEnv()` caching): secret
+  values no longer pass through `getEnv()` at all. Rotation window is
+  `SECRETS_CACHE_TTL_SECONDS`, default 300.
+- **The `findWorkspaceRoot()` trap does not bite this image.** Verified against the
+  built container: `/app/pnpm-workspace.yaml` is present with `WORKDIR /app/apps/api`,
+  so the walk succeeds. It only becomes real if slice 6 slims the image — carry the
+  check there, do not fix it here.
+- **API surface change:** `IGitHubOAuthService.isConfigured()` returns
+  `Promise<boolean>`; four handler call sites await it, and
+  `IProjectOAuthProvider.getAuthorizeUrl` widened to `string | Promise<string>`.
+- **Database credentials are out of scope for this slice and belong to the CDK work.**
+  RDS IAM auth removes the password entirely: host/port/database/username are config,
+  and the token is minted locally by SigV4 against the execution role. postgres.js
+  already accepts a password callback and invokes it per connection attempt
+  (`postgres/src/connection.js:750-752`), so this needs one additive optional
+  `password?: () => Promise<string>` on `DatabaseConfig`. Not done here.
+- **Tenancy re-check, done:** `rls-context.ts` is untouched by every slice in this
+  story, so transaction-scoped `SET LOCAL ROLE` still holds and RDS Proxy can stay
+  multiplexed.
+- **Two findings for separate fixes, neither introduced here:**
+  - `printConfigSummary()` logs `DB_CONFIG.url.split('@')[1]`
+    (`apps/api/src/config/env.config.ts:981`) — a password containing a raw `@` leaks a
+    fragment into the log.
+  - `SECURITY_API_KEY` is declared in the env schema and config but has **no runtime
+    consumer**. Left in place (additive-only), flagged for the security review.
+  - `@grantjs/database` has no `ssl` option anywhere, and postgres.js defaults
+    `ssl: false`. RDS Proxy requires TLS, but postgres.js parses `?sslmode=` off the
+    URL, so this is config-only: `DB_URL=...?sslmode=verify-full`. Belongs to the CDK
+    slice.
 
 ### Slice 6 — image and registry
 

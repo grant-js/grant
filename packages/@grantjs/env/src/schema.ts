@@ -161,6 +161,18 @@ export const envSchema = z.object({
     'http://localhost:3000,http://localhost:3001,https://studio.apollographql.com,https://apollo-studio-embed.vercel.app'
   ),
 
+  // Secrets. Default 'env' keeps every existing deployment reading secrets from
+  // the environment exactly as before. 'aws-secrets-manager' resolves them per
+  // use from one JSON secret, falling back to the environment for any key the
+  // payload omits, so secrets can move over one at a time.
+  SECRETS_PROVIDER: z.enum(['env', 'aws-secrets-manager']).optional().default('env'),
+  SECRETS_AWS_SECRET_ID: optionalString(''),
+  SECRETS_AWS_REGION: optionalString('us-east-1'),
+  /** Override for LocalStack; unset uses the real endpoint. */
+  SECRETS_AWS_ENDPOINT: optionalString(''),
+  /** Rotation window: how long a fetched payload is reused before refetching. */
+  SECRETS_CACHE_TTL_SECONDS: optionalNumber(300),
+
   // Apollo / Swagger (when undefined, API config derives from NODE_ENV)
   APOLLO_INTROSPECTION: z
     .union([z.string(), z.undefined()])
