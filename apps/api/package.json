@@ -8,6 +8,7 @@
     "build": "tsc",
     "build:production": "node ../../scripts/docker/build-api-production.mjs",
     "start": "node dist/server.js",
+    "migrate": "node dist/migrate.js",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "type-check": "tsc --noEmit",
@@ -16,6 +17,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "vitest run --config vitest.config.e2e.ts",
     "test:e2e:report": "vitest run --config vitest.config.e2e.ts --reporter=json --reporter=verbose --outputFile=tests/e2e/compliance-report.json",
+    "measure:cdm-gzip": "tsx tests/tools/measure-cdm-gzip.ts",
     "clean": "rm -rf dist"
   },
   "dependencies": {
@@ -24,6 +26,7 @@
     "@asteasolutions/zod-to-openapi": "^9.1.0",
     "@aws-sdk/client-dynamodb": "^3.1113.0",
     "@aws-sdk/client-s3": "^3.1113.0",
+    "@aws-sdk/client-secrets-manager": "^3.1113.0",
     "@aws-sdk/client-ses": "^3.1113.0",
     "@aws-sdk/client-sqs": "^3.1113.0",
     "@aws-sdk/s3-request-presigner": "^3.1113.0",
@@ -39,6 +42,7 @@
     "@grantjs/jobs": "workspace:*",
     "@grantjs/logger": "workspace:*",
     "@grantjs/schema": "workspace:*",
+    "@grantjs/secrets": "workspace:*",
     "@grantjs/storage": "workspace:*",
     "@grantjs/telemetry": "workspace:*",
     "@grantjs/webhooks": "workspace:*",

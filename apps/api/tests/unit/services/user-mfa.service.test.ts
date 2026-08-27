@@ -21,7 +21,8 @@ function createService(): UserMfaService {
     mockFactorRepo as never,
     mockRecoveryRepo as never,
     mockAudit as never,
-    { publish: vi.fn() } as never
+    { publish: vi.fn() } as never,
+    { resolve: () => Promise.resolve('0123456789abcdef0123456789abcdef') }
   );
 }
 

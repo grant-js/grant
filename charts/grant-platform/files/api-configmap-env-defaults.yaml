@@ -21,6 +21,8 @@ ANALYTICS_UMAMI_API_URL: ''
 ANALYTICS_UMAMI_WEBSITE_ID: ''
 ANALYTICS_UMAMI_HOSTNAME: grant-api
 TRACING_ENABLED: 'false'
+# Long-running pods buffer spans; 'simple' is for freezable runtimes (ADR 0003).
+TRACING_SPAN_PROCESSOR: 'batch'
 TRACING_BACKEND: jaeger
 JAEGER_ENDPOINT: ''
 OTLP_ENDPOINT: ''
@@ -32,6 +34,9 @@ DB_CONNECTION_TIMEOUT: '30'
 DB_IDLE_TIMEOUT: '20'
 DB_QUERY_TIMEOUT: '60000'
 DB_LOG_QUERIES: 'false'
+# Chart default keeps the in-container bootstrap (no Helm hook Job), matching the
+# behavior recorded in ADR 0001. Set 'false' only alongside a migrate Job.
+DB_BOOTSTRAP_ON_BOOT: 'true'
 JWT_ACCESS_TOKEN_EXPIRATION_MINUTES: '15'
 JWT_REFRESH_TOKEN_EXPIRATION_DAYS: '30'
 JWT_JWKS_MAX_AGE_SECONDS: '300'

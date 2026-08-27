@@ -4,8 +4,9 @@
 
 - **Slug**: `aws-lambda-runtime`
 - **Date**: 2026-08-21
-- **Status**: **draft — ready for gate 1.** Phase **B** of three. Its prerequisite,
-  phase A (`aws-adapters`), merged to `main` as #313 on 2026-08-24.
+- **Status**: **approved** (gate 1, 2026-08-24, Ale Heredia). Phase **B** of three. Its
+  prerequisite, phase A (`aws-adapters`), merged to `main` as #313 on 2026-08-24.
+- **Stack plan**: [`2026-08-21-aws-lambda-runtime-stack.md`](./2026-08-21-aws-lambda-runtime-stack.md)
 - **Citations re-verified** against `main` at `39151c33` on 2026-08-24. One had
   drifted: `bootstrapDatabase()` moved from `server.ts:59` to `:56`. Everything else
   still holds — `env.config.ts:15`, `env/src/schema.ts:31`, `release.yml:282`,
@@ -104,5 +105,5 @@ Senior Security, QA, Verifier.
 
 ## Human gate
 
-- [ ] Gate 1: not yet sought. Citations re-verified against `39151c33`; re-check if
-      `main` moves again before this story is queued.
+- [x] Gate 1: **approved 2026-08-24, Ale Heredia.** Citations re-verified a second time
+      against `main` at `048341cb` when the stack plan was drafted; all still hold.

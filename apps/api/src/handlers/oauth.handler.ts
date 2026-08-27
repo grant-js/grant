@@ -68,7 +68,7 @@ export class OAuthHandler extends CacheHandler {
   public async initiateGithubAuth(
     params: InitiateGithubAuthParams
   ): Promise<InitiateGithubAuthResult> {
-    if (!this.githubOAuth.isConfigured()) {
+    if (!(await this.githubOAuth.isConfigured())) {
       throw new ConfigurationError('GitHub OAuth is not configured');
     }
 
@@ -92,7 +92,7 @@ export class OAuthHandler extends CacheHandler {
     code: string | undefined,
     stateToken: string | undefined
   ): Promise<HandleGithubCallbackResult> {
-    if (!this.githubOAuth.isConfigured()) {
+    if (!(await this.githubOAuth.isConfigured())) {
       throw new ConfigurationError('GitHub OAuth is not configured');
     }
 

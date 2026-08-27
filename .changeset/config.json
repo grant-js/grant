@@ -35,6 +35,7 @@
     "@grantjs/i18n",
     "@grantjs/jobs",
     "@grantjs/logger",
+    "@grantjs/secrets",
     "@grantjs/storage",
     "@grantjs/telemetry",
     "@grantjs/webhooks"

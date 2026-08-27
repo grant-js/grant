@@ -85,6 +85,9 @@ const DB_CONFIG = {
 
   /** Enable query logging */
   logQueries: env.DB_LOG_QUERIES,
+
+  /** Run migrations and the core seed at API start (`DB_BOOTSTRAP_ON_BOOT`). */
+  bootstrapOnBoot: env.DB_BOOTSTRAP_ON_BOOT,
 } as const;
 
 // ============================================================================
@@ -314,6 +317,24 @@ const REDIS_CONFIG = {
 // Security Configuration
 // ============================================================================
 
+// ============================================================================
+// Secrets Configuration
+// ============================================================================
+
+/**
+ * Which resolver supplies deployment secrets. Default 'env' reads them from the
+ * process environment, which is what every deployment did before this existed.
+ */
+const SECRETS_CONFIG = {
+  provider: env.SECRETS_PROVIDER,
+  awsSecretsManager: {
+    secretId: env.SECRETS_AWS_SECRET_ID,
+    region: env.SECRETS_AWS_REGION,
+    endpoint: env.SECRETS_AWS_ENDPOINT || undefined,
+    cacheTtlSeconds: env.SECRETS_CACHE_TTL_SECONDS,
+  },
+} as const;
+
 const SECURITY_CONFIG = {
   /** Frontend URL for CORS */
   frontendUrl: env.SECURITY_FRONTEND_URL,
@@ -528,7 +549,7 @@ const METRICS_CONFIG = {
 // ============================================================================
 
 const TELEMETRY_CONFIG = {
-  /** Telemetry provider: none (noop) | cloudwatch */
+  /** Telemetry provider: none (noop) | cloudwatch | emf */
   provider: env.TELEMETRY_PROVIDER,
 
   /** CloudWatch adapter (used when provider is cloudwatch) */
@@ -536,6 +557,21 @@ const TELEMETRY_CONFIG = {
     region: env.TELEMETRY_CLOUDWATCH_REGION,
     logGroupName: env.TELEMETRY_CLOUDWATCH_LOG_GROUP,
     logStreamPrefix: env.TELEMETRY_CLOUDWATCH_LOG_STREAM_PREFIX,
+  },
+
+  /** Embedded Metric Format adapter (used when provider is emf) */
+  emf: {
+    namespace: env.TELEMETRY_EMF_NAMESPACE,
+    dimensions: env.TELEMETRY_EMF_DIMENSIONS.split(',')
+      .map((s: string) => s.trim())
+      .filter(Boolean),
+    /** `field:Unit` pairs; a pair missing its unit is ignored rather than defaulted. */
+    metrics: Object.fromEntries(
+      env.TELEMETRY_EMF_METRICS.split(',')
+        .map((pair: string) => pair.split(':').map((part) => part.trim()))
+        .filter((parts: string[]) => parts.length === 2 && parts[0] && parts[1])
+        .map((parts: string[]) => [parts[0], parts[1]])
+    ) as Record<string, string>,
   },
 } as const;
 
@@ -574,6 +610,9 @@ const TRACING_CONFIG = {
 
   /** OTLP trace endpoint (for TRACING_BACKEND=otlp or xray) */
   otlpEndpoint: env.OTLP_ENDPOINT,
+
+  /** Span export strategy: batch (buffered) | simple (per-span) */
+  spanProcessor: env.TRACING_SPAN_PROCESSOR,
 
   /** Sampling rate 0.0 to 1.0 */
   samplingRate: env.TRACING_SAMPLING_RATE,
@@ -1080,6 +1119,7 @@ export const config = {
   projectOAuth: PROJECT_OAUTH_CONFIG,
   cache: CACHE_CONFIG,
   redis: REDIS_CONFIG,
+  secrets: SECRETS_CONFIG,
   security: SECURITY_CONFIG,
   apollo: APOLLO_CONFIG,
   swagger: SWAGGER_CONFIG,

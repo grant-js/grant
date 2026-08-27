@@ -1,6 +1,7 @@
 import {
   IAuditLogger,
   IEventPublisher,
+  ISecretResolver,
   IUserMfaFactorRepository,
   IUserMfaRecoveryCodeRepository,
   IUserMfaService,
@@ -25,8 +26,21 @@ export class UserMfaService implements IUserMfaService {
     private readonly userMfaFactorRepository: IUserMfaFactorRepository,
     private readonly userMfaRecoveryCodeRepository: IUserMfaRecoveryCodeRepository,
     private readonly audit: IAuditLogger,
-    private readonly events: IEventPublisher
+    private readonly events: IEventPublisher,
+    private readonly secrets: ISecretResolver
   ) {}
+
+  /**
+   * Resolved per use rather than read once at boot, so a rotated key is picked up
+   * without a redeploy. The `env` resolver makes this a plain `process.env` read.
+   */
+  private async requireEncryptionKey(): Promise<string> {
+    const encryptionKey = await this.secrets.resolve('AUTH_MFA_SECRET_ENCRYPTION_KEY');
+    if (!encryptionKey) {
+      throw new ConfigurationError('AUTH_MFA_SECRET_ENCRYPTION_KEY must be configured');
+    }
+    return encryptionKey;
+  }
 
   public async listDevices(userId: string, transaction?: Transaction): Promise<MfaDeviceInfo[]> {
     const devices = await this.userMfaFactorRepository.listFactors(userId, transaction);
@@ -47,10 +61,7 @@ export class UserMfaService implements IUserMfaService {
     accountName: string,
     transaction?: Transaction
   ): Promise<MfaSetupResult> {
-    const encryptionKey = config.auth.mfa.secretEncryptionKey;
-    if (!encryptionKey) {
-      throw new ConfigurationError('AUTH_MFA_SECRET_ENCRYPTION_KEY must be configured');
-    }
+    const encryptionKey = await this.requireEncryptionKey();
     const secret = generateTotpSecret();
     const encrypted = encryptMfaSecret(secret, encryptionKey);
     const factor = await this.userMfaFactorRepository.upsertPrimaryFactor(
@@ -80,10 +91,7 @@ export class UserMfaService implements IUserMfaService {
     code: string,
     transaction?: Transaction
   ): Promise<{ factorId: string; verified: boolean }> {
-    const encryptionKey = config.auth.mfa.secretEncryptionKey;
-    if (!encryptionKey) {
-      throw new ConfigurationError('AUTH_MFA_SECRET_ENCRYPTION_KEY must be configured');
-    }
+    const encryptionKey = await this.requireEncryptionKey();
     const factor = await this.userMfaFactorRepository.getPrimaryFactor(userId, transaction);
     if (!factor) {
       throw new AuthenticationError('MFA factor not set up');

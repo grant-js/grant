@@ -13,7 +13,7 @@ The project follows hexagonal architecture (ports and adapters). Understand and 
 
 ### Package dependency graph (DAG — no cycles allowed)
 
-**18 packages, in three classes.** Every arrow below is a real `dependencies` entry in the package's own `package.json`, and each package's allowed set is enforced by its own block in `eslint.config.mjs`. The allowed sets differ — do not copy one package's rule to another.
+**19 packages, in three classes.** Every arrow below is a real `dependencies` entry in the package's own `package.json`, and each package's allowed set is enforced by its own block in `eslint.config.mjs`. The allowed sets differ — do not copy one package's rule to another.
 
 ```
 @grantjs/env             (env parsing, no workspace deps)
@@ -29,6 +29,7 @@ The project follows hexagonal architecture (ports and adapters). Understand and 
             ├── @grantjs/email      (SMTP/SES/Mailgun/Mailjet/console)
             ├── @grantjs/telemetry  (CloudWatch/no-op)
             ├── @grantjs/analytics  (Umami/no-op)
+            ├── @grantjs/secrets    (env/AWS Secrets Manager resolvers)
             ├── @grantjs/webhooks   (delivery, signing, SSRF guard)
             └── @grantjs/jobs       → also @grantjs/schema (node-cron/BullMQ)
 
@@ -38,7 +39,7 @@ published to npm — a contract surface, not internal:
 @grantjs/cli             (no workspace deps)
 ```
 
-- **`@grantjs/core`** defines domain ports (`ILogger`, `ILoggerFactory`, `ICacheAdapter`, `IFileStorageService`, `IEmailService`, `IJobAdapter`, `ITelemetryAdapter`, `IAnalyticsAdapter`) and a rich exception hierarchy (`GrantException` → `NotFoundError`, `BadRequestError`, `AuthenticationError`, `AuthorizationError`, `ConflictError`, `ConfigurationError`, `ValidationError`).
+- **`@grantjs/core`** defines domain ports (`ILogger`, `ILoggerFactory`, `ICacheAdapter`, `IFileStorageService`, `IEmailService`, `IJobAdapter`, `ITelemetryAdapter`, `IAnalyticsAdapter`, `ISecretResolver`) and a rich exception hierarchy (`GrantException` → `NotFoundError`, `BadRequestError`, `AuthenticationError`, `AuthorizationError`, `ConflictError`, `ConfigurationError`, `ValidationError`).
 - **Adapter packages** (`cache`, `storage`, `email`, `jobs`, `logger`, `errors`, `telemetry`, `analytics`, `webhooks`) implement core ports. They accept `ILogger` (or `ILoggerFactory`) via constructor injection or factory — they must **never** import `@grantjs/logger` directly.
 - **The published trio** (`client`, `server`, `cli`) is the only non-private set; `scripts/check-publishable-packages.mjs` enforces that list. Their DAG is enforced by `PUBLISHED_PACKAGE_DEPS` in `eslint.config.mjs` — a separate map from the internal one, because the distinction is a review bar, not a rule shape. `client` and `server` may import `@grantjs/schema` and nothing else; `cli` may import no workspace package at all.
 - **"Unused export" means something different in each of the trio, and the difference is measurable.** What is semver-public is what the built `.d.ts` entry points re-export, not what `src` declares — so read the artifact, not the source:
@@ -216,3 +217,4 @@ Contributor docs for CDM: `apps/api/src/lib/cdm/README.md`, `docs/core-concepts/
 | API app          | `apps/api`                                                   | `api.mdc`           |
 | Web app          | `apps/web`                                                   | `react-and-web.mdc` |
 | Agentic SDLC     | `docs/contributing/agentic-sdlc.md`, `.cursor/agents/`       | —                   |
+| Decision records | `decisions/` (ADRs — see `decisions/README.md`)              | —                   |

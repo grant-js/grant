@@ -1,150 +1,15 @@
 import '@/lib/tracing'; // must run first so OTel patches http/express before they load
 
-import { ApolloServer } from '@apollo/server';
-import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
-import { ApolloServerPluginInlineTrace } from '@apollo/server/plugin/inlineTrace';
-import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
-import { expressMiddleware } from '@as-integrations/express5';
-import { bootstrapDatabase, closeDatabase, initializeDBConnection } from '@grantjs/database';
-import cors from 'cors';
-import express from 'express';
-import helmet from 'helmet';
-import http from 'http';
-import swaggerUi from 'swagger-ui-express';
-
-import { config, printConfigSummary, validateConfig } from '@/config';
-import { schema } from '@/graphql/resolvers';
-import { GraphqlContext } from '@/graphql/types';
-import { i18nMiddleware, initializeI18n } from '@/i18n';
+import { config } from '@/config';
+import { createApp } from '@/create-app';
 import { createAppContext } from '@/lib/app-context.lib';
-import { graphqlMinAalAtLoginMiddleware } from '@/lib/authorization/min-aal-at-login';
-import { CacheFactory } from '@/lib/cache';
-import { formatGraphQLError } from '@/lib/errors';
 import { closeHttpServer } from '@/lib/http-server.lib';
 import { initializeJobs, shutdownJobs } from '@/lib/jobs/initialize';
-import { logger, loggerFactory } from '@/lib/logger';
-import { metricsHandler, metricsMiddleware } from '@/lib/metrics';
+import { logger } from '@/lib/logger';
 import { shutdownTracing } from '@/lib/tracing';
-import { contextMiddleware } from '@/middleware/context.middleware';
-import { errorHandler } from '@/middleware/error.middleware';
-import { rateLimitMiddleware } from '@/middleware/rate-limit.middleware';
-import { requestLoggingMiddleware } from '@/middleware/request-logging.middleware';
-import { storageMiddleware } from '@/middleware/storage.middleware';
-import { createRestRouter } from '@/rest';
-import { generateOpenApiDocument } from '@/rest/openapi';
-import { createJwksRouter } from '@/rest/routes/jwks.routes';
-import { ContextRequest } from '@/types';
 
 async function startServer() {
-  validateConfig();
-  await printConfigSummary();
-
-  await initializeI18n();
-  logger.info({
-    msg: 'i18n initialized',
-    locales: config.i18n.supportedLocales,
-  });
-
-  const db = initializeDBConnection({
-    connectionString: config.db.url,
-    max: config.db.poolMax,
-    idleTimeout: config.db.idleTimeout,
-    connectTimeout: config.db.connectionTimeout,
-    logger: loggerFactory.createLogger('DatabaseConnection'),
-  });
-
-  // Sole migrate/seed path for Kubernetes (no Helm hook Job); PostgreSQL advisory lock is safe for multiple replicas.
-  await bootstrapDatabase(db, config.system.systemUserId);
-
-  const app = express();
-  const httpServer = http.createServer(app);
-
-  const apolloServer = new ApolloServer<GraphqlContext>({
-    schema,
-    introspection: config.apollo.introspection,
-    formatError: formatGraphQLError,
-    plugins: [
-      ApolloServerPluginDrainHttpServer({ httpServer }),
-      ...(config.apollo.playground
-        ? [ApolloServerPluginLandingPageLocalDefault({ embed: true })]
-        : []),
-      ApolloServerPluginInlineTrace(),
-    ],
-  });
-
-  await apolloServer.start();
-
-  const cache = CacheFactory.createEntityCache(
-    {
-      strategy: config.cache.strategy,
-      redis:
-        config.cache.strategy === 'redis'
-          ? {
-              host: config.redis.host,
-              port: config.redis.port,
-              password: config.redis.password,
-              db: config.redis.database,
-            }
-          : undefined,
-      dynamodb: config.cache.strategy === 'dynamodb' ? config.cache.dynamodb : undefined,
-    },
-    loggerFactory
-  );
-
-  app.use(cors<cors.CorsRequest>(config.cors));
-  app.use(helmet(config.helmet));
-  app.use(express.json({ limit: config.app.jsonBodyLimitBytes }));
-  app.use(i18nMiddleware);
-  if (config.storage.provider === 'local') {
-    app.use('/storage', storageMiddleware());
-  }
-
-  app.use(requestLoggingMiddleware);
-  app.use(contextMiddleware(db, cache));
-  app.use(rateLimitMiddleware(cache.rateLimit));
-  if (config.metrics.enabled) {
-    app.use(metricsMiddleware);
-  }
-
-  const openApiDocument = generateOpenApiDocument();
-
-  if (config.swagger.enabled) {
-    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument, config.swaggerSetup));
-  }
-
-  app.get('/api-docs.json', (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
-    res.send(openApiDocument);
-  });
-
-  app.use('/api', (req, res, next) => {
-    const contextReq = req as ContextRequest;
-    const restRouter = createRestRouter(contextReq.context);
-    restRouter(req, res, next);
-  });
-
-  app.use(
-    '/graphql',
-    graphqlMinAalAtLoginMiddleware,
-    expressMiddleware(apolloServer, {
-      context: async ({ req, res }: { req: express.Request; res: express.Response }) => {
-        const contextReq = req as ContextRequest;
-        return { ...contextReq.context, req, res };
-      },
-    })
-  );
-
-  app.get('/health', (_req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
-  });
-
-  if (config.metrics.enabled) {
-    app.get(config.metrics.endpoint, metricsHandler);
-  }
-
-  app.use(createJwksRouter());
-
-  app.use(errorHandler);
+  const { httpServer, db, cache, shutdown } = await createApp();
 
   await new Promise<void>((resolve) => httpServer.listen({ port: config.app.port }, resolve));
 
@@ -184,7 +49,7 @@ async function startServer() {
     try {
       if (isDevelopment) {
         logger.info({ msg: 'Shutting down...' });
-        await apolloServer.stop().catch((err: unknown) => {
+        await shutdown.stopApollo().catch((err: unknown) => {
           logger.warn({ msg: 'Apollo stop during dev shutdown', err });
         });
         await closeHttpServer(httpServer);
@@ -198,7 +63,7 @@ async function startServer() {
         signal,
       });
 
-      await apolloServer.stop().catch((error: unknown) => {
+      await shutdown.stopApollo().catch((error: unknown) => {
         logger.error({
           msg: 'Error stopping Apollo Server',
           err: error,
@@ -229,7 +94,7 @@ async function startServer() {
       }
 
       try {
-        await CacheFactory.disconnect(cache);
+        await shutdown.disconnectCache();
         logger.info({ msg: 'Cache disconnected' });
       } catch (error) {
         logger.error({
@@ -239,7 +104,7 @@ async function startServer() {
       }
 
       try {
-        await closeDatabase();
+        await shutdown.closeDatabase();
         logger.info({ msg: 'Database closed' });
       } catch (error) {
         logger.error({

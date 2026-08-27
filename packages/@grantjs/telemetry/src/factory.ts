@@ -2,9 +2,10 @@ import type { ILoggerFactory, ITelemetryAdapter } from '@grantjs/core';
 import { ConfigurationError, noopLogger } from '@grantjs/core';
 
 import { CloudWatchTelemetryAdapter } from './cloudwatch';
+import { EmfTelemetryAdapter } from './emf';
 import { NoopTelemetryAdapter } from './noop';
 
-export type TelemetryProvider = 'none' | 'cloudwatch';
+export type TelemetryProvider = 'none' | 'cloudwatch' | 'emf';
 
 export interface TelemetryFactoryConfig {
   provider: TelemetryProvider;
@@ -12,6 +13,11 @@ export interface TelemetryFactoryConfig {
     region: string;
     logGroupName: string;
     logStreamPrefix?: string;
+  };
+  emf?: {
+    namespace: string;
+    dimensions: string[];
+    metrics: Record<string, string>;
   };
 }
 
@@ -40,6 +46,19 @@ export class TelemetryFactory {
             logStreamPrefix: config.cloudwatch.logStreamPrefix,
           },
           mkLogger('CloudWatchTelemetryAdapter')
+        );
+      }
+
+      case 'emf': {
+        // No required config: the defaults below are a working namespace and a
+        // low-cardinality dimension set, so `TELEMETRY_PROVIDER=emf` alone works.
+        return new EmfTelemetryAdapter(
+          {
+            namespace: config.emf?.namespace || 'Grant/API',
+            dimensions: config.emf?.dimensions ?? ['method', 'statusCode'],
+            metrics: config.emf?.metrics ?? { duration: 'Milliseconds' },
+          },
+          mkLogger('EmfTelemetryAdapter')
         );
       }
 

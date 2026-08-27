@@ -53,6 +53,14 @@ export const envSchema = z.object({
   DB_IDLE_TIMEOUT: optionalNumber(20),
   DB_QUERY_TIMEOUT: optionalNumber(60000),
   DB_LOG_QUERIES: optionalBoolean(true),
+  /**
+   * Run migrations and the core seed at API start. Default true — the long-running
+   * server's historical behavior. Set false where a separate migrate/seed step runs
+   * first (a Helm hook Job, an ECS one-off task, or `node dist/migrate.js`), which
+   * every serverless target needs: concurrent cold starts must not each try to
+   * migrate, and migrations do not fit a request-scoped invocation.
+   */
+  DB_BOOTSTRAP_ON_BOOT: optionalBoolean(true),
 
   // JWT / Auth / Token
   JWT_ACCESS_TOKEN_EXPIRATION_MINUTES: optionalNumber(15),
@@ -153,6 +161,18 @@ export const envSchema = z.object({
     'http://localhost:3000,http://localhost:3001,https://studio.apollographql.com,https://apollo-studio-embed.vercel.app'
   ),
 
+  // Secrets. Default 'env' keeps every existing deployment reading secrets from
+  // the environment exactly as before. 'aws-secrets-manager' resolves them per
+  // use from one JSON secret, falling back to the environment for any key the
+  // payload omits, so secrets can move over one at a time.
+  SECRETS_PROVIDER: z.enum(['env', 'aws-secrets-manager']).optional().default('env'),
+  SECRETS_AWS_SECRET_ID: optionalString(''),
+  SECRETS_AWS_REGION: optionalString('us-east-1'),
+  /** Override for LocalStack; unset uses the real endpoint. */
+  SECRETS_AWS_ENDPOINT: optionalString(''),
+  /** Rotation window: how long a fetched payload is reused before refetching. */
+  SECRETS_CACHE_TTL_SECONDS: optionalNumber(300),
+
   // Apollo / Swagger (when undefined, API config derives from NODE_ENV)
   APOLLO_INTROSPECTION: z
     .union([z.string(), z.undefined()])
@@ -217,10 +237,22 @@ export const envSchema = z.object({
   METRICS_ENABLED: optionalBoolean(false),
   METRICS_ENDPOINT: optionalString('/metrics'),
   METRICS_COLLECT_DEFAULTS: optionalBoolean(true),
-  TELEMETRY_PROVIDER: z.enum(['none', 'cloudwatch']).optional().default('none'),
+  TELEMETRY_PROVIDER: z.enum(['none', 'cloudwatch', 'emf']).optional().default('none'),
   TELEMETRY_CLOUDWATCH_REGION: optionalString('us-east-1'),
   TELEMETRY_CLOUDWATCH_LOG_GROUP: optionalString(''),
   TELEMETRY_CLOUDWATCH_LOG_STREAM_PREFIX: optionalString('grant-api'),
+  /** CloudWatch custom metric namespace (TELEMETRY_PROVIDER=emf). */
+  TELEMETRY_EMF_NAMESPACE: optionalString('Grant/API'),
+  /**
+   * Comma-separated fields promoted to metric dimensions. Every distinct
+   * combination creates a billable CloudWatch metric, so keep this
+   * low-cardinality. Do NOT add `path`: request paths embed resource IDs and
+   * would create an unbounded number of metrics. Unbounded fields are still
+   * emitted as document properties and stay queryable in Logs Insights.
+   */
+  TELEMETRY_EMF_DIMENSIONS: optionalString('method,statusCode'),
+  /** Comma-separated `field:CloudWatchUnit` pairs extracted as metrics. */
+  TELEMETRY_EMF_METRICS: optionalString('duration:Milliseconds'),
   ANALYTICS_ENABLED: optionalBoolean(false),
   ANALYTICS_PROVIDER: z.enum(['none', 'umami']).optional().default('none'),
   ANALYTICS_UMAMI_API_URL: optionalString(''),
@@ -230,6 +262,13 @@ export const envSchema = z.object({
   TRACING_BACKEND: z.enum(['jaeger', 'otlp', 'xray']).optional().default('jaeger'),
   JAEGER_ENDPOINT: optionalString('http://localhost:14268/api/traces'),
   OTLP_ENDPOINT: optionalString('http://localhost:4318/v1/traces'),
+  /**
+   * Span export strategy. `batch` buffers and exports on a timer — right for a
+   * long-running server. `simple` exports each span as it ends: required wherever the
+   * process can be frozen or killed between requests without warning, such as Lambda
+   * behind the Web Adapter, where a buffered batch is simply lost.
+   */
+  TRACING_SPAN_PROCESSOR: z.enum(['batch', 'simple']).optional().default('batch'),
   TRACING_SAMPLING_RATE: optionalNumber(1),
   TRACING_SERVICE_NAME: optionalString('grant-api'),
 

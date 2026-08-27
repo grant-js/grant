@@ -248,7 +248,7 @@ export class ProjectOAuthHandler {
     await this.cache.oauth.set(key, statePayload, config.projectOAuth.stateTtlSeconds);
 
     const providerImpl = this.getProviderRegistry()[provider];
-    const authorizationUrl = providerImpl.getAuthorizeUrl({
+    const authorizationUrl = await providerImpl.getAuthorizeUrl({
       clientId,
       redirectUri,
       stateId,
@@ -266,8 +266,8 @@ export class ProjectOAuthHandler {
   private getProviderRegistry(): Record<ProjectOAuthProvider, IProjectOAuthProvider> {
     return {
       github: {
-        getAuthorizeUrl: (params) => {
-          if (!this.githubOAuth.isConfigured()) {
+        getAuthorizeUrl: async (params) => {
+          if (!(await this.githubOAuth.isConfigured())) {
             throw new ConfigurationError('GitHub OAuth is not configured');
           }
           return this.githubOAuth.getProjectAuthorizationUrl(params.stateId);
@@ -393,7 +393,7 @@ export class ProjectOAuthHandler {
     code: string,
     stateId: string
   ): Promise<HandleProjectCallbackResult | HandleProjectCallbackConsentRedirectResult> {
-    if (!this.githubOAuth.isConfigured()) {
+    if (!(await this.githubOAuth.isConfigured())) {
       throw new ConfigurationError('GitHub OAuth is not configured');
     }
 
