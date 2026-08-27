@@ -33,7 +33,6 @@ Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
   `IGitHubOAuthService.isConfigured()` now returns `Promise<boolean>`, since determining whether GitHub OAuth is configured requires resolving the client secret.
 
-
 ### Patch Changes
 
 - 7a96814: Add `DB_BOOTSTRAP_ON_BOOT` and a standalone migrate entrypoint.
