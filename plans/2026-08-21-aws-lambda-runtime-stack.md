@@ -195,11 +195,22 @@ no span flush, no job cleanup, and no clean database or cache disconnect.
 because nothing checks the container's exit code — `scripts/e2e.sh` tears the stack
 down with `down -v` regardless.
 
-**Not fixed here.** Fixing it is a behavior change and would destroy the no-op
-property this slice exists to demonstrate. It wants its own PR off `main` — the same
-shape as #315 — and it is worth doing before phase B goes further, because blocker 5
-(OTel spans lost on container freeze) assumes a shutdown path that currently never
-executes.
+**Not fixed in this slice** — fixing it is a behavior change and would have destroyed
+the no-op property slice 2 exists to demonstrate. It went out as its own PR off
+`main`, [#325](https://github.com/grant-js/grant/pull/325), merged `9c1aaeb4`
+2026-08-25: `closeHttpServer()` absorbs `ERR_SERVER_NOT_RUNNING` and only that code,
+so shutdown runs to completion and exits 0.
+
+**Resolved, and the resolution was re-verified through the extraction.** The trunk was
+rebased onto the new `main`; slice 2 conflicted in `server.ts` exactly as predicted,
+in the import block. Resolution kept `closeHttpServer` — `server.ts` still owns
+shutdown — and dropped the three imports that moved to `create-app.ts`. SIGTERM
+against the rebuilt container now exits 0 through the extracted `create-app` with the
+full sequence: HTTP server closed, job scheduling shut down, cache disconnected,
+database closed.
+
+This also clears the ground for blocker 5 (OTel spans lost on container freeze),
+which had been assuming a shutdown path that never executed.
 
 ### Slice 3 — bootstrap gate
 
@@ -213,9 +224,51 @@ executes.
      are safe because they yield via `maxBatches`.
 - **The repo has no ADR directory.** `docs/architecture/` holds topic documents
   (`overview.md`, `multi-tenancy.md`, `rbac.md`, `security.md`, `data-model.md`), not
-  decisions. This plan proposes `docs/architecture/decisions/NNNN-<slug>.md` and slice
+  decisions. This plan proposes `decisions/NNNN-<slug>.md` and slice
   3 establishes it. **Flagged for gate 2** — if a different home is wanted, say so
   before slice 3 rather than after two ADRs land.
+
+### Slice 3 — bootstrap gate — **delivered**
+
+- `DB_BOOTSTRAP_ON_BOOT`, default `true`. Verified both ways against the real image:
+  default boots with the drizzle migration exactly as before and the oracle passes
+  21/21; `false` logs the skip and serves normally.
+- `apps/api/src/migrate.ts` → `node dist/migrate.js`, confirmed present and exiting 0
+  inside the production container.
+- **The reason the standalone runner is necessary was confirmed, not assumed**:
+  `drizzle-kit` is absent from the production image (`ls node_modules/.bin/drizzle-kit`
+  → no such file), because it is a devDependency and the runner stage prunes to
+  production deps. `pnpm --filter @grantjs/database db:migrate` therefore cannot run
+  in a container. `bootstrapDatabase()` uses `drizzle-orm`'s migrator, which ships.
+- ADR directory established at **`decisions/`** (repo root, sibling to `plans/`) with a
+  README defining the convention, plus ADRs
+  [0001](../decisions/0001-configuration-gated-database-bootstrap.md) and
+  [0002](../decisions/0002-long-running-cdm-sync-beyond-lambda.md). Indexed from
+  AGENTS.md § Where to look.
+
+  **Not** `docs/architecture/decisions/`, which is where this plan originally proposed
+  them: `docs/` is a workspace package whose `build` script is `vitepress build`, so
+  every `.md` beneath it becomes a public page. ADRs cite `plans/`, phase numbers, and
+  blocker indices — engineering records for this repo, with `plans/`'s audience and
+  lifecycle. At the root they are unpublished by construction rather than by an
+  `srcExclude` entry someone has to remember.
+
+- Documented in `apps/api/.env.example` and the Helm configmap defaults, both of
+  which keep today's behavior.
+
+**ADR 0002 landed differently than the plan anticipated.** The plan framed the
+choice as "Step Functions or a Fargate escape hatch". Reading the code closed it:
+`ProjectImportService.applyProjectCdmImport` (`services/project-import.service.ts:255-268`)
+runs the whole import in a **single transaction**, so Step Functions is not an
+infrastructure choice at all — chunking means committing partial imports, which means
+abandoning that transaction and inventing a resumability protocol. A partially applied
+permission model is a security outcome. The decision is to move the workload to a
+runtime that fits the transaction, not to break the transaction to fit the runtime.
+
+**One quantity is still unmeasured and is now called out in ADR 0002**: how long a
+28,880-entity import actually takes against RDS. Until that exists, the size at which
+sync must leave Lambda is unknown. Slice 1's fixtures make it measurable and
+deterministic; phase C owns it.
 
 ### Slice 4 — handler
 

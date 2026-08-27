@@ -8,6 +8,7 @@
     "build": "tsc",
     "build:production": "node ../../scripts/docker/build-api-production.mjs",
     "start": "node dist/server.js",
+    "migrate": "node dist/migrate.js",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "type-check": "tsc --noEmit",

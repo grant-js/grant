@@ -2,7 +2,11 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     "apps/api": {
-      "entry": ["src/jobs/**/*.job.ts", "tests/**/*.test.ts"],
+      // src/migrate.ts is a second process entrypoint (`node dist/migrate.js`), run as
+      // a Helm hook Job or ECS task where DB_BOOTSTRAP_ON_BOOT=false. Nothing imports
+      // it, so knip needs it named or it reports the file as unused. server.ts is
+      // inferred from package.json; this one is not.
+      "entry": ["src/jobs/**/*.job.ts", "src/migrate.ts", "tests/**/*.test.ts"],
       "project": ["src/**/*.ts"],
       // pino-pretty is never imported: @grantjs/logger names it as a string transport
       // target (`target: 'pino-pretty'`), which knip cannot follow. Removing it breaks
