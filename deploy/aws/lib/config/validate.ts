@@ -9,6 +9,8 @@
  * its templates. Parity with that is an acceptance criterion, not polish.
  */
 
+import { Token } from 'aws-cdk-lib';
+
 import { ConfigurationError } from './errors';
 
 /** CloudFront serves certificates only from us-east-1, whatever region the stack targets. */
@@ -87,6 +89,58 @@ export function validateHostnameInZone(hostname: string, zoneName: string): void
     throw new ConfigurationError(
       `appUrl hostname "${hostname}" is not inside hosted zone "${zone}".\n` +
         'The stack would create a record the zone does not serve.'
+    );
+  }
+}
+
+/**
+ * Asserts a stack's environment is concrete rather than region-agnostic.
+ *
+ * This exists because of a failure that **synthesizes cleanly and fails at deploy**.
+ * CDK wires a cross-region reference only when it can see that the two stacks differ —
+ * with both regions left as tokens it cannot, so it silently emits an ordinary
+ * `Fn::ImportValue`. CloudFormation exports do not cross regions, so the deploy
+ * fails with an unresolved-export error naming neither region.
+ *
+ * Verified by synthesizing both shapes: the agnostic pair produced no
+ * `Custom::CrossRegionExportReader` at all, while the concrete pair produced the
+ * reader, its Lambda and its role.
+ */
+export function assertConcreteEnv(
+  stackName: string,
+  env: { account?: string; region?: string }
+): { account: string; region: string } {
+  const { account, region } = env;
+
+  if (!account || !region || Token.isUnresolved(account) || Token.isUnresolved(region)) {
+    throw new ConfigurationError(
+      `Stack "${stackName}" needs a concrete account and region.\n` +
+        'The certificate lives in us-east-1 and the platform elsewhere, and CDK only\n' +
+        'generates cross-region plumbing when both environments are known at synth time.\n' +
+        'Left agnostic this synthesizes cleanly and then fails at deploy.\n' +
+        '  cdk deploy -c account=123456789012 -c region=eu-central-1'
+    );
+  }
+
+  return { account, region };
+}
+
+/**
+ * Guards the one case where creating a certificate in the platform stack is wrong.
+ *
+ * CloudFront serves certificates only from us-east-1. A supplied ARN is checked
+ * lexically; one created in-stack inherits the stack's region, so composing the
+ * construct into a stack elsewhere would produce a distribution CloudFront rejects.
+ */
+export function assertCertificateRegion(region: string): void {
+  if (Token.isUnresolved(region)) return;
+
+  if (region !== CLOUDFRONT_CERTIFICATE_REGION) {
+    throw new ConfigurationError(
+      `A certificate created in this stack would be in ${region}, but CloudFront only ` +
+        `serves certificates from ${CLOUDFRONT_CERTIFICATE_REGION}.\n` +
+        'Pass an existing us-east-1 certificate via dns.certificate, or use the reference ' +
+        'app in bin/, which creates it in a separate us-east-1 stack.'
     );
   }
 }

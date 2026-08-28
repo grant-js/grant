@@ -10,6 +10,7 @@
  */
 import { App, Stack } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
+import { Certificate, type ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { HostedZone } from 'aws-cdk-lib/aws-route53';
 import { describe, expect, it } from 'vitest';
 
@@ -224,5 +225,47 @@ describe('dns', () => {
       DomainName: 'grant.example.com',
       ValidationMethod: 'DNS',
     });
+  });
+});
+
+describe('certificate region', () => {
+  function synthIn(region: string, certificate?: ICertificate) {
+    const app = new App();
+    const stack = new Stack(app, 'TestStack', { env: { account: '123456789012', region } });
+    return () =>
+      new GrantPlatform(stack, 'Grant', {
+        appUrl: 'https://grant.example.com',
+        dns: {
+          hostedZone: HostedZone.fromHostedZoneAttributes(stack, 'Zone', {
+            hostedZoneId: 'ZTEST000000000',
+            zoneName: 'example.com',
+          }),
+          certificate,
+        },
+      });
+  }
+
+  it('creates a certificate when the stack is already in us-east-1', () => {
+    expect(synthIn('us-east-1')).not.toThrow();
+  });
+
+  it('refuses to create one anywhere else', () => {
+    // CloudFront is global; only the certificate is pinned. Creating it here would
+    // build a distribution CloudFront rejects — caught at synth, not at deploy.
+    expect(synthIn('eu-central-1')).toThrow(/only serves certificates from us-east-1/);
+  });
+
+  it('accepts a supplied certificate in any region', () => {
+    // The whole point of the split: the platform stack goes where latency wants, and
+    // the certificate arrives from elsewhere as an ICertificate.
+    const certStack = new Stack(new App(), 'CertStack', {
+      env: { account: '123456789012', region: 'us-east-1' },
+    });
+    const cert = Certificate.fromCertificateArn(
+      certStack,
+      'C',
+      'arn:aws:acm:us-east-1:123456789012:certificate/abc'
+    );
+    expect(synthIn('eu-central-1', cert)).not.toThrow();
   });
 });

@@ -8,19 +8,28 @@
  * with `Vpc.fromVpcAttributes(...)` and your existing certificate — while staying on
  * upstream `lib/`. Forking the library means porting every later fix by hand.
  *
- * Configuration comes from CDK context, so the common case needs no code change:
+ * Two stacks, because CloudFront is global but the ACM certificate it serves is
+ * pinned to `us-east-1`. Splitting the certificate out is what keeps the platform
+ * free to live in a region chosen for latency instead of for CloudFront.
  *
- *   cdk deploy -c appUrl=https://grant.example.com \
- *              -c zoneName=example.com \
- *              -c hostedZoneId=Z123456ABCDEFG
+ *   cdk deploy --all \
+ *     -c appUrl=https://grant.example.com \
+ *     -c zoneName=example.com \
+ *     -c hostedZoneId=Z123456ABCDEFG \
+ *     -c account=123456789012 \
+ *     -c region=eu-central-1
  */
 import { App, Stack } from 'aws-cdk-lib';
-import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
+import { Certificate, type ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { HostedZone } from 'aws-cdk-lib/aws-route53';
 
 import { ConfigurationError } from '../lib/config/errors';
-import { validateCertificateArn } from '../lib/config/validate';
+import { assertConcreteEnv, validateAppUrl, validateCertificateArn } from '../lib/config/validate';
+import { EdgeCertificate } from '../lib/edge/certificate';
 import { GrantPlatform } from '../lib/grant-platform';
+
+/** CloudFront reads its certificate only from here. */
+const CERTIFICATE_REGION = 'us-east-1';
 
 const app = new App();
 
@@ -29,39 +38,81 @@ function required(key: string): string {
   if (!value) {
     throw new ConfigurationError(
       `Missing required context "${key}".\n` +
-        '  cdk deploy -c appUrl=https://grant.example.com -c zoneName=example.com -c hostedZoneId=Z123456ABCDEFG'
+        '  cdk deploy --all -c appUrl=https://grant.example.com -c zoneName=example.com \\\n' +
+        '    -c hostedZoneId=Z123456ABCDEFG -c account=123456789012 -c region=eu-central-1'
     );
   }
   return value;
 }
 
+function optional(key: string): string | undefined {
+  return app.node.tryGetContext(key) as string | undefined;
+}
+
 const appUrl = required('appUrl');
 const zoneName = required('zoneName');
 const hostedZoneId = required('hostedZoneId');
-const certificateArn = app.node.tryGetContext('certificateArn') as string | undefined;
+const certificateArn = optional('certificateArn');
 
-// Lexical and cheap: fromCertificateArn returns a token that validates nothing, and a
-// certificate outside us-east-1 is the most common first-deploy failure.
-if (certificateArn) validateCertificateArn(certificateArn);
+const { hostname } = validateAppUrl(appUrl);
 
-const stack = new Stack(app, 'GrantPlatform', {
-  description: 'Grant platform — AWS serverless target',
-  // No `env`: the stack stays region-agnostic so `cdk synth` is hermetic and its
-  // output is reviewable evidence. Set CDK_DEFAULT_ACCOUNT/REGION when deploying.
+// Concrete, never agnostic. CDK only generates cross-region plumbing when it can see
+// the two environments differ; left as tokens it silently emits an ordinary
+// Fn::ImportValue, which synthesizes cleanly and fails at deploy.
+// No placeholder fallback: one would make this assertion unreachable, and an
+// unreachable guard against a silent deploy failure is worse than none. `pnpm synth`
+// passes both explicitly so the committed template stays deterministic; `cdk deploy`
+// gets them from the CLI's credentials; anything else fails here with instructions.
+const { account, region } = assertConcreteEnv('GrantPlatform', {
+  account: optional('account') ?? process.env.CDK_DEFAULT_ACCOUNT,
+  region: optional('region') ?? process.env.CDK_DEFAULT_REGION,
 });
 
-new GrantPlatform(stack, 'Grant', {
-  appUrl,
-  dns: {
-    // fromHostedZoneAttributes, not fromLookup: a lookup resolves against live
-    // account state at synth time and would make the committed template a function
-    // of whichever account last ran synth. ADR 0005.
-    hostedZone: HostedZone.fromHostedZoneAttributes(stack, 'HostedZone', {
-      hostedZoneId,
-      zoneName,
-    }),
-    certificate: certificateArn
-      ? Certificate.fromCertificateArn(stack, 'Certificate', certificateArn)
-      : undefined,
-  },
-});
+const zoneAttributes = { hostedZoneId, zoneName };
+
+let certificate: ICertificate;
+
+if (certificateArn) {
+  // Lexical and cheap: fromCertificateArn returns a token that validates nothing, and
+  // a certificate outside us-east-1 is the most common first-deploy failure.
+  validateCertificateArn(certificateArn);
+  const importStack = new Stack(app, 'GrantPlatform', {
+    env: { account, region },
+    crossRegionReferences: true,
+    description: 'Grant platform — AWS serverless target',
+  });
+  certificate = Certificate.fromCertificateArn(importStack, 'Certificate', certificateArn);
+  buildPlatform(importStack, certificate);
+} else {
+  // Its own stack, in us-east-1, regardless of where the platform lives.
+  const certificateStack = new Stack(app, 'GrantCertificate', {
+    env: { account, region: CERTIFICATE_REGION },
+    crossRegionReferences: true,
+    description: 'Grant platform — CloudFront certificate (must be us-east-1)',
+  });
+
+  certificate = new EdgeCertificate(certificateStack, 'Edge', {
+    hostname,
+    hostedZone: HostedZone.fromHostedZoneAttributes(certificateStack, 'HostedZone', zoneAttributes),
+  }).certificate;
+
+  const platformStack = new Stack(app, 'GrantPlatform', {
+    env: { account, region },
+    crossRegionReferences: true,
+    description: 'Grant platform — AWS serverless target',
+  });
+  buildPlatform(platformStack, certificate);
+}
+
+function buildPlatform(stack: Stack, cert: ICertificate): void {
+  new GrantPlatform(stack, 'Grant', {
+    appUrl,
+    dns: {
+      // fromHostedZoneAttributes, not fromLookup: a lookup resolves against live
+      // account state at synth time and would make the committed template a function
+      // of whichever account last ran synth. ADR 0005.
+      hostedZone: HostedZone.fromHostedZoneAttributes(stack, 'HostedZone', zoneAttributes),
+      certificate: cert,
+    },
+  });
+}
