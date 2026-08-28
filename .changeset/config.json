@@ -38,6 +38,7 @@
     "@grantjs/secrets",
     "@grantjs/storage",
     "@grantjs/telemetry",
-    "@grantjs/webhooks"
+    "@grantjs/webhooks",
+    "grant-aws-deploy"
   ]
 }

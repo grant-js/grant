@@ -39,6 +39,10 @@ jobs:
               - 'apps/**'
               - 'packages/**'
               - 'charts/**'
+              # deploy/aws is a workspace package with tests. Without this its
+              # routing-parity oracle would never run in CI, which is the only
+              # reason it exists.
+              - 'deploy/**'
               - 'package.json'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
@@ -139,6 +143,9 @@ jobs:
       # exports that never reach a public entry point at all.
       - name: Dead code (published @grantjs packages)
         run: pnpm run dead-code:published
+
+      - name: Dead code (deploy/aws)
+        run: pnpm run dead-code:deploy
 
       # @grantjs/schema's generated types are committed. Regenerate and fail on any
       # diff, so an edited .graphql file can never ship with a stale type. Scoped to
