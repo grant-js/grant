@@ -138,9 +138,101 @@ status columns distinguish "staged and identical" (a commit in progress, fine) f
   `fromHostedZoneAttributes`, never `fromLookup`, and sets no `env` on the stack — so
   the committed template does not depend on which account last ran synth (ADR 0005).
 
-## Slice 3 — docs site
+## Slice 3a — docs site (constructs)
 
-_Not started._
+**Date**: 2026-08-28 · **Deploy**: **not performed — see 3b**
+
+### Split, and why
+
+The plan's slice 3 is "docs on S3, CloudFront, cert, zone, Function", verified by a
+recorded deploy. No AWS CLI or credentials exist on the build machine, so the deploy
+half cannot be produced. Everything else can, and is: constructs, synth, and unit
+tests, all CI-verifiable.
+
+Split along the same line as phase B's 6a/6b — what can be verified locally versus
+what needs an account.
+
+- **3a (this)** — constructs and synth. CI evidence.
+- **3b (pending)** — deploy into a scratch account, `cdk destroy`, measurements.
+
+### Resources synthesized
+
+18 resources, from `cdk.snapshot/GrantPlatform.template.json`:
+
+| Type                                                      | Count |
+| --------------------------------------------------------- | ----- |
+| `AWS::CloudFront::Distribution`                           | 1     |
+| `AWS::CloudFront::Function`                               | 2     |
+| `AWS::CloudFront::OriginAccessControl`                    | 1     |
+| `AWS::S3::Bucket` + policy                                | 2     |
+| `AWS::CertificateManager::Certificate`                    | 1     |
+| `AWS::Route53::RecordSet` (A, AAAA)                       | 2     |
+| `Custom::CDKBucketDeployment` + handler/role/policy/layer | 5     |
+| `Custom::S3AutoDeleteObjects` + provider                  | 3     |
+| `AWS::CDK::Metadata`                                      | 1     |
+
+Synth takes **3.7s** including the 19 MB docs asset.
+
+### Two latent repo bugs this slice surfaced
+
+**1. `turbo.json` did not track the docs build output.** Build outputs were
+`.next/**`, `dist/**`, `build/**`; VitePress writes to `<pkg>/.vitepress/dist`, which
+none of them match. Measured rather than assumed:
+
+```
+rm -rf docs/.vitepress/dist && pnpm run build --filter=grant-docs
+  grant-docs:build: cache hit, replaying logs
+  >>> FULL TURBO
+  dist STILL MISSING
+```
+
+CI runs on a **self-hosted** runner with a persistent turbo cache, so `synth:check`
+would have failed there with `«CannotFindAsset»` while passing on any machine that
+had built docs recently. Fixed by adding `.vitepress/dist/**` to the build outputs;
+a cache hit now restores it.
+
+**2. Asset hashes churned the committed template.** CDK bakes a content hash into
+every asset's S3 key, and the docs site is an asset. Measured: adding one file to
+`docs/.vitepress/dist` changed the hash set, so **any documentation edit would have
+failed `synth:check`**. The snapshot is evidence about structure, not content, so
+`snapshot-template.mjs` now normalizes 64-hex hashes to `<asset-hash>`. Verified in
+both directions — a docs edit no longer changes the template, and a structural change
+(`PriceClass.PRICE_CLASS_100` → `_ALL`) still fails the check.
+
+### Perturbation results
+
+| Perturbation                        | Expected            | Result                                       |
+| ----------------------------------- | ------------------- | -------------------------------------------- |
+| Docs content edit (add one file)    | template unchanged  | **unchanged** ✓                              |
+| Structural change (price class)     | `synth:check` fails | **out of date** ✓                            |
+| Missing `docs/.vitepress/dist`      | actionable error    | **"Run `pnpm --filter grant-docs build`"** ✓ |
+| Cached turbo build, no dist on disk | dist restored       | **restored** ✓                               |
+
+### Gates
+
+`lint` · `type-check` · `dead-code:deploy` · **149 tests** · `synth:check` ·
+`format:check` — all clean. Test count 123 → 149; the 26 new cover the two
+CloudFront Functions as executed code, the docs key layout, OAC, and DNS.
+
+### Known limits
+
+- **Nothing has been deployed.** Every claim here is about synthesized structure.
+  CloudFront path-pattern semantics, OAC policy acceptance, ACM DNS validation and
+  index resolution against a real S3 origin are all unverified until 3b.
+- **The root path 404s.** The docs bucket is the default origin until the web app
+  lands in slice 5, and content lives under the `docs/` key prefix. `/docs/…` is what
+  this slice claims to serve.
+- **Certificate region is not asserted for the created path.** A supplied ARN is
+  checked lexically for `us-east-1`; one created here inherits the stack's region, so
+  the stack must target us-east-1 until a cross-region certificate stack exists.
+  Slice 4 forces that decision, because the API and data tier will want a region
+  chosen for latency.
+- **`pre-push` reordered.** `synth:check` now runs after `build`, since synth needs
+  built docs. CI already had `Build` before it.
+
+## Slice 3b — docs site (deploy)
+
+_Blocked: needs a scratch AWS account, a registrable domain, and a hosted zone._
 
 ## Slice 4 — API and data tier
 

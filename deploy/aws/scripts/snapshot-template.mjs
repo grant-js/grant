@@ -30,12 +30,26 @@ if (templates.length === 0) {
   process.exit(1);
 }
 
+/**
+ * CDK bakes a content hash into every asset's S3 key. The docs site is an asset, so
+ * editing a single documentation page changes the template and would fail
+ * `synth:check` — measured, not assumed: adding one file to `docs/.vitepress/dist`
+ * changes the hash set.
+ *
+ * The snapshot exists as evidence about *structure* — which resources exist, how
+ * they are wired, what the routing plan is. Content hashes are not structure, so
+ * they are normalized away. A **new** asset still shows up as a new `S3Key` entry,
+ * so this hides churn without hiding additions.
+ */
+const ASSET_HASH = /\b[0-9a-f]{64}\b/g;
+
 mkdirSync(snapshotDir, { recursive: true });
 for (const name of templates) {
   // Reformat so a semantically identical template produces an identical file, and
   // so the committed artifact is readable in a diff.
   const template = JSON.parse(readFileSync(join(outDir, name), 'utf8'));
-  writeFileSync(join(snapshotDir, name), `${JSON.stringify(template, null, 2)}\n`);
+  const normalized = JSON.stringify(template, null, 2).replace(ASSET_HASH, '<asset-hash>');
+  writeFileSync(join(snapshotDir, name), `${normalized}\n`);
 }
 
 console.log(`Snapshotted ${templates.length} template(s) to cdk.snapshot/`);
