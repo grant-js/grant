@@ -66,7 +66,77 @@ Recorded so slice 2 does not assume more coverage than exists:
 
 ## Slice 2 — construct library
 
-_Not started._
+**Date**: 2026-08-28 · **AWS resources**: none · **Deploy**: n/a (CI-verified slice)
+
+### The third witness
+
+Slice 1 compares two implementations by parsing them. CloudFront behaviours are
+**generated** from the same declaration, which is strictly stronger: a route cannot
+be in the table and missing from the distribution.
+
+Derived plan, in CloudFront evaluation order, as emitted in the committed template's
+`RoutingPlan` output:
+
+| #   | Path pattern      | Origin            | Cache     |
+| --- | ----------------- | ----------------- | --------- |
+| 1   | `/org/*`          | api               | disabled  |
+| 2   | `/acc/*`          | api               | disabled  |
+| 3   | `/.well-known/*`  | api               | short     |
+| 4   | `/api-docs*`      | api               | disabled  |
+| 5   | `/graphql*`       | api               | disabled  |
+| 6   | `/health*`        | api               | disabled  |
+| 7   | `/docs/*`         | docs-bucket       | long      |
+| 8   | `/api/*`          | api               | disabled  |
+| 9   | `/_next/static/*` | web-assets-bucket | immutable |
+
+`/storage` is omitted (mounted only for `STORAGE_PROVIDER=local`), as are the web
+catch-all (CloudFront's default behaviour) and `/example` (not deployed here).
+
+### A bug the synth output caught
+
+The first synth emitted `/org/*=>api:short` and `/acc/*=>api:short`.
+
+`toPathPattern` truncates at the first wildcard, so the canonical route
+`/org/<id>/prj/<id>/.well-known/` becomes `/org/*` — but the cache policy was still
+being derived from the **narrow** route, which contains `.well-known` and is
+cacheable. The behaviour that actually ships matches every path under `/org/`, so a
+per-tenant API response would have been served from the edge.
+
+Fixed by deriving the policy from what the behaviour matches: any widened pattern is
+never cached. `behaviours.test.ts` now asserts this directly, and the table above is
+the corrected output. **This is the argument for committing synth output** — the
+defect was invisible in the diff and obvious in the artifact.
+
+### Perturbation results
+
+| Perturbation                                     | Expected            | Result            |
+| ------------------------------------------------ | ------------------- | ----------------- |
+| Rename a declared route (`/health` → `/healthz`) | `synth:check` fails | **out of date** ✓ |
+| Snapshot untracked (new stack, never added)      | `synth:check` fails | **out of date** ✓ |
+| Snapshot staged and identical                    | pass                | **up to date** ✓  |
+| Clean tree                                       | pass                | **up to date** ✓  |
+
+The second row is why `synth:check` uses `git status --porcelain` rather than
+`git diff --exit-code`: a plain diff only sees tracked files, so a newly added
+stack's template would be ignored — the drift most worth catching. Porcelain's two
+status columns distinguish "staged and identical" (a commit in progress, fine) from
+"regenerated and changed" (drift).
+
+### Gates
+
+`lint` · `type-check` · `dead-code:deploy` · **123 tests** · `synth:check` — all clean.
+
+### Known limits
+
+- **No resources are created.** The template contains outputs and CDK metadata only.
+  `grant-platform.test.ts` asserts exactly that, so a later slice landing early is
+  visible rather than silent.
+- **Behaviour _derivation_ is verified; behaviour _wiring_ is not.** Nothing yet
+  builds a `Distribution` from this plan. Slice 3 does, and its deploy is the first
+  evidence the patterns behave as CloudFront reads them.
+- **`cdk synth` is hermetic on purpose.** The reference app uses
+  `fromHostedZoneAttributes`, never `fromLookup`, and sets no `env` on the stack — so
+  the committed template does not depend on which account last ran synth (ADR 0005).
 
 ## Slice 3 — docs site
 
