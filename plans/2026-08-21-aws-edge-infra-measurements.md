@@ -9,6 +9,13 @@ The brief's timing and cost tables are **estimates**. Slice 7 replaces them with
 figures accumulated here. Where an estimate and a measurement disagree, the
 measurement wins and the brief is corrected, not the other way round.
 
+**No account identifiers are recorded here.** Account IDs, hosted zone IDs and ACM
+validation tokens identify the account that happened to run the deploy and prove
+nothing a reader needs — the evidence is the timings, the resource states and the
+teardown residue. Where an example value is genuinely useful, use the
+documentation-reserved `123456789012`, as the tests do. The same reasoning keeps
+`cdk.context.json` untracked.
+
 ## Slice 1 — routing oracle
 
 **Date**: 2026-08-27 · **AWS resources**: none · **Deploy**: n/a (CI-verified slice)
@@ -285,7 +292,7 @@ depend on who ran synth.
 
 ## Slice 3b — docs site (deploy)
 
-**Date**: 2026-08-29 · **Account**: `972374872669` · **Domain**: `aws.grantjs.org`
+**Date**: 2026-08-29 · **Account**: not recorded (see note) · **Domain**: `aws.grantjs.org`
 **Credential**: IAM user `grant-cdk-deploy` → role `GrantCdkDeploy` (AdministratorAccess),
 profile `grant-cdk`. The user itself holds only `sts:AssumeRole`; verified that its
 key alone is refused (`AccessDenied` on `s3:ListAllMyBuckets`).
@@ -335,7 +342,7 @@ The acceptance criterion earned its place here. After a clean destroy of both st
 - **but the zone held 20 records, not the original 19**
 
 The survivor is the ACM validation CNAME
-`_17d199c9b8df2cc1e725d5274f58c2bf.aws.grantjs.org` → `...acm-validations.aws.`
+an ACM validation CNAME `_<token>.aws.grantjs.org` → `...acm-validations.aws.`
 
 **Cause, established rather than guessed:** `GrantCertificate.template.json` contains
 **no `AWS::Route53::RecordSet`** — its resources are the certificate, a Lambda, an IAM
@@ -500,7 +507,7 @@ resolves the real zones under its own account key and is unaffected.
 
 ## Slice 4a — data tier (deploy)
 
-**Date**: 2026-08-29 · **Account**: `972374872669` · **Domain**: `aws.grantjs.org`
+**Date**: 2026-08-29 · **Account**: not recorded (see note) · **Domain**: `aws.grantjs.org`
 **Context**: `-c ephemeral=true`, so `destroyOnRemoval: true` reaches the cluster. A
 non-ephemeral deploy would refuse to tear down at all, which is the point of the flag.
 
@@ -537,12 +544,32 @@ diverged on database name, which would have given `DB_URL` a different shape on 
 target. Changing the default to `grant_db` fixes the reserved word and the divergence
 together.
 
-**No reserved-word validator was added.** The project guards a failure when it is
-silent or confusing — that is why `assertCertificateRegion` exists. Here the AWS error
-names the cause exactly, so a local copy of the engine's reserved-word list would be a
-second source of truth that drifts from the real one without improving diagnosis. The
-reasoning is recorded on the prop instead, with a regression test pinning the default
-(verified: reverting to `grant` fails 1 of 13).
+**A synth-time validator was added, reversing a first call not to.** The initial
+reasoning was that AWS's error already names the cause, so a local reserved-word list
+would be a second source of truth that drifts. What that missed is the shape of the
+failure: `cdk synth` and CI both pass, and the deploy dies minutes later with the VPC
+and NAT already standing. A green gate that does not mean the thing it appears to mean
+is worth more than the drift risk.
+
+Two further points settled it:
+
+- **The likelier mistake is not a reserved word at all.** `grant-db` reads as a
+  perfectly natural name, and RDS rejects a hyphen just as hard. A shape rule catches
+  a wider class than the case that was actually hit.
+- **The list cannot go wrong for another engine.** `Database` pins
+  `DatabaseClusterEngine.auroraPostgres`, so a PostgreSQL keyword list is correct by
+  construction. Were the engine configurable, this would not belong in the repo.
+
+`validateDatabaseName` checks shape and reserved words, case-insensitively, and passes
+unresolved tokens through rather than guessing. It does not replace the API's
+validation: if AWS rejects a name this accepts, its error still names the cause. It
+moves the common cases from minutes-deep to instant. Verified by reverting the default
+to `grant`, which now fails `cdk synth` with
+
+```
+ConfigurationError: databaseName "grant" is a reserved word in PostgreSQL, and RDS
+refuses it when it creates the cluster. Pick another name, e.g. "grant_db".
+```
 
 ### Timings
 
@@ -606,7 +633,7 @@ writes that record itself and CloudFormation never owned it. It recurred here ex
 the zone went 19 → 20.
 
 The new detail is the name. It is **byte-identical** to slice 3b's orphan —
-`_17d199c9b8df2cc1e725d5274f58c2bf.aws.grantjs.org` — even though that record was
+the same `_<token>.aws.grantjs.org` — even though that record was
 deleted and the certificate reissued from scratch. ACM derives the validation token
 deterministically per domain, so repeated deploy/destroy cycles converge on **one**
 stray record, not one per cycle.
