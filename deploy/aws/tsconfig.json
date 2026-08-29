@@ -5,6 +5,6 @@
     "lib": ["esnext"],
     "types": ["node"]
   },
-  "include": ["lib/**/*"],
-  "exclude": ["cdk.out", "node_modules"]
+  "include": ["lib/**/*", "bin/**/*"],
+  "exclude": ["cdk.out", "cdk.snapshot", "node_modules"]
 }

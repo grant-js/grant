@@ -5,15 +5,23 @@
   "description": "CDK construct library and reference app for Grant's AWS serverless deployment target",
   "type": "module",
   "scripts": {
-    "lint": "eslint lib --ext .ts",
-    "lint:fix": "eslint lib --ext .ts --fix",
+    "lint": "eslint lib bin --ext .ts",
+    "lint:fix": "eslint lib bin --ext .ts --fix",
     "type-check": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "synth": "cdk synth --quiet -c appUrl=https://grant.example.com -c zoneName=example.com -c hostedZoneId=ZREFERENCE00000 && node scripts/snapshot-template.mjs",
+    "synth:check": "cdk synth --quiet -c appUrl=https://grant.example.com -c zoneName=example.com -c hostedZoneId=ZREFERENCE00000 && node scripts/snapshot-template.mjs --check"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
+    "aws-cdk": "^2.1139.0",
+    "tsx": "^4.23.12",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "aws-cdk-lib": "^2.267.0",
+    "constructs": "^10.5.0"
+  }
 }

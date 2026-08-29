@@ -1,0 +1,52 @@
+/**
+ * Environment defaults for the AWS target.
+ *
+ * The Helm chart's equivalent is the `config:` block in `values.yaml`. Parity with
+ * it is an acceptance criterion: an adopter should not have to read source to learn
+ * which settings this target needs.
+ *
+ * Every key here is a strategy phases A and B added as *additional* options —
+ * nothing is replaced, and each one still defaults to its previous value in
+ * `@grantjs/env`. What this file does is pick the AWS-appropriate option per key, in
+ * one reviewable place, with the reason attached.
+ */
+
+import type { GrantEnv } from './props';
+
+export const AWS_TARGET_ENV_DEFAULTS: GrantEnv = {
+  NODE_ENV: 'production',
+
+  // Phase B, ADR 0001. Concurrent Lambda cold starts must not each attempt to
+  // migrate, and migrations do not fit a request-scoped invocation. The stack runs
+  // `node dist/migrate.js` as a deploy-time one-shot instead.
+  DB_BOOTSTRAP_ON_BOOT: 'false',
+
+  // Phase A. DynamoDB rather than Redis, so a green-field deploy needs no
+  // ElastiCache cluster. An adopter with an existing cluster overrides this with
+  // `redis` and the REDIS_* keys.
+  CACHE_STRATEGY: 'dynamodb',
+
+  // S3 rather than local disk: a Lambda's filesystem is ephemeral and per-container.
+  // This also drops the /storage route, which apps/api mounts only for the local
+  // provider (apps/api/src/create-app.ts:157).
+  STORAGE_PROVIDER: 's3',
+
+  // Phase B, slice 7. Embedded Metric Format needs no SDK, no log-stream sequence
+  // token, and nothing flushed before a freeze — none of which the pull-scraped
+  // /metrics endpoint can offer on a frozen container.
+  TELEMETRY_PROVIDER: 'emf',
+
+  // Phase B, ADR 0004. Resolved per use through ISecretResolver, so a rotated secret
+  // is picked up within the TTL rather than at the next redeploy.
+  SECRETS_PROVIDER: 'aws-secrets-manager',
+
+  // Phase B. A buffered batch is not delayed on a freezing container, it is lost —
+  // and the spans lost are disproportionately those of the slowest requests.
+  TRACING_SPAN_PROCESSOR: 'simple',
+
+  // Prometheus pull-scraping has no analogue on Lambda; EMF above replaces it.
+  METRICS_ENABLED: 'false',
+
+  // The Lambda Web Adapter reads this to know where the app listens.
+  API_PORT: '4000',
+};

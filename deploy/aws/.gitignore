@@ -1,0 +1,3 @@
+# CDK synth working directory. The reviewable artifact is cdk.snapshot/, written by
+# `pnpm synth` and committed; cdk.out churns with asset hashes and metadata.
+cdk.out/
