@@ -285,7 +285,101 @@ depend on who ran synth.
 
 ## Slice 3b — docs site (deploy)
 
-**Status**: not blocked on credentials after all — **blocked on a target account decision.**
+**Date**: 2026-08-29 · **Account**: `972374872669` · **Domain**: `aws.grantjs.org`
+**Credential**: IAM user `grant-cdk-deploy` → role `GrantCdkDeploy` (AdministratorAccess),
+profile `grant-cdk`. The user itself holds only `sts:AssumeRole`; verified that its
+key alone is refused (`AccessDenied` on `s3:ListAllMyBuckets`).
+
+### Timings
+
+| Stage                                                         | Duration             |
+| ------------------------------------------------------------- | -------------------- |
+| `cdk bootstrap`, both regions                                 | **58 s**             |
+| Synthesis                                                     | 2.0 s                |
+| `GrantCertificate` (us-east-1) — ACM DNS validation dominates | **170 s**            |
+| `GrantPlatform` (eu-central-1) — CloudFront dominates         | **204 s**            |
+| **Deploy total**                                              | **405 s (6 m 45 s)** |
+| `cdk destroy --all`                                           | **247 s (4 m 07 s)** |
+
+Against the brief's estimate of ~10–20 min for an adopter with an existing data
+tier: **the docs-only slice came in at under 7 minutes.** The estimate stands for
+the full stack; slices 4–5 add the database and NAT that dominate it.
+
+Bootstrap used `--bootstrap-kms-key-id AWS_MANAGED_KEY`. Confirmed **0 KMS keys** in
+both regions, so the ~$2/month customer-key charge the default would incur is avoided.
+Bootstrap version 32 (template requires ≥ 6).
+
+### Verified against the live site
+
+| Check                                                                         | Result                                               |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------- |
+| DNS A + AAAA                                                                  | both resolve                                         |
+| TLS                                                                           | valid (`ssl_verify=0`)                               |
+| `/docs/`                                                                      | **200**, `<title>Grant</title>`                      |
+| `/docs` → `/docs/`                                                            | **302** — trailing-slash Function works              |
+| `/docs/index.html`, `/docs/README.html`, `/docs/advanced-topics/logging.html` | 200                                                  |
+| `/docs/assets/app.CVOa4Hir.js`                                                | 200, 699 KB, `text/javascript`                       |
+| `/`                                                                           | 404 — expected until the web origin lands in slice 5 |
+| Edge cache, repeat request                                                    | `Hit from cloudfront`, `age: 15`                     |
+
+**The `docs/` key-prefix decision is confirmed in production.** The built HTML
+references `/docs/assets/…` and those resolve straight to the matching S3 keys with
+no rewrite at the edge — the property slice 3a chose the layout for.
+
+### Finding 1 — `cdk destroy` strands the ACM validation record
+
+The acceptance criterion earned its place here. After a clean destroy of both stacks:
+
+- both stacks gone (`Stack ... does not exist`)
+- `aws.grantjs.org` A and AAAA removed; site unreachable; `dig` empty
+- **but the zone held 20 records, not the original 19**
+
+The survivor is the ACM validation CNAME
+`_17d199c9b8df2cc1e725d5274f58c2bf.aws.grantjs.org` → `...acm-validations.aws.`
+
+**Cause, established rather than guessed:** `GrantCertificate.template.json` contains
+**no `AWS::Route53::RecordSet`** — its resources are the certificate, a Lambda, an IAM
+role, the cross-region export writer and CDK metadata. The validation record is
+written by **ACM itself** through `DomainValidationOptions.HostedZoneId`, so
+CloudFormation never owned it and cannot delete it.
+
+This is documented AWS behaviour, not a CDK defect, but it is a stranded resource and
+it accumulates one orphan CNAME per deploy/destroy cycle. The deployment guide must
+say so, and slice 7's smoke test should assert the zone returns to its prior record
+count — or the stack should own the validation record itself so CloudFormation can
+remove it.
+
+### Finding 2 — unknown paths diverge from nginx
+
+`/docs/deployment/` (a directory with no `index.html`; VitePress emits `page.html`)
+returns **404 with the VitePress 404 page** — the 403→404 error mapping working as
+designed. nginx's `try_files $uri $uri/ /index.html` instead serves the documentation
+**homepage with 200**.
+
+CloudFront's behaviour is arguably the better of the two — a truthful status code and
+a real 404 page rather than a soft-404 — but it is a difference between targets and
+belongs in the parity record rather than being quietly accepted.
+
+### Finding 3 — S3 objects carry no `Cache-Control`
+
+`head-object` on a content-hashed asset returns `CacheControl: null`. Edge caching
+works, but browsers receive no directive for files that could safely be
+`public, max-age=31536000, immutable`. `BucketDeployment` accepts a `cacheControl`
+prop; a one-line fix, not a 3b blocker.
+
+### Finding 4 — `cdk bootstrap` executes the app
+
+Even with explicit `aws://account/region` arguments, bootstrap runs `cdk.json`'s
+`app` and fails on missing context — so an adopter's **first** command needs the full
+`-c appUrl=… -c zoneName=… -c hostedZoneId=…` set for an operation that ignores every
+one of them. Squarely against the "adoptable in one command" bar; fix by documenting
+it or by having `bin/grant.ts` tolerate absent context when no stack is synthesized.
+
+### DNS impact
+
+Zone went 19 → 22 records during the deploy (A, AAAA, ACM validation CNAME) and back
+to 20 after destroy. **The 19 pre-existing records — apex, `demo`, `docs`, six SES
+DKIM CNAMEs, MX, DMARC — were never touched.**
 
 Slice 3a recorded this as blocked because `aws sts get-caller-identity` failed. That
 was misdiagnosed: the **`aws` CLI binary is not installed**, but the AWS SDK resolves
@@ -312,3 +406,36 @@ _Not started._
 ## Slice 7 — smoke test and guide
 
 _Not started._
+
+## Slice 3d — deploy findings addressed
+
+**Date**: 2026-08-29 · **AWS resources**: none changed · **Deploy**: n/a (CI-verified)
+
+Two of slice 3b's four findings are fixed here; the other two are recorded as carried
+follow-ups in the stack plan, with reasons, rather than fixed where they were found.
+
+### F3 — `Cache-Control` on published documentation
+
+`BucketDeployment` now sets `public, max-age=3600`, verified present in the committed
+template as `SystemMetadata: {"cache-control": "public, max-age=3600"}` and pinned by a
+test.
+
+One hour rather than a year, deliberately: the same policy applies to `.html` pages,
+whose filenames are **not** content-hashed, so a long TTL would pin a stale page in
+every visitor's browser until expiry. An hour removes the revalidation round-trip
+without that risk. Splitting hashed assets from HTML would need two deployments — not
+worth it until a measurement says otherwise.
+
+### F4 — `pnpm bootstrap`
+
+Supplies the context `cdk bootstrap` demands but ignores, and pins
+`--bootstrap-kms-key-id AWS_MANAGED_KEY` so a re-run cannot silently add the
+customer-managed key slice 3b avoided.
+
+Verified idempotent against the already-bootstrapped account: both environments
+reported **"bootstrapped (no changes)"** in 6 s, and no KMS key was added.
+
+### Gates
+
+**163 tests** (from 162). `lint`, `type-check`, `dead-code:deploy`, `synth:check`,
+`format:check` all clean.

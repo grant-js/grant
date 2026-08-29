@@ -228,6 +228,9 @@
         "DestinationBucketKeyPrefix": "docs",
         "WaitForDistributionInvalidation": true,
         "Prune": false,
+        "SystemMetadata": {
+          "cache-control": "public, max-age=3600"
+        },
         "OutputObjectKeys": true
       },
       "UpdateReplacePolicy": "Delete",
