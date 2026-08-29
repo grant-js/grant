@@ -442,7 +442,7 @@ reported **"bootstrapped (no changes)"** in 6 s, and no KMS key was added.
 
 ## Slice 4a — network and data tier
 
-**Date**: 2026-08-29 · **AWS resources**: none deployed yet · **Deploy**: pending
+**Date**: 2026-08-29 · **AWS resources**: VPC, NAT, Aurora Serverless v2 · **Deploy**: recorded below
 
 Split from slice 4 as the stack plan pre-authorised. 4b carries the API Lambda, RDS
 Proxy and migrate one-shot.
@@ -497,3 +497,119 @@ resolves the real zones under its own account key and is unaffected.
 
 **175 tests** (from 163). `lint`, `type-check`, `dead-code:deploy`, `synth:check`,
 `format:check` all clean.
+
+## Slice 4a — data tier (deploy)
+
+**Date**: 2026-08-29 · **Account**: `972374872669` · **Domain**: `aws.grantjs.org`
+**Context**: `-c ephemeral=true`, so `destroyOnRemoval: true` reaches the cluster. A
+non-ephemeral deploy would refuse to tear down at all, which is the point of the flag.
+
+### Baseline captured before deploying
+
+Recorded first, because "no snapshot survives" is unfalsifiable without it — a
+survivor could otherwise be blamed on something pre-existing.
+
+| Baseline (eu-central-1) | Value  |
+| ----------------------- | ------ |
+| RDS cluster snapshots   | **0**  |
+| RDS instance snapshots  | **0**  |
+| RDS clusters            | **0**  |
+| `grantjs.org` records   | **19** |
+
+The 19 also confirms slice 3b's orphan cleanup held.
+
+### Finding 1 — `grant` is a reserved word in Aurora PostgreSQL
+
+**The first deploy failed**, and no synth-time test could have caught it:
+
+```
+DatabaseName grant cannot be used.  It is a reserved word for this engine
+(Service: Rds, Status Code: 400)
+```
+
+The template is valid CloudFormation. RDS validates `DatabaseName` against the
+engine's reserved words at **create** time, so the failure arrived ~4 minutes in,
+after the VPC and NAT gateway already existed, and rolled the stack back.
+
+The default was also **inconsistent with the Docker target**: `docker-compose.yml`
+and `.env.example` both use `POSTGRES_DB=grant_db`. So the AWS target had quietly
+diverged on database name, which would have given `DB_URL` a different shape on each
+target. Changing the default to `grant_db` fixes the reserved word and the divergence
+together.
+
+**No reserved-word validator was added.** The project guards a failure when it is
+silent or confusing — that is why `assertCertificateRegion` exists. Here the AWS error
+names the cause exactly, so a local copy of the engine's reserved-word list would be a
+second source of truth that drifts from the real one without improving diagnosis. The
+reasoning is recorded on the prop instead, with a regression test pinning the default
+(verified: reverting to `grant` fails 1 of 13).
+
+### Timings
+
+| Stage                                             | Duration               |
+| ------------------------------------------------- | ---------------------- |
+| Synthesis                                         | 2.3 s                  |
+| `GrantCertificate` (us-east-1), first deploy      | **170.8 s**            |
+| `GrantCertificate`, redeploy                      | 0 s (no changes)       |
+| `GrantPlatform` (eu-central-1) — Aurora dominates | **433.0 s**            |
+| **Deploy total**                                  | **452.6 s (7 m 33 s)** |
+| `cdk destroy --all`                               | **441 s (7 m 21 s)**   |
+
+The certificate stage came in at 170.8 s against slice 3b's 170 s — within a second
+across separate deploys, so ACM DNS validation is the fixed floor it appeared to be.
+
+Against the brief's ~10–20 min estimate for a full stack, the data tier reached
+**7 m 33 s**. Aurora provisioning is the new dominant term, as predicted.
+
+### Verified on the live tier
+
+| Check                       | Result                                        |
+| --------------------------- | --------------------------------------------- |
+| Aurora cluster              | `available`, PostgreSQL **17.5**              |
+| Capacity                    | **MinACU 0.0** / MaxACU 4.0 — auto-pause live |
+| `DatabaseName`              | **`grant_db`** — the fix, end to end          |
+| `StorageEncrypted`          | true                                          |
+| `DeletionProtection`        | **false** — the ephemeral opt-in working      |
+| Writer instance             | `db.serverless`, `PubliclyAccessible: false`  |
+| NAT gateways                | **1**, not one per AZ                         |
+| Subnets                     | 6 = 3 tiers × 2 zones                         |
+| DB subnet `0.0.0.0/0` route | **none** — genuinely isolated                 |
+| Secret                      | `Database-db-credentials`                     |
+| `/docs/`, `/docs`, `/`      | 200, 302, 404 — unchanged from slice 3b       |
+
+**The route-table check is stronger than the test that motivated it.** `data-tier.test.ts`
+asserts `resourceCountIs('AWS::EC2::Subnet', 6)` and infers isolation from a count,
+which is a proxy. Querying the live route tables shows the database subnets carry no
+default route to an internet gateway or a NAT at all. Only a deploy can check that.
+
+### Teardown — the claim this slice exists to make good on
+
+| After `cdk destroy --all`  | Result   |
+| -------------------------- | -------- |
+| **RDS cluster snapshots**  | **0** ✓  |
+| **RDS instance snapshots** | **0** ✓  |
+| RDS clusters / instances   | 0 / 0    |
+| CloudFormation stacks      | none     |
+| VPCs (non-default)         | none     |
+| NAT gateways               | none     |
+| **Elastic IPs**            | **none** |
+| Secrets (incl. pending)    | none     |
+| S3 buckets                 | none     |
+
+Elastic IPs are listed because an unattached one is billed and would have been an easy
+thing to strand behind a deleted NAT gateway. None survived.
+
+### Finding 2 — the ACM orphan recurs, but does not accumulate
+
+Slice 3b recorded that `cdk destroy` strands the ACM validation CNAME because ACM
+writes that record itself and CloudFormation never owned it. It recurred here exactly:
+the zone went 19 → 20.
+
+The new detail is the name. It is **byte-identical** to slice 3b's orphan —
+`_17d199c9b8df2cc1e725d5274f58c2bf.aws.grantjs.org` — even though that record was
+deleted and the certificate reissued from scratch. ACM derives the validation token
+deterministically per domain, so repeated deploy/destroy cycles converge on **one**
+stray record, not one per cycle.
+
+That changes F1's severity: untidy, not accumulating. Slice 7 still documents it and
+asserts it in the smoke test, but it is not a leak that grows.
