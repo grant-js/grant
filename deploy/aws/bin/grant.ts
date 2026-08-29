@@ -54,6 +54,16 @@ const zoneName = required('zoneName');
 const hostedZoneId = required('hostedZoneId');
 const certificateArn = optional('certificateArn');
 
+/**
+ * Throwaway environment: teardown may destroy the data.
+ *
+ * Off by default, and it also disables deletion protection when set — which is why
+ * it is an explicit opt-in rather than inferred from anything else.
+ *
+ *   cdk deploy --all -c ephemeral=true ...
+ */
+const ephemeral = optional('ephemeral') === 'true';
+
 const { hostname } = validateAppUrl(appUrl);
 
 // Concrete, never agnostic. CDK only generates cross-region plumbing when it can see
@@ -107,6 +117,7 @@ if (certificateArn) {
 function buildPlatform(stack: Stack, cert: ICertificate): void {
   new GrantPlatform(stack, 'Grant', {
     appUrl,
+    database: { destroyOnRemoval: ephemeral },
     dns: {
       // fromHostedZoneAttributes, not fromLookup: a lookup resolves against live
       // account state at synth time and would make the committed template a function

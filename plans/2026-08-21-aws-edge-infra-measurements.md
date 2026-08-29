@@ -439,3 +439,61 @@ reported **"bootstrapped (no changes)"** in 6 s, and no KMS key was added.
 
 **163 tests** (from 162). `lint`, `type-check`, `dead-code:deploy`, `synth:check`,
 `format:check` all clean.
+
+## Slice 4a — network and data tier
+
+**Date**: 2026-08-29 · **AWS resources**: none deployed yet · **Deploy**: pending
+
+Split from slice 4 as the stack plan pre-authorised. 4b carries the API Lambda, RDS
+Proxy and migrate one-shot.
+
+### What the committed template now holds
+
+53 resources, up from 20. The data tier adds a VPC with three subnet tiers across two
+zones (6 subnets, 6 route tables), **one** NAT gateway, an Aurora Serverless v2
+cluster with its instance and subnet group, and a generated Secrets Manager secret.
+
+| Default              | Value    | Why it is explicit                                                                                                                                                          |
+| -------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DeletionPolicy`     | `Retain` | CDK's default is `SNAPSHOT`, which removes the cluster but keeps a **storage-billed snapshot** that survives `cdk destroy` unseen. Set in both directions, never inherited. |
+| `DeletionProtection` | `true`   | Off only when `-c ephemeral=true` is passed.                                                                                                                                |
+| `MinCapacity`        | `0`      | Serverless v2 auto-pause. An idle cluster costs nothing, which is the entire premise of this target.                                                                        |
+| NAT gateways         | `1`      | CDK's default is one **per availability zone** — roughly $32/month each, silently doubling the largest fixed cost before a request is served.                               |
+
+Verified no account ID appears in either committed template.
+
+### Perturbation results
+
+The two cost guards exist because the failure is a bill, not an error. Each was
+reverted to CDK's default and the suite re-run:
+
+| Perturbation                                       | Expected | Result          |
+| -------------------------------------------------- | -------- | --------------- |
+| Drop explicit `removalPolicy` (inherit `SNAPSHOT`) | fail     | **1 failed** ✓  |
+| Drop `natGateways: 1` (inherit one-per-AZ)         | fail     | **1 failed** ✓  |
+| Raise `minCapacity` off `0` (lose auto-pause)      | fail     | **1 failed** ✓  |
+| Baseline                                           | pass     | **12 passed** ✓ |
+
+### Finding — creating a VPC forces an AZ context lookup, and explicit zones do not avoid it
+
+Adding the VPC broke `pnpm synth` with _"Could not assume role in target account …
+Roles may not be assumed by root accounts"_. The cause is not the credential: creating
+a `Vpc` resolves the region's zone list through the **availability-zones context
+provider**, an AWS call at synth time.
+
+Supplying `availabilityZones` explicitly does **not** avoid it. CDK validates the
+supplied list against `stack.availabilityZones` and touches the same provider either
+way — the `GivenAvailabilityZones` check in `aws-ec2/lib/vpc.js`. Established by
+reading the compiled source after the first fix failed to work.
+
+**This lookup is not the kind ADR 0005 rules out**, and the distinction is worth
+stating. `Vpc.fromLookup` **discovers existing infrastructure**, so the template
+becomes a function of account state. This one asks a stable question about a region.
+`cdk.json` therefore seeds the answer for the **synth-only placeholder account**, which
+keeps the committed template reproducible and CI credential-free, while a real deploy
+resolves the real zones under its own account key and is unaffected.
+
+### Gates
+
+**175 tests** (from 163). `lint`, `type-check`, `dead-code:deploy`, `synth:check`,
+`format:check` all clean.

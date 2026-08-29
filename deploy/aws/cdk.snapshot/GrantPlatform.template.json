@@ -1,6 +1,663 @@
 {
   "Description": "Grant platform — AWS serverless target",
   "Resources": {
+    "GrantNetworkVpc0AD1B27C": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.42.0.0/16",
+        "EnableDnsHostnames": true,
+        "EnableDnsSupport": true,
+        "InstanceTenancy": "default",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "GrantPlatform/Grant/Network/Vpc"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/Resource"
+      }
+    },
+    "GrantNetworkVpcpublicSubnet1Subnet8091B032": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": "eu-central-1a",
+        "CidrBlock": "10.42.0.0/24",
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "public"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Public"
+          },
+          {
+            "Key": "Name",
+            "Value": "GrantPlatform/Grant/Network/Vpc/publicSubnet1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "GrantNetworkVpc0AD1B27C"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/publicSubnet1/Subnet"
+      }
+    },
+    "GrantNetworkVpcpublicSubnet1RouteTable8DFEA180": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "GrantPlatform/Grant/Network/Vpc/publicSubnet1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "GrantNetworkVpc0AD1B27C"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/publicSubnet1/RouteTable"
+      }
+    },
+    "GrantNetworkVpcpublicSubnet1RouteTableAssociationF08F69EB": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "GrantNetworkVpcpublicSubnet1RouteTable8DFEA180"
+        },
+        "SubnetId": {
+          "Ref": "GrantNetworkVpcpublicSubnet1Subnet8091B032"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/publicSubnet1/RouteTableAssociation"
+      }
+    },
+    "GrantNetworkVpcpublicSubnet1DefaultRoute2FB6711B": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "GrantNetworkVpcIGW7C9C5D09"
+        },
+        "RouteTableId": {
+          "Ref": "GrantNetworkVpcpublicSubnet1RouteTable8DFEA180"
+        }
+      },
+      "DependsOn": [
+        "GrantNetworkVpcVPCGW03CE51CF"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/publicSubnet1/DefaultRoute"
+      }
+    },
+    "GrantNetworkVpcpublicSubnet1EIP78361F3B": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "GrantPlatform/Grant/Network/Vpc/publicSubnet1"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/publicSubnet1/EIP"
+      }
+    },
+    "GrantNetworkVpcpublicSubnet1NATGateway15659E35": {
+      "Type": "AWS::EC2::NatGateway",
+      "Properties": {
+        "AllocationId": {
+          "Fn::GetAtt": [
+            "GrantNetworkVpcpublicSubnet1EIP78361F3B",
+            "AllocationId"
+          ]
+        },
+        "SubnetId": {
+          "Ref": "GrantNetworkVpcpublicSubnet1Subnet8091B032"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "GrantPlatform/Grant/Network/Vpc/publicSubnet1"
+          }
+        ]
+      },
+      "DependsOn": [
+        "GrantNetworkVpcpublicSubnet1DefaultRoute2FB6711B",
+        "GrantNetworkVpcpublicSubnet1RouteTableAssociationF08F69EB"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/publicSubnet1/NATGateway"
+      }
+    },
+    "GrantNetworkVpcpublicSubnet2Subnet19CF0BD7": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": "eu-central-1b",
+        "CidrBlock": "10.42.1.0/24",
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "public"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Public"
+          },
+          {
+            "Key": "Name",
+            "Value": "GrantPlatform/Grant/Network/Vpc/publicSubnet2"
+          }
+        ],
+        "VpcId": {
+          "Ref": "GrantNetworkVpc0AD1B27C"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/publicSubnet2/Subnet"
+      }
+    },
+    "GrantNetworkVpcpublicSubnet2RouteTableAF950457": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "GrantPlatform/Grant/Network/Vpc/publicSubnet2"
+          }
+        ],
+        "VpcId": {
+          "Ref": "GrantNetworkVpc0AD1B27C"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/publicSubnet2/RouteTable"
+      }
+    },
+    "GrantNetworkVpcpublicSubnet2RouteTableAssociation507EEF98": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "GrantNetworkVpcpublicSubnet2RouteTableAF950457"
+        },
+        "SubnetId": {
+          "Ref": "GrantNetworkVpcpublicSubnet2Subnet19CF0BD7"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/publicSubnet2/RouteTableAssociation"
+      }
+    },
+    "GrantNetworkVpcpublicSubnet2DefaultRoute645FDB60": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "GrantNetworkVpcIGW7C9C5D09"
+        },
+        "RouteTableId": {
+          "Ref": "GrantNetworkVpcpublicSubnet2RouteTableAF950457"
+        }
+      },
+      "DependsOn": [
+        "GrantNetworkVpcVPCGW03CE51CF"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/publicSubnet2/DefaultRoute"
+      }
+    },
+    "GrantNetworkVpcprivateegressSubnet1Subnet520E2403": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": "eu-central-1a",
+        "CidrBlock": "10.42.2.0/24",
+        "MapPublicIpOnLaunch": false,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "private-egress"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Private"
+          },
+          {
+            "Key": "Name",
+            "Value": "GrantPlatform/Grant/Network/Vpc/private-egressSubnet1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "GrantNetworkVpc0AD1B27C"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/private-egressSubnet1/Subnet"
+      }
+    },
+    "GrantNetworkVpcprivateegressSubnet1RouteTable6D0027B9": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "GrantPlatform/Grant/Network/Vpc/private-egressSubnet1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "GrantNetworkVpc0AD1B27C"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/private-egressSubnet1/RouteTable"
+      }
+    },
+    "GrantNetworkVpcprivateegressSubnet1RouteTableAssociation2ECAC4A8": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "GrantNetworkVpcprivateegressSubnet1RouteTable6D0027B9"
+        },
+        "SubnetId": {
+          "Ref": "GrantNetworkVpcprivateegressSubnet1Subnet520E2403"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/private-egressSubnet1/RouteTableAssociation"
+      }
+    },
+    "GrantNetworkVpcprivateegressSubnet1DefaultRouteE76A3F47": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "NatGatewayId": {
+          "Ref": "GrantNetworkVpcpublicSubnet1NATGateway15659E35"
+        },
+        "RouteTableId": {
+          "Ref": "GrantNetworkVpcprivateegressSubnet1RouteTable6D0027B9"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/private-egressSubnet1/DefaultRoute"
+      }
+    },
+    "GrantNetworkVpcprivateegressSubnet2Subnet2A5B7DBC": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": "eu-central-1b",
+        "CidrBlock": "10.42.3.0/24",
+        "MapPublicIpOnLaunch": false,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "private-egress"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Private"
+          },
+          {
+            "Key": "Name",
+            "Value": "GrantPlatform/Grant/Network/Vpc/private-egressSubnet2"
+          }
+        ],
+        "VpcId": {
+          "Ref": "GrantNetworkVpc0AD1B27C"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/private-egressSubnet2/Subnet"
+      }
+    },
+    "GrantNetworkVpcprivateegressSubnet2RouteTableBA0724DD": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "GrantPlatform/Grant/Network/Vpc/private-egressSubnet2"
+          }
+        ],
+        "VpcId": {
+          "Ref": "GrantNetworkVpc0AD1B27C"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/private-egressSubnet2/RouteTable"
+      }
+    },
+    "GrantNetworkVpcprivateegressSubnet2RouteTableAssociationB2C26EB8": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "GrantNetworkVpcprivateegressSubnet2RouteTableBA0724DD"
+        },
+        "SubnetId": {
+          "Ref": "GrantNetworkVpcprivateegressSubnet2Subnet2A5B7DBC"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/private-egressSubnet2/RouteTableAssociation"
+      }
+    },
+    "GrantNetworkVpcprivateegressSubnet2DefaultRoute7FAF126D": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "NatGatewayId": {
+          "Ref": "GrantNetworkVpcpublicSubnet1NATGateway15659E35"
+        },
+        "RouteTableId": {
+          "Ref": "GrantNetworkVpcprivateegressSubnet2RouteTableBA0724DD"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/private-egressSubnet2/DefaultRoute"
+      }
+    },
+    "GrantNetworkVpcisolatedSubnet1Subnet35EA7342": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": "eu-central-1a",
+        "CidrBlock": "10.42.4.0/24",
+        "MapPublicIpOnLaunch": false,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "isolated"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Isolated"
+          },
+          {
+            "Key": "Name",
+            "Value": "GrantPlatform/Grant/Network/Vpc/isolatedSubnet1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "GrantNetworkVpc0AD1B27C"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/isolatedSubnet1/Subnet"
+      }
+    },
+    "GrantNetworkVpcisolatedSubnet1RouteTable8B1FB3AA": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "GrantPlatform/Grant/Network/Vpc/isolatedSubnet1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "GrantNetworkVpc0AD1B27C"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/isolatedSubnet1/RouteTable"
+      }
+    },
+    "GrantNetworkVpcisolatedSubnet1RouteTableAssociationE872F79F": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "GrantNetworkVpcisolatedSubnet1RouteTable8B1FB3AA"
+        },
+        "SubnetId": {
+          "Ref": "GrantNetworkVpcisolatedSubnet1Subnet35EA7342"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/isolatedSubnet1/RouteTableAssociation"
+      }
+    },
+    "GrantNetworkVpcisolatedSubnet2SubnetDECB0BA8": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": "eu-central-1b",
+        "CidrBlock": "10.42.5.0/24",
+        "MapPublicIpOnLaunch": false,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "isolated"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Isolated"
+          },
+          {
+            "Key": "Name",
+            "Value": "GrantPlatform/Grant/Network/Vpc/isolatedSubnet2"
+          }
+        ],
+        "VpcId": {
+          "Ref": "GrantNetworkVpc0AD1B27C"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/isolatedSubnet2/Subnet"
+      }
+    },
+    "GrantNetworkVpcisolatedSubnet2RouteTable7BA65BA7": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "GrantPlatform/Grant/Network/Vpc/isolatedSubnet2"
+          }
+        ],
+        "VpcId": {
+          "Ref": "GrantNetworkVpc0AD1B27C"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/isolatedSubnet2/RouteTable"
+      }
+    },
+    "GrantNetworkVpcisolatedSubnet2RouteTableAssociation6345452F": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "GrantNetworkVpcisolatedSubnet2RouteTable7BA65BA7"
+        },
+        "SubnetId": {
+          "Ref": "GrantNetworkVpcisolatedSubnet2SubnetDECB0BA8"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/isolatedSubnet2/RouteTableAssociation"
+      }
+    },
+    "GrantNetworkVpcIGW7C9C5D09": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "GrantPlatform/Grant/Network/Vpc"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/IGW"
+      }
+    },
+    "GrantNetworkVpcVPCGW03CE51CF": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "InternetGatewayId": {
+          "Ref": "GrantNetworkVpcIGW7C9C5D09"
+        },
+        "VpcId": {
+          "Ref": "GrantNetworkVpc0AD1B27C"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/VPCGW"
+      }
+    },
+    "GrantDatabaseClusterSubnetsF0D5EA18": {
+      "Type": "AWS::RDS::DBSubnetGroup",
+      "Properties": {
+        "DBSubnetGroupDescription": "Subnets for Cluster database",
+        "SubnetIds": [
+          {
+            "Ref": "GrantNetworkVpcisolatedSubnet1Subnet35EA7342"
+          },
+          {
+            "Ref": "GrantNetworkVpcisolatedSubnet2SubnetDECB0BA8"
+          }
+        ]
+      },
+      "UpdateReplacePolicy": "Retain",
+      "DeletionPolicy": "Retain",
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Database/Cluster/Subnets/Default"
+      }
+    },
+    "GrantDatabaseClusterSecurityGroup3AFA53E8": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "RDS security group",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "GrantNetworkVpc0AD1B27C"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Database/Cluster/SecurityGroup/Resource"
+      }
+    },
+    "GrantPlatformGrantDatabaseClusterSecretA1048C1A3fdaad7efa858a3daf9490cf0a702aeb": {
+      "Type": "AWS::SecretsManager::Secret",
+      "Properties": {
+        "Description": {
+          "Fn::Join": [
+            "",
+            [
+              "Generated by the CDK for stack: ",
+              {
+                "Ref": "AWS::StackName"
+              }
+            ]
+          ]
+        },
+        "GenerateSecretString": {
+          "ExcludeCharacters": " %+~`#$&*()|[]{}:;<>?!'/@\"\\",
+          "GenerateStringKey": "password",
+          "PasswordLength": 30,
+          "SecretStringTemplate": "{\"username\":\"grant_admin\"}"
+        },
+        "Name": "Database-db-credentials"
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete",
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Database/Cluster/Secret/Resource"
+      }
+    },
+    "GrantDatabaseClusterSecretAttachmentAD6E16E9": {
+      "Type": "AWS::SecretsManager::SecretTargetAttachment",
+      "Properties": {
+        "SecretId": {
+          "Ref": "GrantPlatformGrantDatabaseClusterSecretA1048C1A3fdaad7efa858a3daf9490cf0a702aeb"
+        },
+        "TargetId": {
+          "Ref": "GrantDatabaseCluster299E828E"
+        },
+        "TargetType": "AWS::RDS::DBCluster"
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Database/Cluster/Secret/Attachment/Resource"
+      }
+    },
+    "GrantDatabaseCluster299E828E": {
+      "Type": "AWS::RDS::DBCluster",
+      "Properties": {
+        "BackupRetentionPeriod": 7,
+        "CopyTagsToSnapshot": true,
+        "DBClusterParameterGroupName": "default.aurora-postgresql17",
+        "DBSubnetGroupName": {
+          "Ref": "GrantDatabaseClusterSubnetsF0D5EA18"
+        },
+        "DatabaseName": "grant",
+        "DeletionProtection": true,
+        "Engine": "aurora-postgresql",
+        "EngineVersion": "17.5",
+        "MasterUserPassword": {
+          "Fn::Join": [
+            "",
+            [
+              "{{resolve:secretsmanager:",
+              {
+                "Ref": "GrantPlatformGrantDatabaseClusterSecretA1048C1A3fdaad7efa858a3daf9490cf0a702aeb"
+              },
+              ":SecretString:password::}}"
+            ]
+          ]
+        },
+        "MasterUsername": "grant_admin",
+        "Port": 5432,
+        "ServerlessV2ScalingConfiguration": {
+          "MaxCapacity": 4,
+          "MinCapacity": 0
+        },
+        "StorageEncrypted": true,
+        "VpcSecurityGroupIds": [
+          {
+            "Fn::GetAtt": [
+              "GrantDatabaseClusterSecurityGroup3AFA53E8",
+              "GroupId"
+            ]
+          }
+        ]
+      },
+      "UpdateReplacePolicy": "Retain",
+      "DeletionPolicy": "Retain",
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Database/Cluster/Resource"
+      }
+    },
+    "GrantDatabaseClusterWriterC3A48690": {
+      "Type": "AWS::RDS::DBInstance",
+      "Properties": {
+        "DBClusterIdentifier": {
+          "Ref": "GrantDatabaseCluster299E828E"
+        },
+        "DBInstanceClass": "db.serverless",
+        "Engine": "aurora-postgresql",
+        "PromotionTier": 0,
+        "PubliclyAccessible": false
+      },
+      "DependsOn": [
+        "GrantNetworkVpcisolatedSubnet1RouteTableAssociationE872F79F",
+        "GrantNetworkVpcisolatedSubnet2RouteTableAssociation6345452F"
+      ],
+      "UpdateReplacePolicy": "Retain",
+      "DeletionPolicy": "Retain",
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Database/Cluster/Writer/Resource"
+      }
+    },
     "GrantDocsBucket9B92AB66": {
       "Type": "AWS::S3::Bucket",
       "Properties": {
@@ -671,7 +1328,7 @@
     "CDKMetadata": {
       "Type": "AWS::CDK::Metadata",
       "Properties": {
-        "Analytics": "v2:deflate64:H4sIAAAAAAAA/5VRQY4aMRB8C5yNd8OQRMptdlBOiUCMlMtqhYynGTV4bORuQ5Dlv688RiyKkkNOXV1dVbLKczn/8lU+T9SFZro7zgzuZGxZ6aPYALngNQh1oW2kSsaXoI/Aotnbgl7jdMDfaKffpo/+rKdKjieSRVoHdkswwLDaHUAzTdObKKe1M6ivH6ll/4/sYmhZMQxgH6NfFEESVG1jByfjrvl8My3vhFBEwCTrPJIwath1SsZmb3+oK/hf4AmdFS3a3gA7+z1YzZm5g2Z/J5PQxoVu751lGf+mEEsk9rgL49JWK4892lprIGqcZe9Mlv+DfjQn4V1g+FzJWG9AO99lRUEtsKiVUmVLAtUg48YZGCV5ftReUEqiCcRuuP/7GHbDpZWtyY1s1YW0QVlfqDE4liTG8lpWPdp+fH7gU+A/EtfenbEDn78li36q0wltn4R1HcgDPZ3nC/lpIZ8nB0Kc+WAZB5CbMt8Bujef86sCAAA="
+        "Analytics": "v2:deflate64:H4sIAAAAAAAA/5VTwW7bMAz9luasal3SbcBujrMVAbY1iItciiGgZdZTK0uBSCULDP/7ICl1gmI77ETy8fGRoKipnH78JG+u4EDXqnm5NrqWfcWgXsQayQWvUMCBtj2qqew3OyXKJ7tZlWIVaqNVFWqLHLGzt3aB8QFqg2f8jBVETmlg7exIjs6X5SqaH8B3wHiAo1h5vQfGs/DSMnqLIyFPcooKZlC/OrQsKlTBaz7eeRd2aYZLYBC+IdkvgKEGwtIEYvQitxlLFvNL4JVcofJ5lsX8tTAFS0sMVuEgKFGoAwstetnn9rEqmwfwLfLFtCPhbWYQNJP9PKiX3DJ7j/2k07+1nXyeXL5ZfCOayZQimalFYLdAg4z39TMqpsnwU+TUyhmtjmfVHP+Hdi6oGBjjrBfSc6C4htm2b3Bn3DGmT0WLERBAhEyyiGYQBrq6gbSsb3BEv0FP8UAqbVuD7OzXYFU6mdEpn0ZwEMq40Dx5Z1n2f2OIhSb2ug4pqGb3XrfaFkohUekse2ci/R/wZfEgfLzYDzPZF2tUzjfpipNXIYsCAHI0CA2d7Ncu/4Nkz2vP3jCktoF3gUUZiF03/roke/LzfrYm7mYLB1JGy+JApdFpXSKtsWJotW3f6Ky82+sGfXyWqPkddjtt20FY16B8pnf76a18fytvrp5J62sfLOsO5TrbPx339EsfBAAA"
       },
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/CDKMetadata/Default"
@@ -784,6 +1441,85 @@
     }
   },
   "Outputs": {
+    "GrantDatabaseSecretNameB16909AE": {
+      "Description": "Set SECRETS_AWS_SECRET_ID to this; credentials are resolved per use, never inlined.",
+      "Value": {
+        "Fn::Join": [
+          "-",
+          [
+            {
+              "Fn::Select": [
+                0,
+                {
+                  "Fn::Split": [
+                    "-",
+                    {
+                      "Fn::Select": [
+                        6,
+                        {
+                          "Fn::Split": [
+                            ":",
+                            {
+                              "Ref": "GrantPlatformGrantDatabaseClusterSecretA1048C1A3fdaad7efa858a3daf9490cf0a702aeb"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "Fn::Select": [
+                1,
+                {
+                  "Fn::Split": [
+                    "-",
+                    {
+                      "Fn::Select": [
+                        6,
+                        {
+                          "Fn::Split": [
+                            ":",
+                            {
+                              "Ref": "GrantPlatformGrantDatabaseClusterSecretA1048C1A3fdaad7efa858a3daf9490cf0a702aeb"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "Fn::Select": [
+                2,
+                {
+                  "Fn::Split": [
+                    "-",
+                    {
+                      "Fn::Select": [
+                        6,
+                        {
+                          "Fn::Split": [
+                            ":",
+                            {
+                              "Ref": "GrantPlatformGrantDatabaseClusterSecretA1048C1A3fdaad7efa858a3daf9490cf0a702aeb"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        ]
+      }
+    },
     "GrantDistributionDomainName441A29C4": {
       "Description": "CloudFront domain; the canonical hostname aliases to this.",
       "Value": {

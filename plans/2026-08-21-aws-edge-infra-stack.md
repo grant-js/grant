@@ -157,6 +157,12 @@ a database exists.
 
 ### Slice 4 — API and data tier
 
+**Split into 4a/4b at execution time**, as this section pre-authorised. 4a is the
+network and data tier; 4b is the API Lambda, RDS Proxy and the migrate one-shot. The
+split falls where the plan said it would — 4a stands alone as a deployable,
+destroyable unit, and bundling the Lambda would have pushed the diff past the review
+ceiling on the one slice that carries a security-full bar.
+
 The largest slice, and the only one at **security-full**: it lands VPC wiring, the
 data tier, secrets, the API Lambda and the migrate one-shot, and it is where auth
 paths first route through CloudFront (forwarded-header handling feeds `getClientIp`,
