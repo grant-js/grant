@@ -72,6 +72,10 @@ jobs:
               - '.changeset/**'
               - 'package.json'
               - 'pnpm-lock.yaml'
+              # `pnpm run version` runs update-root-changelog.mjs and
+              # extract-release-notes.sh, so a change to either must re-run the
+              # release job and regenerate the open version PR.
+              - 'scripts/**'
             api: 'apps/api/**'
             web: 'apps/web/**'
             docs: 'docs/**'

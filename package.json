@@ -69,6 +69,7 @@
     "version": "changeset version && node scripts/update-root-changelog.mjs",
     "release": "pnpm build:release && changeset publish",
     "release:check": "node scripts/check-publishable-packages.mjs",
+    "release-notes:check": "node scripts/check-release-notes.mjs",
     "postinstall": "pnpm env:setup --quiet",
     "benchmark:authz": "node scripts/benchmarks/permission-evaluation.mjs"
   },

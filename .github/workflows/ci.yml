@@ -52,6 +52,10 @@ jobs:
               # Workflow edits change how everything else is verified, so they must
               # be verified themselves — without this, a CI change merges untested.
               - '.github/workflows/**'
+              # scripts/ generates files the gates below check (the root CHANGELOG
+              # is written by extract-release-notes.sh and read by format:check),
+              # so a generator change must be verified like any other code change.
+              - 'scripts/**'
               - 'eslint.config.*'
               - '.eslintrc*'
               - 'knip.json'
@@ -166,6 +170,13 @@ jobs:
       # the npm contract surface was a manual step nobody was required to take.
       - name: Publishable packages (@grantjs/schema, client, server, cli)
         run: pnpm run release:check
+
+      # format:check gates the committed root CHANGELOG.md, but that file is written
+      # by `pnpm run version` — so a generator emitting markdown Prettier rejects
+      # could only surface on an open version PR. This runs the generators over a
+      # fixture tree instead.
+      - name: Release-notes generation
+        run: pnpm run release-notes:check
 
       - name: Type check
         run: pnpm run type-check
