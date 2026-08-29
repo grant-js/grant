@@ -28,11 +28,16 @@ import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
 import { Construct } from 'constructs';
 
 import { ASSET_BEHAVIOURS, type CloudFrontBehaviour, toCloudFrontBehaviours } from './behaviours';
+import { ApiImage } from './compute/api-image';
+import { MigrateTask } from './compute/migrate-task';
+import { MigrateTrigger } from './compute/migrate-trigger';
 import { AWS_TARGET_ENV_DEFAULTS } from './config/defaults';
 import type { GrantEnv, GrantPlatformProps } from './config/props';
 import { assertCertificateRegion, validateAppUrl, validateHostnameInZone } from './config/validate';
 import { Database } from './data/database';
 import { Network } from './data/network';
+import { PlatformSecret } from './data/platform-secret';
+import { DatabaseConnectionProxy } from './data/proxy';
 import { EdgeCertificate } from './edge/certificate';
 import { EdgeDistribution } from './edge/distribution';
 import { DocsSite } from './edge/docs-site';
@@ -59,6 +64,11 @@ export class GrantPlatform extends Construct {
   /** Present only when the data tier was requested. */
   public readonly network?: Network;
   public readonly database?: Database;
+  public readonly proxy?: DatabaseConnectionProxy;
+  public readonly platformSecret?: PlatformSecret;
+
+  /** Present only when the data tier was requested and migration is enabled. */
+  public readonly migrateTask?: MigrateTask;
 
   constructor(scope: Construct, id: string, props: GrantPlatformProps) {
     super(scope, id);
@@ -101,10 +111,71 @@ export class GrantPlatform extends Construct {
         destroyOnRemoval: props.database.destroyOnRemoval,
       });
 
+      // The proxy, not the cluster, is what anything else connects to: Lambda
+      // concurrency multiplied by a per-environment pool exhausts a database sized
+      // for this target's cost floor.
+      this.proxy = new DatabaseConnectionProxy(this, 'Proxy', {
+        vpc: this.network.vpc,
+        cluster: this.database.cluster,
+        secret: this.database.secret,
+      });
+
+      // Two secrets, two shapes. The cluster's is RDS-shaped and only the proxy reads
+      // it; this one is the flat ENV_NAME:value object the application's resolver
+      // requires. See PlatformSecret.
+      this.platformSecret = new PlatformSecret(this, 'PlatformSecret', {
+        databaseCredentials: this.database.secret,
+        host: this.proxy.proxy.endpoint,
+        port: this.database.cluster.clusterEndpoint.port,
+        databaseName: this.database.databaseName,
+      });
+
+      if (props.migration?.enabled ?? true) {
+        // Built from source unless the caller supplied one. `imageIdentifier` is what
+        // re-arms the migration trigger, so a caller-supplied image needs the caller
+        // to say when it changed — the tag alone may be mutable.
+        let image = props.migration?.image;
+        let imageIdentifier = props.migration?.imageIdentifier ?? 'caller-supplied';
+        if (!image) {
+          const built = new ApiImage(this, 'ApiImage');
+          image = built.containerImage;
+          imageIdentifier = built.imageIdentifier;
+        }
+
+        this.migrateTask = new MigrateTask(this, 'Migrate', {
+          vpc: this.network.vpc,
+          image,
+          securityGroups: [this.proxy.clientSecurityGroup],
+          platformSecret: this.platformSecret.secret,
+          environment: {
+            ...this.env,
+            SECRETS_AWS_SECRET_ID: this.platformSecret.secret.secretName,
+            SECRETS_AWS_REGION: Stack.of(this).region,
+          },
+          cluster: props.migration?.cluster,
+        });
+
+        new MigrateTrigger(this, 'MigrateTrigger', {
+          vpc: this.network.vpc,
+          task: this.migrateTask,
+          securityGroups: [this.proxy.clientSecurityGroup],
+          timeout: props.migration?.timeout,
+          imageIdentifier,
+          // Nothing may migrate before the proxy it connects through and the secret
+          // it reads credentials from both exist.
+          executeAfter: [this.proxy, this.platformSecret],
+        });
+      }
+
       new CfnOutput(this, 'DatabaseSecretName', {
-        value: this.database.secret.secretName,
+        value: this.platformSecret.secret.secretName,
         description:
           'Set SECRETS_AWS_SECRET_ID to this; credentials are resolved per use, never inlined.',
+      });
+
+      new CfnOutput(this, 'DatabaseProxyEndpoint', {
+        value: this.proxy.proxy.endpoint,
+        description: 'Pooled Postgres endpoint. Nothing should connect to the cluster directly.',
       });
     }
 

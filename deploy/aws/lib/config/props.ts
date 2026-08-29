@@ -17,8 +17,10 @@
  * path — and is reviewed as one.
  */
 
+import type { Duration } from 'aws-cdk-lib';
 import type { ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
 import type { IVpc } from 'aws-cdk-lib/aws-ec2';
+import type { ContainerImage, ICluster } from 'aws-cdk-lib/aws-ecs';
 import type { IHostedZone } from 'aws-cdk-lib/aws-route53';
 import type { IBucket } from 'aws-cdk-lib/aws-s3';
 
@@ -52,6 +54,49 @@ interface NetworkProps {
    * one-per-AZ, which would double the largest fixed cost in the target.
    */
   readonly natGateways?: number;
+}
+
+/**
+ * Deploy-time database migration.
+ *
+ * Runs `node dist/migrate.js` as a Fargate one-shot and waits for it, because
+ * `DB_BOOTSTRAP_ON_BOOT` is false on this target (ADR 0001) — nothing migrates at
+ * boot, so something has to migrate at deploy.
+ */
+interface MigrationProps {
+  /**
+   * Whether to run migrations during deploy. Defaults to **true** whenever this stack
+   * owns the database.
+   *
+   * Set false when a pipeline runs migrations itself, or when the deploying principal
+   * should not be able to alter the schema.
+   */
+  readonly enabled?: boolean;
+
+  /** Ceiling for the migration. Lambda's hard limit caps this at 15 minutes. */
+  readonly timeout?: Duration;
+
+  /** Existing ECS cluster to run the task in. Omit to create one. */
+  readonly cluster?: ICluster;
+
+  /**
+   * Pre-published image to migrate with, e.g. `ContainerImage.fromEcrRepository(...)`.
+   *
+   * Omit and the stack builds from source at deploy time. An adopter consuming this
+   * as a library has no API source on disk and should pass one.
+   */
+  readonly image?: ContainerImage;
+
+  /**
+   * Identity of a caller-supplied `image`, used to decide whether to migrate again.
+   *
+   * The trigger re-runs when this changes. A built-from-source image supplies its own
+   * content hash; a pre-published one cannot, because a tag may be mutable — pushing
+   * a new image to `:latest` changes nothing CloudFormation can see. Pass the digest,
+   * or any value that changes when the image does. Left unset, migrations run once
+   * and are not repeated on later deploys.
+   */
+  readonly imageIdentifier?: string;
 }
 
 /** The database. Omit entirely to bring your own via `DB_URL` in `env`. */
@@ -136,6 +181,9 @@ export interface GrantPlatformProps {
    * `DB_URL` through `env` — the shape the Helm chart has always used.
    */
   readonly database?: DatabaseProps;
+
+  /** Deploy-time migration. Ignored when this stack does not own the database. */
+  readonly migration?: MigrationProps;
 
   /** Passed through to the API container. */
   readonly env?: GrantEnv;

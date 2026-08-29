@@ -38,3 +38,15 @@ e2e
 *.log
 .DS_Store
 *.plan.md
+
+# Git worktrees. The Agentic SDLC creates one per parallel story (AGENTS.md
+# § Worktrees), each a full checkout of the repo — 3 GB on a machine running two —
+# and none of it belongs in a build context. Docker would copy it; CDK's
+# DockerImageAsset walks it to compute the asset fingerprint, which is slower still
+# because that happens on every synth.
+.worktrees
+**/.worktrees
+
+# CDK synth output, including staged assets from a previous run.
+cdk.out
+**/cdk.out

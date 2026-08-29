@@ -547,6 +547,40 @@
         "aws:cdk:path": "GrantPlatform/Grant/Database/Cluster/SecurityGroup/Resource"
       }
     },
+    "GrantDatabaseClusterSecurityGroupfromGrantPlatformGrantProxyProxySecurityGroupD9149626IndirectPortE82AA564": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "Description": "Allow connections to the database Cluster from the Proxy",
+        "FromPort": {
+          "Fn::GetAtt": [
+            "GrantDatabaseCluster299E828E",
+            "Endpoint.Port"
+          ]
+        },
+        "GroupId": {
+          "Fn::GetAtt": [
+            "GrantDatabaseClusterSecurityGroup3AFA53E8",
+            "GroupId"
+          ]
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "GrantProxyProxySecurityGroup4C0037FB",
+            "GroupId"
+          ]
+        },
+        "ToPort": {
+          "Fn::GetAtt": [
+            "GrantDatabaseCluster299E828E",
+            "Endpoint.Port"
+          ]
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Database/Cluster/SecurityGroup/from GrantPlatformGrantProxyProxySecurityGroupD9149626:{IndirectPort}"
+      }
+    },
     "GrantPlatformGrantDatabaseClusterSecretA1048C1A3fdaad7efa858a3daf9490cf0a702aeb": {
       "Type": "AWS::SecretsManager::Secret",
       "Properties": {
@@ -656,6 +690,775 @@
       "DeletionPolicy": "Retain",
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/Grant/Database/Cluster/Writer/Resource"
+      }
+    },
+    "GrantProxyClientSecurityGroup2B0C4F81": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Clients permitted to reach the RDS proxy",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "GrantNetworkVpc0AD1B27C"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Proxy/ClientSecurityGroup/Resource"
+      }
+    },
+    "GrantProxyProxySecurityGroup4C0037FB": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "RDS proxy",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "GrantNetworkVpc0AD1B27C"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Proxy/ProxySecurityGroup/Resource"
+      }
+    },
+    "GrantProxyProxySecurityGroupfromGrantPlatformGrantProxyClientSecurityGroupDD3D6530IndirectPort9F21212A": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "Description": "Grant clients reach the proxy",
+        "FromPort": {
+          "Fn::GetAtt": [
+            "GrantDatabaseCluster299E828E",
+            "Endpoint.Port"
+          ]
+        },
+        "GroupId": {
+          "Fn::GetAtt": [
+            "GrantProxyProxySecurityGroup4C0037FB",
+            "GroupId"
+          ]
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "GrantProxyClientSecurityGroup2B0C4F81",
+            "GroupId"
+          ]
+        },
+        "ToPort": {
+          "Fn::GetAtt": [
+            "GrantDatabaseCluster299E828E",
+            "Endpoint.Port"
+          ]
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Proxy/ProxySecurityGroup/from GrantPlatformGrantProxyClientSecurityGroupDD3D6530:{IndirectPort}"
+      }
+    },
+    "GrantProxyIAMRoleD6A7BA0E": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "rds.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Proxy/Proxy/IAMRole/Resource"
+      }
+    },
+    "GrantProxyIAMRoleDefaultPolicyCF8F147F": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Ref": "GrantDatabaseClusterSecretAttachmentAD6E16E9"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "GrantProxyIAMRoleDefaultPolicyCF8F147F",
+        "Roles": [
+          {
+            "Ref": "GrantProxyIAMRoleD6A7BA0E"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Proxy/Proxy/IAMRole/DefaultPolicy/Resource"
+      }
+    },
+    "GrantProxyB9B3B885": {
+      "Type": "AWS::RDS::DBProxy",
+      "Properties": {
+        "Auth": [
+          {
+            "AuthScheme": "SECRETS",
+            "IAMAuth": "DISABLED",
+            "SecretArn": {
+              "Ref": "GrantDatabaseClusterSecretAttachmentAD6E16E9"
+            }
+          }
+        ],
+        "DBProxyName": "Proxy",
+        "EngineFamily": "POSTGRESQL",
+        "IdleClientTimeout": 1800,
+        "RequireTLS": true,
+        "RoleArn": {
+          "Fn::GetAtt": [
+            "GrantProxyIAMRoleD6A7BA0E",
+            "Arn"
+          ]
+        },
+        "VpcSecurityGroupIds": [
+          {
+            "Fn::GetAtt": [
+              "GrantProxyProxySecurityGroup4C0037FB",
+              "GroupId"
+            ]
+          }
+        ],
+        "VpcSubnetIds": [
+          {
+            "Ref": "GrantNetworkVpcisolatedSubnet1Subnet35EA7342"
+          },
+          {
+            "Ref": "GrantNetworkVpcisolatedSubnet2SubnetDECB0BA8"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Proxy/Proxy/Resource"
+      }
+    },
+    "GrantProxyProxyTargetGroup08B884B7": {
+      "Type": "AWS::RDS::DBProxyTargetGroup",
+      "Properties": {
+        "ConnectionPoolConfigurationInfo": {
+          "ConnectionBorrowTimeout": 30
+        },
+        "DBClusterIdentifiers": [
+          {
+            "Ref": "GrantDatabaseCluster299E828E"
+          }
+        ],
+        "DBProxyName": {
+          "Ref": "GrantProxyB9B3B885"
+        },
+        "TargetGroupName": "default"
+      },
+      "DependsOn": [
+        "GrantDatabaseCluster299E828E",
+        "GrantDatabaseClusterWriterC3A48690"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Proxy/Proxy/ProxyTargetGroup"
+      }
+    },
+    "GrantPlatformSecretCBEA56FA": {
+      "Type": "AWS::SecretsManager::Secret",
+      "Properties": {
+        "Description": "Grant platform environment — JSON of ENV_NAME: value",
+        "SecretString": {
+          "Fn::Join": [
+            "",
+            [
+              "{\"DB_URL\":\"postgresql://{{resolve:secretsmanager:",
+              {
+                "Ref": "GrantDatabaseClusterSecretAttachmentAD6E16E9"
+              },
+              ":SecretString:username::}}:{{resolve:secretsmanager:",
+              {
+                "Ref": "GrantDatabaseClusterSecretAttachmentAD6E16E9"
+              },
+              ":SecretString:password::}}@",
+              {
+                "Fn::GetAtt": [
+                  "GrantProxyB9B3B885",
+                  "Endpoint"
+                ]
+              },
+              ":",
+              {
+                "Fn::GetAtt": [
+                  "GrantDatabaseCluster299E828E",
+                  "Endpoint.Port"
+                ]
+              },
+              "/grant_db?sslmode=require\"}"
+            ]
+          ]
+        }
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete",
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/PlatformSecret/Secret/Resource"
+      }
+    },
+    "GrantMigrateCluster49E4FE04": {
+      "Type": "AWS::ECS::Cluster",
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Migrate/Cluster/Resource"
+      }
+    },
+    "GrantMigrateTaskDefinitionTaskRole1F83DA2A": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Migrate/TaskDefinition/TaskRole/Resource"
+      }
+    },
+    "GrantMigrateTaskDefinitionTaskRoleDefaultPolicy5707197A": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Ref": "GrantPlatformSecretCBEA56FA"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "GrantMigrateTaskDefinitionTaskRoleDefaultPolicy5707197A",
+        "Roles": [
+          {
+            "Ref": "GrantMigrateTaskDefinitionTaskRole1F83DA2A"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Migrate/TaskDefinition/TaskRole/DefaultPolicy/Resource"
+      }
+    },
+    "GrantMigrateTaskDefinition414BB234": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Command": [
+              "node",
+              "dist/migrate.js"
+            ],
+            "Environment": [
+              {
+                "Name": "NODE_ENV",
+                "Value": "production"
+              },
+              {
+                "Name": "DB_BOOTSTRAP_ON_BOOT",
+                "Value": "false"
+              },
+              {
+                "Name": "CACHE_STRATEGY",
+                "Value": "dynamodb"
+              },
+              {
+                "Name": "STORAGE_PROVIDER",
+                "Value": "s3"
+              },
+              {
+                "Name": "TELEMETRY_PROVIDER",
+                "Value": "emf"
+              },
+              {
+                "Name": "SECRETS_PROVIDER",
+                "Value": "aws-secrets-manager"
+              },
+              {
+                "Name": "TRACING_SPAN_PROCESSOR",
+                "Value": "simple"
+              },
+              {
+                "Name": "METRICS_ENABLED",
+                "Value": "false"
+              },
+              {
+                "Name": "API_PORT",
+                "Value": "4000"
+              },
+              {
+                "Name": "SECRETS_AWS_SECRET_ID",
+                "Value": {
+                  "Fn::Join": [
+                    "-",
+                    [
+                      {
+                        "Fn::Select": [
+                          0,
+                          {
+                            "Fn::Split": [
+                              "-",
+                              {
+                                "Fn::Select": [
+                                  6,
+                                  {
+                                    "Fn::Split": [
+                                      ":",
+                                      {
+                                        "Ref": "GrantPlatformSecretCBEA56FA"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "Fn::Select": [
+                          1,
+                          {
+                            "Fn::Split": [
+                              "-",
+                              {
+                                "Fn::Select": [
+                                  6,
+                                  {
+                                    "Fn::Split": [
+                                      ":",
+                                      {
+                                        "Ref": "GrantPlatformSecretCBEA56FA"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  ]
+                }
+              },
+              {
+                "Name": "SECRETS_AWS_REGION",
+                "Value": "eu-central-1"
+              }
+            ],
+            "Essential": true,
+            "Image": {
+              "Fn::Sub": "000000000000.dkr.ecr.eu-central-1.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-eu-central-1:<asset-hash>"
+            },
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "GrantMigrateTaskDefinitionMigrateLogGroup7178CB80"
+                },
+                "awslogs-stream-prefix": "migrate",
+                "awslogs-region": "eu-central-1"
+              }
+            },
+            "Name": "Migrate",
+            "StopTimeout": 120
+          }
+        ],
+        "Cpu": "512",
+        "ExecutionRoleArn": {
+          "Fn::GetAtt": [
+            "GrantMigrateTaskDefinitionExecutionRole2B818788",
+            "Arn"
+          ]
+        },
+        "Family": "GrantPlatformGrantMigrateTaskDefinition1D553353",
+        "Memory": "1024",
+        "NetworkMode": "awsvpc",
+        "RequiresCompatibilities": [
+          "FARGATE"
+        ],
+        "TaskRoleArn": {
+          "Fn::GetAtt": [
+            "GrantMigrateTaskDefinitionTaskRole1F83DA2A",
+            "Arn"
+          ]
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Migrate/TaskDefinition/Resource"
+      }
+    },
+    "GrantMigrateTaskDefinitionMigrateLogGroup7178CB80": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "RetentionInDays": 14
+      },
+      "UpdateReplacePolicy": "Retain",
+      "DeletionPolicy": "Retain",
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Migrate/TaskDefinition/Migrate/LogGroup/Resource"
+      }
+    },
+    "GrantMigrateTaskDefinitionExecutionRole2B818788": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Migrate/TaskDefinition/ExecutionRole/Resource"
+      }
+    },
+    "GrantMigrateTaskDefinitionExecutionRoleDefaultPolicyD69AEFA9": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:BatchGetImage"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":ecr:eu-central-1:000000000000:repository/cdk-hnb659fds-container-assets-000000000000-eu-central-1"
+                  ]
+                ]
+              }
+            },
+            {
+              "Action": "ecr:GetAuthorizationToken",
+              "Effect": "Allow",
+              "Resource": "*"
+            },
+            {
+              "Action": [
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "GrantMigrateTaskDefinitionMigrateLogGroup7178CB80",
+                  "Arn"
+                ]
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "GrantMigrateTaskDefinitionExecutionRoleDefaultPolicyD69AEFA9",
+        "Roles": [
+          {
+            "Ref": "GrantMigrateTaskDefinitionExecutionRole2B818788"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Migrate/TaskDefinition/ExecutionRole/DefaultPolicy/Resource"
+      }
+    },
+    "GrantMigrateTriggerRunnerServiceRoleC1E66B57": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/MigrateTrigger/Runner/ServiceRole/Resource"
+      }
+    },
+    "GrantMigrateTriggerRunnerServiceRoleDefaultPolicy16D3609D": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "ecs:RunTask",
+              "Condition": {
+                "ArnEquals": {
+                  "ecs:cluster": {
+                    "Fn::GetAtt": [
+                      "GrantMigrateCluster49E4FE04",
+                      "Arn"
+                    ]
+                  }
+                }
+              },
+              "Effect": "Allow",
+              "Resource": {
+                "Ref": "GrantMigrateTaskDefinition414BB234"
+              }
+            },
+            {
+              "Action": "ecs:DescribeTasks",
+              "Condition": {
+                "ArnEquals": {
+                  "ecs:cluster": {
+                    "Fn::GetAtt": [
+                      "GrantMigrateCluster49E4FE04",
+                      "Arn"
+                    ]
+                  }
+                }
+              },
+              "Effect": "Allow",
+              "Resource": "*"
+            },
+            {
+              "Action": "iam:PassRole",
+              "Condition": {
+                "StringEquals": {
+                  "iam:PassedToService": "ecs-tasks.amazonaws.com"
+                }
+              },
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "GrantMigrateTaskDefinitionTaskRole1F83DA2A",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::GetAtt": [
+                    "GrantMigrateTaskDefinitionExecutionRole2B818788",
+                    "Arn"
+                  ]
+                }
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "GrantMigrateTriggerRunnerServiceRoleDefaultPolicy16D3609D",
+        "Roles": [
+          {
+            "Ref": "GrantMigrateTriggerRunnerServiceRoleC1E66B57"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/MigrateTrigger/Runner/ServiceRole/DefaultPolicy/Resource"
+      }
+    },
+    "GrantMigrateTriggerRunnerD40BD9B3": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "\nconst { ECSClient, RunTaskCommand, DescribeTasksCommand } = require('@aws-sdk/client-ecs');\n\nconst ecs = new ECSClient({});\nconst sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));\n\nexports.handler = async function handler() {\n  const started = await ecs.send(new RunTaskCommand({\n    cluster: process.env.CLUSTER_ARN,\n    taskDefinition: process.env.TASK_DEFINITION_ARN,\n    launchType: 'FARGATE',\n    count: 1,\n    networkConfiguration: {\n      awsvpcConfiguration: {\n        subnets: JSON.parse(process.env.SUBNET_IDS),\n        securityGroups: JSON.parse(process.env.SECURITY_GROUP_IDS),\n        assignPublicIp: 'DISABLED',\n      },\n    },\n  }));\n\n  const failure = started.failures && started.failures[0];\n  if (failure) {\n    throw new Error('Could not start the migrate task: ' + failure.reason + ' (' + failure.detail + ')');\n  }\n\n  const taskArn = started.tasks[0].taskArn;\n  const deadline = Date.now() + Number(process.env.WAIT_TIMEOUT_MS);\n\n  for (;;) {\n    if (Date.now() > deadline) {\n      throw new Error('Migration did not finish within the configured timeout: ' + taskArn);\n    }\n    await sleep(5000);\n\n    const described = await ecs.send(new DescribeTasksCommand({\n      cluster: process.env.CLUSTER_ARN,\n      tasks: [taskArn],\n    }));\n    const task = described.tasks && described.tasks[0];\n    if (!task || task.lastStatus !== 'STOPPED') continue;\n\n    const container = (task.containers || [])[0] || {};\n    if (container.exitCode === 0) return;\n\n    // stoppedReason carries the useful text when the container never ran at all --\n    // an image pull failure, for instance, where exitCode is undefined.\n    throw new Error(\n      'Migration failed: exitCode=' + container.exitCode +\n      ' reason=' + (container.reason || task.stoppedReason || 'unknown')\n    );\n  }\n};\n"
+        },
+        "Environment": {
+          "Variables": {
+            "CLUSTER_ARN": {
+              "Fn::GetAtt": [
+                "GrantMigrateCluster49E4FE04",
+                "Arn"
+              ]
+            },
+            "IMAGE_IDENTIFIER": "<asset-hash>",
+            "SECURITY_GROUP_IDS": {
+              "Fn::Join": [
+                "",
+                [
+                  "[\"",
+                  {
+                    "Fn::GetAtt": [
+                      "GrantProxyClientSecurityGroup2B0C4F81",
+                      "GroupId"
+                    ]
+                  },
+                  "\"]"
+                ]
+              ]
+            },
+            "SUBNET_IDS": {
+              "Fn::Join": [
+                "",
+                [
+                  "[\"",
+                  {
+                    "Ref": "GrantNetworkVpcprivateegressSubnet1Subnet520E2403"
+                  },
+                  "\",\"",
+                  {
+                    "Ref": "GrantNetworkVpcprivateegressSubnet2Subnet2A5B7DBC"
+                  },
+                  "\"]"
+                ]
+              ]
+            },
+            "TASK_DEFINITION_ARN": {
+              "Ref": "GrantMigrateTaskDefinition414BB234"
+            },
+            "WAIT_TIMEOUT_MS": "900000"
+          }
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "GrantMigrateTriggerRunnerServiceRoleC1E66B57",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs22.x",
+        "Timeout": 900
+      },
+      "DependsOn": [
+        "GrantMigrateTriggerRunnerServiceRoleDefaultPolicy16D3609D",
+        "GrantMigrateTriggerRunnerServiceRoleC1E66B57"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/MigrateTrigger/Runner/Resource"
+      }
+    },
+    "GrantMigrateTriggerRunnerLogRetention27459F97": {
+      "Type": "Custom::LogRetention",
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aFD4BFC8A",
+            "Arn"
+          ]
+        },
+        "LogGroupName": {
+          "Fn::Join": [
+            "",
+            [
+              "/aws/lambda/",
+              {
+                "Ref": "GrantMigrateTriggerRunnerD40BD9B3"
+              }
+            ]
+          ]
+        },
+        "RetentionInDays": 14
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/MigrateTrigger/Runner/LogRetention/Resource"
+      }
+    },
+    "GrantMigrateTriggerRunnerCurrentVersion8D49C7F16161e6507c205cc3dd922d4358292cee": {
+      "Type": "AWS::Lambda::Version",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "GrantMigrateTriggerRunnerD40BD9B3"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/MigrateTrigger/Runner/CurrentVersion/Resource",
+        "aws:cdk:do-not-refactor": true
+      }
+    },
+    "GrantMigrateTrigger1B34E3ED": {
+      "Type": "Custom::Trigger",
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "AWSCDKTriggerCustomResourceProviderCustomResourceProviderHandler97BECD91",
+            "Arn"
+          ]
+        },
+        "HandlerArn": {
+          "Ref": "GrantMigrateTriggerRunnerCurrentVersion8D49C7F16161e6507c205cc3dd922d4358292cee"
+        },
+        "InvocationType": "RequestResponse",
+        "Timeout": "120000",
+        "ExecuteOnHandlerChange": true
+      },
+      "DependsOn": [
+        "GrantPlatformSecretCBEA56FA",
+        "GrantProxyClientSecurityGroup2B0C4F81",
+        "GrantProxyIAMRoleDefaultPolicyCF8F147F",
+        "GrantProxyIAMRoleD6A7BA0E",
+        "GrantProxyProxyTargetGroup08B884B7",
+        "GrantProxyB9B3B885",
+        "GrantProxyProxySecurityGroupfromGrantPlatformGrantProxyClientSecurityGroupDD3D6530IndirectPort9F21212A",
+        "GrantProxyProxySecurityGroup4C0037FB"
+      ],
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete",
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/MigrateTrigger/Trigger/Default/Default"
       }
     },
     "GrantDocsBucket9B92AB66": {
@@ -1098,6 +1901,179 @@
         "aws:cdk:path": "GrantPlatform/Grant/AliasIpv6/Resource"
       }
     },
+    "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8a/ServiceRole/Resource"
+      }
+    },
+    "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRoleDefaultPolicyADDA7DEB": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "logs:PutRetentionPolicy",
+                "logs:DeleteRetentionPolicy"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRoleDefaultPolicyADDA7DEB",
+        "Roles": [
+          {
+            "Ref": "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8a/ServiceRole/DefaultPolicy/Resource"
+      }
+    },
+    "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aFD4BFC8A": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Handler": "index.handler",
+        "Runtime": "nodejs24.x",
+        "Timeout": 900,
+        "Code": {
+          "S3Bucket": "cdk-hnb659fds-assets-000000000000-eu-central-1",
+          "S3Key": "<asset-hash>.zip"
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRoleDefaultPolicyADDA7DEB",
+        "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8a/Resource",
+        "aws:asset:path": "asset.<asset-hash>",
+        "aws:asset:is-bundled": false,
+        "aws:asset:property": "Code"
+      }
+    },
+    "AWSCDKTriggerCustomResourceProviderCustomResourceProviderRoleE18FAF0A": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+          }
+        ],
+        "Policies": [
+          {
+            "PolicyName": "Inline",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "lambda:InvokeFunction"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          {
+                            "Fn::GetAtt": [
+                              "GrantMigrateTriggerRunnerD40BD9B3",
+                              "Arn"
+                            ]
+                          },
+                          ":*"
+                        ]
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/AWSCDK.TriggerCustomResourceProviderCustomResourceProvider/Role"
+      }
+    },
+    "AWSCDKTriggerCustomResourceProviderCustomResourceProviderHandler97BECD91": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": "cdk-hnb659fds-assets-000000000000-eu-central-1",
+          "S3Key": "<asset-hash>.zip"
+        },
+        "Timeout": 900,
+        "MemorySize": 128,
+        "Handler": "__entrypoint__.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "AWSCDKTriggerCustomResourceProviderCustomResourceProviderRoleE18FAF0A",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs24.x"
+      },
+      "DependsOn": [
+        "AWSCDKTriggerCustomResourceProviderCustomResourceProviderRoleE18FAF0A"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/AWSCDK.TriggerCustomResourceProviderCustomResourceProvider/Handler",
+        "aws:asset:path": "asset.<asset-hash>",
+        "aws:asset:property": "Code"
+      }
+    },
     "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092": {
       "Type": "AWS::IAM::Role",
       "Properties": {
@@ -1328,7 +2304,7 @@
     "CDKMetadata": {
       "Type": "AWS::CDK::Metadata",
       "Properties": {
-        "Analytics": "v2:deflate64:H4sIAAAAAAAA/5VTwW7bMAz9luasal3SbcBujrMVAbY1iItciiGgZdZTK0uBSCULDP/7ICl1gmI77ETy8fGRoKipnH78JG+u4EDXqnm5NrqWfcWgXsQayQWvUMCBtj2qqew3OyXKJ7tZlWIVaqNVFWqLHLGzt3aB8QFqg2f8jBVETmlg7exIjs6X5SqaH8B3wHiAo1h5vQfGs/DSMnqLIyFPcooKZlC/OrQsKlTBaz7eeRd2aYZLYBC+IdkvgKEGwtIEYvQitxlLFvNL4JVcofJ5lsX8tTAFS0sMVuEgKFGoAwstetnn9rEqmwfwLfLFtCPhbWYQNJP9PKiX3DJ7j/2k07+1nXyeXL5ZfCOayZQimalFYLdAg4z39TMqpsnwU+TUyhmtjmfVHP+Hdi6oGBjjrBfSc6C4htm2b3Bn3DGmT0WLERBAhEyyiGYQBrq6gbSsb3BEv0FP8UAqbVuD7OzXYFU6mdEpn0ZwEMq40Dx5Z1n2f2OIhSb2ug4pqGb3XrfaFkohUekse2ci/R/wZfEgfLzYDzPZF2tUzjfpipNXIYsCAHI0CA2d7Ncu/4Nkz2vP3jCktoF3gUUZiF03/roke/LzfrYm7mYLB1JGy+JApdFpXSKtsWJotW3f6Ky82+sGfXyWqPkddjtt20FY16B8pnf76a18fytvrp5J62sfLOsO5TrbPx339EsfBAAA"
+        "Analytics": "v2:deflate64:H4sIAAAAAAAA/5VUwW7bMAz9lvasal3SbcBuSbwWAbo1iItehiGgZUZTY0uBSDUNDP/7IMtxjA4dsJMeHx8pWk/yRE4+f5HXF3CgK1XuripTyCZnUDuxRnLBKxRwoE2DaiKbp70Si619Wi3EKhSVUXkoLHLkzmjtAuMjFBWe+TM3I3LKABtnB3EE35aruPwAvgPGAxzFypsXYDw3XlpGb3EQpEn6aMYM6neNlkWOKnjDxzvvwr6b4Z/E0mqPRK3wJckmA4YCCBdVIEYv0vZDZTYfEydxjsqnGbP5qbALlpYYrMJBufLu9Zhyb+EjeN03bgV1HakGCxq9bNLQcZO0JPHoowfBX5lEt8JALZu1S7Z068pVRnUjJNQKVH4DRMgkM6d26Jc16OgZcszJNe4dGXb+OAdCgYpkM/rgE7wFryEaTrsMt8aak91vGWcZjEV/5lpROU2yuXd6OPQB3zu9RkbbC6EuSpDNbbDqtMGAn9BTz43gPRzRn+LcWF0hu6GoFTSVzTyoXTIzoZ/NZW1ejb38ejl+JfFV0FR2KZJJOgvsMqyQ8aF4RsV02f4SKXU+63H8H71TQc7AGG0dtY5WxNE3TYn7yh1jui/KBkL0tnZetkJVLpRb7yy/c36ZIfamCF2QTx+80cbOlEKi6Jp3VZS/Q4+LW+HjG/80lc1sjcr5srt/HcqRxQwAUtS2opsuZ9DG6iTr/0HsjdboST4mIBaB2NVDPs4SeB+4vxWbKjq9gQOpysjZgRaV6cx/U7jy7sWU6LvrvNja77DfG6tbYV2J8pk+vExu5McbeX3xTMZc+WDZ1CjXaf0DBOlORD4FAAA="
       },
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/CDKMetadata/Default"
@@ -1460,7 +2436,7 @@
                           "Fn::Split": [
                             ":",
                             {
-                              "Ref": "GrantPlatformGrantDatabaseClusterSecretA1048C1A3fdaad7efa858a3daf9490cf0a702aeb"
+                              "Ref": "GrantPlatformSecretCBEA56FA"
                             }
                           ]
                         }
@@ -1483,30 +2459,7 @@
                           "Fn::Split": [
                             ":",
                             {
-                              "Ref": "GrantPlatformGrantDatabaseClusterSecretA1048C1A3fdaad7efa858a3daf9490cf0a702aeb"
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "Fn::Select": [
-                2,
-                {
-                  "Fn::Split": [
-                    "-",
-                    {
-                      "Fn::Select": [
-                        6,
-                        {
-                          "Fn::Split": [
-                            ":",
-                            {
-                              "Ref": "GrantPlatformGrantDatabaseClusterSecretA1048C1A3fdaad7efa858a3daf9490cf0a702aeb"
+                              "Ref": "GrantPlatformSecretCBEA56FA"
                             }
                           ]
                         }
@@ -1517,6 +2470,15 @@
               ]
             }
           ]
+        ]
+      }
+    },
+    "GrantDatabaseProxyEndpointB8B2F207": {
+      "Description": "Pooled Postgres endpoint. Nothing should connect to the cluster directly.",
+      "Value": {
+        "Fn::GetAtt": [
+          "GrantProxyB9B3B885",
+          "Endpoint"
         ]
       }
     },

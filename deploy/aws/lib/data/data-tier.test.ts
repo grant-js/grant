@@ -32,6 +32,9 @@ function build(
       }),
     },
     database,
+    // Not under test here, and building the image fingerprints the entire repo for
+    // every case. Slice 4b's own suite covers the migration.
+    migration: { enabled: false },
     network: network?.useExistingVpc
       ? {
           vpc: Vpc.fromVpcAttributes(stack, 'Existing', {
@@ -148,8 +151,13 @@ describe('database placement and secrets', () => {
   it('generates credentials into Secrets Manager rather than the template', () => {
     // No password is ever expressed in the template, in CDK context, or in an
     // environment variable — phase B's ISecretResolver reads it per use.
+    //
+    // Two secrets, not one, and the distinction is load-bearing: RDS generates
+    // `{username, password, host, …}` for the proxy to authenticate with, while the
+    // application's resolver accepts only a flat ENV_NAME:value object. Slice 4b's
+    // PlatformSecret is the second. Conflating them fails at runtime, not at synth.
     const { template } = build({});
-    template.resourceCountIs('AWS::SecretsManager::Secret', 1);
+    template.resourceCountIs('AWS::SecretsManager::Secret', 2);
     const json = JSON.stringify(template.toJSON());
     expect(json).not.toMatch(/"MasterUserPassword":\s*"[^"]/);
   });
