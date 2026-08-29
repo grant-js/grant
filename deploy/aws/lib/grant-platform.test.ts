@@ -146,6 +146,16 @@ describe('docs site', () => {
     });
   });
 
+  it('sets Cache-Control so browsers do not revalidate every asset', () => {
+    // Measured in slice 3b against the live deploy: without this, head-object returns
+    // CacheControl: null and the browser leg is uncached even though CloudFront
+    // caches at the edge. One hour, not a year — the same policy covers .html pages
+    // whose names are not content-hashed.
+    template.hasResourceProperties('Custom::CDKBucketDeployment', {
+      SystemMetadata: { 'cache-control': 'public, max-age=3600' },
+    });
+  });
+
   it('does not prune keys outside its prefix', () => {
     // Later slices publish the web app's static assets into the same bucket space; a
     // pruning deployment would delete them on every docs push.

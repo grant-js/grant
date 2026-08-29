@@ -15,9 +15,9 @@
 
 import { existsSync } from 'node:fs';
 
-import { RemovalPolicy } from 'aws-cdk-lib';
+import { Duration, RemovalPolicy } from 'aws-cdk-lib';
 import { BlockPublicAccess, Bucket, BucketEncryption, type IBucket } from 'aws-cdk-lib/aws-s3';
-import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
+import { BucketDeployment, CacheControl, Source } from 'aws-cdk-lib/aws-s3-deployment';
 import { Construct } from 'constructs';
 
 import { ConfigurationError } from '../config/errors';
@@ -88,6 +88,17 @@ export class DocsSite extends Construct {
       // Leave anything outside this prefix alone: later slices publish the web app's
       // static assets, and a pruning deployment would delete them on every docs push.
       prune: false,
+      // Measured in slice 3b: without this, objects land with no Cache-Control at
+      // all, so a browser revalidates every asset on every page load even though
+      // VitePress content-hashes their filenames. CloudFront still cached at the
+      // edge; only the browser leg was uncached.
+      //
+      // One hour rather than a year: the same policy applies to `.html` pages, whose
+      // names are *not* content-hashed, so a long TTL would pin a stale page in every
+      // visitor's browser until it expired. An hour bounds that while removing the
+      // revalidation round-trip. Splitting hashed assets from HTML would need two
+      // deployments; not worth it until measurements say otherwise.
+      cacheControl: [CacheControl.setPublic(), CacheControl.maxAge(Duration.hours(1))],
     });
   }
 }
