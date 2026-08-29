@@ -144,3 +144,132 @@ export function assertCertificateRegion(region: string): void {
     );
   }
 }
+
+/**
+ * PostgreSQL's reserved key words, from the "reserved" column of the engine's
+ * keyword appendix.
+ *
+ * Safe to hold locally only because the construct pins the engine: `Database` builds
+ * `DatabaseClusterEngine.auroraPostgres`, so this list cannot be wrong for some other
+ * engine an adopter chose. If it were engine-dependent it would not belong here.
+ */
+const POSTGRES_RESERVED_WORDS = new Set([
+  'all',
+  'analyse',
+  'analyze',
+  'and',
+  'any',
+  'array',
+  'as',
+  'asc',
+  'asymmetric',
+  'both',
+  'case',
+  'cast',
+  'check',
+  'collate',
+  'column',
+  'constraint',
+  'create',
+  'current_catalog',
+  'current_date',
+  'current_role',
+  'current_time',
+  'current_timestamp',
+  'current_user',
+  'default',
+  'deferrable',
+  'desc',
+  'distinct',
+  'do',
+  'else',
+  'end',
+  'except',
+  'false',
+  'fetch',
+  'for',
+  'foreign',
+  'from',
+  'grant',
+  'group',
+  'having',
+  'in',
+  'initially',
+  'intersect',
+  'into',
+  'lateral',
+  'leading',
+  'limit',
+  'localtime',
+  'localtimestamp',
+  'not',
+  'null',
+  'offset',
+  'on',
+  'only',
+  'or',
+  'order',
+  'placing',
+  'primary',
+  'references',
+  'returning',
+  'select',
+  'session_user',
+  'some',
+  'symmetric',
+  'table',
+  'then',
+  'to',
+  'trailing',
+  'true',
+  'union',
+  'unique',
+  'user',
+  'using',
+  'variadic',
+  'when',
+  'where',
+  'window',
+  'with',
+]);
+
+/** RDS accepts a letter followed by up to 62 letters, digits or underscores. */
+const DATABASE_NAME_SHAPE = /^[A-Za-z][A-Za-z0-9_]{0,62}$/;
+
+/**
+ * Asserts a database name RDS will actually accept.
+ *
+ * RDS validates `DatabaseName` at **create** time, not against the template, so an
+ * invalid name synthesizes green, deploys, and fails minutes later — after the VPC
+ * and NAT gateway exist — then rolls back. That is a false pass from the one gate
+ * this repo can run in CI, which is why it is checked here.
+ *
+ * The reserved word is the case a real deploy hit (`grant`). The shape rule is the
+ * likelier one: `grant-db` reads as an obvious name and a hyphen is rejected just as
+ * hard.
+ *
+ * This does not replace the API's own validation, and is not trying to. If AWS ever
+ * rejects a name this accepts, its error still names the cause exactly — this only
+ * moves the common cases from minutes-deep to instant.
+ */
+export function validateDatabaseName(name: string): string {
+  // A token means the name is resolved at deploy time; there is nothing to inspect.
+  if (Token.isUnresolved(name)) return name;
+
+  if (!DATABASE_NAME_SHAPE.test(name)) {
+    throw new ConfigurationError(
+      `databaseName must start with a letter and contain only letters, digits or underscores, ` +
+        `up to 63 characters — RDS rejects anything else when it creates the cluster, not at ` +
+        `synth (received: ${name})`
+    );
+  }
+
+  if (POSTGRES_RESERVED_WORDS.has(name.toLowerCase())) {
+    throw new ConfigurationError(
+      `databaseName "${name}" is a reserved word in PostgreSQL, and RDS refuses it when it ` +
+        `creates the cluster. Pick another name, e.g. "${name.toLowerCase()}_db".`
+    );
+  }
+
+  return name;
+}

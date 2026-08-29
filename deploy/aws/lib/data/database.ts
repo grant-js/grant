@@ -25,6 +25,8 @@ import {
 import type { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
+import { validateDatabaseName } from '../config/validate';
+
 export interface DatabaseProps {
   readonly vpc: IVpc;
 
@@ -34,12 +36,10 @@ export interface DatabaseProps {
    * Defaults to `grant_db`, matching `POSTGRES_DB` in `docker-compose.yml` and
    * `.env.example` so a `DB_URL` has the same shape on both deployment targets.
    *
-   * Not every name is available: RDS rejects the engine's reserved words at
-   * **create** time, not at synth. `grant` is one of them, which a real deploy found
-   * the expensive way — the template is valid CloudFormation and the failure arrives
-   * minutes in, after the VPC and NAT gateway already exist. The API's error names
-   * the cause precisely, so this is recorded here rather than re-implemented as a
-   * local copy of a reserved-word list that would drift from the real one.
+   * Validated at synth by `validateDatabaseName`. RDS checks this at **create** time,
+   * not against the template, so an invalid name otherwise synthesizes green and
+   * fails minutes into a deploy after the VPC and NAT gateway already exist — which
+   * is what `grant` did. Shape and reserved words are both checked.
    */
   readonly databaseName?: string;
 
@@ -78,7 +78,7 @@ export class Database extends Construct {
   constructor(scope: Construct, id: string, props: DatabaseProps) {
     super(scope, id);
 
-    this.databaseName = props.databaseName ?? 'grant_db';
+    this.databaseName = validateDatabaseName(props.databaseName ?? 'grant_db');
     const destroy = props.destroyOnRemoval ?? false;
 
     this.cluster = new DatabaseCluster(this, 'Cluster', {

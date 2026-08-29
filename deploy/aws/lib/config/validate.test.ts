@@ -4,7 +4,7 @@
  * unrelated resource. Failing at synth with an actionable sentence is the whole
  * point of the configuration surface.
  */
-import { App, Stack } from 'aws-cdk-lib';
+import { App, Stack, Token } from 'aws-cdk-lib';
 import { describe, expect, it } from 'vitest';
 
 import { ConfigurationError } from './errors';
@@ -13,6 +13,7 @@ import {
   assertConcreteEnv,
   validateAppUrl,
   validateCertificateArn,
+  validateDatabaseName,
   validateHostnameInZone,
 } from './validate';
 
@@ -153,5 +154,42 @@ describe('assertCertificateRegion', () => {
     // assertConcreteEnv is what refuses that shape.
     const stack = new Stack(new App(), 'S');
     expect(() => assertCertificateRegion(stack.region)).not.toThrow();
+  });
+});
+
+describe('validateDatabaseName', () => {
+  it('accepts the default and ordinary names', () => {
+    for (const name of ['grant_db', 'g', 'a1_b2', 'A'.repeat(63)]) {
+      expect(validateDatabaseName(name)).toBe(name);
+    }
+  });
+
+  it('rejects the reserved word a real deploy failed on', () => {
+    // RDS returned "DatabaseName grant cannot be used. It is a reserved word for this
+    // engine" four minutes into a deploy, after the VPC and NAT already existed.
+    expect(() => validateDatabaseName('grant')).toThrow(/reserved word/);
+  });
+
+  it('is case-insensitive about reserved words', () => {
+    expect(() => validateDatabaseName('GRANT')).toThrow(/reserved word/);
+    expect(() => validateDatabaseName('User')).toThrow(/reserved word/);
+  });
+
+  it('rejects a hyphen, which is the likelier mistake than a reserved word', () => {
+    expect(() => validateDatabaseName('grant-db')).toThrow(/letters, digits or underscores/);
+  });
+
+  it.each([['1grant'], ['_grant'], [''], ['grant db'], ['grant;drop'], ['A'.repeat(64)]])(
+    'rejects %j on shape',
+    (name) => {
+      expect(() => validateDatabaseName(name)).toThrow(/must start with a letter/);
+    }
+  );
+
+  it('passes through an unresolved token rather than guessing', () => {
+    // A name resolved at deploy time has nothing to inspect; rejecting it would block
+    // a legitimate configuration.
+    const token = Token.asString({ Ref: 'SomeParameter' });
+    expect(validateDatabaseName(token)).toBe(token);
   });
 });
