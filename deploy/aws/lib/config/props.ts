@@ -45,7 +45,29 @@ interface NetworkProps {
    * makes the committed synth output a function of whichever account last ran it —
    * defeating the acceptance criterion that the template be reviewable evidence.
    */
-  readonly vpc: IVpc;
+  readonly vpc?: IVpc;
+
+  /**
+   * NAT gateways when the stack creates the VPC. Defaults to 1 rather than CDK's
+   * one-per-AZ, which would double the largest fixed cost in the target.
+   */
+  readonly natGateways?: number;
+}
+
+/** The database. Omit entirely to bring your own via `DB_URL` in `env`. */
+interface DatabaseProps {
+  /** Minimum Aurora capacity units. `0` auto-pauses an idle cluster to no cost. */
+  readonly minCapacity?: number;
+  readonly maxCapacity?: number;
+
+  /**
+   * Allow teardown to destroy the data. Default false.
+   *
+   * Set true for throwaway environments — and note this construct sets the removal
+   * policy explicitly either way, because CDK's `SNAPSHOT` default retains a
+   * storage-billed snapshot that survives `cdk destroy` unnoticed.
+   */
+  readonly destroyOnRemoval?: boolean;
 }
 
 /** DNS. Always referenced, never created — a zone needs nameserver re-delegation CDK cannot perform. */
@@ -108,6 +130,12 @@ export interface GrantPlatformProps {
   readonly storage?: StorageProps;
 
   readonly docs?: DocsProps;
+
+  /**
+   * Create the data tier. Omit to bring your own Postgres, in which case supply
+   * `DB_URL` through `env` — the shape the Helm chart has always used.
+   */
+  readonly database?: DatabaseProps;
 
   /** Passed through to the API container. */
   readonly env?: GrantEnv;

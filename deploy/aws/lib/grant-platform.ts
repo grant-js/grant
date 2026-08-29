@@ -31,6 +31,8 @@ import { ASSET_BEHAVIOURS, type CloudFrontBehaviour, toCloudFrontBehaviours } fr
 import { AWS_TARGET_ENV_DEFAULTS } from './config/defaults';
 import type { GrantEnv, GrantPlatformProps } from './config/props';
 import { assertCertificateRegion, validateAppUrl, validateHostnameInZone } from './config/validate';
+import { Database } from './data/database';
+import { Network } from './data/network';
 import { EdgeCertificate } from './edge/certificate';
 import { EdgeDistribution } from './edge/distribution';
 import { DocsSite } from './edge/docs-site';
@@ -53,6 +55,10 @@ export class GrantPlatform extends Construct {
 
   public readonly docs: DocsSite;
   public readonly edge: EdgeDistribution;
+
+  /** Present only when the data tier was requested. */
+  public readonly network?: Network;
+  public readonly database?: Database;
 
   constructor(scope: Construct, id: string, props: GrantPlatformProps) {
     super(scope, id);
@@ -79,6 +85,27 @@ export class GrantPlatform extends Construct {
         hostname,
         hostedZone: props.dns.hostedZone,
       }).certificate;
+    }
+
+    // The data tier is opt-in. Omitting it is the bring-your-own-Postgres path the
+    // Helm chart has always taken, and it keeps the docs-only deploy free of a VPC.
+    if (props.database) {
+      this.network = new Network(this, 'Network', {
+        vpc: props.network?.vpc,
+        natGateways: props.network?.natGateways,
+      });
+      this.database = new Database(this, 'Database', {
+        vpc: this.network.vpc,
+        minCapacity: props.database.minCapacity,
+        maxCapacity: props.database.maxCapacity,
+        destroyOnRemoval: props.database.destroyOnRemoval,
+      });
+
+      new CfnOutput(this, 'DatabaseSecretName', {
+        value: this.database.secret.secretName,
+        description:
+          'Set SECRETS_AWS_SECRET_ID to this; credentials are resolved per use, never inlined.',
+      });
     }
 
     this.docs = new DocsSite(this, 'Docs', {
