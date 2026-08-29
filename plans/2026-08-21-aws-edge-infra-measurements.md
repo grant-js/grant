@@ -230,9 +230,72 @@ CloudFront Functions as executed code, the docs key layout, OAC, and DNS.
 - **`pre-push` reordered.** `synth:check` now runs after `build`, since synth needs
   built docs. CI already had `Build` before it.
 
+## Slice 3c — cross-region certificate
+
+**Date**: 2026-08-28 · **AWS resources**: none deployed · **Deploy**: n/a (CI-verified)
+
+### The correction that prompted it
+
+Slice 3a recorded that "the stack must target us-east-1 until a cross-region
+certificate stack exists". That overstated the constraint. **CloudFront is a global
+service; only the ACM certificate it serves is pinned to us-east-1.** Colocating the
+certificate with everything else is what would have forced the platform into that
+region — not CloudFront itself.
+
+### A failure that synthesizes cleanly and fails at deploy
+
+Measured before choosing the design. Two stacks referencing each other across
+regions, synthesized twice:
+
+| Stack environments                        | Synth  | Cross-region plumbing                                |
+| ----------------------------------------- | ------ | ---------------------------------------------------- |
+| Region-agnostic (no `env`)                | **OK** | **none** — plain `Fn::ImportValue`                   |
+| Cert `us-east-1`, platform `eu-central-1` | OK     | `CrossRegionExportWriter` + `Reader` + Lambda + role |
+
+With both regions left as tokens CDK cannot see that the reference crosses a region,
+so it emits an ordinary CloudFormation export. Exports do not cross regions, so the
+deploy fails with an unresolved-export error naming neither. `assertConcreteEnv`
+refuses that shape at synth.
+
+An early version of the guard was **unreachable**: the reference app fell back to a
+placeholder account and region before asserting, so it could never see an agnostic
+env. The fallback was removed — an unreachable guard against a silent deploy failure
+is worse than none.
+
+### Topologies produced
+
+| Configuration                                   | Stacks                                           |
+| ----------------------------------------------- | ------------------------------------------------ |
+| Created certificate, platform in `eu-central-1` | `GrantCertificate` (us-east-1) + `GrantPlatform` |
+| Created certificate, platform in `us-east-1`    | same two — uniform, no special case              |
+| Supplied `us-east-1` certificate ARN            | `GrantPlatform` only; no cert stack needed       |
+| Supplied certificate ARN in another region      | **refused at synth**                             |
+
+### Determinism
+
+`pnpm synth` passes account and region as explicit context, which beats
+`CDK_DEFAULT_*`. Verified the committed templates contain **no** account ID at all —
+including none from the credentials present on this machine — so the artifact does not
+depend on who ran synth.
+
+### Gates
+
+`lint` · `type-check` · `dead-code:deploy` · **162 tests** (from 149) ·
+`synth:check` · `format:check` — all clean.
+
 ## Slice 3b — docs site (deploy)
 
-_Blocked: needs a scratch AWS account, a registrable domain, and a hosted zone._
+**Status**: not blocked on credentials after all — **blocked on a target account decision.**
+
+Slice 3a recorded this as blocked because `aws sts get-caller-identity` failed. That
+was misdiagnosed: the **`aws` CLI binary is not installed**, but the AWS SDK resolves
+a profile fine, and the CDK CLI reports a usable account and region.
+
+Deploying is therefore technically possible and deliberately not done. The available
+account is the one the existing Kubernetes deployment runs in — see
+[[solo-owner-aws-account]]: solo access does not mean nothing is running. The stack
+plan calls for a **scratch** account, and a first CloudFront/ACM/Route 53 deploy
+against live infrastructure is not a decision to take implicitly.
 
 ## Slice 4 — API and data tier
 

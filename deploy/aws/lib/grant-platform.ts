@@ -22,8 +22,7 @@
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { CfnOutput } from 'aws-cdk-lib';
-import { Certificate, CertificateValidation } from 'aws-cdk-lib/aws-certificatemanager';
+import { CfnOutput, Stack } from 'aws-cdk-lib';
 import { AaaaRecord, ARecord, RecordTarget } from 'aws-cdk-lib/aws-route53';
 import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
 import { Construct } from 'constructs';
@@ -31,7 +30,8 @@ import { Construct } from 'constructs';
 import { ASSET_BEHAVIOURS, type CloudFrontBehaviour, toCloudFrontBehaviours } from './behaviours';
 import { AWS_TARGET_ENV_DEFAULTS } from './config/defaults';
 import type { GrantEnv, GrantPlatformProps } from './config/props';
-import { validateAppUrl, validateHostnameInZone } from './config/validate';
+import { assertCertificateRegion, validateAppUrl, validateHostnameInZone } from './config/validate';
+import { EdgeCertificate } from './edge/certificate';
 import { EdgeDistribution } from './edge/distribution';
 import { DocsSite } from './edge/docs-site';
 
@@ -67,16 +67,19 @@ export class GrantPlatform extends Construct {
     this.env = { ...AWS_TARGET_ENV_DEFAULTS, ...props.env };
     this.behaviours = [...toCloudFrontBehaviours(), ...ASSET_BEHAVIOURS];
 
-    // us-east-1 or nothing: CloudFront serves certificates only from there. An
-    // adopter supplying an ARN has it asserted lexically in the reference app; one
-    // created here inherits the constraint from the stack's own region, which the
-    // deployment guide states.
-    const certificate =
-      props.dns.certificate ??
-      new Certificate(this, 'Certificate', {
-        domainName: hostname,
-        validation: CertificateValidation.fromDns(props.dns.hostedZone),
-      });
+    // CloudFront is global; only the certificate it serves is pinned to us-east-1.
+    // Creating one here inherits this stack's region, so composing the construct into
+    // a stack elsewhere would build a distribution CloudFront rejects — guarded
+    // rather than documented. The reference app avoids the case entirely by creating
+    // the certificate in its own us-east-1 stack and passing it in.
+    let certificate = props.dns.certificate;
+    if (!certificate) {
+      assertCertificateRegion(Stack.of(this).region);
+      certificate = new EdgeCertificate(this, 'Certificate', {
+        hostname,
+        hostedZone: props.dns.hostedZone,
+      }).certificate;
+    }
 
     this.docs = new DocsSite(this, 'Docs', {
       distPath: props.docs?.distPath ?? DEFAULT_DOCS_DIST,

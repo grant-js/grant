@@ -4,10 +4,17 @@
  * unrelated resource. Failing at synth with an actionable sentence is the whole
  * point of the configuration surface.
  */
+import { App, Stack } from 'aws-cdk-lib';
 import { describe, expect, it } from 'vitest';
 
 import { ConfigurationError } from './errors';
-import { validateAppUrl, validateCertificateArn, validateHostnameInZone } from './validate';
+import {
+  assertCertificateRegion,
+  assertConcreteEnv,
+  validateAppUrl,
+  validateCertificateArn,
+  validateHostnameInZone,
+} from './validate';
 
 describe('validateAppUrl', () => {
   it.each([
@@ -90,5 +97,61 @@ describe('validateHostnameInZone', () => {
     ['example.com.evil.com', 'example.com'],
   ])('rejects %s in %s', (hostname, zone) => {
     expect(() => validateHostnameInZone(hostname, zone)).toThrow(ConfigurationError);
+  });
+});
+
+describe('assertConcreteEnv', () => {
+  it('accepts a concrete account and region', () => {
+    expect(assertConcreteEnv('S', { account: '123456789012', region: 'eu-central-1' })).toEqual({
+      account: '123456789012',
+      region: 'eu-central-1',
+    });
+  });
+
+  it.each([
+    ['no account', { region: 'eu-central-1' }],
+    ['no region', { account: '123456789012' }],
+    ['neither', {}],
+  ])('rejects %s', (_label, env) => {
+    expect(() => assertConcreteEnv('S', env)).toThrow(ConfigurationError);
+  });
+
+  it('rejects unresolved tokens', () => {
+    // The failure this guards synthesizes cleanly and fails at deploy: with both
+    // regions as tokens CDK cannot see the reference crosses a region, so it emits an
+    // ordinary Fn::ImportValue, and CloudFormation exports do not cross regions.
+    const stack = new Stack(new App(), 'S');
+    expect(() => assertConcreteEnv('S', { account: stack.account, region: stack.region })).toThrow(
+      /needs a concrete account and region/
+    );
+  });
+
+  it('explains the silent-synth failure mode', () => {
+    expect(() => assertConcreteEnv('S', {})).toThrow(
+      /synthesizes cleanly and then fails at deploy/
+    );
+  });
+});
+
+describe('assertCertificateRegion', () => {
+  it('accepts us-east-1', () => {
+    expect(() => assertCertificateRegion('us-east-1')).not.toThrow();
+  });
+
+  it('rejects any other region', () => {
+    expect(() => assertCertificateRegion('eu-central-1')).toThrow(
+      /only serves certificates from us-east-1/
+    );
+  });
+
+  it('says how to fix it', () => {
+    expect(() => assertCertificateRegion('eu-west-1')).toThrow(/separate us-east-1 stack/);
+  });
+
+  it('passes through an unresolved region', () => {
+    // A region-agnostic stack cannot be checked here; the reference app's
+    // assertConcreteEnv is what refuses that shape.
+    const stack = new Stack(new App(), 'S');
+    expect(() => assertCertificateRegion(stack.region)).not.toThrow();
   });
 });
