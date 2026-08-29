@@ -1,0 +1,19 @@
+{
+  "name": "grant-aws-deploy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CDK construct library and reference app for Grant's AWS serverless deployment target",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint lib --ext .ts",
+    "lint:fix": "eslint lib --ext .ts --fix",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.11"
+  },
+  "license": "MIT"
+}

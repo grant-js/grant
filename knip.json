@@ -75,6 +75,13 @@
       // discovers them by glob, which knip cannot follow.
       "entry": ["src/index.ts", "src/**/*.test.ts", "src/test-support/**/*.ts"],
       "project": ["src/**/*.ts"]
+    },
+    // No package.json `main`: this is a CDK app, not a module anyone imports. Its
+    // entry points are the vitest-discovered tests, and — from slice 2 — bin/, which
+    // the CDK CLI runs rather than importing.
+    "deploy/aws": {
+      "entry": ["lib/**/*.test.ts"],
+      "project": ["lib/**/*.ts"]
     }
   },
   "ignore": ["**/generated/**", "**/dist/**", "docs/**"],
