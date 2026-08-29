@@ -62,6 +62,20 @@ interface DnsProps {
   readonly certificate?: ICertificate;
 }
 
+/** The documentation site. */
+interface DocsProps {
+  /**
+   * Built VitePress output. Defaults to the repo's `docs/.vitepress/dist`.
+   *
+   * Required at synth time, so a deploy cannot silently produce an empty site —
+   * run `pnpm --filter grant-docs build` first.
+   */
+  readonly distPath?: string;
+
+  /** Existing bucket to publish into. Omit to create one. */
+  readonly bucket?: IBucket;
+}
+
 interface StorageProps {
   /**
    * Uploads bucket. Omit to have the stack create one.
@@ -92,6 +106,8 @@ export interface GrantPlatformProps {
   readonly network?: NetworkProps;
 
   readonly storage?: StorageProps;
+
+  readonly docs?: DocsProps;
 
   /** Passed through to the API container. */
   readonly env?: GrantEnv;
