@@ -1,3 +1,12 @@
 # CDK synth working directory. The reviewable artifact is cdk.snapshot/, written by
 # `pnpm synth` and committed; cdk.out churns with asset hashes and metadata.
 cdk.out/
+
+# Context cache written by a real `cdk deploy`. CDK's convention is to commit this so
+# lookups are reproducible, which is right for an app repo targeting one known
+# account — but this is a construct library, and the file records whichever account
+# last deployed (its ID and that region's availability zones). Committing it would put
+# one adopter's account ID in everyone's checkout and buy nothing: the determinism the
+# committed template needs comes from the placeholder context seeded in cdk.json,
+# which is account-independent.
+cdk.context.json

@@ -130,6 +130,16 @@ describe('database placement and secrets', () => {
     template.resourceCountIs('AWS::EC2::Subnet', 6);
   });
 
+  it('does not name the database a reserved word', () => {
+    // Found by deploying, not by synthesizing: RDS rejects the engine's reserved
+    // words at create time, so `grant` produced a valid template that failed four
+    // minutes into a deploy, after the VPC and NAT gateway already existed. The name
+    // also matches POSTGRES_DB in docker-compose.yml, so DB_URL has the same shape on
+    // both targets.
+    const { template } = build({});
+    template.hasResourceProperties('AWS::RDS::DBCluster', { DatabaseName: 'grant_db' });
+  });
+
   it('encrypts storage', () => {
     const { template } = build({});
     template.hasResourceProperties('AWS::RDS::DBCluster', { StorageEncrypted: true });

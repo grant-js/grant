@@ -28,7 +28,19 @@ import { Construct } from 'constructs';
 export interface DatabaseProps {
   readonly vpc: IVpc;
 
-  /** Logical database created with the cluster. */
+  /**
+   * Logical database created with the cluster.
+   *
+   * Defaults to `grant_db`, matching `POSTGRES_DB` in `docker-compose.yml` and
+   * `.env.example` so a `DB_URL` has the same shape on both deployment targets.
+   *
+   * Not every name is available: RDS rejects the engine's reserved words at
+   * **create** time, not at synth. `grant` is one of them, which a real deploy found
+   * the expensive way — the template is valid CloudFormation and the failure arrives
+   * minutes in, after the VPC and NAT gateway already exist. The API's error names
+   * the cause precisely, so this is recorded here rather than re-implemented as a
+   * local copy of a reserved-word list that would drift from the real one.
+   */
   readonly databaseName?: string;
 
   /**
@@ -66,7 +78,7 @@ export class Database extends Construct {
   constructor(scope: Construct, id: string, props: DatabaseProps) {
     super(scope, id);
 
-    this.databaseName = props.databaseName ?? 'grant';
+    this.databaseName = props.databaseName ?? 'grant_db';
     const destroy = props.destroyOnRemoval ?? false;
 
     this.cluster = new DatabaseCluster(this, 'Cluster', {

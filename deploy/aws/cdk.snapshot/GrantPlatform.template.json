@@ -599,7 +599,7 @@
         "DBSubnetGroupName": {
           "Ref": "GrantDatabaseClusterSubnetsF0D5EA18"
         },
-        "DatabaseName": "grant",
+        "DatabaseName": "grant_db",
         "DeletionProtection": true,
         "Engine": "aurora-postgresql",
         "EngineVersion": "17.5",
