@@ -109,10 +109,18 @@ export class ApiFunction extends Construct {
       // arbitrary webhook URLs, none of which a VPC endpoint can reach.
       vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
       securityGroups: props.securityGroups,
-      // Lambda's CPU allocation is proportional to memory, so this is a latency
-      // setting as much as a memory one. A Node process running Apollo and Express
-      // is starved below 1 GB and cold starts stretch accordingly.
-      memorySize: props.memorySize ?? 1024,
+      // A CPU dial, not a memory one, and the measurement says so: a live deploy used
+      // 350 MB of the 1024 MB it had. Lambda allocates CPU in proportion to memory and
+      // 1,769 MB is where a function gets one full vCPU, against roughly 0.58 at 1 GB.
+      //
+      // Cold start is what this buys. Boot is CPU-bound — 77% of it is loading the
+      // module graph — and a measured 8.9 s init sits against Lambda's 10 s ceiling,
+      // past which init is re-run inside the invocation and the caller waits for it.
+      //
+      // Roughly cost-neutral rather than a trade: billing is per GB-millisecond, so
+      // 1.73x the rate against a proportionally shorter init, and every warm
+      // invocation gets cheaper too.
+      memorySize: props.memorySize ?? 1769,
       // CloudFront's origin response timeout is 30 seconds by default, so a longer
       // Lambda timeout only buys a 504 at the edge while still being billed.
       timeout: props.timeout ?? Duration.seconds(30),
