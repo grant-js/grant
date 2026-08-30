@@ -652,9 +652,9 @@ const STORAGE_CONFIG = {
     /** AWS region */
     region: env.STORAGE_S3_REGION,
     /** AWS access key ID */
-    accessKeyId: env.STORAGE_S3_ACCESS_KEY_ID,
+    accessKeyId: env.STORAGE_S3_ACCESS_KEY_ID || undefined,
     /** AWS secret access key */
-    secretAccessKey: env.STORAGE_S3_SECRET_ACCESS_KEY,
+    secretAccessKey: env.STORAGE_S3_SECRET_ACCESS_KEY || undefined,
     /** Custom S3 endpoint (for S3-compatible services like MinIO) */
     endpoint: env.STORAGE_S3_ENDPOINT || undefined,
     /** Public URL base (e.g., CloudFront distribution URL) */
@@ -974,12 +974,12 @@ export function validateConfig(): void {
     if (!STORAGE_CONFIG.s3.bucket) {
       errors.push('STORAGE_S3_BUCKET is required when using s3 provider');
     }
-    if (!STORAGE_CONFIG.s3.accessKeyId) {
-      errors.push('STORAGE_S3_ACCESS_KEY_ID is required when using s3 provider');
-    }
-    if (!STORAGE_CONFIG.s3.secretAccessKey) {
-      errors.push('STORAGE_S3_SECRET_ACCESS_KEY is required when using s3 provider');
-    }
+    // Credentials are deliberately not required. Left unset, the SDK's default
+    // credential chain applies and a Lambda or task role supplies them — which is the
+    // expected production path on the AWS target, where static keys would be a
+    // long-lived secret to store and rotate for no benefit. CACHE_DYNAMODB_* and
+    // JOBS_AWS_* have always worked this way; S3 requiring them was the outlier, and
+    // it blocked the AWS target outright (ADR 0004, Correction 2026-08-30).
   }
 
   // Validate GitHub OAuth configuration (optional, but warn if partially configured)

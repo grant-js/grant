@@ -53,6 +53,32 @@ afterEach(() => {
 });
 
 describe('validateConfig', () => {
+  it('accepts the s3 provider without static credentials', async () => {
+    // On Lambda or Fargate the SDK's default credential chain applies and the
+    // execution role supplies credentials, so requiring static keys would force a
+    // long-lived secret to store and rotate for no benefit. CACHE_DYNAMODB_* and
+    // JOBS_AWS_* have always worked this way; S3 requiring them blocked the AWS
+    // target outright (ADR 0004, Correction 2026-08-30).
+    const validateConfig = await loadWith({
+      STORAGE_PROVIDER: 's3',
+      STORAGE_S3_BUCKET: 'grant-uploads',
+      STORAGE_S3_ACCESS_KEY_ID: '',
+      STORAGE_S3_SECRET_ACCESS_KEY: '',
+    });
+
+    expect(() => validateConfig()).not.toThrow();
+  });
+
+  it('still requires a bucket for the s3 provider', async () => {
+    // The credentials are optional; the bucket is not — nothing can infer it.
+    const validateConfig = await loadWith({
+      STORAGE_PROVIDER: 's3',
+      STORAGE_S3_BUCKET: '',
+    });
+
+    expect(() => validateConfig()).toThrow(/STORAGE_S3_BUCKET is required/);
+  });
+
   it('accepts a minimal valid configuration', async () => {
     const validateConfig = await loadWith({});
 
