@@ -218,6 +218,23 @@ describe('the migration runs at deploy and can fail the deploy', () => {
   // default path yields a hash rather than the 'caller-supplied' sentinel. `synth:check`
   // runs it on every build, so the coverage is stronger than a unit test, not weaker.
 
+  it('waits for the writer instance, not just the cluster', () => {
+    // An Aurora cluster endpoint has no DNS record until an instance exists, so a
+    // migration that starts too early fails with ENOTFOUND rather than with a refused
+    // connection. The platform secret references `clusterEndpoint.hostname`, which is
+    // a DBCluster attribute — ordering the trigger after the cluster alone, and after
+    // the writer never. A live deploy raced and lost: the trigger fired 58 s after the
+    // instance began creating and 88 s before it would have been ready.
+    const { template } = build();
+    const trigger = Object.values(template.findResources('Custom::Trigger'))[0] as {
+      DependsOn?: string[];
+    };
+    const instances = Object.keys(template.findResources('AWS::RDS::DBInstance'));
+
+    expect(instances).toHaveLength(1);
+    expect(trigger.DependsOn).toEqual(expect.arrayContaining(instances));
+  });
+
   it('scopes ecs:RunTask to the cluster rather than to *', () => {
     const { template } = build();
     const policies = JSON.stringify(template.findResources('AWS::IAM::Policy'));

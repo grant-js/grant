@@ -712,3 +712,196 @@ the literal.
 
 **220 tests** (from 204). `lint`, `type-check`, `dead-code:deploy`, `format:check`
 clean. Two consecutive synths produced byte-identical templates.
+
+## Slice 4c — the API serves (deploy)
+
+**Date**: 2026-08-30 · **Domain**: `aws.grantjs.org` · **Context**: `-c ephemeral=true`
+
+First deploy of the serving function, and the first time the Lambda image path has been
+built and published at all — the stack plan flagged it as untested through phase B.
+
+### Baseline captured before deploying
+
+| Baseline (eu-central-1)                   | Value                         |
+| ----------------------------------------- | ----------------------------- |
+| CloudFormation stacks                     | 1 (bootstrap)                 |
+| Route 53 records                          | 20 (19 real + the ACM orphan) |
+| S3 buckets                                | 2                             |
+| Lambda / DynamoDB / RDS / non-default VPC | 0 / 0 / 0 / 0                 |
+
+### Finding 1 — the migration was never ordered after the writer instance
+
+The first deploy rolled back. The migrate task failed with
+`getaddrinfo ENOTFOUND …cluster-….rds.amazonaws.com`, which is **not** a refused
+connection or a timeout: the hostname did not exist yet.
+
+| Time     | Event                             |
+| -------- | --------------------------------- |
+| 16:34:09 | DBCluster `CREATE_COMPLETE`       |
+| 16:34:09 | Writer DBInstance begins creating |
+| 16:35:07 | Migrate trigger fires             |
+| 16:35:44 | Task fails, `ENOTFOUND`           |
+
+`MigrateTrigger.executeAfter` named the platform secret, and `PlatformSecret`
+references `cluster.clusterEndpoint.hostname` — an attribute of the **DBCluster**.
+CloudFormation therefore ordered the trigger after the cluster and never after the
+instance. An Aurora cluster endpoint has no DNS record until an instance exists.
+
+**Slice 4b passed on scheduling luck.** With a smaller resource graph the writer
+finished first; adding the serving function changed the parallel schedule and the race
+flipped. Synth was green both times — only a deploy could find this.
+
+Fixed by naming the whole `Database` construct in `executeAfter`, so ordering no longer
+depends on which attribute happens to be referenced. The regression test asserts the
+trigger's `DependsOn` contains the DBInstance logical ID, and was confirmed to **fail
+against the original wiring**.
+
+### Finding 2 — a failed create cannot roll itself back
+
+The rollback then failed on its own: `ROLLBACK_FAILED`, because the docs bucket still
+held 313 objects. `autoDeleteObjects` installs a custom resource that empties the
+bucket, but it does not get to run while CloudFormation is unwinding a failed create.
+Recovery was manual: empty the bucket, delete the stack, redeploy.
+
+This is a sharp edge on a **first** deploy specifically — the failure mode that greets
+someone whose first attempt goes wrong. Carried to slice 7.
+
+### Finding 3 — `ephemeral` did not reach the uploads bucket
+
+Caught by reading `bin/grant.ts` before deploying, not by the deploy. `ephemeral` was
+passed to `database` only, so the uploads bucket kept its `Retain` default and teardown
+would have stranded it — breaking the property the flag exists to provide. The cache
+table was already correct, defaulting to `Delete`.
+
+### The API serves — verified in both directions
+
+| Request                                   | Result                                    |
+| ----------------------------------------- | ----------------------------------------- |
+| Unsigned `GET /health`                    | **403 Forbidden** — no public bypass      |
+| SigV4-signed `GET /health`                | **200** `{"status":"ok",…}`               |
+| SigV4-signed `GET /.well-known/jwks.json` | **200**, 1 RSA key **read from Postgres** |
+| SigV4-signed `GET /api-docs.json`         | **200**, 87 OpenAPI paths                 |
+
+`/health` alone would not have proved much — it touches no database. JWKS does, so the
+full chain is verified: LWA → Express → Aurora, with `DB_URL` resolved through the
+secret port. The function's own log carries
+`AwsSecretsManagerResolver … keys:["DB_URL"]`, which is ADR 0004 running on the real
+Lambda rather than only in the migrate task. The cache table took an item from the rate
+limiter, so DynamoDB is wired too. No errors or warnings in the function log.
+
+### Finding 4 — cold start sits against Lambda's init ceiling
+
+| Invocation                             | Duration              |
+| -------------------------------------- | --------------------- |
+| Cold, first ever (includes image pull) | **18,975 ms**         |
+| Cold, image cached                     | **8,900 ms init**     |
+| Warm                                   | 173 ms → 46 ms → 6 ms |
+
+Lambda's init phase has a **10 second ceiling**, past which init is retried inside the
+invocation — which is the most likely explanation for the first call billing 19 s. At
+8.9 s, boot sits right at that edge, so anything added to startup could tip it over,
+and a user reaching a cold container through CloudFront waits about nine seconds.
+
+Worth attention before 4d puts traffic on it. Candidates: the OpenAPI document is
+generated for 87 paths at boot, the Apollo schema is built at boot, and the LWA probes
+`/health` before reporting readiness.
+
+**Memory is over-provisioned on purpose, and the measurement confirms it**: 350 MB used
+against 1024 MB allocated. The setting buys CPU share, not headroom.
+
+### Gates
+
+**221 tests** (from 220). `lint`, `type-check`, `format:check` clean. Deploy 530 s.
+
+### Teardown — zero residue, including the bucket the fix was for
+
+Measured against the baseline captured before deploying:
+
+| After `cdk destroy --all`      | Result        |
+| ------------------------------ | ------------- |
+| CloudFormation stack           | gone          |
+| Route 53 records               | 20 = baseline |
+| S3 buckets                     | 2 = baseline  |
+| **RDS cluster snapshots**      | **0**         |
+| DynamoDB tables                | 0             |
+| Lambda functions               | 0             |
+| VPCs (non-default)             | 0             |
+| NAT gateways                   | 0             |
+| **Elastic IPs**                | **0**         |
+| Secrets (incl. pending delete) | 0             |
+
+The bucket count returning to baseline is the finding 3 fix confirmed in practice
+rather than in synth: without it the uploads bucket would have kept its `Retain`
+default and survived here.
+
+**The ACM orphan did not accumulate.** The zone stayed at 20, matching slice 3d's
+conclusion that ACM derives the validation token deterministically per domain, so
+repeated deploy/destroy cycles converge on one stray record rather than one per cycle.
+
+### Cold start — where the 8.9 s goes
+
+Measured by running the shipped image locally, so the split is app-level rather than
+inferred from Lambda's single `Init Duration` number:
+
+| Phase                                       | Local (full core) | Share |
+| ------------------------------------------- | ----------------- | ----- |
+| **Module import graph**                     | **2,402 ms**      | 77%   |
+| `createApp()` — i18n, Apollo, cache, routes | 473 ms            | 15%   |
+| OpenAPI generation (87 paths)               | 260 ms            | 8%    |
+
+This agrees with the CloudWatch timeline, where `i18n initialized` to
+`Database connection initialized` was about 250 ms — almost nothing expensive happens
+after the app starts running. The cost is getting there.
+
+**The first invocation reported no `Init Duration` at all**, only 18,975 ms billed,
+while the second reported 8,900 ms. Lambda re-runs init inside the invocation when the
+init phase exceeds its 10 s ceiling and does not report a separate duration, so the
+ceiling was likely crossed on the first call. Image pull is a competing explanation for
+that first invocation and the two have not been isolated.
+
+Ranked candidates, not yet implemented:
+
+1. **Memory 1024 → 1769 MB.** CPU is proportional to memory and 1,769 MB is one full
+   vCPU, against roughly 0.58 today. Only 350 MB is used, so memory here is purely a
+   CPU dial. Roughly cost-neutral: ~1.73x per millisecond against ~40% fewer of them.
+2. **Bundle with esbuild.** Targets the 77%. Its own slice, with before/after numbers.
+3. **Defer OpenAPI generation** to the first `/api-docs` request.
+
+Ruled out: **SnapStart** supports Java, Python and .NET and requires ZIP packaging, not
+container images. **Provisioned concurrency** bills continuously, contradicting the
+premise the target is built on.
+
+## Cold start — first two optimizations
+
+**Date**: 2026-08-30 · Applied after the 4c deploy measured 8.9 s init.
+
+### Deferring OpenAPI generation — measured
+
+`createApp()` generated the 87-path OpenAPI document at boot, for a document read only
+by `/api-docs` and `/api-docs.json`. Now generated on first request and memoized.
+
+Measured by running the shipped image before and after, same probe, three runs each:
+
+| Phase         | Before (ms) | After (ms) |
+| ------------- | ----------- | ---------- |
+| Module import | 2426–2468   | 2435–2454  |
+| `createApp()` | **300–332** | **24–26**  |
+| Total boot    | ~2769       | ~2472      |
+
+`createApp()` is **92% faster**; total local boot falls ~297 ms, about 11%. On Lambda's
+slower core the saving is proportionally larger.
+
+**Import is unchanged**, which is the point worth carrying: it is ~2,445 ms of the
+~2,472 ms that remains, and nothing here touches it. Bundling is the fix for that and
+it is its own slice.
+
+### Memory 1024 → 1769 MB — not yet verified
+
+1,769 MB is where Lambda allocates one full vCPU, against roughly 0.58 at 1 GB. Chosen
+for CPU, not memory: the deploy used 350 MB of the 1024 it had, and 77% of boot is
+CPU-bound module loading. Billing is per GB-millisecond, so a 1.73x rate against a
+proportionally shorter init is close to cost-neutral, and warm invocations get cheaper.
+
+**This cannot be measured locally** — a container gets the host's CPU regardless of the
+Lambda memory setting. It is the one change here whose effect is only observable on the
+next deploy, and it should be checked against the 8.9 s baseline then.

@@ -91,6 +91,27 @@ function initializeOpenApiRegistry() {
 }
 
 /**
+ * The OpenAPI document, generated once per process and then reused.
+ *
+ * Generation walks the whole endpoint registry — 87 paths — and measured 260 ms in the
+ * shipped container on a full CPU core. `createApp()` used to pay that at boot, on
+ * every cold start, for a document most requests never ask for: it is read by
+ * `/api-docs` and `/api-docs.json` and by nothing else.
+ *
+ * That is cheap on a long-running server, which boots once. It is not cheap on Lambda,
+ * where a measured cold start of 8.9 s sits against a 10 s init ceiling — past which
+ * Lambda re-runs init inside the invocation and the caller waits for it.
+ *
+ * The document is immutable once built (the registry is populated by module imports,
+ * not by request state), so caching it is safe and the first caller pays for everyone.
+ */
+let cachedDocument: ReturnType<typeof generateOpenApiDocument> | undefined;
+
+export function getOpenApiDocument(): ReturnType<typeof generateOpenApiDocument> {
+  return (cachedDocument ??= generateOpenApiDocument());
+}
+
+/**
  * Generate the complete OpenAPI document
  */
 export function generateOpenApiDocument() {

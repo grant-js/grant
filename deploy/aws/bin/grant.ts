@@ -118,6 +118,11 @@ function buildPlatform(stack: Stack, cert: ICertificate): void {
   new GrantPlatform(stack, 'Grant', {
     appUrl,
     database: { destroyOnRemoval: ephemeral },
+    // The uploads bucket defaults to Retain, which is right for user data and wrong
+    // for a throwaway environment: teardown would leave a bucket behind and break the
+    // property `ephemeral` exists to provide. The cache table already defaults to
+    // Delete, so only this one needs saying.
+    storage: { destroyOnRemoval: ephemeral },
     dns: {
       // fromHostedZoneAttributes, not fromLookup: a lookup resolves against live
       // account state at synth time and would make the committed template a function

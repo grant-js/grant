@@ -242,9 +242,25 @@ export class GrantPlatform extends Construct {
           securityGroups: [this.databaseClientSecurityGroup],
           timeout: props.migration?.timeout,
           imageIdentifier,
-          // Nothing may migrate before the proxy it connects through and the secret
-          // it reads credentials from both exist.
-          executeAfter: this.proxy ? [this.proxy, this.platformSecret] : [this.platformSecret],
+          // Nothing may migrate before the database it connects to, the proxy it
+          // connects through, and the secret it reads credentials from.
+          //
+          // `this.database` is load-bearing and was missing. The secret depends on
+          // `cluster.clusterEndpoint.hostname`, which is an attribute of the
+          // **DBCluster** — so CloudFormation ordered the trigger after the cluster
+          // and never after the writer instance. An Aurora cluster endpoint has no
+          // DNS record until an instance exists, so the migration resolved a
+          // hostname that was not there yet and failed with ENOTFOUND rather than
+          // with a refused connection.
+          //
+          // Slice 4b passed on scheduling luck: with a smaller resource graph the
+          // writer happened to finish first. Adding the serving function changed the
+          // parallel schedule and the race flipped. Naming the whole construct covers
+          // the instance as well as the cluster, so the ordering no longer depends on
+          // which attribute happens to be referenced.
+          executeAfter: this.proxy
+            ? [this.database, this.proxy, this.platformSecret]
+            : [this.database, this.platformSecret],
         });
       }
 
