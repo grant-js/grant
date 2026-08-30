@@ -111,18 +111,25 @@ export class ApiFunction extends Construct {
       // arbitrary webhook URLs, none of which a VPC endpoint can reach.
       vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
       securityGroups: props.securityGroups,
-      // A CPU dial, not a memory one, and the measurement says so: a live deploy used
-      // 350 MB of the 1024 MB it had. Lambda allocates CPU in proportion to memory and
-      // 1,769 MB is where a function gets one full vCPU, against roughly 0.58 at 1 GB.
+      // 1024, and the number is measured rather than reasoned.
       //
-      // Cold start is what this buys. Boot is CPU-bound — 77% of it is loading the
-      // module graph — and a measured 8.9 s init sits against Lambda's 10 s ceiling,
-      // past which init is re-run inside the invocation and the caller waits for it.
+      // The reasoning said 1769: Lambda allocates CPU in proportion to memory, that is
+      // where a function gets one full vCPU against roughly 0.58 at 1 GB, and 77% of
+      // boot is CPU-bound module loading. It was wrong. A/B on one live deploy, same
+      // image, memory the only variable:
       //
-      // Roughly cost-neutral rather than a trade: billing is per GB-millisecond, so
-      // 1.73x the rate against a proportionally shorter init, and every warm
-      // invocation gets cheaper too.
-      memorySize: props.memorySize ?? 1769,
+      //   1769 MB  ->  INIT_REPORT ... Status: timeout   (10,000 ms ceiling, 13,811 ms billed)
+      //   1024 MB  ->  Init Duration: 7,634 ms           (7,642 ms billed)
+      //
+      // At 1769 the init phase reproducibly exceeds Lambda's 10 s ceiling and is re-run
+      // inside the invocation, so the caller waits for the whole thing twice. At 1024 it
+      // finishes with room to spare. The mechanism is not established — plausibly V8
+      // sizing its heap generations off the larger limit and paying longer GCs during
+      // the module-loading burst — so this is recorded as an observation, not a theory.
+      //
+      // Do not raise this without measuring `INIT_REPORT` afterwards. More memory buys
+      // CPU, and on this workload that did not translate into a faster boot.
+      memorySize: props.memorySize ?? 1024,
       // CloudFront's origin response timeout is 30 seconds by default, so a longer
       // Lambda timeout only buys a 504 at the edge while still being billed.
       timeout: props.timeout ?? Duration.seconds(30),

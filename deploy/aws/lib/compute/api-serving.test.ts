@@ -183,14 +183,15 @@ describe('database connections stay within what Aurora accepts', () => {
     expect(props.ReservedConcurrentExecutions * poolMax).toBeLessThan(100);
   });
 
-  it('allocates a full vCPU, because boot is CPU-bound', () => {
-    // 1,769 MB is the threshold where Lambda gives a function one whole vCPU. The
-    // setting is not about memory — a live deploy used 350 MB — it is about cold
-    // start, 77% of which is loading the module graph. Dropping below this to "save
-    // memory" would buy nothing and cost CPU.
+  it('stays at the memory that measured fastest, not the one that reasons fastest', () => {
+    // 1,769 MB is where Lambda gives a full vCPU, so it should boot faster. Measured
+    // A/B on a live deploy it does the opposite: init hits the 10 s ceiling and is
+    // re-run inside the invocation, billing 13,811 ms, against 7,634 ms at 1024.
+    // Pinned so the appealing-but-wrong value cannot be reintroduced from first
+    // principles without someone re-measuring INIT_REPORT.
     const { template } = build();
     const props = apiFunction(template).Properties as { MemorySize: number };
-    expect(props.MemorySize).toBeGreaterThanOrEqual(1769);
+    expect(props.MemorySize).toBe(1024);
   });
 
   it('lets concurrency be unbounded only when asked explicitly', () => {

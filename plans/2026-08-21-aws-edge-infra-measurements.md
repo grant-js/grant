@@ -905,3 +905,97 @@ proportionally shorter init is close to cost-neutral, and warm invocations get c
 **This cannot be measured locally** — a container gets the host's CPU regardless of the
 Lambda memory setting. It is the one change here whose effect is only observable on the
 next deploy, and it should be checked against the 8.9 s baseline then.
+
+## Slice 4d — the edge routes to the API (deploy)
+
+**Date**: 2026-08-31 · **Domain**: `aws.grantjs.org` · **Context**: `-c ephemeral=true` · Deploy 617 s
+
+First deploy of the secret-guarded origin. Every claim 4d makes was checked against
+real infrastructure rather than inferred from the template.
+
+### The origin design works, in both directions
+
+| Check                                | Result                                      |
+| ------------------------------------ | ------------------------------------------- |
+| Direct request to the Function URL   | **403**, in the _application's_ error shape |
+| `/health` direct                     | **200** — the LWA exemption holds           |
+| `/health` through the edge           | **200**                                     |
+| **POST `/graphql` through the edge** | **200** `{"data":{"__typename":"Query"}}`   |
+| POST with a 4 KB body                | **200** — forwarding intact                 |
+
+The 403 body carries `translationKey`, not AWS's `{"Message":"Forbidden"}`, which is
+the evidence that `originVerifyMiddleware` refused it rather than IAM. The dynamic
+reference in the origin custom header resolved correctly — a literal
+`{{resolve:…}}` would have failed here.
+
+**The GraphQL POST is the finding that justifies the architecture change.** It is
+precisely what OAC could not have carried without the browser computing
+`x-amz-content-sha256`.
+
+### The rate-limiter bypass is closed in production
+
+Sent a request through the edge carrying `X-Forwarded-For: 1.2.3.4`, then read the
+rate-limiter's own DynamoDB keys:
+
+```
+global:87.171.69.148   <- the real client address
+global:64.89.160.19
+```
+
+The spoofed value is **absent**. Verified by reading what the limiter actually keyed
+on, not by inspecting logs — an earlier attempt to check via CloudWatch found neither
+address and proved nothing.
+
+### Finding — more memory made the cold start worse
+
+The 1769 MB default shipped unverified in #363 on the reasoning that Lambda allocates
+CPU in proportion to memory, 1,769 MB buys a full vCPU against roughly 0.58 at 1 GB,
+and 77% of boot is CPU-bound module loading. **That reasoning did not hold.**
+
+A/B on one live deploy, same image, memory the only variable:
+
+| Memory  | Init                                         | Billed        |
+| ------- | -------------------------------------------- | ------------- |
+| 1769 MB | `INIT_REPORT … 10000.06 ms, Status: timeout` | **13,811 ms** |
+| 1024 MB | `Init Duration: 7,633.66 ms`                 | **7,642 ms**  |
+
+At 1769 the init phase reproducibly exceeds Lambda's 10 s ceiling and is re-run inside
+the invocation, so the caller waits for boot twice. At 1024 it finishes with room.
+
+Reverted to 1024 and pinned by a test, so the appealing-but-wrong value cannot be
+reintroduced from first principles without re-measuring `INIT_REPORT`. **The mechanism
+is not established** — plausibly V8 sizing its heap generations off the larger limit
+and paying longer GCs during the module-loading burst — and is recorded as an
+observation rather than dressed up as a theory.
+
+Evidence strength, stated plainly: the 1769 timeout was observed three times; the 1024
+figure is one clean sample from this deploy, corroborated by the previous deploy's
+8,900 ms (also under the ceiling). A follow-up A/B loop failed to force fresh execution
+environments and produced nothing, so it is not counted.
+
+**The OpenAPI deferral is confirmed good**: 8,900 ms → 7,634 ms at the same 1024 MB.
+That half of #363 earned its place.
+
+### Teardown — zero residue
+
+| After `cdk destroy --all`         | Result        |
+| --------------------------------- | ------------- |
+| CloudFormation stack              | gone          |
+| Route 53 records                  | 20 = baseline |
+| S3 buckets                        | 2 = baseline  |
+| DynamoDB / Lambda                 | 0 / 0         |
+| RDS clusters / manual snapshots   | 0 / 0         |
+| VPCs / NAT gateways / Elastic IPs | 0 / 0 / 0     |
+| Secrets (incl. pending delete)    | 0             |
+
+### Gap — the AWS target has no values file
+
+`config/defaults.ts` sets the bar itself: "The Helm chart's equivalent is the `config:`
+block in `values.yaml`. Parity with it is an acceptance criterion: an adopter should
+not have to read source to learn which settings this target needs."
+
+They currently do. `charts/grant-platform/values.yaml` is 339 documented lines; the CDK
+equivalent is `cdk.json` holding two availability-zone entries, seven `-c` flags, and
+TypeScript. `app.node.tryGetContext()` already reads `cdk.json`'s `context` block, so
+the keys could move there with no change to `bin/grant.ts` and flags still overriding.
+Not attempted — recorded as its own piece of work.

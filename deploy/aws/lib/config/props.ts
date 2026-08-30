@@ -228,13 +228,16 @@ interface ApiProps {
   readonly image?: DockerImageCode;
 
   /**
-   * Memory, which on Lambda also sets the CPU share. Defaults to **1769 MB**, the
-   * point at which a function gets one full vCPU.
+   * Memory, which on Lambda also sets the CPU share. Defaults to **1024 MB**.
    *
-   * Chosen for CPU rather than memory: a live deploy used 350 MB. Boot is CPU-bound,
-   * and a measured 8.9 s cold start sits against Lambda's 10 s init ceiling. Billing
-   * is per GB-millisecond, so a higher rate against a shorter init is close to
-   * cost-neutral.
+   * Not the obvious choice, and measured rather than reasoned. 1,769 MB is where a
+   * function gets one full vCPU, so it should boot faster — on this workload it does
+   * the opposite. A/B on a live deploy with the image fixed: at 1769 the init phase
+   * hits Lambda's 10 s ceiling and is re-run inside the invocation (13,811 ms billed);
+   * at 1024 it completes in 7,634 ms.
+   *
+   * Raising this is reasonable to try, but verify `INIT_REPORT` afterwards rather than
+   * assuming more CPU means a faster cold start.
    */
   readonly memorySize?: number;
 

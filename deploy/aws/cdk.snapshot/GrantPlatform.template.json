@@ -1829,7 +1829,7 @@
             "Ref": "GrantApiLogs7DBA426F"
           }
         },
-        "MemorySize": 1769,
+        "MemorySize": 1024,
         "PackageType": "Image",
         "ReservedConcurrentExecutions": 20,
         "Role": {
