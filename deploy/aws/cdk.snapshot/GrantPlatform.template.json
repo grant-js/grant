@@ -1286,7 +1286,7 @@
         "aws:cdk:path": "GrantPlatform/Grant/MigrateTrigger/Runner/LogRetention/Resource"
       }
     },
-    "GrantMigrateTriggerRunnerCurrentVersion8D49C7F141463f5cc0585d972bcf1df25006292e": {
+    "GrantMigrateTriggerRunnerCurrentVersion8D49C7F1<version-hash>": {
       "Type": "AWS::Lambda::Version",
       "Properties": {
         "FunctionName": {
@@ -1308,7 +1308,7 @@
           ]
         },
         "HandlerArn": {
-          "Ref": "GrantMigrateTriggerRunnerCurrentVersion8D49C7F141463f5cc0585d972bcf1df25006292e"
+          "Ref": "GrantMigrateTriggerRunnerCurrentVersion8D49C7F1<version-hash>"
         },
         "InvocationType": "RequestResponse",
         "Timeout": "120000",

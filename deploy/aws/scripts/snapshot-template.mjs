@@ -43,12 +43,27 @@ if (templates.length === 0) {
  */
 const ASSET_HASH = /\b[0-9a-f]{64}\b/g;
 
+/**
+ * A Lambda `AWS::Lambda::Version` logical ID ends in a 32-hex digest of the function's
+ * configuration, so it moves whenever that configuration does. The migrate trigger
+ * carries `IMAGE_IDENTIFIER`, which is the image asset hash, which is a function of the
+ * whole build context — so an unrelated file anywhere in the workspace changes this ID
+ * and `synth:check` reports drift on a template that is structurally identical.
+ *
+ * Normalized for the same reason asset hashes are: this file is evidence about
+ * *structure* — which resources exist and how they reference each other — not about
+ * which bytes happened to be on disk during a given synth.
+ */
+const VERSION_LOGICAL_ID = /(CurrentVersion[0-9A-Fa-f]{8})[0-9a-f]{32}\b/g;
+
 mkdirSync(snapshotDir, { recursive: true });
 for (const name of templates) {
   // Reformat so a semantically identical template produces an identical file, and
   // so the committed artifact is readable in a diff.
   const template = JSON.parse(readFileSync(join(outDir, name), 'utf8'));
-  const normalized = JSON.stringify(template, null, 2).replace(ASSET_HASH, '<asset-hash>');
+  const normalized = JSON.stringify(template, null, 2)
+    .replace(ASSET_HASH, '<asset-hash>')
+    .replace(VERSION_LOGICAL_ID, '$1<version-hash>');
   writeFileSync(join(snapshotDir, name), `${normalized}\n`);
 }
 
