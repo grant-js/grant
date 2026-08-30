@@ -50,3 +50,11 @@ e2e
 # CDK synth output, including staged assets from a previous run.
 cdk.out
 **/cdk.out
+
+# The committed CDK template, which `pnpm synth` rewrites. It lives inside the build
+# context, so leaving it here makes the image asset hash a function of the previous
+# synth's output: each run rewrites the snapshot, which changes the context, which
+# changes the asset hash, which changes the migrate trigger's IMAGE_IDENTIFIER and the
+# Lambda Version logical ID derived from it. `synth:check` then reports drift forever.
+cdk.snapshot
+**/cdk.snapshot

@@ -13,7 +13,13 @@
  */
 
 import { Duration } from 'aws-cdk-lib';
-import { type ISecurityGroup, type IVpc, Port, SecurityGroup, SubnetType } from 'aws-cdk-lib/aws-ec2';
+import {
+  type ISecurityGroup,
+  type IVpc,
+  Port,
+  SecurityGroup,
+  SubnetType,
+} from 'aws-cdk-lib/aws-ec2';
 import { type DatabaseCluster, DatabaseProxy, ProxyTarget } from 'aws-cdk-lib/aws-rds';
 import type { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
