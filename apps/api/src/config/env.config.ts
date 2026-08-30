@@ -349,6 +349,16 @@ const SECURITY_CONFIG = {
   /** Enable Helmet security headers */
   enableHelmet: env.SECURITY_ENABLE_HELMET,
 
+  /**
+   * Header naming the real client IP. Empty keeps the historical `x-forwarded-for`
+   * handling; see `getClientIp` for why an edge-set header is not interchangeable
+   * with it.
+   */
+  trustedClientIpHeader: env.SECURITY_TRUSTED_CLIENT_IP_HEADER.trim().toLowerCase(),
+
+  /** Header carrying the CDN's shared secret. Enforced only when a secret resolves. */
+  originVerifyHeader: env.SECURITY_ORIGIN_VERIFY_HEADER.trim().toLowerCase(),
+
   /** Enable rate limiting (default: true in production when not set) */
   enableRateLimit: env.SECURITY_ENABLE_RATE_LIMIT ?? APP_CONFIG.isProduction,
 

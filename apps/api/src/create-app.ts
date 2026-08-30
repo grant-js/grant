@@ -51,9 +51,10 @@ import { CacheFactory, type IEntityCacheAdapter } from '@/lib/cache';
 import { formatGraphQLError } from '@/lib/errors';
 import { logger, loggerFactory } from '@/lib/logger';
 import { metricsHandler, metricsMiddleware } from '@/lib/metrics';
-import { resolveDatabaseConnectionString } from '@/lib/secrets';
+import { resolveDatabaseConnectionString, secretResolver } from '@/lib/secrets';
 import { contextMiddleware } from '@/middleware/context.middleware';
 import { errorHandler } from '@/middleware/error.middleware';
+import { originVerifyMiddleware } from '@/middleware/origin-verify.middleware';
 import { rateLimitMiddleware } from '@/middleware/rate-limit.middleware';
 import { requestLoggingMiddleware } from '@/middleware/request-logging.middleware';
 import { storageMiddleware } from '@/middleware/storage.middleware';
@@ -150,6 +151,12 @@ export async function createApp(): Promise<CreatedApp> {
     },
     loggerFactory
   );
+
+  // First, ahead of every other middleware. A request that did not come through the
+  // CDN should be refused before it can consume a database connection, a cache slot or
+  // a rate-limit bucket. No-op unless a secret is configured, which is every target
+  // except AWS.
+  app.use(originVerifyMiddleware(secretResolver));
 
   app.use(cors<cors.CorsRequest>(config.cors));
   app.use(helmet(config.helmet));
