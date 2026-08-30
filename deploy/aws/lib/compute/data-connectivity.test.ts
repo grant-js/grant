@@ -15,16 +15,7 @@ import { describe, expect, it } from 'vitest';
 
 import { GrantPlatform } from '../grant-platform';
 
-/**
- * `buildImageFromSource` is off by default. The default path builds a
- * `DockerImageAsset`, which fingerprints the entire repository at synth time — no
- * `docker build` runs, but the hash walk still costs seconds per synth and would
- * dominate this suite. One case below exercises it; the rest supply an image.
- */
-function build(
-  migration?: { enabled?: boolean },
-  options: { buildImageFromSource?: boolean } = {}
-) {
+function build(migration?: { enabled?: boolean }, options: { proxy?: boolean } = {}) {
   const app = new App();
   const stack = new Stack(app, 'TestStack', {
     env: { account: '123456789012', region: 'eu-central-1' },
@@ -44,21 +35,49 @@ function build(
         'arn:aws:acm:us-east-1:123456789012:certificate/abc-123'
       ),
     },
-    database: {},
-    migration: options.buildImageFromSource
-      ? migration
-      : {
-          image: ContainerImage.fromRegistry('grant/api:test'),
-          imageIdentifier: 'test-image',
-          ...migration,
-        },
+    database: { proxy: { enabled: options.proxy ?? false } },
+    // Always a registry image: see the note below on why the built-from-source path
+    // is covered by the committed template rather than here.
+    migration: {
+      image: ContainerImage.fromRegistry('grant/api:test'),
+      imageIdentifier: 'test-image',
+      ...migration,
+    },
   });
   return { template: Template.fromStack(stack), platform };
 }
 
-describe('connections go through the proxy', () => {
-  it('creates a proxy that requires TLS', () => {
+describe('pooling is opt-in because it forfeits auto-pause', () => {
+  it('creates no proxy by default', () => {
+    // Measured, not assumed: a proxy holds a persistent pool, and Aurora cannot
+    // auto-pause while any connection exists. A live deploy sat at 0.5 ACU with four
+    // held connections across forty idle minutes — about $58/month to keep
+    // connections warm for traffic a green-field deploy does not have.
+    const { template, platform } = build();
+    template.resourceCountIs('AWS::RDS::DBProxy', 0);
+    expect(platform.proxy).toBeUndefined();
+  });
+
+  it('lets clients reach the cluster directly when pooling is off', () => {
+    // Something still has to be allowed in, or the migration cannot connect at all.
     const { template } = build();
+    template.hasResourceProperties('AWS::EC2::SecurityGroupIngress', {
+      Description: 'Grant database clients',
+      IpProtocol: 'tcp',
+    });
+  });
+
+  it('points DB_URL at the cluster when pooling is off, and the proxy when on', () => {
+    const direct = JSON.stringify(build().template.findResources('AWS::SecretsManager::Secret'));
+    expect(direct).toMatch(/Endpoint\.Address/);
+
+    const pooled = build(undefined, { proxy: true });
+    pooled.template.resourceCountIs('AWS::RDS::DBProxy', 1);
+    expect(pooled.platform.proxy).toBeDefined();
+  });
+
+  it('creates a proxy that requires TLS', () => {
+    const { template } = build(undefined, { proxy: true });
     template.hasResourceProperties('AWS::RDS::DBProxy', {
       RequireTLS: true,
       EngineFamily: 'POSTGRESQL',
@@ -66,7 +85,7 @@ describe('connections go through the proxy', () => {
   });
 
   it('places the proxy in isolated subnets, not with the internet-facing tier', () => {
-    const { template, platform } = build();
+    const { template, platform } = build(undefined, { proxy: true });
     expect(platform.proxy).toBeDefined();
     // Two isolated subnets exist; the proxy names both.
     template.hasResourceProperties('AWS::RDS::DBProxy', {
@@ -77,7 +96,7 @@ describe('connections go through the proxy', () => {
   it('reaches the proxy by security group, not by CIDR', () => {
     // A CIDR allowance widens silently as subnets are added; naming the client group
     // keeps the permission attached to identity.
-    const { template } = build();
+    const { template } = build(undefined, { proxy: true });
     template.hasResourceProperties('AWS::EC2::SecurityGroupIngress', {
       SourceSecurityGroupId: Match.anyValue(),
       IpProtocol: 'tcp',
@@ -125,6 +144,57 @@ describe('the migration runs at deploy and can fail the deploy', () => {
     });
   });
 
+  it('injects DB_URL from the secret rather than the environment', () => {
+    // Nothing hydrates process.env from ISecretResolver: migrate.ts reads
+    // config.db.url, derived from the environment at import. A DB_URL living only
+    // inside the secret is one the migration cannot see. ECS fetches it at task start.
+    const { template } = build();
+    template.hasResourceProperties('AWS::ECS::TaskDefinition', {
+      ContainerDefinitions: Match.arrayWith([
+        Match.objectLike({
+          Secrets: Match.arrayWith([Match.objectLike({ Name: 'DB_URL' })]),
+        }),
+      ]),
+    });
+    // And never as a plain environment entry, which would put it in the template.
+    const rendered = JSON.stringify(template.findResources('AWS::ECS::TaskDefinition'));
+    expect(rendered).not.toMatch(/"Name":\s*"DB_URL",\s*"Value"/);
+  });
+
+  it('sets the production-required URL environment from appUrl', () => {
+    // SECURITY_FRONTEND_URL is required once NODE_ENV is production, which the AWS
+    // defaults set. Omitting it fails config validation before the database is touched.
+    const { template } = build();
+    template.hasResourceProperties('AWS::ECS::TaskDefinition', {
+      ContainerDefinitions: Match.arrayWith([
+        Match.objectLike({
+          Environment: Match.arrayWith([
+            Match.objectLike({
+              Name: 'SECURITY_FRONTEND_URL',
+              Value: 'https://grant.example.com',
+            }),
+          ]),
+        }),
+      ]),
+    });
+  });
+
+  it('does not ask the migration for storage credentials it never uses', () => {
+    // validateConfig() validates the whole surface regardless of entrypoint, so
+    // STORAGE_PROVIDER=s3 would demand a bucket and static keys from a task that
+    // opens neither.
+    const { template } = build();
+    template.hasResourceProperties('AWS::ECS::TaskDefinition', {
+      ContainerDefinitions: Match.arrayWith([
+        Match.objectLike({
+          Environment: Match.arrayWith([
+            Match.objectLike({ Name: 'STORAGE_PROVIDER', Value: 'local' }),
+          ]),
+        }),
+      ]),
+    });
+  });
+
   it('is omitted when disabled', () => {
     const { template, platform } = build({ enabled: false });
     expect(platform.migrateTask).toBeUndefined();
@@ -139,21 +209,14 @@ describe('the migration runs at deploy and can fail the deploy', () => {
     expect(policies).not.toMatch(/secretsmanager:PutSecretValue/);
   });
 
-  it('builds the image from source when none is supplied', () => {
-    // The default path an adopter gets on a first deploy: nothing pre-published, so
-    // the stack builds from the workspace. The asset's own content hash then becomes
-    // the signal that re-arms the migration on a later deploy.
-    const { template } = build(undefined, { buildImageFromSource: true });
-    const runners = template.findResources('AWS::Lambda::Function', {
-      Properties: { Environment: { Variables: { IMAGE_IDENTIFIER: Match.anyValue() } } },
-    });
-    expect(Object.keys(runners)).toHaveLength(1);
-    const identifier = Object.values(runners)[0].Properties.Environment.Variables
-      .IMAGE_IDENTIFIER as string;
-    // A content hash, not the 'caller-supplied' sentinel.
-    expect(identifier).not.toBe('caller-supplied');
-    expect(identifier).toMatch(/^[0-9a-f]{16,}$/);
-  });
+  // The built-from-source path is deliberately NOT exercised here. Constructing a
+  // DockerImageAsset fingerprints the build context, and doing it inside the suite cost
+  // 282 s in one measured run — longer than every other test combined. The committed
+  // template covers it on the real asset instead: `cdk.snapshot` records
+  // `IMAGE_IDENTIFIER: <asset-hash>`, normalized by the snapshot script from a 64-hex
+  // content hash, which is exactly the assertion this test would have made — that the
+  // default path yields a hash rather than the 'caller-supplied' sentinel. `synth:check`
+  // runs it on every build, so the coverage is stronger than a unit test, not weaker.
 
   it('scopes ecs:RunTask to the cluster rather than to *', () => {
     const { template } = build();

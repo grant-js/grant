@@ -72,6 +72,41 @@ for any key the payload omits, so enabling it with an empty secret behaves exact
 blocker 6 from the stack plan: the frozen `getEnv()` cache no longer pins secret values
 for the life of the process, because secret values no longer pass through it.
 
+## Correction — 2026-08-30
+
+**The decision stands; one supporting claim in Consequences is wrong.** Recorded here
+rather than edited in place, per `decisions/README.md`: the record is the history, not
+the current state.
+
+Consequences says `STORAGE_S3_*`, `CACHE_DYNAMODB_*` and `JOBS_AWS_*` "are already
+documented as intentionally blank so the execution role supplies them", citing
+`packages/@grantjs/env/src/schema.ts:132-134`. That is true of two of the three
+families and false of the one the citation does not cover:
+
+| Family             | Comment in schema              | Required by `validateConfig()` |
+| ------------------ | ------------------------------ | ------------------------------ |
+| `CACHE_DYNAMODB_*` | yes — `schema.ts:132-134`      | no                             |
+| `JOBS_AWS_*`       | yes — `schema.ts:307-309`      | no                             |
+| `STORAGE_S3_*`     | **none** — `schema.ts:278-283` | **yes** — bucket and both keys |
+
+`apps/api/src/config/env.config.ts:973-981` requires `STORAGE_S3_BUCKET`,
+`STORAGE_S3_ACCESS_KEY_ID` and `STORAGE_S3_SECRET_ACCESS_KEY` whenever
+`STORAGE_PROVIDER=s3` — which the AWS target sets by default, because a Lambda
+filesystem is ephemeral. So the target demands static IAM user keys on precisely the
+runtime where the task or function role should supply credentials instead.
+
+Found by deploying, not by reading: phase C slice 4b's migrate task exited 1 on config
+validation before it reached the database
+(`plans/2026-08-21-aws-edge-infra-measurements.md`, slice 4b). Reading this ADR would
+lead you to conclude S3 was already handled, which is why the error is worth recording
+against it rather than only in the slice that found it.
+
+The migration works around it by declaring `STORAGE_PROVIDER=local`, which is honest
+for an entrypoint that opens no object storage. **The serving function cannot**, and is
+blocked on making the S3 static credentials optional so the default credential chain
+applies — the pattern `CACHE_DYNAMODB_*` and `JOBS_AWS_*` already follow. That change
+is a new decision if it needs one; this note only corrects the record.
+
 ## Notes for the security review
 
 - `GITHUB_CLIENT_SECRET` was previously used to construct an `Octokit` instance in the

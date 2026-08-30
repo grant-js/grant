@@ -23,6 +23,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { CfnOutput, Stack } from 'aws-cdk-lib';
+import { SecurityGroup } from 'aws-cdk-lib/aws-ec2';
 import { AaaaRecord, ARecord, RecordTarget } from 'aws-cdk-lib/aws-route53';
 import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
 import { Construct } from 'constructs';
@@ -64,7 +65,11 @@ export class GrantPlatform extends Construct {
   /** Present only when the data tier was requested. */
   public readonly network?: Network;
   public readonly database?: Database;
+  /** Present only when pooling was explicitly enabled. See the note at its creation. */
   public readonly proxy?: DatabaseConnectionProxy;
+
+  /** Everything permitted to open a database connection wears this. */
+  public readonly databaseClientSecurityGroup?: SecurityGroup;
   public readonly platformSecret?: PlatformSecret;
 
   /** Present only when the data tier was requested and migration is enabled. */
@@ -80,7 +85,17 @@ export class GrantPlatform extends Construct {
 
     this.hostname = hostname;
     // Caller last: an adopter overriding a default must win over this file's opinion.
-    this.env = { ...AWS_TARGET_ENV_DEFAULTS, ...props.env };
+    // The URL-shaped values are derived rather than defaulted, because the defaults in
+    // `@grantjs/env` are localhost and `SECURITY_FRONTEND_URL` is *required* once
+    // NODE_ENV is production — which the AWS defaults set. A deploy that omitted them
+    // would fail config validation before it touched anything.
+    this.env = {
+      ...AWS_TARGET_ENV_DEFAULTS,
+      APP_URL: props.appUrl,
+      SECURITY_FRONTEND_URL: props.appUrl,
+      DOCS_URL: `${props.appUrl}/docs`,
+      ...props.env,
+    };
     this.behaviours = [...toCloudFrontBehaviours(), ...ASSET_BEHAVIOURS];
 
     // CloudFront is global; only the certificate it serves is pinned to us-east-1.
@@ -111,21 +126,49 @@ export class GrantPlatform extends Construct {
         destroyOnRemoval: props.database.destroyOnRemoval,
       });
 
-      // The proxy, not the cluster, is what anything else connects to: Lambda
-      // concurrency multiplied by a per-environment pool exhausts a database sized
-      // for this target's cost floor.
-      this.proxy = new DatabaseConnectionProxy(this, 'Proxy', {
+      // One group names everything allowed to open a database connection, whether it
+      // reaches the cluster directly or through the proxy. Identity, not CIDR: a CIDR
+      // allowance widens silently as subnets are added.
+      this.databaseClientSecurityGroup = new SecurityGroup(this, 'DatabaseClients', {
         vpc: this.network.vpc,
-        cluster: this.database.cluster,
-        secret: this.database.secret,
+        description: 'Permitted to open Grant database connections',
+        allowAllOutbound: true,
       });
+
+      // Off by default, and the reason is measured rather than assumed. A proxy holds
+      // a persistent pool to the cluster, and Aurora cannot auto-pause while any
+      // connection exists — so enabling it forfeits the `serverlessV2MinCapacity: 0`
+      // that this target's cost model is built on. Measured on a live deploy: 0.5 ACU
+      // and four held connections, flat across forty idle minutes, versus a cluster
+      // that otherwise pauses to zero. That is roughly $58/month to keep connections
+      // warm for traffic a green-field deploy does not have yet.
+      //
+      // Turn it on when Lambda concurrency is real: without pooling, each warm
+      // execution environment holds its own connections and a burst exhausts
+      // `max_connections`. The trade is cheap idle against tolerance for concurrency,
+      // and it cannot be had both ways.
+      if (props.database.proxy?.enabled ?? false) {
+        this.proxy = new DatabaseConnectionProxy(this, 'Proxy', {
+          vpc: this.network.vpc,
+          cluster: this.database.cluster,
+          secret: this.database.secret,
+          clientSecurityGroup: this.databaseClientSecurityGroup,
+          requireTls: props.database.proxy?.requireTls,
+        });
+      } else {
+        this.database.cluster.connections.allowDefaultPortFrom(
+          this.databaseClientSecurityGroup,
+          'Grant database clients'
+        );
+      }
 
       // Two secrets, two shapes. The cluster's is RDS-shaped and only the proxy reads
       // it; this one is the flat ENV_NAME:value object the application's resolver
       // requires. See PlatformSecret.
       this.platformSecret = new PlatformSecret(this, 'PlatformSecret', {
         databaseCredentials: this.database.secret,
-        host: this.proxy.proxy.endpoint,
+        // The proxy when there is one, the cluster writer otherwise.
+        host: this.proxy?.proxy.endpoint ?? this.database.cluster.clusterEndpoint.hostname,
         port: this.database.cluster.clusterEndpoint.port,
         databaseName: this.database.databaseName,
       });
@@ -145,12 +188,22 @@ export class GrantPlatform extends Construct {
         this.migrateTask = new MigrateTask(this, 'Migrate', {
           vpc: this.network.vpc,
           image,
-          securityGroups: [this.proxy.clientSecurityGroup],
+          securityGroups: [this.databaseClientSecurityGroup],
           platformSecret: this.platformSecret.secret,
           environment: {
             ...this.env,
             SECRETS_AWS_SECRET_ID: this.platformSecret.secret.secretName,
             SECRETS_AWS_REGION: Stack.of(this).region,
+            // A migration touches no object storage, and `validateConfig()` validates
+            // the whole surface regardless of what the entrypoint uses — demanding a
+            // bucket and static S3 keys for a task that opens neither. Declaring the
+            // provider it actually uses is the honest configuration, not a workaround.
+            //
+            // The serving function in 4c does need S3, and cannot do this. It is
+            // blocked on making the static keys optional so the task role's default
+            // credential chain applies — which is what CACHE_DYNAMODB_* already does
+            // (`apps/api/src/config/env.config.ts:270`) and what S3 does not.
+            STORAGE_PROVIDER: 'local',
           },
           cluster: props.migration?.cluster,
         });
@@ -158,12 +211,12 @@ export class GrantPlatform extends Construct {
         new MigrateTrigger(this, 'MigrateTrigger', {
           vpc: this.network.vpc,
           task: this.migrateTask,
-          securityGroups: [this.proxy.clientSecurityGroup],
+          securityGroups: [this.databaseClientSecurityGroup],
           timeout: props.migration?.timeout,
           imageIdentifier,
           // Nothing may migrate before the proxy it connects through and the secret
           // it reads credentials from both exist.
-          executeAfter: [this.proxy, this.platformSecret],
+          executeAfter: this.proxy ? [this.proxy, this.platformSecret] : [this.platformSecret],
         });
       }
 
@@ -173,10 +226,12 @@ export class GrantPlatform extends Construct {
           'Set SECRETS_AWS_SECRET_ID to this; credentials are resolved per use, never inlined.',
       });
 
-      new CfnOutput(this, 'DatabaseProxyEndpoint', {
-        value: this.proxy.proxy.endpoint,
-        description: 'Pooled Postgres endpoint. Nothing should connect to the cluster directly.',
-      });
+      if (this.proxy) {
+        new CfnOutput(this, 'DatabaseProxyEndpoint', {
+          value: this.proxy.proxy.endpoint,
+          description: 'Pooled Postgres endpoint. Nothing should connect to the cluster directly.',
+        });
+      }
     }
 
     this.docs = new DocsSite(this, 'Docs', {

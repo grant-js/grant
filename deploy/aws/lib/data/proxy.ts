@@ -13,7 +13,7 @@
  */
 
 import { Duration } from 'aws-cdk-lib';
-import { type IVpc, Port, SecurityGroup, SubnetType } from 'aws-cdk-lib/aws-ec2';
+import { type ISecurityGroup, type IVpc, Port, SecurityGroup, SubnetType } from 'aws-cdk-lib/aws-ec2';
 import { type DatabaseCluster, DatabaseProxy, ProxyTarget } from 'aws-cdk-lib/aws-rds';
 import type { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
@@ -33,25 +33,27 @@ export interface DatabaseProxyProps {
    * a handshake per pooled connection rather than per request.
    */
   readonly requireTls?: boolean;
+
+  /**
+   * Group whose members may reach the proxy.
+   *
+   * Supplied by the caller because the same group must reach the *cluster* directly
+   * when the proxy is disabled — so ownership of "things allowed to talk to the
+   * database" cannot live inside the proxy.
+   */
+  readonly clientSecurityGroup: ISecurityGroup;
 }
 
 export class DatabaseConnectionProxy extends Construct {
   public readonly proxy: DatabaseProxy;
 
   /** Attach this to anything that should be allowed to reach the proxy. */
-  public readonly clientSecurityGroup: SecurityGroup;
+  public readonly clientSecurityGroup: ISecurityGroup;
 
   constructor(scope: Construct, id: string, props: DatabaseProxyProps) {
     super(scope, id);
 
-    // A dedicated group with no ingress rules of its own: it exists to be a *source*
-    // the proxy's group can name. That keeps the allowance tied to identity — "things
-    // wearing this group" — rather than to a CIDR that widens as subnets are added.
-    this.clientSecurityGroup = new SecurityGroup(this, 'ClientSecurityGroup', {
-      vpc: props.vpc,
-      description: 'Clients permitted to reach the RDS proxy',
-      allowAllOutbound: true,
-    });
+    this.clientSecurityGroup = props.clientSecurityGroup;
 
     const proxySecurityGroup = new SecurityGroup(this, 'ProxySecurityGroup', {
       vpc: props.vpc,

@@ -355,6 +355,12 @@ Recorded in `decisions/0004-secret-resolution-through-a-port.md`.
   `GITHUB_CLIENT_SECRET`. `STORAGE_S3_*`, `CACHE_DYNAMODB_*` and `JOBS_AWS_*` already
   document themselves as intentionally blank so the execution role supplies them
   (`env/src/schema.ts:132-134`), so they need nothing.
+  - **Corrected 2026-08-30.** True of `CACHE_DYNAMODB_*` and `JOBS_AWS_*`; false of
+    `STORAGE_S3_*`, which carries no such comment (`env/src/schema.ts:278-283`) and is
+    _required_ by `validateConfig()` when `STORAGE_PROVIDER=s3`
+    (`apps/api/src/config/env.config.ts:973-981`). Phase C slice 4b's migrate task
+    failed on it. See the correction in
+    [ADR 0004](../decisions/0004-secret-resolution-through-a-port.md).
 - **Blocker 6 resolved** (rotation vs. container-scoped `getEnv()` caching): secret
   values no longer pass through `getEnv()` at all. Rotation window is
   `SECRETS_CACHE_TTL_SECONDS`, default 300.

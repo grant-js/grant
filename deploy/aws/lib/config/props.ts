@@ -99,6 +99,33 @@ interface MigrationProps {
   readonly imageIdentifier?: string;
 }
 
+/**
+ * Connection pooling in front of the cluster.
+ *
+ * **Off by default, on a measurement rather than a preference.** RDS Proxy holds a
+ * persistent pool to the database, and Aurora Serverless v2 cannot auto-pause while
+ * any connection exists — so enabling it forfeits the `minCapacity: 0` this target's
+ * cost model rests on. A live deploy measured 0.5 ACU and four held connections, flat
+ * across forty idle minutes, where the cluster otherwise pauses to zero: roughly
+ * $58/month to keep connections warm.
+ *
+ * Enable it when Lambda concurrency is real. Without pooling every warm execution
+ * environment holds its own connections and a burst exhausts `max_connections`. Cheap
+ * idle and warm connections are mutually exclusive; this is where you choose.
+ */
+interface DatabaseProxyProps {
+  readonly enabled?: boolean;
+
+  /**
+   * Require TLS between client and proxy. Defaults to true.
+   *
+   * Note this is TLS to the *proxy*; `sslmode=require` in the composed `DB_URL`
+   * encrypts without verifying the server certificate, because the image carries no
+   * RDS CA bundle.
+   */
+  readonly requireTls?: boolean;
+}
+
 /** The database. Omit entirely to bring your own via `DB_URL` in `env`. */
 interface DatabaseProps {
   /** Minimum Aurora capacity units. `0` auto-pauses an idle cluster to no cost. */
@@ -113,6 +140,9 @@ interface DatabaseProps {
    * storage-billed snapshot that survives `cdk destroy` unnoticed.
    */
   readonly destroyOnRemoval?: boolean;
+
+  /** Connection pooling. Off by default — see `DatabaseProxyProps`. */
+  readonly proxy?: DatabaseProxyProps;
 }
 
 /** DNS. Always referenced, never created — a zone needs nameserver re-delegation CDK cannot perform. */

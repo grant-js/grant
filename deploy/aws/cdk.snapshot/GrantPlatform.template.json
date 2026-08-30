@@ -547,10 +547,10 @@
         "aws:cdk:path": "GrantPlatform/Grant/Database/Cluster/SecurityGroup/Resource"
       }
     },
-    "GrantDatabaseClusterSecurityGroupfromGrantPlatformGrantProxyProxySecurityGroupD9149626IndirectPortE82AA564": {
+    "GrantDatabaseClusterSecurityGroupfromGrantPlatformGrantDatabaseClients1ABF8663IndirectPort087B05F2": {
       "Type": "AWS::EC2::SecurityGroupIngress",
       "Properties": {
-        "Description": "Allow connections to the database Cluster from the Proxy",
+        "Description": "Grant database clients",
         "FromPort": {
           "Fn::GetAtt": [
             "GrantDatabaseCluster299E828E",
@@ -566,7 +566,7 @@
         "IpProtocol": "tcp",
         "SourceSecurityGroupId": {
           "Fn::GetAtt": [
-            "GrantProxyProxySecurityGroup4C0037FB",
+            "GrantDatabaseClientsEC63EC18",
             "GroupId"
           ]
         },
@@ -578,7 +578,7 @@
         }
       },
       "Metadata": {
-        "aws:cdk:path": "GrantPlatform/Grant/Database/Cluster/SecurityGroup/from GrantPlatformGrantProxyProxySecurityGroupD9149626:{IndirectPort}"
+        "aws:cdk:path": "GrantPlatform/Grant/Database/Cluster/SecurityGroup/from GrantPlatformGrantDatabaseClients1ABF8663:{IndirectPort}"
       }
     },
     "GrantPlatformGrantDatabaseClusterSecretA1048C1A3fdaad7efa858a3daf9490cf0a702aeb": {
@@ -692,10 +692,10 @@
         "aws:cdk:path": "GrantPlatform/Grant/Database/Cluster/Writer/Resource"
       }
     },
-    "GrantProxyClientSecurityGroup2B0C4F81": {
+    "GrantDatabaseClientsEC63EC18": {
       "Type": "AWS::EC2::SecurityGroup",
       "Properties": {
-        "GroupDescription": "Clients permitted to reach the RDS proxy",
+        "GroupDescription": "Permitted to open Grant database connections",
         "SecurityGroupEgress": [
           {
             "CidrIp": "0.0.0.0/0",
@@ -708,176 +708,7 @@
         }
       },
       "Metadata": {
-        "aws:cdk:path": "GrantPlatform/Grant/Proxy/ClientSecurityGroup/Resource"
-      }
-    },
-    "GrantProxyProxySecurityGroup4C0037FB": {
-      "Type": "AWS::EC2::SecurityGroup",
-      "Properties": {
-        "GroupDescription": "RDS proxy",
-        "SecurityGroupEgress": [
-          {
-            "CidrIp": "0.0.0.0/0",
-            "Description": "Allow all outbound traffic by default",
-            "IpProtocol": "-1"
-          }
-        ],
-        "VpcId": {
-          "Ref": "GrantNetworkVpc0AD1B27C"
-        }
-      },
-      "Metadata": {
-        "aws:cdk:path": "GrantPlatform/Grant/Proxy/ProxySecurityGroup/Resource"
-      }
-    },
-    "GrantProxyProxySecurityGroupfromGrantPlatformGrantProxyClientSecurityGroupDD3D6530IndirectPort9F21212A": {
-      "Type": "AWS::EC2::SecurityGroupIngress",
-      "Properties": {
-        "Description": "Grant clients reach the proxy",
-        "FromPort": {
-          "Fn::GetAtt": [
-            "GrantDatabaseCluster299E828E",
-            "Endpoint.Port"
-          ]
-        },
-        "GroupId": {
-          "Fn::GetAtt": [
-            "GrantProxyProxySecurityGroup4C0037FB",
-            "GroupId"
-          ]
-        },
-        "IpProtocol": "tcp",
-        "SourceSecurityGroupId": {
-          "Fn::GetAtt": [
-            "GrantProxyClientSecurityGroup2B0C4F81",
-            "GroupId"
-          ]
-        },
-        "ToPort": {
-          "Fn::GetAtt": [
-            "GrantDatabaseCluster299E828E",
-            "Endpoint.Port"
-          ]
-        }
-      },
-      "Metadata": {
-        "aws:cdk:path": "GrantPlatform/Grant/Proxy/ProxySecurityGroup/from GrantPlatformGrantProxyClientSecurityGroupDD3D6530:{IndirectPort}"
-      }
-    },
-    "GrantProxyIAMRoleD6A7BA0E": {
-      "Type": "AWS::IAM::Role",
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Statement": [
-            {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "rds.amazonaws.com"
-              }
-            }
-          ],
-          "Version": "2012-10-17"
-        }
-      },
-      "Metadata": {
-        "aws:cdk:path": "GrantPlatform/Grant/Proxy/Proxy/IAMRole/Resource"
-      }
-    },
-    "GrantProxyIAMRoleDefaultPolicyCF8F147F": {
-      "Type": "AWS::IAM::Policy",
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "secretsmanager:GetSecretValue",
-                "secretsmanager:DescribeSecret"
-              ],
-              "Effect": "Allow",
-              "Resource": {
-                "Ref": "GrantDatabaseClusterSecretAttachmentAD6E16E9"
-              }
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "PolicyName": "GrantProxyIAMRoleDefaultPolicyCF8F147F",
-        "Roles": [
-          {
-            "Ref": "GrantProxyIAMRoleD6A7BA0E"
-          }
-        ]
-      },
-      "Metadata": {
-        "aws:cdk:path": "GrantPlatform/Grant/Proxy/Proxy/IAMRole/DefaultPolicy/Resource"
-      }
-    },
-    "GrantProxyB9B3B885": {
-      "Type": "AWS::RDS::DBProxy",
-      "Properties": {
-        "Auth": [
-          {
-            "AuthScheme": "SECRETS",
-            "IAMAuth": "DISABLED",
-            "SecretArn": {
-              "Ref": "GrantDatabaseClusterSecretAttachmentAD6E16E9"
-            }
-          }
-        ],
-        "DBProxyName": "Proxy",
-        "EngineFamily": "POSTGRESQL",
-        "IdleClientTimeout": 1800,
-        "RequireTLS": true,
-        "RoleArn": {
-          "Fn::GetAtt": [
-            "GrantProxyIAMRoleD6A7BA0E",
-            "Arn"
-          ]
-        },
-        "VpcSecurityGroupIds": [
-          {
-            "Fn::GetAtt": [
-              "GrantProxyProxySecurityGroup4C0037FB",
-              "GroupId"
-            ]
-          }
-        ],
-        "VpcSubnetIds": [
-          {
-            "Ref": "GrantNetworkVpcisolatedSubnet1Subnet35EA7342"
-          },
-          {
-            "Ref": "GrantNetworkVpcisolatedSubnet2SubnetDECB0BA8"
-          }
-        ]
-      },
-      "Metadata": {
-        "aws:cdk:path": "GrantPlatform/Grant/Proxy/Proxy/Resource"
-      }
-    },
-    "GrantProxyProxyTargetGroup08B884B7": {
-      "Type": "AWS::RDS::DBProxyTargetGroup",
-      "Properties": {
-        "ConnectionPoolConfigurationInfo": {
-          "ConnectionBorrowTimeout": 30
-        },
-        "DBClusterIdentifiers": [
-          {
-            "Ref": "GrantDatabaseCluster299E828E"
-          }
-        ],
-        "DBProxyName": {
-          "Ref": "GrantProxyB9B3B885"
-        },
-        "TargetGroupName": "default"
-      },
-      "DependsOn": [
-        "GrantDatabaseCluster299E828E",
-        "GrantDatabaseClusterWriterC3A48690"
-      ],
-      "Metadata": {
-        "aws:cdk:path": "GrantPlatform/Grant/Proxy/Proxy/ProxyTargetGroup"
+        "aws:cdk:path": "GrantPlatform/Grant/DatabaseClients/Resource"
       }
     },
     "GrantPlatformSecretCBEA56FA": {
@@ -899,8 +730,8 @@
               ":SecretString:password::}}@",
               {
                 "Fn::GetAtt": [
-                  "GrantProxyB9B3B885",
-                  "Endpoint"
+                  "GrantDatabaseCluster299E828E",
+                  "Endpoint.Address"
                 ]
               },
               ":",
@@ -1000,7 +831,7 @@
               },
               {
                 "Name": "STORAGE_PROVIDER",
-                "Value": "s3"
+                "Value": "local"
               },
               {
                 "Name": "TELEMETRY_PROVIDER",
@@ -1021,6 +852,18 @@
               {
                 "Name": "API_PORT",
                 "Value": "4000"
+              },
+              {
+                "Name": "APP_URL",
+                "Value": "https://grant.example.com"
+              },
+              {
+                "Name": "SECURITY_FRONTEND_URL",
+                "Value": "https://grant.example.com"
+              },
+              {
+                "Name": "DOCS_URL",
+                "Value": "https://grant.example.com/docs"
               },
               {
                 "Name": "SECRETS_AWS_SECRET_ID",
@@ -1098,6 +941,22 @@
               }
             },
             "Name": "Migrate",
+            "Secrets": [
+              {
+                "Name": "DB_URL",
+                "ValueFrom": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Ref": "GrantPlatformSecretCBEA56FA"
+                      },
+                      ":DB_URL::"
+                    ]
+                  ]
+                }
+              }
+            ],
             "StopTimeout": 120
           }
         ],
@@ -1197,6 +1056,16 @@
                   "GrantMigrateTaskDefinitionMigrateLogGroup7178CB80",
                   "Arn"
                 ]
+              }
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Ref": "GrantPlatformSecretCBEA56FA"
               }
             }
           ],
@@ -1343,7 +1212,7 @@
                   "[\"",
                   {
                     "Fn::GetAtt": [
-                      "GrantProxyClientSecurityGroup2B0C4F81",
+                      "GrantDatabaseClientsEC63EC18",
                       "GroupId"
                     ]
                   },
@@ -1417,7 +1286,7 @@
         "aws:cdk:path": "GrantPlatform/Grant/MigrateTrigger/Runner/LogRetention/Resource"
       }
     },
-    "GrantMigrateTriggerRunnerCurrentVersion8D49C7F16161e6507c205cc3dd922d4358292cee": {
+    "GrantMigrateTriggerRunnerCurrentVersion8D49C7F16818f903bf8c18655b6bd3560920f996": {
       "Type": "AWS::Lambda::Version",
       "Properties": {
         "FunctionName": {
@@ -1439,21 +1308,14 @@
           ]
         },
         "HandlerArn": {
-          "Ref": "GrantMigrateTriggerRunnerCurrentVersion8D49C7F16161e6507c205cc3dd922d4358292cee"
+          "Ref": "GrantMigrateTriggerRunnerCurrentVersion8D49C7F16818f903bf8c18655b6bd3560920f996"
         },
         "InvocationType": "RequestResponse",
         "Timeout": "120000",
         "ExecuteOnHandlerChange": true
       },
       "DependsOn": [
-        "GrantPlatformSecretCBEA56FA",
-        "GrantProxyClientSecurityGroup2B0C4F81",
-        "GrantProxyIAMRoleDefaultPolicyCF8F147F",
-        "GrantProxyIAMRoleD6A7BA0E",
-        "GrantProxyProxyTargetGroup08B884B7",
-        "GrantProxyB9B3B885",
-        "GrantProxyProxySecurityGroupfromGrantPlatformGrantProxyClientSecurityGroupDD3D6530IndirectPort9F21212A",
-        "GrantProxyProxySecurityGroup4C0037FB"
+        "GrantPlatformSecretCBEA56FA"
       ],
       "UpdateReplacePolicy": "Delete",
       "DeletionPolicy": "Delete",
@@ -2304,7 +2166,7 @@
     "CDKMetadata": {
       "Type": "AWS::CDK::Metadata",
       "Properties": {
-        "Analytics": "v2:deflate64:H4sIAAAAAAAA/5VUwW7bMAz9lvasal3SbcBuSbwWAbo1iItehiGgZUZTY0uBSDUNDP/7IMtxjA4dsJMeHx8pWk/yRE4+f5HXF3CgK1XuripTyCZnUDuxRnLBKxRwoE2DaiKbp70Si619Wi3EKhSVUXkoLHLkzmjtAuMjFBWe+TM3I3LKABtnB3EE35aruPwAvgPGAxzFypsXYDw3XlpGb3EQpEn6aMYM6neNlkWOKnjDxzvvwr6b4Z/E0mqPRK3wJckmA4YCCBdVIEYv0vZDZTYfEydxjsqnGbP5qbALlpYYrMJBufLu9Zhyb+EjeN03bgV1HakGCxq9bNLQcZO0JPHoowfBX5lEt8JALZu1S7Z068pVRnUjJNQKVH4DRMgkM6d26Jc16OgZcszJNe4dGXb+OAdCgYpkM/rgE7wFryEaTrsMt8aak91vGWcZjEV/5lpROU2yuXd6OPQB3zu9RkbbC6EuSpDNbbDqtMGAn9BTz43gPRzRn+LcWF0hu6GoFTSVzTyoXTIzoZ/NZW1ejb38ejl+JfFV0FR2KZJJOgvsMqyQ8aF4RsV02f4SKXU+63H8H71TQc7AGG0dtY5WxNE3TYn7yh1jui/KBkL0tnZetkJVLpRb7yy/c36ZIfamCF2QTx+80cbOlEKi6Jp3VZS/Q4+LW+HjG/80lc1sjcr5srt/HcqRxQwAUtS2opsuZ9DG6iTr/0HsjdboST4mIBaB2NVDPs4SeB+4vxWbKjq9gQOpysjZgRaV6cx/U7jy7sWU6LvrvNja77DfG6tbYV2J8pk+vExu5McbeX3xTMZc+WDZ1CjXaf0DBOlORD4FAAA="
+        "Analytics": "v2:deflate64:H4sIAAAAAAAA/5VUy27bMBD8lvjMsK2dtkBvttUEBtLGsIJcisJYUWuVMUUK3GVcQ9C/FxRtWUiRAj3t7OxDIw6lqZx++izfX8GBrlW5vza6kG3OoPZig+SCVyjgQNsW1VS2T40Sy519Wi/FOhRGqzwUFjlyF7RxgfERCoMX/sLNiZzSwNrZoTmCr6t1DN+B74DxAEex9voFGC+LV5bRWxwakpJTNmcG9atGyyJHFbzm4513oek1/JNY2cojUSd8SbLNgKEAwqUJxOhFevwwmS3GxLk5R+WTxmxxHuyTlSUGq7AT1LdQDRYq9LJNKuJUCo/gK+TRWwwNf1US3QlUfgtEyCQzp/boVzVU8YCRY01usHGk2fnjAggFKpLtSN0Z3oKvILpD+wx32uqzN68ZZxm0RX/hOqGhlu3GJa/7uHZGq96chDphXEWyvXfVcIoDvnfVBhltWmagLkqQ7W2w6ixiwE/o6cSN4D0c0Z/zXNvKILthqBM0k+0iqH1yJ6Ef7aTWv7WdfJmMr3285jSTfYlkap0HdhkaZHwonlExTbqfIpUu7znO/2N3GsgZGKOto9XRrih925bYGHeM5dNQNhDiZH3vdyeUcaHceWf5jfPLNLHXReiTfPbgdaXtXCkkis56Z2L7G/R4uBM+frQfZ7Kdb1A5X/be9yhHFnMASFnXiV5dzlBpW6W200+Fva4q9CQfExDLQOzqoR61BG4Cn27F1kSnt3AgZbScH2hpdG/+q8G1dy+6RN9f+eXOfoOm0bbqhHUlymd69zK9kR9u5PurZ9L62gfLuka5SfEPnBSQwA8FAAA="
       },
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/CDKMetadata/Default"
@@ -2470,15 +2332,6 @@
               ]
             }
           ]
-        ]
-      }
-    },
-    "GrantDatabaseProxyEndpointB8B2F207": {
-      "Description": "Pooled Postgres endpoint. Nothing should connect to the cluster directly.",
-      "Value": {
-        "Fn::GetAtt": [
-          "GrantProxyB9B3B885",
-          "Endpoint"
         ]
       }
     },

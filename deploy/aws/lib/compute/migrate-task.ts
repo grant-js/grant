@@ -28,6 +28,7 @@ import {
   FargateTaskDefinition,
   type ICluster,
   LogDriver,
+  Secret as EcsSecret,
 } from 'aws-cdk-lib/aws-ecs';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 import type { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
@@ -82,6 +83,18 @@ export class MigrateTask extends Construct {
       // Overrides the image's `node dist/server.js`; the entrypoint script still runs.
       command: ['node', 'dist/migrate.js'],
       environment: { ...props.environment },
+      // ECS reads these from Secrets Manager at task start and injects them as
+      // environment variables. That indirection is necessary, not decorative:
+      // `SECRETS_AWS_SECRET_ID` is a *per-use* resolver for specific consumers
+      // (ADR 0004), and nothing hydrates `process.env` from it — `migrate.ts` reads
+      // `config.db.url`, which is derived from the environment at import. A DB_URL
+      // that exists only inside the secret is a DB_URL the migration cannot see.
+      //
+      // The value still never appears in the template: the task definition holds the
+      // secret's ARN and a JSON key, and the execution role fetches it at runtime.
+      secrets: {
+        DB_URL: EcsSecret.fromSecretsManager(props.platformSecret, 'DB_URL'),
+      },
       logging: LogDriver.awsLogs({
         streamPrefix: 'migrate',
         // The migration log is the record of what a deploy did to the schema. Two
