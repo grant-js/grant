@@ -38,3 +38,23 @@ e2e
 *.log
 .DS_Store
 *.plan.md
+
+# Git worktrees. The Agentic SDLC creates one per parallel story (AGENTS.md
+# § Worktrees), each a full checkout of the repo — 3 GB on a machine running two —
+# and none of it belongs in a build context. Docker would copy it; CDK's
+# DockerImageAsset walks it to compute the asset fingerprint, which is slower still
+# because that happens on every synth.
+.worktrees
+**/.worktrees
+
+# CDK synth output, including staged assets from a previous run.
+cdk.out
+**/cdk.out
+
+# The committed CDK template, which `pnpm synth` rewrites. It lives inside the build
+# context, so leaving it here makes the image asset hash a function of the previous
+# synth's output: each run rewrites the snapshot, which changes the context, which
+# changes the asset hash, which changes the migrate trigger's IMAGE_IDENTIFIER and the
+# Lambda Version logical ID derived from it. `synth:check` then reports drift forever.
+cdk.snapshot
+**/cdk.snapshot

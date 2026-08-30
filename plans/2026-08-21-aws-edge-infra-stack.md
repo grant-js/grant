@@ -157,11 +157,30 @@ a database exists.
 
 ### Slice 4 — API and data tier
 
-**Split into 4a/4b at execution time**, as this section pre-authorised. 4a is the
-network and data tier; 4b is the API Lambda, RDS Proxy and the migrate one-shot. The
-split falls where the plan said it would — 4a stands alone as a deployable,
-destroyable unit, and bundling the Lambda would have pushed the diff past the review
-ceiling on the one slice that carries a security-full bar.
+**Split into 4a/4b/4c at execution time**, as this section pre-authorised. The split
+fell where the plan said it would — 4a stands alone as a deployable, destroyable unit
+— and then went one step further, because 4b as scoped still bundled the proxy, the
+secret, the migrate one-shot, the Lambda, DynamoDB, S3 and the edge behaviours onto
+the one slice carrying a security-full bar.
+
+- **4a** — network and data tier. Merged, deployed, destroyed.
+- **4b** — the image can reach and migrate the database: RDS Proxy, the platform
+  secret, the migrate one-shot and its IAM. Verified by a migration running against a
+  real cluster, through the proxy the API will later use.
+- **4c** — the API serves traffic: the Lambda, its Function URL, the DynamoDB cache
+  table, the storage bucket and the CloudFront API behaviours. Verified by `/health`
+  through the edge.
+
+The security review splits along the same seam: credentials and network reachability
+in 4b, edge header handling and rate limiting in 4c.
+
+**The migrate one-shot is an ECS Fargate task, not a Lambda.** The LWA image cannot
+run it: the adapter is a Lambda _extension_ that probes `/health` on port 4000, so a
+container whose command is `node dist/migrate.js` never satisfies the runtime contract
+even when the migration itself succeeds. ADR 0003 already establishes that one image
+serves Lambda and Fargate alike, and `apps/api/src/migrate.ts` names "an ECS one-off
+task" first among its intended runners. Fargate bills per task-second and costs
+nothing idle.
 
 The largest slice, and the only one at **security-full**: it lands VPC wiring, the
 data tier, secrets, the API Lambda and the migrate one-shot, and it is where auth

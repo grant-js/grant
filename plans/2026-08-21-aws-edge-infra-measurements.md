@@ -640,3 +640,75 @@ stray record, not one per cycle.
 
 That changes F1's severity: untidy, not accumulating. Slice 7 still documents it and
 asserts it in the smoke test, but it is not a leak that grows.
+
+## Slice 4c — the API can serve
+
+**Date**: 2026-08-30 · **AWS resources**: Lambda, Function URL, DynamoDB, S3 · **Deploy**: pending
+
+Split from slice 4b, which the stack plan pre-authorised. 4d carries the CloudFront
+API behaviours and the header handling the security review attaches to.
+
+### What the committed template now holds
+
+84 resources, up from 74. The ten added are the whole slice, with nothing incidental:
+
+| Added                        | Count | Why                                                                |
+| ---------------------------- | ----- | ------------------------------------------------------------------ |
+| `AWS::Lambda::Function`      | +1    | The serving function                                               |
+| `AWS::Lambda::Url`           | +1    | Its origin endpoint, `AWS_IAM`                                     |
+| `AWS::DynamoDB::GlobalTable` | +1    | The cache table (`TableV2` renders as a single-region GlobalTable) |
+| `AWS::S3::Bucket` + policy   | +2    | Uploads                                                            |
+| `AWS::EC2::VPCEndpoint`      | +2    | S3 and DynamoDB gateway endpoints                                  |
+| `AWS::IAM::Role` + policy    | +2    | The function's execution role                                      |
+| `AWS::Logs::LogGroup`        | +1    | Its logs, at a declared retention                                  |
+
+### The decisions worth reviewing
+
+| Default                        | Value     | Why it is explicit                                                                                                                                        |
+| ------------------------------ | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Function URL `AuthType`        | `AWS_IAM` | `NONE` is a public endpoint that bypasses CloudFront entirely. CDK also attaches a `Lambda::Permission` with a `*` principal — both are asserted against. |
+| `ReservedConcurrentExecutions` | `20`      | A **database** guard. Pooling is off by default, so each warm environment holds its own connections.                                                      |
+| `DB_POOL_MAX`                  | `2`       | One environment serves one request; a larger pool only reserves connections another environment could use.                                                |
+| Cache table removal            | `Delete`  | Deliberately unlike the database. Cache entries are reconstructible and TTL'd; retaining the table leaves a billed resource nobody reads.                 |
+| Uploads bucket removal         | `Retain`  | User data. `autoDeleteObjects` stays off with it, so no bucket-emptying custom resource is ever created.                                                  |
+| Gateway endpoints              | created   | Free. Without them every cache read and upload is billed as NAT data processing.                                                                          |
+
+**Aurora Serverless v2 derives `max_connections` from the maximum ACU, not the
+current one** — roughly 900 at the default `maxCapacity: 4`. The concurrency ceiling
+still matters: an account's default Lambda limit is 1000, and 1000 × `DB_POOL_MAX=2`
+is 2000 connections. The test asserts the _product_, not either factor, because that
+is the quantity the database actually sees.
+
+### No credential reaches the serving function
+
+The environment carries `SECRETS_AWS_SECRET_ID` and no secret. This is the first
+consumer of the `DB_URL`-through-`ISecretResolver` change (#359): the migrate task
+must inject `DB_URL` as an ECS secret because its entrypoint reads `config.db.url`,
+while `create-app.ts` resolves per use — so a rotation reaches a warm container within
+`SECRETS_CACHE_TTL_SECONDS` rather than at the next redeploy. Asserted directly:
+no key matching `ACCESS_KEY`, `PASSWORD` or `SECRET_KEY`, and no `DB_URL`.
+
+### Perturbation results
+
+Every guard was reverted and the suite re-run. None is decorative:
+
+| Perturbation                             | Expected | Result          |
+| ---------------------------------------- | -------- | --------------- |
+| Function URL `AuthType` → `NONE`         | fail     | **2 failed** ✓  |
+| Reserved concurrency 20 → 1000           | fail     | **1 failed** ✓  |
+| Drop the cache table's TTL specification | fail     | **1 failed** ✓  |
+| Uploads bucket defaults to destroy       | fail     | **2 failed** ✓  |
+| Rename the cache sort key off `sk`       | fail     | **1 failed** ✓  |
+| Remove the VPC gateway endpoints         | fail     | **1 failed** ✓  |
+| Baseline                                 | pass     | **16 passed** ✓ |
+
+The sort-key case is the one worth noting: the construct and `DynamoDBCacheAdapter`
+live in packages with no compile-time link, so a renamed attribute deploys clean and
+fails at the first `set()`. The test reads the adapter's source and matches against
+it — the same third-witness shape as the routing oracle, rather than a second copy of
+the literal.
+
+### Gates
+
+**220 tests** (from 204). `lint`, `type-check`, `dead-code:deploy`, `format:check`
+clean. Two consecutive synths produced byte-identical templates.

@@ -51,6 +51,7 @@ import { CacheFactory, type IEntityCacheAdapter } from '@/lib/cache';
 import { formatGraphQLError } from '@/lib/errors';
 import { logger, loggerFactory } from '@/lib/logger';
 import { metricsHandler, metricsMiddleware } from '@/lib/metrics';
+import { resolveDatabaseConnectionString } from '@/lib/secrets';
 import { contextMiddleware } from '@/middleware/context.middleware';
 import { errorHandler } from '@/middleware/error.middleware';
 import { rateLimitMiddleware } from '@/middleware/rate-limit.middleware';
@@ -95,7 +96,7 @@ export async function createApp(): Promise<CreatedApp> {
   });
 
   const db = initializeDBConnection({
-    connectionString: config.db.url,
+    connectionString: await resolveDatabaseConnectionString(),
     max: config.db.poolMax,
     idleTimeout: config.db.idleTimeout,
     connectTimeout: config.db.connectionTimeout,

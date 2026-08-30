@@ -17,8 +17,12 @@
  * path — and is reviewed as one.
  */
 
+import type { Duration } from 'aws-cdk-lib';
 import type { ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
+import type { ITable } from 'aws-cdk-lib/aws-dynamodb';
 import type { IVpc } from 'aws-cdk-lib/aws-ec2';
+import type { ContainerImage, ICluster } from 'aws-cdk-lib/aws-ecs';
+import type { DockerImageCode } from 'aws-cdk-lib/aws-lambda';
 import type { IHostedZone } from 'aws-cdk-lib/aws-route53';
 import type { IBucket } from 'aws-cdk-lib/aws-s3';
 
@@ -54,6 +58,76 @@ interface NetworkProps {
   readonly natGateways?: number;
 }
 
+/**
+ * Deploy-time database migration.
+ *
+ * Runs `node dist/migrate.js` as a Fargate one-shot and waits for it, because
+ * `DB_BOOTSTRAP_ON_BOOT` is false on this target (ADR 0001) — nothing migrates at
+ * boot, so something has to migrate at deploy.
+ */
+interface MigrationProps {
+  /**
+   * Whether to run migrations during deploy. Defaults to **true** whenever this stack
+   * owns the database.
+   *
+   * Set false when a pipeline runs migrations itself, or when the deploying principal
+   * should not be able to alter the schema.
+   */
+  readonly enabled?: boolean;
+
+  /** Ceiling for the migration. Lambda's hard limit caps this at 15 minutes. */
+  readonly timeout?: Duration;
+
+  /** Existing ECS cluster to run the task in. Omit to create one. */
+  readonly cluster?: ICluster;
+
+  /**
+   * Pre-published image to migrate with, e.g. `ContainerImage.fromEcrRepository(...)`.
+   *
+   * Omit and the stack builds from source at deploy time. An adopter consuming this
+   * as a library has no API source on disk and should pass one.
+   */
+  readonly image?: ContainerImage;
+
+  /**
+   * Identity of a caller-supplied `image`, used to decide whether to migrate again.
+   *
+   * The trigger re-runs when this changes. A built-from-source image supplies its own
+   * content hash; a pre-published one cannot, because a tag may be mutable — pushing
+   * a new image to `:latest` changes nothing CloudFormation can see. Pass the digest,
+   * or any value that changes when the image does. Left unset, migrations run once
+   * and are not repeated on later deploys.
+   */
+  readonly imageIdentifier?: string;
+}
+
+/**
+ * Connection pooling in front of the cluster.
+ *
+ * **Off by default, on a measurement rather than a preference.** RDS Proxy holds a
+ * persistent pool to the database, and Aurora Serverless v2 cannot auto-pause while
+ * any connection exists — so enabling it forfeits the `minCapacity: 0` this target's
+ * cost model rests on. A live deploy measured 0.5 ACU and four held connections, flat
+ * across forty idle minutes, where the cluster otherwise pauses to zero: roughly
+ * $58/month to keep connections warm.
+ *
+ * Enable it when Lambda concurrency is real. Without pooling every warm execution
+ * environment holds its own connections and a burst exhausts `max_connections`. Cheap
+ * idle and warm connections are mutually exclusive; this is where you choose.
+ */
+interface DatabaseProxyProps {
+  readonly enabled?: boolean;
+
+  /**
+   * Require TLS between client and proxy. Defaults to true.
+   *
+   * Note this is TLS to the *proxy*; `sslmode=require` in the composed `DB_URL`
+   * encrypts without verifying the server certificate, because the image carries no
+   * RDS CA bundle.
+   */
+  readonly requireTls?: boolean;
+}
+
 /** The database. Omit entirely to bring your own via `DB_URL` in `env`. */
 interface DatabaseProps {
   /** Minimum Aurora capacity units. `0` auto-pauses an idle cluster to no cost. */
@@ -68,6 +142,9 @@ interface DatabaseProps {
    * storage-billed snapshot that survives `cdk destroy` unnoticed.
    */
   readonly destroyOnRemoval?: boolean;
+
+  /** Connection pooling. Off by default — see `DatabaseProxyProps`. */
+  readonly proxy?: DatabaseProxyProps;
 }
 
 /** DNS. Always referenced, never created — a zone needs nameserver re-delegation CDK cannot perform. */
@@ -102,12 +179,79 @@ interface StorageProps {
   /**
    * Uploads bucket. Omit to have the stack create one.
    *
-   * An imported bucket's resource policy is not owned by CDK —
-   * `addToResourcePolicy` silently no-ops — so the stack cannot grant it CloudFront
-   * Origin Access Control. Where one is supplied, the required policy is emitted as
-   * a `CfnOutput` rather than appearing to have been applied.
+   * Unlike the docs bucket this is never a CloudFront origin — uploads are
+   * per-tenant and the API authorizes each read — so an imported bucket needs no
+   * out-of-band resource policy. The grant is on the function's role, which CDK owns
+   * whether or not it owns the bucket.
    */
   readonly uploadsBucket?: IBucket;
+
+  /**
+   * Whether teardown may destroy uploaded objects. Default false.
+   *
+   * Enabling this also enables `autoDeleteObjects`, because a non-empty bucket blocks
+   * stack deletion. Both are off for a bucket holding real uploads.
+   */
+  readonly destroyOnRemoval?: boolean;
+}
+
+/** The cache and session store. */
+interface CacheProps {
+  /**
+   * Existing DynamoDB table to use. Omit to have the stack create one.
+   *
+   * Must carry a `pk`/`sk` string key schema and a TTL on `expiresAt` — the contract
+   * `DynamoDBCacheAdapter` writes against. Nothing here can verify that about an
+   * imported table.
+   */
+  readonly table?: ITable;
+
+  /**
+   * Whether teardown may destroy the table. Defaults to **true**, unlike the
+   * database: every item here is a cache entry, a session or a rate-limit counter,
+   * all reconstructible and all TTL'd. Retaining it leaves a billed table nobody
+   * reads again.
+   */
+  readonly destroyOnRemoval?: boolean;
+}
+
+/** The serving function. */
+interface ApiProps {
+  /**
+   * Pre-published image to serve from, e.g.
+   * `DockerImageCode.fromEcr(repository, { tagOrDigest })`.
+   *
+   * Omit and the stack builds from source at deploy time, sharing the asset with the
+   * migration so both run the identical artifact (ADR 0003). An adopter consuming
+   * this as a library has no API source on disk and should pass one.
+   */
+  readonly image?: DockerImageCode;
+
+  /**
+   * Memory, which on Lambda also sets the CPU share. Defaults to 1024 MB; a Node
+   * process running Apollo and Express is starved below roughly 1 GB and cold starts
+   * stretch accordingly.
+   */
+  readonly memorySize?: number;
+
+  /**
+   * Per-request ceiling. Defaults to 30 seconds, matching CloudFront's origin
+   * response timeout — beyond it the edge returns 504 while Lambda keeps billing.
+   */
+  readonly timeout?: Duration;
+
+  /**
+   * Ceiling on concurrent execution environments. Defaults to 20.
+   *
+   * This guards the **database**, not the bill. With pooling off (the default, since
+   * a proxy forfeits Aurora's auto-pause) each warm environment holds its own
+   * connections. An account's default Lambda concurrency limit is 1000, which times
+   * `DB_POOL_MAX=2` is 2000 connections against the roughly 900 Aurora allows at the
+   * default `maxCapacity: 4`. 20 times 2 is 40.
+   *
+   * Pass `0` to leave concurrency unbounded — appropriate once the proxy is enabled.
+   */
+  readonly reservedConcurrency?: number;
 }
 
 /** Top-level props for the whole platform. */
@@ -129,6 +273,11 @@ export interface GrantPlatformProps {
 
   readonly storage?: StorageProps;
 
+  readonly cache?: CacheProps;
+
+  /** The serving function. Created only when the data tier is. */
+  readonly api?: ApiProps;
+
   readonly docs?: DocsProps;
 
   /**
@@ -136,6 +285,9 @@ export interface GrantPlatformProps {
    * `DB_URL` through `env` — the shape the Helm chart has always used.
    */
   readonly database?: DatabaseProps;
+
+  /** Deploy-time migration. Ignored when this stack does not own the database. */
+  readonly migration?: MigrationProps;
 
   /** Passed through to the API container. */
   readonly env?: GrantEnv;

@@ -23,16 +23,26 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { CfnOutput, Stack } from 'aws-cdk-lib';
+import { SecurityGroup } from 'aws-cdk-lib/aws-ec2';
+import { DockerImageCode } from 'aws-cdk-lib/aws-lambda';
 import { AaaaRecord, ARecord, RecordTarget } from 'aws-cdk-lib/aws-route53';
 import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
 import { Construct } from 'constructs';
 
 import { ASSET_BEHAVIOURS, type CloudFrontBehaviour, toCloudFrontBehaviours } from './behaviours';
+import { ApiFunction } from './compute/api-function';
+import { ApiImage } from './compute/api-image';
+import { MigrateTask } from './compute/migrate-task';
+import { MigrateTrigger } from './compute/migrate-trigger';
 import { AWS_TARGET_ENV_DEFAULTS } from './config/defaults';
 import type { GrantEnv, GrantPlatformProps } from './config/props';
 import { assertCertificateRegion, validateAppUrl, validateHostnameInZone } from './config/validate';
+import { CacheTable } from './data/cache-table';
 import { Database } from './data/database';
 import { Network } from './data/network';
+import { PlatformSecret } from './data/platform-secret';
+import { DatabaseConnectionProxy } from './data/proxy';
+import { StorageBucket } from './data/storage-bucket';
 import { EdgeCertificate } from './edge/certificate';
 import { EdgeDistribution } from './edge/distribution';
 import { DocsSite } from './edge/docs-site';
@@ -59,6 +69,28 @@ export class GrantPlatform extends Construct {
   /** Present only when the data tier was requested. */
   public readonly network?: Network;
   public readonly database?: Database;
+  /** Present only when pooling was explicitly enabled. See the note at its creation. */
+  public readonly proxy?: DatabaseConnectionProxy;
+
+  /** Everything permitted to open a database connection wears this. */
+  public readonly databaseClientSecurityGroup?: SecurityGroup;
+  public readonly platformSecret?: PlatformSecret;
+
+  /** Present only when the data tier was requested and migration is enabled. */
+  public readonly migrateTask?: MigrateTask;
+
+  /** Present only when the data tier was requested. */
+  public readonly cacheTable?: CacheTable;
+  public readonly uploads?: StorageBucket;
+
+  /**
+   * The serving function. Present only when the data tier was requested.
+   *
+   * Bring-your-own-Postgres does not get one yet: the function reads `DB_URL` from
+   * the platform secret, which this construct only creates alongside its own cluster.
+   * Serving against an external database is a follow-up, not an omission.
+   */
+  public readonly api?: ApiFunction;
 
   constructor(scope: Construct, id: string, props: GrantPlatformProps) {
     super(scope, id);
@@ -70,7 +102,17 @@ export class GrantPlatform extends Construct {
 
     this.hostname = hostname;
     // Caller last: an adopter overriding a default must win over this file's opinion.
-    this.env = { ...AWS_TARGET_ENV_DEFAULTS, ...props.env };
+    // The URL-shaped values are derived rather than defaulted, because the defaults in
+    // `@grantjs/env` are localhost and `SECURITY_FRONTEND_URL` is *required* once
+    // NODE_ENV is production — which the AWS defaults set. A deploy that omitted them
+    // would fail config validation before it touched anything.
+    this.env = {
+      ...AWS_TARGET_ENV_DEFAULTS,
+      APP_URL: props.appUrl,
+      SECURITY_FRONTEND_URL: props.appUrl,
+      DOCS_URL: `${props.appUrl}/docs`,
+      ...props.env,
+    };
     this.behaviours = [...toCloudFrontBehaviours(), ...ASSET_BEHAVIOURS];
 
     // CloudFront is global; only the certificate it serves is pinned to us-east-1.
@@ -101,11 +143,167 @@ export class GrantPlatform extends Construct {
         destroyOnRemoval: props.database.destroyOnRemoval,
       });
 
+      // One group names everything allowed to open a database connection, whether it
+      // reaches the cluster directly or through the proxy. Identity, not CIDR: a CIDR
+      // allowance widens silently as subnets are added.
+      this.databaseClientSecurityGroup = new SecurityGroup(this, 'DatabaseClients', {
+        vpc: this.network.vpc,
+        description: 'Permitted to open Grant database connections',
+        allowAllOutbound: true,
+      });
+
+      // Off by default, and the reason is measured rather than assumed. A proxy holds
+      // a persistent pool to the cluster, and Aurora cannot auto-pause while any
+      // connection exists — so enabling it forfeits the `serverlessV2MinCapacity: 0`
+      // that this target's cost model is built on. Measured on a live deploy: 0.5 ACU
+      // and four held connections, flat across forty idle minutes, versus a cluster
+      // that otherwise pauses to zero. That is roughly $58/month to keep connections
+      // warm for traffic a green-field deploy does not have yet.
+      //
+      // Turn it on when Lambda concurrency is real: without pooling, each warm
+      // execution environment holds its own connections and a burst exhausts
+      // `max_connections`. The trade is cheap idle against tolerance for concurrency,
+      // and it cannot be had both ways.
+      if (props.database.proxy?.enabled ?? false) {
+        this.proxy = new DatabaseConnectionProxy(this, 'Proxy', {
+          vpc: this.network.vpc,
+          cluster: this.database.cluster,
+          secret: this.database.secret,
+          clientSecurityGroup: this.databaseClientSecurityGroup,
+          requireTls: props.database.proxy?.requireTls,
+        });
+      } else {
+        this.database.cluster.connections.allowDefaultPortFrom(
+          this.databaseClientSecurityGroup,
+          'Grant database clients'
+        );
+      }
+
+      // Two secrets, two shapes. The cluster's is RDS-shaped and only the proxy reads
+      // it; this one is the flat ENV_NAME:value object the application's resolver
+      // requires. See PlatformSecret.
+      this.platformSecret = new PlatformSecret(this, 'PlatformSecret', {
+        databaseCredentials: this.database.secret,
+        // The proxy when there is one, the cluster writer otherwise.
+        host: this.proxy?.proxy.endpoint ?? this.database.cluster.clusterEndpoint.hostname,
+        port: this.database.cluster.clusterEndpoint.port,
+        databaseName: this.database.databaseName,
+      });
+
+      // One asset, built at most once and shared by the migration and the serving
+      // function — ADR 0003's "one image everywhere", enforced by construction rather
+      // than by convention. Lazy, so a deploy where both images are caller-supplied
+      // builds nothing.
+      let builtImage: ApiImage | undefined;
+      const buildImage = (): ApiImage => (builtImage ??= new ApiImage(this, 'ApiImage'));
+      const builtImageCode = (): DockerImageCode => {
+        const { asset } = buildImage();
+        return DockerImageCode.fromEcr(asset.repository, { tagOrDigest: asset.imageTag });
+      };
+
+      if (props.migration?.enabled ?? true) {
+        // Built from source unless the caller supplied one. `imageIdentifier` is what
+        // re-arms the migration trigger, so a caller-supplied image needs the caller
+        // to say when it changed — the tag alone may be mutable.
+        let image = props.migration?.image;
+        let imageIdentifier = props.migration?.imageIdentifier ?? 'caller-supplied';
+        if (!image) {
+          const built = buildImage();
+          image = built.containerImage;
+          imageIdentifier = built.imageIdentifier;
+        }
+
+        this.migrateTask = new MigrateTask(this, 'Migrate', {
+          vpc: this.network.vpc,
+          image,
+          securityGroups: [this.databaseClientSecurityGroup],
+          platformSecret: this.platformSecret.secret,
+          environment: {
+            ...this.env,
+            SECRETS_AWS_SECRET_ID: this.platformSecret.secret.secretName,
+            SECRETS_AWS_REGION: Stack.of(this).region,
+            // A migration touches no object storage, and `validateConfig()` validates
+            // the whole surface regardless of what the entrypoint uses — demanding a
+            // bucket and static S3 keys for a task that opens neither. Declaring the
+            // provider it actually uses is the honest configuration, not a workaround.
+            //
+            // The serving function does need S3 and does not do this: the static
+            // keys are now optional, so its role's default credential chain applies.
+            // This stays `local` regardless, because it is the honest configuration
+            // for a task that opens no object storage — not a workaround for a gap.
+            STORAGE_PROVIDER: 'local',
+          },
+          cluster: props.migration?.cluster,
+        });
+
+        new MigrateTrigger(this, 'MigrateTrigger', {
+          vpc: this.network.vpc,
+          task: this.migrateTask,
+          securityGroups: [this.databaseClientSecurityGroup],
+          timeout: props.migration?.timeout,
+          imageIdentifier,
+          // Nothing may migrate before the proxy it connects through and the secret
+          // it reads credentials from both exist.
+          executeAfter: this.proxy ? [this.proxy, this.platformSecret] : [this.platformSecret],
+        });
+      }
+
+      this.cacheTable = new CacheTable(this, 'Cache', {
+        table: props.cache?.table,
+        destroyOnRemoval: props.cache?.destroyOnRemoval,
+      });
+
+      this.uploads = new StorageBucket(this, 'Uploads', {
+        bucket: props.storage?.uploadsBucket,
+        destroyOnRemoval: props.storage?.destroyOnRemoval,
+      });
+
+      this.api = new ApiFunction(this, 'Api', {
+        vpc: this.network.vpc,
+        code: props.api?.image ?? builtImageCode(),
+        securityGroups: [this.databaseClientSecurityGroup],
+        platformSecret: this.platformSecret.secret,
+        cacheTable: this.cacheTable.table,
+        uploadsBucket: this.uploads.bucket,
+        environment: {
+          ...this.env,
+          // The resolver's own configuration, not a credential: it names *where* to
+          // look, and the function's role is what permits the lookup. DB_URL itself
+          // never enters this environment — create-app.ts resolves it per use
+          // through ISecretResolver (ADR 0004), which is what lets a rotation reach a
+          // warm container.
+          SECRETS_AWS_SECRET_ID: this.platformSecret.secret.secretName,
+          SECRETS_AWS_REGION: Stack.of(this).region,
+          // Names only. The static STORAGE_S3_* and CACHE_DYNAMODB_* keys are left
+          // unset so the SDK falls through to the function role's credentials.
+          STORAGE_S3_BUCKET: this.uploads.bucket.bucketName,
+          STORAGE_S3_REGION: Stack.of(this).region,
+          CACHE_DYNAMODB_TABLE: this.cacheTable.table.tableName,
+          CACHE_DYNAMODB_REGION: Stack.of(this).region,
+        },
+        memorySize: props.api?.memorySize,
+        timeout: props.api?.timeout,
+        reservedConcurrency: props.api?.reservedConcurrency,
+      });
+
+      new CfnOutput(this, 'ApiFunctionUrl', {
+        value: this.api.functionUrl.url,
+        description:
+          'IAM-authorized origin endpoint. Not publicly reachable; sign requests with SigV4.',
+      });
+
       new CfnOutput(this, 'DatabaseSecretName', {
-        value: this.database.secret.secretName,
+        value: this.platformSecret.secret.secretName,
         description:
           'Set SECRETS_AWS_SECRET_ID to this; credentials are resolved per use, never inlined.',
       });
+
+      if (this.proxy) {
+        new CfnOutput(this, 'DatabaseProxyEndpoint', {
+          value: this.proxy.proxy.endpoint,
+          description: 'Pooled Postgres endpoint. Nothing should connect to the cluster directly.',
+        });
+      }
     }
 
     this.docs = new DocsSite(this, 'Docs', {

@@ -25,12 +25,13 @@ import { bootstrapDatabase, closeDatabase, initializeDBConnection } from '@grant
 
 import { config, validateConfig } from '@/config';
 import { logger, loggerFactory } from '@/lib/logger';
+import { resolveDatabaseConnectionString } from '@/lib/secrets';
 
 async function runMigrations(): Promise<void> {
   validateConfig();
 
   const db = initializeDBConnection({
-    connectionString: config.db.url,
+    connectionString: await resolveDatabaseConnectionString(),
     max: config.db.poolMax,
     idleTimeout: config.db.idleTimeout,
     connectTimeout: config.db.connectionTimeout,
