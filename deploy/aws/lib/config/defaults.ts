@@ -49,4 +49,12 @@ export const AWS_TARGET_ENV_DEFAULTS: GrantEnv = {
 
   // The Lambda Web Adapter reads this to know where the app listens.
   API_PORT: '4000',
+
+  // One execution environment serves one request at a time, so a pool larger than
+  // this is never drawn on — it only reserves connections the cluster could give to
+  // another environment. With pooling off by default (a proxy forfeits auto-pause),
+  // every warm environment holds its own connections straight to Aurora. This value
+  // times the function's reserved concurrency is what bounds a burst; see
+  // `compute/api-function.ts` for the arithmetic against Aurora's max_connections.
+  DB_POOL_MAX: '2',
 };

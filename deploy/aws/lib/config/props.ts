@@ -19,8 +19,10 @@
 
 import type { Duration } from 'aws-cdk-lib';
 import type { ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
+import type { ITable } from 'aws-cdk-lib/aws-dynamodb';
 import type { IVpc } from 'aws-cdk-lib/aws-ec2';
 import type { ContainerImage, ICluster } from 'aws-cdk-lib/aws-ecs';
+import type { DockerImageCode } from 'aws-cdk-lib/aws-lambda';
 import type { IHostedZone } from 'aws-cdk-lib/aws-route53';
 import type { IBucket } from 'aws-cdk-lib/aws-s3';
 
@@ -177,12 +179,79 @@ interface StorageProps {
   /**
    * Uploads bucket. Omit to have the stack create one.
    *
-   * An imported bucket's resource policy is not owned by CDK —
-   * `addToResourcePolicy` silently no-ops — so the stack cannot grant it CloudFront
-   * Origin Access Control. Where one is supplied, the required policy is emitted as
-   * a `CfnOutput` rather than appearing to have been applied.
+   * Unlike the docs bucket this is never a CloudFront origin — uploads are
+   * per-tenant and the API authorizes each read — so an imported bucket needs no
+   * out-of-band resource policy. The grant is on the function's role, which CDK owns
+   * whether or not it owns the bucket.
    */
   readonly uploadsBucket?: IBucket;
+
+  /**
+   * Whether teardown may destroy uploaded objects. Default false.
+   *
+   * Enabling this also enables `autoDeleteObjects`, because a non-empty bucket blocks
+   * stack deletion. Both are off for a bucket holding real uploads.
+   */
+  readonly destroyOnRemoval?: boolean;
+}
+
+/** The cache and session store. */
+interface CacheProps {
+  /**
+   * Existing DynamoDB table to use. Omit to have the stack create one.
+   *
+   * Must carry a `pk`/`sk` string key schema and a TTL on `expiresAt` — the contract
+   * `DynamoDBCacheAdapter` writes against. Nothing here can verify that about an
+   * imported table.
+   */
+  readonly table?: ITable;
+
+  /**
+   * Whether teardown may destroy the table. Defaults to **true**, unlike the
+   * database: every item here is a cache entry, a session or a rate-limit counter,
+   * all reconstructible and all TTL'd. Retaining it leaves a billed table nobody
+   * reads again.
+   */
+  readonly destroyOnRemoval?: boolean;
+}
+
+/** The serving function. */
+interface ApiProps {
+  /**
+   * Pre-published image to serve from, e.g.
+   * `DockerImageCode.fromEcr(repository, { tagOrDigest })`.
+   *
+   * Omit and the stack builds from source at deploy time, sharing the asset with the
+   * migration so both run the identical artifact (ADR 0003). An adopter consuming
+   * this as a library has no API source on disk and should pass one.
+   */
+  readonly image?: DockerImageCode;
+
+  /**
+   * Memory, which on Lambda also sets the CPU share. Defaults to 1024 MB; a Node
+   * process running Apollo and Express is starved below roughly 1 GB and cold starts
+   * stretch accordingly.
+   */
+  readonly memorySize?: number;
+
+  /**
+   * Per-request ceiling. Defaults to 30 seconds, matching CloudFront's origin
+   * response timeout — beyond it the edge returns 504 while Lambda keeps billing.
+   */
+  readonly timeout?: Duration;
+
+  /**
+   * Ceiling on concurrent execution environments. Defaults to 20.
+   *
+   * This guards the **database**, not the bill. With pooling off (the default, since
+   * a proxy forfeits Aurora's auto-pause) each warm environment holds its own
+   * connections. An account's default Lambda concurrency limit is 1000, which times
+   * `DB_POOL_MAX=2` is 2000 connections against the roughly 900 Aurora allows at the
+   * default `maxCapacity: 4`. 20 times 2 is 40.
+   *
+   * Pass `0` to leave concurrency unbounded — appropriate once the proxy is enabled.
+   */
+  readonly reservedConcurrency?: number;
 }
 
 /** Top-level props for the whole platform. */
@@ -203,6 +272,11 @@ export interface GrantPlatformProps {
   readonly network?: NetworkProps;
 
   readonly storage?: StorageProps;
+
+  readonly cache?: CacheProps;
+
+  /** The serving function. Created only when the data tier is. */
+  readonly api?: ApiProps;
 
   readonly docs?: DocsProps;
 

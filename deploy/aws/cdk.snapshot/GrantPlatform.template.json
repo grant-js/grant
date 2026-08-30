@@ -509,6 +509,106 @@
         "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/VPCGW"
       }
     },
+    "GrantNetworkVpcS3Endpoint9F0435DA": {
+      "Type": "AWS::EC2::VPCEndpoint",
+      "Properties": {
+        "RouteTableIds": [
+          {
+            "Ref": "GrantNetworkVpcprivateegressSubnet1RouteTable6D0027B9"
+          },
+          {
+            "Ref": "GrantNetworkVpcprivateegressSubnet2RouteTableBA0724DD"
+          },
+          {
+            "Ref": "GrantNetworkVpcpublicSubnet1RouteTable8DFEA180"
+          },
+          {
+            "Ref": "GrantNetworkVpcpublicSubnet2RouteTableAF950457"
+          },
+          {
+            "Ref": "GrantNetworkVpcisolatedSubnet1RouteTable8B1FB3AA"
+          },
+          {
+            "Ref": "GrantNetworkVpcisolatedSubnet2RouteTable7BA65BA7"
+          }
+        ],
+        "ServiceName": {
+          "Fn::Join": [
+            "",
+            [
+              "com.amazonaws.",
+              {
+                "Ref": "AWS::Region"
+              },
+              ".s3"
+            ]
+          ]
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "GrantPlatform/Grant/Network/Vpc"
+          }
+        ],
+        "VpcEndpointType": "Gateway",
+        "VpcId": {
+          "Ref": "GrantNetworkVpc0AD1B27C"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/S3Endpoint/Resource"
+      }
+    },
+    "GrantNetworkVpcDynamoDbEndpoint2F6C3E39": {
+      "Type": "AWS::EC2::VPCEndpoint",
+      "Properties": {
+        "RouteTableIds": [
+          {
+            "Ref": "GrantNetworkVpcprivateegressSubnet1RouteTable6D0027B9"
+          },
+          {
+            "Ref": "GrantNetworkVpcprivateegressSubnet2RouteTableBA0724DD"
+          },
+          {
+            "Ref": "GrantNetworkVpcpublicSubnet1RouteTable8DFEA180"
+          },
+          {
+            "Ref": "GrantNetworkVpcpublicSubnet2RouteTableAF950457"
+          },
+          {
+            "Ref": "GrantNetworkVpcisolatedSubnet1RouteTable8B1FB3AA"
+          },
+          {
+            "Ref": "GrantNetworkVpcisolatedSubnet2RouteTable7BA65BA7"
+          }
+        ],
+        "ServiceName": {
+          "Fn::Join": [
+            "",
+            [
+              "com.amazonaws.",
+              {
+                "Ref": "AWS::Region"
+              },
+              ".dynamodb"
+            ]
+          ]
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "GrantPlatform/Grant/Network/Vpc"
+          }
+        ],
+        "VpcEndpointType": "Gateway",
+        "VpcId": {
+          "Ref": "GrantNetworkVpc0AD1B27C"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Network/Vpc/DynamoDbEndpoint/Resource"
+      }
+    },
     "GrantDatabaseClusterSubnetsF0D5EA18": {
       "Type": "AWS::RDS::DBSubnetGroup",
       "Properties": {
@@ -852,6 +952,10 @@
               {
                 "Name": "API_PORT",
                 "Value": "4000"
+              },
+              {
+                "Name": "DB_POOL_MAX",
+                "Value": "2"
               },
               {
                 "Name": "APP_URL",
@@ -1321,6 +1425,456 @@
       "DeletionPolicy": "Delete",
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/Grant/MigrateTrigger/Trigger/Default/Default"
+      }
+    },
+    "GrantCacheTable1D2DDEFA": {
+      "Type": "AWS::DynamoDB::GlobalTable",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "pk",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "sk",
+            "AttributeType": "S"
+          }
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "KeySchema": [
+          {
+            "AttributeName": "pk",
+            "KeyType": "HASH"
+          },
+          {
+            "AttributeName": "sk",
+            "KeyType": "RANGE"
+          }
+        ],
+        "Replicas": [
+          {
+            "PointInTimeRecoverySpecification": {
+              "PointInTimeRecoveryEnabled": false
+            },
+            "Region": "eu-central-1"
+          }
+        ],
+        "TimeToLiveSpecification": {
+          "AttributeName": "expiresAt",
+          "Enabled": true
+        }
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete",
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Cache/Table/Resource"
+      }
+    },
+    "GrantUploadsBucketCEFFF261": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        }
+      },
+      "UpdateReplacePolicy": "Retain",
+      "DeletionPolicy": "Retain",
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Uploads/Bucket/Resource"
+      }
+    },
+    "GrantUploadsBucketPolicy32C36F42": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "GrantUploadsBucketCEFFF261"
+        },
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "s3:*",
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false"
+                }
+              },
+              "Effect": "Deny",
+              "Principal": {
+                "AWS": "*"
+              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "GrantUploadsBucketCEFFF261",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "GrantUploadsBucketCEFFF261",
+                          "Arn"
+                        ]
+                      },
+                      "/*"
+                    ]
+                  ]
+                }
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Uploads/Bucket/Policy/Resource"
+      }
+    },
+    "GrantApiLogs7DBA426F": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "RetentionInDays": 14
+      },
+      "UpdateReplacePolicy": "Retain",
+      "DeletionPolicy": "Retain",
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Api/Logs/Resource"
+      }
+    },
+    "GrantApiFunctionServiceRoleA3049DC6": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+              ]
+            ]
+          }
+        ]
+      },
+      "DependsOn": [
+        "GrantNetworkVpcprivateegressSubnet1DefaultRouteE76A3F47",
+        "GrantNetworkVpcprivateegressSubnet1RouteTableAssociation2ECAC4A8",
+        "GrantNetworkVpcprivateegressSubnet2DefaultRoute7FAF126D",
+        "GrantNetworkVpcprivateegressSubnet2RouteTableAssociationB2C26EB8"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Api/Function/ServiceRole/Resource"
+      }
+    },
+    "GrantApiFunctionServiceRoleDefaultPolicyB7773B6D": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Ref": "GrantPlatformSecretCBEA56FA"
+              }
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "GrantCacheTable1D2DDEFA",
+                  "Arn"
+                ]
+              }
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "GrantCacheTable1D2DDEFA",
+                  "Arn"
+                ]
+              }
+            },
+            {
+              "Action": [
+                "s3:GetObject*",
+                "s3:GetBucket*",
+                "s3:List*",
+                "s3:DeleteObject*",
+                "s3:PutObject",
+                "s3:PutObjectLegalHold",
+                "s3:PutObjectRetention",
+                "s3:PutObjectTagging",
+                "s3:PutObjectVersionTagging",
+                "s3:Abort*"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "GrantUploadsBucketCEFFF261",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "GrantUploadsBucketCEFFF261",
+                          "Arn"
+                        ]
+                      },
+                      "/*"
+                    ]
+                  ]
+                }
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "GrantApiFunctionServiceRoleDefaultPolicyB7773B6D",
+        "Roles": [
+          {
+            "Ref": "GrantApiFunctionServiceRoleA3049DC6"
+          }
+        ]
+      },
+      "DependsOn": [
+        "GrantNetworkVpcprivateegressSubnet1DefaultRouteE76A3F47",
+        "GrantNetworkVpcprivateegressSubnet1RouteTableAssociation2ECAC4A8",
+        "GrantNetworkVpcprivateegressSubnet2DefaultRoute7FAF126D",
+        "GrantNetworkVpcprivateegressSubnet2RouteTableAssociationB2C26EB8"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Api/Function/ServiceRole/DefaultPolicy/Resource"
+      }
+    },
+    "GrantApiFunction17129135": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ImageUri": {
+            "Fn::Join": [
+              "",
+              [
+                "000000000000.dkr.ecr.eu-central-1.",
+                {
+                  "Ref": "AWS::URLSuffix"
+                },
+                "/cdk-hnb659fds-container-assets-000000000000-eu-central-1:<asset-hash>"
+              ]
+            ]
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "NODE_ENV": "production",
+            "DB_BOOTSTRAP_ON_BOOT": "false",
+            "CACHE_STRATEGY": "dynamodb",
+            "STORAGE_PROVIDER": "s3",
+            "TELEMETRY_PROVIDER": "emf",
+            "SECRETS_PROVIDER": "aws-secrets-manager",
+            "TRACING_SPAN_PROCESSOR": "simple",
+            "METRICS_ENABLED": "false",
+            "API_PORT": "4000",
+            "DB_POOL_MAX": "2",
+            "APP_URL": "https://grant.example.com",
+            "SECURITY_FRONTEND_URL": "https://grant.example.com",
+            "DOCS_URL": "https://grant.example.com/docs",
+            "SECRETS_AWS_SECRET_ID": {
+              "Fn::Join": [
+                "-",
+                [
+                  {
+                    "Fn::Select": [
+                      0,
+                      {
+                        "Fn::Split": [
+                          "-",
+                          {
+                            "Fn::Select": [
+                              6,
+                              {
+                                "Fn::Split": [
+                                  ":",
+                                  {
+                                    "Ref": "GrantPlatformSecretCBEA56FA"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Fn::Select": [
+                      1,
+                      {
+                        "Fn::Split": [
+                          "-",
+                          {
+                            "Fn::Select": [
+                              6,
+                              {
+                                "Fn::Split": [
+                                  ":",
+                                  {
+                                    "Ref": "GrantPlatformSecretCBEA56FA"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              ]
+            },
+            "SECRETS_AWS_REGION": "eu-central-1",
+            "STORAGE_S3_BUCKET": {
+              "Ref": "GrantUploadsBucketCEFFF261"
+            },
+            "STORAGE_S3_REGION": "eu-central-1",
+            "CACHE_DYNAMODB_TABLE": {
+              "Ref": "GrantCacheTable1D2DDEFA"
+            },
+            "CACHE_DYNAMODB_REGION": "eu-central-1"
+          }
+        },
+        "LoggingConfig": {
+          "LogGroup": {
+            "Ref": "GrantApiLogs7DBA426F"
+          }
+        },
+        "MemorySize": 1024,
+        "PackageType": "Image",
+        "ReservedConcurrentExecutions": 20,
+        "Role": {
+          "Fn::GetAtt": [
+            "GrantApiFunctionServiceRoleA3049DC6",
+            "Arn"
+          ]
+        },
+        "Timeout": 30,
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::GetAtt": [
+                "GrantDatabaseClientsEC63EC18",
+                "GroupId"
+              ]
+            }
+          ],
+          "SubnetIds": [
+            {
+              "Ref": "GrantNetworkVpcprivateegressSubnet1Subnet520E2403"
+            },
+            {
+              "Ref": "GrantNetworkVpcprivateegressSubnet2Subnet2A5B7DBC"
+            }
+          ]
+        }
+      },
+      "DependsOn": [
+        "GrantApiFunctionServiceRoleDefaultPolicyB7773B6D",
+        "GrantApiFunctionServiceRoleA3049DC6",
+        "GrantNetworkVpcprivateegressSubnet1DefaultRouteE76A3F47",
+        "GrantNetworkVpcprivateegressSubnet1RouteTableAssociation2ECAC4A8",
+        "GrantNetworkVpcprivateegressSubnet2DefaultRoute7FAF126D",
+        "GrantNetworkVpcprivateegressSubnet2RouteTableAssociationB2C26EB8"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Api/Function/Resource"
+      }
+    },
+    "GrantApiFunctionFunctionUrl06A8617E": {
+      "Type": "AWS::Lambda::Url",
+      "Properties": {
+        "AuthType": "AWS_IAM",
+        "TargetFunctionArn": {
+          "Fn::GetAtt": [
+            "GrantApiFunction17129135",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "GrantNetworkVpcprivateegressSubnet1DefaultRouteE76A3F47",
+        "GrantNetworkVpcprivateegressSubnet1RouteTableAssociation2ECAC4A8",
+        "GrantNetworkVpcprivateegressSubnet2DefaultRoute7FAF126D",
+        "GrantNetworkVpcprivateegressSubnet2RouteTableAssociationB2C26EB8"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Api/Function/FunctionUrl/Resource"
       }
     },
     "GrantDocsBucket9B92AB66": {
@@ -2166,7 +2720,7 @@
     "CDKMetadata": {
       "Type": "AWS::CDK::Metadata",
       "Properties": {
-        "Analytics": "v2:deflate64:H4sIAAAAAAAA/5VUy27bMBD8lvjMsK2dtkBvttUEBtLGsIJcisJYUWuVMUUK3GVcQ9C/FxRtWUiRAj3t7OxDIw6lqZx++izfX8GBrlW5vza6kG3OoPZig+SCVyjgQNsW1VS2T40Sy519Wi/FOhRGqzwUFjlyF7RxgfERCoMX/sLNiZzSwNrZoTmCr6t1DN+B74DxAEex9voFGC+LV5bRWxwakpJTNmcG9atGyyJHFbzm4513oek1/JNY2cojUSd8SbLNgKEAwqUJxOhFevwwmS3GxLk5R+WTxmxxHuyTlSUGq7AT1LdQDRYq9LJNKuJUCo/gK+TRWwwNf1US3QlUfgtEyCQzp/boVzVU8YCRY01usHGk2fnjAggFKpLtSN0Z3oKvILpD+wx32uqzN68ZZxm0RX/hOqGhlu3GJa/7uHZGq96chDphXEWyvXfVcIoDvnfVBhltWmagLkqQ7W2w6ixiwE/o6cSN4D0c0Z/zXNvKILthqBM0k+0iqH1yJ6Ef7aTWv7WdfJmMr3285jSTfYlkap0HdhkaZHwonlExTbqfIpUu7znO/2N3GsgZGKOto9XRrih925bYGHeM5dNQNhDiZH3vdyeUcaHceWf5jfPLNLHXReiTfPbgdaXtXCkkis56Z2L7G/R4uBM+frQfZ7Kdb1A5X/be9yhHFnMASFnXiV5dzlBpW6W200+Fva4q9CQfExDLQOzqoR61BG4Cn27F1kSnt3AgZbScH2hpdG/+q8G1dy+6RN9f+eXOfoOm0bbqhHUlymd69zK9kR9u5PurZ9L62gfLuka5SfEPnBSQwA8FAAA="
+        "Analytics": "v2:deflate64:H4sIAAAAAAAA/31UwW7bMAz9lt5VrUu77ZwmbRGg24K4yzWgZUZTI0uGSDUIDP/7IMt2sg7diY+PjwKpJ3smZ1+/yZsrONK1qg7X1pSyLRjUQWyQfAwKBRxp16KayXbbKLHYu+16IdaxtEYVsXTIiTujjY+ML1BaPPNnbk7klQE23k3iBB5W6xR+AD8B4xFOYh3MGzCeD145xuBwEuRJhmzODOp3jY7FwGwb9eCqxhvHg3RKC1QxGD49BR+bfsr/EiunAxJ1IlQk2yUwlEC4sJEYg8gDTp3L+0tiFBeoQt5ieT829snKEYNT2AnqJVSDA41BtnmK1JXDCwSNfLHnJPinkulOoAo7IEImufTqgGFVg04WIKea3GDjybAPp3sgFKhIthfTjfARgobkHx2WuDfOjO69Z7xjMA7DmeuEgVq2G59fQx/X3hrV25dRJ6zXJNtnr6dbnPCz1xtkdPkwC3VZgWwfo1PjEBPeYqCBG+HF1pNsBL+CTdIhPMMJw9hWGKctsp/O7kR1clD7qpRt/4y3s9T0ZH0Jtic6QbeyvY/qkG0eUA7njf/Kc5KuPnXv2gob60/JQZlLy4kQg429d51Q1sdqH7zjD+5iaYiDKWOfFLc/g9HGzZVCouRS8P3SH9CXzZ0I6RP9civb+QaVD1XvY48KZDEHgJx1neinKxi0cTrLhl8IB6M1BpIvGYhFJPb1VE+zRG4iDw7vbLJjB0dS1sj5kRbW9A69a1wH/2YqDP3zXezdd2ga43QnnK9QvtKnt9md/Hwnb65eyZjrEB2bGuUmxz+zITEq/QQAAA=="
       },
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/CDKMetadata/Default"
@@ -2279,6 +2833,15 @@
     }
   },
   "Outputs": {
+    "GrantApiFunctionUrlB01E0C67": {
+      "Description": "IAM-authorized origin endpoint. Not publicly reachable; sign requests with SigV4.",
+      "Value": {
+        "Fn::GetAtt": [
+          "GrantApiFunctionFunctionUrl06A8617E",
+          "FunctionUrl"
+        ]
+      }
+    },
     "GrantDatabaseSecretNameB16909AE": {
       "Description": "Set SECRETS_AWS_SECRET_ID to this; credentials are resolved per use, never inlined.",
       "Value": {
