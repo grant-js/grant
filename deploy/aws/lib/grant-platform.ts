@@ -24,21 +24,25 @@ import { fileURLToPath } from 'node:url';
 
 import { CfnOutput, Stack } from 'aws-cdk-lib';
 import { SecurityGroup } from 'aws-cdk-lib/aws-ec2';
+import { DockerImageCode } from 'aws-cdk-lib/aws-lambda';
 import { AaaaRecord, ARecord, RecordTarget } from 'aws-cdk-lib/aws-route53';
 import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
 import { Construct } from 'constructs';
 
 import { ASSET_BEHAVIOURS, type CloudFrontBehaviour, toCloudFrontBehaviours } from './behaviours';
+import { ApiFunction } from './compute/api-function';
 import { ApiImage } from './compute/api-image';
 import { MigrateTask } from './compute/migrate-task';
 import { MigrateTrigger } from './compute/migrate-trigger';
 import { AWS_TARGET_ENV_DEFAULTS } from './config/defaults';
 import type { GrantEnv, GrantPlatformProps } from './config/props';
 import { assertCertificateRegion, validateAppUrl, validateHostnameInZone } from './config/validate';
+import { CacheTable } from './data/cache-table';
 import { Database } from './data/database';
 import { Network } from './data/network';
 import { PlatformSecret } from './data/platform-secret';
 import { DatabaseConnectionProxy } from './data/proxy';
+import { StorageBucket } from './data/storage-bucket';
 import { EdgeCertificate } from './edge/certificate';
 import { EdgeDistribution } from './edge/distribution';
 import { DocsSite } from './edge/docs-site';
@@ -74,6 +78,19 @@ export class GrantPlatform extends Construct {
 
   /** Present only when the data tier was requested and migration is enabled. */
   public readonly migrateTask?: MigrateTask;
+
+  /** Present only when the data tier was requested. */
+  public readonly cacheTable?: CacheTable;
+  public readonly uploads?: StorageBucket;
+
+  /**
+   * The serving function. Present only when the data tier was requested.
+   *
+   * Bring-your-own-Postgres does not get one yet: the function reads `DB_URL` from
+   * the platform secret, which this construct only creates alongside its own cluster.
+   * Serving against an external database is a follow-up, not an omission.
+   */
+  public readonly api?: ApiFunction;
 
   constructor(scope: Construct, id: string, props: GrantPlatformProps) {
     super(scope, id);
@@ -173,6 +190,17 @@ export class GrantPlatform extends Construct {
         databaseName: this.database.databaseName,
       });
 
+      // One asset, built at most once and shared by the migration and the serving
+      // function — ADR 0003's "one image everywhere", enforced by construction rather
+      // than by convention. Lazy, so a deploy where both images are caller-supplied
+      // builds nothing.
+      let builtImage: ApiImage | undefined;
+      const buildImage = (): ApiImage => (builtImage ??= new ApiImage(this, 'ApiImage'));
+      const builtImageCode = (): DockerImageCode => {
+        const { asset } = buildImage();
+        return DockerImageCode.fromEcr(asset.repository, { tagOrDigest: asset.imageTag });
+      };
+
       if (props.migration?.enabled ?? true) {
         // Built from source unless the caller supplied one. `imageIdentifier` is what
         // re-arms the migration trigger, so a caller-supplied image needs the caller
@@ -180,7 +208,7 @@ export class GrantPlatform extends Construct {
         let image = props.migration?.image;
         let imageIdentifier = props.migration?.imageIdentifier ?? 'caller-supplied';
         if (!image) {
-          const built = new ApiImage(this, 'ApiImage');
+          const built = buildImage();
           image = built.containerImage;
           imageIdentifier = built.imageIdentifier;
         }
@@ -199,10 +227,10 @@ export class GrantPlatform extends Construct {
             // bucket and static S3 keys for a task that opens neither. Declaring the
             // provider it actually uses is the honest configuration, not a workaround.
             //
-            // The serving function in 4c does need S3, and cannot do this. It is
-            // blocked on making the static keys optional so the task role's default
-            // credential chain applies — which is what CACHE_DYNAMODB_* already does
-            // (`apps/api/src/config/env.config.ts:270`) and what S3 does not.
+            // The serving function does need S3 and does not do this: the static
+            // keys are now optional, so its role's default credential chain applies.
+            // This stays `local` regardless, because it is the honest configuration
+            // for a task that opens no object storage — not a workaround for a gap.
             STORAGE_PROVIDER: 'local',
           },
           cluster: props.migration?.cluster,
@@ -219,6 +247,50 @@ export class GrantPlatform extends Construct {
           executeAfter: this.proxy ? [this.proxy, this.platformSecret] : [this.platformSecret],
         });
       }
+
+      this.cacheTable = new CacheTable(this, 'Cache', {
+        table: props.cache?.table,
+        destroyOnRemoval: props.cache?.destroyOnRemoval,
+      });
+
+      this.uploads = new StorageBucket(this, 'Uploads', {
+        bucket: props.storage?.uploadsBucket,
+        destroyOnRemoval: props.storage?.destroyOnRemoval,
+      });
+
+      this.api = new ApiFunction(this, 'Api', {
+        vpc: this.network.vpc,
+        code: props.api?.image ?? builtImageCode(),
+        securityGroups: [this.databaseClientSecurityGroup],
+        platformSecret: this.platformSecret.secret,
+        cacheTable: this.cacheTable.table,
+        uploadsBucket: this.uploads.bucket,
+        environment: {
+          ...this.env,
+          // The resolver's own configuration, not a credential: it names *where* to
+          // look, and the function's role is what permits the lookup. DB_URL itself
+          // never enters this environment — create-app.ts resolves it per use
+          // through ISecretResolver (ADR 0004), which is what lets a rotation reach a
+          // warm container.
+          SECRETS_AWS_SECRET_ID: this.platformSecret.secret.secretName,
+          SECRETS_AWS_REGION: Stack.of(this).region,
+          // Names only. The static STORAGE_S3_* and CACHE_DYNAMODB_* keys are left
+          // unset so the SDK falls through to the function role's credentials.
+          STORAGE_S3_BUCKET: this.uploads.bucket.bucketName,
+          STORAGE_S3_REGION: Stack.of(this).region,
+          CACHE_DYNAMODB_TABLE: this.cacheTable.table.tableName,
+          CACHE_DYNAMODB_REGION: Stack.of(this).region,
+        },
+        memorySize: props.api?.memorySize,
+        timeout: props.api?.timeout,
+        reservedConcurrency: props.api?.reservedConcurrency,
+      });
+
+      new CfnOutput(this, 'ApiFunctionUrl', {
+        value: this.api.functionUrl.url,
+        description:
+          'IAM-authorized origin endpoint. Not publicly reachable; sign requests with SigV4.',
+      });
 
       new CfnOutput(this, 'DatabaseSecretName', {
         value: this.platformSecret.secret.secretName,

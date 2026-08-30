@@ -12,7 +12,13 @@
  * downstream can tell the difference.
  */
 
-import { IpAddresses, type IVpc, SubnetType, Vpc } from 'aws-cdk-lib/aws-ec2';
+import {
+  GatewayVpcEndpointAwsService,
+  IpAddresses,
+  type IVpc,
+  SubnetType,
+  Vpc,
+} from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 
 export interface NetworkProps {
@@ -92,5 +98,22 @@ export class Network extends Construct {
           },
         ],
       });
+
+    // Gateway endpoints keep S3 and DynamoDB traffic off the NAT gateway. They are
+    // free — no hourly charge and no data processing — so the only reason not to add
+    // them is that the routes belong to route tables this construct may not own.
+    //
+    // Created only when the VPC is ours. `Vpc.fromVpcAttributes()` does not carry
+    // route table IDs, so `addGatewayEndpoint` on an imported VPC either fails or
+    // silently attaches to nothing; an adopter supplying their own VPC adds these
+    // themselves, where they can see which route tables are affected.
+    if (this.ownsVpc) {
+      this.vpc.addGatewayEndpoint('S3Endpoint', {
+        service: GatewayVpcEndpointAwsService.S3,
+      });
+      this.vpc.addGatewayEndpoint('DynamoDbEndpoint', {
+        service: GatewayVpcEndpointAwsService.DYNAMODB,
+      });
+    }
   }
 }
