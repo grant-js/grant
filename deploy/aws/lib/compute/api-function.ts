@@ -92,8 +92,10 @@ export class ApiFunction extends Construct {
   public readonly function: DockerImageFunction;
 
   /**
-   * The invocation endpoint. `AWS_IAM`-authorized, so it is not reachable without a
-   * signed request — the distribution reaches it through Origin Access Control.
+   * The invocation endpoint.
+   *
+   * Reachable, and guarded by a shared secret the application checks rather than by
+   * IAM. See the note at its creation for why IAM is not available here.
    */
   public readonly functionUrl: IFunctionUrl;
 
@@ -141,12 +143,25 @@ export class ApiFunction extends Construct {
     props.uploadsBucket.grantReadWrite(this.function);
 
     this.functionUrl = this.function.addFunctionUrl({
-      // Not NONE. A Function URL with NONE is a public endpoint that bypasses
-      // CloudFront entirely — every header rule, the WAF and any edge behaviour
-      // become advisory, because the origin answers the internet directly. IAM auth
-      // means only a principal the stack granted can invoke it, and slice 4d grants
-      // exactly one: the distribution, through Origin Access Control.
-      authType: FunctionUrlAuthType.AWS_IAM,
+      // `AWS_IAM` would be the better answer and is not available to this API. Slice
+      // 4c shipped it, and verifying the edge in 4d established that CloudFront's
+      // Origin Access Control cannot carry this application's traffic:
+      //
+      //   - OAC's recommended `SigningBehavior: always` overwrites the viewer's
+      //     `Authorization` header with its own SigV4 signature, so bearer tokens
+      //     cannot survive the hop. `no-override` does not help: it declines to sign
+      //     when the viewer sends `Authorization`, and IAM then refuses the unsigned
+      //     request.
+      //   - `POST` and `PUT` through OAC require the *viewer* to send
+      //     `x-amz-content-sha256` with the body hash, because CloudFront will not
+      //     buffer the body to compute it. GraphQL is POST-only from a browser.
+      //
+      // So the URL answers the internet, and `originVerifyMiddleware` in `apps/api`
+      // refuses anything without the secret CloudFront attaches as an origin custom
+      // header. The difference from IAM is where enforcement happens: AWS turns away
+      // an unsigned request before any code runs, while this costs one short
+      // invocation. Reserved concurrency bounds that.
+      authType: FunctionUrlAuthType.NONE,
     });
   }
 }

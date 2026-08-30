@@ -128,21 +128,42 @@ describe('no credential reaches the serving function', () => {
   });
 });
 
-describe('the function URL is an origin, not a public endpoint', () => {
-  it('requires IAM authorization', () => {
-    // AuthType NONE would make the URL publicly reachable and bypass CloudFront
-    // entirely — every edge behaviour, header rule and WAF association becomes
-    // advisory when the origin answers the internet directly.
+describe('the function URL answers the internet, and is guarded in the app', () => {
+  it('is unauthenticated at the AWS layer, by necessity', () => {
+    // This started as AWS_IAM and had to change. CloudFront's Origin Access Control
+    // cannot carry this API: its recommended signing mode overwrites the viewer's
+    // Authorization header, and POST through OAC requires the *viewer* to send
+    // x-amz-content-sha256 with the body hash. GraphQL is POST-only from a browser.
+    //
+    // Asserted rather than left implicit so the cost of that constraint is visible in
+    // the test suite: nothing at the AWS layer refuses an unsigned caller here.
     const { template } = build();
-    template.hasResourceProperties('AWS::Lambda::Url', { AuthType: 'AWS_IAM' });
+    template.hasResourceProperties('AWS::Lambda::Url', { AuthType: 'NONE' });
   });
 
-  it('grants no principal invoke permission yet', () => {
-    // The distribution's Origin Access Control arrives in 4d. Until then nothing may
-    // invoke the URL, which is the correct state for a half-wired stack — better than
-    // a window in which the origin is reachable by anyone.
+  it('is therefore invokable by any principal, which is the whole exposure', () => {
+    // CDK attaches a `*`-principal permission for a NONE URL. What actually turns
+    // away a direct caller is originVerifyMiddleware in apps/api, checking a secret
+    // only CloudFront attaches — enforced in the function rather than by AWS, so a
+    // probe costs one short invocation. Reserved concurrency bounds that.
     const { template } = build();
-    template.resourceCountIs('AWS::Lambda::Permission', 0);
+    const permissions = Object.values(template.findResources('AWS::Lambda::Permission'));
+    const urlPermissions = permissions.filter(
+      (p) => (p.Properties as { FunctionUrlAuthType?: string }).FunctionUrlAuthType === 'NONE'
+    );
+
+    expect(urlPermissions).toHaveLength(1);
+    expect((urlPermissions[0].Properties as { Principal: string }).Principal).toBe('*');
+  });
+
+  it('generates the origin secret rather than composing it into the template', () => {
+    // The compensating control. It must exist in the secret and not as a literal
+    // anywhere in the template.
+    const { template } = build();
+    const secrets = JSON.stringify(template.findResources('AWS::SecretsManager::Secret'));
+
+    expect(secrets).toMatch(/ORIGIN_VERIFY_SECRET/);
+    expect(secrets).not.toMatch(/"[A-Za-z0-9]{64}"/);
   });
 });
 

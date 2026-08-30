@@ -21,10 +21,12 @@ import {
   FunctionCode,
   FunctionEventType,
   HttpVersion,
+  OriginRequestPolicy,
   PriceClass,
   ViewerProtocolPolicy,
 } from 'aws-cdk-lib/aws-cloudfront';
-import { S3BucketOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
+import { FunctionUrlOrigin, S3BucketOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
+import type { IFunctionUrl } from 'aws-cdk-lib/aws-lambda';
 import type { IBucket } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 
@@ -36,6 +38,21 @@ export interface EdgeDistributionProps {
   readonly hostname: string;
   readonly certificate: ICertificate;
   readonly docsBucket: IBucket;
+
+  /** The API's invocation endpoint. Omit and no API behaviour is created. */
+  readonly apiFunctionUrl?: IFunctionUrl;
+
+  /**
+   * Secret CloudFront attaches to every API origin request, proving the request
+   * came through the edge. Required whenever `apiFunctionUrl` is given.
+   *
+   * Pass a `{{resolve:secretsmanager:…}}` dynamic reference rather than a literal —
+   * CloudFormation resolves it at deploy and the plaintext never enters the template.
+   */
+  readonly apiOriginSecret?: string;
+
+  /** Header the secret travels in. Must match `SECURITY_ORIGIN_VERIFY_HEADER`. */
+  readonly apiOriginSecretHeader?: string;
 }
 
 export class EdgeDistribution extends Construct {
@@ -77,6 +94,21 @@ export class EdgeDistribution extends Construct {
       throw new Error('No docs behaviour was derived from the canonical routing table');
     }
 
+    const apiBehaviours = this.buildApiBehaviours(props, derived);
+
+    // Assembled by walking the derivation, not by spreading two maps together.
+    // Insertion order into this object is the order CloudFront evaluates, and
+    // building it any other way silently reorders the routing plan — `/docs/*`
+    // precedes `/api/*` in the canonical table, and an object spread put it last.
+    const additionalBehaviors: Record<string, BehaviorOptions> = {};
+    for (const behaviour of derived) {
+      if (behaviour.pathPattern === docsPattern.pathPattern) {
+        additionalBehaviors[behaviour.pathPattern] = docsBehaviour;
+      } else if (apiBehaviours[behaviour.pathPattern]) {
+        additionalBehaviors[behaviour.pathPattern] = apiBehaviours[behaviour.pathPattern];
+      }
+    }
+
     this.distribution = new Distribution(this, 'Distribution', {
       domainNames: [props.hostname],
       certificate: props.certificate,
@@ -93,9 +125,11 @@ export class EdgeDistribution extends Construct {
           { function: trailingSlashRedirect, eventType: FunctionEventType.VIEWER_REQUEST },
         ],
       },
-      additionalBehaviors: {
-        [docsPattern.pathPattern]: docsBehaviour,
-      },
+      // Order is load-bearing and comes from `routesByPrecedence()`, never from the
+      // declaration array's own order. CloudFront evaluates behaviours in the order
+      // they are declared rather than by specificity, so `/api/*` landing after a
+      // broader pattern would silently never match.
+      additionalBehaviors,
       errorResponses: [
         {
           // S3 returns 403 for a missing key when the caller cannot list the bucket,
@@ -108,5 +142,56 @@ export class EdgeDistribution extends Construct {
         },
       ],
     });
+  }
+
+  /**
+   * Behaviours routing to the API, or none when the origin has not been supplied.
+   *
+   * Everything here is uncached. `toCloudFrontBehaviours` already resolves the policy
+   * per route, and every API route resolves to `disabled` or `short`; a cached
+   * authenticated response is a cross-tenant data leak, so this asserts the
+   * derivation agreed rather than trusting it.
+   */
+  private buildApiBehaviours(
+    props: EdgeDistributionProps,
+    derived: ReturnType<typeof toCloudFrontBehaviours>
+  ): Record<string, BehaviorOptions> {
+    if (!props.apiFunctionUrl) return {};
+
+    if (!props.apiOriginSecret) {
+      // Without the secret the origin would answer the internet directly and every
+      // behaviour here would be advisory. Refusing at synth beats deploying it.
+      throw new Error('apiOriginSecret is required when apiFunctionUrl is given');
+    }
+
+    const header = props.apiOriginSecretHeader ?? 'x-origin-verify';
+
+    const apiOrigin = new FunctionUrlOrigin(props.apiFunctionUrl, {
+      // The only thing separating an edge request from a direct one. It is a
+      // CloudFormation dynamic reference, so the plaintext is not in this template.
+      customHeaders: { [header]: props.apiOriginSecret },
+    });
+
+    const behaviours: Record<string, BehaviorOptions> = {};
+    for (const behaviour of derived) {
+      if (behaviour.origin !== 'api') continue;
+
+      behaviours[behaviour.pathPattern] = {
+        origin: apiOrigin,
+        viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        // GraphQL is POST-only and the REST surface writes, so the read-only method
+        // set would turn every mutation into a 405 at the edge.
+        allowedMethods: AllowedMethods.ALLOW_ALL,
+        cachePolicy: CachePolicy.CACHING_DISABLED,
+        // ALL_VIEWER_EXCEPT_HOST_HEADER, and the exception is the point: a Function
+        // URL rejects a request whose Host is not its own, so forwarding the viewer's
+        // Host breaks every call. Everything else — Authorization, Cookie, the
+        // CloudFront-Viewer-* set that carries the real client address — is forwarded,
+        // because the API authenticates and rate-limits on them.
+        originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+      };
+    }
+
+    return behaviours;
   }
 }
