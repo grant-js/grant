@@ -18,6 +18,6 @@
       "@/config/*": ["./src/config/*"]
     }
   },
-  "include": ["src/**/*", "tests/**/*"],
+  "include": ["src/**/*", "tests/**/*", "vitest.config.ts", "vitest.config.e2e.ts"],
   "exclude": ["node_modules", "dist"]
 }

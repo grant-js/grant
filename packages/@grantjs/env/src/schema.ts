@@ -142,6 +142,21 @@ export const envSchema = z.object({
   SECURITY_FRONTEND_URL: optionalString('http://localhost:3000'),
   SECURITY_ADDITIONAL_ORIGINS: optionalString(''),
   SECURITY_ENABLE_HELMET: optionalBoolean(true),
+
+  /**
+   * Header naming the real client IP, when a trusted proxy sets one.
+   *
+   * Empty by default, which keeps the historical `x-forwarded-for` handling. Set it
+   * only where the edge is known to overwrite the header rather than append to it —
+   * `cloudfront-viewer-address` on the AWS target. See `getClientIp`.
+   */
+  SECURITY_TRUSTED_CLIENT_IP_HEADER: optionalString(''),
+
+  /**
+   * Header carrying the shared secret that proves a request arrived through the CDN
+   * rather than directly at the origin. Only enforced when a secret is configured.
+   */
+  SECURITY_ORIGIN_VERIFY_HEADER: optionalString('x-origin-verify'),
   /** When undefined, API config derives from NODE_ENV (production -> true) */
   SECURITY_ENABLE_RATE_LIMIT: z
     .union([z.string(), z.undefined()])
