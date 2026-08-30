@@ -1419,6 +1419,13 @@
         "ExecuteOnHandlerChange": true
       },
       "DependsOn": [
+        "GrantDatabaseCluster299E828E",
+        "GrantDatabaseClusterSecretAttachmentAD6E16E9",
+        "GrantPlatformGrantDatabaseClusterSecretA1048C1A3fdaad7efa858a3daf9490cf0a702aeb",
+        "GrantDatabaseClusterSecurityGroupfromGrantPlatformGrantDatabaseClients1ABF8663IndirectPort087B05F2",
+        "GrantDatabaseClusterSecurityGroup3AFA53E8",
+        "GrantDatabaseClusterSubnetsF0D5EA18",
+        "GrantDatabaseClusterWriterC3A48690",
         "GrantPlatformSecretCBEA56FA"
       ],
       "UpdateReplacePolicy": "Delete",
