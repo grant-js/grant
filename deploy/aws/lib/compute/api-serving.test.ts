@@ -162,6 +162,16 @@ describe('database connections stay within what Aurora accepts', () => {
     expect(props.ReservedConcurrentExecutions * poolMax).toBeLessThan(100);
   });
 
+  it('allocates a full vCPU, because boot is CPU-bound', () => {
+    // 1,769 MB is the threshold where Lambda gives a function one whole vCPU. The
+    // setting is not about memory — a live deploy used 350 MB — it is about cold
+    // start, 77% of which is loading the module graph. Dropping below this to "save
+    // memory" would buy nothing and cost CPU.
+    const { template } = build();
+    const props = apiFunction(template).Properties as { MemorySize: number };
+    expect(props.MemorySize).toBeGreaterThanOrEqual(1769);
+  });
+
   it('lets concurrency be unbounded only when asked explicitly', () => {
     // 0 is the opt-out for a deployment that has enabled the proxy, where the pool
     // lives in the proxy rather than in each execution environment.

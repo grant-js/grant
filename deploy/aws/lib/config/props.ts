@@ -228,9 +228,13 @@ interface ApiProps {
   readonly image?: DockerImageCode;
 
   /**
-   * Memory, which on Lambda also sets the CPU share. Defaults to 1024 MB; a Node
-   * process running Apollo and Express is starved below roughly 1 GB and cold starts
-   * stretch accordingly.
+   * Memory, which on Lambda also sets the CPU share. Defaults to **1769 MB**, the
+   * point at which a function gets one full vCPU.
+   *
+   * Chosen for CPU rather than memory: a live deploy used 350 MB. Boot is CPU-bound,
+   * and a measured 8.9 s cold start sits against Lambda's 10 s init ceiling. Billing
+   * is per GB-millisecond, so a higher rate against a shorter init is close to
+   * cost-neutral.
    */
   readonly memorySize?: number;
 

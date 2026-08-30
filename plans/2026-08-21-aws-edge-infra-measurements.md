@@ -870,3 +870,38 @@ Ranked candidates, not yet implemented:
 Ruled out: **SnapStart** supports Java, Python and .NET and requires ZIP packaging, not
 container images. **Provisioned concurrency** bills continuously, contradicting the
 premise the target is built on.
+
+## Cold start — first two optimizations
+
+**Date**: 2026-08-30 · Applied after the 4c deploy measured 8.9 s init.
+
+### Deferring OpenAPI generation — measured
+
+`createApp()` generated the 87-path OpenAPI document at boot, for a document read only
+by `/api-docs` and `/api-docs.json`. Now generated on first request and memoized.
+
+Measured by running the shipped image before and after, same probe, three runs each:
+
+| Phase         | Before (ms) | After (ms) |
+| ------------- | ----------- | ---------- |
+| Module import | 2426–2468   | 2435–2454  |
+| `createApp()` | **300–332** | **24–26**  |
+| Total boot    | ~2769       | ~2472      |
+
+`createApp()` is **92% faster**; total local boot falls ~297 ms, about 11%. On Lambda's
+slower core the saving is proportionally larger.
+
+**Import is unchanged**, which is the point worth carrying: it is ~2,445 ms of the
+~2,472 ms that remains, and nothing here touches it. Bundling is the fix for that and
+it is its own slice.
+
+### Memory 1024 → 1769 MB — not yet verified
+
+1,769 MB is where Lambda allocates one full vCPU, against roughly 0.58 at 1 GB. Chosen
+for CPU, not memory: the deploy used 350 MB of the 1024 it had, and 77% of boot is
+CPU-bound module loading. Billing is per GB-millisecond, so a 1.73x rate against a
+proportionally shorter init is close to cost-neutral, and warm invocations get cheaper.
+
+**This cannot be measured locally** — a container gets the host's CPU regardless of the
+Lambda memory setting. It is the one change here whose effect is only observable on the
+next deploy, and it should be checked against the 8.9 s baseline then.
