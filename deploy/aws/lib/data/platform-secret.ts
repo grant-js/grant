@@ -16,6 +16,7 @@
  * proxy requires TLS. Composing it is the only place the `sslmode` can be attached.
  */
 
+import type { SecretValue } from 'aws-cdk-lib';
 import { type ISecret, Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
@@ -47,8 +48,15 @@ export interface PlatformSecretProps {
   readonly port: number;
   readonly databaseName: string;
 
-  /** Extra `ENV_NAME: value` pairs. Merged after the defaults, so a caller wins. */
-  readonly extraEnv?: Readonly<Record<string, string>>;
+  /**
+   * Extra `ENV_NAME: value` pairs. Merged after the defaults, so a caller wins.
+   *
+   * `SecretValue` rather than `string`: a value built from
+   * `SecretValue.secretsManager(...)` renders as a dynamic reference and keeps the
+   * plaintext out of the template, while `unsafePlainText` does not. See
+   * `GrantPlatformProps.secrets`.
+   */
+  readonly extraEnv?: Readonly<Record<string, SecretValue>>;
 }
 
 export class PlatformSecret extends Construct {
@@ -79,7 +87,12 @@ export class PlatformSecret extends Construct {
         // Everything known at synth goes in the template; the one generated value is
         // added to it by Secrets Manager. `generateStringKey` cannot be combined with
         // `secretObjectValue`, which is why the composed keys are serialized here.
-        secretStringTemplate: JSON.stringify({ DB_URL: dbUrl, ...(props.extraEnv ?? {}) }),
+        secretStringTemplate: JSON.stringify({
+          DB_URL: dbUrl,
+          ...Object.fromEntries(
+            Object.entries(props.extraEnv ?? {}).map(([key, value]) => [key, value.unsafeUnwrap()])
+          ),
+        }),
         generateStringKey: ORIGIN_VERIFY_SECRET_KEY,
         // The value travels in an HTTP header, so it must survive header encoding
         // unambiguously. Alphanumeric only, and long enough that length rather than

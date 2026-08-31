@@ -1700,6 +1700,14 @@
                   ]
                 }
               ]
+            },
+            {
+              "Action": [
+                "ses:SendEmail",
+                "ses:SendRawEmail"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
             }
           ],
           "Version": "2012-10-17"
@@ -1930,6 +1938,110 @@
       ],
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/Grant/Api/Function/invoke-function"
+      }
+    },
+    "GrantWebLogs6BC96A53": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "RetentionInDays": 14
+      },
+      "UpdateReplacePolicy": "Retain",
+      "DeletionPolicy": "Retain",
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Web/Logs/Resource"
+      }
+    },
+    "GrantWebFunctionServiceRole1AFFFDF0": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Web/Function/ServiceRole/Resource"
+      }
+    },
+    "GrantWebFunctionF35070FA": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ImageUri": {
+            "Fn::Join": [
+              "",
+              [
+                "000000000000.dkr.ecr.eu-central-1.",
+                {
+                  "Ref": "AWS::URLSuffix"
+                },
+                "/cdk-hnb659fds-container-assets-000000000000-eu-central-1:<asset-hash>"
+              ]
+            ]
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "APP_URL": "https://grant.example.com"
+          }
+        },
+        "LoggingConfig": {
+          "LogGroup": {
+            "Ref": "GrantWebLogs6BC96A53"
+          }
+        },
+        "MemorySize": 1024,
+        "PackageType": "Image",
+        "Role": {
+          "Fn::GetAtt": [
+            "GrantWebFunctionServiceRole1AFFFDF0",
+            "Arn"
+          ]
+        },
+        "Timeout": 30
+      },
+      "DependsOn": [
+        "GrantWebFunctionServiceRole1AFFFDF0"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Web/Function/Resource"
+      }
+    },
+    "GrantWebFunctionFunctionUrl15112144": {
+      "Type": "AWS::Lambda::Url",
+      "Properties": {
+        "AuthType": "AWS_IAM",
+        "TargetFunctionArn": {
+          "Fn::GetAtt": [
+            "GrantWebFunctionF35070FA",
+            "Arn"
+          ]
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Web/Function/FunctionUrl/Resource"
       }
     },
     "GrantDocsBucket9B92AB66": {
@@ -2228,18 +2340,67 @@
         "aws:cdk:path": "GrantPlatform/Grant/Edge/ApiShortCache/Resource"
       }
     },
-    "GrantEdgeDistributionOrigin1S3OriginAccessControl65710DE3": {
+    "GrantEdgeDistributionOrigin1FunctionUrlOriginAccessControl8708BF6E": {
       "Type": "AWS::CloudFront::OriginAccessControl",
       "Properties": {
         "OriginAccessControlConfig": {
-          "Name": "GrantPlatformGrantEdgeDistriOrigin1S3OriginAccessControl025F6ED6",
+          "Name": "GrantPlatformGrantEdgeDistrinctionUrlOriginAccessControl33935C3D",
+          "OriginAccessControlOriginType": "lambda",
+          "SigningBehavior": "always",
+          "SigningProtocol": "sigv4"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Edge/Distribution/Origin1/FunctionUrlOriginAccessControl/Resource"
+      }
+    },
+    "GrantEdgeDistributionOrigin1InvokeFromApiForGrantPlatformGrantEdgeDistributionOrigin101758DB2B5C495E2": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunctionUrl",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "GrantWebFunctionFunctionUrl15112144",
+            "FunctionArn"
+          ]
+        },
+        "Principal": "cloudfront.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":cloudfront::",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":distribution/",
+              {
+                "Ref": "GrantEdgeDistribution4016EFC4"
+              }
+            ]
+          ]
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Edge/Distribution/Origin1/InvokeFromApiForGrantPlatformGrantEdgeDistributionOrigin101758DB2"
+      }
+    },
+    "GrantEdgeDistributionOrigin3S3OriginAccessControl94321902": {
+      "Type": "AWS::CloudFront::OriginAccessControl",
+      "Properties": {
+        "OriginAccessControlConfig": {
+          "Name": "GrantPlatformGrantEdgeDistriOrigin3S3OriginAccessControlB7772BA9",
           "OriginAccessControlOriginType": "s3",
           "SigningBehavior": "always",
           "SigningProtocol": "sigv4"
         }
       },
       "Metadata": {
-        "aws:cdk:path": "GrantPlatform/Grant/Edge/Distribution/Origin1/S3OriginAccessControl/Resource"
+        "aws:cdk:path": "GrantPlatform/Grant/Edge/Distribution/Origin3/S3OriginAccessControl/Resource"
       }
     },
     "GrantEdgeDistribution4016EFC4": {
@@ -2374,7 +2535,7 @@
                 }
               ],
               "PathPattern": "/docs/*",
-              "TargetOriginId": "GrantPlatformGrantEdgeDistributionOrigin101758DB2",
+              "TargetOriginId": "GrantPlatformGrantEdgeDistributionOrigin391BB0A8F",
               "ViewerProtocolPolicy": "redirect-to-https"
             },
             {
@@ -2393,11 +2554,24 @@
               "PathPattern": "/api/*",
               "TargetOriginId": "GrantPlatformGrantEdgeDistributionOrigin2DC059090",
               "ViewerProtocolPolicy": "redirect-to-https"
+            },
+            {
+              "AllowedMethods": [
+                "GET",
+                "HEAD",
+                "OPTIONS"
+              ],
+              "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+              "Compress": true,
+              "OriginRequestPolicyId": "b689b0a8-53d0-40ab-baf2-68738e2966ac",
+              "PathPattern": "/_next/static/*",
+              "TargetOriginId": "GrantPlatformGrantEdgeDistributionOrigin101758DB2",
+              "ViewerProtocolPolicy": "redirect-to-https"
             }
           ],
           "CustomErrorResponses": [
             {
-              "ErrorCachingMinTTL": 300,
+              "ErrorCachingMinTTL": 0,
               "ErrorCode": 403,
               "ResponseCode": 404,
               "ResponsePagePath": "/docs/404.html"
@@ -2409,7 +2583,7 @@
               "HEAD",
               "OPTIONS"
             ],
-            "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+            "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
             "Compress": true,
             "FunctionAssociations": [
               {
@@ -2422,6 +2596,7 @@
                 }
               }
             ],
+            "OriginRequestPolicyId": "b689b0a8-53d0-40ab-baf2-68738e2966ac",
             "TargetOriginId": "GrantPlatformGrantEdgeDistributionOrigin101758DB2",
             "ViewerProtocolPolicy": "redirect-to-https"
           },
@@ -2430,21 +2605,34 @@
           "IPV6Enabled": true,
           "Origins": [
             {
+              "CustomOriginConfig": {
+                "OriginProtocolPolicy": "https-only",
+                "OriginSSLProtocols": [
+                  "TLSv1.2"
+                ]
+              },
               "DomainName": {
-                "Fn::GetAtt": [
-                  "GrantDocsBucket9B92AB66",
-                  "RegionalDomainName"
+                "Fn::Select": [
+                  2,
+                  {
+                    "Fn::Split": [
+                      "/",
+                      {
+                        "Fn::GetAtt": [
+                          "GrantWebFunctionFunctionUrl15112144",
+                          "FunctionUrl"
+                        ]
+                      }
+                    ]
+                  }
                 ]
               },
               "Id": "GrantPlatformGrantEdgeDistributionOrigin101758DB2",
               "OriginAccessControlId": {
                 "Fn::GetAtt": [
-                  "GrantEdgeDistributionOrigin1S3OriginAccessControl65710DE3",
+                  "GrantEdgeDistributionOrigin1FunctionUrlOriginAccessControl8708BF6E",
                   "Id"
                 ]
-              },
-              "S3OriginConfig": {
-                "OriginAccessIdentity": ""
               }
             },
             {
@@ -2488,6 +2676,24 @@
                   }
                 }
               ]
+            },
+            {
+              "DomainName": {
+                "Fn::GetAtt": [
+                  "GrantDocsBucket9B92AB66",
+                  "RegionalDomainName"
+                ]
+              },
+              "Id": "GrantPlatformGrantEdgeDistributionOrigin391BB0A8F",
+              "OriginAccessControlId": {
+                "Fn::GetAtt": [
+                  "GrantEdgeDistributionOrigin3S3OriginAccessControl94321902",
+                  "Id"
+                ]
+              },
+              "S3OriginConfig": {
+                "OriginAccessIdentity": ""
+              }
             }
           ],
           "PriceClass": "PriceClass_100",
@@ -2505,6 +2711,37 @@
       },
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/Grant/Edge/Distribution/Resource"
+      }
+    },
+    "GrantEdgeCloudFrontInvokeFunctionDBF05106": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "GrantWebFunctionFunctionUrl15112144",
+            "FunctionArn"
+          ]
+        },
+        "Principal": "cloudfront.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":cloudfront::000000000000:distribution/",
+              {
+                "Ref": "GrantEdgeDistribution4016EFC4"
+              }
+            ]
+          ]
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Edge/CloudFrontInvokeFunction"
       }
     },
     "GrantAliasIpv449BB19A1": {
@@ -2877,7 +3114,7 @@
     "CDKMetadata": {
       "Type": "AWS::CDK::Metadata",
       "Properties": {
-        "Analytics": "v2:deflate64:H4sIAAAAAAAA/31U227bMAz9lr6rWpd223MubRGgW4O4y2tAy4yrRpYMkm4QGP73wfIt69A98fDokKJ0ZM/07PsPfXMFJ7422fHa2VTXiYA5qi1yqMigghPvazQzXe9Ko5YHv9ss1aZKnTVJlXqUlpvQNlSCL5A6nPiJmzMHY0Fs8KO4BffrTRt+gTyC4AnOakP2HQSnxmsvSB5HQTdJn81FwLwW6EX1zK409z4rg/XSS8c0QVORlfMjhaqMU/6XWPuckLlRlLGuVyCQAuPSVSxIqhtwrFwtLolBnKCh7hSrxVAYk7VnAW+wURwlXICHHEnX3RRtVRdegHKUi3OOgn9WOrpRaGgPzCisV8EckdYF5K0FKO2a3mIZ2Eqg8wIYFRrW9cV0A3wAyqH1j48rPFhvB/c+MsELWI80cY2yUOh6G7rXEOMmOGuifR1qlAs56/op5OMtDrhRDoo0A10/VN4M+454h8Q9N8CLg46yAfwm10r7sEEqLA/1T3BGGpok1ucOJYw7NSo7eyhCluo6vuPdrC16dCEFF4lG8a2uF5U5dj73qAvTkf/Ku6S9+7Z6X2dYunBuLdTd0mokVO9jNK9RxoUqO1Dw8snNLMG84rTtZbqyLGTTKuqS22eyufVzY5C5dZBCvJ1P6MviRlH7+X671fV8iyZQFj2OKEFRcwDosqZRcfBEILc+V0I2z5FYv3RALSuWUIy/nNhmws+VlJX0T2HvWqf2cGLjrJ6feOlsNO9Dkw2Fd5shxae9PPifUJbW543yIUP9xl/eZ3f6652+uXpja6+p8mIL1Nsu/gFUqR7UGQUAAA=="
+        "Analytics": "v2:deflate64:H4sIAAAAAAAA/31U227bMAz9lr2rWpd223MubRGgW4O4y2tAy4yrRpYMkm4QGP73wfIt69Y98fCIpEge2TM9+/ZdX3+CE1+Z7HjlbKrrRMAc1RY5VGRQwYn3NZqZrnelUcuD322WalOlzpqkSj1Ky01oGyrBZ0gdTvzEzZmDsSA2+DG4BXfrTWt+gjyA4AnOakP2DQSnwmsvSB7HgK6T3puLgHkp0IvqmV1p7nxWBuulDx3dBE1FVs4PFKoydvlfYu1zQuZGUca6XoFACoxLV7Egqa7BMXO1uCSG4AQNdVOsFkNidNaeBbzBRnEM4QI85Ei67rposzrzDJSjXMw5Bvx10tGNQkN7YEZhvQrmiLQuIG8lQGnP9BbLwFYCnRfAqNCwri+6G+A9UA6tfnxc4cF6O6j3nglewHqkiWuUhULX29C9hmg3wVkT5etQo1zIWdePIR+3OOBGOSjSDHR9X3kz3DviHRL33AAvBh3DBvCLXBvamw1SYXnIf4Qz0lAksT53KGG8qVHZ2UMRslTX8R3vZm3SgwspuEg0im90vajMsdO5R52ZRv7D75x29232vs6wdOHcSqi7o9VIqF7HKF6jjAtVdqDg5YPNLMG84HTtpbuyLGTT6v1qnsjm1s+NQeZWSgpxTf+ik5sPgi9rN4rar/vrja7nWzSBsvgEIkpQ1BwAOq9pVJwrEcitz5WQzXMk1s8dUMuKJRTjHymWmfBTJWUl/UvZu1bIPZzYOKvnJ146G7V9V2RD4c1mSPHlLw/+B5Sl9XmjfMhQv/Lnt9mt/nKrrz+9srVXVHmxBeptZ38D8U98yjgFAAA="
       },
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/CDKMetadata/Default"
@@ -3070,7 +3307,7 @@
     },
     "GrantRoutingPlan162673EA": {
       "Description": "CloudFront behaviours in evaluation order, derived from lib/routing.ts.",
-      "Value": "/org/*=>api:disabled /acc/*=>api:disabled /.well-known/*=>api:short /api-docs*=>api:disabled /graphql*=>api:disabled /health*=>api:disabled /docs/*=>docs-bucket:long /api/*=>api:disabled /_next/static/*=>web-assets-bucket:immutable"
+      "Value": "/org/*=>api:disabled /acc/*=>api:disabled /.well-known/*=>api:short /api-docs*=>api:disabled /graphql*=>api:disabled /health*=>api:disabled /docs/*=>docs-bucket:long /api/*=>api:disabled /_next/static/*=>web:immutable"
     }
   },
   "Mappings": {

@@ -17,7 +17,7 @@
  * path — and is reviewed as one.
  */
 
-import type { Duration } from 'aws-cdk-lib';
+import type { Duration, SecretValue } from 'aws-cdk-lib';
 import type { ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
 import type { ITable } from 'aws-cdk-lib/aws-dynamodb';
 import type { IVpc } from 'aws-cdk-lib/aws-ec2';
@@ -161,6 +161,28 @@ interface DnsProps {
   readonly certificate?: ICertificate;
 }
 
+/**
+ * The web app.
+ *
+ * A Next.js standalone server behind the Lambda Web Adapter, not OpenNext. OpenNext
+ * exists for ISR cache persistence and image optimization on serverless, and this app
+ * uses neither — so it would add a build toolchain and a Next-16 support risk to buy
+ * features nothing consumes. Recorded in the stack plan; revisit if ISR is adopted.
+ */
+interface WebProps {
+  /**
+   * Pre-published image, e.g. `DockerImageCode.fromEcr(repository, { tagOrDigest })`.
+   * Omit and the stack builds from source at deploy time.
+   */
+  readonly image?: DockerImageCode;
+
+  readonly memorySize?: number;
+  readonly timeout?: Duration;
+
+  /** Passed through to the Next server. The web app reads no secrets. */
+  readonly env?: GrantEnv;
+}
+
 /** The documentation site. */
 interface DocsProps {
   /**
@@ -285,6 +307,12 @@ export interface GrantPlatformProps {
   /** The serving function. Created only when the data tier is. */
   readonly api?: ApiProps;
 
+  /**
+   * The web app. Omit and the docs bucket stays the default origin — the docs-only
+   * deploy, where the root path 404s because content lives under `docs/`.
+   */
+  readonly web?: WebProps;
+
   readonly docs?: DocsProps;
 
   /**
@@ -298,4 +326,32 @@ export interface GrantPlatformProps {
 
   /** Passed through to the API container. */
   readonly env?: GrantEnv;
+
+  /**
+   * Secret `ENV_NAME: value` pairs, merged into the platform secret rather than into
+   * the container's environment.
+   *
+   * For anything the application resolves through `ISecretResolver` —
+   * `GITHUB_CLIENT_SECRET`, `AUTH_MFA_SECRET_ENCRYPTION_KEY`. Unlike `env`, these never
+   * become Lambda environment variables, and a rotation is picked up within the
+   * resolver's TTL rather than at the next redeploy.
+   *
+   * **`SecretValue`, not `string`, and the type is the warning.** CloudFormation cannot
+   * place a literal secret into a resource without that literal being in the template,
+   * so the shape forces the choice to be deliberate:
+   *
+   *   - `SecretValue.secretsManager('my/existing/secret')` renders a
+   *     `{{resolve:secretsmanager:…}}` reference. The plaintext never enters the
+   *     template. **This is the one to use for real credentials.**
+   *   - `SecretValue.unsafePlainText('…')` puts the literal in the template, readable
+   *     by anyone who can describe the stack. `unsafe` is not decoration.
+   *
+   * A value with no upstream secret to reference is better added to the platform secret
+   * out of band after deploy — the resolver picks it up without a stack update, which
+   * is the property ADR 0004 bought.
+   *
+   * Only meaningful when this stack owns the database, since the platform secret is
+   * created alongside it.
+   */
+  readonly secrets?: Readonly<Record<string, SecretValue>>;
 }

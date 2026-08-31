@@ -34,6 +34,8 @@ import { ApiFunction } from './compute/api-function';
 import { ApiImage } from './compute/api-image';
 import { MigrateTask } from './compute/migrate-task';
 import { MigrateTrigger } from './compute/migrate-trigger';
+import { WebFunction } from './compute/web-function';
+import { WebImage } from './compute/web-image';
 import { AWS_TARGET_ENV_DEFAULTS } from './config/defaults';
 import type { GrantEnv, GrantPlatformProps } from './config/props';
 import { assertCertificateRegion, validateAppUrl, validateHostnameInZone } from './config/validate';
@@ -65,6 +67,9 @@ export class GrantPlatform extends Construct {
 
   public readonly docs: DocsSite;
   public readonly edge: EdgeDistribution;
+
+  /** Present only when the web app was requested. */
+  public readonly web?: WebFunction;
 
   /** Present only when the data tier was requested. */
   public readonly network?: Network;
@@ -188,6 +193,7 @@ export class GrantPlatform extends Construct {
         host: this.proxy?.proxy.endpoint ?? this.database.cluster.clusterEndpoint.hostname,
         port: this.database.cluster.clusterEndpoint.port,
         databaseName: this.database.databaseName,
+        extraEnv: props.secrets,
       });
 
       // One asset, built at most once and shared by the migration and the serving
@@ -326,6 +332,30 @@ export class GrantPlatform extends Construct {
       }
     }
 
+    if (props.web) {
+      // One asset, referenced twice. Constructing WebImage inline for each of
+      // `repository` and `imageTag` would create two DockerImageAssets and build the
+      // image twice.
+      let webCode = props.web.image;
+      if (!webCode) {
+        const { asset } = new WebImage(this, 'WebImage');
+        webCode = DockerImageCode.fromEcr(asset.repository, { tagOrDigest: asset.imageTag });
+      }
+
+      this.web = new WebFunction(this, 'Web', {
+        code: webCode,
+        // Deliberately outside the VPC. The web app reaches the API over the public
+        // canonical URL exactly as a browser does, so it needs nothing from inside —
+        // and staying out avoids ENI attachment on every cold start.
+        environment: {
+          APP_URL: props.appUrl,
+          ...props.web.env,
+        },
+        memorySize: props.web.memorySize,
+        timeout: props.web.timeout,
+      });
+    }
+
     this.docs = new DocsSite(this, 'Docs', {
       distPath: props.docs?.distPath ?? DEFAULT_DOCS_DIST,
       bucket: props.docs?.bucket,
@@ -341,6 +371,7 @@ export class GrantPlatform extends Construct {
       apiOriginSecret: this.platformSecret?.secret
         .secretValueFromJson(ORIGIN_VERIFY_SECRET_KEY)
         .unsafeUnwrap(),
+      webFunctionUrl: this.web?.functionUrl,
     });
 
     const recordTarget = RecordTarget.fromAlias(new CloudFrontTarget(this.edge.distribution));

@@ -123,6 +123,32 @@ function buildPlatform(stack: Stack, cert: ICertificate): void {
     // property `ephemeral` exists to provide. The cache table already defaults to
     // Delete, so only this one needs saying.
     storage: { destroyOnRemoval: ephemeral },
+    // The web app is what makes the deployment a platform rather than docs plus an
+    // API. Built from source; `apps/web/.next/static` must exist, so run
+    // `pnpm --filter grant-web build` first — the same contract the docs site has.
+    web: {},
+    env: {
+      // Email is opt-in per deployment because SES needs a verified identity that CDK
+      // cannot create for you. Set here rather than in the target defaults so a fresh
+      // deploy without a verified domain still boots — it falls back to `console`.
+      ...(optional('emailFrom')
+        ? {
+            EMAIL_PROVIDER: 'ses',
+            EMAIL_FROM: optional('emailFrom') as string,
+            EMAIL_SES_REGION: region,
+          }
+        : {}),
+      // Not secret; the client secret goes to the platform secret, never here.
+      ...(optional('githubClientId')
+        ? { GITHUB_CLIENT_ID: optional('githubClientId') as string }
+        : {}),
+      ...(optional('githubClientId')
+        ? {
+            GITHUB_CALLBACK_URL: `${appUrl}/api/auth/github/callback`,
+            GITHUB_PROJECT_CALLBACK_URL: `${appUrl}/api/auth/project/callback`,
+          }
+        : {}),
+    },
     dns: {
       // fromHostedZoneAttributes, not fromLookup: a lookup resolves against live
       // account state at synth time and would make the committed template a function

@@ -131,11 +131,15 @@ describe('toCloudFrontBehaviours', () => {
 });
 
 describe('ASSET_BEHAVIOURS', () => {
-  it('serves Next.js build output immutably from S3', () => {
+  it('serves Next.js build output immutably from the web origin', () => {
+    // From the web function rather than a bucket, and that is correctness rather than
+    // convenience: a bucket would be filled from a host build while the function serves
+    // HTML from a container build, and Next randomises its build ID per build. The HTML
+    // would reference assets the bucket never had.
     expect(ASSET_BEHAVIOURS).toEqual([
       expect.objectContaining({
         pathPattern: '/_next/static/*',
-        origin: 'web-assets-bucket',
+        origin: 'web',
         cache: 'immutable',
       }),
     ]);

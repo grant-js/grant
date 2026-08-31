@@ -109,16 +109,16 @@ failure unattributable, which is the whole reason for serializing.
 
 ## Ordered slices (PRs)
 
-| #     | Branch                          | Base    | Concern                                                     | Owner             | Review bar        | PR  |
-| ----- | ------------------------------- | ------- | ----------------------------------------------------------- | ----------------- | ----------------- | --- |
-| 1     | `feat/aws-edge-infra-routing`   | trunk   | **Routing oracle.** One declaration + three-way parity test | **QA**            | light             |     |
-| 2     | `feat/aws-edge-infra-library`   | slice 1 | Construct library skeleton, props, validation, synth        | Backend + Arch    | light             |     |
-| 3     | `feat/aws-edge-infra-docs-site` | slice 2 | Docs on S3, CloudFront, cert, zone, Function                | Backend           | light             |     |
-| 4     | `feat/aws-edge-infra-api`       | slice 3 | Network, data tier, API Lambda, migrate one-shot            | Backend + **Sec** | **security-full** |     |
-| 5     | `feat/aws-edge-infra-web`       | slice 4 | OpenNext, `_next/static` from S3                            | **Frontend**      | light             |     |
-| 6     | `feat/aws-edge-infra-jobs`      | slice 5 | EventBridge rules generated from the job source             | Backend           | light             |     |
-| 7     | `feat/aws-edge-infra-guide`     | slice 6 | Smoke test, deployment guide, measured figures              | **QA**            | light             |     |
-| final | `feat/aws-edge-infra`           | `main`  | integration                                                 | Principal         | **deep**          |     |
+| #     | Branch                          | Base    | Concern                                                     | Owner             | Review bar        | PR                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ----- | ------------------------------- | ------- | ----------------------------------------------------------- | ----------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | `feat/aws-edge-infra-routing`   | trunk   | **Routing oracle.** One declaration + three-way parity test | **QA**            | light             | [#347](https://github.com/grant-js/grant/pull/347)                                                                                                                                                                                                                                                                                                                                                                                                    |
+| 2     | `feat/aws-edge-infra-library`   | slice 1 | Construct library skeleton, props, validation, synth        | Backend + Arch    | light             | [#349](https://github.com/grant-js/grant/pull/349)                                                                                                                                                                                                                                                                                                                                                                                                    |
+| 3     | `feat/aws-edge-infra-docs-site` | slice 2 | Docs on S3, CloudFront, cert, zone, Function                | Backend           | light             | [#351](https://github.com/grant-js/grant/pull/351) · [#352](https://github.com/grant-js/grant/pull/352) · [#353](https://github.com/grant-js/grant/pull/353)                                                                                                                                                                                                                                                                                          |
+| 4     | `feat/aws-edge-infra-api`       | slice 3 | Network, data tier, API Lambda, migrate one-shot            | Backend + **Sec** | **security-full** | 4a [#354](https://github.com/grant-js/grant/pull/354) · [#355](https://github.com/grant-js/grant/pull/355) · [#356](https://github.com/grant-js/grant/pull/356) — 4b [#357](https://github.com/grant-js/grant/pull/357) — 4c [#360](https://github.com/grant-js/grant/pull/360) — 4d [#364](https://github.com/grant-js/grant/pull/364) · [#365](https://github.com/grant-js/grant/pull/365) — sec [#366](https://github.com/grant-js/grant/pull/366) |
+| 5     | `feat/aws-edge-infra-web`       | slice 4 | OpenNext, `_next/static` from S3                            | **Frontend**      | light             | in review                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| 6     | `feat/aws-edge-infra-jobs`      | slice 5 | EventBridge rules generated from the job source             | Backend           | light             |                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| 7     | `feat/aws-edge-infra-guide`     | slice 6 | Smoke test, deployment guide, measured figures              | **QA**            | light             |                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| final | `feat/aws-edge-infra`           | `main`  | integration                                                 | Principal         | **deep**          |                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
 ### Slice 1 — routing oracle
 
@@ -193,9 +193,31 @@ made for slice 6. Flagged now rather than discovered mid-review.
 
 ### Slice 5 — web
 
-OpenNext, `_next/static` to S3, the default CloudFront behaviour. Frontend-owned.
-Low-risk by construction: zero `NEXT_PUBLIC_*` and no `middleware.ts`, both
-re-verified above.
+`_next/static` to S3 and the default CloudFront behaviour, as planned. Low-risk by
+construction: zero `NEXT_PUBLIC_*` and no `middleware.ts`, both re-verified above.
+
+**Deviation, decided at execution time: not OpenNext.** The Next.js standalone server
+runs behind the Lambda Web Adapter instead — the same image/LWA/Function-URL pattern
+slice 4 built and deployed.
+
+OpenNext exists to solve ISR cache persistence and image optimization on serverless,
+and this app uses neither: no `revalidate`, `revalidatePath`, `revalidateTag` or
+`generateStaticParams` anywhere, and zero `next/image` imports. It is an authenticated
+per-tenant dashboard — dynamic SSR plus client-side Apollo. Adopting OpenNext would add
+a second build toolchain and a dependency on Next 16 support that is active but not
+formally verified, to buy features nothing here consumes. Next's own Adapter API went
+stable in 16.2 with an official AWS adapter in development, so that plumbing may be
+superseded regardless.
+
+Revisit if ISR or image optimization is adopted, or when the official adapter ships.
+
+**The web function uses `AWS_IAM` with Origin Access Control, where the API could
+not.** Both OAC blockers were API-specific: its signing mode overwrites the viewer's
+`Authorization` header, and POST requires a viewer-supplied body hash. The web app
+authenticates by **cookie** and serves **GET only** — no server actions, no route
+handlers, no native form posts — and the default behaviour is restricted to
+GET/HEAD/OPTIONS, so no body can reach it. There is therefore no second publicly
+reachable origin, and no `middleware.ts` was needed.
 
 ### Slice 6 — scheduled jobs
 
@@ -266,7 +288,11 @@ found, recorded here so they are tracked work rather than observations in a log.
 ## Human gates
 
 - [ ] Gate 2: Stack plan approved — no implementation until a human confirms.
-- [ ] Gate 3: Stack PRs merged into trunk (light, except slice 4 security-full).
+- [x] Gate 3: Stack PRs merged into trunk (light, except slice 4 security-full).
+      Slices 1–4 merged. Slice 4's `security-full` review ran and its findings are
+      closed by #366 — **but the reviewer was the slice author**, so the plan's
+      "independent of the slice author" condition is _not_ met. Recorded rather than
+      quietly ticked; an independent pass is still owed before gate 4.
 - [ ] Gate 4: Story → `main` deep review complete.
 
 ## Cleanup
