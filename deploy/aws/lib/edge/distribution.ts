@@ -10,7 +10,7 @@
  * template never claims a route works before it does.
  */
 
-import { Duration } from 'aws-cdk-lib';
+import { Duration, Stack } from 'aws-cdk-lib';
 import type { ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
 import {
   AllowedMethods,
@@ -27,7 +27,7 @@ import {
   ViewerProtocolPolicy,
 } from 'aws-cdk-lib/aws-cloudfront';
 import { FunctionUrlOrigin, S3BucketOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
-import type { IFunctionUrl } from 'aws-cdk-lib/aws-lambda';
+import { CfnPermission, type IFunctionUrl } from 'aws-cdk-lib/aws-lambda';
 import type { IBucket } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 
@@ -163,9 +163,48 @@ export class EdgeDistribution extends Construct {
           httpStatus: 403,
           responseHttpStatus: 404,
           responsePagePath: '/docs/404.html',
-          ttl: Duration.minutes(5),
+          // Not cached, and the zero is deliberate. This mapping is distribution-wide,
+          // so it also catches a 403 from the *API or web origin* — a genuine
+          // permissions failure — and dresses it as a friendly documentation 404. With
+          // a TTL, CloudFront then serves that stale failure after the origin has
+          // recovered: measured at over eleven minutes on the first web deploy, because
+          // the error page carries `Cache-Control: max-age=3600` of its own and
+          // CloudFront honours it. That turned a two-minute fix into an hour of
+          // misdiagnosis. Serving it uncached keeps the friendly 404 without pinning an
+          // outage that has already ended.
+          ttl: Duration.seconds(0),
         },
       ],
+    });
+
+    this.grantCloudFrontInvoke(props.webFunctionUrl);
+  }
+
+  /**
+   * Grants CloudFront the second permission a Lambda function URL origin needs.
+   *
+   * `FunctionUrlOrigin.withOriginAccessControl` adds `lambda:InvokeFunctionUrl` and
+   * stops there. AWS's own instructions for restricting a function URL to CloudFront
+   * list **two** `add-permission` calls, and without the second every origin request is
+   * refused before the function is invoked — so the function's log group stays empty
+   * and it looks like a routing problem rather than a permissions one.
+   *
+   * Found on the first deploy of the web tier, where it presented as the entire site
+   * returning the documentation 404 page.
+   */
+  private grantCloudFrontInvoke(functionUrl?: IFunctionUrl): void {
+    if (!functionUrl) return;
+
+    new CfnPermission(this, 'CloudFrontInvokeFunction', {
+      action: 'lambda:InvokeFunction',
+      functionName: functionUrl.functionArn,
+      principal: 'cloudfront.amazonaws.com',
+      sourceArn: Stack.of(this).formatArn({
+        service: 'cloudfront',
+        region: '',
+        resource: 'distribution',
+        resourceName: this.distribution.distributionId,
+      }),
     });
   }
 

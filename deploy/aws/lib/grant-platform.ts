@@ -193,6 +193,7 @@ export class GrantPlatform extends Construct {
         host: this.proxy?.proxy.endpoint ?? this.database.cluster.clusterEndpoint.hostname,
         port: this.database.cluster.clusterEndpoint.port,
         databaseName: this.database.databaseName,
+        extraEnv: props.secrets,
       });
 
       // One asset, built at most once and shared by the migration and the serving

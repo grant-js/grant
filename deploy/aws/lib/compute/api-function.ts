@@ -24,6 +24,7 @@
 import { Duration } from 'aws-cdk-lib';
 import type { ITable } from 'aws-cdk-lib/aws-dynamodb';
 import { type ISecurityGroup, type IVpc, SubnetType } from 'aws-cdk-lib/aws-ec2';
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import {
   type DockerImageCode,
   DockerImageFunction,
@@ -160,6 +161,21 @@ export class ApiFunction extends Construct {
     props.platformSecret.grantRead(this.function);
     props.cacheTable.grantReadWriteData(this.function);
     props.uploadsBucket.grantReadWrite(this.function);
+
+    // Send-only, and no static keys anywhere: the SES adapter falls through to the
+    // default credential chain when `EMAIL_SES_CLIENT_ID`/`_SECRET` are unset, so this
+    // role is what signs. Scoped to sending — the function has no reason to manage
+    // identities, verify domains or read the account's sending statistics.
+    //
+    // `ses:SendEmail` and `ses:SendRawEmail` do not support resource-level permissions
+    // in the classic API, so the resource is `*`; the identity restriction is that only
+    // verified identities can be used as the From address, enforced by SES itself.
+    this.function.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+        resources: ['*'],
+      })
+    );
 
     this.functionUrl = this.function.addFunctionUrl({
       // `AWS_IAM` would be the better answer and is not available to this API. Slice

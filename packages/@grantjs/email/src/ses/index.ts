@@ -35,10 +35,18 @@ export class SesEmailAdapter implements IEmailService {
   ) {
     this.sesClient = new SESClient({
       region: config.region,
-      credentials: {
-        accessKeyId: config.clientId,
-        secretAccessKey: config.clientSecret,
-      },
+      // Static keys only when both are supplied. Left unset the SDK's default
+      // credential chain applies, so a Lambda execution role or ECS task role signs
+      // instead — which is the production path on AWS, where a long-lived access key
+      // in an environment variable is the thing to avoid. Mirrors the S3 adapter.
+      ...(config.clientId && config.clientSecret
+        ? {
+            credentials: {
+              accessKeyId: config.clientId,
+              secretAccessKey: config.clientSecret,
+            },
+          }
+        : {}),
     });
 
     this.from = config.fromName ? `"${config.fromName}" <${config.from}>` : config.from;
