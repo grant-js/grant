@@ -59,3 +59,28 @@ ENV HOSTNAME=0.0.0.0
 
 WORKDIR /app/apps/web
 CMD ["node", "server.js"]
+
+# ---------------------------------------------------------------------------
+# Stage: runner-lambda — the same standalone server, fronted by the adapter
+# ---------------------------------------------------------------------------
+# Mirrors `apps/api/Dockerfile`, and for the same reason: the Lambda Web Adapter is an
+# extension that translates each invocation into an HTTP request against a normal
+# listening server, so `apps/web` needs no knowledge of Lambda and CMD is unchanged.
+#
+# OpenNext was the plan and is deliberately not used. It exists to solve ISR cache
+# persistence and image optimization on serverless, and this app uses neither — no
+# `revalidate`, no `revalidatePath`/`revalidateTag`, no `generateStaticParams`, and no
+# `next/image` imports. Adding it would mean a second build toolchain and a dependency
+# on Next 16 support that is active but not formally verified, to buy features nothing
+# here consumes. Recorded in the stack plan; revisit if ISR is ever adopted.
+FROM runner AS runner-lambda
+
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:1.1.0 /lambda-adapter /opt/extensions/lambda-adapter
+
+# Must match PORT from `runner` above.
+ENV AWS_LWA_PORT=3000
+
+# TCP rather than an HTTP path, as in the API image: the Next standalone server binds
+# the port only once it is ready to serve, so the bind is the readiness signal and no
+# route needs to answer before the adapter will forward traffic.
+ENV AWS_LWA_READINESS_CHECK_PROTOCOL=tcp

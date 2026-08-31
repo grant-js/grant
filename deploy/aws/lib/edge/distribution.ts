@@ -31,7 +31,7 @@ import type { IFunctionUrl } from 'aws-cdk-lib/aws-lambda';
 import type { IBucket } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 
-import { type CloudFrontBehaviour, toCloudFrontBehaviours } from '../behaviours';
+import { ASSET_BEHAVIOURS, type CloudFrontBehaviour, toCloudFrontBehaviours } from '../behaviours';
 import { INDEX_REWRITE_FUNCTION, TRAILING_SLASH_REDIRECT_FUNCTION } from './viewer-request';
 
 export interface EdgeDistributionProps {
@@ -54,6 +54,15 @@ export interface EdgeDistributionProps {
 
   /** Header the secret travels in. Must match `SECURITY_ORIGIN_VERIFY_HEADER`. */
   readonly apiOriginSecretHeader?: string;
+
+  /**
+   * The web app's invocation endpoint. Omit and the docs bucket stays the default
+   * origin, which is the docs-only deploy.
+   *
+   * IAM-authorized and reached through Origin Access Control — possible here and not
+   * for the API because the web app authenticates by cookie and serves GET only.
+   */
+  readonly webFunctionUrl?: IFunctionUrl;
 }
 
 /** Well-known documents are public; a minute of edge cache cuts origin load. */
@@ -128,6 +137,8 @@ export class EdgeDistribution extends Construct {
       }
     }
 
+    const web = this.buildWebBehaviours(props, docsBehaviour, trailingSlashRedirect);
+
     this.distribution = new Distribution(this, 'Distribution', {
       domainNames: [props.hostname],
       certificate: props.certificate,
@@ -138,17 +149,12 @@ export class EdgeDistribution extends Construct {
       // Until the web origin lands, the docs bucket is the default origin. The root
       // path therefore 404s — content lives under the `docs/` key prefix — which is
       // correct for this slice and replaced when the web app arrives.
-      defaultBehavior: {
-        ...docsBehaviour,
-        functionAssociations: [
-          { function: trailingSlashRedirect, eventType: FunctionEventType.VIEWER_REQUEST },
-        ],
-      },
+      defaultBehavior: web.defaultBehaviour,
       // Order is load-bearing and comes from `routesByPrecedence()`, never from the
       // declaration array's own order. CloudFront evaluates behaviours in the order
       // they are declared rather than by specificity, so `/api/*` landing after a
       // broader pattern would silently never match.
-      additionalBehaviors,
+      additionalBehaviors: { ...additionalBehaviors, ...web.assetBehaviours },
       errorResponses: [
         {
           // S3 returns 403 for a missing key when the caller cannot list the bucket,
@@ -179,6 +185,77 @@ export class EdgeDistribution extends Construct {
    * slow to take effect. Everything else on the API is uncached, because a cached
    * authenticated response is a cross-tenant data leak.
    */
+  /**
+   * The default behaviour, plus the S3 route for Next's build output.
+   *
+   * Without a web origin the docs bucket stays default and the root 404s — content
+   * lives under the `docs/` prefix — which is the docs-only deploy and correct for it.
+   *
+   * The default behaviour is restricted to **GET/HEAD/OPTIONS**, and that restriction
+   * is load-bearing rather than tidy: it is what makes Origin Access Control usable
+   * here. OAC requires the viewer to supply `x-amz-content-sha256` for a request with a
+   * body, so refusing bodies at the edge removes the constraint entirely. The app
+   * serves GET only — no server actions, no route handlers — so nothing is lost.
+   */
+  private buildWebBehaviours(
+    props: EdgeDistributionProps,
+    docsBehaviour: BehaviorOptions,
+    trailingSlashRedirect: CloudFrontFunction
+  ): { defaultBehaviour: BehaviorOptions; assetBehaviours: Record<string, BehaviorOptions> } {
+    if (!props.webFunctionUrl) {
+      return {
+        defaultBehaviour: {
+          ...docsBehaviour,
+          functionAssociations: [
+            { function: trailingSlashRedirect, eventType: FunctionEventType.VIEWER_REQUEST },
+          ],
+        },
+        assetBehaviours: {},
+      };
+    }
+
+    const webOrigin = FunctionUrlOrigin.withOriginAccessControl(props.webFunctionUrl);
+
+    // Same origin as the default behaviour, different cache posture. Pages are
+    // per-session and uncached; build output is immutable and cached hard. Serving it
+    // from a separate bucket would mean filling that bucket from a *host* build while
+    // the function serves HTML from a *container* build — and Next randomises its build
+    // ID per build, so the HTML would reference assets the bucket does not have.
+    const assetBehaviours: Record<string, BehaviorOptions> = {};
+    for (const asset of ASSET_BEHAVIOURS) {
+      if (asset.origin !== 'web') continue;
+      assetBehaviours[asset.pathPattern] = {
+        origin: webOrigin,
+        viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        allowedMethods: AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+        // Next sets `max-age=31536000, immutable` on these itself, so each asset is
+        // fetched from the function once per edge location and cached thereafter.
+        cachePolicy: CachePolicy.CACHING_OPTIMIZED,
+        originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+      };
+    }
+
+    return {
+      defaultBehaviour: {
+        origin: webOrigin,
+        viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        // See above — this is what keeps OAC usable.
+        allowedMethods: AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+        // Pages are per-session: the app renders authenticated shells and reads the
+        // session cookie. Caching them at the edge would serve one tenant's document
+        // to another.
+        cachePolicy: CachePolicy.CACHING_DISABLED,
+        // Cookies carry the session and must reach the server; Host must not, because
+        // a Function URL refuses a request whose Host is not its own.
+        originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+        functionAssociations: [
+          { function: trailingSlashRedirect, eventType: FunctionEventType.VIEWER_REQUEST },
+        ],
+      },
+      assetBehaviours,
+    };
+  }
+
   private buildApiBehaviours(
     props: EdgeDistributionProps,
     derived: ReturnType<typeof toCloudFrontBehaviours>

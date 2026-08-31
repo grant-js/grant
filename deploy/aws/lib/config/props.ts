@@ -161,6 +161,28 @@ interface DnsProps {
   readonly certificate?: ICertificate;
 }
 
+/**
+ * The web app.
+ *
+ * A Next.js standalone server behind the Lambda Web Adapter, not OpenNext. OpenNext
+ * exists for ISR cache persistence and image optimization on serverless, and this app
+ * uses neither — so it would add a build toolchain and a Next-16 support risk to buy
+ * features nothing consumes. Recorded in the stack plan; revisit if ISR is adopted.
+ */
+interface WebProps {
+  /**
+   * Pre-published image, e.g. `DockerImageCode.fromEcr(repository, { tagOrDigest })`.
+   * Omit and the stack builds from source at deploy time.
+   */
+  readonly image?: DockerImageCode;
+
+  readonly memorySize?: number;
+  readonly timeout?: Duration;
+
+  /** Passed through to the Next server. The web app reads no secrets. */
+  readonly env?: GrantEnv;
+}
+
 /** The documentation site. */
 interface DocsProps {
   /**
@@ -284,6 +306,12 @@ export interface GrantPlatformProps {
 
   /** The serving function. Created only when the data tier is. */
   readonly api?: ApiProps;
+
+  /**
+   * The web app. Omit and the docs bucket stays the default origin — the docs-only
+   * deploy, where the root path 404s because content lives under `docs/`.
+   */
+  readonly web?: WebProps;
 
   readonly docs?: DocsProps;
 

@@ -14,7 +14,7 @@
 import { type CanonicalRoute, routesByPrecedence, type RouteTarget } from './routing';
 
 /** Where a behaviour sends the request. Resolved to real origins by the stack. */
-type OriginKind = 'api' | 'docs-bucket' | 'web-assets-bucket';
+type OriginKind = 'api' | 'docs-bucket' | 'web';
 
 /**
  * How aggressively a behaviour may cache.
@@ -136,16 +136,27 @@ export function toCloudFrontBehaviours(): CloudFrontBehaviour[] {
 /**
  * Behaviours that exist for reasons outside the routing table.
  *
- * `_next/static` is Next.js build output with content-hashed filenames, served from
- * S3 rather than the web Lambda. It is not a canonical *route* — nothing chooses
- * between apps for it — so it is declared here rather than polluting the table the
- * gateway is checked against.
+ * `_next/static` is Next.js build output. It is not a canonical *route* — nothing
+ * chooses between apps for it — so it is declared here rather than polluting the table
+ * the gateway is checked against.
+ *
+ * It is served by the **web function**, not from a separate bucket, and that is a
+ * correctness requirement rather than a simplification. The bucket would be filled from
+ * a host build while the function serves HTML from a container build, and Next
+ * randomises its build ID per build (`generateBuildId` is unset) — so the HTML would
+ * reference `/_next/static/<container-build-id>/…` while the bucket held a different
+ * one, and every asset would 404. One artifact, no divergence.
+ *
+ * The cost of serving them from the function is close to zero: Next sets
+ * `Cache-Control: public, max-age=31536000, immutable` on these responses, so each
+ * asset is fetched once per edge location and served from cache thereafter. It needs
+ * its own behaviour only because the default behaviour is uncached.
  */
 export const ASSET_BEHAVIOURS: readonly CloudFrontBehaviour[] = [
   {
     pathPattern: '/_next/static/*',
-    origin: 'web-assets-bucket',
+    origin: 'web',
     cache: 'immutable',
-    description: 'Next.js build output; filenames are content-hashed.',
+    description: 'Next.js build output; content-hashed, cached hard at the edge.',
   },
 ];
