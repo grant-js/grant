@@ -2,12 +2,31 @@ import type { ISecretResolver } from '@grantjs/core';
 import type { NextFunction, Request, Response } from 'express';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { config } from '@/config';
 import { AuthorizationError } from '@/lib/errors';
-import {
-  ORIGIN_VERIFY_SECRET_KEY,
-  originVerifyMiddleware,
-} from '@/middleware/origin-verify.middleware';
+
+/**
+ * Mocked rather than mutated: the real `config` is readonly, so assigning to it
+ * type-checks as an error even though vitest would happily transpile past it.
+ */
+const mockConfig = {
+  security: { originVerifyHeader: 'x-origin-verify', originVerifyRequired: false },
+};
+vi.mock('@/config', () => ({ config: mockConfig }));
+
+// The middleware logs refusals. The logger builds itself from the real config at
+// import time, which the mock above does not satisfy — and none of these tests assert
+// on log output, so a stub is the whole requirement.
+vi.mock('@/lib/logger', () => ({
+  createLogger: () => ({
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
+
+const { ORIGIN_VERIFY_SECRET_KEY, originVerifyMiddleware } =
+  await import('@/middleware/origin-verify.middleware');
 
 const SECRET = 'a-shared-secret-value';
 
@@ -31,7 +50,8 @@ describe('originVerifyMiddleware', () => {
   let header: string;
 
   beforeEach(() => {
-    header = config.security.originVerifyHeader;
+    header = mockConfig.security.originVerifyHeader;
+    mockConfig.security.originVerifyRequired = false;
   });
 
   it('refuses a request that carries no secret', async () => {
@@ -54,28 +74,38 @@ describe('originVerifyMiddleware', () => {
     expect(err).toBeUndefined();
   });
 
-  it('is a pass-through when no secret is configured', async () => {
+  it('is a pass-through when no secret is configured and none is required', async () => {
     // Docker and Kubernetes configure none, and must behave exactly as before.
+    mockConfig.security.originVerifyRequired = false;
     const err = await run(resolverWith(undefined), request());
 
     expect(err).toBeUndefined();
   });
 
-  it('lets /health through without the header', async () => {
-    // Load-bearing, not a convenience. The Lambda Web Adapter probes /health over
-    // loopback to decide the container is ready, and that probe carries no CloudFront
-    // headers. Refusing it means the function never reports ready and every
-    // invocation fails.
-    const err = await run(resolverWith(SECRET), request({}, '/health'));
-
-    expect(err).toBeUndefined();
-  });
-
-  it('does not exempt paths that merely start with /health', async () => {
-    // An exemption matched by prefix would hand an attacker `/health/../graphql`.
-    const err = await run(resolverWith(SECRET), request({}, '/healthz'));
+  it('fails closed when a secret is required but none resolves', async () => {
+    // The control that replaces IAM must not be disableable by absence. A secret
+    // dropped from the payload would otherwise open a publicly reachable origin
+    // silently — no error, no failing test, nothing to notice.
+    mockConfig.security.originVerifyRequired = true;
+    const err = await run(resolverWith(undefined), request());
 
     expect(err).toBeInstanceOf(AuthorizationError);
+  });
+
+  it('exempts nothing, including /health', async () => {
+    // /health used to be exempt so the Lambda Web Adapter could probe it, which left
+    // an unauthenticated endpoint on a publicly reachable origin. The adapter now uses
+    // a TCP readiness check, so there is no probe to accommodate and no exemption.
+    const err = await run(resolverWith(SECRET), request({}, '/health'));
+
+    expect(err).toBeInstanceOf(AuthorizationError);
+  });
+
+  it('admits /health when the secret is present, like any other path', async () => {
+    const header = mockConfig.security.originVerifyHeader;
+    const err = await run(resolverWith(SECRET), request({ [header]: SECRET }, '/health'));
+
+    expect(err).toBeUndefined();
   });
 
   it('resolves the secret per request, so a rotation takes effect', async () => {

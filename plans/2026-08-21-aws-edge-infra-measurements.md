@@ -999,3 +999,77 @@ equivalent is `cdk.json` holding two availability-zone entries, seven `-c` flags
 TypeScript. `app.node.tryGetContext()` already reads `cdk.json`'s `context` block, so
 the keys could move there with no change to `bin/grant.ts` and flags still overriding.
 Not attempted — recorded as its own piece of work.
+
+## Slice 4 — security-full review, findings and disposition
+
+**Date**: 2026-08-31 · Bar: `security-full` · Scope: `9942d900..41b1193e` (PRs #354–#365)
+
+### Accepted risk — the Function URL is publicly reachable
+
+**Not fixable at this layer, and that is the finding.** Origin Access Control cannot
+carry this API: its recommended signing mode overwrites the viewer's `Authorization`
+header, and `POST`/`PUT` through OAC require the _viewer_ to send
+`x-amz-content-sha256`. Enforcement therefore lives in the function, which means a
+request that will be refused still costs a Lambda invocation.
+
+The consequence the review named: a low `reservedConcurrentExecutions` makes denial of
+service **cheaper**, not safer. At 20, roughly twenty concurrent requests to the origin
+exhaust every execution environment and starve legitimate CloudFront traffic. The
+earlier code comment — "reserved concurrency bounds that" — was wrong in a way worth
+recording: it bounds _spend_, not _availability_.
+
+**Mitigations applied**, none of which eliminate the exposure:
+
+| Mitigation                             | Effect                                                                                  |
+| -------------------------------------- | --------------------------------------------------------------------------------------- |
+| Reserved concurrency 20 → **100**      | Exhaustion costs 5x more; 100 x `DB_POOL_MAX=2` = 200 connections against Aurora's ~900 |
+| `SECURITY_ORIGIN_VERIFY_REQUIRED=true` | A missing secret refuses every request instead of opening the origin                    |
+| Distinguishable log on refusal         | Direct-origin probes are separable from ordinary 403s, so they can be alarmed on        |
+| LWA readiness moved to TCP             | No exempt path remains; `/health` now requires the secret too                           |
+
+**Rejected**: API Gateway in front of the Lambda would let AWS refuse before compute,
+and is deliberately not adopted yet — it adds a component and per-request cost to a
+target whose premise is minimal idle cost. AWS WAF does not support Lambda function
+URLs. Revisit if abuse is observed.
+
+**Residual risk**: an attacker who learns the Function URL can still burn invocations.
+Detection is the compensating control; the alarm is not yet wired.
+
+### Accepted risk — `sslmode=require` does not verify the server certificate
+
+Already recorded in `platform-secret.ts`. postgres.js maps `require` to
+`rejectUnauthorized = false`, so the hop is encrypted but the server certificate is
+unverified — that defeats passive interception, not an active in-VPC MITM.
+`verify-full` needs the RDS CA bundle shipped in the image, which it does not carry.
+**Accepted at this bar** for a hop that never leaves the VPC and terminates in isolated
+subnets with no route out.
+
+### Fixed
+
+| Finding                                                    | Disposition                                                 |
+| ---------------------------------------------------------- | ----------------------------------------------------------- |
+| Origin verification failed open when the secret was absent | `SECURITY_ORIGIN_VERIFY_REQUIRED`, true on AWS              |
+| `/health` exempt and internet-reachable                    | Exemption deleted; LWA readiness is TCP                     |
+| `logs:PutRetentionPolicy` on `*` via CDK's LogRetention    | Explicit `logGroup`; custom resource gone, wildcards 3 → 2  |
+| `RoutingPlan` advertised a cache plan not implemented      | Behaviours honour `cacheFor()`; JWKS keeps its 5-minute TTL |
+| No distinguishable signal for direct-origin probes         | Structured warn under `OriginVerify`                        |
+
+The two remaining wildcard IAM statements are both legitimate:
+`ecr:GetAuthorizationToken` does not support resource-level permissions, and
+`ecs:DescribeTasks` is conditioned by `ArnEquals ecs:cluster`.
+
+### Not fixed — client-IP fallback collapses to loopback
+
+When a trusted header is configured but absent, `getClientIp` falls through to
+`req.ip`/socket, which under the Lambda Web Adapter is always `127.0.0.1` — so those
+requests share one rate-limit bucket. Unreachable in practice because origin
+verification now refuses every non-CDN request before the rate limiter, and there is no
+longer an exempt path. **The safety depends on middleware order, and nothing asserts
+that order** — worth a test if the ordering is ever touched.
+
+### Independence
+
+Every line reviewed was written by the same author who wrote the slice. Real findings
+came out of it, but the trust-model finding is exactly where self-review is weakest:
+the design and the comment asserting it was bounded came from the same hand. **The
+plan's "independent of the slice author" gate is not satisfied by this pass.**

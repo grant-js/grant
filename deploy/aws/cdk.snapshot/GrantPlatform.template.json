@@ -964,6 +964,10 @@
                 "Value": "2"
               },
               {
+                "Name": "SECURITY_ORIGIN_VERIFY_REQUIRED",
+                "Value": "true"
+              },
+              {
                 "Name": "APP_URL",
                 "Value": "https://grant.example.com"
               },
@@ -1192,6 +1196,17 @@
         "aws:cdk:path": "GrantPlatform/Grant/Migrate/TaskDefinition/ExecutionRole/DefaultPolicy/Resource"
       }
     },
+    "GrantMigrateTriggerTriggerLogsE697A799": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "RetentionInDays": 14
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete",
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/MigrateTrigger/TriggerLogs/Resource"
+      }
+    },
     "GrantMigrateTriggerRunnerServiceRoleC1E66B57": {
       "Type": "AWS::IAM::Role",
       "Properties": {
@@ -1353,6 +1368,11 @@
           }
         },
         "Handler": "index.handler",
+        "LoggingConfig": {
+          "LogGroup": {
+            "Ref": "GrantMigrateTriggerTriggerLogsE697A799"
+          }
+        },
         "Role": {
           "Fn::GetAtt": [
             "GrantMigrateTriggerRunnerServiceRoleC1E66B57",
@@ -1368,32 +1388,6 @@
       ],
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/Grant/MigrateTrigger/Runner/Resource"
-      }
-    },
-    "GrantMigrateTriggerRunnerLogRetention27459F97": {
-      "Type": "Custom::LogRetention",
-      "Properties": {
-        "ServiceToken": {
-          "Fn::GetAtt": [
-            "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aFD4BFC8A",
-            "Arn"
-          ]
-        },
-        "LogGroupName": {
-          "Fn::Join": [
-            "",
-            [
-              "/aws/lambda/",
-              {
-                "Ref": "GrantMigrateTriggerRunnerD40BD9B3"
-              }
-            ]
-          ]
-        },
-        "RetentionInDays": 14
-      },
-      "Metadata": {
-        "aws:cdk:path": "GrantPlatform/Grant/MigrateTrigger/Runner/LogRetention/Resource"
       }
     },
     "GrantMigrateTriggerRunnerCurrentVersion8D49C7F1<version-hash>": {
@@ -1756,6 +1750,7 @@
             "METRICS_ENABLED": "false",
             "API_PORT": "4000",
             "DB_POOL_MAX": "2",
+            "SECURITY_ORIGIN_VERIFY_REQUIRED": "true",
             "APP_URL": "https://grant.example.com",
             "SECURITY_FRONTEND_URL": "https://grant.example.com",
             "DOCS_URL": "https://grant.example.com/docs",
@@ -1831,7 +1826,7 @@
         },
         "MemorySize": 1024,
         "PackageType": "Image",
-        "ReservedConcurrentExecutions": 20,
+        "ReservedConcurrentExecutions": 100,
         "Role": {
           "Fn::GetAtt": [
             "GrantApiFunctionServiceRoleA3049DC6",
@@ -2205,6 +2200,34 @@
         "aws:cdk:path": "GrantPlatform/Grant/Edge/TrailingSlashRedirect/Resource"
       }
     },
+    "GrantEdgeApiShortCacheB1868587": {
+      "Type": "AWS::CloudFront::CachePolicy",
+      "Properties": {
+        "CachePolicyConfig": {
+          "Comment": "Well-known documents: public, small, read on every token verification",
+          "DefaultTTL": 300,
+          "MaxTTL": 300,
+          "MinTTL": 0,
+          "Name": "GrantPlatformGrantEdgeApiShortCache2092EF1C-eu-central-1",
+          "ParametersInCacheKeyAndForwardedToOrigin": {
+            "CookiesConfig": {
+              "CookieBehavior": "none"
+            },
+            "EnableAcceptEncodingBrotli": false,
+            "EnableAcceptEncodingGzip": true,
+            "HeadersConfig": {
+              "HeaderBehavior": "none"
+            },
+            "QueryStringsConfig": {
+              "QueryStringBehavior": "none"
+            }
+          }
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Edge/ApiShortCache/Resource"
+      }
+    },
     "GrantEdgeDistributionOrigin1S3OriginAccessControl65710DE3": {
       "Type": "AWS::CloudFront::OriginAccessControl",
       "Properties": {
@@ -2271,7 +2294,9 @@
                 "POST",
                 "DELETE"
               ],
-              "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+              "CachePolicyId": {
+                "Ref": "GrantEdgeApiShortCacheB1868587"
+              },
               "Compress": true,
               "OriginRequestPolicyId": "b689b0a8-53d0-40ab-baf2-68738e2966ac",
               "PathPattern": "/.well-known/*",
@@ -2536,95 +2561,6 @@
       },
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/Grant/AliasIpv6/Resource"
-      }
-    },
-    "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB": {
-      "Type": "AWS::IAM::Role",
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Statement": [
-            {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "lambda.amazonaws.com"
-              }
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "ManagedPolicyArns": [
-          {
-            "Fn::Join": [
-              "",
-              [
-                "arn:",
-                {
-                  "Ref": "AWS::Partition"
-                },
-                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-              ]
-            ]
-          }
-        ]
-      },
-      "Metadata": {
-        "aws:cdk:path": "GrantPlatform/LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8a/ServiceRole/Resource"
-      }
-    },
-    "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRoleDefaultPolicyADDA7DEB": {
-      "Type": "AWS::IAM::Policy",
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "logs:PutRetentionPolicy",
-                "logs:DeleteRetentionPolicy"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "PolicyName": "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRoleDefaultPolicyADDA7DEB",
-        "Roles": [
-          {
-            "Ref": "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB"
-          }
-        ]
-      },
-      "Metadata": {
-        "aws:cdk:path": "GrantPlatform/LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8a/ServiceRole/DefaultPolicy/Resource"
-      }
-    },
-    "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aFD4BFC8A": {
-      "Type": "AWS::Lambda::Function",
-      "Properties": {
-        "Handler": "index.handler",
-        "Runtime": "nodejs24.x",
-        "Timeout": 900,
-        "Code": {
-          "S3Bucket": "cdk-hnb659fds-assets-000000000000-eu-central-1",
-          "S3Key": "<asset-hash>.zip"
-        },
-        "Role": {
-          "Fn::GetAtt": [
-            "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB",
-            "Arn"
-          ]
-        }
-      },
-      "DependsOn": [
-        "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRoleDefaultPolicyADDA7DEB",
-        "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB"
-      ],
-      "Metadata": {
-        "aws:cdk:path": "GrantPlatform/LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8a/Resource",
-        "aws:asset:path": "asset.<asset-hash>",
-        "aws:asset:is-bundled": false,
-        "aws:asset:property": "Code"
       }
     },
     "AWSCDKTriggerCustomResourceProviderCustomResourceProviderRoleE18FAF0A": {
@@ -2941,7 +2877,7 @@
     "CDKMetadata": {
       "Type": "AWS::CDK::Metadata",
       "Properties": {
-        "Analytics": "v2:deflate64:H4sIAAAAAAAA/31UwW7bMAz9lt5VrUu77ZwmbRGg24K4yzWgZcZTI0sGSTcIDP/7IMt2sg7diY+Pjwqpp3imZ1+/6ZsrOPK1KQ7Xzua6zQTMQW2QQ0MGFRx516KZ6XZbG7XY++16odZN7qzJmtyjRO6MNqERfIHc4Zk/c3PmYCyIDX4SR/CwWsfwA+QJBI9wUmuybyB4PnjlBcnjJEiTDNlcBMzvCr2ogdnW5sEXdbBeBumUZmgasnJ6otDU/ZT/JVa+JGTuFBWs2yUI5MC4cA0LkkoDTp3L+0tiFGdoKG2xvB8b+2TlWcAb7BT3Eq7AQ4mk2zRF7ErhBahEudhzEvxTSXSn0NAOmFFYL4M5IK0qKKMFKLGmN1gHthLodA+MCg3r9mK6ET4ClRD948MS99bb0b33TPAC1iOduU5ZqHS7Cek19HEdnDW9fQl1yoWSdfscyukWJ/wcyg0K+nSYgyovQLePjTfjEBPeIvHAjfBi60k2gl/konQIa6TK8tj/DCek8ZDM+tKhhOmXOlWcPFShyHXbP+rtLDY9uZCD64lO8a1u7xtzSKYPKIXz/n/lKYlGxO5dW2Dtwin6qVNpORFqMLV3slPGhabYU/Dywc0sLQvZvOmT7PYn2dL6uTHIHD2j0F/BB/Rlc6co/mG/3Op2vkETqOhd7VGGouYAkLKuU/10mUBpfZlkwwdFyJYlEuuXBNSiYQnVVI+zNFI3Mvi9c9GOHRzZOKvnR1442zv0rnFN4c0WSP1jXuz9d6hr68tO+VCgfuVPb7M7/flO31y9srXX1HixFepNin8AwLv1lQsFAAA="
+        "Analytics": "v2:deflate64:H4sIAAAAAAAA/31U227bMAz9lr6rWpd223MubRGgW4O4y2tAy4yrRpYMkm4QGP73wfIt69A98fDokKJ0ZM/07PsPfXMFJ7422fHa2VTXiYA5qi1yqMigghPvazQzXe9Ko5YHv9ss1aZKnTVJlXqUlpvQNlSCL5A6nPiJmzMHY0Fs8KO4BffrTRt+gTyC4AnOakP2HQSnxmsvSB5HQTdJn81FwLwW6EX1zK409z4rg/XSS8c0QVORlfMjhaqMU/6XWPuckLlRlLGuVyCQAuPSVSxIqhtwrFwtLolBnKCh7hSrxVAYk7VnAW+wURwlXICHHEnX3RRtVRdegHKUi3OOgn9WOrpRaGgPzCisV8EckdYF5K0FKO2a3mIZ2Eqg8wIYFRrW9cV0A3wAyqH1j48rPFhvB/c+MsELWI80cY2yUOh6G7rXEOMmOGuifR1qlAs56/op5OMtDrhRDoo0A10/VN4M+454h8Q9N8CLg46yAfwm10r7sEEqLA/1T3BGGpok1ucOJYw7NSo7eyhCluo6vuPdrC16dCEFF4lG8a2uF5U5dj73qAvTkf/Ku6S9+7Z6X2dYunBuLdTd0mokVO9jNK9RxoUqO1Dw8snNLMG84rTtZbqyLGTTKuqS22eyufVzY5C5dZBCvJ1P6MviRlH7+X671fV8iyZQFj2OKEFRcwDosqZRcfBEILc+V0I2z5FYv3RALSuWUIy/nNhmws+VlJX0T2HvWqf2cGLjrJ6feOlsNO9Dkw2Fd5shxae9PPifUJbW543yIUP9xl/eZ3f6652+uXpja6+p8mIL1Nsu/gFUqR7UGQUAAA=="
       },
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/CDKMetadata/Default"

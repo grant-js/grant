@@ -157,6 +157,16 @@ export const envSchema = z.object({
    * rather than directly at the origin. Only enforced when a secret is configured.
    */
   SECURITY_ORIGIN_VERIFY_HEADER: optionalString('x-origin-verify'),
+
+  /**
+   * Refuse every request when no origin-verification secret resolves.
+   *
+   * False by default, because absence of a secret is the normal state everywhere the
+   * origin is not directly reachable — Docker, Kubernetes, local. Set true wherever
+   * the origin answers the internet and that secret is the only thing in front of it,
+   * so a secret that goes missing fails closed instead of silently opening the origin.
+   */
+  SECURITY_ORIGIN_VERIFY_REQUIRED: optionalBoolean(false),
   /** When undefined, API config derives from NODE_ENV (production -> true) */
   SECURITY_ENABLE_RATE_LIMIT: z
     .union([z.string(), z.undefined()])

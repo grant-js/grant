@@ -359,6 +359,12 @@ const SECURITY_CONFIG = {
   /** Header carrying the CDN's shared secret. Enforced only when a secret resolves. */
   originVerifyHeader: env.SECURITY_ORIGIN_VERIFY_HEADER.trim().toLowerCase(),
 
+  /**
+   * Whether a missing origin-verification secret is fatal to the request rather than
+   * a pass-through. True wherever the origin is publicly reachable.
+   */
+  originVerifyRequired: env.SECURITY_ORIGIN_VERIFY_REQUIRED,
+
   /** Enable rate limiting (default: true in production when not set) */
   enableRateLimit: env.SECURITY_ENABLE_RATE_LIMIT ?? APP_CONFIG.isProduction,
 

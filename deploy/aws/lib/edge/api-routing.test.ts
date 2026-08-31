@@ -103,16 +103,32 @@ describe('every API route reaches the API', () => {
     }
   });
 
-  it('caches nothing on the API', () => {
-    // A cached authenticated response is a cross-tenant data leak. CachePolicyId must
-    // be the managed CachingDisabled policy on every API behaviour.
+  it('caches nothing that could carry tenant data', () => {
+    // A cached authenticated response is a cross-tenant leak, so everything the API
+    // serves is uncached — except the well-known documents, which are public by
+    // definition and read on every token verification.
+    //
+    // Asserted against the derivation rather than a list, so the two cannot drift: an
+    // earlier version flattened every API behaviour to CachingDisabled while the
+    // RoutingPlan output still advertised `/.well-known/*=>api:short`.
+    const derived = toCloudFrontBehaviours().filter((b) => b.origin === 'api');
     const behaviours = distributionConfig(build().template).CacheBehaviors ?? [];
-    const api = behaviours.filter((b) => b.PathPattern !== '/docs/*');
-    const policies = new Set(api.map((b) => b.CachePolicyId as string));
+    const byPattern = new Map(behaviours.map((b) => [b.PathPattern as string, b]));
 
-    expect(policies.size).toBe(1);
     // 4135ea2d-6df8-44a3-9df3-4b5a84be39ad is AWS's managed CachingDisabled.
-    expect([...policies][0]).toBe('4135ea2d-6df8-44a3-9df3-4b5a84be39ad');
+    const DISABLED = '4135ea2d-6df8-44a3-9df3-4b5a84be39ad';
+
+    for (const route of derived) {
+      const policy = byPattern.get(route.pathPattern)?.CachePolicyId as string;
+      if (route.cache === 'disabled') {
+        expect(policy).toBe(DISABLED);
+      } else {
+        // A TTL is only ever allowed where the derivation asked for one, and a
+        // wildcard-widened pattern always derives to `disabled`.
+        expect(route.pathPattern).toContain('.well-known');
+        expect(policy).not.toBe(DISABLED);
+      }
+    }
   });
 });
 

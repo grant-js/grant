@@ -21,6 +21,14 @@
  *
  * **Disabled unless a secret resolves**, which is what keeps every other target
  * unchanged: Docker and Kubernetes configure no secret and this is a pass-through.
+ * Where the origin *is* reachable, `SECURITY_ORIGIN_VERIFY_REQUIRED` makes a missing
+ * secret fail closed rather than open — absence must not disable the control.
+ *
+ * There are no exempt paths. An earlier version exempted `/health` because the Lambda
+ * Web Adapter probed it over loopback, which left an unauthenticated endpoint on a
+ * publicly reachable origin. The adapter now uses a TCP readiness check
+ * (`apps/api/Dockerfile`), which needs no exemption: the port does not open until
+ * `createApp()` has resolved, so binding it is already the readiness signal.
  */
 
 import { createHash, timingSafeEqual } from 'node:crypto';
@@ -30,21 +38,10 @@ import type { NextFunction, Request, Response } from 'express';
 
 import { config } from '@/config';
 import { AuthorizationError } from '@/lib/errors';
+import { createLogger } from '@/lib/logger';
 
 /** The resolver key holding the shared secret. */
 export const ORIGIN_VERIFY_SECRET_KEY = 'ORIGIN_VERIFY_SECRET';
-
-/**
- * Paths that must answer without the header.
- *
- * The Lambda Web Adapter probes `/health` over loopback to decide the container is
- * ready, and that probe carries no CloudFront headers. Rejecting it would mean the
- * function never reports ready and every invocation fails — a self-inflicted outage
- * rather than a security control, so the exemption is load-bearing.
- *
- * Exempting it costs nothing: the handler reads no data and returns a fixed document.
- */
-const EXEMPT_PATHS = new Set(['/health']);
 
 /**
  * Compares as fixed-width digests rather than raw strings.
@@ -60,12 +57,9 @@ function secretsMatch(provided: string, expected: string): boolean {
 }
 
 export function originVerifyMiddleware(secrets: ISecretResolver) {
-  return function verifyOrigin(req: Request, _res: Response, next: NextFunction): void {
-    if (EXEMPT_PATHS.has(req.path)) {
-      next();
-      return;
-    }
+  const log = createLogger('OriginVerify');
 
+  return function verifyOrigin(req: Request, _res: Response, next: NextFunction): void {
     // Resolved per request rather than captured at boot, so a rotated secret takes
     // effect within the resolver's cache TTL instead of at the next redeploy (ADR
     // 0004). The resolver caches, so this is not a per-request network call.
@@ -73,7 +67,20 @@ export function originVerifyMiddleware(secrets: ISecretResolver) {
       .resolve(ORIGIN_VERIFY_SECRET_KEY)
       .then((expected) => {
         if (!expected) {
-          // Not configured: every other deployment target, unchanged.
+          if (config.security.originVerifyRequired) {
+            // The control that replaces IAM must not be disableable by absence. A
+            // secret dropped from the payload, a partial rotation or a changed shape
+            // would otherwise open the origin silently — no error, no log, nothing
+            // failing. Refuse instead, loudly.
+            log.error({
+              msg: 'Origin verification is required but no secret resolved; refusing request',
+              key: ORIGIN_VERIFY_SECRET_KEY,
+            });
+            next(new AuthorizationError('Forbidden'));
+            return;
+          }
+
+          // Not configured and not required: every other deployment target, unchanged.
           next();
           return;
         }
@@ -82,8 +89,17 @@ export function originVerifyMiddleware(secrets: ISecretResolver) {
         const provided = Array.isArray(header) ? header[0] : header;
 
         if (!provided || !secretsMatch(provided, expected)) {
-          // Deliberately says nothing about which header was expected or whether one
-          // was present — a direct caller learns only that the origin refused them.
+          // Logged under a stable module name so reaching the origin directly is
+          // distinguishable from an ordinary authorization failure — that is the one
+          // condition worth alerting on, and it is otherwise indistinguishable from
+          // every other 403 the API produces.
+          log.warn({
+            msg: 'Request did not arrive through the CDN; refusing',
+            path: req.path,
+            headerPresent: provided !== undefined,
+          });
+          // The response deliberately says nothing about which header was expected or
+          // whether one was present — a direct caller learns only that it was refused.
           next(new AuthorizationError('Forbidden'));
           return;
         }

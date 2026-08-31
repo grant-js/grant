@@ -168,11 +168,18 @@ describe('the function URL answers the internet, and is guarded in the app', () 
 });
 
 describe('database connections stay within what Aurora accepts', () => {
-  it('bounds concurrency times pool size well under max_connections', () => {
-    // Pooling is off by default, so each warm environment holds its own connections.
-    // An account's default Lambda concurrency limit is 1000; unbounded, that is 2000
-    // connections against the ~900 Aurora allows at maxCapacity 4. The product of
-    // these two values is the real guard, so the test asserts the product.
+  it('bounds concurrency times pool size under what Aurora accepts', () => {
+    // Two pressures meet here and they pull opposite ways. The database wants a low
+    // ceiling: pooling is off by default, so each warm environment holds its own
+    // connections, and unbounded concurrency (1000 by account default) would want 2000
+    // against the ~900 Aurora allows at maxCapacity 4.
+    //
+    // Availability wants a high one: the Function URL is publicly reachable, a refused
+    // request still costs an invocation, and a *low* reservation is what makes
+    // exhausting every environment cheap. The security review named that trade.
+    //
+    // 100 x 2 = 200 leaves the cluster ample headroom while making denial of service
+    // five times more expensive than the original 20.
     const { template } = build();
     const props = apiFunction(template).Properties as {
       ReservedConcurrentExecutions: number;
@@ -180,7 +187,9 @@ describe('database connections stay within what Aurora accepts', () => {
     const poolMax = Number(apiEnvironment(template).DB_POOL_MAX);
 
     expect(poolMax).toBeGreaterThan(0);
-    expect(props.ReservedConcurrentExecutions * poolMax).toBeLessThan(100);
+    expect(props.ReservedConcurrentExecutions * poolMax).toBeLessThan(500);
+    // Low is not automatically safe — guard the availability side too.
+    expect(props.ReservedConcurrentExecutions).toBeGreaterThanOrEqual(100);
   });
 
   it('stays at the memory that measured fastest, not the one that reasons fastest', () => {
