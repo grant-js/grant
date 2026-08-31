@@ -57,4 +57,10 @@ export const AWS_TARGET_ENV_DEFAULTS: GrantEnv = {
   // times the function's reserved concurrency is what bounds a burst; see
   // `compute/api-function.ts` for the arithmetic against Aurora's max_connections.
   DB_POOL_MAX: '2',
+
+  // The Function URL answers the internet, so the shared secret CloudFront attaches is
+  // the only thing in front of the origin. Required here means a secret that goes
+  // missing refuses every request instead of quietly admitting everyone — the control
+  // that replaces IAM must not be disableable by absence.
+  SECURITY_ORIGIN_VERIFY_REQUIRED: 'true',
 };

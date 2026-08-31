@@ -52,11 +52,23 @@ import type { GrantEnv } from '../config/props';
  * the cluster will accept, with the failure surfacing as a 500 on an unrelated request
  * rather than as anything naming Lambda.
  *
- * 20 times 2 is 40, which leaves the cluster almost entirely free for the migrate task
- * and any human holding a psql session. Raise both together, or enable the proxy, once
- * concurrency is real.
+ * **100, not 20, and the security review is why.** The Function URL answers the
+ * internet — Origin Access Control cannot carry this API — so a request that will be
+ * refused still costs an invocation. A low reservation therefore makes denial of
+ * service *cheaper*, not safer: at 20, roughly twenty concurrent requests to the
+ * origin exhaust every execution environment and legitimate CloudFront traffic is
+ * starved. Bounding spend and bounding availability pull in opposite directions here,
+ * and availability wins.
+ *
+ * 100 times `DB_POOL_MAX=2` is 200 connections against the roughly 900 Aurora allows
+ * at `maxCapacity: 4`, so the database guard still holds with room to spare. It raises
+ * the cost of exhaustion fivefold without buying anything from the cluster's budget.
+ *
+ * This does not *solve* the exposure, and nothing at this layer can: enforcement lives
+ * in the function because AWS cannot do it for us. It is an accepted risk with a
+ * mitigation, recorded in the measurements file.
  */
-const DEFAULT_RESERVED_CONCURRENCY = 20;
+const DEFAULT_RESERVED_CONCURRENCY = 100;
 
 export interface ApiFunctionProps {
   readonly vpc: IVpc;

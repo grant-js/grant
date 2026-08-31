@@ -128,9 +128,17 @@ COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:1.1.0 /lambda-adapter /opt
 # The adapter probes the app on this port; it must match API_PORT from `runner`.
 ENV AWS_LWA_PORT=4000
 
-# Cold start is not complete until this returns 2xx, which keeps the first real
-# invocation from racing Apollo/DB initialization.
-ENV AWS_LWA_READINESS_CHECK_PATH=/health
+# TCP, not an HTTP probe against /health, and the difference is a security one.
+#
+# An HTTP readiness path has to answer before the adapter will forward anything, so
+# it must be exempt from origin verification — and the Function URL is publicly
+# reachable, which made /health an unauthenticated endpoint on a public origin.
+#
+# TCP needs no exemption and loses nothing: `server.ts` calls `httpServer.listen()`
+# only after `createApp()` has resolved, so the port does not open until Apollo, the
+# database connection and every middleware are in place. Binding the port is already
+# the readiness signal the HTTP probe was standing in for.
+ENV AWS_LWA_READINESS_CHECK_PROTOCOL=tcp
 
 # ---------------------------------------------------------------------------
 # Stage 5 – default: keep `runner` the implicit build target

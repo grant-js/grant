@@ -12,11 +12,11 @@
  * during deployment, and `executeAfter` expresses the ordering that matters.
  */
 
-import { Duration, Stack } from 'aws-cdk-lib';
+import { Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
 import type { ISecurityGroup, IVpc } from 'aws-cdk-lib/aws-ec2';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Code, Function as LambdaFunction, Runtime } from 'aws-cdk-lib/aws-lambda';
-import { RetentionDays } from 'aws-cdk-lib/aws-logs';
+import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { Trigger } from 'aws-cdk-lib/triggers';
 import { Construct } from 'constructs';
 
@@ -121,7 +121,14 @@ export class MigrateTrigger extends Construct {
       handler: 'index.handler',
       code: Code.fromInline(RUNNER_SOURCE),
       timeout,
-      logRetention: RetentionDays.TWO_WEEKS,
+      // An explicit group, not the deprecated `logRetention` prop. That prop creates a
+      // CDK custom resource whose role holds `logs:PutRetentionPolicy` and
+      // `logs:DeleteRetentionPolicy` on `*` — account-wide authority to reconfigure
+      // any log group, granted to run one migration. An owned group needs neither.
+      logGroup: new LogGroup(this, 'TriggerLogs', {
+        retention: RetentionDays.TWO_WEEKS,
+        removalPolicy: RemovalPolicy.DESTROY,
+      }),
       environment: {
         CLUSTER_ARN: props.task.cluster.clusterArn,
         TASK_DEFINITION_ARN: props.task.taskDefinition.taskDefinitionArn,

@@ -21,6 +21,7 @@ import {
   FunctionCode,
   FunctionEventType,
   HttpVersion,
+  type ICachePolicy,
   OriginRequestPolicy,
   PriceClass,
   ViewerProtocolPolicy,
@@ -30,7 +31,7 @@ import type { IFunctionUrl } from 'aws-cdk-lib/aws-lambda';
 import type { IBucket } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 
-import { toCloudFrontBehaviours } from '../behaviours';
+import { type CloudFrontBehaviour, toCloudFrontBehaviours } from '../behaviours';
 import { INDEX_REWRITE_FUNCTION, TRAILING_SLASH_REDIRECT_FUNCTION } from './viewer-request';
 
 export interface EdgeDistributionProps {
@@ -55,8 +56,26 @@ export interface EdgeDistributionProps {
   readonly apiOriginSecretHeader?: string;
 }
 
+/** Well-known documents are public; a minute of edge cache cuts origin load. */
+const WELL_KNOWN_CACHE_TTL = Duration.minutes(5);
+
 export class EdgeDistribution extends Construct {
   public readonly distribution: Distribution;
+
+  private cachePolicyFor(kind: CloudFrontBehaviour['cache']): ICachePolicy {
+    if (kind !== 'short') return CachePolicy.CACHING_DISABLED;
+
+    this.shortCachePolicy ??= new CachePolicy(this, 'ApiShortCache', {
+      comment: 'Well-known documents: public, small, read on every token verification',
+      defaultTtl: WELL_KNOWN_CACHE_TTL,
+      maxTtl: WELL_KNOWN_CACHE_TTL,
+      minTtl: Duration.seconds(0),
+      enableAcceptEncodingGzip: true,
+    });
+    return this.shortCachePolicy;
+  }
+
+  private shortCachePolicy?: ICachePolicy;
 
   constructor(scope: Construct, id: string, props: EdgeDistributionProps) {
     super(scope, id);
@@ -152,6 +171,14 @@ export class EdgeDistribution extends Construct {
    * authenticated response is a cross-tenant data leak, so this asserts the
    * derivation agreed rather than trusting it.
    */
+  /**
+   * Maps a derived cache intent to a CloudFront policy.
+   *
+   * `short` exists for the well-known documents: small, public, and fetched on every
+   * token verification, so a brief TTL cuts origin load without making key rotation
+   * slow to take effect. Everything else on the API is uncached, because a cached
+   * authenticated response is a cross-tenant data leak.
+   */
   private buildApiBehaviours(
     props: EdgeDistributionProps,
     derived: ReturnType<typeof toCloudFrontBehaviours>
@@ -182,7 +209,16 @@ export class EdgeDistribution extends Construct {
         // GraphQL is POST-only and the REST surface writes, so the read-only method
         // set would turn every mutation into a 405 at the edge.
         allowedMethods: AllowedMethods.ALLOW_ALL,
-        cachePolicy: CachePolicy.CACHING_DISABLED,
+        // The policy the derivation chose, not a blanket disable. Flattening these to
+        // CACHING_DISABLED was safe but made the `RoutingPlan` output — this story's
+        // evidence artifact — advertise a plan the distribution did not implement:
+        // it still said `/.well-known/*=>api:short`. Honouring the derivation keeps
+        // the output honest and restores the intended edge cache on JWKS, which is a
+        // public document read on every token verification.
+        //
+        // Anything widened by a wildcard resolves to `disabled` in `cacheFor()`, so a
+        // per-tenant path can never inherit a TTL from a truncated pattern.
+        cachePolicy: this.cachePolicyFor(behaviour.cache),
         // ALL_VIEWER_EXCEPT_HOST_HEADER, and the exception is the point: a Function
         // URL rejects a request whose Host is not its own, so forwarding the viewer's
         // Host breaks every call. Everything else — Authorization, Cookie, the
