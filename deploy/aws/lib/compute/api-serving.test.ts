@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { App, Stack } from 'aws-cdk-lib';
+import { App, SecretValue, Stack } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
@@ -32,6 +32,7 @@ import { GrantPlatform } from '../grant-platform';
 function build(
   overrides: {
     api?: { reservedConcurrency?: number; memorySize?: number };
+    secrets?: Record<string, SecretValue>;
     cache?: { destroyOnRemoval?: boolean };
     storage?: { destroyOnRemoval?: boolean };
   } = {}
@@ -66,6 +67,7 @@ function build(
     },
     cache: overrides.cache,
     storage: overrides.storage,
+    secrets: overrides.secrets,
   });
   return { template: Template.fromStack(stack), platform };
 }
@@ -111,6 +113,46 @@ describe('no credential reaches the serving function', () => {
       (key) => key.includes('ACCESS_KEY') || key.includes('PASSWORD') || key.includes('SECRET_KEY')
     );
     expect(credentialShaped).toEqual([]);
+  });
+
+  it('grants send-only SES, with no static credentials anywhere', () => {
+    // The adapter falls through to the default credential chain when no static keys
+    // are set, so this role is what signs. Send-only: the function has no reason to
+    // manage identities, verify domains or read sending statistics.
+    const { template } = build();
+    const policies = JSON.stringify(template.findResources('AWS::IAM::Policy'));
+    const env = apiEnvironment(template);
+
+    expect(policies).toMatch(/ses:SendEmail/);
+    expect(policies).not.toMatch(/ses:VerifyEmailIdentity/);
+    expect(policies).not.toMatch(/ses:DeleteIdentity/);
+    expect(env.EMAIL_SES_CLIENT_ID).toBeUndefined();
+    expect(env.EMAIL_SES_CLIENT_SECRET).toBeUndefined();
+  });
+
+  it('puts caller secrets in the secret, never in the environment', () => {
+    // A value handed to `secrets` must not become a Lambda environment variable, where
+    // anyone who can describe the stack can read it.
+    const { template } = build({
+      secrets: { GITHUB_CLIENT_SECRET: SecretValue.secretsManager('github/oauth') },
+    });
+    const env = apiEnvironment(template);
+
+    expect(env.GITHUB_CLIENT_SECRET).toBeUndefined();
+    expect(JSON.stringify(template.toJSON())).toMatch(/GITHUB_CLIENT_SECRET/);
+  });
+
+  it('renders a referenced secret as a dynamic reference, not plaintext', () => {
+    // The reason the prop takes SecretValue rather than string. A value sourced from an
+    // existing secret resolves at deploy time and the plaintext never enters the
+    // template — which a plain string could not promise, because CloudFormation has
+    // nowhere else to put it.
+    const { template } = build({
+      secrets: { GITHUB_CLIENT_SECRET: SecretValue.secretsManager('github/oauth') },
+    });
+    const rendered = JSON.stringify(template.toJSON());
+
+    expect(rendered).toMatch(/\{\{resolve:secretsmanager:github\/oauth/);
   });
 
   it('names the bucket and table without granting more than the data plane', () => {

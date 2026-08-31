@@ -1073,3 +1073,81 @@ Every line reviewed was written by the same author who wrote the slice. Real fin
 came out of it, but the trust-model finding is exactly where self-review is weakest:
 the design and the comment asserting it was bounded came from the same hand. **The
 plan's "independent of the slice author" gate is not satisfied by this pass.**
+
+## Slice 5 — the platform serves (deploy)
+
+**Date**: 2026-08-31 · **Domain**: `aws.grantjs.org` · **Context**: `-c ephemeral=true`
+
+First deploy where the canonical hostname serves the product rather than documentation
+plus an API. Verified by hand against a live stack, then re-verified against a stack
+built entirely from code with nothing patched in place.
+
+### Finding 1 — CloudFront could not invoke the web function
+
+The whole site returned the documentation 404 page. `FunctionUrlOrigin.withOriginAccessControl`
+grants `lambda:InvokeFunctionUrl` and stops there; AWS's instructions for restricting a
+function URL to CloudFront list **two** `add-permission` calls. Without the second,
+every origin request is refused **before the function is invoked** — so its log group
+stays empty, which reads as a routing fault rather than a permissions one.
+
+### Finding 2 — the error mapping masked it, for over eleven minutes
+
+The 403 → 404 mapping exists so a mistyped docs URL does not look like a permissions
+failure. It is **distribution-wide**, so it also caught a genuine 403 from the web
+origin and dressed it as a friendly 404.
+
+Worse, it was _cached_: the error page carries its own `Cache-Control: max-age=3600` and
+CloudFront honours it over the `errorResponses` TTL. Observed `age: 659` on a response
+whose TTL was 300 s. Every retry re-read one stale failure, and a cache-busting query
+string did not help because the behaviour's cache policy excludes query strings from the
+key. **This cost about an hour**, and briefly produced a wrong diagnosis in the other
+direction — that the failure was only cache.
+
+Fixed by setting the error TTL to zero. The friendly 404 survives; the pinning does not.
+
+### Finding 3 — the validator required an env copy of a resolver-backed secret
+
+`validateConfig()` threw `GITHUB_CLIENT_SECRET is required when GITHUB_CLIENT_ID is set`
+while `GithubOAuthService` reads that value through `ISecretResolver`. Configuring OAuth
+therefore required the literal string `resolved-from-secrets-manager` in the Lambda
+environment purely to pass boot validation — a placeholder standing in for a value the
+app never reads from there. Every key migrated to the resolver would have hit the same
+wall.
+
+### Finding 4 — SES could only be configured with a static access key
+
+The adapter hardcoded `credentials: { accessKeyId, secretAccessKey }`, so the only path
+was a long-lived key in a Lambda environment variable. Now falls through to the default
+credential chain, matching the S3 fix in #358, with `ses:SendEmail`/`ses:SendRawEmail`
+on the function role.
+
+### Smoke test — from code, nothing patched
+
+| Check                                           | Result                                         |
+| ----------------------------------------------- | ---------------------------------------------- |
+| `/` through the edge                            | **200** at `/en`                               |
+| `/en/auth/login`                                | **200**                                        |
+| `_next/static/…js`                              | **200**, `max-age=31536000, immutable`         |
+| `/health`, `/api-docs.json`, `/docs/`           | **200**                                        |
+| `/api/auth/github`                              | **302** to GitHub, correct client and callback |
+| API boots with no `GITHUB_CLIENT_SECRET` in env | ✓                                              |
+| **SES delivery**                                | **1 attempt, 0 bounces, 0 rejects**            |
+
+Email is signed by the **execution role**; no access key exists anywhere in the stack.
+Confirmed against a real send rather than inferred from configuration.
+
+### Cold start — the one weak spot, and it is the API
+
+| Function | Init      | Warm      |
+| -------- | --------- | --------- |
+| Web      | ~2,300 ms | 12–240 ms |
+| API      | ~7,600 ms | 6–225 ms  |
+
+The Next standalone server boots **three times faster** than Express plus Apollo plus
+87 OpenAPI paths, which was not the expected direction. The first request to a cold API
+is the only part of the experience that reads as slow; everything after it is
+indistinguishable from a warm server.
+
+**Bundling remains the outstanding fix**: 77% of the API's boot is loading the module
+graph (2,402 ms of 3,135 ms measured locally), and neither the memory experiment nor the
+OpenAPI deferral touched it.

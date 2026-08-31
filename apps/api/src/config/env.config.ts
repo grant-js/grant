@@ -969,11 +969,10 @@ export function validateConfig(): void {
         }
         break;
       case 'ses':
-        if (!EMAIL_CONFIG.ses.clientId || !EMAIL_CONFIG.ses.clientSecret) {
-          errors.push(
-            'EMAIL_SES_CLIENT_ID and EMAIL_SES_CLIENT_SECRET are required when using ses provider'
-          );
-        }
+        // Credentials are deliberately not required. Left unset the SDK's default
+        // credential chain applies and an execution or task role signs — the expected
+        // production path on AWS, where a static key in an environment variable is
+        // what you are trying to avoid. Same reasoning as the S3 provider above.
         break;
       case 'smtp':
         if (!EMAIL_CONFIG.smtp.host || !EMAIL_CONFIG.smtp.user || !EMAIL_CONFIG.smtp.password) {
@@ -1003,9 +1002,13 @@ export function validateConfig(): void {
     if (!GITHUB_OAUTH_CONFIG.clientId) {
       errors.push('GITHUB_CLIENT_ID is required when GITHUB_CLIENT_SECRET is set');
     }
-    if (!GITHUB_OAUTH_CONFIG.clientSecret) {
-      errors.push('GITHUB_CLIENT_SECRET is required when GITHUB_CLIENT_ID is set');
-    }
+    // The secret is deliberately not required here. `GithubOAuthService` reads it
+    // through `ISecretResolver` (ADR 0004), so on a target that keeps it in a secret
+    // store it is legitimately absent from the environment — and demanding an env copy
+    // defeats the point of moving it. Requiring it forced a placeholder string into the
+    // Lambda environment on the first real deploy, which is the smell that found this.
+    //
+    // The reverse check above stays: a secret with no client ID is unusable either way.
   }
 
   if (errors.length > 0) {

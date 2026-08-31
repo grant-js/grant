@@ -1700,6 +1700,14 @@
                   ]
                 }
               ]
+            },
+            {
+              "Action": [
+                "ses:SendEmail",
+                "ses:SendRawEmail"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
             }
           ],
           "Version": "2012-10-17"
@@ -2563,7 +2571,7 @@
           ],
           "CustomErrorResponses": [
             {
-              "ErrorCachingMinTTL": 300,
+              "ErrorCachingMinTTL": 0,
               "ErrorCode": 403,
               "ResponseCode": 404,
               "ResponsePagePath": "/docs/404.html"
@@ -2703,6 +2711,37 @@
       },
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/Grant/Edge/Distribution/Resource"
+      }
+    },
+    "GrantEdgeCloudFrontInvokeFunctionDBF05106": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "GrantWebFunctionFunctionUrl15112144",
+            "FunctionArn"
+          ]
+        },
+        "Principal": "cloudfront.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":cloudfront::000000000000:distribution/",
+              {
+                "Ref": "GrantEdgeDistribution4016EFC4"
+              }
+            ]
+          ]
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Edge/CloudFrontInvokeFunction"
       }
     },
     "GrantAliasIpv449BB19A1": {

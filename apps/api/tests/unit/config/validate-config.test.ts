@@ -116,10 +116,24 @@ describe('validateConfig', () => {
     expect(() => validateConfig()).not.toThrow();
   });
 
+  it('accepts the ses provider with no credentials', async () => {
+    // Deliberately unlike the other providers. Left unset, the SDK's default credential
+    // chain applies and an execution or task role signs — the expected production path
+    // on AWS, where a long-lived access key in an environment variable is the thing to
+    // avoid. Demanding static keys would make the secure configuration the invalid one.
+    const validateConfig = await loadWith({
+      EMAIL_PROVIDER: 'ses',
+      EMAIL_FROM: 'noreply@example.com',
+      EMAIL_SES_CLIENT_ID: '',
+      EMAIL_SES_CLIENT_SECRET: '',
+    });
+
+    expect(() => validateConfig()).not.toThrow();
+  });
+
   it.each([
     ['mailgun', /MAILGUN_API_KEY and MAILGUN_DOMAIN/],
     ['mailjet', /MAILJET_API_KEY and MAILJET_SECRET_KEY/],
-    ['ses', /EMAIL_SES_CLIENT_ID and EMAIL_SES_CLIENT_SECRET/],
     ['smtp', /SMTP_HOST, SMTP_USER, and SMTP_PASSWORD/],
   ])('names the missing credentials for the %s provider', async (provider, expected) => {
     const validateConfig = await loadWith({
