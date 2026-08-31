@@ -815,35 +815,41 @@
       "Type": "AWS::SecretsManager::Secret",
       "Properties": {
         "Description": "Grant platform environment — JSON of ENV_NAME: value",
-        "SecretString": {
-          "Fn::Join": [
-            "",
-            [
-              "{\"DB_URL\":\"postgresql://{{resolve:secretsmanager:",
-              {
-                "Ref": "GrantDatabaseClusterSecretAttachmentAD6E16E9"
-              },
-              ":SecretString:username::}}:{{resolve:secretsmanager:",
-              {
-                "Ref": "GrantDatabaseClusterSecretAttachmentAD6E16E9"
-              },
-              ":SecretString:password::}}@",
-              {
-                "Fn::GetAtt": [
-                  "GrantDatabaseCluster299E828E",
-                  "Endpoint.Address"
-                ]
-              },
-              ":",
-              {
-                "Fn::GetAtt": [
-                  "GrantDatabaseCluster299E828E",
-                  "Endpoint.Port"
-                ]
-              },
-              "/grant_db?sslmode=require\"}"
+        "GenerateSecretString": {
+          "ExcludeCharacters": "\"\\/@ ",
+          "ExcludePunctuation": true,
+          "GenerateStringKey": "ORIGIN_VERIFY_SECRET",
+          "PasswordLength": 64,
+          "SecretStringTemplate": {
+            "Fn::Join": [
+              "",
+              [
+                "{\"DB_URL\":\"postgresql://{{resolve:secretsmanager:",
+                {
+                  "Ref": "GrantDatabaseClusterSecretAttachmentAD6E16E9"
+                },
+                ":SecretString:username::}}:{{resolve:secretsmanager:",
+                {
+                  "Ref": "GrantDatabaseClusterSecretAttachmentAD6E16E9"
+                },
+                ":SecretString:password::}}@",
+                {
+                  "Fn::GetAtt": [
+                    "GrantDatabaseCluster299E828E",
+                    "Endpoint.Address"
+                  ]
+                },
+                ":",
+                {
+                  "Fn::GetAtt": [
+                    "GrantDatabaseCluster299E828E",
+                    "Endpoint.Port"
+                  ]
+                },
+                "/grant_db?sslmode=require\"}"
+              ]
             ]
-          ]
+          }
         }
       },
       "UpdateReplacePolicy": "Delete",
@@ -1814,7 +1820,8 @@
             "CACHE_DYNAMODB_TABLE": {
               "Ref": "GrantCacheTable1D2DDEFA"
             },
-            "CACHE_DYNAMODB_REGION": "eu-central-1"
+            "CACHE_DYNAMODB_REGION": "eu-central-1",
+            "SECURITY_TRUSTED_CLIENT_IP_HEADER": "cloudfront-viewer-address"
           }
         },
         "LoggingConfig": {
@@ -1822,7 +1829,7 @@
             "Ref": "GrantApiLogs7DBA426F"
           }
         },
-        "MemorySize": 1769,
+        "MemorySize": 1024,
         "PackageType": "Image",
         "ReservedConcurrentExecutions": 20,
         "Role": {
@@ -1866,7 +1873,7 @@
     "GrantApiFunctionFunctionUrl06A8617E": {
       "Type": "AWS::Lambda::Url",
       "Properties": {
-        "AuthType": "AWS_IAM",
+        "AuthType": "NONE",
         "TargetFunctionArn": {
           "Fn::GetAtt": [
             "GrantApiFunction17129135",
@@ -1882,6 +1889,52 @@
       ],
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/Grant/Api/Function/FunctionUrl/Resource"
+      }
+    },
+    "GrantApiFunctioninvokefunctionurlB29B49A4": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunctionUrl",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "GrantApiFunction17129135",
+            "Arn"
+          ]
+        },
+        "FunctionUrlAuthType": "NONE",
+        "Principal": "*"
+      },
+      "DependsOn": [
+        "GrantNetworkVpcprivateegressSubnet1DefaultRouteE76A3F47",
+        "GrantNetworkVpcprivateegressSubnet1RouteTableAssociation2ECAC4A8",
+        "GrantNetworkVpcprivateegressSubnet2DefaultRoute7FAF126D",
+        "GrantNetworkVpcprivateegressSubnet2RouteTableAssociationB2C26EB8"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Api/Function/invoke-function-url"
+      }
+    },
+    "GrantApiFunctioninvokefunctionE68032FE": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "GrantApiFunction17129135",
+            "Arn"
+          ]
+        },
+        "InvokedViaFunctionUrl": true,
+        "Principal": "*"
+      },
+      "DependsOn": [
+        "GrantNetworkVpcprivateegressSubnet1DefaultRouteE76A3F47",
+        "GrantNetworkVpcprivateegressSubnet1RouteTableAssociation2ECAC4A8",
+        "GrantNetworkVpcprivateegressSubnet2DefaultRoute7FAF126D",
+        "GrantNetworkVpcprivateegressSubnet2RouteTableAssociationB2C26EB8"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Api/Function/invoke-function"
       }
     },
     "GrantDocsBucket9B92AB66": {
@@ -2178,6 +2231,108 @@
               "AllowedMethods": [
                 "GET",
                 "HEAD",
+                "OPTIONS",
+                "PUT",
+                "PATCH",
+                "POST",
+                "DELETE"
+              ],
+              "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+              "Compress": true,
+              "OriginRequestPolicyId": "b689b0a8-53d0-40ab-baf2-68738e2966ac",
+              "PathPattern": "/org/*",
+              "TargetOriginId": "GrantPlatformGrantEdgeDistributionOrigin2DC059090",
+              "ViewerProtocolPolicy": "redirect-to-https"
+            },
+            {
+              "AllowedMethods": [
+                "GET",
+                "HEAD",
+                "OPTIONS",
+                "PUT",
+                "PATCH",
+                "POST",
+                "DELETE"
+              ],
+              "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+              "Compress": true,
+              "OriginRequestPolicyId": "b689b0a8-53d0-40ab-baf2-68738e2966ac",
+              "PathPattern": "/acc/*",
+              "TargetOriginId": "GrantPlatformGrantEdgeDistributionOrigin2DC059090",
+              "ViewerProtocolPolicy": "redirect-to-https"
+            },
+            {
+              "AllowedMethods": [
+                "GET",
+                "HEAD",
+                "OPTIONS",
+                "PUT",
+                "PATCH",
+                "POST",
+                "DELETE"
+              ],
+              "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+              "Compress": true,
+              "OriginRequestPolicyId": "b689b0a8-53d0-40ab-baf2-68738e2966ac",
+              "PathPattern": "/.well-known/*",
+              "TargetOriginId": "GrantPlatformGrantEdgeDistributionOrigin2DC059090",
+              "ViewerProtocolPolicy": "redirect-to-https"
+            },
+            {
+              "AllowedMethods": [
+                "GET",
+                "HEAD",
+                "OPTIONS",
+                "PUT",
+                "PATCH",
+                "POST",
+                "DELETE"
+              ],
+              "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+              "Compress": true,
+              "OriginRequestPolicyId": "b689b0a8-53d0-40ab-baf2-68738e2966ac",
+              "PathPattern": "/api-docs*",
+              "TargetOriginId": "GrantPlatformGrantEdgeDistributionOrigin2DC059090",
+              "ViewerProtocolPolicy": "redirect-to-https"
+            },
+            {
+              "AllowedMethods": [
+                "GET",
+                "HEAD",
+                "OPTIONS",
+                "PUT",
+                "PATCH",
+                "POST",
+                "DELETE"
+              ],
+              "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+              "Compress": true,
+              "OriginRequestPolicyId": "b689b0a8-53d0-40ab-baf2-68738e2966ac",
+              "PathPattern": "/graphql*",
+              "TargetOriginId": "GrantPlatformGrantEdgeDistributionOrigin2DC059090",
+              "ViewerProtocolPolicy": "redirect-to-https"
+            },
+            {
+              "AllowedMethods": [
+                "GET",
+                "HEAD",
+                "OPTIONS",
+                "PUT",
+                "PATCH",
+                "POST",
+                "DELETE"
+              ],
+              "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+              "Compress": true,
+              "OriginRequestPolicyId": "b689b0a8-53d0-40ab-baf2-68738e2966ac",
+              "PathPattern": "/health*",
+              "TargetOriginId": "GrantPlatformGrantEdgeDistributionOrigin2DC059090",
+              "ViewerProtocolPolicy": "redirect-to-https"
+            },
+            {
+              "AllowedMethods": [
+                "GET",
+                "HEAD",
                 "OPTIONS"
               ],
               "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
@@ -2195,6 +2350,23 @@
               ],
               "PathPattern": "/docs/*",
               "TargetOriginId": "GrantPlatformGrantEdgeDistributionOrigin101758DB2",
+              "ViewerProtocolPolicy": "redirect-to-https"
+            },
+            {
+              "AllowedMethods": [
+                "GET",
+                "HEAD",
+                "OPTIONS",
+                "PUT",
+                "PATCH",
+                "POST",
+                "DELETE"
+              ],
+              "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+              "Compress": true,
+              "OriginRequestPolicyId": "b689b0a8-53d0-40ab-baf2-68738e2966ac",
+              "PathPattern": "/api/*",
+              "TargetOriginId": "GrantPlatformGrantEdgeDistributionOrigin2DC059090",
               "ViewerProtocolPolicy": "redirect-to-https"
             }
           ],
@@ -2249,6 +2421,48 @@
               "S3OriginConfig": {
                 "OriginAccessIdentity": ""
               }
+            },
+            {
+              "CustomOriginConfig": {
+                "OriginProtocolPolicy": "https-only",
+                "OriginSSLProtocols": [
+                  "TLSv1.2"
+                ]
+              },
+              "DomainName": {
+                "Fn::Select": [
+                  2,
+                  {
+                    "Fn::Split": [
+                      "/",
+                      {
+                        "Fn::GetAtt": [
+                          "GrantApiFunctionFunctionUrl06A8617E",
+                          "FunctionUrl"
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              "Id": "GrantPlatformGrantEdgeDistributionOrigin2DC059090",
+              "OriginCustomHeaders": [
+                {
+                  "HeaderName": "x-origin-verify",
+                  "HeaderValue": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "{{resolve:secretsmanager:",
+                        {
+                          "Ref": "GrantPlatformSecretCBEA56FA"
+                        },
+                        ":SecretString:ORIGIN_VERIFY_SECRET::}}"
+                      ]
+                    ]
+                  }
+                }
+              ]
             }
           ],
           "PriceClass": "PriceClass_100",
@@ -2727,7 +2941,7 @@
     "CDKMetadata": {
       "Type": "AWS::CDK::Metadata",
       "Properties": {
-        "Analytics": "v2:deflate64:H4sIAAAAAAAA/31UwW7bMAz9lt5VrUu77ZwmbRGg24K4yzWgZUZTI0uGSDUIDP/7IMt2sg7diY+PjwKpJ3smZ1+/yZsrONK1qg7X1pSyLRjUQWyQfAwKBRxp16KayXbbKLHYu+16IdaxtEYVsXTIiTujjY+ML1BaPPNnbk7klQE23k3iBB5W6xR+AD8B4xFOYh3MGzCeD145xuBwEuRJhmzODOp3jY7FwGwb9eCqxhvHg3RKC1QxGD49BR+bfsr/EiunAxJ1IlQk2yUwlEC4sJEYg8gDTp3L+0tiFBeoQt5ieT829snKEYNT2AnqJVSDA41BtnmK1JXDCwSNfLHnJPinkulOoAo7IEImufTqgGFVg04WIKea3GDjybAPp3sgFKhIthfTjfARgobkHx2WuDfOjO69Z7xjMA7DmeuEgVq2G59fQx/X3hrV25dRJ6zXJNtnr6dbnPCz1xtkdPkwC3VZgWwfo1PjEBPeYqCBG+HF1pNsBL+CTdIhPMMJw9hWGKctsp/O7kR1clD7qpRt/4y3s9T0ZH0Jtic6QbeyvY/qkG0eUA7njf/Kc5KuPnXv2gob60/JQZlLy4kQg429d51Q1sdqH7zjD+5iaYiDKWOfFLc/g9HGzZVCouRS8P3SH9CXzZ0I6RP9civb+QaVD1XvY48KZDEHgJx1neinKxi0cTrLhl8IB6M1BpIvGYhFJPb1VE+zRG4iDw7vbLJjB0dS1sj5kRbW9A69a1wH/2YqDP3zXezdd2ga43QnnK9QvtKnt9md/Hwnb65eyZjrEB2bGuUmxz+zITEq/QQAAA=="
+        "Analytics": "v2:deflate64:H4sIAAAAAAAA/31UwW7bMAz9lt5VrUu77ZwmbRGg24K4yzWgZcZTI0sGSTcIDP/7IMt2sg7diY+Pjwqpp3imZ1+/6ZsrOPK1KQ7Xzua6zQTMQW2QQ0MGFRx516KZ6XZbG7XY++16odZN7qzJmtyjRO6MNqERfIHc4Zk/c3PmYCyIDX4SR/CwWsfwA+QJBI9wUmuybyB4PnjlBcnjJEiTDNlcBMzvCr2ogdnW5sEXdbBeBumUZmgasnJ6otDU/ZT/JVa+JGTuFBWs2yUI5MC4cA0LkkoDTp3L+0tiFGdoKG2xvB8b+2TlWcAb7BT3Eq7AQ4mk2zRF7ErhBahEudhzEvxTSXSn0NAOmFFYL4M5IK0qKKMFKLGmN1gHthLodA+MCg3r9mK6ET4ClRD948MS99bb0b33TPAC1iOduU5ZqHS7Cek19HEdnDW9fQl1yoWSdfscyukWJ/wcyg0K+nSYgyovQLePjTfjEBPeIvHAjfBi60k2gl/konQIa6TK8tj/DCek8ZDM+tKhhOmXOlWcPFShyHXbP+rtLDY9uZCD64lO8a1u7xtzSKYPKIXz/n/lKYlGxO5dW2Dtwin6qVNpORFqMLV3slPGhabYU/Dywc0sLQvZvOmT7PYn2dL6uTHIHD2j0F/BB/Rlc6co/mG/3Op2vkETqOhd7VGGouYAkLKuU/10mUBpfZlkwwdFyJYlEuuXBNSiYQnVVI+zNFI3Mvi9c9GOHRzZOKvnR1442zv0rnFN4c0WSP1jXuz9d6hr68tO+VCgfuVPb7M7/flO31y9srXX1HixFepNin8AwLv1lQsFAAA="
       },
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/CDKMetadata/Default"

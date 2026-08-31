@@ -40,7 +40,7 @@ import { assertCertificateRegion, validateAppUrl, validateHostnameInZone } from 
 import { CacheTable } from './data/cache-table';
 import { Database } from './data/database';
 import { Network } from './data/network';
-import { PlatformSecret } from './data/platform-secret';
+import { ORIGIN_VERIFY_SECRET_KEY, PlatformSecret } from './data/platform-secret';
 import { DatabaseConnectionProxy } from './data/proxy';
 import { StorageBucket } from './data/storage-bucket';
 import { EdgeCertificate } from './edge/certificate';
@@ -296,6 +296,10 @@ export class GrantPlatform extends Construct {
           STORAGE_S3_REGION: Stack.of(this).region,
           CACHE_DYNAMODB_TABLE: this.cacheTable.table.tableName,
           CACHE_DYNAMODB_REGION: Stack.of(this).region,
+          // CloudFront overwrites this header, so it cannot be supplied by the caller
+          // the way X-Forwarded-For can — which CloudFront *appends* to, leaving the
+          // first entry attacker-controlled. The rate limiter keys on this value.
+          SECURITY_TRUSTED_CLIENT_IP_HEADER: 'cloudfront-viewer-address',
         },
         memorySize: props.api?.memorySize,
         timeout: props.api?.timeout,
@@ -331,6 +335,12 @@ export class GrantPlatform extends Construct {
       hostname,
       certificate,
       docsBucket: this.docs.bucket,
+      apiFunctionUrl: this.api?.functionUrl,
+      // A dynamic reference, not the value: CloudFormation resolves it at deploy and
+      // the plaintext never reaches the template. Present only when the API is.
+      apiOriginSecret: this.platformSecret?.secret
+        .secretValueFromJson(ORIGIN_VERIFY_SECRET_KEY)
+        .unsafeUnwrap(),
     });
 
     const recordTarget = RecordTarget.fromAlias(new CloudFrontTarget(this.edge.distribution));

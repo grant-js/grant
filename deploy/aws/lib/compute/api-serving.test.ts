@@ -128,21 +128,42 @@ describe('no credential reaches the serving function', () => {
   });
 });
 
-describe('the function URL is an origin, not a public endpoint', () => {
-  it('requires IAM authorization', () => {
-    // AuthType NONE would make the URL publicly reachable and bypass CloudFront
-    // entirely — every edge behaviour, header rule and WAF association becomes
-    // advisory when the origin answers the internet directly.
+describe('the function URL answers the internet, and is guarded in the app', () => {
+  it('is unauthenticated at the AWS layer, by necessity', () => {
+    // This started as AWS_IAM and had to change. CloudFront's Origin Access Control
+    // cannot carry this API: its recommended signing mode overwrites the viewer's
+    // Authorization header, and POST through OAC requires the *viewer* to send
+    // x-amz-content-sha256 with the body hash. GraphQL is POST-only from a browser.
+    //
+    // Asserted rather than left implicit so the cost of that constraint is visible in
+    // the test suite: nothing at the AWS layer refuses an unsigned caller here.
     const { template } = build();
-    template.hasResourceProperties('AWS::Lambda::Url', { AuthType: 'AWS_IAM' });
+    template.hasResourceProperties('AWS::Lambda::Url', { AuthType: 'NONE' });
   });
 
-  it('grants no principal invoke permission yet', () => {
-    // The distribution's Origin Access Control arrives in 4d. Until then nothing may
-    // invoke the URL, which is the correct state for a half-wired stack — better than
-    // a window in which the origin is reachable by anyone.
+  it('is therefore invokable by any principal, which is the whole exposure', () => {
+    // CDK attaches a `*`-principal permission for a NONE URL. What actually turns
+    // away a direct caller is originVerifyMiddleware in apps/api, checking a secret
+    // only CloudFront attaches — enforced in the function rather than by AWS, so a
+    // probe costs one short invocation. Reserved concurrency bounds that.
     const { template } = build();
-    template.resourceCountIs('AWS::Lambda::Permission', 0);
+    const permissions = Object.values(template.findResources('AWS::Lambda::Permission'));
+    const urlPermissions = permissions.filter(
+      (p) => (p.Properties as { FunctionUrlAuthType?: string }).FunctionUrlAuthType === 'NONE'
+    );
+
+    expect(urlPermissions).toHaveLength(1);
+    expect((urlPermissions[0].Properties as { Principal: string }).Principal).toBe('*');
+  });
+
+  it('generates the origin secret rather than composing it into the template', () => {
+    // The compensating control. It must exist in the secret and not as a literal
+    // anywhere in the template.
+    const { template } = build();
+    const secrets = JSON.stringify(template.findResources('AWS::SecretsManager::Secret'));
+
+    expect(secrets).toMatch(/ORIGIN_VERIFY_SECRET/);
+    expect(secrets).not.toMatch(/"[A-Za-z0-9]{64}"/);
   });
 });
 
@@ -162,14 +183,15 @@ describe('database connections stay within what Aurora accepts', () => {
     expect(props.ReservedConcurrentExecutions * poolMax).toBeLessThan(100);
   });
 
-  it('allocates a full vCPU, because boot is CPU-bound', () => {
-    // 1,769 MB is the threshold where Lambda gives a function one whole vCPU. The
-    // setting is not about memory — a live deploy used 350 MB — it is about cold
-    // start, 77% of which is loading the module graph. Dropping below this to "save
-    // memory" would buy nothing and cost CPU.
+  it('stays at the memory that measured fastest, not the one that reasons fastest', () => {
+    // 1,769 MB is where Lambda gives a full vCPU, so it should boot faster. Measured
+    // A/B on a live deploy it does the opposite: init hits the 10 s ceiling and is
+    // re-run inside the invocation, billing 13,811 ms, against 7,634 ms at 1024.
+    // Pinned so the appealing-but-wrong value cannot be reintroduced from first
+    // principles without someone re-measuring INIT_REPORT.
     const { template } = build();
     const props = apiFunction(template).Properties as { MemorySize: number };
-    expect(props.MemorySize).toBeGreaterThanOrEqual(1769);
+    expect(props.MemorySize).toBe(1024);
   });
 
   it('lets concurrency be unbounded only when asked explicitly', () => {

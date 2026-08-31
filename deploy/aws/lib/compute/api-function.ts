@@ -92,8 +92,10 @@ export class ApiFunction extends Construct {
   public readonly function: DockerImageFunction;
 
   /**
-   * The invocation endpoint. `AWS_IAM`-authorized, so it is not reachable without a
-   * signed request — the distribution reaches it through Origin Access Control.
+   * The invocation endpoint.
+   *
+   * Reachable, and guarded by a shared secret the application checks rather than by
+   * IAM. See the note at its creation for why IAM is not available here.
    */
   public readonly functionUrl: IFunctionUrl;
 
@@ -109,18 +111,25 @@ export class ApiFunction extends Construct {
       // arbitrary webhook URLs, none of which a VPC endpoint can reach.
       vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
       securityGroups: props.securityGroups,
-      // A CPU dial, not a memory one, and the measurement says so: a live deploy used
-      // 350 MB of the 1024 MB it had. Lambda allocates CPU in proportion to memory and
-      // 1,769 MB is where a function gets one full vCPU, against roughly 0.58 at 1 GB.
+      // 1024, and the number is measured rather than reasoned.
       //
-      // Cold start is what this buys. Boot is CPU-bound — 77% of it is loading the
-      // module graph — and a measured 8.9 s init sits against Lambda's 10 s ceiling,
-      // past which init is re-run inside the invocation and the caller waits for it.
+      // The reasoning said 1769: Lambda allocates CPU in proportion to memory, that is
+      // where a function gets one full vCPU against roughly 0.58 at 1 GB, and 77% of
+      // boot is CPU-bound module loading. It was wrong. A/B on one live deploy, same
+      // image, memory the only variable:
       //
-      // Roughly cost-neutral rather than a trade: billing is per GB-millisecond, so
-      // 1.73x the rate against a proportionally shorter init, and every warm
-      // invocation gets cheaper too.
-      memorySize: props.memorySize ?? 1769,
+      //   1769 MB  ->  INIT_REPORT ... Status: timeout   (10,000 ms ceiling, 13,811 ms billed)
+      //   1024 MB  ->  Init Duration: 7,634 ms           (7,642 ms billed)
+      //
+      // At 1769 the init phase reproducibly exceeds Lambda's 10 s ceiling and is re-run
+      // inside the invocation, so the caller waits for the whole thing twice. At 1024 it
+      // finishes with room to spare. The mechanism is not established — plausibly V8
+      // sizing its heap generations off the larger limit and paying longer GCs during
+      // the module-loading burst — so this is recorded as an observation, not a theory.
+      //
+      // Do not raise this without measuring `INIT_REPORT` afterwards. More memory buys
+      // CPU, and on this workload that did not translate into a faster boot.
+      memorySize: props.memorySize ?? 1024,
       // CloudFront's origin response timeout is 30 seconds by default, so a longer
       // Lambda timeout only buys a 504 at the edge while still being billed.
       timeout: props.timeout ?? Duration.seconds(30),
@@ -141,12 +150,25 @@ export class ApiFunction extends Construct {
     props.uploadsBucket.grantReadWrite(this.function);
 
     this.functionUrl = this.function.addFunctionUrl({
-      // Not NONE. A Function URL with NONE is a public endpoint that bypasses
-      // CloudFront entirely — every header rule, the WAF and any edge behaviour
-      // become advisory, because the origin answers the internet directly. IAM auth
-      // means only a principal the stack granted can invoke it, and slice 4d grants
-      // exactly one: the distribution, through Origin Access Control.
-      authType: FunctionUrlAuthType.AWS_IAM,
+      // `AWS_IAM` would be the better answer and is not available to this API. Slice
+      // 4c shipped it, and verifying the edge in 4d established that CloudFront's
+      // Origin Access Control cannot carry this application's traffic:
+      //
+      //   - OAC's recommended `SigningBehavior: always` overwrites the viewer's
+      //     `Authorization` header with its own SigV4 signature, so bearer tokens
+      //     cannot survive the hop. `no-override` does not help: it declines to sign
+      //     when the viewer sends `Authorization`, and IAM then refuses the unsigned
+      //     request.
+      //   - `POST` and `PUT` through OAC require the *viewer* to send
+      //     `x-amz-content-sha256` with the body hash, because CloudFront will not
+      //     buffer the body to compute it. GraphQL is POST-only from a browser.
+      //
+      // So the URL answers the internet, and `originVerifyMiddleware` in `apps/api`
+      // refuses anything without the secret CloudFront attaches as an origin custom
+      // header. The difference from IAM is where enforcement happens: AWS turns away
+      // an unsigned request before any code runs, while this costs one short
+      // invocation. Reserved concurrency bounds that.
+      authType: FunctionUrlAuthType.NONE,
     });
   }
 }
