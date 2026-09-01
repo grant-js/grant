@@ -83,6 +83,7 @@
     "badge-maker": "^6.0.0",
     "concurrently": "^10.0.5",
     "dotenv-cli": "^11.0.0",
+    "esbuild": "^0.25.0",
     "eslint": "^10.8.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",

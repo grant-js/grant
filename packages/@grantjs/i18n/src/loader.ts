@@ -13,9 +13,15 @@ const LOCALES_DIR = path.join(__dirname, '..', 'locales');
 /**
  * Returns the absolute path to the package's locales directory.
  * API can use this for i18next backend loadPath (e.g. join with '{{lng}}.json' for merged file).
+ *
+ * `override` exists for builds where this module no longer sits next to the
+ * `locales/` directory it ships with — a bundle inlines it into one output file,
+ * so `import.meta.url` points at that file rather than at the package. Callers
+ * that pass nothing keep the on-disk resolution, which is every non-bundled
+ * layout.
  */
-export function getLocalesPath(): string {
-  return LOCALES_DIR;
+export function getLocalesPath(override?: string): string {
+  return override || LOCALES_DIR;
 }
 
 const NAMESPACES = ['errors', 'common', 'email'] as const;
@@ -34,8 +40,8 @@ type MergedMessages = {
  * Loads and merges the three namespace JSONs for the given locale.
  * Sync so it can be used at init time (e.g. i18next with a custom backend that reads merged object).
  */
-export function getMergedMessages(locale: SupportedLocale): MergedMessages {
-  const localeDir = path.join(LOCALES_DIR, locale);
+export function getMergedMessages(locale: SupportedLocale, localesDir?: string): MergedMessages {
+  const localeDir = path.join(getLocalesPath(localesDir), locale);
   const result: MergedMessages = { errors: {}, common: {}, email: {} };
   for (const ns of NAMESPACES) {
     const filePath = path.join(localeDir, `${ns}.json`);

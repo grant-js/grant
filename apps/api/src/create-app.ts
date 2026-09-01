@@ -110,7 +110,9 @@ export async function createApp(): Promise<CreatedApp> {
   // `node dist/migrate.js` as a separate step — see
   // decisions/0001-configuration-gated-database-bootstrap.md.
   if (config.db.bootstrapOnBoot) {
-    await bootstrapDatabase(db, config.system.systemUserId);
+    await bootstrapDatabase(db, config.system.systemUserId, {
+      migrationsFolder: config.db.migrationsDir,
+    });
   } else {
     logger.info({
       msg: 'Skipping database bootstrap at boot (DB_BOOTSTRAP_ON_BOOT=false)',

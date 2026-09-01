@@ -8,13 +8,15 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const migrate = vi.fn<() => Promise<void>>();
+const migrate = vi.fn<(db: unknown, config: { migrationsFolder: string }) => Promise<void>>();
 const ensureRlsRestrictedRoleMembership = vi.fn<(opts?: unknown) => Promise<void>>();
 const seedAll = vi.fn<() => Promise<unknown>>();
 const ensureSystemUserAndSigningKey = vi.fn<() => Promise<void>>();
 const reset = vi.fn<() => Promise<void>>();
 
-vi.mock('drizzle-orm/postgres-js/migrator', () => ({ migrate: () => migrate() }));
+vi.mock('drizzle-orm/postgres-js/migrator', () => ({
+  migrate: (db: unknown, config: { migrationsFolder: string }) => migrate(db, config),
+}));
 vi.mock('./grant-rls-login-role.lib', () => ({
   ensureRlsRestrictedRoleMembership: (opts?: unknown) => ensureRlsRestrictedRoleMembership(opts),
 }));
@@ -256,5 +258,37 @@ describe('runDemoRefresh', () => {
 
     expect(reset).toHaveBeenCalledOnce();
     expect(db.order).toContain('tx:BEGIN');
+  });
+});
+
+/**
+ * The migrations folder is normally derived from this module's own location. A
+ * bundled build inlines the module into one output file, so that derivation points
+ * at the bundle rather than at the package — which is why the caller can override it.
+ */
+describe('bootstrapDatabase migrations folder', () => {
+  it('resolves relative to the package when no override is given', async () => {
+    await bootstrapDatabase(db as unknown as Db, SYSTEM_USER_ID);
+
+    const [, config] = migrate.mock.calls[0]!;
+    expect(config.migrationsFolder).toMatch(/migrations$/);
+  });
+
+  it('uses the override when one is given', async () => {
+    await bootstrapDatabase(db as unknown as Db, SYSTEM_USER_ID, {
+      migrationsFolder: '/app/packages/@grantjs/database/dist/migrations',
+    });
+
+    const [, config] = migrate.mock.calls[0]!;
+    expect(config.migrationsFolder).toBe('/app/packages/@grantjs/database/dist/migrations');
+  });
+
+  it('falls back to package-relative resolution for an empty override', async () => {
+    // `DB_MIGRATIONS_DIR` defaults to '' — an unset override must not become a path.
+    await bootstrapDatabase(db as unknown as Db, SYSTEM_USER_ID, { migrationsFolder: '' });
+
+    const [, config] = migrate.mock.calls[0]!;
+    expect(config.migrationsFolder).toMatch(/migrations$/);
+    expect(config.migrationsFolder).not.toBe('');
   });
 });

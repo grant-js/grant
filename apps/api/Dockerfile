@@ -67,6 +67,26 @@ COPY apps/api apps/api
 
 RUN node scripts/docker/build-api-production.mjs
 
+# ---------------------------------------------------------------------------
+# Stage 2b – bundler: single-file ESM build of the API server (Lambda only)
+# ---------------------------------------------------------------------------
+# Branches off `builder` rather than extending it, for two reasons:
+#   - esbuild is a root devDependency, so this must run BEFORE the prune below.
+#   - Docker only builds the stages a target depends on. `runner` and `default` do
+#     not reference this one, so the Kubernetes and Compose images never run esbuild
+#     and never carry its output.
+FROM builder AS bundler
+
+RUN node scripts/docker/bundle-api-lambda.mjs
+
+# ---------------------------------------------------------------------------
+# Stage 2c – pruner: drop devDependencies
+# ---------------------------------------------------------------------------
+# This was the last step of `builder`. It moved into its own stage so `bundler`
+# above can branch off the tree while devDependencies are still installed; the /app
+# it produces is what `builder` used to hand to `runner`.
+FROM builder AS pruner
+
 RUN echo -e 'ignore-scripts=true\nshamefully-hoist=true' >> .npmrc && CI=true pnpm prune --prod && rm -f .npmrc
 
 # ---------------------------------------------------------------------------
@@ -80,7 +100,7 @@ RUN apk add --no-cache su-exec && \
 
 WORKDIR /app
 
-COPY --from=builder --chown=grantjs:grantjs /app ./
+COPY --from=pruner --chown=grantjs:grantjs /app ./
 
 COPY apps/api/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh && \
@@ -139,6 +159,25 @@ ENV AWS_LWA_PORT=4000
 # database connection and every middleware are in place. Binding the port is already
 # the readiness signal the HTTP probe was standing in for.
 ENV AWS_LWA_READINESS_CHECK_PROTOCOL=tcp
+
+# The single-file bundle from stage `bundler`. Lambda starts a fresh process on every
+# cold start, so module *resolution* — walking node_modules and linking ~2,000 files —
+# is paid per cold start rather than once per pod. Collapsing it into one file cut the
+# measured import phase from ~2,470 ms to ~1,090 ms.
+#
+# `dist/` is still here and still what `runner` runs. This adds a second entrypoint
+# beside it; it does not replace one. `dist/migrate.js` in particular is unchanged and
+# is still what the deploy-time migration task runs, where cold start does not matter.
+COPY --from=bundler --chown=grantjs:grantjs /app/apps/api/dist-lambda /app/apps/api/dist-lambda
+
+# Two directories the bundle can no longer find on its own. Both are normally derived
+# from `import.meta.url` by the module that owns them, which esbuild rewrites to the
+# bundle's own path — so they are passed explicitly instead. Empty (the default
+# everywhere else) keeps the original relative resolution, so `runner` is unaffected.
+ENV I18N_LOCALES_DIR=/app/packages/@grantjs/i18n/locales
+ENV DB_MIGRATIONS_DIR=/app/packages/@grantjs/database/dist/migrations
+
+CMD ["node", "dist-lambda/server.mjs"]
 
 # ---------------------------------------------------------------------------
 # Stage 5 – default: keep `runner` the implicit build target

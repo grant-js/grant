@@ -88,6 +88,9 @@ const DB_CONFIG = {
 
   /** Run migrations and the core seed at API start (`DB_BOOTSTRAP_ON_BOOT`). */
   bootstrapOnBoot: env.DB_BOOTSTRAP_ON_BOOT,
+
+  /** Migrations folder override (`DB_MIGRATIONS_DIR`); empty resolves from the package. */
+  migrationsDir: env.DB_MIGRATIONS_DIR,
 } as const;
 
 // ============================================================================
@@ -478,6 +481,9 @@ const I18N_CONFIG = {
 
   /** Enable i18n debug mode */
   debug: env.I18N_DEBUG,
+
+  /** Locale directory override (`I18N_LOCALES_DIR`); empty resolves from the package. */
+  localesDir: env.I18N_LOCALES_DIR,
 } as const;
 
 // ============================================================================

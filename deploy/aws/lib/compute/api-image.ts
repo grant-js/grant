@@ -7,6 +7,11 @@
  * image plus the Lambda Web Adapter binary, which is inert anywhere the Lambda runtime
  * is not reading `/opt/extensions` — so Fargate runs the identical artifact.
  *
+ * That target additionally carries an esbuild bundle of the server and defaults its
+ * CMD to it, to cut the module resolution Lambda pays on every cold start. The `tsc`
+ * output it was built from is still in the image and still what every explicit command
+ * override runs — the migrate task below is one, and it is unaffected.
+ *
  * Build timing matters here. `DockerImageAsset` does **not** run `docker build` during
  * `cdk synth`: it fingerprints the build context and writes an asset manifest, and the
  * build happens at publish time during `cdk deploy`. That is what keeps `synth:check`
