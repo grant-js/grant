@@ -19,10 +19,15 @@
  *     -c account=123456789012 \
  *     -c region=eu-central-1
  */
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { App, Stack } from 'aws-cdk-lib';
 import { Certificate, type ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { HostedZone } from 'aws-cdk-lib/aws-route53';
 
+import { loadTargetConfig } from '../lib/config/env-file';
 import { ConfigurationError } from '../lib/config/errors';
 import { assertConcreteEnv, validateAppUrl, validateCertificateArn } from '../lib/config/validate';
 import { EdgeCertificate } from '../lib/edge/certificate';
@@ -63,6 +68,36 @@ const certificateArn = optional('certificateArn');
  *   cdk deploy --all -c ephemeral=true ...
  */
 const ephemeral = optional('ephemeral') === 'true';
+
+/**
+ * Configuration file for this target — the AWS analogue of the Helm chart's
+ * `config:` block. Defaults to `deploy/aws/.env`; override with `-c envFile=...`.
+ *
+ * Absent is fine: the stack then deploys on `AWS_TARGET_ENV_DEFAULTS` alone, exactly
+ * as it did before this file existed. Present, its keys layer *over* those defaults,
+ * and explicit `-c` context still wins over both — the same precedence Helm gives
+ * `--set` over `values.yaml`.
+ */
+const DEFAULT_ENV_FILE = join(dirname(fileURLToPath(import.meta.url)), '../.env');
+const envFilePath = resolve(optional('envFile') ?? DEFAULT_ENV_FILE);
+const targetConfig = loadTargetConfig(
+  envFilePath,
+  (p) => readFileSync(p, 'utf-8'),
+  (p) => existsSync(p)
+);
+
+/**
+ * Names only — never values. These are not synthesized into the template at all;
+ * `scripts/put-secrets.mjs` writes them to the platform secret after deploy, and the
+ * application resolves them through `ISecretResolver` within its TTL.
+ */
+const pendingSecretKeys = Object.keys(targetConfig.secrets);
+if (pendingSecretKeys.length > 0) {
+  console.error(
+    `[grant] ${pendingSecretKeys.length} secret(s) in ${envFilePath} are not part of this ` +
+      `template (${pendingSecretKeys.join(', ')}). Apply with: pnpm --filter grant-aws-deploy put-secrets`
+  );
+}
 
 const { hostname } = validateAppUrl(appUrl);
 
@@ -128,6 +163,8 @@ function buildPlatform(stack: Stack, cert: ICertificate): void {
     // `pnpm --filter grant-web build` first — the same contract the docs site has.
     web: {},
     env: {
+      // The config file first, so explicit `-c` context below still wins.
+      ...targetConfig.env,
       // Email is opt-in per deployment because SES needs a verified identity that CDK
       // cannot create for you. Set here rather than in the target defaults so a fresh
       // deploy without a verified domain still boots — it falls back to `console`.
