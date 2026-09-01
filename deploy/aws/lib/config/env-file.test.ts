@@ -1,3 +1,7 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { describe, expect, it } from 'vitest';
 
 import { classifyConfig, loadTargetConfig, parseEnvFile, RESOLVER_SECRET_KEYS } from './env-file';
@@ -80,5 +84,21 @@ describe('loadTargetConfig', () => {
         () => false
       )
     ).toEqual({ env: {}, secrets: {} });
+  });
+});
+
+describe('the committed .env.example is inert', () => {
+  /**
+   * `synth` and `synth:check` read this file so the committed template cannot depend
+   * on an untracked local `.env`. That only holds while every key in it is blank —
+   * a value here would change the snapshot and, worse, silently change what every
+   * adopter deploys.
+   */
+  it('sets no key', () => {
+    const path = join(dirname(fileURLToPath(import.meta.url)), '../../.env.example');
+    const { env, secrets } = classifyConfig(parseEnvFile(readFileSync(path, 'utf-8')));
+
+    expect(env).toEqual({});
+    expect(secrets).toEqual({});
   });
 });
