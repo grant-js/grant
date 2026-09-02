@@ -19,11 +19,17 @@
  *     -c account=123456789012 \
  *     -c region=eu-central-1
  */
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { App, Stack } from 'aws-cdk-lib';
 import { Certificate, type ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { HostedZone } from 'aws-cdk-lib/aws-route53';
 
+import { loadTargetConfig } from '../lib/config/env-file';
 import { ConfigurationError } from '../lib/config/errors';
+import type { GrantEnv } from '../lib/config/props';
 import { assertConcreteEnv, validateAppUrl, validateCertificateArn } from '../lib/config/validate';
 import { EdgeCertificate } from '../lib/edge/certificate';
 import { GrantPlatform } from '../lib/grant-platform';
@@ -63,6 +69,36 @@ const certificateArn = optional('certificateArn');
  *   cdk deploy --all -c ephemeral=true ...
  */
 const ephemeral = optional('ephemeral') === 'true';
+
+/**
+ * Configuration file for this target — the AWS analogue of the Helm chart's
+ * `config:` block. Defaults to `deploy/aws/.env`; override with `-c envFile=...`.
+ *
+ * Absent is fine: the stack then deploys on `AWS_TARGET_ENV_DEFAULTS` alone, exactly
+ * as it did before this file existed. Present, its keys layer *over* those defaults,
+ * and explicit `-c` context still wins over both — the same precedence Helm gives
+ * `--set` over `values.yaml`.
+ */
+const DEFAULT_ENV_FILE = join(dirname(fileURLToPath(import.meta.url)), '../.env');
+const envFilePath = resolve(optional('envFile') ?? DEFAULT_ENV_FILE);
+const targetConfig = loadTargetConfig(
+  envFilePath,
+  (p) => readFileSync(p, 'utf-8'),
+  (p) => existsSync(p)
+);
+
+/**
+ * Names only — never values. These are not synthesized into the template at all;
+ * `scripts/put-secrets.mjs` writes them to the platform secret after deploy, and the
+ * application resolves them through `ISecretResolver` within its TTL.
+ */
+const pendingSecretKeys = Object.keys(targetConfig.secrets);
+if (pendingSecretKeys.length > 0) {
+  console.error(
+    `[grant] ${pendingSecretKeys.length} secret(s) in ${envFilePath} are not part of this ` +
+      `template (${pendingSecretKeys.join(', ')}). Apply with: pnpm --filter grant-aws-deploy put-secrets`
+  );
+}
 
 const { hostname } = validateAppUrl(appUrl);
 
@@ -114,6 +150,55 @@ if (certificateArn) {
   buildPlatform(platformStack, certificate);
 }
 
+/**
+ * The container environment, in three layers — lowest precedence first:
+ *
+ *   1. values derived from other settings
+ *   2. the config file
+ *   3. explicit `-c` context
+ *
+ * Layer 1 exists because three keys have defaults in `@grantjs/env` that are right
+ * for local development and wrong for any real deployment: both GitHub callbacks
+ * point at localhost, and SES points at us-east-1. Before the config file existed,
+ * `-c` context set them implicitly, so configuring GitHub or SES *through the file*
+ * would have silently inherited the local defaults — and both failures surface far
+ * from here, at GitHub's callback check and as an SES identity that "does not exist"
+ * in a region it was never verified in.
+ *
+ * They are a base layer rather than an override, so an explicit value in the file or
+ * on the command line still wins without special-casing either.
+ */
+function buildEnv(): GrantEnv {
+  const fromContext: GrantEnv = {
+    // Email is opt-in per deployment because SES needs a verified identity that CDK
+    // cannot create for you, so a fresh deploy without one still boots on `console`.
+    ...(optional('emailFrom')
+      ? { EMAIL_PROVIDER: 'ses', EMAIL_FROM: optional('emailFrom') as string }
+      : {}),
+    // Not secret; the client secret goes to the platform secret, never here.
+    ...(optional('githubClientId')
+      ? { GITHUB_CLIENT_ID: optional('githubClientId') as string }
+      : {}),
+  };
+
+  const clientId = fromContext.GITHUB_CLIENT_ID ?? targetConfig.env.GITHUB_CLIENT_ID;
+  const emailProvider = fromContext.EMAIL_PROVIDER ?? targetConfig.env.EMAIL_PROVIDER;
+
+  const derived: GrantEnv = {
+    ...(clientId
+      ? {
+          GITHUB_CALLBACK_URL: `${appUrl}/api/auth/github/callback`,
+          GITHUB_PROJECT_CALLBACK_URL: `${appUrl}/api/auth/project/callback`,
+        }
+      : {}),
+    // SES is regional and an identity is verified per region. The stack's own region
+    // is the only default that can be right by construction.
+    ...(emailProvider === 'ses' ? { EMAIL_SES_REGION: region } : {}),
+  };
+
+  return { ...derived, ...targetConfig.env, ...fromContext };
+}
+
 function buildPlatform(stack: Stack, cert: ICertificate): void {
   new GrantPlatform(stack, 'Grant', {
     appUrl,
@@ -127,28 +212,7 @@ function buildPlatform(stack: Stack, cert: ICertificate): void {
     // API. Built from source; `apps/web/.next/static` must exist, so run
     // `pnpm --filter grant-web build` first — the same contract the docs site has.
     web: {},
-    env: {
-      // Email is opt-in per deployment because SES needs a verified identity that CDK
-      // cannot create for you. Set here rather than in the target defaults so a fresh
-      // deploy without a verified domain still boots — it falls back to `console`.
-      ...(optional('emailFrom')
-        ? {
-            EMAIL_PROVIDER: 'ses',
-            EMAIL_FROM: optional('emailFrom') as string,
-            EMAIL_SES_REGION: region,
-          }
-        : {}),
-      // Not secret; the client secret goes to the platform secret, never here.
-      ...(optional('githubClientId')
-        ? { GITHUB_CLIENT_ID: optional('githubClientId') as string }
-        : {}),
-      ...(optional('githubClientId')
-        ? {
-            GITHUB_CALLBACK_URL: `${appUrl}/api/auth/github/callback`,
-            GITHUB_PROJECT_CALLBACK_URL: `${appUrl}/api/auth/project/callback`,
-          }
-        : {}),
-    },
+    env: buildEnv(),
     dns: {
       // fromHostedZoneAttributes, not fromLookup: a lookup resolves against live
       // account state at synth time and would make the committed template a function

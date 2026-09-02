@@ -9,9 +9,10 @@
     "lint:fix": "eslint lib bin --ext .ts --fix",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
-    "synth": "cdk synth --quiet -c appUrl=https://grant.example.com -c zoneName=example.com -c hostedZoneId=ZREFERENCE00000 -c account=000000000000 -c region=eu-central-1 && node scripts/snapshot-template.mjs",
-    "synth:check": "cdk synth --quiet -c appUrl=https://grant.example.com -c zoneName=example.com -c hostedZoneId=ZREFERENCE00000 -c account=000000000000 -c region=eu-central-1 && node scripts/snapshot-template.mjs --check",
-    "bootstrap": "cdk bootstrap --bootstrap-kms-key-id AWS_MANAGED_KEY -c appUrl=https://bootstrap.invalid -c zoneName=bootstrap.invalid -c hostedZoneId=ZBOOTSTRAPONLY0"
+    "synth": "cdk synth --quiet -c appUrl=https://grant.example.com -c zoneName=example.com -c hostedZoneId=ZREFERENCE00000 -c account=000000000000 -c region=eu-central-1 -c envFile=.env.example && node scripts/snapshot-template.mjs",
+    "synth:check": "cdk synth --quiet -c appUrl=https://grant.example.com -c zoneName=example.com -c hostedZoneId=ZREFERENCE00000 -c account=000000000000 -c region=eu-central-1 -c envFile=.env.example && node scripts/snapshot-template.mjs --check",
+    "bootstrap": "cdk bootstrap --bootstrap-kms-key-id AWS_MANAGED_KEY -c appUrl=https://bootstrap.invalid -c zoneName=bootstrap.invalid -c hostedZoneId=ZBOOTSTRAPONLY0",
+    "put-secrets": "tsx scripts/put-secrets.ts"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

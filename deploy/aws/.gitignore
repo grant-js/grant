@@ -10,3 +10,6 @@ cdk.out/
 # committed template needs comes from the placeholder context seeded in cdk.json,
 # which is account-independent.
 cdk.context.json
+
+# Real configuration for this target. Copied from .env.example; holds secrets.
+.env
