@@ -115,7 +115,13 @@ function main(): void {
   console.log(
     `[put-secrets] Preserved ${preserved.length} existing key(s): ${preserved.join(', ')}`
   );
-  console.log('[put-secrets] Resolved within SECRETS_CACHE_TTL_SECONDS; no redeploy needed.');
+  console.log(
+    '[put-secrets] No redeploy needed — but execution environments already running hold\n' +
+      '               the previous payload until SECRETS_CACHE_TTL_SECONDS expires (default\n' +
+      '               300s). The resolver caches the whole secret, not each key, so a warm\n' +
+      '               container keeps answering without these keys until then. Testing\n' +
+      '               immediately can look like a failure that is only a stale cache.'
+  );
 }
 
 main();
