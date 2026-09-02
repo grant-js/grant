@@ -8,10 +8,20 @@
       // inferred from package.json; this one is not.
       "entry": ["src/jobs/**/*.job.ts", "src/migrate.ts", "tests/**/*.test.ts"],
       "project": ["src/**/*.ts"],
-      // pino-pretty is never imported: @grantjs/logger names it as a string transport
-      // target (`target: 'pino-pretty'`), which knip cannot follow. Removing it breaks
-      // pretty dev logging at runtime with no build or type error.
-      "ignoreDependencies": ["pino-pretty"]
+      "ignoreDependencies": [
+        // pino-pretty is never imported: @grantjs/logger names it as a string transport
+        // target (`target: 'pino-pretty'`), which knip cannot follow. Removing it breaks
+        // pretty dev logging at runtime with no build or type error.
+        "pino-pretty",
+        // pino is never imported here either, and for a different reason: it is an
+        // esbuild `external` in the Lambda bundle (scripts/docker/bundle-api-lambda.mjs),
+        // because pino locates its transport worker threads via __dirname. Left external,
+        // the bundle resolves it from node_modules at runtime, so apps/api must declare
+        // it even though no source file names it. tests/unit/lib/lambda-bundle.test.ts
+        // asserts every external is a declared apps/api dependency; removing this entry
+        // breaks the Lambda target at runtime with no build or type error.
+        "pino"
+      ]
     },
     "apps/web": {
       "entry": ["app/**/*.{ts,tsx}", "middleware.ts"],
