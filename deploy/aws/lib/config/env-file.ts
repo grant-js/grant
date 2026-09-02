@@ -40,7 +40,7 @@ export const RESOLVER_SECRET_KEYS = [
  * both put a live secret in the template and break the origin check if it disagreed
  * with what the distribution sends, so it is refused rather than silently ignored.
  */
-export const STACK_GENERATED_KEYS = ['ORIGIN_VERIFY_SECRET'] as const;
+const STACK_GENERATED_KEYS = ['ORIGIN_VERIFY_SECRET'] as const;
 
 export interface TargetConfig {
   /** Non-secret keys, destined for the container environment. */
