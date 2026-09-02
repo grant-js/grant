@@ -2,10 +2,11 @@
  * The migrate one-shot.
  *
  * A Fargate task, not a Lambda, and the reason is mechanical rather than stylistic:
- * the image carries the Lambda Web Adapter as an *extension*, which probes `/health`
- * on `AWS_LWA_PORT` and treats a cold start as incomplete until it answers
- * (`apps/api/Dockerfile:133`). A container whose command is `node dist/migrate.js`
- * never listens, so the invocation fails even when the migration itself succeeded.
+ * the image carries the Lambda Web Adapter as an *extension*, which probes
+ * `AWS_LWA_PORT` and treats a cold start as incomplete until something is listening
+ * (`AWS_LWA_READINESS_CHECK_PROTOCOL=tcp`, set in the `runner-lambda` stage of
+ * `apps/api/Dockerfile`). A container whose command is `node dist/migrate.js` never
+ * listens, so the invocation fails even when the migration itself succeeded.
  * ADR 0003 already establishes that one image serves Lambda and Fargate alike, and
  * `apps/api/src/migrate.ts` names "an ECS one-off task" first among its runners.
  *

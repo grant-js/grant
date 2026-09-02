@@ -82,3 +82,6 @@ apps/api/vitest-final.exit
 .vitest-exit.txt
 # Agent tooling scratch (contains container/agent ids)
 .openmono/
+
+# esbuild output for the Lambda target (apps/api/dist-lambda)
+dist-lambda/

@@ -8,10 +8,20 @@
       // inferred from package.json; this one is not.
       "entry": ["src/jobs/**/*.job.ts", "src/migrate.ts", "tests/**/*.test.ts"],
       "project": ["src/**/*.ts"],
-      // pino-pretty is never imported: @grantjs/logger names it as a string transport
-      // target (`target: 'pino-pretty'`), which knip cannot follow. Removing it breaks
-      // pretty dev logging at runtime with no build or type error.
-      "ignoreDependencies": ["pino-pretty"]
+      "ignoreDependencies": [
+        // pino-pretty is never imported: @grantjs/logger names it as a string transport
+        // target (`target: 'pino-pretty'`), which knip cannot follow. Removing it breaks
+        // pretty dev logging at runtime with no build or type error.
+        "pino-pretty",
+        // pino is never imported here either, and for a different reason: it is an
+        // esbuild `external` in the Lambda bundle (scripts/docker/bundle-api-lambda.mjs),
+        // because pino locates its transport worker threads via __dirname. Left external,
+        // the bundle resolves it from node_modules at runtime, so apps/api must declare
+        // it even though no source file names it. tests/unit/lib/lambda-bundle.test.ts
+        // asserts every external is a declared apps/api dependency; removing this entry
+        // breaks the Lambda target at runtime with no build or type error.
+        "pino"
+      ]
     },
     "apps/web": {
       "entry": ["app/**/*.{ts,tsx}", "middleware.ts"],
@@ -82,8 +92,8 @@
     "deploy/aws": {
       // bin/ is run by the CDK CLI (see cdk.json `app`) and scripts/ by node; neither
       // is imported, so knip needs them named or it reports both as unused files.
-      "entry": ["lib/**/*.test.ts", "bin/*.ts", "scripts/*.mjs"],
-      "project": ["lib/**/*.ts", "bin/*.ts", "scripts/*.mjs"],
+      "entry": ["lib/**/*.test.ts", "bin/*.ts", "scripts/*.{mjs,ts}"],
+      "project": ["lib/**/*.ts", "bin/*.ts", "scripts/*.{mjs,ts}"],
       // tsx is named as a command in cdk.json (`app`), never imported, so knip
       // cannot follow it — same class as pino-pretty and xdg-open above. Removing
       // it breaks `cdk synth` with no build or type error.

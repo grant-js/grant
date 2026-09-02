@@ -62,6 +62,17 @@ export const envSchema = z.object({
    */
   DB_BOOTSTRAP_ON_BOOT: optionalBoolean(true),
 
+  /**
+   * Absolute path to the Drizzle migrations folder. Empty means "resolve it
+   * relative to the compiled `@grantjs/database` module", which is correct for
+   * every layout where that module keeps its own directory on disk.
+   *
+   * A bundled build is the case where it is not: bundling inlines the module
+   * into a single output file, so the path it would derive from its own
+   * location no longer points at the package. Such a build sets this instead.
+   */
+  DB_MIGRATIONS_DIR: optionalString(''),
+
   // JWT / Auth / Token
   JWT_ACCESS_TOKEN_EXPIRATION_MINUTES: optionalNumber(15),
   JWT_REFRESH_TOKEN_EXPIRATION_DAYS: optionalNumber(30),
@@ -233,6 +244,13 @@ export const envSchema = z.object({
   // I18n
   I18N_DEFAULT_LOCALE: z.enum(['en', 'de']).optional().default('en'),
   I18N_DEBUG: optionalBoolean(false),
+
+  /**
+   * Absolute path to the locale JSON directory. Empty means "resolve it relative
+   * to the compiled `@grantjs/i18n` module". Set by bundled builds, for the same
+   * reason as DB_MIGRATIONS_DIR.
+   */
+  I18N_LOCALES_DIR: optionalString(''),
 
   // Email
   EMAIL_PROVIDER: z

@@ -10,8 +10,9 @@
  * This exists because the package-level `pnpm --filter @grantjs/database db:migrate`
  * cannot run in the production image. That script shells out to `drizzle-kit`, a
  * **devDependency**, and the runner stage installs production dependencies only
- * (`apps/api/Dockerfile:68`). `bootstrapDatabase()` uses `drizzle-orm`'s migrator,
- * which is a real dependency, so this entrypoint works in the shipped image.
+ * (the `pruner` stage in `apps/api/Dockerfile`). `bootstrapDatabase()` uses
+ * `drizzle-orm`'s migrator, which is a real dependency, so this entrypoint works in
+ * the shipped image.
  *
  * Use it wherever `DB_BOOTSTRAP_ON_BOOT=false`: a Helm hook Job, an ECS one-off
  * task, or a CodeBuild step ahead of a Lambda deploy. See
@@ -41,7 +42,9 @@ async function runMigrations(): Promise<void> {
   logger.info({ msg: 'Starting database bootstrap' });
 
   try {
-    await bootstrapDatabase(db, config.system.systemUserId);
+    await bootstrapDatabase(db, config.system.systemUserId, {
+      migrationsFolder: config.db.migrationsDir,
+    });
     logger.info({ msg: 'Database bootstrap complete' });
   } finally {
     await closeDatabase();
