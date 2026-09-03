@@ -104,6 +104,11 @@ export function WebhookSubscriptionActions({
     return null;
   }
 
+  // Only while a fetch is genuinely in flight, which cannot be before the menu has
+  // been opened. `!permissionsResolved` looks equivalent and is not: it is true on the
+  // first render, and `Actions` renders `isLoading` as a spinner *and* a disabled
+  // trigger — so the menu could never be opened, `hasBeenOpened` never became true,
+  // and the spinner never stopped. `member-actions.tsx` passes this same expression.
   const isLoading = hasBeenOpened && (isUpdateLoading || isDeleteLoading);
 
   return (
@@ -111,7 +116,7 @@ export function WebhookSubscriptionActions({
       entity={subscription}
       actions={actions}
       onOpenChange={handleOpenChange}
-      isLoading={!permissionsResolved || isLoading}
+      isLoading={isLoading}
     />
   );
 }
