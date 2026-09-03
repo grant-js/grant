@@ -1213,7 +1213,104 @@ generously afterwards.
   Carried as F5.
 - Queued messages _are_ retried, three times, then parked in the dead-letter queue.
 
-### Deploy — not yet run
+### Deploy — two cycles, because the first found an ordering fault
 
-The recorded deploy this slice owes under § Verification model has not been performed.
-Nothing beyond the CI evidence above is claimed.
+**Date**: 2026-09-03 · **Domain**: `aws.grantjs.org` · **Context**: `-c ephemeral=true`
+
+| Cycle   | Certificate | Platform            | Wall clock (incl. image builds) |
+| ------- | ----------- | ------------------- | ------------------------------- |
+| 1       | 45.61 s     | 538.56 s            | 711 s                           |
+| destroy | —           | 786 s (both stacks) | —                               |
+| 2       | 50.35 s     | 605.57 s            | 683 s                           |
+
+The second cycle exists because the first produced a finding that only a fresh deploy
+can produce, and re-running it is the only way to show the fix works.
+
+### The dispatch path works, and it is the part nothing local could prove
+
+EventBridge → jobs Lambda → the Web Adapter's pass-through → `/events` →
+`IJobAdapter.trigger()` → the job. Read from the jobs function's log group:
+
+| Check                                                         | Result                                                       |
+| ------------------------------------------------------------- | ------------------------------------------------------------ |
+| Live rules                                                    | **6**, targets `{"jobId":"…"}` matching the six declarations |
+| Rule states                                                   | 4 ENABLED, 2 DISABLED, as the template said                  |
+| Scheduled executions (cycle 2, ~10 min)                       | **30, all successful** — 10 each of the three minute sweeps  |
+| Queue: valid message                                          | `Queued job executed` for `event-relay`                      |
+| Queue: unroutable message                                     | `Queued job failed; message will be retried`, reported back  |
+| Jobs function URLs                                            | **none** — `list-function-url-configs` empty                 |
+| Direct origin `/health`                                       | **403**, origin verification unchanged                       |
+| `/`, `/en/auth/login`, `/docs/`, `/api-docs.json`, `/graphql` | 200 (307 locale redirect at `/`)                             |
+
+The Lambda Web Adapter's pass-through behaves as documented — the open question
+recorded before the deploy. Its content type is still undocumented, and the router
+parses regardless of it, so this deploy does not settle that half.
+
+### Finding 1 — the rules were armed before the schema existed
+
+The first deploy's sweeps spent their first ninety seconds failing:
+
+```
+relation "event_log" does not exist
+relation "notifications" does not exist
+relation "webhook_delivery_attempts" does not exist
+```
+
+The migrate one-shot was still running. Self-correcting — 07:38:48 was the first
+success and everything after it passed — but an adopter's first look at a working
+stack should not be a log full of errors, and the same window would swallow a genuine
+fault. Fixed by ordering the jobs **function** (not just the rules) after the migrate
+trigger, which covers the queue too since the event-source mapping is created with it.
+
+**Cycle 2 confirms it**: zero `does not exist` failures, and the first execution
+recorded is a success.
+
+### Finding 2 — the first cold starts overran the init ceiling, then stopped doing it
+
+| Cycle | Init                                                             |
+| ----- | ---------------------------------------------------------------- |
+| 1     | `INIT_REPORT … Status: timeout` ×2 at 9,999 ms, then 4,195.82 ms |
+| 2     | 4,897.60 ms and 4,566.36 ms — **no timeout**                     |
+
+Cycle 1's timeouts were during the deploy, with Aurora resuming from zero capacity and
+the migration still running. Cycle 2, where the function is created after the migration,
+saw none. That is consistent with the mechanism and does not establish it — one deploy
+cannot separate a cold cluster from contention with the API function and migrate task
+starting at the same moment. Carried as F8; the steady-state figure matches the API's
+post-bundling ~4.1 s.
+
+Warm invocations, cycle 2: **n=30, min 11 ms, median 14 ms, max 5,062 ms** (the max is
+the cold one). Max memory used ~330 MB of 1,024 — the headroom is large, and shrinking
+it is not free, because memory buys the CPU that boot is bound by.
+
+### Finding 3 — a destroy/redeploy cycle drops the out-of-band secrets
+
+`/api/auth/github` answered **500** after cycle 2 while every GitHub value in the
+template was correct. The platform secret is recreated empty, so `GITHUB_CLIENT_SECRET`
+was simply absent and `isConfigured()` refused. One `put-secrets` run fixed it, plus
+300 s for warm containers to see it — and testing inside that window looks exactly like
+the fix having failed, which it briefly did here. Carried as F10 for the guide.
+
+### Teardown — clean for everything billed, and two things it leaves
+
+| After `cdk destroy --all`       | Result        |
+| ------------------------------- | ------------- |
+| CloudFormation stacks           | gone          |
+| EventBridge rules               | **0**         |
+| SQS queues (incl. dead-letter)  | **0**         |
+| Lambda functions                | 0             |
+| RDS clusters / manual snapshots | 0 / 0         |
+| Secrets (incl. pending delete)  | 0             |
+| S3 buckets                      | 2 = baseline  |
+| Route 53 records                | 20 = baseline |
+
+Two residues, both now measured rather than assumed:
+
+- **The ACM validation CNAME persists** (`_17d199c9b8df2cc1e725d5274f58c2bf.aws.…`),
+  confirming F1 — and refining it: ACM reuses one validation record per domain, so the
+  leak is **idempotent, not per-cycle**. That is why the record count still reads as
+  baseline.
+- **Log groups survive**: 12 stack-owned (7 `GrantApiLogs`, 2 `GrantWebLogs`, 1
+  `GrantJobsLogs`) plus 38 CDK custom-resource groups. CDK's `LogGroup` defaults to
+  `RETAIN`, and unlike the CNAME this **grows by one per function per deploy cycle**.
+  New finding, F7; slice 7's guide gets the cleanup command.
