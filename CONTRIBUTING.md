@@ -33,7 +33,7 @@ To publish changes to npm (e.g. `@grantjs/server`, `@grantjs/client`, `@grantjs/
 
 1. Add a [changeset](https://github.com/changesets/changesets) for the change: `pnpm changeset`
 2. Commit the changeset and merge your PR to `main`
-3. The release workflow on `main` will open a "Version Packages" PR; merging that PR will publish to npm
+3. The release workflow on `main` will open a "Version Packages" PR; merging that PR publishes to npm via [trusted publishing](https://docs.npmjs.com/trusted-publishers/) (OIDC). Do not add changesets for internal (ignored) packages.
 
 Do not run `pnpm release` manually for normal releases; the CI handles it.
 

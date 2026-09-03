@@ -31,7 +31,7 @@ All of these bump together when you add a changeset for any member of the fixed 
 
 The root `grant` package is private and not in the pnpm workspace, so changesets cannot target it by name.
 
-Internal packages (`@grantjs/core`, `@grantjs/database`, etc.) and examples remain in the [changeset ignore list](.changeset/config.json).
+Internal packages (`@grantjs/core`, `@grantjs/database`, etc.) and examples remain in the [changeset ignore list](.changeset/config.json). **Do not add a changeset for an ignored package** — Changesets will not version it, and the leftover file makes the release job try to open an empty version PR instead of publishing.
 
 ## How Changesets work
 
@@ -52,6 +52,19 @@ Internal packages (`@grantjs/core`, `@grantjs/database`, etc.) and examples rema
    - `.changeset/*` files from that PR are removed in the version commit
 
 4. **Every push to `main`** still builds and pushes app images with `:demo` and `:sha-<commit>` when relevant paths change.
+
+## npm trusted publishing
+
+`@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, and `@grantjs/cli` publish from GitHub Actions via [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/) (OIDC). There is no `NPM_TOKEN` on the release job.
+
+| Requirement                                                      | Why                                                                                          |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Trusted publisher workflow filename is `release.yml`             | npm matches the **calling** workflow file; renaming it breaks publish                        |
+| `release` job runs on `ubuntu-latest`                            | npm does not accept OIDC from self-hosted runners                                            |
+| Job has `id-token: write` and no `NPM_TOKEN` / `NODE_AUTH_TOKEN` | A classic token (including an expired one) skips the OIDC exchange                           |
+| npm CLI ≥ 11.5.1                                                 | That is when the token exchange landed; `pnpm publish` packs and shells out to `npm publish` |
+
+Each package is configured on npmjs.com → Settings → Trusted publishing: repository `grant-js/grant`, workflow `release.yml`. After a green publish, revoke any leftover automation token.
 
 ## Docker image tags
 

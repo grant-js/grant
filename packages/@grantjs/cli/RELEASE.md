@@ -53,7 +53,7 @@ pnpm --filter @grantjs/cli publish --access public
 
 When the pipeline is set up, use the same pattern as `@grantjs/client`:
 
-- **Secrets:** `NPM_TOKEN` for npm publish.
+- **Auth:** npm trusted publishing (OIDC) from `.github/workflows/release.yml` — no `NPM_TOKEN`.
 - **Version PR:** Create/update a “Version Packages” PR when changesets are merged.
 - **Publish:** On merge of the version bump PR, run the release workflow.
 
