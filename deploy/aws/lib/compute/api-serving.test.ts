@@ -84,7 +84,9 @@ function apiFunction(template: Template): Record<string, unknown> {
   const api = functions.filter((fn) => {
     const props = fn.Properties as { Environment?: { Variables?: Record<string, unknown> } };
     const env = props.Environment?.Variables;
-    return env?.SECRETS_AWS_SECRET_ID !== undefined && env?.JOBS_EVENT_DISPATCH_ENABLED === undefined;
+    return (
+      env?.SECRETS_AWS_SECRET_ID !== undefined && env?.JOBS_EVENT_DISPATCH_ENABLED === undefined
+    );
   });
   expect(api).toHaveLength(1);
   return api[0] as Record<string, unknown>;

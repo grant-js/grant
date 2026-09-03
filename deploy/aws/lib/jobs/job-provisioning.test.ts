@@ -162,7 +162,9 @@ describe('the dispatcher is not reachable from the internet', () => {
     // The API has one. Nothing points at the dispatcher.
     expect(urls.length).toBeGreaterThan(0);
     for (const url of urls) {
-      const target = JSON.stringify((url.Properties as { TargetFunctionArn: unknown }).TargetFunctionArn);
+      const target = JSON.stringify(
+        (url.Properties as { TargetFunctionArn: unknown }).TargetFunctionArn
+      );
       expect(target).not.toContain(jobsLogicalId as string);
     }
   });
@@ -202,9 +204,7 @@ describe('nothing runs before the schema exists', () => {
     // failing with `relation "event_log" does not exist`. Ordering the function covers
     // the queue too — the event-source mapping is created with it.
     const { template } = build();
-    const [, jobsFunction] = Object.entries(
-      template.findResources('AWS::Lambda::Function')
-    ).find(
+    const [, jobsFunction] = Object.entries(template.findResources('AWS::Lambda::Function')).find(
       ([, fn]) =>
         (fn.Properties as { Environment?: { Variables?: Record<string, unknown> } }).Environment
           ?.Variables?.JOBS_EVENT_DISPATCH_ENABLED !== undefined

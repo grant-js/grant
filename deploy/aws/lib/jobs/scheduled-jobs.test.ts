@@ -177,7 +177,9 @@ describe('SCHEDULED_JOBS', () => {
   it('names no enqueue-only job', () => {
     // `event-relay` and `project-sync` have no recurrence to provision. A rule for
     // either would fire work that is supposed to arrive with a tenant scope attached.
-    const enqueueOnly = parsed.filter((job) => job.scheduleExpression === "''").map((job) => job.id);
+    const enqueueOnly = parsed
+      .filter((job) => job.scheduleExpression === "''")
+      .map((job) => job.id);
 
     expect(enqueueOnly.length).toBeGreaterThan(0);
     for (const id of enqueueOnly) {
