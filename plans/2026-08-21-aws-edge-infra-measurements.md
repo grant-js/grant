@@ -1291,6 +1291,40 @@ was simply absent and `isConfigured()` refused. One `put-secrets` run fixed it, 
 300 s for warm containers to see it — and testing inside that window looks exactly like
 the fix having failed, which it briefly did here. Carried as F10 for the guide.
 
+### The enqueue-only path, exercised by a real import
+
+Not a synthetic probe: a CDM import run from the dashboard against a live project,
+which is the first time `project-sync` has executed anywhere on this target.
+
+| Hop                               | Evidence                                                    |
+| --------------------------------- | ----------------------------------------------------------- |
+| API `startProjectSync` → SQS      | `NumberOfMessagesSent` 5                                    |
+| SQS → event-source mapping        | `NumberOfMessagesReceived` 5, in flight 0                   |
+| Mapping → jobs Lambda → `/events` | `EventDispatch … Queued job executed  jobId=project-sync`   |
+| `trigger()` → `ProjectSyncJob`    | `Starting job` 08:27:40 → `completed successfully` 08:31:08 |
+| Message settled                   | `NumberOfMessagesDeleted` 5, DLQ 0, Errors 0, Throttles 0   |
+
+Result: `rolesCreated: 5, groupsCreated: 5, userRolesAssigned: 273, warnings: 49`.
+
+**Duration 208.25 s**, agreeing to the millisecond between the log delta and the
+Lambda `Duration` metric. Under `node-cron` this same work ran inline in the API
+request, against a 30-second timeout — so this run is direct evidence for why the
+provider switch had to bring the queue with it.
+
+**It is also the first CDM import duration measured anywhere**, which ADR 0002 asks
+for and phase C owns. It is _not_ the measurement that ADR needs: 283 entities is two
+orders of magnitude below the 28,880-entity scenario, and nothing here separates
+per-entity work from fixed cost (fetching the document, transaction setup). Extrapolating
+from one point would produce exactly the confident wrong number the ADR warns about.
+What it does establish is that a real import fits the 15-minute ceiling with room, and
+that the ceiling is reached by scale rather than by overhead.
+
+**What could not be observed**: the `project_sync_jobs` row itself. The cluster has the
+Data API disabled and sits in isolated subnets, so there is no path to it from a
+developer machine without adding a bastion or an in-VPC one-off task. The API serving
+`/sync/jobs/{id}/payload` and `/snapshot` with 200 proves the row exists and is
+readable; its `status` value is not evidenced here.
+
 ### Teardown — clean for everything billed, and two things it leaves
 
 | After `cdk destroy --all`       | Result        |
