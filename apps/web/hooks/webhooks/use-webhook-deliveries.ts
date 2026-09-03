@@ -88,16 +88,38 @@ export function useWebhookDeliveries(
     [scope, replayMutation, refetch, skip, variables]
   );
 
+  /**
+   * Both of these are referentially stable, and that is load-bearing rather than tidy.
+   *
+   * `WebhookDeliveriesViewer` uses each one as a `useEffect` dependency whose body
+   * writes into `useWebhookDeliveriesStore`. A fresh identity per render therefore
+   * re-fires the effect on every render, the store update re-renders
+   * `WebhookDeliveriesCard`, and the card re-renders the viewer — an unbounded loop
+   * that React ends with error #185 ("maximum update depth exceeded"), taking the
+   * whole page down through the global error boundary.
+   *
+   * `?? []` was the subtler half: it allocates a new array on every render where the
+   * query has no data yet, which is every render during the initial load.
+   *
+   * `use-webhook-subscriptions-list.ts` already memoizes its list for the same reason.
+   */
+  const deliveries = useMemo(
+    () => data?.webhookDeliveries?.items ?? [],
+    [data?.webhookDeliveries?.items]
+  );
+
+  const refetchDeliveries = useCallback(async () => {
+    if (skip) return;
+    await refetch(variables);
+  }, [skip, refetch, variables]);
+
   return {
-    deliveries: data?.webhookDeliveries?.items ?? [],
+    deliveries,
     totalCount: data?.webhookDeliveries?.totalCount ?? 0,
     hasNextPage: data?.webhookDeliveries?.hasNextPage ?? false,
     loading,
     error: error ?? null,
-    refetch: async () => {
-      if (skip) return;
-      await refetch(variables);
-    },
+    refetch: refetchDeliveries,
     replay,
   };
 }

@@ -93,7 +93,14 @@ export function WebhookSubscriptionActions({
     });
   }
 
-  if (actions.length === 0) {
+  // `permissionsResolved` is the load-bearing half, and omitting it deadlocked the
+  // menu: permissions are fetched only once it has been opened (`enabled:
+  // hasBeenOpened`), so on first render both grants are false and `actions` is empty.
+  // Returning null then removes the trigger that would set `hasBeenOpened`, so the
+  // permissions are never fetched and the menu can never appear at all.
+  //
+  // `member-actions.tsx` guards it this way for the same reason.
+  if (permissionsResolved && actions.length === 0) {
     return null;
   }
 
