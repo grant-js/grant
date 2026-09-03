@@ -195,6 +195,26 @@ describe('the dispatcher is not reachable from the internet', () => {
   });
 });
 
+describe('nothing runs before the schema exists', () => {
+  it('creates the jobs function only after the migration has finished', () => {
+    // Measured, not anticipated: the first deploy armed the rules while the migrate
+    // one-shot was still running, and the every-minute sweeps spent ninety seconds
+    // failing with `relation "event_log" does not exist`. Ordering the function covers
+    // the queue too — the event-source mapping is created with it.
+    const { template } = build();
+    const [, jobsFunction] = Object.entries(
+      template.findResources('AWS::Lambda::Function')
+    ).find(
+      ([, fn]) =>
+        (fn.Properties as { Environment?: { Variables?: Record<string, unknown> } }).Environment
+          ?.Variables?.JOBS_EVENT_DISPATCH_ENABLED !== undefined
+    ) as [string, { DependsOn?: string[] }];
+
+    const dependsOn = jobsFunction.DependsOn ?? [];
+    expect(dependsOn.some((id) => id.includes('MigrateTrigger'))).toBe(true);
+  });
+});
+
 describe('one-off jobs leave the request path', () => {
   it('selects the AWS provider, which is what makes the rules load-bearing', () => {
     // Under node-cron the application schedules its own timers, which on Lambda fire

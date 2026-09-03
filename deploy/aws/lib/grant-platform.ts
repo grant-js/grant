@@ -215,6 +215,10 @@ export class GrantPlatform extends Construct {
         return DockerImageCode.fromEcr(asset.repository, { tagOrDigest: asset.imageTag });
       };
 
+      // Held, because the jobs function must not exist before the schema does — see
+      // where the dependency is added below.
+      let migrateTrigger: MigrateTrigger | undefined;
+
       if (props.migration?.enabled ?? true) {
         // Built from source unless the caller supplied one. `imageIdentifier` is what
         // re-arms the migration trigger, so a caller-supplied image needs the caller
@@ -250,7 +254,7 @@ export class GrantPlatform extends Construct {
           cluster: props.migration?.cluster,
         });
 
-        new MigrateTrigger(this, 'MigrateTrigger', {
+        migrateTrigger = new MigrateTrigger(this, 'MigrateTrigger', {
           vpc: this.network.vpc,
           task: this.migrateTask,
           securityGroups: [this.databaseClientSecurityGroup],
@@ -373,6 +377,20 @@ export class GrantPlatform extends Construct {
           timeout: jobTimeout,
           reservedConcurrency: props.jobs?.reservedConcurrency,
         });
+
+        // Nothing job-shaped may exist before the migration has finished, and the
+        // first deploy is what proved it necessary: the rules were armed while the
+        // one-shot was still running, so the every-minute sweeps spent the first
+        // ninety seconds failing with `relation "event_log" does not exist`. Harmless
+        // — the next tick succeeds — but an adopter's first look at a fresh deploy
+        // should not be a log full of errors from a stack that is working.
+        //
+        // Ordering the *function* rather than the rules covers the queue as well: the
+        // event-source mapping is created with it, so neither path can deliver into an
+        // unmigrated database.
+        if (migrateTrigger) {
+          this.jobsFunction.node.addDependency(migrateTrigger);
+        }
 
         // Recurrence. Six rules, generated from the same declaration the parity test
         // holds against `apps/api/src/jobs`, so a job added there without a rule here
