@@ -1338,6 +1338,24 @@ readable; its `status` value is not evidenced here.
 | S3 buckets                      | 2 = baseline  |
 | Route 53 records                | 20 = baseline |
 
+### Final teardown — end of the slice 6 session
+
+**Date**: 2026-09-04 · `cdk destroy --all` · **754 s** (12m34s) for both stacks
+
+Every billed resource returned to baseline: Route 53 records 20 = baseline, S3
+buckets 2 = baseline, and zero across EventBridge rules, SQS queues, Lambda
+functions, RDS clusters, manual snapshots, secrets (including pending deletion),
+non-default VPCs, NAT gateways, DynamoDB tables and CloudFront distributions.
+
+The throwaway webhook probe — a Lambda, an HTTP API, an IAM role and a log group,
+created outside CDK to receive deliveries — was removed with it, also to zero.
+
+Unchanged from the earlier cycle, and both already recorded: the ACM validation
+CNAME persists (F1, idempotent per domain, which is why the record count still
+reads as baseline) and the stack-owned log groups persist (F7). The log groups are
+the one residue that **grows**: this session added three more, and the account now
+holds 82 `Grant`-named groups across the story's deploy cycles.
+
 Two residues, both now measured rather than assumed:
 
 - **The ACM validation CNAME persists** (`_17d199c9b8df2cc1e725d5274f58c2bf.aws.…`),
