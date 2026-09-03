@@ -225,6 +225,45 @@ EventBridge rules generated from the same source the API reads. The committed `c
 synth` diff is the evidence, and it must show **exactly six** rules — five production
 plus one demo-gated. A different count is a failed slice even if the deploy works.
 
+**The slice is larger than "rules", and the reason is in the code the earlier slices
+left.** `AwsJobAdapter.schedule()` registers a handler and creates no timer, so
+recurrence and dispatch both live outside the process — and neither existed:
+`IJobAdapter.trigger()` had **no caller anywhere in `apps/api`**. The target ran
+`node-cron` inside a Lambda, where a timer fires only while a container happens to be
+thawed, which `deploy/aws/.env.example` already recorded as a known gap. Provisioning
+rules without a dispatch entry point would have produced six rules that invoke nothing.
+
+Three decisions, taken at execution time and recorded here rather than in a commit
+message.
+
+1. **Dispatch lands on a second Lambda with no Function URL.** The Lambda Web Adapter
+   forwards a non-HTTP event by POSTing it to `AWS_LWA_PASS_THROUGH_PATH`, and no AWS
+   event source can attach the secret CloudFront sends — so the route has to sit ahead
+   of `originVerifyMiddleware`. On the API function that is an unauthenticated job
+   trigger on a publicly reachable origin, which is precisely the `/health` exposure
+   slice 4c deleted. On a function with no URL, `lambda:InvokeFunction` is the guard
+   and AWS enforces it before any code runs — the IAM boundary the API could not have.
+   It also stops sweeps competing for the API's reserved concurrency and lifts the
+   30-second timeout, which exists only to match CloudFront's origin response limit.
+   `JOBS_EVENT_DISPATCH_ENABLED` defaults to **false**, so every other target and the
+   API function itself are unchanged.
+2. **The schedule table lives in `deploy/aws` with a parity test**, not imported from
+   the API. Gate 1 decision 1, applied a second time: a CDK app cannot import the API's
+   configuration graph at synth time, so the copy is checked instead —
+   `scheduled-jobs.test.ts` parses `apps/api/src/jobs/*.job.ts`, `env.config.ts` and
+   `@grantjs/env`'s defaults, and fails if the table names a job they do not, misses
+   one they do, or quotes a drifted default.
+3. **The SQS queue is not optional once the provider changes.** `enqueue()` sends to
+   the queue where `node-cron` ran the handler inline, so shipping rules without a
+   queue and a consumer would have left `startProjectSync` accepting work nothing runs.
+   Delivered together, which moves project sync off the request path — from the API's
+   30-second timeout to fifteen minutes.
+
+**EventBridge is not Unix cron**, and the difference that matters is silent:
+day-of-week is 1-based there and 0-based in `node-cron`, so passing an expression
+through produces a rule that deploys, fires, and fires on the wrong day. `cron.ts`
+translates and refuses at synth what it cannot express.
+
 ### Slice 7 — smoke test and guide
 
 Smoke test covering **at least one path per CloudFront behaviour** — the routing table
@@ -278,12 +317,14 @@ each ready with `gh pr ready <pr>` when it is ready for gate 3.
 Findings from deployed slices that are deliberately **not** fixed where they were
 found, recorded here so they are tracked work rather than observations in a log.
 
-| #   | Finding                                                                                                                                                                                                                        | Disposition                                                                                                                                                                                                                                                                                                                                                                           | Owner slice |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| F1  | `cdk destroy` strands the ACM DNS-validation CNAME. ACM writes it via `DomainValidationOptions.HostedZoneId`, so CloudFormation never owns it and cannot delete it (`GrantCertificate` contains no `AWS::Route53::RecordSet`). | **Document + assert.** The deployment guide states it and gives the cleanup command; the smoke test asserts the zone returns to its baseline record count, converting an invisible leak into a test failure. Making CloudFormation own the record means abandoning the L2 `Certificate`/`fromDns` path for a custom resource — disproportionate for one inert CNAME per deploy cycle. | 7           |
-| F2  | Unknown paths diverge from nginx. CloudFront returns **404** with the VitePress 404 page; nginx's `try_files $uri $uri/ /index.html` serves the **homepage with 200**.                                                         | **Document as a deliberate difference.** CloudFront is the more correct of the two — a truthful status code and a real 404 page rather than a soft-404. Changing it would make the AWS target worse to match a quirk.                                                                                                                                                                 | 7           |
-| F3  | S3 objects carried no `Cache-Control`.                                                                                                                                                                                         | **Fixed** in slice 3d.                                                                                                                                                                                                                                                                                                                                                                | —           |
-| F4  | `cdk bootstrap` executes the app and fails on missing context for an operation that ignores it.                                                                                                                                | **Fixed** in slice 3d via `pnpm bootstrap`.                                                                                                                                                                                                                                                                                                                                           | —           |
+| #   | Finding                                                                                                                                                                                                                        | Disposition                                                                                                                                                                                                                                                                                                                                                                                                      | Owner slice     |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| F1  | `cdk destroy` strands the ACM DNS-validation CNAME. ACM writes it via `DomainValidationOptions.HostedZoneId`, so CloudFormation never owns it and cannot delete it (`GrantCertificate` contains no `AWS::Route53::RecordSet`). | **Document + assert.** The deployment guide states it and gives the cleanup command; the smoke test asserts the zone returns to its baseline record count, converting an invisible leak into a test failure. Making CloudFormation own the record means abandoning the L2 `Certificate`/`fromDns` path for a custom resource — disproportionate for one inert CNAME per deploy cycle.                            | 7               |
+| F2  | Unknown paths diverge from nginx. CloudFront returns **404** with the VitePress 404 page; nginx's `try_files $uri $uri/ /index.html` serves the **homepage with 200**.                                                         | **Document as a deliberate difference.** CloudFront is the more correct of the two — a truthful status code and a real 404 page rather than a soft-404. Changing it would make the AWS target worse to match a quirk.                                                                                                                                                                                            | 7               |
+| F3  | S3 objects carried no `Cache-Control`.                                                                                                                                                                                         | **Fixed** in slice 3d.                                                                                                                                                                                                                                                                                                                                                                                           | —               |
+| F4  | `cdk bootstrap` executes the app and fails on missing context for an operation that ignores it.                                                                                                                                | **Fixed** in slice 3d via `pnpm bootstrap`.                                                                                                                                                                                                                                                                                                                                                                      | —               |
+| F5  | A scheduled job that fails is not retried. Under the Web Adapter the invocation returns the route's HTTP response, so a 500 still completes the invocation successfully and EventBridge sees nothing to retry.                 | **Accept and document.** The minute-by-minute sweeps retry by definition — the next tick claims the same rows. Only `data-retention-cleanup` (daily) and the key rotation (monthly) wait a full period, and both are idempotent. Making this retryable means failing the invocation from inside the app, which the adapter gives no way to express. Queued jobs are unaffected: they report `batchItemFailures`. | 7 (guide)       |
+| F6  | `project-sync` now runs on the jobs function, under Lambda's 15-minute ceiling. ADR 0002 routes imports past that ceiling to a container runtime, and phase C was to wire it.                                                  | **Deferred, and stated as an improvement rather than a fix.** It was previously worse — inline in the API request, under a 30-second timeout — so this slice raises the ceiling thirtyfold without reaching ADR 0002's answer. The measurement that ADR asks for (how long a 28,880-entity import takes against RDS) is still owed and still governs whether the Fargate path is needed.                         | follow-on story |
 
 ## Human gates
 

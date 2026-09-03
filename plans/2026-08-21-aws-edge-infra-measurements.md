@@ -1151,3 +1151,69 @@ indistinguishable from a warm server.
 **Bundling remains the outstanding fix**: 77% of the API's boot is loading the module
 graph (2,402 ms of 3,135 ms measured locally), and neither the memory experiment nor the
 OpenAPI deferral touched it.
+
+## Slice 6 — scheduled jobs
+
+**Date**: 2026-09-03 · **Commit**: `6ef367d9` · **Deploy**: pending (section below)
+
+### The rule count, from the committed template
+
+The acceptance criterion, read out of `cdk.snapshot/GrantPlatform.template.json`
+rather than from the source that generated it.
+
+| Rule                          | Expression            | State        |
+| ----------------------------- | --------------------- | ------------ |
+| `data-retention-cleanup`      | `cron(0 2 * * ? *)`   | ENABLED      |
+| `system-signing-key-rotation` | `cron(0 0 1 * ? *)`   | **DISABLED** |
+| `event-relay-sweep`           | `cron(* * * * ? *)`   | ENABLED      |
+| `webhook-delivery`            | `cron(* * * * ? *)`   | ENABLED      |
+| `notification-delivery`       | `cron(* * * * ? *)`   | ENABLED      |
+| `demo-db-refresh`             | `cron(0 0 */2 * ? *)` | **DISABLED** |
+
+Six rules, five production plus one demo-gated. The two disabled ones are off in
+`@grantjs/env` (`JOBS_SYSTEM_SIGNING_KEY_ROTATION_ENABLED`, `DEMO_MODE_ENABLED`) and
+their rules are synthesized anyway, so the count is not a function of configuration —
+a template with five would need careful reading to tell a disabled job from a lost one.
+
+Other resources the slice added, same source: **2** SQS queues (the queue and its
+dead-letter queue), **1** Lambda event-source mapping, **1** Lambda function. No new
+`AWS::Lambda::Url`: the dispatcher is reachable only through `lambda:InvokeFunction`.
+
+### Perturbation results
+
+A green oracle proves nothing until it is shown to fail. Each row was applied to a
+clean tree, run, and reverted.
+
+| Perturbation                                                | Expected | Result          |
+| ----------------------------------------------------------- | -------- | --------------- |
+| Give `event-relay` a schedule in `apps/api` (a seventh job) | fail     | **1 failed** ✓  |
+| Drop `notification-delivery` from the table                 | fail     | **4 failed** ✓  |
+| Drift a default schedule (`0 2 * * *` → `0 3 * * *`)        | fail     | **1 failed** ✓  |
+| Repoint `webhook-delivery` at another job's schedule key    | fail     | **1 failed** ✓  |
+| Pass Unix cron through untranslated                         | fail     | **2 failed** ✓  |
+| Give the jobs function a public Function URL                | fail     | **1 failed** ✓  |
+| Drop `JOBS_PROVIDER=aws` from the target defaults           | fail     | **1 failed** ✓  |
+| Baseline                                                    | pass     | **54 passed** ✓ |
+
+The last two are the security and correctness ends of the same slice: without the
+provider the application schedules its own timers _and_ receives the rules, running
+everything twice; with a Function URL the dispatch route — mounted ahead of origin
+verification because no AWS event source can send CloudFront's secret — becomes an
+unauthenticated job trigger on the internet.
+
+### What the dispatch path costs, stated before measuring it
+
+Recorded now so the deploy either confirms or refutes it rather than being read
+generously afterwards.
+
+- Each rule invokes a **cold** function most of the time. The sweeps run every minute,
+  which will keep one environment warm; the daily and monthly jobs will not.
+- A failed scheduled run is **not retried**. Under the Web Adapter the invocation
+  returns the route's HTTP response, so a 500 completes the invocation successfully.
+  Carried as F5.
+- Queued messages _are_ retried, three times, then parked in the dead-letter queue.
+
+### Deploy — not yet run
+
+The recorded deploy this slice owes under § Verification model has not been performed.
+Nothing beyond the CI evidence above is claimed.
