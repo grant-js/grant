@@ -93,10 +93,22 @@ export function WebhookSubscriptionActions({
     });
   }
 
-  if (actions.length === 0) {
+  // `permissionsResolved` is the load-bearing half, and omitting it deadlocked the
+  // menu: permissions are fetched only once it has been opened (`enabled:
+  // hasBeenOpened`), so on first render both grants are false and `actions` is empty.
+  // Returning null then removes the trigger that would set `hasBeenOpened`, so the
+  // permissions are never fetched and the menu can never appear at all.
+  //
+  // `member-actions.tsx` guards it this way for the same reason.
+  if (permissionsResolved && actions.length === 0) {
     return null;
   }
 
+  // Only while a fetch is genuinely in flight, which cannot be before the menu has
+  // been opened. `!permissionsResolved` looks equivalent and is not: it is true on the
+  // first render, and `Actions` renders `isLoading` as a spinner *and* a disabled
+  // trigger — so the menu could never be opened, `hasBeenOpened` never became true,
+  // and the spinner never stopped. `member-actions.tsx` passes this same expression.
   const isLoading = hasBeenOpened && (isUpdateLoading || isDeleteLoading);
 
   return (
@@ -104,7 +116,7 @@ export function WebhookSubscriptionActions({
       entity={subscription}
       actions={actions}
       onOpenChange={handleOpenChange}
-      isLoading={!permissionsResolved || isLoading}
+      isLoading={isLoading}
     />
   );
 }
