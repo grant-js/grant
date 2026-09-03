@@ -4,6 +4,11 @@
 #   - Version PR merge: rebuild all images with bumped package.json, push
 #     :<semver>, :latest, :demo, :sha, then create v* git tag and platform GitHub Release.
 # Deploy is handled by deploy.yml when the Release workflow built new images.
+#
+# npm trusted publishing (OIDC): the four public packages trust this file by name
+# (`release.yml` on npmjs.com → Trusted publishing). Do not rename it. The release
+# job must stay on GitHub-hosted runners — npm rejects OIDC from self-hosted. Do
+# not set NPM_TOKEN / NODE_AUTH_TOKEN on that job; a token skips the OIDC exchange.
 name: Release
 
 on:
@@ -179,8 +184,9 @@ jobs:
           path: build.tar.zst
 
   release:
-    name: Version and publish (@grantjs/client, server, cli)
-    runs-on: self-hosted
+    name: Version and publish (@grantjs/schema, client, server, cli)
+    # GitHub-hosted: npm trusted publishing does not accept OIDC from self-hosted runners.
+    runs-on: ubuntu-latest
     needs: prepare
     if: inputs.rebuild_release_images != true
     outputs:
@@ -189,8 +195,6 @@ jobs:
       contents: write
       pull-requests: write
       id-token: write
-    env:
-      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -218,13 +222,27 @@ jobs:
         with:
           node-version: '24'
           cache: 'pnpm'
+          # Do not set registry-url: setup-node would write
+          # //registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN} and npm would
+          # skip OIDC when that placeholder expands empty.
+
+      - name: Ensure npm CLI >= 11.5.1 (trusted publishing)
+        run: |
+          set -euo pipefail
+          npm install -g 'npm@^11.5.1'
+          npm --version
 
       - name: Install (prefer offline)
         run: pnpm install --prefer-offline --frozen-lockfile
 
+      # Ignored-only changesets make changesets/action take the version-PR path
+      # with a no-op `changeset version`, so publish never runs.
+      - name: Drop changesets that only target ignored packages
+        run: node scripts/check-ignored-changesets.mjs --prune
+
       - name: Create Release Pull Request or Publish
         id: changesets
-        uses: changesets/action@v1
+        uses: changesets/action@v1.9.0
         with:
           publish: pnpm run release
           version: pnpm run version
@@ -235,7 +253,8 @@ jobs:
           createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # No NPM_TOKEN / NODE_AUTH_TOKEN: npm CLI exchanges this job's OIDC
+          # token. A classic token (even expired) skips trusted publishing.
 
   docker:
     name: Build and push images

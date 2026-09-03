@@ -98,13 +98,7 @@ This will:
 - Publish packages with bumped versions to npm
 - Create git tags
 
-**Note:** You must be authenticated with npm:
-
-```bash
-npm login
-# or
-npm config set //registry.npmjs.org/:_authToken YOUR_TOKEN
-```
+**Note:** You must be authenticated with npm (`npm login`) for a local publish. CI uses [trusted publishing](https://docs.npmjs.com/trusted-publishers/) (OIDC) instead of a stored token.
 
 ## CI/CD Integration
 
@@ -112,18 +106,10 @@ npm config set //registry.npmjs.org/:_authToken YOUR_TOKEN
 
 A GitHub Actions workflow is set up at `.github/workflows/release.yml`. It will:
 
-1. **On PR to main**: Create/update a "Version Packages" PR when changesets are merged
-2. **On merge to main**: Automatically publish if the PR was a version bump PR
+1. **On push to main with pending changesets**: Create/update a "Version Packages" PR
+2. **On merge of that version PR**: Publish `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, and `@grantjs/cli` via npm trusted publishing
 
-**Required Secrets:**
-
-- `NPM_TOKEN`: Your npm authentication token (create at https://www.npmjs.com/settings/YOUR_USERNAME/tokens)
-
-**Setup:**
-
-1. Create an npm token with "Automation" type
-2. Add it as a secret in GitHub: Settings → Secrets → Actions → New repository secret
-3. Name it `NPM_TOKEN`
+Do not add an `NPM_TOKEN` secret for this workflow. Each public package's npm Settings → Trusted publishing entry must name this repository and the workflow file `release.yml`. The publish job runs on GitHub-hosted runners (`ubuntu-latest`); self-hosted runners cannot use OIDC trusted publishing.
 
 ## Version Types
 
