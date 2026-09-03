@@ -3,6 +3,20 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.6.1
+
+### Platform
+
+**Docker images:** tagged `:1.6.1` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.6.1** (fixed group with apps).
+
+### Patch Changes
+
+- 9eecf80: De-duplicate Redis SCAN results in `RedisCacheAdapter`. SCAN guarantees each key is returned at least once, not exactly once, so `keys()` could report a key twice and `clear()` could issue a redundant DEL when the keyspace is resized mid-iteration.
+
+  The fix is in `@grantjs/cache`, which is internal and never published, so the changeset names the app that ships it. A changeset naming only ignored packages versions nothing, which keeps changesets/action on the version-PR path and stops publish from ever running.
+
 ## 1.6.0
 
 ### Platform
