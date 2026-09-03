@@ -2071,6 +2071,14 @@
       "Properties": {
         "RetentionInDays": 14
       },
+      "DependsOn": [
+        "GrantMigrateTriggerRunnerCurrentVersion8D49C7F1<version-hash>",
+        "GrantMigrateTriggerRunnerD40BD9B3",
+        "GrantMigrateTriggerRunnerServiceRoleDefaultPolicy16D3609D",
+        "GrantMigrateTriggerRunnerServiceRoleC1E66B57",
+        "GrantMigrateTrigger1B34E3ED",
+        "GrantMigrateTriggerTriggerLogsE697A799"
+      ],
       "UpdateReplacePolicy": "Retain",
       "DeletionPolicy": "Retain",
       "Metadata": {
@@ -2120,6 +2128,12 @@
         ]
       },
       "DependsOn": [
+        "GrantMigrateTriggerRunnerCurrentVersion8D49C7F1<version-hash>",
+        "GrantMigrateTriggerRunnerD40BD9B3",
+        "GrantMigrateTriggerRunnerServiceRoleDefaultPolicy16D3609D",
+        "GrantMigrateTriggerRunnerServiceRoleC1E66B57",
+        "GrantMigrateTrigger1B34E3ED",
+        "GrantMigrateTriggerTriggerLogsE697A799",
         "GrantNetworkVpcprivateegressSubnet1DefaultRouteE76A3F47",
         "GrantNetworkVpcprivateegressSubnet1RouteTableAssociation2ECAC4A8",
         "GrantNetworkVpcprivateegressSubnet2DefaultRoute7FAF126D",
@@ -2264,6 +2278,12 @@
         ]
       },
       "DependsOn": [
+        "GrantMigrateTriggerRunnerCurrentVersion8D49C7F1<version-hash>",
+        "GrantMigrateTriggerRunnerD40BD9B3",
+        "GrantMigrateTriggerRunnerServiceRoleDefaultPolicy16D3609D",
+        "GrantMigrateTriggerRunnerServiceRoleC1E66B57",
+        "GrantMigrateTrigger1B34E3ED",
+        "GrantMigrateTriggerTriggerLogsE697A799",
         "GrantNetworkVpcprivateegressSubnet1DefaultRouteE76A3F47",
         "GrantNetworkVpcprivateegressSubnet1RouteTableAssociation2ECAC4A8",
         "GrantNetworkVpcprivateegressSubnet2DefaultRoute7FAF126D",
@@ -2415,6 +2435,12 @@
       "DependsOn": [
         "GrantJobsFunctionServiceRoleDefaultPolicy113576D3",
         "GrantJobsFunctionServiceRoleEAEAA169",
+        "GrantMigrateTriggerRunnerCurrentVersion8D49C7F1<version-hash>",
+        "GrantMigrateTriggerRunnerD40BD9B3",
+        "GrantMigrateTriggerRunnerServiceRoleDefaultPolicy16D3609D",
+        "GrantMigrateTriggerRunnerServiceRoleC1E66B57",
+        "GrantMigrateTrigger1B34E3ED",
+        "GrantMigrateTriggerTriggerLogsE697A799",
         "GrantNetworkVpcprivateegressSubnet1DefaultRouteE76A3F47",
         "GrantNetworkVpcprivateegressSubnet1RouteTableAssociation2ECAC4A8",
         "GrantNetworkVpcprivateegressSubnet2DefaultRoute7FAF126D",
@@ -2442,6 +2468,12 @@
         ]
       },
       "DependsOn": [
+        "GrantMigrateTriggerRunnerCurrentVersion8D49C7F1<version-hash>",
+        "GrantMigrateTriggerRunnerD40BD9B3",
+        "GrantMigrateTriggerRunnerServiceRoleDefaultPolicy16D3609D",
+        "GrantMigrateTriggerRunnerServiceRoleC1E66B57",
+        "GrantMigrateTrigger1B34E3ED",
+        "GrantMigrateTriggerTriggerLogsE697A799",
         "GrantNetworkVpcprivateegressSubnet1DefaultRouteE76A3F47",
         "GrantNetworkVpcprivateegressSubnet1RouteTableAssociation2ECAC4A8",
         "GrantNetworkVpcprivateegressSubnet2DefaultRoute7FAF126D",
