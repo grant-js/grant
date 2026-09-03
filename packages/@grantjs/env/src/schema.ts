@@ -355,6 +355,12 @@ export const envSchema = z.object({
   JOBS_AWS_ENDPOINT: optionalString(''),
   JOBS_AWS_ACCESS_KEY_ID: optionalString(''),
   JOBS_AWS_SECRET_ACCESS_KEY: optionalString(''),
+  // Off unless the process is reachable *only* by an external dispatcher. It exempts
+  // its own path from origin verification, so enabling it on a process with a public
+  // endpoint publishes an unauthenticated job trigger. See the route's own note.
+  JOBS_EVENT_DISPATCH_ENABLED: optionalBoolean(false),
+  // The Lambda Web Adapter's AWS_LWA_PASS_THROUGH_PATH; the two must agree.
+  JOBS_EVENT_DISPATCH_PATH: optionalString('/events'),
 
   JOBS_BULLMQ_ATTEMPTS: optionalNumber(3),
   JOBS_BULLMQ_BACKOFF_TYPE: z.enum(['exponential', 'fixed']).optional().default('exponential'),
