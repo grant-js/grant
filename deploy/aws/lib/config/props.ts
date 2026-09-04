@@ -25,6 +25,7 @@ import type { ContainerImage, ICluster } from 'aws-cdk-lib/aws-ecs';
 import type { DockerImageCode } from 'aws-cdk-lib/aws-lambda';
 import type { IHostedZone } from 'aws-cdk-lib/aws-route53';
 import type { IBucket } from 'aws-cdk-lib/aws-s3';
+import type { IQueue } from 'aws-cdk-lib/aws-sqs';
 
 /**
  * Application environment passed through to the API container.
@@ -283,6 +284,55 @@ interface ApiProps {
   readonly reservedConcurrency?: number;
 }
 
+/**
+ * Background jobs.
+ *
+ * Created only when the data tier is, because every job opens a database connection.
+ * It provisions three things that only make sense together: the function that runs
+ * the work, the six EventBridge rules that drive the schedules, and the queue that
+ * carries one-off jobs. `JOBS_PROVIDER=aws` is what makes the application expect all
+ * three — its `schedule()` registers a handler and creates no timer.
+ */
+interface JobsProps {
+  /**
+   * Whether to provision job execution. Defaults to **true** whenever this stack owns
+   * the database.
+   *
+   * Turning it off leaves the application registering handlers that nothing triggers:
+   * sweeps stop, and enqueued work is accepted and never run. Set it false only when
+   * something outside this stack drives the same queue.
+   */
+  readonly enabled?: boolean;
+
+  /**
+   * Pre-published image, as for the API. Omit and the stack shares the API's asset —
+   * one artifact runs the request path, the migration and the jobs (ADR 0003).
+   */
+  readonly image?: DockerImageCode;
+
+  /** Existing queue for one-off jobs. Omit to create one with a dead-letter queue. */
+  readonly queue?: IQueue;
+
+  readonly memorySize?: number;
+
+  /**
+   * Ceiling on one job run. Defaults to **15 minutes**, Lambda's maximum.
+   *
+   * The sweeps yield well inside it; `project-sync` is what needs the room, and an
+   * import larger than this needs the container runtime ADR 0002 describes rather than
+   * a longer timeout that does not exist.
+   */
+  readonly timeout?: Duration;
+
+  /**
+   * Concurrent job executions. Defaults to 10 — `DB_POOL_MAX=2` each, so twenty
+   * connections against the roughly 900 Aurora allows at `maxCapacity: 4`.
+   *
+   * Pass `0` to leave concurrency unbounded.
+   */
+  readonly reservedConcurrency?: number;
+}
+
 /** Top-level props for the whole platform. */
 export interface GrantPlatformProps {
   /**
@@ -323,6 +373,9 @@ export interface GrantPlatformProps {
 
   /** Deploy-time migration. Ignored when this stack does not own the database. */
   readonly migration?: MigrationProps;
+
+  /** Background jobs. Ignored when this stack does not own the database. */
+  readonly jobs?: JobsProps;
 
   /** Passed through to the API container. */
   readonly env?: GrantEnv;

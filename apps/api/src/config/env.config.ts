@@ -740,6 +740,17 @@ const JOB_CONFIG = {
     secretAccessKey: env.JOBS_AWS_SECRET_ACCESS_KEY || undefined,
   },
 
+  /**
+   * The inbound half of the same arrangement: something outside this process holds
+   * the schedule, and this is where its events land. Off by default, because the
+   * route it mounts is deliberately not origin-verified — see
+   * `rest/routes/event-dispatch.routes.ts`.
+   */
+  eventDispatch: {
+    enabled: env.JOBS_EVENT_DISPATCH_ENABLED,
+    path: env.JOBS_EVENT_DISPATCH_PATH,
+  },
+
   /** Job-specific settings */
   dataRetention: {
     /** Cron pattern for data retention cleanup */

@@ -58,6 +58,14 @@ export const AWS_TARGET_ENV_DEFAULTS: GrantEnv = {
   // `compute/api-function.ts` for the arithmetic against Aurora's max_connections.
   DB_POOL_MAX: '2',
 
+  // Phase B. `node-cron` schedules timers inside the process, and a Lambda execution
+  // environment is frozen between invocations and destroyed when idle — so a timer
+  // fires only while the container happens to be thawed. That is what this target did
+  // until the jobs function existed, and it is why scheduled work here was not
+  // dependable. Under `aws` the adapter registers handlers and creates no timer:
+  // recurrence is the six EventBridge rules, and one-off work goes over the queue.
+  JOBS_PROVIDER: 'aws',
+
   // The Function URL answers the internet, so the shared secret CloudFront attaches is
   // the only thing in front of the origin. Required here means a secret that goes
   // missing refuses every request instead of quietly admitting everyone — the control

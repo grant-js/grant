@@ -60,6 +60,7 @@ import { requestLoggingMiddleware } from '@/middleware/request-logging.middlewar
 import { storageMiddleware } from '@/middleware/storage.middleware';
 import { createRestRouter } from '@/rest';
 import { getOpenApiDocument } from '@/rest/openapi';
+import { createEventDispatchRouter } from '@/rest/routes/event-dispatch.routes';
 import { createJwksRouter } from '@/rest/routes/jwks.routes';
 import { ContextRequest } from '@/types';
 
@@ -154,9 +155,21 @@ export async function createApp(): Promise<CreatedApp> {
     loggerFactory
   );
 
-  // First, ahead of every other middleware. A request that did not come through the
-  // CDN should be refused before it can consume a database connection, a cache slot or
-  // a rate-limit bucket. No-op unless a secret is configured, which is every target
+  // Ahead of origin verification, and only ever mounted where nothing public can
+  // reach it: an AWS event source cannot send the header that middleware requires, so
+  // the dispatch route lives in a process with no Function URL and is guarded by
+  // `lambda:InvokeFunction` instead. Off by default — see the router's own note.
+  if (config.jobs.eventDispatch.enabled) {
+    app.use(createEventDispatchRouter());
+    logger.info({
+      msg: 'External job event dispatch enabled',
+      path: config.jobs.eventDispatch.path,
+    });
+  }
+
+  // First of the request pipeline. A request that did not come through the CDN should
+  // be refused before it can consume a database connection, a cache slot or a
+  // rate-limit bucket. No-op unless a secret is configured, which is every target
   // except AWS.
   app.use(originVerifyMiddleware(secretResolver));
 

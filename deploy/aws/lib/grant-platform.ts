@@ -32,6 +32,7 @@ import { Construct } from 'constructs';
 import { ASSET_BEHAVIOURS, type CloudFrontBehaviour, toCloudFrontBehaviours } from './behaviours';
 import { ApiFunction } from './compute/api-function';
 import { ApiImage } from './compute/api-image';
+import { DEFAULT_JOB_TIMEOUT, EVENT_DISPATCH_PATH, JobsFunction } from './compute/jobs-function';
 import { MigrateTask } from './compute/migrate-task';
 import { MigrateTrigger } from './compute/migrate-trigger';
 import { WebFunction } from './compute/web-function';
@@ -41,6 +42,7 @@ import type { GrantEnv, GrantPlatformProps } from './config/props';
 import { assertCertificateRegion, validateAppUrl, validateHostnameInZone } from './config/validate';
 import { CacheTable } from './data/cache-table';
 import { Database } from './data/database';
+import { JobQueue } from './data/job-queue';
 import { Network } from './data/network';
 import { ORIGIN_VERIFY_SECRET_KEY, PlatformSecret } from './data/platform-secret';
 import { DatabaseConnectionProxy } from './data/proxy';
@@ -48,6 +50,7 @@ import { StorageBucket } from './data/storage-bucket';
 import { EdgeCertificate } from './edge/certificate';
 import { EdgeDistribution } from './edge/distribution';
 import { DocsSite } from './edge/docs-site';
+import { JobSchedules } from './jobs/job-schedules';
 
 /** Repo-relative default for the built documentation. */
 const DEFAULT_DOCS_DIST = join(
@@ -96,6 +99,11 @@ export class GrantPlatform extends Construct {
    * Serving against an external database is a follow-up, not an omission.
    */
   public readonly api?: ApiFunction;
+
+  /** Present only when the data tier was requested and jobs are enabled. */
+  public readonly jobQueue?: JobQueue;
+  public readonly jobsFunction?: JobsFunction;
+  public readonly jobSchedules?: JobSchedules;
 
   constructor(scope: Construct, id: string, props: GrantPlatformProps) {
     super(scope, id);
@@ -207,6 +215,10 @@ export class GrantPlatform extends Construct {
         return DockerImageCode.fromEcr(asset.repository, { tagOrDigest: asset.imageTag });
       };
 
+      // Held, because the jobs function must not exist before the schema does — see
+      // where the dependency is added below.
+      let migrateTrigger: MigrateTrigger | undefined;
+
       if (props.migration?.enabled ?? true) {
         // Built from source unless the caller supplied one. `imageIdentifier` is what
         // re-arms the migration trigger, so a caller-supplied image needs the caller
@@ -242,7 +254,7 @@ export class GrantPlatform extends Construct {
           cluster: props.migration?.cluster,
         });
 
-        new MigrateTrigger(this, 'MigrateTrigger', {
+        migrateTrigger = new MigrateTrigger(this, 'MigrateTrigger', {
           vpc: this.network.vpc,
           task: this.migrateTask,
           securityGroups: [this.databaseClientSecurityGroup],
@@ -280,6 +292,19 @@ export class GrantPlatform extends Construct {
         destroyOnRemoval: props.storage?.destroyOnRemoval,
       });
 
+      // Jobs are opt-out, and creating the queue before the serving function is what
+      // lets the API be told where to enqueue. `JOBS_PROVIDER=aws` splits execution
+      // across two processes — the API sends, the jobs function consumes — so the API
+      // needs the queue URL and the queue needs its consumer's timeout.
+      const jobsEnabled = props.jobs?.enabled ?? true;
+      const jobTimeout = props.jobs?.timeout ?? DEFAULT_JOB_TIMEOUT;
+      if (jobsEnabled) {
+        this.jobQueue = new JobQueue(this, 'JobQueue', {
+          queue: props.jobs?.queue,
+          consumerTimeout: jobTimeout,
+        });
+      }
+
       this.api = new ApiFunction(this, 'Api', {
         vpc: this.network.vpc,
         code: props.api?.image ?? builtImageCode(),
@@ -302,6 +327,12 @@ export class GrantPlatform extends Construct {
           STORAGE_S3_REGION: Stack.of(this).region,
           CACHE_DYNAMODB_TABLE: this.cacheTable.table.tableName,
           CACHE_DYNAMODB_REGION: Stack.of(this).region,
+          // Where `enqueue()` sends one-off work. Under `node-cron` — what this target
+          // ran until now — the handler executed inline, inside the request's own
+          // invocation and under its 30-second timeout; `startProjectSync` was the
+          // caller that made that untenable.
+          ...(this.jobQueue ? { JOBS_AWS_QUEUE_URL: this.jobQueue.queue.queueUrl } : {}),
+          JOBS_AWS_REGION: Stack.of(this).region,
           // CloudFront overwrites this header, so it cannot be supplied by the caller
           // the way X-Forwarded-For can — which CloudFront *appends* to, leaving the
           // first entry attacker-controlled. The rate limiter keys on this value.
@@ -311,6 +342,69 @@ export class GrantPlatform extends Construct {
         timeout: props.api?.timeout,
         reservedConcurrency: props.api?.reservedConcurrency,
       });
+
+      if (this.jobQueue) {
+        // The API may enqueue, and only enqueue: nothing on the request path consumes
+        // the queue, which is the separation the whole arrangement exists for.
+        this.jobQueue.queue.grantSendMessages(this.api.function);
+
+        this.jobsFunction = new JobsFunction(this, 'Jobs', {
+          vpc: this.network.vpc,
+          code: props.jobs?.image ?? props.api?.image ?? builtImageCode(),
+          securityGroups: [this.databaseClientSecurityGroup],
+          platformSecret: this.platformSecret.secret,
+          cacheTable: this.cacheTable.table,
+          uploadsBucket: this.uploads.bucket,
+          queue: this.jobQueue.queue,
+          environment: {
+            ...this.env,
+            SECRETS_AWS_SECRET_ID: this.platformSecret.secret.secretName,
+            SECRETS_AWS_REGION: Stack.of(this).region,
+            STORAGE_S3_BUCKET: this.uploads.bucket.bucketName,
+            STORAGE_S3_REGION: Stack.of(this).region,
+            CACHE_DYNAMODB_TABLE: this.cacheTable.table.tableName,
+            CACHE_DYNAMODB_REGION: Stack.of(this).region,
+            JOBS_AWS_QUEUE_URL: this.jobQueue.queue.queueUrl,
+            JOBS_AWS_REGION: Stack.of(this).region,
+            // The dispatch route, mounted only here. It is deliberately ahead of
+            // origin verification — no AWS event source can send CloudFront's secret —
+            // which is safe because this function has no Function URL and is reachable
+            // only by a principal holding `lambda:InvokeFunction`.
+            JOBS_EVENT_DISPATCH_ENABLED: 'true',
+            JOBS_EVENT_DISPATCH_PATH: EVENT_DISPATCH_PATH,
+          },
+          memorySize: props.jobs?.memorySize,
+          timeout: jobTimeout,
+          reservedConcurrency: props.jobs?.reservedConcurrency,
+        });
+
+        // Nothing job-shaped may exist before the migration has finished, and the
+        // first deploy is what proved it necessary: the rules were armed while the
+        // one-shot was still running, so the every-minute sweeps spent the first
+        // ninety seconds failing with `relation "event_log" does not exist`. Harmless
+        // — the next tick succeeds — but an adopter's first look at a fresh deploy
+        // should not be a log full of errors from a stack that is working.
+        //
+        // Ordering the *function* rather than the rules covers the queue as well: the
+        // event-source mapping is created with it, so neither path can deliver into an
+        // unmigrated database.
+        if (migrateTrigger) {
+          this.jobsFunction.node.addDependency(migrateTrigger);
+        }
+
+        // Recurrence. Six rules, generated from the same declaration the parity test
+        // holds against `apps/api/src/jobs`, so a job added there without a rule here
+        // fails CI rather than silently never running.
+        this.jobSchedules = new JobSchedules(this, 'JobSchedules', {
+          target: this.jobsFunction.function,
+          env: this.env,
+        });
+
+        new CfnOutput(this, 'JobQueueUrl', {
+          value: this.jobQueue.queue.queueUrl,
+          description: 'One-off job queue. Recurring work arrives from EventBridge instead.',
+        });
+      }
 
       new CfnOutput(this, 'ApiFunctionUrl', {
         value: this.api.functionUrl.url,

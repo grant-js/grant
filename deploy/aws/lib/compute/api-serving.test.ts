@@ -72,12 +72,21 @@ function build(
   return { template: Template.fromStack(stack), platform };
 }
 
-/** The one Lambda carrying the resolver configuration is the serving function. */
+/**
+ * The serving function.
+ *
+ * Two Lambdas now carry the resolver configuration — the jobs function runs the same
+ * image and reads the same secret — so the discriminator is the dispatch route, which
+ * exists only on the function that has no Function URL.
+ */
 function apiFunction(template: Template): Record<string, unknown> {
   const functions = Object.values(template.findResources('AWS::Lambda::Function'));
   const api = functions.filter((fn) => {
     const props = fn.Properties as { Environment?: { Variables?: Record<string, unknown> } };
-    return props.Environment?.Variables?.SECRETS_AWS_SECRET_ID !== undefined;
+    const env = props.Environment?.Variables;
+    return (
+      env?.SECRETS_AWS_SECRET_ID !== undefined && env?.JOBS_EVENT_DISPATCH_ENABLED === undefined
+    );
   });
   expect(api).toHaveLength(1);
   return api[0] as Record<string, unknown>;
