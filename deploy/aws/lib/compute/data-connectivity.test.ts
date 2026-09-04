@@ -9,7 +9,9 @@
 import { App, Stack } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
+import { Repository } from 'aws-cdk-lib/aws-ecr';
 import { ContainerImage } from 'aws-cdk-lib/aws-ecs';
+import { DockerImageCode } from 'aws-cdk-lib/aws-lambda';
 import { HostedZone } from 'aws-cdk-lib/aws-route53';
 import { describe, expect, it } from 'vitest';
 
@@ -36,6 +38,17 @@ function build(migration?: { enabled?: boolean }, options: { proxy?: boolean } =
       ),
     },
     database: { proxy: { enabled: options.proxy ?? false } },
+    // Caller-supplied for the serving function too, and for a reason that is about
+    // runtime rather than tidiness: leaving it unset makes `GrantPlatform` construct a
+    // `DockerImageAsset`, which fingerprints the whole build context. That cost lands
+    // on whichever test runs first and pushed this file past vitest's 30 s ceiling in
+    // CI once slice 6 added the jobs tier to the same graph. The jobs function reuses
+    // this image, so pinning it here leaves the suite with no assets at all.
+    api: {
+      image: DockerImageCode.fromEcr(Repository.fromRepositoryName(stack, 'Repo', 'grant/api'), {
+        tagOrDigest: 'test',
+      }),
+    },
     // Always a registry image: see the note below on why the built-from-source path
     // is covered by the committed template rather than here.
     migration: {
