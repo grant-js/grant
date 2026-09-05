@@ -42,7 +42,7 @@
   "peerDependencies": {
     "node-cron": "^3",
     "bullmq": "^5",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "@aws-sdk/client-sqs": "^3"
   },
   "peerDependenciesMeta": {
@@ -57,12 +57,12 @@
     }
   },
   "devDependencies": {
-    "@aws-sdk/client-sqs": "^3.1113.0",
-    "@types/node": "^26.2.0",
+    "@aws-sdk/client-sqs": "^3.1125.0",
+    "@types/node": "^26.4.1",
     "@types/node-cron": "^3.0.11",
-    "bullmq": "^5.81.3",
+    "bullmq": "^6.3.4",
     "node-cron": "^4.6.0",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   },
   "license": "MIT"
