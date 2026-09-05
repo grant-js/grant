@@ -4047,7 +4047,7 @@
       }
     },
     "GrantApiFunctionUrlB01E0C67": {
-      "Description": "IAM-authorized origin endpoint. Not publicly reachable; sign requests with SigV4.",
+      "Description": "Origin endpoint, publicly reachable (AuthType NONE). Requests without the origin-verify secret are refused by the application, not by IAM.",
       "Value": {
         "Fn::GetAtt": [
           "GrantApiFunctionFunctionUrl06A8617E",

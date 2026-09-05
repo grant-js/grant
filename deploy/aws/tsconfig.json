@@ -5,6 +5,12 @@
     "lib": ["esnext"],
     "types": ["node"]
   },
-  "include": ["lib/**/*", "bin/**/*", "vitest.config.ts", "vitest.global-setup.ts"],
+  "include": [
+    "lib/**/*",
+    "bin/**/*",
+    "scripts/**/*.ts",
+    "vitest.config.ts",
+    "vitest.global-setup.ts"
+  ],
   "exclude": ["cdk.out", "cdk.snapshot", "node_modules"]
 }

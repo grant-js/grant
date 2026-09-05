@@ -408,8 +408,15 @@ export class GrantPlatform extends Construct {
 
       new CfnOutput(this, 'ApiFunctionUrl', {
         value: this.api.functionUrl.url,
+        // Says what is true rather than what would be reassuring: the URL has
+        // AuthType NONE and answers the internet. What refuses an unsigned request is
+        // the application's origin-verify middleware, not IAM — so the guard is a
+        // shared secret CloudFront attaches, and SECURITY_ORIGIN_VERIFY_REQUIRED is
+        // what makes a missing secret refuse rather than admit. Verified against a
+        // live stack: an unsigned GET /health returns the app's 403 body.
         description:
-          'IAM-authorized origin endpoint. Not publicly reachable; sign requests with SigV4.',
+          'Origin endpoint, publicly reachable (AuthType NONE). Requests without the ' +
+          'origin-verify secret are refused by the application, not by IAM.',
       });
 
       new CfnOutput(this, 'DatabaseSecretName', {

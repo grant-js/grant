@@ -398,22 +398,6 @@ account is the one the existing Kubernetes deployment runs in — see
 plan calls for a **scratch** account, and a first CloudFront/ACM/Route 53 deploy
 against live infrastructure is not a decision to take implicitly.
 
-## Slice 4 — API and data tier
-
-_Not started._
-
-## Slice 5 — web
-
-_Not started._
-
-## Slice 6 — scheduled jobs
-
-_Not started._
-
-## Slice 7 — smoke test and guide
-
-_Not started._
-
 ## Slice 3d — deploy findings addressed
 
 **Date**: 2026-08-29 · **AWS resources**: none changed · **Deploy**: n/a (CI-verified)
@@ -1366,3 +1350,153 @@ Two residues, both now measured rather than assumed:
   `GrantJobsLogs`) plus 38 CDK custom-resource groups. CDK's `LogGroup` defaults to
   `RETAIN`, and unlike the CNAME this **grows by one per function per deploy cycle**.
   New finding, F7; slice 7's guide gets the cleanup command.
+
+## Slice 7 — smoke test and guide
+
+**Date**: 2026-09-05 · **Domain**: `aws.grantjs.org` · **Context**: `-c ephemeral=true`
+
+Green-field deploy into an account returned to baseline by slice 6's final teardown,
+then the story's only end-to-end check. Baseline confirmed before deploying: 2 S3
+buckets, 0 CloudFront distributions, 0 RDS clusters, 0 Lambda functions, 20 Route 53
+records, only `CDKToolkit` in both regions.
+
+### Timings
+
+| Phase                                     | Wall clock  |
+| ----------------------------------------- | ----------- |
+| Docker build + push, both images (cached) | ~2 min      |
+| `GrantCertificate` (us-east-1)            | 44 s        |
+| `GrantPlatform`                           | 10 min 08 s |
+| **Total, one command**                    | **~12 min** |
+
+`GrantPlatform` ran 17:00:57 → 17:11:05 UTC, from CloudFormation's own stack events
+rather than from the CLI's summary. This is the figure the brief's "roughly half an
+hour green-field" estimate is replaced by: it is **less than half** the estimate,
+because the image layers were cached. A first-ever build adds roughly 10 minutes.
+
+### The smoke test, and the two checks it got wrong first
+
+`deploy/aws/scripts/smoke.ts`, 14 checks over **10/10 CloudFront behaviours**. Coverage
+is computed from `toCloudFrontBehaviours()` + `ASSET_BEHAVIOURS` + the default rather
+than hand-listed, and an uncovered behaviour **fails the run** — so the test cannot
+quietly stop covering a route someone adds.
+
+First run was 11/13. `/org/*` and `/acc/*` reported "fell through to the web app", and
+that diagnosis was wrong: the API _was_ answering. Its 404 for a nonexistent project
+carries `content-length: 0`, so "the body parses as JSON" fails on a **correctly**
+routed request. The discriminator that works is headers — Express sets `x-request-id`
+on every API response, Next sets `x-powered-by` on its own:
+
+| Path                        | Status | `content-type`     | Marker                  |
+| --------------------------- | ------ | ------------------ | ----------------------- |
+| `/en/definitely-not-a-page` | 404    | `text/html`        | `x-powered-by: Next.js` |
+| `/org/<uuid>/prj/<uuid>/…`  | 404    | `application/json` | `x-request-id: …`       |
+
+Worth recording because it is the failure mode the oracle exists to prevent, arriving
+from the other direction: a check that is **wrong about what it proves** reports a
+routing fault that does not exist. Fixed, then 13/13.
+
+### Final result — 14/14, from code, nothing patched
+
+| Behaviour         | Check                           | Result                                 |
+| ----------------- | ------------------------------- | -------------------------------------- |
+| `*`               | root                            | **307** → `/en`                        |
+| `*`               | rendered page                   | **200**, 20,341 bytes                  |
+| `*`               | `/docs` trailing slash          | **302** → `/docs/`                     |
+| `*`               | `/api` trailing slash           | **302** → `/api/`                      |
+| `/_next/static/*` | asset, discovered from the HTML | **200**, `max-age=31536000, immutable` |
+| `/health*`        | liveness                        | **200**, `status=ok`                   |
+| `/api/*`          | REST router                     | **200**, JSON                          |
+| `/graphql*`       | GraphQL                         | **200**, `__typename=Query`            |
+| `/api-docs*`      | OpenAPI                         | **200**, openapi 3.0.0, **87 paths**   |
+| `/.well-known/*`  | platform JWKS                   | **200**, 1 key                         |
+| `/org/*`          | reaches the API                 | **404 from the API**                   |
+| `/acc/*`          | reaches the API                 | **404 from the API**                   |
+| `/docs/*`         | index rewrite                   | **200**, 38,985 bytes                  |
+| `/api/*`          | **account registration**        | **201**                                |
+
+**EventBridge rules: exactly 6**, matching the count slice 6 made a pass condition.
+
+### The first account, created through the deployed API
+
+`POST /api/auth/register` → **201**, `accountId 719358c3-…`, confirmed in the API log
+(`msg: "User registered"`). Registration alone sends no mail; `POST
+/api/auth/resend-verification` → **200**, and SES then recorded **Delivery 1, Bounce 0,
+Reject 0**. Signed by the execution role — no access key exists in the stack.
+
+The per-minute `notification-delivery` job logged `delivered: 0` on every run
+throughout, which is also the standing evidence that the EventBridge → jobs Lambda path
+works on this deploy.
+
+### Finding 1 — the database never reaches zero, and the jobs are why
+
+The headline number of this slice, and it contradicts the target's own pitch.
+
+The cluster is `minCapacity: 0` with `SecondsUntilAutoPause: 300`, so it should cost
+nothing idle. Observed capacity is a **flat 0.5 ACU** across every one-minute datapoint
+with no user traffic at all. Cause: **three sweeps run every minute** —
+`event-relay-sweep`, `webhook-delivery`, `notification-delivery` — and each opens a
+connection, so the cluster never sees 300 idle seconds.
+
+Billing agrees independently: **8.605 ACU-hours over 16 hours up** on 2026-09-03 is a
+mean of **0.538 ACU**. Two different instruments, same answer.
+
+**Not established by experiment.** The direct test — disable the six rules, watch
+capacity fall to zero — was not run, so the mechanism is inferred from the schedule
+plus two consistent measurements rather than demonstrated. Stated as inference.
+
+Note that a 5-minute schedule would **not** fix it: auto-pause needs 300 idle seconds,
+which a 5-minute sweep straddles.
+
+### Cost floor — measured, not estimated
+
+Derived from Cost Explorer. The 16 billed NAT-gateway hours on 2026-09-03 pin the
+stack's uptime exactly, which makes every other line divisible by it. The account is
+otherwise near-empty — baseline is ~$0.007/day of Route 53 — so the daily totals are
+almost entirely this stack.
+
+| Item                           | Measured rate    | Per month (730 h) |
+| ------------------------------ | ---------------- | ----------------- |
+| NAT gateway                    | $0.05200 / h     | $37.96            |
+| Public IPv4 (the NAT's)        | $0.00500 / h     | $3.65             |
+| Aurora Serverless v2 @ 0.5 ACU | $0.14000 / ACU-h | $51.10            |
+| Secrets Manager, 1 secret      | —                | $0.40             |
+|                                |                  | **≈ $93 / month** |
+
+The brief predicted "a floor in the tens of dollars per month". That holds, but it
+attributed the floor to NAT plus a minimum-capacity database. **Aurora is the larger
+half**, and it is caused by the job schedule rather than by the database's minimum —
+which is the part an adopter can actually change. Per-request costs at smoke-test
+volumes were below a cent per day and are not what anyone budgets for.
+
+### Finding 2 — a security-relevant stack output stated the opposite of the truth
+
+`ApiFunctionUrl` was described as "IAM-authorized origin endpoint. Not publicly
+reachable; sign requests with SigV4."
+
+Verified against the live stack, all three clauses are wrong:
+
+- `get-function-url-config` returns **`AuthType: NONE`**
+- an unsigned `GET /health` **reaches the application** and returns its 403 body
+  (`{"error":"Forbidden","code":"FORBIDDEN",…}`), not a Lambda IAM rejection
+
+The endpoint is public; what refuses the request is the application's origin-verify
+middleware, which is exactly the design slice 4's security review recorded as an
+accepted risk. The output text contradicted that record. Fixed in
+`lib/grant-platform.ts`; one line of the committed snapshot changed with it.
+
+This one matters more than its size: it is the sentence an adopter reads in `cdk
+deploy` output while deciding whether the endpoint needs protecting.
+
+### Cold starts — the bundling fix holds, and the web function improved sharply
+
+| Function | Init           | Warm invocations               |
+| -------- | -------------- | ------------------------------ |
+| Web      | 526–630 ms     | n=61, min 9 ms, median 235 ms  |
+| API      | 3,776 ms       | n=47, min 24 ms, median 132 ms |
+| Jobs     | 3,808–3,919 ms | n=364, min 7 ms, median 11 ms  |
+
+The API's 3,776 ms confirms slice 6's post-bundling ~4.1 s and is **half** the 7,600 ms
+slice 5 measured pre-bundling. The web function's 526–630 ms against slice 5's
+~2,300 ms is a **four-fold** improvement that this slice did nothing to cause and does
+not explain; recorded as an observation, not a claim.

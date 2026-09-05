@@ -140,6 +140,7 @@ export default withMermaid({
             { text: 'Overview', link: '/deployment/self-hosting' },
             { text: 'Docker', link: '/deployment/docker' },
             { text: 'Kubernetes', link: '/deployment/kubernetes' },
+            { text: 'AWS (serverless)', link: '/deployment/aws-serverless' },
             { text: 'Environment Setup', link: '/deployment/environment' },
           ],
         },

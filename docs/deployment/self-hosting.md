@@ -54,10 +54,13 @@ Everything else has safe defaults; you can tighten it later (rate limits, Redis 
 
 For replicas with a load balancer, use the demo compose file (`docker-compose.demo.yml`). For Kubernetes, the same images and environment variables apply; use the [Kubernetes (Helm)](/deployment/kubernetes) guide and the `charts/grant-platform` chart.
 
+On **AWS**, a CDK app deploys the same platform as Lambda functions behind CloudFront, with Aurora Serverless v2 and DynamoDB in place of PostgreSQL and Redis — no host to patch and no idle compute. See [AWS (serverless)](/deployment/aws-serverless).
+
 ## Next steps
 
 - **Walkthrough**: [Docker deployment](/deployment/docker)
 - **Kubernetes**: [Kubernetes (Helm)](/deployment/kubernetes)
+- **AWS**: [AWS (serverless)](/deployment/aws-serverless)
 - **Environment variables**: [Environment setup](/deployment/environment)
 - **Full config reference**: [Configuration](/getting-started/configuration)
 - **Local development**: [Quick Start](/getting-started/quick-start)
