@@ -301,14 +301,23 @@ function unknownBehaviours(): string[] {
  * Opt-in because it is not idempotent: a second run with the same address gets a
  * conflict, which is a correct response to an incorrect test.
  *
- * The generated password is **printed**, and that is deliberate. An account nobody
- * can sign in to proves the write path and nothing past it; the reason to create one
- * during a smoke test is to then log in and look at the deployment. Set
- * `SMOKE_REGISTER_PASSWORD` to choose your own and nothing is printed.
+ * The password comes from `SMOKE_REGISTER_PASSWORD` and is **required**. An earlier
+ * version generated one and printed it, so the created account was usable — but a
+ * smoke test that writes a credential to stdout puts it in CI logs and scrollback,
+ * and the guard that stopped it printing an operator-supplied value was invisible to
+ * static analysis (CodeQL, correctly, could not see it). Requiring the caller to
+ * supply a password they already know removes the output entirely rather than
+ * guarding it.
+ *
+ * This creates a **real, persistent account**. Do not point it at a deployment you
+ * care about; nothing here cleans it up.
  */
 async function registerAccount(base: string, email: string): Promise<CheckResult> {
-  const chosen = process.env.SMOKE_REGISTER_PASSWORD;
-  const password = chosen ?? `Smoke-${crypto.randomUUID()}`;
+  const password = process.env.SMOKE_REGISTER_PASSWORD;
+  if (!password) {
+    return fail('set SMOKE_REGISTER_PASSWORD to use --register; it is never generated or printed');
+  }
+
   const response = await get(`${base}/api/auth/register`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -326,10 +335,7 @@ async function registerAccount(base: string, email: string): Promise<CheckResult
   if (response.status !== 201) {
     return fail(`${response.status}, body=${JSON.stringify(body)?.slice(0, 200)}`);
   }
-  return pass(
-    `201, account=${body?.data?.account?.id ?? 'unknown'}` +
-      (chosen ? '' : `, password=${password}`)
-  );
+  return pass(`201, account=${body?.data?.account?.id ?? 'unknown'}`);
 }
 
 async function main(): Promise<void> {

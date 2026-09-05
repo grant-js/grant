@@ -53,7 +53,9 @@ describe('every bundle external is resolvable at runtime', () => {
   it('declares at least one dependency for each wildcard external', () => {
     const wildcards = EXTERNALS.filter((name) => name.includes('*'));
     for (const pattern of wildcards) {
-      const prefix = pattern.replace('*', '');
+      // Everything before the first `*`, not `replace('*','')`: a pattern carrying a
+      // second wildcard would keep it and the prefix would never match anything.
+      const prefix = pattern.slice(0, pattern.indexOf('*'));
       const matches = Object.keys(apiPkg.dependencies).filter((dep) => dep.startsWith(prefix));
       expect(matches.length, `nothing matches ${pattern}`).toBeGreaterThan(0);
     }

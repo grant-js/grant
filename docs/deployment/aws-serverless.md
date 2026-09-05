@@ -117,7 +117,11 @@ A smoke test ships with the target. It covers **at least one path per CloudFront
 pnpm --filter grant-aws-deploy smoke https://grant.example.com
 ```
 
-Add `--register you@example.com` to also create an account through the REST API — the one check that writes.
+Add `--register you@example.com` to also create an account through the REST API — the one check that writes. It needs `SMOKE_REGISTER_PASSWORD` set; the script never generates or prints a credential.
+
+::: warning
+That creates a **real, persistent account** and nothing cleans it up. Point it at a throwaway deployment, not one you care about.
+:::
 
 ## How long it takes
 
