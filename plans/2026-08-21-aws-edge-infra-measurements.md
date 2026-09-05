@@ -1500,3 +1500,41 @@ The API's 3,776 ms confirms slice 6's post-bundling ~4.1 s and is **half** the 7
 slice 5 measured pre-bundling. The web function's 526–630 ms against slice 5's
 ~2,300 ms is a **four-fold** improvement that this slice did nothing to cause and does
 not explain; recorded as an observation, not a claim.
+
+### Teardown — the account returned to baseline
+
+**Date**: 2026-09-05 · `cdk destroy --all` · **39 s** for the remaining stack
+
+Recorded late, and that is itself the finding. The slice 7 session tore down
+`GrantPlatform` but left **`GrantCertificate` standing in `us-east-1`** — a stack and
+an ACM certificate that a check of the platform region alone reports as clean. The
+gate 4 audit (F15) caught it; a `--all` destroy at the end of the session would have.
+The lesson is that "torn down" has to be measured in **both** regions, because this
+target is deliberately two-region and only one of them holds anything interesting.
+
+| After `cdk destroy --all`       | Result                          |
+| ------------------------------- | ------------------------------- |
+| CloudFormation stacks           | `CDKToolkit` only, both regions |
+| ACM certificates (`us-east-1`)  | **0**                           |
+| CloudFront distributions        | 0                               |
+| RDS clusters / manual snapshots | 0 / 0                           |
+| Lambda functions                | 0                               |
+| EventBridge rules               | 0                               |
+| SQS queues                      | 0                               |
+| DynamoDB tables                 | 0                               |
+| Secrets (incl. pending delete)  | 0                               |
+| NAT gateways / non-default VPCs | 0 / 0                           |
+| S3 buckets                      | 2 = baseline                    |
+| Route 53 records                | 20 = baseline                   |
+
+Nothing billed survives. The two residues are the ones already carried:
+
+- **F1 — the ACM validation CNAME persists**, and it is the _same record_ slice 6
+  recorded: `_17d199c9b8df2cc1e725d5274f58c2bf.aws.grantjs.org.` Two full
+  deploy/destroy cycles later it has not duplicated, which upgrades "idempotent per
+  domain" from inference to a measurement across cycles. It is why the record count
+  reads as baseline rather than baseline+1.
+- **F7 — log groups survive and accumulate.** 82 at the end of slice 6, **90 now**:
+  eight more from this session's deploy, the rotation redeploy and the destroy.
+  Unchanged as the one residue that grows per cycle, and the reason the guide ships a
+  cleanup command.
