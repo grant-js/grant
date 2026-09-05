@@ -1,5 +1,46 @@
 # grant-api
 
+## 1.6.2
+
+### Patch Changes
+
+- @grantjs/schema@1.6.2
+- @grantjs/core@1.0.0
+- @grantjs/jobs@1.0.0
+- @grantjs/analytics@1.0.0
+- @grantjs/cache@1.0.0
+- @grantjs/constants@1.0.0
+- @grantjs/database@1.0.0
+- @grantjs/email@1.0.0
+- @grantjs/errors@1.0.0
+- @grantjs/logger@1.0.0
+- @grantjs/secrets@1.0.0
+- @grantjs/storage@1.0.0
+- @grantjs/telemetry@1.0.0
+- @grantjs/webhooks@1.0.0
+
+## 1.6.1
+
+### Patch Changes
+
+- 9eecf80: De-duplicate Redis SCAN results in `RedisCacheAdapter`. SCAN guarantees each key is returned at least once, not exactly once, so `keys()` could report a key twice and `clear()` could issue a redundant DEL when the keyspace is resized mid-iteration.
+
+  The fix is in `@grantjs/cache`, which is internal and never published, so the changeset names the app that ships it. A changeset naming only ignored packages versions nothing, which keeps changesets/action on the version-PR path and stops publish from ever running.
+  - @grantjs/schema@1.6.1
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.6.0
 
 ### Minor Changes

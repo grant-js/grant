@@ -165,10 +165,10 @@ jobs:
       - name: Codegen drift (@grantjs/schema)
         run: pnpm run codegen:check
 
-      # The script that enforces exactly which packages may be published. It existed
-      # as `release:check` from the start and ran in no workflow, so the guardrail on
-      # the npm contract surface was a manual step nobody was required to take.
-      - name: Publishable packages (@grantjs/schema, client, server, cli)
+      # Enforces the publishable set and rejects changesets that name ignored
+      # packages (those leftover files make the release job open an empty
+      # version PR and never publish).
+      - name: Publishable packages and changesets
         run: pnpm run release:check
 
       # format:check gates the committed root CHANGELOG.md, but that file is written

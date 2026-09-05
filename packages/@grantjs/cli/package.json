@@ -1,6 +1,6 @@
 {
   "name": "@grantjs/cli",
-  "version": "1.6.0",
+  "version": "1.6.2",
   "description": "Grant CLI - Setup, authentication, and typings generation for @grantjs/server",
   "type": "module",
   "main": "./dist/index.mjs",

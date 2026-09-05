@@ -1,5 +1,33 @@
 # grant-web
 
+## 1.6.2
+
+### Patch Changes
+
+- d5b2b05: Fix three deadlocks in the webhook UI that made the feature unusable.
+
+  The detail page crashed with React error #185 (maximum update depth exceeded)
+  because `useWebhookDeliveries` returned a new `deliveries` array and a new
+  `refetch` closure on every render, and both are used as effect dependencies that
+  write into a store — so each store update re-rendered the component that owned
+  them. The actions menu could never be opened: permissions are fetched only once
+  the menu has been opened, and both the empty-actions guard and the `isLoading`
+  expression removed or disabled the trigger before that could happen, so rotating
+  a signing secret was unreachable from any view.
+  - @grantjs/schema@1.6.2
+  - @grantjs/client@1.6.2
+  - @grantjs/core@1.0.0
+  - @grantjs/constants@1.0.0
+
+## 1.6.1
+
+### Patch Changes
+
+- @grantjs/schema@1.6.1
+- @grantjs/client@1.6.1
+- @grantjs/core@1.0.0
+- @grantjs/constants@1.0.0
+
 ## 1.6.0
 
 ### Patch Changes

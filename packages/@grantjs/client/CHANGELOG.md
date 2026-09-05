@@ -1,5 +1,17 @@
 # @grantjs/client
 
+## 1.6.2
+
+### Patch Changes
+
+- @grantjs/schema@1.6.2
+
+## 1.6.1
+
+### Patch Changes
+
+- @grantjs/schema@1.6.1
+
 ## 1.6.0
 
 ### Patch Changes
