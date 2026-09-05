@@ -461,7 +461,7 @@ jobs:
           echo "path=$NOTES_FILE" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3.0.0
+        uses: softprops/action-gh-release@v3.0.2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
           name: v${{ steps.version.outputs.version }}
