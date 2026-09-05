@@ -6,12 +6,12 @@
 - **Date**: 2026-08-21 (drafted) · **revised 2026-08-27** for gate 1 · **revised
   2026-09-05** for gate 4
 - **Author**: Ale Heredia (human) / drafted with Claude
-- **Status**: **ready-for-main** (gate 3 complete 2026-09-05; acceptance met).
-  All seven slices merged to `feat/aws-edge-infra`; last slice is #381
-  (`a3d026ab`). Gate 4 not started — three **blocking flags** in the stack plan
-  (scratch-account teardown, merge `main`, independent security pass) must clear
-  before the integration PR opens. Phase B merged to `main` as #338
-  (`7a968149`, 2026-08-27).
+- **Status**: **merged** — phase C is on `main` as
+  [#382](https://github.com/grant-js/grant/pull/382) (`798111ac`, 2026-09-05).
+  Seven slices through gate 3, then an integration PR that cleared gate 4's three
+  blocking flags. Acceptance met with two criteria qualified: OpenNext was not used
+  (the web app runs as a Next standalone server) and bring-your-own PostgreSQL is not
+  end-to-end. Phase B merged as #338 (`7a968149`, 2026-08-27).
 - **Stack plan**: [`2026-08-21-aws-edge-infra-stack.md`](./2026-08-21-aws-edge-infra-stack.md)
 - **Program brief**: [`2026-08-21-aws-serverless-target-brief.md`](./2026-08-21-aws-serverless-target-brief.md)
 - **Depends on**: `aws-lambda-runtime` (merged)

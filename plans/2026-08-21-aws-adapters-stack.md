@@ -176,7 +176,7 @@ declaring every branch at `init` strands later slices while reporting success.
 
 - [x] Local slice branches deleted (all five, 2026-08-24)
 - [x] Stack plan status → `merged-to-main`
-- [ ] Remote slice branches — still on origin; not auto-deleted on merge
+- [x] Remote slice branches — deleted 2026-09-05, with phase C's
 - [x] Phase B (`aws-lambda-runtime`) brief re-verified against the new `main` and
       submitted for its own gate 1 — approved 2026-08-24; stack plan drafted
 
@@ -190,8 +190,10 @@ each was green against a tree that did not contain the other.
 
 Checked after the fact on `39151c33`: the integration lane passes, 48 cache and 7 jobs.
 
-**One latent issue left open, not introduced by this story.** Redis `SCAN` may return
-the same key more than once, and `scanFullKeys()` does not de-duplicate. The
+**One latent issue, closed since.** Redis `SCAN` may return the same key more than
+once, and `scanFullKeys()` did not de-duplicate — fixed in #320 (`9eecf80a`), which
+added the `Set`. Left below as originally written, because the reasoning is what makes
+the fix legible. The
 conformance suite asserts exact key sets, so a duplicate would fail
 `keys() with no pattern returns every key set` — non-deterministically, and only on a
 keyspace large enough to span multiple `SCAN` iterations or resized mid-iteration.

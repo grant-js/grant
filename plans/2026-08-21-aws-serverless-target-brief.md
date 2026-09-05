@@ -37,7 +37,7 @@ organization.
 #305, #306, #309 and #311, and #338 (`7a968149`, 2026-08-27) from eight slices, closed
 out by #339. Gates 1–4 cleared on both.
 
-**Phase C is integrated on `feat/aws-edge-infra`** (2026-09-05, last slice #381).
+**Phase C is merged to `main`** as #382 (`798111ac`, 2026-09-05).
 Gates 1–3 cleared; gate 4 (trunk → `main`) not started. Open questions from the
 draft were answered at gate 1 (2026-08-27). Acceptance, PR map and remaining flags:
 [brief](./2026-08-21-aws-edge-infra-brief.md) · [stack](./2026-08-21-aws-edge-infra-stack.md).
