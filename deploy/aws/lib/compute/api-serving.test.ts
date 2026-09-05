@@ -35,6 +35,7 @@ function build(
     secrets?: Record<string, SecretValue>;
     cache?: { destroyOnRemoval?: boolean };
     storage?: { destroyOnRemoval?: boolean };
+    env?: Record<string, string>;
   } = {}
 ) {
   const app = new App();
@@ -68,6 +69,7 @@ function build(
     cache: overrides.cache,
     storage: overrides.storage,
     secrets: overrides.secrets,
+    env: overrides.env,
   });
   return { template: Template.fromStack(stack), platform };
 }
@@ -77,16 +79,16 @@ function build(
  *
  * Two Lambdas now carry the resolver configuration — the jobs function runs the same
  * image and reads the same secret — so the discriminator is the dispatch route, which
- * exists only on the function that has no Function URL.
+ * is enabled only on the function that has no Function URL. Both now *set* the key:
+ * the API pins it `false` so a config file cannot enable it, so the value
+ * distinguishes them where its absence used to.
  */
 function apiFunction(template: Template): Record<string, unknown> {
   const functions = Object.values(template.findResources('AWS::Lambda::Function'));
   const api = functions.filter((fn) => {
     const props = fn.Properties as { Environment?: { Variables?: Record<string, unknown> } };
     const env = props.Environment?.Variables;
-    return (
-      env?.SECRETS_AWS_SECRET_ID !== undefined && env?.JOBS_EVENT_DISPATCH_ENABLED === undefined
-    );
+    return env?.SECRETS_AWS_SECRET_ID !== undefined && env?.JOBS_EVENT_DISPATCH_ENABLED === 'false';
   });
   expect(api).toHaveLength(1);
   return api[0] as Record<string, unknown>;
@@ -365,5 +367,52 @@ describe('the function runs where the database can be reached', () => {
     // billed as NAT data processing.
     const { template } = build();
     template.resourceCountIs('AWS::EC2::VPCEndpoint', 2);
+  });
+});
+
+/**
+ * Gate 4, finding F-A.
+ *
+ * Two keys are safe by default and unsafe if a `deploy/aws/.env` sets them, and no
+ * layer below this one can refuse them. `create-app.ts` mounts the event-dispatch
+ * router *ahead of* origin verification and the rate limiter, on the stated
+ * assumption that it only runs "where nothing public can reach it" — true of the jobs
+ * function, false of this one. `@grantjs/env` cannot reject the value either, because
+ * the jobs function legitimately sets it `true`. Only CDK knows which function has a
+ * publicly reachable URL, so the refusal belongs here.
+ */
+describe('the config file cannot open the public origin', () => {
+  const hostile = {
+    JOBS_EVENT_DISPATCH_ENABLED: 'true',
+    SECURITY_ORIGIN_VERIFY_REQUIRED: 'false',
+  };
+
+  it('pins the dispatch route off on the function that has a URL', () => {
+    const { template } = build({ env: hostile });
+
+    expect(apiEnvironment(template).JOBS_EVENT_DISPATCH_ENABLED).toBe('false');
+  });
+
+  it('pins origin verification on, so it cannot be made to fail open', () => {
+    const { template } = build({ env: hostile });
+
+    expect(apiEnvironment(template).SECURITY_ORIGIN_VERIFY_REQUIRED).toBe('true');
+  });
+
+  it('still lets the jobs function enable dispatch, which is what it is for', () => {
+    const { template } = build({ env: hostile });
+
+    const jobs = Object.values(template.findResources('AWS::Lambda::Function')).filter((fn) => {
+      const props = fn.Properties as { Environment?: { Variables?: Record<string, unknown> } };
+      return props.Environment?.Variables?.JOBS_EVENT_DISPATCH_ENABLED === 'true';
+    });
+
+    expect(jobs).toHaveLength(1);
+  });
+
+  it('leaves every other key from the file passing through', () => {
+    const { template } = build({ env: { ...hostile, AUTH_MIN_AAL_AT_LOGIN: 'aal2' } });
+
+    expect(apiEnvironment(template).AUTH_MIN_AAL_AT_LOGIN).toBe('aal2');
   });
 });

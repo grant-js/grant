@@ -195,7 +195,10 @@ export class ApiFunction extends Construct {
       // refuses anything without the secret CloudFront attaches as an origin custom
       // header. The difference from IAM is where enforcement happens: AWS turns away
       // an unsigned request before any code runs, while this costs one short
-      // invocation. Reserved concurrency bounds that.
+      // invocation. Reserved concurrency does **not** bound that — see
+      // `DEFAULT_RESERVED_CONCURRENCY` above, where the opposite is argued and
+      // measured: a low reservation makes exhaustion cheaper, not safer. The exposure
+      // is accepted and mitigated, not closed.
       authType: FunctionUrlAuthType.NONE,
     });
   }

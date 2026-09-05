@@ -57,12 +57,19 @@ function build(overrides: { env?: GrantEnv; jobs?: { enabled?: boolean } } = {})
   return { template: Template.fromStack(stack), platform };
 }
 
-/** The dispatcher: the one function carrying the pass-through route. */
+/**
+ * The dispatcher: the one function with the route actually enabled.
+ *
+ * Matched on the *value*, not on the key being present. Since gate 4's F-A the API
+ * function pins this to `'false'` so a config file cannot enable it on a function
+ * that has a public URL, so both functions now set the key and only the value tells
+ * them apart.
+ */
 function jobsEnvironment(template: Template): Record<string, unknown> {
   const functions = Object.values(template.findResources('AWS::Lambda::Function'));
   const jobs = functions.filter((fn) => {
     const props = fn.Properties as { Environment?: { Variables?: Record<string, unknown> } };
-    return props.Environment?.Variables?.JOBS_EVENT_DISPATCH_ENABLED !== undefined;
+    return props.Environment?.Variables?.JOBS_EVENT_DISPATCH_ENABLED === 'true';
   });
   expect(jobs).toHaveLength(1);
   const props = jobs[0]!.Properties as { Environment: { Variables: Record<string, unknown> } };
@@ -152,7 +159,7 @@ describe('the dispatcher is not reachable from the internet', () => {
       .filter(
         ([, fn]) =>
           (fn.Properties as { Environment?: { Variables?: Record<string, unknown> } }).Environment
-            ?.Variables?.JOBS_EVENT_DISPATCH_ENABLED !== undefined
+            ?.Variables?.JOBS_EVENT_DISPATCH_ENABLED === 'true'
       )
       .map(([logicalId]) => logicalId);
 
@@ -174,7 +181,7 @@ describe('the dispatcher is not reachable from the internet', () => {
     const withDispatch = Object.values(template.findResources('AWS::Lambda::Function')).filter(
       (fn) =>
         (fn.Properties as { Environment?: { Variables?: Record<string, unknown> } }).Environment
-          ?.Variables?.JOBS_EVENT_DISPATCH_ENABLED !== undefined
+          ?.Variables?.JOBS_EVENT_DISPATCH_ENABLED === 'true'
     );
 
     expect(withDispatch).toHaveLength(1);
@@ -207,7 +214,7 @@ describe('nothing runs before the schema exists', () => {
     const [, jobsFunction] = Object.entries(template.findResources('AWS::Lambda::Function')).find(
       ([, fn]) =>
         (fn.Properties as { Environment?: { Variables?: Record<string, unknown> } }).Environment
-          ?.Variables?.JOBS_EVENT_DISPATCH_ENABLED !== undefined
+          ?.Variables?.JOBS_EVENT_DISPATCH_ENABLED === 'true'
     ) as [string, { DependsOn?: string[] }];
 
     const dependsOn = jobsFunction.DependsOn ?? [];

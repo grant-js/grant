@@ -337,6 +337,22 @@ export class GrantPlatform extends Construct {
           // the way X-Forwarded-For can — which CloudFront *appends* to, leaving the
           // first entry attacker-controlled. The rate limiter keys on this value.
           SECURITY_TRUSTED_CLIENT_IP_HEADER: 'cloudfront-viewer-address',
+          // Pinned *after* the spread, so the config file cannot reach them. Both are
+          // safe by default; the point is that this is the only layer that knows this
+          // function has a publicly reachable URL, and neither the application nor
+          // `@grantjs/env` can refuse them on its behalf.
+          //
+          // `create-app.ts` mounts the event-dispatch router *ahead of* origin
+          // verification and the rate limiter, on the stated assumption that it only
+          // ever runs "where nothing public can reach it". That assumption is correct
+          // for the jobs function, which sets this true and has no URL. Here it would
+          // publish an unauthenticated, unthrottled job trigger on the open internet —
+          // which `@grantjs/env`'s own schema note warns about. The app cannot
+          // self-guard: the same value is legitimate on the jobs function.
+          JOBS_EVENT_DISPATCH_ENABLED: 'false',
+          // The whole origin design rests on this failing closed. A file that set it
+          // false would leave the Function URL answering anyone, silently.
+          SECURITY_ORIGIN_VERIFY_REQUIRED: 'true',
         },
         memorySize: props.api?.memorySize,
         timeout: props.api?.timeout,

@@ -1950,7 +1950,8 @@
               "Ref": "GrantJobQueue8C243AD6"
             },
             "JOBS_AWS_REGION": "eu-central-1",
-            "SECURITY_TRUSTED_CLIENT_IP_HEADER": "cloudfront-viewer-address"
+            "SECURITY_TRUSTED_CLIENT_IP_HEADER": "cloudfront-viewer-address",
+            "JOBS_EVENT_DISPATCH_ENABLED": "false"
           }
         },
         "LoggingConfig": {
