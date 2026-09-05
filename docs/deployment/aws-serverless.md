@@ -210,11 +210,87 @@ Two CloudFront Functions close the gaps between CloudFront and nginx: one resolv
 - **No long-lived credential exists in the stack.** S3, SES and Secrets Manager access all go through the execution role.
 - **The database is in isolated subnets** with no route to the internet, reachable only from the functions' security group.
 
-## Bring your own VPC, certificate or zone
+## Client IP and rate limiting
+
+The rate limiter keys on **`CloudFront-Viewer-Address`**, which the stack sets as
+`SECURITY_TRUSTED_CLIENT_IP_HEADER`. CloudFront _overwrites_ that header, so unlike
+`X-Forwarded-For` — which it _appends_ to, leaving the first entry attacker-controlled —
+it cannot be supplied by the caller. Limits here are genuinely per-device.
+
+Two consequences worth knowing before you tune anything:
+
+- **Request logs show `ip: 127.0.0.1`.** That field is Express's `req.ip`, which under
+  the Lambda Web Adapter is the loopback address of the adapter's own connection. It is
+  not the value the limiter or the audit context uses; both call `getClientIp()`, which
+  reads the trusted header. Cosmetic, but it looks alarming in a log.
+- **The default bites sooner than it reads.** 100 requests per 15 minutes is ~6.7 a
+  minute for an entire browser, and a dashboard polling a running sync job exhausts it
+  in minutes. Raise `SECURITY_RATE_LIMIT_MAX` rather than disabling the limiter: the
+  Function URL answers the internet and origin verification is enforced _inside_ the
+  function, so even a refused request costs an invocation. This is one of the few
+  controls in front of that.
+
+If the trusted header is ever absent, `getClientIp()` falls back to `req.ip` and those
+requests share one bucket. That path is unreachable while origin verification refuses
+every non-CDN request first — but the safety depends on middleware order and no test
+asserts it.
+
+## Observability
+
+There is no Prometheus endpoint on this target. `METRICS_ENABLED` is `false` by default
+and pull-scraping has no analogue on a function that is frozen between invocations.
+
+| Signal      | Where it goes                                                                              |
+| ----------- | ------------------------------------------------------------------------------------------ |
+| **Logs**    | CloudWatch, one log group per function, **14-day retention**                               |
+| **Metrics** | CloudWatch **Embedded Metric Format**, namespace `Grant/API`, emitted inline with the logs |
+| **Traces**  | `TRACING_SPAN_PROCESSOR=simple` — spans are exported per span, not batched                 |
+
+EMF is chosen because it needs no SDK, no log-stream sequence token, and nothing flushed
+before a freeze. The same reasoning drives the span processor: a buffered batch on a
+freezing container is not delayed, it is **lost**, and the spans lost are
+disproportionately those of the slowest requests — the ones worth having.
+
+Log group names are `GrantPlatform-Grant{Api,Web,Jobs}Logs-*`. Note that they **survive
+teardown** and accumulate across deploy cycles; the [Teardown](#teardown) section has the
+cleanup command.
+
+## Database connections
+
+`DB_POOL_MAX` defaults to **2** on this target, against 10 elsewhere, and the reason is
+structural rather than conservative: one execution environment serves one request at a
+time, so a larger pool is never drawn on — it only reserves connections Aurora could
+give to another environment.
+
+What bounds a burst is therefore `DB_POOL_MAX × the function's concurrency`, and that
+product is what to check against Aurora's `max_connections` before raising either. The
+RDS proxy is **off** by default because it forfeits the cluster's ability to auto-pause;
+enable it (`database.proxy`) if you expect concurrency high enough to exhaust the
+cluster rather than the pool.
+
+## Bring your own infrastructure
 
 `bin/grant.ts` is the layer you **replace**, not fork. The constructs in `deploy/aws/lib/` accept CDK resource interfaces — `IVpc`, `ICertificate`, `IBucket`, `IHostedZone` — so composing against infrastructure you already run means writing your own version of that one file while staying on upstream `lib/`. Forking the library means porting every later fix by hand. See [ADR 0005](https://github.com/grant-js/grant/blob/main/decisions/0005-aws-target-as-a-construct-library.md).
 
 If you only need to reuse an **existing certificate**, pass `-c certificateArn=…`. It must be in `us-east-1`; the app asserts this rather than letting CloudFront reject it at deploy time.
+
+What each resource supports today, so you can tell a supported path from a plausible-looking one:
+
+| Resource           | How                                            | Status                                                        |
+| ------------------ | ---------------------------------------------- | ------------------------------------------------------------- |
+| **VPC**            | `vpc?: IVpc`                                   | supported — prefer `fromVpcAttributes()` over a lookup        |
+| **Certificate**    | `-c certificateArn=…`, or `ICertificate`       | supported                                                     |
+| **Hosted zone**    | `IHostedZone`                                  | supported                                                     |
+| **Uploads bucket** | `storage.uploadsBucket?: IBucket`              | supported                                                     |
+| **Cache table**    | `cache.table?: ITable`                         | supported — needs a `pk`/`sk` schema and a TTL on `expiresAt` |
+| **PostgreSQL**     | omit `database`, set `DB_URL` in `env`         | **not yet** — see below                                       |
+| **Redis**          | `CACHE_STRATEGY=redis` plus `REDIS_*` in `env` | config only — no network wiring is generated                  |
+
+::: warning Bring-your-own PostgreSQL does not work end to end yet
+Omitting the `database` prop is what you would reach for, and the props document it that way — but the same condition gates the **API function**, which reads `DB_URL` from the platform secret the stack only creates alongside its own cluster. Omit `database` today and you get no serving function. This is recorded in the library as a follow-up rather than an oversight; until it lands, this target creates its own Aurora cluster.
+:::
+
+Redis is a weaker case than it looks: the keys are honoured by the application, but nothing in the stack opens a path to a cluster it did not create. You would be bringing the VPC, the security-group rule and the cluster yourself, and the DynamoDB table would still be created unless you also pass `cache.table`.
 
 ## Teardown
 
@@ -243,16 +319,16 @@ aws logs describe-log-groups \
 
 Each of these was found by deploying, not by reading the code. None is a blocker; all of them are cheaper to know in advance.
 
-| #   | Limitation                                                                                                                                                                                                                                                                      |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| F1  | `cdk destroy` strands the **ACM validation CNAME**. ACM owns it, not CloudFormation. Idempotent per domain, so it does not accumulate.                                                                                                                                          |
-| F2  | Unknown paths under `/docs/` **diverge from nginx**: CloudFront returns a real 404, nginx serves the docs homepage with 200. CloudFront's is arguably the better behaviour, but it is a difference between targets.                                                             |
-| F5  | A failed **scheduled** run is not retried — under the Web Adapter a 500 still completes the invocation successfully. Queued work _is_ retried three times, then dead-lettered.                                                                                                  |
-| F7  | **Log groups survive teardown** and grow by one per function per deploy cycle. Cleanup command above.                                                                                                                                                                           |
-| F10 | A destroy/redeploy cycle **drops the out-of-band secrets** — the platform secret is recreated empty. Re-run `put-secrets`, then allow up to `SECRETS_CACHE_TTL_SECONDS` (default 300 s) for warm containers to see it. Testing inside that window looks exactly like a failure. |
-| —   | **Uploads are capped at ~6 MB**, Lambda's request payload limit. The nginx gateway allows 100 MB. Presigned-PUT uploads are tracked as separate work and would lift the cap on every target.                                                                                    |
-| —   | **Client IP collapses to loopback.** The API sees `127.0.0.1` rather than the viewer address, so rate limiting keys on a single bucket. Do not rely on per-IP limits on this target yet.                                                                                        |
-| —   | **The Function URLs answer the internet.** They are guarded by the origin-verify shared secret rather than by IAM — see [Security model](#security-model).                                                                                                                      |
+| #   | Limitation                                                                                                                                                                                                                                                                                  |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| F1  | `cdk destroy` strands the **ACM validation CNAME**. ACM owns it, not CloudFormation. Idempotent per domain, so it does not accumulate.                                                                                                                                                      |
+| F2  | Unknown paths under `/docs/` **diverge from nginx**: CloudFront returns a real 404, nginx serves the docs homepage with 200. CloudFront's is arguably the better behaviour, but it is a difference between targets.                                                                         |
+| F5  | A failed **scheduled** run is not retried — under the Web Adapter a 500 still completes the invocation successfully. Queued work _is_ retried three times, then dead-lettered.                                                                                                              |
+| F7  | **Log groups survive teardown** and grow by one per function per deploy cycle. Cleanup command above.                                                                                                                                                                                       |
+| F10 | A destroy/redeploy cycle **drops the out-of-band secrets** — the platform secret is recreated empty. Re-run `put-secrets`, then allow up to `SECRETS_CACHE_TTL_SECONDS` (default 300 s) for warm containers to see it. Testing inside that window looks exactly like a failure.             |
+| —   | **Uploads are capped at ~6 MB**, Lambda's request payload limit. The nginx gateway allows 100 MB. Presigned-PUT uploads are tracked as separate work and would lift the cap on every target.                                                                                                |
+| —   | **Request logs show `127.0.0.1` as the client IP.** Cosmetic, and it is not what the rate limiter uses — see [Client IP and rate limiting](#client-ip-and-rate-limiting). The residual gap is the fallback path, unreachable while origin verification runs first, and asserted by no test. |
+| —   | **The Function URLs answer the internet.** They are guarded by the origin-verify shared secret rather than by IAM — see [Security model](#security-model).                                                                                                                                  |
 
 ## Related
 
