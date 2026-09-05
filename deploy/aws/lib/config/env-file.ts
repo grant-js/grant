@@ -40,7 +40,46 @@ export const RESOLVER_SECRET_KEYS = [
  * both put a live secret in the template and break the origin check if it disagreed
  * with what the distribution sends, so it is refused rather than silently ignored.
  */
-const STACK_GENERATED_KEYS = ['ORIGIN_VERIFY_SECRET'] as const;
+export const STACK_GENERATED_KEYS = ['ORIGIN_VERIFY_SECRET'] as const;
+
+/**
+ * Credentials with **no safe path on this target**, refused rather than routed.
+ *
+ * Everything not in `RESOLVER_SECRET_KEYS` becomes a Lambda environment variable,
+ * which is a literal string in the CloudFormation template and in the function
+ * configuration — readable by anyone holding `cloudformation:GetTemplate` or
+ * `lambda:GetFunctionConfiguration`, and written to `cdk.out` on disk. Lambda has no
+ * equivalent of the ECS task's `Secrets`/`ValueFrom`, where the agent fetches the
+ * value at start and the template carries only an ARN. That asymmetry is why
+ * `ISecretResolver` exists (ADR 0004).
+ *
+ * These keys cannot simply be moved into the platform secret instead: the adapters
+ * read them from `process.env`, so a value placed in the secret is a value the
+ * application never sees. Making them resolver-backed is real work across the email,
+ * cache, storage and jobs packages, and it benefits every target — so it is a
+ * follow-on story, not a line in this file.
+ *
+ * Until then the honest answer is refusal at synth, with a sentence saying why, in
+ * preference to a credential that deploys successfully and leaks quietly. Gate 4,
+ * finding F-C.
+ */
+export const CREDENTIAL_KEYS = [
+  'CACHE_DYNAMODB_ACCESS_KEY_ID',
+  'CACHE_DYNAMODB_SECRET_ACCESS_KEY',
+  'E2E_REDIS_PASSWORD',
+  'EMAIL_SES_CLIENT_SECRET',
+  'JOBS_AWS_ACCESS_KEY_ID',
+  'JOBS_AWS_SECRET_ACCESS_KEY',
+  'MAILGUN_API_KEY',
+  'MAILJET_API_KEY',
+  'MAILJET_SECRET_KEY',
+  'POSTGRES_PASSWORD',
+  'REDIS_PASSWORD',
+  'SECURITY_API_KEY',
+  'SMTP_PASSWORD',
+  'STORAGE_S3_ACCESS_KEY_ID',
+  'STORAGE_S3_SECRET_ACCESS_KEY',
+] as const;
 
 export interface TargetConfig {
   /** Non-secret keys, destined for the container environment. */
@@ -115,9 +154,23 @@ export function classifyConfig(pairs: Readonly<Record<string, string>>): TargetC
 
     if ((RESOLVER_SECRET_KEYS as readonly string[]).includes(key)) {
       secrets[key] = value;
-    } else {
-      env[key] = value;
+      continue;
     }
+
+    // After the resolver check, so the two keys that *do* have a safe path are routed
+    // before anything is refused.
+    if ((CREDENTIAL_KEYS as readonly string[]).includes(key)) {
+      throw new Error(
+        `${key} cannot be set from this file. Keys here become Lambda environment ` +
+          'variables, which are plaintext in the CloudFormation template and in the ' +
+          'function configuration. This target has no secure path for it yet — the ' +
+          'application reads it from process.env rather than through ISecretResolver, ' +
+          'so moving it to the platform secret would only hide it from the app too. ' +
+          'See docs/deployment/aws-serverless.md § Configure.'
+      );
+    }
+
+    env[key] = value;
   }
 
   return { env, secrets };

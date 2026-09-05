@@ -85,6 +85,16 @@ Two kinds of value are handled differently, and the difference is deliberate:
 
 `cdk deploy` prints a reminder naming the keys it did not carry.
 
+**Credential-shaped keys are refused, not deployed.** Anything else in the file becomes
+a Lambda environment variable, and those are plaintext in the CloudFormation template
+and in the function configuration — Lambda has no equivalent of the ECS task's
+`Secrets`/`ValueFrom`, where the template carries only an ARN. So `SMTP_PASSWORD`,
+`MAILGUN_API_KEY`, `REDIS_PASSWORD`, the `*_SECRET_ACCESS_KEY` pairs and their kin fail
+at synth with a sentence explaining why. They cannot simply be routed to the platform
+secret instead: the adapters read them from `process.env`, so a value placed in the
+secret is one the application never sees. Making them resolver-backed is tracked
+separately and benefits every target.
+
 ## Deploy
 
 ```bash
