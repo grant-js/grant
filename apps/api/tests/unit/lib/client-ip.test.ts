@@ -102,3 +102,36 @@ describe('getClientIp with a trusted header', () => {
     expect(getClientIp(request({ 'x-forwarded-for': '1.2.3.4' }))).toBe('10.0.1.7');
   });
 });
+
+/**
+ * Gate 4, finding F-B.
+ *
+ * The trusted header keys the rate limiter and the audit `ipAddress`, so its value has
+ * to be an address or nothing. Measured against the live edge, CloudFront overwrites
+ * the header and a viewer cannot reach these cases — but that made the safety a
+ * property of CloudFront rather than of this code. These pin it here.
+ */
+describe('a trusted header that is not an address is refused', () => {
+  function withTrusted(value: string) {
+    mockConfig.security.trustedClientIpHeader = 'cloudfront-viewer-address';
+    return request({ 'cloudfront-viewer-address': value });
+  }
+
+  it('takes the address from a well-formed value', () => {
+    expect(getClientIp(withTrusted('203.0.113.5:54321'))).toBe('203.0.113.5');
+  });
+
+  it('accepts a value carrying no port at all', () => {
+    expect(getClientIp(withTrusted('203.0.113.5'))).toBe('203.0.113.5');
+  });
+
+  it('does not key on a comma-joined value, which is what an appending proxy produces', () => {
+    // Falls through to the socket address: one shared bucket, not a bucket the caller
+    // chose. Worse limiting, safe direction.
+    expect(getClientIp(withTrusted('9.9.9.9:1, 203.0.113.5:53'))).toBe('10.0.1.7');
+  });
+
+  it('does not key on arbitrary text', () => {
+    expect(getClientIp(withTrusted('not-an-address'))).toBe('10.0.1.7');
+  });
+});

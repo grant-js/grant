@@ -36,15 +36,26 @@ function firstHeaderValue(value: string | string[] | undefined): string | null {
  * connection rather than per address — weaker limiting for a minority of IPv6 callers,
  * against a header that is spoofable by everyone today. Bracketed notation would
  * settle it, and CloudFront does not use it.
+ *
+ * **Returns `null` rather than the input when the value is neither.** This keys the
+ * rate limiter and the audit `ipAddress`, and an unvalidated free string is not an
+ * address — a caller able to put one here would get a distinct bucket per value, which
+ * is the bypass the limiter exists to prevent. `null` falls through to `req.ip`, which
+ * on Lambda is one shared bucket: worse limiting, but in the safe direction.
+ *
+ * Measured against the live edge at gate 4: CloudFront **overwrites** this header, so
+ * a viewer cannot reach this path today — five spoof shapes, including duplicate and
+ * lowercase headers, all produced the real client address. This makes the property
+ * hold because the code enforces it rather than because CloudFront happens to.
  */
-function stripPort(address: string): string {
+function stripPort(address: string): string | null {
   if (isIP(address)) return address;
 
   const lastColon = address.lastIndexOf(':');
-  if (lastColon === -1) return address;
+  if (lastColon === -1) return null;
 
   const candidate = address.slice(0, lastColon);
-  return isIP(candidate) ? candidate : address;
+  return isIP(candidate) ? candidate : null;
 }
 
 /**

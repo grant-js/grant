@@ -1538,3 +1538,40 @@ Nothing billed survives. The two residues are the ones already carried:
   eight more from this session's deploy, the rotation redeploy and the destroy.
   Unchanged as the one residue that grows per cycle, and the reason the guide ships a
   cleanup command.
+
+### Gate 4 F-B — the trusted client-IP header is not spoofable, measured
+
+**Date**: 2026-09-05 · redeployed to `aws.grantjs.org` specifically to settle this
+
+The security review could not determine statically whether a **viewer-supplied**
+`CloudFront-Viewer-Address` is replaced, dropped, or **appended** alongside
+CloudFront's own value. Appending would have been exploitable: `stripPort()` returned
+its input unchanged when it parsed as neither an address nor `address:port`, so a
+comma-joined value would have become the rate-limit key, and rotating the attacker
+half would have bypassed the auth limiter.
+
+Method: send the header through the edge, then read the limiter's own DynamoDB keys —
+the same instrument slice 4d used, so the two measurements are comparable.
+
+| Request through the edge                                            | Resulting rate-limit key |
+| ------------------------------------------------------------------- | ------------------------ |
+| baseline, no added headers                                          | `global:87.171.69.148`   |
+| `CloudFront-Viewer-Address: 203.0.113.99:1234`                      | `global:87.171.69.148`   |
+| duplicate `CloudFront-Viewer-Address` + `cloudfront-viewer-address` | `global:87.171.69.148`   |
+| `cloudfront-viewer-address: 198.51.100.9` (no port)                 | `global:87.171.69.148`   |
+| `CloudFront-Viewer-Address: 2001:db8::dead:1234`                    | `global:87.171.69.148`   |
+| `X-Forwarded-For: 192.0.2.44`                                       | `global:87.171.69.148`   |
+
+`87.171.69.148` is the real client address. After six requests the table holds
+**exactly one** rate-limit key. CloudFront **overwrites** the header rather than
+appending to it, and because a configured trusted header is used _exclusively_, the
+`X-Forwarded-For` path — the one CloudFront does append to — is not consulted at all.
+
+**F-B is not exploitable.** The limiter is genuinely per-device, which is what
+`.env.example` claimed all along and what the deployment guide now says.
+
+`stripPort()` was hardened anyway, and the distinction is worth stating: before, the
+property held because CloudFront happens to overwrite; now it holds because the code
+refuses anything that is not an address, falling through to `req.ip` — one shared
+bucket, which is worse limiting in the safe direction rather than a bucket the caller
+chose. Four cases pinned in `client-ip.test.ts`.
