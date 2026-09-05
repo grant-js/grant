@@ -4,6 +4,7 @@ import { NextFunction, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 
 import { config } from '@/config';
+import { getClientIp } from '@/lib/headers.lib';
 import { logger } from '@/lib/logger';
 import { getTelemetryAdapter } from '@/lib/telemetry';
 import { ContextRequest } from '@/types';
@@ -51,7 +52,12 @@ export function requestLoggingMiddleware(req: Request, res: Response, next: Next
     method: req.method,
     path: req.path,
     query: req.query,
-    ip: req.ip,
+    // `getClientIp`, not `req.ip`: behind an edge that terminates the connection —
+    // the Lambda Web Adapter, most visibly — `req.ip` is the loopback address of the
+    // proxy's own socket, so every request logged `127.0.0.1` while the rate limiter
+    // and the audit record showed the real client. Two different answers to "who
+    // called" in one request is a debugging trap, and the log had the useless one.
+    ip: getClientIp(req),
     userAgent: req.headers['user-agent'],
   });
 

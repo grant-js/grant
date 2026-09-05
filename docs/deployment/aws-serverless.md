@@ -231,12 +231,17 @@ The rate limiter keys on **`CloudFront-Viewer-Address`**, which the stack sets a
 `X-Forwarded-For` — which it _appends_ to, leaving the first entry attacker-controlled —
 it cannot be supplied by the caller. Limits here are genuinely per-device.
 
-Two consequences worth knowing before you tune anything:
+**Measured, not assumed.** Six requests through the edge — a spoofed
+`CloudFront-Viewer-Address`, duplicate and lowercase copies of it, one with no port, an
+IPv6-shaped one, and an `X-Forwarded-For` — produced exactly one rate-limit key, the
+real client address. CloudFront overwrites the header rather than appending to it, and
+because a configured trusted header is consulted exclusively, the `X-Forwarded-For`
+path it does append to is never read. `getClientIp()` additionally refuses any value
+that is not an address, so the guarantee survives a change of CDN or origin request
+policy.
 
-- **Request logs show `ip: 127.0.0.1`.** That field is Express's `req.ip`, which under
-  the Lambda Web Adapter is the loopback address of the adapter's own connection. It is
-  not the value the limiter or the audit context uses; both call `getClientIp()`, which
-  reads the trusted header. Cosmetic, but it looks alarming in a log.
+One consequence worth knowing before you tune anything:
+
 - **The default bites sooner than it reads.** 100 requests per 15 minutes is ~6.7 a
   minute for an entire browser, and a dashboard polling a running sync job exhausts it
   in minutes. Raise `SECURITY_RATE_LIMIT_MAX` rather than disabling the limiter: the
@@ -342,7 +347,6 @@ Each of these was found by deploying, not by reading the code. None is a blocker
 | F8  | The **jobs function can overrun Lambda's 10-second init ceiling on the very first cold starts after a deploy** — observed twice at 9,999 ms, then 4,196 ms, and not again on a later cycle where the function is created after the migration. Lambda retries init, so the effect is a slow first scheduled run rather than a failure. Consistent with contention against a resuming Aurora cluster and the migrate task, but one deploy cannot separate those causes, so treat it as a symptom to expect rather than a diagnosis. |
 | F10 | A destroy/redeploy cycle **drops the out-of-band secrets** — the platform secret is recreated empty. Re-run `put-secrets`, then allow up to `SECRETS_CACHE_TTL_SECONDS` (default 300 s) for warm containers to see it. Testing inside that window looks exactly like a failure.                                                                                                                                                                                                                                                   |
 | —   | **Uploads are capped at ~6 MB**, Lambda's request payload limit. The nginx gateway allows 100 MB. Presigned-PUT uploads are tracked as separate work and would lift the cap on every target.                                                                                                                                                                                                                                                                                                                                      |
-| —   | **Request logs show `127.0.0.1` as the client IP.** Cosmetic, and it is not what the rate limiter uses — see [Client IP and rate limiting](#client-ip-and-rate-limiting). The residual gap is the fallback path, unreachable while origin verification runs first, and asserted by no test.                                                                                                                                                                                                                                       |
 | —   | **The Function URLs answer the internet.** They are guarded by the origin-verify shared secret rather than by IAM — see [Security model](#security-model).                                                                                                                                                                                                                                                                                                                                                                        |
 
 ## Related
