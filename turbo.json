@@ -45,7 +45,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "dist/**", "build/**"]
+      "outputs": [".next/**", "dist/**", "build/**", ".vitepress/dist/**"]
     },
     "dev": {
       "cache": false,

@@ -51,13 +51,16 @@ import { CacheFactory, type IEntityCacheAdapter } from '@/lib/cache';
 import { formatGraphQLError } from '@/lib/errors';
 import { logger, loggerFactory } from '@/lib/logger';
 import { metricsHandler, metricsMiddleware } from '@/lib/metrics';
+import { resolveDatabaseConnectionString, secretResolver } from '@/lib/secrets';
 import { contextMiddleware } from '@/middleware/context.middleware';
 import { errorHandler } from '@/middleware/error.middleware';
+import { originVerifyMiddleware } from '@/middleware/origin-verify.middleware';
 import { rateLimitMiddleware } from '@/middleware/rate-limit.middleware';
 import { requestLoggingMiddleware } from '@/middleware/request-logging.middleware';
 import { storageMiddleware } from '@/middleware/storage.middleware';
 import { createRestRouter } from '@/rest';
-import { generateOpenApiDocument } from '@/rest/openapi';
+import { getOpenApiDocument } from '@/rest/openapi';
+import { createEventDispatchRouter } from '@/rest/routes/event-dispatch.routes';
 import { createJwksRouter } from '@/rest/routes/jwks.routes';
 import { ContextRequest } from '@/types';
 
@@ -95,7 +98,7 @@ export async function createApp(): Promise<CreatedApp> {
   });
 
   const db = initializeDBConnection({
-    connectionString: config.db.url,
+    connectionString: await resolveDatabaseConnectionString(),
     max: config.db.poolMax,
     idleTimeout: config.db.idleTimeout,
     connectTimeout: config.db.connectionTimeout,
@@ -108,7 +111,9 @@ export async function createApp(): Promise<CreatedApp> {
   // `node dist/migrate.js` as a separate step — see
   // decisions/0001-configuration-gated-database-bootstrap.md.
   if (config.db.bootstrapOnBoot) {
-    await bootstrapDatabase(db, config.system.systemUserId);
+    await bootstrapDatabase(db, config.system.systemUserId, {
+      migrationsFolder: config.db.migrationsDir,
+    });
   } else {
     logger.info({
       msg: 'Skipping database bootstrap at boot (DB_BOOTSTRAP_ON_BOOT=false)',
@@ -150,6 +155,24 @@ export async function createApp(): Promise<CreatedApp> {
     loggerFactory
   );
 
+  // Ahead of origin verification, and only ever mounted where nothing public can
+  // reach it: an AWS event source cannot send the header that middleware requires, so
+  // the dispatch route lives in a process with no Function URL and is guarded by
+  // `lambda:InvokeFunction` instead. Off by default — see the router's own note.
+  if (config.jobs.eventDispatch.enabled) {
+    app.use(createEventDispatchRouter());
+    logger.info({
+      msg: 'External job event dispatch enabled',
+      path: config.jobs.eventDispatch.path,
+    });
+  }
+
+  // First of the request pipeline. A request that did not come through the CDN should
+  // be refused before it can consume a database connection, a cache slot or a
+  // rate-limit bucket. No-op unless a secret is configured, which is every target
+  // except AWS.
+  app.use(originVerifyMiddleware(secretResolver));
+
   app.use(cors<cors.CorsRequest>(config.cors));
   app.use(helmet(config.helmet));
   app.use(express.json({ limit: config.app.jsonBodyLimitBytes }));
@@ -165,15 +188,24 @@ export async function createApp(): Promise<CreatedApp> {
     app.use(metricsMiddleware);
   }
 
-  const openApiDocument = generateOpenApiDocument();
-
+  // Both routes resolve the document on first request rather than at boot. See
+  // getOpenApiDocument: generating it walks 87 endpoints and measured 260 ms in the
+  // shipped container, which a Lambda cold start pays for a document most requests
+  // never read.
   if (config.swagger.enabled) {
-    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument, config.swaggerSetup));
+    // The UI middleware is built on first use and then reused, so the document is
+    // generated once and the HTML template once — not per request.
+    let swaggerUiHandler: express.RequestHandler | undefined;
+    const lazySwaggerUi: express.RequestHandler = (req, res, next) => {
+      swaggerUiHandler ??= swaggerUi.setup(getOpenApiDocument(), config.swaggerSetup);
+      swaggerUiHandler(req, res, next);
+    };
+    app.use('/api-docs', swaggerUi.serve, lazySwaggerUi);
   }
 
   app.get('/api-docs.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    res.send(openApiDocument);
+    res.send(getOpenApiDocument());
   });
 
   app.use('/api', (req, res, next) => {

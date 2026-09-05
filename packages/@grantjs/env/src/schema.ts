@@ -62,6 +62,17 @@ export const envSchema = z.object({
    */
   DB_BOOTSTRAP_ON_BOOT: optionalBoolean(true),
 
+  /**
+   * Absolute path to the Drizzle migrations folder. Empty means "resolve it
+   * relative to the compiled `@grantjs/database` module", which is correct for
+   * every layout where that module keeps its own directory on disk.
+   *
+   * A bundled build is the case where it is not: bundling inlines the module
+   * into a single output file, so the path it would derive from its own
+   * location no longer points at the package. Such a build sets this instead.
+   */
+  DB_MIGRATIONS_DIR: optionalString(''),
+
   // JWT / Auth / Token
   JWT_ACCESS_TOKEN_EXPIRATION_MINUTES: optionalNumber(15),
   JWT_REFRESH_TOKEN_EXPIRATION_DAYS: optionalNumber(30),
@@ -142,6 +153,31 @@ export const envSchema = z.object({
   SECURITY_FRONTEND_URL: optionalString('http://localhost:3000'),
   SECURITY_ADDITIONAL_ORIGINS: optionalString(''),
   SECURITY_ENABLE_HELMET: optionalBoolean(true),
+
+  /**
+   * Header naming the real client IP, when a trusted proxy sets one.
+   *
+   * Empty by default, which keeps the historical `x-forwarded-for` handling. Set it
+   * only where the edge is known to overwrite the header rather than append to it —
+   * `cloudfront-viewer-address` on the AWS target. See `getClientIp`.
+   */
+  SECURITY_TRUSTED_CLIENT_IP_HEADER: optionalString(''),
+
+  /**
+   * Header carrying the shared secret that proves a request arrived through the CDN
+   * rather than directly at the origin. Only enforced when a secret is configured.
+   */
+  SECURITY_ORIGIN_VERIFY_HEADER: optionalString('x-origin-verify'),
+
+  /**
+   * Refuse every request when no origin-verification secret resolves.
+   *
+   * False by default, because absence of a secret is the normal state everywhere the
+   * origin is not directly reachable — Docker, Kubernetes, local. Set true wherever
+   * the origin answers the internet and that secret is the only thing in front of it,
+   * so a secret that goes missing fails closed instead of silently opening the origin.
+   */
+  SECURITY_ORIGIN_VERIFY_REQUIRED: optionalBoolean(false),
   /** When undefined, API config derives from NODE_ENV (production -> true) */
   SECURITY_ENABLE_RATE_LIMIT: z
     .union([z.string(), z.undefined()])
@@ -208,6 +244,13 @@ export const envSchema = z.object({
   // I18n
   I18N_DEFAULT_LOCALE: z.enum(['en', 'de']).optional().default('en'),
   I18N_DEBUG: optionalBoolean(false),
+
+  /**
+   * Absolute path to the locale JSON directory. Empty means "resolve it relative
+   * to the compiled `@grantjs/i18n` module". Set by bundled builds, for the same
+   * reason as DB_MIGRATIONS_DIR.
+   */
+  I18N_LOCALES_DIR: optionalString(''),
 
   // Email
   EMAIL_PROVIDER: z
@@ -312,6 +355,12 @@ export const envSchema = z.object({
   JOBS_AWS_ENDPOINT: optionalString(''),
   JOBS_AWS_ACCESS_KEY_ID: optionalString(''),
   JOBS_AWS_SECRET_ACCESS_KEY: optionalString(''),
+  // Off unless the process is reachable *only* by an external dispatcher. It exempts
+  // its own path from origin verification, so enabling it on a process with a public
+  // endpoint publishes an unauthenticated job trigger. See the route's own note.
+  JOBS_EVENT_DISPATCH_ENABLED: optionalBoolean(false),
+  // The Lambda Web Adapter's AWS_LWA_PASS_THROUGH_PATH; the two must agree.
+  JOBS_EVENT_DISPATCH_PATH: optionalString('/events'),
 
   JOBS_BULLMQ_ATTEMPTS: optionalNumber(3),
   JOBS_BULLMQ_BACKOFF_TYPE: z.enum(['exponential', 'fixed']).optional().default('exponential'),

@@ -3,15 +3,21 @@
 ## Metadata
 
 - **Slug**: `aws-edge-infra`
-- **Date**: 2026-08-21 (drafted) · **revised 2026-08-27** for gate 1
+- **Date**: 2026-08-21 (drafted) · **revised 2026-08-27** for gate 1 · **revised
+  2026-09-05** for gate 4
 - **Author**: Ale Heredia (human) / drafted with Claude
-- **Status**: **approved** (gate 1, 2026-08-27, Ale Heredia). Phase **C** of three.
-  Phase B merged to `main` as #338 (`7a968149`, 2026-08-27).
+- **Status**: **ready-for-main** (gate 3 complete 2026-09-05; acceptance met).
+  All seven slices merged to `feat/aws-edge-infra`; last slice is #381
+  (`a3d026ab`). Gate 4 not started — three **blocking flags** in the stack plan
+  (scratch-account teardown, merge `main`, independent security pass) must clear
+  before the integration PR opens. Phase B merged to `main` as #338
+  (`7a968149`, 2026-08-27).
 - **Stack plan**: [`2026-08-21-aws-edge-infra-stack.md`](./2026-08-21-aws-edge-infra-stack.md)
 - **Program brief**: [`2026-08-21-aws-serverless-target-brief.md`](./2026-08-21-aws-serverless-target-brief.md)
 - **Depends on**: `aws-lambda-runtime` (merged)
-- **Base**: `main` at `dabc7339`. Every `file:line` below was re-verified against
-  this commit on 2026-08-27; the draft's citations were written against `0592720c`.
+- **Base**: `main` at `dabc7339` at gate 1. Trunk last merged `main` at `c83e30bb`
+  (#348). `main` has since moved two commits ahead of the trunk (`b0b8b669` #375,
+  `b9ac825f` #376) — rebase or merge before opening the integration PR.
 
 ## Objective
 
@@ -31,33 +37,29 @@ Umami, and as easy to deploy into an adopter's own AWS account as Databricks. Ph
 owns the second half. Concretely, that means judging every knob by what an adopter
 must _know_, not by what the stack can express.
 
-**Honest timing.** "Minutes" is achievable for everything except the data tier and
-CloudFront propagation. Estimates for a first deploy, to be replaced with measurements
-in the stack plan:
+**Honest timing.** Measured 2026-09-05, green-field into a baseline account
+(`eu-central-1`, `-c ephemeral=true`). The gate-1 estimates are superseded:
 
-| Stage                                | Green field | Adopter with existing data tier |
-| ------------------------------------ | ----------- | ------------------------------- |
-| CDK bootstrap (one-time)             | ~2 min      | ~2 min                          |
-| Container image build + push         | ~3–6 min    | — (pre-published)               |
-| VPC + NAT                            | ~3–5 min    | —                               |
-| **Database provisioning**            | ~10–15 min  | —                               |
-| ACM DNS validation (in-account zone) | ~2–5 min    | —                               |
-| **CloudFront distribution**          | ~5–15 min   | ~5–15 min                       |
-| Lambdas, S3, EventBridge             | ~1–2 min    | ~1–2 min                        |
-| migrate + seed one-shot              | ~1–2 min    | ~1–2 min                        |
-| **Total**                            | ~25–40 min  | ~10–20 min                      |
+| Stage                                   | Gate-1 estimate | Measured (slice 7)                          |
+| --------------------------------------- | --------------- | ------------------------------------------- |
+| Container image build + push            | ~3–6 min        | ~2 min (cached layers); ~10 min first-ever  |
+| ACM DNS validation (`GrantCertificate`) | ~2–5 min        | **44 s**                                    |
+| Everything else (`GrantPlatform`)       | ~20–30 min      | **10 min 08 s**                             |
+| **Total, one command**                  | ~25–40 min      | **~12 min** cached / **~22 min** first-ever |
 
-The claim to make in the docs is therefore **"one command, no manual console steps,
-roughly half an hour green-field"** — not "minutes." Subsequent deploys are ~3–8 min,
-dominated by CloudFront whenever a cache behavior changes.
+The claim in the docs is therefore **"one command, no manual console steps, roughly
+twelve minutes with a warm Docker cache — about twenty on a first-ever build"** —
+not "minutes" and not "half an hour." Subsequent deploys that change a cache
+behaviour still pay CloudFront propagation.
 
-**Cost floor.** The program's motivation is reducing idle compute cost, so the fixed
-monthly floor belongs in the brief rather than on the first bill. A VPC-attached API
-Lambda needs NAT for outbound webhook delivery to arbitrary URLs — VPC endpoints
-cannot substitute, because the destinations are not AWS services. NAT plus a
-minimum-capacity serverless database is a floor in the tens of dollars per month
-before any traffic. The stack plan must state the measured figure and the levers
-(NAT instance instead of NAT Gateway; scale-to-zero database tiers).
+**Cost floor.** Measured from Cost Explorer over a 16-hour up window that NAT-gateway
+hours pin exactly: **≈ $93 / month** before traffic. The gate-1 guess ("tens of
+dollars, NAT plus a minimum-capacity database") holds as an order of magnitude, but
+the split is wrong: **Aurora is the larger half ($51)** and it is caused by three
+per-minute job sweeps keeping the cluster at a flat 0.5 ACU, not by
+`minCapacity`. NAT is $38 + $4 IPv4. Levers, in the order they pay: lengthen or
+disable the minute sweeps; NAT instance instead of NAT Gateway; bring-your-own
+database (not end-to-end yet — see stack plan F13).
 
 ## Architecture
 
@@ -71,22 +73,33 @@ Recorded so slices do not re-derive it.
         ┌───────────────┬───────────────┼────────────────┬──────────────┐
         ▼               ▼               ▼                ▼              ▼
    /graphql        /docs/*        /_next/static/*     (no /storage)   * default
-   /api/*          S3 docs        S3 web assets                       Web Lambda
-   /health          [OAC]           [OAC]                             (OpenNext)
+   /api/*          S3 docs        web image assets                    Web Lambda
+   /health          [OAC]                                             (standalone + LWA)
    /.well-known/*
    /org/* /acc/*
         │
         ▼
    API Lambda (container image, Web Adapter — phase B)
         │  in-VPC
-        ├──► RDS Proxy ──► Postgres          (DB_URL)
-        ├──► ElastiCache                     (REDIS_*, optional)
+        ├──► Aurora Serverless v2            (DB_URL; RDS Proxy opt-in)
+        ├──► DynamoDB                        (CACHE_STRATEGY=dynamodb)
         ├──► Secrets Manager                 (SECRETS_AWS_SECRET_ID)
         ├──► S3 uploads                      (STORAGE_S3_BUCKET)
         └──► NAT ──► internet (webhooks, SES, GitHub OAuth)
 
-   EventBridge Scheduler ──► API Lambda ×6 rules (5 production + 1 demo-gated)
+   EventBridge Scheduler ──► Jobs Lambda ×6 rules (5 production + 1 demo-gated)
+                             (no Function URL; SQS consumer for enqueue-only jobs)
 ```
+
+**Deviations from this drawing, recorded so gate 4 does not treat the diagram as
+the shipping topology:**
+
+- **No ElastiCache.** `CACHE_STRATEGY=dynamodb` (phase A). DynamoDB bills per request
+  and costs nothing idle.
+- **RDS Proxy is opt-in, default off.** Default `DB_URL` points at the cluster
+  writer. A proxy pool forfeits Aurora auto-pause (F14).
+- **Jobs are a second Lambda**, not rules targeting the API function (#374).
+- **Web is Next standalone + LWA**, not OpenNext (#368).
 
 **The web app never calls the API server-side.** `apps/web` declares zero
 `NEXT_PUBLIC_*` variables, and `getGraphQLUrl()` returns the bare relative string
@@ -172,41 +185,65 @@ the login user; it matters if the target later moves to RDS IAM authentication.
 
 ## Acceptance criteria
 
-- [ ] A CDK **construct library** under `deploy/aws/lib/` and a **reference app** at
+Outcomes as of trunk `a3d026ab` (2026-09-05). `[x]` delivered, `[~]` superseded at
+execution time, `[ ]` still open and recorded as a follow-up rather than a silent miss.
+
+- [x] A CDK **construct library** under `deploy/aws/lib/` and a **reference app** at
       `deploy/aws/bin/grant.ts`, per ADR 0005. Constructs accept CDK resource
       interfaces so an adopter composes against existing infrastructure by replacing
-      `bin/`, without forking `lib/`.
-- [ ] **A configuration surface at parity with `values.yaml`**: typed props, a
+      `bin/`, without forking `lib/`. _(#349.)_ VPC, certificate, hosted zone, uploads
+      bucket and cache table are supported; **bring-your-own Postgres is not
+      end-to-end** — omitting `database` currently drops the API function with it
+      (F13).
+- [x] **A configuration surface at parity with `values.yaml`**: typed props, a
       defaults file, and schema validation equivalent to `values.schema.json`.
       Configuring a deployment must not require reading CDK source. One required
       setting plus a hosted zone must be sufficient for a green-field deploy.
-- [ ] A synth-time assertion that a supplied certificate ARN is in `us-east-1`.
-- [ ] **EventBridge rules are generated from the same job id/schedule source the API
+      _(#349 props/defaults/validation; #371 `deploy/aws/.env`, the Helm `config:`
+      analogue.)_ Required context is `appUrl` + `zoneName` + `hostedZoneId`.
+- [x] A synth-time assertion that a supplied certificate ARN is in `us-east-1`.
+      _(#349; #352 puts the certificate in its own `us-east-1` stack.)_
+- [x] **EventBridge rules are generated from the same job id/schedule source the API
       reads** — no hand-maintained parallel list. A drifted cron list fails silently
-      and surfaces hours later as "a sweep stopped running".
-- [ ] `cdk synth` output is committed and reviewed. The synthesized template is the
+      and surfaces hours later as "a sweep stopped running". _(#374.)_ Mechanism
+      superseded in the same way as the routing oracle: the schedule table lives in
+      `deploy/aws` with a parity test, because a CDK app cannot import the API's
+      configuration graph at synth time.
+- [x] `cdk synth` output is committed and reviewed. The synthesized template is the
       **evidence** that generation produced exactly **six** rules — five production
-      plus one demo-gated — and no others. See the correction below.
-- [ ] The standalone migrate/seed runner from phase B (`node dist/migrate.js`) is
+      plus one demo-gated — and no others. See the correction below. _(#374; smoke
+      test re-asserts the count on a live stack, #381.)_
+- [x] The standalone migrate/seed runner from phase B (`node dist/migrate.js`) is
       wired as a deploy-time one-shot. First deploy must converge with no manual step.
-- [ ] `apps/web` deploys via OpenNext, with `/_next/static/*` served from S3. The app
-      has **no `middleware.ts`** (verified absent), so no Lambda@Edge complexity, and
-      **no `NEXT_PUBLIC_*` variables** (verified zero), so runtime configuration works.
-- [ ] `docs/` deploys as an S3 origin under a `docs/` key prefix, with a CloudFront
+      _(#357.)_ **ECS Fargate task, not Lambda** — the LWA image cannot run
+      `node dist/migrate.js`. Ordered after the writer instance (#362).
+- [~] ~~`apps/web` deploys via OpenNext, with `/_next/static/*` served from S3.~~
+  **Superseded.** Next.js standalone behind the Lambda Web Adapter — the same
+  image/LWA/Function-URL pattern as the API. The app still has **no
+  `middleware.ts`** and **no `NEXT_PUBLIC_*` variables**. `_next/static` is
+  served from the web image artifact, not a separate S3 origin.
+  _(#368; rationale in the stack plan § Slice 5.)_
+- [x] `docs/` deploys as an S3 origin under a `docs/` key prefix, with a CloudFront
       Function resolving directory indexes and the two trailing-slash redirects.
-- [ ] CloudFront provides gateway routing per the table above.
+      _(#351 · #352 · #353.)_
+- [x] CloudFront provides gateway routing per the table above.
       `deploy/gateway.conf.template` is **unchanged** and remains the routing path for
-      the K8s and docker-compose targets.
-- [ ] `config.storage.provider` is S3 for this target; the `local` provider,
+      the K8s and docker-compose targets. _(#347 oracle; #365 API behaviours; #368
+      default / web.)_
+- [x] `config.storage.provider` is S3 for this target; the `local` provider,
       `storageMiddleware()`, and `pvc-api.yaml` are untouched and still work.
-- [ ] **A smoke test against a deployed stack** exists and runs post-deploy. It must
+      _(#360; S3 default-credential-chain fix #358.)_
+- [x] **A smoke test against a deployed stack** exists and runs post-deploy. It must
       cover at least one path per CloudFront behavior — the routing table is the part
-      with no CI coverage anywhere.
-- [ ] `docs/deployment/aws-serverless.md` written, at the depth of
+      with no CI coverage anywhere. _(#381.)_ 14/14 on a green-field deploy, coverage
+      derived from `toCloudFrontBehaviours()` so an uncovered behaviour fails the run.
+- [x] `docs/deployment/aws-serverless.md` written, at the depth of
       `docs/deployment/kubernetes.md`, including the timing and cost figures above as
-      measured rather than estimated.
-- [ ] Helm chart values passthroughs added only where a new shared config key requires
-      one; no other chart change.
+      measured rather than estimated. _(#381.)_
+- [x] Helm chart values passthroughs added only where a new shared config key requires
+      one; no other chart change. _No chart diff against `main`. New keys
+      (`SECURITY_ORIGIN_VERIFY_*`, `JOBS_EVENT_DISPATCH_*`) default off and are
+      selected by this target's env file, so they need no Helm passthrough._
 
 ## Corrections to the draft and the program brief
 
@@ -241,6 +278,21 @@ way that would have produced wrong evidence.
 
 4. **Program brief, "no `values.yaml`-equivalent config surface" (blocker 9)** is
    addressed by ADR 0005 plus the parity criterion above.
+
+## Deviations at execution (gate 3)
+
+Carried so gate 4 reviews what shipped, not what was drawn in August.
+
+1. **Not OpenNext.** Slice 5 runs the Next.js standalone server behind the Lambda Web
+   Adapter. ISR and `next/image` are unused here; OpenNext would have added a second
+   build toolchain for features nothing consumes. AC marked `[~]`.
+2. **EventBridge does not invoke the API Lambda.** Dispatch is a second function with
+   no URL; `JOBS_EVENT_DISPATCH_ENABLED` defaults false so every other target is
+   unchanged. The schedule table is a copy plus a parity test, same argument as
+   gate 1 decision 1.
+3. **Config surface landed late.** Slice 4 recorded the missing `values.yaml`
+   analogue; #371 added `deploy/aws/.env` between slices 5 and 6.
+4. **RDS Proxy is not the default path.** See the architecture note above.
 
 ## Non-goals
 
@@ -305,6 +357,10 @@ Slice 2 is deliberately the first deployed slice: it exercises certificate, host
 zone, OAC, the `docs/` key layout and the CloudFront Function while risking only a
 static site.
 
+**Executed as seven slices plus 5b**, not this six-row draft. Routing oracle was
+front-loaded as slice 1; OpenNext became Next standalone; bundle + `.env` landed as
+5b. Canonical PR map: [stack plan](./2026-08-21-aws-edge-infra-stack.md) § Ordered slices.
+
 ## Risk flags
 
 - [x] Tenancy / RLS / org scoping — RDS Proxy topology
@@ -326,3 +382,7 @@ Verifier.
 - [x] Gate 1: story brief approved 2026-08-27 (Ale Heredia), with all three open
       questions answered. Citations re-verified against `dabc7339` at gate 1 and
       again against `440c322f` in the stack plan after `main` moved.
+- [x] Gate 3: all seven slices merged to `feat/aws-edge-infra` (2026-09-05, #381
+      last). See the stack plan for the PR map and the security-independence flag.
+- [ ] Gate 4: story trunk → `main` deep review. **Not started.** Flags that must be
+      visible to that review are in the stack plan § Gate 4 flags.

@@ -88,6 +88,9 @@ const DB_CONFIG = {
 
   /** Run migrations and the core seed at API start (`DB_BOOTSTRAP_ON_BOOT`). */
   bootstrapOnBoot: env.DB_BOOTSTRAP_ON_BOOT,
+
+  /** Migrations folder override (`DB_MIGRATIONS_DIR`); empty resolves from the package. */
+  migrationsDir: env.DB_MIGRATIONS_DIR,
 } as const;
 
 // ============================================================================
@@ -349,6 +352,22 @@ const SECURITY_CONFIG = {
   /** Enable Helmet security headers */
   enableHelmet: env.SECURITY_ENABLE_HELMET,
 
+  /**
+   * Header naming the real client IP. Empty keeps the historical `x-forwarded-for`
+   * handling; see `getClientIp` for why an edge-set header is not interchangeable
+   * with it.
+   */
+  trustedClientIpHeader: env.SECURITY_TRUSTED_CLIENT_IP_HEADER.trim().toLowerCase(),
+
+  /** Header carrying the CDN's shared secret. Enforced only when a secret resolves. */
+  originVerifyHeader: env.SECURITY_ORIGIN_VERIFY_HEADER.trim().toLowerCase(),
+
+  /**
+   * Whether a missing origin-verification secret is fatal to the request rather than
+   * a pass-through. True wherever the origin is publicly reachable.
+   */
+  originVerifyRequired: env.SECURITY_ORIGIN_VERIFY_REQUIRED,
+
   /** Enable rate limiting (default: true in production when not set) */
   enableRateLimit: env.SECURITY_ENABLE_RATE_LIMIT ?? APP_CONFIG.isProduction,
 
@@ -462,6 +481,9 @@ const I18N_CONFIG = {
 
   /** Enable i18n debug mode */
   debug: env.I18N_DEBUG,
+
+  /** Locale directory override (`I18N_LOCALES_DIR`); empty resolves from the package. */
+  localesDir: env.I18N_LOCALES_DIR,
 } as const;
 
 // ============================================================================
@@ -652,9 +674,9 @@ const STORAGE_CONFIG = {
     /** AWS region */
     region: env.STORAGE_S3_REGION,
     /** AWS access key ID */
-    accessKeyId: env.STORAGE_S3_ACCESS_KEY_ID,
+    accessKeyId: env.STORAGE_S3_ACCESS_KEY_ID || undefined,
     /** AWS secret access key */
-    secretAccessKey: env.STORAGE_S3_SECRET_ACCESS_KEY,
+    secretAccessKey: env.STORAGE_S3_SECRET_ACCESS_KEY || undefined,
     /** Custom S3 endpoint (for S3-compatible services like MinIO) */
     endpoint: env.STORAGE_S3_ENDPOINT || undefined,
     /** Public URL base (e.g., CloudFront distribution URL) */
@@ -716,6 +738,17 @@ const JOB_CONFIG = {
     endpoint: env.JOBS_AWS_ENDPOINT || undefined,
     accessKeyId: env.JOBS_AWS_ACCESS_KEY_ID || undefined,
     secretAccessKey: env.JOBS_AWS_SECRET_ACCESS_KEY || undefined,
+  },
+
+  /**
+   * The inbound half of the same arrangement: something outside this process holds
+   * the schedule, and this is where its events land. Off by default, because the
+   * route it mounts is deliberately not origin-verified — see
+   * `rest/routes/event-dispatch.routes.ts`.
+   */
+  eventDispatch: {
+    enabled: env.JOBS_EVENT_DISPATCH_ENABLED,
+    path: env.JOBS_EVENT_DISPATCH_PATH,
   },
 
   /** Job-specific settings */
@@ -953,11 +986,10 @@ export function validateConfig(): void {
         }
         break;
       case 'ses':
-        if (!EMAIL_CONFIG.ses.clientId || !EMAIL_CONFIG.ses.clientSecret) {
-          errors.push(
-            'EMAIL_SES_CLIENT_ID and EMAIL_SES_CLIENT_SECRET are required when using ses provider'
-          );
-        }
+        // Credentials are deliberately not required. Left unset the SDK's default
+        // credential chain applies and an execution or task role signs — the expected
+        // production path on AWS, where a static key in an environment variable is
+        // what you are trying to avoid. Same reasoning as the S3 provider above.
         break;
       case 'smtp':
         if (!EMAIL_CONFIG.smtp.host || !EMAIL_CONFIG.smtp.user || !EMAIL_CONFIG.smtp.password) {
@@ -974,12 +1006,12 @@ export function validateConfig(): void {
     if (!STORAGE_CONFIG.s3.bucket) {
       errors.push('STORAGE_S3_BUCKET is required when using s3 provider');
     }
-    if (!STORAGE_CONFIG.s3.accessKeyId) {
-      errors.push('STORAGE_S3_ACCESS_KEY_ID is required when using s3 provider');
-    }
-    if (!STORAGE_CONFIG.s3.secretAccessKey) {
-      errors.push('STORAGE_S3_SECRET_ACCESS_KEY is required when using s3 provider');
-    }
+    // Credentials are deliberately not required. Left unset, the SDK's default
+    // credential chain applies and a Lambda or task role supplies them — which is the
+    // expected production path on the AWS target, where static keys would be a
+    // long-lived secret to store and rotate for no benefit. CACHE_DYNAMODB_* and
+    // JOBS_AWS_* have always worked this way; S3 requiring them was the outlier, and
+    // it blocked the AWS target outright (ADR 0004, Correction 2026-08-30).
   }
 
   // Validate GitHub OAuth configuration (optional, but warn if partially configured)
@@ -987,9 +1019,13 @@ export function validateConfig(): void {
     if (!GITHUB_OAUTH_CONFIG.clientId) {
       errors.push('GITHUB_CLIENT_ID is required when GITHUB_CLIENT_SECRET is set');
     }
-    if (!GITHUB_OAUTH_CONFIG.clientSecret) {
-      errors.push('GITHUB_CLIENT_SECRET is required when GITHUB_CLIENT_ID is set');
-    }
+    // The secret is deliberately not required here. `GithubOAuthService` reads it
+    // through `ISecretResolver` (ADR 0004), so on a target that keeps it in a secret
+    // store it is legitimately absent from the environment — and demanding an env copy
+    // defeats the point of moving it. Requiring it forced a placeholder string into the
+    // Lambda environment on the first real deploy, which is the smell that found this.
+    //
+    // The reverse check above stays: a secret with no client ID is unusable either way.
   }
 
   if (errors.length > 0) {

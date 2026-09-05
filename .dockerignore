@@ -29,12 +29,53 @@ coverage
 e2e
 **/e2e
 
-# Env and secrets
+# Env and secrets.
+#
+# The `**/` forms are required, for the same reason node_modules is doubled up above:
+# Docker matches these patterns against the whole relative path, so a bare `.env`
+# covers only the context root. Without them `deploy/aws/.env` stays in the build
+# context — measured, not assumed: appending one line to it changed both image asset
+# hashes, so a configuration-only change rebuilt and re-pushed both images. Not a
+# secret leak (every COPY in the Dockerfiles is explicit and narrow; none reaches
+# `deploy/`), but it defeats the point of a config-driven target.
+#
+# Deliberately NO `!**/.env.example` counterpart. A `**` *negation* forces CDK's asset
+# fingerprint to descend into every excluded directory to check for re-includes, which
+# defeats directory pruning: measured at 6.7 s -> 59.4 s of synth, a 9x regression, on
+# a tree carrying node_modules and a 465 MB cdk.out. The `**` *excludes* above are
+# free (7.2 s) — it is only the negation that costs. Nothing needs it either: no
+# Dockerfile in this repo COPYs any `.env*`, so the example files are wanted in git,
+# not in an image. `!.env.example` below is kept for the context root only, where the
+# absence of `**` leaves pruning intact.
+#
+# Pinned by deploy/aws/lib/config/env-file-churn.test.ts.
 .env
 .env.*
+**/.env
+**/.env.*
 !.env.example
 
 # Misc
 *.log
 .DS_Store
 *.plan.md
+
+# Git worktrees. The Agentic SDLC creates one per parallel story (AGENTS.md
+# § Worktrees), each a full checkout of the repo — 3 GB on a machine running two —
+# and none of it belongs in a build context. Docker would copy it; CDK's
+# DockerImageAsset walks it to compute the asset fingerprint, which is slower still
+# because that happens on every synth.
+.worktrees
+**/.worktrees
+
+# CDK synth output, including staged assets from a previous run.
+cdk.out
+**/cdk.out
+
+# The committed CDK template, which `pnpm synth` rewrites. It lives inside the build
+# context, so leaving it here makes the image asset hash a function of the previous
+# synth's output: each run rewrites the snapshot, which changes the context, which
+# changes the asset hash, which changes the migrate trigger's IMAGE_IDENTIFIER and the
+# Lambda Version logical ID derived from it. `synth:check` then reports drift forever.
+cdk.snapshot
+**/cdk.snapshot

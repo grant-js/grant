@@ -1,6 +1,7 @@
 import { AUTH_ACCESS_TOKEN_KEY, AUTH_REFRESH_TOKEN_KEY } from '@grantjs/constants';
 import { Request } from 'express';
 import { IncomingHttpHeaders } from 'http';
+import { isIP } from 'net';
 
 import { config } from '@/config';
 
@@ -10,19 +11,83 @@ export interface ContextHeaders {
   authorization: string | null;
 }
 
+function firstHeaderValue(value: string | string[] | undefined): string | null {
+  if (!value) return null;
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+}
+
+/**
+ * Strips the port from an edge-supplied address, validating rather than guessing.
+ *
+ * `CloudFront-Viewer-Address` is `<ip>:<port>`, and for IPv6 the address itself
+ * contains colons — `2001:db8::1:54321` — so the port is after the *last* colon, not
+ * the first. Splitting on the first would truncate every IPv6 client to `2001`,
+ * collapsing them into a single rate-limit bucket.
+ *
+ * Splitting on the last colon unconditionally is wrong in the other direction: a bare
+ * `2001:db8::1` would become `2001:db8:`. So the remainder is checked with `isIP` and
+ * only used when it is genuinely an address, and a value that is already a valid IP is
+ * returned untouched — which also lets this config point at a header that carries no
+ * port at all.
+ *
+ * One case stays ambiguous and no heuristic resolves it: `2001:db8::1:8443` is a valid
+ * IPv6 address *and* a plausible address:port, because a four-digit decimal port is
+ * also a valid hex group. Those are left whole, so such a client is keyed per
+ * connection rather than per address — weaker limiting for a minority of IPv6 callers,
+ * against a header that is spoofable by everyone today. Bracketed notation would
+ * settle it, and CloudFront does not use it.
+ *
+ * **Returns `null` rather than the input when the value is neither.** This keys the
+ * rate limiter and the audit `ipAddress`, and an unvalidated free string is not an
+ * address — a caller able to put one here would get a distinct bucket per value, which
+ * is the bypass the limiter exists to prevent. `null` falls through to `req.ip`, which
+ * on Lambda is one shared bucket: worse limiting, but in the safe direction.
+ *
+ * Measured against the live edge at gate 4: CloudFront **overwrites** this header, so
+ * a viewer cannot reach this path today — five spoof shapes, including duplicate and
+ * lowercase headers, all produced the real client address. This makes the property
+ * hold because the code enforces it rather than because CloudFront happens to.
+ */
+function stripPort(address: string): string | null {
+  if (isIP(address)) return address;
+
+  const lastColon = address.lastIndexOf(':');
+  if (lastColon === -1) return null;
+
+  const candidate = address.slice(0, lastColon);
+  return isIP(candidate) ? candidate : null;
+}
+
+/**
+ * The client IP as reported by headers.
+ *
+ * `x-forwarded-for` is read as the **first** entry, which is correct behind a proxy
+ * that builds the chain itself and wrong behind one that appends to whatever the
+ * client sent. CloudFront appends: a request carrying `X-Forwarded-For: 1.2.3.4`
+ * arrives as `1.2.3.4, <real client>`, so the first entry is attacker-controlled. That
+ * matters because this value keys the rate limiter
+ * (`middleware/rate-limit.middleware.ts`) and is recorded as `ipAddress` on the
+ * request context — a spoofable value means a limiter that can be evaded by rotating
+ * a header, and audit records naming whichever IP the caller chose.
+ *
+ * `SECURITY_TRUSTED_CLIENT_IP_HEADER` names a header the edge is known to *overwrite*
+ * rather than append to, and when set it is used exclusively — no fallback to
+ * `x-forwarded-for`, because falling back would restore the bypass whenever the
+ * trusted header were absent. Unset, everything below behaves exactly as before.
+ */
 function getClientIpFromHeaders(headers: IncomingHttpHeaders): string | null {
-  const forwardedFor = headers['x-forwarded-for'];
+  const trustedHeader = config.security.trustedClientIpHeader;
+  if (trustedHeader) {
+    const trusted = firstHeaderValue(headers[trustedHeader]);
+    return trusted ? stripPort(trusted.trim()) : null;
+  }
+
+  const forwardedFor = firstHeaderValue(headers['x-forwarded-for']);
   if (forwardedFor) {
-    const ips = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
-    return ips.split(',')[0].trim();
+    return forwardedFor.split(',')[0].trim();
   }
 
-  const realIp = headers['x-real-ip'];
-  if (realIp) {
-    return Array.isArray(realIp) ? realIp[0] : realIp;
-  }
-
-  return null;
+  return firstHeaderValue(headers['x-real-ip']);
 }
 
 export function getClientIp(req: Request): string | null {

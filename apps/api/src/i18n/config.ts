@@ -13,7 +13,9 @@ const NS = 'translation';
 export async function initializeI18n() {
   const resources: Record<string, Record<string, Record<string, unknown>>> = {};
   for (const lng of SUPPORTED_LOCALES) {
-    resources[lng] = { [NS]: getMergedMessages(lng) as Record<string, unknown> };
+    resources[lng] = {
+      [NS]: getMergedMessages(lng, config.i18n.localesDir) as Record<string, unknown>,
+    };
   }
 
   await i18next.use(middleware.LanguageDetector).init({

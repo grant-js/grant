@@ -13,8 +13,13 @@ import { GrantException } from '@grantjs/core';
 export interface S3Config {
   bucket: string;
   region: string;
-  accessKeyId: string;
-  secretAccessKey: string;
+  /**
+   * Omit both to use the SDK's default credential chain. That is the expected
+   * production path: a Lambda or task role supplies credentials, and no secret
+   * reaches this adapter. Matches `DynamoDBCacheAdapter`.
+   */
+  accessKeyId?: string;
+  secretAccessKey?: string;
   endpoint?: string;
   publicUrl?: string;
 }
@@ -32,10 +37,13 @@ export class S3StorageAdapter implements IFileStorageService {
   ) {
     this.s3Client = new S3Client({
       region: config.region,
-      credentials: {
-        accessKeyId: config.accessKeyId,
-        secretAccessKey: config.secretAccessKey,
-      },
+      ...(config.accessKeyId &&
+        config.secretAccessKey && {
+          credentials: {
+            accessKeyId: config.accessKeyId,
+            secretAccessKey: config.secretAccessKey,
+          },
+        }),
       ...(config.endpoint && { endpoint: config.endpoint }),
     });
   }

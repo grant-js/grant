@@ -1,0 +1,19 @@
+{
+  "app": "pnpm exec tsx bin/grant.ts",
+  "output": "cdk.out",
+  "watch": {
+    "exclude": ["**/*.test.ts", "cdk.out", "cdk.snapshot"]
+  },
+  "context": {
+    "availability-zones:account=000000000000:region=eu-central-1": [
+      "eu-central-1a",
+      "eu-central-1b",
+      "eu-central-1c"
+    ],
+    "availability-zones:account=000000000000:region=us-east-1": [
+      "us-east-1a",
+      "us-east-1b",
+      "us-east-1c"
+    ]
+  }
+}

@@ -1,0 +1,418 @@
+/**
+ * Slice 4c assertions: the API can serve.
+ *
+ * The cases pinned here are the ones a template review would not catch, because each
+ * is a contract with something outside CloudFormation — the cache adapter's item
+ * shape, the resolver's promise that no credential enters the environment, and the
+ * connection arithmetic between Lambda concurrency and Aurora's `max_connections`.
+ */
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { App, SecretValue, Stack } from 'aws-cdk-lib';
+import { Match, Template } from 'aws-cdk-lib/assertions';
+import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
+import { Repository } from 'aws-cdk-lib/aws-ecr';
+import { ContainerImage } from 'aws-cdk-lib/aws-ecs';
+import { DockerImageCode } from 'aws-cdk-lib/aws-lambda';
+import { HostedZone } from 'aws-cdk-lib/aws-route53';
+import { describe, expect, it } from 'vitest';
+
+import { CACHE_PARTITION_KEY, CACHE_SORT_KEY, CACHE_TTL_ATTRIBUTE } from '../data/cache-table';
+import { GrantPlatform } from '../grant-platform';
+
+/**
+ * Both images are caller-supplied, and that is not incidental. Constructing a
+ * `DockerImageAsset` fingerprints the whole build context — 282 s in one measured run
+ * during slice 4b, longer than every other test combined. The built-from-source path
+ * is covered by the committed template instead, where `synth:check` exercises it on
+ * every build against the real asset.
+ */
+function build(
+  overrides: {
+    api?: { reservedConcurrency?: number; memorySize?: number };
+    secrets?: Record<string, SecretValue>;
+    cache?: { destroyOnRemoval?: boolean };
+    storage?: { destroyOnRemoval?: boolean };
+    env?: Record<string, string>;
+  } = {}
+) {
+  const app = new App();
+  const stack = new Stack(app, 'TestStack', {
+    env: { account: '123456789012', region: 'eu-central-1' },
+  });
+  const platform = new GrantPlatform(stack, 'Grant', {
+    appUrl: 'https://grant.example.com',
+    dns: {
+      hostedZone: HostedZone.fromHostedZoneAttributes(stack, 'Zone', {
+        hostedZoneId: 'ZTEST000000000',
+        zoneName: 'example.com',
+      }),
+      certificate: Certificate.fromCertificateArn(
+        stack,
+        'Cert',
+        'arn:aws:acm:us-east-1:123456789012:certificate/abc-123'
+      ),
+    },
+    database: {},
+    migration: {
+      image: ContainerImage.fromRegistry('grant/api:test'),
+      imageIdentifier: 'test-image',
+    },
+    api: {
+      image: DockerImageCode.fromEcr(Repository.fromRepositoryName(stack, 'Repo', 'grant/api'), {
+        tagOrDigest: 'test',
+      }),
+      ...overrides.api,
+    },
+    cache: overrides.cache,
+    storage: overrides.storage,
+    secrets: overrides.secrets,
+    env: overrides.env,
+  });
+  return { template: Template.fromStack(stack), platform };
+}
+
+/**
+ * The serving function.
+ *
+ * Two Lambdas now carry the resolver configuration — the jobs function runs the same
+ * image and reads the same secret — so the discriminator is the dispatch route, which
+ * is enabled only on the function that has no Function URL. Both now *set* the key:
+ * the API pins it `false` so a config file cannot enable it, so the value
+ * distinguishes them where its absence used to.
+ */
+function apiFunction(template: Template): Record<string, unknown> {
+  const functions = Object.values(template.findResources('AWS::Lambda::Function'));
+  const api = functions.filter((fn) => {
+    const props = fn.Properties as { Environment?: { Variables?: Record<string, unknown> } };
+    const env = props.Environment?.Variables;
+    return env?.SECRETS_AWS_SECRET_ID !== undefined && env?.JOBS_EVENT_DISPATCH_ENABLED === 'false';
+  });
+  expect(api).toHaveLength(1);
+  return api[0] as Record<string, unknown>;
+}
+
+function apiEnvironment(template: Template): Record<string, unknown> {
+  const props = apiFunction(template).Properties as {
+    Environment: { Variables: Record<string, unknown> };
+  };
+  return props.Environment.Variables;
+}
+
+describe('no credential reaches the serving function', () => {
+  it('passes the secret id but never the secret', () => {
+    // The payoff of resolving DB_URL through ISecretResolver (ADR 0004). The migrate
+    // task must inject DB_URL as an ECS secret because its entrypoint reads
+    // config.db.url; create-app.ts resolves per use, so the serving function is told
+    // only where to look. A rotation therefore reaches a warm container.
+    const env = apiEnvironment(build().template);
+
+    expect(env.SECRETS_AWS_SECRET_ID).toBeDefined();
+    expect(env.SECRETS_PROVIDER).toBe('aws-secrets-manager');
+    expect(env.DB_URL).toBeUndefined();
+  });
+
+  it('sets no static access keys, so the function role is used', () => {
+    // apps/api treats STORAGE_S3_* and CACHE_DYNAMODB_* credentials as optional
+    // precisely so the SDK's default chain applies. Setting them here would put
+    // long-lived keys in a template.
+    const env = apiEnvironment(build().template);
+
+    const credentialShaped = Object.keys(env).filter(
+      (key) => key.includes('ACCESS_KEY') || key.includes('PASSWORD') || key.includes('SECRET_KEY')
+    );
+    expect(credentialShaped).toEqual([]);
+  });
+
+  it('grants send-only SES, with no static credentials anywhere', () => {
+    // The adapter falls through to the default credential chain when no static keys
+    // are set, so this role is what signs. Send-only: the function has no reason to
+    // manage identities, verify domains or read sending statistics.
+    const { template } = build();
+    const policies = JSON.stringify(template.findResources('AWS::IAM::Policy'));
+    const env = apiEnvironment(template);
+
+    expect(policies).toMatch(/ses:SendEmail/);
+    expect(policies).not.toMatch(/ses:VerifyEmailIdentity/);
+    expect(policies).not.toMatch(/ses:DeleteIdentity/);
+    expect(env.EMAIL_SES_CLIENT_ID).toBeUndefined();
+    expect(env.EMAIL_SES_CLIENT_SECRET).toBeUndefined();
+  });
+
+  it('puts caller secrets in the secret, never in the environment', () => {
+    // A value handed to `secrets` must not become a Lambda environment variable, where
+    // anyone who can describe the stack can read it.
+    const { template } = build({
+      secrets: { GITHUB_CLIENT_SECRET: SecretValue.secretsManager('github/oauth') },
+    });
+    const env = apiEnvironment(template);
+
+    expect(env.GITHUB_CLIENT_SECRET).toBeUndefined();
+    expect(JSON.stringify(template.toJSON())).toMatch(/GITHUB_CLIENT_SECRET/);
+  });
+
+  it('renders a referenced secret as a dynamic reference, not plaintext', () => {
+    // The reason the prop takes SecretValue rather than string. A value sourced from an
+    // existing secret resolves at deploy time and the plaintext never enters the
+    // template — which a plain string could not promise, because CloudFormation has
+    // nowhere else to put it.
+    const { template } = build({
+      secrets: { GITHUB_CLIENT_SECRET: SecretValue.secretsManager('github/oauth') },
+    });
+    const rendered = JSON.stringify(template.toJSON());
+
+    expect(rendered).toMatch(/\{\{resolve:secretsmanager:github\/oauth/);
+  });
+
+  it('names the bucket and table without granting more than the data plane', () => {
+    const { template } = build();
+    const env = apiEnvironment(template);
+    expect(env.STORAGE_S3_BUCKET).toBeDefined();
+    expect(env.CACHE_DYNAMODB_TABLE).toBeDefined();
+
+    const policies = JSON.stringify(template.findResources('AWS::IAM::Policy'));
+    expect(policies).toMatch(/dynamodb:PutItem/);
+    // Control-plane verbs would let the function delete the table it caches into.
+    expect(policies).not.toMatch(/dynamodb:DeleteTable/);
+    expect(policies).not.toMatch(/s3:DeleteBucket/);
+    expect(policies).not.toMatch(/secretsmanager:PutSecretValue/);
+  });
+});
+
+describe('the function URL answers the internet, and is guarded in the app', () => {
+  it('is unauthenticated at the AWS layer, by necessity', () => {
+    // This started as AWS_IAM and had to change. CloudFront's Origin Access Control
+    // cannot carry this API: its recommended signing mode overwrites the viewer's
+    // Authorization header, and POST through OAC requires the *viewer* to send
+    // x-amz-content-sha256 with the body hash. GraphQL is POST-only from a browser.
+    //
+    // Asserted rather than left implicit so the cost of that constraint is visible in
+    // the test suite: nothing at the AWS layer refuses an unsigned caller here.
+    const { template } = build();
+    template.hasResourceProperties('AWS::Lambda::Url', { AuthType: 'NONE' });
+  });
+
+  it('is therefore invokable by any principal, which is the whole exposure', () => {
+    // CDK attaches a `*`-principal permission for a NONE URL. What actually turns
+    // away a direct caller is originVerifyMiddleware in apps/api, checking a secret
+    // only CloudFront attaches — enforced in the function rather than by AWS, so a
+    // probe costs one short invocation. Reserved concurrency bounds that.
+    const { template } = build();
+    const permissions = Object.values(template.findResources('AWS::Lambda::Permission'));
+    const urlPermissions = permissions.filter(
+      (p) => (p.Properties as { FunctionUrlAuthType?: string }).FunctionUrlAuthType === 'NONE'
+    );
+
+    expect(urlPermissions).toHaveLength(1);
+    expect((urlPermissions[0].Properties as { Principal: string }).Principal).toBe('*');
+  });
+
+  it('generates the origin secret rather than composing it into the template', () => {
+    // The compensating control. It must exist in the secret and not as a literal
+    // anywhere in the template.
+    const { template } = build();
+    const secrets = JSON.stringify(template.findResources('AWS::SecretsManager::Secret'));
+
+    expect(secrets).toMatch(/ORIGIN_VERIFY_SECRET/);
+    expect(secrets).not.toMatch(/"[A-Za-z0-9]{64}"/);
+  });
+});
+
+describe('database connections stay within what Aurora accepts', () => {
+  it('bounds concurrency times pool size under what Aurora accepts', () => {
+    // Two pressures meet here and they pull opposite ways. The database wants a low
+    // ceiling: pooling is off by default, so each warm environment holds its own
+    // connections, and unbounded concurrency (1000 by account default) would want 2000
+    // against the ~900 Aurora allows at maxCapacity 4.
+    //
+    // Availability wants a high one: the Function URL is publicly reachable, a refused
+    // request still costs an invocation, and a *low* reservation is what makes
+    // exhausting every environment cheap. The security review named that trade.
+    //
+    // 100 x 2 = 200 leaves the cluster ample headroom while making denial of service
+    // five times more expensive than the original 20.
+    const { template } = build();
+    const props = apiFunction(template).Properties as {
+      ReservedConcurrentExecutions: number;
+    };
+    const poolMax = Number(apiEnvironment(template).DB_POOL_MAX);
+
+    expect(poolMax).toBeGreaterThan(0);
+    expect(props.ReservedConcurrentExecutions * poolMax).toBeLessThan(500);
+    // Low is not automatically safe — guard the availability side too.
+    expect(props.ReservedConcurrentExecutions).toBeGreaterThanOrEqual(100);
+  });
+
+  it('stays at the memory that measured fastest, not the one that reasons fastest', () => {
+    // 1,769 MB is where Lambda gives a full vCPU, so it should boot faster. Measured
+    // A/B on a live deploy it does the opposite: init hits the 10 s ceiling and is
+    // re-run inside the invocation, billing 13,811 ms, against 7,634 ms at 1024.
+    // Pinned so the appealing-but-wrong value cannot be reintroduced from first
+    // principles without someone re-measuring INIT_REPORT.
+    const { template } = build();
+    const props = apiFunction(template).Properties as { MemorySize: number };
+    expect(props.MemorySize).toBe(1024);
+  });
+
+  it('lets concurrency be unbounded only when asked explicitly', () => {
+    // 0 is the opt-out for a deployment that has enabled the proxy, where the pool
+    // lives in the proxy rather than in each execution environment.
+    const { template } = build({ api: { reservedConcurrency: 0 } });
+    const props = apiFunction(template).Properties as {
+      ReservedConcurrentExecutions?: number;
+    };
+    expect(props.ReservedConcurrentExecutions).toBeUndefined();
+  });
+});
+
+describe('the cache table matches what the adapter writes', () => {
+  it('uses the attribute names DynamoDBCacheAdapter actually writes', () => {
+    // A third witness, in the spirit of the routing oracle: the construct and the
+    // adapter are separate packages with no compile-time link, so a renamed attribute
+    // would deploy clean and fail at the first set(). Read the adapter rather than
+    // restating its literals — two copies of a literal prove only that both were typed.
+    const adapterSource = readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        '../../../../packages/@grantjs/cache/src/dynamodb/index.ts'
+      ),
+      'utf8'
+    );
+
+    expect(adapterSource).toMatch(new RegExp(`${CACHE_PARTITION_KEY}:\\s*\\{\\s*S:`));
+    expect(adapterSource).toMatch(new RegExp(`${CACHE_SORT_KEY}:\\s*\\{\\s*S:`));
+    expect(adapterSource).toMatch(new RegExp(`${CACHE_TTL_ATTRIBUTE}:\\s*\\{\\s*N:`));
+  });
+
+  it('declares that key schema on the table', () => {
+    const { template } = build();
+    template.hasResourceProperties('AWS::DynamoDB::GlobalTable', {
+      KeySchema: [
+        { AttributeName: CACHE_PARTITION_KEY, KeyType: 'HASH' },
+        { AttributeName: CACHE_SORT_KEY, KeyType: 'RANGE' },
+      ],
+    });
+  });
+
+  it('expires entries, so the table does not grow without bound', () => {
+    // Without a TTL specification `expiresAt` is an ordinary attribute: the adapter
+    // filters expired reads in code, but nothing ever deletes them.
+    const { template } = build();
+    template.hasResourceProperties('AWS::DynamoDB::GlobalTable', {
+      TimeToLiveSpecification: { AttributeName: CACHE_TTL_ATTRIBUTE, Enabled: true },
+    });
+  });
+
+  it('bills per request, not per hour', () => {
+    // Provisioned capacity would reintroduce the idle cost that ruled out ElastiCache.
+    const { template } = build();
+    template.hasResourceProperties('AWS::DynamoDB::GlobalTable', {
+      BillingMode: 'PAY_PER_REQUEST',
+    });
+  });
+});
+
+describe('teardown keeps what cannot be rebuilt', () => {
+  it('retains uploaded objects but discards the cache', () => {
+    // Deliberately asymmetric: cache entries are reconstructible and TTL'd, uploads
+    // are user data. Retaining a cache table leaves a billed resource nobody reads.
+    const { template } = build();
+    template.hasResource('AWS::S3::Bucket', {
+      Properties: Match.objectLike({ BucketName: Match.absent() }),
+      DeletionPolicy: 'Retain',
+    });
+    template.hasResource('AWS::DynamoDB::GlobalTable', { DeletionPolicy: 'Delete' });
+  });
+
+  it('creates no object-emptying custom resource for the uploads bucket', () => {
+    // autoDeleteObjects installs a Lambda that empties the bucket on teardown. For a
+    // bucket holding real uploads that must never exist by default.
+    const { template } = build();
+    const buckets = template.findResources('AWS::S3::Bucket');
+    const retained = Object.entries(buckets).filter(
+      ([, bucket]) => bucket.DeletionPolicy === 'Retain'
+    );
+    expect(retained).toHaveLength(1);
+  });
+
+  it('blocks public access to uploads', () => {
+    const { template } = build();
+    template.hasResourceProperties('AWS::S3::Bucket', {
+      PublicAccessBlockConfiguration: {
+        BlockPublicAcls: true,
+        BlockPublicPolicy: true,
+        IgnorePublicAcls: true,
+        RestrictPublicBuckets: true,
+      },
+    });
+  });
+});
+
+describe('the function runs where the database can be reached', () => {
+  it('sits in private subnets wearing the database client group', () => {
+    // Never public, and never isolated: the API calls SES, GitHub OAuth and arbitrary
+    // webhook URLs, none of which a VPC endpoint can reach.
+    const { template } = build();
+    const props = apiFunction(template).Properties as {
+      VpcConfig: { SubnetIds: unknown[]; SecurityGroupIds: unknown[] };
+    };
+    expect(props.VpcConfig.SubnetIds).toHaveLength(2);
+    expect(props.VpcConfig.SecurityGroupIds).toHaveLength(1);
+  });
+
+  it('keeps S3 and DynamoDB traffic off the NAT gateway', () => {
+    // Gateway endpoints are free. Without them every cache read and every upload is
+    // billed as NAT data processing.
+    const { template } = build();
+    template.resourceCountIs('AWS::EC2::VPCEndpoint', 2);
+  });
+});
+
+/**
+ * Gate 4, finding F-A.
+ *
+ * Two keys are safe by default and unsafe if a `deploy/aws/.env` sets them, and no
+ * layer below this one can refuse them. `create-app.ts` mounts the event-dispatch
+ * router *ahead of* origin verification and the rate limiter, on the stated
+ * assumption that it only runs "where nothing public can reach it" — true of the jobs
+ * function, false of this one. `@grantjs/env` cannot reject the value either, because
+ * the jobs function legitimately sets it `true`. Only CDK knows which function has a
+ * publicly reachable URL, so the refusal belongs here.
+ */
+describe('the config file cannot open the public origin', () => {
+  const hostile = {
+    JOBS_EVENT_DISPATCH_ENABLED: 'true',
+    SECURITY_ORIGIN_VERIFY_REQUIRED: 'false',
+  };
+
+  it('pins the dispatch route off on the function that has a URL', () => {
+    const { template } = build({ env: hostile });
+
+    expect(apiEnvironment(template).JOBS_EVENT_DISPATCH_ENABLED).toBe('false');
+  });
+
+  it('pins origin verification on, so it cannot be made to fail open', () => {
+    const { template } = build({ env: hostile });
+
+    expect(apiEnvironment(template).SECURITY_ORIGIN_VERIFY_REQUIRED).toBe('true');
+  });
+
+  it('still lets the jobs function enable dispatch, which is what it is for', () => {
+    const { template } = build({ env: hostile });
+
+    const jobs = Object.values(template.findResources('AWS::Lambda::Function')).filter((fn) => {
+      const props = fn.Properties as { Environment?: { Variables?: Record<string, unknown> } };
+      return props.Environment?.Variables?.JOBS_EVENT_DISPATCH_ENABLED === 'true';
+    });
+
+    expect(jobs).toHaveLength(1);
+  });
+
+  it('leaves every other key from the file passing through', () => {
+    const { template } = build({ env: { ...hostile, AUTH_MIN_AAL_AT_LOGIN: 'aal2' } });
+
+    expect(apiEnvironment(template).AUTH_MIN_AAL_AT_LOGIN).toBe('aal2');
+  });
+});

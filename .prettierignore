@@ -21,3 +21,10 @@ charts/**/templates/**/*.yaml
 # while `format:check`'s glob (ts,tsx,js,jsx,json,md,graphql) does not, so every commit
 # staging the lockfile rewrote all ~13k lines and the next `pnpm install` reverted them.
 pnpm-lock.yaml
+# CDK synth working directory — regenerated on every `cdk synth`, never committed.
+deploy/aws/cdk.out
+
+# The committed CDK template. `synth:check` compares it byte-for-byte against fresh
+# synth output, so Prettier reformatting it would put the two gates in permanent
+# conflict: format:check rewrites, synth:check then reports drift.
+deploy/aws/cdk.snapshot
