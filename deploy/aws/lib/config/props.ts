@@ -129,7 +129,7 @@ interface DatabaseProxyProps {
   readonly requireTls?: boolean;
 }
 
-/** The database. Omit entirely to bring your own via `DB_URL` in `env`. */
+/** The database this stack creates. Omit it and pass `databaseUrl` to bring your own. */
 interface DatabaseProps {
   /** Minimum Aurora capacity units. `0` auto-pauses an idle cluster to no cost. */
   readonly minCapacity?: number;
@@ -366,10 +366,50 @@ export interface GrantPlatformProps {
   readonly docs?: DocsProps;
 
   /**
-   * Create the data tier. Omit to bring your own Postgres, in which case supply
-   * `DB_URL` through `env` — the shape the Helm chart has always used.
+   * Create the data tier — an Aurora cluster this stack owns and tears down with
+   * itself. Omit it and pass `databaseUrl` to serve against a database you already
+   * run; the two are mutually exclusive.
    */
   readonly database?: DatabaseProps;
+
+  /**
+   * `DB_URL` for a database this stack does not create, and the whole of what it
+   * needs to know about one. Everything downstream reads the key out of the platform
+   * secret and cannot tell which topology produced it.
+   *
+   * Not settable from the env file. A key there becomes a Lambda environment
+   * variable, which is plaintext in the CloudFormation template and in the function
+   * configuration, so `DB_URL` is refused there and supplied here instead.
+   *
+   * **`SecretValue`, not `string`, and the type is the warning** — the same choice
+   * `secrets` carries, for the same reason:
+   *
+   *   - `SecretValue.secretsManager(arn)` renders a `{{resolve:secretsmanager:…}}`
+   *     dynamic reference that CloudFormation resolves during create or update. The
+   *     password is present at deploy time and absent from the template. **This is
+   *     the one to use.**
+   *   - `SecretValue.unsafePlainText('postgresql://…')` puts the connection string,
+   *     password included, into the template. `unsafe` is not decoration.
+   *
+   * **A dynamic reference is copied, not linked, and `cdk deploy` is not enough to
+   * refresh it.** CloudFormation retrieves the value only while creating or updating
+   * the resource that holds the reference — and rotating the upstream secret changes
+   * nothing in this template, so there is no update to make. A deploy after a
+   * rotation reports success and leaves the old URL in place. The same property is
+   * recorded for `ORIGIN_VERIFY_SECRET` in `PlatformSecret`.
+   *
+   * To rotate, write `DB_URL` into the platform secret directly; the application's
+   * resolver picks it up within `SECRETS_CACHE_TTL_SECONDS` with no deploy at all.
+   * Note that a later stack update which *does* modify the platform secret will
+   * overwrite that value with whatever this reference resolves to.
+   *
+   * The URL is used exactly as written, including its `sslmode`; the stack never
+   * rewrites it. It must be a bare, percent-encoded connection string: the value is
+   * substituted into a JSON document at deploy time, so a quote, backslash or
+   * newline in it breaks that document. Supplied literals are checked at synth;
+   * a referenced secret's contents are not visible there.
+   */
+  readonly databaseUrl?: SecretValue;
 
   /** Deploy-time migration. Ignored when this stack does not own the database. */
   readonly migration?: MigrationProps;
