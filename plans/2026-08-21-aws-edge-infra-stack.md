@@ -5,10 +5,12 @@
 - **Slug**: `aws-edge-infra`
 - **Story brief**: [`2026-08-21-aws-edge-infra-brief.md`](./2026-08-21-aws-edge-infra-brief.md) — approved 2026-08-27, Ale Heredia; **ready-for-main** 2026-09-05
 - **Program brief**: [`2026-08-21-aws-serverless-target-brief.md`](./2026-08-21-aws-serverless-target-brief.md) — phase **C** of three
-- **Status**: `integrated` — all seven slices merged to `feat/aws-edge-infra`
-  (last: #381, `a3d026ab`, 2026-09-05). Gate 3 complete. Gate 4 (trunk → `main`)
-  **not started** — no integration PR. `main` is two commits ahead of the trunk
-  (#375, #376); merge before opening.
+- **Status**: `merged-to-main` — trunk merged as
+  [#382](https://github.com/grant-js/grant/pull/382) (`798111ac`, 2026-09-05, squash),
+  so the trunk is not an ancestor of `main`; content was verified identical before
+  merging. All four gates cleared. The three gate 4 blocking flags cleared in the
+  integration PR: teardown recorded, `main` merged, and an independent security review
+  run whose one High finding (F-A) was fixed there.
 - **Story trunk**: `feat/aws-edge-infra`
 - **Base**: `main` at `440c322f` at gate 2. Trunk last merged `main` at `c83e30bb`
   (#348, 2026-08-29).
@@ -420,10 +422,27 @@ review. These are the items that pass would miss if it only read the diffs:
 
 - [x] Scratch account torn down; final `cdk destroy` recorded (2026-09-05, both regions at baseline)
 - [x] `git worktree remove` (none was created)
-- [ ] Local slice branches deleted
-- [ ] Remote slice branches deleted from origin (still present:
-      `feat/aws-edge-infra-{routing,library,docs-site,certificate,api,data-connectivity,api-serving,edge-trust,edge-routing,web,oauth-email,lambda-bundle,config-surface,jobs,guide,polish}`
-      and `fix/aws-edge-infra-lint-scope`)
-- [ ] Stack plan status → `merged-to-main` (currently `integrated`)
-- [ ] Program brief updated: phase C outcome, blockers 3 and 9 closed
-      (9 is closed by ADR 0005 + #371; 3 is **wired, not closed** — do not tick 3)
+- [x] Local slice branches deleted (2026-09-05)
+- [x] Remote slice branches deleted from origin (2026-09-05)
+- [x] Stack plan status → `merged-to-main`
+- [x] Program brief updated: phase C outcome, blocker 9 closed. **Blocker 3 deliberately
+      not ticked** — it is wired, not closed: `project-sync` runs on the jobs Lambda
+      under the 15-minute ceiling, but the only measurement is 208 s for 283 entities,
+      two orders of magnitude below the scenario ADR 0002 asks about.
+
+## Follow-ons
+
+Carried out of this story rather than done inside it. Each is here because it is real
+work with its own review surface, not because it was forgotten.
+
+| #   | Item                                                                                                                                                                                                                     | Why it is not in phase C                                                                                                                                     |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | **Make credential keys resolver-backed** (gate 4 F-C, option 2). `classifyConfig` now _refuses_ ~15 credential-shaped keys because Lambda env vars are template plaintext and the adapters read them from `process.env`. | Touches the email, cache, storage and jobs adapters. Benefits every target, so it is not an AWS story. Refusal is the safe interim.                          |
+| 2   | **Presigned-PUT uploads.** Lifts the ~6 MB Lambda payload cap; the nginx gateway allows 100 MB.                                                                                                                          | Changes `IFileStorageService` in `@grantjs/core` plus both adapters, an API handler and the web upload flow. Vertical feature, wrong eyes in a deploy slice. |
+| 3   | **Bring-your-own PostgreSQL, end to end** (F13). Omitting `database` also omits the API function, which reads `DB_URL` from the platform secret the stack creates beside its own cluster.                                | The props already document the intent; wiring it needs a second `DB_URL` path. Recorded in the library and the guide.                                        |
+| 4   | **An alarm on the origin-verify warn log.** The security review sustained the public-Function-URL risk _with_ this as the named compensating control, and it is not wired.                                               | The control exists on paper only. Small, but it is observability work rather than deploy work.                                                               |
+| 5   | **`project-sync` at ADR 0002 scale, and the Fargate escape hatch** (program blocker 3).                                                                                                                                  | Needs a 28,880-entity fixture. One import at 283 entities establishes the path works, not that it scales.                                                    |
+| 6   | **RDS Proxy on by default, and RDS IAM auth** (F14). Proxy is off because it forfeits Aurora auto-pause; IAM auth was a phase B leftover never built.                                                                    | Both are cost/behaviour trade-offs that want their own decision, not a default flipped in an integration PR.                                                 |
+| 7   | **OpenNext.** The web app runs as a Next standalone server on Lambda; the acceptance criterion is marked `[~]`.                                                                                                          | It works and is measured — 526–630 ms cold. Adopting OpenNext is an optimisation with its own migration.                                                     |
+| 8   | **A test asserting middleware order** (gate 4 F-D). Origin verification must precede the rate limiter; it does today, and nothing asserts it.                                                                            | Cheap, but it belongs with the API's middleware tests rather than the deploy target.                                                                         |
+| 9   | **Scope `ses:SendEmail` to the sending identity** (F-E). Currently `Resource: "*"`, so a compromised function could send from any verified identity in the account.                                                      | Needs `EMAIL_FROM` known at synth, which it is not in every configuration.                                                                                   |

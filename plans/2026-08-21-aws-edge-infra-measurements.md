@@ -1575,3 +1575,36 @@ property held because CloudFront happens to overwrite; now it holds because the 
 refuses anything that is not an address, falling through to `req.ip` — one shared
 bucket, which is worse limiting in the safe direction rather than a bucket the caller
 chose. Four cases pinned in `client-ip.test.ts`.
+
+### Teardown after the F-B redeploy — and the number the guide was missing
+
+**Date**: 2026-09-05 · `cdk destroy --all` · **1,526 s (25m26s)**, both stacks
+
+The story's other full teardown measured 754 s. This one took **twice that**, and the
+reason is worth recording because it looks like a hang: for roughly ten minutes
+CloudFormation emits **no events at all** while a Lambda function sits at
+`DELETE_IN_PROGRESS` and its **VPC ENIs** are still attached. Nothing can proceed until
+Lambda releases them — the RDS cluster, NAT gateway, subnets and VPC are all queued
+behind two network interfaces. Checking `describe-stack-events` during that window
+shows a last event ten minutes old, which reads as wedged and is not.
+
+The 39 s figure recorded earlier in this file is the **certificate stack alone**, which
+has no VPC. Quoting it as "teardown time" would be misleading, so: **budget ~25 minutes
+for a full destroy**, and expect a long silent stretch in the middle.
+
+| After `cdk destroy --all`       | Result                          |
+| ------------------------------- | ------------------------------- |
+| CloudFormation stacks           | `CDKToolkit` only, both regions |
+| ACM certificates (`us-east-1`)  | 0                               |
+| CloudFront distributions        | 0                               |
+| RDS clusters / manual snapshots | 0 / 0                           |
+| Lambda functions / VPC ENIs     | 0 / **0**                       |
+| EventBridge rules / SQS queues  | 0 / 0                           |
+| DynamoDB tables / secrets       | 0 / 0                           |
+| Non-default VPCs / NAT gateways | 0 / 0                           |
+| S3 buckets                      | 2 = baseline                    |
+| Route 53 records                | 20 = baseline                   |
+
+Both carried residues behaved as recorded. F1's ACM validation CNAME is still the same
+single record across what is now three deploy/destroy cycles. F7's log groups went
+**90 → 98**: eight more from this cycle, still the one residue that grows.
