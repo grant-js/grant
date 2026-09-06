@@ -39,7 +39,12 @@ import { WebFunction } from './compute/web-function';
 import { WebImage } from './compute/web-image';
 import { AWS_TARGET_ENV_DEFAULTS } from './config/defaults';
 import type { GrantEnv, GrantPlatformProps } from './config/props';
-import { assertCertificateRegion, validateAppUrl, validateHostnameInZone } from './config/validate';
+import {
+  assertCertificateRegion,
+  assertDatabaseSelection,
+  validateAppUrl,
+  validateHostnameInZone,
+} from './config/validate';
 import { CacheTable } from './data/cache-table';
 import { Database } from './data/database';
 import { JobQueue } from './data/job-queue';
@@ -74,8 +79,10 @@ export class GrantPlatform extends Construct {
   /** Present only when the web app was requested. */
   public readonly web?: WebFunction;
 
-  /** Present only when the data tier was requested. */
+  /** Present whenever the platform serves an API, whichever database it reaches. */
   public readonly network?: Network;
+
+  /** Present only when this stack creates the cluster — absent on the BYO path. */
   public readonly database?: Database;
   /** Present only when pooling was explicitly enabled. See the note at its creation. */
   public readonly proxy?: DatabaseConnectionProxy;
@@ -84,23 +91,24 @@ export class GrantPlatform extends Construct {
   public readonly databaseClientSecurityGroup?: SecurityGroup;
   public readonly platformSecret?: PlatformSecret;
 
-  /** Present only when the data tier was requested and migration is enabled. */
+  /** Present only when the platform serves an API and migration is enabled. */
   public readonly migrateTask?: MigrateTask;
 
-  /** Present only when the data tier was requested. */
+  /** Present whenever the platform serves an API. */
   public readonly cacheTable?: CacheTable;
   public readonly uploads?: StorageBucket;
 
   /**
-   * The serving function. Present only when the data tier was requested.
+   * The serving function.
    *
-   * Bring-your-own-Postgres does not get one yet: the function reads `DB_URL` from
-   * the platform secret, which this construct only creates alongside its own cluster.
-   * Serving against an external database is a follow-up, not an omission.
+   * Present whenever a database is reachable — one this stack created via `database`,
+   * or one supplied through `databaseUrl`. It reads `DB_URL` from the platform
+   * secret either way and cannot tell the difference. Absent only on the docs-only
+   * deploy, where neither prop is set.
    */
   public readonly api?: ApiFunction;
 
-  /** Present only when the data tier was requested and jobs are enabled. */
+  /** Present only when the platform serves an API and jobs are enabled. */
   public readonly jobQueue?: JobQueue;
   public readonly jobsFunction?: JobsFunction;
   public readonly jobSchedules?: JobSchedules;
@@ -112,6 +120,7 @@ export class GrantPlatform extends Construct {
     // sentence, not fifteen minutes into a deploy with an unrelated resource named.
     const { hostname } = validateAppUrl(props.appUrl);
     validateHostnameInZone(hostname, props.dns.hostedZone.zoneName);
+    assertDatabaseSelection(props);
 
     this.hostname = hostname;
     // Caller last: an adopter overriding a default must win over this file's opinion.
@@ -142,19 +151,41 @@ export class GrantPlatform extends Construct {
       }).certificate;
     }
 
-    // The data tier is opt-in. Omitting it is the bring-your-own-Postgres path the
-    // Helm chart has always taken, and it keeps the docs-only deploy free of a VPC.
-    if (props.database) {
+    // Two decisions where there used to be one, and the split is the whole slice.
+    //
+    // `ownsDatabase` is about a *cluster*: whether this stack creates one, and with it
+    // the proxy and the ingress rule that only mean anything for a database it owns.
+    // `servesApi` is about a database being reachable at all, from either source — and
+    // that is what the serving function, the migration, the cache, the bucket, the
+    // queue and the outputs actually depend on. Conflating the two is why omitting
+    // `database` used to produce a docs-only deploy rather than the bring-your-own
+    // path the props advertised.
+    //
+    // Deliberately **no new construct scope**. A CloudFormation logical ID is a hash
+    // of the construct path, so lifting these into a tidy `DataTier` sub-construct
+    // would rename every resource in the green-field template — which on a live deploy
+    // means replacing the database. The refactor is in place, in the same scope, with
+    // the same ids; `synth:check` is what proves it.
+    const ownsDatabase = props.database !== undefined;
+    const servesApi = ownsDatabase || props.databaseUrl !== undefined;
+
+    if (servesApi) {
+      // Created for every serving topology, including bring-your-own. Making the VPC
+      // itself optional is slice 3's change and a separate decision: it alters what
+      // `ApiFunction` and `JobsFunction` promise, not merely who creates the database.
       this.network = new Network(this, 'Network', {
         vpc: props.network?.vpc,
         natGateways: props.network?.natGateways,
       });
-      this.database = new Database(this, 'Database', {
-        vpc: this.network.vpc,
-        minCapacity: props.database.minCapacity,
-        maxCapacity: props.database.maxCapacity,
-        destroyOnRemoval: props.database.destroyOnRemoval,
-      });
+
+      if (props.database) {
+        this.database = new Database(this, 'Database', {
+          vpc: this.network.vpc,
+          minCapacity: props.database.minCapacity,
+          maxCapacity: props.database.maxCapacity,
+          destroyOnRemoval: props.database.destroyOnRemoval,
+        });
+      }
 
       // One group names everything allowed to open a database connection, whether it
       // reaches the cluster directly or through the proxy. Identity, not CIDR: a CIDR
@@ -177,32 +208,46 @@ export class GrantPlatform extends Construct {
       // execution environment holds its own connections and a burst exhausts
       // `max_connections`. The trade is cheap idle against tolerance for concurrency,
       // and it cannot be had both ways.
-      if (props.database.proxy?.enabled ?? false) {
-        this.proxy = new DatabaseConnectionProxy(this, 'Proxy', {
-          vpc: this.network.vpc,
-          cluster: this.database.cluster,
-          secret: this.database.secret,
-          clientSecurityGroup: this.databaseClientSecurityGroup,
-          requireTls: props.database.proxy?.requireTls,
-        });
-      } else {
-        this.database.cluster.connections.allowDefaultPortFrom(
-          this.databaseClientSecurityGroup,
-          'Grant database clients'
-        );
+      //
+      // Both branches are about a cluster this stack created. An adopter's own
+      // database has neither: CDK cannot attach a proxy to something it does not own,
+      // and opening their security group needs a handle on it — which is slice 3's
+      // `network.databaseSecurityGroup`. Until then, reachability on the BYO path is
+      // the adopter's precondition, and the migration is where it fails loudly.
+      if (props.database && this.database) {
+        if (props.database.proxy?.enabled ?? false) {
+          this.proxy = new DatabaseConnectionProxy(this, 'Proxy', {
+            vpc: this.network.vpc,
+            cluster: this.database.cluster,
+            secret: this.database.secret,
+            clientSecurityGroup: this.databaseClientSecurityGroup,
+            requireTls: props.database.proxy?.requireTls,
+          });
+        } else {
+          this.database.cluster.connections.allowDefaultPortFrom(
+            this.databaseClientSecurityGroup,
+            'Grant database clients'
+          );
+        }
       }
 
       // Two secrets, two shapes. The cluster's is RDS-shaped and only the proxy reads
       // it; this one is the flat ENV_NAME:value object the application's resolver
       // requires. See PlatformSecret.
-      this.platformSecret = new PlatformSecret(this, 'PlatformSecret', {
-        databaseCredentials: this.database.secret,
-        // The proxy when there is one, the cluster writer otherwise.
-        host: this.proxy?.proxy.endpoint ?? this.database.cluster.clusterEndpoint.hostname,
-        port: this.database.cluster.clusterEndpoint.port,
-        databaseName: this.database.databaseName,
-        extraEnv: props.secrets,
-      });
+      this.platformSecret = new PlatformSecret(
+        this,
+        'PlatformSecret',
+        this.database
+          ? {
+              databaseCredentials: this.database.secret,
+              // The proxy when there is one, the cluster writer otherwise.
+              host: this.proxy?.proxy.endpoint ?? this.database.cluster.clusterEndpoint.hostname,
+              port: this.database.cluster.clusterEndpoint.port,
+              databaseName: this.database.databaseName,
+              extraEnv: props.secrets,
+            }
+          : { databaseUrl: props.databaseUrl, extraEnv: props.secrets }
+      );
 
       // One asset, built at most once and shared by the migration and the serving
       // function — ADR 0003's "one image everywhere", enforced by construction rather
@@ -276,9 +321,15 @@ export class GrantPlatform extends Construct {
           // parallel schedule and the race flipped. Naming the whole construct covers
           // the instance as well as the cluster, so the ordering no longer depends on
           // which attribute happens to be referenced.
-          executeAfter: this.proxy
-            ? [this.database, this.proxy, this.platformSecret]
-            : [this.database, this.platformSecret],
+          //
+          // On the bring-your-own path there is no cluster and no proxy to order
+          // against, and the ordering above has nothing to say about a database this
+          // stack did not create: it is already running, or it is not, and no
+          // dependency edge here can change that. What remains load-bearing on both
+          // paths is the platform secret, which is where the migration reads DB_URL.
+          executeAfter: [this.database, this.proxy, this.platformSecret].filter(
+            (dependency) => dependency !== undefined
+          ),
         });
       }
 

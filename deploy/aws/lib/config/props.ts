@@ -411,10 +411,14 @@ export interface GrantPlatformProps {
    */
   readonly databaseUrl?: SecretValue;
 
-  /** Deploy-time migration. Ignored when this stack does not own the database. */
+  /**
+   * Deploy-time migration. Runs on the bring-your-own path too — the task reads
+   * `DB_URL` from the platform secret and does not care which topology filled it.
+   * Ignored only on the docs-only deploy, where there is no database at all.
+   */
   readonly migration?: MigrationProps;
 
-  /** Background jobs. Ignored when this stack does not own the database. */
+  /** Background jobs. Ignored only on the docs-only deploy. */
   readonly jobs?: JobsProps;
 
   /** Passed through to the API container. */
@@ -443,8 +447,8 @@ export interface GrantPlatformProps {
    * out of band after deploy — the resolver picks it up without a stack update, which
    * is the property ADR 0004 bought.
    *
-   * Only meaningful when this stack owns the database, since the platform secret is
-   * created alongside it.
+   * Meaningful on every serving topology. The platform secret is created whenever a
+   * database is reachable, whether this stack made one or `databaseUrl` named one.
    */
   readonly secrets?: Readonly<Record<string, SecretValue>>;
 }
