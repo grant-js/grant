@@ -4,13 +4,14 @@
  * unrelated resource. Failing at synth with an actionable sentence is the whole
  * point of the configuration surface.
  */
-import { App, Stack, Token } from 'aws-cdk-lib';
+import { App, SecretValue, Stack, Token } from 'aws-cdk-lib';
 import { describe, expect, it } from 'vitest';
 
 import { ConfigurationError } from './errors';
 import {
   assertCertificateRegion,
   assertConcreteEnv,
+  assertDatabaseSelection,
   validateAppUrl,
   validateCertificateArn,
   validateDatabaseName,
@@ -191,5 +192,48 @@ describe('validateDatabaseName', () => {
     // a legitimate configuration.
     const token = Token.asString({ Ref: 'SomeParameter' });
     expect(validateDatabaseName(token)).toBe(token);
+  });
+});
+
+describe('assertDatabaseSelection', () => {
+  const url = SecretValue.secretsManager(
+    'arn:aws:secretsmanager:eu-central-1:123456789012:secret:grant/db-AbCdEf'
+  );
+
+  it('accepts each database prop on its own, and neither', () => {
+    // Green-field, bring-your-own, and the docs-only deploy.
+    expect(() => assertDatabaseSelection({ database: {} })).not.toThrow();
+    expect(() => assertDatabaseSelection({ databaseUrl: url })).not.toThrow();
+    expect(() => assertDatabaseSelection({})).not.toThrow();
+  });
+
+  it('refuses both, because no default resolves the ambiguity', () => {
+    expect(() => assertDatabaseSelection({ database: {}, databaseUrl: url })).toThrow(
+      ConfigurationError
+    );
+    expect(() => assertDatabaseSelection({ database: {}, databaseUrl: url })).toThrow(
+      /Pick one database/
+    );
+  });
+
+  it('refuses DB_URL passed through env, where the file parser cannot see it', () => {
+    // `classifyConfig` guards the .env path. ADR 0005 invites an adopter to replace
+    // bin/ and construct props directly, which reaches the same plaintext Lambda
+    // variable with no file involved.
+    expect(() =>
+      assertDatabaseSelection({ databaseUrl: url, env: { DB_URL: 'postgresql://u:p@h/d' } })
+    ).toThrow(/cannot be passed through `env`/);
+  });
+
+  it('names the prop to use instead rather than only refusing', () => {
+    expect(() => assertDatabaseSelection({ env: { DB_URL: 'postgresql://u:p@h/d' } })).toThrow(
+      /SecretValue.secretsManager/
+    );
+  });
+
+  it('leaves a blank DB_URL alone, matching the env file', () => {
+    // `.env.example` ships every key blank, and classifyConfig treats '' as unset.
+    // Disagreeing here would make the two paths refuse different things.
+    expect(() => assertDatabaseSelection({ databaseUrl: url, env: { DB_URL: '' } })).not.toThrow();
   });
 });

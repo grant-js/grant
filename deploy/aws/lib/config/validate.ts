@@ -11,7 +11,9 @@
 
 import { Token } from 'aws-cdk-lib';
 
+import { STACK_COMPOSED_KEYS } from './env-file';
 import { ConfigurationError } from './errors';
+import type { GrantPlatformProps } from './props';
 
 /** CloudFront serves certificates only from us-east-1, whatever region the stack targets. */
 const CLOUDFRONT_CERTIFICATE_REGION = 'us-east-1';
@@ -141,6 +143,51 @@ export function assertCertificateRegion(region: string): void {
         `serves certificates from ${CLOUDFRONT_CERTIFICATE_REGION}.\n` +
         'Pass an existing us-east-1 certificate via dns.certificate, or use the reference ' +
         'app in bin/, which creates it in a separate us-east-1 stack.'
+    );
+  }
+}
+
+/**
+ * Exactly one way of naming the database, and no smuggling it in through `env`.
+ *
+ * Two failures this catches, both of which otherwise deploy:
+ *
+ *   - Supplying `database` **and** `databaseUrl` is ambiguous in a way no default
+ *     resolves. Picking one silently would mean the API and the migration might
+ *     reach a cluster the adopter is paying for while their real data sits
+ *     elsewhere, or the reverse — and the wrong guess is discovered by writing to
+ *     the wrong database.
+ *   - `env: { DB_URL: … }` is refused for the same reason the env *file* refuses it:
+ *     every key in `env` becomes a Lambda environment variable, plaintext in the
+ *     template, in the function configuration and in `cdk.out`. `classifyConfig`
+ *     guards the file path, but ADR 0005 explicitly invites an adopter to replace
+ *     `bin/` and construct these props directly — which reaches the identical
+ *     variable with no file involved. A security review of slice 1 found that gap;
+ *     this closes it at the other end.
+ */
+export function assertDatabaseSelection(
+  props: Pick<GrantPlatformProps, 'database' | 'databaseUrl' | 'env'>
+): void {
+  if (props.database && props.databaseUrl) {
+    throw new ConfigurationError(
+      'Pick one database: `database` creates an Aurora cluster this stack owns, and ' +
+        '`databaseUrl` serves against one it does not. Supplying both leaves it ' +
+        'ambiguous which one the API and the migration would reach, and the answer ' +
+        'would be discovered by writing to the wrong database.'
+    );
+  }
+
+  const composed = (STACK_COMPOSED_KEYS as readonly string[]).filter(
+    (key) => props.env?.[key] !== undefined && props.env[key] !== ''
+  );
+
+  if (composed.length > 0) {
+    throw new ConfigurationError(
+      `${composed.join(', ')} cannot be passed through \`env\`: every key there becomes ` +
+        'a Lambda environment variable, which is plaintext in the CloudFormation ' +
+        'template, in the function configuration and in cdk.out on disk. Pass ' +
+        '`databaseUrl: SecretValue.secretsManager(arn)` instead — it renders a ' +
+        'dynamic reference the platform secret resolves at deploy time.'
     );
   }
 }
