@@ -10,6 +10,9 @@
  */
 import { App, SecretValue, Stack } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
+import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
+import { Repository } from 'aws-cdk-lib/aws-ecr';
+import { DockerImageCode } from 'aws-cdk-lib/aws-lambda';
 import { HostedZone } from 'aws-cdk-lib/aws-route53';
 import { describe, expect, it } from 'vitest';
 
@@ -18,12 +21,24 @@ import { GrantPlatform } from '../grant-platform';
 
 const BYO_ARN = 'arn:aws:secretsmanager:eu-central-1:123456789012:secret:grant/db-url-AbCdEf';
 
+/**
+ * Every image is caller-supplied, for the reason `api-serving.test.ts` records:
+ * constructing a `DockerImageAsset` fingerprints the whole build context, measured at
+ * 282 s in one slice 4b run. This file builds a platform seven times, so building
+ * from source here times the suite out on CI rather than merely slowing it — which is
+ * exactly what happened on the first push of this slice.
+ *
+ * Nothing under test is lost. The inventory below is about which constructs exist and
+ * how they are wired, not about how an image was produced, and the built-from-source
+ * path is exercised on every build by `synth:check` against the real asset.
+ */
 function build(overrides: Partial<GrantPlatformProps> = {}) {
   const app = new App();
   const stack = new Stack(app, 'TestStack', {
-    // us-east-1 so the construct may create its own certificate; CloudFront serves
-    // them from nowhere else, and the reference app solves it with a second stack.
-    env: { account: '123456789012', region: 'us-east-1' },
+    env: { account: '123456789012', region: 'eu-central-1' },
+  });
+  const image = DockerImageCode.fromEcr(Repository.fromRepositoryName(stack, 'Repo', 'grant/api'), {
+    tagOrDigest: 'test',
   });
   const platform = new GrantPlatform(stack, 'Grant', {
     appUrl: 'https://grant.example.com',
@@ -32,12 +47,17 @@ function build(overrides: Partial<GrantPlatformProps> = {}) {
         hostedZoneId: 'ZTEST000000000',
         zoneName: 'example.com',
       }),
+      certificate: Certificate.fromCertificateArn(
+        stack,
+        'Cert',
+        'arn:aws:acm:us-east-1:123456789012:certificate/abc-123'
+      ),
     },
     databaseUrl: SecretValue.secretsManager(BYO_ARN),
-    web: {},
-    // Building the API image fingerprints the whole repo for every case, and the
-    // migration has its own suite. The resources under test here are the ones the
-    // old `if (props.database)` gated, not the migration's shape.
+    api: { image },
+    web: { image },
+    // The migration has its own suite, and its shape is not what the old
+    // `if (props.database)` condition gated.
     migration: { enabled: false },
     ...overrides,
   });
