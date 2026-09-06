@@ -21,7 +21,7 @@
  * tell which one produced it.
  */
 
-import type { SecretValue } from 'aws-cdk-lib';
+import { type SecretValue, Token } from 'aws-cdk-lib';
 import { type ISecret, Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
@@ -101,9 +101,45 @@ function resolveDatabaseUrl(props: PlatformSecretProps): string {
 
   // Used exactly as written. The adopter owns their connection string, including its
   // `sslmode`; silently rewriting a URL is how a deploy ends up talking to a database
-  // over a channel its operator did not choose.
+  // over a channel its operator did not choose. Checked, though — validating and
+  // saying what is wrong is a different thing from rewriting it.
   if (props.databaseUrl) {
-    return props.databaseUrl.unsafeUnwrap();
+    const url = props.databaseUrl.unsafeUnwrap();
+
+    // A `SecretValue.secretsManager(...)` unwraps to a token, whose contents nothing
+    // at synth can see; a `SecretValue.unsafePlainText(...)` unwraps to the literal,
+    // which can be checked. `Token.isUnresolved` is what distinguishes the two, and
+    // the checks below apply only where there is something to check.
+    if (!Token.isUnresolved(url)) {
+      if (!/^postgres(ql)?:\/\//.test(url.trim())) {
+        // Deliberately does not echo the value: it is a connection string, and the
+        // message goes to a terminal and a CI log.
+        throw new Error(
+          'databaseUrl does not look like a PostgreSQL connection string — it must ' +
+            'begin with postgresql:// or postgres://. An empty or malformed value ' +
+            'would be written to the platform secret as DB_URL, and the application ' +
+            'falls back to composing a URL from POSTGRES_* defaults when it cannot ' +
+            'read one, so the failure would surface as a connection error to ' +
+            'localhost rather than as this.'
+        );
+      }
+
+      // The value is substituted into a JSON document, and for a dynamic reference
+      // CloudFormation does that substitution textually, after synth. A quote or a
+      // backslash therefore breaks the document — or, worse, closes the DB_URL string
+      // and opens another key, which is the resolver's whole input. A correctly
+      // percent-encoded URI contains neither, so this is a check rather than an
+      // escaping problem to solve.
+      if (/["\\\n\r]/.test(url)) {
+        throw new Error(
+          'databaseUrl contains a quote, backslash or newline. The value is placed ' +
+            'into a JSON document that CloudFormation completes at deploy time, so ' +
+            'those characters break it. Percent-encode the credentials in the URI.'
+        );
+      }
+    }
+
+    return url;
   }
 
   if (!props.databaseCredentials) {

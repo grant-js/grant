@@ -24,6 +24,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import {
+  classifyConfig,
   CREDENTIAL_KEYS,
   RESOLVER_SECRET_KEYS,
   STACK_COMPOSED_KEYS,
@@ -91,20 +92,48 @@ describe('every credential-shaped env key is classified', () => {
   });
 
   /**
-   * The one credential the heuristic above cannot see, asserted by name.
+   * The blind spot the heuristic above has by construction: a password inside a URL.
    *
-   * `DB_URL` holds a password inside a URL, and matches none of `SECRET`, `PASSWORD`,
-   * `API_KEY`, `PRIVATE_KEY`, `ACCESS_KEY` or `CREDENTIAL`. Widening the pattern is
-   * not the fix: `_URL$` would sweep in `APP_URL`, `DOCS_URL` and
-   * `SECURITY_FRONTEND_URL` among others, and a heuristic that fires on eight
-   * harmless keys is a heuristic people learn to add exclusions to without reading.
-   * So this key is pinned individually, and the next URL-shaped credential gets a
-   * line of its own here too.
+   * None of `DB_URL`, `DB_GRANT_ROLE_URL` or `E2E_DB_URL` matches `SECRET`,
+   * `PASSWORD`, `API_KEY`, `PRIVATE_KEY`, `ACCESS_KEY` or `CREDENTIAL`, so the oracle
+   * above passes with all three unclassified — which it did until a security review
+   * of this slice found the last two still routed into the template as plaintext
+   * Lambda environment variables.
+   *
+   * Widening the pattern is not the fix. `_URL$` sweeps in `APP_URL`, `DOCS_URL` and
+   * `SECURITY_FRONTEND_URL` among others, and a heuristic that fires on a dozen
+   * harmless keys is one people learn to add exclusions to without reading. So the
+   * URL-shaped credentials are enumerated, and this list is the thing to extend when
+   * `@grantjs/env` gains another.
+   *
+   * Asserted through `classifyConfig` rather than against the constants, because
+   * membership in an array is not the property that matters — being refused is.
    */
-  it('classifies DB_URL, which the heuristic cannot match', () => {
-    expect(schemaKeys()).toContain('DB_URL');
-    expect(CREDENTIAL_SHAPED.test('DB_URL')).toBe(false);
-    expect(STACK_COMPOSED_KEYS as readonly string[]).toContain('DB_URL');
+  it.each(['DB_URL', 'DB_GRANT_ROLE_URL', 'E2E_DB_URL'])(
+    'refuses %s, which the heuristic cannot match',
+    (key) => {
+      expect(schemaKeys()).toContain(key);
+      expect(CREDENTIAL_SHAPED.test(key)).toBe(false);
+      expect(() => classifyConfig({ [key]: 'postgresql://u:pw@h:5432/d' })).toThrow();
+    }
+  );
+
+  it('has an entry for every URL-shaped key in the schema that carries credentials', () => {
+    // The reverse direction, so a *new* `*_DB_URL` in @grantjs/env fails here rather
+    // than deploying quietly. Deliberately narrow: only keys whose name says they
+    // hold a database URL, since those are the ones that carry a password.
+    const carriesCredentials = /(^|_)DB(_[A-Z0-9_]+)?_URL$|^DB_URL$/;
+    const enumerated = new Set<string>([...STACK_COMPOSED_KEYS, ...CREDENTIAL_KEYS]);
+
+    const missed = schemaKeys().filter(
+      (key) => carriesCredentials.test(key) && !enumerated.has(key)
+    );
+
+    expect(
+      missed,
+      `Database URLs carry a password the CREDENTIAL_SHAPED heuristic cannot see. ` +
+        `Add each to CREDENTIAL_KEYS (refused) or STACK_COMPOSED_KEYS: ${missed.join(', ')}`
+    ).toEqual([]);
   });
 
   it('never refuses a key that has a safe path', () => {

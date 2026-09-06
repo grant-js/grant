@@ -31,6 +31,25 @@ describe('parseEnvFile', () => {
   it('drops a trailing comment on an unquoted value', () => {
     expect(parseEnvFile('JOBS_PROVIDER=aws # use EventBridge')).toEqual({ JOBS_PROVIDER: 'aws' });
   });
+
+  it.each([
+    'db_url=postgresql://u:hunter2@h:5432/d',
+    'Db_Url=postgresql://u:hunter2@h:5432/d',
+    'smtp_password=hunter2',
+    'origin_verify_secret=nope',
+  ])('refuses a lower-case key rather than passing it through: %s', (line) => {
+    // The parser once matched keys case-insensitively while every refusal matched
+    // them exactly, so these four slipped past all three key lists and were
+    // synthesized into the template as Lambda environment variables — in plaintext,
+    // read by nothing, since `@grantjs/env` declares no lower-case key.
+    expect(() => parseEnvFile(line)).toThrow(/environment keys are upper-case/);
+  });
+
+  it('still ignores a line whose key is not an identifier at all', () => {
+    // Not the same class: `a-b` cannot be an environment variable in any casing, and
+    // silently skipping malformed lines is long-standing parser behavior.
+    expect(parseEnvFile('a-b=c\nEMAIL_PROVIDER=ses')).toEqual({ EMAIL_PROVIDER: 'ses' });
+  });
 });
 
 describe('classifyConfig', () => {
@@ -85,6 +104,20 @@ describe('classifyConfig', () => {
       })
     ).toThrow(/DB_URL cannot be set from this file/);
   });
+
+  it.each(['DB_GRANT_ROLE_URL', 'E2E_DB_URL'])(
+    'refuses %s, the other credentials hidden inside a URL',
+    (key) => {
+      // Neither matches CREDENTIAL_SHAPED in credential-keys.test.ts — a password
+      // inside a URL matches none of SECRET|PASSWORD|API_KEY|... — and neither is read
+      // through ISecretResolver, so the platform secret is not an alternative either.
+      // DB_GRANT_ROLE_URL is a *superuser* URL, which makes it the most valuable
+      // credential this file refuses.
+      expect(() => classifyConfig({ [key]: 'postgresql://postgres:pw@h:5432/d' })).toThrow(
+        /cannot be set from this file/
+      );
+    }
+  );
 
   it('leaves a blank DB_URL inert, like every other unset key', () => {
     // `.env.example` documents the key in prose and sets nothing. An operator who

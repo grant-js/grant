@@ -83,6 +83,14 @@ export const STACK_GENERATED_KEYS = ['ORIGIN_VERIFY_SECRET'] as const;
 export const CREDENTIAL_KEYS = [
   'CACHE_DYNAMODB_ACCESS_KEY_ID',
   'CACHE_DYNAMODB_SECRET_ACCESS_KEY',
+  // Two connection strings that carry a password inside a URL, so `CREDENTIAL_SHAPED`
+  // in credential-keys.test.ts cannot see them either — the same blind spot DB_URL
+  // has, without DB_URL's alternative. Both are read from `process.env` rather than
+  // through ISecretResolver (`database/src/grant-rls-login-role.lib.ts:10`), so the
+  // platform secret would hide them from the application too. DB_GRANT_ROLE_URL is a
+  // *superuser* URL, which makes it the most valuable credential in this list.
+  'DB_GRANT_ROLE_URL',
+  'E2E_DB_URL',
   'E2E_REDIS_PASSWORD',
   'EMAIL_SES_CLIENT_SECRET',
   'JOBS_AWS_ACCESS_KEY_ID',
@@ -127,7 +135,26 @@ export function parseEnvFile(contents: string): Record<string, string> {
     }
 
     const key = withoutExport.slice(0, eq).trim();
-    if (!/^[A-Z_][A-Z0-9_]*$/i.test(key)) {
+
+    // Upper-case only, and a lower-case key is refused rather than skipped.
+    //
+    // This regex used to carry an `i` flag while every refusal below matches the key
+    // exactly, so `db_url=` or `smtp_password=` slipped past all three key lists and
+    // was synthesized into the template as a Lambda environment variable. The
+    // application never reads it — `@grantjs/env` declares no lower-case key and
+    // `process.env` is case-sensitive — so the value had no effect whatsoever except
+    // to place a credential in the CloudFormation template, in the function
+    // configuration and in `cdk.out` on disk. A silent skip would close the leak and
+    // leave the operator believing the key was set, so it is an error instead.
+    if (!/^[A-Z_][A-Z0-9_]*$/.test(key)) {
+      if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
+        throw new Error(
+          `${key}: environment keys are upper-case. @grantjs/env declares none in ` +
+            'this form, so this line would be read by nothing — while its value would ' +
+            'still be synthesized into the template as a Lambda environment variable, ' +
+            'in plaintext, past every refusal in this file. Rename it or remove it.'
+        );
+      }
       continue;
     }
 
@@ -169,8 +196,9 @@ export function classifyConfig(pairs: Readonly<Record<string, string>>): TargetC
       continue;
     }
 
-    // Before the resolver branch, because the fix for DB_URL is not "route it
-    // elsewhere in this file" — it is a prop, and the message has to say so.
+    // After the blank-value skip, so `DB_URL=` in a copied .env.example stays inert,
+    // and before the two refusal lists, so the message names the prop that replaces
+    // this key rather than the generic "no safe path" sentence below.
     if ((STACK_COMPOSED_KEYS as readonly string[]).includes(key)) {
       throw new Error(
         `${key} cannot be set from this file. With the \`database\` prop the stack ` +

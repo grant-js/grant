@@ -391,13 +391,23 @@ export interface GrantPlatformProps {
    *   - `SecretValue.unsafePlainText('postgresql://…')` puts the connection string,
    *     password included, into the template. `unsafe` is not decoration.
    *
-   * Because a dynamic reference is copied at deploy rather than linked, rotating the
-   * upstream secret does not reach the platform secret until the next stack update.
-   * To rotate without one, write `DB_URL` into the platform secret directly — the
-   * application's resolver picks it up within `SECRETS_CACHE_TTL_SECONDS`.
+   * **A dynamic reference is copied, not linked, and `cdk deploy` is not enough to
+   * refresh it.** CloudFormation retrieves the value only while creating or updating
+   * the resource that holds the reference — and rotating the upstream secret changes
+   * nothing in this template, so there is no update to make. A deploy after a
+   * rotation reports success and leaves the old URL in place. The same property is
+   * recorded for `ORIGIN_VERIFY_SECRET` in `PlatformSecret`.
+   *
+   * To rotate, write `DB_URL` into the platform secret directly; the application's
+   * resolver picks it up within `SECRETS_CACHE_TTL_SECONDS` with no deploy at all.
+   * Note that a later stack update which *does* modify the platform secret will
+   * overwrite that value with whatever this reference resolves to.
    *
    * The URL is used exactly as written, including its `sslmode`; the stack never
-   * rewrites it.
+   * rewrites it. It must be a bare, percent-encoded connection string: the value is
+   * substituted into a JSON document at deploy time, so a quote, backslash or
+   * newline in it breaks that document. Supplied literals are checked at synth;
+   * a referenced secret's contents are not visible there.
    */
   readonly databaseUrl?: SecretValue;
 
