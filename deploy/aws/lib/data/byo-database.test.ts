@@ -177,3 +177,25 @@ describe('exactly one database, refused at synth', () => {
     );
   });
 });
+
+describe('a VPC is decided separately from a database', () => {
+  it.each([
+    // Topology C. `network` omitted on the bring-your-own path means no VPC at all:
+    // the functions run outside one, which is what removes the NAT gateway.
+    ['bring-your-own with network omitted builds none', {}, 0],
+    // Topology D. `{}` asks for one anyway — a peered database, or one otherwise
+    // reachable only from inside a VPC the adopter does not already have.
+    ['bring-your-own with an empty network prop builds one', { network: {} }, 1],
+    // Topology A. A cluster this stack creates must live in one, whatever `network`
+    // says, so the green-field graph is unchanged by any of this.
+    ['green-field with network omitted builds one', { database: {}, databaseUrl: undefined }, 1],
+  ])('%s', (_label, overrides, vpcs) => {
+    const { template, platform } = build(overrides as Partial<GrantPlatformProps>);
+
+    template.resourceCountIs('AWS::EC2::VPC', vpcs);
+    expect(platform.network === undefined).toBe(vpcs === 0);
+    // The client group is a VPC resource; where there is no VPC there is nothing for
+    // it to be attached to.
+    expect(platform.databaseClientSecurityGroup === undefined).toBe(vpcs === 0);
+  });
+});

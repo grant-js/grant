@@ -18,7 +18,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { CfnOutput, Stack } from 'aws-cdk-lib';
-import { SecurityGroup } from 'aws-cdk-lib/aws-ec2';
+import { Port, SecurityGroup } from 'aws-cdk-lib/aws-ec2';
 import { DockerImageCode } from 'aws-cdk-lib/aws-lambda';
 import { AaaaRecord, ARecord, RecordTarget } from 'aws-cdk-lib/aws-route53';
 import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
@@ -38,6 +38,7 @@ import {
   assertCertificateRegion,
   assertConfigurableEnv,
   assertDatabaseSelection,
+  assertMigrationIsRunnable,
   validateAppUrl,
   validateHostnameInZone,
 } from './config/validate';
@@ -52,6 +53,13 @@ import { EdgeCertificate } from './edge/certificate';
 import { EdgeDistribution } from './edge/distribution';
 import { DocsSite } from './edge/docs-site';
 import { JobSchedules } from './jobs/job-schedules';
+
+/**
+ * Port opened on an adopter's database security group. PostgreSQL's default, and this
+ * target pins the engine — `Database` builds `DatabaseClusterEngine.auroraPostgres`,
+ * and a bring-your-own database has to speak the same wire protocol to be usable.
+ */
+const DEFAULT_DATABASE_PORT = 5432;
 
 /** Repo-relative default for the built documentation. */
 const DEFAULT_DOCS_DIST = join(
@@ -75,7 +83,11 @@ export class GrantPlatform extends Construct {
   /** Present only when the web app was requested. */
   public readonly web?: WebFunction;
 
-  /** Present whenever the platform serves an API, whichever database it reaches. */
+  /**
+   * Present wherever there is a VPC — always with `database`, and with `databaseUrl`
+   * only when `network` was supplied. Omitting `network` on the bring-your-own path
+   * puts the functions outside a VPC entirely.
+   */
   public readonly network?: Network;
 
   /** Present only when this stack creates the cluster — absent on the BYO path. */
@@ -83,11 +95,18 @@ export class GrantPlatform extends Construct {
   /** Present only when pooling was explicitly enabled. See the note at its creation. */
   public readonly proxy?: DatabaseConnectionProxy;
 
-  /** Everything permitted to open a database connection wears this. */
+  /**
+   * Everything permitted to open a database connection wears this. Present only where
+   * a VPC is: a security group is a VPC resource, and outside one there is nothing for
+   * it to be attached to.
+   */
   public readonly databaseClientSecurityGroup?: SecurityGroup;
   public readonly platformSecret?: PlatformSecret;
 
-  /** Present only when the platform serves an API and migration is enabled. */
+  /**
+   * Present when the platform serves an API, migration is enabled, and there is a VPC
+   * for the task to run in. Without one, `scripts/migrate.ts` is the path.
+   */
   public readonly migrateTask?: MigrateTask;
 
   /** Present whenever the platform serves an API. */
@@ -117,6 +136,7 @@ export class GrantPlatform extends Construct {
     const { hostname } = validateAppUrl(props.appUrl);
     validateHostnameInZone(hostname, props.dns.hostedZone.zoneName);
     assertDatabaseSelection(props);
+    assertMigrationIsRunnable(props);
     // Both environment surfaces, not just the API's: `web.env` reaches a Lambda
     // environment variable by exactly the same route.
     assertConfigurableEnv(props.env, 'env');
@@ -151,7 +171,8 @@ export class GrantPlatform extends Construct {
       }).certificate;
     }
 
-    // Two decisions where there used to be one, and the split is the whole slice.
+    // Three decisions where there used to be one, and the split is what makes the
+    // bring-your-own topologies expressible.
     //
     // `ownsDatabase` is about a *cluster*: whether this stack creates one, and with it
     // the proxy and the ingress rule that only mean anything for a database it owns.
@@ -168,64 +189,94 @@ export class GrantPlatform extends Construct {
     // the same ids; `synth:check` is what proves it.
     const ownsDatabase = props.database !== undefined;
     const servesApi = ownsDatabase || props.databaseUrl !== undefined;
+    // `hasVpc` is the third: a network, decided independently of a database. A cluster
+    // this stack creates must live in a VPC, so `database` implies one whatever
+    // `network` says. `databaseUrl` does not — with `network` omitted the functions run
+    // outside a VPC entirely and reach a routable database directly, which removes the
+    // NAT gateway and is the deployment most adopters bringing a managed Postgres
+    // actually have. `network: {}` asks for one anyway.
+    const hasVpc = servesApi && (ownsDatabase || props.network !== undefined);
+
+    // Held as locals as well as fields so the code below narrows: `this.network` is
+    // optional and TypeScript cannot see that the migration branch only runs where it
+    // is set.
+    let network: Network | undefined;
+    let databaseClients: SecurityGroup | undefined;
 
     if (servesApi) {
-      // Created for every serving topology, including bring-your-own. Making the VPC
-      // itself optional is slice 3's change and a separate decision: it alters what
-      // `ApiFunction` and `JobsFunction` promise, not merely who creates the database.
-      this.network = new Network(this, 'Network', {
-        vpc: props.network?.vpc,
-        natGateways: props.network?.natGateways,
-      });
-
-      if (props.database) {
-        this.database = new Database(this, 'Database', {
-          vpc: this.network.vpc,
-          minCapacity: props.database.minCapacity,
-          maxCapacity: props.database.maxCapacity,
-          destroyOnRemoval: props.database.destroyOnRemoval,
+      if (hasVpc) {
+        network = new Network(this, 'Network', {
+          vpc: props.network?.vpc,
+          natGateways: props.network?.natGateways,
         });
-      }
+        this.network = network;
 
-      // One group names everything allowed to open a database connection, whether it
-      // reaches the cluster directly or through the proxy. Identity, not CIDR: a CIDR
-      // allowance widens silently as subnets are added.
-      this.databaseClientSecurityGroup = new SecurityGroup(this, 'DatabaseClients', {
-        vpc: this.network.vpc,
-        description: 'Permitted to open Grant database connections',
-        allowAllOutbound: true,
-      });
-
-      // Off by default, and the reason is measured rather than assumed. A proxy holds
-      // a persistent pool to the cluster, and Aurora cannot auto-pause while any
-      // connection exists — so enabling it forfeits the `serverlessV2MinCapacity: 0`
-      // that this target's cost model is built on. Measured on a live deploy: 0.5 ACU
-      // and four held connections, flat across forty idle minutes, versus a cluster
-      // that otherwise pauses to zero. That is roughly $58/month to keep connections
-      // warm for traffic a green-field deploy does not have yet.
-      //
-      // Turn it on when Lambda concurrency is real: without pooling, each warm
-      // execution environment holds its own connections and a burst exhausts
-      // `max_connections`. The trade is cheap idle against tolerance for concurrency,
-      // and it cannot be had both ways.
-      //
-      // Both branches are about a cluster this stack created. An adopter's own
-      // database has neither: CDK cannot attach a proxy to something it does not own,
-      // and opening their security group needs a handle on it — which is slice 3's
-      // `network.databaseSecurityGroup`. Until then, reachability on the BYO path is
-      // the adopter's precondition, and the migration is where it fails loudly.
-      if (props.database && this.database) {
-        if (props.database.proxy?.enabled ?? false) {
-          this.proxy = new DatabaseConnectionProxy(this, 'Proxy', {
-            vpc: this.network.vpc,
-            cluster: this.database.cluster,
-            secret: this.database.secret,
-            clientSecurityGroup: this.databaseClientSecurityGroup,
-            requireTls: props.database.proxy?.requireTls,
+        if (props.database) {
+          this.database = new Database(this, 'Database', {
+            vpc: network.vpc,
+            minCapacity: props.database.minCapacity,
+            maxCapacity: props.database.maxCapacity,
+            destroyOnRemoval: props.database.destroyOnRemoval,
           });
-        } else {
-          this.database.cluster.connections.allowDefaultPortFrom(
-            this.databaseClientSecurityGroup,
+        }
+
+        // One group names everything allowed to open a database connection, whether it
+        // reaches the cluster directly or through the proxy. Identity, not CIDR: a CIDR
+        // allowance widens silently as subnets are added.
+        databaseClients = new SecurityGroup(this, 'DatabaseClients', {
+          vpc: network.vpc,
+          description: 'Permitted to open Grant database connections',
+          allowAllOutbound: true,
+        });
+        this.databaseClientSecurityGroup = databaseClients;
+
+        // Off by default, and the reason is measured rather than assumed. A proxy holds
+        // a persistent pool to the cluster, and Aurora cannot auto-pause while any
+        // connection exists — so enabling it forfeits the `serverlessV2MinCapacity: 0`
+        // that this target's cost model is built on. Measured on a live deploy: 0.5 ACU
+        // and four held connections, flat across forty idle minutes, versus a cluster
+        // that otherwise pauses to zero. That is roughly $58/month to keep connections
+        // warm for traffic a green-field deploy does not have yet.
+        //
+        // Turn it on when Lambda concurrency is real: without pooling, each warm
+        // execution environment holds its own connections and a burst exhausts
+        // `max_connections`. The trade is cheap idle against tolerance for concurrency,
+        // and it cannot be had both ways.
+        //
+        // Both branches are about a cluster this stack created; CDK cannot attach a
+        // proxy to a database it does not own. The `else if` is the bring-your-own
+        // equivalent of the direct rule above it — same identity-based permission,
+        // written onto a group this stack imports rather than one it created.
+        if (props.database && this.database) {
+          if (props.database.proxy?.enabled ?? false) {
+            this.proxy = new DatabaseConnectionProxy(this, 'Proxy', {
+              vpc: network.vpc,
+              cluster: this.database.cluster,
+              secret: this.database.secret,
+              clientSecurityGroup: databaseClients,
+              requireTls: props.database.proxy?.requireTls,
+            });
+          } else {
+            this.database.cluster.connections.allowDefaultPortFrom(
+              databaseClients,
+              'Grant database clients'
+            );
+          }
+        } else if (props.network?.databaseSecurityGroup) {
+          // Topology B: their VPC, their database, their security group. Without this
+          // a deploy stops halfway while someone opens the group by hand, which is the
+          // kind of step that turns a supported path back into a plausible-looking one.
+          //
+          // The ingress lands in the *imported* group's scope, so it adds no construct
+          // here and cannot move a green-field logical id. Verified by synthesizing it:
+          // an `ISecurityGroup` from `SecurityGroup.fromSecurityGroupId` left mutable
+          // emits an `AWS::EC2::SecurityGroupIngress` whose `GroupId` is the adopter's
+          // literal id and whose `SourceSecurityGroupId` is `DatabaseClients`. Imported
+          // with `{ mutable: false }` CDK drops the call silently instead — which is why
+          // the prop's documentation says which import to use.
+          props.network.databaseSecurityGroup.connections.allowFrom(
+            databaseClients,
+            Port.tcp(props.network.databasePort ?? DEFAULT_DATABASE_PORT),
             'Grant database clients'
           );
         }
@@ -264,7 +315,12 @@ export class GrantPlatform extends Construct {
       // where the dependency is added below.
       let migrateTrigger: MigrateTrigger | undefined;
 
-      if (props.migration?.enabled ?? true) {
+      // The Fargate one-shot exists only where a VPC does: a task needs subnets to be
+      // placed in. Topology C migrates with `pnpm --filter grant-aws-deploy migrate`
+      // instead, which runs the same `node dist/migrate.js` against the same database —
+      // and `assertMigrationIsRunnable` refuses `migration.enabled: true` there rather
+      // than dropping it quietly, so nobody is left believing a schema was applied.
+      if (network && databaseClients && (props.migration?.enabled ?? true)) {
         // Built from source unless the caller supplied one. `imageIdentifier` is what
         // re-arms the migration trigger, so a caller-supplied image needs the caller
         // to say when it changed — the tag alone may be mutable.
@@ -277,9 +333,9 @@ export class GrantPlatform extends Construct {
         }
 
         this.migrateTask = new MigrateTask(this, 'Migrate', {
-          vpc: this.network.vpc,
+          vpc: network.vpc,
           image,
-          securityGroups: [this.databaseClientSecurityGroup],
+          securityGroups: [databaseClients],
           platformSecret: this.platformSecret.secret,
           environment: {
             ...this.env,
@@ -300,9 +356,9 @@ export class GrantPlatform extends Construct {
         });
 
         migrateTrigger = new MigrateTrigger(this, 'MigrateTrigger', {
-          vpc: this.network.vpc,
+          vpc: network.vpc,
           task: this.migrateTask,
-          securityGroups: [this.databaseClientSecurityGroup],
+          securityGroups: [databaseClients],
           timeout: props.migration?.timeout,
           imageIdentifier,
           // Nothing may migrate before the database it connects to, the proxy it
@@ -357,9 +413,9 @@ export class GrantPlatform extends Construct {
       }
 
       this.api = new ApiFunction(this, 'Api', {
-        vpc: this.network.vpc,
+        vpc: network?.vpc,
         code: props.api?.image ?? builtImageCode(),
-        securityGroups: [this.databaseClientSecurityGroup],
+        securityGroups: databaseClients ? [databaseClients] : undefined,
         platformSecret: this.platformSecret.secret,
         cacheTable: this.cacheTable.table,
         uploadsBucket: this.uploads.bucket,
@@ -416,9 +472,9 @@ export class GrantPlatform extends Construct {
         this.jobQueue.queue.grantSendMessages(this.api.function);
 
         this.jobsFunction = new JobsFunction(this, 'Jobs', {
-          vpc: this.network.vpc,
+          vpc: network?.vpc,
           code: props.jobs?.image ?? props.api?.image ?? builtImageCode(),
-          securityGroups: [this.databaseClientSecurityGroup],
+          securityGroups: databaseClients ? [databaseClients] : undefined,
           platformSecret: this.platformSecret.secret,
           cacheTable: this.cacheTable.table,
           uploadsBucket: this.uploads.bucket,

@@ -5,6 +5,7 @@
  * point of the configuration surface.
  */
 import { App, SecretValue, Stack, Token } from 'aws-cdk-lib';
+import { Vpc } from 'aws-cdk-lib/aws-ec2';
 import { describe, expect, it } from 'vitest';
 
 import { ConfigurationError } from './errors';
@@ -13,6 +14,7 @@ import {
   assertConcreteEnv,
   assertConfigurableEnv,
   assertDatabaseSelection,
+  assertMigrationIsRunnable,
   validateAppUrl,
   validateCertificateArn,
   validateDatabaseName,
@@ -269,5 +271,62 @@ describe('assertConfigurableEnv', () => {
     expect(() => assertConfigurableEnv({ DB_URL: 'postgresql://u:hunter2@h/d' }, 'env')).toThrow(
       expect.not.stringContaining('hunter2')
     );
+  });
+});
+
+describe('assertMigrationIsRunnable', () => {
+  const url = SecretValue.secretsManager(
+    'arn:aws:secretsmanager:eu-central-1:123456789012:secret:grant/db-AbCdEf'
+  );
+  const vpc = Vpc.fromVpcAttributes(new Stack(new App(), 'S'), 'Vpc', {
+    vpcId: 'vpc-0123456789abcdef0',
+    availabilityZones: ['eu-central-1a', 'eu-central-1b'],
+    privateSubnetIds: ['subnet-aaa', 'subnet-bbb'],
+  });
+
+  it.each([
+    ['green-field, which always has a VPC', { database: {} }],
+    ['green-field, network omitted', { database: {}, network: undefined }],
+    ["bring-your-own in the adopter's VPC", { databaseUrl: url, network: { vpc } }],
+    ['bring-your-own with a VPC the stack builds', { databaseUrl: url, network: {} }],
+  ])('accepts an explicit migration %s', (_label, props) => {
+    expect(() =>
+      assertMigrationIsRunnable({ ...props, migration: { enabled: true } })
+    ).not.toThrow();
+  });
+
+  it('refuses an explicit migration where the stack builds no VPC', () => {
+    // Topology C. A Fargate task needs subnets, and there are none — so this asks for
+    // something that cannot be placed, and a deploy would fail with a CloudFormation
+    // error naming an ECS resource rather than the configuration that caused it.
+    expect(() =>
+      assertMigrationIsRunnable({ databaseUrl: url, migration: { enabled: true } })
+    ).toThrow(ConfigurationError);
+    expect(() =>
+      assertMigrationIsRunnable({ databaseUrl: url, migration: { enabled: true } })
+    ).toThrow(/creates no VPC/);
+  });
+
+  it('names the command that does work rather than only refusing', () => {
+    // Gate 1 was explicit that a guide telling an operator to run it themselves is not
+    // a migration path. The refusal names the built one.
+    expect(() =>
+      assertMigrationIsRunnable({ databaseUrl: url, migration: { enabled: true } })
+    ).toThrow(/pnpm --filter grant-aws-deploy migrate -c dbUrlSecretArn=<arn>/);
+  });
+
+  it('leaves the migration unset alone, because that topology simply has none', () => {
+    // Left unset the stack creates no task and the operator command is the path;
+    // refusing here would make topology C unconfigurable rather than explicit.
+    expect(() => assertMigrationIsRunnable({ databaseUrl: url })).not.toThrow();
+    expect(() =>
+      assertMigrationIsRunnable({ databaseUrl: url, migration: { enabled: false } })
+    ).not.toThrow();
+  });
+
+  it('says nothing about the docs-only deploy, which has no database to migrate', () => {
+    // Naming a database in the message would name something absent from the
+    // configuration entirely.
+    expect(() => assertMigrationIsRunnable({ migration: { enabled: true } })).not.toThrow();
   });
 });

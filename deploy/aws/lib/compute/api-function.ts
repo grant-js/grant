@@ -72,7 +72,17 @@ import type { GrantEnv } from '../config/props';
 const DEFAULT_RESERVED_CONCURRENCY = 100;
 
 export interface ApiFunctionProps {
-  readonly vpc: IVpc;
+  /**
+   * Network placement. Optional, and the option is the bring-your-own path: with
+   * `database` and `network` both omitted this stack creates no VPC, the function runs
+   * outside one and reaches a routable database directly. That also removes the NAT
+   * gateway, which is the largest fixed cost in the target, and ENI attachment from
+   * every cold start. Same shape as `WebFunction`, which has always been outside.
+   *
+   * Whether the database is actually reachable that way is the adopter's precondition:
+   * the URL is a `SecretValue`, opaque at synth, so nothing here can check it.
+   */
+  readonly vpc?: IVpc;
 
   /**
    * The image to run. `DockerImageCode` rather than a `DockerImageAsset` so an
@@ -82,8 +92,8 @@ export interface ApiFunctionProps {
    */
   readonly code: DockerImageCode;
 
-  /** Attached so the function may open database connections. */
-  readonly securityGroups: ISecurityGroup[];
+  /** Attached so the function may open database connections. Ignored without `vpc`. */
+  readonly securityGroups?: ISecurityGroup[];
 
   /** Points `SECRETS_AWS_SECRET_ID` at the env-shaped secret holding `DB_URL`. */
   readonly platformSecret: ISecret;
@@ -119,11 +129,15 @@ export class ApiFunction extends Construct {
 
     this.function = new DockerImageFunction(this, 'Function', {
       code: props.code,
-      vpc: props.vpc,
-      // Private-with-egress, never isolated: the API calls SES, GitHub OAuth and
-      // arbitrary webhook URLs, none of which a VPC endpoint can reach.
-      vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
-      securityGroups: props.securityGroups,
+      ...(props.vpc
+        ? {
+            vpc: props.vpc,
+            // Private-with-egress, never isolated: the API calls SES, GitHub OAuth and
+            // arbitrary webhook URLs, none of which a VPC endpoint can reach.
+            vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
+            ...(props.securityGroups ? { securityGroups: props.securityGroups } : {}),
+          }
+        : {}),
       // 1024, and the number is measured rather than reasoned.
       //
       // The reasoning said 1769: Lambda allocates CPU in proportion to memory, that is
