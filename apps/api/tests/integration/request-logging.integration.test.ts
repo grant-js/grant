@@ -10,6 +10,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mockConfig = vi.hoisted(() => ({
   tracing: { enabled: false },
   telemetry: { provider: 'none' as const },
+  // Read by `getClientIp`, which the middleware now uses in place of `req.ip`.
+  security: { trustedClientIpHeader: '' },
 }));
 
 vi.mock('@/config', () => ({ config: mockConfig }));
