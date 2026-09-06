@@ -34,16 +34,16 @@
   },
   "devDependencies": {
     "@graphql-codegen/add": "^7.1.0",
-    "@graphql-codegen/cli": "^7.2.0",
+    "@graphql-codegen/cli": "^7.4.0",
     "@graphql-codegen/typed-document-node": "^7.1.0",
     "@graphql-codegen/typescript": "^6.1.0",
     "@graphql-codegen/typescript-operations": "^6.1.6",
     "@graphql-codegen/typescript-resolvers": "^6.1.0",
     "@parcel/watcher": "^2.6.0",
-    "@types/node": "^26.2.0",
-    "eslint": "^10.8.1",
-    "graphql": "^16.14.2",
-    "typescript": "^6.0.3",
+    "@types/node": "^26.4.1",
+    "eslint": "^10.9.1",
+    "graphql": "^17.0.2",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.11"
   }
 }
