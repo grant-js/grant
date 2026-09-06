@@ -64,6 +64,34 @@ describe('classifyConfig', () => {
     });
   });
 
+  it('refuses DB_URL and names the prop that replaces it', () => {
+    // The refusal has to carry the fix, because the alternative is not another key in
+    // this file — it is a deploy flag. A bare "not allowed" would leave an operator
+    // with a database and no way to reach it.
+    expect(() => classifyConfig({ DB_URL: 'postgresql://u:p@h:5432/d' })).toThrow(
+      /-c dbUrlSecretArn=<arn>/
+    );
+  });
+
+  it('fails the whole file closed rather than classifying around DB_URL', () => {
+    // The upgrade case: someone whose .env already carries DB_URL, from the days when
+    // the props said to put it there, alongside keys that classify fine. Synth stops
+    // rather than deploying a Lambda whose environment holds a database password.
+    expect(() =>
+      classifyConfig({
+        EMAIL_PROVIDER: 'ses',
+        DB_URL: 'postgresql://u:p@h:5432/d',
+        GITHUB_CLIENT_SECRET: 'shhh',
+      })
+    ).toThrow(/DB_URL cannot be set from this file/);
+  });
+
+  it('leaves a blank DB_URL inert, like every other unset key', () => {
+    // `.env.example` documents the key in prose and sets nothing. An operator who
+    // writes `DB_URL=` has expressed no value, and refusing that would be noise.
+    expect(classifyConfig({ DB_URL: '' })).toEqual({ env: {}, secrets: {} });
+  });
+
   it('refuses a stack-generated key rather than ignoring it', () => {
     // Silently dropping it would leave the operator believing they had set the value
     // CloudFront verifies against.

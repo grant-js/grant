@@ -23,7 +23,12 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { CREDENTIAL_KEYS, RESOLVER_SECRET_KEYS, STACK_GENERATED_KEYS } from './env-file';
+import {
+  CREDENTIAL_KEYS,
+  RESOLVER_SECRET_KEYS,
+  STACK_COMPOSED_KEYS,
+  STACK_GENERATED_KEYS,
+} from './env-file';
 
 const SCHEMA = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -61,6 +66,7 @@ describe('every credential-shaped env key is classified', () => {
     const classified = new Set<string>([
       ...CREDENTIAL_KEYS,
       ...RESOLVER_SECRET_KEYS,
+      ...STACK_COMPOSED_KEYS,
       ...STACK_GENERATED_KEYS,
       ...Object.keys(NOT_A_CREDENTIAL),
     ]);
@@ -82,6 +88,23 @@ describe('every credential-shaped env key is classified', () => {
     const stale = [...CREDENTIAL_KEYS].filter((key) => !keys.has(key));
 
     expect(stale, `refused keys no longer in @grantjs/env: ${stale.join(', ')}`).toEqual([]);
+  });
+
+  /**
+   * The one credential the heuristic above cannot see, asserted by name.
+   *
+   * `DB_URL` holds a password inside a URL, and matches none of `SECRET`, `PASSWORD`,
+   * `API_KEY`, `PRIVATE_KEY`, `ACCESS_KEY` or `CREDENTIAL`. Widening the pattern is
+   * not the fix: `_URL$` would sweep in `APP_URL`, `DOCS_URL` and
+   * `SECURITY_FRONTEND_URL` among others, and a heuristic that fires on eight
+   * harmless keys is a heuristic people learn to add exclusions to without reading.
+   * So this key is pinned individually, and the next URL-shaped credential gets a
+   * line of its own here too.
+   */
+  it('classifies DB_URL, which the heuristic cannot match', () => {
+    expect(schemaKeys()).toContain('DB_URL');
+    expect(CREDENTIAL_SHAPED.test('DB_URL')).toBe(false);
+    expect(STACK_COMPOSED_KEYS as readonly string[]).toContain('DB_URL');
   });
 
   it('never refuses a key that has a safe path', () => {

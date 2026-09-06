@@ -129,7 +129,7 @@ interface DatabaseProxyProps {
   readonly requireTls?: boolean;
 }
 
-/** The database. Omit entirely to bring your own via `DB_URL` in `env`. */
+/** The database this stack creates. Omit it and pass `databaseUrl` to bring your own. */
 interface DatabaseProps {
   /** Minimum Aurora capacity units. `0` auto-pauses an idle cluster to no cost. */
   readonly minCapacity?: number;
@@ -366,10 +366,40 @@ export interface GrantPlatformProps {
   readonly docs?: DocsProps;
 
   /**
-   * Create the data tier. Omit to bring your own Postgres, in which case supply
-   * `DB_URL` through `env` — the shape the Helm chart has always used.
+   * Create the data tier — an Aurora cluster this stack owns and tears down with
+   * itself. Omit it and pass `databaseUrl` to serve against a database you already
+   * run; the two are mutually exclusive.
    */
   readonly database?: DatabaseProps;
+
+  /**
+   * `DB_URL` for a database this stack does not create, and the whole of what it
+   * needs to know about one. Everything downstream reads the key out of the platform
+   * secret and cannot tell which topology produced it.
+   *
+   * Not settable from the env file. A key there becomes a Lambda environment
+   * variable, which is plaintext in the CloudFormation template and in the function
+   * configuration, so `DB_URL` is refused there and supplied here instead.
+   *
+   * **`SecretValue`, not `string`, and the type is the warning** — the same choice
+   * `secrets` carries, for the same reason:
+   *
+   *   - `SecretValue.secretsManager(arn)` renders a `{{resolve:secretsmanager:…}}`
+   *     dynamic reference that CloudFormation resolves during create or update. The
+   *     password is present at deploy time and absent from the template. **This is
+   *     the one to use.**
+   *   - `SecretValue.unsafePlainText('postgresql://…')` puts the connection string,
+   *     password included, into the template. `unsafe` is not decoration.
+   *
+   * Because a dynamic reference is copied at deploy rather than linked, rotating the
+   * upstream secret does not reach the platform secret until the next stack update.
+   * To rotate without one, write `DB_URL` into the platform secret directly — the
+   * application's resolver picks it up within `SECRETS_CACHE_TTL_SECONDS`.
+   *
+   * The URL is used exactly as written, including its `sslmode`; the stack never
+   * rewrites it.
+   */
+  readonly databaseUrl?: SecretValue;
 
   /** Deploy-time migration. Ignored when this stack does not own the database. */
   readonly migration?: MigrationProps;

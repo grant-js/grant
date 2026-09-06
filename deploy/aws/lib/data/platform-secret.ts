@@ -14,6 +14,11 @@
  * `DB_URL` is composed here rather than derived from `POSTGRES_*` at runtime, because
  * `resolveDatabaseUrl` (`@grantjs/env`) builds a URL with no SSL parameter and the
  * proxy requires TLS. Composing it is the only place the `sslmode` can be attached.
+ *
+ * When the stack does not own a cluster, the same key is filled from a `SecretValue`
+ * the caller supplies instead. That is the only difference between the two topologies
+ * at this layer: everything downstream reads `DB_URL` out of this secret and cannot
+ * tell which one produced it.
  */
 
 import type { SecretValue } from 'aws-cdk-lib';
@@ -40,13 +45,26 @@ import { Construct } from 'constructs';
 export const ORIGIN_VERIFY_SECRET_KEY = 'ORIGIN_VERIFY_SECRET';
 
 export interface PlatformSecretProps {
+  /**
+   * `DB_URL` for a database this stack did not create.
+   *
+   * Mutually exclusive with the cluster fields below, and exactly one of the two
+   * forms is required — asserted in the constructor, because a caller writing their
+   * own `bin/` may build these props dynamically and lose the type's help.
+   *
+   * Use `SecretValue.secretsManager(arn)`: it renders a dynamic reference and the
+   * password never enters the template. `SecretValue.unsafePlainText(...)` writes the
+   * literal instead, and `unsafe` is not decoration.
+   */
+  readonly databaseUrl?: SecretValue;
+
   /** The cluster's RDS-shaped credentials, read to compose `DB_URL`. */
-  readonly databaseCredentials: ISecret;
+  readonly databaseCredentials?: ISecret;
 
   /** Proxy endpoint, so pooled connections are used rather than the cluster directly. */
-  readonly host: string;
-  readonly port: number;
-  readonly databaseName: string;
+  readonly host?: string;
+  readonly port?: number;
+  readonly databaseName?: string;
 
   /**
    * Extra `ENV_NAME: value` pairs. Merged after the defaults, so a caller wins.
@@ -59,27 +77,70 @@ export interface PlatformSecretProps {
   readonly extraEnv?: Readonly<Record<string, SecretValue>>;
 }
 
+/**
+ * The one `DB_URL`, from whichever of the two sources the caller supplied.
+ *
+ * `unsafeUnwrap` names a real hazard, but not these uses. It renders a
+ * `{{resolve:secretsmanager:…}}` dynamic reference into the template, which
+ * CloudFormation resolves at deploy time — the plaintext is never in the template,
+ * the synthesized output, or CDK context. The destination is another Secrets Manager
+ * secret, so the value never leaves that boundary. The exception an adopter can
+ * create for themselves is `SecretValue.unsafePlainText`, which has no upstream
+ * secret to reference and therefore does put the literal in the template; that is
+ * documented on `GrantPlatformProps.databaseUrl` and is their choice, not this
+ * construct's.
+ */
+function resolveDatabaseUrl(props: PlatformSecretProps): string {
+  if (props.databaseUrl && props.databaseCredentials) {
+    throw new Error(
+      'PlatformSecret takes either databaseUrl or the credentials of a cluster this ' +
+        'stack created, not both. Supplying both leaves it ambiguous which database ' +
+        'the API and the migration would actually reach.'
+    );
+  }
+
+  // Used exactly as written. The adopter owns their connection string, including its
+  // `sslmode`; silently rewriting a URL is how a deploy ends up talking to a database
+  // over a channel its operator did not choose.
+  if (props.databaseUrl) {
+    return props.databaseUrl.unsafeUnwrap();
+  }
+
+  if (!props.databaseCredentials) {
+    throw new Error(
+      'PlatformSecret needs a database. Either pass databaseUrl for one this stack ' +
+        'does not own, or databaseCredentials with host, port and databaseName for a ' +
+        'cluster it created.'
+    );
+  }
+
+  if (props.host === undefined || props.port === undefined || props.databaseName === undefined) {
+    throw new Error(
+      'PlatformSecret needs host, port and databaseName alongside databaseCredentials: ' +
+        'the RDS-shaped secret holds a username and password, and the endpoint to ' +
+        "point them at is the stack's to decide — the proxy when there is one, the " +
+        'cluster writer otherwise.'
+    );
+  }
+
+  const username = props.databaseCredentials.secretValueFromJson('username').unsafeUnwrap();
+  const password = props.databaseCredentials.secretValueFromJson('password').unsafeUnwrap();
+
+  // sslmode=require: postgres.js maps it to `rejectUnauthorized = false`
+  // (`postgres/src/connection.js:283`), so the hop is encrypted but the server
+  // certificate is not verified. That defeats passive interception, not an active
+  // in-VPC MITM; `verify-full` would need the RDS CA bundle shipped in the image,
+  // which it does not carry. Recorded rather than silently accepted.
+  return `postgresql://${username}:${password}@${props.host}:${props.port}/${props.databaseName}?sslmode=require`;
+}
+
 export class PlatformSecret extends Construct {
   public readonly secret: Secret;
 
   constructor(scope: Construct, id: string, props: PlatformSecretProps) {
     super(scope, id);
 
-    const username = props.databaseCredentials.secretValueFromJson('username').unsafeUnwrap();
-    const password = props.databaseCredentials.secretValueFromJson('password').unsafeUnwrap();
-
-    // `unsafeUnwrap` names a real hazard, but not this use. It renders a
-    // `{{resolve:secretsmanager:…}}` dynamic reference into the template, which
-    // CloudFormation resolves at deploy time — the plaintext is never in the
-    // template, the synthesized output, or CDK context. The destination is another
-    // Secrets Manager secret, so the value never leaves that boundary.
-    //
-    // sslmode=require: postgres.js maps it to `rejectUnauthorized = false`
-    // (`postgres/src/connection.js:283`), so the hop is encrypted but the server
-    // certificate is not verified. That defeats passive interception, not an active
-    // in-VPC MITM; `verify-full` would need the RDS CA bundle shipped in the image,
-    // which it does not carry. Recorded rather than silently accepted.
-    const dbUrl = `postgresql://${username}:${password}@${props.host}:${props.port}/${props.databaseName}?sslmode=require`;
+    const dbUrl = resolveDatabaseUrl(props);
 
     this.secret = new Secret(this, 'Secret', {
       description: 'Grant platform environment — JSON of ENV_NAME: value',
