@@ -38,7 +38,7 @@ Inside `GrantPlatform`:
 | **Migrations** | An ECS Fargate one-shot task, run by a CDK trigger **before** the API function is created |
 | **Network**    | VPC with public / private-egress / isolated subnets and one NAT gateway                   |
 
-**PostgreSQL and Redis are not something you bring.** Unlike the Docker and Kubernetes targets, this one creates its own data tier: Aurora replaces PostgreSQL and DynamoDB replaces Redis, so a green-field deploy needs no cluster of either. DynamoDB bills per request and genuinely costs nothing idle; Aurora is configured to scale to zero but does not reach it in the default configuration — see [Why the database does not reach zero](#why-the-database-does-not-reach-zero).
+**Redis is not something you bring; PostgreSQL now is.** Unlike the Docker and Kubernetes targets, this one creates its own data tier by default: Aurora replaces PostgreSQL and DynamoDB replaces Redis, so a green-field deploy needs no cluster of either. You can serve against a PostgreSQL you already run — see [Bring your own PostgreSQL](#bring-your-own-postgresql) — but Redis remains configuration only. DynamoDB bills per request and genuinely costs nothing idle; Aurora is configured to scale to zero but does not reach it in the default configuration — see [Why the database does not reach zero](#why-the-database-does-not-reach-zero).
 
 ## Prerequisites
 
@@ -295,21 +295,163 @@ If you only need to reuse an **existing certificate**, pass `-c certificateArn=�
 
 What each resource supports today, so you can tell a supported path from a plausible-looking one:
 
-| Resource           | How                                            | Status                                                        |
-| ------------------ | ---------------------------------------------- | ------------------------------------------------------------- |
-| **VPC**            | `vpc?: IVpc`                                   | supported — prefer `fromVpcAttributes()` over a lookup        |
-| **Certificate**    | `-c certificateArn=…`, or `ICertificate`       | supported                                                     |
-| **Hosted zone**    | `IHostedZone`                                  | supported                                                     |
-| **Uploads bucket** | `storage.uploadsBucket?: IBucket`              | supported                                                     |
-| **Cache table**    | `cache.table?: ITable`                         | supported — needs a `pk`/`sk` schema and a TTL on `expiresAt` |
-| **PostgreSQL**     | omit `database`, set `DB_URL` in `env`         | **not yet** — see below                                       |
-| **Redis**          | `CACHE_STRATEGY=redis` plus `REDIS_*` in `env` | config only — no network wiring is generated                  |
-
-::: warning Bring-your-own PostgreSQL does not work end to end yet
-Omitting the `database` prop is what you would reach for, and the props document it that way — but the same condition gates the **API function**, which reads `DB_URL` from the platform secret the stack only creates alongside its own cluster. Omit `database` today and you get no serving function. This is recorded in the library as a follow-up rather than an oversight; until it lands, this target creates its own Aurora cluster.
-:::
+| Resource           | How                                            | Status                                                                  |
+| ------------------ | ---------------------------------------------- | ----------------------------------------------------------------------- |
+| **VPC**            | `vpc?: IVpc`                                   | supported — prefer `fromVpcAttributes()` over a lookup                  |
+| **Certificate**    | `-c certificateArn=…`, or `ICertificate`       | supported                                                               |
+| **Hosted zone**    | `IHostedZone`                                  | supported                                                               |
+| **Uploads bucket** | `storage.uploadsBucket?: IBucket`              | supported                                                               |
+| **Cache table**    | `cache.table?: ITable`                         | supported — needs a `pk`/`sk` schema and a TTL on `expiresAt`           |
+| **PostgreSQL**     | omit `database`, pass `-c dbUrlSecretArn=…`    | supported — see [Bring your own PostgreSQL](#bring-your-own-postgresql) |
+| **Redis**          | `CACHE_STRATEGY=redis` plus `REDIS_*` in `env` | config only — no network wiring is generated                            |
 
 Redis is a weaker case than it looks: the keys are honoured by the application, but nothing in the stack opens a path to a cluster it did not create. You would be bringing the VPC, the security-group rule and the cluster yourself, and the DynamoDB table would still be created unless you also pass `cache.table`.
+
+## Bring your own PostgreSQL
+
+Omit the `database` prop and point the stack at a database you already run. Everything
+else is unchanged: the API, the web app, the docs site, the cache table, the uploads
+bucket, the job queue and all six scheduled jobs are created exactly as they are on a
+green-field deploy. Nothing downstream can tell which database it reached.
+
+Both shapes below were deployed, migrated, smoke-tested and destroyed before this was
+written — the numbers come from `plans/2026-09-05-byo-database-measurements.md`.
+
+### The connection string goes in Secrets Manager, not in `.env`
+
+`DB_URL` is **refused** from the env file, and the refusal is deliberate. Every key in
+that file becomes a Lambda environment variable, which is plaintext in the
+CloudFormation template, in the function configuration, and in `cdk.out` on disk. A
+connection string carries a password.
+
+So put the URL in Secrets Manager and pass the ARN:
+
+```bash
+aws secretsmanager create-secret \
+  --name grant/db-url \
+  --secret-string 'postgresql://user:password@db.example.com:5432/grant_db?sslmode=require'
+```
+
+The secret must be **in the same account and region as the stack** — a cross-account
+secret needs a resource policy and a KMS grant the reference app does not compose — and
+must hold a bare, percent-encoded connection string. No quotes, no backslashes, no
+trailing newline: the value is substituted into a JSON document at deploy time and
+those characters break it.
+
+The stack renders the ARN as a <span v-pre>`{{resolve:secretsmanager:…}}`</span> dynamic reference inside
+the platform secret, so the password is present at deploy time and **absent from the
+template**.
+
+Your URL is used exactly as written, `sslmode` included. The stack never rewrites it.
+
+### Two shapes, and the one you pick decides how you migrate
+
+|                    | In your VPC                                                                                | No VPC                                   |
+| ------------------ | ------------------------------------------------------------------------------------------ | ---------------------------------------- |
+| Context flags      | `-c dbUrlSecretArn` `-c vpcId` `-c vpcAzs` `-c vpcPrivateSubnetIds` `-c dbSecurityGroupId` | `-c dbUrlSecretArn`                      |
+| Functions          | inside your VPC                                                                            | outside any VPC                          |
+| NAT gateway        | yours                                                                                      | **none**                                 |
+| Migration          | Fargate one-shot, during `cdk deploy`                                                      | `pnpm --filter grant-aws-deploy migrate` |
+| Deployed resources | 79                                                                                         | 61                                       |
+
+Green-field is 112 resources and one NAT gateway for comparison.
+
+#### In your VPC
+
+```bash
+pnpm --filter grant-aws-deploy exec cdk deploy --all \
+  -c appUrl=https://grant.example.com \
+  -c zoneName=example.com -c hostedZoneId=Z123456ABCDEFG \
+  -c dbUrlSecretArn=arn:aws:secretsmanager:eu-central-1:123456789012:secret:grant/db-url-AbCdEf \
+  -c vpcId=vpc-0123456789abcdef0 \
+  -c vpcAzs=eu-central-1a,eu-central-1b \
+  -c vpcPrivateSubnetIds=subnet-0aaa,subnet-0bbb \
+  -c dbSecurityGroupId=sg-0123456789abcdef0
+```
+
+**The private subnets need a route out.** A Lambda ENI gets no public IP, so functions
+in a subnet whose only route is an internet gateway have no egress at all — they cannot
+reach Secrets Manager or ECR, and the failure looks like a database problem when it is a
+routing one. Private subnets with a NAT gateway, or the interface endpoints equivalent
+to it.
+
+`-c dbSecurityGroupId` opens your database's security group to the stack's client group
+on port 5432 (`network.databasePort` if yours differs). The rule is written by identity
+— source is the Grant client security group, not a CIDR — so it does not widen as
+subnets are added. Import the group **mutable**; `SecurityGroup.fromSecurityGroupId(…,
+{ mutable: false })` makes CDK drop the call silently and you get no rule at all.
+
+The migration is the same Fargate one-shot a green-field deploy runs, and it converges
+during the first `cdk deploy`. Measured: bootstrap complete 5 minutes into a 7½-minute
+deploy, against a database that had never been touched.
+
+#### No VPC
+
+```bash
+pnpm --filter grant-aws-deploy exec cdk deploy --all \
+  -c appUrl=https://grant.example.com \
+  -c zoneName=example.com -c hostedZoneId=Z123456ABCDEFG \
+  -c dbUrlSecretArn=arn:aws:secretsmanager:eu-central-1:123456789012:secret:grant/db-url-AbCdEf
+```
+
+For a managed PostgreSQL reachable from the internet. The functions run outside a VPC,
+which removes the NAT gateway — **the largest fixed cost in this target**, about
+\$32/month in hourly charges alone, billed whether or not a request is served.
+
+The trade is stated plainly: your database is reachable from the internet, and because
+the functions have no fixed egress address you cannot restrict it to them by IP.
+Restrict by credentials and TLS, and prefer the VPC shape if your provider supports
+private networking.
+
+A Fargate task needs subnets, so there is no deploy-time migration here. Run it
+yourself, against the same secret, using the same entrypoint the Fargate task would
+have run:
+
+```bash
+pnpm --filter grant-aws-deploy migrate \
+  -c dbUrlSecretArn=arn:aws:secretsmanager:eu-central-1:123456789012:secret:grant/db-url-AbCdEf
+```
+
+It is idempotent and holds an advisory lock, so it is safe to run again and safe to run
+from CI. Setting `migration.enabled: true` with no VPC is **refused at synth** rather
+than silently skipped, so nobody is left believing a schema was applied.
+
+### Your database must let the migration create a role
+
+`migrate` runs migrations, a row-level-security role grant and the core seed in one
+pass. The grant needs a login that may `CREATE ROLE`. On RDS the master user qualifies —
+`rolcreaterole = t`, `rolsuper = f` — and no extra configuration is needed. A managed
+PostgreSQL that withholds `CREATEROLE` fails at that step; set `DB_GRANT_ROLE_URL` to a
+role that has it, or run the grant yourself.
+
+Nothing at synth can check this. The connection string is a `SecretValue` and opaque by
+construction, so the first thing that finds out is the migration — which fails loudly
+and names the database.
+
+### Rotating the password
+
+**A dynamic reference is copied, not linked, and `cdk deploy` will not refresh it.**
+CloudFormation reads the referenced secret only while creating or updating the resource
+that holds it. Rotating your secret changes nothing in the template, so there is no
+update, so there is no re-resolution.
+
+Measured: after rotating the upstream secret, `cdk deploy` with identical context
+reported `GrantPlatform (no changes)` in 0 s and the platform secret still held the old
+URL. A deploy after a rotation **succeeds and keeps the old credential** — which is the
+failure worth knowing about, because it looks like it worked.
+
+To rotate, write `DB_URL` into the platform secret directly (its name is the
+`DatabaseSecretName` stack output); the application resolves secrets per use and picks
+the new value up within `SECRETS_CACHE_TTL_SECONDS`, with no deploy. Note this has not
+been measured end to end, and that a later stack update which does modify the platform
+secret will overwrite the value with whatever the reference resolves to.
+
+### What is not created
+
+No Aurora cluster, no RDS Proxy, and no database credentials of the stack's own. The
+`DatabaseSecretName` output still names the platform secret — the flat `ENV_NAME: value`
+document the application resolves — which exists on every serving topology. The name is
+kept for compatibility with `put-secrets`; it does not imply a database.
 
 ## Teardown
 
