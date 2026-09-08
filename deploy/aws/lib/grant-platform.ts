@@ -8,15 +8,10 @@
  * owns, and hand the handles in — which is exactly the composition an adopter needs
  * when they replace `bin/`.
  *
- * Slice 2 establishes the configuration surface and the routing plan; it creates no
- * AWS resources. That is deliberate — the stack plan front-loads everything CI can
- * verify, because from the docs site onward the evidence is a recorded deploy rather
- * than a diff.
- *
- * What it does emit is the **resolved plan** as outputs: the canonical hostname and
- * the CloudFront behaviour order. The committed synth output is therefore reviewable
- * evidence that derivation produced the intended routing, before any distribution
- * exists to get it wrong.
+ * It emits the **resolved plan** as outputs alongside the resources: the canonical
+ * hostname and the CloudFront behaviour order. The committed synth output is
+ * therefore reviewable evidence that derivation produced the intended routing, rather
+ * than something only a deploy can confirm.
  */
 
 import { dirname, join } from 'node:path';
@@ -41,6 +36,7 @@ import { AWS_TARGET_ENV_DEFAULTS } from './config/defaults';
 import type { GrantEnv, GrantPlatformProps } from './config/props';
 import {
   assertCertificateRegion,
+  assertConfigurableEnv,
   assertDatabaseSelection,
   validateAppUrl,
   validateHostnameInZone,
@@ -121,6 +117,10 @@ export class GrantPlatform extends Construct {
     const { hostname } = validateAppUrl(props.appUrl);
     validateHostnameInZone(hostname, props.dns.hostedZone.zoneName);
     assertDatabaseSelection(props);
+    // Both environment surfaces, not just the API's: `web.env` reaches a Lambda
+    // environment variable by exactly the same route.
+    assertConfigurableEnv(props.env, 'env');
+    assertConfigurableEnv(props.web?.env, 'web.env');
 
     this.hostname = hostname;
     // Caller last: an adopter overriding a default must win over this file's opinion.

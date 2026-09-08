@@ -68,8 +68,8 @@ interface NetworkProps {
  */
 interface MigrationProps {
   /**
-   * Whether to run migrations during deploy. Defaults to **true** whenever this stack
-   * owns the database.
+   * Whether to run migrations during deploy. Defaults to **true** on every topology
+   * that serves an API, including one reaching a database this stack did not create.
    *
    * Set false when a pipeline runs migrations itself, or when the deploying principal
    * should not be able to alter the schema.
@@ -295,8 +295,8 @@ interface ApiProps {
  */
 interface JobsProps {
   /**
-   * Whether to provision job execution. Defaults to **true** whenever this stack owns
-   * the database.
+   * Whether to provision job execution. Defaults to **true** on every topology that
+   * serves an API, whichever database it reaches.
    *
    * Turning it off leaves the application registering handlers that nothing triggers:
    * sweeps stop, and enqueued work is accepted and never run. Set it false only when
@@ -354,7 +354,7 @@ export interface GrantPlatformProps {
 
   readonly cache?: CacheProps;
 
-  /** The serving function. Created only when the data tier is. */
+  /** The serving function. Created whenever a database is reachable. */
   readonly api?: ApiProps;
 
   /**

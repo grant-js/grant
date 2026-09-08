@@ -9,7 +9,7 @@
  * further along.
  */
 import { App, SecretValue, Stack } from 'aws-cdk-lib';
-import { Match, Template } from 'aws-cdk-lib/assertions';
+import { Template } from 'aws-cdk-lib/assertions';
 import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
 import { DockerImageCode } from 'aws-cdk-lib/aws-lambda';
@@ -103,16 +103,30 @@ describe('serving against a database this stack did not create', () => {
     template.resourceCountIs('AWS::Events::Rule', 6);
   });
 
-  it('routes the API through CloudFront rather than leaving the origin unreferenced', () => {
+  it('points the API behaviours at the API function URL, not merely at some origin', () => {
     // The failure this replaces was not a missing function — it was a distribution
     // with no API origin, serving only docs.
+    //
+    // Asserting "an origin with a CustomOriginConfig exists" does not catch that: the
+    // web function URL is one too, so the assertion passed with the API origin
+    // removed entirely. A security review found it by mutation. Follow the behaviour
+    // instead — from the path pattern to its target origin to the function URL that
+    // origin resolves to — which is the wiring that actually has to hold.
     const { template } = build();
+    const distribution = Object.values(template.findResources('AWS::CloudFront::Distribution'))[0]!;
+    const config = distribution.Properties.DistributionConfig as {
+      Origins: { Id: string; DomainName: unknown }[];
+      CacheBehaviors: { PathPattern: string; TargetOriginId: string }[];
+    };
 
-    template.hasResourceProperties('AWS::CloudFront::Distribution', {
-      DistributionConfig: {
-        Origins: Match.arrayWith([Match.objectLike({ CustomOriginConfig: Match.anyValue() })]),
-      },
-    });
+    const graphql = config.CacheBehaviors.find((b) => b.PathPattern === '/graphql*');
+    expect(graphql, 'no /graphql* behaviour').toBeDefined();
+
+    const origin = config.Origins.find((o) => o.Id === graphql!.TargetOriginId);
+    expect(origin, 'the /graphql* behaviour targets an origin that does not exist').toBeDefined();
+
+    // The domain is derived from the API function's URL, so it names that resource.
+    expect(JSON.stringify(origin!.DomainName)).toContain('GrantApi');
   });
 
   it('gives the API no database credential in its environment', () => {
@@ -159,7 +173,7 @@ describe('exactly one database, refused at synth', () => {
     // which reaches the plaintext Lambda variable without touching the env file that
     // `classifyConfig` guards.
     expect(() => build({ env: { DB_URL: 'postgresql://u:p@h:5432/d' } })).toThrow(
-      /cannot be passed through/
+      /cannot be passed as configuration/
     );
   });
 });

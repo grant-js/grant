@@ -11,7 +11,12 @@
 
 import { Token } from 'aws-cdk-lib';
 
-import { STACK_COMPOSED_KEYS } from './env-file';
+import {
+  CREDENTIAL_KEYS,
+  ENV_KEY_SHAPE,
+  STACK_COMPOSED_KEYS,
+  STACK_GENERATED_KEYS,
+} from './env-file';
 import { ConfigurationError } from './errors';
 import type { GrantPlatformProps } from './props';
 
@@ -148,25 +153,15 @@ export function assertCertificateRegion(region: string): void {
 }
 
 /**
- * Exactly one way of naming the database, and no smuggling it in through `env`.
+ * Exactly one way of naming the database.
  *
- * Two failures this catches, both of which otherwise deploy:
- *
- *   - Supplying `database` **and** `databaseUrl` is ambiguous in a way no default
- *     resolves. Picking one silently would mean the API and the migration might
- *     reach a cluster the adopter is paying for while their real data sits
- *     elsewhere, or the reverse — and the wrong guess is discovered by writing to
- *     the wrong database.
- *   - `env: { DB_URL: … }` is refused for the same reason the env *file* refuses it:
- *     every key in `env` becomes a Lambda environment variable, plaintext in the
- *     template, in the function configuration and in `cdk.out`. `classifyConfig`
- *     guards the file path, but ADR 0005 explicitly invites an adopter to replace
- *     `bin/` and construct these props directly — which reaches the identical
- *     variable with no file involved. A security review of slice 1 found that gap;
- *     this closes it at the other end.
+ * Supplying `database` **and** `databaseUrl` is ambiguous in a way no default
+ * resolves. Picking one silently would mean the API and the migration might reach a
+ * cluster the adopter is paying for while their real data sits elsewhere, or the
+ * reverse — and the wrong guess is discovered by writing to the wrong database.
  */
 export function assertDatabaseSelection(
-  props: Pick<GrantPlatformProps, 'database' | 'databaseUrl' | 'env'>
+  props: Pick<GrantPlatformProps, 'database' | 'databaseUrl'>
 ): void {
   if (props.database && props.databaseUrl) {
     throw new ConfigurationError(
@@ -176,19 +171,71 @@ export function assertDatabaseSelection(
         'would be discovered by writing to the wrong database.'
     );
   }
+}
 
-  const composed = (STACK_COMPOSED_KEYS as readonly string[]).filter(
-    (key) => props.env?.[key] !== undefined && props.env[key] !== ''
-  );
+/**
+ * Every key that may never become a container environment variable, built from the
+ * three lists that already say so — so the two boundaries cannot refuse different
+ * things.
+ *
+ * `RESOLVER_SECRET_KEYS` is deliberately absent: those have a safe path. The env file
+ * routes them to the platform secret, and from props they belong in
+ * `GrantPlatformProps.secrets` as a `SecretValue`. Refusing them would remove the only
+ * way to supply them.
+ */
+const REFUSED_AS_ENV: readonly string[] = [
+  ...STACK_GENERATED_KEYS,
+  ...STACK_COMPOSED_KEYS,
+  ...CREDENTIAL_KEYS,
+];
 
-  if (composed.length > 0) {
-    throw new ConfigurationError(
-      `${composed.join(', ')} cannot be passed through \`env\`: every key there becomes ` +
-        'a Lambda environment variable, which is plaintext in the CloudFormation ' +
-        'template, in the function configuration and in cdk.out on disk. Pass ' +
-        '`databaseUrl: SecretValue.secretsManager(arn)` instead — it renders a ' +
-        'dynamic reference the platform secret resolves at deploy time.'
-    );
+/**
+ * The second configuration boundary, and the one with no parser in front of it.
+ *
+ * `classifyConfig` guards the env *file*: it refuses twenty keys outright, and
+ * `parseEnvFile` rejects any key that is not upper-case — because a lower-case one is
+ * read by nothing (`@grantjs/env` declares none and `process.env` is case-sensitive)
+ * while its value is still synthesized into the template in plaintext.
+ *
+ * ADR 0005 explicitly invites an adopter to replace `bin/` and construct these props
+ * directly, which reaches the identical Lambda environment variable with no file
+ * involved. A security review of slice 2 found this boundary refusing exactly one key
+ * where the file refused twenty: `db_url`, `DB_GRANT_ROLE_URL` (a **superuser** URL),
+ * `POSTGRES_PASSWORD` and the rest all synthesized into the template. Both boundaries
+ * now read the same lists and apply the same shape rule, and
+ * `env-boundary-parity.test.ts` fails if they diverge again.
+ *
+ * Unlike the file path there is no blank-value carve-out. That exists in the file
+ * because `.env.example` ships every key blank and copying it must change nothing;
+ * props have no such template, so a refused key written blank is a mistake worth
+ * naming rather than a placeholder — and it was reaching the functions as `DB_URL: ""`.
+ */
+export function assertConfigurableEnv(
+  env: Readonly<Record<string, string>> | undefined,
+  source: string
+): void {
+  if (!env) return;
+
+  for (const key of Object.keys(env)) {
+    if (!ENV_KEY_SHAPE.test(key)) {
+      throw new ConfigurationError(
+        `${source}: "${key}" is not a usable environment key — they are upper-case, ` +
+          'and @grantjs/env declares none in this form, so nothing would read it. Its ' +
+          'value would still be synthesized into the CloudFormation template as a ' +
+          'Lambda environment variable. Rename it or remove it.'
+      );
+    }
+
+    if (REFUSED_AS_ENV.includes(key)) {
+      throw new ConfigurationError(
+        `${source}: ${key} cannot be passed as configuration. Every key here becomes a ` +
+          'Lambda environment variable, which is plaintext in the CloudFormation ' +
+          'template, in the function configuration and in cdk.out on disk. For a ' +
+          'database URL pass `databaseUrl: SecretValue.secretsManager(arn)`, which ' +
+          'renders a dynamic reference the platform secret resolves at deploy time; ' +
+          'for the rest, see docs/deployment/aws-serverless.md § Configure.'
+      );
+    }
   }
 }
 
