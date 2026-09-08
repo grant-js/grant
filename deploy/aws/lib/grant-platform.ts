@@ -383,9 +383,24 @@ export class GrantPlatform extends Construct {
           // stack did not create: it is already running, or it is not, and no
           // dependency edge here can change that. What remains load-bearing on both
           // paths is the platform secret, which is where the migration reads DB_URL.
-          executeAfter: [this.database, this.proxy, this.platformSecret].filter(
-            (dependency) => dependency !== undefined
-          ),
+          //
+          // The network replaces the cluster there, and it is not decoration. The
+          // task pulls an image and reads a secret, and this VPC has only S3 and
+          // DynamoDB *gateway* endpoints — so both go through the NAT gateway, and
+          // the private subnets need their default route before the trigger fires.
+          // Green-field never had to say so: the Aurora cluster in `executeAfter`
+          // takes about ten minutes to create and the NAT always won that race.
+          // Removing the cluster removes the accident, so the edge is stated.
+          //
+          // Conditional on purpose. Adding it unconditionally would put new
+          // `DependsOn` entries in the green-field template, which is the one thing
+          // this story may not do (§ Governing constraint, gate 1 decision 4).
+          executeAfter: [
+            this.database,
+            this.proxy,
+            ownsDatabase ? undefined : network,
+            this.platformSecret,
+          ].filter((dependency) => dependency !== undefined),
         });
       }
 

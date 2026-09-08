@@ -12,12 +12,16 @@ import { App, SecretValue, Stack } from 'aws-cdk-lib';
 import { Template } from 'aws-cdk-lib/assertions';
 import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
+import { ContainerImage } from 'aws-cdk-lib/aws-ecs';
 import { DockerImageCode } from 'aws-cdk-lib/aws-lambda';
 import { HostedZone } from 'aws-cdk-lib/aws-route53';
 import { describe, expect, it } from 'vitest';
 
 import type { GrantPlatformProps } from '../config/props';
 import { GrantPlatform } from '../grant-platform';
+
+/** Keeps the Fargate cases off the DockerImageAsset path; see the note on `build`. */
+const MIGRATE_IMAGE = ContainerImage.fromRegistry('grant/api:test');
 
 const BYO_ARN = 'arn:aws:secretsmanager:eu-central-1:123456789012:secret:grant/db-url-AbCdEf';
 
@@ -175,6 +179,58 @@ describe('exactly one database, refused at synth', () => {
     expect(() => build({ env: { DB_URL: 'postgresql://u:p@h:5432/d' } })).toThrow(
       /cannot be passed as configuration/
     );
+  });
+});
+
+describe('the migration waits for what it actually needs', () => {
+  /** `DependsOn` on the migrate trigger, which is what orders the one-shot. */
+  function triggerDependsOn(template: Template): string[] {
+    const triggers = template.findResources('Custom::Trigger');
+    const entry = Object.values(triggers)[0];
+    expect(entry, 'no migrate trigger in the template').toBeDefined();
+    return (entry!.DependsOn as string[]) ?? [];
+  }
+
+  it('waits for the stack-built VPC when there is no cluster to wait for', () => {
+    // Topology D. The task pulls an image and reads a secret, and this VPC has only
+    // S3 and DynamoDB gateway endpoints — so both go through the NAT gateway and the
+    // private subnets need their default route first. Green-field never had to say
+    // so: Aurora takes ~10 minutes to create and always won that race. Removing the
+    // cluster from the ordering removed the accident, so the edge is explicit.
+    const depends = triggerDependsOn(
+      build({ network: {}, migration: { image: MIGRATE_IMAGE, imageIdentifier: 'test' } }).template
+    );
+
+    expect(
+      depends.some((d) => /Network/.test(d)),
+      depends.join(', ')
+    ).toBe(true);
+    expect(
+      depends.some((d) => /PlatformSecret/.test(d)),
+      depends.join(', ')
+    ).toBe(true);
+  });
+
+  it('does not add that edge on the green-field path', () => {
+    // Not tidiness — a new DependsOn entry in the green-field template is a template
+    // diff, which is the one thing this story may not produce. The cluster already
+    // orders the migration there, transitively covering the network.
+    const depends = triggerDependsOn(
+      build({
+        database: {},
+        databaseUrl: undefined,
+        migration: { image: MIGRATE_IMAGE, imageIdentifier: 'test' },
+      }).template
+    );
+
+    expect(
+      depends.some((d) => /^GrantNetwork/.test(d)),
+      depends.join(', ')
+    ).toBe(false);
+    expect(
+      depends.some((d) => /Database/.test(d)),
+      depends.join(', ')
+    ).toBe(true);
   });
 });
 
