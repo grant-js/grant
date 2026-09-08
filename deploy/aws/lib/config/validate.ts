@@ -240,6 +240,41 @@ export function assertConfigurableEnv(
 }
 
 /**
+ * Refuses a deploy-time migration with nowhere to run.
+ *
+ * The migration is a Fargate one-shot, and a Fargate task needs subnets. With
+ * `database` omitted **and** `network` omitted the stack builds no VPC at all — the
+ * functions run outside one and reach a routable database directly — so there is
+ * nothing to place the task in.
+ *
+ * Left unset, the migration is simply absent there and the operator command is the
+ * path. Asked for explicitly, it is refused rather than dropped: silently skipping it
+ * would leave an adopter believing their schema had been applied, and the failure
+ * would surface as `relation "..." does not exist` from the API on its first request.
+ */
+export function assertMigrationIsRunnable(
+  props: Pick<GrantPlatformProps, 'database' | 'databaseUrl' | 'network' | 'migration'>
+): void {
+  if (props.migration?.enabled !== true) return;
+
+  // The docs-only deploy has no migration to run either way, and refusing it there
+  // would name a database that is not part of the configuration at all.
+  const servesApi = props.database !== undefined || props.databaseUrl !== undefined;
+  const hasVpc = props.database !== undefined || props.network !== undefined;
+  if (!servesApi || hasVpc) return;
+
+  throw new ConfigurationError(
+    'migration.enabled is true, but this configuration creates no VPC: with `database` ' +
+      'omitted and `network` omitted the functions run outside one, and a Fargate task ' +
+      'has no subnets to be placed in.\n' +
+      'Either pass `network` — an existing `vpc`, or `{}` to have the stack build one — ' +
+      'or leave migration.enabled unset and migrate with:\n' +
+      '  pnpm --filter grant-aws-deploy migrate -c dbUrlSecretArn=<arn>\n' +
+      'which runs the same `node dist/migrate.js` against the same database.'
+  );
+}
+
+/**
  * PostgreSQL's reserved key words, from the "reserved" column of the engine's
  * keyword appendix.
  *

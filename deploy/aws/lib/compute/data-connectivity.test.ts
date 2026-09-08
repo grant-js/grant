@@ -6,15 +6,17 @@
  * secret shape, the proxy's TLS requirement, and the fact that a migration which
  * fails must fail the deploy rather than be reported as success.
  */
-import { App, Stack } from 'aws-cdk-lib';
+import { App, SecretValue, Stack } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
+import { SecurityGroup, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
 import { ContainerImage } from 'aws-cdk-lib/aws-ecs';
 import { DockerImageCode } from 'aws-cdk-lib/aws-lambda';
 import { HostedZone } from 'aws-cdk-lib/aws-route53';
 import { describe, expect, it } from 'vitest';
 
+import type { GrantPlatformProps } from '../config/props';
 import { GrantPlatform } from '../grant-platform';
 
 function build(migration?: { enabled?: boolean }, options: { proxy?: boolean } = {}) {
@@ -260,5 +262,167 @@ describe('the migration runs at deploy and can fail the deploy', () => {
     const policies = JSON.stringify(template.findResources('AWS::IAM::Policy'));
     expect(policies).toMatch(/iam:PassRole/);
     expect(policies).toMatch(/ecs-tasks\.amazonaws\.com/);
+  });
+});
+
+/**
+ * Topology C, and B beside it: a database this stack did not create, reached with and
+ * without a VPC.
+ *
+ * The cases worth pinning are the same kind as above — contracts with things outside
+ * CloudFormation. Here they are that leaving the VPC does not quietly take the secret
+ * grant with it, that it does not put `DB_URL` back into the function's configuration,
+ * and that an adopter's own security group is actually opened rather than left as a
+ * manual step someone is told about in a guide.
+ */
+describe('serving a database this stack did not create', () => {
+  const BYO_ARN = 'arn:aws:secretsmanager:eu-central-1:123456789012:secret:grant/db-url-AbCdEf';
+
+  /**
+   * Every image is caller-supplied — the migration's as well as the API's — for the
+   * reason recorded above: a `DockerImageAsset` fingerprints the whole build context,
+   * measured at 282 s in one run. The topologies that keep the Fargate migration would
+   * otherwise build one, and the built-from-source path is covered by `synth:check`
+   * against the real asset rather than here.
+   */
+  function buildByo(network?: (stack: Stack) => GrantPlatformProps['network']) {
+    const app = new App();
+    const stack = new Stack(app, 'TestStack', {
+      env: { account: '123456789012', region: 'eu-central-1' },
+    });
+    const platform = new GrantPlatform(stack, 'Grant', {
+      appUrl: 'https://grant.example.com',
+      dns: {
+        hostedZone: HostedZone.fromHostedZoneAttributes(stack, 'Zone', {
+          hostedZoneId: 'ZTEST000000000',
+          zoneName: 'example.com',
+        }),
+        certificate: Certificate.fromCertificateArn(
+          stack,
+          'Cert',
+          'arn:aws:acm:us-east-1:123456789012:certificate/abc-123'
+        ),
+      },
+      databaseUrl: SecretValue.secretsManager(BYO_ARN),
+      api: {
+        image: DockerImageCode.fromEcr(Repository.fromRepositoryName(stack, 'Repo', 'grant/api'), {
+          tagOrDigest: 'test',
+        }),
+      },
+      migration: {
+        image: ContainerImage.fromRegistry('grant/api:test'),
+        imageIdentifier: 'test-image',
+      },
+      ...(network ? { network: network(stack) } : {}),
+    });
+    return { template: Template.fromStack(stack), platform };
+  }
+
+  describe('with no VPC at all', () => {
+    it('builds no VPC and places no function in one', () => {
+      // The reason this topology exists: no VPC means no NAT gateway, which is the
+      // largest fixed cost in the target.
+      const { template, platform } = buildByo();
+
+      template.resourceCountIs('AWS::EC2::VPC', 0);
+      template.resourceCountIs('AWS::EC2::NatGateway', 0);
+      expect(platform.network).toBeUndefined();
+
+      const functions = Object.values(template.findResources('AWS::Lambda::Function'));
+      expect(functions.length).toBeGreaterThan(0);
+      for (const fn of functions) {
+        expect(fn.Properties?.VpcConfig).toBeUndefined();
+      }
+    });
+
+    it('creates no client security group, having no VPC to attach one to', () => {
+      const { template, platform } = buildByo();
+      expect(platform.databaseClientSecurityGroup).toBeUndefined();
+      template.resourceCountIs('AWS::EC2::SecurityGroup', 0);
+    });
+
+    it('keeps the secret read the resolver depends on', () => {
+      // Outside a VPC the function still resolves DB_URL per use through
+      // ISecretResolver (ADR 0004). Losing this grant surfaces as a connection failure
+      // to localhost rather than as an access-denied naming the secret.
+      const { template } = buildByo();
+      const policies = JSON.stringify(template.findResources('AWS::IAM::Policy'));
+      expect(policies).toMatch(/secretsmanager:GetSecretValue/);
+      expect(policies).not.toMatch(/secretsmanager:PutSecretValue/);
+    });
+
+    it('still hands the function no database credential', () => {
+      // Leaving the VPC changes where the function runs, not what it is told.
+      const { template } = buildByo();
+      for (const fn of Object.values(template.findResources('AWS::Lambda::Function'))) {
+        expect(Object.keys(fn.Properties?.Environment?.Variables ?? {})).not.toContain('DB_URL');
+      }
+      expect(JSON.stringify(template.toJSON())).not.toMatch(/postgres(ql)?:\/\//);
+    });
+
+    it('runs no Fargate migration, because a task would have no subnets', () => {
+      // `pnpm --filter grant-aws-deploy migrate` is this topology's path, and
+      // `assertMigrationIsRunnable` refuses an explicit request rather than dropping it.
+      const { template, platform } = buildByo();
+      expect(platform.migrateTask).toBeUndefined();
+      template.resourceCountIs('AWS::ECS::TaskDefinition', 0);
+      template.resourceCountIs('AWS::ECS::Cluster', 0);
+    });
+  });
+
+  describe("in the adopter's VPC", () => {
+    function buildInTheirVpc() {
+      return buildByo((stack) => ({
+        vpc: Vpc.fromVpcAttributes(stack, 'TheirVpc', {
+          vpcId: 'vpc-0123456789abcdef0',
+          availabilityZones: ['eu-central-1a', 'eu-central-1b'],
+          privateSubnetIds: ['subnet-aaa', 'subnet-bbb'],
+        }),
+        databaseSecurityGroup: SecurityGroup.fromSecurityGroupId(
+          stack,
+          'TheirDatabase',
+          'sg-0123456789abcdef0'
+        ),
+      }));
+    }
+
+    it('opens their database security group rather than leaving a manual step', () => {
+      // CDK does emit an ingress rule against a group it does not own, provided the
+      // group was imported mutable — which `fromSecurityGroupId` is by default. With
+      // `{ mutable: false }` the call is dropped silently, which is why the prop
+      // documents the import to use.
+      const { template, platform } = buildInTheirVpc();
+
+      expect(platform.databaseClientSecurityGroup).toBeDefined();
+      // Identity, not CIDR: the target is the literal id of a group this stack never
+      // created, and the source is DatabaseClients.
+      template.hasResourceProperties('AWS::EC2::SecurityGroupIngress', {
+        GroupId: 'sg-0123456789abcdef0',
+        IpProtocol: 'tcp',
+        FromPort: 5432,
+        ToPort: 5432,
+        Description: 'Grant database clients',
+        SourceSecurityGroupId: Match.anyValue(),
+      });
+    });
+
+    it('creates no VPC of its own and still runs the Fargate migration', () => {
+      const { template, platform } = buildInTheirVpc();
+      template.resourceCountIs('AWS::EC2::VPC', 0);
+      expect(platform.network?.ownsVpc).toBe(false);
+      expect(platform.migrateTask).toBeDefined();
+      template.resourceCountIs('AWS::ECS::TaskDefinition', 1);
+    });
+  });
+
+  describe('with a VPC this stack creates', () => {
+    it('builds one when `network` is present but names no vpc', () => {
+      // Topology D: a database that is peered, or otherwise only reachable from inside
+      // a VPC the adopter does not already have.
+      const { template, platform } = buildByo(() => ({}));
+      template.resourceCountIs('AWS::EC2::VPC', 1);
+      expect(platform.network?.ownsVpc).toBe(true);
+      expect(platform.migrateTask).toBeDefined();
+    });
   });
 });
