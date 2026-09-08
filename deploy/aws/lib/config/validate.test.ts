@@ -5,7 +5,7 @@
  * point of the configuration surface.
  */
 import { App, SecretValue, Stack, Token } from 'aws-cdk-lib';
-import { Vpc } from 'aws-cdk-lib/aws-ec2';
+import { SecurityGroup, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { describe, expect, it } from 'vitest';
 
 import { ConfigurationError } from './errors';
@@ -15,10 +15,12 @@ import {
   assertConfigurableEnv,
   assertDatabaseSelection,
   assertMigrationIsRunnable,
+  assertNetworkSelection,
   validateAppUrl,
   validateCertificateArn,
   validateDatabaseName,
   validateHostnameInZone,
+  validateSecretArn,
 } from './validate';
 
 describe('validateAppUrl', () => {
@@ -83,6 +85,56 @@ describe('validateCertificateArn', () => {
       expect(() => validateCertificateArn(arn)).toThrow(ConfigurationError);
     }
   );
+});
+
+describe('validateSecretArn', () => {
+  const env = { account: '123456789012', region: 'eu-central-1' };
+  const arn = 'arn:aws:secretsmanager:eu-central-1:123456789012:secret:grant/db-url-AbCdEf';
+
+  it('accepts a secret in the stack account and region', () => {
+    expect(() => validateSecretArn(arn, env)).not.toThrow();
+  });
+
+  it('accepts non-aws partitions', () => {
+    expect(() =>
+      validateSecretArn(
+        'arn:aws-us-gov:secretsmanager:eu-central-1:123456789012:secret:grant/db-AbCdEf',
+        env
+      )
+    ).not.toThrow();
+  });
+
+  it('rejects a secret in another region', () => {
+    // CloudFormation resolves the dynamic reference itself, in the stack's region, so
+    // this one fails while creating the platform secret rather than here.
+    expect(() =>
+      validateSecretArn(
+        'arn:aws:secretsmanager:us-east-1:123456789012:secret:grant/db-url-AbCdEf',
+        env
+      )
+    ).toThrow(/in us-east-1, but this stack deploys to eu-central-1/);
+  });
+
+  it('rejects a secret in another account, and says what that would take', () => {
+    expect(() =>
+      validateSecretArn(
+        'arn:aws:secretsmanager:eu-central-1:210987654321:secret:grant/db-url-AbCdEf',
+        env
+      )
+    ).toThrow(/resource policy on the secret and a grant on its KMS/);
+  });
+
+  it.each([
+    ['grant/db-url'],
+    ['not-an-arn'],
+    ['arn:aws:acm:eu-central-1:123456789012:certificate/abc-123'],
+    ['arn:aws:secretsmanager:eu-central-1:123456789012'],
+  ])('rejects %s as not a Secrets Manager secret ARN', (candidate) => {
+    // A secret *name* is the likely paste, and it carries neither of the two things
+    // worth checking — which is what the message says.
+    expect(() => validateSecretArn(candidate, env)).toThrow(ConfigurationError);
+    expect(() => validateSecretArn(candidate, env)).toThrow(/Not a Secrets Manager secret ARN/);
+  });
 });
 
 describe('validateHostnameInZone', () => {
@@ -328,5 +380,45 @@ describe('assertMigrationIsRunnable', () => {
     // Naming a database in the message would name something absent from the
     // configuration entirely.
     expect(() => assertMigrationIsRunnable({ migration: { enabled: true } })).not.toThrow();
+  });
+});
+
+describe('assertNetworkSelection', () => {
+  const theirGroup = (stack: Stack) =>
+    SecurityGroup.fromSecurityGroupId(stack, 'Theirs', 'sg-0a1b2c3d4e5f60718');
+
+  function stack() {
+    return new Stack(new App(), 'S', { env: { account: '123456789012', region: 'eu-central-1' } });
+  }
+
+  it('accepts the group alongside the VPC it belongs to', () => {
+    const s = stack();
+    expect(() =>
+      assertNetworkSelection({
+        network: {
+          vpc: Vpc.fromVpcAttributes(s, 'V', {
+            vpcId: 'vpc-1',
+            availabilityZones: ['eu-central-1a'],
+            privateSubnetIds: ['subnet-1'],
+          }),
+          databaseSecurityGroup: theirGroup(s),
+        },
+      })
+    ).not.toThrow();
+  });
+
+  it('refuses the group with no VPC, which would span two of them', () => {
+    // bin/grant.ts refuses this lexically one flag earlier. This is the props-level
+    // twin: ADR 0005 invites replacing bin/, so a guard only there is one the
+    // documented path walks past.
+    const s = stack();
+    expect(() =>
+      assertNetworkSelection({ network: { databaseSecurityGroup: theirGroup(s) } })
+    ).toThrow(/spanning two VPCs/);
+  });
+
+  it('is silent when no group was supplied', () => {
+    expect(() => assertNetworkSelection({})).not.toThrow();
+    expect(() => assertNetworkSelection({ network: {} })).not.toThrow();
   });
 });
