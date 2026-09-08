@@ -5,7 +5,7 @@
  * point of the configuration surface.
  */
 import { App, SecretValue, Stack, Token } from 'aws-cdk-lib';
-import { Vpc } from 'aws-cdk-lib/aws-ec2';
+import { SecurityGroup, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { describe, expect, it } from 'vitest';
 
 import { ConfigurationError } from './errors';
@@ -15,6 +15,7 @@ import {
   assertConfigurableEnv,
   assertDatabaseSelection,
   assertMigrationIsRunnable,
+  assertNetworkSelection,
   validateAppUrl,
   validateCertificateArn,
   validateDatabaseName,
@@ -379,5 +380,45 @@ describe('assertMigrationIsRunnable', () => {
     // Naming a database in the message would name something absent from the
     // configuration entirely.
     expect(() => assertMigrationIsRunnable({ migration: { enabled: true } })).not.toThrow();
+  });
+});
+
+describe('assertNetworkSelection', () => {
+  const theirGroup = (stack: Stack) =>
+    SecurityGroup.fromSecurityGroupId(stack, 'Theirs', 'sg-0a1b2c3d4e5f60718');
+
+  function stack() {
+    return new Stack(new App(), 'S', { env: { account: '123456789012', region: 'eu-central-1' } });
+  }
+
+  it('accepts the group alongside the VPC it belongs to', () => {
+    const s = stack();
+    expect(() =>
+      assertNetworkSelection({
+        network: {
+          vpc: Vpc.fromVpcAttributes(s, 'V', {
+            vpcId: 'vpc-1',
+            availabilityZones: ['eu-central-1a'],
+            privateSubnetIds: ['subnet-1'],
+          }),
+          databaseSecurityGroup: theirGroup(s),
+        },
+      })
+    ).not.toThrow();
+  });
+
+  it('refuses the group with no VPC, which would span two of them', () => {
+    // bin/grant.ts refuses this lexically one flag earlier. This is the props-level
+    // twin: ADR 0005 invites replacing bin/, so a guard only there is one the
+    // documented path walks past.
+    const s = stack();
+    expect(() =>
+      assertNetworkSelection({ network: { databaseSecurityGroup: theirGroup(s) } })
+    ).toThrow(/spanning two VPCs/);
+  });
+
+  it('is silent when no group was supplied', () => {
+    expect(() => assertNetworkSelection({})).not.toThrow();
+    expect(() => assertNetworkSelection({ network: {} })).not.toThrow();
   });
 });

@@ -330,6 +330,34 @@ export function assertMigrationIsRunnable(
 }
 
 /**
+ * An adopter's database security group only means something with their VPC.
+ *
+ * `network.databaseSecurityGroup` opens their group to `DatabaseClients`, and that
+ * rule names a source group and a target group. Supply the group without
+ * `network.vpc` and the stack builds a VPC of its own, so the source lives in one VPC
+ * and the target in another — a rule CloudFormation refuses, halfway through a deploy,
+ * after the VPC and NAT gateway already exist.
+ *
+ * `bin/grant.ts` refuses the same mistake lexically, one flag earlier. This is the
+ * props-level twin, and it exists because the story has now been bitten twice by a
+ * refusal living at one configuration boundary and not the other — F10, then F-A. ADR
+ * 0005 invites an adopter to replace `bin/` entirely, so a guard that lives only there
+ * is a guard the documented path walks straight past.
+ */
+export function assertNetworkSelection(props: Pick<GrantPlatformProps, 'network'>): void {
+  if (!props.network?.databaseSecurityGroup || props.network.vpc) return;
+
+  throw new ConfigurationError(
+    'network.databaseSecurityGroup was supplied without network.vpc. The stack would ' +
+      'build a VPC of its own and then write an ingress rule whose source is a security ' +
+      'group in it and whose target is a group in yours — and CloudFormation refuses a ' +
+      'rule spanning two VPCs, partway through the deploy.\n' +
+      'Pass the VPC that group belongs to as `network.vpc`, or drop ' +
+      '`databaseSecurityGroup` and open your database to the stack yourself.'
+  );
+}
+
+/**
  * PostgreSQL's reserved key words, from the "reserved" column of the engine's
  * keyword appendix.
  *

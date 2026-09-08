@@ -39,6 +39,7 @@ import {
   assertConfigurableEnv,
   assertDatabaseSelection,
   assertMigrationIsRunnable,
+  assertNetworkSelection,
   validateAppUrl,
   validateHostnameInZone,
 } from './config/validate';
@@ -137,6 +138,7 @@ export class GrantPlatform extends Construct {
     validateHostnameInZone(hostname, props.dns.hostedZone.zoneName);
     assertDatabaseSelection(props);
     assertMigrationIsRunnable(props);
+    assertNetworkSelection(props);
     // Both environment surfaces, not just the API's: `web.env` reaches a Lambda
     // environment variable by exactly the same route.
     assertConfigurableEnv(props.env, 'env');
