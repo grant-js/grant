@@ -331,6 +331,34 @@ and the guide will claim both.
   commands, the RLS precondition, the `sslmode` note (the adopter's URL is used as
   written and never rewritten), and the rotation caveat from § Risks row 1.
 
+## Security review findings carried forward
+
+Slice 1's blocking security review (2026-09-06) found six issues beyond the slice's
+own design. Four were fixed in slice 1; two belong to later slices and are recorded
+here so they are not lost between them.
+
+| From | Finding                                                                                                                                                                                                                                                    | Disposition                                                                                                                                                                                                                                                                                    |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| F1   | `parseEnvFile` matched keys case-insensitively while every refusal matched exactly, so `db_url=` and `smtp_password=` reached the template as plaintext Lambda variables. Pre-existing; in scope because slice 1 claims the `DB_URL` refusal fails closed. | **Fixed in slice 1.** Upper-case keys only, and a lower-case one is an error rather than a silent skip.                                                                                                                                                                                        |
+| F2   | `DB_GRANT_ROLE_URL` (a **superuser** URL) and `E2E_DB_URL` were unclassified — a password inside a URL matches none of `CREDENTIAL_SHAPED`.                                                                                                                | **Fixed in slice 1.** Both refused; the oracle now checks both directions for URL-shaped keys. Note `DB_GRANT_ROLE_URL` is § Risks row 3's likely workaround, and it is read from `process.env`, not the resolver — so slice 5's guide must say the RLS grant is run manually, not configured. |
+| F4   | `resolveDatabaseUrl` wrote an empty or malformed `DB_URL` rather than throwing; the failure then surfaced as a connection error to `localhost`.                                                                                                            | **Fixed in slice 1**, honoring § Risks row 4's "validate and say what is wrong".                                                                                                                                                                                                               |
+| F6   | The rotation wording said "until the next deploy". A rotation changes nothing in the template, so there is no update and `cdk deploy` reports success while keeping the old URL.                                                                           | **Fixed in slice 1** in `props.ts` and `.env.example`. **§ Risks row 1 above is still imprecise in the same way** — read it with this correction.                                                                                                                                              |
+| F10  | The `DB_URL` refusal exists only on the env-**file** path. A caller writing their own `bin/` can pass `env: { DB_URL: '…' }` and reach the identical plaintext Lambda variable with no guard. ADR 0005 explicitly invites that.                            | **Slice 2.** `assertDatabaseSelection` also asserts `STACK_COMPOSED_KEYS ∩ Object.keys(props.env)` is empty.                                                                                                                                                                                   |
+| F7   | Slice 1's refusal message and `.env.example` name `-c dbUrlSecretArn=<arn>`, which nothing reads yet; an unrecognized `-c` is silently ignored.                                                                                                            | **Slice 4** builds it. Acceptable inside the stack, not at `main` — gate 4 re-verifies.                                                                                                                                                                                                        |
+
+Two measurements added to slice 5, both from findings that cannot be settled without
+an account:
+
+- Rotate the upstream secret, redeploy unchanged, and record whether the platform
+  secret's `DB_URL` moved (F6). Record too whether a stack update that _does_ modify
+  the platform secret overwrites an out-of-band write, and what it does to
+  `ORIGIN_VERIFY_SECRET`.
+- Put a `"` in the referenced secret and record what CloudFormation does (F5). The
+  value is substituted textually into a JSON document at deploy time, so a quote may
+  merely break it — or may close `DB_URL` and open another key, which is the
+  resolver's entire input. Literals are checked at synth; a referenced secret's
+  contents are not visible there.
+
 ## Stack setup
 
 Root the stack on the trunk — never `main`, or the slices skip gate 4:
