@@ -68,8 +68,8 @@ interface NetworkProps {
  */
 interface MigrationProps {
   /**
-   * Whether to run migrations during deploy. Defaults to **true** whenever this stack
-   * owns the database.
+   * Whether to run migrations during deploy. Defaults to **true** on every topology
+   * that serves an API, including one reaching a database this stack did not create.
    *
    * Set false when a pipeline runs migrations itself, or when the deploying principal
    * should not be able to alter the schema.
@@ -295,8 +295,8 @@ interface ApiProps {
  */
 interface JobsProps {
   /**
-   * Whether to provision job execution. Defaults to **true** whenever this stack owns
-   * the database.
+   * Whether to provision job execution. Defaults to **true** on every topology that
+   * serves an API, whichever database it reaches.
    *
    * Turning it off leaves the application registering handlers that nothing triggers:
    * sweeps stop, and enqueued work is accepted and never run. Set it false only when
@@ -354,7 +354,7 @@ export interface GrantPlatformProps {
 
   readonly cache?: CacheProps;
 
-  /** The serving function. Created only when the data tier is. */
+  /** The serving function. Created whenever a database is reachable. */
   readonly api?: ApiProps;
 
   /**
@@ -411,10 +411,14 @@ export interface GrantPlatformProps {
    */
   readonly databaseUrl?: SecretValue;
 
-  /** Deploy-time migration. Ignored when this stack does not own the database. */
+  /**
+   * Deploy-time migration. Runs on the bring-your-own path too — the task reads
+   * `DB_URL` from the platform secret and does not care which topology filled it.
+   * Ignored only on the docs-only deploy, where there is no database at all.
+   */
   readonly migration?: MigrationProps;
 
-  /** Background jobs. Ignored when this stack does not own the database. */
+  /** Background jobs. Ignored only on the docs-only deploy. */
   readonly jobs?: JobsProps;
 
   /** Passed through to the API container. */
@@ -443,8 +447,8 @@ export interface GrantPlatformProps {
    * out of band after deploy — the resolver picks it up without a stack update, which
    * is the property ADR 0004 bought.
    *
-   * Only meaningful when this stack owns the database, since the platform secret is
-   * created alongside it.
+   * Meaningful on every serving topology. The platform secret is created whenever a
+   * database is reachable, whether this stack made one or `databaseUrl` named one.
    */
   readonly secrets?: Readonly<Record<string, SecretValue>>;
 }

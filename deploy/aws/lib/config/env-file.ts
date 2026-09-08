@@ -30,6 +30,15 @@ import type { GrantEnv } from './props';
  * `DB_URL` is resolver-backed too but is not here, and it is not settable from this
  * file at all — see `STACK_COMPOSED_KEYS`.
  */
+/**
+ * The shape of a key anything will actually read: upper-case, as `@grantjs/env`
+ * declares them and as `process.env` matches them.
+ *
+ * Exported because `validate.ts` applies the identical rule to `GrantPlatformProps.env`,
+ * which has no parser in front of it.
+ */
+export const ENV_KEY_SHAPE = /^[A-Z_][A-Z0-9_]*$/;
+
 export const RESOLVER_SECRET_KEYS = [
   'GITHUB_CLIENT_SECRET',
   'AUTH_MFA_SECRET_ENCRYPTION_KEY',
@@ -146,7 +155,7 @@ export function parseEnvFile(contents: string): Record<string, string> {
     // to place a credential in the CloudFormation template, in the function
     // configuration and in `cdk.out` on disk. A silent skip would close the leak and
     // leave the operator believing the key was set, so it is an error instead.
-    if (!/^[A-Z_][A-Z0-9_]*$/.test(key)) {
+    if (!ENV_KEY_SHAPE.test(key)) {
       if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
         throw new Error(
           `${key}: environment keys are upper-case. @grantjs/env declares none in ` +
