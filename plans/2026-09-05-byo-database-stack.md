@@ -428,24 +428,34 @@ gh stack add feat/byo-database-graph               # before starting the next on
 - [x] Gate 1: Story brief approved — 2026-09-05, Ale Heredia, with all three open
       questions answered (§ Gate 1 decisions).
 - [x] Gate 2: Stack plan approved — 2026-09-06, Ale Heredia.
-- [ ] Gate 3: Stack PRs merged into trunk (light, except slice 1 **security-full,
-      reviewed by someone other than its author** — phase C F16).
-- [ ] Gate 4: Story → `main` deep review complete. Blocking items known in advance:
-      the scratch account and both external databases measured to zero in both
-      regions; `main` merged into the trunk before the integration PR opens; an
-      independent security pass over the assembled BYO path.
+- [x] Gate 3: Stack PRs merged into trunk — 2026-09-08, Ale Heredia. #386, #387,
+      #390, #391, #392, squash-merged into `feat/byo-database` in order. Slice 1's
+      security-full review was performed by someone other than its author (phase C
+      F16), and produced two confirmed plaintext-credential leaks that were fixed
+      before it merged — § Security review findings carried forward.
+- [ ] Gate 4: Story → `main` deep review complete. Blocking items, with status:
+  - [x] Scratch account and both external databases measured to zero in both regions
+        — measurements file § Teardown, verified with the same commands as the
+        pre-deploy baseline.
+  - [x] `main` merged into the trunk before the integration PR opens — **not
+        required**: `main` did not move during this story (`git rev-list --count
+feat/byo-database..main` = 0), so the trunk is a clean fast-forward from
+        `5fd7e1d3`. Recorded rather than silently skipped.
+  - [ ] Independent security pass over the assembled BYO path.
 
 ## Cleanup
 
-- [ ] Scratch account and both external databases torn down; final `cdk destroy`
-      recorded in the measurements file, both regions at baseline
+- [x] Scratch account and both external databases torn down; final `cdk destroy`
+      recorded in the measurements file, both regions at baseline. Phase C's finding
+      F1 reproduced — two stranded ACM validation CNAMEs — and both were removed by
+      hand; the zone holds no `byo-vpc*` records.
 - [ ] `git worktree remove ../grant-pr384` (stale from #384; no worktree needed for
       this story)
 - [ ] Local **and remote** slice branches deleted — phases A and C both ticked this
       without doing it (program brief § Housekeeping)
 - [ ] Stack plan status → `merged-to-main`
-- [ ] Program brief updated: tier 1 item 1 closed
-- [ ] Phase C stack plan: F13 disposition updated from "follow-on story" to this story
+- [x] Program brief updated: tier 1 item 1 closed
+- [x] Phase C stack plan: F13 disposition updated from "follow-on story" to this story
 
 ## Follow-ons
 
