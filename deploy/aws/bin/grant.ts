@@ -18,19 +18,29 @@
  *     -c hostedZoneId=Z123456ABCDEFG \
  *     -c account=123456789012 \
  *     -c region=eu-central-1
+ *
+ * Add `-c dbUrlSecretArn=...` to serve against a database you already run instead of
+ * an Aurora cluster this stack creates; see `buildDatabase` below for the rest of the
+ * bring-your-own flags.
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { App, Stack } from 'aws-cdk-lib';
+import { App, SecretValue, Stack } from 'aws-cdk-lib';
 import { Certificate, type ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
+import { SecurityGroup, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { HostedZone } from 'aws-cdk-lib/aws-route53';
 
 import { loadTargetConfig } from '../lib/config/env-file';
 import { ConfigurationError } from '../lib/config/errors';
-import type { GrantEnv } from '../lib/config/props';
-import { assertConcreteEnv, validateAppUrl, validateCertificateArn } from '../lib/config/validate';
+import type { GrantEnv, GrantPlatformProps } from '../lib/config/props';
+import {
+  assertConcreteEnv,
+  validateAppUrl,
+  validateCertificateArn,
+  validateSecretArn,
+} from '../lib/config/validate';
 import { EdgeCertificate } from '../lib/edge/certificate';
 import { GrantPlatform } from '../lib/grant-platform';
 
@@ -116,6 +126,97 @@ const { account, region } = assertConcreteEnv('GrantPlatform', {
 
 const zoneAttributes = { hostedZoneId, zoneName };
 
+/**
+ * Bring your own PostgreSQL, in the two shapes this app can express.
+ *
+ *   -c dbUrlSecretArn=arn:aws:secretsmanager:<region>:<account>:secret:<name>-<suffix>
+ *   -c vpcId=vpc-... -c vpcAzs=eu-central-1a,eu-central-1b \
+ *     -c vpcPrivateSubnetIds=subnet-...,subnet-...
+ *   -c dbSecurityGroupId=sg-...
+ *
+ * With the ARN alone the functions run outside a VPC and reach a routable database
+ * directly, which is what removes the NAT gateway — the largest fixed cost in this
+ * target — and is the deployment most adopters bringing a managed Postgres have. Add
+ * the VPC flags and they run inside the VPC the database already lives in, where the
+ * deploy-time Fargate migration is available again because a task has subnets.
+ *
+ * The CDK CLI ignores an unrecognized `-c` silently, so every combination that would
+ * quietly do nothing is refused instead. A flag with no effect is how someone deploys
+ * an Aurora cluster believing they brought their own database.
+ */
+const dbUrlSecretArn = optional('dbUrlSecretArn');
+const vpcId = optional('vpcId');
+const dbSecurityGroupId = optional('dbSecurityGroupId');
+
+const BROUGHT_DATABASE_KEYS = ['vpcId', 'vpcAzs', 'vpcPrivateSubnetIds', 'dbSecurityGroupId'];
+
+if (dbUrlSecretArn) {
+  // Lexical and cheap, exactly as the certificate ARN is: a dynamic reference is
+  // resolved by CloudFormation during deploy, so a secret in the wrong account or
+  // region fails while creating the platform secret rather than here.
+  validateSecretArn(dbUrlSecretArn, { account, region });
+} else {
+  const ignored = BROUGHT_DATABASE_KEYS.filter((key) => optional(key));
+  if (ignored.length > 0) {
+    throw new ConfigurationError(
+      `Without -c dbUrlSecretArn nothing reads ${ignored.join(', ')}: this app deploys ` +
+        'the Aurora cluster it creates, in a VPC it creates.\n' +
+        'To put a cluster this stack owns inside a VPC you already have, pass ' +
+        '`network.vpc` from your own bin/ — that composition is what ADR 0005 keeps open.'
+    );
+  }
+}
+
+if (dbSecurityGroupId && !vpcId) {
+  throw new ConfigurationError(
+    'dbSecurityGroupId needs -c vpcId. Without one this app builds a VPC of its own and ' +
+      'then writes an ingress rule whose source is a security group in it and whose target ' +
+      'is a group in yours — and CloudFormation refuses a rule spanning two VPCs, halfway ' +
+      'through the deploy.\n' +
+      'Either name the VPC the database lives in, or drop the flag and open the group ' +
+      'yourself.'
+  );
+}
+
+/** Comma-separated ids, as the AWS console and CLI both print them. */
+function requiredList(key: string): string[] {
+  const values = (optional(key) ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (values.length === 0) {
+    throw new ConfigurationError(
+      `Missing required context "${key}". Importing a VPC by attributes takes all three:\n` +
+        '  -c vpcId=vpc-0123456789abcdef0 \\\n' +
+        '    -c vpcAzs=eu-central-1a,eu-central-1b \\\n' +
+        '    -c vpcPrivateSubnetIds=subnet-0123456789abcdef0,subnet-0123456789abcdef1\n' +
+        'CDK cannot discover them without a lookup, and a lookup would make the committed ' +
+        'template a function of whichever account last synthesized.'
+    );
+  }
+  return values;
+}
+
+/**
+ * The private subnets are named rather than discovered because the API function, the
+ * jobs function and the migration task all select `PRIVATE_WITH_EGRESS`, and an
+ * imported VPC knows only what it is told. They must have a route out: the functions
+ * reach SES, GitHub and arbitrary webhook URLs, and the migration pulls an image.
+ *
+ * CDK warns at synth that no route table id was supplied for them. Nothing here reads
+ * one: the gateway endpoints that would are created only for a VPC `Network` owns,
+ * because `addGatewayEndpoint` on an imported VPC attaches to route tables this stack
+ * cannot see.
+ */
+const vpcAttributes = vpcId
+  ? {
+      vpcId,
+      availabilityZones: requiredList('vpcAzs'),
+      privateSubnetIds: requiredList('vpcPrivateSubnetIds'),
+    }
+  : undefined;
+
 let certificate: ICertificate;
 
 if (certificateArn) {
@@ -199,10 +300,55 @@ function buildEnv(): GrantEnv {
   return { ...derived, ...targetConfig.env, ...fromContext };
 }
 
+/**
+ * The database, and the network that follows from it.
+ *
+ * `database` is spread conditionally rather than passed unconditionally, and that is
+ * the whole of what makes the bring-your-own topologies reachable from here: the two
+ * props are mutually exclusive at synth, so an unconditional `database: {}` meant
+ * every `-c dbUrlSecretArn` deploy failed on "Pick one database" instead.
+ */
+function buildDatabase(
+  stack: Stack
+): Pick<GrantPlatformProps, 'database' | 'databaseUrl' | 'network'> {
+  if (!dbUrlSecretArn) return { database: { destroyOnRemoval: ephemeral } };
+
+  // Rendered as a {{resolve:secretsmanager:...}} dynamic reference inside the platform
+  // secret: present at deploy time, absent from the template. Never `unsafePlainText`,
+  // which would put the connection string and its password in cdk.out and in every
+  // copy of the template.
+  const databaseUrl = SecretValue.secretsManager(dbUrlSecretArn);
+  if (!vpcAttributes) return { databaseUrl };
+
+  return {
+    databaseUrl,
+    network: {
+      // fromVpcAttributes, not fromLookup — the same rule the hosted zone follows
+      // below. A lookup resolves against live account state at synth time and caches
+      // into cdk.context.json, which would make the committed template a function of
+      // whichever account last ran synth. ADR 0005.
+      vpc: Vpc.fromVpcAttributes(stack, 'Vpc', vpcAttributes),
+      ...(dbSecurityGroupId
+        ? {
+            // Mutable, which `fromSecurityGroupId` is by default and which is what
+            // makes CDK emit the ingress rule against a group this stack does not own.
+            // With `{ mutable: false }` the call is dropped silently and the migration
+            // fails to connect. See NetworkProps.databaseSecurityGroup.
+            databaseSecurityGroup: SecurityGroup.fromSecurityGroupId(
+              stack,
+              'BroughtDatabase',
+              dbSecurityGroupId
+            ),
+          }
+        : {}),
+    },
+  };
+}
+
 function buildPlatform(stack: Stack, cert: ICertificate): void {
   new GrantPlatform(stack, 'Grant', {
     appUrl,
-    database: { destroyOnRemoval: ephemeral },
+    ...buildDatabase(stack),
     // The uploads bucket defaults to Retain, which is right for user data and wrong
     // for a throwaway environment: teardown would leave a bucket behind and break the
     // property `ephemeral` exists to provide. The cache table already defaults to

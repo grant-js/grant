@@ -87,6 +87,61 @@ export function validateCertificateArn(arn: string): void {
 }
 
 /**
+ * Asserts a Secrets Manager ARN the platform secret can actually dereference.
+ *
+ * `SecretValue.secretsManager()` renders `{{resolve:secretsmanager:<arn>:...}}`, which
+ * CloudFormation resolves while it creates or updates the resource holding it — so a
+ * secret it cannot read fails minutes into the deploy, naming the *platform secret*
+ * rather than the ARN that was wrong. Everything checkable is lexically present in the
+ * ARN, so it is checked here for the same reason `validateCertificateArn` is.
+ *
+ * Region and account are compared against the stack's own because a dynamic reference
+ * is resolved by CloudFormation itself, in the stack's region and under the deploying
+ * principal: a secret elsewhere needs a resource policy and a KMS grant this reference
+ * app does not compose. That is a `bin/` an adopter writes (ADR 0005), where
+ * `databaseUrl` takes any `SecretValue`.
+ */
+export function validateSecretArn(arn: string, env: { account: string; region: string }): void {
+  // arn:<partition>:secretsmanager:<region>:<account>:secret:<name>-<suffix>
+  const segments = arn.split(':');
+  const [prefix, , service, region, account, resource] = segments;
+
+  if (
+    prefix !== 'arn' ||
+    service !== 'secretsmanager' ||
+    resource !== 'secret' ||
+    segments.length < 7
+  ) {
+    throw new ConfigurationError(
+      `Not a Secrets Manager secret ARN: ${arn}\n` +
+        'Expected arn:<partition>:secretsmanager:<region>:<account>:secret:<name>-<suffix>.\n' +
+        'Pass the full ARN rather than the secret name: the name carries neither the ' +
+        'account nor the region, which are the two things worth checking before a deploy.'
+    );
+  }
+
+  if (region !== env.region) {
+    throw new ConfigurationError(
+      `The database secret is in ${region}, but this stack deploys to ${env.region}.\n` +
+        `  ${arn}\n` +
+        'CloudFormation resolves a secretsmanager dynamic reference in the region of the stack ' +
+        'that holds it, so this one would fail while creating the platform secret. Replicate ' +
+        `the secret into ${env.region} and pass that ARN.`
+    );
+  }
+
+  if (account !== env.account) {
+    throw new ConfigurationError(
+      `The database secret is in account ${account}, but this stack deploys to ${env.account}.\n` +
+        `  ${arn}\n` +
+        'A cross-account secret needs a resource policy on the secret and a grant on its KMS ' +
+        'key, which this reference app does not create. Copy the connection string into a ' +
+        'secret in this account, or compose `databaseUrl` yourself from your own bin/.'
+    );
+  }
+}
+
+/**
  * Asserts the canonical hostname sits inside the hosted zone that will hold its
  * record. A mismatch synthesizes fine and then deploys a record nothing resolves.
  */

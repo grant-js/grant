@@ -82,9 +82,16 @@ function main(): void {
 
   const secretOutput = outputs.find((o) => o.OutputKey.startsWith('GrantDatabaseSecretName'));
   if (!secretOutput) {
+    // The output name is a misnomer since bring-your-own landed: it names the platform
+    // secret, which exists wherever the stack serves an API — including where the stack
+    // owns no database at all. Renaming it would move a logical id in the green-field
+    // template and break the prefix match above, so the message carries the correction.
     throw new Error(
       `Stack ${stackName} publishes no GrantDatabaseSecretName output. ` +
-        'The platform secret is created with the database — this stack may not own one.'
+        'That output names the platform secret, which this stack creates whenever it ' +
+        'serves an API — from a cluster it owns or from a `databaseUrl` you brought. ' +
+        'Missing, it means the docs-only deploy (neither was configured), or that ' +
+        'GRANT_STACK_NAME names a different stack.'
     );
   }
   const secretId = secretOutput.OutputValue;

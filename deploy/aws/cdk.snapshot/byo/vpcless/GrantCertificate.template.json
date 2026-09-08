@@ -1,0 +1,179 @@
+{
+  "Description": "Grant platform — CloudFront certificate (must be us-east-1)",
+  "Resources": {
+    "EdgeCertificateE929CC3D": {
+      "Type": "AWS::CertificateManager::Certificate",
+      "Properties": {
+        "DomainName": "grant.example.com",
+        "DomainValidationOptions": [
+          {
+            "DomainName": "grant.example.com",
+            "HostedZoneId": "ZREFERENCE00000"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "GrantCertificate/Edge/Certificate"
+          }
+        ],
+        "ValidationMethod": "DNS"
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantCertificate/Edge/Certificate/Resource"
+      }
+    },
+    "CDKMetadata": {
+      "Type": "AWS::CDK::Metadata",
+      "Properties": {
+        "Analytics": "v2:deflate64:H4sIAAAAAAAA/03IvQ2EMAxA4VnoE8NFCAZgA26AkzEGmZ8gxQkUiN0pKI7q6XsOXFVDkeGhlvrZLtLB+Y1Is2lZtxSIDR76Iw5RBiGMvKLHkQOczf+ZZvAvXpfxW88wab67Ej4lFNmkIjYkH2VlaJ/etgGtmn4AAAA="
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantCertificate/CDKMetadata/Default"
+      }
+    },
+    "ExportsWritereucentral1E172851B74269898": {
+      "Type": "Custom::CrossRegionExportWriter",
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "CustomCrossRegionExportWriterCustomResourceProviderHandlerD8786E8A",
+            "Arn"
+          ]
+        },
+        "WriterProps": {
+          "region": "eu-central-1",
+          "exports": {
+            "/cdk/exports/GrantPlatform/GrantCertificateuseast1RefEdgeCertificateE929CC3D825DE199": {
+              "Ref": "EdgeCertificateE929CC3D"
+            }
+          }
+        }
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete",
+      "Metadata": {
+        "aws:cdk:path": "GrantCertificate/ExportsWritereucentral1E172851B/Resource/Default"
+      }
+    },
+    "CustomCrossRegionExportWriterCustomResourceProviderRoleC951B1E1": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+          }
+        ],
+        "Policies": [
+          {
+            "PolicyName": "Inline",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Resource": [
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "arn:",
+                          {
+                            "Ref": "AWS::Partition"
+                          },
+                          ":ssm:eu-central-1:000000000000:parameter/cdk/exports/*"
+                        ]
+                      ]
+                    }
+                  ],
+                  "Action": [
+                    "ssm:DeleteParameters",
+                    "ssm:ListTagsForResource",
+                    "ssm:GetParameters",
+                    "ssm:PutParameter"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantCertificate/Custom::CrossRegionExportWriterCustomResourceProvider/Role"
+      }
+    },
+    "CustomCrossRegionExportWriterCustomResourceProviderHandlerD8786E8A": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": "cdk-hnb659fds-assets-000000000000-us-east-1",
+          "S3Key": "<asset-hash>.zip"
+        },
+        "Timeout": 900,
+        "MemorySize": 128,
+        "Handler": "__entrypoint__.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "CustomCrossRegionExportWriterCustomResourceProviderRoleC951B1E1",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs24.x"
+      },
+      "DependsOn": [
+        "CustomCrossRegionExportWriterCustomResourceProviderRoleC951B1E1"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "GrantCertificate/Custom::CrossRegionExportWriterCustomResourceProvider/Handler",
+        "aws:asset:path": "asset.<asset-hash>",
+        "aws:asset:property": "Code"
+      }
+    }
+  },
+  "Parameters": {
+    "BootstrapVersion": {
+      "Type": "AWS::SSM::Parameter::Value<String>",
+      "Default": "/cdk-bootstrap/hnb659fds/version",
+      "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+    }
+  },
+  "Rules": {
+    "CheckBootstrapVersion": {
+      "Assertions": [
+        {
+          "Assert": {
+            "Fn::Not": [
+              {
+                "Fn::Contains": [
+                  [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5"
+                  ],
+                  {
+                    "Ref": "BootstrapVersion"
+                  }
+                ]
+              }
+            ]
+          },
+          "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+        }
+      ]
+    }
+  }
+}
