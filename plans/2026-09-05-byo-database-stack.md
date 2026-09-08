@@ -449,10 +449,13 @@ feat/byo-database..main` = 0), so the trunk is a clean fast-forward from
       recorded in the measurements file, both regions at baseline. Phase C's finding
       F1 reproduced — two stranded ACM validation CNAMEs — and both were removed by
       hand; the zone holds no `byo-vpc*` records.
-- [ ] `git worktree remove ../grant-pr384` (stale from #384; no worktree needed for
-      this story)
-- [ ] Local **and remote** slice branches deleted — phases A and C both ticked this
-      without doing it (program brief § Housekeeping)
+- [x] `git worktree remove ../grant-pr384` (stale from #384), plus the four this
+      story created for parallel slice work. Only the trunk checkout remains.
+- [x] Local **and remote** slice branches deleted — all five, verified with
+      `git ls-remote --heads origin 'feat/byo-database-*'` returning nothing. Phases A
+      and C both ticked this without doing it (program brief § Housekeeping); the
+      squash merges mean the per-slice commits live on in the merged PRs, so the
+      trunk loses nothing.
 - [ ] Stack plan status → `merged-to-main`
 - [x] Program brief updated: tier 1 item 1 closed
 - [x] Phase C stack plan: F13 disposition updated from "follow-on story" to this story
