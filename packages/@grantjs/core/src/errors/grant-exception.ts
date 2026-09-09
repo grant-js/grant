@@ -121,6 +121,38 @@ export class ConflictError extends GrantException {
 }
 
 /**
+ * Thrown when a request body exceeds the size the server will accept.
+ *
+ * Distinct from `ValidationError` and `BadRequestError` because the caller's remedy is
+ * different in kind: the body is not malformed and no field is wrong — it is simply too
+ * large, and the answer is to send less or to send it compressed. HTTP has a status for
+ * exactly that, and collapsing it into a 400 loses the one thing the caller needs to
+ * know.
+ *
+ * Carries the limit when it is known, so a client can be told what it exceeded rather
+ * than left to guess. `body-parser` reports both numbers; the API's error middleware is
+ * what translates its `entity.too.large` into this.
+ */
+export class PayloadTooLargeError extends GrantException {
+  /** Bytes the server accepts, when the thrower knows it. */
+  public readonly limitBytes?: number;
+
+  /** Bytes the caller sent, when known. `body-parser` reports it only sometimes. */
+  public readonly receivedBytes?: number;
+
+  constructor(
+    message: string = 'Request body is too large',
+    limitBytes?: number,
+    receivedBytes?: number,
+    originalError?: Error
+  ) {
+    super(message, 'PAYLOAD_TOO_LARGE', originalError);
+    this.limitBytes = limitBytes;
+    this.receivedBytes = receivedBytes;
+  }
+}
+
+/**
  * Thrown when the system is misconfigured (missing env vars, bad adapter config, etc.).
  */
 export class ConfigurationError extends GrantException {

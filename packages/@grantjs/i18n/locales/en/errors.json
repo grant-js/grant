@@ -28,7 +28,8 @@
     "stateNotFound": "Invalid or expired state parameter",
     "invalidState": "Invalid or expired state parameter",
     "invalidOrExpiredCode": "Invalid or expired one-time code",
-    "invalidOrUsedVerificationToken": "This verification link was already used or is invalid. If you've already verified your email, go to the dashboard; otherwise log in to request a new verification email."
+    "invalidOrUsedVerificationToken": "This verification link was already used or is invalid. If you've already verified your email, go to the dashboard; otherwise log in to request a new verification email.",
+    "notAuthenticated": "Authentication required"
   },
   "validation": {
     "required": "{{field}} is required",
@@ -146,7 +147,8 @@
     "groupIdsRequired": "Group IDs are required",
     "tagIdsRequired": "Tag IDs are required",
     "redirectUrisMinOne": "At least one redirect URI is required",
-    "invalidProjectAppId": "Invalid project app ID"
+    "invalidProjectAppId": "Invalid project app ID",
+    "badRequest": "Bad request"
   },
   "notFound": {
     "resource": "{{resource}} not found",
@@ -170,6 +172,7 @@
     "badRequest": "Bad request",
     "originRequired": "Origin is required",
     "unknownError": "An unknown error occurred",
-    "tooManyRequests": "Too many requests. Please try again later."
+    "tooManyRequests": "Too many requests. Please try again later.",
+    "payloadTooLarge": "Request body is too large"
   }
 }

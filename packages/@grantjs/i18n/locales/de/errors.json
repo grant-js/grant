@@ -28,7 +28,8 @@
     "stateNotFound": "Ungültiger oder abgelaufener State-Parameter",
     "invalidState": "Ungültiger oder abgelaufener State-Parameter",
     "invalidOrExpiredCode": "Ungültiger oder abgelaufener Einmalcode",
-    "invalidOrUsedVerificationToken": "Dieser Verifizierungslink wurde bereits verwendet oder ist ungültig. Wenn Sie Ihre E-Mail bereits verifiziert haben, gehen Sie zum Dashboard; andernfalls melden Sie sich an, um einen neuen Link anzufordern."
+    "invalidOrUsedVerificationToken": "Dieser Verifizierungslink wurde bereits verwendet oder ist ungültig. Wenn Sie Ihre E-Mail bereits verifiziert haben, gehen Sie zum Dashboard; andernfalls melden Sie sich an, um einen neuen Link anzufordern.",
+    "notAuthenticated": "Authentifizierung erforderlich"
   },
   "validation": {
     "required": "{{field}} ist erforderlich",
@@ -146,7 +147,8 @@
     "groupIdsRequired": "Gruppen-IDs sind erforderlich",
     "tagIdsRequired": "Tag-IDs sind erforderlich",
     "redirectUrisMinOne": "Mindestens eine Weiterleitungs-URI ist erforderlich",
-    "invalidProjectAppId": "Ungültige Projekt-App-ID"
+    "invalidProjectAppId": "Ungültige Projekt-App-ID",
+    "badRequest": "Ungültige Anfrage"
   },
   "notFound": {
     "resource": "{{resource}} nicht gefunden",
@@ -170,6 +172,7 @@
     "badRequest": "Ungültige Anfrage",
     "originRequired": "Herkunft ist erforderlich",
     "unknownError": "Ein unbekannter Fehler ist aufgetreten",
-    "tooManyRequests": "Zu viele Anfragen. Bitte versuchen Sie es später erneut."
+    "tooManyRequests": "Zu viele Anfragen. Bitte versuchen Sie es später erneut.",
+    "payloadTooLarge": "Der Anfragetext ist zu groß"
   }
 }
