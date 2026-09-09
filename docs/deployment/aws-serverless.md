@@ -420,9 +420,17 @@ than silently skipped, so nobody is left believing a schema was applied.
 
 `migrate` runs migrations, a row-level-security role grant and the core seed in one
 pass. The grant needs a login that may `CREATE ROLE`. On RDS the master user qualifies —
-`rolcreaterole = t`, `rolsuper = f` — and no extra configuration is needed. A managed
-PostgreSQL that withholds `CREATEROLE` fails at that step; set `DB_GRANT_ROLE_URL` to a
-role that has it, or run the grant yourself.
+`rolcreaterole = t`, `rolsuper = f` — and no extra configuration is needed.
+
+A managed PostgreSQL that withholds `CREATEROLE` fails at that step, and **on this
+target the fix is to run the grant yourself, not to configure one**. `DB_GRANT_ROLE_URL`
+is a superuser connection string that the application reads from the process environment
+rather than through the secret resolver, so there is nowhere safe to put it here: the
+env file refuses it, `props.env` refuses it, and `migrate` does not forward it to the
+container. Run the grant from a session that already holds the privilege — a psql
+session against your own database, using the statements in
+`packages/@grantjs/database/src/grant-rls-login-role.lib.ts` — and then run `migrate`,
+which is idempotent and will skip what already exists.
 
 Nothing at synth can check this. The connection string is a `SecretValue` and opaque by
 construction, so the first thing that finds out is the migration — which fails loudly

@@ -37,6 +37,7 @@ import type { GrantEnv, GrantPlatformProps } from './config/props';
 import {
   assertCertificateRegion,
   assertConfigurableEnv,
+  assertConfigurableSecrets,
   assertDatabaseSelection,
   assertMigrationIsRunnable,
   assertNetworkSelection,
@@ -139,10 +140,13 @@ export class GrantPlatform extends Construct {
     assertDatabaseSelection(props);
     assertMigrationIsRunnable(props);
     assertNetworkSelection(props);
-    // Both environment surfaces, not just the API's: `web.env` reaches a Lambda
-    // environment variable by exactly the same route.
+    // All three caller-supplied configuration surfaces. `web.env` reaches a Lambda
+    // environment variable by exactly the same route as `env`, and `secrets` reaches
+    // the platform secret — a safe destination that still may not carry a key the
+    // stack generates, composes, or reads from the process environment instead.
     assertConfigurableEnv(props.env, 'env');
     assertConfigurableEnv(props.web?.env, 'web.env');
+    assertConfigurableSecrets(props.secrets, 'secrets');
 
     this.hostname = hostname;
     // Caller last: an adopter overriding a default must win over this file's opinion.
