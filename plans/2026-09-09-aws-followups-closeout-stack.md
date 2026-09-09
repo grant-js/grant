@@ -113,13 +113,17 @@ costs and one changes whether an item is justified at all.
    document validates against `startProjectSyncRequestSchema`. What is missing is not a
    fixture — it is an **execution** of one at that scale against a real database.
 
-4. **The SES comment states a constraint that may not exist.** `api-function.ts:184-186`
-   says `ses:SendEmail`/`ses:SendRawEmail` "do not support resource-level permissions in
-   the classic API". Slice 2's first task is to check that against the SES actions,
-   resources and condition-keys reference, because it decides the slice's shape: if
-   identity-ARN resources are supported the fix is `resources: [identityArn]`; if only
-   condition keys are, it is `conditions: { StringEquals: { 'ses:FromAddress': … } }`.
-   Either way the comment is rewritten to match what was checked, with the date.
+4. **The SES comment states a constraint that does not exist. — CHECKED 2026-09-09,
+   and it is wrong.** `api-function.ts:184-186` said `ses:SendEmail`/`ses:SendRawEmail`
+   "do not support resource-level permissions in the classic API". The SES developer
+   guide, § Identity and access management, says the opposite in as many words: "To
+   restrict the identities that a user is allowed to send from, set `Resource` to the
+   ARNs of the identities that you are permitting the user to use." **Both** mechanisms
+   are available and slice 2 (#401) uses both: `resources: [identityArn]` bounds which
+   identity, and `ses:FromAddress` bounds which address within it — a domain identity
+   otherwise covers every mailbox at the domain. `ses:FromDisplayName` being a separate
+   condition key is what establishes that SES parses `Source`, so `"Grant" <a@b.com>` is
+   matched as `a@b.com`. The comment is rewritten to say what was checked, and when.
 
 ## Gate 1 decisions
 
@@ -211,25 +215,25 @@ Ordered by what it costs to be wrong, then by what unblocks what. Part A first
 because an accepted risk whose compensating control does not exist is an unaccepted
 risk; slice 4 early because two later slices are blocked on its number.
 
-| #     | Branch                                     | Base  | Part | Concern                                                      | Owner             | Bar               | PR  |
-| ----- | ------------------------------------------ | ----- | ---- | ------------------------------------------------------------ | ----------------- | ----------------- | --- |
-| 1     | `feat/aws-followups-middleware-order`      | trunk | A    | Origin verification precedes the rate limiter, asserted      | Backend + QA      | light             |     |
-| 2     | `feat/aws-followups-ses-identity`          | 1     | A    | `ses:SendEmail` scoped, and granted only where used          | Backend + **Sec** | **security-full** |     |
-| 3     | `feat/aws-followups-origin-alarm`          | 2     | A    | The compensating control, wired                              | Backend + **Sec** | **security-full** |     |
-| 4     | `feat/aws-followups-edge-proof`            | 3     | A/E  | Deployed proof of 1–3 **and** ADR 0002's missing number      | **QA**            | light             |     |
-| 5     | `feat/aws-followups-payload-errors`        | 4     | B    | `413` and `400` instead of `500 INTERNAL_ERROR`              | Backend           | light             |     |
-| 6     | `feat/aws-followups-body-limit`            | 5     | B    | The Lambda target stops advertising a limit it cannot honour | Backend           | light             |     |
-| 7     | `feat/aws-followups-credential-resolution` | 6     | C    | Credentials resolve through `ISecretResolver`, every target  | Backend + **Sec** | **security-full** |     |
-| 8     | `feat/aws-followups-credential-keys`       | 7     | C    | The AWS refusal becomes a route                              | Backend + **Sec** | **security-full** |     |
-| 9     | `feat/aws-followups-upload-port`           | 8     | D    | `getUploadUrl()` on the port, and both adapters              | Backend + Arch    | **deep**          |     |
-| 10    | `feat/aws-followups-upload-api`            | 9     | D    | Schema, resolver, REST, handler, service                     | Backend           | light             |     |
-| 11    | `feat/aws-followups-upload-web`            | 10    | D    | The hook and the two dialogs                                 | Frontend          | light             |     |
-| 12    | `feat/aws-followups-sync-runtime`          | 11    | E    | ADR 0002 settled: escape hatch, or closed as unneeded        | Backend           | light             |     |
-| 13    | `feat/aws-followups-queue-redelivery`      | 12    | E    | Visibility timeout from a measured duration                  | Backend           | light             |     |
-| 14    | `feat/aws-followups-rds-iam`               | 13    | E    | RDS IAM auth as an option; the proxy default re-decided      | Backend           | light             |     |
-| 15    | `feat/aws-followups-opennext`              | 14    | E    | Measured, then decided                                       | Backend           | light             |     |
-| 16    | `feat/aws-followups-proof`                 | 15    | F    | Deployed proof of C, D and anything E built; teardown        | **QA**            | light             |     |
-| final | `feat/aws-followups-closeout`              | main  | —    | integration                                                  | Principal         | **deep**          |     |
+| #     | Branch                                     | Base  | Part | Concern                                                      | Owner             | Bar               | PR   |
+| ----- | ------------------------------------------ | ----- | ---- | ------------------------------------------------------------ | ----------------- | ----------------- | ---- |
+| 1     | `feat/aws-followups-middleware-order`      | trunk | A    | Origin verification precedes the rate limiter, asserted      | Backend + QA      | light             | #400 |
+| 2     | `feat/aws-followups-ses-identity`          | 1     | A    | `ses:SendEmail` scoped, and granted only where used          | Backend + **Sec** | **security-full** | #401 |
+| 3     | `feat/aws-followups-origin-alarm`          | 2     | A    | The compensating control, wired                              | Backend + **Sec** | **security-full** | #403 |
+| 4     | `feat/aws-followups-edge-proof`            | 3     | A/E  | Deployed proof of 1–3 **and** ADR 0002's missing number      | **QA**            | light             |      |
+| 5     | `feat/aws-followups-payload-errors`        | 4     | B    | `413` and `400` instead of `500 INTERNAL_ERROR`              | Backend           | light             |      |
+| 6     | `feat/aws-followups-body-limit`            | 5     | B    | The Lambda target stops advertising a limit it cannot honour | Backend           | light             |      |
+| 7     | `feat/aws-followups-credential-resolution` | 6     | C    | Credentials resolve through `ISecretResolver`, every target  | Backend + **Sec** | **security-full** |      |
+| 8     | `feat/aws-followups-credential-keys`       | 7     | C    | The AWS refusal becomes a route                              | Backend + **Sec** | **security-full** |      |
+| 9     | `feat/aws-followups-upload-port`           | 8     | D    | `getUploadUrl()` on the port, and both adapters              | Backend + Arch    | **deep**          |      |
+| 10    | `feat/aws-followups-upload-api`            | 9     | D    | Schema, resolver, REST, handler, service                     | Backend           | light             |      |
+| 11    | `feat/aws-followups-upload-web`            | 10    | D    | The hook and the two dialogs                                 | Frontend          | light             |      |
+| 12    | `feat/aws-followups-sync-runtime`          | 11    | E    | ADR 0002 settled: escape hatch, or closed as unneeded        | Backend           | light             |      |
+| 13    | `feat/aws-followups-queue-redelivery`      | 12    | E    | Visibility timeout from a measured duration                  | Backend           | light             |      |
+| 14    | `feat/aws-followups-rds-iam`               | 13    | E    | RDS IAM auth as an option; the proxy default re-decided      | Backend           | light             |      |
+| 15    | `feat/aws-followups-opennext`              | 14    | E    | Measured, then decided                                       | Backend           | light             |      |
+| 16    | `feat/aws-followups-proof`                 | 15    | F    | Deployed proof of C, D and anything E built; teardown        | **QA**            | light             |      |
+| final | `feat/aws-followups-closeout`              | main  | —    | integration                                                  | Principal         | **deep**          |      |
 
 ### Part A — the edge trust model (program items 2, 3, 4)
 
@@ -292,6 +296,17 @@ account and has no reason to send mail at all.
 - Tests: the grant absent under `console`, present and scoped under `ses`, the refusal
   when `EMAIL_FROM` is missing, and — mutation-tested — a test that fails if
   `resources` reverts to `['*']`.
+- **Shipped as #401, with two deviations from the shape above, both recorded rather than
+  quiet.** (a) The function props gained `ses?: SesSendGrant` — an
+  `{ identityArn, fromAddress }` pair — instead of a bare `sesIdentityArn?: string`,
+  because using both IAM mechanisms needs both values and two loose optionals make
+  "ARN set, address unset" a representable state that means nothing. The
+  `GrantPlatformProps` surface is still exactly `email.sesIdentityArn`; the address comes
+  from the resolved `EMAIL_FROM`, so the policy and the environment cannot diverge.
+  (b) A third refusal was considered and **not** added: an identity ARN under
+  `EMAIL_PROVIDER=console` stays inert rather than failing synth. An unused prop is not a
+  broken deployment, and a config file carrying the ARN across a provider switch is
+  reasonable to have.
 
 #### Slice 3 — the compensating control, wired
 
@@ -322,6 +337,17 @@ was never built. This is the first observability construct in the target: `grep 
   snapshots gain the same two.
 - Tests: filter and alarm exist on every serving topology including both BYO shapes;
   no alarm action without a topic; an action with one.
+- **Shipped as #403.** Two things worth carrying forward. (a) The filter pattern is a
+  **text** pattern, not the JSON one (`{ $.module = "OriginVerify" }`) this slice's
+  wording implies: a JSON pattern needs the log event to parse as JSON end to end, and
+  whether the Lambda runtime forwards this container's stdout verbatim or prefixes it is
+  not knowable at synth. Substring terms match either way, and slice 4 is what confirms
+  the filter increments at all. (b) `ApiFunction.logGroup` is now a public field rather
+  than an inline `new LogGroup(...)`. Same construct path, so the logical ID is unchanged
+  and nothing is replaced — verified by the absence of any `AWS::Logs::LogGroup` line in
+  the snapshot diff.
+- **One template line beyond the declaration, and it is unavoidable**: `CDKMetadata`'s
+  `Analytics` blob changes whenever the construct set does. Same for #401.
 
 #### Slice 4 — the deployed proof, and ADR 0002's missing number
 
