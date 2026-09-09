@@ -515,6 +515,10 @@ feat/byo-database..main` = 0), so the trunk is a clean fast-forward from
       commits live on in the merged PRs, so the trunk loses nothing — checked as a
       **tree** diff against the trunk before deleting, since a squash makes the commit
       list a misleading answer to "is this contained".
+- [x] Story trunk `feat/byo-database` deleted, local and remote, after #394 merged —
+      containment checked as a tree diff against `origin/main`, not a commit list.
+      The trunk worktree `../grant-byo-database` goes with the close-out PR; it is the
+      last one this story created.
 - [x] Stack plan status → `merged-to-main`
 - [x] Program brief updated: tier 1 item 1 closed — refreshed at close-out to name
       #393 and the merge to `main`, since the disposition was written when the
