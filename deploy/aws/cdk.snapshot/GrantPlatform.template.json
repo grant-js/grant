@@ -972,6 +972,10 @@
                 "Value": "true"
               },
               {
+                "Name": "API_JSON_BODY_LIMIT_BYTES",
+                "Value": "5242880"
+              },
+              {
                 "Name": "APP_URL",
                 "Value": "https://grant.example.com"
               },
@@ -1873,6 +1877,7 @@
             "DB_POOL_MAX": "2",
             "JOBS_PROVIDER": "aws",
             "SECURITY_ORIGIN_VERIFY_REQUIRED": "true",
+            "API_JSON_BODY_LIMIT_BYTES": "5242880",
             "APP_URL": "https://grant.example.com",
             "SECURITY_FRONTEND_URL": "https://grant.example.com",
             "DOCS_URL": "https://grant.example.com/docs",
@@ -2346,6 +2351,7 @@
             "DB_POOL_MAX": "2",
             "JOBS_PROVIDER": "aws",
             "SECURITY_ORIGIN_VERIFY_REQUIRED": "true",
+            "API_JSON_BODY_LIMIT_BYTES": "5242880",
             "APP_URL": "https://grant.example.com",
             "SECURITY_FRONTEND_URL": "https://grant.example.com",
             "DOCS_URL": "https://grant.example.com/docs",

@@ -308,6 +308,63 @@ What each resource supports today, so you can tell a supported path from a plaus
 
 Redis is a weaker case than it looks: the keys are honoured by the application, but nothing in the stack opens a path to a cluster it did not create. You would be bringing the VPC, the security-group rule and the cluster yourself, and the DynamoDB table would still be created unless you also pass `cache.table`.
 
+## Request body size
+
+This target lowers `API_JSON_BODY_LIMIT_BYTES` to **5 MiB**, from the 10 MiB
+`@grantjs/env` defaults to everywhere else. The reason is honesty rather than caution:
+Lambda's invocation payload cap sits at a measured **5.32 MiB of raw CDM** for an
+uncompressed body, so at 10 MiB the API advertised a ceiling AWS would not honour.
+Between the two numbers a request was rejected by the runtime before any code ran —
+**no `413`, no domain error, no audit entry, and nothing in the request log.** The
+caller got an opaque failure from infrastructure the application never saw.
+
+At 5 MiB the application refuses first, with the `413` it should always have returned.
+
+### Gzip buys you more, and the limit does not know it
+
+`body-parser` inflates `Content-Encoding: gzip` bodies **before** applying the limit. So
+compression spends fewer bytes against Lambda's cap but not against this one:
+
+| Client       | Bounded by                  | Effective ceiling                                            |
+| ------------ | --------------------------- | ------------------------------------------------------------ |
+| Uncompressed | `API_JSON_BODY_LIMIT_BYTES` | 5 MiB of CDM, roughly where Lambda would have refused anyway |
+| Gzipped      | `API_JSON_BODY_LIMIT_BYTES` | 5 MiB of CDM — **earlier than Lambda would have refused**    |
+
+That asymmetry is documented rather than engineered around. One number that is honest
+about the worst case beats two that are each right half the time, and the alternative —
+a route that requires `Content-Encoding: gzip` and applies a different ceiling — is
+per-route behaviour for a problem one config value solves.
+
+**Gzip large CDM anyway.** Measured over the CDM scale fixtures, the compression ratio
+is **17.7% mean and 22.8% worst case**, so a gzipped body of 5 MiB carries roughly 22–28
+MiB of raw CDM against Lambda's cap even though this limit stops it at 5 MiB decompressed.
+The cap is not what you will hit; the pipe is much wider than the raw path.
+
+| Profile         | Entities |  Raw JSON |  Gzipped | Ratio |
+| --------------- | -------: | --------: | -------: | ----: |
+| `department`    |    3,650 |  1.39 MiB | 0.23 MiB | 16.5% |
+| `enterprise`    |   28,880 | 12.16 MiB | 2.22 MiB | 18.2% |
+| `entropy-bound` |   28,880 | 16.99 MiB | 3.87 MiB | 22.8% |
+
+`entropy-bound` is not a tenant — it is the least compressible document the CDM shape
+permits, included so the worst case is a measurement rather than a guess.
+
+### Raising it
+
+If you have measured your own CDM and 5 MiB is wrong for you, override it like any other
+setting — this is a default, not a ceiling:
+
+```sh
+# deploy/aws/.env
+API_JSON_BODY_LIMIT_BYTES=8388608
+```
+
+Above ~5.32 MiB you are back to relying on Lambda to refuse, which it does silently.
+Raise it only if your clients gzip, where the runtime cap is nowhere near binding.
+
+Full numbers and method: `plans/2026-08-21-aws-lambda-runtime-measurements.md`
+(`pnpm --filter grant-api measure:cdm-gzip` reproduces them).
+
 ## The alarm on direct origin requests
 
 The API's Function URL answers the internet. It has to: CloudFront's Origin Access
