@@ -33,7 +33,7 @@ import type { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
 import type { IQueue } from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 
-import type { GrantEnv } from '../config/props';
+import type { GrantEnv, SesSendGrant } from '../config/props';
 
 /**
  * Where the Lambda Web Adapter delivers a non-HTTP event, and where the application
@@ -97,6 +97,13 @@ export interface JobsFunctionProps {
 
   /** See `DEFAULT_RESERVED_CONCURRENCY`. Pass `0` to leave concurrency unbounded. */
   readonly reservedConcurrency?: number;
+
+  /**
+   * The SES identity and From address this function may send as. Omit — the default,
+   * and the case for every deployment on `EMAIL_PROVIDER=console` — and no SES
+   * statement is attached to the role. Notification delivery is what uses it.
+   */
+  readonly ses?: SesSendGrant;
 }
 
 export class JobsFunction extends Construct {
@@ -147,12 +154,34 @@ export class JobsFunction extends Construct {
 
     // Notification delivery is the job that sends mail, so this role needs SES more
     // plainly than the API's does. Send-only, and no static keys anywhere.
-    this.function.addToRolePolicy(
-      new PolicyStatement({
-        actions: ['ses:SendEmail', 'ses:SendRawEmail'],
-        resources: ['*'],
-      })
-    );
+    //
+    // Granted only where mail is actually sent. `EMAIL_PROVIDER` defaults to `console`
+    // (`@grantjs/env/src/schema.ts:256-259`), so the common deployment used to hold a
+    // send-as-anyone permission for a function that never calls SES at all.
+    //
+    // Scoped two ways, because SES narrows two different things and supports each for
+    // `SendEmail`/`SendRawEmail` (SES developer guide, "Identity and access management
+    // in Amazon SES", checked 2026-09-09):
+    //
+    //   - `Resource` set to identity ARNs, which the guide gives as the alternative to
+    //     `*` in as many words: "To restrict the identities that a user is allowed to
+    //     send from, set Resource to the ARNs of the identities". **The comment that
+    //     used to stand here said the opposite** — that these actions "do not support
+    //     resource-level permissions in the classic API" — and that was simply wrong.
+    //   - `ses:FromAddress`, which bounds the address within that identity. A domain
+    //     identity otherwise permits every mailbox at the domain, and the adapter only
+    //     ever sends as one address. SES parses `Source`, matching a display name
+    //     against the separate `ses:FromDisplayName` key, so `"Grant" <a@b.com>` is
+    //     compared here as `a@b.com`.
+    if (props.ses) {
+      this.function.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+          resources: [props.ses.identityArn],
+          conditions: { StringEquals: { 'ses:FromAddress': props.ses.fromAddress } },
+        })
+      );
+    }
 
     // A job may enqueue another job — the event relay's on-demand path does exactly
     // that after a transaction commits — so this function both consumes and sends.

@@ -40,6 +40,7 @@ import {
   validateAppUrl,
   validateCertificateArn,
   validateSecretArn,
+  validateSesIdentityArn,
 } from '../lib/config/validate';
 import { EdgeCertificate } from '../lib/edge/certificate';
 import { GrantPlatform } from '../lib/grant-platform';
@@ -301,6 +302,48 @@ function buildEnv(): GrantEnv {
 }
 
 /**
+ * The SES identity the platform is permitted to send as.
+ *
+ * `-c sesIdentityArn` wins; otherwise the domain-identity ARN is composed from
+ * `-c emailFrom`. Composing it *here* rather than in `lib/` is ADR 0005: an ARN
+ * derived from a mail address is a guess about how an adopter verified their identity,
+ * and the reference app is the layer allowed to make convenient guesses.
+ *
+ * The guess is the domain, because that is what a real deployment verifies —
+ * `no-reply@example.com` sends from a verified `example.com` far more often than from
+ * a mailbox identity of its own. An adopter who verified the address instead passes
+ * `-c sesIdentityArn=...:identity/no-reply@example.com` and this composition is
+ * skipped entirely.
+ *
+ * The region is the stack's, matching the `EMAIL_SES_REGION` derived in `buildEnv` —
+ * SES identities are verified per region, and an ARN naming another one produces a
+ * grant for an identity that does not exist there.
+ */
+function buildEmail(env: GrantEnv): Pick<GrantPlatformProps, 'email'> {
+  const explicit = optional('sesIdentityArn');
+  if (explicit) {
+    // Lexical, and for the same reason certificateArn is: it lands in a policy
+    // `Resource`, where a wrong one deploys cleanly and fails on the first send.
+    validateSesIdentityArn(explicit);
+    return { email: { sesIdentityArn: explicit } };
+  }
+
+  const from = env.EMAIL_FROM;
+  if (env.EMAIL_PROVIDER !== 'ses' || !from) return {};
+
+  const domain = from.split('@')[1];
+  if (!domain) {
+    throw new Error(
+      `EMAIL_FROM is not an email address: ${from}\n` +
+        'The SES identity ARN is composed from its domain. Pass a full address, or ' +
+        'name the identity outright with -c sesIdentityArn=...'
+    );
+  }
+
+  return { email: { sesIdentityArn: `arn:aws:ses:${region}:${account}:identity/${domain}` } };
+}
+
+/**
  * The database, and the network that follows from it.
  *
  * `database` is spread conditionally rather than passed unconditionally, and that is
@@ -346,6 +389,8 @@ function buildDatabase(
 }
 
 function buildPlatform(stack: Stack, cert: ICertificate): void {
+  const env = buildEnv();
+
   new GrantPlatform(stack, 'Grant', {
     appUrl,
     ...buildDatabase(stack),
@@ -358,7 +403,8 @@ function buildPlatform(stack: Stack, cert: ICertificate): void {
     // API. Built from source; `apps/web/.next/static` must exist, so run
     // `pnpm --filter grant-web build` first — the same contract the docs site has.
     web: {},
-    env: buildEnv(),
+    env,
+    ...buildEmail(env),
     dns: {
       // fromHostedZoneAttributes, not fromLookup: a lookup resolves against live
       // account state at synth time and would make the committed template a function
