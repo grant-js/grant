@@ -295,17 +295,52 @@ If you only need to reuse an **existing certificate**, pass `-c certificateArn=�
 
 What each resource supports today, so you can tell a supported path from a plausible-looking one:
 
-| Resource           | How                                            | Status                                                                  |
-| ------------------ | ---------------------------------------------- | ----------------------------------------------------------------------- |
-| **VPC**            | `vpc?: IVpc`                                   | supported — prefer `fromVpcAttributes()` over a lookup                  |
-| **Certificate**    | `-c certificateArn=…`, or `ICertificate`       | supported                                                               |
-| **Hosted zone**    | `IHostedZone`                                  | supported                                                               |
-| **Uploads bucket** | `storage.uploadsBucket?: IBucket`              | supported                                                               |
-| **Cache table**    | `cache.table?: ITable`                         | supported — needs a `pk`/`sk` schema and a TTL on `expiresAt`           |
-| **PostgreSQL**     | omit `database`, pass `-c dbUrlSecretArn=…`    | supported — see [Bring your own PostgreSQL](#bring-your-own-postgresql) |
-| **Redis**          | `CACHE_STRATEGY=redis` plus `REDIS_*` in `env` | config only — no network wiring is generated                            |
+| Resource           | How                                              | Status                                                                  |
+| ------------------ | ------------------------------------------------ | ----------------------------------------------------------------------- |
+| **VPC**            | `vpc?: IVpc`                                     | supported — prefer `fromVpcAttributes()` over a lookup                  |
+| **Certificate**    | `-c certificateArn=…`, or `ICertificate`         | supported                                                               |
+| **Hosted zone**    | `IHostedZone`                                    | supported                                                               |
+| **Uploads bucket** | `storage.uploadsBucket?: IBucket`                | supported                                                               |
+| **Cache table**    | `cache.table?: ITable`                           | supported — needs a `pk`/`sk` schema and a TTL on `expiresAt`           |
+| **PostgreSQL**     | omit `database`, pass `-c dbUrlSecretArn=…`      | supported — see [Bring your own PostgreSQL](#bring-your-own-postgresql) |
+| **SES identity**   | `-c sesIdentityArn=…`, or `email.sesIdentityArn` | supported — see [Sending mail](#sending-mail)                           |
+| **Redis**          | `CACHE_STRATEGY=redis` plus `REDIS_*` in `env`   | config only — no network wiring is generated                            |
 
 Redis is a weaker case than it looks: the keys are honoured by the application, but nothing in the stack opens a path to a cluster it did not create. You would be bringing the VPC, the security-group rule and the cluster yourself, and the DynamoDB table would still be created unless you also pass `cache.table`.
+
+## Sending mail
+
+`EMAIL_PROVIDER` defaults to `console`, and on that default **neither function is given
+`ses:SendEmail` at all**. The permission appears only when the resolved environment says
+`ses`, and it is scoped when it does:
+
+- `Resource` is the identity ARN, not `*`. Without this a compromised function could
+  send as any identity verified anywhere in the account.
+- A `ses:FromAddress` condition pins the exact address in `EMAIL_FROM`, because a domain
+  identity otherwise covers every mailbox at that domain and the application only ever
+  sends as one.
+
+```sh
+cdk deploy --all \
+  -c appUrl=https://grant.example.com \
+  -c zoneName=example.com -c hostedZoneId=Z123456ABCDEFG \
+  -c emailFrom=no-reply@example.com
+```
+
+`-c emailFrom` sets `EMAIL_PROVIDER=ses` and `EMAIL_FROM`, and composes the ARN of the
+**domain** identity — `arn:aws:ses:<stack region>:<account>:identity/example.com` — which
+is what a real deployment usually verifies. If you verified the address itself, name the
+identity outright and it is used as given:
+
+```sh
+  -c sesIdentityArn=arn:aws:ses:eu-central-1:123456789012:identity/no-reply@example.com
+```
+
+Synth refuses `EMAIL_PROVIDER=ses` without `EMAIL_FROM`, without an identity ARN, or with
+an ARN that is not an SES identity. Each of those would otherwise deploy cleanly and fail
+on the first email — a path nobody is watching. What synth cannot check is whether the
+identity is _verified_, or verified **in this region**: SES verifies per region, and an
+unverified identity fails at send time whatever the policy says.
 
 ## Bring your own PostgreSQL
 

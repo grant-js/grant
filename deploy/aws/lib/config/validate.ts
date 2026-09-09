@@ -19,7 +19,7 @@ import {
   STACK_GENERATED_KEYS,
 } from './env-file';
 import { ConfigurationError } from './errors';
-import type { GrantPlatformProps } from './props';
+import type { EmailProps, GrantEnv, GrantPlatformProps } from './props';
 
 /** CloudFront serves certificates only from us-east-1, whatever region the stack targets. */
 const CLOUDFRONT_CERTIFICATE_REGION = 'us-east-1';
@@ -444,6 +444,84 @@ export function assertNetworkSelection(props: Pick<GrantPlatformProps, 'network'
       'Pass the VPC that group belongs to as `network.vpc`, or drop ' +
       '`databaseSecurityGroup` and open your database to the stack yourself.'
   );
+}
+
+/**
+ * Asserts that a deployment configured to send mail can be given a scoped grant.
+ *
+ * `ses:SendEmail` is granted only where mail is actually sent, and only for one
+ * identity and one From address. Both facts have to be known at synth for the policy
+ * to say them, so this refuses the two configurations where they are not:
+ *
+ *   - `EMAIL_PROVIDER=ses` with no `EMAIL_FROM`. `apps/api` already refuses this at
+ *     boot (`env.config.ts:970`); moving the same refusal here costs a synth instead
+ *     of a deploy plus a cold start.
+ *   - `EMAIL_PROVIDER=ses` with no `email.sesIdentityArn`. An address is not an
+ *     identity — `no-reply@example.com` may be verified as the mailbox or as the
+ *     domain, and only the adopter knows which — so this library will not construct
+ *     the ARN from the address it was given.
+ *
+ * The reverse case, an identity ARN under `EMAIL_PROVIDER=console`, is deliberately
+ * *not* refused: it is an inert prop rather than a broken deployment, and a config
+ * file that carries the ARN through a provider switch is a reasonable thing to have.
+ *
+ * Not a check that the identity exists or is verified — nothing at synth can know
+ * that, and an unverified identity fails at send time regardless of this policy.
+ */
+export function assertSesSendingIdentity(env: GrantEnv, email: EmailProps | undefined): void {
+  if (env.EMAIL_PROVIDER !== 'ses') return;
+
+  if (!env.EMAIL_FROM) {
+    throw new ConfigurationError(
+      'EMAIL_PROVIDER is "ses" but EMAIL_FROM is unset. The API refuses to boot ' +
+        'without it, and the SES grant is scoped to it — so without it this deploy ' +
+        'would produce a function that cannot send and a policy that cannot say what ' +
+        'it may send as.\n' +
+        'Pass -c emailFrom=<address>, or set EMAIL_FROM in the config file.'
+    );
+  }
+
+  if (!email?.sesIdentityArn) {
+    throw new ConfigurationError(
+      'EMAIL_PROVIDER is "ses" but no email.sesIdentityArn was supplied, so the ' +
+        'sending grant has no identity to be scoped to. It is not derived from ' +
+        `EMAIL_FROM (${env.EMAIL_FROM}) because an address does not say whether the ` +
+        'verified identity is the mailbox or its domain.\n' +
+        'Pass -c sesIdentityArn=arn:<partition>:ses:<region>:<account>:identity/<name>, ' +
+        "or use the reference app's -c emailFrom, which composes the domain-identity ARN."
+    );
+  }
+
+  validateSesIdentityArn(email.sesIdentityArn);
+}
+
+/**
+ * Asserts an ARN that names an SES identity.
+ *
+ * Lexical only, for the same reason `validateCertificateArn` is: the ARN goes straight
+ * into a policy `Resource`, where a malformed one is accepted by CloudFormation and
+ * surfaces as `AccessDenied` on the first email the platform tries to send — long
+ * after the deploy said it succeeded, and on a path nobody is watching.
+ */
+export function validateSesIdentityArn(arn: string): void {
+  // arn:<partition>:ses:<region>:<account>:identity/<name>
+  const segments = arn.split(':');
+  const [prefix, , service] = segments;
+  const resource = segments[5];
+
+  if (prefix !== 'arn' || service !== 'ses' || segments.length < 6) {
+    throw new ConfigurationError(
+      `Not an SES ARN: ${arn}\n` + 'Expected arn:<partition>:ses:<region>:<account>:identity/<name>'
+    );
+  }
+
+  if (!resource?.startsWith('identity/') || resource === 'identity/') {
+    throw new ConfigurationError(
+      `Not an SES *identity* ARN: ${arn}\n` +
+        'Expected the resource part to be identity/<domain-or-address>. A configuration ' +
+        'set or a template ARN is not something ses:SendEmail can be scoped to.'
+    );
+  }
 }
 
 /**

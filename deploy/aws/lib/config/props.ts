@@ -370,6 +370,57 @@ interface JobsProps {
   readonly reservedConcurrency?: number;
 }
 
+/**
+ * The SES sending identity a function is permitted to send from.
+ *
+ * Composed by `GrantPlatform` from `EmailProps.sesIdentityArn` and the resolved
+ * `EMAIL_FROM`, and passed only to functions in a deployment that actually sends mail.
+ * Absent, and the function gets no SES statement at all — which is the common case,
+ * because `EMAIL_PROVIDER` defaults to `console`.
+ *
+ * Both fields, because the two IAM mechanisms narrow different things and SES supports
+ * each independently for `SendEmail`/`SendRawEmail`:
+ *
+ *   - `identityArn` in `Resource` bounds *which verified identity* may be used.
+ *   - `fromAddress` in a `ses:FromAddress` condition bounds *which address within it*.
+ *
+ * The ARN alone leaves a domain identity able to send as every mailbox at that domain,
+ * so the pair is what makes the grant match the one address the adapter ever sets as
+ * `Source` (`@grantjs/email/src/ses/index.ts:52`).
+ */
+export interface SesSendGrant {
+  /**
+   * e.g. `arn:aws:ses:eu-central-1:123456789012:identity/example.com`, or one naming a
+   * single verified address.
+   */
+  readonly identityArn: string;
+
+  /**
+   * The bare address, without a display name. SES parses `Source` and matches the
+   * display name against the separate `ses:FromDisplayName` key, so `"Grant"
+   * <no-reply@example.com>` is evaluated here as `no-reply@example.com`.
+   */
+  readonly fromAddress: string;
+}
+
+/**
+ * Outbound mail.
+ *
+ * Only the identity ARN, and only an ARN: `EMAIL_PROVIDER`, `EMAIL_FROM` and
+ * `EMAIL_SES_REGION` are ordinary environment and belong in `env`, where the
+ * application reads them. This prop exists because an ARN is the one thing the
+ * *policy* needs and the environment cannot supply — an address is not an identity,
+ * and a domain address does not tell this library whether the verified identity is the
+ * domain or the mailbox.
+ *
+ * ADR 0005: interface-typed, and `bin/` composes it. The reference app derives the
+ * domain-identity ARN from `-c emailFrom` and accepts `-c sesIdentityArn` to override,
+ * so an adopter can point at an identity they already own.
+ */
+export interface EmailProps {
+  readonly sesIdentityArn: string;
+}
+
 /** Top-level props for the whole platform. */
 export interface GrantPlatformProps {
   /**
@@ -470,6 +521,13 @@ export interface GrantPlatformProps {
 
   /** Passed through to the API container. */
   readonly env?: GrantEnv;
+
+  /**
+   * Outbound mail. Required when `env.EMAIL_PROVIDER` is `ses`, ignored otherwise, and
+   * refused at synth if the provider says `ses` without it — see
+   * `assertSesSendingIdentity`.
+   */
+  readonly email?: EmailProps;
 
   /**
    * Secret `ENV_NAME: value` pairs, merged into the platform secret rather than into

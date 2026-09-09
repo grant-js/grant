@@ -41,6 +41,7 @@ import {
   assertDatabaseSelection,
   assertMigrationIsRunnable,
   assertNetworkSelection,
+  assertSesSendingIdentity,
   validateAppUrl,
   validateHostnameInZone,
 } from './config/validate';
@@ -161,6 +162,16 @@ export class GrantPlatform extends Construct {
       DOCS_URL: `${props.appUrl}/docs`,
       ...props.env,
     };
+
+    // After the merge, not before: `EMAIL_PROVIDER` and `EMAIL_FROM` can arrive from
+    // `AWS_TARGET_ENV_DEFAULTS` or from the caller, and it is the resolved value the
+    // functions will actually boot with that decides whether a send grant is issued.
+    assertSesSendingIdentity(this.env, props.email);
+    const ses =
+      this.env.EMAIL_PROVIDER === 'ses' && props.email
+        ? { identityArn: props.email.sesIdentityArn, fromAddress: this.env.EMAIL_FROM }
+        : undefined;
+
     this.behaviours = [...toCloudFrontBehaviours(), ...ASSET_BEHAVIOURS];
 
     // CloudFront is global; only the certificate it serves is pinned to us-east-1.
@@ -482,6 +493,7 @@ export class GrantPlatform extends Construct {
           // false would leave the Function URL answering anyone, silently.
           SECURITY_ORIGIN_VERIFY_REQUIRED: 'true',
         },
+        ses,
         memorySize: props.api?.memorySize,
         timeout: props.api?.timeout,
         reservedConcurrency: props.api?.reservedConcurrency,
@@ -517,6 +529,7 @@ export class GrantPlatform extends Construct {
             JOBS_EVENT_DISPATCH_ENABLED: 'true',
             JOBS_EVENT_DISPATCH_PATH: EVENT_DISPATCH_PATH,
           },
+          ses,
           memorySize: props.jobs?.memorySize,
           timeout: jobTimeout,
           reservedConcurrency: props.jobs?.reservedConcurrency,

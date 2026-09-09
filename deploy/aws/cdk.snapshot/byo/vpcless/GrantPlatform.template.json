@@ -373,14 +373,6 @@
             },
             {
               "Action": [
-                "ses:SendEmail",
-                "ses:SendRawEmail"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
-            },
-            {
-              "Action": [
                 "sqs:SendMessage",
                 "sqs:GetQueueAttributes",
                 "sqs:GetQueueUrl"
@@ -714,14 +706,6 @@
                   ]
                 }
               ]
-            },
-            {
-              "Action": [
-                "ses:SendEmail",
-                "ses:SendRawEmail"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
             },
             {
               "Action": [
