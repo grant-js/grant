@@ -5,8 +5,11 @@
 - **Slug**: `byo-database`
 - **Date**: 2026-09-05
 - **Author**: Ale Heredia (human) / drafted with Claude
-- **Status**: **approved** — gate 1 cleared 2026-09-05, Ale Heredia. Stack plan:
-  [`2026-09-05-byo-database-stack.md`](./2026-09-05-byo-database-stack.md).
+- **Status**: **shipped** — merged to `main` 2026-09-09 as
+  [#394](https://github.com/grant-js/grant/pull/394) (`98943678`). Gate 1 cleared
+  2026-09-05, Ale Heredia. Stack plan:
+  [`2026-09-05-byo-database-stack.md`](./2026-09-05-byo-database-stack.md);
+  measurements: [`2026-09-05-byo-database-measurements.md`](./2026-09-05-byo-database-measurements.md).
 - **Program brief**: [`2026-09-05-aws-followups-brief.md`](./2026-09-05-aws-followups-brief.md)
   — tier 1, item 1
 - **Origin**: phase C carried follow-up **F13**, § Follow-ons row 3
@@ -83,50 +86,51 @@ So the story is **two** decoupled things, and the second is not optional:
 
 ## Acceptance criteria
 
-- [ ] **Omitting `database` yields a complete serving platform.** A `cdk deploy` with
+- [x] **Omitting `database` yields a complete serving platform.** A `cdk deploy` with
       no `database` prop and a supplied connection string produces the API function,
       the web function, the docs site, the cache table, the uploads bucket, the job
       queue, the jobs function and all six EventBridge rules — everything the
       green-field path produces except `Database` and, where the adopter supplies a
       VPC, `Network`.
-- [ ] **The green-field path is byte-identical.** With `database` supplied, the
+- [x] **The green-field path is byte-identical.** With `database` supplied, the
       synthesized template must not change. This is the governing constraint made
       testable: the committed `cdk.snapshot` is the oracle, and a diff there is a
       failure unless it is argued for explicitly.
-- [ ] **`DB_URL` is resolver-backed.** It moves into `RESOLVER_SECRET_KEYS`
+- [x] **`DB_URL` is resolver-backed** — _in intent, not in letter; see the gate 1
+      amendment below._ It moves into `RESOLVER_SECRET_KEYS`
       (`env-file.ts:33`), so a value in `deploy/aws/.env` lands in the platform secret
       rather than in a Lambda environment variable. The `credential-keys.test.ts`
       classification test must cover it.
-- [ ] **A `DB_URL` that would have become a plaintext env var fails loudly**, not
+- [x] **A `DB_URL` that would have become a plaintext env var fails loudly**, not
       silently, for anyone upgrading — the same treatment `STACK_GENERATED_KEYS` and
       `CREDENTIAL_KEYS` already get, with a sentence saying where to put it instead.
-- [ ] **The platform secret exists without a cluster.** `PlatformSecret` today takes
+- [x] **The platform secret exists without a cluster.** `PlatformSecret` today takes
       `databaseCredentials: ISecret` plus host/port/dbname and composes `DB_URL`
       (`deploy/aws/lib/data/platform-secret.ts`). It must also accept a caller-supplied
       `DB_URL` — as a `SecretValue`, so `SecretValue.secretsManager('…')` renders a
       dynamic reference and the plaintext never enters the template.
       **`ORIGIN_VERIFY_SECRET` is generated here too**, so this construct is required
       on every path, not just the green-field one — the edge trust model depends on it.
-- [ ] **Network is decided independently of the database.** Bring-your-own Postgres in
+- [x] **Network is decided independently of the database.** Bring-your-own Postgres in
       an adopter's existing VPC needs `network.vpc` without `database`; a database
       reachable over the public internet needs no VPC at all. Both must synthesize.
       State which is supported and refuse the other at synth with a real sentence.
-- [ ] **Migration is opt-in-able on the BYO path.** `migration` is documented as
+- [x] **Migration is opt-in-able on the BYO path.** `migration` is documented as
       "Ignored when this stack does not own the database" (`props.ts:374`). Decide
       deliberately: either the Fargate one-shot runs against the supplied `DB_URL`
       (it needs VPC reachability and the security group), or it stays off and the
       guide says the adopter runs `node dist/migrate.js` themselves. Do not leave it
       ambiguous.
-- [ ] **A deployed proof, torn down.** Per phase C's verification model, a recorded
+- [x] **A deployed proof, torn down.** Per phase C's verification model, a recorded
       deploy against a Postgres instance this stack did not create, the smoke test
       green, then `cdk destroy` with the account measured back to baseline in **both**
       regions. A measurements file entry, not a claim.
-- [ ] **The guide's warning is replaced by instructions.** The `::: warning
+- [x] **The guide's warning is replaced by instructions.** The `::: warning
 Bring-your-own PostgreSQL does not work end to end yet` block in
       `docs/deployment/aws-serverless.md:303` goes away; the resource table's
       **PostgreSQL** row moves from "**not yet**" to a supported path with its
       preconditions stated.
-- [ ] **With no configuration changed, behavior is identical to `main`** — on the AWS
+- [x] **With no configuration changed, behavior is identical to `main`** — on the AWS
       target, on Helm, and on docker-compose.
 
 > **Gate 1 amended two of these, and the amendments are recorded rather than applied
@@ -139,6 +143,28 @@ Bring-your-own PostgreSQL does not work end to end yet` block in
 > letter. AC 6 gains a condition from the answer to question 2: **every** supported
 > topology must have a migration path, not only the ones where the Fargate one-shot
 > can run. Both live in the stack plan's § Gate 1 decisions.
+
+**Ticked 2026-09-09, at close-out.** Where each was met, so the boxes are checkable
+rather than asserted:
+
+| AC  | Met by                                                                                                                                                                                                                                                                           |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `lib/data/byo-database.test.ts` — the inventory census, plus both deployed topologies. Topology C runs **61 resources against green-field's 112**.                                                                                                                               |
+| 2   | `synth:check` in CI, and verified past the oracle in slice 2: raw `cdk.out` diffed against a clean checkout, 112 resources both sides, identical logical-ID sets and ordering, no `DependsOn` change.                                                                            |
+| 3   | **In intent only.** Gate 1 refused `DB_URL` from the env file rather than routing it — see the amendment above. It never becomes a Lambda environment variable, and `credential-keys.test.ts` covers it. The letter of this AC was deliberately superseded, not quietly dropped. |
+| 4   | 18 spellings tested — lower-case, quoted, `export`-prefixed, BOM-prefixed, whitespace-padded — all refused with a message naming the fix.                                                                                                                                        |
+| 5   | `lib/data/platform-secret.test.ts`; `ORIGIN_VERIFY_SECRET` generation unchanged on both paths.                                                                                                                                                                                   |
+| 6   | Topologies B, C and D all synthesize; F refused at synth with a real sentence; `migration.enabled: true` in C refused too.                                                                                                                                                       |
+| 7   | Fargate one-shot where a VPC exists, `pnpm --filter grant-aws-deploy migrate` where it does not — built and exercised against a real database, per gate 1's added condition.                                                                                                     |
+| 8   | Measurements file, both topologies, both regions back to baseline, external databases deleted with them.                                                                                                                                                                         |
+| 9   | Guide § Bring your own PostgreSQL; the warning block is gone and the resource table's **PostgreSQL** row is supported with preconditions.                                                                                                                                        |
+| 10  | Byte-identical template on the AWS target; **Helm and docker-compose have no diff in the whole story** — verified at close-out, not assumed.                                                                                                                                     |
+
+One AC was met late and only after a fight: gate 4's independent security pass found
+that AC 4's guarantee held on the env-file boundary and **not** on the props boundary,
+where `AUTH_MFA_SECRET_ENCRYPTION_KEY` and `GITHUB_CLIENT_SECRET` synthesized as
+plaintext. Fixed in [#393](https://github.com/grant-js/grant/pull/393). An AC is only
+as good as the boundary it was checked on.
 
 ## Non-goals
 
@@ -230,3 +256,11 @@ answered as "both", since VPC-optional changes what the construct library promis
 - [x] Gate 1: Story brief approved — **2026-09-05, Ale Heredia.** All three open
       questions answered above; citations re-verified against `5fd7e1d3`, with the one
       that moved recorded in Metadata. Stack planning unblocked; gate 2 is next.
+- [x] Gate 2: Stack plan approved — 2026-09-06, Ale Heredia.
+- [x] Gate 3: Five slices merged to the trunk — 2026-09-08. #386, #387, #390, #391,
+      #392, in order, slice 1 under a security-full review by someone other than its
+      author.
+- [x] Gate 4: Story → `main` — 2026-09-09, merged as #394. The independent security
+      pass **blocked** (one Critical, one High, four Medium, two Low) and was
+      remediated by #393 before the gate cleared. Full register in the stack plan
+      § Gate 4's independent pass.

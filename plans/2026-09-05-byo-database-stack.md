@@ -7,7 +7,8 @@
   — approved 2026-09-05, Ale Heredia, with all three open questions answered
 - **Program brief**: [`2026-09-05-aws-followups-brief.md`](./2026-09-05-aws-followups-brief.md)
   — tier 1, item 1
-- **Status**: `approved` — gate 2 cleared 2026-09-06, Ale Heredia
+- **Status**: `merged-to-main` — gate 4 cleared 2026-09-09, Ale Heredia. Merged as
+  [#394](https://github.com/grant-js/grant/pull/394) (`98943678`, squash).
 - **Story trunk**: `feat/byo-database`
 - **Base**: `main` at `5fd7e1d3` (#385). The brief was written against `798111ac`;
   § Citation re-verification below covers the move.
@@ -176,14 +177,23 @@ about not creating a database must not leave one running.
 
 ## Ordered slices (PRs)
 
-| #     | Branch                            | Base    | Concern                                                      | Owner             | Review bar        | PR  |
-| ----- | --------------------------------- | ------- | ------------------------------------------------------------ | ----------------- | ----------------- | --- |
-| 1     | `feat/byo-database-secret`        | trunk   | `DB_URL` refusal; `PlatformSecret` without a cluster         | Backend + **Sec** | **security-full** |     |
-| 2     | `feat/byo-database-graph`         | slice 1 | The eleven constructs come out of `if (props.database)`      | Backend + Arch    | light             |     |
-| 3     | `feat/byo-database-vpcless`       | slice 2 | VPC-optional; migration policy; the operator migrate command | Backend + Arch    | light             |     |
-| 4     | `feat/byo-database-reference-app` | slice 3 | `bin/` context surface; the committed BYO template           | Backend           | light             |     |
-| 5     | `feat/byo-database-proof`         | slice 4 | Deployed proof of B and C, torn down; the guide              | **QA**            | light             |     |
-| final | `feat/byo-database`               | `main`  | integration                                                  | Principal         | **deep**          |     |
+| #     | Branch                            | Base    | Concern                                                      | Owner             | Review bar        | PR                                                 |
+| ----- | --------------------------------- | ------- | ------------------------------------------------------------ | ----------------- | ----------------- | -------------------------------------------------- |
+| 1     | `feat/byo-database-secret`        | trunk   | `DB_URL` refusal; `PlatformSecret` without a cluster         | Backend + **Sec** | **security-full** | [#386](https://github.com/grant-js/grant/pull/386) |
+| 2     | `feat/byo-database-graph`         | slice 1 | The eleven constructs come out of `if (props.database)`      | Backend + Arch    | light             | [#387](https://github.com/grant-js/grant/pull/387) |
+| 3     | `feat/byo-database-vpcless`       | slice 2 | VPC-optional; migration policy; the operator migrate command | Backend + Arch    | light             | [#390](https://github.com/grant-js/grant/pull/390) |
+| 4     | `feat/byo-database-reference-app` | slice 3 | `bin/` context surface; the committed BYO template           | Backend           | light             | [#391](https://github.com/grant-js/grant/pull/391) |
+| 5     | `feat/byo-database-proof`         | slice 4 | Deployed proof of B and C, torn down; the guide              | **QA**            | light             | [#392](https://github.com/grant-js/grant/pull/392) |
+| _g4_  | `fix/byo-database-env-parity`     | trunk   | Gate 4's boundary findings: C-1, H-1, M-1, M-2               | Backend + **Sec** | **security-full** | [#393](https://github.com/grant-js/grant/pull/393) |
+| final | `feat/byo-database`               | `main`  | integration                                                  | Principal         | **deep**          | [#394](https://github.com/grant-js/grant/pull/394) |
+
+All merged; PR numbers filled in at close-out. `_g4_` was **not** in the planned order
+— it is the remediation for gate 4's independent security pass, which blocked. It is
+listed as a row rather than folded into `final` because it was a reviewed slice into
+the trunk like any other, and because a plan that hides its unplanned work is less
+useful to the next story than one that shows where the estimate broke.
+
+Numbering skips #388 (an issue, not a PR) and #389 (an open Dependabot bump).
 
 ### Slice 1 — the secret path
 
@@ -469,7 +479,8 @@ gh stack add feat/byo-database-graph               # before starting the next on
       security-full review was performed by someone other than its author (phase C
       F16), and produced two confirmed plaintext-credential leaks that were fixed
       before it merged — § Security review findings carried forward.
-- [ ] Gate 4: Story → `main` deep review complete. Blocking items, with status:
+- [x] Gate 4: Story → `main` deep review complete — 2026-09-09, Ale Heredia, merged
+      as #394 (`98943678`). Blocking items, with status:
   - [x] Scratch account and both external databases measured to zero in both regions
         — measurements file § Teardown, verified with the same commands as the
         pre-deploy baseline.
@@ -490,7 +501,10 @@ feat/byo-database..main` = 0), so the trunk is a clean fast-forward from
         merged trunk and still fail, at identical counts** — the fixes survived the
         squash and are load-bearing where they landed, which is the property a squash
         merge is worth re-checking.
-  - [ ] Trunk→`main` deep review itself.
+  - [x] Trunk→`main` deep review — 2026-09-09, Ale Heredia. Merged as #394
+        (`98943678`). CI green on the assembled diff including CodeQL, which is
+        the first run over the integration: CI triggers on `pull_request`, so
+        each slice was tested against its own base and never as a whole.
 
 ## Cleanup
 
@@ -511,9 +525,23 @@ feat/byo-database..main` = 0), so the trunk is a clean fast-forward from
       commits live on in the merged PRs, so the trunk loses nothing — checked as a
       **tree** diff against the trunk before deleting, since a squash makes the commit
       list a misleading answer to "is this contained".
-- [ ] Stack plan status → `merged-to-main`
-- [x] Program brief updated: tier 1 item 1 closed
-- [x] Phase C stack plan: F13 disposition updated from "follow-on story" to this story
+- [x] Story trunk `feat/byo-database` deleted, local and remote, after #394 merged —
+      containment checked as a tree diff against `origin/main`, not a commit list.
+      The trunk worktree `../grant-byo-database` goes with the close-out PR; it is the
+      last one this story created.
+- [x] Stack plan status → `merged-to-main`
+- [x] Program brief updated: tier 1 item 1 closed — refreshed at close-out to name
+      #393 and the merge to `main`, since the disposition was written when the
+      story had only reached the trunk.
+- [x] Phase C stack plan: F13 disposition updated from "follow-on story" to this
+      story. **Left reading "merged 2026-09-08" rather than refreshed to name #394**,
+      and the reason is worth recording: editing that one cell re-pads all eighteen
+      rows of the findings table under Prettier, and `chore/close-out-aws-edge-infra`
+      is editing rows in the same table. A true-but-stale line beats a guaranteed
+      conflict in someone else's branch, and that branch is the natural place for the
+      refresh. Phase C's _brief_ is deliberately left alone too — a brief records what
+      was true when it was written, and "not end-to-end yet" was. A register carries
+      dispositions; a brief does not get rewritten to make history tidy.
 
 ## Follow-ons
 
