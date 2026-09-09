@@ -65,7 +65,12 @@ async function checkLimit(
 }
 
 export function rateLimitMiddleware(store: ICacheAdapter) {
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  // Named, not anonymous. Express records `layer.handle.name` and nothing else that
+  // identifies a middleware, so a name is what lets the pipeline be asserted from the
+  // outside — see `middleware-order.test.ts`. `verifyOrigin` in
+  // `origin-verify.middleware.ts` sets the same precedent, and a name in a stack trace
+  // is worth having regardless.
+  return async function rateLimit(req: Request, res: Response, next: NextFunction): Promise<void> {
     if (config.security.enableRateLimit === false) {
       next();
       return;
