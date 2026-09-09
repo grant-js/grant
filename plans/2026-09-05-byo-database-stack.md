@@ -482,7 +482,15 @@ feat/byo-database..main` = 0), so the trunk is a clean fast-forward from
         High, four Medium, two Low (§ Gate 4's independent pass). All fixed except
         M-4, accepted as follow-on 5. Fixes landed as a slice into the trunk rather
         than on it, so they carry their own CI run and review surface.
-  - [ ] Re-verification of the fix slice, then the trunk→`main` deep review itself.
+  - [x] Re-verification of the reassembled trunk after #393 merged — 2026-09-09. Not
+        a repeat of the slice's own CI: the fixes changed a security boundary, so the
+        assembled path is not the tree the pass reviewed. 465 tests, type-check, lint,
+        `dead-code:deploy` exit 0, `synth:check` up to date, and the green-field
+        snapshot still byte-identical to `main`. **All six mutations re-run against the
+        merged trunk and still fail, at identical counts** — the fixes survived the
+        squash and are load-bearing where they landed, which is the property a squash
+        merge is worth re-checking.
+  - [ ] Trunk→`main` deep review itself.
 
 ## Cleanup
 
@@ -496,11 +504,13 @@ feat/byo-database..main` = 0), so the trunk is a clean fast-forward from
       was still on disk, detached at #392's merge commit. Removed at gate 4. Third
       phase running where this item was ticked ahead of the fact (program brief
       § Housekeeping); the tick is worth less than the `git worktree list` behind it.
-- [x] Local **and remote** slice branches deleted — all five, verified with
-      `git ls-remote --heads origin 'feat/byo-database-*'` returning nothing. Phases A
-      and C both ticked this without doing it (program brief § Housekeeping); the
-      squash merges mean the per-slice commits live on in the merged PRs, so the
-      trunk loses nothing.
+- [x] Local **and remote** slice branches deleted — all five, plus
+      `fix/byo-database-env-parity` (#393) after gate 4. Verified with `git ls-remote`
+      returning nothing for both patterns. Phases A and C both ticked this without
+      doing it (program brief § Housekeeping); the squash merges mean the per-slice
+      commits live on in the merged PRs, so the trunk loses nothing — checked as a
+      **tree** diff against the trunk before deleting, since a squash makes the commit
+      list a misleading answer to "is this contained".
 - [ ] Stack plan status → `merged-to-main`
 - [x] Program brief updated: tier 1 item 1 closed
 - [x] Phase C stack plan: F13 disposition updated from "follow-on story" to this story
