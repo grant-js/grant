@@ -7,7 +7,8 @@
   — approved 2026-09-05, Ale Heredia, with all three open questions answered
 - **Program brief**: [`2026-09-05-aws-followups-brief.md`](./2026-09-05-aws-followups-brief.md)
   — tier 1, item 1
-- **Status**: `approved` — gate 2 cleared 2026-09-06, Ale Heredia
+- **Status**: `merged-to-main` — gate 4 cleared 2026-09-09, Ale Heredia. Merged as
+  [#394](https://github.com/grant-js/grant/pull/394) (`98943678`, squash).
 - **Story trunk**: `feat/byo-database`
 - **Base**: `main` at `5fd7e1d3` (#385). The brief was written against `798111ac`;
   § Citation re-verification below covers the move.
@@ -490,7 +491,10 @@ feat/byo-database..main` = 0), so the trunk is a clean fast-forward from
         merged trunk and still fail, at identical counts** — the fixes survived the
         squash and are load-bearing where they landed, which is the property a squash
         merge is worth re-checking.
-  - [ ] Trunk→`main` deep review itself.
+  - [x] Trunk→`main` deep review — 2026-09-09, Ale Heredia. Merged as #394
+        (`98943678`). CI green on the assembled diff including CodeQL, which is
+        the first run over the integration: CI triggers on `pull_request`, so
+        each slice was tested against its own base and never as a whole.
 
 ## Cleanup
 
@@ -511,9 +515,19 @@ feat/byo-database..main` = 0), so the trunk is a clean fast-forward from
       commits live on in the merged PRs, so the trunk loses nothing — checked as a
       **tree** diff against the trunk before deleting, since a squash makes the commit
       list a misleading answer to "is this contained".
-- [ ] Stack plan status → `merged-to-main`
-- [x] Program brief updated: tier 1 item 1 closed
-- [x] Phase C stack plan: F13 disposition updated from "follow-on story" to this story
+- [x] Stack plan status → `merged-to-main`
+- [x] Program brief updated: tier 1 item 1 closed — refreshed at close-out to name
+      #393 and the merge to `main`, since the disposition was written when the
+      story had only reached the trunk.
+- [x] Phase C stack plan: F13 disposition updated from "follow-on story" to this
+      story. **Left reading "merged 2026-09-08" rather than refreshed to name #394**,
+      and the reason is worth recording: editing that one cell re-pads all eighteen
+      rows of the findings table under Prettier, and `chore/close-out-aws-edge-infra`
+      is editing rows in the same table. A true-but-stale line beats a guaranteed
+      conflict in someone else's branch, and that branch is the natural place for the
+      refresh. Phase C's _brief_ is deliberately left alone too — a brief records what
+      was true when it was written, and "not end-to-end yet" was. A register carries
+      dispositions; a brief does not get rewritten to make history tidy.
 
 ## Follow-ons
 
