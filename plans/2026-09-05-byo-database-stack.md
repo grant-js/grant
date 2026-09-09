@@ -177,14 +177,23 @@ about not creating a database must not leave one running.
 
 ## Ordered slices (PRs)
 
-| #     | Branch                            | Base    | Concern                                                      | Owner             | Review bar        | PR  |
-| ----- | --------------------------------- | ------- | ------------------------------------------------------------ | ----------------- | ----------------- | --- |
-| 1     | `feat/byo-database-secret`        | trunk   | `DB_URL` refusal; `PlatformSecret` without a cluster         | Backend + **Sec** | **security-full** |     |
-| 2     | `feat/byo-database-graph`         | slice 1 | The eleven constructs come out of `if (props.database)`      | Backend + Arch    | light             |     |
-| 3     | `feat/byo-database-vpcless`       | slice 2 | VPC-optional; migration policy; the operator migrate command | Backend + Arch    | light             |     |
-| 4     | `feat/byo-database-reference-app` | slice 3 | `bin/` context surface; the committed BYO template           | Backend           | light             |     |
-| 5     | `feat/byo-database-proof`         | slice 4 | Deployed proof of B and C, torn down; the guide              | **QA**            | light             |     |
-| final | `feat/byo-database`               | `main`  | integration                                                  | Principal         | **deep**          |     |
+| #     | Branch                            | Base    | Concern                                                      | Owner             | Review bar        | PR                                                 |
+| ----- | --------------------------------- | ------- | ------------------------------------------------------------ | ----------------- | ----------------- | -------------------------------------------------- |
+| 1     | `feat/byo-database-secret`        | trunk   | `DB_URL` refusal; `PlatformSecret` without a cluster         | Backend + **Sec** | **security-full** | [#386](https://github.com/grant-js/grant/pull/386) |
+| 2     | `feat/byo-database-graph`         | slice 1 | The eleven constructs come out of `if (props.database)`      | Backend + Arch    | light             | [#387](https://github.com/grant-js/grant/pull/387) |
+| 3     | `feat/byo-database-vpcless`       | slice 2 | VPC-optional; migration policy; the operator migrate command | Backend + Arch    | light             | [#390](https://github.com/grant-js/grant/pull/390) |
+| 4     | `feat/byo-database-reference-app` | slice 3 | `bin/` context surface; the committed BYO template           | Backend           | light             | [#391](https://github.com/grant-js/grant/pull/391) |
+| 5     | `feat/byo-database-proof`         | slice 4 | Deployed proof of B and C, torn down; the guide              | **QA**            | light             | [#392](https://github.com/grant-js/grant/pull/392) |
+| _g4_  | `fix/byo-database-env-parity`     | trunk   | Gate 4's boundary findings: C-1, H-1, M-1, M-2               | Backend + **Sec** | **security-full** | [#393](https://github.com/grant-js/grant/pull/393) |
+| final | `feat/byo-database`               | `main`  | integration                                                  | Principal         | **deep**          | [#394](https://github.com/grant-js/grant/pull/394) |
+
+All merged; PR numbers filled in at close-out. `_g4_` was **not** in the planned order
+— it is the remediation for gate 4's independent security pass, which blocked. It is
+listed as a row rather than folded into `final` because it was a reviewed slice into
+the trunk like any other, and because a plan that hides its unplanned work is less
+useful to the next story than one that shows where the estimate broke.
+
+Numbering skips #388 (an issue, not a PR) and #389 (an open Dependabot bump).
 
 ### Slice 1 — the secret path
 
@@ -470,7 +479,8 @@ gh stack add feat/byo-database-graph               # before starting the next on
       security-full review was performed by someone other than its author (phase C
       F16), and produced two confirmed plaintext-credential leaks that were fixed
       before it merged — § Security review findings carried forward.
-- [ ] Gate 4: Story → `main` deep review complete. Blocking items, with status:
+- [x] Gate 4: Story → `main` deep review complete — 2026-09-09, Ale Heredia, merged
+      as #394 (`98943678`). Blocking items, with status:
   - [x] Scratch account and both external databases measured to zero in both regions
         — measurements file § Teardown, verified with the same commands as the
         pre-deploy baseline.
