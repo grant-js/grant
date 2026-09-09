@@ -8,6 +8,10 @@
  *   - **`GrantPlatformProps.env`** and `props.web.env`, which ADR 0005 explicitly
  *     invites an adopter to construct directly when they replace `bin/`.
  *
+ * `GrantPlatformProps.secrets` is a third boundary with a different destination — the
+ * platform secret rather than the function — so it is held to a different rule and
+ * covered here too, rather than in a file of its own where it would drift.
+ *
  * They reach the identical `Environment.Variables` on the identical Lambda. Slice 2
  * guarded the second with a list of its own, and a security review found that list
  * held one key where the file's held twenty — `DB_GRANT_ROLE_URL`, a superuser
@@ -29,7 +33,7 @@ import {
   STACK_COMPOSED_KEYS,
   STACK_GENERATED_KEYS,
 } from './env-file';
-import { assertConfigurableEnv } from './validate';
+import { assertConfigurableEnv, assertConfigurableSecrets } from './validate';
 
 /**
  * True when the env-file path refuses this key outright rather than routing it.
@@ -53,6 +57,16 @@ function fileRefuses(key: string): boolean {
 function propsRefuses(key: string): boolean {
   try {
     assertConfigurableEnv({ [key]: 'sentinel' }, 'env');
+    return false;
+  } catch {
+    return true;
+  }
+}
+
+/** True when `props.secrets` — the platform-secret boundary — refuses it. */
+function secretsRefuses(key: string): boolean {
+  try {
+    assertConfigurableSecrets({ [key]: 'sentinel' }, 'secrets');
     return false;
   } catch {
     return true;
@@ -88,12 +102,70 @@ describe('the file and the props refuse the same keys', () => {
     }
   });
 
-  it('keeps resolver-backed keys off both refusal lists', () => {
-    // These have a safe path: the file routes them to the platform secret, and from
-    // props they belong in `GrantPlatformProps.secrets` as a SecretValue. Refusing
-    // them would remove the only way to supply them.
-    for (const key of RESOLVER_SECRET_KEYS) {
-      expect(fileRefuses(key), `${key} is resolver-backed and must not be refused`).toBe(false);
-    }
+  // Resolver-backed keys are where "parity" stops meaning "refuse the same thing".
+  //
+  // The file *routes* them to the platform secret, so it must not refuse them. Props
+  // has no routing step — whatever is in `env` becomes a Lambda environment variable —
+  // so the equivalent safety there is refusal, with `secrets` as the destination.
+  //
+  // This test previously asserted only `fileRefuses(key) === false` and never called
+  // `propsRefuses` at all, so the parity test was blind on exactly the two keys it
+  // named. `AUTH_MFA_SECRET_ENCRYPTION_KEY` and `GITHUB_CLIENT_SECRET` synthesized as
+  // plaintext Lambda environment variables through props for the whole story. Gate 4,
+  // finding C-1.
+  describe('resolver-backed keys reach the platform secret and never a function', () => {
+    it.each(RESOLVER_SECRET_KEYS)('the env file routes %s rather than refusing it', (key) => {
+      expect(fileRefuses(key), `${key} is resolver-backed and the file must route it`).toBe(false);
+
+      const { env, secrets } = classifyConfig(parseEnvFile(`${key}=sentinel`));
+      expect(secrets[key], `${key} must land in the platform secret`).toBe('sentinel');
+      expect(env, `${key} must not also become an environment variable`).not.toHaveProperty(key);
+    });
+
+    it.each(RESOLVER_SECRET_KEYS)('props.env refuses %s, naming secrets instead', (key) => {
+      expect(
+        propsRefuses(key),
+        `${key}: GrantPlatformProps.env has no routing step, so accepting it makes it ` +
+          `a plaintext Lambda environment variable`
+      ).toBe(true);
+
+      expect(() => assertConfigurableEnv({ [key]: 'sentinel' }, 'env')).toThrow(/secrets/);
+    });
+
+    it.each(RESOLVER_SECRET_KEYS)('props.secrets accepts %s — it is what it is for', (key) => {
+      expect(secretsRefuses(key), `${key} is what GrantPlatformProps.secrets exists for`).toBe(
+        false
+      );
+    });
+  });
+
+  // The platform secret is a safe *destination*, which is a different question from
+  // which keys may go there. Nothing checked the keys at all until gate 4 found
+  // `ORIGIN_VERIFY_SECRET` — refused by name on both other boundaries — accepted here,
+  // and a `DB_URL` that silently overrode the validated one. Findings H-1 and M-1.
+  describe('props.secrets refuses what the stack owns', () => {
+    it.each([...STACK_GENERATED_KEYS, ...STACK_COMPOSED_KEYS])(
+      '%s is generated or composed by the stack, so secrets refuses it too',
+      (key) => {
+        expect(secretsRefuses(key), `${key}: props.secrets accepted a key the stack owns`).toBe(
+          true
+        );
+      }
+    );
+
+    it.each(CREDENTIAL_KEYS)('%s in the platform secret would never be read', (key) => {
+      // Refused for the opposite reason to the others: the adapters read these from
+      // `process.env`, so a value here is one the application never sees. Accepting it
+      // is a deploy that succeeds while the credential silently never arrives.
+      expect(secretsRefuses(key), `${key}: accepted into a secret nothing reads it from`).toBe(
+        true
+      );
+    });
+
+    it('refuses a lower-case spelling, like every other boundary', () => {
+      for (const key of ['db_url', 'github_client_secret']) {
+        expect(secretsRefuses(key), `${key}: props.secrets`).toBe(true);
+      }
+    });
   });
 });
