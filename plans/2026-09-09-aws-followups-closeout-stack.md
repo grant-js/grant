@@ -221,8 +221,8 @@ risk; slice 4 early because two later slices are blocked on its number.
 | 2     | `feat/aws-followups-ses-identity`          | 1     | A    | `ses:SendEmail` scoped, and granted only where used          | Backend + **Sec** | **security-full** | #401 |
 | 3     | `feat/aws-followups-origin-alarm`          | 2     | A    | The compensating control, wired                              | Backend + **Sec** | **security-full** | #403 |
 | 4     | `feat/aws-followups-edge-proof`            | 3     | A/E  | Deployed proof of 1–3 **and** ADR 0002's missing number      | **QA**            | light             |      |
-| 5     | `feat/aws-followups-payload-errors`        | 4     | B    | `413` and `400` instead of `500 INTERNAL_ERROR`              | Backend           | light             |      |
-| 6     | `feat/aws-followups-body-limit`            | 5     | B    | The Lambda target stops advertising a limit it cannot honour | Backend           | light             |      |
+| 5     | `feat/aws-followups-payload-errors`        | 4     | B    | `413` and `400` instead of `500 INTERNAL_ERROR`              | Backend           | light             | #404 |
+| 6     | `feat/aws-followups-body-limit`            | 5     | B    | The Lambda target stops advertising a limit it cannot honour | Backend           | light             | #405 |
 | 7     | `feat/aws-followups-credential-resolution` | 6     | C    | Credentials resolve through `ISecretResolver`, every target  | Backend + **Sec** | **security-full** |      |
 | 8     | `feat/aws-followups-credential-keys`       | 7     | C    | The AWS refusal becomes a route                              | Backend + **Sec** | **security-full** |      |
 | 9     | `feat/aws-followups-upload-port`           | 8     | D    | `getUploadUrl()` on the port, and both adapters              | Backend + Arch    | **deep**          |      |
@@ -397,6 +397,13 @@ Two changes, both small, and the order matters: make the error real before lower
 the limit that produces it, or the first adopter to hit the new limit gets the same
 `500 INTERNAL_ERROR` and a worse experience than before.
 
+> **Rooted on the trunk, not on slice 4.** Part A merged (#400, #401, #403) but **slice
+> 4 has not run** — it is an account cycle and needs credentials this work did not have.
+> Nothing in part B consumes slice 4's output: the ordering table put slice 5 on top of
+> it for stack shape, not for a dependency. Part E is the part that genuinely blocks on
+> slice 4's number, and it is still downstream of it. Slices 2 and 3 remain **unproven**
+> until that deploy runs, and merging them did not change that.
+
 #### Slice 5 — `413` and `400`, instead of `500 INTERNAL_ERROR`
 
 Phase B measurements § Finding 4 verified this against a running container rather
@@ -425,6 +432,22 @@ fall to the generic `res.status(500)` at `:42`.
   `errors.common.internalError` has fixed nothing.
 - **Every target gets this**, not just Lambda. The 500 is wrong on Docker and
   Kubernetes too; it is merely more consequential where the runtime has its own cap.
+- **Shipped as #404, and it found three missing translation keys on the way.** i18next
+  returns the key itself when it cannot resolve one, so a missing entry does not fail —
+  it ships as user-facing text. `errors.validation.badRequest` (every `BadRequestError`)
+  and `errors.auth.notAuthenticated` (**every 401**) were defined in neither locale, so
+  the API had been answering real requests with a dot-separated identifier in the `error`
+  field. Both are now defined, and a new test resolves every _static_ key the mapper can
+  produce in every locale — the assertion whose absence allowed this, since the existing
+  `error-mapper.translationKey.test.ts` only checks which key is chosen.
+- **`errors.conflict.<resource>` is a fourth, of a different shape, and is deliberately
+  left open.** The mapper derives it from a runtime resource name, so the key set is
+  unbounded and **no member of it is defined for any resource**. Closing it means
+  deciding whether the mapper should keep deriving keys it cannot guarantee, which is not
+  this slice's decision to take on the way past. Recorded as a test that asserts the miss,
+  and as follow-on 5. What #404 _does_ fix is the leak: `translateError` checks `exists`
+  and falls back to the error's own message, so the worst case across the whole unbounded
+  family is an untranslated sentence rather than a leaked identifier.
 
 #### Slice 6 — the Lambda target stops advertising a limit it cannot honour
 
@@ -451,6 +474,13 @@ request log.
 - Tests: the parity/defaults test that already guards `AWS_TARGET_ENV_DEFAULTS`; and an
   assertion tying the value to the measured ceiling with a comment pointing at the
   measurements file, so a future edit has to argue with a number.
+- **Shipped as #405.** The template diff is **three** resources per VPC-bearing shape,
+  not the two declared: the migrate Fargate task shares the resolved environment and
+  picks the key up exactly as it picks up every other `AWS_TARGET_ENV_DEFAULTS` entry.
+  Inert there — it runs `node dist/migrate.js` and serves no HTTP — and consistent with
+  existing behaviour rather than a defect, but the declaration did not name it.
+  `byo/vpcless` gains two, having no migrate task. No `CDKMetadata` change, because this
+  adds a value rather than a construct.
 
 ### Part C — credentials with a path instead of a refusal (program item 5)
 
@@ -795,9 +825,10 @@ gh stack add feat/aws-followups-ses-identity                  # before starting 
 
 Carried out even of this story, which is meant to be the one that carries everything.
 
-| #   | Item                                                                                                                                                               | Why it is not here                                                                                                                                                              |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **`DB_GRANT_ROLE_URL` through the resolver.** The one credential part C leaves refused, and the most valuable one in the list — a superuser URL.                   | It is read outside any composition root, during a migration (`database/src/grant-rls-login-role.lib.ts`). Moving it changes the RLS grant path's shape, which is its own story. |
-| 2   | **Bring-your-own Redis** (byo-database follow-on 1). Still "config only — no network wiring is generated".                                                         | Unchanged by anything here.                                                                                                                                                     |
-| 3   | **F5 — a `"` inside a _referenced_ secret** (byo-database gate 4, M-4). Whether CloudFormation merely breaks or the quote can close `DB_URL` and open another key. | Still open, still needs a deploy. **Slice 16 is a deploy** — if it is cheap to fold in there, do it and close the finding; if not, it stays open and this row says so.          |
-| 4   | **GraphQL ingress payload sizes.** Phase B measured REST ingress only; a GraphQL client sending `searchable` pays more than the recorded table shows.              | Slice 6 sets a limit informed by REST numbers. If GraphQL ingress turns out to bind first, that is a second measurement and a second decision.                                  |
+| #   | Item                                                                                                                                                                                                                                                 | Why it is not here                                                                                                                                                                                                                                                                                                 |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | **`DB_GRANT_ROLE_URL` through the resolver.** The one credential part C leaves refused, and the most valuable one in the list — a superuser URL.                                                                                                     | It is read outside any composition root, during a migration (`database/src/grant-rls-login-role.lib.ts`). Moving it changes the RLS grant path's shape, which is its own story.                                                                                                                                    |
+| 2   | **Bring-your-own Redis** (byo-database follow-on 1). Still "config only — no network wiring is generated".                                                                                                                                           | Unchanged by anything here.                                                                                                                                                                                                                                                                                        |
+| 3   | **F5 — a `"` inside a _referenced_ secret** (byo-database gate 4, M-4). Whether CloudFormation merely breaks or the quote can close `DB_URL` and open another key.                                                                                   | Still open, still needs a deploy. **Slice 16 is a deploy** — if it is cheap to fold in there, do it and close the finding; if not, it stays open and this row says so.                                                                                                                                             |
+| 4   | **GraphQL ingress payload sizes.** Phase B measured REST ingress only; a GraphQL client sending `searchable` pays more than the recorded table shows.                                                                                                | Slice 6 sets a limit informed by REST numbers. If GraphQL ingress turns out to bind first, that is a second measurement and a second decision.                                                                                                                                                                     |
+| 5   | **`errors.conflict.<resource>` resolves for no resource.** `mapDomainToHttp` derives the key from a runtime resource name; the catalogue defines only `duplicateEntry` and `duplicateAuthMethod`, so every `ConflictError` naming a resource misses. | Found by #404, which closed the _leak_ (`translateError` falls back to the message) but not the cause. Fixing it is a decision about whether the mapper should derive keys it cannot guarantee — a design call, not a slice's aside. `errors.notFound.<segment>` has the same shape with mostly-complete coverage. |
