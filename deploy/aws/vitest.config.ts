@@ -38,7 +38,14 @@ export default defineConfig({
      * roughly 10x slower than locally: a 947ms synth measured 9.2s in CI and tripped
      * the default. This is suite-wide rather than per-test because the exposure is, and
      * it grows as later slices add constructs to the same synth.
+     *
+     * **Raised from 30 s after a 35 s observation.** The origin-verify alarm slice added
+     * a fourteenth file to the suite and its first green-field synth measured 35,027 ms
+     * on the runner — the same work that takes under two seconds locally. The file's own
+     * fixture was fixed too (it now memoizes one template per topology instead of
+     * synthesizing per `it`), but the headroom is what stops the next added construct
+     * from failing a test for being slow rather than wrong.
      */
-    testTimeout: 30_000,
+    testTimeout: 60_000,
   },
 });

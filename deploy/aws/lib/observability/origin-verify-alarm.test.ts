@@ -28,7 +28,29 @@ type Topology = 'green-field' | 'byo-vpc' | 'byo-vpcless';
  * exist on all of them. A control present only on the topology the template happens to
  * snapshot is the same paper control in a narrower place.
  */
-function build(topology: Topology, options: { withTopic?: boolean } = {}) {
+/**
+ * Synthesized templates, memoized per fixture.
+ *
+ * Each call synthesizes a whole platform — VPC, Aurora cluster, CloudFront distribution
+ * — and the first in the process also stages the docs asset. At one synth per `it` that
+ * was thirteen of them, and on the self-hosted runner, where the monorepo pipeline runs
+ * concurrently, the first one alone blew the suite's 30 s timeout. `Template` is a
+ * read-only assertion surface, so sharing one per fixture is safe and cuts the file to
+ * four synths.
+ */
+const templates = new Map<string, Template>();
+
+function build(topology: Topology, options: { withTopic?: boolean } = {}): Template {
+  const key = `${topology}:${options.withTopic ? 'topic' : 'no-topic'}`;
+  const cached = templates.get(key);
+  if (cached) return cached;
+
+  const template = synthesize(topology, options);
+  templates.set(key, template);
+  return template;
+}
+
+function synthesize(topology: Topology, options: { withTopic?: boolean } = {}) {
   const app = new App();
   const stack = new Stack(app, 'TestStack', {
     env: { account: '123456789012', region: 'eu-central-1' },
