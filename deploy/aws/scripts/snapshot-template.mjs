@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Writes the synthesized CloudFormation template into `cdk.snapshot/`, and with
- * `--check`, fails if that leaves the working tree dirty.
+ * Synthesizes every supported topology and writes the CloudFormation templates into
+ * `cdk.snapshot/`; with `--check`, fails if that leaves the working tree dirty.
  *
  * The stack plan requires the synth output be committed and reviewed — it is the
  * evidence that generation produced the intended resources and no others. `cdk.out/`
@@ -13,22 +13,86 @@
  * template that the check silently ignores — the drift most worth catching.
  *
  * Same shape as the repo's `codegen:check`: regenerate, then fail on any change.
+ *
+ * The synths live here rather than in `package.json` because there are now three of
+ * them sharing one set of scalars. Restating those scalars per script is how the
+ * green-field synth would eventually drift from the bring-your-own ones on some axis
+ * that has nothing to do with the database — and the whole value of the second
+ * snapshot is that it can be diffed against the first.
  */
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
-const outDir = join(packageRoot, 'cdk.out');
-const snapshotDir = join(packageRoot, 'cdk.snapshot');
 const check = process.argv.includes('--check');
 
-const templates = readdirSync(outDir).filter((name) => name.endsWith('.template.json'));
-if (templates.length === 0) {
-  console.error(`No templates in ${outDir}. Run \`cdk synth\` first.`);
-  process.exit(1);
-}
+/**
+ * Resolved rather than taken from PATH so this runs the same CDK whether it is
+ * invoked through `pnpm synth` or as a bare `node scripts/snapshot-template.mjs`.
+ */
+const CDK = join(packageRoot, 'node_modules/.bin/cdk');
+
+/**
+ * The scalars every topology shares. The account and region are placeholders, seeded
+ * in `cdk.json` with an availability-zone list so the committed template is
+ * reproducible and CI needs no credentials. `.env.example` is read rather than a local
+ * `.env` so the template cannot depend on an untracked file — `env-file.test.ts`
+ * asserts that file sets nothing.
+ */
+const COMMON_CONTEXT = {
+  appUrl: 'https://grant.example.com',
+  zoneName: 'example.com',
+  hostedZoneId: 'ZREFERENCE00000',
+  account: '000000000000',
+  region: 'eu-central-1',
+  envFile: '.env.example',
+};
+
+/**
+ * Placeholder identifiers for the brought infrastructure. Well-formed but owned by
+ * nobody: nothing here is looked up, so they only have to be shaped like the values an
+ * adopter would paste in. They are what makes the imported VPC, its subnets and the
+ * ingress rule against a security group this stack does not own readable in the diff.
+ */
+const BROUGHT = {
+  dbUrlSecretArn: 'arn:aws:secretsmanager:eu-central-1:000000000000:secret:grant/db-url-AbCdEf',
+  vpcId: 'vpc-0a1b2c3d4e5f60718',
+  vpcAzs: 'eu-central-1a,eu-central-1b',
+  vpcPrivateSubnetIds: 'subnet-0a1b2c3d4e5f60718,subnet-0a1b2c3d4e5f60719',
+  dbSecurityGroupId: 'sg-0a1b2c3d4e5f60718',
+};
+
+/**
+ * One entry per topology the deployment guide claims, because a claim without a
+ * committed template is an assertion about a graph nobody has looked at.
+ *
+ * Green-field is first and is the one governed by the story's acceptance criterion:
+ * it must stay byte-identical. The two bring-your-own snapshots are the inventory
+ * evidence — B carries an imported VPC, the ingress rule on a group this stack does
+ * not own and the Fargate migration; C carries no VPC at all, which is what removes
+ * the NAT gateway and is therefore the topology whose cost story needs proving.
+ *
+ * Each writes into its own `cdk.out/` subdirectory rather than overwriting the
+ * previous one, so a failed synth cannot leave a half-written snapshot looking like
+ * drift. Subdirectories are invisible to the `.template.json` scan below.
+ */
+const TOPOLOGIES = [
+  { name: 'green-field', outDir: 'cdk.out', snapshotDir: 'cdk.snapshot', context: {} },
+  {
+    name: 'brought database, in the adopter VPC',
+    outDir: 'cdk.out/byo-vpc',
+    snapshotDir: 'cdk.snapshot/byo/vpc',
+    context: BROUGHT,
+  },
+  {
+    name: 'brought database, no VPC',
+    outDir: 'cdk.out/byo-vpcless',
+    snapshotDir: 'cdk.snapshot/byo/vpcless',
+    context: { dbUrlSecretArn: BROUGHT.dbUrlSecretArn },
+  },
+];
 
 /**
  * CDK bakes a content hash into every asset's S3 key. The docs site is an asset, so
@@ -56,18 +120,43 @@ const ASSET_HASH = /\b[0-9a-f]{64}\b/g;
  */
 const VERSION_LOGICAL_ID = /(CurrentVersion[0-9A-Fa-f]{8})[0-9a-f]{32}\b/g;
 
-mkdirSync(snapshotDir, { recursive: true });
-for (const name of templates) {
-  // Reformat so a semantically identical template produces an identical file, and
-  // so the committed artifact is readable in a diff.
-  const template = JSON.parse(readFileSync(join(outDir, name), 'utf8'));
-  const normalized = JSON.stringify(template, null, 2)
-    .replace(ASSET_HASH, '<asset-hash>')
-    .replace(VERSION_LOGICAL_ID, '$1<version-hash>');
-  writeFileSync(join(snapshotDir, name), `${normalized}\n`);
+function synth({ outDir, context }) {
+  const args = ['synth', '--quiet', '--output', outDir];
+  for (const [key, value] of Object.entries({ ...COMMON_CONTEXT, ...context })) {
+    args.push('-c', `${key}=${value}`);
+  }
+  execFileSync(CDK, args, { cwd: packageRoot, stdio: 'inherit' });
 }
 
-console.log(`Snapshotted ${templates.length} template(s) to cdk.snapshot/`);
+function snapshot({ outDir, snapshotDir }) {
+  const from = join(packageRoot, outDir);
+  const into = join(packageRoot, snapshotDir);
+
+  const templates = readdirSync(from).filter((name) => name.endsWith('.template.json'));
+  if (templates.length === 0) {
+    console.error(`No templates in ${from}. Run \`cdk synth\` first.`);
+    process.exit(1);
+  }
+
+  mkdirSync(into, { recursive: true });
+  for (const name of templates) {
+    // Reformat so a semantically identical template produces an identical file, and
+    // so the committed artifact is readable in a diff.
+    const template = JSON.parse(readFileSync(join(from, name), 'utf8'));
+    const normalized = JSON.stringify(template, null, 2)
+      .replace(ASSET_HASH, '<asset-hash>')
+      .replace(VERSION_LOGICAL_ID, '$1<version-hash>');
+    writeFileSync(join(into, name), `${normalized}\n`);
+  }
+
+  return templates.length;
+}
+
+for (const topology of TOPOLOGIES) {
+  synth(topology);
+  const count = snapshot(topology);
+  console.log(`Snapshotted ${count} template(s) to ${topology.snapshotDir}/ (${topology.name})`);
+}
 
 if (!check) process.exit(0);
 
@@ -101,4 +190,4 @@ if (drifted.length > 0) {
   process.exit(1);
 }
 
-console.log('Committed CDK template is up to date.');
+console.log('Committed CDK templates are up to date.');

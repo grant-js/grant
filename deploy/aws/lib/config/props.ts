@@ -20,7 +20,7 @@
 import type { Duration, SecretValue } from 'aws-cdk-lib';
 import type { ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
 import type { ITable } from 'aws-cdk-lib/aws-dynamodb';
-import type { IVpc } from 'aws-cdk-lib/aws-ec2';
+import type { ISecurityGroup, IVpc } from 'aws-cdk-lib/aws-ec2';
 import type { ContainerImage, ICluster } from 'aws-cdk-lib/aws-ecs';
 import type { DockerImageCode } from 'aws-cdk-lib/aws-lambda';
 import type { IHostedZone } from 'aws-cdk-lib/aws-route53';
@@ -42,7 +42,21 @@ import type { IQueue } from 'aws-cdk-lib/aws-sqs';
  */
 export type GrantEnv = Readonly<Record<string, string>>;
 
-/** Existing network to attach the API to. Omit to have the stack create one. */
+/**
+ * The network the API runs in — and, on the bring-your-own path, **whether there is
+ * one at all**.
+ *
+ * With `database` set this stack always creates or attaches to a VPC, because the
+ * cluster needs one. With `databaseUrl` set it does not: omit this prop entirely and
+ * the functions run outside a VPC, reaching a routable database over the public
+ * network. That removes the NAT gateway, which is the largest fixed cost in the
+ * target, and is the deployment most adopters bringing a managed Postgres actually
+ * have. Pass `{}` instead to have the stack create a VPC anyway — for a database that
+ * is peered or otherwise only reachable from inside one.
+ *
+ * The deploy-time Fargate migration exists only where a VPC does, because a task needs
+ * subnets. Without one, migrate with `pnpm --filter grant-aws-deploy migrate`.
+ */
 interface NetworkProps {
   /**
    * Prefer `Vpc.fromVpcAttributes()` over `Vpc.fromLookup()`. A lookup resolves at
@@ -57,6 +71,26 @@ interface NetworkProps {
    * one-per-AZ, which would double the largest fixed cost in the target.
    */
   readonly natGateways?: number;
+
+  /**
+   * The security group in front of a database this stack did not create, so the stack
+   * can open it to its own clients rather than leaving that as a manual step in the
+   * middle of a deploy.
+   *
+   * Import it mutable — `SecurityGroup.fromSecurityGroupId(scope, id, sgId)`, which is
+   * mutable by default. CDK then emits an `AWS::EC2::SecurityGroupIngress` naming your
+   * group as the target and the stack's `DatabaseClients` group as the source, so the
+   * permission is attached to identity rather than to a CIDR that widens as subnets are
+   * added. Imported with `{ mutable: false }` the call is silently dropped and the
+   * migration fails to connect.
+   *
+   * Only meaningful alongside `vpc`: with a cluster this stack owns there is nothing to
+   * import, and with no VPC at all there is no client group to name.
+   */
+  readonly databaseSecurityGroup?: ISecurityGroup;
+
+  /** Port to open on `databaseSecurityGroup`. Defaults to PostgreSQL's 5432. */
+  readonly databasePort?: number;
 }
 
 /**
@@ -68,11 +102,14 @@ interface NetworkProps {
  */
 interface MigrationProps {
   /**
-   * Whether to run migrations during deploy. Defaults to **true** whenever this stack
-   * owns the database.
+   * Whether to run migrations during deploy. Defaults to **true** wherever a database
+   * is reachable and a VPC exists to place the task in — including one reaching a
+   * database this stack did not create.
    *
    * Set false when a pipeline runs migrations itself, or when the deploying principal
-   * should not be able to alter the schema.
+   * should not be able to alter the schema. Setting it **true** where the stack builds
+   * no VPC is refused at synth: a Fargate task needs subnets, and quietly skipping the
+   * migration would leave an adopter believing their schema had been applied.
    */
   readonly enabled?: boolean;
 
@@ -129,7 +166,7 @@ interface DatabaseProxyProps {
   readonly requireTls?: boolean;
 }
 
-/** The database. Omit entirely to bring your own via `DB_URL` in `env`. */
+/** The database this stack creates. Omit it and pass `databaseUrl` to bring your own. */
 interface DatabaseProps {
   /** Minimum Aurora capacity units. `0` auto-pauses an idle cluster to no cost. */
   readonly minCapacity?: number;
@@ -295,8 +332,8 @@ interface ApiProps {
  */
 interface JobsProps {
   /**
-   * Whether to provision job execution. Defaults to **true** whenever this stack owns
-   * the database.
+   * Whether to provision job execution. Defaults to **true** on every topology that
+   * serves an API, whichever database it reaches.
    *
    * Turning it off leaves the application registering handlers that nothing triggers:
    * sweeps stop, and enqueued work is accepted and never run. Set it false only when
@@ -347,14 +384,17 @@ export interface GrantPlatformProps {
 
   readonly dns: DnsProps;
 
-  /** Omit to have the stack create a VPC. */
+  /**
+   * Omit to have the stack create a VPC — except on the bring-your-own path, where
+   * omitting it means no VPC at all. See `NetworkProps`.
+   */
   readonly network?: NetworkProps;
 
   readonly storage?: StorageProps;
 
   readonly cache?: CacheProps;
 
-  /** The serving function. Created only when the data tier is. */
+  /** The serving function. Created whenever a database is reachable. */
   readonly api?: ApiProps;
 
   /**
@@ -366,15 +406,66 @@ export interface GrantPlatformProps {
   readonly docs?: DocsProps;
 
   /**
-   * Create the data tier. Omit to bring your own Postgres, in which case supply
-   * `DB_URL` through `env` — the shape the Helm chart has always used.
+   * Create the data tier — an Aurora cluster this stack owns and tears down with
+   * itself. Omit it and pass `databaseUrl` to serve against a database you already
+   * run; the two are mutually exclusive.
    */
   readonly database?: DatabaseProps;
 
-  /** Deploy-time migration. Ignored when this stack does not own the database. */
+  /**
+   * `DB_URL` for a database this stack does not create, and the whole of what it
+   * needs to know about one. Everything downstream reads the key out of the platform
+   * secret and cannot tell which topology produced it.
+   *
+   * Not settable from the env file. A key there becomes a Lambda environment
+   * variable, which is plaintext in the CloudFormation template and in the function
+   * configuration, so `DB_URL` is refused there and supplied here instead.
+   *
+   * **`SecretValue`, not `string`, and the type is the warning** — the same choice
+   * `secrets` carries, for the same reason:
+   *
+   *   - `SecretValue.secretsManager(arn)` renders a `{{resolve:secretsmanager:…}}`
+   *     dynamic reference that CloudFormation resolves during create or update. The
+   *     password is present at deploy time and absent from the template. **This is
+   *     the one to use.**
+   *   - `SecretValue.unsafePlainText('postgresql://…')` puts the connection string,
+   *     password included, into the template. `unsafe` is not decoration.
+   *
+   * **A dynamic reference is copied, not linked, and `cdk deploy` is not enough to
+   * refresh it.** CloudFormation retrieves the value only while creating or updating
+   * the resource that holds the reference — and rotating the upstream secret changes
+   * nothing in this template, so there is no update to make. A deploy after a
+   * rotation reports success and leaves the old URL in place. The same property is
+   * recorded for `ORIGIN_VERIFY_SECRET` in `PlatformSecret`.
+   *
+   * To rotate, write `DB_URL` into the platform secret directly; the application's
+   * resolver should pick it up within `SECRETS_CACHE_TTL_SECONDS` with no deploy at
+   * all. **This workaround is reasoned, not measured** — the write against the platform
+   * secret was blocked by tooling policy when the story deployed, so it is the one
+   * claim here with no observation behind it. Note also that a later stack update which
+   * *does* modify the platform secret will overwrite that value with whatever this
+   * reference resolves to.
+   *
+   * The URL is used exactly as written, including its `sslmode`; the stack never
+   * rewrites it. It must be a bare, percent-encoded connection string: the value is
+   * substituted into a JSON document at deploy time, so a quote, backslash or
+   * newline in it breaks that document. Supplied literals are checked at synth;
+   * a referenced secret's contents are not visible there.
+   */
+  readonly databaseUrl?: SecretValue;
+
+  /**
+   * Deploy-time migration. Runs on the bring-your-own path too — the task reads
+   * `DB_URL` from the platform secret and does not care which topology filled it.
+   *
+   * Ignored on the docs-only deploy, where there is no database at all, and absent
+   * where there is no VPC for a Fargate task to be placed in — asking for it there is
+   * refused at synth rather than silently dropped. That topology migrates with
+   * `pnpm --filter grant-aws-deploy migrate`, which runs the same entrypoint.
+   */
   readonly migration?: MigrationProps;
 
-  /** Background jobs. Ignored when this stack does not own the database. */
+  /** Background jobs. Ignored only on the docs-only deploy. */
   readonly jobs?: JobsProps;
 
   /** Passed through to the API container. */
@@ -403,8 +494,8 @@ export interface GrantPlatformProps {
    * out of band after deploy — the resolver picks it up without a stack update, which
    * is the property ADR 0004 bought.
    *
-   * Only meaningful when this stack owns the database, since the platform secret is
-   * created alongside it.
+   * Meaningful on every serving topology. The platform secret is created whenever a
+   * database is reachable, whether this stack made one or `databaseUrl` named one.
    */
   readonly secrets?: Readonly<Record<string, SecretValue>>;
 }

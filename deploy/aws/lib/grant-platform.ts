@@ -8,22 +8,17 @@
  * owns, and hand the handles in — which is exactly the composition an adopter needs
  * when they replace `bin/`.
  *
- * Slice 2 establishes the configuration surface and the routing plan; it creates no
- * AWS resources. That is deliberate — the stack plan front-loads everything CI can
- * verify, because from the docs site onward the evidence is a recorded deploy rather
- * than a diff.
- *
- * What it does emit is the **resolved plan** as outputs: the canonical hostname and
- * the CloudFront behaviour order. The committed synth output is therefore reviewable
- * evidence that derivation produced the intended routing, before any distribution
- * exists to get it wrong.
+ * It emits the **resolved plan** as outputs alongside the resources: the canonical
+ * hostname and the CloudFront behaviour order. The committed synth output is
+ * therefore reviewable evidence that derivation produced the intended routing, rather
+ * than something only a deploy can confirm.
  */
 
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { CfnOutput, Stack } from 'aws-cdk-lib';
-import { SecurityGroup } from 'aws-cdk-lib/aws-ec2';
+import { Port, SecurityGroup } from 'aws-cdk-lib/aws-ec2';
 import { DockerImageCode } from 'aws-cdk-lib/aws-lambda';
 import { AaaaRecord, ARecord, RecordTarget } from 'aws-cdk-lib/aws-route53';
 import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
@@ -39,7 +34,16 @@ import { WebFunction } from './compute/web-function';
 import { WebImage } from './compute/web-image';
 import { AWS_TARGET_ENV_DEFAULTS } from './config/defaults';
 import type { GrantEnv, GrantPlatformProps } from './config/props';
-import { assertCertificateRegion, validateAppUrl, validateHostnameInZone } from './config/validate';
+import {
+  assertCertificateRegion,
+  assertConfigurableEnv,
+  assertConfigurableSecrets,
+  assertDatabaseSelection,
+  assertMigrationIsRunnable,
+  assertNetworkSelection,
+  validateAppUrl,
+  validateHostnameInZone,
+} from './config/validate';
 import { CacheTable } from './data/cache-table';
 import { Database } from './data/database';
 import { JobQueue } from './data/job-queue';
@@ -51,6 +55,13 @@ import { EdgeCertificate } from './edge/certificate';
 import { EdgeDistribution } from './edge/distribution';
 import { DocsSite } from './edge/docs-site';
 import { JobSchedules } from './jobs/job-schedules';
+
+/**
+ * Port opened on an adopter's database security group. PostgreSQL's default, and this
+ * target pins the engine — `Database` builds `DatabaseClusterEngine.auroraPostgres`,
+ * and a bring-your-own database has to speak the same wire protocol to be usable.
+ */
+const DEFAULT_DATABASE_PORT = 5432;
 
 /** Repo-relative default for the built documentation. */
 const DEFAULT_DOCS_DIST = join(
@@ -74,33 +85,47 @@ export class GrantPlatform extends Construct {
   /** Present only when the web app was requested. */
   public readonly web?: WebFunction;
 
-  /** Present only when the data tier was requested. */
+  /**
+   * Present wherever there is a VPC — always with `database`, and with `databaseUrl`
+   * only when `network` was supplied. Omitting `network` on the bring-your-own path
+   * puts the functions outside a VPC entirely.
+   */
   public readonly network?: Network;
+
+  /** Present only when this stack creates the cluster — absent on the BYO path. */
   public readonly database?: Database;
   /** Present only when pooling was explicitly enabled. See the note at its creation. */
   public readonly proxy?: DatabaseConnectionProxy;
 
-  /** Everything permitted to open a database connection wears this. */
+  /**
+   * Everything permitted to open a database connection wears this. Present only where
+   * a VPC is: a security group is a VPC resource, and outside one there is nothing for
+   * it to be attached to.
+   */
   public readonly databaseClientSecurityGroup?: SecurityGroup;
   public readonly platformSecret?: PlatformSecret;
 
-  /** Present only when the data tier was requested and migration is enabled. */
+  /**
+   * Present when the platform serves an API, migration is enabled, and there is a VPC
+   * for the task to run in. Without one, `scripts/migrate.ts` is the path.
+   */
   public readonly migrateTask?: MigrateTask;
 
-  /** Present only when the data tier was requested. */
+  /** Present whenever the platform serves an API. */
   public readonly cacheTable?: CacheTable;
   public readonly uploads?: StorageBucket;
 
   /**
-   * The serving function. Present only when the data tier was requested.
+   * The serving function.
    *
-   * Bring-your-own-Postgres does not get one yet: the function reads `DB_URL` from
-   * the platform secret, which this construct only creates alongside its own cluster.
-   * Serving against an external database is a follow-up, not an omission.
+   * Present whenever a database is reachable — one this stack created via `database`,
+   * or one supplied through `databaseUrl`. It reads `DB_URL` from the platform
+   * secret either way and cannot tell the difference. Absent only on the docs-only
+   * deploy, where neither prop is set.
    */
   public readonly api?: ApiFunction;
 
-  /** Present only when the data tier was requested and jobs are enabled. */
+  /** Present only when the platform serves an API and jobs are enabled. */
   public readonly jobQueue?: JobQueue;
   public readonly jobsFunction?: JobsFunction;
   public readonly jobSchedules?: JobSchedules;
@@ -112,6 +137,16 @@ export class GrantPlatform extends Construct {
     // sentence, not fifteen minutes into a deploy with an unrelated resource named.
     const { hostname } = validateAppUrl(props.appUrl);
     validateHostnameInZone(hostname, props.dns.hostedZone.zoneName);
+    assertDatabaseSelection(props);
+    assertMigrationIsRunnable(props);
+    assertNetworkSelection(props);
+    // All three caller-supplied configuration surfaces. `web.env` reaches a Lambda
+    // environment variable by exactly the same route as `env`, and `secrets` reaches
+    // the platform secret — a safe destination that still may not carry a key the
+    // stack generates, composes, or reads from the process environment instead.
+    assertConfigurableEnv(props.env, 'env');
+    assertConfigurableEnv(props.web?.env, 'web.env');
+    assertConfigurableSecrets(props.secrets, 'secrets');
 
     this.hostname = hostname;
     // Caller last: an adopter overriding a default must win over this file's opinion.
@@ -142,67 +177,134 @@ export class GrantPlatform extends Construct {
       }).certificate;
     }
 
-    // The data tier is opt-in. Omitting it is the bring-your-own-Postgres path the
-    // Helm chart has always taken, and it keeps the docs-only deploy free of a VPC.
-    if (props.database) {
-      this.network = new Network(this, 'Network', {
-        vpc: props.network?.vpc,
-        natGateways: props.network?.natGateways,
-      });
-      this.database = new Database(this, 'Database', {
-        vpc: this.network.vpc,
-        minCapacity: props.database.minCapacity,
-        maxCapacity: props.database.maxCapacity,
-        destroyOnRemoval: props.database.destroyOnRemoval,
-      });
+    // Three decisions where there used to be one, and the split is what makes the
+    // bring-your-own topologies expressible.
+    //
+    // `ownsDatabase` is about a *cluster*: whether this stack creates one, and with it
+    // the proxy and the ingress rule that only mean anything for a database it owns.
+    // `servesApi` is about a database being reachable at all, from either source — and
+    // that is what the serving function, the migration, the cache, the bucket, the
+    // queue and the outputs actually depend on. Conflating the two is why omitting
+    // `database` used to produce a docs-only deploy rather than the bring-your-own
+    // path the props advertised.
+    //
+    // Deliberately **no new construct scope**. A CloudFormation logical ID is a hash
+    // of the construct path, so lifting these into a tidy `DataTier` sub-construct
+    // would rename every resource in the green-field template — which on a live deploy
+    // means replacing the database. The refactor is in place, in the same scope, with
+    // the same ids; `synth:check` is what proves it.
+    const ownsDatabase = props.database !== undefined;
+    const servesApi = ownsDatabase || props.databaseUrl !== undefined;
+    // `hasVpc` is the third: a network, decided independently of a database. A cluster
+    // this stack creates must live in a VPC, so `database` implies one whatever
+    // `network` says. `databaseUrl` does not — with `network` omitted the functions run
+    // outside a VPC entirely and reach a routable database directly, which removes the
+    // NAT gateway and is the deployment most adopters bringing a managed Postgres
+    // actually have. `network: {}` asks for one anyway.
+    const hasVpc = servesApi && (ownsDatabase || props.network !== undefined);
 
-      // One group names everything allowed to open a database connection, whether it
-      // reaches the cluster directly or through the proxy. Identity, not CIDR: a CIDR
-      // allowance widens silently as subnets are added.
-      this.databaseClientSecurityGroup = new SecurityGroup(this, 'DatabaseClients', {
-        vpc: this.network.vpc,
-        description: 'Permitted to open Grant database connections',
-        allowAllOutbound: true,
-      });
+    // Held as locals as well as fields so the code below narrows: `this.network` is
+    // optional and TypeScript cannot see that the migration branch only runs where it
+    // is set.
+    let network: Network | undefined;
+    let databaseClients: SecurityGroup | undefined;
 
-      // Off by default, and the reason is measured rather than assumed. A proxy holds
-      // a persistent pool to the cluster, and Aurora cannot auto-pause while any
-      // connection exists — so enabling it forfeits the `serverlessV2MinCapacity: 0`
-      // that this target's cost model is built on. Measured on a live deploy: 0.5 ACU
-      // and four held connections, flat across forty idle minutes, versus a cluster
-      // that otherwise pauses to zero. That is roughly $58/month to keep connections
-      // warm for traffic a green-field deploy does not have yet.
-      //
-      // Turn it on when Lambda concurrency is real: without pooling, each warm
-      // execution environment holds its own connections and a burst exhausts
-      // `max_connections`. The trade is cheap idle against tolerance for concurrency,
-      // and it cannot be had both ways.
-      if (props.database.proxy?.enabled ?? false) {
-        this.proxy = new DatabaseConnectionProxy(this, 'Proxy', {
-          vpc: this.network.vpc,
-          cluster: this.database.cluster,
-          secret: this.database.secret,
-          clientSecurityGroup: this.databaseClientSecurityGroup,
-          requireTls: props.database.proxy?.requireTls,
+    if (servesApi) {
+      if (hasVpc) {
+        network = new Network(this, 'Network', {
+          vpc: props.network?.vpc,
+          natGateways: props.network?.natGateways,
         });
-      } else {
-        this.database.cluster.connections.allowDefaultPortFrom(
-          this.databaseClientSecurityGroup,
-          'Grant database clients'
-        );
+        this.network = network;
+
+        if (props.database) {
+          this.database = new Database(this, 'Database', {
+            vpc: network.vpc,
+            minCapacity: props.database.minCapacity,
+            maxCapacity: props.database.maxCapacity,
+            destroyOnRemoval: props.database.destroyOnRemoval,
+          });
+        }
+
+        // One group names everything allowed to open a database connection, whether it
+        // reaches the cluster directly or through the proxy. Identity, not CIDR: a CIDR
+        // allowance widens silently as subnets are added.
+        databaseClients = new SecurityGroup(this, 'DatabaseClients', {
+          vpc: network.vpc,
+          description: 'Permitted to open Grant database connections',
+          allowAllOutbound: true,
+        });
+        this.databaseClientSecurityGroup = databaseClients;
+
+        // Off by default, and the reason is measured rather than assumed. A proxy holds
+        // a persistent pool to the cluster, and Aurora cannot auto-pause while any
+        // connection exists — so enabling it forfeits the `serverlessV2MinCapacity: 0`
+        // that this target's cost model is built on. Measured on a live deploy: 0.5 ACU
+        // and four held connections, flat across forty idle minutes, versus a cluster
+        // that otherwise pauses to zero. That is roughly $58/month to keep connections
+        // warm for traffic a green-field deploy does not have yet.
+        //
+        // Turn it on when Lambda concurrency is real: without pooling, each warm
+        // execution environment holds its own connections and a burst exhausts
+        // `max_connections`. The trade is cheap idle against tolerance for concurrency,
+        // and it cannot be had both ways.
+        //
+        // Both branches are about a cluster this stack created; CDK cannot attach a
+        // proxy to a database it does not own. The `else if` is the bring-your-own
+        // equivalent of the direct rule above it — same identity-based permission,
+        // written onto a group this stack imports rather than one it created.
+        if (props.database && this.database) {
+          if (props.database.proxy?.enabled ?? false) {
+            this.proxy = new DatabaseConnectionProxy(this, 'Proxy', {
+              vpc: network.vpc,
+              cluster: this.database.cluster,
+              secret: this.database.secret,
+              clientSecurityGroup: databaseClients,
+              requireTls: props.database.proxy?.requireTls,
+            });
+          } else {
+            this.database.cluster.connections.allowDefaultPortFrom(
+              databaseClients,
+              'Grant database clients'
+            );
+          }
+        } else if (props.network?.databaseSecurityGroup) {
+          // Topology B: their VPC, their database, their security group. Without this
+          // a deploy stops halfway while someone opens the group by hand, which is the
+          // kind of step that turns a supported path back into a plausible-looking one.
+          //
+          // The ingress lands in the *imported* group's scope, so it adds no construct
+          // here and cannot move a green-field logical id. Verified by synthesizing it:
+          // an `ISecurityGroup` from `SecurityGroup.fromSecurityGroupId` left mutable
+          // emits an `AWS::EC2::SecurityGroupIngress` whose `GroupId` is the adopter's
+          // literal id and whose `SourceSecurityGroupId` is `DatabaseClients`. Imported
+          // with `{ mutable: false }` CDK drops the call silently instead — which is why
+          // the prop's documentation says which import to use.
+          props.network.databaseSecurityGroup.connections.allowFrom(
+            databaseClients,
+            Port.tcp(props.network.databasePort ?? DEFAULT_DATABASE_PORT),
+            'Grant database clients'
+          );
+        }
       }
 
       // Two secrets, two shapes. The cluster's is RDS-shaped and only the proxy reads
       // it; this one is the flat ENV_NAME:value object the application's resolver
       // requires. See PlatformSecret.
-      this.platformSecret = new PlatformSecret(this, 'PlatformSecret', {
-        databaseCredentials: this.database.secret,
-        // The proxy when there is one, the cluster writer otherwise.
-        host: this.proxy?.proxy.endpoint ?? this.database.cluster.clusterEndpoint.hostname,
-        port: this.database.cluster.clusterEndpoint.port,
-        databaseName: this.database.databaseName,
-        extraEnv: props.secrets,
-      });
+      this.platformSecret = new PlatformSecret(
+        this,
+        'PlatformSecret',
+        this.database
+          ? {
+              databaseCredentials: this.database.secret,
+              // The proxy when there is one, the cluster writer otherwise.
+              host: this.proxy?.proxy.endpoint ?? this.database.cluster.clusterEndpoint.hostname,
+              port: this.database.cluster.clusterEndpoint.port,
+              databaseName: this.database.databaseName,
+              extraEnv: props.secrets,
+            }
+          : { databaseUrl: props.databaseUrl, extraEnv: props.secrets }
+      );
 
       // One asset, built at most once and shared by the migration and the serving
       // function — ADR 0003's "one image everywhere", enforced by construction rather
@@ -219,7 +321,12 @@ export class GrantPlatform extends Construct {
       // where the dependency is added below.
       let migrateTrigger: MigrateTrigger | undefined;
 
-      if (props.migration?.enabled ?? true) {
+      // The Fargate one-shot exists only where a VPC does: a task needs subnets to be
+      // placed in. Topology C migrates with `pnpm --filter grant-aws-deploy migrate`
+      // instead, which runs the same `node dist/migrate.js` against the same database —
+      // and `assertMigrationIsRunnable` refuses `migration.enabled: true` there rather
+      // than dropping it quietly, so nobody is left believing a schema was applied.
+      if (network && databaseClients && (props.migration?.enabled ?? true)) {
         // Built from source unless the caller supplied one. `imageIdentifier` is what
         // re-arms the migration trigger, so a caller-supplied image needs the caller
         // to say when it changed — the tag alone may be mutable.
@@ -232,9 +339,9 @@ export class GrantPlatform extends Construct {
         }
 
         this.migrateTask = new MigrateTask(this, 'Migrate', {
-          vpc: this.network.vpc,
+          vpc: network.vpc,
           image,
-          securityGroups: [this.databaseClientSecurityGroup],
+          securityGroups: [databaseClients],
           platformSecret: this.platformSecret.secret,
           environment: {
             ...this.env,
@@ -255,9 +362,9 @@ export class GrantPlatform extends Construct {
         });
 
         migrateTrigger = new MigrateTrigger(this, 'MigrateTrigger', {
-          vpc: this.network.vpc,
+          vpc: network.vpc,
           task: this.migrateTask,
-          securityGroups: [this.databaseClientSecurityGroup],
+          securityGroups: [databaseClients],
           timeout: props.migration?.timeout,
           imageIdentifier,
           // Nothing may migrate before the database it connects to, the proxy it
@@ -276,9 +383,30 @@ export class GrantPlatform extends Construct {
           // parallel schedule and the race flipped. Naming the whole construct covers
           // the instance as well as the cluster, so the ordering no longer depends on
           // which attribute happens to be referenced.
-          executeAfter: this.proxy
-            ? [this.database, this.proxy, this.platformSecret]
-            : [this.database, this.platformSecret],
+          //
+          // On the bring-your-own path there is no cluster and no proxy to order
+          // against, and the ordering above has nothing to say about a database this
+          // stack did not create: it is already running, or it is not, and no
+          // dependency edge here can change that. What remains load-bearing on both
+          // paths is the platform secret, which is where the migration reads DB_URL.
+          //
+          // The network replaces the cluster there, and it is not decoration. The
+          // task pulls an image and reads a secret, and this VPC has only S3 and
+          // DynamoDB *gateway* endpoints — so both go through the NAT gateway, and
+          // the private subnets need their default route before the trigger fires.
+          // Green-field never had to say so: the Aurora cluster in `executeAfter`
+          // takes about ten minutes to create and the NAT always won that race.
+          // Removing the cluster removes the accident, so the edge is stated.
+          //
+          // Conditional on purpose. Adding it unconditionally would put new
+          // `DependsOn` entries in the green-field template, which is the one thing
+          // this story may not do (§ Governing constraint, gate 1 decision 4).
+          executeAfter: [
+            this.database,
+            this.proxy,
+            ownsDatabase ? undefined : network,
+            this.platformSecret,
+          ].filter((dependency) => dependency !== undefined),
         });
       }
 
@@ -306,9 +434,9 @@ export class GrantPlatform extends Construct {
       }
 
       this.api = new ApiFunction(this, 'Api', {
-        vpc: this.network.vpc,
+        vpc: network?.vpc,
         code: props.api?.image ?? builtImageCode(),
-        securityGroups: [this.databaseClientSecurityGroup],
+        securityGroups: databaseClients ? [databaseClients] : undefined,
         platformSecret: this.platformSecret.secret,
         cacheTable: this.cacheTable.table,
         uploadsBucket: this.uploads.bucket,
@@ -365,9 +493,9 @@ export class GrantPlatform extends Construct {
         this.jobQueue.queue.grantSendMessages(this.api.function);
 
         this.jobsFunction = new JobsFunction(this, 'Jobs', {
-          vpc: this.network.vpc,
+          vpc: network?.vpc,
           code: props.jobs?.image ?? props.api?.image ?? builtImageCode(),
-          securityGroups: [this.databaseClientSecurityGroup],
+          securityGroups: databaseClients ? [databaseClients] : undefined,
           platformSecret: this.platformSecret.secret,
           cacheTable: this.cacheTable.table,
           uploadsBucket: this.uploads.bucket,

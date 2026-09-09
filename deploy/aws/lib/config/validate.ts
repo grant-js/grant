@@ -11,7 +11,15 @@
 
 import { Token } from 'aws-cdk-lib';
 
+import {
+  CREDENTIAL_KEYS,
+  ENV_KEY_SHAPE,
+  RESOLVER_SECRET_KEYS,
+  STACK_COMPOSED_KEYS,
+  STACK_GENERATED_KEYS,
+} from './env-file';
 import { ConfigurationError } from './errors';
+import type { GrantPlatformProps } from './props';
 
 /** CloudFront serves certificates only from us-east-1, whatever region the stack targets. */
 const CLOUDFRONT_CERTIFICATE_REGION = 'us-east-1';
@@ -80,6 +88,61 @@ export function validateCertificateArn(arn: string): void {
 }
 
 /**
+ * Asserts a Secrets Manager ARN the platform secret can actually dereference.
+ *
+ * `SecretValue.secretsManager()` renders `{{resolve:secretsmanager:<arn>:...}}`, which
+ * CloudFormation resolves while it creates or updates the resource holding it — so a
+ * secret it cannot read fails minutes into the deploy, naming the *platform secret*
+ * rather than the ARN that was wrong. Everything checkable is lexically present in the
+ * ARN, so it is checked here for the same reason `validateCertificateArn` is.
+ *
+ * Region and account are compared against the stack's own because a dynamic reference
+ * is resolved by CloudFormation itself, in the stack's region and under the deploying
+ * principal: a secret elsewhere needs a resource policy and a KMS grant this reference
+ * app does not compose. That is a `bin/` an adopter writes (ADR 0005), where
+ * `databaseUrl` takes any `SecretValue`.
+ */
+export function validateSecretArn(arn: string, env: { account: string; region: string }): void {
+  // arn:<partition>:secretsmanager:<region>:<account>:secret:<name>-<suffix>
+  const segments = arn.split(':');
+  const [prefix, , service, region, account, resource] = segments;
+
+  if (
+    prefix !== 'arn' ||
+    service !== 'secretsmanager' ||
+    resource !== 'secret' ||
+    segments.length < 7
+  ) {
+    throw new ConfigurationError(
+      `Not a Secrets Manager secret ARN: ${arn}\n` +
+        'Expected arn:<partition>:secretsmanager:<region>:<account>:secret:<name>-<suffix>.\n' +
+        'Pass the full ARN rather than the secret name: the name carries neither the ' +
+        'account nor the region, which are the two things worth checking before a deploy.'
+    );
+  }
+
+  if (region !== env.region) {
+    throw new ConfigurationError(
+      `The database secret is in ${region}, but this stack deploys to ${env.region}.\n` +
+        `  ${arn}\n` +
+        'CloudFormation resolves a secretsmanager dynamic reference in the region of the stack ' +
+        'that holds it, so this one would fail while creating the platform secret. Replicate ' +
+        `the secret into ${env.region} and pass that ARN.`
+    );
+  }
+
+  if (account !== env.account) {
+    throw new ConfigurationError(
+      `The database secret is in account ${account}, but this stack deploys to ${env.account}.\n` +
+        `  ${arn}\n` +
+        'A cross-account secret needs a resource policy on the secret and a grant on its KMS ' +
+        'key, which this reference app does not create. Copy the connection string into a ' +
+        'secret in this account, or compose `databaseUrl` yourself from your own bin/.'
+    );
+  }
+}
+
+/**
  * Asserts the canonical hostname sits inside the hosted zone that will hold its
  * record. A mismatch synthesizes fine and then deploys a record nothing resolves.
  */
@@ -143,6 +206,244 @@ export function assertCertificateRegion(region: string): void {
         'app in bin/, which creates it in a separate us-east-1 stack.'
     );
   }
+}
+
+/**
+ * Exactly one way of naming the database.
+ *
+ * Supplying `database` **and** `databaseUrl` is ambiguous in a way no default
+ * resolves. Picking one silently would mean the API and the migration might reach a
+ * cluster the adopter is paying for while their real data sits elsewhere, or the
+ * reverse — and the wrong guess is discovered by writing to the wrong database.
+ */
+export function assertDatabaseSelection(
+  props: Pick<GrantPlatformProps, 'database' | 'databaseUrl'>
+): void {
+  if (props.database && props.databaseUrl) {
+    throw new ConfigurationError(
+      'Pick one database: `database` creates an Aurora cluster this stack owns, and ' +
+        '`databaseUrl` serves against one it does not. Supplying both leaves it ' +
+        'ambiguous which one the API and the migration would reach, and the answer ' +
+        'would be discovered by writing to the wrong database.'
+    );
+  }
+}
+
+/**
+ * Every key that may never become a container environment variable, built from the
+ * four lists that already say so — so the two boundaries cannot refuse different
+ * things.
+ *
+ * `RESOLVER_SECRET_KEYS` was excluded here on the reasoning that those keys have a
+ * safe path and refusing them "would remove the only way to supply them". That was
+ * wrong in a way worth recording: `secrets` **is** the way, so refusing them on `env`
+ * removes nothing. The exclusion meant `AUTH_MFA_SECRET_ENCRYPTION_KEY` and
+ * `GITHUB_CLIENT_SECRET` — routed to the platform secret by the env file — synthesized
+ * as plaintext Lambda environment variables when passed through props. They were not
+ * inert there either: the AWS resolver reads `payload[name] ?? process.env[name]`
+ * (`@grantjs/secrets/src/aws-secrets-manager.ts:53`), so the plaintext works, which is
+ * why an adopter would reach for it. The MFA key derives the AES-256 key over every
+ * stored TOTP seed.
+ *
+ * The lesson generalizes past this list: a key belongs here if it may never be an
+ * environment variable, which is not the same question as whether some other path
+ * accepts it.
+ */
+const REFUSED_AS_ENV: readonly string[] = [
+  ...STACK_GENERATED_KEYS,
+  ...STACK_COMPOSED_KEYS,
+  ...CREDENTIAL_KEYS,
+  ...RESOLVER_SECRET_KEYS,
+];
+
+/**
+ * The second configuration boundary, and the one with no parser in front of it.
+ *
+ * `classifyConfig` guards the env *file*: it refuses twenty keys outright, and
+ * `parseEnvFile` rejects any key that is not upper-case — because a lower-case one is
+ * read by nothing (`@grantjs/env` declares none and `process.env` is case-sensitive)
+ * while its value is still synthesized into the template in plaintext.
+ *
+ * ADR 0005 explicitly invites an adopter to replace `bin/` and construct these props
+ * directly, which reaches the identical Lambda environment variable with no file
+ * involved. A security review of slice 2 found this boundary refusing exactly one key
+ * where the file refused twenty: `db_url`, `DB_GRANT_ROLE_URL` (a **superuser** URL),
+ * `POSTGRES_PASSWORD` and the rest all synthesized into the template. Both boundaries
+ * now read the same lists and apply the same shape rule, and
+ * `env-boundary-parity.test.ts` fails if they diverge again.
+ *
+ * Unlike the file path there is no blank-value carve-out. That exists in the file
+ * because `.env.example` ships every key blank and copying it must change nothing;
+ * props have no such template, so a refused key written blank is a mistake worth
+ * naming rather than a placeholder — and it was reaching the functions as `DB_URL: ""`.
+ */
+export function assertConfigurableEnv(
+  env: Readonly<Record<string, string>> | undefined,
+  source: string
+): void {
+  if (!env) return;
+
+  for (const key of Object.keys(env)) {
+    if (!ENV_KEY_SHAPE.test(key)) {
+      throw new ConfigurationError(
+        `${source}: "${key}" is not a usable environment key — they are upper-case, ` +
+          'and @grantjs/env declares none in this form, so nothing would read it. Its ' +
+          'value would still be synthesized into the CloudFormation template as a ' +
+          'Lambda environment variable. Rename it or remove it.'
+      );
+    }
+
+    if (REFUSED_AS_ENV.includes(key)) {
+      throw new ConfigurationError(
+        `${source}: ${key} cannot be passed as configuration. Every key here becomes a ` +
+          'Lambda environment variable, which is plaintext in the CloudFormation ' +
+          'template, in the function configuration and in cdk.out on disk. For a ' +
+          'database URL pass `databaseUrl: SecretValue.secretsManager(arn)`, which ' +
+          'renders a dynamic reference the platform secret resolves at deploy time; ' +
+          'for an application secret pass it in `secrets` as a `SecretValue`, which ' +
+          'lands in the platform secret rather than on the function; for the rest, ' +
+          'see docs/deployment/aws-serverless.md § Configure.'
+      );
+    }
+  }
+}
+
+/**
+ * The fourth configuration boundary, and the one the first three reviews did not count.
+ *
+ * `secrets` is the safe path — the values land in the platform secret rather than on
+ * the function — but "safe path" is about where a value goes, not about which keys may
+ * go there, and nothing checked the keys at all. Gate 4 found `ORIGIN_VERIFY_SECRET`
+ * accepted here while both other boundaries refuse it by name, and a `DB_URL` that
+ * silently overrode the validated `databaseUrl`: `PlatformSecret` spreads `extraEnv`
+ * *after* the composed `DB_URL`, so the last writer won and it was the unchecked one.
+ *
+ * Three classes are refused, for two different reasons:
+ *
+ *   - **Generated by the stack** (`ORIGIN_VERIFY_SECRET`). It is the `generateStringKey`
+ *     of the same secret, so supplying it collides with the value Secrets Manager
+ *     generates. It is also the only control in front of an `AuthType: NONE` function
+ *     URL, and `platform-secret.ts` states it must never pass through the template.
+ *   - **Composed by the stack** (`DB_URL`). `resolveDatabaseUrl` validates the URL —
+ *     scheme, and no quote, backslash or newline that could break out of the JSON
+ *     document — and an override here reaches the same field having passed none of it.
+ *   - **Read from `process.env` by their adapters** (`CREDENTIAL_KEYS`). These are
+ *     refused for the opposite reason to the others: not because the value is unsafe
+ *     here, but because it would do nothing. `CREDENTIAL_KEYS`' own comment says a
+ *     value placed in the platform secret "is a value the application never sees" —
+ *     the adapters read `process.env` directly. Accepting one silently is a deploy that
+ *     succeeds while the credential never arrives, and with `unsafePlainText` it is a
+ *     literal in the template that buys nothing.
+ *
+ * `RESOLVER_SECRET_KEYS` are exactly what this prop is for, and are allowed.
+ */
+export function assertConfigurableSecrets(
+  secrets: Readonly<Record<string, unknown>> | undefined,
+  source: string
+): void {
+  if (!secrets) return;
+
+  for (const key of Object.keys(secrets)) {
+    if (!ENV_KEY_SHAPE.test(key)) {
+      throw new ConfigurationError(
+        `${source}: "${key}" is not a usable environment key — they are upper-case, ` +
+          'and @grantjs/env declares none in this form, so nothing would resolve it. ' +
+          'Its value would still be written into the platform secret. Rename it or ' +
+          'remove it.'
+      );
+    }
+
+    if ((STACK_GENERATED_KEYS as readonly string[]).includes(key)) {
+      throw new ConfigurationError(
+        `${source}: ${key} is generated by the stack and cannot be supplied. It is ` +
+          'the generated key of this very secret, so a supplied value collides with ' +
+          'the one Secrets Manager creates, and CloudFront and the API agree on it ' +
+          'without configuration. Remove it.'
+      );
+    }
+
+    if ((STACK_COMPOSED_KEYS as readonly string[]).includes(key)) {
+      throw new ConfigurationError(
+        `${source}: ${key} is composed by the stack and cannot be supplied here. It ` +
+          'would silently override the connection string the stack validated and ' +
+          'built, without passing any of the same checks. To serve against a database ' +
+          'this stack did not create, pass `databaseUrl: SecretValue.secretsManager(arn)`.'
+      );
+    }
+
+    if ((CREDENTIAL_KEYS as readonly string[]).includes(key)) {
+      throw new ConfigurationError(
+        `${source}: ${key} cannot be supplied through the platform secret. Its adapter ` +
+          'reads it from the process environment rather than through ISecretResolver, ' +
+          'so a value placed here is one the application never reads — the deploy ' +
+          'would succeed and the credential would never arrive. See ' +
+          'docs/deployment/aws-serverless.md § Configure.'
+      );
+    }
+  }
+}
+
+/**
+ * Refuses a deploy-time migration with nowhere to run.
+ *
+ * The migration is a Fargate one-shot, and a Fargate task needs subnets. With
+ * `database` omitted **and** `network` omitted the stack builds no VPC at all — the
+ * functions run outside one and reach a routable database directly — so there is
+ * nothing to place the task in.
+ *
+ * Left unset, the migration is simply absent there and the operator command is the
+ * path. Asked for explicitly, it is refused rather than dropped: silently skipping it
+ * would leave an adopter believing their schema had been applied, and the failure
+ * would surface as `relation "..." does not exist` from the API on its first request.
+ */
+export function assertMigrationIsRunnable(
+  props: Pick<GrantPlatformProps, 'database' | 'databaseUrl' | 'network' | 'migration'>
+): void {
+  if (props.migration?.enabled !== true) return;
+
+  // The docs-only deploy has no migration to run either way, and refusing it there
+  // would name a database that is not part of the configuration at all.
+  const servesApi = props.database !== undefined || props.databaseUrl !== undefined;
+  const hasVpc = props.database !== undefined || props.network !== undefined;
+  if (!servesApi || hasVpc) return;
+
+  throw new ConfigurationError(
+    'migration.enabled is true, but this configuration creates no VPC: with `database` ' +
+      'omitted and `network` omitted the functions run outside one, and a Fargate task ' +
+      'has no subnets to be placed in.\n' +
+      'Either pass `network` — an existing `vpc`, or `{}` to have the stack build one — ' +
+      'or leave migration.enabled unset and migrate with:\n' +
+      '  pnpm --filter grant-aws-deploy migrate -c dbUrlSecretArn=<arn>\n' +
+      'which runs the same `node dist/migrate.js` against the same database.'
+  );
+}
+
+/**
+ * An adopter's database security group only means something with their VPC.
+ *
+ * `network.databaseSecurityGroup` opens their group to `DatabaseClients`, and that
+ * rule names a source group and a target group. Supply the group without
+ * `network.vpc` and the stack builds a VPC of its own, so the source lives in one VPC
+ * and the target in another — a rule CloudFormation refuses, halfway through a deploy,
+ * after the VPC and NAT gateway already exist.
+ *
+ * `bin/grant.ts` refuses the same mistake lexically, one flag earlier. This is the
+ * props-level twin, and it exists because the story has now been bitten twice by a
+ * refusal living at one configuration boundary and not the other — F10, then F-A. ADR
+ * 0005 invites an adopter to replace `bin/` entirely, so a guard that lives only there
+ * is a guard the documented path walks straight past.
+ */
+export function assertNetworkSelection(props: Pick<GrantPlatformProps, 'network'>): void {
+  if (!props.network?.databaseSecurityGroup || props.network.vpc) return;
+
+  throw new ConfigurationError(
+    'network.databaseSecurityGroup was supplied without network.vpc. The stack would ' +
+      'build a VPC of its own and then write an ingress rule whose source is a security ' +
+      'group in it and whose target is a group in yours — and CloudFormation refuses a ' +
+      'rule spanning two VPCs, partway through the deploy.\n' +
+      'Pass the VPC that group belongs to as `network.vpc`, or drop ' +
+      '`databaseSecurityGroup` and open your database to the stack yourself.'
+  );
 }
 
 /**

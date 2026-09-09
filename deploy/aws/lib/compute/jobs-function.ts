@@ -68,12 +68,20 @@ export const DEFAULT_JOB_TIMEOUT = Duration.minutes(15);
 const DEFAULT_RESERVED_CONCURRENCY = 10;
 
 export interface JobsFunctionProps {
-  readonly vpc: IVpc;
+  /**
+   * Network placement, optional for the reason `ApiFunction` records: the
+   * bring-your-own topology with no `network` prop creates no VPC and this function
+   * runs outside one. Nothing here needs the inside of a VPC — webhook delivery and
+   * SES are both public destinations, and the database is reached over whatever route
+   * `DB_URL` names.
+   */
+  readonly vpc?: IVpc;
 
   /** The API image. Same one, per ADR 0003 — no second artifact to keep in step. */
   readonly code: DockerImageCode;
 
-  readonly securityGroups: ISecurityGroup[];
+  /** Attached so the function may open database connections. Ignored without `vpc`. */
+  readonly securityGroups?: ISecurityGroup[];
   readonly platformSecret: ISecret;
   readonly cacheTable: ITable;
   readonly uploadsBucket: IBucket;
@@ -105,11 +113,15 @@ export class JobsFunction extends Construct {
 
     this.function = new DockerImageFunction(this, 'Function', {
       code: props.code,
-      vpc: props.vpc,
-      // Private-with-egress, as the API is: webhook delivery POSTs to arbitrary
-      // customer URLs and notification delivery calls SES.
-      vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
-      securityGroups: props.securityGroups,
+      ...(props.vpc
+        ? {
+            vpc: props.vpc,
+            // Private-with-egress, as the API is: webhook delivery POSTs to arbitrary
+            // customer URLs and notification delivery calls SES.
+            vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
+            ...(props.securityGroups ? { securityGroups: props.securityGroups } : {}),
+          }
+        : {}),
       // Matches the API, and for the measured reason rather than for symmetry: 1769 MB
       // reproducibly overran Lambda's 10-second init ceiling on this image while 1024
       // finished with room. See `compute/api-function.ts`.

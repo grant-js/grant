@@ -7,7 +7,7 @@
  * doubles the largest fixed cost in the target. Both are pinned here so a later
  * change has to argue with a test rather than slip through.
  */
-import { App, Stack } from 'aws-cdk-lib';
+import { App, SecretValue, Stack } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { Vpc } from 'aws-cdk-lib/aws-ec2';
 import { HostedZone } from 'aws-cdk-lib/aws-route53';
@@ -17,7 +17,8 @@ import { GrantPlatform } from '../grant-platform';
 
 function build(
   database?: { destroyOnRemoval?: boolean; minCapacity?: number },
-  network?: { natGateways?: number; useExistingVpc?: boolean }
+  network?: { natGateways?: number; useExistingVpc?: boolean },
+  databaseUrl?: SecretValue
 ) {
   const app = new App();
   const stack = new Stack(app, 'TestStack', {
@@ -32,6 +33,7 @@ function build(
       }),
     },
     database,
+    databaseUrl,
     // Not under test here, and building the image fingerprints the entire repo for
     // every case. Slice 4b's own suite covers the migration.
     migration: { enabled: false },
@@ -58,6 +60,26 @@ describe('the data tier is opt-in', () => {
     template.resourceCountIs('AWS::RDS::DBCluster', 0);
     expect(platform.database).toBeUndefined();
     expect(platform.network).toBeUndefined();
+  });
+
+  it('creates a VPC but no cluster when the database is brought rather than made', () => {
+    // The distinction the slice introduced: `ownsDatabase` decides the cluster,
+    // `servesApi` decides everything the API needs — and a VPC is on the second list,
+    // because in this slice every serving topology still has one. Slice 3 separates
+    // those two too.
+    const { template, platform } = build(
+      undefined,
+      undefined,
+      SecretValue.secretsManager('arn:aws:secretsmanager:us-east-1:123456789012:secret:db-AbCdEf')
+    );
+
+    template.resourceCountIs('AWS::EC2::VPC', 1);
+    template.resourceCountIs('AWS::RDS::DBCluster', 0);
+    expect(platform.network).toBeDefined();
+    expect(platform.database).toBeUndefined();
+    // Nothing to open the adopter's database to yet — slice 3 adds the handle — but
+    // the clients group exists, because the functions are in a VPC and wear it.
+    expect(platform.databaseClientSecurityGroup).toBeDefined();
   });
 
   it('creates both when requested', () => {

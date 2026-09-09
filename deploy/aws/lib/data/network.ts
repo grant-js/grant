@@ -10,6 +10,13 @@
  * construct creates nothing. That is ADR 0005's interface-typed props doing the work
  * — an adopter supplies `Vpc.fromVpcAttributes(...)` and none of the constructs
  * downstream can tell the difference.
+ *
+ * Whether this construct is created at all is now a separate decision from whether
+ * there is a database: `GrantPlatformProps.network` omitted on the bring-your-own path
+ * means no VPC, and the functions run outside one. `network.databaseSecurityGroup` is
+ * declared on that public prop rather than here, because opening it needs the
+ * `DatabaseClients` group — which is created beside the database rules in
+ * `grant-platform.ts`, not inside a construct that owns only the VPC.
  */
 
 import {
