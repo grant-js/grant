@@ -439,9 +439,12 @@ export interface GrantPlatformProps {
    * recorded for `ORIGIN_VERIFY_SECRET` in `PlatformSecret`.
    *
    * To rotate, write `DB_URL` into the platform secret directly; the application's
-   * resolver picks it up within `SECRETS_CACHE_TTL_SECONDS` with no deploy at all.
-   * Note that a later stack update which *does* modify the platform secret will
-   * overwrite that value with whatever this reference resolves to.
+   * resolver should pick it up within `SECRETS_CACHE_TTL_SECONDS` with no deploy at
+   * all. **This workaround is reasoned, not measured** — the write against the platform
+   * secret was blocked by tooling policy when the story deployed, so it is the one
+   * claim here with no observation behind it. Note also that a later stack update which
+   * *does* modify the platform secret will overwrite that value with whatever this
+   * reference resolves to.
    *
    * The URL is used exactly as written, including its `sslmode`; the stack never
    * rewrites it. It must be a bare, percent-encoded connection string: the value is

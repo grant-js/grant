@@ -95,6 +95,38 @@ function aws(args: string[]): string {
 }
 
 /**
+ * Pins the AWS CLI to the region in the ARN, when an ARN is what was passed.
+ *
+ * `cdk deploy` validates this same flag against the stack's account and region
+ * (`validateSecretArn` in `lib/config/validate.ts`); this command validated nothing and
+ * passed no `--region`, so it resolved against whatever the operator's profile defaults
+ * to. Same flag name, two different constraint sets — and the failure is quiet: a
+ * default region holding a same-named secret migrates the wrong database. Gate 4,
+ * finding L-2.
+ *
+ * A bare secret *name* stays supported and unpinned, because it is a legitimate thing
+ * to pass — `DatabaseSecretName` is published as a name, not an ARN — and a name
+ * carries no region to pin to.
+ */
+function regionOf(secretId: string): string[] {
+  if (!secretId.startsWith('arn:')) return [];
+
+  // arn:<partition>:secretsmanager:<region>:<account>:secret:<name>-<suffix>
+  const segments = secretId.split(':');
+  const [, , service, region, , resource] = segments;
+
+  if (service !== 'secretsmanager' || resource !== 'secret' || segments.length < 7 || !region) {
+    throw new Error(
+      `Not a Secrets Manager secret ARN: ${secretId}\n` +
+        'Expected arn:<partition>:secretsmanager:<region>:<account>:secret:<name>-<suffix>, ' +
+        'the same ARN `cdk deploy -c dbUrlSecretArn=...` takes, or a bare secret name.'
+    );
+  }
+
+  return ['--region', region];
+}
+
+/**
  * The connection string, from the secret the stack was given.
  *
  * Two shapes are accepted because two secrets legitimately hold this value: the one
@@ -110,6 +142,7 @@ function readDatabaseUrl(secretId: string): string {
     'get-secret-value',
     '--secret-id',
     secretId,
+    ...regionOf(secretId),
     '--query',
     'SecretString',
     '--output',
