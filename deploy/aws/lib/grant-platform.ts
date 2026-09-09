@@ -56,6 +56,7 @@ import { EdgeCertificate } from './edge/certificate';
 import { EdgeDistribution } from './edge/distribution';
 import { DocsSite } from './edge/docs-site';
 import { JobSchedules } from './jobs/job-schedules';
+import { OriginVerifyAlarm } from './observability/origin-verify-alarm';
 
 /**
  * Port opened on an adopter's database security group. PostgreSQL's default, and this
@@ -129,6 +130,12 @@ export class GrantPlatform extends Construct {
   /** Present only when the platform serves an API and jobs are enabled. */
   public readonly jobQueue?: JobQueue;
   public readonly jobsFunction?: JobsFunction;
+
+  /**
+   * The compensating control for the publicly reachable Function URL. Present wherever
+   * the API is — a serving deployment without it is the state phase C left behind.
+   */
+  public readonly originVerifyAlarm?: OriginVerifyAlarm;
   public readonly jobSchedules?: JobSchedules;
 
   constructor(scope: Construct, id: string, props: GrantPlatformProps) {
@@ -497,6 +504,16 @@ export class GrantPlatform extends Construct {
         memorySize: props.api?.memorySize,
         timeout: props.api?.timeout,
         reservedConcurrency: props.api?.reservedConcurrency,
+      });
+
+      // Unconditional, and only its *action* depends on configuration. Phase C's
+      // security review asked for a control, not a mailbox: an alarm sitting in OK
+      // with no subscribers is still queryable, still has a history, and is still the
+      // thing that was promised when "the Function URL is publicly reachable" was
+      // accepted as a risk.
+      this.originVerifyAlarm = new OriginVerifyAlarm(this, 'OriginVerifyAlarm', {
+        logGroup: this.api.logGroup,
+        alarmTopic: props.observability?.alarmTopic,
       });
 
       if (this.jobQueue) {

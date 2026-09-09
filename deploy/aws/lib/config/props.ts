@@ -25,6 +25,7 @@ import type { ContainerImage, ICluster } from 'aws-cdk-lib/aws-ecs';
 import type { DockerImageCode } from 'aws-cdk-lib/aws-lambda';
 import type { IHostedZone } from 'aws-cdk-lib/aws-route53';
 import type { IBucket } from 'aws-cdk-lib/aws-s3';
+import type { ITopic } from 'aws-cdk-lib/aws-sns';
 import type { IQueue } from 'aws-cdk-lib/aws-sqs';
 
 /**
@@ -421,6 +422,25 @@ export interface EmailProps {
   readonly sesIdentityArn: string;
 }
 
+/**
+ * Where the platform's alarms send a breach.
+ *
+ * A group with one member today, and a group rather than a bare `alarmTopic` because
+ * the next observability construct will want the same destination — this is the seam
+ * that keeps that from being a second top-level prop.
+ */
+export interface ObservabilityProps {
+  /**
+   * SNS topic for alarm actions. Omit and alarms are still created and still evaluate;
+   * they notify nobody.
+   *
+   * `ITopic`, and composed in `bin/` (ADR 0005). The reference app's `-c alarmEmail`
+   * builds a topic with an email subscription; a construct library that created a
+   * mailbox would be one an adopter has to fork to change.
+   */
+  readonly alarmTopic?: ITopic;
+}
+
 /** Top-level props for the whole platform. */
 export interface GrantPlatformProps {
   /**
@@ -528,6 +548,12 @@ export interface GrantPlatformProps {
    * `assertSesSendingIdentity`.
    */
   readonly email?: EmailProps;
+
+  /**
+   * Alarm destinations. The alarms themselves are unconditional — see
+   * `ObservabilityProps.alarmTopic`.
+   */
+  readonly observability?: ObservabilityProps;
 
   /**
    * Secret `ENV_NAME: value` pairs, merged into the platform secret rather than into
