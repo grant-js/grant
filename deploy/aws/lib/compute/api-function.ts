@@ -122,6 +122,14 @@ export class ApiFunction extends Construct {
   public readonly function: DockerImageFunction;
 
   /**
+   * Exposed rather than reached through `function.logGroup`, because this is the one
+   * thing outside the construct that needs it: `OriginVerifyAlarm` puts a metric filter
+   * on the refusal line `originVerifyMiddleware` writes here. A concrete `LogGroup` also
+   * says it is stack-owned — nothing has to import or look one up.
+   */
+  public readonly logGroup: LogGroup;
+
+  /**
    * The invocation endpoint.
    *
    * Reachable, and guarded by a shared secret the application checks rather than by
@@ -133,6 +141,12 @@ export class ApiFunction extends Construct {
     super(scope, id);
 
     const reserved = props.reservedConcurrency ?? DEFAULT_RESERVED_CONCURRENCY;
+
+    this.logGroup = new LogGroup(this, 'Logs', {
+      // Long enough to investigate an incident reported a week late, short of
+      // paying to store request logs indefinitely.
+      retention: RetentionDays.TWO_WEEKS,
+    });
 
     this.function = new DockerImageFunction(this, 'Function', {
       code: props.code,
@@ -169,11 +183,7 @@ export class ApiFunction extends Construct {
       timeout: props.timeout ?? Duration.seconds(30),
       environment: { ...props.environment },
       ...(reserved > 0 ? { reservedConcurrentExecutions: reserved } : {}),
-      logGroup: new LogGroup(this, 'Logs', {
-        // Long enough to investigate an incident reported a week late, short of
-        // paying to store request logs indefinitely.
-        retention: RetentionDays.TWO_WEEKS,
-      }),
+      logGroup: this.logGroup,
     });
 
     // Least privilege, and each grant is the narrowest CDK offers: read on one secret,

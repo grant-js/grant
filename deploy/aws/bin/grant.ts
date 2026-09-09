@@ -31,10 +31,12 @@ import { App, SecretValue, Stack } from 'aws-cdk-lib';
 import { Certificate, type ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { SecurityGroup, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { HostedZone } from 'aws-cdk-lib/aws-route53';
+import { Topic } from 'aws-cdk-lib/aws-sns';
+import { EmailSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
 
 import { loadTargetConfig } from '../lib/config/env-file';
 import { ConfigurationError } from '../lib/config/errors';
-import type { GrantEnv, GrantPlatformProps } from '../lib/config/props';
+import type { GrantEnv, GrantPlatformProps, ObservabilityProps } from '../lib/config/props';
 import {
   assertConcreteEnv,
   validateAppUrl,
@@ -388,6 +390,32 @@ function buildDatabase(
   };
 }
 
+/**
+ * Where the origin-verify alarm sends a breach.
+ *
+ * The topic and its subscription are composed here, never in `lib/` (ADR 0005): a
+ * construct library that created a mailbox would be one an adopter has to fork to
+ * change the destination. Omit `-c alarmEmail` and the alarm is still created and still
+ * evaluates — it notifies nobody, which is a control with a history rather than no
+ * control.
+ *
+ * An email subscription needs confirming: AWS sends a confirmation link on first
+ * deploy, and until it is clicked the subscription is `PendingConfirmation` and
+ * delivers nothing. That is a manual step no template can take, and worth knowing
+ * before treating the alarm as wired.
+ */
+function buildObservability(stack: Stack): { observability?: ObservabilityProps } {
+  const alarmEmail = optional('alarmEmail');
+  if (!alarmEmail) return {};
+
+  const topic = new Topic(stack, 'Alarms', {
+    displayName: 'Grant platform alarms',
+  });
+  topic.addSubscription(new EmailSubscription(alarmEmail));
+
+  return { observability: { alarmTopic: topic } };
+}
+
 function buildPlatform(stack: Stack, cert: ICertificate): void {
   const env = buildEnv();
 
@@ -405,6 +433,7 @@ function buildPlatform(stack: Stack, cert: ICertificate): void {
     web: {},
     env,
     ...buildEmail(env),
+    ...buildObservability(stack),
     dns: {
       // fromHostedZoneAttributes, not fromLookup: a lookup resolves against live
       // account state at synth time and would make the committed template a function

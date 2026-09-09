@@ -2059,6 +2059,43 @@
         "aws:cdk:path": "GrantPlatform/Grant/Api/Function/invoke-function"
       }
     },
+    "GrantOriginVerifyAlarmFilterD2CE028B": {
+      "Type": "AWS::Logs::MetricFilter",
+      "Properties": {
+        "FilterPattern": "\"\\\"module\\\":\\\"OriginVerify\\\"\" \"\\\"level\\\":\\\"warn\\\"\"",
+        "LogGroupName": {
+          "Ref": "GrantApiLogs7DBA426F"
+        },
+        "MetricTransformations": [
+          {
+            "DefaultValue": 0,
+            "MetricName": "DirectOriginRequests",
+            "MetricNamespace": "Grant/Edge",
+            "MetricValue": "1"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/OriginVerifyAlarm/Filter/Resource"
+      }
+    },
+    "GrantOriginVerifyAlarm4857E4E3": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "Requests reached the API Function URL without CloudFront's origin-verify secret. The URL is publicly reachable by design — Origin Access Control cannot carry this API — so this is the compensating control for that accepted risk. A sustained rate means someone is working the origin directly.",
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "EvaluationPeriods": 2,
+        "MetricName": "DirectOriginRequests",
+        "Namespace": "Grant/Edge",
+        "Period": 300,
+        "Statistic": "Sum",
+        "Threshold": 20,
+        "TreatMissingData": "notBreaching"
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/OriginVerifyAlarm/Alarm/Resource"
+      }
+    },
     "GrantJobsLogsF2529BC2": {
       "Type": "AWS::Logs::LogGroup",
       "Properties": {
@@ -3912,7 +3949,7 @@
     "CDKMetadata": {
       "Type": "AWS::CDK::Metadata",
       "Properties": {
-        "Analytics": "v2:deflate64:H4sIAAAAAAAA/31UXW/bMAz8LX1XtS7ttuc0aYsA3ZrFXV4DWmZcNbLkiVKCwPB/HyT5a127l/B4JiXSd/GMz75+41cXcKJLURwulcx5kzkQB7ZBMt4KZHCiXYNixpttLdhir7frBVv7XEmR+VyjC9yINsY7fIZc4ciP3JzICAlOGj0UB3C3WofwA9wDODzBma2tPILD8eCVdmg1DgVpki6bOwfipULtWMdsa3Gni9pI7brSIc1QeCvd+cEaX8cp/0usdGmRqGW2IN4swUEOhAvlyaFlacChc3k7JfriDIVNWyxv+8aYrDQ50AJbRrGEKtBQouVNmiJ0pfAMtkQ32XMo+OdJoluGwu6ACB3xpREHtKsKyiABuvCMb7A2JJ2x51sgZCiIN5PpengPtoSgHx2WuJda9uq9ZYx2IDXakWuZhIo3G5PcEOPaKCmifAm1TJmSePNoyuEt9rhlCqq8AN7cey36ewe8RUsd18PJokNZD35ZFUq7sEZbSYpNd0fULot2/w51LXUZPfku+whntP1tmdSlQmeGkVpWnDVUpsh5Ew2/nYWmB2VyUJFoGV3z5taLQzJEh1IY381feUqCSC2j38Sbnx59fKMJxN+xd5K2DMMWxJuN7zTwaYZdU2CtzDk4hqcLlgPBOttEr7RMKOOLvTXafSDEAsTLZIBpupTkrMz9WyWerCylnguBRME51kRV3qOz6w+Kp2e3zIaPyZdr3sw3KIwt4rYRZejYHABS1rYs7pU5KIOozsqyREv8OQG28ORMNXwA4zEjfvKu9q4z5k4FO+zgREJJPj/RQsnokDeHrK05ygJt/KMt9rozVMu0KZC/0qfj7IZ/vuFXF68k5aX12skK+SbFP0xjs1qnBQAA"
+        "Analytics": "v2:deflate64:H4sIAAAAAAAA/31UTW/bMAz9Lbur2pbu45wmbRGg3bK4yzWgZdbVIkueSDUIDP/3QZLjeF27i/n4TNKk+OSZnH35Kj+8gwNdqGp/YXQpu4JB7cUGyQWvUMCBdh2qmey2rRKLR7tdL8Q6lEarIpQWOXJntHGB8QFKg2f+zM2JnNLA2tkxOILr1Tqab8C3wHiAo1h7/QyM58Iry+gtjgG5k8GbM4N6atCyGJhtq65t1TpteQgd3QJV8JqPt96FNnX5X2Jla49EvfAVyW4JDCUQLkwgRi9yg2Pm8mpKnIILVD5Psbw6JSZnZYnBKuwFpRBqwEKNXna5i5iVzQP4Gnky5xjwz5tM9wKV3wERMsmlU3v0qwbquALk+E5usHWk2fnjFRAKVCS7SXcneAO+hrg/2i/xUVt92t5LxlkGbdGfuV5oaGS3cVkNya6d0SqtL6NeGFeT7O5cPZ7iiO+RvVY32gw9Tf1eGGjKCmR3E6w6NTXiLXoauBOcnMIYdgI/vYmhg1mjbzSlpOtntFyku3APbattnQT7KnsHR/SnrxXa1gbZjS31ojpaaFxVyi7dhu0sJt0aV4JJRC/oUnZXQe2zWgaUzfng/vKzEzfYC/pNsvsRMKTjziA9z7kTtxfKuFAdgNWT7OYGfBMjEugFxglJdpswLC/k/nZdha1xxyg1mT++HAkx6C2JbKj/6J3lN5a0APU0aW7qLjWx12V4uaXvXtfazpVCoig579LGXqOLyzeCp7V74eNf6POl7OYbVM5XadqECmQxB4Ds9b1IcxUMdVw4e13X6Ek+ZCAWgdg1458zlTnj74HbwINodyZKZQcHUkbL+YEWRif1vCiy9u5ZV+jTDY0XIIutF9ZVKH/R++fZJ/nxk/zw7hdpfeGDZd2g3GT7B/TDrxHgBQAA"
       },
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/CDKMetadata/Default"

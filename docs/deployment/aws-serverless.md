@@ -308,6 +308,42 @@ What each resource supports today, so you can tell a supported path from a plaus
 
 Redis is a weaker case than it looks: the keys are honoured by the application, but nothing in the stack opens a path to a cluster it did not create. You would be bringing the VPC, the security-group rule and the cluster yourself, and the DynamoDB table would still be created unless you also pass `cache.table`.
 
+## The alarm on direct origin requests
+
+The API's Function URL answers the internet. It has to: CloudFront's Origin Access
+Control cannot carry this API — `SigningBehavior: always` overwrites the viewer's
+`Authorization` header, and `POST` through OAC requires the viewer to send
+`x-amz-content-sha256`, which a browser doing GraphQL cannot. So the URL is public and
+`originVerifyMiddleware` refuses anything arriving without the secret CloudFront attaches
+as an origin custom header.
+
+That is an accepted risk, and this alarm is its compensating control. Every deploy gets
+it — a metric filter on the API log group counting refusals, and an alarm on the rate:
+
+|          |                                                      |
+| -------- | ---------------------------------------------------- |
+| Metric   | `Grant/Edge` / `DirectOriginRequests`                |
+| Fires at | 20 refusals in 5 minutes, sustained across 2 periods |
+| Action   | none, unless `-c alarmEmail` is passed               |
+
+Without `-c alarmEmail` the alarm still exists and still evaluates; it notifies nobody.
+That is a control with a queryable history rather than no control. To be notified:
+
+```sh
+cdk deploy --all \
+  -c appUrl=https://grant.example.com \
+  -c zoneName=example.com -c hostedZoneId=Z123456ABCDEFG \
+  -c alarmEmail=oncall@example.com
+```
+
+AWS emails a confirmation link on the first deploy. **Until it is clicked the
+subscription is `PendingConfirmation` and delivers nothing** — no template can take that
+step for you, so check it before treating the alarm as wired.
+
+The threshold is a starting point, not a measurement: nothing has yet counted how much
+unsolicited traffic a deployed Function URL receives. Pass your own through
+`observability` if 20 in five minutes is wrong for your hostname.
+
 ## Sending mail
 
 `EMAIL_PROVIDER` defaults to `console`, and on that default **neither function is given
