@@ -3889,6 +3889,9 @@
     "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
+        "Architectures": [
+          "arm64"
+        ],
         "Code": {
           "S3Bucket": "cdk-hnb659fds-assets-000000000000-eu-central-1",
           "S3Key": "<asset-hash>.zip"
@@ -3928,7 +3931,7 @@
     "CDKMetadata": {
       "Type": "AWS::CDK::Metadata",
       "Properties": {
-        "Analytics": "v2:deflate64:H4sIAAAAAAAA/31UXW/bMAz8LX1XtS7ttuc0aYsA3ZrFXV4DWmZcNbLkiVKCwPB/HyT5a127l/B4JiXSd/GMz75+41cXcKJLURwulcx5kzkQB7ZBMt4KZHCiXYNixpttLdhir7frBVv7XEmR+VyjC9yINsY7fIZc4ciP3JzICAlOGj0UB3C3WofwA9wDODzBma2tPILD8eCVdmg1DgVpki6bOwfipULtWMdsa3Gni9pI7brSIc1QeCvd+cEaX8cp/0usdGmRqGW2IN4swUEOhAvlyaFlacChc3k7JfriDIVNWyxv+8aYrDQ50AJbRrGEKtBQouVNmiJ0pfAMtkQ32XMo+OdJoluGwu6ACB3xpREHtKsKyiABuvCMb7A2JJ2x51sgZCiIN5PpengPtoSgHx2WuJda9uq9ZYx2IDXakWuZhIo3G5PcEOPaKCmifAm1TJmSePNoyuEt9rhlCqq8AN7cey36ewe8RUsd18PJokNZD35ZFUq7sEZbSYpNd0fULot2/w51LXUZPfku+whntP1tmdSlQmeGkVpWnDVUpsh5Ew2/nYWmB2VyUJFoGV3z5taLQzJEh1IY381feUqCSC2j38Sbnx59fKMJxN+xd5K2DMMWxJuN7zTwaYZdU2CtzDk4hqcLlgPBOttEr7RMKOOLvTXafSDEAsTLZIBpupTkrMz9WyWerCylnguBRME51kRV3qOz6w+Kp2e3zIaPyZdr3sw3KIwt4rYRZejYHABS1rYs7pU5KIOozsqyREv8OQG28ORMNXwA4zEjfvKu9q4z5k4FO+zgREJJPj/RQsnokDeHrK05ygJt/KMt9rozVMu0KZC/0qfj7IZ/vuFXF68k5aX12skK+SbFP0xjs1qnBQAA"
+        "Analytics": "v2:deflate64:H4sIAAAAAAAA/31UXW/bMAz8LX1XtS7thr2mSVsE6NYs7vIa0DLjqpElT5QSBIb/+yDJX+vavYTHMymRvotnfPb1G7+6gBNdiuJwqWTOm8yBOLANkvFWIIMT7RoUM95sa8EWe71dL9ja50qKzOcaXeBGtDHe4TPkCkd+5OZERkhw0uihOIC71TqEH+AewOEJzmxt5REcjgevtEOrcShIk3TZ3DkQLxVqxzpmW4s7XdRGateVDmmGwlvpzg/W+DpO+V9ipUuLRC2zBfFmCQ5yIFwoTw4tSwMOncvbKdEXZyhs2mJ52zfGZKXJgRbYMoolVIGGEi1v0hShK4VnsCW6yZ5DwT9PEt0yFHYHROiIL404oF1VUAYJ0IVnfIO1IemMPd8CIUNBvJlM18N7sCUE/eiwxL3UslfvLWO0A6nRjlzLJFS82ZjkhhjXRkkR5UuoZcqUxJtHUw5vscctU1DlBfDm3mvR3zvgLVrquB5OFh3KevDLqlDahTXaSlJsujuidlm0+3eoa6nL6Ml32Uc4o+1vy6QuFTozjNSy4qyhMkXOm2j47Sw0PSiTg4pEy+iaN7deHJIhOpTC+G7+ylMSRGoZ/Sbe/PTo4xtNIP6OvZO0ZRi2IN5sfKeBTzPsmgJrZc7BMTxdsBwI1tkmeqVlQhlf7K3R7gMhFiBeJgNM06UkZ2Xu3yrxZGUp9VwIJArOsSaq8h6dXX9QPD27ZTZ8TL5c82a+QWFsEbeNKEPH5gCQsrZlca/MQRlEdVaWJVrizwmwhSdnquEDGI8Z8ZN3tXedMXcq2GEHJxJK8vmJFkpGh7w5ZG3NURZo4x9tsdedoVqmTYH8lT4dZzf88w2/unglKS+t105WyDcp/gFiYYDCpwUAAA=="
       },
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/CDKMetadata/Default"
