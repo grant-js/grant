@@ -42,6 +42,26 @@ export const ENV_KEY_SHAPE = /^[A-Z_][A-Z0-9_]*$/;
 export const RESOLVER_SECRET_KEYS = [
   'GITHUB_CLIENT_SECRET',
   'AUTH_MFA_SECRET_ENCRYPTION_KEY',
+
+  // Routed rather than refused since `apps/api/src/config/credentials.ts` began
+  // overlaying resolver-provided values onto `config` in the composition root, before
+  // the first adapter is built. Thirteen keys, in the same order as the table there so
+  // the two lists can be diffed by eye — that file is the other half of this one, and a
+  // key present here but absent there would be written to the platform secret and read
+  // by nothing.
+  'CACHE_DYNAMODB_ACCESS_KEY_ID',
+  'CACHE_DYNAMODB_SECRET_ACCESS_KEY',
+  'REDIS_PASSWORD',
+  'SECURITY_API_KEY',
+  'MAILGUN_API_KEY',
+  'MAILJET_API_KEY',
+  'MAILJET_SECRET_KEY',
+  'EMAIL_SES_CLIENT_SECRET',
+  'SMTP_PASSWORD',
+  'STORAGE_S3_ACCESS_KEY_ID',
+  'STORAGE_S3_SECRET_ACCESS_KEY',
+  'JOBS_AWS_ACCESS_KEY_ID',
+  'JOBS_AWS_SECRET_ACCESS_KEY',
 ] as const;
 
 /**
@@ -79,40 +99,45 @@ export const STACK_GENERATED_KEYS = ['ORIGIN_VERIFY_SECRET'] as const;
  * value at start and the template carries only an ARN. That asymmetry is why
  * `ISecretResolver` exists (ADR 0004).
  *
- * These keys cannot simply be moved into the platform secret instead: the adapters
- * read them from `process.env`, so a value placed in the secret is a value the
- * application never sees. Making them resolver-backed is real work across the email,
- * cache, storage and jobs packages, and it benefits every target — so it is a
- * follow-on story, not a line in this file.
+ * **This list used to hold seventeen keys, and the reason it gave for thirteen of them
+ * was wrong.** It said the adapters read those keys from `process.env`, so a value in
+ * the platform secret would be hidden from the application too — and that routing them
+ * meant work "across the email, cache, storage and jobs packages". None of it was true:
+ * `grep -rn 'process\.env' packages/@grantjs/{email,cache,storage,jobs}/src` returns
+ * nothing. Every one of those keys lands in `apps/api/src/config/env.config.ts` and is
+ * handed to an adapter as ordinary constructor config, so overlaying resolved values in
+ * the composition root was one file plus a call — `apps/api/src/config/credentials.ts`.
+ * They are in `RESOLVER_SECRET_KEYS` now.
  *
- * Until then the honest answer is refusal at synth, with a sentence saying why, in
- * preference to a credential that deploys successfully and leaks quietly. Gate 4,
+ * What remains is four keys, and each is a separate decision rather than a leftover:
+ *
+ *   - `DB_GRANT_ROLE_URL` — a **superuser** connection string, and the most valuable
+ *     credential in this file. `@grantjs/database`'s `grant-rls-login-role.lib.ts:10`
+ *     reads it from `process.env` during a migration, outside any composition root, so
+ *     the overlay cannot reach it. Routing it means changing the RLS grant path's
+ *     shape, which is its own story.
+ *   - `POSTGRES_PASSWORD` — refused here because it **already has a route**, not
+ *     because it lacks one. `@grantjs/env` composes `DB_URL` from the discrete
+ *     `POSTGRES_*` parts, and `DB_URL` is resolver-backed
+ *     (`apps/api/src/lib/secrets/database-url.ts`) and supplied through
+ *     `STACK_COMPOSED_KEYS`. Setting this one here would put a password in the
+ *     template to build a URL that arrives by a safe path anyway.
+ *   - `E2E_DB_URL`, `E2E_REDIS_PASSWORD` — **test-harness keys with no production
+ *     caller.** Nothing in `apps/api` reads either outside `tests/`. Giving them a
+ *     production secret store would be inventing a use for them.
+ *
+ * The honest answer for all four is still refusal at synth with a sentence saying why,
+ * in preference to a credential that deploys successfully and leaks quietly. Gate 4,
  * finding F-C.
  */
 export const CREDENTIAL_KEYS = [
-  'CACHE_DYNAMODB_ACCESS_KEY_ID',
-  'CACHE_DYNAMODB_SECRET_ACCESS_KEY',
   // Two connection strings that carry a password inside a URL, so `CREDENTIAL_SHAPED`
   // in credential-keys.test.ts cannot see them either — the same blind spot DB_URL
-  // has, without DB_URL's alternative. Both are read from `process.env` rather than
-  // through ISecretResolver (`database/src/grant-rls-login-role.lib.ts:10`), so the
-  // platform secret would hide them from the application too. DB_GRANT_ROLE_URL is a
-  // *superuser* URL, which makes it the most valuable credential in this list.
+  // has, without DB_URL's alternative.
   'DB_GRANT_ROLE_URL',
   'E2E_DB_URL',
   'E2E_REDIS_PASSWORD',
-  'EMAIL_SES_CLIENT_SECRET',
-  'JOBS_AWS_ACCESS_KEY_ID',
-  'JOBS_AWS_SECRET_ACCESS_KEY',
-  'MAILGUN_API_KEY',
-  'MAILJET_API_KEY',
-  'MAILJET_SECRET_KEY',
   'POSTGRES_PASSWORD',
-  'REDIS_PASSWORD',
-  'SECURITY_API_KEY',
-  'SMTP_PASSWORD',
-  'STORAGE_S3_ACCESS_KEY_ID',
-  'STORAGE_S3_SECRET_ACCESS_KEY',
 ] as const;
 
 export interface TargetConfig {
@@ -185,6 +210,40 @@ export function parseEnvFile(contents: string): Record<string, string> {
   return result;
 }
 
+/**
+ * Why this particular key has no route, said in the message rather than left to a doc.
+ *
+ * Four keys, four different reasons, and an operator hitting one of them is entitled to
+ * know which. The old message gave a single sentence for all seventeen — and that
+ * sentence, "the application reads it from process.env rather than through
+ * ISecretResolver", was untrue of thirteen of them.
+ */
+function refusalReason(key: string): string {
+  switch (key) {
+    case 'DB_GRANT_ROLE_URL':
+      return (
+        'This is a superuser connection string, and @grantjs/database reads it from ' +
+        'process.env during a migration — outside the composition root where every ' +
+        'other credential is now resolved — so the platform secret would hide it from ' +
+        'the migration too. Run `db:grant-rls-role` out of band instead.'
+      );
+    case 'POSTGRES_PASSWORD':
+      return (
+        'It already has a safe path: @grantjs/env composes DB_URL from the discrete ' +
+        'POSTGRES_* parts, and DB_URL arrives through the platform secret. Deploy with ' +
+        '-c dbUrlSecretArn=<arn> and drop the discrete parts.'
+      );
+    case 'E2E_DB_URL':
+    case 'E2E_REDIS_PASSWORD':
+      return (
+        'This is a test-only key. Nothing outside apps/api/tests reads it, so a ' +
+        'deployed stack has no use for it at all — remove the line.'
+      );
+    default:
+      return 'This target has no secure path for it.';
+  }
+}
+
 /** Splits parsed pairs into what may be synthesized and what may not. */
 export function classifyConfig(pairs: Readonly<Record<string, string>>): TargetConfig {
   const env: Record<string, string> = {};
@@ -231,10 +290,8 @@ export function classifyConfig(pairs: Readonly<Record<string, string>>): TargetC
     if ((CREDENTIAL_KEYS as readonly string[]).includes(key)) {
       throw new Error(
         `${key} cannot be set from this file. Keys here become Lambda environment ` +
-          'variables, which are plaintext in the CloudFormation template and in the ' +
-          'function configuration. This target has no secure path for it yet — the ' +
-          'application reads it from process.env rather than through ISecretResolver, ' +
-          'so moving it to the platform secret would only hide it from the app too. ' +
+          'variables, which are plaintext in the CloudFormation template, in the ' +
+          `function configuration and in cdk.out on disk. ${refusalReason(key)} ` +
           'See docs/deployment/aws-serverless.md § Configure.'
       );
     }

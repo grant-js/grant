@@ -81,19 +81,48 @@ The defaults ([`deploy/aws/lib/config/defaults.ts`](https://github.com/grant-js/
 Two kinds of value are handled differently, and the difference is deliberate:
 
 - **Configuration** goes in `.env` and is synthesized into the template.
-- **Secrets** — `GITHUB_CLIENT_SECRET` and `AUTH_MFA_SECRET_ENCRYPTION_KEY` — also go in `.env`, but are **never** written to the template. CloudFormation cannot hold a literal secret without it being readable by anyone who can describe the stack. They are written to the platform secret out of band, after the deploy, by a separate command.
+- **Secrets** also go in `.env`, but are **never** written to the template. CloudFormation cannot hold a literal secret without it being readable by anyone who can describe the stack. They are written to the platform secret out of band, after the deploy, by a separate command.
 
 `cdk deploy` prints a reminder naming the keys it did not carry.
 
-**Credential-shaped keys are refused, not deployed.** Anything else in the file becomes
-a Lambda environment variable, and those are plaintext in the CloudFormation template
-and in the function configuration — Lambda has no equivalent of the ECS task's
-`Secrets`/`ValueFrom`, where the template carries only an ARN. So `SMTP_PASSWORD`,
-`MAILGUN_API_KEY`, `REDIS_PASSWORD`, the `*_SECRET_ACCESS_KEY` pairs and their kin fail
-at synth with a sentence explaining why. They cannot simply be routed to the platform
-secret instead: the adapters read them from `process.env`, so a value placed in the
-secret is one the application never sees. Making them resolver-backed is tracked
-separately and benefits every target.
+**Credentials go to the platform secret, not to the function.** Anything not on that
+list becomes a Lambda environment variable, and those are plaintext in the
+CloudFormation template, in the function configuration and in `cdk.out` on disk —
+Lambda has no equivalent of the ECS task's `Secrets`/`ValueFrom`, where the template
+carries only an ARN. So the fifteen keys below are routed instead: put them in `.env`,
+run `put-secrets`, and the API reads them through `ISecretResolver` at boot.
+
+| Provider                          | Keys                                                              |
+| --------------------------------- | ----------------------------------------------------------------- |
+| GitHub OAuth                      | `GITHUB_CLIENT_SECRET`                                            |
+| MFA                               | `AUTH_MFA_SECRET_ENCRYPTION_KEY`                                  |
+| Mailgun                           | `MAILGUN_API_KEY`                                                 |
+| Mailjet                           | `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`                           |
+| SMTP                              | `SMTP_PASSWORD`                                                   |
+| SES (static keys)                 | `EMAIL_SES_CLIENT_SECRET`                                         |
+| Redis                             | `REDIS_PASSWORD`                                                  |
+| S3 / DynamoDB / SQS (static keys) | `STORAGE_S3_*`, `CACHE_DYNAMODB_*`, `JOBS_AWS_*` access-key pairs |
+| API                               | `SECURITY_API_KEY`                                                |
+
+The AWS access-key pairs are usually the wrong choice here: leave them blank and the
+SDK's default credential chain uses the function's execution role, which the stack has
+already granted exactly the access each function needs. Fill them in only to reach a
+bucket, table or queue in an account the role cannot assume.
+
+**Rotation works differently for these than for the origin secret.** They are resolved
+once at boot and captured by the adapter that uses them, so a rotation reaches a running
+function when it is **replaced**, not within `SECRETS_CACHE_TTL_SECONDS`. Rotate, then
+roll the functions. `ORIGIN_VERIFY_SECRET` is the exception — the middleware resolves it
+per request, so it does track the TTL.
+
+**Four keys are still refused at synth**, each for its own reason, and the error says
+which:
+
+| Key                                | Why                                                                                                                                                               |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DB_GRANT_ROLE_URL`                | A superuser URL read by `@grantjs/database` during a migration, outside the composition root where credentials are resolved. Run `db:grant-rls-role` out of band. |
+| `POSTGRES_PASSWORD`                | It already has a safe path — `DB_URL` arrives through the platform secret. Use `-c dbUrlSecretArn=…` and drop the discrete parts.                                 |
+| `E2E_DB_URL`, `E2E_REDIS_PASSWORD` | Test-only keys. Nothing outside `apps/api/tests` reads them, so a deployed stack has no use for them.                                                             |
 
 ## Deploy
 
