@@ -5,6 +5,12 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   typedRoutes: true,
   transpilePackages: ['@grantjs/core', '@grantjs/schema'],
+  // Next 16 defaults useTypeScriptCli to true and looks for typescript/bin/tsc.
+  // The package named `typescript` is the 6.x API wrapper (tsc6 only); native
+  // tsc lives on `@typescript/native`. See decisions/0006.
+  experimental: {
+    useTypeScriptCli: false,
+  },
   // NFT traces CJS @swc/helpers; Node 22 may require ESM at runtime (next#97358).
   outputFileTracingIncludes: {
     '/*': ['./node_modules/@swc/helpers/esm/**/*'],

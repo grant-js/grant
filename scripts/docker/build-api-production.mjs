@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, unlinkSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -8,7 +9,11 @@ import { patchWorkspaceExports } from './patch-workspace-exports.mjs';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '../..');
 
-const TSC = join(ROOT, 'node_modules/typescript/bin/tsc');
+// TypeScript 7's `tsc` lives on `@typescript/native`. The `typescript` package
+// is the 6.x API wrapper and only ships `tsc6`. Spawn the bin directly (it is
+// not safe to run as `node bin/tsc` across TS 7 layouts).
+const require = createRequire(import.meta.url);
+const TSC = join(dirname(require.resolve('@typescript/native/package.json')), 'bin/tsc');
 const RESOLVE_API_ALIASES = join(ROOT, 'scripts/docker/resolve-api-path-aliases.mjs');
 const RESOLVE_ESM_EXTENSIONS = join(ROOT, 'scripts/docker/resolve-esm-extensions.mjs');
 
@@ -76,7 +81,7 @@ function buildPackage(relDir, assets = []) {
     unlinkSync(tsbuildInfo);
   }
 
-  run(process.execPath, [TSC, '-p', tsconfig, '--pretty', 'false']);
+  run(TSC, ['-p', tsconfig, '--pretty', 'false']);
 
   const distDir = join(absDir, 'dist');
   if (!existsSync(distDir)) {
@@ -94,7 +99,9 @@ function buildPackage(relDir, assets = []) {
 
 function main() {
   if (!existsSync(TSC)) {
-    throw new Error('TypeScript not installed. Run pnpm install from the repo root.');
+    throw new Error(
+      'TypeScript 7 native compiler not installed. Run pnpm install from the repo root.'
+    );
   }
 
   for (const pkg of WORKSPACE_PACKAGES) {
@@ -102,7 +109,7 @@ function main() {
   }
 
   console.log('\n[build-api] Compiling apps/api...');
-  run(process.execPath, [TSC, '-p', join(ROOT, 'apps/api/tsconfig.build.json'), '--pretty', 'false']);
+  run(TSC, ['-p', join(ROOT, 'apps/api/tsconfig.build.json'), '--pretty', 'false']);
   run(process.execPath, [RESOLVE_API_ALIASES]);
   run(process.execPath, [RESOLVE_ESM_EXTENSIONS, join(ROOT, 'apps/api/dist')]);
 

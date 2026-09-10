@@ -28,3 +28,4 @@ record _why_ it became that way.
 | [0003](./0003-lambda-web-adapter-over-a-handler-entrypoint.md) | Accepted | Lambda runs `server.js` behind the Web Adapter, no handler                    |
 | [0004](./0004-secret-resolution-through-a-port.md)             | Accepted | Secrets resolve through `ISecretResolver` at point of use, not a boot preload |
 | [0005](./0005-aws-target-as-a-construct-library.md)            | Accepted | AWS target ships as a construct library; adopters replace `bin/`, not fork    |
+| [0006](./0006-typescript-7-dual-install.md)                    | Accepted | `tsc` is TypeScript 7; `import 'typescript'` stays the 6.x API until 7.1      |
