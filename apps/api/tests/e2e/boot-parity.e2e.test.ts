@@ -192,32 +192,43 @@ describe('boot parity oracle', () => {
       expect(res.body).toMatchObject({ code: 'VALIDATION_ERROR' });
     });
 
-    it('enforces the JSON body limit above API_JSON_BODY_LIMIT_BYTES', async () => {
-      // Pinned, not endorsed: body-parser raises PayloadTooLargeError and the error
-      // handler maps it to 500 rather than 413. See
-      // plans/2026-08-21-aws-lambda-runtime-measurements.md § finding 2.
+    it('answers 413 above API_JSON_BODY_LIMIT_BYTES', async () => {
+      // Was pinned at 500 and explicitly not endorsed — body-parser's
+      // PayloadTooLargeError is neither a GrantException nor an HttpException, so it
+      // fell to the generic handler. Phase B put the pin here so this fix would read as
+      // a deliberate change rather than a silent one; this is that change.
+      // plans/2026-08-21-aws-lambda-runtime-measurements.md § finding 4.
       const oversized = `{"a":"${'x'.repeat(11 * 1024 * 1024)}"}`;
       const res = await apiClient()
         .post('/api/projects')
         .set('content-type', 'application/json')
         .send(oversized);
 
-      expect(res.status).toBe(500);
-      expect(res.body).toMatchObject({ code: 'INTERNAL_ERROR' });
+      expect(res.status).toBe(413);
+      expect(res.body).toMatchObject({ code: 'PAYLOAD_TOO_LARGE' });
+      // The ceiling, in a field. A client that has to parse English to learn what it
+      // exceeded cannot act on it in code.
+      expect(res.body.extensions?.limitBytes).toBeGreaterThan(0);
+      // Not the raw translation key, which is what shipped for every key the catalogue
+      // was missing until this slice.
+      expect(res.body.error).not.toMatch(/^errors\./);
     });
 
-    it('routes errors through the error handler last', async () => {
+    it('routes errors through the error handler last, and answers 400 for malformed JSON', async () => {
       const res = await apiClient()
         .post('/api/projects')
         .set('content-type', 'application/json')
         .send('{not json');
 
-      // Also pinned rather than endorsed: a malformed body is a 500, not a 400.
-      expect(res.status).toBe(500);
+      // Also pinned at 500 rather than endorsed. A body the server could not parse is
+      // the caller's problem, and saying so is the whole difference between a client
+      // fixing its request and a client opening a bug.
+      expect(res.status).toBe(400);
       expect(res.body).toMatchObject({
-        code: 'INTERNAL_ERROR',
-        translationKey: 'errors.common.internalError',
+        code: 'BAD_REQUEST',
+        translationKey: 'errors.validation.badRequest',
       });
+      expect(res.body.error).not.toMatch(/^errors\./);
     });
 
     it('records requests in the metrics registry', async () => {
