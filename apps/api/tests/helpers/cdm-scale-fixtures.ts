@@ -324,10 +324,15 @@ export function generateCdmAtScale(profile: CdmScaleProfile, seed = 0x5ea1): Syn
       action,
       name: `${resource.name}: ${action}`,
       description: rand() < profile.descriptionRatio ? sentence(rand, 10) : null,
+      // IAM-shaped, because that is what `permissionConditionSchema` accepts:
+      // `{ <ComparisonOperator>: { <fieldPath>: <value> } }`. The earlier
+      // `{ field, operator, value }` shape was accepted by
+      // `startProjectSyncRequestSchema` — which does not look inside a condition — and
+      // then rejected by `PermissionService.createPermission` on the first entity of
+      // every import. See `cdm-scale-fixtures.test.ts` for the assertion that now holds
+      // the two apart.
       condition:
-        rand() < 0.15
-          ? { field: 'metadata.department', operator: 'eq', value: pick(rand, DEPARTMENTS) }
-          : null,
+        rand() < 0.15 ? { StringEquals: { 'metadata.department': pick(rand, DEPARTMENTS) } } : null,
       groups: [],
       tags: [],
       primaryTag: null,
