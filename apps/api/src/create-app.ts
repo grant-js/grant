@@ -42,7 +42,7 @@ import helmet from 'helmet';
 import http from 'http';
 import swaggerUi from 'swagger-ui-express';
 
-import { config, printConfigSummary, validateConfig } from '@/config';
+import { config, printConfigSummary, resolveCredentials, validateConfig } from '@/config';
 import { schema } from '@/graphql/resolvers';
 import { GraphqlContext } from '@/graphql/types';
 import { i18nMiddleware, initializeI18n } from '@/i18n';
@@ -88,8 +88,23 @@ export interface CreatedApp {
 }
 
 export async function createApp(): Promise<CreatedApp> {
+  // Before `validateConfig()`, and the order is the guarantee rather than a preference.
+  // The overlay writes resolver-provided credentials into `config`, so the validator's
+  // existing "required when this provider is selected" checks see them: a deployment
+  // keeping MAILGUN_API_KEY in Secrets Manager boots, and one whose secret is missing
+  // or misnamed fails here with a configuration error instead of building an adapter
+  // around an empty string. Validate first and every resolver-backed credential looks
+  // absent. See `config/credentials.ts`.
+  const credentials = await resolveCredentials(secretResolver);
+
   validateConfig();
   await printConfigSummary();
+  logger.info({
+    msg: 'Credentials resolved through the secret port',
+    // Key names only. Never the values, and never their lengths — a length is a hint.
+    keys: credentials.resolved,
+    provider: config.secrets.provider,
+  });
 
   await initializeI18n();
   logger.info({
