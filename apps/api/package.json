@@ -78,7 +78,7 @@
     "mjml": "^5.4.0",
     "node-cron": "^4.6.0",
     "node-mailjet": "^6.0.6",
-    "nodemailer": "^9.0.5",
+    "nodemailer": "^9.1.1",
     "pino": "^10.3.1",
     "postgres": "^3.4.9",
     "prom-client": "^15.1.0",
