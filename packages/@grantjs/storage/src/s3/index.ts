@@ -22,6 +22,13 @@ export interface S3Config {
   secretAccessKey?: string;
   endpoint?: string;
   publicUrl?: string;
+  /**
+   * Address the bucket as a path segment (`<endpoint>/<bucket>/<key>`) instead of
+   * a subdomain. Required by S3-compatible endpoints that do not serve
+   * virtual-hosted buckets — LocalStack and MinIO among them. Left unset against
+   * real S3, which prefers virtual-hosted style.
+   */
+  forcePathStyle?: boolean;
 }
 
 /**
@@ -45,6 +52,7 @@ export class S3StorageAdapter implements IFileStorageService {
           },
         }),
       ...(config.endpoint && { endpoint: config.endpoint }),
+      ...(config.forcePathStyle && { forcePathStyle: true }),
     });
   }
 
