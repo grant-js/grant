@@ -71,4 +71,24 @@ export const AWS_TARGET_ENV_DEFAULTS: GrantEnv = {
   // missing refuses every request instead of quietly admitting everyone — the control
   // that replaces IAM must not be disableable by absence.
   SECURITY_ORIGIN_VERIFY_REQUIRED: 'true',
+
+  // 5 MiB, down from `@grantjs/env`'s 10 MiB, because on this target the platform must
+  // not advertise a ceiling the runtime will not honour.
+  //
+  // Phase B measured Lambda's invocation cap at **5.32 MiB of raw CDM** for an
+  // uncompressed body (`2026-08-21-aws-lambda-runtime-measurements.md` § finding 2).
+  // Between 5.32 and 10 MiB the API accepted, by its own configuration, payloads AWS
+  // rejected before any code ran: no 413, no domain error, no audit entry, nothing in
+  // the request log — the client got an opaque failure from infrastructure the
+  // application never saw. This is finding 2's recommended option taken: one config
+  // value, no route-specific behaviour, every other target untouched.
+  //
+  // **The gzip asymmetry is deliberate, and it is not engineered around.**
+  // `body-parser` applies `limit` *after* inflating, so a gzipped client is bounded by
+  // 5 MiB of decompressed body while spending far fewer bytes against the invocation
+  // cap. The new limit therefore binds uncompressed clients roughly where Lambda would
+  // have, and gzipped clients earlier than Lambda would have. That is the correct
+  // trade: one number that is honest for the worst case beats two that are each right
+  // half the time. An adopter who has measured their own CDM raises it in `env`.
+  API_JSON_BODY_LIMIT_BYTES: '5242880',
 };
