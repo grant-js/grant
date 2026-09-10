@@ -3006,6 +3006,9 @@
     "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
+        "Architectures": [
+          "arm64"
+        ],
         "Code": {
           "S3Bucket": "cdk-hnb659fds-assets-000000000000-eu-central-1",
           "S3Key": "<asset-hash>.zip"
@@ -3045,7 +3048,7 @@
     "CDKMetadata": {
       "Type": "AWS::CDK::Metadata",
       "Properties": {
-        "Analytics": "v2:deflate64:H4sIAAAAAAAA/3VT224aMRD9lrwbN4W0fSbQRJFShbI0r2jwDlsHr01nbBCy/O+VvcslKHnZOXN2Lh6f8VAOv/+Qtzew54GqNwOjVzJWHtRGzJFdIIUC9ryMqIYyTta2QhVI+8MjubB9sg0hs3hHiuuoJBgVoecWLDRIMlbF7wMJfRKoaAnM6FlOndogPbXQ4Dgz+Z+c49ax9o4O98AoULGMExPYI+UyR/gA1IDHBfBmimtttdfO5oBrxlkP2iKduSQ0tDLOncGcUOzMGa0O2e1QEsY1LOOza06jHnESBtpVDTI+BKuOfU/4FYl77ggvBj2FHcEfMjm0NzOkVnNJ+rlD66sizC/YbrVtcsDH7DMckI7dKm0bg96djpREfbDQunol4wJWBl+HOenRuBWYQiTBIxnvg9p0YvWoM+e7eed3ThYpCf7HMv4OGMqNdqB8z7kXbhKYp2AZ56HXIHRnWMYat8YdWrRedg2mJ0L0a1N2JQllXKjX5Kz/RIgJqL8XB7h0p5o96VW4VuKFdKPtWClkzptDrqjyEV2NPgm+rJ0EueDx20jG8RyVo7pMW1CFXowBoPNSEmWuykOTRfWkmwaJ5aIDYhLYu/b0VEuZM34Jfht8v5hLk9dhCXtWRsvxnidGlw25KjIjt9M1Unlok7XtFyoJ62qUb/xlN7yTX+/k7c0baz2gYL1uUc47+x9evevoUQQAAA=="
+        "Analytics": "v2:deflate64:H4sIAAAAAAAA/3VT224aMRD9lrwbN4W06iuBJoqUKpSleUWDd9g6eG06Y4OQ5X+v7F0uQcnLzpmzc/H4jIdy+P2HvL2BPQ9UvRkYvZKx8qA2Yo7sAikUsOdlRDWUcbK2FapA2h8eyYXtk20ImcU7UlxHJcGoCD23YKFBkrEqfh9I6JNARUtgRs9y6tQG6amFBseZyf/kHLeOtXd0uAdGgYplnJjAHimXOcIHoAY8LoA3U1xrq712NgdcM8560BbpzCWhoZVx7gzmhGJnzmh1yG6HkjCuYRmfXXMa9YiTMNCuapDxIVh17HvCr0jcc0d4Megp7Aj+kMmhvZkhtZpL0s8dWl8VYX7BdqttkwM+Zp/hgHTsVmnbGPTudKQk6oOF1tUrGRewMvg6zEmPxq3AFCIJHsl4H9SmE6tHnTnfzTu/c7JISfA/lvF3wFButAPle869cJPAPAXLOA+9BqE7wzLWuDXu0KL1smswPRGiX5uyK0ko40K9Jmf9J0JMQP29OMClO9XsSa/CtRIvpBttx0ohc94cckWVj+hq9EnwZe0kyAWP30YyjueoHNVl2oIq9GIMAJ2XkihzVR6aLKon3TRILBcdEJPA3rWnp1rKnPFL8Nvg+8VcmrwOS9izMlqO9zwxumzIVZEZuZ2ukcpDm6xtv1BJWFejfOMvu+Gd/Honb2/eWOsBBet1i3Le2f8UXUbIUQQAAA=="
       },
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/CDKMetadata/Default"

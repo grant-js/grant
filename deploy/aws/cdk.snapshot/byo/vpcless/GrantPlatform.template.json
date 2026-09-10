@@ -2238,6 +2238,9 @@
     "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
+        "Architectures": [
+          "arm64"
+        ],
         "Code": {
           "S3Bucket": "cdk-hnb659fds-assets-000000000000-eu-central-1",
           "S3Key": "<asset-hash>.zip"
@@ -2277,7 +2280,7 @@
     "CDKMetadata": {
       "Type": "AWS::CDK::Metadata",
       "Properties": {
-        "Analytics": "v2:deflate64:H4sIAAAAAAAA/3VSwW7bMAz9lt4VrUu67Zw6WzGgQzN76zWgZcZTI4ueKCUIBP/7INlNgja7iI9PfBT4qLmcf/4ib2/gwDPV7GZG1zJWHtROlMgUnEIBB95ERuXQcwcWWnQyVjkXxdaOaBDN0UJHTS3jL6gNPs/T5YOhGkwmBsELGe+D2o26CY1hTUar45me8jG5B07qvyzjz4ABU9kI8nnWXqSDQOU2wIye5YrUDt33DlpcJibdyRJ7Yu3JHVN/YahlGR+pfXAU+tTtFQ/CQFc3IONFn2/BKq/JpsITfgW/nUn8FNboOs2cCr7u0foq2/oD+l7bNhVcZx/hiO4ZXRZW2rYGPb1/axAaOhlLMtmXHM+OnMxIT7CMZZjKwriQTWywN3Ts0Ho5ur06EWKyL3s2CGUoNFtH1st4dfwC1J+LbVymK83e6Tq8tenJ6VbbpVLIXJD1jrJl1+hq8Z/iy96DcBQ8flrIuCxRkWvytBlV6MUSAMZsGESeq/LQTo4/Bd8HL4rAnrrT98/6CY8fYWPSajZwYGW0XB64MDpv64107WivG3T5fxVbOy13EJYalC/8YT+/kx/v5O3NC2s9c8F63aEsx/gPKk4kr5sDAAA="
+        "Analytics": "v2:deflate64:H4sIAAAAAAAA/3VSwW7bMAz9lt4VrUu6YdfU2YoBHZrZW68BLTOeGln0RClBIPjfB8luErTZRXx84qPAR83l/PMXeXsDB56pZjczupax8qB2okSm4BQKOPAmMiqHnjuw0KKTscq5KLZ2RINojhY6amoZf0Ft8HmeLh8M1WAyMQheyHgf1G7UTWgMazJaHc/0lI/JPXBS/2UZfwYMmMpGkM+z9iIdBCq3AWb0LFekdui+d9DiMjHpTpbYE2tP7pj6C0Mty/hI7YOj0Kdur3gQBrq6ARkv+nwLVnlNNhWe8Cv47Uzip7BG12nmVPB1j9ZX2dYf0PfatqngOvsIR3TP6LKw0rY16On9W4PQ0MlYksm+5Hh25GRGeoJlLMNUFsaFbGKDvaFjh9bL0e3ViRCTfdmzQShDodk6sl7Gq+MXoP5cbOMyXWn2TtfhrU1PTrfaLpVC5oKsd5Qtu0ZXi/8UX/YehKPg8dNCxmWJilyTp82oQi+WADBmwyDyXJWHdnL8Kfg+eFEE9tSdvn/WT3j8CBuTVrOBAyuj5fLAhdF5W2+ka0d73aDL/6vY2mm5g7DUoHzhD/v5nfx4J29vXljrmQvW6w5lOcZ/ppCd0psDAAA="
       },
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/CDKMetadata/Default"
