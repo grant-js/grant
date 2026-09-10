@@ -1,4 +1,10 @@
-import type { IFileStorageService, IFileStorageServicePort } from '@grantjs/core';
+import type {
+  IFileStorageService,
+  IFileStorageServicePort,
+  StoredObjectMetadata,
+  UploadUrlOptions,
+  UploadUrlResult,
+} from '@grantjs/core';
 
 import { config } from '@/config';
 import { BadRequestError } from '@/lib/errors';
@@ -48,6 +54,14 @@ export class FileStorageService implements IFileStorageServicePort {
 
   public async getUrl(path: string): Promise<string> {
     return this.storageAdapter.getUrl(path);
+  }
+
+  public async getUploadUrl(path: string, options: UploadUrlOptions): Promise<UploadUrlResult> {
+    return this.storageAdapter.getUploadUrl(path, options);
+  }
+
+  public async getMetadata(path: string): Promise<StoredObjectMetadata | null> {
+    return this.storageAdapter.getMetadata(path);
   }
 
   public async exists(path: string): Promise<boolean> {

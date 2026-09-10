@@ -21,10 +21,11 @@ record _why_ it became that way.
 
 ## Index
 
-| ADR                                                            | Status   | Decision                                                                      |
-| -------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------- |
-| [0001](./0001-configuration-gated-database-bootstrap.md)       | Accepted | Boot-time migrate/seed becomes configuration-gated                            |
-| [0002](./0002-long-running-cdm-sync-beyond-lambda.md)          | Accepted | CDM sync jobs exceeding 15 minutes run off-Lambda                             |
-| [0003](./0003-lambda-web-adapter-over-a-handler-entrypoint.md) | Accepted | Lambda runs `server.js` behind the Web Adapter, no handler                    |
-| [0004](./0004-secret-resolution-through-a-port.md)             | Accepted | Secrets resolve through `ISecretResolver` at point of use, not a boot preload |
-| [0005](./0005-aws-target-as-a-construct-library.md)            | Accepted | AWS target ships as a construct library; adopters replace `bin/`, not fork    |
+| ADR                                                               | Status   | Decision                                                                         |
+| ----------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------- |
+| [0001](./0001-configuration-gated-database-bootstrap.md)          | Accepted | Boot-time migrate/seed becomes configuration-gated                               |
+| [0002](./0002-long-running-cdm-sync-beyond-lambda.md)             | Accepted | CDM sync jobs exceeding 15 minutes run off-Lambda                                |
+| [0003](./0003-lambda-web-adapter-over-a-handler-entrypoint.md)    | Accepted | Lambda runs `server.js` behind the Web Adapter, no handler                       |
+| [0004](./0004-secret-resolution-through-a-port.md)                | Accepted | Secrets resolve through `ISecretResolver` at point of use, not a boot preload    |
+| [0005](./0005-aws-target-as-a-construct-library.md)               | Accepted | AWS target ships as a construct library; adopters replace `bin/`, not fork       |
+| [0006](./0006-presigned-uploads-as-a-required-port-capability.md) | Accepted | Direct upload is required of every `IFileStorageService`, local adapter included |

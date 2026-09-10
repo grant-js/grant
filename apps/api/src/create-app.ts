@@ -57,7 +57,7 @@ import { errorHandler } from '@/middleware/error.middleware';
 import { originVerifyMiddleware } from '@/middleware/origin-verify.middleware';
 import { rateLimitMiddleware } from '@/middleware/rate-limit.middleware';
 import { requestLoggingMiddleware } from '@/middleware/request-logging.middleware';
-import { storageMiddleware } from '@/middleware/storage.middleware';
+import { storageMiddleware, uploadMiddleware } from '@/middleware/storage.middleware';
 import { createRestRouter } from '@/rest';
 import { getOpenApiDocument } from '@/rest/openapi';
 import { createEventDispatchRouter } from '@/rest/routes/event-dispatch.routes';
@@ -193,6 +193,9 @@ export async function createApp(): Promise<CreatedApp> {
   app.use(express.json({ limit: config.app.jsonBodyLimitBytes }));
   app.use(i18nMiddleware);
   if (config.storage.provider === 'local') {
+    // Write before read: `storageMiddleware` is `express.static`, which answers
+    // 404 for a PUT rather than passing it on.
+    app.use('/storage', uploadMiddleware());
     app.use('/storage', storageMiddleware());
   }
 

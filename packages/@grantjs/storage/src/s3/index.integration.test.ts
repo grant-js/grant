@@ -76,24 +76,38 @@ afterAll(async () => {
   admin.destroy();
 });
 
-runFileStorageConformance('s3 (LocalStack)', {
-  create: () =>
-    new S3StorageAdapter(
-      {
-        bucket: BUCKET,
-        region: REGION,
-        endpoint: ENDPOINT,
-        accessKeyId: CREDENTIALS.accessKeyId,
-        secretAccessKey: CREDENTIALS.secretAccessKey,
-        forcePathStyle: true,
-      },
-      noopLogger
-    ),
-  readBack: async (path) => {
-    const object = await admin.send(new GetObjectCommand({ Bucket: BUCKET, Key: path }));
-    return Buffer.from(await object.Body!.transformToByteArray());
+runFileStorageConformance(
+  's3 (LocalStack)',
+  {
+    create: () =>
+      new S3StorageAdapter(
+        {
+          bucket: BUCKET,
+          region: REGION,
+          endpoint: ENDPOINT,
+          accessKeyId: CREDENTIALS.accessKeyId,
+          secretAccessKey: CREDENTIALS.secretAccessKey,
+          forcePathStyle: true,
+        },
+        noopLogger
+      ),
+    readBack: async (path) => {
+      const object = await admin.send(new GetObjectCommand({ Bucket: BUCKET, Key: path }));
+      return Buffer.from(await object.Body!.transformToByteArray());
+    },
+    put: async (url, method, headers, body) => {
+      const response = await fetch(url, { method, headers, body });
+      return { status: response.status };
+    },
   },
-});
+  {
+    urlsAreAbsolute: true,
+    // False because of the emulator, not the adapter — LocalStack 3.8 does not
+    // verify SigV4 at all. See the flag's doc comment in ../conformance-suite.ts,
+    // and ADR 0006 § What CI can prove about enforcement is asymmetric.
+    enforcesUrlConstraints: false,
+  }
+);
 
 /**
  * The S3 side of the divergence index in ../conformance-suite.ts.
@@ -133,6 +147,16 @@ describe('s3 adapter divergences', () => {
     const adapter = new S3StorageAdapter(configured, noopLogger);
 
     await expect(adapter.getUrl('nothing-here.png')).resolves.toContain('nothing-here.png');
+  });
+
+  it('divergence — getMetadata reports the content type S3 recorded', async () => {
+    // The other side of the local adapter's `contentType: undefined`. Slice 10's
+    // confirm step may verify size on both stores, and a content type on neither.
+    const adapter = new S3StorageAdapter(configured, noopLogger);
+    const key = `metadata-type-${Date.now()}.png`;
+    await adapter.upload(Buffer.from('a'), key, { contentType: 'image/png' });
+
+    expect(await adapter.getMetadata(key)).toMatchObject({ size: 1, contentType: 'image/png' });
   });
 
   it('divergence 5 — persists the content type on the object', async () => {
