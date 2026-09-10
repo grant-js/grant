@@ -220,7 +220,7 @@ risk; slice 4 early because two later slices are blocked on its number.
 | 1     | `feat/aws-followups-middleware-order`      | trunk | A    | Origin verification precedes the rate limiter, asserted      | Backend + QA      | light             | #400 |
 | 2     | `feat/aws-followups-ses-identity`          | 1     | A    | `ses:SendEmail` scoped, and granted only where used          | Backend + **Sec** | **security-full** | #401 |
 | 3     | `feat/aws-followups-origin-alarm`          | 2     | A    | The compensating control, wired                              | Backend + **Sec** | **security-full** | #403 |
-| 4     | `feat/aws-followups-edge-proof`            | 3     | A/E  | Deployed proof of 1–3 **and** ADR 0002's missing number      | **QA**            | light             |      |
+| 4     | `feat/aws-followups-edge-proof`            | 3     | A/E  | Deployed proof of 1–3 **and** ADR 0002's missing number      | **QA**            | light             | #421 |
 | 5     | `feat/aws-followups-payload-errors`        | 4     | B    | `413` and `400` instead of `500 INTERNAL_ERROR`              | Backend           | light             | #404 |
 | 6     | `feat/aws-followups-body-limit`            | 5     | B    | The Lambda target stops advertising a limit it cannot honour | Backend           | light             | #405 |
 | 7     | `feat/aws-followups-credential-resolution` | 6     | C    | Credentials resolve through `ISecretResolver`, every target  | Backend + **Sec** | **security-full** | #407 |
@@ -388,6 +388,28 @@ ADR 0002's number:
   15 minutes (slice 12 closes ADR 0002's escape hatch as unneeded and amends the ADR),
   near it (slice 12 builds the hatch), or the import fails for a reason unrelated to
   duration (which is the finding, and it reprioritises everything after it).
+- **Ran 2026-09-10 as #421. It went the third way.** The import failed for a reason
+  unrelated to duration: `cdm-scale-fixtures.ts` generates permission conditions
+  `permissionConditionSchema` rejects, so every import died on its first permission.
+  **Reproducible offline in one line** — no deploy was needed to find it, which makes this
+  the expensive way to learn something CI could have said for free. § Four things, item 3
+  of this plan recorded "the fixture already exists" on the strength of a test asserting
+  the documents validate against `startProjectSyncRequestSchema`; they do, and that is not
+  the assertion `PermissionService.createPermission` makes. Fixed as **#422**, which also
+  adds the assertion whose absence allowed it.
+- **Part A, by contrast, is fully proven.** Every claim slices 2 and 3 could not make from
+  a template now has an observation: 403 direct versus 200 through CloudFront, the filter
+  incrementing 0→3, the alarm reaching `ALARM` from `OK`, SES sending 2 and delivering 2
+  under the scoped policy **with a display-name `Source`** — the case named as most likely
+  to break delivery — and IAM simulation denying both a same-domain and an other-identity
+  send. Baseline noise is **zero**, structurally: the metric counts requests to the
+  Function URL, whose hostname is in no CT log, so scanners arrive through CloudFront
+  carrying the secret. The threshold stays at 20.
+- **Lambda forwards the container's stdout verbatim**, so slice 3's text filter pattern
+  was a safe choice and an unnecessary one — a JSON pattern would have matched. Recorded
+  so a future slice narrows it deliberately rather than rediscovering it.
+- **Four findings the deploy produced**, none visible from a template, carried as
+  follow-ons 6–9.
 - Teardown: `cdk destroy`, both regions to baseline, F1's ACM CNAME and F7's log-group
   growth expected and counted.
 
@@ -886,3 +908,7 @@ Carried out even of this story, which is meant to be the one that carries everyt
 | 3   | **F5 — a `"` inside a _referenced_ secret** (byo-database gate 4, M-4). Whether CloudFormation merely breaks or the quote can close `DB_URL` and open another key.                                                                                   | Still open, still needs a deploy. **Slice 16 is a deploy** — if it is cheap to fold in there, do it and close the finding; if not, it stays open and this row says so.                                                                                                                                             |
 | 4   | **GraphQL ingress payload sizes.** Phase B measured REST ingress only; a GraphQL client sending `searchable` pays more than the recorded table shows.                                                                                                | Slice 6 sets a limit informed by REST numbers. If GraphQL ingress turns out to bind first, that is a second measurement and a second decision.                                                                                                                                                                     |
 | 5   | **`errors.conflict.<resource>` resolves for no resource.** `mapDomainToHttp` derives the key from a runtime resource name; the catalogue defines only `duplicateEntry` and `duplicateAuthMethod`, so every `ConflictError` naming a resource misses. | Found by #404, which closed the _leak_ (`translateError` falls back to the message) but not the cause. Fixing it is a decision about whether the mapper should derive keys it cannot guarantee — a design call, not a slice's aside. `errors.notFound.<segment>` has the same shape with mostly-complete coverage. |
+| 6   | **A rotated `DB_URL` does not reach a warm container.** `createApp()` resolves it once and hands it to a pool; the resolver TTL cannot govern a pool built from an earlier value. `apps/api/src/lib/secrets/database-url.ts` documents the opposite. | Found by #421 and measured: polled 8 m 27 s against a 300 s TTL, still stale; one container replacement fixed it on the first request. Same shape as the caveat slice 7 records for overlaid credentials, so it is one rule rather than two exceptions — and the doc comment is currently wrong.                   |
+| 7   | **JWKS answers `200 {"keys":[]}` when the database is unreachable.** `getJwks()` swallows conversion failures and `sendJwksResponse` wires `onKeyError` only in development.                                                                         | Found by #421. Worse than a 500: a verifier receives a valid-looking empty key set, rejects every token, and gets no signal that the cause was an outage. Security-adjacent.                                                                                                                                       |
+| 8   | **Token `iss`/`aud` are the Function URL, not `APP_URL`.** The issuer is request-derived, and behind CloudFront the Host the Lambda sees is the origin.                                                                                              | Found by #421. An OIDC relying party following `iss` reaches an origin that refuses every unauthenticated request by design, and the value changes if the Function URL is ever recreated.                                                                                                                          |
+| 9   | **`project_sync_jobs` rows are not readable immediately after their own `202`.** Absent twice in five checks at 5 s; all present later.                                                                                                              | Found by #421. Read-after-write latency rather than loss, but a client that follows its own 202 with a GET can get a 404. A guide note, or a read-your-writes guarantee.                                                                                                                                           |
