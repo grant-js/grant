@@ -1100,8 +1100,8 @@ importers:
         specifier: ^17.4.2
         version: 17.4.2
       dotenv-expand:
-        specifier: ^13.0.0
-        version: 13.0.0
+        specifier: ^1000.0.0
+        version: 1000.0.0
       zod:
         specifier: ^4.5.4
         version: 4.6.1
@@ -13126,19 +13126,17 @@ packages:
       minimist: 1.2.8
     dev: true
 
+  /dotenv-expand@1000.0.0:
+    resolution: {integrity: sha512-3T4TtUjXm5iGKFEirqKjcDJ0EheFJbv9peb5xytC+HNu3l5Ygnu4dYE8yeqkppHMsh1If9C/A//EJu7IPtNu+A==}
+    engines: {node: '>=16'}
+    dev: false
+
   /dotenv-expand@12.0.3:
     resolution: {integrity: sha512-uc47g4b+4k/M/SeaW1y4OApx+mtLWl92l5LMPP0GNXctZqELk+YGgOPIIC5elYmUH4OuoK3JLhuRUYegeySiFA==}
     engines: {node: '>=12'}
     dependencies:
       dotenv: 16.6.1
     dev: true
-
-  /dotenv-expand@13.0.0:
-    resolution: {integrity: sha512-aBfBS8eYIeXmpHI9ThIlA7/WLq+SLt18iXUZhb52rW89QLKQFoIpPG1bPeewoPZsTyjSSO3T7234FBVUM1V2rA==}
-    engines: {node: '>=12'}
-    dependencies:
-      dotenv: 17.4.2
-    dev: false
 
   /dotenv@16.6.1:
     resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
