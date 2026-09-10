@@ -223,8 +223,8 @@ risk; slice 4 early because two later slices are blocked on its number.
 | 4     | `feat/aws-followups-edge-proof`            | 3     | A/E  | Deployed proof of 1–3 **and** ADR 0002's missing number      | **QA**            | light             |      |
 | 5     | `feat/aws-followups-payload-errors`        | 4     | B    | `413` and `400` instead of `500 INTERNAL_ERROR`              | Backend           | light             | #404 |
 | 6     | `feat/aws-followups-body-limit`            | 5     | B    | The Lambda target stops advertising a limit it cannot honour | Backend           | light             | #405 |
-| 7     | `feat/aws-followups-credential-resolution` | 6     | C    | Credentials resolve through `ISecretResolver`, every target  | Backend + **Sec** | **security-full** |      |
-| 8     | `feat/aws-followups-credential-keys`       | 7     | C    | The AWS refusal becomes a route                              | Backend + **Sec** | **security-full** |      |
+| 7     | `feat/aws-followups-credential-resolution` | 6     | C    | Credentials resolve through `ISecretResolver`, every target  | Backend + **Sec** | **security-full** | #407 |
+| 8     | `feat/aws-followups-credential-keys`       | 7     | C    | The AWS refusal becomes a route                              | Backend + **Sec** | **security-full** | #408 |
 | 9     | `feat/aws-followups-upload-port`           | 8     | D    | `getUploadUrl()` on the port, and both adapters              | Backend + Arch    | **deep**          |      |
 | 10    | `feat/aws-followups-upload-api`            | 9     | D    | Schema, resolver, REST, handler, service                     | Backend           | light             |      |
 | 11    | `feat/aws-followups-upload-web`            | 10    | D    | The hook and the two dialogs                                 | Frontend          | light             |      |
@@ -537,6 +537,25 @@ password-protected Redis, cannot deploy this target at all.
   _required_ credential must fail closed at boot, not degrade to an empty string —
   byo-database's F4 is the precedent, where an empty `DB_URL` surfaced as a connection
   error to `localhost` instead of a configuration error.
+- **Shipped as #407.** Three notes for the security reviewer.
+  - **The TTL sentence above is wrong, and the truth is a weaker guarantee.** These
+    values are read once at boot and captured by the adapter constructed from them, so
+    a rotation lands when the container is **replaced** — it does not track
+    `SECRETS_CACHE_TTL_SECONDS`. `ORIGIN_VERIFY_SECRET` does, because the middleware
+    resolves it per request. Inherent to the overlay shape rather than fixable within
+    it; stated in the code, the guide and `.env.example`.
+  - **Fail-closed needed no new validation code.** The overlay runs _before_
+    `validateConfig()`, so the validator's existing "required when this provider is
+    selected" checks see resolved values. Moving one call is the whole mechanism, and
+    the ordering is pinned by a test that mutation-fails when reversed.
+  - **Thirteen keys, not seventeen.** `POSTGRES_PASSWORD` joins the plan's three named
+    exclusions: it is refused because it _already_ has a route through `DB_URL`, not
+    because it lacks one.
+- **A mutation initially survived, and the fix is in the diff.** Weakening the
+  empty-value guard from `!value` to `value === undefined` passed every test, because
+  the fake resolver normalized `''` away before the guard saw it — testing
+  `EnvSecretResolver`'s normalization rather than the overlay's own defence. The suite
+  now carries a deliberately less well-behaved resolver alongside the realistic one.
 
 #### Slice 8 — the AWS refusal becomes a route
 
@@ -560,6 +579,21 @@ password-protected Redis, cannot deploy this target at all.
 - `.env.example` — the ARN/secret flow for each newly routed key.
 - **Template diff, declared:** keys leave the functions' `Environment` maps. That is the
   entire point of the slice and the diff should show exactly that and nothing else.
+- **Shipped as #408, and three of its four expected costs were zero.**
+  - **The template diff is empty**, and the declaration above is simply wrong. These
+    keys were _refused_, so they were never in a template: `grep -c MAILGUN_API_KEY` on
+    all three snapshots returns 0 before and after. What changed is which configurations
+    synth accepts, which no snapshot of a configuration that never set them can show.
+  - **`assertConfigurableEnv` needed no lockstep edit**, and cannot break the way F10
+    did: `REFUSED_AS_ENV` is _derived_ from all four lists rather than duplicating them,
+    so a key moving between two of them stays refused by construction. Confirmed by
+    mutation as the slice demanded — dropping `...RESOLVER_SECRET_KEYS` from that spread
+    fails `env-boundary-parity.test.ts` on all fifteen keys, naming each.
+  - **`put-secrets.ts` needed no change.** It writes whatever `loadTargetConfig().secrets`
+    holds, which `RESOLVER_SECRET_KEYS` populates.
+  - `credential-keys.test.ts` also needed no change — both lists feed its `classified`
+    set, so a key moving between them is a no-op to the oracle while an _unclassified_
+    new one still fails it. That is the property it was written for.
 
 ### Part D — presigned uploads (program item 7)
 
