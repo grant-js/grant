@@ -11,13 +11,15 @@ updates:
       day: 'monday'
       time: '09:00'
       timezone: 'Europe/Madrid'
-    open-pull-requests-limit: 1
+    # One grouped patch/minor PR plus a few ungrouped majors. Majors used to
+    # ride in the same group as TypeScript 7 (PR #399) and hid GraphQL 17 /
+    # Vitest 5 behind a compiler bump.
+    open-pull-requests-limit: 5
     commit-message:
       prefix: 'chore(deps)'
     labels:
       - 'dependencies'
       - 'npm'
-    # One PR for all npm updates (minor, patch, major) to avoid lockfile conflicts across PRs
     groups:
       all:
         patterns:
@@ -25,7 +27,13 @@ updates:
         update-types:
           - 'minor'
           - 'patch'
-          - 'major'
+    ignore:
+      # `typescript` is an alias to @typescript/typescript6 (the 6.x JS API).
+      # Dependabot must not replace it with typescript@7. Bump the wrapper and
+      # `@typescript/native` (real typescript@7) by hand until ADR 0006's
+      # removal trigger. See decisions/0006-typescript-7-dual-install.md.
+      - dependency-name: 'typescript'
+      - dependency-name: '@typescript/typescript6'
 
   # GitHub Actions (workflows) — one PR for all action updates
   - package-ecosystem: 'github-actions'

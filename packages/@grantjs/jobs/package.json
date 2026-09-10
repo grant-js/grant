@@ -42,7 +42,7 @@
   "peerDependencies": {
     "node-cron": "^3",
     "bullmq": "^5",
-    "typescript": "^6.0.3",
+    "typescript": "^6.0.2",
     "@aws-sdk/client-sqs": "^3"
   },
   "peerDependenciesMeta": {
@@ -62,7 +62,8 @@
     "@types/node-cron": "^3.0.11",
     "bullmq": "^5.81.3",
     "node-cron": "^4.6.0",
-    "typescript": "^6.0.3",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^4.1.10"
   },
   "license": "MIT"
