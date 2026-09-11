@@ -119,6 +119,7 @@ export function createOrganizationRoutes(context: RequestContext) {
       body: uploadOrganizationPictureRequestSchema,
     }),
     requireEmailThenMfaRest({ allowPersonalContext: false }, { allowPersonalContext: false }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     authorizeRestRoute({
       resource: ResourceSlug.Organization,
       action: ResourceAction.UploadPicture,
