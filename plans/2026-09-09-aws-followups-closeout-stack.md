@@ -33,6 +33,47 @@
   edits"), and both local branches deleted. Their **remote** refs are still standing and
   stay on the § Cleanup list, which is where remote-ref deletion belongs.
 
+## Stack status
+
+Live record, updated as slices land. The `PR` column in § Ordered slices is the
+authoritative per-slice reference; this is the same information as a progress view.
+Last updated **2026-09-11**.
+
+| Slices              | State                                | PRs                                                                            |
+| ------------------- | ------------------------------------ | ------------------------------------------------------------------------------ |
+| 1–8 (parts A, B, C) | **merged to trunk**                  | [#400], [#401], [#403], [#404], [#405], [#407], [#408], and [#421] for slice 4 |
+| 9 (part D)          | **merged to trunk** 2026-09-11       | [#427]                                                                         |
+| 10–11 (part D)      | not started                          | —                                                                              |
+| 12–15 (part E)      | not started; input unblocked by #422 | —                                                                              |
+| 16 (part F)         | not started                          | —                                                                              |
+| final → `main`      | not opened                           | —                                                                              |
+
+**Out of band.** [#422] is not a slice. Slice 4's deployed import failed on a defect in
+`cdm-scale-fixtures.ts` rather than on anything the deployment did, and the fix had to
+land before part E could consume slice 4's measurement — so it went to the trunk as its
+own PR rather than being smuggled into a slice that was not about it.
+
+**Trunk against `main`:** 15 commits ahead, 5 behind as of 2026-09-11 (the dependency
+bumps [#409], [#411], [#415], [#420], [#426] merged to `main` after the trunk opened).
+Nothing has conflicted, but **slice 10 touches `@grantjs/schema` codegen**, so the trunk
+should take `main` before slice 10 starts rather than after it discovers a drift.
+
+[#400]: https://github.com/grant-js/grant/pull/400
+[#401]: https://github.com/grant-js/grant/pull/401
+[#403]: https://github.com/grant-js/grant/pull/403
+[#404]: https://github.com/grant-js/grant/pull/404
+[#405]: https://github.com/grant-js/grant/pull/405
+[#407]: https://github.com/grant-js/grant/pull/407
+[#408]: https://github.com/grant-js/grant/pull/408
+[#409]: https://github.com/grant-js/grant/pull/409
+[#411]: https://github.com/grant-js/grant/pull/411
+[#415]: https://github.com/grant-js/grant/pull/415
+[#420]: https://github.com/grant-js/grant/pull/420
+[#421]: https://github.com/grant-js/grant/pull/421
+[#422]: https://github.com/grant-js/grant/pull/422
+[#426]: https://github.com/grant-js/grant/pull/426
+[#427]: https://github.com/grant-js/grant/pull/427
+
 ## Scope, and the objection to it
 
 Gate 1 asked whether this plan should cover the next story (items 2–4) or everything
