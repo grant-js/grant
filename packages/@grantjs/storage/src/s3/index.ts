@@ -7,8 +7,18 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import type { IFileStorageService, ILogger, UploadOptions, UploadResult } from '@grantjs/core';
+import type {
+  IFileStorageService,
+  ILogger,
+  StoredObjectMetadata,
+  UploadOptions,
+  UploadResult,
+  UploadUrlOptions,
+  UploadUrlResult,
+} from '@grantjs/core';
 import { GrantException } from '@grantjs/core';
+
+import { assertUploadTarget } from '../upload-url';
 
 export interface S3Config {
   bucket: string;
@@ -22,6 +32,13 @@ export interface S3Config {
   secretAccessKey?: string;
   endpoint?: string;
   publicUrl?: string;
+  /**
+   * Address the bucket as a path segment (`<endpoint>/<bucket>/<key>`) instead of
+   * a subdomain. Required by S3-compatible endpoints that do not serve
+   * virtual-hosted buckets — LocalStack and MinIO among them. Left unset against
+   * real S3, which prefers virtual-hosted style.
+   */
+  forcePathStyle?: boolean;
 }
 
 /**
@@ -31,11 +48,27 @@ export interface S3Config {
 export class S3StorageAdapter implements IFileStorageService {
   private readonly s3Client: S3Client;
 
+  /**
+   * A second client, for presigning only.
+   *
+   * The default client hoists `x-amz-checksum-crc32` — computed over an *empty*
+   * body, because presigning never sees the bytes — into the signed query string,
+   * and a real PUT carrying actual bytes is then refused with
+   * `400 InvalidRequest: Value for x-amz-checksum-crc32 header is invalid`. The
+   * parameters sit inside the signed canonical query string, so they cannot be
+   * stripped after the fact; `requestChecksumCalculation` is only settable at
+   * construction.
+   *
+   * Setting it on the shared client instead would silently drop checksums from
+   * `upload()`, an existing working path. Extend, do not replace. See ADR 0006.
+   */
+  private readonly presignClient: S3Client;
+
   constructor(
     private readonly config: S3Config,
     private readonly logger: ILogger
   ) {
-    this.s3Client = new S3Client({
+    const clientConfig = {
       region: config.region,
       ...(config.accessKeyId &&
         config.secretAccessKey && {
@@ -45,7 +78,98 @@ export class S3StorageAdapter implements IFileStorageService {
           },
         }),
       ...(config.endpoint && { endpoint: config.endpoint }),
+      ...(config.forcePathStyle && { forcePathStyle: true }),
+    };
+
+    this.s3Client = new S3Client(clientConfig);
+    this.presignClient = new S3Client({
+      ...clientConfig,
+      requestChecksumCalculation: 'WHEN_REQUIRED',
     });
+  }
+
+  async getUploadUrl(filePath: string, options: UploadUrlOptions): Promise<UploadUrlResult> {
+    assertUploadTarget(filePath, options);
+
+    const expiresAt = new Date(Date.now() + options.expiresInSeconds * 1000);
+
+    try {
+      const url = await getSignedUrl(
+        this.presignClient,
+        new PutObjectCommand({
+          Bucket: this.config.bucket,
+          Key: filePath,
+          ContentType: options.contentType,
+          ContentLength: options.contentLength,
+        }),
+        {
+          expiresIn: options.expiresInSeconds,
+          // Without this, `content-type` is accepted and *not signed*: the URL would
+          // appear to pin the type while accepting any. `content-length` is signed by
+          // default. Verified by test in ./index.test.ts. See ADR 0006.
+          signableHeaders: new Set(['content-type']),
+        }
+      );
+
+      this.logger.debug({
+        msg: 'Presigned S3 upload URL issued',
+        path: filePath,
+        bucket: this.config.bucket,
+        contentLength: options.contentLength,
+        expiresAt: expiresAt.toISOString(),
+      });
+
+      return {
+        url,
+        method: 'PUT',
+        headers: { 'Content-Type': options.contentType },
+        expiresAt,
+      };
+    } catch (error) {
+      this.logger.error({
+        msg: 'Failed to presign S3 upload URL',
+        err: error,
+        path: filePath,
+        bucket: this.config.bucket,
+      });
+      throw new GrantException(
+        `Failed to presign upload URL: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'STORAGE_ERROR',
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  async getMetadata(filePath: string): Promise<StoredObjectMetadata | null> {
+    try {
+      const head = await this.s3Client.send(
+        new HeadObjectCommand({ Bucket: this.config.bucket, Key: filePath })
+      );
+
+      return {
+        size: head.ContentLength ?? 0,
+        ...(head.ContentType && { contentType: head.ContentType }),
+        ...(head.LastModified && { lastModified: head.LastModified }),
+      };
+    } catch (error) {
+      if (
+        (error as { name?: string }).name === 'NotFound' ||
+        (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404
+      ) {
+        return null;
+      }
+      this.logger.error({
+        msg: 'Failed to read S3 object metadata',
+        err: error,
+        path: filePath,
+        bucket: this.config.bucket,
+      });
+      throw new GrantException(
+        `Failed to read file metadata: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'STORAGE_ERROR',
+        error instanceof Error ? error : undefined
+      );
+    }
   }
 
   async upload(file: Buffer, filePath: string, options?: UploadOptions): Promise<UploadResult> {

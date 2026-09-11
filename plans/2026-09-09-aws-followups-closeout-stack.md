@@ -225,7 +225,7 @@ risk; slice 4 early because two later slices are blocked on its number.
 | 6     | `feat/aws-followups-body-limit`            | 5     | B    | The Lambda target stops advertising a limit it cannot honour | Backend           | light             | #405 |
 | 7     | `feat/aws-followups-credential-resolution` | 6     | C    | Credentials resolve through `ISecretResolver`, every target  | Backend + **Sec** | **security-full** | #407 |
 | 8     | `feat/aws-followups-credential-keys`       | 7     | C    | The AWS refusal becomes a route                              | Backend + **Sec** | **security-full** | #408 |
-| 9     | `feat/aws-followups-upload-port`           | 8     | D    | `getUploadUrl()` on the port, and both adapters              | Backend + Arch    | **deep**          |      |
+| 9     | `feat/aws-followups-upload-port`           | 8     | D    | `getUploadUrl()` on the port, and both adapters              | Backend + Arch    | **deep**          | #427 |
 | 10    | `feat/aws-followups-upload-api`            | 9     | D    | Schema, resolver, REST, handler, service                     | Backend           | light             |      |
 | 11    | `feat/aws-followups-upload-web`            | 10    | D    | The hook and the two dialogs                                 | Frontend          | light             |      |
 | 12    | `feat/aws-followups-sync-runtime`          | 11    | E    | ADR 0002 settled: escape hatch, or closed as unneeded        | Backend           | light             |      |
@@ -648,6 +648,33 @@ Promise<{ url, fields?, expiresAt }>` added to `IFileStorageService` (currently
 - Constraints that must be in the contract, not in the caller: expiry, maximum size,
   and content type. A presigned URL without a size condition is an open write endpoint
   with a timer on it.
+
+**Slice 9 outcome (#427).** Architect took the decision the plan referred: **required**,
+recorded as ADR 0006. `fields?` did not survive — a `content-length-range` exists only
+in presigned POST, which costs a dependency this repo does not carry, and an exact
+length is the stronger commitment. Two additions the plan did not anticipate, both
+argued in the ADR: `getMetadata()` on the port, because after a direct upload what a
+client claimed is not evidence and a core change belongs in the deep-reviewed slice;
+and the `PUT /storage/*` route, because a port method returning a URL to a route that
+does not exist is not an implementation.
+
+Three measured findings, all recorded rather than absorbed:
+
+- `getSignedUrl` does **not** sign `content-type` unless `signableHeaders` names it.
+  The obvious implementation issues a URL that appears to pin the type and accepts
+  anything.
+- A default S3 client hoists `x-amz-checksum-crc32` of an empty body into the signed
+  query string; every real PUT is then refused `400 InvalidRequest`. Presigning needs
+  its own client, because the fix is construction-time only and applying it to the
+  shared client would strip checksums from `upload()`.
+- **LocalStack community 3.8 does not verify SigV4 at all** — a forged signature, an
+  expired URL, a wrong-length body and a rewritten tenant prefix were all accepted with 200. So the integration lane proves the round trip and nothing about enforcement.
+  Slice 16 inherits assertions 19–24 against a real bucket; until it runs, nothing in
+  the repository demonstrates that S3 refuses any of them.
+
+`@grantjs/storage` had zero tests before this slice and now has 65 unit and 54
+integration, plus a shared conformance suite for the five methods that already existed.
+Twelve mutations killed. Template diff: none, as declared.
 
 #### Slice 10 — the API surface
 
