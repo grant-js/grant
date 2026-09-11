@@ -35,7 +35,7 @@ export function assertUploadPath(path: string): void {
     // keeps its signing key at `<basePath>/.grant-upload-key`, and a mint for that
     // path would hand out a capability to overwrite the key that authorizes every
     // other mint. `express.static`'s `dotfiles: 'deny'` stops it being *read*; this
-    // stops it being written. See ADR 0006 § Notes for the security review.
+    // stops it being written. See ADR 0007 § Notes for the security review.
     if (segment.startsWith('.')) {
       throw new ValidationError(`Storage path may not contain a dot-prefixed segment: ${path}`);
     }

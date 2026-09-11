@@ -8,7 +8,7 @@ export type ToolbarItemConfig = {
   content: ReactNode;
 };
 
-export type ToolbarItem = ReactNode | ToolbarItemConfig;
+type ToolbarItem = ReactNode | ToolbarItemConfig;
 
 function isToolbarItemConfig(item: ToolbarItem): item is ToolbarItemConfig {
   return (

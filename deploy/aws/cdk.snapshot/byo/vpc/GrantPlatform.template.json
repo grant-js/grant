@@ -3033,6 +3033,9 @@
     "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
+        "Architectures": [
+          "arm64"
+        ],
         "Code": {
           "S3Bucket": "cdk-hnb659fds-assets-000000000000-eu-central-1",
           "S3Key": "<asset-hash>.zip"
@@ -3072,7 +3075,7 @@
     "CDKMetadata": {
       "Type": "AWS::CDK::Metadata",
       "Properties": {
-        "Analytics": "v2:deflate64:H4sIAAAAAAAA/3VTUU8bMQz+LbynGWvZ9lzagZBAsF7Ha+XmzBGaSzo7oaqi/Pcpueu1VPBy/vzdZ8eOnbEc//wlLy9gxyNVb0ZGr2WsPKiNWCC7QAoF7HgVUY1lnL3YClUg7fe35ML2zjaEzOIDKc5VSTAqQs8tWGiQZKyK3wsJfRKoaAXM6FnOndog3bXQ4DQz+Z9c4Nax9o7218AoULGMMxPYI+U0B3gD1IDHJfBmji/aaq+dzYJzxlkP2iIduSQ0tDIunMEcUOyTM1rts9uhJIxrWMZ71wytDvgBPWl1o01f06mfhIF2XYOMN8GqQ1EDfkbinjvAk1sYZAfwl0yW9uYJqdVcgn6/o/VVmdoDbLfaNlnwOXsPe6TDaZW2jUHvhpKSqPcWWlevZVzC2uDzOAfdGrcGU4gkeCLjdVCbbpI96szx4j74nZMnmAT/Yxn/BAzlujtQvsfYEzcJZVyod+DVq4xTA9RmRQFJYO6QZVyEfnihq28Va9wat2/RetkdPh8I0e9bWbI+/ws5678Y0gzU60lxp+5csye9DudTeiTdaDtVCpnzypErE/uMriZfiE9zJ0EuePwxkXG6QOWoLt0WVKEXUwDovJRE6avy0OSBe9JNg8Ry2QExC+xdO7zxkuaIH4PfBt8v7crkVVnBjpXRcrrjmdFle86SPJF71zVSeaH5AXTLloR1Nco3/vY+vpLfr+TlxRtrPaJgvW5RLjr7H4nWNF+KBAAA"
+        "Analytics": "v2:deflate64:H4sIAAAAAAAA/3VTUU8bMQz+LbynGWvZtNfSDoQEgvU6Xis3Z47QXNLZCVUV5b9PyV2vpYKX8+fvPjt27Izl+OcveXkBOx6pejMyei1j5UFtxALZBVIoYMeriGos4+zFVqgCab+/JRe2d7YhZBYfSHGuSoJREXpuwUKDJGNV/F5I6JNARStgRs9y7tQG6a6FBqeZyf/kAreOtXe0vwZGgYplnJnAHimnOcAboAY8LoE3c3zRVnvtbBacM8560BbpyCWhoZVx4QzmgGKfnNFqn90OJWFcwzLeu2ZodcAP6EmrG236mk79JAy06xpkvAlWHYoa8DMS99wBntzCIDuAv2SytDdPSK3mEvT7Ha2vytQeYLvVtsmCz9l72CMdTqu0bQx6N5SURL230Lp6LeMS1gafxzno1rg1mEIkwRMZr4PadJPsUWeOF/fB75w8wST4H8v4J2Ao192B8j3GnrhJKONCvQOvXmWcGqA2KwpIAnOHLOMi9MMLXX2rWOPWuH2L1svu8PlAiH7fypL1+V/IWf/FkGagXk+KO3Xnmj3pdTif0iPpRtupUsicV45cmdhndDX5QnyaOwlyweOPiYzTBSpHdem2oAq9mAJA56UkSl+VhyYP3JNuGiSWyw6IWWDv2uGNlzRH/Bj8Nvh+aVcmr8oKdqyMltMdz4wu23OW5Incu66RygvND6BbtiSsq1G+8bf38ZX8fiUvL95Y6xEF63WLctHZ/wZQoeSKBAAA"
       },
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/CDKMetadata/Default"

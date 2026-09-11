@@ -92,6 +92,12 @@ pnpm --filter web dev      # Web on :3000
 
 See [Adding REST Endpoints](/contributing/rest-api) for the full step-by-step guide covering Zod schemas, routes, RBAC guards, and OpenAPI registration.
 
+## TypeScript 7 dual-install
+
+`tsc` is TypeScript 7 (native). The package named `typescript` is the 6.x JS API that eslint and `vite-plugin-dts` still import. Do not replace that alias with `typescript@7` until 7.1 and those tools ship a JS API — see `decisions/0006-typescript-7-dual-install.md`.
+
+Confirm after install: `pnpm exec tsc --version` prints 7.0.x and `pnpm exec tsc6 --version` prints 6.0.x.
+
 ## Code Style
 
 - TypeScript strict mode everywhere

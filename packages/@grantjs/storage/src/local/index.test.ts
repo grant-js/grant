@@ -115,7 +115,7 @@ describe('local adapter divergences', () => {
 /**
  * The signing key, which has no counterpart on S3: there, the URL is signed with
  * credentials the adapter already holds. Here the adapter has to manage a key, and
- * where it lives is the decision ADR 0006 records.
+ * where it lives is the decision ADR 0007 records.
  */
 describe('local upload signing key', () => {
   const keyPath = path.join(basePath, '.grant-upload-key');

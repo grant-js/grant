@@ -13,7 +13,7 @@ import { S3StorageAdapter } from './index';
  * here, because the integration lane runs against LocalStack 3.8, which does not
  * verify SigV4 at all — it cannot tell a correct URL from a forged one. What the
  * URL *commits to* is checkable here; whether S3 *enforces* it is checkable only
- * against a real bucket, on slice 16's deploy. See ADR 0006.
+ * against a real bucket, on slice 16's deploy. See ADR 0007.
  */
 const adapter = new S3StorageAdapter(
   {

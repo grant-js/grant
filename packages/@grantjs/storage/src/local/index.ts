@@ -173,7 +173,7 @@ export class LocalStorageAdapter implements IFileStorageService {
    * the key; replicas that do not already cannot serve each other's files. An env
    * key has no safe default — empty would mean either an open write endpoint or a
    * required method that throws `ConfigurationError`, and a per-process random one
-   * fails intermittently across replicas. See ADR 0006.
+   * fails intermittently across replicas. See ADR 0007.
    */
   private loadUploadKey(): Promise<Buffer> {
     this.uploadKey ??= (async () => {
@@ -262,7 +262,7 @@ export class LocalStorageAdapter implements IFileStorageService {
    *
    * Not on `IFileStorageService`: S3 verifies its own signatures at the edge, so a
    * `verifyUploadUrl` on the port would be a method one adapter exists to answer.
-   * The application's PUT route calls this directly. See ADR 0006.
+   * The application's PUT route calls this directly. See ADR 0007.
    *
    * `observed` is what the request actually carried. It is checked here rather than
    * by the caller so that every caller — the Express route, and the conformance

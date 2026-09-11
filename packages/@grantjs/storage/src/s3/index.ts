@@ -60,7 +60,7 @@ export class S3StorageAdapter implements IFileStorageService {
    * construction.
    *
    * Setting it on the shared client instead would silently drop checksums from
-   * `upload()`, an existing working path. Extend, do not replace. See ADR 0006.
+   * `upload()`, an existing working path. Extend, do not replace. See ADR 0007.
    */
   private readonly presignClient: S3Client;
 
@@ -106,7 +106,7 @@ export class S3StorageAdapter implements IFileStorageService {
           expiresIn: options.expiresInSeconds,
           // Without this, `content-type` is accepted and *not signed*: the URL would
           // appear to pin the type while accepting any. `content-length` is signed by
-          // default. Verified by test in ./index.test.ts. See ADR 0006.
+          // default. Verified by test in ./index.test.ts. See ADR 0007.
           signableHeaders: new Set(['content-type']),
         }
       );

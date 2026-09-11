@@ -66,6 +66,8 @@
   // organizeImportsOnSave disabled - ESLint import/order handles import organization
   "typescript.preferences.organizeImportsOnSave": false,
   "typescript.suggest.autoImports": true,
+  // Do not set typescript.tsdk to node_modules/typescript: that name is the
+  // TypeScript 6 API wrapper (no tsserver). See decisions/0006.
 
   // File associations
   "files.associations": {

@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import dotenv from 'dotenv';
-import dotenvExpand from 'dotenv-expand';
+import { expand } from 'dotenv-expand';
 
 /**
  * Find monorepo root by walking up until pnpm-workspace.yaml exists.
@@ -53,7 +53,7 @@ export function loadEnv(rootArg?: string): void {
       override: true,
     });
     if (result.parsed) {
-      dotenvExpand.expand(result);
+      expand(result);
     }
   }
 
@@ -62,13 +62,13 @@ export function loadEnv(rootArg?: string): void {
   if (extraEnvPath && fs.existsSync(extraEnvPath)) {
     const extraResult = dotenv.config({ path: extraEnvPath, override: true });
     if (extraResult.parsed) {
-      dotenvExpand.expand(extraResult);
+      expand(extraResult);
     }
   }
 
   // Expand ${VAR} in process.env so runtime-injected vars (Docker env_file/environment, CI, shell) are expanded too.
   // Without this, vars injected by the container runtime are never expanded; only values from dotenv.config() above were.
-  dotenvExpand.expand({
+  expand({
     parsed: process.env as Record<string, string>,
   });
 }

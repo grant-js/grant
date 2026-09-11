@@ -33,7 +33,7 @@ export function storageMiddleware(): express.RequestHandler {
  * The write half of the local storage mount: `PUT /storage/<path>?exp&len&ct&sig`.
  *
  * A presigned URL is only a capability if something honours it, so the route that
- * accepts one ships with the port method that mints one (ADR 0006). On the S3
+ * accepts one ships with the port method that mints one (ADR 0007). On the S3
  * target this has no counterpart — the client writes to the bucket and never
  * reaches this process, which is the whole point of part D.
  *

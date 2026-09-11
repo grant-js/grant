@@ -125,7 +125,7 @@ describe('the local signing key is not reachable over the mount it lives under',
   it('never serves the key file — the dotfiles option is load-bearing', async () => {
     // The key authorizes every upload URL this target issues, and it lives inside
     // the directory `express.static` serves. The `dotfiles` option is the only
-    // thing between the two, so relaxing it to 'allow' must fail this. See ADR 0006.
+    // thing between the two, so relaxing it to 'allow' must fail this. See ADR 0007.
     //
     // Asserted as "not served", not as a status: measured on express 5.2.1, both
     // 'deny' and 'ignore' answer 404 here, so a status assertion could not tell

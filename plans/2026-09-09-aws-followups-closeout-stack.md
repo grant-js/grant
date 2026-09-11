@@ -691,7 +691,7 @@ Promise<{ url, fields?, expiresAt }>` added to `IFileStorageService` (currently
   with a timer on it.
 
 **Slice 9 outcome (#427).** Architect took the decision the plan referred: **required**,
-recorded as ADR 0006. `fields?` did not survive — a `content-length-range` exists only
+recorded as ADR 0007. `fields?` did not survive — a `content-length-range` exists only
 in presigned POST, which costs a dependency this repo does not carry, and an exact
 length is the stronger commitment. Two additions the plan did not anticipate, both
 argued in the ADR: `getMetadata()` on the port, because after a direct upload what a

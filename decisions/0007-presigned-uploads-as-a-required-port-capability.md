@@ -1,4 +1,4 @@
-# 0006 — Direct upload is a required capability of `IFileStorageService`, and the local adapter honours it
+# 0007 — Direct upload is a required capability of `IFileStorageService`, and the local adapter honours it
 
 - **Status**: Accepted
 - **Date**: 2026-09-11

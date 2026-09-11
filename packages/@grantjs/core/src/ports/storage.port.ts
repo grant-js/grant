@@ -16,7 +16,7 @@ export interface UploadUrlOptions {
    * Exact byte length the client will send. The URL commits to it: a body of any
    * other length must be rejected by the store. Exact, not maximum — the client
    * holds the file and knows the number before it asks, and the only presigning
-   * form that expresses a *range* is presigned POST. See ADR 0006.
+   * form that expresses a *range* is presigned POST. See ADR 0007.
    */
   contentLength: number;
 

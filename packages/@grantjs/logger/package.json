@@ -26,11 +26,12 @@
   },
   "devDependencies": {
     "pino-pretty": "^13.0.0",
-    "@types/node": "^26.2.0",
-    "typescript": "^6.0.3"
+    "@types/node": "^26.4.1",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "typescript": "npm:@typescript/typescript6@^6.0.2"
   },
   "peerDependencies": {
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.2"
   },
   "license": "MIT"
 }

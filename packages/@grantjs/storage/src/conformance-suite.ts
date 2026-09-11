@@ -594,7 +594,7 @@ export function runFileStorageConformance(
  * 7. **Where the bytes travel.** An `s3` upload URL takes the client straight to the
  *    object store; a `local` one comes back to this application, which writes the
  *    file itself. Offload is a property of S3, not a promise of the port — the port
- *    promises a bounded capability, and both adapters honour that. ADR 0006.
+ *    promises a bounded capability, and both adapters honour that. ADR 0007.
  *
  * 8. **Whether two identical mints produce identical URLs.** SigV4 is deterministic
  *    to the second, so `s3` repeats itself; `local` happens to as well, but nothing

@@ -104,7 +104,7 @@ runFileStorageConformance(
     urlsAreAbsolute: true,
     // False because of the emulator, not the adapter — LocalStack 3.8 does not
     // verify SigV4 at all. See the flag's doc comment in ../conformance-suite.ts,
-    // and ADR 0006 § What CI can prove about enforcement is asymmetric.
+    // and ADR 0007 § What CI can prove about enforcement is asymmetric.
     enforcesUrlConstraints: false,
   }
 );
