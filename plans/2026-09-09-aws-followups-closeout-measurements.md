@@ -442,3 +442,106 @@ survived untouched, which is why the baseline named them.
 **Slices 12–15 remain blocked.** They were blocked on a number; they are now blocked on
 follow-up 1, which is smaller and CI-shaped. That is the reprioritisation the stack plan
 said this measurement might force.
+
+---
+
+# ADR 0002's number — obtained 2026-09-11, without a deploy
+
+Slice 12. Cycle 1 spent an account cycle failing to time an import that could not run;
+this obtained the number on a developer machine against the e2e PostgreSQL, for nothing,
+using `pnpm --filter grant-api measure:cdm-import` — the harness whose absence was the
+whole cost of cycle 1.
+
+**Three fixture defects stood between the fixtures and a single completed import**, all of
+one shape: a value `startProjectSyncRequestSchema` does not inspect, rejected by a service
+the fixtures had never been run through. #422 fixed the first. Slice 12 found the other
+two in the first ten minutes of running the harness — `findBy: CdmFindBy.Id` resolvers
+carrying generated UUIDs, and a hand-copied tag colour list containing `slate`. Follow-up
+1 of cycle 1 is closed, and closed at the level it asked for: three unit assertions for
+the known classes, plus `cdm-scale-import.e2e.test.ts`, which imports the `starter`
+profile through the real route, queue, worker and services.
+
+## The four points
+
+Each is one run of the harness against the same database on the same machine. Duration is
+the rollback snapshot plus the import inside one transaction, matching
+`project-sync.job.ts`; it excludes queue latency and the job-row writes that bracket it.
+
+| Profile          |   Entities |       Duration | ms/entity |     Applied |  vs 15 min |
+| ---------------- | ---------: | -------------: | --------: | ----------: | ---------: |
+| `starter`        |        124 |         2.90 s |      23.4 |         380 |       0.3% |
+| `team`           |        620 |        18.22 s |      29.4 |       2,118 |       2.0% |
+| `department`     |      3,650 |       191.49 s |      52.5 |      14,416 |      21.3% |
+| **`enterprise`** | **28,880** | **3,738.44 s** | **129.4** | **124,348** | **415.4%** |
+
+**The 28,880-entity import takes 62.3 minutes. The ceiling is 15.** Measured, not
+extrapolated — which matters, because every extrapolation available before this run was
+wrong in the optimistic direction.
+
+## The shape, and why a linear model would have lied
+
+| Model     | Fit                          |     R² | At 28,880 | Crosses 900 s at |
+| --------- | ---------------------------- | -----: | --------: | ---------------: |
+| Linear    | `t = -116.7 + 132.77 ms · n` | 0.9956 |   3,718 s |        7,653 ent |
+| Power law | `t = 4.348e-03 · n^1.319`    | 0.9826 |   3,320 s |       10,734 ent |
+
+Per-entity cost rises **5.5×** across the measured range, 23.4 → 129.4 ms. Phase C's
+single point (283 entities, 208.25 s) and its own warning that one point cannot separate
+fixed from per-entity cost were both right, and the warning was the important half: a
+linear fit through the two smallest profiles alone predicts 891 s at 28,880 — 99% of the
+ceiling, comfortably wrong.
+
+## Why it is superlinear: ~105 statements per entity, each getting slower
+
+Statement counts taken from PostgreSQL's own log (`log_statement='all'`) across a whole
+run, on the disposable e2e database.
+
+| Profile      | Entities | Statements | Statements/entity | ms/statement |
+| ------------ | -------: | ---------: | ----------------: | -----------: |
+| `team`       |      620 |     69,130 |             111.5 |        0.329 |
+| `department` |    3,650 |    377,602 |             103.5 |        0.613 |
+
+Two facts, and they point at different things:
+
+1. **Statements per entity is flat** (111.5 → 103.5, slightly _down_). So this is **not**
+   an N+1 that worsens with scale. It is a fixed, extremely chatty per-entity cost —
+   ~105 SQL statements to apply one CDM entity, which projects to **≈3.0 million
+   statements** for a 28,880-entity document.
+2. **Mean statement latency nearly doubles** (0.329 → 0.613 ms, 1.87×) as the tables grow.
+   That is the superlinearity: constant query count against rows that keep accumulating.
+
+The per-entity chattiness is visible in the code — `CdmEntityBuilder.linkDirectGroupsToUser`
+issues `userHasGroup` (which itself calls `userExists` and then reads _all_ of a user's
+groups) plus `getProjectUserGroups` for every `(user, group)` pair, then filters in
+application code. Which of those dominates is not established here; the count and the
+latency trend are.
+
+## What this says about the deployed target, without deploying to it
+
+**The import is latency-bound, and this is the measurement that makes a deploy
+unnecessary for the decision.** At ~3.0 million statements, every microsecond of
+per-statement round trip costs three seconds of job duration:
+
+- local Docker, loopback: 0.33–0.61 ms/statement → 62 min measured
+- Lambda → RDS in one region, ~1 ms round trip: **round trips alone are ≈50 min**, before
+  any query does work
+
+So the deployed number cannot be better than the local one and is very likely several
+times worse. A cycle spent measuring it would move 415% to some larger percentage and
+change no decision. **ADR 0002's question is answered: a 28,880-entity import does not
+fit inside Lambda's 15-minute ceiling, and does not come close.**
+
+Recorded so that the absence of a cycle-2 deploy here reads as a measurement that made
+one unnecessary, rather than as a step skipped. Slice 15's cold-start re-check and slice
+16's part C and D proofs still need a deploy, and slice 16 is already that cycle.
+
+## The number that reframes the remedy
+
+At the _small-scale_ per-entity rate — 23.4 ms, before table growth inflates it —
+28,880 entities would take **675 s (11.3 min), inside the ceiling**.
+
+The gap between 11.3 and 62.3 minutes is not Lambda's limit being too low. It is ~105
+statements per entity against growing tables. ADR 0002's pre-specified remedy is a
+Fargate escape hatch, which would run the same 3 million statements somewhere without a
+15-minute wall — a correct escape valve and not a fix. Both are defensible; they are
+different slices, and the choice is recorded as gate work rather than settled here.
