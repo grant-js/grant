@@ -100,6 +100,8 @@ exports[`boot parity oracle > route table > exposes exactly the documented REST 
   "POST /api/me/notifications/read-all",
   "POST /api/me/notifications/{id}/read",
   "POST /api/me/picture",
+  "POST /api/me/picture/confirm",
+  "POST /api/me/picture/upload-url",
   "POST /api/organization-invitations/accept",
   "POST /api/organization-invitations/invite",
   "POST /api/organization-invitations/{id}/renew",
