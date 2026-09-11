@@ -2,10 +2,15 @@ import { useTranslations } from 'next-intl';
 import { ApolloCache } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import {
+  ConfirmUserPictureUploadDocument,
+  ConfirmUserPictureUploadMutation,
   CreateUserDocument,
   CreateUserInput,
   DeleteUserDocument,
   MutationDeleteUserArgs,
+  RequestUserPictureUploadUrlDocument,
+  RequestUserPictureUploadUrlMutation,
+  Scope,
   UpdateUserDocument,
   UpdateUserInput,
   UploadUserPictureDocument,
@@ -14,6 +19,8 @@ import {
   User,
 } from '@grantjs/schema';
 import { toast } from 'sonner';
+
+import { type DirectUploadBody, runDirectUpload } from '@/lib/direct-upload';
 
 import { evictUsersCache } from './cache';
 
@@ -38,6 +45,19 @@ export function useUserMutations() {
 
   const [uploadUserPicture] = useMutation<{ uploadUserPicture: UploadUserPictureResult }>(
     UploadUserPictureDocument,
+    {
+      update,
+    }
+  );
+
+  // Minting changes nothing, so it carries no cache update; the confirm is what makes
+  // the new picture the current one.
+  const [requestUserPictureUploadUrl] = useMutation<RequestUserPictureUploadUrlMutation>(
+    RequestUserPictureUploadUrlDocument
+  );
+
+  const [confirmUserPictureUpload] = useMutation<ConfirmUserPictureUploadMutation>(
+    ConfirmUserPictureUploadDocument,
     {
       update,
     }
@@ -114,10 +134,47 @@ export function useUserMutations() {
     }
   };
 
+  /**
+   * The administrator target. `userId` and `scope` are the caller's claim about whose
+   * picture this is, and they reach the storage path — so they are sent identically to
+   * both steps and the API re-checks the permission at each. Nothing here is trusted to
+   * carry authorization between the two requests.
+   *
+   * No toast on failure: the upload dialog renders it inline where the user is looking.
+   */
+  const handleUploadUserPictureDirect = async (
+    target: { userId: string; scope: Scope },
+    file: DirectUploadBody,
+    options?: { signal?: AbortSignal }
+  ) => {
+    const result = await runDirectUpload(
+      {
+        mint: async (descriptor) =>
+          (
+            await requestUserPictureUploadUrl({
+              variables: { input: { ...descriptor, ...target } },
+            })
+          ).data?.requestUserPictureUploadUrl,
+        confirm: async ({ filename }) =>
+          (
+            await confirmUserPictureUpload({
+              variables: { input: { filename, ...target } },
+            })
+          ).data?.confirmUserPictureUpload,
+      },
+      file,
+      options
+    );
+
+    toast.success(t('notifications.uploadPictureSuccess'));
+    return result;
+  };
+
   return {
     createUser: handleCreateUser,
     updateUser: handleUpdateUser,
     deleteUser: handleDeleteUser,
     uploadUserPicture: handleUploadUserPicture,
+    uploadUserPictureDirect: handleUploadUserPictureDirect,
   };
 }
