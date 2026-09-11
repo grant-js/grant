@@ -32,6 +32,28 @@ const BLOCK_UNVERIFIED_EMAIL: EmailVerificationGraphQLGuardOptions = {
 };
 const BLOCK_UNVERIFIED_MFA: MfaGraphQLGuardOptions = { allowPersonalContext: false };
 
+/**
+ * The guard every route that writes another user's picture must carry.
+ *
+ * Written once and applied three times rather than spelled out three times, because
+ * these three are the only mutations whose storage path is derived from the
+ * **target** user rather than the caller: nothing about the path constrains who may
+ * write it, so this guard and the handler's own check are the whole of the
+ * protection. Two of them issue a presigned URL, which is a write capability handed
+ * out minutes before anything is written — one guarded more weakly than the base64
+ * route would be a way to obtain that capability without the authorization the
+ * base64 route demands. A shared definition cannot drift; three copies can.
+ */
+const guardUserPictureWrite = <T>(resolver: T) =>
+  requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      { resource: ResourceSlug.User, action: ResourceAction.UploadPicture },
+      resolver as Parameters<typeof authorizeGraphQLResolver>[1]
+    )
+  );
+
 export const Mutation = {
   // Auth (public - no guards needed)
   login: authMutations.login,
@@ -70,6 +92,12 @@ export const Mutation = {
     meMutations.requestMyUserPictureUploadUrl!
   ),
   confirmMyUserPictureUpload: authenticateGraphQLResolver(meMutations.confirmMyUserPictureUpload!),
+  requestMyProjectMembershipPictureUploadUrl: authenticateGraphQLResolver(
+    meMutations.requestMyProjectMembershipPictureUploadUrl!
+  ),
+  confirmMyProjectMembershipPictureUpload: authenticateGraphQLResolver(
+    meMutations.confirmMyProjectMembershipPictureUpload!
+  ),
   updateMyUser: authenticateGraphQLResolver(meMutations.updateMyUser!),
   updateMyProjectMembership: authenticateGraphQLResolver(meMutations.updateMyProjectMembership!),
   uploadMyProjectMembershipPicture: authenticateGraphQLResolver(
@@ -106,14 +134,9 @@ export const Mutation = {
       userMutations.deleteUser!
     )
   ),
-  uploadUserPicture: requireEmailThenMfaGraphQL(
-    ALLOW_PERSONAL_EMAIL,
-    ALLOW_PERSONAL_MFA,
-    authorizeGraphQLResolver(
-      { resource: ResourceSlug.User, action: ResourceAction.UploadPicture },
-      userMutations.uploadUserPicture!
-    )
-  ),
+  uploadUserPicture: guardUserPictureWrite(userMutations.uploadUserPicture!),
+  requestUserPictureUploadUrl: guardUserPictureWrite(userMutations.requestUserPictureUploadUrl!),
+  confirmUserPictureUpload: guardUserPictureWrite(userMutations.confirmUserPictureUpload!),
   assignUserPermission: requireEmailThenMfaGraphQL(
     ALLOW_PERSONAL_EMAIL,
     ALLOW_PERSONAL_MFA,

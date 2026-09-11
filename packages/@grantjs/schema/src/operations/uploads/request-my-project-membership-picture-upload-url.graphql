@@ -1,0 +1,13 @@
+mutation RequestMyProjectMembershipPictureUploadUrl(
+  $input: RequestMyProjectMembershipPictureUploadUrlInput!
+) {
+  requestMyProjectMembershipPictureUploadUrl(input: $input) {
+    url
+    method
+    expiresAt
+    headers {
+      name
+      value
+    }
+  }
+}

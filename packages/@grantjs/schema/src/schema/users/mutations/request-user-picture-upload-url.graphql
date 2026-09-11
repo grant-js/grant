@@ -1,0 +1,12 @@
+extend type Mutation {
+  """
+  Ask for a URL to upload another user's picture directly to storage.
+
+  Unlike the `me` variants, the storage path here is derived from the **target**
+  user rather than the caller, so the permission check is the only thing standing
+  between a caller and another user's picture. It therefore runs before a URL is
+  issued — the same scope and self-managed-identity rules `uploadUserPicture`
+  applies — and again when the upload is confirmed.
+  """
+  requestUserPictureUploadUrl(input: RequestUserPictureUploadUrlInput!): UploadUrl!
+}
