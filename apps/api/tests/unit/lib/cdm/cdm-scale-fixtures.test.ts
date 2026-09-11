@@ -16,9 +16,27 @@
  * could never have run (`2026-09-09-aws-followups-closeout-measurements.md`, § ADR 0002).
  * The lesson is narrow and worth keeping: *a fixture is only as valid as the strictest
  * validator that will see it*, and the request schema is not that validator.
+ *
+ * **It was not one defect but three, and the other two were found the same way — by
+ * finally running an import.** Slice 12 built `tests/tools/measure-cdm-import.ts` and
+ * pointed it at a real database, which surfaced, in order:
+ *
+ *   1. the permission `condition` shape above;
+ *   2. `findBy: CdmFindBy.Id` user resolvers carrying freshly generated UUIDs. In CDM
+ *      that means "assign to the user with this id" — `expand-cdm-sync-input.lib.ts`
+ *      provisions nothing for it — so every id-resolved user failed with
+ *      `NotFoundError: User not found` as soon as a group was linked to it;
+ *   3. a hand-copied colour list containing `slate`, which is not in `TAG_COLORS`, so
+ *      `TagService.createTag` rejected any tag that drew it.
+ *
+ * All three share one shape: a value `startProjectSyncRequestSchema` does not inspect,
+ * rejected by a service the fixture was never run through. The assertions below cover
+ * the three known instances; `tests/e2e/scenarios/cdm-scale-import.e2e.test.ts` covers
+ * the family, by importing the smallest profile for real.
  */
+import { TAG_COLORS } from '@grantjs/constants';
 import { permissionConditionSchema } from '@grantjs/core';
-import { Tenant } from '@grantjs/schema';
+import { CdmFindBy, Tenant } from '@grantjs/schema';
 import { describe, expect, it } from 'vitest';
 
 import { startProjectSyncRequestSchema } from '@/rest/schemas/projects.schemas';
@@ -62,6 +80,33 @@ describe('CDM scale fixtures', () => {
             result.error?.issues[0]?.message ?? null,
             `condition rejected: ${JSON.stringify(condition)}`
           ).toBeNull();
+        }
+      });
+
+      it('resolves every user by a key that provisions one', () => {
+        // Defect 2. `findBy: Id` is a lookup, not a creation key: a self-contained
+        // document cannot reference a user id that already exists, so an id resolver here
+        // is always an import that fails partway through rather than a document that is
+        // merely odd.
+        const cdm = generateCdmAtScale(profile);
+
+        expect(cdm.users.length).toBeGreaterThan(0);
+        for (const user of cdm.users) {
+          expect(user.key.findBy, `user ${user.key.value} must not resolve by id`).not.toBe(
+            CdmFindBy.Id
+          );
+        }
+      });
+
+      it('colours every tag with one the tag service accepts', () => {
+        // Defect 3. Asserted against `TAG_COLORS` rather than against a list repeated
+        // here — a second copy of the canonical list is the thing that broke.
+        const cdm = generateCdmAtScale(profile);
+        const tags = cdm.tags ?? [];
+
+        expect(tags.length).toBeGreaterThan(0);
+        for (const tag of tags) {
+          expect(TAG_COLORS, `tag ${tag.key} has colour ${tag.color}`).toContain(tag.color);
         }
       });
 
